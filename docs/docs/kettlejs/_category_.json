@@ -1,0 +1,11 @@
+{
+  "label": "KettleJS Framework",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "KettleJS Framework",
+    "description": "KettleJS is a modern, reactive web framework that combines fine-grained reactivity with lit-html templating. Build fast, efficient web applications with signals, JSX support, and React compatibility.",
+    "slug": "/kettlejs"
+  },
+  "collapsed": false
+}

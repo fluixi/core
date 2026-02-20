@@ -1,0 +1,41 @@
+{
+  "lastVersion": "0.0.5",
+  "lastPublishDate": "2025-12-21T03:47:55.341Z",
+  "history": [
+    {
+      "version": "0.0.5",
+      "tag": "latest",
+      "date": "2025-12-21T03:47:55.341Z",
+      "type": "patch",
+      "suffix": null
+    },
+    {
+      "version": "0.0.4",
+      "tag": "latest",
+      "date": "2025-12-21T03:37:58.120Z",
+      "type": "patch",
+      "suffix": null
+    },
+    {
+      "version": "0.0.3",
+      "tag": "latest",
+      "date": "2025-12-21T03:35:42.993Z",
+      "type": "patch",
+      "suffix": null
+    },
+    {
+      "version": "0.0.2",
+      "tag": "latest",
+      "date": "2025-12-21T02:34:10.456Z",
+      "type": "patch",
+      "suffix": null
+    },
+    {
+      "version": "0.0.1",
+      "tag": "latest",
+      "date": "2025-12-21T02:32:02.621Z",
+      "type": "patch",
+      "suffix": null
+    }
+  ]
+}

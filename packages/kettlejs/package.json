@@ -1,0 +1,115 @@
+{
+  "name": "@awc/kettlejs",
+  "version": "0.0.1",
+  "description": "Solid-Compatible Fine-Grained UI Framework",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "kettle-generate": "./dist/cli/generate.js",
+    "kettle-run": "./dist/cli/run.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.mjs",
+      "require": "./dist/src/index.cjs",
+      "default": "./dist/src/index.js"
+    },
+    "./rx": {
+      "development": "./src/lib/server/reactive.ts",
+      "types": "./dist/src/lib/server/reactive.d.ts",
+      "import": "./dist/src/lib/server/reactive.mjs",
+      "require": "./dist/src/lib/server/reactive.cjs",
+      "default": "./dist/src/lib/server/reactive.js"
+    },
+    "./app": {
+      "development": "./internal/vinxi/app.ts",
+      "types": "./dist/internal/vinxi/app.d.ts",
+      "import": "./dist/internal/vinxi/app.js",
+      "require": "./dist/internal/vinxi/app.cjs",
+      "default": "./dist/internal/vinxi/app.js"
+    },
+    "./server": {
+      "development": "./src/lib/server/index.ts",
+      "types": "./dist/src/lib/server/index.d.ts",
+      "import": "./dist/src/lib/server/index.mjs",
+      "require": "./dist/src/lib/server/index.cjs",
+      "default": "./dist/src/lib/server/index.js"
+    },
+    "./client": {
+      "development": "./src/lib/client/index.ts",
+      "types": "./dist/src/lib/client/index.d.ts",
+      "import": "./dist/src/lib/client/index.mjs",
+      "require": "./dist/src/lib/client/index.cjs",
+      "default": "./dist/src/lib/client/index.js"
+    },
+    "./router": {
+      "development": "./src/lib/router/index.ts",
+      "types": "./dist/src/lib/router/index.d.ts",
+      "import": "./dist/src/lib/router/index.mjs",
+      "require": "./dist/src/lib/router/index.cjs",
+      "default": "./dist/src/lib/router/index.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/src/lib/jsx-runtime/index.d.ts",
+      "import": "./dist/src/lib/jsx-runtime/index.mjs",
+      "require": "./dist/src/lib/jsx-runtime/index.cjs",
+      "default": "./dist/src/lib/jsx-runtime/index.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.d.ts",
+      "import": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.mjs",
+      "require": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.cjs",
+      "default": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.js"
+    },
+    "./plugins": {
+      "development": "./src/lib/plugins/index.ts",
+      "types": "./dist/src/lib/plugins/index.d.ts",
+      "import": "./dist/src/lib/plugins/index.mjs",
+      "require": "./dist/src/lib/plugins/index.cjs",
+      "default": "./dist/src/lib/plugins/index.js"
+    },
+    "./lib/*": "./src/lib/*"
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
+    "pack": "pnpm pack",
+    "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc",
+    "test": "vitest",
+    "lint": "eslint src --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@awc/dom": "workspace:*",
+    "@awc/jsx-runtime": "workspace:*",
+    "@awc/reactive": "workspace:*",
+    "@awc/utils": "workspace:*",
+    "@lit-labs/ssr": "^3.0.0",
+    "@lit-labs/ssr-client": "^1.0.0",
+    "@vinxi/server-functions": "^0.5.1",
+    "execa": "^9.6.1",
+    "lit": "^3.0.0",
+    "lit-html": "^3.0.0",
+    "vinxi": "^0.5.8"
+  },
+  "devDependencies": {
+    "@awc/mix-builder": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.9",
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
+    "esbuild": "^0.27.1",
+    "fs-extra": "^11.3.3",
+    "inquirer": "^9.3.8",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

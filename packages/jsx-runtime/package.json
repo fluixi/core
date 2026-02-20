@@ -1,0 +1,60 @@
+{
+  "name": "@awc/jsx-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./jsx-runtime": {
+      "development": "./src/lib/jsx-runtime.ts",
+      "types": "./dist/lib/jsx-runtime.d.ts",
+      "import": "./dist/lib/jsx-runtime.mjs",
+      "require": "./dist/lib/jsx-runtime.cjs",
+      "default": "./dist/lib/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "development": "./src/lib/jsx-dev-runtime.ts",
+      "types": "./dist/lib/jsx-dev-runtime.d.ts",
+      "import": "./dist/lib/jsx-dev-runtime.mjs",
+      "require": "./dist/lib/jsx-dev-runtime.cjs",
+      "default": "./dist/lib/jsx-dev-runtime.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run copy:types",
+    "copy:types": "cp ./src/lib/jsx.d.ts dist/lib",
+    "dev": "tsc -w -p tsconfig.lib.json"
+  },
+  "dependencies": {
+    "@awc/babel-plugin-jsx": "workspace:*",
+    "@awc/dom": "workspace:*",
+    "@awc/reactive": "workspace:*",
+    "@babel/preset-typescript": "^7.28.5",
+    "@lit-labs/ssr": "^3.3.1",
+    "lit": "^3.3.1",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@awc/mix-builder": "workspace:*",
+    "@types/babel__core": "^7.20.5",
+    "@types/react": "^19.2.7",
+    "inquirer": "^13.1.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  }
+}
