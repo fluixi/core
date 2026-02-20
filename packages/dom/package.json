@@ -1,0 +1,223 @@
+{
+  "name": "@awc/dom",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./dom": {
+      "development": "./src/lib/dom/dom.ts",
+      "types": "./dist/lib/dom/dom.d.ts",
+      "import": "./dist/lib/dom/dom.mjs",
+      "require": "./dist/lib/dom/dom.cjs",
+      "default": "./dist/lib/dom/dom.js"
+    },
+    "./server": {
+      "development": "./src/lib/dom/server-renderer.ts",
+      "types": "./dist/lib/dom/server-renderer.d.ts",
+      "import": "./dist/lib/dom/server-renderer.mjs",
+      "require": "./dist/lib/dom/server-renderer.cjs",
+      "default": "./dist/lib/dom/server-renderer.js"
+    },
+    "./runtime": {
+      "development": "./src/lib/dom/runtime.ts",
+      "types": "./dist/lib/dom/runtime.d.ts",
+      "import": "./dist/lib/dom/runtime.mjs",
+      "require": "./dist/lib/dom/runtime.cjs",
+      "default": "./dist/lib/dom/runtime.js"
+    },
+    "./integration": {
+      "development": "./src/lib/dom/integration.ts",
+      "types": "./dist/lib/dom/integration.d.ts",
+      "import": "./dist/lib/dom/integration.mjs",
+      "require": "./dist/lib/dom/integration.cjs",
+      "default": "./dist/lib/dom/integration.js"
+    },
+    "./control-flow": {
+      "development": "./src/lib/dom/control-flow.ts",
+      "types": "./dist/lib/dom/control-flow.d.ts",
+      "import": "./dist/lib/dom/control-flow.mjs",
+      "require": "./dist/lib/dom/control-flow.cjs",
+      "default": "./dist/lib/dom/control-flow.js"
+    },
+    "./lit": {
+      "development": "./src/lib/lit/index.ts",
+      "types": "./dist/lib/lit/index.d.ts",
+      "import": "./dist/lib/lit/index.mjs",
+      "require": "./dist/lib/lit/index.cjs",
+      "default": "./dist/lib/lit/index.js"
+    },
+    "./lit/directives": {
+      "development": "./src/lib/lit/directives/index.ts",
+      "types": "./dist/lib/lit/directives/index.d.ts",
+      "import": "./dist/lib/lit/directives/index.mjs",
+      "require": "./dist/lib/lit/directives/index.cjs",
+      "default": "./dist/lib/lit/directives/index.js"
+    },
+    "./lit/directives/classMap": {
+      "development": "./src/lib/lit/directives/classMap.ts",
+      "types": "./dist/lib/lit/directives/classMap.d.ts",
+      "import": "./dist/lib/lit/directives/classMap.mjs",
+      "require": "./dist/lib/lit/directives/classMap.cjs",
+      "default": "./dist/lib/lit/directives/classMap.js"
+    },
+    "./lit/directives/styleMap": {
+      "development": "./src/lib/lit/directives/styleMap.ts",
+      "types": "./dist/lib/lit/directives/styleMap.d.ts",
+      "import": "./dist/lib/lit/directives/styleMap.mjs",
+      "require": "./dist/lib/lit/directives/styleMap.cjs",
+      "default": "./dist/lib/lit/directives/styleMap.js"
+    },
+    "./lit/directives/ifDefined": {
+      "development": "./src/lib/lit/directives/ifDefined.ts",
+      "types": "./dist/lib/lit/directives/ifDefined.d.ts",
+      "import": "./dist/lib/lit/directives/ifDefined.mjs",
+      "require": "./dist/lib/lit/directives/ifDefined.cjs",
+      "default": "./dist/lib/lit/directives/ifDefined.js"
+    },
+    "./lit/directives/live": {
+      "development": "./src/lib/lit/directives/live.ts",
+      "types": "./dist/lib/lit/directives/live.d.ts",
+      "import": "./dist/lib/lit/directives/live.mjs",
+      "require": "./dist/lib/lit/directives/live.cjs",
+      "default": "./dist/lib/lit/directives/live.js"
+    },
+    "./lit/directives/ref": {
+      "development": "./src/lib/lit/directives/ref.ts",
+      "types": "./dist/lib/lit/directives/ref.d.ts",
+      "import": "./dist/lib/lit/directives/ref.mjs",
+      "require": "./dist/lib/lit/directives/ref.cjs",
+      "default": "./dist/lib/lit/directives/ref.js"
+    },
+    "./lit/directives/repeat": {
+      "development": "./src/lib/lit/directives/repeat.ts",
+      "types": "./dist/lib/lit/directives/repeat.d.ts",
+      "import": "./dist/lib/lit/directives/repeat.mjs",
+      "require": "./dist/lib/lit/directives/repeat.cjs",
+      "default": "./dist/lib/lit/directives/repeat.js"
+    },
+    "./lit/directives/unsafeHTML": {
+      "development": "./src/lib/lit/directives/unsafeHTML.ts",
+      "types": "./dist/lib/lit/directives/unsafeHTML.d.ts",
+      "import": "./dist/lib/lit/directives/unsafeHTML.mjs",
+      "require": "./dist/lib/lit/directives/unsafeHTML.cjs",
+      "default": "./dist/lib/lit/directives/unsafeHTML.js"
+    },
+    "./lit/directives/unsafeSVG": {
+      "development": "./src/lib/lit/directives/unsafeSVG.ts",
+      "types": "./dist/lib/lit/directives/unsafeSVG.d.ts",
+      "import": "./dist/lib/lit/directives/unsafeSVG.mjs",
+      "require": "./dist/lib/lit/directives/unsafeSVG.cjs",
+      "default": "./dist/lib/lit/directives/unsafeSVG.js"
+    },
+    "./lit/directives/litrx": {
+      "development": "./src/lib/lit/directives/litrx.ts",
+      "types": "./dist/lib/lit/directives/litrx.d.ts",
+      "import": "./dist/lib/lit/directives/litrx.mjs",
+      "require": "./dist/lib/lit/directives/litrx.cjs",
+      "default": "./dist/lib/lit/directives/litrx.js"
+    },
+    "./lit/directives/utils": {
+      "development": "./src/lib/lit/directives/utils.ts",
+      "types": "./dist/lib/lit/directives/utils.d.ts",
+      "import": "./dist/lib/lit/directives/utils.mjs",
+      "require": "./dist/lib/lit/directives/utils.cjs",
+      "default": "./dist/lib/lit/directives/utils.js"
+    },
+    "./lit/templates": {
+      "development": "./src/lib/lit/templates/index.ts",
+      "types": "./dist/lib/lit/templates/index.d.ts",
+      "import": "./dist/lib/lit/templates/index.mjs",
+      "require": "./dist/lib/lit/templates/index.cjs",
+      "default": "./dist/lib/lit/templates/index.js"
+    },
+    "./lit/templates/helpers": {
+      "development": "./src/lib/lit/templates/helpers.ts",
+      "types": "./dist/lib/lit/templates/helpers.d.ts",
+      "import": "./dist/lib/lit/templates/helpers.mjs",
+      "require": "./dist/lib/lit/templates/helpers.cjs",
+      "default": "./dist/lib/lit/templates/helpers.js"
+    },
+    "./lit/control-flow": {
+      "development": "./src/lib/lit/control-flow/index.ts",
+      "types": "./dist/lib/lit/control-flow/index.d.ts",
+      "import": "./dist/lib/lit/control-flow/index.mjs",
+      "require": "./dist/lib/lit/control-flow/index.cjs",
+      "default": "./dist/lib/lit/control-flow/index.js"
+    },
+    "./lit/control-flow/for": {
+      "development": "./src/lib/lit/control-flow/for.ts",
+      "types": "./dist/lib/lit/control-flow/for.d.ts",
+      "import": "./dist/lib/lit/control-flow/for.mjs",
+      "require": "./dist/lib/lit/control-flow/for.cjs",
+      "default": "./dist/lib/lit/control-flow/for.js"
+    },
+    "./lit/control-flow/dynamic": {
+      "development": "./src/lib/lit/control-flow/dynamic.ts",
+      "types": "./dist/lib/lit/control-flow/dynamic.d.ts",
+      "import": "./dist/lib/lit/control-flow/dynamic.mjs",
+      "require": "./dist/lib/lit/control-flow/dynamic.cjs",
+      "default": "./dist/lib/lit/control-flow/dynamic.js"
+    },
+    "./lit/control-flow/index": {
+      "development": "./src/lib/lit/control-flow/index-flow.ts",
+      "types": "./dist/lib/lit/control-flow/index-flow.d.ts",
+      "import": "./dist/lib/lit/control-flow/index-flow.mjs",
+      "require": "./dist/lib/lit/control-flow/index-flow.cjs",
+      "default": "./dist/lib/lit/control-flow/index-flow.js"
+    },
+    "./lit/control-flow/each": {
+      "development": "./src/lib/lit/control-flow/each.ts",
+      "types": "./dist/lib/lit/control-flow/each.d.ts",
+      "import": "./dist/lib/lit/control-flow/each.mjs",
+      "require": "./dist/lib/lit/control-flow/each.cjs",
+      "default": "./dist/lib/lit/control-flow/each.js"
+    },
+    "./lit/control-flow/show": {
+      "development": "./src/lib/lit/control-flow/show.ts",
+      "types": "./dist/lib/lit/control-flow/show.d.ts",
+      "import": "./dist/lib/lit/control-flow/show.mjs",
+      "require": "./dist/lib/lit/control-flow/show.cjs",
+      "default": "./dist/lib/lit/control-flow/show.js"
+    },
+    "./lit/control-flow/switch": {
+      "development": "./src/lib/lit/control-flow/switch.ts",
+      "types": "./dist/lib/lit/control-flow/switch.d.ts",
+      "import": "./dist/lib/lit/control-flow/switch.mjs",
+      "require": "./dist/lib/lit/control-flow/switch.cjs",
+      "default": "./dist/lib/lit/control-flow/switch.js"
+    },
+    "./lit/directives/portal": {
+      "development": "./src/lib/lit/control-flow/portal.ts",
+      "types": "./dist/lib/lit/control-flow/portal.d.ts",
+      "import": "./dist/lib/lit/control-flow/portal.mjs",
+      "require": "./dist/lib/lit/control-flow/portal.cjs",
+      "default": "./dist/lib/lit/control-flow/portal.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json"
+  },
+  "dependencies": {
+    "@awc/reactive": "workspace:*",
+    "lit": "^3.3.1",
+    "stream": "^0.0.3",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@awc/mix-builder": "workspace:*",
+    "inquirer": "^13.1.0"
+  }
+}

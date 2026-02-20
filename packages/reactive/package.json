@@ -1,0 +1,105 @@
+{
+  "name": "@awc/reactive",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.mjs",
+      "require": "./dist/lib/index.cjs",
+      "default": "./dist/lib/index.js"
+    },
+    "./observable": {
+      "development": "./src/lib/observable/index.ts",
+      "types": "./dist/lib/observable/index.d.ts",
+      "import": "./dist/lib/observable/index.mjs",
+      "require": "./dist/lib/observable/index.cjs",
+      "default": "./dist/lib/observable/index.js"
+    },
+    "./helpers": {
+      "development": "./src/lib/helpers/index.ts",
+      "types": "./dist/lib/helpers/index.d.ts",
+      "import": "./dist/lib/helpers/index.mjs",
+      "require": "./dist/lib/helpers/index.cjs",
+      "default": "./dist/lib/helpers/index.js"
+    },
+    "./actions": {
+      "development": "./src/lib/actions/index.ts",
+      "types": "./dist/lib/actions/index.d.ts",
+      "import": "./dist/lib/actions/index.mjs",
+      "require": "./dist/lib/actions/index.cjs",
+      "default": "./dist/lib/actions/index.js"
+    },
+    "./schedulers": {
+      "development": "./src/lib/schedulers/index.ts",
+      "types": "./dist/lib/schedulers/index.d.ts",
+      "import": "./dist/lib/schedulers/index.mjs",
+      "require": "./dist/lib/schedulers/index.cjs",
+      "default": "./dist/lib/schedulers/index.js"
+    },
+    "./schedulers/async": {
+      "development": "./src/lib/schedulers/async.ts",
+      "types": "./dist/lib/schedulers/async.d.ts",
+      "import": "./dist/lib/schedulers/async.mjs",
+      "require": "./dist/lib/schedulers/async.cjs",
+      "default": "./dist/lib/schedulers/async.js"
+    },
+    "./store": {
+      "development": "./src/lib/store/index.ts",
+      "types": "./dist/lib/store/index.d.ts",
+      "import": "./dist/lib/store/index.mjs",
+      "require": "./dist/lib/store/index.cjs",
+      "default": "./dist/lib/store/index.js"
+    },
+    "./signal": {
+      "development": "./src/lib/signal/index.ts",
+      "types": "./dist/lib/signal/index.d.ts",
+      "import": "./dist/lib/signal/index.mjs",
+      "require": "./dist/lib/signal/index.cjs",
+      "default": "./dist/lib/signal/index.js"
+    },
+    "./rx": {
+      "development": "./src/lib/rx.ts",
+      "types": "./dist/lib/rx.d.ts",
+      "import": "./dist/lib/rx.mjs",
+      "require": "./dist/lib/rx.cjs",
+      "default": "./dist/lib/rx.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:store": "vitest --run ./src/lib/store/store.fine-grained.store.spec.ts",
+    "test:solid": "vitest --run ./src/lib/store/solid.spec.tsx",
+    "test:signal": "vitest --run ./src/lib/signal/signal.spec.ts",
+    "test:res": "vitest --run ./src/lib/signal/resources.spec.ts",
+    "test:solid-signal": "vitest --run ./src/lib/signal/signal.solid.spec.tsx",
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
+    "pack": "pnpm pack",
+    "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
+  },
+  "dependencies": {
+    "@awc/mix-builder": "^0.0.3",
+    "@awc/utils": "workspace:*",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/user-event": "^14.6.1",
+    "inquirer": "^13.1.0",
+    "sdom": "^0.0.4",
+    "vite-plugin-solid": "^2.11.10"
+  }
+}

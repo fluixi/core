@@ -2,5 +2,30 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./packages/reactive"
+    },
+    {
+      "path": "./packages/utils"
+    },
+    {
+      "path": "./packages/mix-builder"
+    },
+    {
+      "path": "./packages/kettlejs"
+    },
+    {
+      "path": "./packages/kettlejs-test"
+    },
+    {
+      "path": "./packages/babel"
+    },
+    {
+      "path": "./packages/jsx-runtime"
+    },
+    {
+      "path": "./packages/dom"
+    }
+  ]
 }

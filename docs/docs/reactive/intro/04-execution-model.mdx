@@ -1,0 +1,11 @@
+# Execution Model
+
+## Push-Based Updates
+
+```mermaid
+sequenceDiagram
+  participant Value
+  participant Computation
+  Value->>Computation: notify change
+  Computation->>Computation: re-execute
+```

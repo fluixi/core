@@ -1,0 +1,158 @@
+{
+  "name": "@awc/utils",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./primitive": {
+      "development": "./src/lib/primitive/index.ts",
+      "types": "./dist/lib/primitive/index.d.ts",
+      "import": "./dist/lib/primitive/index.mjs",
+      "require": "./dist/lib/primitive/index.cjs",
+      "default": "./dist/lib/primitive/index.js"
+    },
+    "./primitive/types": {
+      "development": "./src/lib/primitive/types/index.ts",
+      "types": "./dist/lib/primitive/types/index.d.ts",
+      "import": "./dist/lib/primitive/types/index.mjs",
+      "require": "./dist/lib/primitive/types/index.cjs",
+      "default": "./dist/lib/primitive/types/index.js"
+    },
+    "./object": {
+      "development": "./src/lib/object/index.ts",
+      "types": "./dist/lib/object/index.d.ts",
+      "import": "./dist/lib/object/index.mjs",
+      "require": "./dist/lib/object/index.cjs",
+      "default": "./dist/lib/object/index.js"
+    },
+    "./object/types": {
+      "development": "./src/lib/object/types/index.ts",
+      "types": "./dist/lib/object/types/index.d.ts",
+      "import": "./dist/lib/object/types/index.mjs",
+      "require": "./dist/lib/object/types/index.cjs",
+      "default": "./dist/lib/object/types/index.js"
+    },
+    "./maths": {
+      "development": "./src/lib/maths/index.ts",
+      "types": "./dist/lib/maths/index.d.ts",
+      "import": "./dist/lib/maths/index.mjs",
+      "require": "./dist/lib/maths/index.cjs",
+      "default": "./dist/lib/maths/index.js"
+    },
+    "./maths/types": {
+      "development": "./src/lib/maths/types/index.ts",
+      "types": "./dist/lib/maths/types/index.d.ts",
+      "import": "./dist/lib/maths/types/index.mjs",
+      "require": "./dist/lib/maths/types/index.cjs",
+      "default": "./dist/lib/maths/types/index.js"
+    },
+    "./maths/fn": {
+      "development": "./src/lib/maths/fn/index.ts",
+      "types": "./dist/lib/maths/fn/index.d.ts",
+      "import": "./dist/lib/maths/fn/index.mjs",
+      "require": "./dist/lib/maths/fn/index.cjs",
+      "default": "./dist/lib/maths/fn/index.js"
+    },
+    "./maths/constants": {
+      "development": "./src/lib/maths/constants.ts",
+      "types": "./dist/lib/maths/constants.d.ts",
+      "import": "./dist/lib/maths/constants.mjs",
+      "require": "./dist/lib/maths/constants.cjs",
+      "default": "./dist/lib/maths/constants.js"
+    },
+    "./maths/guards": {
+      "development": "./src/lib/maths/guards.ts",
+      "types": "./dist/lib/maths/guards.d.ts",
+      "import": "./dist/lib/maths/guards.mjs",
+      "require": "./dist/lib/maths/guards.cjs",
+      "default": "./dist/lib/maths/guards.js"
+    },
+    "./dom": {
+      "development": "./src/lib/dom/index.ts",
+      "types": "./dist/lib/dom/index.d.ts",
+      "import": "./dist/lib/dom/index.mjs",
+      "require": "./dist/lib/dom/index.cjs",
+      "default": "./dist/lib/dom/index.js"
+    },
+    "./dom/types": {
+      "development": "./src/lib/dom/types/index.ts",
+      "types": "./dist/lib/dom/types/index.d.ts",
+      "import": "./dist/lib/dom/types/index.mjs",
+      "require": "./dist/lib/dom/types/index.cjs",
+      "default": "./dist/lib/dom/types/index.js"
+    },
+    "./functions": {
+      "development": "./src/lib/functions/index.ts",
+      "types": "./dist/lib/functions/index.d.ts",
+      "import": "./dist/lib/functions/index.mjs",
+      "require": "./dist/lib/functions/index.cjs",
+      "default": "./dist/lib/functions/index.js"
+    },
+    "./compare": {
+      "development": "./src/lib/compare/index.ts",
+      "types": "./dist/lib/compare/index.d.ts",
+      "import": "./dist/lib/compare/index.mjs",
+      "require": "./dist/lib/compare/index.cjs",
+      "default": "./dist/lib/compare/index.js"
+    },
+    "./functions/types": {
+      "development": "./src/lib/functions/types/index.ts",
+      "types": "./dist/lib/functions/types/index.d.ts",
+      "import": "./dist/lib/functions/types/index.mjs",
+      "require": "./dist/lib/functions/types/index.cjs",
+      "default": "./dist/lib/functions/types/index.js"
+    },
+    "./array": {
+      "development": "./src/lib/array/index.ts",
+      "types": "./dist/lib/array/index.d.ts",
+      "import": "./dist/lib/array/index.mjs",
+      "require": "./dist/lib/array/index.cjs",
+      "default": "./dist/lib/array/index.js"
+    },
+    "./array/types": {
+      "development": "./src/lib/array/types/index.ts",
+      "types": "./dist/lib/array/types/index.d.ts",
+      "import": "./dist/lib/array/types/index.mjs",
+      "require": "./dist/lib/array/types/index.cjs",
+      "default": "./dist/lib/array/types/index.js"
+    },
+    "./color": {
+      "development": "./src/lib/color/index.ts",
+      "types": "./dist/lib/color/index.d.ts",
+      "import": "./dist/lib/color/index.mjs",
+      "require": "./dist/lib/color/index.cjs",
+      "default": "./dist/lib/color/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "build:old": "tsc -p tsconfig.json",
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
+    "pack": "pnpm pack",
+    "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
+  },
+  "dependencies": {
+    "@awc/mix-builder": "workspace:*",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "inquirer": "^13.1.0"
+  }
+}

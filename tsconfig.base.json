@@ -16,6 +16,14 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["development"]
+    "customConditions": ["development"],
+    "paths": {
+      "@awc/kettlejs/rx": ["./packages/kettlejs/src/lib/server/reactive.js"],
+      "@awc/kettlejs/rx/*": ["./packages/kettlejs/src/lib/server/*.js"],
+      "@awc/reactive": ["./packages/reactive/lib/index.js"],
+      "@awc/reactive/*": ["./packages/reactive/lib/*.js"],
+      "@awc/utils": ["./packages/utils/src/index.js"],
+      "@awc/utils/*": ["./packages/utils/*.js"]
+    }
   }
 }

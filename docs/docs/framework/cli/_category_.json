@@ -1,0 +1,8 @@
+{
+  "label": "Commands",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "description": "Commands to manage your KettleJS project"
+  }
+}

@@ -1,0 +1,12 @@
+# Formal Reactive Graph Specification
+
+## Entities
+
+- **Node**: Reactive value or computation
+- **Edge**: Dependency relationship
+
+## Rules
+
+1. Reading a value creates an edge to the active computation
+2. Writing a value invalidates dependent nodes
+3. Invalidated computations re-execute in topological order

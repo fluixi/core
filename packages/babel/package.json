@@ -1,0 +1,36 @@
+{
+  "name": "@awc/babel-plugin-jsx",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json"
+  },
+  "dependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/types": "^7.28.5",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@awc/mix-builder": "workspace:*",
+    "@types/babel__core": "^7.20.5",
+    "@types/babel__helper-plugin-utils": "^7.10.3",
+    "inquirer": "^13.1.0"
+  }
+}

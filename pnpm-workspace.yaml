@@ -1,0 +1,5 @@
+packages:
+  - packages/*
+  - packages/kettle-apps/*
+overrides:
+  '@awc/kettlejs': link:packages/kettlejs
