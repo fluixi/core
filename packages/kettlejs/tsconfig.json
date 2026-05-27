@@ -20,7 +20,7 @@
     "experimentalDecorators": true,
     "types": ["node"]
   },
-  "include": ["src"],
+  "include": ["src", "types/kettle.d.ts"],
   "references": [
     {
       "path": "../utils"

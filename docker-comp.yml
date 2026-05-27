@@ -1,0 +1,91 @@
+# ─── Leuzman Backend — Medusa v2 ─────────────────────────────────────────────
+# Services:
+#   postgres  — PostgreSQL 15 database
+#   redis     — Redis 7 (event bus + cache)
+#   medusa    — Medusa v2 backend API  (port 9000)
+#              built-in admin dashboard (port 9000/app)
+#
+# Quick start (Docker):
+#   docker compose up -d          # start all services
+#   docker compose logs -f medusa # follow backend logs
+#
+# After first start the seed script runs automatically and prints:
+#   Publishable API key: pk_...
+# Copy that key into storefront/.env and store-admin/.env.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: leuzman_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       leuzman_store
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - leuzman_network
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U postgres -d leuzman_store"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+      start_period: 15s
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: leuzman_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - leuzman_network
+    healthcheck:
+      test:     ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout:  3s
+      retries:  5
+
+  # ── Medusa Backend ───────────────────────────────────────────────────────────
+  medusa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leuzman_medusa
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "9000:9000"   # API + Admin dashboard
+      - "5173:5173"   # Vite HMR (admin dev mode)
+    environment:
+      NODE_ENV:       development
+      DATABASE_URL:   postgres://postgres:postgres@postgres:5432/leuzman_store
+      REDIS_URL:      redis://redis:6379
+      JWT_SECRET:     JwthdXJyNDYBsksndhBTXHndhDBDD
+      COOKIE_SECRET:  JdgdbdofjHDBDTBDdbgedTGDBi
+      STORE_CORS:     http://localhost:3003,http://localhost:3004
+      ADMIN_CORS:     http://localhost:3004,http://localhost:9000,http://localhost:5173
+      AUTH_CORS:      http://localhost:3003,http://localhost:3004,http://localhost:9000,http://localhost:5173
+    volumes:
+      - .:/server
+      - /server/node_modules
+    networks:
+      - leuzman_network
+
+volumes:
+  postgres_data:
+
+networks:
+  leuzman_network:
+    driver: bridge

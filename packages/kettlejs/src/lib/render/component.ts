@@ -15,15 +15,10 @@ import {
   initializeIntegration,
   registerBatch,
   registerEffectCreator,
-  isDOMNode,
   registerCreateComponent,
-  isRoutes,
   asComponent,
-  isProvider,
-  isRouter,
-  isSuspense,
-  isComponent,
-  isOutlet,
+  CreateComponentReturnType,
+  intergartionInitialized,
 } from '@awc/dom';
 import {
   untrack,
@@ -36,13 +31,25 @@ import {
   batch,
   createRoot,
   runWithOwner,
-  createContext as createReactiveContext,
-  useContext as useReactiveContext,
+  createComputed,
+  // createContext as createReactiveContext,
+  // useContext as useReactiveContext,
   devComponent,
   __DEV__,
   createRenderEffect,
   trackPromise,
+  childrens,
+  createResource,
+  createContext,
+  useContext,
+  getSuspenseContext,
+  getSuspenseListContext,
+  resumeEffects,
+  createDeferred,
+  getSharedConfig as getSignalSharedConfig,
 } from '@awc/reactive/signal';
+
+import {createStore} from "@awc/reactive/store";
 // } from '@awc/kettlejs/rx';
 
 // Note: Owner type from @awc/reactive/signal
@@ -105,15 +112,15 @@ export const DEV =
 /**
  * Component props type
  */
-export interface ComponentProps {
-  children?: any;
-  [key: string]: any;
-}
+// export interface ComponentProps {
+//   children?: any;
+//   [key: string]: any;
+// }
 
-/**
- * Component function type
- */
-export type Component<P = ComponentProps, Return = any> = (props?: P) => Return;
+// /**
+//  * Component function type
+//  */
+// export type Component<P = ComponentProps, Return = any> = (props?: P) => Return;
 
 
 
@@ -213,7 +220,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
 /**
  * Integration initialized flag
  */
-let integrationInitialized = false;
+// let integrationInitialized = false;
 
 // ============================================================================
 // Integration Setup
@@ -222,28 +229,44 @@ let integrationInitialized = false;
 /**
  * Initialize integration with reactive system
  */
-export function ensureIntegration(): void {
-  if (integrationInitialized) return;
-
+export function ensureIntegration(from?: string): void {
+  // Always call initializeIntegration — it now merges rather than replaces,
+  // so calling it multiple times is safe. createComponent lives here (not in
+  // @awc/dom) so it must be patched in every time until fully registered.
   initializeIntegration({
     signalSystem: {
-      createEffect: createRenderEffect,
-      batch,
+      createEffect,
+      createRenderEffect,
+      createRoot,
       createMemo,
+      createSignal,
+      resolveChildren: childrens,
+      batch,
       untrack,
       getOwner,
       runWithOwner,
-      createRoot,
       onCleanup,
       createComponent,
-    } as any,
+      devComponent,
+      createResource,
+      createContext,
+      useContext,
+      getSuspenseContext,
+      getSuspenseListContext,
+      createComputed,
+      resumeEffects,
+      isSignal,
+      createStore,
+      createDeferred,
+      getSharedConfig: getSignalSharedConfig,
+      setOwner,
+    },
   });
 
   registerEffectCreator(createEffect);
   registerBatch(batch);
   registerCreateComponent(createComponent as any);
 
-  integrationInitialized = true;
 }
 
 // ============================================================================
@@ -277,12 +300,6 @@ export function ensureIntegration(): void {
  * const result = createComponent(MyComponent, { name: 'World' });
  * ```
  */
-export type IComponent<T, U = any, W = any> = ()=>Component<U, W> & {
-  $COMPONENT: boolean
-}
-
-export type C<T, V> = T extends (props?: infer U) => any ? IComponent<T, V extends never ? U : V, ReturnType<T>> : T extends object ? IComponent<T, V> : never
-
 // export function $component<T, U = any>(value: T, props?: U) {
 //   const component = () => (typeof value === 'function' && props) ?(value as any)(props) : value;
 //   Object.defineProperty(component, '__kettle', {
@@ -297,7 +314,7 @@ export type C<T, V> = T extends (props?: infer U) => any ? IComponent<T, V exten
 export function createComponent<T extends (props?: any) => any, U = any>(
   Comp: T,
   props?: U
-): ReturnType<C<T, U>> {
+): CreateComponentReturnType<T, U> {
   return $component(Comp, props)
   // const c = $component(Comp, props)
   // // return c() as any
@@ -319,6 +336,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   // }
   const component = (typeof value === 'function')
     ? isDev() ? devComponent(value, props) : untrack(() => value(props))
+    // ? isDev() ? devComponent(value, props) : devComponent(value, props)
     : value;
   // Only stamp $name and $COMPONENT on functions/objects — primitives (strings, numbers)
   // cannot have properties added in strict mode and would throw TypeError.
@@ -328,9 +346,9 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
     try { (component as any)['$name'] = value.name; } catch {}
     // Always mark with asComponent so isComponent() works reliably in both dev and
     // production browser environments.
-    return asComponent(component) as C<T, U>;
+    return asComponent(component) as CreateComponentReturnType<T, U>;
   }
-  return component as C<T, U>;
+  return component as CreateComponentReturnType<T, U>;
 }
 
 // ============================================================================
@@ -358,13 +376,23 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
  * };
  * ```
  */
-export function onMount(fn: LifecycleCallback): void {
+export function onMount(fn: LifecycleCallback, reactive: boolean = true): void {
   const lc = getOwnerLifecycle();
   if (lc) {
+    if(!reactive) {
+      if(!lc.scheduled){
+        fn();
+      }
+      return;
+    }
     // Attach to Owner — will run BEFORE useEffect callbacks in the flush.
     lc.mounts.push(fn);
     scheduleLifecycleFlush(lc);
   } else {
+    if(!reactive) {
+      fn();
+      return;
+    }
     // No Owner (rare). Fall back to SolidJS pattern.
     createEffect(() => {
       const cleanup = untrack(fn);
@@ -443,9 +471,38 @@ export { onCleanup };
  * };
  * ```
  */
-export function useEffect(callback: () => void | (() => void)): void {
+export function workingUseEffect(callback: () => void | (() => void), debug?: boolean): void {
   const lc = getOwnerLifecycle();
+  // if(debug){
+  // }
+  console.log('setting effect', callback, lc)
+  // if (lc) {
+  //   // if(lc.scheduled) return;
+  //   // Attach to Owner — will be created as an effect AFTER all onMount callbacks.
+  //   lc.effects.push(callback);
+  //   scheduleLifecycleFlush(lc);
+  // } else {
+  // }
+  // No Owner (rare). Create the effect immediately.
+    let cleanup: (() => void) | void;
+  
+    createRenderEffect(() => {
+      if (cleanup) cleanup();
+      cleanup = callback();
+    });
+  
+    onCleanup(() => {
+      // console.log('cleanup', cleanup)
+      if (cleanup) cleanup();
+    });
+}
+export function useEffect(callback: () => void | (() => void), debug?: boolean): void {
+  const lc = getOwnerLifecycle();
+  // if(debug){
+  // }
+  // console.log('setting effect', callback, lc)
   if (lc) {
+    // if(lc.scheduled) return;
     // Attach to Owner — will be created as an effect AFTER all onMount callbacks.
     lc.effects.push(callback);
     scheduleLifecycleFlush(lc);
@@ -464,6 +521,9 @@ export function useEffect(callback: () => void | (() => void)): void {
     });
   }
 }
+
+
+// export {createRenderEffect as useEffect}
 
 /**
  * Create a memoized computed value
@@ -681,10 +741,6 @@ export { getOwner };
  */
 export { runWithOwner };
 
-/**
- * Re-export context functions
- */
-export { createReactiveContext, useReactiveContext };
 
 // ============================================================================
 // HELPER FUNCTIONS (INTERNAL)
@@ -702,27 +758,6 @@ export function hasLifecycleContext(): boolean {
 // DEV MODE UTILITIES
 // ============================================================================
 
-/**
- * Mark a component for development debugging
- *
- * @param {Component<any>} Comp - Component to mark
- * @param {string} name - Component name
- * @returns {Component<any>} Marked component
- * @internal
- */
-export function markComponent<P extends ComponentProps>(
-  Comp: Component<P>,
-  name: string
-): Component<P> {
-  if (DEV) {
-    Object.defineProperty(Comp, 'name', {
-      value: name,
-      writable: false,
-      configurable: true,
-    });
-  }
-  return Comp;
-}
 
 /**
  * Check if in development mode
@@ -758,3 +793,8 @@ export function devOnly(fn: () => void): void {
     fn();
   }
 }
+
+export type { Component,
+  ComponentProps} from "@awc/dom"
+
+

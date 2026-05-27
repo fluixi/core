@@ -82,7 +82,7 @@ export const deepClone = <T>(obj: T, skipKeys?: (string | symbol)[]): T => {
 
   // Handle Array
   if (Array.isArray(obj)) {
-    return obj.map((item) => deepClone(item)) as T;
+    return Array.from(obj).map((item) => deepClone(item)) as T;
   }
 
   // Handle plain object

@@ -130,9 +130,11 @@ function scanDirectory(
       dirRoutes.push(...children);
     } else {
       // Regular directory: becomes a nested route
-      // If there's a layout in the children, it becomes the parent route
-      const childLayout = children.find((c) => c.isLayout);
-      const childNonLayout = children.filter((c) => !c.isLayout);
+      // If there's a DIRECT layout in the children (urlPath matches this dir's path),
+      // it becomes the parent route. We must NOT pick up layouts from deeper descendants
+      // (e.g. campaigns/[id]/workspace/layout.tsx must not be the layout for campaigns/).
+      const childLayout = children.find((c) => c.isLayout && c.urlPath === childUrlPath);
+      const childNonLayout = children.filter((c) => !c.isLayout || c.urlPath !== childUrlPath);
 
       if (childLayout) {
         // Preserve children from recursive scan, add any non-layout siblings

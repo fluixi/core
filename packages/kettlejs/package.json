@@ -13,6 +13,10 @@
     "README.md"
   ],
   "exports": {
+    "./types": {
+      "development": "./types/kettle.d.ts",
+      "types": "./dist/kettle.d.ts"
+    },
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
@@ -55,7 +59,22 @@
       "require": "./dist/src/lib/router/index.cjs",
       "default": "./dist/src/lib/router/index.js"
     },
+    "./router/index": {
+      "development": "./src/lib/router/index.ts",
+      "types": "./dist/src/lib/router/index.d.ts",
+      "import": "./dist/src/lib/router/index.mjs",
+      "require": "./dist/src/lib/router/index.cjs",
+      "default": "./dist/src/lib/router/index.js"
+    },
+    "./router.js": {
+      "development": "./src/lib/router/index.ts",
+      "types": "./dist/src/lib/router/index.d.ts",
+      "import": "./dist/src/lib/router/index.mjs",
+      "require": "./dist/src/lib/router/index.cjs",
+      "default": "./dist/src/lib/router/index.js"
+    },
     "./jsx-runtime": {
+      "development": "./src/lib/jsx-runtime/index.ts",
       "types": "./dist/src/lib/jsx-runtime/index.d.ts",
       "import": "./dist/src/lib/jsx-runtime/index.mjs",
       "require": "./dist/src/lib/jsx-runtime/index.cjs",
@@ -78,7 +97,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && cp types/kettle.d.ts dist/kettle.d.ts",
     "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc",
@@ -98,6 +117,7 @@
     "execa": "^9.6.1",
     "lit": "^3.0.0",
     "lit-html": "^3.0.0",
+    "vite-plugin-node-polyfills": "^0.25.0",
     "vinxi": "^0.5.8"
   },
   "devDependencies": {

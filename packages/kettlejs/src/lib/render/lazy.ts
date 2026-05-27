@@ -11,9 +11,8 @@
  *     before the component is rendered.
  */
 
-import { Component } from '@awc/dom';
-import { Accessor, createMemo, createResource, createSignal, untrack } from '@awc/reactive/signal';
-import { ComponentProps } from './component.js';
+import { Component, ComponentProps, createMemo, createResource, createSignal, } from '@awc/dom';
+import { Accessor, untrack } from '@awc/reactive/signal';
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -38,11 +37,12 @@ export function lazy<T extends (...args: any[]) => any>(
   // ── Module-level state ─────────────────────────────────────────────────────
   // Shared across every instance of this lazy component so that the first
   // render that triggers loading benefits all subsequent renders.
-
+  
   // The resolved component function (undefined until the module loads).
   // createSignal here is fine at module level — signals need no owner.
   // const [comp, setComp] = createSignal<T | undefined>(undefined);
   let component: Accessor<Component | undefined> | undefined;
+  const [resolved, setResolved] = createSignal<any | undefined>(undefined)
 
   // The single in-flight / completed promise.  Idempotent: subsequent calls
   // to load() return the same promise instead of re-importing the module.
@@ -52,7 +52,6 @@ export function lazy<T extends (...args: any[]) => any>(
   function load(): Promise<any> {
     if (!promise) {
       promise = loader().then((mod) => {
-        console.log('setting comp', mod.default)
         // Functional setter form `() => value` prevents the setter from
         // interpreting the component function as an updater callback.
         // setComp(() => mod.default);
@@ -83,8 +82,6 @@ export function lazy<T extends (...args: any[]) => any>(
   
       // If the component has failed to load, show the error.
       if (resource.error) throw resource.error;
-    }else{
-      console.log('component already defined')
     }
 
     // setComp(resource())
@@ -102,8 +99,7 @@ export function lazy<T extends (...args: any[]) => any>(
 // return untrack(() => C(props));
 // if(lazyCache.has(loader)) return untrack(lazyCache.get(loader))
     return createMemo(() => {
-      const C = component();
-      // console.log('throwing', C, promise, loader)
+      const C = component!();
       if (!C) {
         // Module still loading — throw the promise so Suspense boundaries catch it.
         // The throw propagates to createMemo's catch block which calls
@@ -111,7 +107,15 @@ export function lazy<T extends (...args: any[]) => any>(
         // throw promise || load();
         return undefined
       }
-      return untrack(() => C!(props));
+      // return res;
+      // if(untrack(resolved)) {
+      //     // console.log('resolved is', resolved())
+      //     return resolved()
+      //   }
+        const res = typeof C==="function" ? untrack(() => C!(props)) : C
+        setResolved(()=>res)
+        return res
+        // return typeof C==="function" ? untrack(() => C!(props)) : C
     }, undefined, {name: "lazy"});
   }) as unknown as T & { preload: () => Promise<void> };
 
@@ -121,6 +125,7 @@ export function lazy<T extends (...args: any[]) => any>(
   //   router.prefetch(LazyFoo)
   LazyWrapper.preload = load;
   (LazyWrapper as any).$lazy = true;
+  (LazyWrapper as any).loader = loader;
 
   return LazyWrapper;
 }

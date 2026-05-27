@@ -121,7 +121,7 @@ export function deepClone<T>(obj: T): T {
   }
 
   if (obj instanceof Array) {
-    return obj.map((item) => deepClone(item)) as T;
+    return Array.from(obj).map((item) => deepClone(item)) as T;
   }
 
   if (obj instanceof Set) {

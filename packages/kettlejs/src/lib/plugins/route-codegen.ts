@@ -74,7 +74,12 @@ function generateRouteObject(
   // This prevents unnecessary async imports and avoids calling d.data() for
   // levels that have no data, which kept the router's if (d.data) check clean.
   if (route.hasRouteData) {
-    props.push(`${indent}  data: (args, __owner, __isCancelled) => import(${JSON.stringify(importPath)}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; return __owner ? runWithOwner(__owner, () => m.routeData(args)) : m.routeData(args); })`);
+    props.push(
+      `${indent}  data: (args, __owner, __isCancelled) => import(${JSON.stringify(
+        importPath
+      )}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; return __owner ?  m.routeData(args) : m.routeData(args); })`
+    );
+    // props.push(`${indent}  data: (args) => import(${JSON.stringify(importPath)}).then(m => m.routeData ? m.routeData(args) : undefined)`);
   }
 
   // Children

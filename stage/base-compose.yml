@@ -1,0 +1,43 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres-base:
+    image: postgres:15-alpine
+    container_name: leuzman_postgres
+    restart: unless-stopped
+    env_file: .env
+    
+    healthcheck:
+      interval: 5s
+      timeout:  5s
+      retries:  10
+      start_period: 15s
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis-base:
+    image: redis:7-alpine
+    container_name: leuzman_redis
+    restart: unless-stopped
+    healthcheck:
+      test:     ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout:  3s
+      retries:  5
+
+  # ── Medusa Backend ───────────────────────────────────────────────────────────
+  medusa-base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leuzman_medusa
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - .:/server
+      - /server/node_modules
+

@@ -1,9 +1,66 @@
 {
-"typescript.tsserver.experimental.enableProjectDiagnostics": false,
-"typescript.disableAutomaticTypeAcquisition": true, 
-"lit-html.tags": [
-    "html",
-    "raw"
-],
-"lit-html.format.enabled": true
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+  "js/ts.tsserver.automaticTypeAcquisition.enabled": false,
+  "js/ts.tsserver.maxMemory": 8192,
+  "eslint.enable": false,
+  "eslint.run": "onSave",
+  "eslint.probe": ["typescript", "typescriptreact"],
+  "js/ts.tsserver.log": "off",
+  "js/ts.tsserver.useSyntaxServer": "auto",
+  "typescript.tsconfig": "tsconfig.json",
+  "js/ts.preferences.autoImportFileExcludePatterns": [
+    "**/node_modules/@medusajs/**",
+    "**/node_modules/.pnpm/@medusajs+**",
+    "**/node_modules/@types/**"
+  ],
+  "js/ts.tsserver.watchOptions": {
+    "excludeDirectories": [
+      "**/.nx/**",
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/packages/kettle-apps/adafri-auth/**",
+      "**/packages/kettle-apps/adafri-api/**",
+      "**/packages/kettle-apps/adafri/**",
+      "**/packages/kettle-apps/my-kettle-app/**",
+      "**/packages/kettle-apps/kettle-jsx/**",
+      "**/adafri-webcomponents/**"
+    ]
+  },
+  "files.watcherExclude": {
+    "**/.nx/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/packages/kettle-apps/adafri-auth/**": true,
+    "**/packages/kettle-apps/adafri-api/**": true,
+    "**/packages/kettle-apps/adafri/**": true,
+    "**/packages/kettle-apps/my-kettle-app/**": true,
+    "**/packages/kettle-apps/kettle-jsx/**": true,
+    "**/packages/webui/node_modules/**": true,
+    "**/packages/webui/dist/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.nx/**": true,
+    "**/packages/kettle-apps/adafri-auth/**": true,
+    "**/packages/kettle-apps/adafri-api/**": true,
+    "**/packages/kettle-apps/adafri/**": true,
+    "**/packages/kettle-apps/my-kettle-app/**": true,
+    "**/packages/kettle-apps/kettle-jsx/**": true,
+    "**/packages/webui/node_modules/**": true,
+    "**/packages/webui/dist/**": true
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.nx/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  },
+  "lit-html.tags": ["html", "raw"],
+  "lit-html.format.enabled": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }

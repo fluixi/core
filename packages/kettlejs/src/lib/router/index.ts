@@ -3,6 +3,7 @@
  * @module @awc/kettlejs/router
  */
 
+
 export {
   Router,
   Routes,
@@ -15,8 +16,11 @@ export {
   useLocation,
   useNavigate,
   useParams,
+  useParam,
+  useParamSelector,
   useMatch,
   useSearchParams,
+  select
 } from './router.js';
 
 export {
@@ -50,4 +54,5 @@ export { createFileRoutes } from './fs-router.js';
 export type { FileRouterOptions } from './fs-router.js';
 
 export {lazy} from "../render/lazy.js"
-export { runWithOwner } from '@awc/reactive/signal';
+export { runWithOwner } from '@awc/dom';
+

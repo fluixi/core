@@ -3,14 +3,17 @@
 //  * @module @awc/kettlejs/context/context
 //  */
 
-import { asProvider, isPromise, type Component } from '@awc/dom';
+import { asProvider, isPromise, type Component,createContext as createReactiveContext,
+  useContext as useReactiveContext, } from '@awc/dom';
 import {
   Accessor,
   Context,
-  createContext as createReactiveContext,
-  useContext as useReactiveContext,
+  // createContext as createReactiveContext,
+  // useContext as useReactiveContext,
   isSignal,
 } from '@awc/reactive/signal';
+import { ensureIntegration } from '../render/component.js';
+ensureIntegration('index')
 // import {
 //   createContext as reactiveCreateContext,
 //   useContext as reactiveUseContext,
@@ -122,12 +125,16 @@ type C = Component | Component[];
 
 interface Children {
   (): C;
+  (...args: any[]): C;
 }
 // /**
 //  * Props for the Provider component
 //  * @template T - Type of the context value
 //  */
-export interface ContextProvider<T> extends ProviderProps {
+
+type PickAccessor<T> = T extends Accessor<infer U> ? U : T;
+type PickChildren<T> = T extends Record<any, any> ? 'children' extends keyof T ? T['children'] : never : never;
+export interface ContextProvider<T, S> {
   /**
    * Context to provide
    */
@@ -142,13 +149,14 @@ export interface ContextProvider<T> extends ProviderProps {
    * Children components that can access this context
    */
   debug?: boolean;
+  children?: (S extends Record<any, any> ? PickChildren<S> : never) | S;
 }
 
-export interface ProviderProps {
+export interface ProviderProps<Child> {
   /**
    * Children components that can access this context
    */
-  children: Children;
+  children?: Child extends Record<any, any> ? PickChildren<Child> : never;
 }
 
 /**
@@ -214,7 +222,7 @@ export interface ProviderProps {
  * }
  * ```
  */
-export function createProvider<T>(props: ContextProvider<T>): Component {
+export function createProvider<T, S=Children>(props: ContextProvider<T, S>): Component<T> {
   const { context, value, children, debug = false } = props;
 
   // Resolve value if it's an accessor
@@ -279,12 +287,12 @@ export function createProvider<T>(props: ContextProvider<T>): Component {
  * }
  * ```
  */
-export function createContextWithProvider<T>(
+export function createContextWithProvider<T, U>(
   defaultValue: T
-): [Context<T>, (props: Omit<ContextProvider<T>, 'context'>) => Component] {
+): [Context<T>, (props: Omit<ContextProvider<T, U>, 'context'>) => Component] {
   const context = createContext(defaultValue);
 
-  const provider = (props: Omit<ContextProvider<T>, 'context'>) => {
+  const provider = (props: Omit<ContextProvider<T, U>, 'context'>) => {
     return createProvider({ context, ...props });
   };
 
@@ -343,7 +351,7 @@ export function composeProviders(
   return createProvider({
     context,
     value,
-    children: composeProviders(remaining, children),
+    children: composeProviders(remaining, children) as any,
   });
 }
 
@@ -572,8 +580,6 @@ export function createContext<T>(defaultValue?: T): {
   const Provider = (props: { value: T; children?: any, debug?: boolean }) => {
     if (props.debug === true) {
     }
-    // if(props.value && props.value.workpsace)
-    console.log('provider set', props)
     // Pass children as-is to the reactive Provider.
     // The reactive Provider evaluates function children inside its render effect,
     // AFTER setting the context value on the owner. Eagerly resolving here would

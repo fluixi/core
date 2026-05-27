@@ -25,22 +25,37 @@ export type {
   ComponentObserver,
 } from './dom/types.js';
 
-import { initializeIntegration, autoInitialize } from './dom/integration.js';
+import { initializeIntegration, autoInitialize, intergartionInitialized } from './dom/integration.js';
 import * as runtime from './dom/index.js';
+import {
+  createSignal, createEffect, createMemo, createRenderEffect,
+  createRoot, createComputed, createResource, createDeferred,
+  onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
+  childrens, createContext, useContext, isSignal,
+  getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
+} from '@awc/reactive/signal';
+import { isStore, isStoreProxy } from '@awc/reactive/store';
 
-// Try to auto-initialize with available reactive systems
-if (typeof window !== 'undefined') {
-  // Browser environment - delay initialization
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      autoInitialize();
-    });
-  } else {
-    autoInitialize();
-  }
-} else {
-  // Node environment - initialize immediately
-  autoInitialize();
+// Initialize integration directly from reactive imports — works in both
+// ESM dev (Vite source loading) and CJS bundles without relying on require().
+if (!intergartionInitialized()) {
+  console.log('initializations')
+  initializeIntegration({
+    signalSystem: {
+      createSignal, createEffect, createMemo, createRenderEffect,
+      createRoot, createComputed, createResource, createDeferred,
+      onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
+      resolveChildren: childrens, createContext, useContext, isSignal,
+      getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
+      createComponent: null as any,
+      getSharedConfig: null as any,
+    },
+    storeSystem: {
+      isStore,
+      isStoreProxy,
+      unwrap: (v: any) => v,
+    },
+  });
 }
 
 export default {

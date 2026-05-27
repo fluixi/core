@@ -7,12 +7,17 @@
  */
 
 import {
+  type Accessor,
+  type SuspenseContextType,
+  type SuspenseListContextType,
+  type SuspenseListRegisteredState,
+} from '@awc/reactive/signal';
+import {
   createSignal,
   createMemo,
   createEffect,
   createRenderEffect,
   isSignal,
-  isResource,
   untrack,
   batch,
   useContext,
@@ -20,13 +25,10 @@ import {
   getSuspenseContext,
   getSuspenseListContext,
   resumeEffects,
-  type Accessor,
-  type SuspenseContextType,
-  type SuspenseListContextType,
-  type SuspenseListRegisteredState,
-} from '@awc/reactive/signal';
-import { createComponent } from './component.js';
-import { asSuspense, isComponent, isProvider } from '@awc/dom';
+  asSuspense, 
+  isComponent,
+  createComponent
+} from "@awc/dom"
 
 // ============================================================================
 // TYPES
@@ -210,6 +212,7 @@ function SuspenseImpl(props: SuspenseProps): any {
   //   → routeStates re-evaluates → createLevelState → lazy view created →
   //   untrack loop calls view() → throw caught with prevOwner = RE_comp →
   //   SuspenseCtx found → increment.
+  console.log('on suspense')
   if (typeof resolvedChildren === 'function' && isSignal(resolvedChildren)) {
     createRenderEffect(() => {
       const v = resolvedChildren();  // tracked: RE subscribes to children signal

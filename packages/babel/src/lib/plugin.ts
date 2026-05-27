@@ -25,6 +25,14 @@ import {
 
 export interface PluginOptions {
   /**
+   * Automatically transform `{() => cond && <JSX />}` and
+   * `{() => cond ? <JSX /> : null}` patterns into `<Show>` components.
+   * Prevents entire sub-trees from being recreated on every signal change.
+   * @default false
+   */
+  autoShowTransform?: boolean;
+
+  /**
    * JSX runtime mode
    * @default 'automatic'
    */
@@ -115,6 +123,7 @@ interface PluginStateData {
   hasLitHTML: boolean;
   needsSignalImport: boolean;
   needsControlFlowImport: boolean;
+  needsCreateMemo: boolean;
   controlFlowComponents: Set<string>;
   delegatedEvents: Set<string>;
   staticElements: Map<string, t.Expression>;
@@ -190,6 +199,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     sourceMaps = true,
     signalModule = '@awc/dom',
     controlFlowModule = '@awc/dom',
+    autoShowTransform = false,
   } = options;
 
   const pluginState: PluginStateData = {
@@ -199,6 +209,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     hasLitHTML: false,
     needsSignalImport: false,
     needsControlFlowImport: false,
+    needsCreateMemo: false,
     controlFlowComponents: new Set(),
     delegatedEvents: new Set(),
     staticElements: new Map(),
@@ -242,9 +253,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             needsSignalImport: false,
             needsLitrxImport: false,
             needsControlFlowImport: false,
+            needsCreateMemo: false,
             controlFlowComponents: new Set(),
             delegatedEvents: new Set(),
             staticElements: new Map(),
+            autoShow: autoShowTransform,
             staticCounter: 0,
             libModule: '@awc/kettlejs',
           });
@@ -318,22 +331,36 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               );
             }
 
-            // Add control flow imports if needed
+            // Add createMemo import when JSX conditionals are wrapped as memos
+            if (state.needsCreateMemo && !path.scope.hasBinding('createMemo')) {
+              imports.push(
+                t.importDeclaration(
+                  [t.importSpecifier(t.identifier('createMemo'), t.identifier('createMemo'))],
+                  t.stringLiteral(state.libModule ?? '@awc/kettlejs'),
+                ),
+              );
+            }
+
+            // Add control flow imports for auto-transformed components (Show, etc.)
+            // Only add components that aren't already bound in the file scope.
             if (
               state.needsControlFlowImport &&
               state.controlFlowComponents.size > 0
             ) {
-              const specifiers = (
-                Array.from(state.controlFlowComponents) as string[]
-              ).map((name) =>
-                t.importSpecifier(t.identifier(name), t.identifier(name))
+              const unbound = (Array.from(state.controlFlowComponents) as string[]).filter(
+                (name) => !path.scope.hasBinding(name),
               );
-              imports.push(
-                t.importDeclaration(
-                  specifiers,
-                  t.stringLiteral(controlFlowModule)
-                )
-              );
+              if (unbound.length > 0) {
+                const specifiers = unbound.map((name) =>
+                  t.importSpecifier(t.identifier(name), t.identifier(name)),
+                );
+                imports.push(
+                  t.importDeclaration(
+                    specifiers,
+                    t.stringLiteral(controlFlowModule),
+                  ),
+                );
+              }
             }
 
             // Add event delegation setup if needed
@@ -425,6 +452,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           development,
           detectReactivity,
           useLitHTML,
+          autoShow: autoShowTransform,
         });
 
         path.replaceWith(transformed);
@@ -463,45 +491,14 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           state.hasReactivity = true;
         }
       },
-      JSXExpressionContainer(path) {
-        const expression = path.get('expression');
-        const node = expression.node;
-
-        // Skip if it's already wrapped or empty
-        if (t.isJSXEmptyExpression(node)) return;
-
-        let shouldWrap = false;
-        let newNode: t.Expression = node as t.Expression;
-
-        // 1. Handle Member Expressions (e.g., theme.$color)
-        if (t.isMemberExpression(node) && t.isIdentifier(node.property)) {
-          if (node.property.name.startsWith('$')) {
-            shouldWrap = true;
-            this.needsWatchImport = true;
-
-            // Strip the $ for the runtime Proxy
-            newNode = t.memberExpression(
-              node.object,
-              t.identifier(node.property.name.replace('$', ''))
-            );
-          }
-        }
-
-        // 2. Handle Signal/Function Calls (e.g., count())
-        if (t.isCallExpression(node)) {
-          shouldWrap = true;
-          this.needsWatchImport = true;
-        }
-        // console.log('is call exp', node.loc)
-
-        if (shouldWrap) {
-          // Wrap the expression: { watch(() => expression) }
-          expression.replaceWith(
-            t.callExpression(t.identifier('watch'), [
-              t.arrowFunctionExpression([], newNode),
-            ])
-          );
-        }
+      // NOTE: JSXExpressionContainer visitor is intentionally a no-op.
+      // JSXElement.enter fires BEFORE children are traversed, so by the time
+      // Babel would visit nested JSXExpressionContainers the JSXElement has
+      // already been replaced via path.replaceWith(). Attribute and children
+      // expressions are processed directly in transformAttributeValue /
+      // transformChildren above.
+      JSXExpressionContainer(_path) {
+        // no-op
       },
       TaggedTemplateExpression(path, state) {
         // const expressions = t.isTaggedTemplateExpression(path.node)
@@ -739,12 +736,13 @@ function transformJSXElement(
     development: boolean;
     detectReactivity: boolean;
     useLitHTML: boolean;
+    autoShow?: boolean;
   }
 ): t.Expression {
-  const { runtime, pragma, development } = options;
+  const { runtime, pragma, development, autoShow = true } = options;
 
   if (runtime === 'automatic') {
-    return transformAutomaticElement(element, state, development);
+    return transformAutomaticElement(element, state, development, autoShow);
   } else {
     return transformClassicElement(element, state, pragma);
   }
@@ -753,7 +751,8 @@ function transformJSXElement(
 function transformAutomaticElement(
   element: t.JSXElement,
   state: any,
-  development: boolean
+  development: boolean,
+  autoShow = true,
 ): t.CallExpression {
   const openingElement = element.openingElement;
   const children = element.children;
@@ -761,14 +760,22 @@ function transformAutomaticElement(
   // Get element name/tag
   const tag = getElementName(openingElement.name);
 
+  // Only auto-wrap reactive expressions for native HTML elements (lowercase tag).
+  // Component props must NOT be wrapped — the component receives the value
+  // as-is and is responsible for its own reactivity.
+  const isNativeElement =
+    t.isJSXIdentifier(openingElement.name) &&
+    /^[a-z]/.test(openingElement.name.name);
+
   // Transform attributes to props object
   const { props, spreads } = transformAttributes(
     openingElement.attributes,
-    state
+    state,
+    isNativeElement
   );
 
   // Transform children
-  const transformedChildren = transformChildren(children, state);
+  const transformedChildren = transformChildren(children, state, autoShow);
 
   // Add children to props if any
   if (transformedChildren.length > 0) {
@@ -830,11 +837,15 @@ function transformClassicElement(
   const children = element.children;
 
   const tag = getElementName(openingElement.name);
+  const isNativeElement =
+    t.isJSXIdentifier(openingElement.name) &&
+    /^[a-z]/.test(openingElement.name.name);
   const { props, spreads } = transformAttributes(
     openingElement.attributes,
-    state
+    state,
+    isNativeElement
   );
-  const transformedChildren = transformChildren(children, state);
+  const transformedChildren = transformChildren(children, state, state.autoShow ?? true);
 
   let propsObj: t.Expression;
 
@@ -871,7 +882,7 @@ function transformJSXFragment(
 ): t.Expression {
   const { runtime, pragmaFrag, development } = options;
 
-  const children = transformChildren(fragment.children, state);
+  const children = transformChildren(fragment.children, state, state.autoShow ?? true);
 
   if (runtime === 'automatic') {
     const functionName = development
@@ -957,7 +968,8 @@ function isValidJSIdentifier(name: string): boolean {
 
 function transformAttributes(
   attributes: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
-  state: any
+  state: any,
+  isNativeElement = true
 ): { props: t.ObjectProperty[]; spreads: t.Expression[] } {
   const props: t.ObjectProperty[] = [];
   const spreads: t.Expression[] = [];
@@ -968,7 +980,7 @@ function transformAttributes(
       spreads.push(attr.argument as t.Expression);
     } else if (t.isJSXAttribute(attr)) {
       const name = getAttributeName(attr.name);
-      const value = transformAttributeValue(attr.value, state);
+      const value = transformAttributeValue(attr.value, state, name, isNativeElement);
 
       // Detect event handlers for delegation
       if (EVENT_PROPS.test(name)) {
@@ -1002,13 +1014,23 @@ function getAttributeName(name: t.JSXAttribute['name']): string {
 
 function transformAttributeValue(
   value: t.JSXAttribute['value'],
-  state: any
+  state: any,
+  attrName: string = '',
+  isNativeElement = true
 ): t.Expression {
   if (value === null) {
     return t.booleanLiteral(true);
   }
 
   if (t.isStringLiteral(value)) {
+    // JSX allows string attribute values to span multiple lines, but JS string
+    // literals cannot contain raw newlines. When multi-line, normalise: collapse
+    // any run of whitespace (including newlines) to a single space and trim.
+    // We create a *new* StringLiteral so Babel discards the original extra.raw
+    // (which still contains the literal newlines) and generates a clean literal.
+    if (value.value.includes('\n')) {
+      return t.stringLiteral(value.value.replace(/\s+/g, ' ').trim());
+    }
     return value;
   }
 
@@ -1018,19 +1040,20 @@ function transformAttributeValue(
     }
 
     const expr = value.expression as t.Expression;
-    // if (shouldWrapReactive(expr, state)) {
-    //   state.needsSignalImport = true;
-    //   return wrapReactiveExpression(expr);
-    // }
 
-    // DON'T auto-wrap expressions in attributes - they're passed as-is to props
-    // Signal accessors and store proxies work correctly when passed as props
-    // Only children expressions need wrapping for display
+    // Auto-wrap reactive expressions so DOM attribute reads happen inside effects.
+    // Only applies to native HTML elements — component props must NOT be wrapped
+    // because the component receives the value directly and calling it would give
+    // () => value instead of value.
+    if (isNativeElement && shouldAutoWrapAttrExpression(expr, attrName)) {
+      return t.arrowFunctionExpression([], expr);
+    }
+
     return expr;
   }
 
   if (t.isJSXElement(value)) {
-    return transformAutomaticElement(value, state, false);
+    return transformAutomaticElement(value, state, false, state.autoShow ?? true);
   }
 
   if (t.isJSXFragment(value)) {
@@ -1042,6 +1065,88 @@ function transformAttributeValue(
   }
 
   return t.booleanLiteral(true);
+}
+
+/**
+ * Decide whether a JSX attribute value expression should be auto-wrapped
+ * in `() => expr` for fine-grained reactivity (SolidJS style).
+ */
+function shouldAutoWrapAttrExpression(
+  expr: t.Expression,
+  attrName: string
+): boolean {
+  // Event handlers must NOT be wrapped — they are called by the runtime.
+  // Covers both camelCase (onClick) and namespaced (on:click) forms.
+  if (EVENT_PROPS.test(attrName) || attrName.startsWith('on:')) {
+    return false;
+  }
+
+  // ref receives the DOM element directly — never wrap.
+  if (attrName === 'ref') {
+    return false;
+  }
+
+  // use:Directive — the directive itself decides how to handle the value.
+  if (attrName.startsWith('use:')) {
+    return false;
+  }
+
+  // Already an arrow function or function expression — already reactive.
+  if (t.isArrowFunctionExpression(expr) || t.isFunctionExpression(expr)) {
+    return false;
+  }
+
+  // Plain identifier — may itself be a signal accessor/function; let runtime handle it.
+  if (t.isIdentifier(expr)) {
+    return false;
+  }
+
+  // Static literals need no wrapping.
+  if (
+    t.isStringLiteral(expr) ||
+    t.isNumericLiteral(expr) ||
+    t.isBooleanLiteral(expr) ||
+    t.isNullLiteral(expr)
+  ) {
+    return false;
+  }
+
+  // Call expressions: signal(), count(), store.method()
+  if (t.isCallExpression(expr) || t.isOptionalCallExpression(expr)) {
+    return true;
+  }
+
+  // Member expressions: store.prop, obj.value
+  if (t.isMemberExpression(expr) || t.isOptionalMemberExpression(expr)) {
+    return true;
+  }
+
+  // Compound expressions that may contain reactive reads.
+  if (
+    t.isLogicalExpression(expr) ||
+    t.isConditionalExpression(expr) ||
+    t.isBinaryExpression(expr) ||
+    t.isUnaryExpression(expr)
+  ) {
+    return true;
+  }
+
+  // Template literals: `Hello ${name()}`
+  if (t.isTemplateLiteral(expr)) {
+    return true;
+  }
+
+  // Object expressions: classList={{ active: isActive() }}
+  if (t.isObjectExpression(expr)) {
+    return true;
+  }
+
+  // Array expressions: style={[baseStyle, dynamicStyle()]}
+  if (t.isArrayExpression(expr)) {
+    return true;
+  }
+
+  return false;
 }
 
 // ============================================================================
@@ -1056,7 +1161,8 @@ function transformChildren(
     | t.JSXElement
     | t.JSXFragment
   >,
-  state: any
+  state: any,
+  autoShow = true,
 ): t.Expression[] {
   const result: t.Expression[] = [];
 
@@ -1075,22 +1181,41 @@ function transformChildren(
       if (!t.isJSXEmptyExpression(child.expression)) {
         const expr = child.expression as t.Expression;
 
+        // Auto-transform patterns into jsx(Show, ...) so JSX subtrees are
+        // created once and never recreated on every signal change.
+        //
+        // Handled patterns:
+        //   () => cond && <JSX />                — arrow logical
+        //   () => cond ? <JSX /> : fallback       — arrow ternary
+        //   cond && <JSX />                       — bare logical
+        //   cond ? <JSX /> : fallback             — bare ternary
+        if (autoShow) {
+          const showNode =
+            tryTransformArrowToShow(expr, state) ??
+            tryTransformRawToShow(expr, state);
+          if (showNode) {
+            result.push(showNode);
+            continue;
+          }
+        } else {
+          // autoShow off: wrap JSX conditional expressions in createMemo(() => expr)
+          // so the condition is still evaluated reactively without recreating the tree.
+          const memoNode = tryWrapConditionalAsMemo(expr, state);
+          if (memoNode) {
+            result.push(memoNode);
+            continue;
+          }
+        }
+
         // Auto-wrap reactive expressions for SolidJS-style reactivity
-        // Wrap member expressions (store.property), call expressions (signal()), etc.
         if (shouldAutoWrapExpression(expr)) {
           result.push(t.arrowFunctionExpression([], expr));
         } else {
           result.push(expr);
         }
-        // if (shouldWrapReactive(expr, state)) {
-        //   state.needsSignalImport = true;
-        //   result.push(wrapReactiveExpression(expr));
-        // } else {
-        //   result.push(expr);
-        // }
       }
     } else if (t.isJSXElement(child)) {
-      result.push(transformAutomaticElement(child, state, false));
+      result.push(transformAutomaticElement(child, state, false, state.autoShow ?? true));
     } else if (t.isJSXFragment(child)) {
       result.push(
         transformJSXFragment(child, state, {
@@ -1105,6 +1230,338 @@ function transformChildren(
   }
 
   return result;
+}
+
+// ============================================================================
+// Auto-Show Transform
+// ============================================================================
+
+/**
+ * Detects the patterns:
+ *   () => condition && <JSX />
+ *   () => condition ? <JSX /> : null
+ *   () => condition ? <JSX /> : <Fallback />
+ *
+ * and rewrites them to:
+ *   jsx(Show, { when: () => condition, children: jsx(...), fallback? })
+ *
+ * This prevents the JSX subtree from being recreated on every reactive update.
+ * Show's memo only re-evaluates when the boolean result of `condition` changes.
+ */
+function tryTransformArrowToShow(
+  expr: t.Expression,
+  state: any,
+): t.Expression | null {
+  if (
+    !t.isArrowFunctionExpression(expr) ||
+    expr.params.length !== 0 ||
+    expr.async
+  ) {
+    return null;
+  }
+
+  const body = expr.body as t.Expression;
+
+  // Pattern 1: () => condition && <JSX />   (or () => condition && (() => <JSX />))
+  if (
+    t.isLogicalExpression(body) &&
+    body.operator === '&&'
+  ) {
+    const jsx = getJSXContent(body.right as t.Expression);
+    if (jsx) {
+      return buildShowCall(
+        unwrapZeroArgArrow(body.left as t.Expression),
+        jsx,
+        null,
+        state,
+      );
+    }
+  }
+
+  // Pattern 2: () => condition ? <JSX /> : null | undefined | false
+  // Pattern 3: () => condition ? <JSX /> : <Fallback />
+  // Pattern 4: () => condition ? <JSX /> : otherCond ? <JSX2 /> : <Fallback /> (nested ternary)
+  if (t.isConditionalExpression(body)) {
+    const jsx = getJSXContent(body.consequent as t.Expression);
+    if (jsx) {
+      const fallback = buildFallback(body.alternate as t.Expression, state);
+      return buildShowCall(
+        unwrapZeroArgArrow(body.test),
+        jsx,
+        fallback,
+        state,
+        true
+      );
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Handles bare (non-arrow-wrapped) ternary and logical JSX expressions:
+ *
+ *   cond && <JSX />
+ *   cond ? <JSX /> : fallback
+ *
+ * These are transformed to `jsx(Show, { when: () => cond, ... })` exactly like
+ * their arrow-wrapped counterparts, preventing JSX subtrees from being
+ * recreated on every reactive update.
+ */
+function tryTransformRawToShow(
+  expr: t.Expression,
+  state: any,
+): t.Expression | null {
+  // cond && <JSX />   (or cond && (() => <JSX />))
+  if (t.isLogicalExpression(expr) && expr.operator === '&&') {
+    const jsx = getJSXContent(expr.right as t.Expression);
+    if (jsx) {
+      return buildShowCall(
+        unwrapZeroArgArrow(expr.left as t.Expression),
+        jsx,
+        null,
+        state,
+      );
+    }
+  }
+
+  // cond ? <JSX /> : fallback   (consequent may be () => <JSX />)
+  // test may be (() => expr) — unwrap to avoid double arrow wrapping
+  if (t.isConditionalExpression(expr)) {
+    const jsx = getJSXContent(expr.consequent as t.Expression);
+    if (jsx) {
+      const fallback = buildFallback(expr.alternate as t.Expression, state);
+      return buildShowCall(
+        unwrapZeroArgArrow(expr.test),
+        jsx,
+        fallback,
+        state,
+      );
+    }
+  }
+
+  return null;
+}
+
+/**
+ * When autoShow is disabled, wraps ALL ternary and logical-AND expressions in
+ * `createMemo(() => normalizedExpr)` so the condition evaluates reactively and
+ * the result is cached (not re-evaluated on every render cycle).
+ *
+ * Normalization rules applied before wrapping:
+ *   - Outer zero-arg arrow unwrapped:  `() => cond ? a : b` → body used directly
+ *   - Arrow-wrapped test unwrapped:    `(() => cond) ? a : b` → `cond ? a : b`
+ *   - Arrow-wrapped JSX consequent:    `() => <JSX>` → `<JSX>` (so Babel transforms it)
+ *   - Arrow-wrapped JSX alternate:     `() => <JSX>` → `<JSX>` likewise
+ *   - Non-JSX branches left as-is:     strings, identifiers, call results, etc.
+ *
+ * Examples:
+ *   {cond ? "a" : "b"}                →  createMemo(() => cond ? "a" : "b")
+ *   {cond ? <A/> : <B/>}              →  createMemo(() => cond ? <A/> : <B/>)
+ *   {(() => cond) ? ()=><A/> : <B/>}  →  createMemo(() => cond ? <A/> : <B/>)
+ *   {cond && <A/>}                    →  createMemo(() => cond && <A/>)
+ */
+function tryWrapConditionalAsMemo(
+  expr: t.Expression,
+  state: any,
+): t.Expression | null {
+  // Unwrap outer zero-arg arrow: () => <inner> → work on inner directly
+  const inner: t.Expression =
+    t.isArrowFunctionExpression(expr) &&
+    expr.params.length === 0 &&
+    !expr.async &&
+    t.isExpression(expr.body)
+      ? (expr.body as t.Expression)
+      : expr;
+
+  if (t.isConditionalExpression(inner)) {
+    // Unwrap arrow-wrapped test to prevent always-truthy condition
+    const normalizedTest = unwrapZeroArgArrow(inner.test);
+    // Unwrap arrow-wrapped JSX branches so Babel can transform them;
+    // non-JSX branches (strings, calls, etc.) are kept as-is
+    const consequentJsx = getJSXContent(inner.consequent as t.Expression);
+    const normalizedConsequent = consequentJsx ?? (inner.consequent as t.Expression);
+    const altJsx = getJSXContent(inner.alternate as t.Expression);
+    const normalizedAlternate = altJsx ?? (inner.alternate as t.Expression);
+
+    const normalized = t.conditionalExpression(
+      normalizedTest,
+      normalizedConsequent,
+      normalizedAlternate,
+    );
+
+    // If either branch is a control-flow component (For, Switch, Index, Show, …),
+    // do NOT wrap in createMemo — return null so the caller falls through to the
+    // plain `() => expr` path via shouldAutoWrapExpression.
+    if (
+      isControlFlowJSX(inner.consequent as t.Expression) ||
+      isControlFlowJSX(inner.alternate as t.Expression)
+    ) {
+      return null;
+    }
+
+    state.needsCreateMemo = true;
+    return t.callExpression(t.identifier('createMemo'), [
+      t.arrowFunctionExpression([], normalized),
+    ]);
+  }
+
+  if (t.isLogicalExpression(inner) && inner.operator === '&&') {
+    const normalizedLeft = unwrapZeroArgArrow(inner.left as t.Expression);
+    const rightJsx = getJSXContent(inner.right as t.Expression);
+    const normalizedRight = rightJsx ?? (inner.right as t.Expression);
+
+    const normalized = t.logicalExpression('&&', normalizedLeft, normalizedRight);
+
+    // Same guard for logical && (e.g. {show && <For ...>})
+    if (isControlFlowJSX(inner.right as t.Expression)) {
+      return null;
+    }
+
+    state.needsCreateMemo = true;
+    return t.callExpression(t.identifier('createMemo'), [
+      t.arrowFunctionExpression([], normalized),
+    ]);
+  }
+
+  return null;
+}
+
+/**
+ * Recursively transforms a fallback expression into a reactive value.
+ * If the expression is a nested ternary `cond ? <JSX /> : rest`, it is
+ * transformed into a nested `Show` call so the condition is tracked reactively.
+ */
+function buildFallback(expr: t.Expression, state: any): t.Expression | null {
+  if (isFalsyNode(expr)) return null;
+  // bare JSX or () => <JSX>
+  const directJsx = getJSXContent(expr);
+  if (directJsx) {
+    return transformJSXNode(directJsx, state);
+  }
+  // Nested ternary whose truthy branch is JSX (or arrow-wrapped JSX)
+  if (t.isConditionalExpression(expr)) {
+    const inner = expr as t.ConditionalExpression;
+    const innerJsx = getJSXContent(inner.consequent as t.Expression);
+    if (innerJsx) {
+      const nestedFallback = buildFallback(inner.alternate as t.Expression, state);
+      return buildShowCall(
+        unwrapZeroArgArrow(inner.test),
+        innerJsx,
+        nestedFallback,
+        state,
+      );
+    }
+  }
+  return expr;
+}
+
+function isJSXNode(node: t.Node): node is t.JSXElement | t.JSXFragment {
+  return t.isJSXElement(node) || t.isJSXFragment(node);
+}
+
+/**
+ * Returns true when `expr` (or a zero-arg arrow wrapping it) is a JSXElement
+ * whose tag is one of the KettleJS control-flow components (For, Switch, Index,
+ * Show, Portal, Dynamic, ErrorBoundary, Suspense).  These must NOT be wrapped in
+ * createMemo — a plain `() => expr` arrow is sufficient and avoids double-tracking.
+ */
+function isControlFlowJSX(expr: t.Expression): boolean {
+  const jsx = getJSXContent(expr);
+  if (!jsx || !t.isJSXElement(jsx)) return false;
+  const name = jsx.openingElement.name;
+  return t.isJSXIdentifier(name) && CONTROL_FLOW_COMPONENTS.has(name.name);
+}
+
+/**
+ * Returns the JSX content from either bare `<JSX>` or a zero-arg arrow `() => <JSX>`.
+ * This allows Show transformation to work regardless of whether the author wrapped the
+ * consequent/alternate in an arrow function or not.
+ */
+function getJSXContent(expr: t.Expression): t.JSXElement | t.JSXFragment | null {
+  if (isJSXNode(expr)) return expr as t.JSXElement | t.JSXFragment;
+  if (
+    t.isArrowFunctionExpression(expr) &&
+    expr.params.length === 0 &&
+    !expr.async &&
+    isJSXNode(expr.body as t.Node)
+  ) {
+    return expr.body as t.JSXElement | t.JSXFragment;
+  }
+  return null;
+}
+
+/**
+ * Unwraps a zero-argument arrow `() => expr` to `expr`.
+ * Used to avoid double-wrapping when the test/condition is already `() => cond`.
+ * `buildShowCall` always wraps the condition in `() =>`, so passing a bare expr
+ * produces `() => cond`; passing `() => cond` without unwrapping produces `() => () => cond`
+ * which is always truthy.
+ */
+function unwrapZeroArgArrow(expr: t.Expression): t.Expression {
+  if (
+    t.isArrowFunctionExpression(expr) &&
+    expr.params.length === 0 &&
+    !expr.async &&
+    t.isExpression(expr.body)
+  ) {
+    return expr.body as t.Expression;
+  }
+  return expr;
+}
+
+function isFalsyNode(node: t.Node): boolean {
+  return (
+    t.isNullLiteral(node) ||
+    (t.isIdentifier(node) && node.name === 'undefined') ||
+    (t.isBooleanLiteral(node) && node.value === false)
+  );
+}
+
+function transformJSXNode(
+  node: t.JSXElement | t.JSXFragment,
+  state: any,
+): t.Expression {
+  if (t.isJSXElement(node)) {
+    return transformAutomaticElement(node, state, false, state.autoShow ?? true);
+  }
+  return transformJSXFragment(node, state, {
+    runtime: 'automatic',
+    pragmaFrag: 'Fragment',
+    development: false,
+  });
+}
+
+function buildShowCall(
+  condition: t.Expression,
+  children: t.JSXElement | t.JSXFragment,
+  fallback: t.Expression | null,
+  state: any,
+  fromArrow: boolean = false
+): t.CallExpression {
+  // Register Show so it gets auto-imported if needed
+  state.controlFlowComponents.add('Show');
+  state.needsControlFlowImport = true;
+
+  const transformedChildren = transformJSXNode(children, state);
+  // console.log('build show call', generate(condition).code);
+  const props: t.ObjectProperty[] = [
+    t.objectProperty(
+      t.identifier('when'),
+      t.arrowFunctionExpression([], condition)
+      // fromArrow ? (condition) : t.arrowFunctionExpression([], condition),
+    ),
+    t.objectProperty(t.identifier('children'), transformedChildren),
+  ];
+
+  if (fallback) {
+    props.push(t.objectProperty(t.identifier('fallback'), fallback));
+  }
+
+  return t.callExpression(t.identifier('jsx'), [
+    t.identifier('Show'),
+    t.objectExpression(props),
+  ]);
 }
 
 // ============================================================================

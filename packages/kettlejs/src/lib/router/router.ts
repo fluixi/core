@@ -29,14 +29,19 @@ import {
   getOwner,
   runWithOwner,
   batch,
-   childrens,
-} from '@awc/reactive/signal';
-import type { RootOwner } from '@awc/reactive/signal';
-import { $component, Component, createComponent, type ComponentProps } from '../render/component.js';
+  resolveChildren,
+  createComponent,
+  type ComponentProps
+} from '@awc/dom';
+import type { RootOwner, Signal } from '@awc/reactive/signal';
 import { RouteDataProvider, RouteDataContext, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
-import { asOutlet, asRouter, asRoutes, html, insert, isComponent, isPromise, mergeProps } from '@awc/dom';
-import { Accessor, sharedConfig } from '@awc/reactive';
+import { asOutlet, asRouter, asRoutes, html, insert, isAccessor, isComponent, isPromise, mergeProps } from '@awc/dom';
+import { Accessor } from '@awc/reactive';
+import { AnyObject, get, GetAtPath } from '@awc/utils/object';
+import { isEqual } from '@awc/utils';
+import { IsUndefined } from '@awc/utils/primitive';
+import { deepEqual } from '@awc/utils/compare';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -97,10 +102,15 @@ export interface RouterConfig {
 // ─── Internal route state (one per matched level) ────────────────────────────
 
 interface RouteState {
+  path: string
   /** Component function reference — used as the diff key */
   componentRef: any;
   /** Rendered output for this level (stable ref while this level is reused) */
   content: any;
+  /** The contentMemo if this level uses deferred creation, null for sync levels.
+   *  Child levels track this reactively to wait for parent components to execute
+   *  (ensuring parent Providers stamp their context before children run). */
+  _asyncContent: (() => any) | null;
   /** Dispose this level's reactive root */
   dispose: () => void;
   /** The route context value passed to RouteContext.Provider for this level */
@@ -132,20 +142,25 @@ function matchPath(
 ): { params: Record<string, string>; path: string } | null {
   const keys: string[] = [];
 
+  // const router = useRouter()
   if (pattern === path) return { params: {}, path };
 
   if (!exact && pattern === '/' && path.startsWith('/'))
     return { params: {}, path: '/' };
 
   let regexStr = pattern
-    .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => { keys.push(key); return '([^/]+)'; })
-    .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => { if (name) keys.push(name); return '(.*)'; });
-
+  .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => { keys.push(key); return '([^/]+)'; })
+  .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => { if (name) keys.push(name); return '(.*)'; });
+  
   if (!regexStr.startsWith('/')) regexStr = '/' + regexStr;
   if (regexStr === '') regexStr = '/';
-
+  
   const regex = new RegExp(`^${regexStr}${exact ? '$' : '(?=/|$)'}`);
   const match = path.match(regex);
+  if(pattern==='/products'){
+
+    console.log('match path', {pattern, path, keys, })
+  }
   if (!match) return null;
 
   const params: Record<string, string> = {};
@@ -201,6 +216,8 @@ const $OUTLET = Symbol.for('kettle-outlet');
 interface MatchDef {
   defs: RouteDefinition[];
   params: Record<string, string>;
+  /** Params for each level individually (index matches defs index). */
+  perLevelParams: Record<string, string>[];
   matchedPath: string;
 }
 
@@ -227,6 +244,7 @@ function findMatch(
         return {
           defs: [def, ...childMatch.defs],
           params: { ...match.params, ...childMatch.params },
+          perLevelParams: [match.params, ...childMatch.perLevelParams],
           matchedPath: normalizePath(childMatch.matchedPath),
         };
       }
@@ -234,6 +252,7 @@ function findMatch(
       return {
         defs: [def],
         params: match.params,
+        perLevelParams: [match.params],
         matchedPath: normalizePath(match.path === '//' ? '/' : match.path),
       };
     }
@@ -353,7 +372,10 @@ export function createRouter(config: RouterConfig) {
     };
 
     if (config.init) {
-      const cleanup = config.init(() => batch(() => setLoc(getRawLocation())));
+      const cleanup = config.init(() => {
+        console.log('init fired')
+        batch(() => setLoc(getRawLocation()))
+      });
       if (cleanup) onCleanup(cleanup);
     }
 
@@ -407,7 +429,9 @@ export const Router: (props: ComponentProps & { base?: string; url?: string; roo
         // Use a small debounce to coalesce rapid popstate events
         let pending: ReturnType<typeof setTimeout> | undefined;
         const handler = () => {
-          alert('popstate handler')
+          // alert('popstate handler')
+          // batch(()=>notify())
+          // notify()
           if (pending) clearTimeout(pending);
           pending = setTimeout(() => { pending = undefined; notify(); }, 10);
         };
@@ -439,14 +463,14 @@ export const StaticRouter: (props: ComponentProps & { url?: string; base?: strin
 
 // ─── Route (data object only) ─────────────────────────────────────────────────
 
-export function Route(props: RouteDefinition) { 
-  // return props; 
-  const childRoutes = childrens(() => props.children);
-  return mergeProps(props, {
+export function Route(props: RouteDefinition) {
+  const childRoutes = resolveChildren(() => props.children);
+  return {
+    ...props,
     get children() {
       return childRoutes();
-    }
-  }) as RouteDefinition
+    },
+  } as RouteDefinition;
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -481,14 +505,15 @@ export function Route(props: RouteDefinition) {
 //   because `dataParams` reads `routeMatch()` which always reflects the current URL.
 // sharedConfig.routeData;
 
-const persistentData = new Map<any, any>()
 
 export function Routes(props: ComponentProps) {
+  const persistentData = new Map<any, any>()
+
   const definitions: RouteDefinition[] = filterRouter(
     Array.isArray(props.children) ? props.children.flat() : [props.children],
   );
   const rankedDefs = rankRoutes(definitions);
-
+   const router = getRouterCtx();
   // ── Pure memo: computes the current route match ────────────────────────────
   // NOTE: getRouterCtx() is called INSIDE the memo (not captured at Routes() call time)
   // because Routes() is evaluated as a function argument BEFORE Router() runs.
@@ -497,6 +522,7 @@ export function Routes(props: ComponentProps) {
   const routeMatch = createMemo(
     () => {
       const router = getRouterCtx();
+      console.log('find match', router?.location())
       return findMatch(rankedDefs, router ? router.location().pathname : '/');
     },
     undefined,
@@ -515,19 +541,20 @@ export function Routes(props: ComponentProps) {
   // killing their outlet render effects so setOutlet writes propagate nowhere.
   const routeStates = createMemo((prev: RouteState[] = []): RouteState[] => {
     const match = routeMatch();
-    console.log('route match', match)
-
     if (!match) {
       prev.forEach(s => s.dispose());
       _activeRouteCtx = null;
       return [];
     }
+    console.log('route match', match, prev)
 
     const { defs } = match;
     const next: RouteState[] = [];
 
     // Find the first level whose component changed
-    let firstChanged = defs.length;
+    let firstChanged = defs.length - 1;
+    const currentParams = match.params;
+    let reused = false
     for (let i = 0; i < defs.length; i++) {
       if (prev[i] && prev[i].componentRef === defs[i].component) {
         next[i] = prev[i]; // reuse
@@ -536,6 +563,12 @@ export function Routes(props: ComponentProps) {
         break;
       }
     }
+    
+    // if(reused){
+      
+    //   console.log('reuse', next, prev)
+    // }
+    // console.log('load defs', defs, firstChanged)
 
     if (firstChanged < defs.length) {
       // Dispose all levels from firstChanged onwards
@@ -547,7 +580,13 @@ export function Routes(props: ComponentProps) {
       // natural owner-chain walk in useContext().
       function createLevelState(k: number): void {
         const d = defs[k];
+        // const p = prev[k];
+        // console.log('loading for', d.path)
+        // if(p && d.path===p.path){
+        //   console.log('same level', d, p)
+        // }
         let state!: RouteState;
+        let setParamsSignal!: (p: Record<string, string>) => void;
 
         createRoot(dispose => {
           const thisOwner = getOwner()!;
@@ -556,16 +595,31 @@ export function Routes(props: ComponentProps) {
           // Outlet starts as null — safe to call during this memo's own execution
           // because it does NOT read routeStates(). Updated after ALL levels created.
 
-          // params as a reactive memo — updates on every navigation
+          // params as a reactive memo — updates only when param values change.
+          // Use deep-equality so navigating between sub-routes with the same
+          // params (e.g. same workspaceId) does NOT fire the signal and
+          // re-evaluate data/resource memos that depend on it.
           const paramsSignal = createMemo(
+            // () => routeMatch()?.perLevelParams?.[k] ?? {},
+            // () => {
+            //   // console.log('read memo params', match?.params ?? {})
+            //   // return match?.params ?? {}
+            // },
             () => routeMatch()?.params ?? {},
+            // () => match?.params ?? {},
+            {},
+            { equals: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
           ) as () => Record<string, string>;
+          // const [_paramsSignal, setP] = createSignal<Record<string, string>>(currentParams, { equals: (a, b) => a && b && JSON.stringify(a) === JSON.stringify(b) });
+          // const paramsSignal = createMemo(()=>_paramsSignal())
+          // setParamsSignal = setP;
 
           const routeCtxValue: RouteContextValue = {
             parentPath: '',
             outlet,
             params: paramsSignal,
           };
+          // console.log('params data', paramsSignal(), routeMatch())
 
           if (k === 0) _activeRouteCtx = routeCtxValue;
 
@@ -583,44 +637,76 @@ export function Routes(props: ComponentProps) {
           //    params change.
           //  • The data root is cleaned up when Routes unmounts (onCleanup above).
           let currentData: any = undefined;
-          // console.log('all persisted', persistentData, d)
+          let resolver: Signal<any> | undefined
+         
           if (d.data) {
-            if (persistentData.has(d.data)) {
-              // Route was visited before — reuse the live, reactive data
+            console.log('all persisted', persistentData, paramsSignal())
+            const hasData = persistentData.has(d.data)
+            const d2 = persistentData.get(d.data);
+            if (d2) {
+              // if(!d || untrack(d.params) !== untrack(paramsSignal)) {
+              //   // Route was visited before — reuse the live, reactive data
+                
+              // }
               currentData = persistentData.get(d.data)?.data;
+              resolver = persistentData.get(d.data)?.resolver;
             } else {
-              // First visit — create data in its own persistent root
-              createRoot(dataDispose => {
-                const dataOwner = getOwner()!;
-                // Use a paramsSignal scoped to this persistent root so it tracks
-                // routeMatch() independently of the level root's lifetime.
-                const dataParams = createMemo(
-                  () => routeMatch()?.params ?? {}
-                ) as () => Record<string, string>;
+            // First visit — create data in its own persistent root
+            createRoot(dataDispose => {
+              const dataOwner = getOwner()!;
+               const resolve= createSignal(false)
+              // Create a fresh paramsSignal INSIDE the persistent data root so it
+              // reads routeMatch() directly from Routes' scope. This root is never
+              // disposed on navigation (only when Routes unmounts), so this memo
+              // stays alive and reactive across same-component navigations (e.g.
+              // /products/1234 → /products/2345). Passing the level's paramsSignal
+              // was wrong: the level root is disposed and recreated on every
+              // navigation, which freezes the old paramsSignal.
+              const dataParams = createMemo(
+                () => routeMatch()?.params ?? {},
+                {},
+                { equals: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
+              ) as () => Record<string, string>;
 
-                // console.log('on route load data', d.data)
-                const dataResult = d.data!(
-                  {
-                    params: dataParams,
-                    location: getRouterCtx()?.location ?? ({ pathname: '', search: '' } as any),
-                  },
-                  dataOwner,
-                  undefined  // no cancellation — persistent data is never cancelled
-                );
+              // console.log('on route load data', d.data)
+              const dataResult = d.data!(
+                {
+                  params: dataParams,
+                  location: router?.location ?? ({ pathname: '', search: '' } as any),
+                },
+                dataOwner,
+                undefined  // no cancellation — persistent data is never cancelled
+              );
 
-                if (isPromise(dataResult)) {
-                  const [resource] = createResource(() => dataResult);
-                  currentData = createMemo(() => resource());
-                } else if (dataResult !== undefined) {
-                  currentData = dataResult;
-                }
+              if (isPromise(dataResult)) {
+                const [resource] = createResource(() => dataResult);
+                // Drive the resolver via a standalone effect so it fires
+                // regardless of whether anyone is reading currentData.
+                // This avoids a deadlock: without this, resolver[1](true) was
+                // inside the currentData memo, which only ran when someone read
+                // the memo — but the component (the reader) was gated on the
+                // resolver being true.
+                // Expose the resource directly so useRouteData() returns a
+                // reactive accessor that throws while pending (Suspense-compatible)
+                // and resolves to the actual value once the promise settles.
+                  const dispose = createEffect(() => {
+                    if (!resource.loading) resolve[1](true);
+                  });
+                  currentData = createMemo(()=> resource.loading ? undefined : resource(), undefined, {equals: false});
+              } else if (dataResult !== undefined) {
+                console.log('no data result')
+                // Non-async data is immediately available
+                resolve[1](true);
+                currentData = dataResult;
+              }
 
-                // Store both the data accessor AND the dispose function so
-                // Routes' onCleanup can tear down the root on unmount.
-                persistentData.set(d.data!, { data: currentData, dispose: dataDispose });
-              });
-              // createRoot runs synchronously — read back the stored value
-              currentData = persistentData.get(d.data)?.data;
+              // Store both the data accessor AND the dispose function so
+              // Routes' onCleanup can tear down the root on unmount.
+              persistentData.set(d.data!, { data: currentData, dispose: dataDispose, resolver: resolve, params: dataParams });
+            });
+            // createRoot runs synchronously — read back the stored value
+            currentData = persistentData.get(d.data)?.data;
+            resolver = persistentData.get(d.data)?.resolver;
             }
           }
 
@@ -630,6 +716,10 @@ export function Routes(props: ComponentProps) {
           // component's constructor (e.g. useRouteData(), useParams()) find the
           // correct values synchronously — even though the Provider wrappers in
           // the `content` tree haven't been processed by the DOM runtime yet.
+          //
+          // Without this stamp, createComponent(d.component, {}) runs before
+          // RouteDataProvider is created (lines below), so useContext(RouteDataContext)
+          // inside the component setup finds nothing → useRouteData() returns undefined.
           //
           // For levels without routeData, RouteDataContext is NOT stamped here.
           // useContext() then walks up to the nearest ancestor createRoot owner
@@ -641,26 +731,75 @@ export function Routes(props: ComponentProps) {
           //   thisOwner.contexts.set(RouteDataContext.id, currentData);
           // }
 
-          // Create the component after contexts are stamped
-          const view = d.component ? createComponent(d.component, {}) : null;
+          // Build content tree.
+          // For async routeData, or when a parent level is async, we defer
+          // component creation via a memo. This ensures:
+          //   1. The component is not created until its own data is ready.
+          //   2. The component is not created until parent levels have executed
+          //      (so parent Providers like WorkspaceProvider stamp their context
+          //      on thisOwner before child components call useContext).
+          //
+          // _asyncContent: the contentMemo if this level is deferred, null if sync.
+          // Child levels track parent._asyncContent() to gate their own creation.
+          let content: any;
+          let _asyncContent: (() => any) | null = null;
 
-          // Build content tree with providers for DOM runtime context propagation.
-          // The providers here complement the owner-stamp above: they ensure the
-          // context is also available to components rendered via insert()'s render
-          // effects, which have their own Owner chains separate from the createRoot.
-          const content =  currentData
-            ? createComponent(RouteDataProvider, {
-                value: currentData,
-                children:  RouteContext.Provider({ value: routeCtxValue, children:()=> view }),
-              })
-            : RouteContext.Provider({ value: routeCtxValue, children: ()=>view });
+          // Reactive gate on the immediate parent level's async content.
+          // Calling parentGate() inside createMemo creates a reactive dependency:
+          // when parent flips from null → component, this level's memo re-evaluates.
+          const parentGate: (() => any) | null = k > 0
+            ? (next[k - 1] as any)._asyncContent ?? null
+            : null;
 
-          state = { componentRef: d.component, content:  content, dispose, routeCtxValue, owner: thisOwner, setOutlet };
+          const needsDeferred = (currentData !== undefined && resolver != null) || parentGate != null;
+   
+          // Deferred path: return null until all gates pass, then build once.
+          // _built caches so re-evaluations don't recreate owned computations.
+          let _built: any = null;
+          const contentMemo = createMemo(() => {
+            // 1. Wait for parent level's component to have executed.
+            //    createProvider stamps context on all ancestors when layout runs;
+            //    we must not run child components before that happens.
+            if (parentGate && parentGate() === null) return null;
+            // 2. Wait for our own async data if applicable.
+            if (resolver && !resolver[0]()) return null;
+            if (_built) return _built;
+            _built = untrack(() => {
+              const v = d.component ? createComponent(d.component, {}) : null;
+              return currentData !== undefined
+                ? createComponent(RouteDataProvider, {
+                    value: currentData,
+                    children: RouteContext.Provider({ value: routeCtxValue, children: v }),
+                  })
+                : RouteContext.Provider({ value: routeCtxValue, children: v });
+            });
+            return _built;
+          });
+
+          content = contentMemo;
+          _asyncContent = contentMemo;
+          // if (needsDeferred) {
+          // } else {
+          //     // console.log('no need', d)
+          //   // Sync: no async data, no async parent — create component immediately.
+          //   const v = d.component ? createComponent(d.component, {}) : null;
+          //   const cnt = currentData
+          //     ? createComponent(RouteDataProvider, {
+          //         value: currentData,
+          //         children: RouteContext.Provider({ value: routeCtxValue, children: v }),
+          //       })
+          //     : RouteContext.Provider({ value: routeCtxValue, children: v });
+          //   content = cnt
+          //   // createMemo(() => typeof cnt === 'function' ? cnt() : cnt); 
+          // }
+
+          state = { componentRef: d.component, content, _asyncContent, dispose, routeCtxValue, owner: thisOwner, setOutlet, path: d.path};
           next[k] = state;
-
+          
           // Create the next level INSIDE this createRoot's callback so that
           // createRoot_{k+1}.owner = thisOwner (level k's root owner).
           if (k + 1 < defs.length) createLevelState(k + 1);
+          // console.log('router root')
         });
       }
 
@@ -668,6 +807,7 @@ export function Routes(props: ComponentProps) {
       // new level's createRoot has the reused level's owner as its parent.
       // console.log('we on there', firstChanged, defs)
       if (firstChanged > 0 && next[firstChanged - 1]?.owner) {
+        // console.log('run with owner', next[firstChanged - 1].owner)
         runWithOwner(next[firstChanged - 1].owner, () => createLevelState(firstChanged));
       } else {
         createLevelState(firstChanged);
@@ -683,6 +823,9 @@ export function Routes(props: ComponentProps) {
     // Each level's outlet points to the NEXT level's content.
     // For reused levels, setOutlet is a no-op when content hasn't changed.
     for (let i = 0; i < next.length; i++) {
+      // if(i===next.length - 1){
+      //   next[i].setParams(currentParams);
+      // }
       next[i].setOutlet(i + 1 < next.length ? next[i + 1].content : null);
     }
 
@@ -706,6 +849,9 @@ export function Routes(props: ComponentProps) {
     undefined,
     { name: 'routes memo' }
   );
+  // onCleanup(()=>{
+  //   alert('on cleanup')
+  // })
 
   return asRoutes(routeContent);
 }
@@ -746,8 +892,10 @@ export function Link(
     replace?: boolean | Accessor<boolean> | (() => boolean);
     active?: boolean | Accessor<boolean> | (() => boolean);
     class?: string | Accessor<string> | (() => string);
+    className?: string | Accessor<string> | (() => string);
     activeClass?: string | Accessor<string> | (() => string);
     lit?: boolean;
+    slot?: string;
   },
 ) {
   const router = getRouterCtx();
@@ -769,6 +917,9 @@ export function Link(
 
   const el = document.createElement('a');
   el.setAttribute('href', typeof props.href === 'function' ? props.href() : props.href);
+  if(props.slot){
+    el.slot = props.slot;
+  }
 
   // Use direct addEventListener for Link clicks.
   // We use direct addEventListener (not delegation) so that e.preventDefault()
@@ -785,11 +936,14 @@ export function Link(
     const currentHref = typeof props.href === 'function' ? props.href() : props.href;
     el.setAttribute('href', currentHref);
 
-    const baseClass = (typeof props.class === 'function' ? props.class() : props.class) || '';
+    const cls = props.className ? props.className : props.class;
+    const baseClass = (typeof cls === 'function' ? cls() : props.class) || '';
     const activeClass = (typeof props.activeClass === 'function' ? props.activeClass() : props.activeClass) || '';
     const isActive =
       (typeof props.active === 'function' ? props.active() : props.active) ??
       (router ? router.location().pathname === currentHref : false);
+
+      // console.log('link class is', {baseClass, activeClass, isActive, props})
 
     el.className = [baseClass, isActive ? activeClass : ''].filter(Boolean).join(' ');
   });
@@ -821,10 +975,10 @@ export function useRouter() {
   return ctx;
 }
 
-export function useLocation() {
+export function useLocation(): Location {
   const ctx = getRouterCtx();
   if (!ctx) return { pathname: '', search: '', hash: '' } as any;
-  return ctx.location();
+  return ctx.location() as Location;
 }
 export function useNavigate() {
   return useRouter().navigate;
@@ -832,7 +986,118 @@ export function useNavigate() {
 
 export function useParams<T extends Record<string, string> = Record<string, string>>() {
   const ctx = getRouteCtx();
-  return (ctx?.params ?? (() => ({} as T))) as () => T;
+  // Deep equality: only notify when the param values actually change.
+  // Reference equality (a === b) would always miss because paramsSignal
+  // may return a new object on every route transition.
+  return createMemo(
+    () => ((ctx?.params ?? (() => ({} as T))) as () => T)(),
+    {} as T,
+    { equals: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
+  );
+}
+
+/**
+ * Reactive accessor for a single route parameter.
+ *
+ * Wraps `useParams()` in a fine-grained memo so that the returned accessor
+ * only re-triggers when the specific param value changes — NOT when other
+ * params in the same route level change.
+ *
+ * @example
+ * // Only re-runs when workspaceId changes, NOT on channel navigation
+ * const workspaceId = useParam('workspaceId');
+ * createEffect(() => { console.log(workspaceId()); });
+ */
+export function useParam1(key: string): () => string | undefined {
+  const params = useParams();
+  // createMemo with default === equality: strings are primitives, so this
+  // will NOT re-trigger when other params change but this key stays the same.
+  // console.log('using on')
+  // on(()=>params, (v)=>{
+  //   console.log('on triggered', v)
+    
+  // }, {defer: true})
+  return createMemo(() => params()[key]);
+}
+
+export function useParam(key: string): () => string | undefined {
+  const [p, setP] = createSignal(undefined)
+  const dispose = createEffect(()=>{
+    const params = useParams();
+    // console.log('params effect', params())
+    if(params && untrack(p)!==(params() as any)[key]){
+      setP((params() as any)[key])
+    }
+  })
+  onCleanup(()=>{
+    console.log('on effect clean up')
+    dispose()
+  })
+  // createMemo with default === equality: strings are primitives, so this
+  // will NOT re-trigger when other params change but this key stays the same.
+  // console.log('using on')
+  // on(()=>params, (v)=>{
+  //   console.log('on triggered', v)
+    
+  // }, {defer: true})
+  return p;
+  // return createMemo(() => params()[key]);
+}
+
+/**
+ * Create a stable accessor from any reactive source with deep-equal memoization.
+ *
+ * Only re-triggers downstream effects/computations when the value actually
+ * changes (deep-equal comparison). Useful to prevent effects from re-running
+ * when a store signal fires but returns the same data.
+ *
+ * Optionally pass a `key` to select a nested property.
+ *
+ * @example
+ * const ws = select(workflowStore.activeWorkspace);         // whole object
+ * const wsId = select(workflowStore.activeWorkspace, 'id'); // single field
+ */
+export function select<T extends any, K extends string = never>(
+  source: () => T,
+  key?: K,
+): () => IsUndefined<K> extends true ? T : GetAtPath<T, K> {
+  if (key !== undefined) {
+    return createMemo(
+      () => get(source() as any, key as any) as any,
+      undefined,
+      { equals: (a: any, b: any) => deepEqual(a, b) },
+    ) as any;
+  }
+  return createMemo(
+    source,
+    undefined,
+    { equals: (a: any, b: any) => deepEqual(a, b) },
+  ) as any;
+}
+
+/**
+ * Derive a stable value from route params using a selector function.
+ * Only re-triggers when the selector's return value changes (=== equality).
+ *
+ * Useful when you need multiple params but want to avoid re-triggering on
+ * unrelated param changes:
+ *
+ * @example
+ * const ids = useParamSelector(p => ({ wsId: p.workspaceId, chId: p.channelId }));
+ * // Re-triggers only when wsId or chId change, not when other params change.
+ * // Note: selector must return a primitive or stable reference for === to work;
+ * // for objects, pass a custom equals function.
+ */
+export function useParamSelector<T>(
+  selector: (params: Record<string, string>) => T,
+  equals?: (a: T, b: T) => boolean
+): () => T {
+  const params = useParams();
+  return createMemo(
+    () => selector(params()),
+    undefined as T,
+    equals ? { equals } : undefined
+  );
 }
 
 export function useMatch(path: (() => string) | string) {

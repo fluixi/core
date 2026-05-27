@@ -5,7 +5,13 @@
   "scripts": {
     "artifact:auth": "npx google-artifactregistry-auth --repo-config=./.npmrc --credential-config=./.npmrc && npm run share:auth",
     "share:auth": "cp .npmrc ~/npm-artifacts/.npmrc",
-    "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
+    "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc",
+    "docker:up": "docker compose --env-file .env.docker up --build -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v",
+    "docker:logs": "docker compose logs -f",
+    "docker:backend": "docker compose --env-file .env.docker up --build -d postgres redis medusa",
+    "docker:frontend": "docker compose --env-file .env.docker up --build -d storefront store-admin"
   },
   "private": true,
   "devDependencies": {
@@ -18,9 +24,11 @@
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/node": "18.16.9",
+    "@typescript/native-preview": "7.0.0-dev.20260430.1",
     "@vitest/coverage-v8": "^3.0.5",
     "@vitest/ui": "^3.0.0",
     "cross-env": "^10.1.0",
+    "electron": "^33.4.11",
     "jiti": "2.4.2",
     "jsdom": "^27.2.0",
     "nx": "21.4.0",

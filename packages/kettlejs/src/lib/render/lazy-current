@@ -1,0 +1,105 @@
+/**
+ * Lazy-load a component module.
+ *
+ * SolidJS-aligned pattern:
+ *  1. `comp` signal is shared across all instances of this lazy component (module-level).
+ *  2. `createResource` at the component level registers the load promise with the
+ *     nearest Suspense boundary (trackPromise / resource.loading).
+ *  3. A pure `createMemo` reads `comp()` — undefined while loading (Suspense shows
+ *     fallback), the rendered component once loaded.
+ *  4. `preload()` is exposed so routes / link hover handlers can start the download
+ *     before the component is rendered.
+ */
+
+import { Component } from '@awc/dom';
+import { createMemo, createResource, createSignal, untrack } from '@awc/reactive';
+import { ComponentProps } from './component.js';
+
+// ─── Public types ────────────────────────────────────────────────────────────
+
+export type LazyComponent<P = ComponentProps> = () => Promise<{
+  default: Component<P>;
+}>;
+
+export interface LazyOptions {
+  /** Show this while the module is loading */
+  fallback?: any;
+  /** If true, start loading immediately when lazy() is called */
+  preload?: boolean;
+}
+
+// ─── Implementation ──────────────────────────────────────────────────────────
+
+export function lazy<T extends (...args: any[]) => any>(
+  loader: () => Promise<{ default: T }>,
+  options?: LazyOptions,
+): T & { preload: () => Promise<void> } {
+  // ── Module-level state ─────────────────────────────────────────────────────
+  // Shared across every instance of this lazy component so that the first
+  // render that triggers loading benefits all subsequent renders.
+
+  // The resolved component function (undefined until the module loads).
+  // createSignal here is fine at module level — signals need no owner.
+  const [comp, setComp] = createSignal<T | undefined>(undefined);
+
+  // The single in-flight / completed promise.  Idempotent: subsequent calls
+  // to load() return the same promise instead of re-importing the module.
+  let promise: Promise<void> | undefined;
+
+  function load(): Promise<void> {
+    if (!promise) {
+      promise = loader().then((mod) => {
+        // Functional setter form `() => value` prevents the setter from
+        // interpreting the component function as an updater callback.
+        setComp(() => mod.default);
+      });
+    }
+    return promise;
+  }
+
+  // ── Optional eager preload ─────────────────────────────────────────────────
+  if (options?.preload) {
+    load();
+  }
+
+  // ── Component wrapper ──────────────────────────────────────────────────────
+  const LazyWrapper = ((props: any) => {
+    // createResource registers the loading promise with the nearest Suspense
+    // boundary via trackPromise / context.increment().  The resource is created
+    // at the component (not memo) level so its internal effect is owned by this
+    // component instance and is not cancelled by memo re-evaluation.
+    const [resource] = createResource(() => load());
+
+    // If the component is not yet loaded, show the fallback.
+    // if (resource.loading) return options?.fallback;
+
+    // If the component has failed to load, show the error.
+    if (resource.error) throw resource.error;
+
+
+    // Pure memo: reads `comp` (the shared signal) — creates no side effects.
+    //   • While loading  → comp() === undefined → return undefined
+    //                      Suspense boundary keeps showing the fallback.
+    //   • After load     → comp() === RealComponent → call it with props
+    //                      Suspense switches to content.
+    //
+    // untrack() around the component call ensures the component's own reactive
+    // primitives are NOT tracked as dependencies of this memo.
+    return createMemo(() => {
+      const C = comp();
+      if (!C) return undefined;
+      return untrack(() => {
+        return (C as any)(props)
+      });
+    });
+  }) as unknown as T & { preload: () => Promise<void> };
+
+  // ── Preload API ────────────────────────────────────────────────────────────
+  // Callers can kick off the download before the component enters the view:
+  //   <a onMouseEnter={() => LazyFoo.preload()}>…</a>
+  //   router.prefetch(LazyFoo)
+  LazyWrapper.preload = load;
+  (LazyWrapper as any).$lazy = true;
+
+  return LazyWrapper;
+}

@@ -7,6 +7,8 @@ export * from './clone.js';
 export * from './getter-setter.js';
 export * from './omit.js';
 export * from './transform.js';
+export * from './reconcile.js';
+export * from './sort.js';
 export {
   toJSONString,
   isEmptyObject,

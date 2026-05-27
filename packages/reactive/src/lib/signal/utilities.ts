@@ -11,7 +11,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
-} from '@awc/reactive/signal';
+} from './signal.js';
 import { Observable } from '@awc/reactive/observable';
 
 // ============================================================================
@@ -674,18 +674,27 @@ export { type Accessor, type MemoOptions } from './signal.js';
  * return deferred.promise;
  * ```
  */
-export function createDeferred<T>(): {
-  promise: Promise<T>;
-  resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: any) => void;
-} {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: any) => void;
+// export function createDeferred<T>(): {
+//   promise: Promise<T>;
+//   resolve: (value: T | PromiseLike<T>) => void;
+//   reject: (reason?: any) => void;
+// } {
+//   let resolve!: (value: T | PromiseLike<T>) => void;
+//   let reject!: (reason?: any) => void;
 
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
+//   const promise = new Promise<T>((res, rej) => {
+//     resolve = res;
+//     reject = rej;
+//   });
 
-  return { promise, resolve, reject };
+//   return { promise, resolve, reject };
+// }
+
+
+export type ReadSignal<T, depth extends 0 | 1 | 2 | 3 | 4 = 0> = depth extends 4 ? T : T extends Accessor<infer U> ? U extends (()=>any) ? ReadSignal<U, depth extends 4 ? 4 : depth extends 3 ? 3 : depth extends 2 ? 2 : depth extends 1 ? 1 : 0> : U : T;
+
+export function readSignal<T>(signal?: Accessor<T> | T | null): ReadSignal<T> {
+  let value = signal;
+  while (typeof value === 'function') value = (value as any)() as any;
+  return value as ReadSignal<T>;
 }

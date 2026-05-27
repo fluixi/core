@@ -90,7 +90,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@awc/mix-builder": "^0.0.3",
+    "@awc/mix-builder": "workspace:*",
     "@awc/utils": "workspace:*",
     "tslib": "^2.3.0"
   },

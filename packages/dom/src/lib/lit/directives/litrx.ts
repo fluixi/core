@@ -166,6 +166,7 @@ class ReactiveDirective extends Directive {
     //     }
     //   });
     this.disposeRoot = createRoot((dispose) => {
+      console.log('lit root')
       createEffect(() => {
         try {
           let newValue = accessor();
