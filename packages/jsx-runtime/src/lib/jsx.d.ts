@@ -230,6 +230,7 @@ export namespace JSX {
     'aria-valuemin'?: number;
     'aria-valuenow'?: number;
     'aria-valuetext'?: string;
+    align?: string
 
     // Data attributes
     [key: `data-${string}`]: string | number | boolean | undefined;
@@ -832,25 +833,46 @@ export namespace JSX {
     use: SVGAttributes<SVGUseElement>;
     view: SVGAttributes;
 
-    // Custom elements (web components)
+    // Custom elements: picks up KettleElements augmentations automatically
+    // Unknown custom elements fall through to the index signature
     [elemName: string]: any;
   }
 }
+
+/**
+ * Global augmentable interface for registering custom element JSX types.
+ * Augment this instead of JSX.IntrinsicElements to avoid eslint namespace errors.
+ *
+ * @example
+ * ```ts
+ * declare global {
+ *   interface KettleElements {
+ *     'my-counter': KettleElementJSXAttributes<typeof MyCounter>;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface KettleElements {}
 
 /**
  * Global JSX namespace for TypeScript
  * This makes the JSX namespace available globally for TypeScript
  */
 declare global {
+  // Re-export KettleElements so augmentations merge globally
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface KettleElements {}
+
   namespace JSX {
     type Element = import('./jsx.d').JSX.Element;
     type IntrinsicElements = import('./jsx.d').JSX.IntrinsicElements;
-    interface Element extends JSX.Element {
+    interface Element extends JSX.Element, KettleElements {
       strings?: TemplateStringsArray;
       values?: readonly unknown[];
       _$litType$?: number;
     }
-    interface IntrinsicElements extends JSX.IntrinsicElements {}
+    interface IntrinsicElements extends JSX.IntrinsicElements, KettleElements {}
     interface ElementChildrenAttribute {
       children: {};
     }

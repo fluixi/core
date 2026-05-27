@@ -28,9 +28,8 @@ export {
 
   // Rendering
   renderToString,
-  createPortal,
-  delegateEvents,
-  handleRef,
+  // delegateEvents,
+  // handleRef,
 } from './jsx-runtime.js';
 export { jsxDEV } from './jsx-dev-runtime.js';
 
@@ -80,7 +79,7 @@ export type {
 // ============================================================================
 
 // Re-export old runtime for compatibility
-export { ReactiveDOM, $, $if, litrx } from '@awc/dom';
+export { ReactiveDOM, $, $if, litrx, delegateEvents } from '@awc/dom';
 
 // Legacy JSX config
 export interface ReactiveJSXConfig {
@@ -107,11 +106,11 @@ import {
   isValidElement,
   cloneElement,
   renderToString,
-  createPortal,
+  // createPortal,
 } from './jsx-runtime.js';
 
-export { spread, mergeProps } from './jsx-runtime.js';
-import { initializeIntegration, render, runtimeBatch } from '@awc/dom';
+export { mergeProps } from './jsx-runtime.js';
+import { createPortal, initializeIntegration, render, runtimeBatch } from '@awc/dom';
 
 /**
  * Create a reactive JSX API with custom configuration

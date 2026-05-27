@@ -20,6 +20,7 @@ export {
   createEffect,
   createMemo,
   createSignal,
+  createResource,
   createRoot,
   createDeferred,
   createComputed,
@@ -43,6 +44,8 @@ export type {
   RootOwner as Owner,
   Context,
 } from '@awc/reactive/signal';
+
+export { createStore,   Store, type StoreSetter} from '@awc/reactive/store';
 
 // ============================================================================
 // SECTION 2 — createComponent & LIFECYCLE
@@ -109,6 +112,40 @@ export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
 // ============================================================================
 // DOM UTILITIES (from @awc/dom)
 // ============================================================================
+
+export {
+  Show,
+  For,
+  Index,
+  Switch,
+  Match,
+  Dynamic,
+  ErrorBoundary,
+  Portal,
+  type ShowProps,
+  type ForProps,
+  type IndexProps,
+  type SwitchProps,
+  type MatchProps,
+  type MatchNode,
+  type DynamicProps,
+  type ErrorBoundaryProps,
+  type PortalProps,
+} from '@awc/dom';
+export {
+  // Framework-agnostic reactive attribute maps (return Accessor<string>)
+  classMap,
+  styleMap,
+  type ClassMapInput,
+  type ClassCondition,
+  type StyleMapInput,
+  type StyleValue,
+  // Lit-specific directive versions (classList/style diff, more efficient)
+  $classMap,
+  $styleMap,
+  // Reactive litrx directive
+  litrx,
+} from '@awc/dom';
 
 export {
   // Control Flow
@@ -254,6 +291,16 @@ import {
 
 import { render as _render } from './render/index.js';
 // './core/index.js';
+
+export {
+  defineElement,
+  KettleElement,
+  KettleLitElement,
+  KettleController,
+  kettleElementPlugin,
+} from '@awc/element';
+
+export type * from '@awc/element';
 
 export default {
   // Core

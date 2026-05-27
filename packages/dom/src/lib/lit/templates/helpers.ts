@@ -1,7 +1,13 @@
 import { TemplateResult, nothing, svg, html } from 'lit';
-import { isSignal, isMemo, isResource, type Accessor } from '@awc/reactive/signal';
+import {
+  isSignal,
+  isMemo,
+  isResource,
+  type Accessor,
+} from '@awc/reactive/signal';
 import { getNode, isStore } from '@awc/reactive/store';
 import { litrx } from '../directives/litrx.js';
+import { reactiveAttr } from '../directives/reactiveAttr.js';
 import {
   getLitEventName,
   isEventHandler,
@@ -14,7 +20,7 @@ import { ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { live } from 'lit/directives/live.js';
-import { isAccessor, isPromise } from '../directives/utils.js';
+import {  isPromise } from '../directives/utils.js';
 import { iterateFn } from '../../dom/runtime.js';
 import { asyncAppend } from '../directives/async-append.js';
 
@@ -78,11 +84,111 @@ function createSignalHandler() {
  * Child content positions end with '>' or plain text.
  */
 function isBindingPosition(precedingStr: string): boolean {
-  // Trim trailing whitespace, then check if it ends with an attribute binding
   const trimmed = precedingStr.trimEnd();
-  // Matches: @event=, .prop=, ?bool=, attr=, attr="
-  return /(?:[@.?]?[\w-]+=["']?\s*$)/.test(trimmed);
+  // Matches all attribute binding positions:
+  //   attr=          purely dynamic, no quote yet
+  //   attr="         purely dynamic, quote just opened
+  //   attr="partial  interpolated — value is inside an open double-quoted attr
+  //   attr='partial  interpolated — value is inside an open single-quoted attr
+  // Also handles @event, .prop, ?bool prefixes.
+  return /[@.?]?[\w-]+=(?:["']?\s*$|"[^"]*$|'[^']*$)/.test(trimmed);
 }
+
+/**
+ * Returns true when the preceding string ends with an EVENT binding (`@name=`).
+ * Covers both `@click=` (no quote) and `@click="` (opened quote) forms.
+ * Event handlers must never be wrapped with reactive directives — they are
+ * plain function references that lit registers as listeners.
+ */
+function isEventBinding(precedingStr: string): boolean {
+  return /@[\w-]+=(?:["']?\s*$|"[^"]*$|'[^']*$)/.test(precedingStr.trimEnd());
+}
+
+/**
+ * When a dynamic value sits inside a quoted attribute that already has static
+ * content (e.g. `class="tab ${fn}"`), the surrounding static strings must be
+ * combined with the reactive value or `element.setAttribute` would overwrite
+ * the whole attribute and lose the static parts.
+ *
+ * Returns `{ prefix, suffix }` when the value is inside such an interpolated
+ * attribute, or `null` when the binding is purely dynamic (no static content
+ * adjacent to the dynamic slot).
+ *
+ * Examples:
+ *   `class="tab ${fn}"`   → { prefix: 'tab ', suffix: '' }
+ *   `class="${fn} base"`  → { prefix: '',     suffix: ' base' }
+ *   `class="${fn}"`       → null  (prefix and suffix are both empty)
+ *   `class=${fn}`         → null  (no quotes at all)
+ */
+function getInterpolationParts(
+  strings: TemplateStringsArray,
+  i: number
+): { prefix: string; suffix: string } | null {
+  const before = strings[i];
+  const after = strings[i + 1] ?? '';
+
+  // Double-quoted: attr="PREFIX  →  capture PREFIX
+  const dbl = before.match(/[@.?]?[\w-]+="([^"]*)$/);
+  if (dbl) {
+    const prefix = dbl[1];
+    const suffix = after.match(/^([^"]*)/)?.[1] ?? '';
+    if (prefix || suffix) return { prefix, suffix };
+    return null;
+  }
+
+  // Single-quoted: attr='PREFIX  →  capture PREFIX
+  const sgl = before.match(/[@.?]?[\w-]+='([^']*)$/);
+  if (sgl) {
+    const prefix = sgl[1];
+    const suffix = after.match(/^([^']*)/)?.[1] ?? '';
+    if (prefix || suffix) return { prefix, suffix };
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Wrap a reactive input so that its resolved value is concatenated with the
+ * static prefix and suffix of an interpolated attribute binding.
+ */
+function wrapWithInterpolation(
+  input: any,
+  prefix: string,
+  suffix: string
+): () => string {
+  return () => {
+    let v = typeof input === 'function' ? input() : input;
+    // Unwrap further function layers (plain thunks, not reactive primitives —
+    // those were already called above inside the reactive context).
+    let depth = 0;
+    while (typeof v === 'function' && depth < 10) { v = v(); depth++; }
+    return prefix + String(v ?? '') + suffix;
+  };
+}
+function isShow(accessor: any) {
+  if (typeof accessor === 'function') {
+    const node = accessor[Symbol.for('signal-node')];
+    if (node && node.name === 'show') {
+      console.log('initial accessor helpers', accessor);
+      return true;
+    }
+  } else if (accessor.name.toLowerCase() === 'show') {
+    console.log('initial name', accessor);
+  }
+  return false;
+}
+function getSignal(accessor: any) {
+  if (typeof accessor === 'function') {
+    const node = accessor[Symbol.for('signal-node')];
+    if (node && node.name === 'show') {
+      console.log('initial accessor helpers', node);
+    }
+  } else if (accessor.name.toLowerCase() === 'show') {
+    console.log('initial name', accessor);
+  }
+}
+
 // export function isPromise<T = any>(v: unknown): v is Promise<T> {
 //   return (
 //     !!v && (typeof v === 'object' || typeof v === 'function') && 'then' in v
@@ -91,21 +197,54 @@ function isBindingPosition(precedingStr: string): boolean {
 /**
  * Recursively process values to wrap signals
  */
-export function processValues(values: any[], strings?: TemplateStringsArray): any[] {
+export function processValues(
+  values: any[],
+  strings?: TemplateStringsArray,
+  index?: number
+): any[] {
   if (!Array.isArray(values)) {
-      return values
+    return values;
   }
   const data = values.map((_value, i) => {
     let value = _value;
     if (strings && isBindingPosition(strings[i])) {
-      return value;
+      // Event handlers (@click, @submit, …) must NEVER be wrapped — they are
+      // plain function references that lit registers as listeners directly.
+      if (isEventBinding(strings[i])) {
+        return value;
+      }
+
+      // Resolve the base reactive input (unwrap store nodes).
+      let baseInput: any = value;
+      if (isStore(value)) {
+        baseInput = getNode(value)!;
+      } else if (
+        !isSignal(value) &&
+        !isMemo(value) &&
+        !isResource(value) &&
+        (typeof value !== 'function' || isPromise(value))
+      ) {
+        // Static / non-reactive value — no wrapping needed.
+        return value;
+      }
+
+      // For interpolated attributes (class="prefix ${fn} suffix"), combine the
+      // static surrounding text with the dynamic value before calling
+      // reactiveAttr, so setAttribute receives the full attribute string.
+      const interp = getInterpolationParts(strings, i);
+      if (interp) {
+        console.log('interp', interp);
+        baseInput = wrapWithInterpolation(baseInput, interp.prefix, interp.suffix);
+      }
+
+      try { return reactiveAttr(baseInput); } catch { return value; }
     }
-    if (value instanceof Element) {
-      return value
-    }
-    if (isSignal(value) || isMemo(value) || isResource(value)) {
+      if (value instanceof Element) {
+        return value;
+      }
+      if (isSignal(value) || isMemo(value) || isResource(value)) {
+      // console.log('processing value', value[Symbol.for('signal-node')]);
       try {
-        console.log('litrx')
         return litrx(value);
       } catch (e) {
         return value;
@@ -118,7 +257,7 @@ export function processValues(values: any[], strings?: TemplateStringsArray): an
 
     // Process arrays recursively
     if (Array.isArray(value)) {
-      return processValues(value);
+      return processValues(value, undefined, i);
     }
 
     // // For objects, check if any property is a signal
@@ -150,21 +289,28 @@ export function processValues(values: any[], strings?: TemplateStringsArray): an
     }
 
     if (typeof value === 'function' && !isPromise(value)) {
+      // console.log('initial name', value.name)
       // Unwrap function layers one step at a time.
       // Stop if we hit a reactive primitive (signal/memo/resource)
       // so it can be wrapped with litrx for fine-grained tracking.
       while (typeof value === 'function' && !isPromise(value)) {
         if (isSignal(value) || isMemo(value) || isResource(value)) {
+          // console.log('on r', value[Symbol.for('signal-node')])
           return litrx(value);
         }
-        value = iterateFn(value);
+        console.log('is fn', value, strings?.[i]);
+        // return litrx(value);
+        value = value();
         if (Array.isArray(value)) {
-          value = processValues([...value], strings)
+          value = processValues([...value], strings, i);
         }
       }
       if (isTemplateResult(value)) {
-        value.values = processValues([...value.values], value.strings)
+        value.values = processValues([...value.values], value.strings);
       }
+      // if (typeof value === 'function') {
+      //   return litrx(value);
+      // }
     }
 
     return value;
@@ -233,9 +379,11 @@ export function processValues(values: any[], strings?: TemplateStringsArray): an
 /**
  * Process object to wrap signals in object properties
  */
-function processObject(obj: Record<string, any>, strings_values?: TemplateStringsArray): any {
+function processObject(
+  obj: Record<string, any>,
+  strings_values?: TemplateStringsArray
+): any {
   const result: Record<string, any> = {};
-  console.log('procees object', obj)
   let strings = strings_values;
   for (let [key, value] of Object.entries(obj)) {
     if (key !== 'strings' && key !== '_$litType$') {
@@ -255,7 +403,7 @@ function processObject(obj: Record<string, any>, strings_values?: TemplateString
         result[key] = value;
       }
     } else {
-      strings = value
+      strings = value;
       result[key] = value;
     }
   }
@@ -314,6 +462,7 @@ export function buildElementTemplate(
     // Handle event handlers
     if (isEventHandler(key)) {
       const eventName = getLitEventName(key);
+      console.log('binding', eventName);
       strings[strings.length - 1] += ` @${eventName}=`;
       values.push(value);
       strings.push('');

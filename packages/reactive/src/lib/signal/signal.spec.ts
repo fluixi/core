@@ -82,7 +82,7 @@ describe('Signal System - Core Features', () => {
       setCount(2);
       setCount(3);
 
-      console.log('values', values);
+      // console.log('values', values);
       expect(values).toEqual([1, 2, 3]);
       sub.unsubscribe();
     });
@@ -108,7 +108,7 @@ describe('Signal System - Core Features', () => {
       });
       expect(runs).toBe(1);
       setCount(1);
-      // expect(runs).toBe(2);
+      expect(runs).toBe(2);
     });
 
     it('should track multiple dependencies', () => {
@@ -150,7 +150,7 @@ describe('Signal System - Core Features', () => {
       });
       setCount(1);
       setCount(2);
-      // expect(cleanups).toBeGreaterThan(0);
+      expect(cleanups).toBeGreaterThan(0);
     });
   });
 
@@ -1129,7 +1129,7 @@ describe('Signal System - Integration Tests', () => {
     });
   });
 
-  it.skip('should work with all features combined', () => {
+  it('should work with all features combined', () => {
     // TODO: This test has a complex timing issue with memo recomputation
     // inside batched updates. The memo recomputes correctly but the effect
     // reads stale values. This is an edge case that needs investigation.

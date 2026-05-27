@@ -1,4 +1,9 @@
 {
 "typescript.tsserver.experimental.enableProjectDiagnostics": false,
 "typescript.disableAutomaticTypeAcquisition": true, 
+"lit-html.tags": [
+    "html",
+    "raw"
+],
+"lit-html.format.enabled": true
 }

@@ -1,0 +1,319 @@
+{
+    "name": "@awc/webui",
+    "version": "0.0.1",
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    ".": {
+        "development": "./src/index.ts",
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+    },
+    "./button": {
+        "development": "./src/button.tsx",
+        "types": "./dist/button.d.ts",
+        "import": "./dist/button.mjs",
+        "require": "./dist/button.cjs",
+        "default": "./dist/button.jsx"
+    },
+    "./button.jsx": {
+        "development": "./src/button.tsx",
+        "types": "./dist/button.d.ts",
+        "import": "./dist/button.mjs",
+        "require": "./dist/button.cjs",
+        "default": "./dist/button.jsx"
+    },
+    "./card": {
+        "development": "./src/card.tsx",
+        "types": "./dist/card.d.ts",
+        "import": "./dist/card.mjs",
+        "require": "./dist/card.cjs",
+        "default": "./dist/card.jsx"
+    },
+    "./card.jsx": {
+        "development": "./src/card.tsx",
+        "types": "./dist/card.d.ts",
+        "import": "./dist/card.mjs",
+        "require": "./dist/card.cjs",
+        "default": "./dist/card.jsx"
+    },
+    "./checkbox": {
+        "development": "./src/checkbox.tsx",
+        "types": "./dist/checkbox.d.ts",
+        "import": "./dist/checkbox.mjs",
+        "require": "./dist/checkbox.cjs",
+        "default": "./dist/checkbox.jsx"
+    },
+    "./checkbox.jsx": {
+        "development": "./src/checkbox.tsx",
+        "types": "./dist/checkbox.d.ts",
+        "import": "./dist/checkbox.mjs",
+        "require": "./dist/checkbox.cjs",
+        "default": "./dist/checkbox.jsx"
+    },
+    "./dialog": {
+        "development": "./src/dialog.tsx",
+        "types": "./dist/dialog.d.ts",
+        "import": "./dist/dialog.mjs",
+        "require": "./dist/dialog.cjs",
+        "default": "./dist/dialog.jsx"
+    },
+    "./dialog.jsx": {
+        "development": "./src/dialog.tsx",
+        "types": "./dist/dialog.d.ts",
+        "import": "./dist/dialog.mjs",
+        "require": "./dist/dialog.cjs",
+        "default": "./dist/dialog.jsx"
+    },
+    "./drawer": {
+        "development": "./src/drawer.tsx",
+        "types": "./dist/drawer.d.ts",
+        "import": "./dist/drawer.mjs",
+        "require": "./dist/drawer.cjs",
+        "default": "./dist/drawer.jsx"
+    },
+    "./drawer.jsx": {
+        "development": "./src/drawer.tsx",
+        "types": "./dist/drawer.d.ts",
+        "import": "./dist/drawer.mjs",
+        "require": "./dist/drawer.cjs",
+        "default": "./dist/drawer.jsx"
+    },
+    "./dropdown": {
+        "development": "./src/dropdown.tsx",
+        "types": "./dist/dropdown.d.ts",
+        "import": "./dist/dropdown.mjs",
+        "require": "./dist/dropdown.cjs",
+        "default": "./dist/dropdown.jsx"
+    },
+    "./dropdown.jsx": {
+        "development": "./src/dropdown.tsx",
+        "types": "./dist/dropdown.d.ts",
+        "import": "./dist/dropdown.mjs",
+        "require": "./dist/dropdown.cjs",
+        "default": "./dist/dropdown.jsx"
+    },
+    "./icon": {
+        "development": "./src/icon.tsx",
+        "types": "./dist/icon.d.ts",
+        "import": "./dist/icon.mjs",
+        "require": "./dist/icon.cjs",
+        "default": "./dist/icon.jsx"
+    },
+    "./icon.jsx": {
+        "development": "./src/icon.tsx",
+        "types": "./dist/icon.d.ts",
+        "import": "./dist/icon.mjs",
+        "require": "./dist/icon.cjs",
+        "default": "./dist/icon.jsx"
+    },
+    "./input": {
+        "development": "./src/input.tsx",
+        "types": "./dist/input.d.ts",
+        "import": "./dist/input.mjs",
+        "require": "./dist/input.cjs",
+        "default": "./dist/input.jsx"
+    },
+    "./input.jsx": {
+        "development": "./src/input.tsx",
+        "types": "./dist/input.d.ts",
+        "import": "./dist/input.mjs",
+        "require": "./dist/input.cjs",
+        "default": "./dist/input.jsx"
+    },
+    "./list": {
+        "development": "./src/list.tsx",
+        "types": "./dist/list.d.ts",
+        "import": "./dist/list.mjs",
+        "require": "./dist/list.cjs",
+        "default": "./dist/list.jsx"
+    },
+    "./list.jsx": {
+        "development": "./src/list.tsx",
+        "types": "./dist/list.d.ts",
+        "import": "./dist/list.mjs",
+        "require": "./dist/list.cjs",
+        "default": "./dist/list.jsx"
+    },
+    "./popover": {
+        "development": "./src/popover.tsx",
+        "types": "./dist/popover.d.ts",
+        "import": "./dist/popover.mjs",
+        "require": "./dist/popover.cjs",
+        "default": "./dist/popover.jsx"
+    },
+    "./popover.jsx": {
+        "development": "./src/popover.tsx",
+        "types": "./dist/popover.d.ts",
+        "import": "./dist/popover.mjs",
+        "require": "./dist/popover.cjs",
+        "default": "./dist/popover.jsx"
+    },
+    "./radio": {
+        "development": "./src/radio.tsx",
+        "types": "./dist/radio.d.ts",
+        "import": "./dist/radio.mjs",
+        "require": "./dist/radio.cjs",
+        "default": "./dist/radio.jsx"
+    },
+    "./radio.jsx": {
+        "development": "./src/radio.tsx",
+        "types": "./dist/radio.d.ts",
+        "import": "./dist/radio.mjs",
+        "require": "./dist/radio.cjs",
+        "default": "./dist/radio.jsx"
+    },
+    "./select": {
+        "development": "./src/select.tsx",
+        "types": "./dist/select.d.ts",
+        "import": "./dist/select.mjs",
+        "require": "./dist/select.cjs",
+        "default": "./dist/select.jsx"
+    },
+    "./select.jsx": {
+        "development": "./src/select.tsx",
+        "types": "./dist/select.d.ts",
+        "import": "./dist/select.mjs",
+        "require": "./dist/select.cjs",
+        "default": "./dist/select.jsx"
+    },
+    "./sidenav": {
+        "development": "./src/sidenav.tsx",
+        "types": "./dist/sidenav.d.ts",
+        "import": "./dist/sidenav.mjs",
+        "require": "./dist/sidenav.cjs",
+        "default": "./dist/sidenav.jsx"
+    },
+    "./sidenav.jsx": {
+        "development": "./src/sidenav.tsx",
+        "types": "./dist/sidenav.d.ts",
+        "import": "./dist/sidenav.mjs",
+        "require": "./dist/sidenav.cjs",
+        "default": "./dist/sidenav.jsx"
+    },
+    "./switch": {
+        "development": "./src/switch.tsx",
+        "types": "./dist/switch.d.ts",
+        "import": "./dist/switch.mjs",
+        "require": "./dist/switch.cjs",
+        "default": "./dist/switch.jsx"
+    },
+    "./switch.jsx": {
+        "development": "./src/switch.tsx",
+        "types": "./dist/switch.d.ts",
+        "import": "./dist/switch.mjs",
+        "require": "./dist/switch.cjs",
+        "default": "./dist/switch.jsx"
+    },
+    "./icons": {
+        "development": "./src/icons.tsx",
+        "types": "./dist/icons.d.ts",
+        "import": "./dist/icons.mjs",
+        "require": "./dist/icons.cjs",
+        "default": "./dist/icons.jsx"
+    },
+    "./icons.js": {
+        "development": "./src/icons.ts",
+        "types": "./dist/icons.d.ts",
+        "import": "./dist/icons.mjs",
+        "require": "./dist/icons.cjs",
+        "default": "./dist/icons.js"
+    },
+    "./src/icons": {
+        "development": "./src/icons.ts",
+        "types": "./dist/icons.d.ts",
+        "import": "./dist/icons.mjs",
+        "require": "./dist/icons.cjs",
+        "default": "./dist/icons.js"
+    },
+    "./component": {
+        "development": "./src/component.ts",
+        "types": "./dist/component.d.ts",
+        "import": "./dist/component.mjs",
+        "require": "./dist/component.cjs",
+        "default": "./dist/component.js"
+    },
+    "./src/component": {
+        "development": "./src/component.ts",
+        "types": "./dist/component.d.ts",
+        "import": "./dist/component.mjs",
+        "require": "./dist/component.cjs",
+        "default": "./dist/component.js"
+    },
+    "scripts": {
+        "build:typings": "tsc -p tsconfig.json",
+        "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+        "dev": "tsc -w -p tsconfig.json"
+    },
+    "dependencies": {
+        "@awc/adf-accordion": "link:../../../../adafri-webcomponents/packages/components/adf-accordion",
+        "@awc/adf-accounts-selector": "link:../../../../adafri-webcomponents/packages/components/adf-accounts-selector",
+        "@awc/adf-alert": "link:../../../../adafri-webcomponents/packages/components/adf-alert",
+        "@awc/adf-avatar": "link:../../../../adafri-webcomponents/packages/components/adf-avatar",
+        "@awc/adf-base": "link:../../../../adafri-webcomponents/packages/components/adf-base",
+        "@awc/adf-button": "link:../../../../adafri-webcomponents/packages/components/adf-button",
+        "@awc/adf-card": "link:../../../../adafri-webcomponents/packages/components/adf-card",
+        "@awc/adf-checkbox": "link:../../../../adafri-webcomponents/packages/components/adf-checkbox",
+        "@awc/adf-cropper": "link:../../../../adafri-webcomponents/packages/components/adf-cropper",
+        "@awc/adf-datepicker": "link:../../../../adafri-webcomponents/packages/components/adf-datepicker",
+        "@awc/adf-daterangepicker": "link:../../../../adafri-webcomponents/packages/components/adf-daterangepicker",
+        "@awc/adf-dialog": "link:../../../../adafri-webcomponents/packages/components/adf-dialog",
+        "@awc/adf-drawer": "link:../../../../adafri-webcomponents/packages/components/adf-drawer",
+        "@awc/adf-dropdown": "link:../../../../adafri-webcomponents/packages/components/adf-dropdown",
+        "@awc/adf-file-uploader": "link:../../../../adafri-webcomponents/packages/components/adf-file-uploader",
+        "@awc/adf-form-field": "link:../../../../adafri-webcomponents/packages/components/adf-form-field",
+        "@awc/adf-gads-bid": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-bid",
+        "@awc/adf-gads-budget": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-budget",
+        "@awc/adf-gads-dates": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-dates",
+        "@awc/adf-gads-demographic": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-demographic",
+        "@awc/adf-gads-device-target": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-device-target",
+        "@awc/adf-gads-display-builder": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-display-builder",
+        "@awc/adf-gads-image-ad-creator": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-image-ad-creator",
+        "@awc/adf-gads-landing-page": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-landing-page",
+        "@awc/adf-gads-locations": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-locations",
+        "@awc/adf-gads-name": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-name",
+        "@awc/adf-gads-objectives": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-objectives",
+        "@awc/adf-gads-placements": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-placements",
+        "@awc/adf-gads-responsive-display-ad-creator": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-responsive-display-ad-creator",
+        "@awc/adf-gads-responsive-display-preview": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-responsive-display-preview",
+        "@awc/adf-gads-step-1": "link:../../../../adafri-webcomponents/packages/components/adf-gads-step-1",
+        "@awc/adf-gads-times-schedules": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-times-schedules",
+        "@awc/adf-gads-user-interest": "link:../../../../adafri-webcomponents/packages/components/gads/adf-gads-user-interest",
+        "@awc/adf-google-maps": "link:../../../../adafri-webcomponents/packages/components/adf-google-maps",
+        "@awc/adf-horizontal-card-item": "link:../../../../adafri-webcomponents/packages/components/adf-horizontal-card-item",
+        "@awc/adf-icon": "link:../../../../adafri-webcomponents/packages/components/adf-icon",
+        "@awc/adf-lang-selector": "link:../../../../adafri-webcomponents/packages/components/adf-lang-selector",
+        "@awc/adf-list": "link:../../../../adafri-webcomponents/packages/components/adf-list",
+        "@awc/adf-oauth2": "link:../../../../adafri-webcomponents/packages/components/adf-oauth2",
+        "@awc/adf-paginator": "link:../../../../adafri-webcomponents/packages/components/adf-paginator",
+        "@awc/adf-popover": "link:../../../../adafri-webcomponents/packages/components/adf-popover",
+        "@awc/adf-progress": "link:../../../../adafri-webcomponents/packages/components/adf-progress",
+        "@awc/adf-radio": "link:../../../../adafri-webcomponents/packages/components/adf-radio",
+        "@awc/adf-scrollable-container": "link:../../../../adafri-webcomponents/packages/components/adf-scrollable-container",
+        "@awc/adf-select": "link:../../../../adafri-webcomponents/packages/components/adf-select",
+        "@awc/adf-sidenav": "link:../../../../adafri-webcomponents/packages/components/adf-sidenav",
+        "@awc/adf-slider": "link:../../../../adafri-webcomponents/packages/components/adf-slider",
+        "@awc/adf-spinner": "link:../../../../adafri-webcomponents/packages/components/adf-spinner",
+        "@awc/adf-switch": "link:../../../../adafri-webcomponents/packages/components/adf-switch",
+        "@awc/adf-table": "link:../../../../adafri-webcomponents/packages/components/adf-table",
+        "@awc/adf-tabs": "link:../../../../adafri-webcomponents/packages/components/adf-tabs",
+        "@awc/adf-theme-selector": "link:../../../../adafri-webcomponents/packages/components/adf-theme-selector",
+        "@awc/adf-vertical-card-asset": "link:../../../../adafri-webcomponents/packages/components/adf-vertical-card-asset",
+        "@awc/adf-draggable": "link:../../../../adafri-webcomponents/packages/components/adf-draggable",
+        "@awc/components": "link:../../../../adafri-webcomponents/packages/components/bundles",
+        "@awc/core": "link:../../../../adafri-webcomponents/packages/core",
+        "@awc/dom": "workspace:*",
+        "@awc/element": "workspace:*",
+        "@awc/gads-components": "link:../../../../adafri-webcomponents/packages/components/gads-bundle",
+        "@awc/helpers": "link:../../../../adafri-webcomponents/packages/helpers",
+        "@awc/jsx-runtime": "workspace:*",
+        "lit": "^3.3.1"
+    },
+    "devDependencies": {
+        "@awc/mix-builder": "workspace:*",
+        "inquirer": "^13.4.2"
+    }
+}

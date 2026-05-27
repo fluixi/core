@@ -23,38 +23,46 @@ import {
   untrack,
   createRoot,
   isMemo,
-  createRenderEffect,
 } from '@awc/reactive/signal';
 import type { Accessor } from '@awc/reactive/signal';
-import {
-  AsyncDirective,
-  directive as asyncDirective,
-  PartType as AsyncPartType,
-} from 'lit/async-directive.js';
 import { isPromise } from './utils.js';
+
+
+function getSignal(accessor: any) {
+  if (typeof accessor === 'function') {
+    const node = accessor[Symbol.for('signal-node')]
+    if (node) {
+    console.log('initial accessor', node)
+    }
+  }
+}
 
 /**
  * Resolve a reactive accessor to its final non-function value.
- * Walks through signal → memo → closure chains.
+ *
+ * Two-phase unwrap:
+ *  1. Read through signal/memo/resource chains (these are the reactive reads
+ *     that effects must track).
+ *  2. Unwrap remaining plain functions (thunks, closures).
  */
 function resolveValue(accessor: any): any {
   let val = accessor;
-  if (typeof val === 'function' && !isSignal(val)) {
+  // Phase 1: Read through reactive primitives (signal → memo → resource chain).
+  // Each call establishes a dependency when called inside an effect.
+  while (typeof val === 'function' && !isSignal(val)) {
     val = val();
   }
-  // Unwrap nested functions (memo returning closure, etc.)
-  // Limit depth to prevent infinite loops from circular references.
+
+  // Phase 2: Unwrap plain (non-reactive) function layers.
   let depth = 0;
-  while (typeof val === 'function' && depth < 50) {
+  while (typeof val === 'function' && depth < 5) {
     val = val();
     depth++;
   }
-  // console.log('returning', val)
+
   return val;
 }
 
-let count = 0
- const countmap = new Map()
 class ReactiveDirective extends Directive {
   private value: any = noChange;
   private disposeRoot?: () => void;
@@ -107,9 +115,12 @@ class ReactiveDirective extends Directive {
       return accessor;
     }
 
+
+    
     // Same accessor with active effect → nothing to do.
     // The existing effect will push updates via _$setValue.
     if (this.currentAccessor === accessor && this.disposeRoot) {
+      console.log('lit rex')
       return noChange;
     }
 
@@ -117,55 +128,53 @@ class ReactiveDirective extends Directive {
     this.cleanup();
     this.currentAccessor = accessor;
 
+    let isFirstRun = true;
+
     // Use createRoot to ISOLATE the effect's ownership.
     // Without this, effects created during _$setValue (for inner litrx
     // directives in nested templates) become children of THIS effect,
     // causing disposal cascades when the outer effect re-runs.
-    let isFirstRun = true;
+    // this.disposeRoot = createEffect(() => {
+    //     try {
+    //       const newValue = resolveValue(accessor);
 
+    //       // console.log('new a')
+    //       if (isFirstRun) {
+    //         // Skip _$setValue on first run — render() returns the initial
+    //         // value to lit-html. Calling _$setValue here would double-process
+    //         // the template (especially TemplateResults with inner directives).
+    //         isFirstRun = false;
+    //         this.value = newValue;
+    //         return;
+    //       }
 
-    this.disposeRoot = createRenderEffect(() => {
-        try {
-          const newValue = resolveValue(accessor);
-
-          if (isFirstRun) {
-            // Skip _$setValue on first run — render() returns the initial
-            // value to lit-html. Calling _$setValue here would double-process
-            // the template (especially TemplateResults with inner directives).
-            isFirstRun = false;
-            this.value = newValue;
-            return;
-          }
-
-          // Subsequent runs: signal changed → push update to DOM.
-          if (newValue !== this.value) {
-            this.value = newValue;
-            if (this.part) {
-              // Guard: if the part's marker nodes were removed from DOM
-              // (e.g. route change replaced parent), skip this update.
-              // Do NOT dispose — the part may be re-attached later.
-              try {
-                if (typeof newValue !== 'undefined') {
-                  this.part._$setValue(newValue);
-                }
-              } catch {
-                // Part was ejected from DOM — skip silently
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error in reactive directive:', error);
-        }
-
-    });
-
+    //       // Subsequent runs: signal changed → push update to DOM.
+    //       if (newValue !== this.value) {
+    //         this.value = newValue;
+    //         if (this.part) {
+    //           try {
+    //             if (typeof newValue !== 'undefined') {
+    //               this.part._$setValue(newValue);
+    //             }
+    //           } catch {
+    //             // Part was ejected from DOM — skip silently
+    //           }
+    //         }
+    //       }
+    //     } catch (error) {
+    //       console.error('Error in reactive directive:', error);
+    //     }
+    //   });
     this.disposeRoot = createRoot((dispose) => {
       createEffect(() => {
-             countmap.set(accessor, 1)
         try {
-          const newValue = resolveValue(accessor);
+          let newValue = accessor();
+          while (typeof newValue === 'function') {
+            newValue = newValue();
+          }
 
           if (isFirstRun) {
+            // console.log('new a', newValue)
             // Skip _$setValue on first run — render() returns the initial
             // value to lit-html. Calling _$setValue here would double-process
             // the template (especially TemplateResults with inner directives).
@@ -178,17 +187,16 @@ class ReactiveDirective extends Directive {
           if (newValue !== this.value) {
             this.value = newValue;
             if (this.part) {
-              // Guard: if the part's marker nodes were removed from DOM
-              // (e.g. route change replaced parent), skip this update.
-              // Do NOT dispose — the part may be re-attached later.
               try {
                 if (typeof newValue !== 'undefined') {
                   this.part._$setValue(newValue);
                 }
-              } catch(e) {
-                console.log('e', e)
+              } catch(error) {
+                console.warn('dom part ejected', {error, part: this.part})
                 // Part was ejected from DOM — skip silently
               }
+            }else{
+              console.warn('dom part not found', {part: this.part})
             }
           }
         } catch (error) {

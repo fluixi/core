@@ -59,12 +59,12 @@ export function asyncRxDirective<T extends (...args: any[]) => any>(
   }) as T;
 }
 
-/**
- * Helper type to check if a value is a signal accessor
- */
-export function isAccessor(value: any): value is Accessor<any> {
-  return typeof value === 'function' && value.length === 0;
-}
+// /**
+//  * Helper type to check if a value is a signal accessor
+//  */
+// export function isAccessor(value: any): value is Accessor<any> {
+//   return typeof value === 'function' && value.length === 0;
+// }
 
 /**
  * Automatically wraps signal accessors with reactive directive

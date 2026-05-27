@@ -264,18 +264,37 @@ export function useAction<T, Args extends any[]>(
 // ============================================================================
 
 export interface RouteDataArgs {
-  params: Record<string, string>;
-  location: { pathname: string; search: string };
+  /**
+   * Route params — either a reactive signal accessor (when called from the
+   * router's createRoot during layout creation) or a plain snapshot object
+   * (legacy / manual usage). Always normalise with:
+   *   `const getParams = typeof args.params === 'function' ? args.params : () => args.params;`
+   */
+  params: Record<string, string> | (() => Record<string, string>);
+  location:
+    | { pathname: string; search: string }
+    | (() => { pathname: string; search: string });
 }
 
-export type RouteLoadFunc = (args: RouteDataArgs) => any;
+export type RouteLoadFunc = (
+  args: RouteDataArgs,
+  owner?: any,
+  isCancelled?: () => boolean
+) => any;
 
-const RouteDataContext = createContext<any>();
+export const RouteDataContext = createContext<any>();
 
 export const RouteDataProvider = RouteDataContext.Provider;
 
-export function useRouteData<T>(): Accessor<T | undefined> {
-  const data = useContext(RouteDataContext);
-  console.log('use route data', data)
-  return data || (() => undefined);
+/**
+ * Access the data returned by the nearest ancestor route's `routeData` export.
+ *
+ * Returns a stable accessor function. Call it to get the current route data:
+ *
+ *   const data = useRouteData<WorkspaceRouteData>();
+ *   createEffect(() => console.log(data()?.workspace()));
+ */
+export function useRouteData<T>(): () => T | undefined {
+  const ctx = useContext(RouteDataContext) as T | undefined;
+  return typeof ctx === 'function' ? (ctx as any) : () => ctx;
 }

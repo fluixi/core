@@ -435,8 +435,8 @@ export function set(
           // for (let i = 0; i < obj.length; i++) {
           //   obj.pop();
           // }
-          // obj.push(...params[0]);
-          obj = params[0];
+          obj.push(...params[0]);
+          // obj = params[0];
           // console.log('params', params);
           return obj;
           // if (obj.length > 0) {

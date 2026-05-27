@@ -1,3 +1,23 @@
+/**
+ * @fileoverview SolidJS-inspired Client-Side Router for KettleJS
+ * @module @awc/kettlejs/router
+ *
+ * Key design decisions:
+ * - navigate() updates a signal → reactive chain triggers DOM updates
+ * - routeStates diffing memo: level-by-level diff by component reference
+ * - Layout caching: same component at a level → reuse, only outlet signal updates
+ * - Outlet TDZ fix: outlet starts as null signal, updated AFTER all levels created
+ * - No onCleanup in Routes: disposal managed inside routeStates.fn only
+ *
+ * Critical invariants (from MEMORY.md):
+ * - No signal writes inside memos (routeContent is pure read-only)
+ * - routeStates uses { equals: false } to always re-diff
+ * - Outlet signals start null to avoid TDZ errors during memo evaluation
+ * - Outlet signals updated AFTER all levels created (loop after createLevelState)
+ * - No onCleanup in Routes() — disposal is internal to routeStates.fn
+ * - params is a createMemo (reactive signal accessor, not plain object)
+ */
+
 import {
   createSignal,
   createMemo,
@@ -6,14 +26,19 @@ import {
   untrack,
   createRoot,
   createResource,
+  getOwner,
+  runWithOwner,
+  batch,
+   childrens,
 } from '@awc/reactive/signal';
+import type { RootOwner } from '@awc/reactive/signal';
 import { $component, Component, createComponent, type ComponentProps } from '../render/component.js';
-import { RouteDataProvider, type RouteLoadFunc } from './data.js';
+import { RouteDataProvider, RouteDataContext, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
-import { asOutlet, asRouter, asRoutes, insert, isComponent, isPromise } from '@awc/dom';
-import { Accessor} from '@awc/reactive';
+import { asOutlet, asRouter, asRoutes, html, insert, isComponent, isPromise, mergeProps } from '@awc/dom';
+import { Accessor, sharedConfig } from '@awc/reactive';
 
-// --- Types ---
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface Location {
   pathname: string;
@@ -34,7 +59,7 @@ export interface NavigateOptions {
 export type Navigator = (to: string, options?: NavigateOptions) => void;
 
 export interface RouterContextValue {
-  location: ()=> Location;
+  location: () => Location;
   base: string;
   navigate: Navigator;
   data?: any;
@@ -42,8 +67,10 @@ export interface RouterContextValue {
 
 export interface RouteContextValue {
   parentPath: string;
+  /** Signal accessor — reads the child route content for this level's outlet */
   outlet: () => any;
-  params: Record<string, string>;
+  /** Signal accessor — layout components call params() for reactive URL params */
+  params: () => Record<string, string>;
 }
 
 export interface RouteDefinition {
@@ -53,9 +80,41 @@ export interface RouteDefinition {
   data?: RouteLoadFunc;
 }
 
-// --- Utils ---
+// ─── RouterConfig (for createRouter) ─────────────────────────────────────────
+
+export interface RouterConfig {
+  /** Return the current location string or object */
+  get: () => string | { value: string; state?: any };
+  /** Perform the actual navigation (push/replace to history, etc.) */
+  set: (next: { value: string; replace?: boolean; state?: any }) => void;
+  /** Subscribe to external navigation events (popstate, etc.).
+   *  Return a cleanup function that removes the listener. */
+  init?: (notify: () => void) => () => void;
+  /** URL base prefix (stripped from pathname before matching) */
+  base?: string;
+}
+
+// ─── Internal route state (one per matched level) ────────────────────────────
+
+interface RouteState {
+  /** Component function reference — used as the diff key */
+  componentRef: any;
+  /** Rendered output for this level (stable ref while this level is reused) */
+  content: any;
+  /** Dispose this level's reactive root */
+  dispose: () => void;
+  /** The route context value passed to RouteContext.Provider for this level */
+  routeCtxValue: RouteContextValue;
+  /** The createRoot owner for this level — used to nest child levels inside it */
+  owner: RootOwner;
+  /** Update the outlet signal for this level (called after all levels are created) */
+  setOutlet: (v: any) => void;
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
 
 function joinPaths(base: string, path: string) {
+  if (!base) return path.startsWith('/') ? path : '/' + path;
   return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
 }
 
@@ -69,68 +128,39 @@ function parseQuery(search: string): Record<string, string> {
 function matchPath(
   pattern: string,
   path: string,
-  exact: boolean = false
+  exact = false,
 ): { params: Record<string, string>; path: string } | null {
   const keys: string[] = [];
 
-  if (pattern === path) {
-    return { params: {}, path };
-  }
+  if (pattern === path) return { params: {}, path };
 
-  // Root "/" as a non-exact prefix matches any path starting with "/"
-  if (!exact && pattern === '/' && path.startsWith('/')) {
+  if (!exact && pattern === '/' && path.startsWith('/'))
     return { params: {}, path: '/' };
-  }
 
   let regexStr = pattern
-    .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => {
-      keys.push(key);
-      return '([^/]+)';
-    })
-    .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => {
-      if (name) keys.push(name);
-      return '(.*)';
-    });
+    .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => { keys.push(key); return '([^/]+)'; })
+    .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => { if (name) keys.push(name); return '(.*)'; });
 
   if (!regexStr.startsWith('/')) regexStr = '/' + regexStr;
   if (regexStr === '') regexStr = '/';
 
   const regex = new RegExp(`^${regexStr}${exact ? '$' : '(?=/|$)'}`);
   const match = path.match(regex);
-
   if (!match) return null;
 
   const params: Record<string, string> = {};
-  keys.forEach((key, i) => {
-    params[key] = match[i + 1];
-  });
-
+  keys.forEach((key, i) => { params[key] = match[i + 1]; });
   return { params, path: match[0] };
 }
 
-/**
- * Score a route definition for ranking.
- * Higher score = more specific = matched first.
- * Static > dynamic > catch-all.
- */
 function scoreRoute(def: RouteDefinition): number {
-  // console.log('scoring', def)
   const segments = def.path.split('/').filter(Boolean);
   let score = 0;
-
-  // Index route "/" has no segments — rank above catch-all but below dynamic
-  if (segments.length === 0) {
-    return 5;
-  }
-
+  if (segments.length === 0) return 5;
   for (const seg of segments) {
-    if (seg.startsWith('*')) {
-      score += 1; // catch-all: lowest
-    } else if (seg.startsWith(':')) {
-      score += 10; // dynamic param
-    } else {
-      score += 100; // static segment
-    }
+    if (seg.startsWith('*')) score += 1;
+    else if (seg.startsWith(':')) score += 10;
+    else score += 100;
   }
   return score;
 }
@@ -139,476 +169,643 @@ function rankRoutes(defs: RouteDefinition[]): RouteDefinition[] {
   return [...defs].sort((a, b) => scoreRoute(b) - scoreRoute(a));
 }
 
-// --- Module-level references ---
-// Fallback for when reactive context chain is broken
-// (e.g., lit-html async rendering outside ownership tree)
-let _activeRouter: RouterContextValue | null = null;
+// ─── Module-level fallbacks ───────────────────────────────────────────────────
+
+// Use a signal for _activeRouter so that when Router sets it after Routes' memos
+// have already evaluated eagerly (createMemo is eager in this implementation),
+// the memos are dirtied and re-evaluate with the correct router context.
+const [_activeRouterSignal, _setActiveRouter] = createSignal<RouterContextValue | null>(null);
 let _activeRouteCtx: RouteContextValue | null = null;
 
-// --- Contexts ---
+// ─── Contexts ─────────────────────────────────────────────────────────────────
 
 export const RouterContext = createContext<RouterContextValue>();
 const RouteContext = createContext<RouteContextValue>();
 
-// --- Internal helpers ---
-
-/**
- * Get the router context. Tries reactive context first,
- * falls back to module-level reference.
- */
 function getRouterCtx(): RouterContextValue | null {
-  const ctx = useContext(RouterContext);
-  return ctx || _activeRouter;
+  return useContext(RouterContext) || _activeRouterSignal();
 }
 
-/**
- * Get the route context. Tries reactive context first,
- * falls back to module-level reference.
- */
 function getRouteCtx(): RouteContextValue | undefined {
-  const ctx = useContext(RouteContext);
-  return ctx || _activeRouteCtx || undefined;
+  return useContext(RouteContext) || _activeRouteCtx || undefined;
 }
 
-// const locks: any[] = []
-// --- Components ---
-
-export function Router(
-  props: ComponentProps & { base?: string; url?: string }
-) {
-  // console.log('route match router', getOwner())
-  const base = props.base || '';
-  const isServer = typeof window === 'undefined';
-
-  const getRawLocation = () => {
-    if (isServer) {
-      // SSR: use provided url prop
-      const url = props.url || '/';
-      const [pathname, searchAndHash = ''] = url.split('?');
-      const [search, hash = ''] = searchAndHash.split('#');
-      return {
-        pathname: pathname || '/',
-        search: search ? '?' + search : '',
-        hash: hash ? '#' + hash : '',
-        state: null,
-        key: 'server',
-      };
-    }
-    return {
-      pathname:
-        window.location.pathname.replace(new RegExp(`^${base}`), '') || '/',
-        search: window.location.search,
-        hash: window.location.hash,
-      state: window.history.state,
-      key: Math.random().toString(36).substring(2),
-    };
-  };
-
-  const [loc, setLoc] = createSignal(getRawLocation());
-
-  const locationProxy = new Proxy({} as Location, {
-    get(_, prop) {
-      const l = loc();
-      // console.log('returning outlet  match path location proxy get', _, prop, l)
-      if (prop === 'query') return parseQuery(l.search);
-      // console.log('loc', prop, l)
-      return l[prop as keyof typeof l];
-    },
-  });
-
-  const navigate: Navigator = (to, options = {}) => {
-    if (isServer) return;
-    const target = to.startsWith('http') ? to : joinPaths(base, to);
-
-    // console.log('navigating', options.replace)
-    if (options.replace) {
-      window.history.replaceState(options.state, '', target);
-    } else {
-      window.history.pushState(options.state, '', target);
-    }
-    // console.log('navigating', setLoc)
-    setLoc(getRawLocation());
-    if (options.scroll) window.scrollTo(0, 0);
-  };
-
-  const handlePopState = () => setLoc(getRawLocation());
-
-  if (!isServer) {
-    window.addEventListener('popstate', handlePopState);
-    onCleanup(() => window.removeEventListener('popstate', handlePopState));
-  }
-
-  const ctx: RouterContextValue = {
-    location: ()=> locationProxy,
-    // location: l,
-    base,
-    navigate,
-  };
-
-  // Store module-level reference as fallback
-  _activeRouter = ctx;
-  onCleanup(() => {
-    if (_activeRouter === ctx) _activeRouter = null;
-  });
-
-  return asRouter(createMemo(() => {
-    return createComponent(RouterContext.Provider, {
-      value: ctx,
-      children:  props.children,
-    })
-    // return RouterContext.Provider({
-    //   value: ctx,
-    //   children:  props.children,
-    // })
-  }));
-}
+// ─── Symbols ──────────────────────────────────────────────────────────────────
 
 const $ROUTES = Symbol.for('kettle-routes');
 const $ROUTER = Symbol.for('kettle-router');
 const $OUTLET = Symbol.for('kettle-outlet');
-export function Route(props: RouteDefinition) {
-  return props;
+
+// ─── findMatch ────────────────────────────────────────────────────────────────
+
+interface MatchDef {
+  defs: RouteDefinition[];
+  params: Record<string, string>;
+  matchedPath: string;
 }
 
-Object.defineProperty(Routes, $ROUTES, { value: true, enumerable: true });
+function findMatch(
+  defs: RouteDefinition[] | undefined,
+  currentPath: string,
+): MatchDef | null {
+  if (!defs) return null;
 
+  const ranked = rankRoutes(defs);
+  const normalizePath = (p: string) => p.startsWith('//') ? p.replace('//', '/') : p;
 
-const isRouterObject = (a: any) => {
-  if (Array.isArray(a)) {
-    return a.some(isRouterObject)
+  for (const def of ranked) {
+    const match = matchPath(def.path, currentPath, !def.children);
+    if (!match) continue;
+
+    let remaining = currentPath.slice(match.path.length);
+    if (!remaining || !remaining.startsWith('/')) remaining = '/' + (remaining || '');
+
+    if (def.children && !(Array.isArray(def.children) && (def.children as any).length === 0)) {
+      const childDefs = Array.isArray(def.children) ? def.children : [def.children];
+      const childMatch = findMatch(childDefs, currentPath);
+      if (childMatch) {
+        return {
+          defs: [def, ...childMatch.defs],
+          params: { ...match.params, ...childMatch.params },
+          matchedPath: normalizePath(childMatch.matchedPath),
+        };
+      }
+    } else {
+      return {
+        defs: [def],
+        params: match.params,
+        matchedPath: normalizePath(match.path === '//' ? '/' : match.path),
+      };
+    }
   }
-  return typeof a === 'object' && a!==null && typeof a.path!=='undefined'
+  return null;
 }
 
-// Unwrap $COMPONENT thunks to get the actual route definition
+// ─── Route helpers ────────────────────────────────────────────────────────────
+
+const isRouterObject = (a: any): boolean => {
+  if (Array.isArray(a)) return a.some(isRouterObject);
+  return typeof a === 'object' && a !== null && typeof a.path !== 'undefined';
+};
+
 const unwrapRouteThunk = (a: any): any => {
-  // If it's a $COMPONENT thunk, call it to get the route definition
-  while (typeof a === 'function' && isComponent(a)) {
-    a = a();
-  }
+  while (typeof a === 'function' && isComponent(a)) a = a();
   return a;
+};
+
+const filterRouter = (v: any[]) =>
+  v.map(unwrapRouteThunk).filter(isRouterObject);
+
+// ─── matchRoutes (public API) ─────────────────────────────────────────────────
+
+export interface RouteMatch {
+  route: RouteDefinition;
+  params: Record<string, string>;
+  score: number;
 }
 
-const filterRouter = (v: any[]) => {
-  // First unwrap any thunks, then filter for route objects
-  const unwrapped = v.map(unwrapRouteThunk);
-  // console.log('filtering', v, 'unwrapped', unwrapped)
-  return unwrapped.filter(a => isRouterObject(a))
+/**
+ * Match a pathname against a list of route definitions.
+ * Returns sorted array of matches (most specific first).
+ */
+export function matchRoutes(
+  routes: RouteDefinition[],
+  pathname: string
+): RouteMatch[] {
+  const results: RouteMatch[] = [];
+
+  for (const route of routes) {
+    const m = matchPath(route.path, pathname, !route.children);
+    if (m) {
+      results.push({
+        route,
+        params: m.params,
+        score: scoreRoute(route),
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.score - a.score);
 }
 
+// ─── createRouter ─────────────────────────────────────────────────────────────
+
+/**
+ * Create a custom router component from a config object.
+ *
+ * @example
+ * const MemoryRouter = createRouter({
+ *   get: () => memoryLocation,
+ *   set: ({ value }) => { memoryLocation = value; },
+ *   init: (notify) => { onMemoryChange(notify); return () => offMemoryChange(notify); },
+ * });
+ * // Then: <MemoryRouter><App /></MemoryRouter>
+ */
+export function createRouter(config: RouterConfig) {
+  const base = config.base || '';
+
+  return function RouterComponent(props: ComponentProps & { children?: any; root?: any }) {
+    const getRawLocation = () => {
+      const raw = config.get();
+      const urlStr = typeof raw === 'string' ? raw : raw.value;
+      const state = typeof raw === 'string' ? null : (raw.state ?? null);
+      const [pathname, searchAndHash = ''] = urlStr.split('?');
+      const [search, hash = ''] = searchAndHash.split('#');
+      return {
+        pathname: pathname.replace(new RegExp(`^${base}`), '') || '/',
+        search: search ? '?' + search : '',
+        hash: hash ? '#' + hash : '',
+        state,
+        key: Math.random().toString(36).substring(2),
+      };
+    };
+
+    const [loc, setLoc] = createSignal(getRawLocation());
+
+    const locationProxy = new Proxy({} as Location, {
+      get(_, prop) {
+        const l = loc();
+        if (prop === 'query') return parseQuery(l.search);
+        return l[prop as keyof typeof l];
+      },
+    });
+
+    /**
+     * navigate() — THE CRITICAL FUNCTION
+     *
+     * Updates the history API AND immediately calls setLoc() to trigger
+     * the reactive chain: loc signal → locationProxy → routeMatch memo →
+     * routeStates memo → routeContent memo → DOM render effect updates.
+     *
+     * Updates synchronously so the reactive chain fires immediately.
+     */
+    const navigate: Navigator = (to, options = {}) => {
+      const target = to.startsWith('http') ? to : joinPaths(base, to);
+      config.set({ value: target, replace: options.replace, state: options.state });
+      // Wrap in batch so the loc signal update queues all downstream pure memos
+      // (routeMatch → routeStates → routeContent) and flushes them in one pass.
+      // Without batch, Updates=null and pure memos are never triggered (they're lazy).
+      // setTimeout(() => {
+        // setLoc(getRawLocation())
+        
+      // }, 10);
+      batch(() => setLoc(getRawLocation()));
+    };
+
+    if (config.init) {
+      const cleanup = config.init(() => batch(() => setLoc(getRawLocation())));
+      if (cleanup) onCleanup(cleanup);
+    }
+
+    const ctx: RouterContextValue = { location: (() => locationProxy), base, navigate };
+    _setActiveRouter(ctx);
+    onCleanup(() => { 
+      if (_activeRouterSignal() === ctx) _setActiveRouter(null); });
+
+    // `root` — optional layout component wrapping all router children.
+    const routerChildren = props.root
+      ? props.root({ ...props, children: props.children })
+      : props.children;
+
+    return asRouter(
+      // createMemo(()=>RouterContext.Provider({ value: ctx, children: routerChildren }))
+      // RouterContext.Provider({ value: ctx, children: routerChildren })
+      // createComponent(RouterContext.Provider, { value: ctx, children: routerChildren })
+      createMemo(
+        () => createComponent(RouterContext.Provider, { value: ctx, children: routerChildren }),
+        undefined,
+        { name: 'router memo' }
+      )
+    );
+  };
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
+/**
+ * Browser history router. Built on top of createRouter.
+ * Listens to popstate for back/forward navigation.
+ */
+export const Router: (props: ComponentProps & { base?: string; url?: string; root?: any }) => any =
+  (props: ComponentProps & { base?: string; url?: string; root?: any }) => {
+    const base = props.base || '';
+    const isServer = typeof window === 'undefined';
+    const BrowserRouter = createRouter({
+      base,
+      get: () => {
+        if (isServer) return props.url || '/';
+        return window.location.pathname + window.location.search + window.location.hash;
+      },
+      set: ({ value, replace, state }) => {
+        if (isServer) return;
+        const target = value.startsWith('http') ? value : joinPaths(base, value);
+        if (replace) window.history.replaceState(state, '', target);
+        else window.history.pushState(state, '', target);
+      },
+      init: (notify) => {
+        if (isServer) return () => {};
+        // Use a small debounce to coalesce rapid popstate events
+        let pending: ReturnType<typeof setTimeout> | undefined;
+        const handler = () => {
+          alert('popstate handler')
+          if (pending) clearTimeout(pending);
+          pending = setTimeout(() => { pending = undefined; notify(); }, 10);
+        };
+        window.addEventListener('popstate', handler);
+        return () => window.removeEventListener('popstate', handler);
+      },
+    });
+
+    return BrowserRouter(props);
+  };
+
+// ─── StaticRouter ─────────────────────────────────────────────────────────────
+
+/**
+ * A static (non-navigating) router for SSR / testing.
+ */
+export const StaticRouter: (props: ComponentProps & { url?: string; base?: string }) => any =
+  (props: ComponentProps & { url?: string; base?: string }) => {
+    const url = props.url || (typeof window !== 'undefined' ? window.location.pathname : '/');
+
+    const NoOpRouter = createRouter({
+      base: props.base || '',
+      get: () => url,
+      set: () => {},
+    });
+
+    return NoOpRouter(props);
+  };
+
+// ─── Route (data object only) ─────────────────────────────────────────────────
+
+export function Route(props: RouteDefinition) { 
+  // return props; 
+  const childRoutes = childrens(() => props.children);
+  return mergeProps(props, {
+    get children() {
+      return childRoutes();
+    }
+  }) as RouteDefinition
+}
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
+/**
+ * Routes component: matches the current URL to route definitions and renders
+ * the appropriate components. Implements layout caching via SolidJS-style
+ * diffing memo so stable layouts are reused across navigations.
+ *
+ * Critical design:
+ * - routeStates is a diffing memo with `equals: false` (always re-evaluates)
+ * - Outlet signals start as null — safe during memo's own execution (no TDZ)
+ * - Outlet signals updated AFTER all levels created (avoids circular reads)
+ * - No onCleanup in Routes — disposal happens inside routeStates.fn only
+ *
+ * Why no onCleanup in Routes:
+ *   onCleanup fires before EVERY re-run (not just unmount). Any cleanup that
+ *   disposes route states breaks layout reuse. Disposal is managed INSIDE
+ *   routeStates.fn: prev[j].dispose() for changed/excess levels only.
+ */
+// Module-level persistent data cache — keyed by the `d.data` function reference
+// from the generated routes module (a stable module-level constant).
+//
+// WHY module-level (not inside Routes):
+//   When inside Routes, navigating back after any re-render of Routes creates a
+//   fresh Map → every visit is a "first visit" → routeData called N times.
+//   Module-level means the cache survives for the app's lifetime.
+//
+// WHY a separate createRoot per entry:
+//   createRoot is DETACHED — not owned by the level createRoot. The data root
+//   survives `prev[j].dispose()`. Resources inside routeData update reactively
+//   because `dataParams` reads `routeMatch()` which always reflects the current URL.
+// sharedConfig.routeData;
+
+const persistentData = new Map<any, any>()
 
 export function Routes(props: ComponentProps) {
-  const router = getRouterCtx();
-
-  const definitions: RouteDefinition[] = filterRouter(Array.isArray(props.children)
-    ? props.children.flat()
-    : [props.children]);
-
-  // Rank route definitions once (static > dynamic > catch-all)
+  const definitions: RouteDefinition[] = filterRouter(
+    Array.isArray(props.children) ? props.children.flat() : [props.children],
+  );
   const rankedDefs = rankRoutes(definitions);
 
-  const routeMatch = createMemo(() => {
-    const path = router ? router.location().pathname : '/';
-    // if (path !== currentPath) {
-    //   currentPath = path
-    // // console.log('lazy load match', router)
-    // }
-    // console.log('route match path', path)
+  // ── Pure memo: computes the current route match ────────────────────────────
+  // NOTE: getRouterCtx() is called INSIDE the memo (not captured at Routes() call time)
+  // because Routes() is evaluated as a function argument BEFORE Router() runs.
+  // By the time the memo evaluates lazily (inside Router's Provider render effect),
+  // _activeRouter is already set by RouterComponent, so getRouterCtx() returns it.
+  const routeMatch = createMemo(
+    () => {
+      const router = getRouterCtx();
+      return findMatch(rankedDefs, router ? router.location().pathname : '/');
+    },
+    undefined,
+    { name: 'routeMatchMemo' },
+  );
 
-    function findMatch(
-      defs: RouteDefinition[] | undefined,
-      currentPath: string
-    ): {
-      defs: RouteDefinition[];
-      params: Record<string, string>;
-      matchedPath: string;
-    } | null {
-      if (!defs) {
-
-        return null;
-      }
-
-      // Rank children too
-      const ranked = rankRoutes(defs);
-
-      const normalizePath = (p: string) => {
-        if (p.startsWith('//')) {
-          return p.replace('//', '/')
-        }
-        return p
-
-      }
-      for (const def of ranked) {
-        const match = matchPath(def.path, currentPath, !def.children);
-        if (match) {
-          let remainingPath = currentPath.slice(match.path.length);
-          // Ensure remaining path always starts with /
-          if (!remainingPath || !remainingPath.startsWith('/')) {
-            remainingPath = '/' + (remainingPath || '');
-          }
-
-          if (
-            def.children &&
-            !(Array.isArray(def.children) && (def.children as any).length === 0)
-          ) {
-            const childDefs = Array.isArray(def.children)
-              ? def.children
-              : [def.children];
-            const childMatch = findMatch(childDefs, remainingPath);
-            if (childMatch) {
-              const mp = match.path + childMatch.matchedPath
-              return {
-                defs: [def, ...childMatch.defs],
-                params: { ...match.params, ...childMatch.params },
-                matchedPath: normalizePath(mp),
-              };
-            }
-          } else {
-            return {
-              defs: [def],
-              params: match.params,
-              matchedPath: normalizePath(match.path === '//' ? '/' : match.path),
-            };
-          }
-        }
-      }
-      return null;
-    }
-    return findMatch(rankedDefs, path);
-  }, undefined, {name: 'routeMatchMemo'});
-
-  // Track the current route's disposal function.
-  // When the route changes, dispose the previous ownership root
-  // so all resources/effects owned by the old route are cleaned up.
-  let disposeCurrentRoute: (() => void) | null = null;
-
-  onCleanup(() => {
-    if (disposeCurrentRoute) {
-      disposeCurrentRoute();
-      disposeCurrentRoute = null;
-    }
-    _activeRouteCtx = null;
-  });
-
-  // let matched: any = null
-
-  const routeContent = createMemo(() => {
+  // ── Diffing memo: SolidJS-style level-by-level diff ───────────────────────
+  //
+  // { equals: false } ensures downstream outlet memos always re-evaluate
+  // on navigation. Outlet memos use default (===) equality, so stable-level
+  // content produces no DOM change even when the array reference changes.
+  //
+  // No onCleanup here: route state disposal is handled INSIDE routeStates.fn
+  // (prev[j].dispose() for changed/excess levels). An onCleanup would fire
+  // before every re-run and dispose ALL states including reused layouts,
+  // killing their outlet render effects so setOutlet writes propagate nowhere.
+  const routeStates = createMemo((prev: RouteState[] = []): RouteState[] => {
     const match = routeMatch();
+    console.log('route match', match)
+
     if (!match) {
-      if (disposeCurrentRoute) {
-        disposeCurrentRoute();
-        disposeCurrentRoute = null;
+      prev.forEach(s => s.dispose());
+      _activeRouteCtx = null;
+      return [];
+    }
+
+    const { defs } = match;
+    const next: RouteState[] = [];
+
+    // Find the first level whose component changed
+    let firstChanged = defs.length;
+    for (let i = 0; i < defs.length; i++) {
+      if (prev[i] && prev[i].componentRef === defs[i].component) {
+        next[i] = prev[i]; // reuse
+      } else {
+        firstChanged = i;
+        break;
       }
-      return null;
     }
 
-    // Dispose previous route's ownership tree
-    if (disposeCurrentRoute) {
-      disposeCurrentRoute();
-      disposeCurrentRoute = null;
-    }
+    if (firstChanged < defs.length) {
+      // Dispose all levels from firstChanged onwards
+      for (let j = firstChanged; j < prev.length; j++) prev[j].dispose();
 
-    // Create new ownership root for this route's data + rendering
-    return createRoot((dispose) => {
-      disposeCurrentRoute = dispose;
+      // createLevelState: creates the route state for level k and stores it in next[k].
+      // Nesting createRoot calls means createRoot_{k+1}.owner = createRoot_k owner,
+      // so contexts set by the layout are reachable by the page component via the
+      // natural owner-chain walk in useContext().
+      function createLevelState(k: number): void {
+        const d = defs[k];
+        let state!: RouteState;
 
-      // Load data for each matched route definition.
-      // def.data() can return:
-      //   - A Promise<Accessor> (from dynamic import wrapping createAsync result) → unwrap
-      //   - A reactive accessor (from createAsync called synchronously) → pass through
-      //   - A plain value → pass through
-      const routeData = match.defs.map((def) => {
-        if (def.data) {
-          const result = def.data({
-            params: match.params,
-            location: router
-              ? router.location
-              : ({ pathname: '', search: '' } as any),
-          });
-          if (isPromise(result)) {
-            // console.log('promise result', result)
-            // Dynamic import wraps routeData result in Promise.
-            // routeData typically returns an Accessor (from createAsync).
-            // Use createResource to track the async loading state,
-            // then unwrap: if the resolved value is a function (accessor),
-            // call it to get the actual data value.
-            const [resource] = createResource(() => result);
-            return () => {
-              const val = resource();
-              return typeof val === 'function' ? val() : val;
-            };
-          }
-          return result;
-        }
-        return undefined;
-      });
-      // console.log('route data', routeData)
+        createRoot(dispose => {
+          const thisOwner = getOwner()!;
+          const [outlet, setOutlet] = createSignal<any>(null);
 
-      let result: any = null;
+          // Outlet starts as null — safe to call during this memo's own execution
+          // because it does NOT read routeStates(). Updated after ALL levels created.
 
-      // Build nested route tree from innermost to outermost
-      for (let i = match.defs.length - 1; i >= 0; i--) {
-        const def = match.defs[i];
-        const Component = def.component;
-        const currentParams = match.params;
-        const currentData = routeData[i];
-        console.log('comp', Component, routeData, def)
+          // params as a reactive memo — updates on every navigation
+          const paramsSignal = createMemo(
+            () => routeMatch()?.params ?? {},
+          ) as () => Record<string, string>;
 
-        const nextContent = result;
-        const OutletFn = () => nextContent;
+          const routeCtxValue: RouteContextValue = {
+            parentPath: '',
+            outlet,
+            params: paramsSignal,
+          };
 
-        const routeCtxValue: RouteContextValue = {
-          parentPath: '',
-          outlet: OutletFn,
-          params: currentParams,
-        };
+          if (k === 0) _activeRouteCtx = routeCtxValue;
 
-        // Set module-level fallback for RouteContext.
-        // The outermost iteration (i === 0) has the most complete context,
-        // but all levels share the same aggregated params.
-        if (i === 0) {
-          _activeRouteCtx = routeCtxValue;
-        }
-        // Create view once, cache it to prevent multiple executions
-        let cachedView: any = null;
-        const ViewWithData = () => {
-          // console.log('cached view run', Component, currentData)
-          if (cachedView === null) {
-            if (!currentData) {
-              cachedView = (Component) ? createComponent(Component, {}) : nextContent;
+          // ── Data loading ───────────────────────────────────────────────────
+          // d.data is only set by the codegen for route files that export routeData.
+          // For levels without routeData, d.data is undefined — no resource created.
+          //
+          // Data is created in a SEPARATE, persistent createRoot (not inside this
+          // level's createRoot). This means:
+          //  • routeData() is called at most ONCE per unique route — no repeated
+          //    calls on re-navigation (the persistent root survives level disposal).
+          //  • paramsSignal in the persistent root reads routeMatch() which always
+          //    reflects the current URL, so reactive resources inside routeData
+          //    (e.g. createResource(id, fetchWorkspace)) update automatically when
+          //    params change.
+          //  • The data root is cleaned up when Routes unmounts (onCleanup above).
+          let currentData: any = undefined;
+          // console.log('all persisted', persistentData, d)
+          if (d.data) {
+            if (persistentData.has(d.data)) {
+              // Route was visited before — reuse the live, reactive data
+              currentData = persistentData.get(d.data)?.data;
             } else {
-              // Children must be lazy so Component runs INSIDE RouteDataProvider's
-              // context scope — otherwise useRouteData() can't find the provider.
-              cachedView = createComponent(RouteDataProvider, {
-                value: currentData,
-                children: (Component) ? createComponent(Component, {}) : nextContent,
+              // First visit — create data in its own persistent root
+              createRoot(dataDispose => {
+                const dataOwner = getOwner()!;
+                // Use a paramsSignal scoped to this persistent root so it tracks
+                // routeMatch() independently of the level root's lifetime.
+                const dataParams = createMemo(
+                  () => routeMatch()?.params ?? {}
+                ) as () => Record<string, string>;
+
+                // console.log('on route load data', d.data)
+                const dataResult = d.data!(
+                  {
+                    params: dataParams,
+                    location: getRouterCtx()?.location ?? ({ pathname: '', search: '' } as any),
+                  },
+                  dataOwner,
+                  undefined  // no cancellation — persistent data is never cancelled
+                );
+
+                if (isPromise(dataResult)) {
+                  const [resource] = createResource(() => dataResult);
+                  currentData = createMemo(() => resource());
+                } else if (dataResult !== undefined) {
+                  currentData = dataResult;
+                }
+
+                // Store both the data accessor AND the dispose function so
+                // Routes' onCleanup can tear down the root on unmount.
+                persistentData.set(d.data!, { data: currentData, dispose: dataDispose });
               });
+              // createRoot runs synchronously — read back the stored value
+              currentData = persistentData.get(d.data)?.data;
             }
           }
-          return cachedView;
-        };
 
+          // ── Stamp contexts BEFORE creating the component ───────────────────
+          // RouteContext and (if data exists) RouteDataContext are stamped on
+          // this createRoot's owner NOW, so that useContext() calls inside the
+          // component's constructor (e.g. useRouteData(), useParams()) find the
+          // correct values synchronously — even though the Provider wrappers in
+          // the `content` tree haven't been processed by the DOM runtime yet.
+          //
+          // For levels without routeData, RouteDataContext is NOT stamped here.
+          // useContext() then walks up to the nearest ancestor createRoot owner
+          // that HAS RouteDataContext (a parent layout with routeData), giving
+          // natural data inheritance without any activeRouteData hacks.
+          // if (!thisOwner.contexts) thisOwner.contexts = new Map();
+          // thisOwner.contexts.set(RouteContext.id, routeCtxValue);
+          // if (currentData !== undefined) {
+          //   thisOwner.contexts.set(RouteDataContext.id, currentData);
+          // }
 
-        result = RouteContext.Provider({
-          value: routeCtxValue,
-          children: ViewWithData,
-        })
-        // result = createComponent(RouteContext.Provider, {
-        //   value: routeCtxValue,
-        //   children: ViewWithData,
-        // });
+          // Create the component after contexts are stamped
+          const view = d.component ? createComponent(d.component, {}) : null;
+
+          // Build content tree with providers for DOM runtime context propagation.
+          // The providers here complement the owner-stamp above: they ensure the
+          // context is also available to components rendered via insert()'s render
+          // effects, which have their own Owner chains separate from the createRoot.
+          const content =  currentData
+            ? createComponent(RouteDataProvider, {
+                value: currentData,
+                children:  RouteContext.Provider({ value: routeCtxValue, children:()=> view }),
+              })
+            : RouteContext.Provider({ value: routeCtxValue, children: ()=>view });
+
+          state = { componentRef: d.component, content:  content, dispose, routeCtxValue, owner: thisOwner, setOutlet };
+          next[k] = state;
+
+          // Create the next level INSIDE this createRoot's callback so that
+          // createRoot_{k+1}.owner = thisOwner (level k's root owner).
+          if (k + 1 < defs.length) createLevelState(k + 1);
+        });
       }
 
-      return result;
-    });
-  }, undefined, {name: 'routeContentMemo'});
+      // If level firstChanged-1 was reused, run inside its owner so that the
+      // new level's createRoot has the reused level's owner as its parent.
+      // console.log('we on there', firstChanged, defs)
+      if (firstChanged > 0 && next[firstChanged - 1]?.owner) {
+        runWithOwner(next[firstChanged - 1].owner, () => createLevelState(firstChanged));
+      } else {
+        createLevelState(firstChanged);
+      }
+    }
+
+    // Dispose levels beyond the new match depth
+    for (let j = defs.length; j < prev.length; j++) prev[j].dispose();
+
+    if (next.length > 0) _activeRouteCtx = next[0].routeCtxValue;
+
+    // Update outlet signals AFTER all levels are created.
+    // Each level's outlet points to the NEXT level's content.
+    // For reused levels, setOutlet is a no-op when content hasn't changed.
+    for (let i = 0; i < next.length; i++) {
+      next[i].setOutlet(i + 1 < next.length ? next[i + 1].content : null);
+    }
+
+    // Return the same array reference when all levels were reused (no structural
+    // change). Default memo equality (===) will short-circuit routeContent.
+    // if (firstChanged >= defs.length && next.length === prev.length) return prev;
+
+    return next;
+  }, [], { equals: false, name: 'route-content' });
+
+  // ── Top-level content ──────────────────────────────────────────────────────
+  // CRITICAL: routeContent must be a PURE memo — no setX() calls inside.
+  // Only reads routeStates()[0].content.
+  const routeContent = createMemo(
+    () => {
+      const states = routeStates();
+      // sharedConfig.matchedRoute.set(props, states)
+      // console.log('route content', states[0].content)
+      return states.length > 0 ? states[0].content : null;
+    },
+    undefined,
+    { name: 'routes memo' }
+  );
+
   return asRoutes(routeContent);
 }
 
 Object.defineProperty(Routes, $ROUTES, { value: true, enumerable: true });
 Object.defineProperty(Router, $ROUTER, { value: true, enumerable: true });
 
-// --- Renderer-agnostic components ---
-// These return raw DOM elements that work with both lit-html and JSX renderers.
+// ─── Outlet ───────────────────────────────────────────────────────────────────
 
 /**
- * Outlet renders the child route content.
- * Renderer-agnostic: returns the outlet value directly.
+ * Renders the child route content inside a layout component.
+ * ctx.outlet is a signal that updates when the child route changes.
  */
 export function Outlet() {
-    // const l = useLocation()
-    const ctx = getRouteCtx();
-      const thunk = (ctx?.outlet ? ctx.outlet() : null);
-        // (thunk as any).$COMPONENT = true
-      return asOutlet(thunk);
-  // return createMemo(() => {
-
-  // })
+  const ctx = getRouteCtx();
+  // if (!ctx?.outlet) return null;
+  return asOutlet(createMemo(() => ctx?.outlet(), undefined, { name: 'outlet memo' }));
 }
 Object.defineProperty(Outlet, $OUTLET, { value: true, enumerable: true });
 
+// ─── Type guards ──────────────────────────────────────────────────────────────
+
 export function isRoute(value: any) {
-  return value && typeof value === 'function' && (value as any)[$ROUTES] === true
+  return value && typeof value === 'function' && (value as any)[$ROUTES] === true;
 }
 export function isRouter(value: any) {
-  return value && typeof value === 'function' && (value as any)[$ROUTER] === true
+  return value && typeof value === 'function' && (value as any)[$ROUTER] === true;
 }
 export function isOutlet(value: any) {
-  return value && typeof value === 'function' && (value as any)[$OUTLET] === true
+  return value && typeof value === 'function' && (value as any)[$OUTLET] === true;
 }
 
-/**
- * Link component for client-side navigation.
- * Renderer-agnostic: returns a raw <a> DOM element.
- */
+// ─── Link ─────────────────────────────────────────────────────────────────────
+
 export function Link(
   props: ComponentProps & {
-    href: string;
-    replace?: boolean;
-    class?: string;
-    activeClass?: string;
-  }
+    href: string | Accessor<string> | (() => string);
+    replace?: boolean | Accessor<boolean> | (() => boolean);
+    active?: boolean | Accessor<boolean> | (() => boolean);
+    class?: string | Accessor<string> | (() => string);
+    activeClass?: string | Accessor<string> | (() => string);
+    lit?: boolean;
+  },
 ) {
   const router = getRouterCtx();
-  // console.log('router link', router)
-
   const isServer = typeof document === 'undefined';
-  if (isServer) {
-    // SSR: return a plain anchor string (or template)
-    return `<a href="${props.href}" class="${props.class || ''}">${
-      props.children || ''
-    }</a>`;
+
+  function navigate() {
+    router?.navigate(
+      typeof props.href === 'function' ? props.href() : props.href,
+      { replace: typeof props.replace === 'function' ? props.replace() : props.replace },
+    );
+  }
+
+  if (isServer || props.lit) {
+    if (props.lit) {
+      return html`<a @click="${navigate}" class="${typeof props.class === 'function' ? props.class() : props.class || ''}">${props.children || ''}</a>`;
+    }
+    return `<a href="${typeof props.href === 'function' ? props.href() : props.href}" class="${typeof props.class === 'function' ? props.class() : props.class || ''}">${props.children || ''}</a>`;
   }
 
   const el = document.createElement('a');
-  el.setAttribute('href', props.href);
+  el.setAttribute('href', typeof props.href === 'function' ? props.href() : props.href);
 
-  // Click handler for client-side navigation
+  // Use direct addEventListener for Link clicks.
+  // We use direct addEventListener (not delegation) so that e.preventDefault()
+  // is guaranteed to work — delegated events fire after bubbling which can be
+  // too late for some browser default behaviors.
   el.addEventListener('click', (e: Event) => {
-    // Allow modifier keys for new tab/window behavior
     const me = e as MouseEvent;
     if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey) return;
-
     e.preventDefault();
-    router?.navigate(props.href, { replace: props.replace });
+    navigate();
   });
 
-  // Reactive class binding
-  if (props.class || props.activeClass) {
-    createEffect(() => {
-      const cls = [props.class || ''];
-      if (
-        router &&
-        props.activeClass &&
-        router.location().pathname.startsWith(props.href)
-      ) {
-        cls.push(props.activeClass);
-      }
-      el.className = cls.filter(Boolean).join(' ');
-    });
-  }
-  // console.log('navigate', props.children)
+  createEffect(() => {
+    const currentHref = typeof props.href === 'function' ? props.href() : props.href;
+    el.setAttribute('href', currentHref);
 
-  // Insert children into the anchor element
-  if (props.children != null) {
-    insert(el, props.children);
-  }
+    const baseClass = (typeof props.class === 'function' ? props.class() : props.class) || '';
+    const activeClass = (typeof props.activeClass === 'function' ? props.activeClass() : props.activeClass) || '';
+    const isActive =
+      (typeof props.active === 'function' ? props.active() : props.active) ??
+      (router ? router.location().pathname === currentHref : false);
+
+    el.className = [baseClass, isActive ? activeClass : ''].filter(Boolean).join(' ');
+  });
+
+  if (props.children != null) insert(el, props.children);
 
   return el;
 }
 
 export const A = Link;
 
-/**
- * Redirect component. Navigates on mount.
- * Renderer-agnostic: returns null (no DOM output).
- */
+// ─── Redirect ─────────────────────────────────────────────────────────────────
+
 export function Redirect(props: { to: string; replace?: boolean }) {
   const router = getRouterCtx();
-  if (!router) return null;
-
-  const isServer = typeof window === 'undefined';
-  if (isServer) return null;
+  if (!router || typeof window === 'undefined') return null;
 
   createEffect(() => {
     router.navigate(props.to, { replace: props.replace !== false });
@@ -616,7 +813,7 @@ export function Redirect(props: { to: string; replace?: boolean }) {
   return null;
 }
 
-// --- Hooks ---
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useRouter() {
   const ctx = getRouterCtx();
@@ -625,22 +822,23 @@ export function useRouter() {
 }
 
 export function useLocation() {
-  return useRouter().location();
+  const ctx = getRouterCtx();
+  if (!ctx) return { pathname: '', search: '', hash: '' } as any;
+  return ctx.location();
 }
-
 export function useNavigate() {
   return useRouter().navigate;
 }
 
-export function useParams() {
+export function useParams<T extends Record<string, string> = Record<string, string>>() {
   const ctx = getRouteCtx();
-  return ctx?.params || {};
+  return (ctx?.params ?? (() => ({} as T))) as () => T;
 }
 
-export function useMatch(path: () => string | string) {
+export function useMatch(path: (() => string) | string) {
   const location = useLocation();
   return createMemo(() =>
-    matchPath(typeof path === 'function' ? path() : path, location.pathname)
+    matchPath(typeof path === 'function' ? path() : path, location.pathname),
   );
 }
 
@@ -649,19 +847,50 @@ export function useSearchParams() {
   const navigate = useNavigate();
   const params = createMemo(() => location.query);
 
-  const setParams = (
-    next: Record<string, string | null>,
-    options?: NavigateOptions
-  ) => {
+  const setParams = (next: Record<string, string | null>, options?: NavigateOptions) => {
     const current = new URLSearchParams(location.search);
     Object.entries(next).forEach(([k, v]) => {
       if (v === null) current.delete(k);
       else current.set(k, v);
     });
     const search = current.toString();
-    const query = search ? `?${search}` : '';
-    navigate(location.pathname + query, options);
+    navigate(location.pathname + (search ? `?${search}` : ''), options);
   };
 
   return [params, setParams] as const;
 }
+
+// ─── cache / createRouteData ──────────────────────────────────────────────────
+
+/**
+ * Memoize an async function per key. Deduplicates in-flight requests.
+ * When the promise resolves, removes itself from cache so next call re-fetches.
+ */
+export function cache<T, Args extends any[]>(
+  fn: (...args: Args) => Promise<T>,
+  key?: string
+): (...args: Args) => Promise<T> {
+  const store = new Map<string, Promise<T>>();
+
+  return (...args: Args): Promise<T> => {
+    const cacheKey = key ? `${key}:${JSON.stringify(args)}` : JSON.stringify(args);
+    if (store.has(cacheKey)) return store.get(cacheKey)!;
+
+    const promise = fn(...args).finally(() => store.delete(cacheKey));
+    store.set(cacheKey, promise);
+    return promise;
+  };
+}
+
+/**
+ * Reactive data fetching for routes.
+ */
+export function createRouteData<T, S = true>(
+  source: (() => S) | S,
+  fetcher: (key: S, info: { value: T | undefined; refetching: unknown }) => T | Promise<T>,
+  options?: { initialValue?: T; key?: string }
+): () => T | undefined {
+  const [resource] = createResource(source as any, fetcher as any, options);
+  return resource;
+}
+

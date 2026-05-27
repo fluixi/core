@@ -253,13 +253,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         exit(path, state: any) {
           const imports: t.ImportDeclaration[] = [];
           if (!state.hasJSX) {
-            if (state.needsLitrxImport) {
-              console.log('state', {
-                jsx: state.hasJSX,
-                need: state.needsLitrxImport,
-                binding: !path.scope.hasBinding('litrx'),
-              });
-            }
             // Add signal directive import if needed
             if (state.needsSignalImport) {
               imports.push(
@@ -395,7 +388,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
       },
 
       JSXElement(path, state: any) {
-        console.log('jsx visitor');
         state.hasJSX = true;
 
         const element = path.node;
@@ -439,7 +431,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
       },
 
       JSXFragment(path, state: any) {
-        console.log('jsx fragment babel');
         state.hasJSX = true;
 
         const transformed = transformJSXFragment(path.node, state, {
@@ -959,6 +950,11 @@ function transformJSXMemberExpression(
 // Attribute Transformation
 // ============================================================================
 
+/** Returns true when `name` can be used as an unquoted JS identifier. */
+function isValidJSIdentifier(name: string): boolean {
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name);
+}
+
 function transformAttributes(
   attributes: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
   state: any
@@ -982,7 +978,10 @@ function transformAttributes(
         }
       }
 
-      props.push(t.objectProperty(t.identifier(name), value));
+      const key = isValidJSIdentifier(name)
+        ? t.identifier(name)
+        : t.stringLiteral(name);
+      props.push(t.objectProperty(key, value));
     }
   }
 

@@ -36,6 +36,9 @@
     },
     {
       "path": "../dom/tsconfig.lib.json"
+    },
+    {
+      "path": "../element/tsconfig.lib.json"
     }
   ],
   "exclude": [

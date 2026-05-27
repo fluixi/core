@@ -1,6 +1,6 @@
-export * from './classMap.js';
+export { $classMap, type ClassMapInput as LitClassMapInput } from './classMap.js';
+export { $styleMap, type StyleMapInput as LitStyleMapInput } from './styleMap.js';
 export * from './ifDefined.js';
-export * from './styleMap.js';
 export * from './live.js';
 export * from './ref.js';
 export * from './repeat.js';
@@ -9,4 +9,5 @@ export * from './unsafeSVG.js';
 export * from './async-append.js';
 export * from './suspense.js';
 export * from './litrx.js';
+export * from './reactiveAttr.js';
 export * from './utils.js';

@@ -19,6 +19,11 @@ import {
   registerCreateComponent,
   isRoutes,
   asComponent,
+  isProvider,
+  isRouter,
+  isSuspense,
+  isComponent,
+  isOutlet,
 } from '@awc/dom';
 import {
   untrack,
@@ -27,6 +32,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  isSignal,
   batch,
   createRoot,
   runWithOwner,
@@ -34,7 +40,6 @@ import {
   useContext as useReactiveContext,
   devComponent,
   __DEV__,
-  type Signal,
   createRenderEffect,
   trackPromise,
 } from '@awc/reactive/signal';
@@ -128,32 +133,81 @@ export interface RefObject<T> {
 }
 
 // ============================================================================
-// LIFECYCLE STATE
+// OWNER-BASED LIFECYCLE COORDINATION
 // ============================================================================
+// Every component has a reactive Owner (from devComponent or createRoot).
+// onMount and useEffect attach callbacks to the Owner via a Symbol-keyed
+// property. A single queueMicrotask per Owner flushes them in order:
+//   1. All onMount callbacks run first
+//   2. Then all useEffect callbacks are created as reactive effects
+// This works regardless of whether the component goes through $component,
+// the JSX runtime, or is called directly — as long as there's an Owner.
 
-interface LifecycleContext {
-  owner: Owner;
-  cleanups: Array<() => void>;
-  onMountCallbacks: Set<LifecycleCallback>;
-  onCleanupCallbacks: Array<() => void>;
-  mounted?: boolean;
-  mountedSignal?: Signal<boolean>;
+const _LIFECYCLE = Symbol.for('kettle-lifecycle');
+
+interface OwnerLifecycle {
+  mounts: Array<() => void | (() => void)>;
+  effects: Array<() => void | (() => void)>;
+  scheduled: boolean;
 }
 
-const lifecycleStack: LifecycleContext[] = [];
+/**
+ * Get or create a lifecycle bucket on the current Owner.
+ * Returns null if there is no reactive Owner.
+ */
+function getOwnerLifecycle(): OwnerLifecycle | null {
+  const owner = getOwner() as any;
+  if (!owner) return null;
 
-function getCurrentLifecycle(): LifecycleContext | null {
-  return lifecycleStack[lifecycleStack.length - 1] || null;
+  if (!owner[_LIFECYCLE]) {
+    const lc: OwnerLifecycle = { mounts: [], effects: [], scheduled: false };
+    owner[_LIFECYCLE] = lc;
+  }
+  return owner[_LIFECYCLE];
 }
 
-function pushLifecycle(ctx: LifecycleContext): void {
-  lifecycleStack.push(ctx);
-}
+/**
+ * Schedule a microtask to flush the lifecycle for the current Owner.
+ * Only schedules once per Owner — subsequent calls are no-ops.
+ */
+function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
+  if (lc.scheduled) return;
+  lc.scheduled = true;
 
-function popLifecycle(): void {
-    lifecycleStack.pop();
-  // if (lifecycleStack.length > 1) {
-  // }
+  // Capture the owner now; by microtask time it will have been restored.
+  const owner = getOwner();
+
+  queueMicrotask(() => {
+    runWithOwner(owner, () => {
+      // 1. Run ALL onMount callbacks first
+      for (const cb of lc.mounts) {
+        try {
+          const cleanup = cb();
+          if (typeof cleanup === 'function') {
+            onCleanup(cleanup);
+          }
+        } catch (e) {
+          console.error('Error in onMount callback:', e);
+        }
+      }
+
+      // 2. THEN create effects for useEffect callbacks
+      for (const cb of lc.effects) {
+        let cleanup: (() => void) | void;
+        createEffect(() => {
+          if (cleanup) cleanup();
+          cleanup = cb();
+        });
+        onCleanup(() => {
+          if (cleanup) cleanup();
+        });
+      }
+
+      // Clear
+      lc.mounts = [];
+      lc.effects = [];
+    });
+  });
 }
 
 /**
@@ -244,16 +298,39 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   Comp: T,
   props?: U
 ): ReturnType<C<T, U>> {
-
-  const c = $component(Comp, props)
-  return c() as any
+  return $component(Comp, props)
+  // const c = $component(Comp, props)
+  // // return c() as any
+  // return  c as any
 }
 
+const cached = new WeakMap<any, any>()
+
 export function $component<T extends (props?: any) => any, U = any>(value: T, props?: U) {
-  // console.log('defining', isDev())
-  // const component = () =>(typeof value === 'function' && typeof props!=='undefined') ? isDev() ? devComponent(value, props) : untrack(()=>value(props)) : value;
-  const component = () =>(typeof value === 'function' && typeof props!=='undefined') ? isDev() ? devComponent(value, props) : untrack(()=>value(props)) : value;
-  return (isDev() ? asComponent(component) : component) as C<T, U>;
+  // if(isComponent(value) || isRoutes(value) || isRouter(value)) {
+  // //   if(!cached.has(value)){
+  // //     cached.set(value, ()=>untrack(()=>value(props)))
+  // //   }else{
+      
+  // //     console.log('skipp track', value)
+  // //   }
+  // //  return cached.get(value)()
+  //   return untrack(() => value(props))
+  // }
+  const component = (typeof value === 'function')
+    ? isDev() ? devComponent(value, props) : untrack(() => value(props))
+    : value;
+  // Only stamp $name and $COMPONENT on functions/objects — primitives (strings, numbers)
+  // cannot have properties added in strict mode and would throw TypeError.
+  // Also skip stamping reactive values (signals/memos) with $COMPONENT so the DOM
+  // runtime doesn't misidentify them as static component thunks and cache them.
+  if (component != null && (typeof component === 'function' || typeof component === 'object') && !isSignal(component)) {
+    try { (component as any)['$name'] = value.name; } catch {}
+    // Always mark with asComponent so isComponent() works reliably in both dev and
+    // production browser environments.
+    return asComponent(component) as C<T, U>;
+  }
+  return component as C<T, U>;
 }
 
 // ============================================================================
@@ -263,8 +340,9 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
 /**
  * Register a callback to run when component mounts
  *
- * Section 1: Component constructs reactive graph
- * onMount is part of the lifecycle setup
+ * SolidJS-aligned: uses createEffect to schedule the callback.
+ * The effect runs once after the reactive graph is established,
+ * tied to the current Owner for automatic cleanup.
  *
  * @param {LifecycleCallback} fn - Mount callback
  *
@@ -281,28 +359,27 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
  * ```
  */
 export function onMount(fn: LifecycleCallback): void {
-  const ctx = getCurrentLifecycle();
-  console.log('on mount called', ctx)
-  if (ctx) {
-    if (!ctx.onMountCallbacks.has(fn)) {
-      ctx.onMountCallbacks.add(fn);
-    }
+  const lc = getOwnerLifecycle();
+  if (lc) {
+    // Attach to Owner — will run BEFORE useEffect callbacks in the flush.
+    lc.mounts.push(fn);
+    scheduleLifecycleFlush(lc);
   } else {
-    // console.log('no lofecycle');
-    // No lifecycle context, run immediately
-    // This handles the case where onMount is called outside render tree
-    // const cleanup = fn();
-    // if (typeof cleanup === 'function') {
-    //   onCleanup(cleanup);
-    // }
+    // No Owner (rare). Fall back to SolidJS pattern.
+    createEffect(() => {
+      const cleanup = untrack(fn);
+      if (typeof cleanup === 'function') {
+        onCleanup(cleanup);
+      }
+    });
   }
 }
 
 /**
  * Register a callback to run when component unmounts
  *
- * Section 1: Component constructs reactive graph including cleanup
- * onUnmount is called before component is removed from DOM
+ * SolidJS-aligned: directly delegates to onCleanup which registers
+ * with the current reactive Owner for automatic disposal.
  *
  * @param {() => void} fn - Unmount callback
  *
@@ -318,13 +395,7 @@ export function onMount(fn: LifecycleCallback): void {
  * ```
  */
 export function onUnmount(fn: () => void): void {
-  const ctx = getCurrentLifecycle();
-  if (ctx) {
-    ctx.onCleanupCallbacks.push(fn);
-  } else {
-    // No lifecycle context, register with reactive cleanup
-    onCleanup(fn);
-  }
+  onCleanup(fn);
 }
 
 /**
@@ -373,33 +444,26 @@ export { onCleanup };
  * ```
  */
 export function useEffect(callback: () => void | (() => void)): void {
-  const context = getCurrentLifecycle();
-  // console.log('use effect', context)
-  if (!context) return;
+  const lc = getOwnerLifecycle();
+  if (lc) {
+    // Attach to Owner — will be created as an effect AFTER all onMount callbacks.
+    lc.effects.push(callback);
+    scheduleLifecycleFlush(lc);
+  } else {
+    // No Owner (rare). Create the effect immediately.
+    let cleanup: (() => void) | void;
 
-  let cleanup: (() => void) | void;
+    createEffect(() => {
+      if (cleanup) cleanup();
+      cleanup = callback();
+    });
 
-  // Track the effect's reactive root
-  const dispose = createEffect(() => {
-    // 1. Dependency on the Mounted Signal
-    // This ensures we wait until ALL onMount callbacks have finished
-    if (context.mountedSignal && !context.mountedSignal[0]()) return;
-
-    // 2. Execute callback
-    if (cleanup) cleanup();
-    cleanup = callback();
-  });
-
-  context.cleanups.push(() => {
-    if (typeof dispose === 'function') (dispose as any)();
-    if (typeof dispose === 'object' && (dispose as any).dispose)
-      (dispose as any).dispose();
-    if (cleanup) cleanup();
-  });
+    onCleanup(() => {
+      // console.log('cleanup', cleanup)
+      if (cleanup) cleanup();
+    });
+  }
 }
-// export function useEffect(fn: (v?: any) => any): void {
-//   createEffect(fn);
-// }
 
 /**
  * Create a memoized computed value
@@ -419,26 +483,10 @@ export function useEffect(callback: () => void | (() => void)): void {
  * ```
  */
 export function useMemo<T>(fn: () => T): () => T {
-  const context = getCurrentLifecycle();
-
-  // createMemo is natively reactive, but we track the disposer
-  // so that the computation stops when the component is destroyed.
-  const memo = createMemo(fn);
-
-  if (context) {
-    // Some reactive systems dispose memos automatically if created
-    // inside a root, but adding it to cleanups is safer for KettleJS.
-    context.cleanups.push(() => {
-      // If your signal library provides a manual dispose for memos:
-      // (memo as any).dispose?.();
-    });
-  }
-
-  return memo;
+  // createMemo is natively reactive and disposed automatically
+  // when its Owner is cleaned up. No lifecycle stack needed.
+  return createMemo(fn);
 }
-// export function useMemo<T>(fn: () => T): () => T {
-//   return createMemo(fn);
-// }
 
 /**
  * Create a ref object
@@ -643,94 +691,11 @@ export { createReactiveContext, useReactiveContext };
 // ============================================================================
 
 /**
- * Execute mount callbacks for a lifecycle context
- * @internal
- */
-export function executeMountCallbacks(ctx: LifecycleContext): void {
-  if (ctx.mounted) return;
-  ctx.mounted = true;
-  for (const callback of ctx.onMountCallbacks) {
-    console.log('execute on mount', callback)
-    try {
-      const cleanup = callback();
-      if (typeof cleanup === 'function') {
-        ctx.cleanups.push(cleanup);
-      }
-    } catch (error) {
-      console.error('Error in onMount callback:', error);
-    }
-  }
-  ctx.onMountCallbacks.clear()
-    // = new Set();
-
-  // Signal that mount is complete, triggering any pending useEffects
-  if (ctx.mountedSignal) {
-    ctx.mountedSignal[1](true);
-  }
-}
-
-/**
- * Execute cleanup callbacks for a lifecycle context
- * @internal
- */
-export function executeCleanups(ctx: LifecycleContext): void {
-  // Run unmount callbacks first
-  for (const callback of ctx.onCleanupCallbacks) {
-    try {
-      callback();
-    } catch (error) {
-      console.error('Error in onUnmount callback:', error);
-    }
-  }
-  ctx.onCleanupCallbacks = [];
-
-  // Then run regular cleanups
-  for (const cleanup of ctx.cleanups) {
-    try {
-      cleanup();
-    } catch (error) {
-      console.error('Error in cleanup:', error);
-    }
-  }
-  ctx.cleanups = [];
-}
-
-/**
- * Create a lifecycle context
- * Used internally by render functions
- * @internal
- */
-export function createLifecycleContext(owner: Owner): LifecycleContext {
-  return {
-    owner,
-    cleanups: [],
-    onMountCallbacks: new Set(),
-    onCleanupCallbacks: [],
-    mounted: false,
-    mountedSignal: createSignal(false),
-  };
-}
-
-/**
- * Run a function with lifecycle context
- * Used internally by render functions
- * @internal
- */
-export function withLifecycle<T>(ctx: LifecycleContext, fn: () => T): T {
-  pushLifecycle(ctx);
-  try {
-    return fn();
-  } finally {
-    popLifecycle();
-  }
-}
-
-/**
  * Helper to check if we're in a component context
  * @internal
  */
 export function hasLifecycleContext(): boolean {
-  return getCurrentLifecycle() !== null;
+  return getOwner() !== null;
 }
 
 // ============================================================================
@@ -772,6 +737,7 @@ export function markComponent<P extends ComponentProps>(
  * ```
  */
 export function isDev(): boolean {
+  // return false
   return DEV;
 }
 

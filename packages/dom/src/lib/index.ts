@@ -17,6 +17,7 @@ export * from './dom/integration.js';
 export * from './shared/types.js';
 export * from './lit/index.js';
 export * from './component/index.js';
+export * from './flow/index.js';
 
 export type {
   SignalSystem,

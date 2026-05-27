@@ -32,6 +32,9 @@ export interface ScannedRoute {
   isGroup: boolean;
   /** Nested child routes */
   children: ScannedRoute[];
+  parentUrlPath: string;
+  /** Whether this route file exports a `routeData` function */
+  hasRouteData: boolean;
 }
 
 export interface ScanOptions {
@@ -110,7 +113,7 @@ function scanDirectory(
   for (const d of dirs) {
     const dirName = d.name;
     const isGroup = isRouteGroup(dirName);
-    const segment = isGroup ? '' : dirName;
+    const segment = isGroup ? '' : dirNameToSegment(dirName);
     const childUrlPath = segment
       ? joinUrlPath(parentUrlPath, segment)
       : parentUrlPath;
@@ -194,6 +197,16 @@ function buildFileRoute(
       ? parentUrlPath || '/'
       : joinUrlPath(parentUrlPath, urlSegment);
 
+  // Detect if the file exports a `routeData` function (static analysis at scan time)
+  const absoluteFilePath = path.join(dir, fileName);
+  let hasRouteData = false;
+  try {
+    const content = fs.readFileSync(absoluteFilePath, 'utf-8');
+    hasRouteData = /export\s+(const|function|async\s+function)\s+routeData\b/.test(content);
+  } catch {
+    // If file can't be read, assume no routeData
+  }
+
   return {
     filePath: filePath.replace(/\\/g, '/'), // normalize to forward slashes
     urlSegment,
@@ -204,7 +217,11 @@ function buildFileRoute(
     isCatchAll,
     isGroup: false,
     children: [],
-  };
+    parentUrlPath,
+    hasRouteData,
+    rootDir,
+    dir
+  } as any;
 }
 
 // ============================================================================
@@ -222,6 +239,17 @@ function stripExtension(fileName: string): string {
 
 function isRouteGroup(dirName: string): boolean {
   return dirName.startsWith('(') && dirName.endsWith(')');
+}
+
+/** Convert a directory name to its URL segment, matching the same rules as file names. */
+function dirNameToSegment(dirName: string): string {
+  if (dirName.startsWith('[...') && dirName.endsWith(']')) {
+    return '*' + dirName.slice(4, -1); // [...rest] → *rest
+  }
+  if (dirName.startsWith('[') && dirName.endsWith(']')) {
+    return ':' + dirName.slice(1, -1); // [id] → :id
+  }
+  return dirName;
 }
 
 function joinUrlPath(parent: string, segment: string): string {
