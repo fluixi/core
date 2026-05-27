@@ -1,6 +1,6 @@
 import {
   type IValueOfKey,
-  type SetterParamsType,
+  // type SetterParamsType,
   type SelectorFor,
   type Flatten,
   applyDiff,
@@ -12,7 +12,7 @@ import {
   getPaths,
   deepMerge,
   DiffResult,
-  Callback,
+  reconcile,
 } from '@awc/utils/object';
 import { deepEqual } from '@awc/utils/compare';
 import { isFunction } from '@awc/utils/functions';
@@ -27,9 +27,10 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  untrack,
 } from '@awc/reactive/signal';
 import { Producer, ReconcileOptions } from './types.js';
-
+import type { SetStoreFunction as StoreSetter } from './setter.types.js';
 type PathValue<T, P extends string = never> = Immutable<T> | IValueOfKey<T, P>;
 /**
  * Primitive value types that can be stored
@@ -70,50 +71,57 @@ type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
 type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
 type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 
-interface StoreSetter<T> extends SetterParamsType<T> {
-  <
-    V extends Callback<T> | T
-    // | Callback<A<T>> | A<T>
-    // | (T extends Primitive ? ParamUpdateValue<T> : never)
-  >(
-    value: V
-  ): any;
-  push: <P extends SelectorFor<T>>(
-    path: P,
-    ...items: IValueOfKey<T, P>[]
-  ) => void;
-  pop: <P extends SelectorFor<T>>(
-    path?: P
-  ) => P extends never ? Flatten<T> : Flatten<IValueOfKey<T, P>> | undefined;
-  shift: <P extends SelectorFor<T>>(
-    path?: P
-  ) => P extends never ? Flatten<T> : Flatten<IValueOfKey<T, P>> | undefined;
-  insert: <P extends SelectorFor<T>>(
-    path: P,
-    index: number,
-    value: Flatten<IValueOfKey<T, P>>
-  ) => void;
-  splice: <P extends SelectorFor<T>>(
-    path: P,
-    start: number,
-    deleteCount: number,
-    ...items: IValueOfKey<T, P>[]
-  ) => Flatten<IValueOfKey<T, P>>[];
-  removeAt: <P extends SelectorFor<T>>(
-    path: P,
-    index: number
-  ) => Flatten<IValueOfKey<T, P>>[];
-  $: <P extends SelectorFor<T>>(
-    key?: P
-  ) => P extends SelectorFor<T>
-    ? Immutable<Accessor<IValueOfKey<T, P> | null>>
-    : Immutable<Accessor<T | null>>;
-  // move: (from: number, to: number) => void;
-  // remove: (index: number) => void;
-  // removeWhere: (filterFn: (item: T[0], index: number) => boolean) => void;
-  // unshift: (...items: T[0][]) => void;
-  // reverse: () => void;
-  // sort: (compareFn?: (a: T[0], b: T[0]) => number) => void;
+
+// interface StoreSetter1<T> extends SetterParamsType<T> {
+//   // <
+//   //   V extends Callback<T> | T
+//   //   // | Callback<A<T>> | A<T>
+//   //   // | (T extends Primitive ? ParamUpdateValue<T> : never)
+//   // >(
+//   //   value: V
+//   // ): any;
+//   // push: <P extends SelectorFor<T>>(
+//   //   path: P,
+//   //   ...items: IValueOfKey<T, P>[]
+//   // ) => void;
+//   // pop: <P extends SelectorFor<T>>(
+//   //   path?: P
+//   // ) => P extends never ? Flatten<T> : Flatten<IValueOfKey<T, P>> | undefined;
+//   // shift: <P extends SelectorFor<T>>(
+//   //   path?: P
+//   // ) => P extends never ? Flatten<T> : Flatten<IValueOfKey<T, P>> | undefined;
+//   // insert: <P extends SelectorFor<T>>(
+//   //   path: P,
+//   //   index: number,
+//   //   value: Flatten<IValueOfKey<T, P>>
+//   // ) => void;
+//   // splice: <P extends SelectorFor<T>>(
+//   //   path: P,
+//   //   start: number,
+//   //   deleteCount: number,
+//   //   ...items: IValueOfKey<T, P>[]
+//   // ) => Flatten<IValueOfKey<T, P>>[];
+//   // removeAt: <P extends SelectorFor<T>>(
+//   //   path: P,
+//   //   index: number
+//   // ) => Flatten<IValueOfKey<T, P>>[];
+//   // $: <P extends SelectorFor<T>>(
+//   //   key?: P
+//   // ) => P extends SelectorFor<T>
+//   //   ? Immutable<Accessor<IValueOfKey<T, P> | null>>
+//   //   : Immutable<Accessor<T | null>>;
+//   // move: (from: number, to: number) => void;
+//   // remove: (index: number) => void;
+//   // removeWhere: (filterFn: (item: T[0], index: number) => boolean) => void;
+//   // unshift: (...items: T[0][]) => void;
+//   // reverse: () => void;
+//   // sort: (compareFn?: (a: T[0], b: T[0]) => number) => void;
+// }
+
+
+
+interface StoreSetter2<T>{
+  (...args: any[]):any
 }
 
 interface StoreAccessor<T> extends Accessor<T> {}
@@ -218,13 +226,18 @@ class StoreNode<T> {
     } else {
       this.SELF = createDataNode();
     }
-    this.value = this.getDataNode(path, value)();
+    // this.value = this.getDataNode(path, value)();
+    this.value = untrack(() => this.getDataNode(path, value)())
 
     this.proxy = this.createProxy(value);
   }
   trackSelf() {
     const track = this.getDataNode(this.path, this.value)();
-    console.log('[Track Self]', track);
+    console.log('[Track Self]', track, this.SELF);
+    if(Array.isArray(track)){
+        return track[0];
+    }
+    return track;
   }
 
   toObservable(): Observable<T> {
@@ -318,6 +331,12 @@ class StoreNode<T> {
   private createProxy(value: T): any {
     if (value && typeof value === 'object') {
       const proxy = new Proxy(value, this.createHandler());
+      Object.defineProperty(proxy, $PROXY, {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: Symbol.for('store-proxy'),
+      });
       this.proxies.set(value, proxy);
       return proxy;
     }
@@ -338,6 +357,9 @@ class StoreNode<T> {
 
     return {
       get(target, key, receiver) {
+        if(key === '__proxy') return true;
+        // if(key === '__track') {
+        //   return node.SELF?.()};
         // console.log('get', { key, target, receiver, isSelf: key === $SELF });
         // ---- Solid internals ----
         // if (key === '__track') return node.node;
@@ -378,10 +400,21 @@ class StoreNode<T> {
         }
         
         // ---- array structure tracking ----
-        node.SELF?.();
-        
+        // Only subscribe to SELF for array targets. For plain objects, SELF
+        // fires on every setState (see mergeState), which would cause effects
+        // reading any property to re-run whenever any key is written.
+        if (Array.isArray(target)) node.SELF?.();
+
         // ---- property tracking ----
-        node.getDataNode(key, target[key])();
+        node.getDataNode(key, target[key])()
+        // const tracked = node.value
+        if(key==='__track'){
+          console.log('is tracking', target);
+          if(Array.isArray(target)){
+            return node.trackSelf();
+          }
+        }
+
         
         const value = target[key];
         // if(Array.isArray(target)) {
@@ -390,27 +423,65 @@ class StoreNode<T> {
 
         // ---- array mutators ----
         if (Array.isArray(target) && typeof value === 'function') {
+          // True mutators: fire signals after mutation so reactive dependents update.
           if (
             key === 'push' ||
             key === 'pop' ||
             key === 'shift' ||
             key === 'unshift' ||
-            key === 'splice' ||
-            key === 'find'
+            key === 'splice'
           ) {
             return (...args: any[]) => {
               const result = value.apply(target, args);
-
-              // trigger array structure
               node.SELF?.$(target.length);
-
-              // trigger affected indices
               for (let i = 0; i < target.length; i++) {
                 node.signals.get(i)?.$();
               }
-
               return result;
             };
+          }
+          // Read-only iteration methods: call on the proxy receiver so each index
+          // access goes through the proxy getter and returns the current child
+          // StoreNode proxy (with up-to-date values). Do NOT fire signals — these
+          // are pure reads and must not re-queue the render effect mid-execution.
+          if (
+            key === 'map' ||
+            key === 'filter' ||
+            key === 'find' ||
+            key === 'findIndex' ||
+            key === 'forEach' ||
+            key === 'some' ||
+            key === 'every' ||
+            key === 'reduce' ||
+            key === 'reduceRight' ||
+            key === 'includes' ||
+            key === 'indexOf' ||
+            key === 'flat' ||
+            key === 'flatMap' ||
+            key === 'slice'
+          ) {
+          //   return (...args: any[]) =>{
+          //     // node.getDataNode(key, target[key])();
+          //     const result = value.apply(target, args);
+          //     // if(Array.isArray(result)){
+          //     // }
+          //     // node.SELF?.$(target.length);
+          //     // for (let i = 0; i < target.length; i++) {
+          //     //   node.signals.get(i)?.$();
+          //     // }
+          //     return result;
+          // }
+            // node.SELF?.$(target.length);
+            // return (...args: any[]) => value.apply(receiver, args);
+          }
+          if (key === 'map') {
+            // console.log('map', {target, receiver});
+            // node.SELF?.()
+          //       return (...args: any[]) =>{
+          //     const result = value.apply(target, args);
+          //     return result;
+          // }
+
           }
         }
 
@@ -799,13 +870,27 @@ type DataNode = {
   $(value?: any): void;
 };
 
+// function createDataNode(initial?: any): DataNode {
+//   const [get, set] = createSignal(initial);
+//   const node = get as any as DataNode;
+//   node.$ = set;
+//   return node;
+// }
+
 function createDataNode(initial?: any): DataNode {
   const [get, set] = createSignal(initial);
   const node = get as any as DataNode;
+  // function setNode(value: any){
+  //   if(typeof value!=="undefined"){
+  //     if(!deepEqual(untrack(()=>get()),value)){
+  //       set(value)
+  //       console.log('setting node', value)
+  //     }
+  //   }
+  // }
   node.$ = set;
   return node;
 }
-
 /**
  * Reactive store implementation with SolidJS compatibility
  * Provides fine-grained reactivity for nested state objects
@@ -1126,15 +1211,16 @@ class Store<T> {
     let value2 = params[3];
 
     // Get the original state BEFORE any mutations
-    const originalState = deepClone(this.getRawState(), [
-      $RAW,
-      $PROXY,
-      $STORE,
-    ]) as Immutable<T>;
+    const originalState = deepClone(unwrap(this.proxy));
+    // const originalState = deepClone(this.getRawState(), [
+    //   $RAW,
+    //   $PROXY,
+    //   $STORE,
+    // ]) as Immutable<T>;
 
     // Deep clone to prevent mutations from affecting the original
     // This is necessary because the set helper mutates nested objects
-    const state_clone = deepClone(structuredClone(originalState));
+    const state_clone = untrack(()=>deepClone(structuredClone(originalState)));
 
     batch(() => {
       const s = set(
@@ -1144,6 +1230,7 @@ class Store<T> {
         value1 as any,
         value2 as any
       );
+      // console.log('set done', s)
       this.mergeState(s, originalState as T);
     });
   }
@@ -1391,13 +1478,16 @@ class Store<T> {
     // Use the provided originalState for comparison, or get current if not provided
     const currentState = originalState || deepClone(this.getRawState());
 
+    const newValue = Array.isArray(partial)
+      ? partial.slice()
+      : ({ ...partial } as any);
     const diff = diffObjectDetailed(
       currentState,
-      Array.isArray(partial) ? partial.slice() : ({ ...partial } as any)
+      newValue
     );
 
     const paths = getPaths(partial as any);
-
+    
     if (diff.hasChanges !== undefined) {
       // Sort paths by depth (deepest first) to ensure leaf properties are updated before parents
       // This prevents parent updates from clearing child signals before they're triggered
@@ -1406,33 +1496,42 @@ class Store<T> {
         const bDepth = (b as string).split('.').length;
         return bDepth - aDepth; // Deepest first
       });
-      // First, trigger all signals with the NEW values from the diff
-      // This must happen BEFORE mutating the data, so signal equality checks work correctly
+      let hasP = false;
+      
+      // First, trigger all signals with the NEW values from the diff.
+      // This must happen BEFORE mutating the data, so signal equality checks work correctly.
       for (const path of sortedPaths) {
         const value = get(partial as any, path as any);
         const pathStr = path as string;
-
+        
         // Handle wildcard paths specially
         if (pathStr.includes('[*]')) {
           this.handleWildcardPath(pathStr, partial);
           continue;
         }
-
+        
         // Only trigger signal if the actual path have change
         if (!this.isChanged(diff, pathStr)) {
           continue;
         }
-        // Trigger signals for this path with the new value
+        if(!hasP){
+          hasP= pathStr==='options[0].values[0]'
+        }
         this.triggerPathSignals(pathStr, value, partial);
       }
-
+      // console.log('merge state', diff, paths);
+      
       // Now apply the diff to the actual current state
       const actualCurrentState = this.getRawState();
-      applyDiff(actualCurrentState as any, diff.changes, true);
+      // applyDiff(actualCurrentState as any, diff.changes, true);
+      reconcile(newValue, { keepRef: true})(actualCurrentState);
+      if(hasP){
 
-      // console.log('actual state', actualCurrentState, diff);
+        console.log('actual state', actualCurrentState, diff);
+      }
+
       // Update child node values to reflect the new data
-      this.updateChildNodeValues(actualCurrentState);
+      this.updateChildNodeValues(actualCurrentState, hasP);
 
       // Special handling for arrays: trigger length signal if array length changed
       if (Array.isArray(partial) && Array.isArray(currentState)) {
@@ -1444,24 +1543,33 @@ class Store<T> {
           // Also trigger the array structure signal
           this.root.SELF?.$(partial.length);
         }
-      } else {
-        this.root.SELF?.$();
       }
+      // Do NOT fire root.SELF for plain-object stores. Individual property
+      // signals have already been fired by triggerPathSignals above.
+      // Firing SELF here would cause every effect that reads ANY store property
+      // (and thus subscribed to SELF) to re-run on every single setState call.
     }
   }
 
   /**
    * Updates child node values to reflect the new state
    */
-  private updateChildNodeValues(state: any): void {
+  private updateChildNodeValues(state: any, debug?: boolean): void {
     // Recursively update all child nodes with their new values from state
     for (const [key, childNode] of this.root.children.entries()) {
-      const newValue = state[key];
+      const newValue = get(state, key as any);
+      if(debug){
+        console.log('updateChildNodeValues', key, newValue)
+      }
       if (newValue !== undefined) {
         // Mutate the existing value object in place to keep proxy references valid
+        // throw Error('mutate')
+        // console.log('mutate value', newValue, childNode.value)
         this.mutateValue(childNode.value, newValue);
         // Recursively update nested children
         this.updateChildNodeValuesRecursive(childNode, newValue);
+        // if(!deepEqual(childNode.value,newValue)){
+        // }
       }
     }
   }
@@ -1594,12 +1702,11 @@ class Store<T> {
   }
 
   /**
-   * Triggers signals for a specific path
+   * Triggers signals for a specific path.
    */
   private triggerPathSignals(pathStr: string, value: any, state: any): void {
     const firstDotIndex = pathStr.indexOf('.');
     const isNestedPath = firstDotIndex > 0;
-
     if (!isNestedPath) {
       // Direct property - extract the actual key
       let propertyKey: PropertyKey;
@@ -1616,25 +1723,59 @@ class Store<T> {
       // Trigger the property signal on the root node
       const dataNode = this.root.signals.get(propertyKey);
       // (this.proxy as any)[$SELF];
-      if (dataNode) {
+      const n = dataNode && ((dataNode as any)[Symbol.for('signal-node')]);
+      if (dataNode && n && n.value!==value) {
+        // console.log('node', n)
         dataNode.$(value);
       }
-      // Invalidate the cached child StoreNode proxy for this property.
-      // The proxy's get-trap caches child StoreNodes in `node.children` and
-      // always returns the same `child.proxy` reference (it mutates the
-      // underlying value in-place). If we leave the cache intact, any
-      // `createMemo(() => state.someKey)` that re-runs after the DataNode
-      // fires will still get the *same* proxy reference → the memo's
-      // reference-equality check sees no change → downstream effects and
-      // `litrx` directives are never notified → DOM never updates.
+      // Invalidate the cached child StoreNode proxy for this property so that
+      // any `createMemo(() => state.someKey)` re-running after the DataNode
+      // fires gets a FRESH proxy reference (new reference ≠ old reference →
+      // memo equality check fails → downstream litrx / effects re-render).
       //
-      // By deleting the child here, the next proxy read creates a brand-new
-      // StoreNode whose `child.proxy` is a different object reference. The
-      // memo detects the change, notifies `litrx`, and the DOM re-renders.
-      this.root.children.delete(propertyKey);
+      // EXCEPTION — array element indices (e.g. propertyKey = '0', '1', …):
+      // For-loop renderers (the `For` component) key their entry cache on the
+      // proxy reference of each item. If we delete the child StoreNode for an
+      // array element, the next `list[i]` read returns a brand-new proxy that
+      // doesn't match the stored reference → `For` treats it as a completely
+      // new item → disposes the existing reactive root → recreates the DOM node
+      // → the focused input is replaced → focus is lost on every keystroke.
+      //
+      // For array elements we instead rely on `updateChildNodeValues` to mutate
+      // the cached child's underlying value in-place. The proxy reference stays
+      // stable, `For` correctly identifies the unchanged item, and only the
+      // property-level effects (e.g. the reactive `value` binding on the input)
+      // fire to apply the new data without touching the DOM structure.
+      // Invalidate the cached child StoreNode proxy so that any
+      // `createMemo(() => state.someKey)` re-running after the DataNode fires
+      // gets a FRESH proxy reference (new reference ≠ old reference →
+      // memo equality check fails → downstream litrx / effects re-render).
+      //
+      // EXCEPTION 1 — array element indices (e.g. propertyKey = '0', '1', …):
+      // For-loop renderers key their entry cache on the proxy reference of each
+      // item. Deleting the child StoreNode forces a new proxy → For treats it
+      // as a new item → disposes reactive root → recreates DOM → focus lost.
+      //
+      // EXCEPTION 2 — child holds an array value:
+      // When `store.options` is an array and `For` reads it via `each={store.options}`,
+      // the individual item proxies returned by the array child StoreNode must
+      // remain stable across in-place element updates. Deleting the 'options'
+      // child StoreNode forces a new array proxy → For's item identity check
+      // fails → DOM recreated → focus lost on every keystroke.
+      const isArrayElementIndex =
+        Array.isArray(this.root.value) &&
+        pathStr.startsWith('[') && pathStr.endsWith(']');
+      const childHoldsArray = (() => {
+        const child = this.root.children.get(propertyKey);
+        return child != null && Array.isArray(child.value);
+      })();
+      if (!isArrayElementIndex && !childHoldsArray) {
+        this.root.children.delete(propertyKey);
+      }
     } else {
       // Nested path handling
       const pathParts = pathStr.split('.');
+
 
       // Handle array element properties like '[0].id' or '[0].tags[0]'
       if (pathParts[0].startsWith('[') && pathParts[0].endsWith(']')) {
@@ -1643,6 +1784,7 @@ class Store<T> {
 
         // Get or create child node for this array element
         let childNode = this.root.children.get(indexStr);
+
 
         if (!childNode) {
           // Child node doesn't exist, trigger the parent signal for this index
@@ -1671,6 +1813,9 @@ class Store<T> {
         const remainingPath = pathParts.slice(1).join('.');
 
         let childNode = this.root.children.get(firstProp);
+                if(pathStr==='options[0].values[0]'){
+          console.log('spath', {pathStr,remainingPath, childNode})
+        }
         if (childNode && remainingPath) {
           this.triggerNestedSignal(childNode, remainingPath, value);
         }
@@ -1930,34 +2075,67 @@ function unwrap<T>(store: T): T {
   if (store instanceof Store) {
     return store.unwrap();
   }
+
   return deserialize(store);
 }
+
+function untrackStore<T>(store: T): T {
+  return untrack(() => unwrap(store));
+}
+
+/**
+ * Recursively strips store proxy wrappers and symbol markers ($RAW, $PROXY) from
+ * a value at ALL nesting levels.
+ *
+ * Previous implementation used deepClone(value, [$RAW, $PROXY]) which only stripped
+ * those symbols at the top level — recursive deepClone calls inside don't forward
+ * skipKeys. Also, nested object properties were returned as-is (no recursive
+ * processing), so nested store proxies or objects with $PROXY set were not unwrapped.
+ */
 function deserialize<T>(store: T): T {
-  if (typeof store === 'undefined' || store === null) {
+  if (store == null || (typeof store !== 'object' && typeof store !== 'function')) {
     return store;
   }
-  // if (typeof store === 'function') {
-  //   return store();
-  // }
 
-  if (typeof store === 'object' || typeof store === 'function') {
-    const clone = deepClone(
-      typeof store === 'function' ? (store as any)() : (store as any),
-      [$RAW, $PROXY]
-    );
-    if ((clone as any)[$RAW]) {
-      delete (clone as any)[$RAW];
-    }
-    if ((clone as any)[$PROXY]) {
-      delete (clone as any)[$PROXY];
-    }
-    if (Array.isArray(clone)) {
-      return clone.map((item) => unwrap(item)) as T;
-    }
+  const raw: any = typeof store === 'function' ? (store as any)() : store;
 
-    return clone as T;
+  // Store proxy — follow $RAW to get the underlying plain target, then recurse
+  const rawValue = raw[$RAW];
+  if (rawValue !== undefined) {
+    return deserialize(rawValue as T);
   }
-  return store;
+
+  // Array — recursively deserialize each element
+  if (Array.isArray(raw)) {
+    return raw.map((item: any) => deserialize(item)) as T;
+  }
+
+  // Special built-ins that deepClone handles; delegate to it (they never carry $PROXY)
+  if (raw instanceof Date) return new Date(raw.getTime()) as T;
+  if (raw instanceof RegExp) return new RegExp(raw.source, raw.flags) as T;
+  if (raw instanceof Map) {
+    const m = new Map();
+    raw.forEach((v: any, k: any) => m.set(k, deserialize(v)));
+    return m as T;
+  }
+  if (raw instanceof Set) {
+    const s = new Set();
+    raw.forEach((v: any) => s.add(deserialize(v)));
+    return s as T;
+  }
+
+  // Plain object — copy string-keyed properties recursively, skip $RAW/$PROXY symbols
+  const result: any = {};
+  for (const key of Object.keys(raw)) {
+    result[key] = deserialize(raw[key]);
+  }
+  // Copy any user-defined symbol keys (but strip store internals)
+  for (const sym of Object.getOwnPropertySymbols(raw)) {
+    if (sym !== $RAW && sym !== $PROXY) {
+      result[sym] = deserialize(raw[sym]);
+    }
+  }
+  return result as T;
 }
 
 export function isStore<T>(store: StoreWrap<T>): store is StoreAccessor<T> {
@@ -1993,6 +2171,7 @@ export {
   createStoreMemo,
   wrap,
   unwrap,
+  untrackStore,
   StoreNode,
   Store,
 };
@@ -2006,7 +2185,7 @@ export function getStoreNode<T>(store: any): StoreNode<T> | null {
 }
 
 export function isStoreProxy(value: any): boolean {
-  return value && typeof value === 'object' && $PROXY in value;
+  return value && typeof value === 'object' && ($PROXY in value || (value as any).__proxy === true);
 }
 
 export function modifiable<T extends object>(value: T): T {
@@ -2019,6 +2198,7 @@ export const StoreAPI = Object.freeze({
   createComputedStore,
   batch,
   unwrap,
+  untrackStore,
   wrap,
 });
 

@@ -7,7 +7,18 @@
     "formats": ["es", "cjs"],
     "entries": ["src/**/*.ts"],
     "rootDir": "src",
-    "externals": ["@awc/*", "lit", "lit/*", "@babel/*"],
+    "externals": ["@awc/*", "lit", "lit/*", "@babel/*",
+    "@awc/reactive",
+      "@awc/reactive/signal",
+      "@awc/reactive/store",
+      "@awc/jsx-runtime",
+      "@awc/dom",
+      "@awc/dom/directives",
+      "@awc/kettlejs",
+      "@awc/kettlejs/router",
+      "@awc/kettlejs/client",
+      "@awc/kettlejs/plugins",
+      "@awc/utils"],
     "minify": false
   }
 }

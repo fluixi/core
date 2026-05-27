@@ -22,19 +22,24 @@ export {
   createSignal,
   createResource,
   createRoot,
-  createDeferred,
   createComputed,
   createRenderEffect,
-  createSelector,
   onCleanup,
   getOwner,
   runWithOwner,
   batch,
   untrack,
+  createDeferred,
   setOwner,
-  // getSharedConfig,
-  // } from '@awc/reactive/signal';
-} from '@awc/kettlejs/rx';
+} from '@awc/dom';
+// } from '@awc/kettlejs/rx';
+
+export {
+  readSignal as read,
+  reduceSignal as reduce,
+  createDebounce,
+  createSelector,
+} from '@awc/reactive/signal';
 
 export type {
   Signal,
@@ -43,9 +48,11 @@ export type {
   SignalOptions,
   RootOwner as Owner,
   Context,
+  Resource,
+  ReadSignal,
 } from '@awc/reactive/signal';
 
-export { createStore,   Store, type StoreSetter} from '@awc/reactive/store';
+export { createStore, untrackStore,   Store, type StoreSetter} from '@awc/reactive/store';
 
 // ============================================================================
 // SECTION 2 — createComponent & LIFECYCLE
@@ -80,7 +87,7 @@ export {
 } from './render/index.js';
 
 export * from './context/index.js';
-
+import {Component, ComponentProps, LifecycleCallback, LazyComponent, RefObject, SuspenseProps} from './render/index.js';
 export type {
   Component,
   ComponentProps,
@@ -88,7 +95,7 @@ export type {
   LazyComponent,
   RefObject,
   SuspenseProps,
-} from './render/index.js';
+};
 
 // ============================================================================
 // SECTION 7 — RENDERING (CLIENT)
@@ -112,7 +119,10 @@ export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
 // ============================================================================
 // DOM UTILITIES (from @awc/dom)
 // ============================================================================
-
+// import {For as _For, ForProps, ForPropsKeyed, ForPropsUnkeyed} from "@awc/dom"
+// export function For<T, U>(props: ForPropsKeyed<T, U>): Accessor<U[]>;
+// export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
+// export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> { return _For(props as any); }
 export {
   Show,
   For,
@@ -124,6 +134,8 @@ export {
   Portal,
   type ShowProps,
   type ForProps,
+  type ForPropsKeyed,
+  type ForPropsUnkeyed,
   type IndexProps,
   type SwitchProps,
   type MatchProps,
@@ -266,7 +278,7 @@ import {
   batch as _batch,
   untrack as _untrack,
   onCleanup as _onCleanup,
-} from '@awc/kettlejs/rx';
+} from '@awc/dom';
 // '@awc/reactive/signal';
 
 import {
@@ -297,7 +309,9 @@ export {
   KettleElement,
   KettleLitElement,
   KettleController,
-  kettleElementPlugin,
+  // kettleElementPlugin,
+  createComponent as createJsxComponent,
+  type EventName
 } from '@awc/element';
 
 export type * from '@awc/element';
@@ -341,4 +355,5 @@ export default {
   getFrameworkInfo,
 };
 
-ensureIntegration()
+
+ensureIntegration('index')

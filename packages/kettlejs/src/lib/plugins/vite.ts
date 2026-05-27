@@ -1,1 +1,1 @@
-export { createVitePlugin } from '@awc/jsx-runtime';
+export { createVitePlugin } from '@awc/jsx-runtime/compiler';

@@ -29,22 +29,28 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  createResource,
   createRoot,
-  createDeferred,
   createComputed,
   createRenderEffect,
-  createSelector,
   onCleanup,
   getOwner,
   runWithOwner,
   batch,
   untrack,
+  createDeferred,
   setOwner,
   getSharedConfig,
-  createResource
-  // Context,
-} from '@awc/kettlejs/rx';
-// } from '@awc/reactive/signal';
+} from '@awc/dom';
+// } from '@awc/kettlejs/rx';
+
+import {
+  readSignal as read,
+  reduceSignal as reduce,
+  createDebounce,
+  createSelector,
+} from '@awc/reactive/signal';
+
 
 import {
   // batch,
@@ -124,6 +130,22 @@ export {
   litrx,
 } from '@awc/dom';
 
+// import {For as _For} from "@awc/dom"
+// export interface ForProps<T, U = any> {
+//   /** Reactive array to iterate over — static, readonly, accessor, or signal. */
+//   each: ReadonlyArray<T> | (() => ReadonlyArray<T> | null | undefined) | Accessor<ReadonlyArray<T>> | null | undefined | false;
+//   /** Rendered when the array is empty or nullish. */
+//   fallback?: any;
+//   /**
+//    * Render function called once per unique item (keyed by reference).
+//    * `index` is a reactive accessor — updates when the item moves position.
+//    *
+//    * JSX:    <For each={() => store.items}>{(item, index) => <li>{item.name}</li>}</For>
+//    * lit:    For({ each: items, children: (item, index) => html`<li>${item.name}</li>` })
+//    */
+//   children?: (item: T, index: Accessor<number>) => U;
+// }
+// export const For = <T>(props: ForProps<T>) => _For(props as any) as JSX.Element;
 export {
   Show,
   For,
@@ -150,7 +172,7 @@ export {
 
 // Re-export reactive primitives from @awc/reactive
 
-export { createStore, unwrap, Store } from '@awc/reactive/store';
+export { createStore, untrackStore, unwrap, Store } from '@awc/reactive/store';
 
 export type {
   Accessor,
@@ -158,6 +180,8 @@ export type {
   Signal,
   SignalOptions,
   MemoOptions,
+  Resource,
+  ReadSignal,
 } from '@awc/reactive/signal';
 
 export {
@@ -280,8 +304,10 @@ export {
   KettleElement,
   KettleLitElement,
   KettleController,
+  createComponent as createJsxComponent,
 } from '@awc/element';
-export type * from '@awc/element';
+
+export type * from '@awc/element/types';
 
 /**
  * Framework version
@@ -301,6 +327,7 @@ export {
   createContext,
   createRoot,
   createDeferred,
+  createDebounce,
   createComputed,
   createRenderEffect,
   createSelector,
@@ -312,6 +339,8 @@ export {
   useContext,
   setOwner,
   getSharedConfig,
+  read,
+  reduce,
 };
 /**
  * Default export - commonly used functions
@@ -360,6 +389,8 @@ export default {
   Link,
   useRouter,
   useNavigate,
+  read,
+  reduce,
 
   // Lit
   html,
@@ -370,4 +401,4 @@ export default {
   FRAMEWORK_NAME,
 };
 
-ensureIntegration()
+ensureIntegration('kettle element main')

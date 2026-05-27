@@ -136,6 +136,52 @@ export const SVG_ELEMENTS = new Set([
 // SVG namespace
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
+/**
+ * Returns true for custom elements (tag name contains a hyphen per the Web
+ * Components spec — e.g. `adf-accounts-selector`).
+ */
+export function isCustomElement(element: Element): boolean {
+  return element.localName.includes('-');
+}
+
+/**
+ * Set a prop on an element, choosing between DOM property assignment and
+ * setAttribute based on:
+ *   - Custom elements always receive complex values (object/array) as DOM
+ *     properties so that Lit components get the rich value, not a serialised
+ *     string.
+ *   - Primitives (string/number/boolean) and standard HTML elements go through
+ *     the normal setAttribute path.
+ */
+export function applyElementProp(
+  element: Element,
+  name: string,
+  value: any,
+  isSVG = false,
+): void {
+  if (value == null) {
+    element.removeAttribute(name);
+    return;
+  }
+  // For custom elements: set objects and arrays directly as DOM properties so
+  // Lit (and other web-component libraries) receive the rich value.
+  // if(element.name === 'stocked_quantity' && name === 'value'){
+  //   console.log(
+  //     'apply custom element prop',
+  //     name,
+  //     value,
+  //     (element as any)[name]
+  //   );
+
+  // }
+  if (isCustomElement(element)) {
+    // if ((element as any)[name]!==value) 
+      (element as any)[name] = value;
+    return;
+  }
+  setAttribute(element, name, value, isSVG);
+}
+
 // Properties that should be set as properties, not attributes
 export const JSX_PROPERTIES = new Set([
   'className',
@@ -316,7 +362,13 @@ export function setAttribute(
       element.removeAttribute(name);
     }
   } else {
-    element.setAttribute(name, String(value));
+    if(typeof value === 'object' && value){
+      element.setAttribute(name, JSON.stringify(value));
+
+    }else{
+      element.setAttribute(name, String(value));
+
+    }
   }
 }
 

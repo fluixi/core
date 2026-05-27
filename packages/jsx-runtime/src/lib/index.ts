@@ -45,34 +45,9 @@ export type {
 // Compiler Utilities
 // ============================================================================
 
-export {
-  analyzeProp,
-  analyzeProps,
-  shouldUseLitTemplate,
-  isLitTemplate,
-  generateCreateElement,
-  generatePropsCode,
-  generateChildrenCode,
-  generateLitHTMLTemplate,
-  optimizeStatic,
-  optimizeSpreads,
-  hoistStatic,
-  generateEventDelegation,
-  transform,
-  createBabelPlugin,
-  createTypeScriptTransformer,
-  createVitePlugin,
-  createWebpackLoader,
-  createRollupPlugin,
-  createESBuildPlugin,
-} from './compiler.js';
-
-export type {
-  CompilerOptions,
-  TransformResult,
-  TransformMetadata,
-  PropAnalysis,
-} from './compiler.js';
+// Build-time compiler utilities are NOT exported from the main browser entry.
+// Import them from '@awc/jsx-runtime/compiler' instead (Node.js only):
+//   import { createVitePlugin } from '@awc/jsx-runtime/compiler'
 
 // ============================================================================
 // Legacy API (for backward compatibility)
@@ -237,7 +212,8 @@ export {
 // Re-export JSX namespace types
 // ============================================================================
 
-export type * from './jsx.d.js';
+export type {JSX} from './jsx.d.js';
+export type {KettleElements} from './jsx.d.js';
 
 // ============================================================================
 // Default Export

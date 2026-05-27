@@ -1,4 +1,24 @@
-type Accessor<T> = () => T;
+import {
+  Computation,
+  ComputationFn,
+  Context,
+  EffectFn,
+  EffectOptions,
+  EqualityFn,
+  MemoOptions,
+  ResourceFetcher,
+  ResourceOptions,
+  ResourceReturn,
+  ResourceSource,
+  RootOwner,
+  Signal,
+  SignalOptions,
+  SuspenseContextType,
+  SuspenseListContextType,
+  type createStore as signalStore,
+} from '@awc/reactive';
+
+export type Accessor<T> = () => T;
 
 export interface ComponentObserver {
   dependencies: Set<Accessor<any>>;
@@ -12,11 +32,46 @@ export interface Effect {
   dispose?: () => void;
 }
 
+
+export interface Resource{
+    <T>(fetcher: ResourceFetcher<T, true>, options?: ResourceOptions<T, true>): ResourceReturn<T>;
+    <T, S>(source: ResourceSource<S>, fetcher: ResourceFetcher<T, S>, options?: ResourceOptions<T, S>): ResourceReturn<T>;
+}
+
+export interface ComponentProps {
+  children?: any;
+  [key: string]: any;
+}
+
+/**
+ * Component function type
+ */
+export type CreateComponent<P = ComponentProps, Return = any> = (props?: P) => Return;
+
+
+export type IComponent<T, U = any, W = any> = ()=>CreateComponent<U, W> & {
+  $COMPONENT: boolean
+}
+
+export type CreateComponentReturnType<T, V> = T extends (props?: infer U) => any ? IComponent<T, V extends never ? U : V, ReturnType<T>> : T extends object ? IComponent<T, V> : never
+
+
+export type DevComponent = <P, V>(Comp: (props?: P) => V, props?: P)=> V
 export interface SignalSystem {
   /**
    * Create an effect that runs when dependencies change
    */
-  createEffect?: (fn: () => void) => Effect;
+  createEffect?: (
+    fn: EffectFn,
+    value?: any,
+    options?: EffectOptions
+  ) => () => void;
+
+  createRenderEffect?: <T>(
+    fn: (prev: T) => T,
+    value?: T | undefined,
+    options?: EffectOptions | undefined
+  ) => () => void;
 
   /**
    * Batch multiple updates together
@@ -26,7 +81,11 @@ export interface SignalSystem {
   /**
    * Create a memo (computed value)
    */
-  createMemo?: <T>(fn: () => T) => () => T;
+  createMemo?: <T>(
+    fn: ComputationFn<T>,
+    value?: T,
+    options?: MemoOptions<T>
+  ) => Accessor<T>;
 
   /**
    * Track a value without subscribing
@@ -52,9 +111,53 @@ export interface SignalSystem {
    * Add a cleanup function
    */
   onCleanup?: (fn: () => void) => void;
-  createSignal?: <T>(initialValue: T) => [() => T, (value: T) => void];
+  createSignal?: <T>(
+    _value: T,
+    options?: SignalOptions<T> | undefined
+  ) => Signal<T>;
   isReactive?: (fn: any) => boolean;
-  createComponent: (fn: any, props: any) => any;
+  createComponent: <T extends (props?: any) => any, U = any>(
+    Comp: T,
+    props?: U
+  ) => CreateComponentReturnType<T, U>;
+  resolveChildren: (value: any) => any;
+  devComponent: DevComponent;
+  createResource: Resource;
+  createContext: <T>(defaultValue?: T | undefined) => {
+    Provider: (props: {
+      value: T;
+      children: any;
+      debug?: boolean | undefined;
+    }) => any;
+    defaultValue: T | undefined;
+    id: symbol;
+  };
+  useContext: <T>(context: { id: symbol; defaultValue?: T }) => T | undefined;
+  resumeEffects: (effects: Computation[]) => void;
+  createComputed: <T>(
+    fn: ComputationFn<T>,
+    value?: T,
+    options?: EffectOptions
+  ) => void;
+  createDeferred: <T>(
+    source: Accessor<T>,
+    options?: {
+      timeoutMs?: number;
+      equals?: false | EqualityFn<T>;
+    }
+  ) => Accessor<T>;
+  getSuspenseContext: () => Context<SuspenseContextType | undefined>;
+  getSuspenseListContext: () => Context<SuspenseListContextType | undefined>;
+  isSignal: <T extends unknown>(value: any) => value is Accessor<T>;
+  createStore?: typeof signalStore;
+  setOwner: (owner: RootOwner | null) => void;
+  getSharedConfig: ()=> {
+    context: RootOwner | null;
+    owner: RootOwner | null;
+    routeData: Map<any, any>;
+    matchedRoute: Map<any, any>;
+  };
+  // createStore: <T>(initialState: T, options?: StoreOptions<T>)=> [Immutable<T>, Store<T>["set"]]
 }
 
 export interface StoreSystem {

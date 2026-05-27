@@ -9,7 +9,7 @@ import type {
  * Type for any object (excluding arrays, functions, and null)
  */
 export type RecordObject = Record<string | number | symbol, any>;
-export type AnyObject = RecordObject | RecordObject[];
+export type AnyObject = RecordObject | Array<RecordObject> | Array<any>;
 
 /**
  * Type for deep partial object
@@ -1092,14 +1092,14 @@ export type DataParam<
 > = Depth extends 0
   ? never
   : IValueOfKey<T, K> extends AnyObject
-  ? IValueOfKey<T, K> extends (infer U)[]
+  ? IValueOfKey<T, K> extends Array<(infer U)>
     ? T extends (infer V)[]
       ? IsStartArray<K> extends true
         ? IsFullMatch<K> extends true
           ? Expand<ParamUpdateValue<U>>
           : ParamUpdateValue<U>
         : Expand<ParamUpdateValue<IValueOfKey<T, K>>>
-      : ParamUpdateValue<U>
+      : ParamUpdateValue<U[]>
     : I extends string
     ? T extends (infer V)[]
       ? Expand<ParamUpdateValue<IValueOfKey<V, I>>>

@@ -34,6 +34,7 @@ describe('createResource (core reactive primitive)', () => {
       createEffect(() => {
         try {
           value = data();
+          console.log('value', value)
         } catch (e) {
           // Suspense should capture this
           suspended = true;

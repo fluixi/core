@@ -9,12 +9,11 @@
  * Following SolidJS structure: render logic separated from component creation
  */
 
-import { createRoot } from '@awc/reactive/signal';
+import { createRoot } from '@awc/dom';
 import {
   isDOMNode,
   delegateEvents,
   registerLitRender,
-  render as domRender,
   insert,
 } from '@awc/dom';
 import { render as litRender } from 'lit';
@@ -96,7 +95,7 @@ export function render(
   container: HTMLElement,
   options: RenderOptions = {}
 ): () => void {
-  ensureIntegration();
+  ensureIntegration('render');
   delegateEvents(['click', 'input', 'change', 'submit']);
 
   if (isServer) {
@@ -108,42 +107,7 @@ export function render(
   if (!container) {
     throw new Error('Container element is required');
   }
-  // console.log('render start');
-
-  let disposed = false;
   let disposer: (() => void) | undefined;
-
-  // Section 5: Create reactive root (Owner)
-  // Section 7: Real DOM with fine-grained updates
-  // createRoot((dispose) => {
-  //   disposer = () => {
-  //     if (disposed) return;
-  //     disposed = true;
-
-  //     // User cleanup
-  //     if (options.onDispose) {
-  //       options.onDispose();
-  //     }
-
-  //     // Dispose reactive root — this triggers all onCleanup callbacks
-  //     // registered by components (onMount cleanup, useEffect cleanup, onUnmount)
-  //     dispose();
-  //   };
-
-  //   // Section 1: Execute code function once
-  //   const result = typeof code === 'function' ? code() : code;
-
-  //   // Section 7: Insert into real DOM with fine-grained updates.
-  //   // IMPORTANT: Use insert() directly within THIS root instead of domRender()
-  //   // which creates a SECOND createRoot. A second root severs the Owner chain,
-  //   // so contexts set by Providers during code() are invisible to render effects
-  //   // created inside the second root. This breaks JSX because JSX wraps
-  //   // components in deferred thunks that only execute inside render effects.
-  //   // With lit-html it worked because component calls happen eagerly during
-  //   // code() — under this root's Owner — before any domRender call.
-  //   container.textContent = '';
-  //   insert(container, result as any);
-  // });
 
   // domRender(code, container)
   createRoot((dispose) => {
@@ -157,6 +121,7 @@ export function render(
     // render effects share the Owner chain with Provider context nodes.
     // Using domRender() would create a second createRoot, severing the chain.
     container.textContent = '';
+    container.setAttribute('kettle-js', 'v1')
     insert(container, result as any);
   });
 

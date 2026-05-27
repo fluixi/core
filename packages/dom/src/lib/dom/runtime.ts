@@ -13,22 +13,69 @@
  * - createRoot owner restoration: Owner = prevOwner (not Owner ??= prevOwner)
  */
 
-import {
-  untrack,
-  createRoot,
+import  {
   isSignal,
-  createEffect,
-  createMemo,
-  onCleanup,
-  getOwner,
-  runWithOwner,
-  createRenderEffect as signalCreateRenderEffect,
 } from '@awc/reactive/signal';
-import { JSX_PROPERTIES, setAttribute, SVG_NAMESPACE } from './utils.js';
-import { processValues } from '../lit/templates/helpers.js';
-import { html, render as litRender } from 'lit';
-import { isTemplateResult } from 'lit/directive-helpers.js';
-import { checkRenderType, isComponent, isProvider, isRoutes, asComponent } from '../component/create.js';
+import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
+import { isComponent } from '../component/modifiers.js';
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, resolveChildren, untrack } from './integration.js';
+
+
+function getElementFingerprint(el: Element): string {
+  const parts: string[] = [];
+
+  while (el && el.nodeType === 1) {
+    let part = el.tagName.toLowerCase();
+
+    // Prefer stable identifiers
+    if (el.id) {
+      part += `#${el.id}`;
+      parts.unshift(part);
+      break; // ID is already unique
+    }
+
+    if (el.getAttribute('data-id')) {
+      part += `[data-id="${el.getAttribute('data-id')}"]`;
+    }
+
+    // Add index among siblings (important)
+    let index = 0;
+    let sibling = el;
+
+    while ((sibling = sibling.previousElementSibling as Element)) {
+      if (sibling.tagName === el.tagName) index++;
+    }
+
+    part += `:nth-of-type(${index + 1})`;
+
+    parts.unshift(part);
+    el = el.parentElement!;
+  }
+
+  return parts.join('>');
+}
+
+function hashString(str: string): string {
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // convert to 32bit int
+  }
+
+  return `el_${Math.abs(hash)}`;
+}
+
+export function getStableElementId(el: Element): string {
+  return hashString(getElementFingerprint(el));
+}
+export const generateID = () => {
+  return 'xxyxxxxxxy-4xx8'.replace(/[xy]/g, function (c) {
+    let r = (Math.random() * 16) | 0;
+    let v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 // ============================================================================
 // Types
@@ -82,7 +129,7 @@ const templateCache = new Map<string, HTMLTemplateElement>();
 const delegatedSet = new Set<string>();
 
 // Events that don't bubble — must use direct addEventListener
-const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize']);
+const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize', 'mouseenter', 'mouseleave']);
 
 /**
  * Register global delegated event listener for the given event names.
@@ -265,9 +312,46 @@ export function iterateFn(item: any): any {
  * Create a reactive render effect. Re-runs when its signal dependencies change.
  * Returns a dispose function.
  */
-export function createRenderEffect(fn: () => void): () => void {
-  return signalCreateRenderEffect(fn as any);
-}
+
+// function createRenderEffect(fn: () => void): (()=>void) {
+//   if (typeof (globalThis as any).__createRenderEffect === 'function') {
+//     // console.log('render effect found');
+//     return (globalThis as any).__createRenderEffect(fn);
+//   } else {
+//     console.log('render effect not found');
+//     return fn() as any;
+//   }
+// }
+// function createEffect(fn: () => void): () => void {
+//   if (typeof (globalThis as any).__createEffect === 'function') {
+//     // console.log('effect found');
+//    return  (globalThis as any).__createEffect(fn);
+//   } else {
+//     console.log('effect not found');
+//     return ()=>{
+//       fn();
+
+//     }
+//   }
+// }
+// function createRoot<T>(fn: (dispose: () => void) => T): T | void {
+//   if (typeof (globalThis as any).__createRoot === 'function') {
+//     console.log('create root found');
+//     (globalThis as any).__createRoot(fn) as T;
+//   } else {
+//     console.log('create root not found');
+//     // fn() as any;
+//   }
+// }
+// function onCleanup(fn: Cleanup): void {
+//   if (typeof (globalThis as any).__onCleanup === 'function') {
+//     // console.log('on cleanup found');
+//     (globalThis as any).__onCleanup(fn);
+//   } else {
+//     console.log('on cleanup not found');
+//     // fn() as any;
+//   }
+// }
 
 // ============================================================================
 // Insert depth guard
@@ -301,7 +385,6 @@ function _createInsertEffect(
     // IMPORTANT: must check !isSignal to avoid caching reactive values that are also
     // stamped as components (e.g. memos returned from components via $component/asComponent).
     if (isComponent(getAccessor as any) && !isSignal(getAccessor as any)) {
-      console.log('comp accessor')
       if (!componentCache.has(getAccessor as Function)) {
         _insertDepth++;
         try {
@@ -312,6 +395,8 @@ function _createInsertEffect(
         }
         // createRoot(() => {
         // });
+      }else{
+        console.log('in cache');
       }
       value = componentCache.get(getAccessor as Function)!;
       while (typeof value === 'function' && isSignal(value)) value = value();
@@ -329,13 +414,17 @@ function _createInsertEffect(
       let chainDepth = 0;
       while (typeof value === 'function' && chainDepth++ < 50) {
         if (isComponent(value)) {
-          const thunk = value;
-          _insertDepth++;
-          try {
-            const inst = thunk();
-            componentCache.set(thunk, inst);
-          } finally {
-            _insertDepth--;
+          if (!componentCache.has(value)) {
+            const thunk = value;
+            _insertDepth++;
+            try {
+              const inst = thunk();
+              componentCache.set(thunk, inst);
+            } finally {
+              _insertDepth--;
+            }
+          }else{
+            console.log('in cache');
           }
           // if (!componentCache.has(value)) {
           //   // createRoot(() => {
@@ -420,20 +509,24 @@ export function insertExpression(
   if (value == null || typeof value === 'boolean') {
     return cleanChildren(parent, current, marker);
   }
+  // console.log('runtime insert', value);
 
   if (typeof value === 'function') {
-    if (isComponent(value) && !isSignal(value)) {
-      // Component thunk — must be called via componentCache (not here)
-      return current ?? null;
-    }
-    // Non-component functions: call defensively to unwrap plain wrappers
-    while (typeof value === 'function' && !isSignal(value) && !isComponent(value)) {
+    while (typeof value === 'function') {
       value = (value as Function)();
     }
-    if (typeof value === 'function') {
-      // Reached a signal or component thunk — cannot handle here
-      return current ?? null;
-    }
+    // if (isComponent(value) && !isSignal(value)) {
+    //   // Component thunk — must be called via componentCache (not here)
+    //   return current ?? null;
+    // }
+    // // Non-component functions: call defensively to unwrap plain wrappers
+    // while (typeof value === 'function' && !isSignal(value) && !isComponent(value)) {
+    //   value = (value as Function)();
+    // }
+    // if (typeof value === 'function') {
+    //   // Reached a signal or component thunk — cannot handle here
+    //   return current ?? null;
+    // }
   }
 
   if (value == null || typeof value === 'boolean') {
@@ -534,8 +627,8 @@ export function insertExpression(
       ? [current as Node]
       : [];
 
-    // console.log('flattening', value)
-    flattenArray(value, array, parent, marker, true, componentCache);
+      flattenArray(value, array, parent, marker, true, componentCache);
+      // console.log('flattening', currentArray, array)
     return reconcileArrays(parent, currentArray, array, marker);
   }
 
@@ -598,6 +691,7 @@ function flattenArray(
       let resolved: any;
 
       if (isComponent(item)) {
+        console.log('is compo')
         // Component thunk — call exactly once, cache result
         if (!componentCache) componentCache = new Map();
         if (!componentCache.has(item)) componentCache.set(item, item());
@@ -607,14 +701,23 @@ function flattenArray(
         resolved = item();
       }
 
-      // Unwrap plain wrappers; stop at signals and component thunks
+      // Unwrap plain wrappers; stop at signals and component thunks.
+      // Cache calls by function reference — a plain function returned by a
+      // signal/memo (e.g. `createMemo(() => cond ? () => <JSX> : ...)`) is a
+      // stable reference as long as the memo doesn't re-evaluate. Calling it
+      // once and caching the result means re-runs of the outer render effect
+      // (triggered by unrelated signals like `activeLevel()`) hit the cache and
+      // return the same DOM nodes. reconcileArrays then sees identical references
+      // and skips the slot — the focused <input> is never removed.
       while (
         typeof resolved === 'function' &&
         !isPromise(resolved) &&
         !isSignal(resolved) &&
         !isComponent(resolved)
       ) {
-        resolved = resolved();
+        if (!componentCache) componentCache = new Map();
+        if (!componentCache.has(resolved)) componentCache.set(resolved, resolved());
+        resolved = componentCache.get(resolved);
       }
 
       if (resolved == null || typeof resolved === 'boolean') continue;
@@ -627,8 +730,9 @@ function flattenArray(
           let val = resolved();
           while (typeof val === 'function' && isSignal(val)) val = val();
           if (val == null || typeof val === 'boolean') continue;
-          if (Array.isArray(val)) flattenArray(val, result, parent, marker, track, componentCache);
-          else flattenArray([val], result, parent, marker, track, componentCache);
+          if (Array.isArray(val)){
+            flattenArray(val, result, parent, marker, track, componentCache)
+          }else flattenArray([val], result, parent, marker, track, componentCache);
           continue;
         }
         // if (isComponent(resolved)) {
@@ -725,64 +829,64 @@ function flattenArray(
   }
 }
 
-function normalizeValue(value: any, result: Node[]): void {
-  if (value == null || typeof value === 'boolean') return;
+// function normalizeValue(value: any, result: Node[]): void {
+//   if (value == null || typeof value === 'boolean') return;
 
-  while (typeof value === 'function' && !isPromise(value)) {
-    value = value();
-    if (value == null || typeof value === 'boolean') return;
-  }
+//   while (typeof value === 'function' && !isPromise(value)) {
+//     value = value();
+//     if (value == null || typeof value === 'boolean') return;
+//   }
 
-  if (isPromise(value)) {
-    const placeholder = createTextNode('');
-    result.push(placeholder);
-    (value as Promise<any>)
-      .then((resolved) => {
-        if (placeholder.parentNode) {
-          const parent = placeholder.parentNode;
-          const tempNodes: Node[] = [];
-          normalizeValue(resolved, tempNodes);
-          for (const node of tempNodes) parent.insertBefore(node, placeholder);
-          parent.removeChild(placeholder);
-        }
-      })
-      .catch((err) => console.error('Error resolving promise in normalizeValue:', err));
-    return;
-  }
+//   if (isPromise(value)) {
+//     const placeholder = createTextNode('');
+//     result.push(placeholder);
+//     (value as Promise<any>)
+//       .then((resolved) => {
+//         if (placeholder.parentNode) {
+//           const parent = placeholder.parentNode;
+//           const tempNodes: Node[] = [];
+//           normalizeValue(resolved, tempNodes);
+//           for (const node of tempNodes) parent.insertBefore(node, placeholder);
+//           parent.removeChild(placeholder);
+//         }
+//       })
+//       .catch((err) => console.error('Error resolving promise in normalizeValue:', err));
+//     return;
+//   }
 
-  if (value instanceof Node) { result.push(value); return; }
+//   if (value instanceof Node) { result.push(value); return; }
 
-  if (
-    typeof value === 'object' &&
-    value !== null &&
-    ('_$litType$' in value || '_$litDirective$' in value)
-  ) {
-    const nodes = renderLitToNodes(value);
-    for (const node of nodes) result.push(node);
-    return;
-  }
+//   if (
+//     typeof value === 'object' &&
+//     value !== null &&
+//     ('_$litType$' in value || '_$litDirective$' in value)
+//   ) {
+//     const nodes = renderLitToNodes(value);
+//     for (const node of nodes) result.push(node);
+//     return;
+//   }
 
-  if (Array.isArray(value)) {
-    for (const item of value) normalizeValue(item, result);
-    return;
-  }
+//   if (Array.isArray(value)) {
+//     for (const item of value) normalizeValue(item, result);
+//     return;
+//   }
 
-  if (typeof value === 'string' || typeof value === 'number') {
-    result.push(createTextNode(String(value)));
-    return;
-  }
+//   if (typeof value === 'string' || typeof value === 'number') {
+//     result.push(createTextNode(String(value)));
+//     return;
+//   }
 
-  if (typeof value === 'object' && value !== null && 'type' in value && 'props' in value) {
-    const jsxValue = value as { type: any; props: any };
-    if (typeof jsxValue.type === 'function') {
-      const resolved = jsxValue.type(jsxValue.props || {});
-      normalizeValue(resolved, result);
-      return;
-    }
-  }
+//   if (typeof value === 'object' && value !== null && 'type' in value && 'props' in value) {
+//     const jsxValue = value as { type: any; props: any };
+//     if (typeof jsxValue.type === 'function') {
+//       const resolved = jsxValue.type(jsxValue.props || {});
+//       normalizeValue(resolved, result);
+//       return;
+//     }
+//   }
 
-  result.push(createTextNode(String(value)));
-}
+//   result.push(createTextNode(String(value)));
+// }
 
 // ============================================================================
 // reconcileArrays
@@ -794,35 +898,165 @@ function reconcileArrays(
   b: Node[],
   marker?: Node
 ): Node[] {
-  let i = 0;
-  const aLength = a.length;
-  const bLength = b.length;
+  // Pre-process: clone any node already owned by a different parent.
+  // The Babel plugin hoists static elements to module-level — the same node
+  // can appear in `b` for multiple parents simultaneously. Clone to avoid
+  // stealing it from its current owner; future reconciles track the clone.
+  for (let i = 0; i < b.length; i++) {
+    if (b[i].parentNode !== null && b[i].parentNode !== parent) {
+      b = b.slice();
+      b[i] = b[i].cloneNode(true) as Node;
+    }
+  }
 
-  while (i < aLength && i < bLength) {
-    if (a[i] !== b[i]) {
-      if (a[i].parentNode === parent) {
-        parent.replaceChild(b[i], a[i]);
-      } else {
-        insertBefore(parent, b[i], marker);
+  // SolidJS-style reconcile: skip common prefix/suffix by identity so unchanged
+  // nodes (e.g. a focused <input> inside a stable parent div) are never removed.
+  let bLength = b.length,
+    aEnd   = a.length,
+    bEnd   = bLength,
+    aStart = 0,
+    bStart = 0,
+    // When `a` is empty fall back to marker so insertions land in the right slot.
+    after: Node | undefined = aEnd > 0
+      ? (a[aEnd - 1].nextSibling as Node | null | undefined) ?? undefined
+      : marker,
+    map: Map<Node, number> | null = null;
+
+  while (aStart < aEnd || bStart < bEnd) {
+    // 1. Common prefix — already in the right place, skip.
+    if (a[aStart] === b[bStart]) {
+      aStart++;
+      bStart++;
+      continue;
+    }
+
+    // 2. Common suffix — already in the right place, shrink window.
+    while (aEnd > aStart && bEnd > bStart && a[aEnd - 1] === b[bEnd - 1]) {
+      aEnd--;
+      bEnd--;
+    }
+
+    // 3. Old list exhausted — insert remaining new nodes.
+    if (aEnd === aStart) {
+      const node: Node | undefined = bEnd < bLength
+        ? bStart
+          ? (b[bStart - 1].nextSibling as Node | null | undefined) ?? undefined
+          : b[bEnd - bStart]
+        : after;
+      while (bStart < bEnd) insertBefore(parent, b[bStart++], node);
+    }
+
+    // 4. New list exhausted — remove remaining old nodes.
+    else if (bEnd === bStart) {
+      while (aStart < aEnd) {
+        if ((!map || !map.has(a[aStart])) && a[aStart].parentNode === parent)
+          parent.removeChild(a[aStart]);
+        aStart++;
       }
     }
-    i++;
-  }
 
-  if (i < aLength) {
-    for (let j = i; j < aLength; j++) {
-      if (a[j].parentNode === parent) parent.removeChild(a[j]);
+    // 5. Two-node swap (cross-endpoints match).
+    else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
+      const node = a[--aEnd].nextSibling;
+      insertBefore(parent, b[bStart++], a[aStart++].nextSibling as Node | undefined);
+      insertBefore(parent, b[--bEnd], node as Node | undefined);
+      a[aEnd] = a[aStart - 1];
     }
-  }
 
-  if (i < bLength) {
-    for (let j = i; j < bLength; j++) {
-      insertBefore(parent, b[j], marker);
+    // 6. Map-based fallback for complex reordering.
+    else {
+      if (!map) {
+        map = new Map();
+        let i = bStart;
+        while (i < bEnd) map.set(b[i], i++);
+      }
+      const index = map.get(a[aStart]);
+      if (index != null) {
+        if (bStart < index && index < bEnd) {
+          let i = aStart, sequence = 1;
+          while (++i < aEnd && i < bEnd) {
+            if (!map.has(a[i]) || map.get(a[i]) !== index + sequence) break;
+            sequence++;
+          }
+          if (sequence > index - bStart) {
+            const node = a[aStart];
+            while (bStart < index) insertBefore(parent, b[bStart++], node);
+          } else {
+            // Guard replaceChild: if a[aStart] was moved out by another effect, insert instead.
+            if (a[aStart].parentNode === parent) {
+              parent.replaceChild(b[bStart++], a[aStart++]);
+            } else {
+              insertBefore(parent, b[bStart++], after);
+              aStart++;
+            }
+          }
+        } else {
+          aStart++;
+        }
+      } else {
+        if (a[aStart].parentNode === parent) parent.removeChild(a[aStart]);
+        aStart++;
+      }
     }
   }
 
   return b;
 }
+
+// function reconcileArrays(
+//   parent: Node,
+//   a: Node[],
+//   b: Node[],
+//   marker?: Node
+// ): Node[] {
+//   // Step 1: remove from the DOM any a-node not present in b.
+//   // The bSet is built from the original b references.  After step 2 may
+//   // replace some entries with clones, so we rebuild a clean set for removal.
+//   if (a.length > 0) {
+//     const bSet = new Set<Node>(b);
+//     for (let i = a.length - 1; i >= 0; i--) {
+//       if (!bSet.has(a[i]) && a[i].parentNode === parent) {
+//         parent.removeChild(a[i]);
+//         // if(a[i].textContent.trim() !== '') {
+//         // }else{
+//         //   console.log('skip remove', a[i].textContent.trim(), b);
+//         // }
+//       }
+//     }
+//   }
+
+//   // Step 2: insert / reorder b-nodes right-to-left.
+//   //
+//   // CRITICAL: The Babel plugin hoists fully-static elements (e.g. an empty
+//   // <span>) to a single module-level DOM node.  When the same node appears in
+//   // the `b` array of *multiple* parents (e.g. several list rows), inserting it
+//   // into the second parent would silently steal it from the first.  To prevent
+//   // this we clone any node that already lives in a *different* parent and
+//   // update the returned array so that future reconciles track the clone instead
+//   // of the original.
+//   //
+//   // Nodes that are already in THIS parent are reused / reordered as normal —
+//   // cloning is only necessary for cross-parent theft.
+//   const out: Node[] = b.slice(); // copy; entries may be replaced by clones
+//   let after: Node | undefined = marker;
+//   for (let i = b.length - 1; i >= 0; i--) {
+//     let node = out[i];
+//     if (node.parentNode !== null && node.parentNode !== parent) {
+//       // Already owned by another parent — clone so we don't steal it.
+//       node = node.cloneNode(true) as Node;
+//       out[i] = node;
+//     }
+//     const alreadyPlaced =
+//       node.parentNode === parent &&
+//       node.nextSibling === (after ?? null);
+//     if (!alreadyPlaced) {
+//       insertBefore(parent, node, after);
+//     }
+//     after = node;
+//   }
+
+//   return out;
+// }
 
 // ============================================================================
 // cleanChildren
@@ -833,6 +1067,7 @@ export function cleanChildren(
   current?: Node | Node[] | null,
   marker?: Node
 ): null {
+  // console.log('cleanChildren', parent, current, marker);
   if (current) {
     if (Array.isArray(current)) {
       for (let i = 0; i < current.length; i++) {
@@ -856,7 +1091,7 @@ function insertBefore(parent: Node, node: Node, marker?: Node) {
   if (isHydrating) {
     if (node.parentNode === parent) return;
   }
-
+  
   if (marker) {
     if (marker.parentNode === parent) {
       parent.insertBefore(node, marker);
@@ -944,7 +1179,10 @@ export function setClassName(element: Element, value: any): void {
   element.setAttribute('class', String(value));
 }
 
-export function setStyle(element: any, value: any): void {
+export function setStyle(element: any, _value: any): void {
+  let value = _value;
+  while(typeof value === 'function') value = value()
+  
   if (value == null) { element.removeAttribute('style'); return; }
 
   if (typeof value === 'string') { element.style.cssText = value; return; }
@@ -1053,19 +1291,118 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     if (key.startsWith('on') && key.length > 2) {
       const name = key.slice(2).toLowerCase();
       if (typeof val === 'function') {
-        (element as any)[`$$${name}`] = val;
-        if (!delegatedSet.has(name) && !NON_DELEGATED.has(name)) delegateEvents([name]);
+        if (NON_DELEGATED.has(name)) {
+          // Non-bubbling events (blur, focus, scroll…): store handler on the element
+          // and attach a single stable forwarder listener. This avoids
+          // addEventListener/removeEventListener churn when a reactive scope re-runs,
+          // which would silently drop the listener via onCleanup before re-adding it.
+          (element as any)[`$$${name}`] = val;
+          const listenerKey = `__awc_${name}`;
+          if (!(element as any)[listenerKey]) {
+            const forwarder = (e: Event) => { (element as any)[`$$${name}`]?.(e); };
+            element.addEventListener(name, forwarder);
+            (element as any)[listenerKey] = forwarder;
+          }
+        } else {
+          (element as any)[`$$${name}`] = val;
+          if (!delegatedSet.has(name)) delegateEvents([name]);
+        }
       }
       continue;
     }
-    if (key === 'class' || key === 'className') { 
+    if (key === 'class' || key === 'className') {
       setClassName(element, val); continue; }
     if (key === 'style') { setStyle(element as HTMLElement, val); continue; }
     if (key === 'innerHTML') {
-      (element as any).innerHTML = val;
+        // let v = typeof val === 'function' ? val() : val
+        // while(typeof v === 'function') v = v()
+              const dispose = createEffect(() => {
+                let v = val()
+                while(typeof v === 'function') v = v();
+                (element as any).innerHTML = v;
+              });
+              onCleanup(()=>{
+                dispose()
+              })
+              // (element as any).innerHTML = val;
+                // console.log('inner html is', v);
       continue;
     }
-    setAttribute(element, key, val, isSVG);
+    // Special case: <input>/<textarea> value — use DOM property assignment, not
+    // setAttribute. Skip reactive updates while the element has focus so user
+    // input is never interrupted and focus is never lost due to signal writes.
+    if (key === 'value' && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA')) {
+      if (typeof val === 'function') {
+        const dispose = createEffect(() => {
+          let v = val();
+          //  console.log('apply inpit props', v, element);
+          while (typeof v === 'function' && (v as Function).length === 0) v = v();
+          // Only update if element is NOT currently focused — don't fight user input
+          if (document.activeElement !== element) {
+            (element as HTMLInputElement).value = v ?? '';
+          }
+        });
+        onCleanup(() => { dispose(); });
+      } else {
+        (element as HTMLInputElement).value = val ?? '';
+      }
+      continue;
+    }
+    if (key === 'checked' && (element.tagName === 'INPUT')) {
+      if (typeof val === 'function') {
+        const dispose = createEffect(() => {
+          let v = val();
+          while (typeof v === 'function' && (v as Function).length === 0) v = v();
+          // Only update if element is NOT currently focused — don't fight user input
+          if (document.activeElement !== element) {
+            (element as any).checked = v ?? '';
+          }
+        });
+        onCleanup(() => { dispose(); });
+      } else {
+        (element as any).checked = val ?? '';
+      }
+      continue;
+    }
+
+    // Special case: <select value=...> — must assign .value as DOM property
+    // AFTER options are in the DOM. We defer the initial run via queueMicrotask
+    // (children/options are inserted synchronously after applyProps returns).
+    if (key === 'value' && (element as Element).tagName === 'SELECT') {
+      if (typeof val === 'function') {
+        let firstRun = true;
+        const dispose = createEffect(() => {
+          let v = val();
+          while (typeof v === 'function' && (v as Function).length === 0) v = v();
+          if (firstRun) {
+            firstRun = false;
+            queueMicrotask(() => { (element as HTMLSelectElement).value = v ?? ''; });
+          } else {
+            (element as HTMLSelectElement).value = v ?? '';
+          }
+        });
+        onCleanup(() => { dispose(); });
+      } else {
+        queueMicrotask(() => { (element as HTMLSelectElement).value = val ?? ''; });
+      }
+      continue;
+    }
+    
+    if (typeof val === 'function') {
+      const dispose = createEffect(() => {
+        let v = val()
+        while((typeof v === 'function' && (v as Function).length===0)) v = v()
+          // if(key==='opened'){
+          //   console.log('opened is', val, element,v)
+          // }
+          applyElementProp(element, key, v, isSVG)
+      });
+                onCleanup(()=>{
+                dispose()
+              })
+    } else {
+      applyElementProp(element, key, val, isSVG);
+    }
   }
 }
 
@@ -1079,6 +1416,8 @@ export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
   // console.log('target is', target)
   return target;
 }
+
+
 
 // ============================================================================
 // Refs
@@ -1136,13 +1475,56 @@ export function renderLitToNodes(template: any): Node[] {
 // Portal
 // ============================================================================
 
-export function createPortal(
-  children: Children | Accessor<Children>,
-  container?: Element
-): () => void {
-  return insert(container || (globalThis as any).body, children) as () => void;
-}
+export function createPortal(children: any, element: any, props?: any) {
+  // 1. Define the target (default to document.body)
+  const container = element || document.body;
 
+  // 2. Use the 'children' helper to resolve the reactive content
+  // This ensures that if children are a function or signal, they are tracked.
+  const resolved = resolveChildren(() => children);
+  const cleanups: any[] = [];
+
+  batch(()=>{
+    const dispose = createRenderEffect(() => {
+      const nodes = resolved();
+      // console.log('resolved', nodes)
+  
+      // 3. Handle the insertion
+      if (Array.isArray(nodes)) {
+        nodes.forEach((node) => container.appendChild(node));
+  
+        // 4. Cleanup: Remove nodes when the effect re-runs or component unmounts
+        cleanups.push(() => {
+          nodes.forEach((node) => {
+            if (node.parentNode === container) {
+              container.removeChild(node);
+            }
+          });
+        });
+      } else if (nodes instanceof Node) {
+        container.appendChild(nodes);
+        cleanups.push(() => {
+          console.log('on cleanup nodes', nodes, nodes.parentNode, container)
+          if (nodes.parentNode === container) {
+            container.removeChild(nodes);
+          }
+        });
+      }
+    });
+    cleanups.push(dispose);
+    // 5. Return the cleanup function
+    onCleanup(()=>{
+      cleanups.forEach((fn) => fn());
+      // dispose();
+    });
+    
+  })
+
+
+
+  // Portal returns nothing to its original parent's DOM location
+  return null;
+}
 // ============================================================================
 // Misc utilities
 // ============================================================================
@@ -1180,10 +1562,20 @@ export function registerBatch(batchFn: (fn: () => void) => void): void {
   (globalThis as any).__batch = batchFn;
 }
 
-export function registerCreateComponent(
-  createComponent: (fn: () => any, props?: any) => any
+// export function registerCreateComponent(
+//   _createComponent: (fn: () => any, props?: any) => any
+// ): void {
+//   (globalThis as any).__createComponent = _createComponent;
+// }
+export function registerCreateRoot(
+  _createRoot: (fn: <T>(fn: (dispose: () => void) => T)=> T) => any
 ): void {
-  (globalThis as any).__createComponent = createComponent;
+  (globalThis as any).__createRoot = _createRoot;
+}
+export function registerOncleanUp(
+  _onCleanup: (fn: () => void) => void
+): void {
+  (globalThis as any).__onCleanup = _onCleanup;
 }
 
 function isPromise(v: any): v is Promise<any> {
@@ -1201,6 +1593,18 @@ function isPromise(v: any): v is Promise<any> {
 
 export function registerEffectCreator(creator: (fn: () => void) => () => void): void {
   (globalThis as any).__createEffect = creator;
+}
+export function registerRenderEffectCreator(creator: (fn: () => void) => () => void): void {
+  (globalThis as any).__createRenderEffect = creator;
+}
+export function registerCreateRootCreator(creator: (fn: () => void) => () => void): void {
+  (globalThis as any).__createRoot = creator;
+}
+export function registerCreateMemoCreator(creator: any): void {
+  (globalThis as any).__createMemo = creator;
+}
+export function registeronCleanupCreator(creator: any): void {
+  (globalThis as any).__onCleanup = creator;
 }
 
 // ============================================================================

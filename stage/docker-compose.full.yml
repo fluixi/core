@@ -1,0 +1,45 @@
+# ─── Leuzman Backend — Medusa v2 ─────────────────────────────────────────────
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    extends:
+        file: base-compose.yml
+        service: postgres-base
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - leuzman_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medusa-store"]
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    extends:
+      file: base-compose.yml
+      service: redis-base
+    networks:
+      - leuzman_network
+    ports:
+      - "6379:6379"
+  # ── Medusa Backend ───────────────────────────────────────────────────────────
+  medusa:
+    extends:
+          file: base-compose.yml
+          service: medusa-base
+    build:
+        context: ../../../
+        dockerfile: packages/kettle-apps/leuzman-backend/Dockerfile.repo
+    networks:
+      - leuzman_network
+    ports:
+      - "9000:9000"   # API + Admin dashboard
+      - "5173:5173"   # Vite HMR (admin dev mode)
+
+volumes:
+  postgres_data:
+
+networks:
+  leuzman_network:
+    driver: bridge

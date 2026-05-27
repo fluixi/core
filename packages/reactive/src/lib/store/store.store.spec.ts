@@ -294,7 +294,7 @@ describe('store with arrays - comprehensive tests', () => {
 
       set('[0][1]', 20);
       expect(matrix[0][1]).toBe(20);
-      expect(matrix[0]).toEqual([1, 20, 3]);
+      expect(unwrap(matrix)[0]).toEqual([1, 20, 3]);
     });
 
     it('should update all elements in nested array', () => {
@@ -304,8 +304,8 @@ describe('store with arrays - comprehensive tests', () => {
       ]);
 
       set('[0][*]', (v) => v * 10);
-      expect(matrix[0]).toEqual([10, 20, 30]);
-      expect(matrix[1]).toEqual([4, 5, 6]);
+      expect(unwrap(matrix)[0]).toEqual([10, 20, 30]);
+      expect(unwrap(matrix)[1]).toEqual([4, 5, 6]);
     });
   });
 
@@ -325,8 +325,8 @@ describe('store with arrays - comprehensive tests', () => {
         { id: 2, name: 'Bob', tags: ['user'] },
       ]);
 
-      expect(users[0].tags).toEqual(['admin', 'user']);
-      expect(users[1].tags).toEqual(['user']);
+      expect(unwrap(users)[0].tags).toEqual(['admin', 'user']);
+      expect(unwrap(users)[1].tags).toEqual(['user']);
     });
 
     it('should update nested array within object', () => {
@@ -337,7 +337,7 @@ describe('store with arrays - comprehensive tests', () => {
 
       set('[0].tags[0]', 'superadmin');
       expect(users[0].tags[0]).toBe('superadmin');
-      expect(users[0].tags).toEqual(['superadmin', 'user']);
+      expect(unwrap(users)[0].tags).toEqual(['superadmin', 'user']);
     });
 
     it('should create deeply nested structure on the fly', () => {
@@ -456,7 +456,7 @@ describe('store with arrays - comprehensive tests', () => {
       expect(mixed[0]).toBe(1);
       expect(mixed[1]).toBe('string');
       expect(mixed[2].name).toBe('object');
-      expect(mixed[3]).toEqual([1, 2, 3]);
+      expect(unwrap(mixed)[3]).toEqual([1, 2, 3]);
       expect(mixed[4]).toBe(true);
     });
 

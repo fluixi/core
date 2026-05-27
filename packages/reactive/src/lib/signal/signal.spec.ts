@@ -168,7 +168,7 @@ describe('Signal System - Core Features', () => {
         computations++;
         return count() * 2;
       });
-      expect(computations).toBe(1);
+      expect(computations).toBe(0); // Memos are lazy — don't compute until first read
       doubled();
       doubled();
       doubled();
@@ -716,7 +716,7 @@ describe('Signal System - Utilities', () => {
         return 'computed';
       });
 
-      expect(computations).toBe(1); // Memos compute on creation
+      expect(computations).toBe(0); // Memos are lazy — don't compute until first read
       expect(lazy()).toBe('computed');
       expect(lazy()).toBe('computed');
       expect(computations).toBe(1); // Should not recompute if dependency hasn't changed

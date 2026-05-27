@@ -6,6 +6,7 @@ import {
 } from './types.js';
 import { isObject, isPlainObject } from './utils.js';
 import { deepClone } from './clone.js';
+import { diffObjectDetailed,  applyDiff, } from './diff.js';
 import { parseSelector } from './selector.js';
 
 /**
@@ -124,6 +125,90 @@ export function merge(...sources: any[]): any {
   return result;
 }
 
+function getKey(value: any, keys?: string[]){
+  let key: string | undefined;
+  if(typeof value === 'undefined' || value === null) return;
+  const data_keys = keys ? keys : ["id"]
+  if(typeof value === 'object'){
+    if(!Array.isArray(value)){
+      let i = 0
+      while(!key){
+        key = data_keys[i]
+        i+=1;
+      }
+    }
+  }
+  return key;
+}
+
+type Primitive = string | number | boolean | null | undefined;
+
+export function mergeArrays<T>(
+  arr1: T[],
+  arr2: T[],
+  options?: {
+    key?: keyof T;       // for objects
+    override?: boolean;  // arr2 overrides arr1
+  }
+): T[] {
+  const { key, override = true } = options || {};
+
+  // 👉 Case 1: primitives
+  if (!key) {
+    return Array.from(new Set([...arr1, ...arr2]));
+  }
+
+  // 👉 Case 2: objects with key
+  const map = new Map<any, T>();
+
+  for (const item of arr1) {
+    map.set((item as any)[key], item);
+  }
+
+  for (const item of arr2) {
+    const existing = map.get((item as any)[key]);
+
+    if (!existing) {
+      map.set((item as any)[key], item);
+    } else {
+      map.set(
+        (item as any)[key],
+        override
+          ? { ...existing, ...item } // merge + override
+          : { ...item, ...existing } // keep original
+      );
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+function mergeInPlace(target: any, source: any) {
+  console.log('merging in place', target, source)
+  for (const key in source) {
+    const tVal = target[key];
+    const sVal = source[key];
+    const diff = diffObjectDetailed(tVal, sVal)
+
+    if (Array.isArray(tVal) && Array.isArray(sVal)) {
+      // keep same array reference
+      tVal.length = 0;
+      tVal.push(...sVal);
+    } else if (
+      typeof tVal === 'object' &&
+      typeof sVal === 'object' &&
+      tVal &&
+      sVal && 
+      diff.hasChanges
+    ) {
+       applyDiff(tVal, sVal)
+      // mergeInPlace(tVal, sVal);
+    } else {
+      target[key] = sVal;
+    }
+  }
+}
+
 /**
  * Merges objects or arrays with options for reference preservation and strict merging
  *
@@ -204,9 +289,33 @@ export function deepMergeWithOptions<T extends object>(
         }
       } else {
         // In non-strict mode, concatenate arrays
-        for (const item of sourceArray) {
-          resultArray.push(deepClone(item));
-        }
+        // console.log('pushing', [...resultArray], [...sourceArray])
+        mergeInPlace(resultArray, sourceArray)
+        // if(sourceArray.length===resultArray.length){
+        //   for (let i=0; i<sourceArray.length; i++) {
+        //     const item = sourceArray[i];
+        //     // const result = resultArray[i];
+        //     // let index = -1;
+        //     // if(typeof item === 'object'){
+        //     //   const key = getKey(item);
+        //     //   if(key){
+        //     //     index = resultArray.find(s=>)
+        //     //   }else{
+
+        //     //   }
+
+        //     // }else{
+
+        //     // }
+        //     resultArray.push(deepClone(item));
+        //   }
+        // }else{
+        //   for (let i=0; i<sourceArray.length; i++) {
+        //     const item = sourceArray[i]
+        //     resultArray.push(deepClone(item));
+        //   }
+
+        // }
       }
     } else {
       // Object merging

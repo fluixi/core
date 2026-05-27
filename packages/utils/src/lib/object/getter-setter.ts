@@ -1,8 +1,9 @@
 import { mergeArraysByKey } from '../array/advanced.js';
 import { isPrimitive } from '../helpers.js';
 import { deepClone } from './clone.js';
-import { applyDiff } from './diff.js';
+import { diffObjectDetailed, applyDiff } from './diff.js';
 import { deepMerge, mergeIntoStructure } from './merge.js';
+import { reconcile } from './reconcile.js';
 import { parseSelector, stringifySelector } from './selector.js';
 import type {
   AnyObject,
@@ -29,6 +30,10 @@ import type {
 } from './types.js';
 import { isObject, traverseStructure } from './utils.js';
 
+
+// const applyDiff = (obj: any, diff: any, keepRef?: boolean) => {
+//   return reconcile(diff)(obj);
+// }
 type A<T> = T extends AnyObject ? T : never;
 /**
  * Setter interface for advanced object manipulation
@@ -394,13 +399,15 @@ export function set<
 >(obj: T, key: K, filterFn: Fn, property: P, value: V): any;
 // Implementation
 export function set(
-  obj: any,
+  _obj: any,
   first?: any,
   second?: any,
   third?: any,
   fourth?: any
 ): any {
   // if (params.length === 0) return obj;
+  let obj = deepClone(_obj)
+  // console.log('set called', {obj, first, second, third, fourth})
 
   const params = [] as any[];
   if (typeof first !== 'undefined') params.push(first);
@@ -421,35 +428,31 @@ export function set(
 
   if (params.length === 1) {
     if (typeof params[0] === 'function') {
+      // console.log('callback update', params, obj)
       return updateWithCallBack(obj, params[0]);
     }
 
-    obj = params[0];
     if (Array.isArray(params[0])) {
-      if (Array.isArray(obj)) {
-        if (first.length === 0) {
-          for (let i = 0; i < obj.length; i++) {
-            obj.pop();
-          }
-        } else {
-          // for (let i = 0; i < obj.length; i++) {
-          //   obj.pop();
-          // }
-          obj.push(...params[0]);
+      console.log('is array', [...params[0]])
+      // if ([...params[0]].some((v) => v.title === 'S / Red / Nike')) throw new Error('stop')
+        if (Array.isArray(obj)) {
           // obj = params[0];
-          // console.log('params', params);
-          return obj;
-          // if (obj.length > 0) {
-          //   mergeArraysByKey([obj, params[0] as any], 'id');
-          // } else {
-          //   obj.push(...params[0]);
-          // }
+          if (first.length === 0) {
+            for (let i = 0; i < obj.length; i++) {
+              obj.pop();
+            }
+          } else {
+            const diff = diffObjectDetailed([...obj], [...params[0]]);
+            if (diff.hasChanges) {
+              applyDiff(obj, [...params[0]], true);
+            }
+            return obj;
+          }
         }
-      }
       // updateWithCallBack(obj, (value) => );
     } else if (typeof params[0] === 'object' && !Array.isArray(params[0])) {
       if (typeof obj === 'object' && !Array.isArray(obj)) {
-        deepMerge(obj, params[0]);
+        applyDiff(obj, params[0], true);
       }
       // if (Array.isArray(obj)) {
       //   obj.push(params[0]);
@@ -493,7 +496,7 @@ export function set(
   //   console.log('items', obj, first, second);
   // }
   if (
-    typeof first === 'string' &&
+    (typeof first === 'string' || typeof first === 'number') &&
     (params.length === 2 || params.length === 3)
   ) {
     if (isRangeObject(second)) {
@@ -503,6 +506,15 @@ export function set(
         second as any,
         third as any
       );
+    }
+    if(typeof first === 'number'){
+      // console.log('setting v', {obj, first, second, third})
+      if(typeof third !== 'undefined'){
+        return setValueAtPath(obj, `[${first}].${second}`, third as any);
+      }else{
+        return setValueAtPath(obj, `[${first}]`, second, third as any);
+
+      }
     }
     // console.log('len 1', params.length);
     if (typeof second === 'number' && typeof third !== 'undefined') {
@@ -523,7 +535,7 @@ export function set(
   }
   // Pattern 3 & 4: set(obj, "path", index, value) or set(obj, "path", index, subPath, value)
   if (typeof first === 'string' && typeof second === 'number') {
-    // console.log('len 2')
+    console.log('len 2', obj, params)
     if (params.length === 3) {
       return setValueAtIndex(obj, first, second, third as any);
     } else if (params.length === 4) {
@@ -581,7 +593,7 @@ export function set(
     !Array.isArray(first) &&
     params.length === 1
   ) {
-    return deepMerge(obj, first);
+    return applyDiff(obj, first, true);
   }
 
   // Pattern 10: set(obj, "path", updateObject)
@@ -615,8 +627,28 @@ export function set(
       );
     }
   }
+  if (typeof first === 'function' && typeof second === 'string') {
+    if (params.length === 3) {
+      console.log('set filter')
+      return setArrayValueWithFilter(
+        obj,
+        first,
+        second as any,
+        third as any
+      );
+    } else if (params.length === 4) {
+      return setValueWithFilterWithSubPath(
+        obj,
+        second,
+        first as (item: any) => boolean,
+        third as any as string,
+        fourth as any
+      );
+    }
+  }
 
   // Pattern 13: Array selectors
+  console.log('last pattern', params, _obj)
   if (Array.isArray(first)) {
     if (
       params.length === 2 &&
@@ -642,6 +674,8 @@ function handleFunctionParams(
   isArray = false
 ) {
   const paths = parseSelector(selector);
+  // console.log('p', { paths, selector, res: paths[paths.length - 1] });
+  if(paths.length === 0) return value
   const isWildcard = paths[paths.length - 1].type === 'wildcard';
   const containWildcard =
     paths.some((path) => path.type === 'wildcard') && Array.isArray(data);
@@ -657,7 +691,7 @@ function handleFunctionParams(
           typeof value === 'function'
             ? value(data[i])
             : typeof data[i] === 'object'
-            ? deepMerge(data[i], value)
+            ? applyDiff(data[i], value, true)
             : value;
         if (!finalValue) finalValue = [];
         finalValue.push(v);
@@ -733,9 +767,9 @@ export function setValueAtPath<
     paths,
     createMissing: true,
   } as any);
-  if (selector === 'person.wife.childs') {
-    console.log('set at p', target, value);
-  }
+  // if (selector === 'variantRows') {
+  //   console.log('set at p', target, value);
+  // }
   let get_value;
   if (subPath) {
     if (typeof value === 'function') {
@@ -749,6 +783,7 @@ export function setValueAtPath<
     value,
     Array.isArray(obj)
   );
+  // console.log('set value at path', {data, finalValue, selector, obj});
   // if (selector === '[*]') {
   //   console.log('finalValue', finalValue, selector);
   // }
@@ -799,6 +834,7 @@ export function setValueAtIndex<
   const target_copy = structuredClone(target);
   const finalValue = handleFunctionParams(selector, target_copy[index], value);
 
+  console.log('set value at index', {obj, selector, index, finalValue, value, target_copy});
   if (index < 0) {
     // Negative index counts from end
     const actualIndex = target.length + index;
@@ -1051,6 +1087,45 @@ export function setValueWithFilter<
 
   return setValueWithIndices(obj, selector, indices, value);
 }
+export function setArrayValueWithFilter<
+  T extends AnyObject | any[],
+  K extends SelectorFor<T> = SelectorFor<T>
+>(
+  obj: T,
+  filterFn: (
+    item: IValueOfKey<T, K> extends (infer U)[] ? U : any,
+    index: number
+  ) => boolean,
+  selector: K,
+  value: IValueOfKey<T, K> extends (infer U)[]
+    ? U | Partial<U> | ((prev: U) => U | Partial<U>)
+    : any
+): T {
+  let target = obj
+
+  // const target = ValueOfKey(obj, selector);
+  if (!Array.isArray(target)) {
+    throw new Error(`Target at ${selector} is not an array`);
+  }
+  // return setValueAtPath(obj, selector, value);
+  console.log('updating', selector, value, target)
+
+
+
+  const indices: number[] = [];
+  const target_copy = [...target];
+
+  target.forEach((item, index) => {
+    const n = setAtPath(item, selector, value, { createMissing: true })
+    item = n
+    // if (filterFn(item, index)) {
+    //   // console.log('set filter for done', index)
+    //   indices.push(index);
+    // }
+  });
+  return target
+  // return setValueWithIndices(obj, selector, indices, value);
+}
 
 /**
  * Sets value for filtered items with sub-path
@@ -1110,7 +1185,7 @@ export function mergeUpdateAtPath<
     : any
 ): T {
   const current = ValueOfKey(obj, selector, { createMissing: true });
-  const merged = deepMerge(current || {}, updates);
+  const merged = applyDiff(current || {}, updates, true);
   return setAtPath(obj, selector, merged, { createMissing: true });
 }
 
@@ -1168,7 +1243,7 @@ export function ValueOfKey<
 >(
   obj: T,
   selector: K,
-  options: { createMissing?: boolean; add?: boolean; debug?: boolean } = {}
+  options: { createMissing?: boolean; type?: 'array'; add?: boolean; debug?: boolean } = {}
 ): any {
   const { createMissing = false, add = false, debug = false } = options;
   const segments = parseSelector(selector);
@@ -1306,7 +1381,8 @@ export function ValueOfKey<
             nextSegment.type === 'index' ||
             nextSegment.type === 'slice' ||
             nextSegment.type === 'union' ||
-            nextSegment.type === 'wildcard'
+            nextSegment.type === 'wildcard' ||
+            options.type === 'array'
               ? []
               : {};
           current = current[String(segment.value)];
@@ -1372,7 +1448,8 @@ export function ValueOfKey<
             nextSegment.type === 'index' ||
             nextSegment.type === 'slice' ||
             nextSegment.type === 'union' ||
-            nextSegment.type === 'wildcard'
+            nextSegment.type === 'wildcard' ||
+            options.type === 'array'
               ? []
               : {};
           current = current[index];
@@ -1420,7 +1497,7 @@ export const setAtPath = <
   options: { createMissing?: boolean } = {}
 ): T => {
   if (selector === '[*]') {
-    return applyDiff(obj, value);
+    return applyDiff(obj, value, true);
   }
   const { createMissing = true } = options;
 
@@ -1555,9 +1632,10 @@ export const setAtPath = <
           }
         }
         if (Array.isArray(value)) {
-          current[index] = deepMerge(
+          current[index] = applyDiff(
             structuredClone(current[index]),
-            value[index]
+            value[index],
+            true
           );
         } else {
           current[index] = value;
@@ -1582,13 +1660,13 @@ export const setAtPath = <
                 ob = fromPath(paths.join('.'), value[i]);
                 current[i] =
                   typeof current[i] === 'object'
-                    ? deepMerge(current[i], ob)
+                    ? applyDiff(current[i], ob, true)
                     : ob;
               } else {
                 ob = fromPath(paths.join('.'), value);
                 current[i] =
                   typeof current[i] === 'object'
-                    ? deepMerge(current[i], ob)
+                    ? applyDiff(current[i], ob, true)
                     : ob;
               }
             }
@@ -1643,9 +1721,10 @@ export const setAtPath = <
         if (Array.isArray(value)) {
           if (typeof current[index] === typeof value[index]) {
             try {
-              current[index] = deepMerge(
+              current[index] = applyDiff(
                 deepClone(current[index]),
-                value[index]
+                value[index],
+                true
               );
             } catch (e) {
               console.log('expected on array', {
@@ -1669,7 +1748,7 @@ export const setAtPath = <
         if (Array.isArray(value)) {
           for (let i = 0; i < current.length; i++) {
             if (typeof current[i] === 'object') {
-              current[i] = deepMerge(current[i], value[i]);
+              current[i] = applyDiff(current[i], value[i], true);
             } else {
               current[i] = value[i];
             }
@@ -1677,7 +1756,7 @@ export const setAtPath = <
         } else {
           for (let i = 0; i < current.length; i++) {
             if (typeof current[i] === 'object') {
-              current[i] = deepMerge(current[i], value);
+              current[i] = applyDiff(current[i], value, true);
             } else {
               current[i] = value;
             }
@@ -1714,7 +1793,7 @@ const updateLastKey = (object: any, value: any) => {
             if (typeof current[i] === 'object' && !Array.isArray(current[i])) {
               updateLastKey(current[i], value);
             } else {
-              current[i] = deepMerge(current[i], value);
+              current[i] = applyDiff(current[i], value, true);
             }
           }
         }
@@ -2239,7 +2318,7 @@ export const deepMergeWithArrays = <T extends AnyObject[]>(
 
     const flat = flattenWithArrays(obj);
     for (const path in flat) {
-      set(result, path, flat[path]);
+      set(result, path, (flat as any)[path] as any);
     }
   }
 
@@ -2521,9 +2600,12 @@ export const updateWithCallBack = <
   //   return setAtPath(obj, path, newValue);
   // }
   // return setValueAtPath(obj as any, path as any, newValue as any);
-  // console.log('callback update', newValue);
-  return deepMerge(obj, newValue);
+  // console.log('callback update before', Array.isArray(obj) ? [...obj] : {...obj} , newValue);
+  const result = applyDiff(obj, newValue, true);
+  // const result = deepMerge(obj, newValue);
+  // console.log('callback update', {obj, result, updater, newValue})
   // return obj;
+  return result;
 };
 
 /**

@@ -132,6 +132,7 @@ export function createMemo<T>(
   value?: T,
   options?: any
 ): Accessor<T> {
+  console.log('memo there')
   // Server: Compute once, no reactivity
   const computed = fn(value);
   return (() => computed) as Accessor<T>;

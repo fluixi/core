@@ -1,14 +1,70 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# ─── Build outputs ────────────────────────────────────────────────────────────
+dist/
+tmp/
+out-tsc/
+*.tsbuildinfo
 
-# compiled output
-dist
-tmp
-out-tsc
+packges/kettle-apps/**/dist
+packges/kettle-apps/**/out
+packges/kettle-apps/leuzman-backend/**/dist
+packges/kettle-apps/pos/out
+packges/kettle-apps/pos/release
+packges/kettle-apps/pos/packages
+packges/kettle-apps/pos-native/.expo
+packges/kettle-apps/dev.db
+packges/kettle-apps/dev.db-shm
+packges/kettle-apps/dev.db-wal
+packges/kettle-apps/stage
+# ─── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
 
-# dependencies
-node_modules
+# Don't commit npm/yarn lockfiles — this repo uses pnpm
+package-lock.json
+yarn.lock
 
-# IDEs and editors
+# ─── Environment & secrets ────────────────────────────────────────────────────
+# Rule: commit *.example / *.docker templates, never the real values.
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+
+# Docker local overrides (real credentials, never commit)
+.env.docker.local
+
+# Private keys, certs
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# ─── Caches ───────────────────────────────────────────────────────────────────
+.nx/cache
+.nx/workspace-data
+.vite/
+.vite-cache/
+.cache/
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+/coverage
+/libpeerconnection.log
+testem.log
+
+# ─── IDEs & editors ───────────────────────────────────────────────────────────
 /.idea
 .project
 .classpath
@@ -17,35 +73,33 @@ node_modules
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
+# VSCode — commit shared settings, ignore personal/local overrides
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.nx/cache
-.nx/workspace-data
+# Cursor / AI tools
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-vite.config.*.timestamp*
-vitest.config.*.timestamp*
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
+# ─── Misc ─────────────────────────────────────────────────────────────────────
+/.sass-cache
+/connect.lock
+/typings
+
+# ─── Project-specific exclusions ─────────────────────────────────────────────
 packages/kettle-apps/
 packages/kettle-test/
 packages/kettlejs/docs

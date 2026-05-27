@@ -64,6 +64,7 @@ function resolveConfig<T extends EsbuildBuilderConfig = EsbuildBuilderConfig>(
     treeShaking = true,
     outExtension = {
       '.js': format === 'esm' ? '.mjs' : format === 'cjs' ? '.cjs' : '.js',
+      '.jsx': format === 'esm' ? '.mjs' : format === 'cjs' ? '.cjs' : '.jsx',
     },
     // chunkNames = 'chunks/[name]-[hash]',
     entryNames = '[name]',
@@ -212,7 +213,7 @@ async function processCopyFiles(
       if (copyConfig.transform) {
         const contents = readFileSync(sourcePath);
         const transformed = await copyConfig.transform(contents, fileName);
-        writeFileSync(destPath, transformed);
+        writeFileSync(destPath, transformed as any);
         if (log) {
           console.log(
             `  📄 Transformed and copied: ${file} → ${path.relative(

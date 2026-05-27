@@ -13,17 +13,15 @@
 import {
   render as domRender,
   hydrate as domHydrate,
-  registerLitRender,
 } from '@awc/dom';
-import { render as litRenderFn } from 'lit';
 import {
   deserializeHydrationData,
   setHydrating,
   cleanupHydration,
 } from '../server/hydration.js';
-import { ensureIntegration } from '../render/component.js';
 import { render } from '../render/index.js';
-
+import { ensureIntegration } from '../render/component.js';
+ensureIntegration('client index');
 // console.log('client called')
 // Register Lit support in @awc/dom
 // This allows JSX/DOM engine to render Lit TemplateResults

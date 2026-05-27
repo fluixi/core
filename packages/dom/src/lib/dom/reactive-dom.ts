@@ -21,53 +21,6 @@ class ComponentObserverImpl implements ComponentObserver {
   }
 }
 
-/**
- * Resolve a value that might be a signal
- * For signals, we use the signal directive to maintain reactivity
- */
-// function resolveValue<T>(value: T | Accessor<T>): any {
-//   if (isSignal(value)) {
-//     return signal(value);
-//   }
-//   return value;
-// }
-
-/**
- * (
-    R
-  )esolve children with reactive signal support
- */
-// function resolveChildren(children: JSXElement | JSXElement[]): any {
-//   if (children === null || children === undefined || children === false) {
-//     return nothing;
-//   }
-
-//   if (Array.isArray(children)) {
-//     const resolved = children
-//       .map(resolveChildren)
-//       .filter(
-//         (c) => c !== nothing && c !== false && c !== null && c !== undefined
-//       );
-//     return resolved.length === 0 ? nothing : resolved;
-//   }
-
-//   if (typeof children === 'string' || typeof children === 'number') {
-//     return children;
-//   }
-
-//   if (typeof children === 'boolean') {
-//     return nothing;
-//   }
-
-//   // Handle signals in children
-//   if (isSignal(children)) {
-//     console.log('signal children', children);
-//     return signal(children);
-//   }
-
-//   // TemplateResult or other valid lit-html content
-//   return children;
-// }
 
 export const ReactiveDOM = {
   currentObserver: null as ComponentObserver | null,

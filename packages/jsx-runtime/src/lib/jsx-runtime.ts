@@ -33,7 +33,7 @@ import {
   applyProps as domProps
 } from '@awc/dom';
 
-import { untrack, createSignal, createMemo, isSignal, childrens } from '@awc/reactive';
+import { untrack, createSignal, createMemo,  resolveChildren } from '@awc/dom';
 
 // ============================================================================
 // Types
@@ -76,9 +76,9 @@ const globalDelegatedSet = new Set<string>();
 // Helper: createComponent
 // ============================================================================
 
-function createComponent(Comp: any, props: any): any {
+function createComponent(Comp: any, props: any, options?: any): any {
   const registered = (globalThis as any).__createComponent;
-  if (registered) return registered(Comp, props);
+  if (registered) return registered(Comp, props, options);
   return untrack(() => Comp(props));
 }
 
@@ -91,12 +91,17 @@ function normalizeChildren(children: any): any {
 
   if (Array.isArray(children)) {
     const flattened = children.map(normalizeChildren).flat();
-    return makeArrayFlat(
-      flattened.filter(
-        (f: any) =>
-          f != null && f !== false && !(typeof f === 'string' && f.trim().length === 0)
-      )
-    );
+    // return makeArrayFlat(
+    //   flattened.filter(
+    //     (f: any) =>
+    //       f != null && f !== false && !(typeof f === 'string' && f.trim().length === 0)
+    //   )
+    // );
+    return flattened
+    // .filter(
+    //   (f: any) =>
+    //     f != null && f !== false && !(typeof f === 'string' && f.trim().length === 0)
+    // )
   }
 
   return children;
@@ -113,6 +118,7 @@ function normalizeChildren(children: any): any {
  * - Fragment → children array
  */
 export function jsx(type: any, props: any, key?: string): JSXElement {
+  // console.log('jsx runtime', type, props)
   if (type == null) return null;
 
   const p = props || {};
@@ -120,7 +126,8 @@ export function jsx(type: any, props: any, key?: string): JSXElement {
 
   // Handle Fragment
   if (type === Fragment) {
-    return asComponent(normalizeChildren(p.children)) as any;
+    // return resolveChildren(()=>asComponent(normalizeChildren(p.children))) as any;
+    return createMemo(()=>asComponent(normalizeChildren(p.children))) as any;
   }
 
   // Handle component functions
@@ -169,6 +176,7 @@ function createNativeElement(tag: string, props: any): any {
     ? document.createElementNS('http://www.w3.org/2000/svg', tag)
     : document.createElement(tag);
 
+  // console.log('apply', element.tagName)
   applyProps(element, props, isSVG);
 
   return element;
@@ -255,7 +263,7 @@ function applyProps(element: Element, props: any, isSVG: boolean): void {
   
   // Handle children
   if (props && props.children !== undefined) {
-    const children = childrens(()=>props.children);
+    const children = resolveChildren(()=>props.children);
     // props.children
     if (Array.isArray(children)) {
       // const asFn = children.some(c=>typeof c === 'function')
@@ -267,7 +275,8 @@ function applyProps(element: Element, props: any, isSVG: boolean): void {
         insert(element, c, (typeof c === 'function' ? null : undefined) as any);
       });
     } else {
-      insert(element, children);
+      insert(element, children, (typeof children === 'function' ? null : undefined) as any);
+      // insert(element, children);
     }
   }
 }
@@ -359,3 +368,9 @@ export async function renderToString(element: JSXElement): Promise<string> {
 
 // Re-export delegatedSet accessor for the runtime to check
 export { globalDelegatedSet as delegatedSet };
+
+// Re-export JSX namespace so TypeScript can find JSX.IntrinsicElements
+// when this module is resolved via jsxImportSource: "@awc/kettlejs"
+// Note: './jsx.d.js' resolves to jsx.d.ts (declaration file with JSX types),
+// not jsx.ts (the React bridge file).
+export type { JSX } from './jsx.d.js';

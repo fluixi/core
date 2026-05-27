@@ -3,11 +3,13 @@
  * @module @awc/kettlejs/router/data
  */
 
-import {
-  createResource,
+import {  createResource,
   createSignal,
+   } from "@awc/dom"
+import {
   type Accessor,
   type Setter,
+  Resource
 } from '@awc/reactive/signal';
 
 import {
@@ -28,9 +30,10 @@ export type CacheFn<T, Args extends any[]> = (
 ) => Promise<T> | T | undefined;
 
 export interface Action<T, Args extends any[]> {
-  (formData: FormData | Args[0]): Promise<T>;
-  url: string;
-  with(args: any): Action<T, Args>;
+  // (formData: FormData | Args[0]): Promise<T>;
+  (...args: Args): Promise<T>;
+  url?: string;
+  with?: (args: any)=> Action<T, Args>;
 }
 
 export interface Submission<T, Args extends any[]> {
@@ -147,12 +150,12 @@ export function revalidate(key: string | ((key: string) => boolean)) {
  * @param fetcher Function that returns a promise
  * @param source Dependency signal (optional)
  */
-export function createAsync<T, S = true>(
+export function createAsync<T, S extends any = true>(
   fetcher: (source: S) => Promise<T> | T,
   source?: () => S
-): Accessor<T | undefined> {
-  const [data] = createResource(source || (() => true as S), fetcher);
-  return data;
+):  Resource<S> {
+  const [data] = createResource(source || (() => true as S) as any, fetcher as any);
+  return data as Resource<S>;
   // return () => '' as any;
 }
 
@@ -237,7 +240,7 @@ export function action<T, Args extends any[]>(
   (submit as any).with = (args: any) =>
     action((...a: any[]) => (fn as any)(args, ...a), name);
 
-  return submit as Action<T, Args>;
+  return submit as any as Action<T, Args>;
 }
 
 /**
@@ -246,7 +249,7 @@ export function action<T, Args extends any[]>(
 export function useSubmission<T, Args extends any[]>(
   actionFn: Action<T, Args>
 ): Accessor<Submission<T, Args> | undefined> {
-  const [submission] = getSubmissionSignal<T, Args>(actionFn.url);
+  const [submission] = getSubmissionSignal<T, Args>(actionFn.url!);
   return submission;
 }
 
@@ -255,8 +258,8 @@ export function useSubmission<T, Args extends any[]>(
  */
 export function useAction<T, Args extends any[]>(
   actionFn: Action<T, Args>
-): (input: Args[0]) => Promise<T> {
-  return actionFn;
+): (...args: Args) => Promise<T> {
+  return actionFn as any;
 }
 
 // ============================================================================
