@@ -41,6 +41,7 @@ import {
   untrack,
   setOwner,
   getSharedConfig,
+  createResource
   // Context,
 } from '@awc/kettlejs/rx';
 // } from '@awc/reactive/signal';
@@ -123,6 +124,30 @@ export {
   litrx,
 } from '@awc/dom';
 
+export {
+  Show,
+  For,
+  Index,
+  Switch,
+  Match,
+  Dynamic,
+  ErrorBoundary,
+  Portal,
+  type ShowProps,
+  type ForProps,
+  type IndexProps,
+  type SwitchProps,
+  type MatchProps,
+  type MatchNode,
+  type DynamicProps,
+  type ErrorBoundaryProps,
+  type PortalProps,
+  classMap,
+  styleMap,
+  $classMap,
+  $styleMap
+} from '@awc/dom';
+
 // Re-export reactive primitives from @awc/reactive
 
 export { createStore, unwrap, Store } from '@awc/reactive/store';
@@ -154,7 +179,7 @@ export {
   lazy,
   Suspense,
   SuspenseList,
-  Show,
+  // Show,
   isNode,
   isLitResult,
   isJSXElement,
@@ -162,7 +187,7 @@ export {
   type RenderOptions,
   type SuspenseProps,
   type SuspenseListProps,
-  type ShowProps,
+  // type ShowProps,
   type LazyOptions,
   type Component,
   type ComponentProps,
@@ -248,6 +273,16 @@ export type {
   // RouterOptions,
 } from './router/index.js';
 
+// Web Component support (re-exported from @awc/element)
+export {
+  defineElement,
+  wrapElement,
+  KettleElement,
+  KettleLitElement,
+  KettleController,
+} from '@awc/element';
+export type * from '@awc/element';
+
 /**
  * Framework version
  */
@@ -262,6 +297,7 @@ export {
   createEffect,
   createMemo,
   createSignal,
+  createResource,
   createContext,
   createRoot,
   createDeferred,

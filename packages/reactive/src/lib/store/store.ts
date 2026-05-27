@@ -376,14 +376,17 @@ class StoreNode<T> {
           // node.trackSelf();
           return receiver;
         }
-
+        
         // ---- array structure tracking ----
         node.SELF?.();
-
+        
         // ---- property tracking ----
         node.getDataNode(key, target[key])();
-
+        
         const value = target[key];
+        // if(Array.isArray(target)) {
+        //   console.log('store map', target, key, value);
+        // }
 
         // ---- array mutators ----
         if (Array.isArray(target) && typeof value === 'function') {
@@ -392,7 +395,8 @@ class StoreNode<T> {
             key === 'pop' ||
             key === 'shift' ||
             key === 'unshift' ||
-            key === 'splice'
+            key === 'splice' ||
+            key === 'find'
           ) {
             return (...args: any[]) => {
               const result = value.apply(target, args);
@@ -1367,6 +1371,14 @@ class Store<T> {
     if (diff.deleted.some((a) => a === path)) {
       return true;
     }
+    // `diffObjectDetailed` adds nested paths (e.g. 'channels[0]', 'channels[1]')
+    // to `modified/added` for array changes, but NOT the top-level key ('channels').
+    // However, it always sets `changes[key] = newValue` for any changed property.
+    // Check `diff.changes` directly so array/object top-level keys properly
+    // trigger their DataNode signals.
+    if (diff.changes && typeof diff.changes === 'object' && path in (diff.changes as object)) {
+      return true;
+    }
     return false;
   }
 
@@ -1607,6 +1619,19 @@ class Store<T> {
       if (dataNode) {
         dataNode.$(value);
       }
+      // Invalidate the cached child StoreNode proxy for this property.
+      // The proxy's get-trap caches child StoreNodes in `node.children` and
+      // always returns the same `child.proxy` reference (it mutates the
+      // underlying value in-place). If we leave the cache intact, any
+      // `createMemo(() => state.someKey)` that re-runs after the DataNode
+      // fires will still get the *same* proxy reference → the memo's
+      // reference-equality check sees no change → downstream effects and
+      // `litrx` directives are never notified → DOM never updates.
+      //
+      // By deleting the child here, the next proxy read creates a brand-new
+      // StoreNode whose `child.proxy` is a different object reference. The
+      // memo detects the change, notifies `litrx`, and the DOM re-renders.
+      this.root.children.delete(propertyKey);
     } else {
       // Nested path handling
       const pathParts = pathStr.split('.');
@@ -1615,12 +1640,6 @@ class Store<T> {
       if (pathParts[0].startsWith('[') && pathParts[0].endsWith(']')) {
         const indexStr = pathParts[0].slice(1, -1);
         const remainingPath = pathParts.slice(1).join('.');
-
-        // When updating array element properties, also trigger array iterator signal
-        // This ensures memos that iterate the array will recompute
-        this.root.SELF?.$(Array.isArray(state) ? state.length : null);
-        // if (Array.isArray(state)) {
-        // }
 
         // Get or create child node for this array element
         let childNode = this.root.children.get(indexStr);

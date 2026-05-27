@@ -1,0 +1,1 @@
+import '@awc/adf-icon/registry.js';

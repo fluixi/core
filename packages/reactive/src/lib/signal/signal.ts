@@ -62,8 +62,12 @@ interface Computation {
   owned: Computation[] | null;
   cleanups: Cleanup[] | null;
   owner: RootOwner | null;
-  context: Map<symbol, unknown> | null;
+  contexts: Map<symbol, unknown> | null;
+  /** true = memo/computed: queued in Updates, processed before user effects.
+   *  false = effect: processed after Updates, deferrable by transitions. */
   pure: boolean;
+  /** true = createComputed: pure=true but runs eagerly (unlike lazy memos). */
+  computed?: boolean;
   updatedAt: number | null;
   node?: ReactiveNode;
   accessor?: Accessor<any>; // For memos, the accessor function that others can observe
@@ -161,10 +165,12 @@ export interface SuspenseListContextType {
 }
 
 interface TransitionState {
-  pending: boolean;
-  startTime: number;
-  timeoutMs: number;
-  updates: Set<() => void>;
+  /** True while the transition fn is executing and effects are being captured. */
+  running: boolean;
+  /** Effects captured during the transition, to be flushed asynchronously. */
+  effects: Computation[];
+  resolve?: () => void;
+  done?: Promise<void>;
 }
 
 interface ErrorBoundary {
@@ -188,6 +194,12 @@ export const __DEV__ = process.env.NODE_ENV !== 'production';
 const CLEAN = 0;
 const STALE = 1;
 const DIRTY = 2;
+// RUNNING is a sentinel state set on a computation just before its fn executes.
+// Any propagateDirty() call that fires DURING the fn (e.g. a signal write inside
+// a route component's setup code) will override it with DIRTY.  After the fn,
+// RUNNING → CLEAN (nothing re-dirtied it) or DIRTY → stay DIRTY (needs re-run).
+// This correctly distinguishes "was dirty going in" from "re-dirtied during fn."
+const RUNNING = 3;
 
 let Owner: RootOwner | null = null;
 let Listener: Computation | null = null;
@@ -195,11 +207,14 @@ let Updates: Computation[] | null = null;
 let Effects: Computation[] | null = null;
 let ExecCount = 0;
 let Pending = false;
+/** Depth of user-initiated batch() calls. Incremented on batch entry, decremented on exit. */
+let BatchDepth = 0;
 const MAX_ITERATIONS = 1000000;
 
 const signalObservers = new WeakMap<Signal<any>, Set<Computation>>();
 
-let currentTransition: TransitionState | null = null;
+/** Active transition — non-null while startTransition's fn is running or effects are deferred. */
+let Transition: TransitionState | null = null;
 const errorHandlers: ErrorBoundary[] = [];
 let Scheduler: ((fn: () => void) => void) | null = null;
 
@@ -209,6 +224,8 @@ let nodeIdCounter = 0;
 export const sharedConfig = {
   context: null as RootOwner | null,
   owner: null as RootOwner | null,
+  routeData: new Map<any, any>(),
+  matchedRoute: new Map<any, any>(),
 };
 
 /**
@@ -279,14 +296,55 @@ function handleError(err: Error): void {
 }
 
 // ============================================================================
+// TRANSITION PENDING SIGNAL  (module-level, shared by startTransition/useTransition)
+// ============================================================================
+
+// Initialized lazily so it doesn't run before createSignal is defined.
+let _transPending: (() => boolean) | null = null;
+let _setTransPending: ((v: boolean) => void) | null = null;
+
+function ensureTransPending() {
+  if (!_transPending) {
+    const [get, set] = createSignal(false);
+    _transPending = get;
+    _setTransPending = set;
+  }
+}
+
+// ============================================================================
+// SCHEDULING HELPER
+// ============================================================================
+
+/**
+ * Central computation scheduling that respects batch mode and active transitions.
+ *
+ *  - In batch    → always queue in Updates (flushed by flushUpdates).
+ *  - In transition (non-pure) → defer to Transition.effects (flush async).
+ *  - Computed (pure=true, computed=true) → run eagerly.
+ *  - Effect (pure=false) → run eagerly (unless deferred by transition).
+ *  - Memo (pure=true, computed=false) → skip here; lazy, runs on next read.
+ */
+function scheduleComputation(c: Computation): void {
+  if (Updates) {
+    if (Updates.indexOf(c) === -1) Updates.push(c);
+  } else if (Transition && Transition.running && !c.pure) {
+    // Defer non-pure effects during a transition
+    if (Transition.effects.indexOf(c) === -1) Transition.effects.push(c);
+  } else if (!c.pure || c.computed) {
+    // Run eager computations and plain effects immediately
+    updateComputation(c);
+  }
+  // Pure memos (pure=true, computed=false) are lazy — they re-evaluate on next
+  // read. Eagerly calling accessor() here broke router context (useRouter error)
+  // because it evaluated memos outside the correct owner/context chain.
+}
+
+// ============================================================================
 // CORE SIGNAL IMPLEMENTATION
 // ============================================================================
 
 function propagate(observerList: Computation[], propagator: (arg: any) => any) {
   for (let i = 0; i < observerList.length; i++) {
-    if (observerList[i].owner && observerList[i].owner?.owned) {
-      propagator(observerList[i].owner?.owned);
-    }
     propagator(observerList[i]);
   }
 }
@@ -309,7 +367,6 @@ export function createSignal<T>(
   signalObservers.set(s, new Set());
 
   function read(): T {
-
     const observer = Listener;
     if (observer) {
       if (!observer.sources) {
@@ -324,7 +381,7 @@ export function createSignal<T>(
       }
     }
     if (options && options.internal) {
-      console.log('read signal', {observer, value})
+      console.log('read signal', { observer, value });
     }
     return value;
   }
@@ -357,59 +414,46 @@ export function createSignal<T>(
 
         function propagateDirty(comp: Computation): void {
           if (visited.has(comp)) {
-            // console.log('no visited');
             return;
           }
 
           visited.add(comp);
 
-          // Mark as dirty and add to update queue if not already dirty
-          const wasDirty = comp.state === DIRTY;
-          // console.log('dirty', comp.state === DIRTY);
+          // Save state BEFORE marking dirty so we can distinguish:
+          //   CLEAN   → first time dirtied → add to toUpdate (normal path)
+          //   RUNNING → currently executing its fn → mark DIRTY so post-fn
+          //             check sees the re-dirtying; push non-pure to Updates
+          //   DIRTY   → already queued / already running and already re-dirtied
+          const prevState = comp.state;
           comp.state = DIRTY;
+          // console.log('prev state', prevState)
 
-          if (!wasDirty) {
+          if (prevState === CLEAN || prevState === STALE) {
             toUpdate.push(comp);
+          } else if (!comp.pure && Updates !== null && Updates.indexOf(comp) === -1) {
+            // Non-pure effect (RUNNING or already DIRTY): re-queue for another
+            // run after the current batch/render completes.
+            Updates.push(comp);
           }
 
-          // If this is a pure computation (memo), propagate to its observers
-          if (comp.pure && comp.accessor) {
+          // Do NOT propagate through pure memos eagerly. scheduleComputation
+          // will evaluate the memo via c.accessor(); if the memo's value changed
+          // its own hasChanged block will then propagate to downstream effects.
+          // Stopping here prevents effects from being queued when an intermediate
+          // memo's value hasn't actually changed (e.g. routeContent returning the
+          // same layout reference after a routeStates equals:false notification).
+          if (comp.pure && comp.accessor && prevState !== RUNNING) {
             const memoObservers = signalObservers.get(comp.accessor as any);
             if (memoObservers) {
-              for (const observer of memoObservers) {
-                propagateDirty(observer);
-              }
+              propagate(Array.from(memoObservers), propagateDirty)
             }
           }
         }
 
         propagate(observerList, propagateDirty);
-        // Propagate DIRTY state through the graph
-        // for (let i = 0; i < observerList.length; i++) {
-        //   if (observerList[i].owned) {
-        //   }
-        //   propagateDirty(observerList[i]);
-        // }
 
-        if (Updates) {
-          // In batch mode, collect all updates
-          for (const comp of toUpdate) {
-            if (Updates.indexOf(comp) === -1) {
-              Updates.push(comp);
-            }
-          }
-        } else {
-          // Run effects immediately (not memos)
-          for (const comp of toUpdate) {
-            if (!comp.pure) {
-              updateComputation(comp);
-            }
-          }
-        }
+        for (const comp of toUpdate) scheduleComputation(comp);
       }
-      // if (options && options.internal) {
-      //   console.log('write signal', {observers, value, node})
-      // }
     }
   }
 
@@ -451,7 +495,7 @@ export function createEffect(
     owned: null,
     cleanups: null,
     owner: Owner,
-    context: null,
+    contexts: null,
     pure: false,
     updatedAt: null,
   };
@@ -526,6 +570,7 @@ function runComputation(c: Computation, value: any): void {
     // if (value) {
     // }
   } catch (err) {
+    console.log('thow comp', err)
     if (isPromise(err)) {
       // Find Suspense boundary via context
       const ctx = _SuspenseContext && useContext(_SuspenseContext);
@@ -548,7 +593,7 @@ function updateComputation(c: Computation): void {
   if (!c.fn) return;
   if (c.state === CLEAN) return;
 
-  if (c.state === DIRTY || c.state === STALE) {
+  if (c.state === DIRTY || c.state === STALE || c.state === RUNNING) {
     // Run cleanups before re-execution
     if (c.cleanups) {
       for (let i = 0; i < c.cleanups.length; i++) {
@@ -625,14 +670,13 @@ export function createMemo<T>(
     owned: null,
     cleanups: null,
     owner: Owner,
-    context: null,
+    contexts: null,
     pure: true,
     updatedAt: null,
     node,
     accessor: undefined, // Will be set to read function after it's defined
   };
 
-  // console.log('memo Owner', Owner);
   if (Owner) {
     if (!Owner.owned) Owner.owned = [c];
     else Owner.owned.push(c);
@@ -672,11 +716,32 @@ export function createMemo<T>(
         c.sourceSlots = null;
       }
 
+      // Run cleanups from the previous run (mirrors updateComputation).
+      if (c.cleanups) {
+        for (let i = 0; i < c.cleanups.length; i++) {
+          c.cleanups[i]();
+        }
+        c.cleanups = null;
+      }
+
+      // Dispose child computations owned by the previous run.
+      if (c.owned) {
+        for (let i = 0; i < c.owned.length; i++) {
+          dispose(c.owned[i]);
+        }
+        c.owned = null;
+      }
+
       const prevListener = Listener;
       const prevOwner = Owner;
 
       Listener = c;
       Owner = c as any;
+      // Mark as RUNNING before executing fn so that any propagateDirty() call
+      // during the fn (e.g. a signal write inside a route component's setup)
+      // will override this with DIRTY.  After the fn we check: RUNNING → CLEAN
+      // (nothing re-dirtied it), DIRTY → keep DIRTY (needs re-evaluation).
+      c.state = RUNNING;
 
       try {
         const nextValue = (c.fn as ComputationFn<T>)(c.value);
@@ -703,30 +768,24 @@ export function createMemo<T>(
 
             function propagateDirty(comp: Computation): void {
               if (comp === c) return; // Skip self
-
-              if (visited.has(comp)) {
-                return;
-              }
-
+              if (visited.has(comp)) return;
               visited.add(comp);
 
-              // Mark as dirty and add to update queue if not already dirty
-              const wasDirty = comp.state === DIRTY;
+              const prevState = comp.state;
               comp.state = DIRTY;
 
-              if (!wasDirty) {
+              if (prevState === CLEAN || prevState === STALE) {
                 toUpdate.push(comp);
+              } else if (!comp.pure && Updates !== null && Updates.indexOf(comp) === -1) {
+                Updates.push(comp);
               }
+              
 
-              // If this is a pure computation (memo), propagate to its observers
-              if (comp.pure && comp.accessor) {
-                const memoObservers = signalObservers.get(comp.accessor as any);
-                if (memoObservers) {
-                  for (const observer of memoObservers) {
-                    propagateDirty(observer);
-                  }
-                }
-              }
+              // Do NOT propagate through pure memos eagerly. scheduleComputation
+              // will evaluate the memo; if its value changed, the memo's own
+              // hasChanged block propagates to downstream effects. Stopping here
+              // prevents effects from running when an intermediate memo returns
+              // the same value (e.g. routeContent stable under equals:false routeStates).
             }
 
             // Propagate DIRTY state through the graph
@@ -734,38 +793,40 @@ export function createMemo<T>(
               propagateDirty(observerList[i]);
             }
 
-            if (Updates) {
-              // In batch mode, collect all updates
-              for (const comp of toUpdate) {
-                if (Updates.indexOf(comp) === -1) {
-                  Updates.push(comp);
-                }
-              }
-            } else {
-              // Run effects immediately (not memos)
-              for (const comp of toUpdate) {
-                if (!comp.pure) {
-                  updateComputation(comp);
-                }
-              }
-            }
+            for (const comp of toUpdate) scheduleComputation(comp);
           }
         }
 
-        // Mark as clean AFTER successful computation
-        c.state = CLEAN;
+        // RUNNING → CLEAN: fn completed without any re-dirtying signal writes.
+        // DIRTY  → keep: a signal fired propagateDirty(c) during the fn, so the
+        //          cached value is stale and the memo must re-evaluate on next read.
+        if (c.state === RUNNING) c.state = CLEAN;
       } catch (err) {
         if (isPromise(err)) {
-          const ctx = _SuspenseContext && useContext(_SuspenseContext);
+          // Walk Owner chain first (c's own scope), then fall back to prevOwner
+          // chain (caller's scope). This handles lazy memos created before a
+          // Suspense boundary was established — in that case c.owner doesn't
+          // include the SuspenseCtx node, but prevOwner (the re-eval caller)
+          // does because the re-eval is triggered from within SuspenseImpl.
+          let ctx = _SuspenseContext && useContext(_SuspenseContext);
+          if (!ctx && _SuspenseContext) {
+            let owner: any = prevOwner;
+            while (owner) {
+              if (owner.contexts?.has(_SuspenseContext.id)) {
+                ctx = owner.contexts.get(_SuspenseContext.id);
+                break;
+              }
+              owner = owner.owner;
+            }
+          }
           if (ctx) {
             ctx.increment();
-            (err as Promise<unknown>).finally(() => ctx.decrement());
+            (err as Promise<unknown>).finally(() => (ctx as any).decrement());
           }
           return c.value as T;
         }
         handleError(err as Error);
       } finally {
-        //console.log('disposing owner memo', prevOwner)
         Listener = prevListener;
         Owner = prevOwner;
       }
@@ -832,15 +893,102 @@ export function createMemo<T>(
 // BATCHING SYSTEM
 // ============================================================================
 
-export function batch<T>(fn: () => T): T {
-  if (Updates) return fn();
+/**
+ * Cascade-evaluates pure memos from `initial`, transitively following any
+ * newly-triggered pure memos, then runs all collected non-pure effects.
+ *
+ * Pure memos with no downstream observers are skipped (lazy — they'll
+ * re-evaluate on next read without side effects).
+ *
+ * This replaces the old two-phase approach that only iterated the *original*
+ * Updates array once, missing memo chains like routeMatch→routeStates→routeContent.
+ */
+function runCascadeAndEffects(initial: Computation[]): void {
+  if(initial.length===0) return;
+  const cascadeQueue: Computation[] = [];
+  const effectsToRun: Computation[] = [];
 
+  // console.log('cascade', initial)
+  for (const comp of initial) {
+    if (comp.pure && !comp.computed && comp.accessor) {
+      if (cascadeQueue.indexOf(comp) === -1) cascadeQueue.push(comp);
+      // console.log('pushing quee', comp)
+    } else if ((comp.computed || !comp.pure) && effectsToRun.indexOf(comp) === -1) {
+      effectsToRun.push(comp);
+    }
+  }
+
+  // Use Updates as a temporary collection bucket during cascade.
+  Updates = [];
+  let ci = 0;
+  while (ci < cascadeQueue.length) {
+    const comp = cascadeQueue[ci++];
+    // Only eagerly evaluate memos that feed downstream computations.
+    // Memos accessed only from outside reactive contexts (observers.size=0)
+    // are truly lazy and must not run their fn here (would cause spurious
+    // side-effects like incrementing test counters).
+    const observers = signalObservers.get(comp.accessor as any);
+    if (observers && observers.size > 0) {
+      (comp.accessor as () => unknown)();
+    }
+    // Drain any newly scheduled items from Updates into the appropriate queue.
+    const fresh = (Updates as Computation[]).splice(0);
+    for (const c of fresh) {
+      if (c.pure && !c.computed && c.accessor) {
+        if (cascadeQueue.indexOf(c) === -1) cascadeQueue.push(c);
+      } else if ((c.computed || !c.pure) && effectsToRun.indexOf(c) === -1) {
+        effectsToRun.push(c);
+      }
+    }
+  }
+
+  Updates = null;
+
+  for (const comp of effectsToRun) {
+    if (comp.computed || !comp.pure) updateComputation(comp);
+  }
+}
+
+export function batch<T>(fn: () => T): T {
+  if (Updates && BatchDepth > 0) {
+    // Nested inside a user-initiated batch() — don't create a sub-batch.
+    // All signals push to the outer batch's Updates and flush together at
+    // the end of the outermost batch (preserving "all batched together").
+    return fn();
+  }
+
+  if (Updates && BatchDepth === 0) {
+    // Inside a render effect (runRenderComputation set Updates=[]) but NOT
+    // inside a user batch. Create a nested sub-batch and flush synchronously
+    // so that batch() inside startTransition / component-setup code sees the
+    // updated values before continuing (e.g. expect() right after batch).
+    const prev = Updates;
+    const nested: Computation[] = [];
+    Updates = nested;
+    BatchDepth++;
+    let result: T;
+    try {
+      result = fn();
+    } finally {
+      BatchDepth--;
+      Updates = prev;  // always restore outer Updates
+    }
+    // Cascade pure memos then run effects (same logic as flushUpdates).
+    const savedUpdates = Updates;
+    runCascadeAndEffects(nested);
+    Updates = savedUpdates;
+    return result!;
+  }
+
+  // Fresh batch at the top level.
+  BatchDepth++;
   Updates = [];
   Effects = [];
 
   try {
     return fn();
   } finally {
+    BatchDepth--;
     flushUpdates();
   }
 }
@@ -851,35 +999,26 @@ function flushUpdates(): void {
   ExecCount = 0;
 
   try {
+    // ── Phase 1: Updates (computations queued via scheduleComputation) ───────
     if (Updates) {
       const updates = Updates;
       Updates = null;
-
-      if (updates.length > 0) {
-        for (let i = 0; i < updates.length; i++) {
-          const comp = updates[i];
-          // Only run effects, not memos (memos are lazy and recompute when accessed)
-          if (!comp.pure) {
-            updateComputation(comp);
-          }
-        }
-      }
+      runCascadeAndEffects(updates);
     }
 
+    // ── Phase 2: Effects queue (populated by createRenderEffect/SSR) ──
     if (Effects) {
       const effects = Effects;
       Effects = null;
-
-      if (effects.length > 0) {
-        for (let i = 0; i < effects.length; i++) {
-          updateComputation(effects[i]);
-        }
+      for (let i = 0; i < effects.length; i++) {
+        updateComputation(effects[i]);
       }
     }
   } finally {
     Pending = false;
   }
 }
+
 
 // ============================================================================
 // ROOT & OWNERSHIP MANAGEMENT
@@ -892,6 +1031,8 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
     contexts: null,
     owner: Owner,
   };
+  const prevListener = Listener;
+  Listener = null; // createRoot is a detached reactive root — clear tracking context
 
   const prevOwner = Owner;
   Owner = owner;
@@ -910,8 +1051,8 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
       }
     });
   } finally {
-    //console.log('disposing owner root', prevOwner)
     Owner = prevOwner;
+    Listener = prevListener;
   }
 }
 
@@ -965,6 +1106,104 @@ export function createSelector<T, U = T>(
     return signal[0]();
   };
 }
+
+// ============================================================================
+// STORE
+// ============================================================================
+
+/**
+ * Readonly proxy over a set of signals. Reading a key creates a reactive
+ * dependency exactly like calling a signal accessor.
+ */
+// export type Store<T extends object> = { readonly [K in keyof T]: T[K] };
+
+// export type SetStoreFunction<T extends object> = {
+//   /** Patch form — update multiple keys at once (batched). */
+//   (patch: { [K in keyof T]?: T[K] | ((prev: T[K]) => T[K]) }): void;
+//   /** Key form — update a single key, optionally with an updater function. */
+//   <K extends keyof T>(key: K, value: T[K] | ((prev: T[K]) => T[K])): void;
+// };
+
+// /**
+//  * Create a flat reactive store from a plain initialiser object.
+//  *
+//  * One signal is created per top-level key. The returned proxy establishes
+//  * reactive dependencies when any key is read inside a `createEffect` or
+//  * `createMemo` — identical to calling a signal accessor directly.
+//  *
+//  * @example
+//  * const [state, setState] = createStore({ count: 0, items: [] as string[] });
+//  * createEffect(() => console.log(state.count));       // tracks count
+//  * setState('count', n => n + 1);                     // increment
+//  * setState({ count: 5, items: ['a'] });              // patch (batched)
+//  */
+// export function createStore<T extends object>(
+//   init: T
+// ): [Store<T>, SetStoreFunction<T>] {
+//   const signals = {} as { [K in keyof T]: Signal<T[K]> };
+
+//   for (const key of Object.keys(init) as (keyof T)[]) {
+//     // `equals: false` ensures array / object mutations always trigger updates.
+//     signals[key] = createSignal<T[typeof key]>(init[key], {
+//       equals: false,
+//     }) as Signal<T[typeof key]>;
+//   }
+
+//   const store = new Proxy(Object.create(null) as T, {
+//     get(_target, prop: string | symbol) {
+//       if (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(signals, prop)) {
+//         return (signals as any)[prop][0]();
+//       }
+//       return undefined;
+//     },
+//     has(_target, prop) {
+//       return (
+//         typeof prop === 'string' &&
+//         Object.prototype.hasOwnProperty.call(signals, prop)
+//       );
+//     },
+//     ownKeys() {
+//       return Object.keys(signals);
+//     },
+//     getOwnPropertyDescriptor(_target, prop) {
+//       if (
+//         typeof prop === 'string' &&
+//         Object.prototype.hasOwnProperty.call(signals, prop)
+//       ) {
+//         return { enumerable: true, configurable: true, value: undefined };
+//       }
+//       return undefined;
+//     },
+//   }) as Store<T>;
+
+//   function setStore<K extends keyof T>(
+//     keyOrPatch: K | { [P in keyof T]?: T[P] | ((prev: T[P]) => T[P]) },
+//     value?: T[K] | ((prev: T[K]) => T[K])
+//   ): void {
+//     if (
+//       typeof keyOrPatch === 'object' &&
+//       keyOrPatch !== null &&
+//       !Array.isArray(keyOrPatch)
+//     ) {
+//       // Patch form — batch all updates into a single flush.
+//       batch(() => {
+//         for (const k of Object.keys(keyOrPatch) as (keyof T)[]) {
+//           if (Object.prototype.hasOwnProperty.call(signals, k)) {
+//             (signals[k] as any)[1]((keyOrPatch as any)[k]);
+//           }
+//         }
+//       });
+//     } else {
+//       // Key form — direct signal setter; supports updater functions.
+//       const key = keyOrPatch as K;
+//       if (Object.prototype.hasOwnProperty.call(signals, key)) {
+//         (signals[key] as any)[1](value);
+//       }
+//     }
+//   }
+
+//   return [store, setStore as SetStoreFunction<T>];
+// }
 
 export type Resource<T> = Accessor<T | undefined> & {
   state: 'unresolved' | 'pending' | 'ready' | 'refreshing' | 'errored';
@@ -1159,8 +1398,7 @@ export function createResource<T, S = true>(
 
   if (typeof fetcherFn === 'function') {
     // Two-argument form: createResource(source, fetcher)
-    s =
-      typeof source === 'function' ? (source as () => S) : () => source as S;
+    s = typeof source === 'function' ? (source as () => S) : () => source as S;
     fetcher = fetcherFn;
   } else {
     // One-argument form: createResource(fetcher)
@@ -1172,11 +1410,7 @@ export function createResource<T, S = true>(
     }
   }
 
-  const {
-    initialValue,
-    name,
-
-  } = options;
+  const { initialValue, name } = options;
 
   const [value, setValue] = createSignal<T | undefined>(options.initialValue, {
     equals: false,
@@ -1198,14 +1432,13 @@ export function createResource<T, S = true>(
     try {
       if (data) {
         // console.log('caching', data)
-      localStorage.setItem(
-        'storage',
-        JSON.stringify({
-          data,
-          timestamp: Date.now(),
-        })
-      );
-
+        localStorage.setItem(
+          'storage',
+          JSON.stringify({
+            data,
+            timestamp: Date.now(),
+          })
+        );
       }
     } catch (error) {
       console.error(`Failed to save resource to cache (${name}):`, error);
@@ -1257,7 +1490,7 @@ export function createResource<T, S = true>(
             if (cancelled) return;
             batch(() => {
               setValue(() => v);
-              saveToCache(v)
+              saveToCache(v);
               setState('ready');
               setPromise(undefined);
             });
@@ -1660,18 +1893,19 @@ export function runWithOwner<T>(owner: RootOwner | null, fn: () => T): T {
   try {
     return fn();
   } finally {
-    //console.log('disposing owner run', prevOwner)
+    // console.log('disposing owner run', prevOwner)
+    // console.error('owner run dispose')
     Owner = prevOwner;
   }
 }
 
 export function createContext<T>(defaultValue?: T): {
-  Provider: (props: { value: T; children: any }) => any;
+  Provider: (props: { value: T; children: any; debug?: boolean }) => any;
   defaultValue: T | undefined;
   id: symbol;
 } {
   const id = Symbol('context');
-  const Provider = createProvider(id)
+  const Provider = createProvider(id);
   return {
     id,
     Provider,
@@ -1679,16 +1913,118 @@ export function createContext<T>(defaultValue?: T): {
   };
 }
 
+// let count = 1
+export function childrens(fn: any) {
+  const children = createMemo(fn);
+  const memo = __DEV__
+    ? createMemo(() => resolveProviderChildren(children()), undefined, { name: "children" })
+    : createMemo(() => resolveProviderChildren(children()));
+  // const memo = __DEV__
+  //   ? createMemo(() => resolveProviderChildren(children()), undefined, { name: "children" })
+  //   : createMemo(() => resolveProviderChildren(children()));
+  // memo.toArray = () => {
+  //   const c = memo();
+  //   return Array.isArray(c) ? c : c != null ? [c] : [];
+  // };
+  return memo;
+}
+
+export function makeArrayFlat(values: any[]) {
+  if(!Array.isArray(values)) return values
+  if (values.length === 2 && values[1] === ' ') {
+    if (Array.isArray(values[0])) {
+      return makeArrayFlat(values[0])
+    }
+    if (typeof values[0] === 'function') {
+      let fn = values[0]
+      return fn
+    }
+    return values[0]
+  }
+  if(values.length === 1 && typeof values[0] === 'function') {
+    return values[0]
+  }
+  return values
+ }
+
+// function resolveChildrens(val: any) {
+//   if(Array.isArray(val){
+
+//   }
+// }
 /**
  * Resolve children values for Provider — flatten arrays, call thunks,
  * but preserve signals/memos for reactive tracking.
  */
-function resolveProviderChildren(val: any): any {
+
+export function isChildren(value: any){
+  if(typeof value === 'function' && value[$NODE]?.name !== 'children'){
+    return value[$NODE]
+  }
+  return undefined
+}
+export function getSignalNode(value: any){
+  if(isSignal(value) && value[$NODE]){
+    return value[$NODE]
+  }
+  return undefined
+}
+export function isComponent(value: any) {
+  return typeof value === 'function' && value[Symbol.for('kettle-component')] === true
+}
+export function isSuspense(value: any) {
+  return typeof value === 'function' && value[Symbol.for('kettle-suspense')] === true
+}
+
+export function isProvider(value: any) {
+  return typeof value === 'function' && value[Symbol.for('kettle-provider')] === true
+}
+function resolveProviderChildren_(_val: any): any {
+  let val = _val;
+  // console.log('resolveProviderChildren', val);
   if (val == null || typeof val === 'boolean') return null;
   if (Array.isArray(val)) {
     const result: any[] = [];
     for (const item of val) {
       const resolved = resolveProviderChildren(item);
+      // console.log('resolved', resolved);
+      if (Array.isArray(resolved)) {
+        for (const r of resolved) if (r != null) result.push(r);
+      } else if (resolved != null) {
+        result.push(resolved);
+      }
+    }
+    return result;
+  }
+  if (typeof val === 'function') {
+    // console.log('resolveProviderChildren not a function', val);
+    let v = val();
+    while (typeof v === 'function') {
+      // console.log('resolveProviderChildren signal', v[$NODE]);
+      // if(isSuspense(v)) return v
+      // if(isSignal(v)) {
+      //   const node = getNode(v)
+      //   if(node && Array.isArray(node.value)) return node.value
+      //   // return v
+      // }
+      v = v();
+    }
+    // console.log('resolveProviderChildren', v);
+    if (Array.isArray(v)) return resolveProviderChildren(v);
+    return v;
+  }else{
+  }
+  return val;
+}
+function resolveProviderChildren1(_val: any): any {
+  let val = _val;
+  // console.log('resolveProviderChildren', val);
+  if (val == null || typeof val === 'boolean') return null;
+  if (Array.isArray(val)) {
+    const result: any[] = [];
+    for (const item of val) {
+      const resolved = resolveProviderChildren(item);
+      // console.log('resolved', resolved);
       if (Array.isArray(resolved)) {
         for (const r of resolved) if (r != null) result.push(r);
       } else if (resolved != null) {
@@ -1702,17 +2038,39 @@ function resolveProviderChildren(val: any): any {
     while (typeof v === 'function' && !isSignal(v)) {
       v = v();
     }
+    // console.log('resolveProviderChildren', v);
     if (Array.isArray(v)) return resolveProviderChildren(v);
     return v;
   }
   return val;
 }
 
-export function createProvider<T>(id: symbol) {
-  return (props: { value: T; children: any }) => {
-    // Create an owner node with the context value. This node becomes
-    // an ancestor for all child computations created inside runWithOwner,
-    // so useContext walks up to it and finds the context.
+// Cached symbol for $COMPONENT thunk detection — avoids Symbol.for() on every call.
+const _KETTLE_COMPONENT_SYM = Symbol.for('kettle-component');
+
+function resolveProviderChildren(children: any): any {
+  if (typeof children === "function" && !children.length) {
+    // if (isSignal(children)) return children;
+    const result = children();
+    if (isSignal(result)) return result;
+    return resolveProviderChildren(result);
+  }
+  if (Array.isArray(children)) {
+    const results: any[] = [];
+    for (let i = 0; i < children.length; i++) {
+      const result = resolveProviderChildren(children[i]);
+      Array.isArray(result) ? results.push.apply(results, result) : results.push(result);
+    }
+    return results;
+  }
+  return children as any;
+}
+
+export function createProvider12<T>(id: symbol) {
+  return (props: { value: T; children: any, debug?: boolean }) => {
+    // Create a dedicated owner node that carries the context value.
+    // All computations created inside runWithOwner(ctxOwner) will have
+    // ctxOwner in their owner chain → useContext walks up to it and finds context.
     const ctxOwner: RootOwner = {
       owner: Owner,
       owned: null,
@@ -1720,26 +2078,200 @@ export function createProvider<T>(id: symbol) {
       contexts: new Map(),
     };
     ctxOwner.contexts!.set(id, props.value);
+
+    // Register ctxOwner in the current owner's children so it is disposed
+    // when the parent scope is torn down (navigation, unmount).
     if (Owner) {
       if (!Owner.owned) Owner.owned = [];
       Owner.owned.push(ctxOwner as any);
     }
-    // Also set on current Owner for lookups outside runWithOwner scope
-    if (Owner) {
-      if (!(Owner as any).contexts) (Owner as any).contexts = new Map();
-      (Owner as any).contexts.set(id, props.value);
-    }
-    // Evaluate children under ctxOwner so all computations (effects, memos,
-    // resources) created by children have ctxOwner in their owner chain.
-    // Only call children() once — do NOT use resolveProviderChildren which
-    // deep-resolves and triggers lazy component stack overflows.
-    const children = props.children;
-    if (typeof children === 'function' && !isSignal(children)) {
-      return runWithOwner(ctxOwner, () => untrack(() => children()));
+
+    // "Stamp all ancestors" — walk the entire owner chain and stamp the context
+    // value on every node.  The immediate Owner stamp alone is not sufficient
+    // because createProvider may be called inside a memo/computation
+    // (e.g. resolveProviderChildren inside childrens()) whose own owner is a
+    // temporary computation node that is NOT in the ancestor chain of sibling
+    // createRoots (e.g. the next route level's createRoot).  By stamping every
+    // ancestor we guarantee the value is visible to any descendant regardless of
+    // which code path reaches useContext.  The `has` guard preserves inner-wins
+    // semantics: an inner Provider's value is already on closer nodes, so we
+    // stop before overwriting it on shared ancestors.
+    // let _stampNode: any = Owner;
+    // while (_stampNode) {
+    //   if (!_stampNode.contexts) _stampNode.contexts = new Map();
+    //   if (!_stampNode.contexts.has(id)) _stampNode.contexts.set(id, props.value);
+    //   _stampNode = _stampNode.owner;
+    // }
+    // let child = props.children;
+    
+    // Resolve children under ctxOwner so any effects/memos they create have
+    // ctxOwner in their owner chain (handles both JSX thunk and plain children).
+    const children = props.children
+    // Array.isArray(props.children) ? props.children[0] : props.children;
+    if (typeof children === 'function') {
+      // return runWithOwner(ctxOwner, () => untrack(() => children()))
+      return runWithOwner(ctxOwner, () => untrack(() => childrens(()=>children)))
     }
     return children;
   };
 }
+
+export function createProvider13<T>(id: symbol) {
+  return (props: { value: T; children: any, debug?: boolean }) => {
+    if (props.debug) console.log('createProvider', id, props.value);
+
+    // Stamp context on the current owner and all ancestors synchronously.
+    // Walk the full owner chain so nested createRoot scopes also find it.
+    let _node: any = Owner;
+    while (_node) {
+      if (!_node.contexts) _node.contexts = new Map();
+      if (!_node.contexts.has(id)) _node.contexts.set(id, props.value);
+      _node = _node.owner;
+    }
+
+    // Return children directly — context is already stamped on all ancestors.
+    // Carrier wrapping is intentionally avoided: carriers create new function
+    // references on each re-evaluation, breaking componentCache keying in the
+    // DOM runtime and causing infinite re-render loops.
+    return props.children;
+  };
+}
+
+export function createProvider<T>(id: symbol) {
+  return (props: { value: T; children: any; debug?: boolean }) => {
+    // Stamp context on the outer Owner (the scope where Provider() is called from).
+    // This is necessary because components inside routeStates.fn (or any
+    // independent createRoot) walk an owner chain that goes through this scope,
+    // NOT through the RE computation created below. The !has guard preserves
+    // inner-wins: a closer inner Provider's value won't be overwritten.
+    // const outerOwner = Owner;
+    // if (outerOwner) {
+    //   if (!outerOwner.contexts) outerOwner.contexts = new Map();
+    //   if (!outerOwner.contexts.has(id)) outerOwner.contexts.set(id, props.value);
+    // }
+
+    let provider;
+    createRenderEffect(() => {
+      provider = untrack(() => {
+        const owner = Owner;
+        if (owner) {
+          if (!owner.contexts) owner.contexts = new Map();
+          owner.contexts.set(id, props.value);
+        }
+        return childrens(()=> props.children);
+      });
+    });
+    return provider;
+  };
+}
+export function createProvider1<T>(id: symbol) {
+  return (props: { value: T; children: any, debug?: boolean }) => {
+    // Build a dedicated owner node that carries the context value.
+    // All child computations created inside runWithOwner(ctxOwner, …) will
+    // have ctxOwner in their owner chain, so useContext walks up to it.
+    const ctxOwner: RootOwner = {
+      owner: Owner,
+      owned: null,
+      cleanups: null,
+      contexts: new Map(),
+    };
+    ctxOwner.contexts!.set(id, props.value);
+
+    // Register ctxOwner as a child of the current owner so it gets disposed
+    // when the parent scope is torn down (e.g. on navigation).
+    if (Owner) {
+      if (!Owner.owned) Owner.owned = [];
+      Owner.owned.push(ctxOwner as any);
+    }
+
+    // "Also stamp" — set context on the current Owner too so any computation
+    // created synchronously in the same scope (not via runWithOwner) can also
+    // find it without walking up to ctxOwner.
+    if (Owner) {
+      if (!Owner.contexts) Owner.contexts = new Map();
+      Owner.contexts.set(id, props.value);
+    }
+
+    // Resolve children under ctxOwner so any effects/memos they create have
+    // ctxOwner in their owner chain.
+    const children = Array.isArray(props.children) ? props.children[0] : props.children;
+    // props.children;
+
+    if (typeof children === 'function' && !isSignal(children)) {
+      return runWithOwner(ctxOwner, () => untrack(() => typeof children === 'function' && !isSignal(children) ? children() : children));
+    }
+
+    return children;
+  };
+}
+// export function createProvider<T>(id: symbol) {
+//   return (props: { value: T; children: any }) => {
+//     // Create an owner node with the context value. This node becomes
+//     // an ancestor for all child computations created inside runWithOwner,
+//     // so useContext walks up to it and finds the context.
+//     const ctxOwner: RootOwner = {
+//       owner: Owner,
+//       owned: null,
+//       cleanups: null,
+//       contexts: new Map(),
+//     };
+//     ctxOwner.contexts!.set(id, props.value);
+//     if (Owner) {
+//       if (!Owner.owned) Owner.owned = [];
+//       Owner.owned.push(ctxOwner as any);
+//     }
+//     // Also set on current Owner for lookups outside runWithOwner scope
+//     if (Owner) {
+//       if (!(Owner as any).contexts) (Owner as any).contexts = new Map();
+//       (Owner as any).contexts.set(id, props.value);
+//     }
+
+    
+//         let children = props.children;
+//         if(Array.isArray(children) && typeof children[0] === 'function') {
+//           // console.log('prov', children)
+//           children = children[0]
+//           if(typeof children !== 'function') console.log('prov not fn', children)
+//           return runWithOwner(ctxOwner, () => untrack(() => children()));
+//         }
+    
+//     if (typeof children === 'function' && !isSignal(children)) {
+//       return runWithOwner(ctxOwner, () => untrack(() => children()));
+//       // const result = runWithOwner(ctxOwner, () => untrack(() => children()));
+//       // console.log('children result', result)
+
+//       // // JSX wraps components in deferred thunks that execute later inside
+//       // // insert()'s render effect. By that time, runWithOwner has returned
+//       // // and the Owner chain no longer includes ctxOwner. Wrap the result
+//       // // in a "context carrier" that propagates the context value onto
+//       // // whatever Owner is current when the DOM runtime calls it.
+//       // // This way, the render effect's computation gets the context in its
+//       // // own .contexts map, and all downstream useContext calls find it.
+//       // if (typeof result === 'function' && !isSignal(result)) {
+//       //   const carrier = (...args: any[]) => {
+//       //     if (Owner) {
+//       //       if (!(Owner as any).contexts) (Owner as any).contexts = new Map();
+//       //       (Owner as any).contexts.set(id, props.value);
+//       //     }
+//       //     return (result as Function)(...args);
+//       //   };
+//       //   // Copy all own properties and symbol markers ($COMPONENT, jsx, etc.)
+//       //   // so that isComponent/isSignal/isProvider checks still work.
+//       //   for (const key of Object.getOwnPropertyNames(result)) {
+//       //     if (key !== 'length' && key !== 'name') {
+//       //       try { (carrier as any)[key] = (result as any)[key]; } catch {}
+//       //     }
+//       //   }
+//       //   for (const sym of Object.getOwnPropertySymbols(result)) {
+//       //     try { (carrier as any)[sym] = (result as any)[sym]; } catch {}
+//       //   }
+//       //   return carrier;
+//       // }
+//       // return result;
+//     }
+//     return children;
+//   };
+// }
 
 export function useContext<T>(context: {
   id: symbol;
@@ -1753,8 +2285,8 @@ export function useContext<T>(context: {
     owner = owner.owner;
   }
   if (!context) {
-    return
-  };
+    return;
+  }
   return context.defaultValue;
 }
 
@@ -2187,70 +2719,92 @@ export function fromObservable<T>(
 // TRANSITIONS
 // ============================================================================
 
-// export function startTransition(fn: () => void): void {
-//   batch(fn);
-// }
 /**
- * Start a transition for lower-priority updates
- * Similar to SolidJS's startTransition
- * Updates within transitions are queued and processed with lower priority
+ * startTransition — defer non-critical effect updates.
+ *
+ * Runs `fn` synchronously, capturing all non-pure effects that would fire as
+ * a result into a deferred queue. Pure computations (memos, createComputed)
+ * update immediately so signal values are consistent. The deferred effects are
+ * then flushed asynchronously (next microtask), keeping the current UI
+ * responsive while the new state is prepared.
+ *
+ * Returns a Promise that resolves once the deferred effects have been flushed.
+ *
+ * Usage:
+ *   startTransition(() => setRoute('/heavy-page'));  // DOM update is deferred
+ *   // or via useTransition:
+ *   const [isPending, start] = useTransition();
+ *   start(() => navigate('/new'));
  */
 export function startTransition(fn: () => void): Promise<void> {
-  return new Promise((resolve) => {
-    const transition: TransitionState = {
-      pending: true,
-      startTime: Date.now(),
-      timeoutMs: 5000,
-      updates: new Set(),
-    };
+  // If already inside a transition, just run — outer transition owns flushing.
+  if (Transition && Transition.running) {
+    fn();
+    return Transition.done!;
+  }
 
-    const prevTransition = currentTransition;
-    currentTransition = transition;
+  ensureTransPending();
 
-    try {
-      // Run function - all effects/computations created here get TRANSITION priority
-      fn();
-    } finally {
-      currentTransition = prevTransition;
+  let resolve!: () => void;
+  const done = new Promise<void>(res => (resolve = res));
+
+  const t: TransitionState = { running: true, effects: [], resolve, done };
+  Transition = t;
+
+  try {
+    // Signal writes inside fn will capture non-pure effects in t.effects
+    // (via scheduleComputation) rather than running them immediately.
+    fn();
+  } finally {
+    t.running = false;
+  }
+
+  if (!t.effects.length) {
+    // Nothing deferred — complete synchronously.
+    Transition = null;
+    resolve();
+    return done;
+  }
+
+  _setTransPending!(true);
+
+  // Flush deferred effects in the next microtask so current frame stays stable.
+  Promise.resolve().then(() => {
+    const effects = t.effects.splice(0);
+    Transition = null;
+    _setTransPending!(false);
+
+    if (effects.length) {
+      batch(() => {
+        for (const e of effects) {
+          e.state = DIRTY;
+          updateComputation(e);
+        }
+      });
     }
-
-    // Queue transition updates to run after current work
-    batch(() => {
-      transition.pending = false;
-      // Execute all transition updates
-      transition.updates.forEach((update) => update());
-      transition.updates.clear();
-      resolve();
-    });
+    resolve();
   });
+
+  return done;
 }
 
-// export function useTransition(): [() => boolean, (fn: () => void) => void] {
-//   const [pending, setPending] = createSignal(false);
-//   return [
-//     pending,
-//     (fn: () => void) => {
-//       setPending(true);
-//       batch(() => {
-//         fn();
-//         setPending(false);
-//       });
-//     },
-//   ];
-// }
-
+/**
+ * useTransition — reactive hook version of startTransition.
+ *
+ * Returns `[isPending, start]`:
+ *  - `isPending()` — true while deferred effects are waiting to flush.
+ *  - `start(fn)`   — same as startTransition(fn), but isPending tracks it.
+ *
+ * Usage:
+ *   const [isPending, start] = useTransition();
+ *   <button disabled={isPending()} onClick={() => start(() => navigate('/'))}>
+ */
 export function useTransition(): [
   () => boolean,
-  (fn: () => void | Promise<void>) => Promise<void>
+  (fn: () => void) => Promise<void>
 ] {
-  const [isPending, setIsPending] = createSignal(false);
-
-  const start = async (fn: () => Promise<void> | void) => {
-    setIsPending(true);
-    return startTransition(fn).finally(() => setIsPending(false));
-  };
-
-  return [isPending, start];
+  ensureTransPending();
+  return [_transPending!, startTransition];
 }
 
 // ============================================================================
@@ -2317,8 +2871,10 @@ export function getReactiveGraph(): any {
   return graph;
 }
 
-export function isSignal<T>(value: any): value is Accessor<T> {
-  return typeof value === 'function' && value[$SIGNAL] === true;
+export function isSignal<T extends any>(value: any): value is Accessor<T> {
+  return (
+    typeof value === 'function' && (value as Accessor<any>)[$SIGNAL] === true
+  );
 }
 export function isMemo<T>(value: any): value is Accessor<T> {
   return typeof value === 'function' && value[$MEMO] === true;
@@ -2369,7 +2925,7 @@ export function createReaction(
       owned: null,
       cleanups: null,
       owner: Owner,
-      context: null,
+      contexts: null,
       pure: false,
       updatedAt: null,
     };
@@ -2414,12 +2970,11 @@ export function createRenderEffect<T>(
     owned: null,
     cleanups: null,
     owner: Owner,
-    context: null,
+    contexts: null,
     pure: false,
     updatedAt: null,
     renderEffect: true,
   };
-
   if (Owner) {
     if (!Owner.owned) Owner.owned = [c];
     else Owner.owned.push(c);
@@ -2470,9 +3025,19 @@ function runRenderComputation(c: Computation): void {
 
   const prevListener = Listener;
   const prevOwner = Owner;
+  const prevUpdates = Updates;
 
   Listener = c;
   Owner = c as any;
+  // Defer any createEffect calls that happen during the render fn so they
+  // don't run synchronously and re-enter this render effect mid-execution.
+  if (Updates === null) Updates = [];
+  // Mark RUNNING before executing fn.  Any propagateDirty() fired during the
+  // fn (e.g. navigate() called from a route component's setup code) will set
+  // state to DIRTY, which we detect below to decide whether a second run is
+  // needed.  Without this sentinel, we can't distinguish "was dirty going in"
+  // from "got re-dirtied mid-run."
+  c.state = RUNNING;
 
   try {
     // Pass previous value to fn, store result as next previous value
@@ -2483,7 +3048,10 @@ function runRenderComputation(c: Computation): void {
       c.cleanups.push(result);
     }
     c.value = result;
-    c.state = CLEAN;
+    // RUNNING → CLEAN: fn completed with no re-dirtying signal writes.
+    // DIRTY  → keep:  a signal fired propagateDirty(c) during the fn,
+    //          so the effect must re-run (deferred flush will call it).
+    if (c.state === RUNNING) c.state = CLEAN;
   } catch (err) {
     if (isPromise(err)) {
       const ctx = _SuspenseContext && useContext(_SuspenseContext);
@@ -2496,18 +3064,70 @@ function runRenderComputation(c: Computation): void {
     }
     handleError(err as Error);
   } finally {
-    //console.log('disposing owner render computation', prevOwner)
     Listener = prevListener;
     Owner = prevOwner;
+    // Flush effects that were deferred during this render (e.g. createEffect
+    // called inside a component during the render fn). We do this AFTER
+    // restoring Listener/Owner so effects run in clean context.
+    const deferred = Updates;
+    Updates = prevUpdates;
+    if (deferred !== prevUpdates && deferred && deferred.length > 0) {
+      for (let i = 0; i < deferred.length; i++) {
+        const comp = deferred[i];
+        if (comp.computed || !comp.pure) updateComputation(comp);
+      }
+    }
   }
 }
 
+/**
+ * createComputed — synchronous pre-render computation.
+ *
+ * Like SolidJS's createComputed:
+ *  - `pure = true`  → runs before user effects (in the Updates phase)
+ *  - `computed = true` → runs eagerly (unlike lazy memos)
+ *  - Returns `void`  → does not expose an accessor; used for side-effectful
+ *    derived state (e.g. writing to other signals based on reactive inputs)
+ *
+ * Use createMemo when you need a readable derived value.
+ * Use createComputed when you need to reactively set other signals.
+ */
 export function createComputed<T>(
   fn: ComputationFn<T>,
   value?: T,
-  options?: MemoOptions<T>
-): Accessor<T> {
-  return createMemo(fn, value, options);
+  options?: EffectOptions
+): void {
+  const c: Computation = {
+    fn,
+    state: DIRTY,
+    sources: null,
+    sourceSlots: null,
+    value,
+    owned: null,
+    cleanups: null,
+    owner: Owner,
+    contexts: null,
+    pure: true,     // queued in Updates — runs before user effects
+    computed: true, // eager — runs immediately (unlike lazy memo)
+    updatedAt: null,
+  };
+
+  if (Owner) {
+    if (!Owner.owned) Owner.owned = [c];
+    else Owner.owned.push(c);
+  }
+
+  // During a transition: queue so it runs in the Updates phase later
+  if (Transition && Transition.running) {
+    if (!Updates) Updates = [];
+    if (Updates.indexOf(c) === -1) Updates.push(c);
+  } else if (Updates) {
+    // Inside batch: add to Updates — runs before user effects in flushUpdates
+    if (Updates.indexOf(c) === -1) Updates.push(c);
+  } else {
+    // Outside batch: run immediately (synchronous, pre-render)
+    runComputation(c, value);
+  }
 }
 
 // ============================================================================
@@ -2522,7 +3142,10 @@ let _SuspenseContext: Context<SuspenseContextType | undefined>;
  * Suspense components provide this via Provider; resources find it via useContext.
  */
 export function getSuspenseContext(): Context<SuspenseContextType | undefined> {
-  return _SuspenseContext || (_SuspenseContext = createContext<SuspenseContextType | undefined>());
+  return (
+    _SuspenseContext ||
+    (_SuspenseContext = createContext<SuspenseContextType | undefined>())
+  );
 }
 
 let _SuspenseListContext: Context<SuspenseListContextType | undefined>;
@@ -2531,8 +3154,15 @@ let _SuspenseListContext: Context<SuspenseListContextType | undefined>;
  * Get the SuspenseListContext (lazy-initialized).
  * SuspenseList provides this; child Suspense boundaries register with it.
  */
-export function getSuspenseListContext(): Context<SuspenseListContextType | undefined> {
-  return _SuspenseListContext || (_SuspenseListContext = createContext<SuspenseListContextType | undefined>());
+export function getSuspenseListContext(): Context<
+  SuspenseListContextType | undefined
+> {
+  return (
+    _SuspenseListContext ||
+    (_SuspenseListContext = createContext<
+      SuspenseListContextType | undefined
+    >())
+  );
 }
 
 /**
@@ -2594,7 +3224,6 @@ export function scheduleMicrotask(fn: () => void): void {
     Promise.resolve().then(fn);
   }
 }
-
 
 /**
  * Track a promise in the nearest Suspense boundary.
@@ -2683,7 +3312,7 @@ export function devComponent<P, V>(Comp: (props?: P) => V, props?: P): V {
   try {
     return untrack(() => {
       Object.assign(Comp, { [$COMP]: true });
-      return Comp(props);
+      return  Comp(props);
     });
   } finally {
     //console.log('disposing owner dev comp', prevOwner)
@@ -2692,7 +3321,7 @@ export function devComponent<P, V>(Comp: (props?: P) => V, props?: P): V {
 }
 
 export type Context<T> = {
-  Provider: (props: { value: T; children: any }) => any;
+  Provider: (props: { value: T; children: any; debug?: boolean }) => any;
   defaultValue: T | undefined;
   id: symbol;
 };

@@ -15,6 +15,13 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./element": {
+      "development": "./src/lib/element/index.ts",
+      "types": "./dist/lib/element/index.d.ts",
+      "import": "./dist/lib/element/index.mjs",
+      "require": "./dist/lib/element/index.cjs",
+      "default": "./dist/lib/element/index.js"
+    },
     "./dom": {
       "development": "./src/lib/dom/dom.ts",
       "types": "./dist/lib/dom/dom.d.ts",

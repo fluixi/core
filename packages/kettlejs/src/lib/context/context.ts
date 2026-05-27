@@ -137,6 +137,11 @@ export interface ContextProvider<T> extends ProviderProps {
    * Value to provide
    */
   value: T | Accessor<T>;
+
+  /**
+   * Children components that can access this context
+   */
+  debug?: boolean;
 }
 
 export interface ProviderProps {
@@ -210,7 +215,7 @@ export interface ProviderProps {
  * ```
  */
 export function createProvider<T>(props: ContextProvider<T>): Component {
-  const { context, value, children } = props;
+  const { context, value, children, debug = false } = props;
 
   // Resolve value if it's an accessor
   const resolvedValue =
@@ -218,9 +223,11 @@ export function createProvider<T>(props: ContextProvider<T>): Component {
 
   // Use @awc/reactive's Provider
   const ReactiveProvider = context.Provider;
+  // console.log('reactive provider', children)
   return ReactiveProvider({
     value: resolvedValue,
-    children: () => resolveChildren(() => children),
+    children,
+    debug
   });
 
   // // Wrap children in the reactive provider
@@ -556,7 +563,7 @@ function resolveChildren(children: any): any {
  */
 export function createContext<T>(defaultValue?: T): {
   id: symbol;
-  Provider: (props: { value: T; children?: any }) => any;
+  Provider: (props: { value: T; children?: any, debug?: boolean }) => any;
   defaultValue: T;
 } {
   const context = createReactiveContext(defaultValue);
@@ -564,15 +571,20 @@ export function createContext<T>(defaultValue?: T): {
   // Wrap Provider to work with both JSX and Lit-html
   const Provider = (props: { value: T; children?: any, debug?: boolean }) => {
     if (props.debug === true) {
-      console.log('provider set', props)
     }
+    // if(props.value && props.value.workpsace)
+    console.log('provider set', props)
     // Pass children as-is to the reactive Provider.
     // The reactive Provider evaluates function children inside its render effect,
     // AFTER setting the context value on the owner. Eagerly resolving here would
     // cause children to run before context is available.
     return context.Provider({
       value: props.value,
-      children:  props.children,
+      children: props.children,
+      // get children(){
+      //   return props.children
+      // },
+      debug: props.debug
     });
   };
 

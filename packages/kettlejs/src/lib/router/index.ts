@@ -50,3 +50,4 @@ export { createFileRoutes } from './fs-router.js';
 export type { FileRouterOptions } from './fs-router.js';
 
 export {lazy} from "../render/lazy.js"
+export { runWithOwner } from '@awc/reactive/signal';

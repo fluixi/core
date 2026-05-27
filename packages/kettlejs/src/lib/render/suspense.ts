@@ -10,6 +10,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  createRenderEffect,
   isSignal,
   isResource,
   untrack,
@@ -23,11 +24,9 @@ import {
   type SuspenseContextType,
   type SuspenseListContextType,
   type SuspenseListRegisteredState,
-  createResource,
-  trackPromise,
 } from '@awc/reactive/signal';
 import { createComponent } from './component.js';
-import { isComponent, isProvider } from '@awc/dom';
+import { asSuspense, isComponent, isProvider } from '@awc/dom';
 
 // ============================================================================
 // TYPES
@@ -83,9 +82,8 @@ function isLitResult(value: any): boolean {
  */
 function isPromise<T = any>(value: any): value is Promise<T> {
   return !!(
-    (value &&
-    typeof value === 'object' &&
-    typeof value.then === 'function') || value instanceof Promise
+    (value && typeof value === 'object' && typeof value.then === 'function') ||
+    value instanceof Promise
   );
 }
 
@@ -136,10 +134,13 @@ function SuspenseImpl(props: SuspenseProps): any {
 
   const store: SuspenseContextType = {
     increment: () => {
+      const inF = untrack(inFallback)
+      // console.log('routeMatch suspense incre', props)
       counter++;
-      if (!untrack(inFallback)) setInFallback(true);
+      if (!inF) setInFallback(true);
     },
     decrement: () => {
+      // console.log('suspense decrement')
       counter--;
       if (counter <= 0) {
         counter = 0;
@@ -155,12 +156,14 @@ function SuspenseImpl(props: SuspenseProps): any {
     resolved: false,
   };
 
-  // Set context on owner BEFORE evaluating children so createResource
-  // inside lazy components finds SuspenseContext via useContext.
-  const owner = getOwner();
-  if (owner) {
-    if (!(owner as any).contexts) (owner as any).contexts = new Map();
-    (owner as any).contexts.set(SuspenseCtx.id, store);
+  // Stamp SuspenseContext on the current owner so that reactive primitives
+  // created in this scope (createResource, lazy memos) can find it via
+  // useContext. The re-eval below handles the case where a lazy memo was
+  // already evaluated before SuspenseImpl ran (JS argument order).
+  const _owner = getOwner();
+  if (_owner) {
+    if (!_owner.contexts) _owner.contexts = new Map();
+    _owner.contexts.set(SuspenseCtx.id, store);
   }
 
   // Check for SuspenseList parent coordination
@@ -171,69 +174,64 @@ function SuspenseImpl(props: SuspenseProps): any {
     listState = listCtx.register(inFallback);
   }
 
-  // Evaluate children ONCE in component scope (NOT inside a memo).
-  // Flatten nested JSX arrays and resolve all thunks here so the DOM
-  // runtime receives clean values (signals, DOM nodes, strings).
-  // Signal writes from createResource/increment are safe in component scope.
-  function unwrapChildren(val: any): any {
-    if (val == null || val === false || val === true) return null;
+  const children = props.children;
 
-    // Flatten arrays (JSX fragments produce nested arrays like [[thunk, " "], " "])
-    if (Array.isArray(val)) {
-      const flat: any[] = [];
-      for (const item of val) {
-        const resolved = unwrapChildren(item);
-        if (Array.isArray(resolved)) {
-          for (const r of resolved) {
-            if (r != null) flat.push(r);
-          }
-        } else if (resolved != null) {
-          flat.push(resolved);
-        }
-      }
-      return flat;
+  // Pre-instantiate component thunks ONCE here in component scope.
+  // The SuspenseCtx is already set on the owner above, so createResource
+  // calls inside lazy/async children will find it via useContext.
+  //
+  // IMPORTANT: Do NOT call thunks inside the output memo below — that would
+  // recreate the entire component tree on every inFallback toggle, causing
+  // the infinite insert loop the user reported.
+  function instantiateOnce(val: any): any {
+    if (val == null || typeof val === 'boolean') return null;
+    if (typeof val === 'function' && isComponent(val) && !isSignal(val)) {
+      return val();
     }
-
-    // Unwrap function layers (thunks, $COMPONENT wrappers).
-    // Stop at signals/memos/resources — those are reactive and the
-    // DOM runtime must track them via effects.
-    let result = val;
-    while (typeof result === 'function' && !isSignal(result) && !isComponent(result)) {
-      if (isProvider(result)) {
-      console.log('is provider', result)
-
-      }
-      result = result();
-    }
-
-    // If unwrapping produced an array, flatten it too
-    if (Array.isArray(result)) {
-      return unwrapChildren(result);
-    }
-
-    return result;
+    return val;
   }
-  console.log('suspense children', props.children)
 
-  // const children = unwrapChildren(props.children);
-  const children = props.children
-  let resource: any;
+  const resolvedChildren = children;
+  // const resolvedChildren = instantiateOnce(children);
+  const resolvedFallback = instantiateOnce(props.fallback ?? null);
+
+  // Re-eval: use a reactive render effect to track the top-level children signal.
+  // On every run (initial + whenever children changes), unwrap the signal chain
+  // inside untrack so reaching a lazy memo — calling it from within this RE ensures
+  // prevOwner = RE_comp whose .owner = c_devComp_susp_impl which has SuspenseCtx.
+  //
+  // Scenario 1 — simple lazy (test 1): resolvedChildren IS the lazy memo.
+  //   Initial RE call: view.read() runs fn → resource() throws → caught by
+  //   view.read() with prevOwner = RE_comp → walk → SuspenseCtx → increment.
+  //
+  // Scenario 2 — Router + lazy (test 2): resolvedChildren = routeContent (undefined
+  //   initially, no route matched yet). After Router calls _setActiveRouter(ctx),
+  //   routeContent becomes DIRTY → RE re-runs synchronously (pure=false, Updates=null)
+  //   → routeStates re-evaluates → createLevelState → lazy view created →
+  //   untrack loop calls view() → throw caught with prevOwner = RE_comp →
+  //   SuspenseCtx found → increment.
+  if (typeof resolvedChildren === 'function' && isSignal(resolvedChildren)) {
+    createRenderEffect(() => {
+      const v = resolvedChildren();  // tracked: RE subscribes to children signal
+      untrack(() => {
+        try {
+          let val: any = v;
+          while (typeof val === 'function' && isSignal(val)) {
+            val = val();
+          }
+        } catch (_) {}
+      });
+    });
+  }
 
   // If children evaluated to a raw promise, track it with the counter.
-  // Store the resolved value in a signal so the output memo can read it.
   const [resolvedContent, setResolvedContent] = createSignal<any>(undefined);
   const childrenIsPromise = isPromise(children);
-  if (isPromise(children)) {
-
+  if (childrenIsPromise) {
     store.increment();
-    // const [r] = createResource(() =>(children as Promise<any>).then(v=>v));
-    // resource = r
-    console.log('fn prom', resource);
     (children as Promise<any>).then(
       (v) => {
-        console.log('promise', v)
-    // setResolvedContent(v);
-        setResolvedContent(()=>v);
+        setResolvedContent(() => v);
         store.decrement();
       },
       () => {
@@ -242,38 +240,26 @@ function SuspenseImpl(props: SuspenseProps): any {
     );
   }
 
-  // Output memo — PURE, no signal writes, no unwrapChildren calls.
-  const output = createMemo(() => {
-    const showFallback = listState ? listState.showFallback() : inFallback();
-    if (showFallback) {
-      const fb = props.fallback;
-      return typeof fb === 'function' && !isLitResult(fb) && !isNode(fb) ? fb() : fb ?? null;
-    }
-      // console.log('fn child', resource)
-    if (childrenIsPromise) {
-      if (resource) {
-
+  // Output memo — PURE: no signal writes, no component instantiation.
+  // Returns pre-resolved values so the DOM runtime just swaps DOM nodes.
+  const output = createMemo(
+    () => {
+      const showFallback = listState ? listState.showFallback() : inFallback();
+      if (showFallback) {
+        return resolvedFallback;
       }
-
-      return resolvedContent();
-    }
-    if (typeof children === 'function') {
-      // children = children()
-    }
-
-    if (isResource(children)) {
-      console.log('is resource')
-    }
-
-    // const [r] = createResource(() => children);
-    // console.log('children', children)
-    return children
-    // typeof children === 'function' ? children() : children;
-  }, undefined, {name: 'suspenseOutputMemo'});
+      if (childrenIsPromise) {
+        return resolvedContent();
+      }
+      return resolvedChildren;
+    },
+    undefined,
+    { name: 'suspenseOutputMemo' }
+  );
 
   // Context already set on owner manually above — no need for Provider wrapper.
   // Returning the output memo directly so the DOM runtime can track it.
-  return  output;
+  return output;
 }
 
 // ============================================================================
@@ -308,13 +294,16 @@ function SuspenseListImpl(props: SuspenseListProps): any {
 
   function coordinateReveal() {
     if (revealOrder === 'together') {
-      const allResolved = registrations.every(r => !r.inFallback());
-      registrations.forEach(r => {
+      const allResolved = registrations.every((r) => !r.inFallback());
+      registrations.forEach((r) => {
         r.setShowContent(allResolved);
         r.setShowFallback(!allResolved);
       });
     } else {
-      const items = revealOrder === 'backwards' ? [...registrations].reverse() : registrations;
+      const items =
+        revealOrder === 'backwards'
+          ? [...registrations].reverse()
+          : registrations;
       let blocked = false;
       for (const r of items) {
         if (blocked || r.inFallback()) {
@@ -334,14 +323,21 @@ function SuspenseListImpl(props: SuspenseListProps): any {
       const [showContent, setShowContent] = createSignal(true);
       const [showFallback, setShowFallback] = createSignal(false);
       registrations.push({ inFallback, setShowContent, setShowFallback });
-      createEffect(() => { inFallback(); coordinateReveal(); });
+      createEffect(() => {
+        inFallback();
+        coordinateReveal();
+      });
       return { showContent, showFallback };
     },
   };
 
-  return SuspenseListCtx.Provider({ value: listContext, children: props.children });
+  return SuspenseListCtx.Provider({
+    value: listContext,
+    children: props.children,
+  });
 }
 
+asSuspense(Suspense)
 Object.defineProperty(Suspense, '__suspense', {
   value: true,
   enumerable: true,
@@ -351,34 +347,7 @@ Object.defineProperty(Suspense, '__suspense', {
 // SHOW WHEN LOADED
 // ============================================================================
 
-/**
- * Extract the resolved value type from Show's `when` prop.
- */
-export type ShowValue<T> = NonNullable<T extends () => infer V ? V : T>;
 
-export interface ShowProps<T> {
-  when: T | undefined | null | false;
-  fallback?: any;
-  children: ShowValue<T> | ((item: ShowValue<T>) => any);
-}
-
-/**
- * Conditional rendering component that works with Suspense
- */
-export function Show<T>(props: ShowProps<T>): any {
-  return createMemo(() => {
-    const value =
-      typeof props.when === 'function' ? (props.when as () => T)() : props.when;
-    if (value != null && value !== false) {
-      const children = props.children;
-      if (typeof children === 'function' && !isLitResult(children)) {
-        return (children as (item: T) => any)(value as T);
-      }
-      return children;
-    }
-    return props.fallback ?? null;
-  });
-}
 
 // ============================================================================
 // EXPORTS

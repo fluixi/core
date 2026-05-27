@@ -458,6 +458,44 @@ export function createResource<T, S = true>(
 }
 
 // ============================================================================
+// SERVER STORE
+// ============================================================================
+
+export type Store<T extends object> = { readonly [K in keyof T]: T[K] };
+export type SetStoreFunction<T extends object> = {
+  (patch: { [K in keyof T]?: T[K] | ((prev: T[K]) => T[K]) }): void;
+  <K extends keyof T>(key: K, value: T[K] | ((prev: T[K]) => T[K])): void;
+};
+
+/**
+ * Server createStore — plain object wrapper, no reactivity.
+ * Mirrors the client API so shared code compiles on both sides.
+ */
+export function createStore<T extends object>(
+  init: T
+): [Store<T>, SetStoreFunction<T>] {
+  const state: T = { ...init };
+
+  function setStore(keyOrPatch: any, value?: any): void {
+    if (
+      typeof keyOrPatch === 'object' &&
+      keyOrPatch !== null &&
+      !Array.isArray(keyOrPatch)
+    ) {
+      for (const k of Object.keys(keyOrPatch)) {
+        const v = keyOrPatch[k];
+        (state as any)[k] = typeof v === 'function' ? v((state as any)[k]) : v;
+      }
+    } else {
+      (state as any)[keyOrPatch] =
+        typeof value === 'function' ? value((state as any)[keyOrPatch]) : value;
+    }
+  }
+
+  return [state as Store<T>, setStore as SetStoreFunction<T>];
+}
+
+// ============================================================================
 // SERVER TRANSITION
 // ============================================================================
 

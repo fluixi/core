@@ -1,0 +1,1 @@
+export * from '@awc/components/index.js';

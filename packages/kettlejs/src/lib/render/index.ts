@@ -11,17 +11,14 @@
 
 import { createRoot } from '@awc/reactive/signal';
 import {
-  render as domRender,
   isDOMNode,
   delegateEvents,
   registerLitRender,
+  render as domRender,
+  insert,
 } from '@awc/dom';
 import { render as litRender } from 'lit';
 import {
-  createLifecycleContext,
-  withLifecycle,
-  executeMountCallbacks,
-  executeCleanups,
   ensureIntegration,
 } from './component.js';
 
@@ -100,6 +97,7 @@ export function render(
   options: RenderOptions = {}
 ): () => void {
   ensureIntegration();
+  delegateEvents(['click', 'input', 'change', 'submit']);
 
   if (isServer) {
     throw new Error(
@@ -110,91 +108,56 @@ export function render(
   if (!container) {
     throw new Error('Container element is required');
   }
-  console.log('render start');
+  // console.log('render start');
 
   let disposed = false;
   let disposer: (() => void) | undefined;
-  let domDisposer: (() => void) | undefined;
-  let lifecycleCtx: any;
 
   // Section 5: Create reactive root (Owner)
   // Section 7: Real DOM with fine-grained updates
+  // createRoot((dispose) => {
+  //   disposer = () => {
+  //     if (disposed) return;
+  //     disposed = true;
+
+  //     // User cleanup
+  //     if (options.onDispose) {
+  //       options.onDispose();
+  //     }
+
+  //     // Dispose reactive root — this triggers all onCleanup callbacks
+  //     // registered by components (onMount cleanup, useEffect cleanup, onUnmount)
+  //     dispose();
+  //   };
+
+  //   // Section 1: Execute code function once
+  //   const result = typeof code === 'function' ? code() : code;
+
+  //   // Section 7: Insert into real DOM with fine-grained updates.
+  //   // IMPORTANT: Use insert() directly within THIS root instead of domRender()
+  //   // which creates a SECOND createRoot. A second root severs the Owner chain,
+  //   // so contexts set by Providers during code() are invisible to render effects
+  //   // created inside the second root. This breaks JSX because JSX wraps
+  //   // components in deferred thunks that only execute inside render effects.
+  //   // With lit-html it worked because component calls happen eagerly during
+  //   // code() — under this root's Owner — before any domRender call.
+  //   container.textContent = '';
+  //   insert(container, result as any);
+  // });
+
+  // domRender(code, container)
   createRoot((dispose) => {
-    disposer = () => {
-      if (disposed) return;
-      disposed = true;
+    disposer = dispose;
+    // Section 1: Execute code function once — Providers run here with Owner = root
+    // so "also stamp" in createProvider sets context on root.contexts, making
+    // it reachable from every render effect created by insert() below.
+    const result = typeof code === 'function' ? code() : code;
 
-      // Clean up DOM
-      if (domDisposer) {
-        domDisposer();
-      }
-
-      // Execute cleanups
-      if (lifecycleCtx) {
-        executeCleanups(lifecycleCtx);
-      }
-
-      // User cleanup
-      if (options.onDispose) {
-        options.onDispose();
-      }
-
-      // Dispose reactive root
-      dispose();
-    };
-
-    // Create lifecycle context for mount/cleanup hooks
-    lifecycleCtx = createLifecycleContext(null as any);
-
-    // Section 1: Execute code function once
-    let result = withLifecycle(
-      lifecycleCtx,
-      typeof code === 'function'
-        ? code
-        : () => {
-            return code;
-          }
-    );
-    // console.log('rendering', result, lifecycleCtx);
-
-    // Section 7: Insert into real DOM with fine-grained updates
-    // If result is a function (reactive accessor from Suspense), pass directly to domRender
-    // domRender will handle reactive functions with createRenderEffect
-    if (typeof result === 'function') {
-      // Reactive function - let domRender handle it
-      domDisposer = domRender(result, container, lifecycleCtx);
-      console.log('render dispose', domDisposer);
-    } else if (isLitTemplateResult(result)) {
-      // Lit template result
-      if (options.hydrate) {
-        console.warn('Hydration should use hydrateRoot from server module');
-      }
-      domDisposer = domRender(result, container, lifecycleCtx);
-      // litRender(result, container);
-    } else if (isDOMNode(result)) {
-      // Direct DOM node
-      container.textContent = '';
-      container.appendChild(result);
-    } else {
-      // Use domRender for everything else (arrays, JSX, primitives, etc.)
-      domDisposer = domRender(result, container, lifecycleCtx);
-    }
-
-    // Execute mount callbacks after DOM is ready
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(() => {
-        if (!disposed && lifecycleCtx) {
-          executeMountCallbacks(lifecycleCtx);
-        }
-      });
-    } else {
-      // Fallback for environments without RAF
-      Promise.resolve().then(() => {
-        if (!disposed && lifecycleCtx) {
-          executeMountCallbacks(lifecycleCtx);
-        }
-      });
-    }
+    // Section 7: Insert into real DOM using the SAME root as code() so that
+    // render effects share the Owner chain with Provider context nodes.
+    // Using domRender() would create a second createRoot, severing the chain.
+    container.textContent = '';
+    insert(container, result as any);
   });
 
   return () => {
@@ -344,10 +307,10 @@ export {
 export {
   Suspense,
   SuspenseList,
-  Show,
+  // Show,
   type SuspenseProps,
   type SuspenseListProps,
-  type ShowProps,
+  // type ShowProps,
   isNode,
   isLitResult,
   isPromise,
