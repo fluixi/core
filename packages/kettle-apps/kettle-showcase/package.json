@@ -1,0 +1,26 @@
+{
+  "name": "kettle-showcase",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --force",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@awc/core": "^6.0.6",
+    "@awc/dom": "workspace:*",
+    "@awc/element": "workspace:*",
+    "@awc/jsx-runtime": "workspace:*",
+    "@awc/kettlejs": "workspace:*",
+    "@awc/reactive": "workspace:*",
+    "@awc/vite": "^6.0.6",
+    "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@awc/babel-plugin-jsx": "workspace:*",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-node-polyfills": "^0.25.0"
+  }
+}
