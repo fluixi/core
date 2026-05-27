@@ -1,0 +1,1122 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/a.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "App"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "App",
+          "declaration": {
+            "name": "App",
+            "module": "src/a.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "App",
+            "module": "src/a.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/api.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "getUsers"
+        },
+        {
+          "kind": "variable",
+          "name": "getUser"
+        },
+        {
+          "kind": "variable",
+          "name": "updateUser"
+        },
+        {
+          "kind": "variable",
+          "name": "deleteUser"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "getUsers",
+          "declaration": {
+            "name": "getUsers",
+            "module": "src/api.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getUser",
+          "declaration": {
+            "name": "getUser",
+            "module": "src/api.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "updateUser",
+          "declaration": {
+            "name": "updateUser",
+            "module": "src/api.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "deleteUser",
+          "declaration": {
+            "name": "deleteUser",
+            "module": "src/api.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/app.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LitApp",
+          "parameters": [
+            {
+              "name": "props",
+              "optional": true,
+              "type": {
+                "text": "{ url?: string }"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "App",
+          "parameters": [
+            {
+              "name": "props",
+              "optional": true,
+              "type": {
+                "text": "{ url?: string }"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "LitApp",
+          "declaration": {
+            "name": "LitApp",
+            "module": "src/app.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "App",
+            "module": "src/app.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/context.tsx",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "themes",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ light: { background: 'white', text: 'black' }, dark: { background: 'black', text: 'white' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "ThemeContext"
+        },
+        {
+          "kind": "function",
+          "name": "ThemeProvider",
+          "parameters": [
+            {
+              "name": "{ children }",
+              "type": {
+                "text": "{ children: JSX.Element }"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "themContext"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "themes",
+          "declaration": {
+            "name": "themes",
+            "module": "src/context.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ThemeContext",
+          "declaration": {
+            "name": "ThemeContext",
+            "module": "src/context.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ThemeProvider",
+          "declaration": {
+            "name": "ThemeProvider",
+            "module": "src/context.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "themContext",
+          "declaration": {
+            "name": "themContext",
+            "module": "src/context.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/entry-client.tsx",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/entry-server.tsx",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "src/entry-server.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/[...rest].tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "NotFound"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "NotFound",
+            "module": "src/routes/[...rest].tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/[id].tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "routeData",
+          "parameters": [
+            {
+              "name": "{ params }",
+              "type": {
+                "text": "any"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "UserDetail"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "routeData",
+          "declaration": {
+            "name": "routeData",
+            "module": "src/routes/[id].tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "UserDetail",
+            "module": "src/routes/[id].tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/about.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "About"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "About",
+            "module": "src/routes/about.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/index.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "routeData"
+        },
+        {
+          "kind": "function",
+          "name": "UserList"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "routeData",
+          "declaration": {
+            "name": "routeData",
+            "module": "src/routes/index.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "UserList",
+            "module": "src/routes/index.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/layout.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "RootLayout"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "RootLayout",
+            "module": "src/routes/layout.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/todolist/todolist.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "TodoList"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TodoList",
+            "module": "src/components/todolist/todolist.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/dashboard/dashboard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LitDashboardPage"
+        },
+        {
+          "kind": "function",
+          "name": "DashboardPage"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "LitDashboardPage",
+          "declaration": {
+            "name": "LitDashboardPage",
+            "module": "src/pages/dashboard/dashboard.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DashboardPage",
+          "declaration": {
+            "name": "DashboardPage",
+            "module": "src/pages/dashboard/dashboard.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "DashboardPage",
+            "module": "src/pages/dashboard/dashboard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/assets/_id_-z76XjbDt.js",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "y",
+          "parameters": [
+            {
+              "name": "{params:a}"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "$"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "$",
+            "module": "dist/assets/_id_-z76XjbDt.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "routeData",
+          "declaration": {
+            "name": "y",
+            "module": "dist/assets/_id_-z76XjbDt.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/assets/api-B-ktFXdN.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "u"
+        },
+        {
+          "kind": "variable",
+          "name": "d"
+        },
+        {
+          "kind": "variable",
+          "name": "g"
+        },
+        {
+          "kind": "variable",
+          "name": "a"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "a",
+          "declaration": {
+            "name": "d",
+            "module": "dist/assets/api-B-ktFXdN.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "g",
+          "declaration": {
+            "name": "u",
+            "module": "dist/assets/api-B-ktFXdN.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "u",
+          "declaration": {
+            "name": "g",
+            "module": "dist/assets/api-B-ktFXdN.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/assets/index-B3IXwn-8.js",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "u"
+        },
+        {
+          "kind": "function",
+          "name": "f"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "f",
+            "module": "dist/assets/index-B3IXwn-8.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "routeData",
+          "declaration": {
+            "name": "u",
+            "module": "dist/assets/index-B3IXwn-8.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/assets/index-BaaU7pqp.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "t"
+        },
+        {
+          "kind": "variable",
+          "name": "u"
+        },
+        {
+          "kind": "variable",
+          "name": "a"
+        },
+        {
+          "kind": "variable",
+          "name": "p"
+        },
+        {
+          "kind": "variable",
+          "name": "y",
+          "type": {
+            "text": "array"
+          },
+          "default": "[]"
+        },
+        {
+          "kind": "variable",
+          "name": "d",
+          "type": {
+            "text": "boolean"
+          },
+          "default": "!1"
+        },
+        {
+          "kind": "variable",
+          "name": "m",
+          "default": "`[${g}]`"
+        },
+        {
+          "kind": "variable",
+          "name": "g",
+          "type": {
+            "text": "object"
+          },
+          "default": "{added:[],deleted:[],modified:[]}"
+        },
+        {
+          "kind": "function",
+          "name": "y",
+          "parameters": [
+            {
+              "name": "g"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "B",
+          "parameters": [
+            {
+              "name": "e"
+            },
+            {
+              "name": "t"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "x",
+          "parameters": [
+            {
+              "name": "e"
+            },
+            {
+              "name": "t"
+            },
+            {
+              "name": "r",
+              "default": "{}"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "p",
+          "parameters": [
+            {
+              "name": "O"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "y",
+          "parameters": [
+            {
+              "name": "O"
+            },
+            {
+              "name": "G"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "d",
+          "parameters": [
+            {
+              "name": "O"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "g",
+          "parameters": [
+            {
+              "name": "O"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "m",
+          "parameters": [
+            {
+              "name": "O"
+            }
+          ]
+        },
+        {
+          "kind": "variable",
+          "name": "O"
+        },
+        {
+          "kind": "function",
+          "name": "y"
+        },
+        {
+          "kind": "variable",
+          "name": "D",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4}"
+        },
+        {
+          "kind": "variable",
+          "name": "X"
+        },
+        {
+          "kind": "variable",
+          "name": "L"
+        },
+        {
+          "kind": "function",
+          "name": "u"
+        },
+        {
+          "kind": "variable",
+          "name": "K"
+        },
+        {
+          "kind": "variable",
+          "name": "et"
+        },
+        {
+          "kind": "function",
+          "name": "cp",
+          "parameters": [
+            {
+              "name": "e"
+            },
+            {
+              "name": "t"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "dp",
+          "parameters": [
+            {
+              "name": "e"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "pp",
+          "parameters": [
+            {
+              "name": "e"
+            },
+            {
+              "name": "t"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "rd",
+          "parameters": [
+            {
+              "name": "e"
+            },
+            {
+              "name": "t"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "yp",
+          "parameters": [
+            {
+              "name": "e"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "gp",
+          "parameters": [
+            {
+              "name": "e"
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "vp"
+        },
+        {
+          "kind": "function",
+          "name": "g"
+        },
+        {
+          "kind": "variable",
+          "name": "mp",
+          "default": "ud"
+        },
+        {
+          "kind": "function",
+          "name": "Ap"
+        },
+        {
+          "kind": "function",
+          "name": "Uo",
+          "parameters": [
+            {
+              "name": "e"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "B",
+          "declaration": {
+            "name": "rd",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "D",
+          "declaration": {
+            "name": "mp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "K",
+          "declaration": {
+            "name": "Uo",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "L",
+          "declaration": {
+            "name": "Ap",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "O",
+          "declaration": {
+            "name": "et",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "a",
+          "declaration": {
+            "name": "pp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "d",
+          "declaration": {
+            "name": "K",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "g",
+          "declaration": {
+            "name": "vp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "m",
+          "declaration": {
+            "name": "gp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "p",
+          "declaration": {
+            "name": "dp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "u",
+          "declaration": {
+            "name": "cp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "x",
+          "declaration": {
+            "name": "X",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "y",
+          "declaration": {
+            "name": "yp",
+            "module": "dist/assets/index-BaaU7pqp.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/(auth)/login.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Login"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Login",
+            "module": "src/routes/(auth)/login.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/(auth)/register.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Register"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Register",
+            "module": "src/routes/(auth)/register.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/dashboard/dashboard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LitDashboardPage"
+        },
+        {
+          "kind": "function",
+          "name": "Wrap",
+          "parameters": [
+            {
+              "name": "{ children }",
+              "type": {
+                "text": "{children: JSX.Element | (()=>unknown)}"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "DashboardPage"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "LitDashboardPage",
+          "declaration": {
+            "name": "LitDashboardPage",
+            "module": "src/routes/dashboard/dashboard.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Wrap",
+          "declaration": {
+            "name": "Wrap",
+            "module": "src/routes/dashboard/dashboard.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DashboardPage",
+          "declaration": {
+            "name": "DashboardPage",
+            "module": "src/routes/dashboard/dashboard.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "DashboardPage",
+            "module": "src/routes/dashboard/dashboard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/dashboard/element.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "MyCounter"
+        },
+        {
+          "kind": "variable",
+          "name": "Counter"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Counter",
+          "declaration": {
+            "name": "Counter",
+            "module": "src/routes/dashboard/element.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MyCounter",
+            "module": "src/routes/dashboard/element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/settings/account.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SettingsAccount"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SettingsAccount",
+            "module": "src/routes/settings/account.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/settings/index.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SettingsOverview"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SettingsOverview",
+            "module": "src/routes/settings/index.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/settings/layout.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SettingsLayout"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SettingsLayout",
+            "module": "src/routes/settings/layout.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/routes/settings/profile.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SettingsProfile"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SettingsProfile",
+            "module": "src/routes/settings/profile.tsx"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -100,6 +100,7 @@ Desktop.ini
 /typings
 
 # ─── Project-specific exclusions ─────────────────────────────────────────────
-packages/kettle-apps/
+packages/kettle-apps/adafri-api
+packages/kettle-apps/adafri-auth
 packages/kettle-test/
 packages/kettlejs/docs

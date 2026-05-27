@@ -1,0 +1,33 @@
+{
+  "name": "kettle-jsx",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+  },
+  "dependencies": {
+    "@awc/kettlejs": "workspace:*",
+    "@awc/reactive": "workspace:*",
+    "@awc/jsx-runtime": "workspace:*",
+    "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "esbuild": "^0.27.1",
+    "eslint": "^8.53.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-babel": "^1.3.2",
+    "vitest": "^1.0.0"
+  },
+  "description": "A KettleJS application",
+  "license": "MIT"
+}

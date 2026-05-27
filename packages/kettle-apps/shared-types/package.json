@@ -1,0 +1,8 @@
+{
+  "name": "@leuzman/shared-types",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc" },
+  "devDependencies": { "typescript": "^5.6.2" }
+}

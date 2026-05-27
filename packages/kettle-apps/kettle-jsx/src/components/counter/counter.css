@@ -1,0 +1,46 @@
+.counter {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.counter h2 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.counter p {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.counter button {
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  border: none;
+  border-radius: 4px;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.counter button:hover {
+  background: #0056b3;
+}
+
+.counter button:active {
+  transform: scale(0.98);
+}
+
+.counter .loading,
+.counter .error,
+.counter .empty {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.counter .error {
+  color: #dc3545;
+}
