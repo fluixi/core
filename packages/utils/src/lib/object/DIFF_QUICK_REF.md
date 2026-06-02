@@ -9,7 +9,7 @@ import {
   getChangedPaths,
   hasObjectChanges,
   applyDiff
-} from '@awc/utils/object';
+} from '@fluixi/utils/object';
 ```
 
 ---
@@ -369,7 +369,7 @@ applyDiff({ a: 1, b: 2 }, { b: undefined });
 ## Quick Start
 
 ```typescript
-import { diffObject, getChangedPaths } from '@awc/utils/object';
+import { diffObject, getChangedPaths } from '@fluixi/utils/object';
 
 // Compare two objects
 const changes = diffObject(oldData, newData);

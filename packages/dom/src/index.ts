@@ -64,5 +64,5 @@ const DOM = {
 export type DOM = typeof DOM
 export default DOM
 
-// import { litrx, registerGlobal } from '@awc/dom';
+// import { litrx, registerGlobal } from '@fluixi/dom';
 // registerGlobal('litrx', litrx);

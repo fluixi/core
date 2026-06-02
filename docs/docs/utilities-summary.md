@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Utilities Summary
 
-Complete overview of the advanced function and URL utilities added to the `@awc/utils` package.
+Complete overview of the advanced function and URL utilities added to the `@fluixi/utils` package.
 
 ## 🚀 Overview
 
@@ -54,7 +54,7 @@ import {
   curry,
   retry,
   // ... other utilities
-} from '@awc/utils/functions';
+} from '@fluixi/utils/functions';
 ```
 
 ### Categories & Functions
@@ -229,7 +229,7 @@ import {
   normalizeUrl,
   sanitizeUrl,
   // ... other utilities
-} from '@awc/utils/url';
+} from '@fluixi/utils/url';
 ```
 
 ### Categories & Functions
@@ -445,7 +445,7 @@ Comprehensive documentation has been created for both modules:
 
 **1. Search Input with Debounce**
 ```typescript
-import { debounce } from '@awc/utils/functions';
+import { debounce } from '@fluixi/utils/functions';
 
 const SearchComponent = () => {
   const search = debounce(async (query: string) => {
@@ -459,7 +459,7 @@ const SearchComponent = () => {
 
 **2. API Call with Retry**
 ```typescript
-import { retry } from '@awc/utils/functions';
+import { retry } from '@fluixi/utils/functions';
 
 const fetchUser = retry(
   async (id: string) => {
@@ -473,7 +473,7 @@ const fetchUser = retry(
 
 **3. Data Processing Pipeline**
 ```typescript
-import { pipe } from '@awc/utils/functions';
+import { pipe } from '@fluixi/utils/functions';
 
 const processData = pipe(
   (data: string[]) => data.filter(Boolean),
@@ -487,7 +487,7 @@ const processData = pipe(
 
 **1. API URL Builder**
 ```typescript
-import { buildUrl } from '@awc/utils/url';
+import { buildUrl } from '@fluixi/utils/url';
 
 class ApiClient {
   buildEndpoint(path: string, params?: Record<string, any>) {
@@ -508,7 +508,7 @@ class ApiClient {
 
 **2. URL Sanitization**
 ```typescript
-import { sanitizeUrl, isValidUrl } from '@awc/utils/url';
+import { sanitizeUrl, isValidUrl } from '@fluixi/utils/url';
 
 function processUserUrl(input: string): string | null {
   if (!isValidUrl(input)) return null;
@@ -525,7 +525,7 @@ function processUserUrl(input: string): string | null {
 
 **3. Query Parameter Manager**
 ```typescript
-import { addQueryParams, removeQueryParams } from '@awc/utils/url';
+import { addQueryParams, removeQueryParams } from '@fluixi/utils/url';
 
 class UrlManager {
   constructor(private url: string) {}
@@ -570,7 +570,7 @@ manager
 
 **Security Example:**
 ```typescript
-import { sanitizeUrl } from '@awc/utils/url';
+import { sanitizeUrl } from '@fluixi/utils/url';
 
 // Always sanitize user-provided URLs
 function handleExternalLink(url: string) {

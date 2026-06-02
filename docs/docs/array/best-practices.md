@@ -13,7 +13,7 @@ Guidelines and patterns for using array utilities effectively in production appl
 All array utilities return new arrays, preserving immutability:
 
 ```typescript
-import { sortBy, unique } from '@awc/utils/array/advanced';
+import { sortBy, unique } from '@fluixi/utils/array/advanced';
 
 const original = [{ id: 3 }, { id: 1 }, { id: 2 }];
 const sorted = sortBy(original, 'id');
@@ -221,7 +221,7 @@ const validated = (await Promise.all(
 Always validate inputs when dealing with external data:
 
 ```typescript
-import { ensureArray, filterCompact } from '@awc/utils/array/advanced';
+import { ensureArray, filterCompact } from '@fluixi/utils/array/advanced';
 
 function processData(data: unknown) {
   // ✅ Ensure data is an array
@@ -335,7 +335,7 @@ function process(item: Item) {
 ### 1. Test Edge Cases
 
 ```typescript
-import { chunk, median, percentile } from '@awc/utils/array/advanced';
+import { chunk, median, percentile } from '@fluixi/utils/array/advanced';
 
 describe('Array utilities', () => {
   it('handles empty arrays', () => {
@@ -378,7 +378,7 @@ expect(sorted).toEqual([1, 2, 3]);
 
 ```typescript
 // utils/arrayHelpers.ts
-import { sortBy, groupBy, sumBy } from '@awc/utils/array/advanced';
+import { sortBy, groupBy, sumBy } from '@fluixi/utils/array/advanced';
 
 export const sortByDate = <T extends { date: Date }>(items: T[]) =>
   sortBy(items, [{ key: 'date', dir: 'desc' }]);
@@ -428,7 +428,7 @@ class ProductService {
 
 ```typescript
 import { useMemo } from 'react';
-import { sortBy, filterCompact } from '@awc/utils/array/advanced';
+import { sortBy, filterCompact } from '@fluixi/utils/array/advanced';
 
 function UserList({ users }: { users: User[] }) {
   const sortedUsers = useMemo(
@@ -455,7 +455,7 @@ function UserList({ users }: { users: User[] }) {
 
 ```typescript
 import { useMemo } from 'react';
-import { groupBy, sortBy } from '@awc/utils/array/advanced';
+import { groupBy, sortBy } from '@fluixi/utils/array/advanced';
 
 function useGroupedData<T>(
   data: T[],

@@ -1,4 +1,4 @@
-import { Accessor, createMemo } from '@awc/reactive/signal';
+import { Accessor, createMemo } from '@fluixi/reactive/signal';
 import { normalizeAccessor } from './utils.js';
 
 export interface DynamicProps<T extends Record<string, any> = Record<string, any>> {

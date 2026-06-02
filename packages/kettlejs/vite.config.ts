@@ -11,11 +11,11 @@ export default defineConfig({
       fileName: 'kettlejs',
     },
     rollupOptions: {
-      external: ['lit', 'lit-html', '@awc/reactive'],
+      external: ['lit', 'lit-html', '@fluixi/reactive'],
       output: {
         globals: {
           lit: 'Lit',
-          '@awc/reactive': 'Reactive',
+          '@fluixi/reactive': 'Reactive',
         },
       },
     },

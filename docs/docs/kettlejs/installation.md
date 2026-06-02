@@ -22,7 +22,7 @@ The fastest way to start with KettleJS is using the official CLI:
 
 ```bash
 # Install CLI globally
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 
 # Create new project
 kettlejs new my-app
@@ -47,7 +47,7 @@ The CLI will prompt you to configure:
 Add KettleJS to an existing project:
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 #### Additional Dependencies
@@ -137,7 +137,7 @@ Create or update `tsconfig.json`:
     "skipLibCheck": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime",
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime",
     "resolveJsonModule": true
   },
   "include": ["src"]
@@ -177,14 +177,14 @@ export default defineConfig({
       output: {
         manualChunks: {
           'lit': ['lit'],
-          'kettlejs': ['@awc/kettlejs'],
-          'reactive': ['@awc/reactive']
+          'kettlejs': ['@fluixi/kettlejs'],
+          'reactive': ['@fluixi/reactive']
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['lit', '@awc/kettlejs', '@awc/reactive']
+    include: ['lit', '@fluixi/kettlejs', '@fluixi/reactive']
   }
 });
 ```
@@ -215,7 +215,7 @@ Create `index.html`:
 Create `src/main.ts`:
 
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 import { App } from './App';
 import './styles/main.css';
 
@@ -229,8 +229,8 @@ if (root) {
 Create `src/App.ts`:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -251,7 +251,7 @@ export const App: Component = () => {
 Create `src/main.ts`:
 
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 import { App } from './App';
 import './styles/main.css';
 
@@ -266,8 +266,8 @@ Create `src/App.tsx`:
 
 ```tsx
 /** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export function App() {
   const [count, setCount] = createSignal(0);
@@ -304,7 +304,7 @@ Create `src/App.tsx`:
 
 ```tsx
 import React from 'react';
-import { useSignal } from '@awc/kettlejs/react-bridge';
+import { useSignal } from '@fluixi/kettlejs/react-bridge';
 
 export function App() {
   const [count, setCount] = useSignal(0);
@@ -378,8 +378,8 @@ Add scripts to `package.json`:
     "preview": "vite preview"
   },
   "dependencies": {
-    "@awc/kettlejs": "latest",
-    "@awc/reactive": "latest",
+    "@fluixi/kettlejs": "latest",
+    "@fluixi/reactive": "latest",
     "lit": "^3.3.1"
   },
   "devDependencies": {
@@ -470,7 +470,7 @@ Verify `tsconfig.json` has correct JSX configuration:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -495,14 +495,14 @@ Now that KettleJS is installed:
 
 Current stable versions:
 
-- `@awc/kettlejs`: 0.0.4
-- `@awc/reactive`: Latest
+- `@fluixi/kettlejs`: 0.0.4
+- `@fluixi/reactive`: Latest
 - `lit`: 3.3.1+
 
 Check npm for latest versions:
 
 ```bash
-npm info @awc/kettlejs version
+npm info @fluixi/kettlejs version
 ```
 
 ---

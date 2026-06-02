@@ -9,8 +9,8 @@
  *     document-level delegation) so shadow DOM events always work
  *
  * Usage:
- *   import { AdfAccountsSelector } from '@awc/adf-accounts-selector';
- *   import { createComponent, EventName } from '@awc/element/jsx';
+ *   import { AdfAccountsSelector } from '@fluixi/adf-accounts-selector';
+ *   import { createComponent, EventName } from '@fluixi/element/jsx';
  *
  *   export const AccountsSelector = createComponent({
  *     tagName:      'adf-accounts-selector',
@@ -30,7 +30,7 @@
  *   />
  */
 
-import { createEffect, onCleanup, type DOM } from '@awc/dom';
+import { createEffect, onCleanup, type DOM } from '@fluixi/dom';
 
 // ─── EventName — branded string carrying the event type ──────────────────────
 

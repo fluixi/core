@@ -1,11 +1,11 @@
 /**
  * @fileoverview Portal component for rendering content outside the component hierarchy in KettleJS
- * @module @awc/kettlejs/control-flow/Portal
+ * @module @fluixi/kettlejs/control-flow/Portal
  */
 
 import { html, render as litRender, TemplateResult, nothing } from 'lit';
-import { createEffect, createSignal, Accessor } from '@awc/reactive/signal';
-import { Component, ComponentProps } from '@awc/dom';
+import { createEffect, createSignal, Accessor } from '@fluixi/reactive/signal';
+import { Component, ComponentProps } from '@fluixi/dom';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
 
 /**

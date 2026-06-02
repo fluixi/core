@@ -34,7 +34,7 @@ A tuple containing:
 ### Example
 
 ```typescript
-import { createStore } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
 
 // Basic store
 const [user, setUser] = createStore({
@@ -323,7 +323,7 @@ Stores work seamlessly with signals, memos, and effects.
 Effects automatically track store property access:
 
 ```typescript
-import { createEffect } from '@awc/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 const [user, setUser] = createStore({
   firstName: 'Alice',
@@ -348,7 +348,7 @@ setUser('firstName', 'Alicia');
 Create computed values from store properties:
 
 ```typescript
-import { createMemo } from '@awc/reactive';
+import { createMemo } from '@fluixi/reactive';
 
 const [user, setUser] = createStore({
   firstName: 'Alice',
@@ -370,7 +370,7 @@ console.log(fullName()); // "Alice Smith"
 Batch multiple store updates:
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 const [state, setState] = createStore({
   a: 1,
@@ -412,7 +412,7 @@ function createStoreEffect<T, U>(
 **Example:**
 
 ```typescript
-import { createStoreEffect } from '@awc/reactive';
+import { createStoreEffect } from '@fluixi/reactive';
 
 const [user, setUser] = createStore({
   profile: { name: 'Alice', age: 30 }
@@ -443,7 +443,7 @@ function createStoreMemo<T, U>(
 **Example:**
 
 ```typescript
-import { createStoreMemo } from '@awc/reactive';
+import { createStoreMemo } from '@fluixi/reactive';
 
 const [user, setUser] = createStore({
   firstName: 'Alice',
@@ -510,7 +510,7 @@ const rawValue = state[$RAW];
 **Example:**
 
 ```typescript
-import { $RAW } from '@awc/reactive';
+import { $RAW } from '@fluixi/reactive';
 
 const [state, setState] = createStore({ count: 0 });
 

@@ -1,12 +1,12 @@
 /**
  * @fileoverview File System Router Generator for KettleJS
- * @module @awc/kettlejs/router/fs-router
+ * @module @fluixi/kettlejs/router/fs-router
  *
  * Utilities to generate route definitions from file system structure
  * compatible with Vite's import.meta.glob.
  */
 
-import { isPromise } from '@awc/dom';
+import { isPromise } from '@fluixi/dom';
 import { lazy } from '../render/lazy.js';
 import type { RouteDefinition } from './router.js';
 
@@ -41,7 +41,7 @@ export function createFileRoutes(
   options: FileRouterOptions = {}
 ): RouteDefinition[] {
   console.warn(
-    '[KettleJS] createFileRoutes is deprecated. Use kettleRoutesPlugin from @awc/kettlejs/plugins instead.'
+    '[KettleJS] createFileRoutes is deprecated. Use kettleRoutesPlugin from @fluixi/kettlejs/plugins instead.'
   );
   const root = options.root || '/src/routes';
   const routes: RouteDefinition[] = [];

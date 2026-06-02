@@ -1,6 +1,6 @@
 // internal/vinxi/entry-client.ts
-// import { hydrate } from "@awc/kettlejs";
-import { hydrate } from '@awc/dom';
+// import { hydrate } from "@fluixi/kettlejs";
+import { hydrate } from '@fluixi/dom';
 import {
   deserializeHydrationData,
   setHydrating,

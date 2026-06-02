@@ -5,13 +5,13 @@ The KettleJS CLI provides powerful scaffolding tools to create projects and comp
 ## Installation
 
 ```bash
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 ```
 
 Or use with npx:
 
 ```bash
-npx @awc/kettlejs <command>
+npx @fluixi/kettlejs <command>
 ```
 
 ## Commands
@@ -98,7 +98,7 @@ kettlejs g c Counter --mode lit-html --type with-state
 **Output:**
 ```typescript
 import { html } from 'lit';
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 import './counter.css';
 
 export const Counter = (props: { initialCount?: number }) => {
@@ -132,8 +132,8 @@ kettlejs g c Counter --mode jsx --type with-state
 **Output:**
 ```tsx
 /** @jsx h */
-import { h, Fragment } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 import './counter.css';
 
 export interface CounterProps {
@@ -167,7 +167,7 @@ Your `tsconfig.json` will be configured automatically:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -184,7 +184,7 @@ kettlejs g c Counter --mode react-bridge --type with-state
 **Output:**
 ```tsx
 import React from 'react';
-import { useSignal, useKettleEffect } from '@awc/kettlejs/react-bridge';
+import { useSignal, useKettleEffect } from '@fluixi/kettlejs/react-bridge';
 import './counter.css';
 
 export interface CounterProps {
@@ -681,7 +681,7 @@ Ensure your `tsconfig.json` is correctly configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -706,7 +706,7 @@ export default defineConfig({
   esbuild: {
     jsxFactory: 'h',
     jsxFragment: 'Fragment',
-    jsxInject: `import { h, Fragment } from '@awc/kettlejs/jsx-runtime'`,
+    jsxInject: `import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime'`,
   },
 });
 ```

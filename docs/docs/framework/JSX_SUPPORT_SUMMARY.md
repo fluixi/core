@@ -69,7 +69,7 @@ KettleJS now has full JSX/TSX support, making it compatible with the React ecosy
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs"
+    "jsxImportSource": "@fluixi/kettlejs"
   }
 }
 ```
@@ -77,7 +77,7 @@ KettleJS now has full JSX/TSX support, making it compatible with the React ecosy
 ### Basic Example
 
 ```tsx
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);

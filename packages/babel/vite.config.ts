@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@awc/babel',
+    name: '@fluixi/babel',
     watch: false,
     globals: true,
     environment: 'node',

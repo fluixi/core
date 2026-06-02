@@ -4,20 +4,25 @@
   "title": "BuildConfig",
   "description": "Configuration for mix-builder supporting both Rollup and ESBuild",
   "type": "object",
-
   "properties": {
-    "rollup": { "$ref": "#/$defs/rollupBuilder" },
-    "esbuild": { "$ref": "#/$defs/esbuildBuilder" },
+    "rollup": {
+      "$ref": "#/$defs/rollupBuilder"
+    },
+    "esbuild": {
+      "$ref": "#/$defs/esbuildBuilder"
+    },
     "builder": {
       "description": "Builder to use",
       "type": "string",
-      "enum": ["rollup", "esbuild", "both"],
+      "enum": [
+        "rollup",
+        "esbuild",
+        "both"
+      ],
       "default": "both"
     }
   },
-
   "additionalProperties": false,
-
   "$defs": {
     "baseBuilder": {
       "type": "object",
@@ -25,22 +30,39 @@
         "extensions": {
           "description": "File extensions to resolve",
           "type": "array",
-          "items": { "type": "string" },
-          "default": [".js", ".jsx", ".ts", ".tsx"]
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx"
+          ]
         },
         "externals": {
           "description": "External dependencies to exclude from bundle",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "formats": {
           "description": "Output module formats",
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["es", "esm", "cjs", "umd", "iife"]
+            "enum": [
+              "es",
+              "esm",
+              "cjs",
+              "umd",
+              "iife"
+            ]
           },
-          "default": ["es"]
+          "default": [
+            "es"
+          ]
         },
         "outdir": {
           "description": "Output directory",
@@ -80,7 +102,10 @@
         "nodeEnv": {
           "description": "Node environment",
           "type": "string",
-          "enum": ["development", "production"],
+          "enum": [
+            "development",
+            "production"
+          ],
           "default": "production"
         },
         "debug": {
@@ -105,10 +130,11 @@
         }
       }
     },
-
     "entryConfig": {
       "allOf": [
-        { "$ref": "#/$defs/baseBuilder" },
+        {
+          "$ref": "#/$defs/baseBuilder"
+        },
         {
           "type": "object",
           "properties": {
@@ -119,7 +145,12 @@
             "buildType": {
               "description": "Build bundling strategy",
               "type": "string",
-              "enum": ["bundled", "external", "inline", "runtime"],
+              "enum": [
+                "bundled",
+                "external",
+                "inline",
+                "runtime"
+              ],
               "default": "bundled"
             },
             "file": {
@@ -135,13 +166,25 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "enum": ["es", "esm", "cjs", "umd", "iife"]
+                  "enum": [
+                    "es",
+                    "esm",
+                    "cjs",
+                    "umd",
+                    "iife"
+                  ]
                 },
                 {
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "enum": ["es", "esm", "cjs", "umd", "iife"]
+                    "enum": [
+                      "es",
+                      "esm",
+                      "cjs",
+                      "umd",
+                      "iife"
+                    ]
                   }
                 }
               ]
@@ -149,13 +192,14 @@
             "globals": {
               "description": "Global variable mappings for UMD/IIFE",
               "type": "object",
-              "additionalProperties": { "type": "string" }
+              "additionalProperties": {
+                "type": "string"
+              }
             }
           }
         }
       ]
     },
-
     "entries": {
       "oneOf": [
         {
@@ -168,41 +212,70 @@
         {
           "description": "Array of entry file paths",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       ]
     },
-
     "rollupBuilder": {
       "type": "object",
       "properties": {
-        "entries": { "$ref": "#/$defs/entries" },
+        "entries": {
+          "$ref": "#/$defs/entries"
+        },
         "buildType": {
           "type": "string",
-          "enum": ["bundled", "external", "inline", "runtime"],
+          "enum": [
+            "bundled",
+            "external",
+            "inline",
+            "runtime"
+          ],
           "default": "bundled"
         },
         "extensions": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": [".js", ".jsx", ".ts", ".tsx"]
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx"
+          ]
         },
         "externals": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "formats": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["es", "cjs", "umd", "iife"]
+            "enum": [
+              "es",
+              "cjs",
+              "umd",
+              "iife"
+            ]
           },
-          "default": ["es"]
+          "default": [
+            "es"
+          ]
         },
         "exports": {
           "description": "Export mode for Rollup",
           "type": "string",
-          "enum": ["auto", "default", "named", "none"],
+          "enum": [
+            "auto",
+            "default",
+            "named",
+            "none"
+          ],
           "default": "named"
         },
         "sourcemap": {
@@ -242,21 +315,33 @@
             "typescript": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean", "default": true },
-                "config": { "type": "object" }
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "config": {
+                  "type": "object"
+                }
               }
             },
             "babel": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean", "default": true },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
                 "includes": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "exclude": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -269,10 +354,17 @@
           "items": {
             "type": "object",
             "properties": {
-              "src": { "type": "string" },
-              "dest": { "type": "string" }
+              "src": {
+                "type": "string"
+              },
+              "dest": {
+                "type": "string"
+              }
             },
-            "required": ["src", "dest"]
+            "required": [
+              "src",
+              "dest"
+            ]
           }
         },
         "copyFiles": {
@@ -284,10 +376,14 @@
               "from": {
                 "description": "Source path or glob pattern(s)",
                 "oneOf": [
-                  { "type": "string" },
+                  {
+                    "type": "string"
+                  },
                   {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 ]
               },
@@ -305,50 +401,97 @@
                 "type": "string"
               }
             },
-            "required": ["from", "to"]
+            "required": [
+              "from",
+              "to"
+            ]
           }
         },
-        "reactExternal": { "type": "boolean", "default": false },
-        "litExternal": { "type": "boolean", "default": false },
-        "libExternal": { "type": "boolean", "default": false },
-        "pkgExternal": { "type": "boolean", "default": false },
+        "reactExternal": {
+          "type": "boolean",
+          "default": false
+        },
+        "litExternal": {
+          "type": "boolean",
+          "default": false
+        },
+        "libExternal": {
+          "type": "boolean",
+          "default": false
+        },
+        "pkgExternal": {
+          "type": "boolean",
+          "default": false
+        },
         "nodeEnv": {
           "type": "string",
-          "enum": ["development", "production"],
+          "enum": [
+            "development",
+            "production"
+          ],
           "default": "production"
         },
-        "log": { "type": "boolean", "default": true },
-        "copy_pkg": { "type": "boolean", "default": false }
+        "log": {
+          "type": "boolean",
+          "default": true
+        },
+        "copy_pkg": {
+          "type": "boolean",
+          "default": false
+        }
       },
-      "required": ["entries"],
+      "required": [
+        "entries"
+      ],
       "additionalProperties": true
     },
-
     "esbuildBuilder": {
       "type": "object",
       "properties": {
-        "entries": { "$ref": "#/$defs/entries" },
+        "entries": {
+          "$ref": "#/$defs/entries"
+        },
         "buildType": {
           "type": "string",
-          "enum": ["bundled", "external", "inline"],
+          "enum": [
+            "bundled",
+            "external",
+            "inline"
+          ],
           "default": "bundled"
         },
         "extensions": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": [".js", ".jsx", ".ts", ".tsx"]
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx"
+          ]
         },
         "externals": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "formats": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["es", "esm", "cjs", "iife"]
+            "enum": [
+              "es",
+              "esm",
+              "cjs",
+              "iife"
+            ]
           },
-          "default": ["esm"]
+          "default": [
+            "esm"
+          ]
         },
         "bundle": {
           "description": "Bundle dependencies",
@@ -383,8 +526,17 @@
         "sourcemap": {
           "description": "Generate source maps",
           "oneOf": [
-            { "type": "boolean" },
-            { "type": "string", "enum": ["inline", "external", "both"] }
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "inline",
+                "external",
+                "both"
+              ]
+            }
           ],
           "default": false
         },
@@ -396,14 +548,25 @@
         "platform": {
           "description": "Target platform",
           "type": "string",
-          "enum": ["browser", "node", "neutral"],
+          "enum": [
+            "browser",
+            "node",
+            "neutral"
+          ],
           "default": "browser"
         },
         "target": {
           "description": "JavaScript target version",
           "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           ],
           "default": "es2021"
         },
@@ -420,7 +583,9 @@
         "outExtension": {
           "description": "Output file extensions",
           "type": "object",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "entryNames": {
           "description": "Entry point naming pattern",
@@ -440,19 +605,32 @@
         "legalComments": {
           "description": "How to handle legal comments",
           "type": "string",
-          "enum": ["none", "inline", "eof", "linked", "external"],
+          "enum": [
+            "none",
+            "inline",
+            "eof",
+            "linked",
+            "external"
+          ],
           "default": "none"
         },
         "charset": {
           "description": "Character encoding",
           "type": "string",
-          "enum": ["ascii", "utf8"],
+          "enum": [
+            "ascii",
+            "utf8"
+          ],
           "default": "utf8"
         },
         "jsx": {
           "description": "JSX transform mode",
           "type": "string",
-          "enum": ["transform", "preserve", "automatic"],
+          "enum": [
+            "transform",
+            "preserve",
+            "automatic"
+          ],
           "default": "automatic"
         },
         "jsxImportSource": {
@@ -470,23 +648,50 @@
           "type": "boolean",
           "default": false
         },
-        "reactExternal": { "type": "boolean", "default": false },
-        "litExternal": { "type": "boolean", "default": false },
-        "libExternal": { "type": "boolean", "default": false },
+        "reactExternal": {
+          "type": "boolean",
+          "default": false
+        },
+        "litExternal": {
+          "type": "boolean",
+          "default": false
+        },
+        "libExternal": {
+          "type": "boolean",
+          "default": false
+        },
         "env": {
           "type": "string",
-          "enum": ["development", "production"],
+          "enum": [
+            "development",
+            "production"
+          ],
           "default": "production"
         },
         "nodeEnv": {
           "type": "string",
-          "enum": ["development", "production"],
+          "enum": [
+            "development",
+            "production"
+          ],
           "default": "production"
         },
-        "log": { "type": "boolean", "default": true },
-        "debug": { "type": "boolean", "default": false },
-        "dts": { "type": "boolean", "default": false },
-        "copy_pkg": { "type": "boolean", "default": false },
+        "log": {
+          "type": "boolean",
+          "default": true
+        },
+        "debug": {
+          "type": "boolean",
+          "default": false
+        },
+        "dts": {
+          "type": "boolean",
+          "default": false
+        },
+        "copy_pkg": {
+          "type": "boolean",
+          "default": false
+        },
         "copyFiles": {
           "description": "Advanced file copying with glob pattern support",
           "type": "array",
@@ -496,10 +701,14 @@
               "from": {
                 "description": "Source path or glob pattern(s)",
                 "oneOf": [
-                  { "type": "string" },
+                  {
+                    "type": "string"
+                  },
                   {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 ]
               },
@@ -517,11 +726,21 @@
                 "type": "string"
               }
             },
-            "required": ["from", "to"]
+            "required": [
+              "from",
+              "to"
+            ]
           }
+        },
+        "clean": {
+          "description": "Remove output directory before building",
+          "type": "boolean",
+          "default": false
         }
       },
-      "required": ["entries"],
+      "required": [
+        "entries"
+      ],
       "additionalProperties": true
     }
   }

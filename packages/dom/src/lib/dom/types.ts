@@ -16,7 +16,7 @@ import {
   SuspenseContextType,
   SuspenseListContextType,
   type createStore as signalStore,
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 export type Accessor<T> = () => T;
 

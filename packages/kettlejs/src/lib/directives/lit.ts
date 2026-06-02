@@ -1,4 +1,4 @@
-// import { Accessor, createEffect } from '@awc/reactive';
+// import { Accessor, createEffect } from '@fluixi/reactive';
 
 // import { Directive, directive, PartInfo, PartType } from 'lit/directive.js';
 

@@ -3,10 +3,10 @@ import {
   ObjectKind,
   ObjectType,
   UndefinedOrNullType,
-} from '@awc/utils/primitive';
-import { isClass, isObject } from '@awc/utils/object';
-import { isArray } from '@awc/utils/array';
-import { isFunction } from '@awc/utils/functions';
+} from '@fluixi/utils/primitive';
+import { isClass, isObject } from '@fluixi/utils/object';
+import { isArray } from '@fluixi/utils/array';
+import { isFunction } from '@fluixi/utils/functions';
 
 /** Check if value is null */
 export function isNull(v: unknown): v is null {

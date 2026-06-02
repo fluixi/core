@@ -10,7 +10,7 @@ First, configure your `tsconfig.json`:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/jsx-runtime",
+    "jsxImportSource": "@fluixi/jsx-runtime",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler"
@@ -21,8 +21,8 @@ First, configure your `tsconfig.json`:
 ## Example 1: Counter with Signals
 
 ```tsx
-import { render } from '@awc/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { render } from '@fluixi/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function Counter() {
   const [count, setCount] = createSignal(0);
@@ -62,9 +62,9 @@ render(<Counter />, document.getElementById('app')!);
 ## Example 2: Todo List with Store
 
 ```tsx
-import { render, For, Show } from '@awc/jsx-runtime';
-import { createStore } from '@awc/reactive/store';
-import { createSignal } from '@awc/reactive/signal';
+import { render, For, Show } from '@fluixi/jsx-runtime';
+import { createStore } from '@fluixi/reactive/store';
+import { createSignal } from '@fluixi/reactive/signal';
 
 interface Todo {
   id: number;
@@ -198,8 +198,8 @@ render(<TodoApp />, document.getElementById('app')!);
 ## Example 3: Data Fetching with Suspense
 
 ```tsx
-import { render, Show, Suspense, ErrorBoundary } from '@awc/jsx-runtime';
-import { createSignal, createResource } from '@awc/reactive/signal';
+import { render, Show, Suspense, ErrorBoundary } from '@fluixi/jsx-runtime';
+import { createSignal, createResource } from '@fluixi/reactive/signal';
 
 interface User {
   id: number;
@@ -264,9 +264,9 @@ render(<UserProfile />, document.getElementById('app')!);
 ## Example 4: Form with Store and Validation
 
 ```tsx
-import { render, Show } from '@awc/jsx-runtime';
-import { createStore } from '@awc/reactive/store';
-import { createMemo } from '@awc/reactive/signal';
+import { render, Show } from '@fluixi/jsx-runtime';
+import { createStore } from '@fluixi/reactive/store';
+import { createMemo } from '@fluixi/reactive/signal';
 
 interface FormData {
   name: string;
@@ -412,10 +412,10 @@ render(<RegistrationForm />, document.getElementById('app')!);
 ## Example 5: Combining Lit-HTML with JSX
 
 ```tsx
-import { render } from '@awc/jsx-runtime';
+import { render } from '@fluixi/jsx-runtime';
 import { html } from 'lit';
-import { signal } from '@awc/dom/reactive';
-import { createSignal } from '@awc/reactive/signal';
+import { signal } from '@fluixi/dom/reactive';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function MixedComponent() {
   const [count, setCount] = createSignal(0);
@@ -471,8 +471,8 @@ render(<MixedComponent />, document.getElementById('app')!);
 ## Example 6: Complex Store with Nested Data
 
 ```tsx
-import { render, For, Show } from '@awc/jsx-runtime';
-import { createStore } from '@awc/reactive/store';
+import { render, For, Show } from '@fluixi/jsx-runtime';
+import { createStore } from '@fluixi/reactive/store';
 
 interface Comment {
   id: number;
@@ -659,8 +659,8 @@ render(<BlogApp />, document.getElementById('app')!);
 ## Example 7: Portal and Modal
 
 ```tsx
-import { render, Show, Portal } from '@awc/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { render, Show, Portal } from '@fluixi/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function ModalExample() {
   const [isOpen, setIsOpen] = createSignal(false);

@@ -1,4 +1,4 @@
 {
-  "$schema": "./node_modules/@awc/mix-builder/src/lib/package-publisher/schemas/publish-config.schema.json",
+  "$schema": "./node_modules/@fluixi/mix-builder/src/lib/package-publisher/schemas/publish-config.schema.json",
   "packages": ["."]
 }

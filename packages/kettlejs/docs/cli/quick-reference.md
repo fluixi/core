@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 ```
 
 ## Commands
@@ -45,7 +45,7 @@ kettlejs g c Counter --mode lit-html
 **Output:** `Counter.ts`
 ```typescript
 import { html } from 'lit';
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -62,8 +62,8 @@ kettlejs g c Counter --mode jsx
 **Output:** `Counter.tsx`
 ```tsx
 /** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export function Counter() {
   const [count, setCount] = createSignal(0);
@@ -80,7 +80,7 @@ kettlejs g c Counter --mode react-bridge
 **Output:** `Counter.tsx`
 ```tsx
 import React from 'react';
-import { useSignal } from '@awc/kettlejs/react-bridge';
+import { useSignal } from '@fluixi/kettlejs/react-bridge';
 
 export function Counter() {
   const [count, setCount] = useSignal(0);
@@ -189,7 +189,7 @@ For each component, generates:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -242,7 +242,7 @@ kettlejs g c UserProfile -t full -p features/user/UserProfile.tsx
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -260,13 +260,13 @@ Check that you're using the correct render function:
 
 **Lit-HTML:**
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 render(MyComponent, document.getElementById('app'));
 ```
 
 **JSX:**
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 render(MyComponent, document.getElementById('app'));
 ```
 

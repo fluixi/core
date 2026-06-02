@@ -1,6 +1,6 @@
 /**
  * @fileoverview Client-Side Rendering for KettleJS
- * @module @awc/kettlejs/render
+ * @module @fluixi/kettlejs/render
  *
  * Implements Section 7 of GEMINI.md: RENDERING (CLIENT)
  * - Real DOM
@@ -9,13 +9,13 @@
  * Following SolidJS structure: render logic separated from component creation
  */
 
-import { createRoot } from '@awc/dom';
+import { createRoot } from '@fluixi/dom';
 import {
   isDOMNode,
   delegateEvents,
   registerLitRender,
   insert,
-} from '@awc/dom';
+} from '@fluixi/dom';
 import { render as litRender } from 'lit';
 import {
   ensureIntegration,
@@ -74,8 +74,8 @@ export interface RenderOptions {
  *
  * @example
  * ```typescript
- * import { render } from '@awc/kettlejs';
- * import { createSignal } from '@awc/reactive';
+ * import { render } from '@fluixi/kettlejs';
+ * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
  * const App = () => {
@@ -160,7 +160,7 @@ function isLitTemplateResult(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { portal } from '@awc/kettlejs';
+ * import { portal } from '@fluixi/kettlejs';
  *
  * const Modal = () => {
  *   return portal(
@@ -221,7 +221,7 @@ export function isRenderable(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { initDelegation } from '@awc/kettlejs';
+ * import { initDelegation } from '@fluixi/kettlejs';
  *
  * initDelegation();
  * render(App, document.getElementById('app'));

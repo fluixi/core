@@ -1,6 +1,6 @@
 /**
  * @fileoverview Router module exports for KettleJS framework
- * @module @awc/kettlejs/router
+ * @module @fluixi/kettlejs/router
  */
 
 
@@ -54,5 +54,5 @@ export { createFileRoutes } from './fs-router.js';
 export type { FileRouterOptions } from './fs-router.js';
 
 export {lazy} from "../render/lazy.js"
-export { runWithOwner } from '@awc/dom';
+export { runWithOwner } from '@fluixi/dom';
 

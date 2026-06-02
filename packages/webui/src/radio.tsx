@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfRadio, AdfRadioChangeEvent} from '@awc/adf-radio';
-import DOM from "@awc/dom"
-// import '@awc/adf-radio/adf-radio.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-radio/adf-radio.js';
 
 
 export const Radio = createComponent({

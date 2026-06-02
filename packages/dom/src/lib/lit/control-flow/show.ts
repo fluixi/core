@@ -1,4 +1,4 @@
-// import { Accessor, createEffect } from '@awc/reactive';
+// import { Accessor, createEffect } from '@fluixi/reactive';
 // import {
 //   ChildPart,
 //   directive,
@@ -72,13 +72,13 @@
 
 /**
  * @fileoverview Show component for conditional rendering in KettleJS
- * @module @awc/kettlejs/control-flow/Show
+ * @module @fluixi/kettlejs/control-flow/Show
  */
 
 import { nothing } from 'lit';
-import { Accessor, createMemo } from '@awc/reactive/signal';
+import { Accessor, createMemo } from '@fluixi/reactive/signal';
 import { isTruthy, normalizeAccessor, renderContent } from './utils.js';
-import type { Component } from '@awc/dom';
+import type { Component } from '@fluixi/dom';
 /**
  * Props for the Show component
  * @template T - Type of the condition value when truthy

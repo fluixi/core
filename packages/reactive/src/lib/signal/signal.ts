@@ -13,10 +13,10 @@
  * Copyright (c) 2026 Ibrahima Touré
  * Licensed under MIT.
  */
-import { isFunction } from '@awc/utils/functions';
-import { Observable } from '@awc/reactive/observable';
-import { deepClone } from '@awc/utils/object';
-import { isPromise } from '@awc/utils';
+import { isFunction } from '@fluixi/utils/functions';
+import { Observable } from '@fluixi/reactive/observable';
+import { deepClone } from '@fluixi/utils/object';
+import { isPromise } from '@fluixi/utils';
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type EffectFn = () => void | (() => void);
 export type ComputationFn<T> = (prev?: T) => T;

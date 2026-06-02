@@ -14,8 +14,8 @@ The `Show` component conditionally renders content based on a condition.
 
 ```typescript
 import { html } from 'lit';
-import { Show } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { Show } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [isLoggedIn, setIsLoggedIn] = createSignal(false);
 
@@ -103,8 +103,8 @@ The `For` component efficiently renders lists with keyed reconciliation.
 ### Basic Usage
 
 ```typescript
-import { For } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { For } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [items, setItems] = createSignal([
   { id: 1, name: 'Apple' },
@@ -257,8 +257,8 @@ The `Dynamic` component renders different components based on a signal.
 ### Basic Usage
 
 ```typescript
-import { Dynamic } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { Dynamic } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [view, setView] = createSignal('home');
 
@@ -346,8 +346,8 @@ The `Portal` component renders content into a different DOM location.
 ### Basic Usage
 
 ```typescript
-import { Portal } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { Portal } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [showModal, setShowModal] = createSignal(false);
 

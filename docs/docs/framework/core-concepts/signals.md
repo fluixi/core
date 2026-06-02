@@ -12,7 +12,7 @@ Signals are the foundation of reactivity in KettleJS. They provide a way to crea
 A signal is a reactive primitive that holds a value and notifies dependents when that value changes. Think of it as a "smart variable" that the framework can track and respond to.
 
 ```typescript
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -29,7 +29,7 @@ console.log(count()); // 5
 ### Basic Signal
 
 ```typescript
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const [value, setValue] = createSignal<string>('initial value');
 
@@ -177,7 +177,7 @@ By default, signals use strict equality (`===`) to compare values. You can provi
 
 ```typescript
 // Deep equality for objects
-import { deepEqual } from '@awc/kettlejs';
+import { deepEqual } from '@fluixi/kettlejs';
 
 const [user, setUser] = createSignal<User>(
   { name: 'Alice', age: 30 },
@@ -205,7 +205,7 @@ setTime(Date.now());
 Signals only track dependencies when read inside a reactive context:
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -407,7 +407,7 @@ const apiUrl = 'https://api.example.com';
 When updating multiple signals, use `batch()` to combine updates:
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -551,4 +551,4 @@ const createAsyncSignal = <T>(fetcher: () => Promise<T>) => {
 
 - [API Reference: createSignal](../api-reference/core.md#createsignal)
 - [Examples: Signal Patterns](../guides/examples.md#signals)
-- [@awc/reactive Documentation](../../reactive/signals.md)
+- [@fluixi/reactive Documentation](../../reactive/signals.md)

@@ -1,8 +1,8 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfDrawer, AdfDrawerContent, AdfDrawerHeader} from '@awc/adf-drawer';
-import DOM from "@awc/dom"
+import DOM from "@fluixi/dom"
 import Sidenav from './sidenav';
-// import '@awc/adf-drawer/adf-drawer.js';
+// import '@fluixi/adf-drawer/adf-drawer.js';
 
 
 const DrawerComponent = createComponent({

@@ -1,4 +1,4 @@
-import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@awc/reactive";
+import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@fluixi/reactive";
 
 /**
  * Projects each source value to an Observable, then switches to the new Observable emitting its values.

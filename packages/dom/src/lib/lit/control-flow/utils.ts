@@ -1,5 +1,5 @@
-import { Component, ComponentChild, html } from '@awc/dom';
-import { Accessor } from '@awc/reactive';
+import { Component, ComponentChild, html } from '@fluixi/dom';
+import { Accessor } from '@fluixi/reactive';
 import { nothing, TemplateResult } from 'lit';
 
 /**

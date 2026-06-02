@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction } from "@awc/reactive";
+import { Observable, OperatorFunction } from "@fluixi/reactive";
 
 /**
  * Emits only the last `count` values emitted by the source Observable.

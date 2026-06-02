@@ -37,7 +37,7 @@ import {
   formatDate, parseDate, addDays,
   
   // ... other utilities
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 ```
 
 ## Quick Start
@@ -55,7 +55,7 @@ import {
   capitalize,
   truncate,
   slugify
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 // Case conversions
 toCamelCase('hello-world');        // "helloWorld"
@@ -81,7 +81,7 @@ import {
   isAlphanumeric,
   startsWith,
   endsWith
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 isEmpty('');                        // true
 isEmpty('   ');                     // true (whitespace only)
@@ -99,7 +99,7 @@ endsWith('hello', 'lo');           // true
 Escape special characters:
 
 ```typescript
-import { escapeHtml, escapeRegExp, unescapeHtml } from '@awc/utils/primitive';
+import { escapeHtml, escapeRegExp, unescapeHtml } from '@fluixi/utils/primitive';
 
 escapeHtml('<div>Hello</div>');    // "&lt;div&gt;Hello&lt;/div&gt;"
 unescapeHtml('&lt;div&gt;');       // "<div>"
@@ -111,7 +111,7 @@ escapeRegExp('.*+?^${}()|[]\\');   // "\\.\\*\\+\\?\\^\\$..."
 Parse and validate booleans:
 
 ```typescript
-import { parseBoolean, isBoolean, toBoolean } from '@awc/utils/primitive';
+import { parseBoolean, isBoolean, toBoolean } from '@fluixi/utils/primitive';
 
 parseBoolean('true');              // true
 parseBoolean('yes');               // true
@@ -138,7 +138,7 @@ import {
   diffDays,
   isValidDate,
   isSameDay
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 // Format dates
 formatDate(new Date(), 'YYYY-MM-DD');          // "2024-01-15"
@@ -515,7 +515,7 @@ endOfMonth(date);                            // 2024-01-31
 ### Form Validation
 
 ```typescript
-import { isEmail, isEmpty, isAlphanumeric } from '@awc/utils/primitive';
+import { isEmail, isEmpty, isAlphanumeric } from '@fluixi/utils/primitive';
 
 function validateForm(data: {
   email: string;
@@ -546,7 +546,7 @@ function validateForm(data: {
 ### URL Slug Generation
 
 ```typescript
-import { slugify, truncate } from '@awc/utils/primitive';
+import { slugify, truncate } from '@fluixi/utils/primitive';
 
 function generateSlug(title: string): string {
   // Remove special chars, convert to lowercase, replace spaces
@@ -563,7 +563,7 @@ generateSlug('Café français');      // "cafe-francais"
 ### Safe HTML Rendering
 
 ```typescript
-import { escapeHtml } from '@awc/utils/primitive';
+import { escapeHtml } from '@fluixi/utils/primitive';
 
 function renderComment(comment: string): string {
   // Escape HTML to prevent XSS
@@ -578,7 +578,7 @@ renderComment('<script>alert("xss")</script>');
 ### Date Range Display
 
 ```typescript
-import { formatDate, diffDays } from '@awc/utils/primitive';
+import { formatDate, diffDays } from '@fluixi/utils/primitive';
 
 function formatDateRange(start: Date, end: Date): string {
   const days = diffDays(start, end);
@@ -598,7 +598,7 @@ function formatDateRange(start: Date, end: Date): string {
 ### Relative Time Display
 
 ```typescript
-import { diffDays, diffHours, diffMinutes } from '@awc/utils/primitive';
+import { diffDays, diffHours, diffMinutes } from '@fluixi/utils/primitive';
 
 function timeAgo(date: Date): string {
   const now = new Date();
@@ -622,7 +622,7 @@ function timeAgo(date: Date): string {
 Full TypeScript support with type guards and strict typing:
 
 ```typescript
-import { isEmail, parseBoolean, isValidDate } from '@awc/utils/primitive';
+import { isEmail, parseBoolean, isValidDate } from '@fluixi/utils/primitive';
 
 function processInput(value: unknown) {
   if (typeof value === 'string') {
@@ -649,7 +649,7 @@ function processInput(value: unknown) {
 ### 1. Validate User Input
 
 ```typescript
-import { isEmail, trim, isEmpty } from '@awc/utils/primitive';
+import { isEmail, trim, isEmpty } from '@fluixi/utils/primitive';
 
 // ✅ Good: Validate and sanitize
 function processEmail(input: string): string {
@@ -670,7 +670,7 @@ function processEmail(input: string): string {
 ### 2. Escape User Content
 
 ```typescript
-import { escapeHtml } from '@awc/utils/primitive';
+import { escapeHtml } from '@fluixi/utils/primitive';
 
 // ✅ Good: Always escape user content
 function renderUserComment(comment: string) {
@@ -686,7 +686,7 @@ function unsafeRender(comment: string) {
 ### 3. Use Consistent Case Conventions
 
 ```typescript
-import { toCamelCase, toKebabCase } from '@awc/utils/primitive';
+import { toCamelCase, toKebabCase } from '@fluixi/utils/primitive';
 
 // ✅ Good: Consistent naming
 const apiFields = ['first_name', 'last_name'].map(toCamelCase);
@@ -699,7 +699,7 @@ const cssClasses = ['headerNav', 'footerLinks'].map(toKebabCase);
 ### 4. Handle Date Edge Cases
 
 ```typescript
-import { isValidDate, parseDateSafe } from '@awc/utils/primitive';
+import { isValidDate, parseDateSafe } from '@fluixi/utils/primitive';
 
 // ✅ Good: Validate dates
 function processDate(input: string): Date {

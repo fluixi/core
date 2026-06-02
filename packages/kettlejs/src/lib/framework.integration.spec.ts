@@ -2,7 +2,7 @@
 /**
  * @fileoverview KettleJS Framework Integration Tests
  *
- * These tests use the REAL framework stack (no @awc/dom mock, no reactive mock).
+ * These tests use the REAL framework stack (no @fluixi/dom mock, no reactive mock).
  * Components return plain strings for easy assertion via container.textContent.
  *
  * Purpose: detect what actually works in navigation, context, outlets, Suspense,
@@ -13,8 +13,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createRoot, createSignal, createMemo, untrack, batch } from '@awc/reactive/signal';
-import { insert } from '@awc/dom';
+import { createRoot, createSignal, createMemo, untrack, batch } from '@fluixi/reactive/signal';
+import { insert } from '@fluixi/dom';
 import { ensureIntegration } from './render/component.js';
 import {
   createRouter,

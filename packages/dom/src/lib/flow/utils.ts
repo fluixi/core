@@ -1,4 +1,4 @@
-import { Accessor } from '@awc/reactive/signal';
+import { Accessor } from '@fluixi/reactive/signal';
 
 /** Normalize a value or accessor to an accessor function */
 export function normalizeAccessor<T>(value: T | Accessor<T>): Accessor<T> {

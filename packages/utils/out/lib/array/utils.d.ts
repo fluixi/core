@@ -1,4 +1,4 @@
-import { type AnyObject } from '@awc/utils/object';
+import { type AnyObject } from '@fluixi/utils/object';
 /**
  * Type guard to check if a value is an object array
  * @param value - Value to check

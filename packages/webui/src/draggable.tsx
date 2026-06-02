@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfDraggable, AdfDraggableItem, AdfDraggableReorderEvent} from '@awc/adf-draggable';
-import DOM from "@awc/dom"
-// import '@awc/adf-draggable/adf-draggable.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-draggable/adf-draggable.js';
 
 
 const DraggableComponent = createComponent({

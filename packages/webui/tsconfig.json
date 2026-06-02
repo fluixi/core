@@ -7,16 +7,8 @@
     "declaration": true,
     "composite": true,
     "noEmit": false,
-    "lib": [
-      "dom",
-      "DOM.Iterable",
-      "ESNext",
-      "es2021",
-      "es2015"
-    ],
-    "types": [
-      "node",
-    ],
+    "lib": ["dom", "DOM.Iterable", "ESNext", "es2021", "es2015"],
+    "types": ["node"],
     "moduleResolution": "bundler",
     "outDir": "dist",
     "rootDir": "src",
@@ -28,11 +20,23 @@
     "checkJs": false,
     "strictNullChecks": true,
     "jsx": "preserve",
-    "jsxImportSource": "@awc/jsx-runtime"
+    "jsxImportSource": "@fluixi/jsx-runtime"
   },
-  "include": [
-    "src"
-  ],
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../jsx-runtime"
+    },
+    {
+      "path": "../element"
+    },
+    {
+      "path": "../dom"
+    },
+    {
+      "path": "../mix-builder"
+    }
+  ]
   // "exclude": [
   //   "../../../../adafri-webcomponents/packages/components/adf-icon/dist/src/AdfIcon.ts"
   // ]

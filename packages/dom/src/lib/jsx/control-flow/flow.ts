@@ -1,6 +1,6 @@
 // /**
 //  * @fileoverview Control Flow Components for Reactive DOM
-//  * @module @awc/dom/control-flow
+//  * @module @fluixi/dom/control-flow
 //  *
 //  * This module provides control flow components similar to SolidJS:
 //  * - Show: Conditional rendering

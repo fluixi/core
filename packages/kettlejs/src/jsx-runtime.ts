@@ -1,8 +1,8 @@
 export *  from './lib/jsx-runtime/index.js';
-export type {JSX} from "@awc/jsx-runtime"
+export type {JSX} from "@fluixi/jsx-runtime"
 /**
  * Global JSX namespace for "jsx": "preserve" mode.
- * Applied automatically when any file imports from @awc/kettlejs.
+ * Applied automatically when any file imports from @fluixi/kettlejs.
  */
 // declare global {
 //   namespace JSX {

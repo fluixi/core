@@ -1,13 +1,18 @@
 {
-  "name": "@awc/reactive",
+  "name": "@fluixi/reactive",
   "version": "0.0.1",
   "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "restricted"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "src",
     "README.md"
   ],
   "exports": {
@@ -90,16 +95,19 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@awc/mix-builder": "workspace:*",
-    "@awc/utils": "workspace:*",
+    "@fluixi/mix-builder": "workspace:*",
+    "@fluixi/utils": "workspace:*",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@solidjs/testing-library": "^0.8.10",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",
     "inquirer": "^13.1.0",
     "sdom": "^0.0.4",
     "vite-plugin-solid": "^2.11.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/reactive"
   }
 }

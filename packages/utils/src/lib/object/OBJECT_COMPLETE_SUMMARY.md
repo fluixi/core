@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented and fixed critical utilities in the `@awc/utils/object` package:
+Successfully implemented and fixed critical utilities in the `@fluixi/utils/object` package:
 1. **diffObject** - Complete object diff system with array index notation
 2. **deepMerge** - Fixed reference leaking and incorrect cloning
 
@@ -402,13 +402,13 @@ import {
   getChangedPaths,
   hasObjectChanges,
   applyDiff
-} from '@awc/utils/object';
+} from '@fluixi/utils/object';
 
 // deepMerge utility
-import { deepMerge } from '@awc/utils/object';
+import { deepMerge } from '@fluixi/utils/object';
 
 // Or import all
-import * as objectUtils from '@awc/utils/object';
+import * as objectUtils from '@fluixi/utils/object';
 ```
 
 ### Updated Exports
@@ -498,7 +498,7 @@ export {
 
 ### diffObject
 ```typescript
-import { diffObject, getChangedPaths } from '@awc/utils/object';
+import { diffObject, getChangedPaths } from '@fluixi/utils/object';
 
 // Get only changed values
 const changes = diffObject(oldData, newData);
@@ -516,7 +516,7 @@ if (changes) {
 
 ### deepMerge
 ```typescript
-import { deepMerge } from '@awc/utils/object';
+import { deepMerge } from '@fluixi/utils/object';
 
 // Safe merging - no references kept
 const result = deepMerge(
@@ -580,4 +580,4 @@ const result = deepMerge(
 **Version**: 1.0.0  
 **Status**: Production Ready ✅  
 **Last Updated**: 2024  
-**Maintained By**: @awc/utils team
+**Maintained By**: @fluixi/utils team

@@ -1,4 +1,4 @@
-import { $SIGNAL, Accessor, Signal, Store } from '@awc/reactive';
+import { $SIGNAL, Accessor, Signal, Store } from '@fluixi/reactive';
 import { TemplateResult } from 'lit';
 import { ComponentObserver, Effect, SignalSystem } from './types.js';
 

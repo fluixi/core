@@ -320,7 +320,7 @@ npx mix-builder --builder=esbuild --formats=esm,cjs --minify
 
 - **--reactExternal:** React + react-dom + all sub-paths
 - **--litExternal:** Lit + lit-html + lit-element + @lit/*
-- **--libExternal:** @awc/* + @adafri/*
+- **--libExternal:** @fluixi/* + @adafri/*
 - **--nodeExternal:** Node.js built-ins + native modules
 - **--pkgExternal:** package.json dependencies
 

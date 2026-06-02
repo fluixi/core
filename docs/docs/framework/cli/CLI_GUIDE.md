@@ -23,10 +23,10 @@ Complete guide for using the KettleJS Command Line Interface to scaffold project
 
 ## Installation
 
-The KettleJS CLI is included with the `@awc/kettlejs` package:
+The KettleJS CLI is included with the `@fluixi/kettlejs` package:
 
 ```bash
-npm install @awc/kettlejs
+npm install @fluixi/kettlejs
 ```
 
 The CLI is available as the `kettlejs` command:
@@ -76,8 +76,8 @@ Extends the `KettleElement` base class with a `view()` method pattern. Provides 
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -112,8 +112,8 @@ Uses a mixin to add signal support to any LitElement. Great for migrating existi
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends WithSignals(LitElement) {
@@ -148,8 +148,8 @@ Uses `SignalController` for manual reactive management. Provides the most contro
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive';
+import { SignalController } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends LitElement {
@@ -183,7 +183,7 @@ export class MyCounter extends LitElement {
 Traditional function-based components. Good for simple presentational components but doesn't support signals natively.
 
 ```typescript
-import { html, Component, ComponentProps } from '@awc/kettlejs';
+import { html, Component, ComponentProps } from '@fluixi/kettlejs';
 
 export interface MyCounterProps extends ComponentProps {
   count: number;
@@ -638,7 +638,7 @@ view() {
 **Issue:** Type errors in generated component
 
 **Solution:**
-1. Ensure `@awc/kettlejs` is installed
+1. Ensure `@fluixi/kettlejs` is installed
 2. Check tsconfig.json includes experimental decorators
 3. Install missing dependencies
 

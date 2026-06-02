@@ -1,4 +1,4 @@
-// import { Subscription, toPromise } from "@awc/reactive";
+// import { Subscription, toPromise } from "@fluixi/reactive";
 
 // import { toPromise } from "./operators/index.js";
 import { Subscription } from "./subscription.js";

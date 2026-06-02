@@ -20,19 +20,19 @@ Before installing KettleJS, ensure you have the following:
 ### Using npm
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ### Using yarn
 
 ```bash
-yarn add @awc/kettlejs @awc/reactive lit
+yarn add @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ### Using pnpm
 
 ```bash
-pnpm add @awc/kettlejs @awc/reactive lit
+pnpm add @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ## Create a New Project
@@ -42,7 +42,7 @@ The easiest way to get started is using the KettleJS CLI:
 ### Install CLI Globally
 
 ```bash
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 ```
 
 ### Create Project
@@ -101,7 +101,7 @@ npm init -y
 ### 2. Install Dependencies
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 npm install -D typescript vite @types/node
 ```
 
@@ -145,7 +145,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['lit', '@awc/reactive', '@awc/kettlejs']
+    include: ['lit', '@fluixi/reactive', '@fluixi/kettlejs']
   }
 });
 ```
@@ -191,7 +191,7 @@ touch index.html
 ### 8. Create `src/App.ts`
 
 ```typescript
-import { html, createSignal, Component } from '@awc/kettlejs';
+import { html, createSignal, Component } from '@fluixi/kettlejs';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -211,7 +211,7 @@ export const App: Component = () => {
 ### 9. Create `src/index.ts`
 
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 import { App } from './App';
 
 const root = document.getElementById('app');
@@ -279,7 +279,7 @@ Create a simple test to verify everything is working:
 
 ```typescript
 // test.ts
-import { createSignal, createEffect } from '@awc/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 

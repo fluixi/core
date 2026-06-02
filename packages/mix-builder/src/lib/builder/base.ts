@@ -673,7 +673,7 @@ export function legacyLitExternals() {
   return ['lit', 'lit/*', '@lit/*'];
 }
 export function libExternals() {
-  return ['@awc/*'];
+  return ['@fluixi/*'];
 }
 
 export function defineExternals(

@@ -91,7 +91,7 @@ import {
   groupBy, 
   sumBy, 
   unique 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 const sales = [
   { region: 'North', rep: 'Alice', amount: 1000 },
@@ -116,11 +116,11 @@ const sorted = sortBy(totals, [{ key: 'total', dir: 'desc' }]);
 ## 📦 Installation
 
 ```bash
-npm install @awc/utils
+npm install @fluixi/utils
 ```
 
 ```typescript
-import { chunk, unique, sortBy } from '@awc/utils/array/advanced';
+import { chunk, unique, sortBy } from '@fluixi/utils/array/advanced';
 ```
 
 ## 🔍 Finding What You Need

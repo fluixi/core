@@ -1,6 +1,6 @@
 # Color Management System Documentation
 
-Complete documentation for the powerful color management system included in `@awc/utils`.
+Complete documentation for the powerful color management system included in `@fluixi/utils`.
 
 ## Documentation Structure
 
@@ -39,7 +39,7 @@ The color management system provides:
 ## Quick Example
 
 ```typescript
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 // Create and manipulate colors
 const color = new Color('#3498db');

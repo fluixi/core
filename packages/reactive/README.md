@@ -1,4 +1,4 @@
-# @awc/reactive - Advanced Reactive Signal System
+# @fluixi/reactive - Advanced Reactive Signal System
 
 A powerful, fine-grained reactive system with SolidJS-inspired features for building high-performance applications.
 
@@ -30,7 +30,7 @@ A powerful, fine-grained reactive system with SolidJS-inspired features for buil
 ## Installation
 
 ```bash
-npm install @awc/reactive
+npm install @fluixi/reactive
 ```
 
 ## Quick Start
@@ -38,7 +38,7 @@ npm install @awc/reactive
 ### Basic Usage
 
 ```typescript
-import { createSignal, createEffect, createMemo, batch } from '@awc/reactive';
+import { createSignal, createEffect, createMemo, batch } from '@fluixi/reactive';
 
 // Create reactive state
 const [count, setCount] = createSignal(0);
@@ -72,7 +72,7 @@ import {
   catchError,
   createContext,
   useContext
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 // Non-blocking updates
 const [isPending, start] = useTransition();

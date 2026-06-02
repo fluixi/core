@@ -1,14 +1,25 @@
 {
-  "$schema": "./node_modules/@awc/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "$schema": "./node_modules/@fluixi/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
     "target": "es2022",
-    "formats": ["es", "cjs"],
-    "entries": ["src/**/*.ts", "src/**/*.tsx"],
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts",
+      "src/**/*.tsx"
+    ],
     "rootDir": "src",
     "externals": [
-      "@awc/*",
+      "@fluixi/*",
       "vite",
       "inquirer",
       "fs-extra",
@@ -20,6 +31,7 @@
       "url",
       "react-dom",
       "react-dom/*",
+      "@fluixi/*",
       "@awc/*",
       "@lit-labs/*",
       "@lit/*",
@@ -36,6 +48,12 @@
       "execa",
       "vite-plugin-node-polyfills"
     ],
-    "copyFiles": [{ "from": "types/kettle.d.ts", "to": "./dist/kettle.d.ts" }]
+    "copyFiles": [
+      {
+        "from": "types/kettle.d.ts",
+        "to": "./dist/kettle.d.ts"
+      }
+    ],
+    "clean": true
   }
 }

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Router module exports for KettleJS framework
- * @module @awc/kettlejs/router
+ * @module @fluixi/kettlejs/router
  */
 
 export {

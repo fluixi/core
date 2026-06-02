@@ -1,7 +1,16 @@
 {
-  "name": "@awc/dom",
+  "name": "@fluixi/dom",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "restricted"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -218,13 +227,17 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@awc/reactive": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "stream": "^0.0.3",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@awc/mix-builder": "workspace:*",
+    "@fluixi/mix-builder": "workspace:*",
     "inquirer": "^13.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/dom"
   }
 }

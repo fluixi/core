@@ -1,5 +1,5 @@
 {
-  "name": "@awc/element",
+  "name": "@fluixi/element",
   "version": "0.0.1",
   "description": "Web Component support for KettleJS - defineElement, KettleElement, KettleLitElement, KettleController",
   "type": "module",
@@ -37,13 +37,13 @@
     "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder"
   },
   "dependencies": {
-    "@awc/dom": "workspace:*",
-    "@awc/reactive": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@awc/mix-builder": "workspace:*",
+    "@fluixi/mix-builder": "workspace:*",
     "inquirer": "^13.2.5"
   }
 }

@@ -1,4 +1,4 @@
-import { isFunction } from '@awc/utils';
+import { isFunction } from '@fluixi/utils';
 import type { Observable, Observer } from '../observable.js';
 import { SchedulerLike } from '../../schedulers/index.js';
 

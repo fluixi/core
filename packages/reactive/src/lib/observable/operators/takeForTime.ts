@@ -1,5 +1,5 @@
-import { Observable, OperatorFunction, SchedulerLike } from "@awc/reactive";
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
+import { Observable, OperatorFunction, SchedulerLike } from "@fluixi/reactive";
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
 
 /**
  * Takes values for a specified duration.

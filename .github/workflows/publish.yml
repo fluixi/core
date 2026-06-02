@@ -1,0 +1,98 @@
+name: Publish packages
+
+# Triggers:
+#   1. Push a version tag: git tag v0.1.0 && git push --tags
+#   2. Manual: Actions → "Publish packages" → Run workflow → enter version
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'   # pre-releases: v0.1.0-beta.1
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.0 or 0.1.0-beta.1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run — build but do not publish'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write   # required for GitHub Packages push
+
+jobs:
+  publish:
+    name: Build & publish @fluixi/* packages
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Toolchain ───────────────────────────────────────────────────────────
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com/
+          scope: '@fluixi'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Resolve version ─────────────────────────────────────────────────────
+      # Tag push  → strip the leading "v"   (e.g. v0.1.0 → 0.1.0)
+      # Dispatch  → use the supplied input
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Bump version in every package ───────────────────────────────────────
+      - name: Bump versions
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          echo "Publishing version: $VERSION"
+          for PKG in babel dom jsx-runtime reactive kettlejs; do
+            (cd packages/$PKG && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+          done
+
+      # ── Build all 5 packages (respects dependency order) ───────────────────
+      - name: Build packages
+        run: |
+          pnpm nx run-many -t build \
+            -p @fluixi/babel-plugin-jsx @fluixi/dom @fluixi/jsx-runtime @fluixi/reactive @fluixi/kettlejs \
+            --parallel=false
+        env:
+          NODE_ENV: production
+
+      # ── Publish to GitHub Packages ───────────────────────────────────────────
+      - name: Publish to GitHub Packages
+        if: ${{ !inputs.dry_run }}
+        run: |
+          for PKG in babel dom jsx-runtime reactive kettlejs; do
+            echo "→ Publishing packages/$PKG ..."
+            (cd packages/$PKG && pnpm publish --no-git-checks --access restricted)
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        run: echo "Dry run — packages were built but NOT published."

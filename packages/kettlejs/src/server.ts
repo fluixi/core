@@ -1,9 +1,9 @@
 /**
  * @fileoverview Server exports for KettleJS
- * @module @awc/kettlejs/server
+ * @module @fluixi/kettlejs/server
  *
  * This module provides server-side rendering and hydration utilities.
- * Import from '@awc/kettlejs/server' for SSR functionality.
+ * Import from '@fluixi/kettlejs/server' for SSR functionality.
  *
  * IMPORTANT: Server Reactive Behavior
  * ====================================
@@ -26,7 +26,7 @@
  *   createSignal,
  *   createEffect,
  *   setHydrationData
- * } from '@awc/kettlejs/server';
+ * } from '@fluixi/kettlejs/server';
  *
  * // Server: Signals are snapshots, effects run once
  * const App = () => {
@@ -46,7 +46,7 @@
  *
  * @example Context on Server
  * ```typescript
- * import { createContext, useContext } from '@awc/kettlejs/server';
+ * import { createContext, useContext } from '@fluixi/kettlejs/server';
  *
  * const ThemeContext = createContext('light');
  *

@@ -23,7 +23,7 @@ import {
   type KeyFn,
   type ItemTemplate,
 } from 'lit/directives/repeat.js';
-import { createEffect, createRoot, untrack } from '@awc/reactive/signal';
+import { createEffect, createRoot, untrack } from '@fluixi/reactive/signal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

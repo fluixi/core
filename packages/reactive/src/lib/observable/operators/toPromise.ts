@@ -1,5 +1,5 @@
-import {Observable, AsyncScheduler} from "@awc/reactive"
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
+import {Observable, AsyncScheduler} from "@fluixi/reactive"
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
 /**
  * Options for toPromise conversion
  */

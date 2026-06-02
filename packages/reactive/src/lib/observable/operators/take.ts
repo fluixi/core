@@ -1,4 +1,4 @@
-import {  Observable, OperatorFunction, SchedulerLike } from "@awc/reactive";
+import {  Observable, OperatorFunction, SchedulerLike } from "@fluixi/reactive";
 
 /**
  * Emits only the first `count` values emitted by the source Observable.

@@ -30,8 +30,8 @@ KettleJS CLI supports 5 different component patterns, each suited for different 
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -129,8 +129,8 @@ export class MyCounter extends LitElement {
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { WithSignals } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends WithSignals(LitElement) {
@@ -173,8 +173,8 @@ export class MyCounter extends WithSignals(LitElement) {
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { SignalController } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends LitElement {
@@ -217,8 +217,8 @@ export class MyCounter extends LitElement {
 
 **Syntax:**
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const MyCounter: Component = () => {
   const [count, setCount] = createSignal(0);

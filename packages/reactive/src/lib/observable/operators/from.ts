@@ -1,4 +1,4 @@
-import { isArrayLike, isIterable, isPromise } from '@awc/utils';
+import { isArrayLike, isIterable, isPromise } from '@fluixi/utils';
 import {
   AnyIterator,
   Observable,

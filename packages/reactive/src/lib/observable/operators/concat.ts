@@ -4,7 +4,7 @@ import {
   ObservableInput,
   OperatorFunction,
   Subscription,
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 /**
  * Creates an output Observable which sequentially emits all values from given Observable

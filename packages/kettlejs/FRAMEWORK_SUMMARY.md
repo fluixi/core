@@ -9,7 +9,7 @@ KettleJS is a **full-featured reactive framework** for building web applications
 ## 📦 Package Structure
 
 ```
-@awc/kettlejs/
+@fluixi/kettlejs/
 ├── src/
 │   ├── lib/
 │   │   ├── core/                  # Core framework functionality
@@ -277,7 +277,7 @@ kettlejs help             # Show help
 
 ### Core Exports
 
-**From `@awc/kettlejs`:**
+**From `@fluixi/kettlejs`:**
 ```typescript
 // Rendering
 render, createRoot, createComponent
@@ -285,7 +285,7 @@ render, createRoot, createComponent
 // Lifecycle
 onMount, onUnmount, registerCleanup
 
-// Reactive (re-exported from @awc/reactive)
+// Reactive (re-exported from @fluixi/reactive)
 createSignal, createEffect, createMemo, createComputed
 batch, untrack, onCleanup
 
@@ -311,14 +311,14 @@ html, svg, nothing, render as litRender
 
 ### Modular Exports
 
-**From `@awc/kettlejs/core`:**
+**From `@fluixi/kettlejs/core`:**
 ```typescript
 createComponent, render, createRoot
 onMount, onUnmount, registerCleanup
 mergeProps, splitProps, batch, untrack
 ```
 
-**From `@awc/kettlejs/control-flow`:**
+**From `@fluixi/kettlejs/control-flow`:**
 ```typescript
 Show, Match, Switch
 For, Index, createKeyedFor
@@ -326,20 +326,20 @@ Portal, GlobalPortal, createFixedPortal
 Dynamic, DynamicSwitch, createPolymorphic
 ```
 
-**From `@awc/kettlejs/context`:**
+**From `@fluixi/kettlejs/context`:**
 ```typescript
 createContext, useContext, Provider
 createContextWithProvider, composeProviders
 createConsumer, useProvide
 ```
 
-**From `@awc/kettlejs/resources`:**
+**From `@fluixi/kettlejs/resources`:**
 ```typescript
 createResource, createResources
 createResourceWithRetry, createLazyResource
 ```
 
-**From `@awc/kettlejs/router`:**
+**From `@fluixi/kettlejs/router`:**
 ```typescript
 createRouter, Router, Link
 useRouter, useLocation, useNavigate
@@ -401,7 +401,7 @@ Every TypeScript file includes comprehensive JSDoc comments:
 - ComponentProps interface for extensibility
 
 ### 3. **Reactive System Integration**
-- Leverages `@awc/reactive` for signals and effects
+- Leverages `@fluixi/reactive` for signals and effects
 - Fine-grained reactivity without virtual DOM
 - Automatic dependency tracking
 - Efficient updates
@@ -505,7 +505,7 @@ Router({ router, children })
 ```json
 {
   "dependencies": {
-    "@awc/reactive": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "tslib": "^2.3.0"
   },
@@ -527,7 +527,7 @@ Router({ router, children })
 - ✅ Similar API design
 - ✅ Fine-grained updates
 - 🔄 Uses lit-html instead of JSX
-- 🔄 Integrated with @awc/reactive
+- 🔄 Integrated with @fluixi/reactive
 
 ### vs React
 - ✅ No virtual DOM
@@ -561,7 +561,7 @@ Perfect for:
 
 ### 1. Create New Project
 ```bash
-npx @awc/kettlejs new my-app
+npx @fluixi/kettlejs new my-app
 cd my-app
 npm install
 npm run dev
@@ -569,12 +569,12 @@ npm run dev
 
 ### 2. Generate Component
 ```bash
-npx @awc/kettlejs generate component MyComponent --type full
+npx @fluixi/kettlejs generate component MyComponent --type full
 ```
 
 ### 3. Start Building
 ```typescript
-import { createSignal, render, html } from '@awc/kettlejs';
+import { createSignal, render, html } from '@fluixi/kettlejs';
 
 const App = () => {
   const [count, setCount] = createSignal(0);

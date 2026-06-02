@@ -18,12 +18,12 @@
     "target": "es2022",
     "customConditions": ["development"],
     "paths": {
-      "@awc/kettlejs/rx": ["./packages/kettlejs/src/lib/server/reactive.js"],
-      "@awc/kettlejs/rx/*": ["./packages/kettlejs/src/lib/server/*.js"],
-      "@awc/reactive": ["./packages/reactive/lib/index.js"],
-      "@awc/reactive/*": ["./packages/reactive/lib/*.js"],
-      "@awc/utils": ["./packages/utils/src/index.js"],
-      "@awc/utils/*": ["./packages/utils/*.js"]
+      "@fluixi/kettlejs/rx": ["./packages/kettlejs/src/lib/server/reactive.js"],
+      "@fluixi/kettlejs/rx/*": ["./packages/kettlejs/src/lib/server/*.js"],
+      "@fluixi/reactive": ["./packages/reactive/lib/index.js"],
+      "@fluixi/reactive/*": ["./packages/reactive/lib/*.js"],
+      "@fluixi/utils": ["./packages/utils/src/index.js"],
+      "@fluixi/utils/*": ["./packages/utils/*.js"]
     }
   }
 }

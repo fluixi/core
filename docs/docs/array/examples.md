@@ -27,7 +27,7 @@ import {
   filterCompact, 
   unique, 
   groupBy 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 // Import and process CSV data
 async function processCSVData(csvData: string) {
@@ -71,7 +71,7 @@ import {
   sortBy, 
   groupBy, 
   mergeByKey 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface Contact {
   email: string;
@@ -118,7 +118,7 @@ import {
   filterCompact, 
   sumBy, 
   avgBy 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface Product {
   id: number;
@@ -182,7 +182,7 @@ import {
   sumBy, 
   sortBy, 
   unique 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface CartItem {
   productId: number;
@@ -240,7 +240,7 @@ import {
   standardDeviation,
   sortBy,
   take
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface Sale {
   id: number;
@@ -326,7 +326,7 @@ import {
   diff,
   slidingWindow,
   avgBy
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface DataPoint {
   timestamp: Date;
@@ -376,7 +376,7 @@ import {
   sortBy, 
   percentile,
   avgBy
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface User {
   id: number;
@@ -465,7 +465,7 @@ import {
   difference,
   unique,
   flatten
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface User {
   id: number;
@@ -527,7 +527,7 @@ import {
   unique, 
   findIndex,
   partition
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface ValidationRule<T> {
   field: keyof T;
@@ -614,7 +614,7 @@ import {
   unique, 
   mergeByKey,
   batchProcessParallel
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface APIResponse<T> {
   data: T[];
@@ -661,7 +661,7 @@ import {
   keyBy, 
   flatten,
   unique
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface APIUser {
   id: number;
@@ -719,7 +719,7 @@ import {
   standardDeviation,
   sortBy,
   groupBy
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface Position {
   symbol: string;
@@ -795,7 +795,7 @@ import {
   partition,
   take,
   findIndex
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 interface Player {
   id: number;

@@ -8,10 +8,10 @@ Get up and running with KettleJS in 5 minutes!
 
 ```bash
 # Using npx
-npx @awc/kettlejs new my-app
+npx @fluixi/kettlejs new my-app
 
 # Or install CLI globally
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 kettlejs new my-app
 
 # Navigate to project
@@ -27,7 +27,7 @@ npm run dev
 ### Option 2: Add to Existing Project
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ## 🎯 Your First Component
@@ -35,7 +35,7 @@ npm install @awc/kettlejs @awc/reactive lit
 ### 1. Create `src/App.ts`
 
 ```typescript
-import { createSignal, html, Component } from '@awc/kettlejs';
+import { createSignal, html, Component } from '@fluixi/kettlejs';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -56,7 +56,7 @@ export const App: Component = () => {
 ### 2. Create `src/main.ts`
 
 ```typescript
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 import { App } from './App';
 
 const root = document.getElementById('app');
@@ -87,7 +87,7 @@ if (root) {
 ### Signals (Reactive State)
 
 ```typescript
-import { createSignal } from '@awc/kettlejs';
+import { createSignal } from '@fluixi/kettlejs';
 
 // Create a signal
 const [count, setCount] = createSignal(0);
@@ -103,7 +103,7 @@ setCount(prev => prev + 1);
 ### Effects (Side Effects)
 
 ```typescript
-import { createSignal, createEffect } from '@awc/kettlejs';
+import { createSignal, createEffect } from '@fluixi/kettlejs';
 
 const [name, setName] = createSignal('Alice');
 
@@ -117,7 +117,7 @@ setName('Bob'); // Logs: "Hello, Bob!"
 ### Conditional Rendering
 
 ```typescript
-import { Show, createSignal, html } from '@awc/kettlejs';
+import { Show, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [isVisible, setIsVisible] = createSignal(true);
@@ -137,7 +137,7 @@ const MyComponent = () => {
 ### Lists
 
 ```typescript
-import { For, createSignal, html } from '@awc/kettlejs';
+import { For, createSignal, html } from '@fluixi/kettlejs';
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal([
@@ -159,7 +159,7 @@ const TodoList = () => {
 ## 🌐 Data Fetching
 
 ```typescript
-import { createResource, Show, html } from '@awc/kettlejs';
+import { createResource, Show, html } from '@fluixi/kettlejs';
 
 const UserProfile = () => {
   const [user, { refetch }] = createResource(
@@ -190,7 +190,7 @@ const UserProfile = () => {
 ## 🛣️ Routing
 
 ```typescript
-import { createRouter, Router, Link, useParams, html } from '@awc/kettlejs';
+import { createRouter, Router, Link, useParams, html } from '@fluixi/kettlejs';
 
 const Home = () => html`<h1>Home</h1>`;
 const About = () => html`<h1>About</h1>`;
@@ -365,7 +365,7 @@ const ContactForm = () => {
 ### Context (State Sharing)
 
 ```typescript
-import { createContext, useContext, Provider } from '@awc/kettlejs';
+import { createContext, useContext, Provider } from '@fluixi/kettlejs';
 
 const ThemeContext = createContext({ dark: false });
 
@@ -386,7 +386,7 @@ const App = () => {
 ### Computed Values
 
 ```typescript
-import { createSignal, createMemo } from '@awc/kettlejs';
+import { createSignal, createMemo } from '@fluixi/kettlejs';
 
 const ShoppingCart = () => {
   const [items, setItems] = createSignal([

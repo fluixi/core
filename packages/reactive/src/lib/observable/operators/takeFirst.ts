@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction } from "@awc/reactive";
+import { Observable, OperatorFunction } from "@fluixi/reactive";
 
 /**
  * Takes the first value that meets a specific condition.

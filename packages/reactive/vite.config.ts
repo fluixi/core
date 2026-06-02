@@ -10,7 +10,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@awc/reactive',
+    name: '@fluixi/reactive',
     watch: false,
     globals: true,
     environment: 'jsdom',

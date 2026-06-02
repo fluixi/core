@@ -1,4 +1,4 @@
-import { Accessor, createRoot, onCleanup } from '@awc/reactive/signal';
+import { Accessor, createRoot, onCleanup } from '@fluixi/reactive/signal';
 import { insert } from '../dom/runtime.js';
 
 export interface PortalProps {

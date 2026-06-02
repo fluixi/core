@@ -296,7 +296,7 @@ const lab3 = { l: 70, a: 0, b: 0 };
 ### Example
 
 ```typescript
-import { colorDistance } from '@awc/utils/color';
+import { colorDistance } from '@fluixi/utils/color';
 
 // Calculate perceptual color distance (Delta E)
 const distance = colorDistance('#ff0000', '#ff0011');
@@ -530,7 +530,7 @@ console.log({
 ### Gradient Comparison
 
 ```typescript
-import { generateGradient } from '@awc/utils/color';
+import { generateGradient } from '@fluixi/utils/color';
 
 const start = '#ff0000';
 const end = '#0000ff';
@@ -550,7 +550,7 @@ const oklchGradient = generateGradient(start, end, 5, 'oklch');
 ### Color Space for Mixing
 
 ```typescript
-import { mixColors } from '@awc/utils/color';
+import { mixColors } from '@fluixi/utils/color';
 
 // Mix in different color spaces
 const color1 = '#ff0000';

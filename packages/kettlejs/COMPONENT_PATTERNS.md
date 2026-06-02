@@ -15,8 +15,8 @@ The `KettleElement` base class provides the cleanest API with automatic signal t
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs/core/component';
-import { createSignal } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -37,7 +37,7 @@ export class MyCounter extends KettleElement {
 ### With Effects
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 @customElement('my-component')
 export class MyComponent extends KettleElement {
@@ -63,7 +63,7 @@ export class MyComponent extends KettleElement {
 ### With Computed Values
 
 ```typescript
-import { createSignal, createMemo } from '@awc/reactive';
+import { createSignal, createMemo } from '@fluixi/reactive';
 
 @customElement('user-profile')
 export class UserProfile extends KettleElement {
@@ -100,8 +100,8 @@ export class UserProfile extends KettleElement {
 ### With Context
 
 ```typescript
-import { createContext, useContext } from '@awc/kettlejs/context';
-import { createSignal } from '@awc/reactive';
+import { createContext, useContext } from '@fluixi/kettlejs/context';
+import { createSignal } from '@fluixi/reactive';
 
 interface Theme {
   primaryColor: string;
@@ -170,8 +170,8 @@ The `WithSignals` mixin adds automatic signal tracking to any Lit element.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends WithSignals(LitElement) {
@@ -193,8 +193,8 @@ export class MyCounter extends WithSignals(LitElement) {
 ```typescript
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core/reactive';
-import { createSignal, createEffect } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 @customElement('my-element')
 export class MyElement extends WithSignals(LitElement) {
@@ -247,9 +247,9 @@ export class MyElement extends WithSignals(LitElement) {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core/reactive';
 import { SomeOtherMixin } from './other-mixin';
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
 export class MyElement extends WithSignals(SomeOtherMixin(LitElement)) {
@@ -286,8 +286,8 @@ Explicit control with `SignalController` for maximum flexibility.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { SignalController } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 export class MyCounter extends LitElement {
@@ -310,8 +310,8 @@ export class MyCounter extends LitElement {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@awc/kettlejs/core/reactive';
-import { createSignal, createEffect } from '@awc/reactive';
+import { ReactiveController } from '@fluixi/kettlejs/core/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 @customElement('my-element')
 export class MyElement extends LitElement {
@@ -344,8 +344,8 @@ export class MyElement extends LitElement {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { ReactiveController } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-form')
 export class MyForm extends LitElement {
@@ -435,12 +435,12 @@ export class MyForm extends LitElement {
 
 ```typescript
 // shared-state.ts
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 export const [globalCount, setGlobalCount] = createSignal(0);
 
 // component-a.ts
-import { KettleElement } from '@awc/kettlejs/core/component';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
 import { globalCount, setGlobalCount } from './shared-state';
 
 @customElement('component-a')
@@ -467,7 +467,7 @@ export class ComponentB extends KettleElement {
 
 ```typescript
 // store.ts
-import { createSignal, createMemo } from '@awc/reactive';
+import { createSignal, createMemo } from '@fluixi/reactive';
 
 export function createStore<T extends object>(initialState: T) {
   const [state, setState] = createSignal(initialState);
@@ -512,8 +512,8 @@ export class UserDisplay extends KettleElement {
 
 ```typescript
 import { LitElement, html } from 'lit';
-import { WithSignals } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 function withLoading<T extends new (...args: any[]) => LitElement>(Base: T) {
   return class extends WithSignals(Base) {
@@ -652,8 +652,8 @@ export class MyElement extends LitElement {
 // After
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs/core/component';
-import { createSignal } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
 export class MyElement extends KettleElement {
@@ -708,4 +708,4 @@ export class Counter extends KettleElement {
 - [API Reference](./docs/API.md)
 - [Integration Guide](./INTEGRATION_GUIDE.md)
 - [Lit Documentation](https://lit.dev)
-- [@awc/reactive Documentation](../reactive/README.md)
+- [@fluixi/reactive Documentation](../reactive/README.md)

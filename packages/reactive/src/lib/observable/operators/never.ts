@@ -1,4 +1,4 @@
-import { Observable } from "@awc/reactive/observable";
+import { Observable } from "@fluixi/reactive/observable";
 
 /**
 * Creates an Observable that never emits any items and never completes.

@@ -1,1 +1,1 @@
-export { createVitePlugin } from '@awc/jsx-runtime/compiler';
+export { createVitePlugin } from '@fluixi/jsx-runtime/compiler';

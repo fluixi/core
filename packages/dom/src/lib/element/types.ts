@@ -1,6 +1,6 @@
 /**
- * @fileoverview Advanced types for @awc/element
- * @module @awc/dom/element/types
+ * @fileoverview Advanced types for @fluixi/element
+ * @module @fluixi/dom/element/types
  */
 
 // ============================================================================
@@ -192,7 +192,7 @@ export type KettleElementInstance<T> = T extends KettleElementConstructor<
  *
  * @example
  * ```ts
- * declare module '@awc/jsx-runtime/jsx' {
+ * declare module '@fluixi/jsx-runtime/jsx' {
  *   namespace JSX {
  *     interface IntrinsicElements {
  *       'my-counter': KettleElementJSXAttributes<typeof MyCounter>;

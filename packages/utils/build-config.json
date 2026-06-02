@@ -1,11 +1,22 @@
 {
-  "$schema": "./node_modules/@awc/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "$schema": "./node_modules/@fluixi/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
     "target": "es2021",
-    "formats": ["es", "cjs"],
-    "entries": ["src/**/*.ts"],
-    "rootDir": "src"
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
+    "rootDir": "src",
+    "clean": true
   }
 }

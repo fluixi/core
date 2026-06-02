@@ -1,16 +1,16 @@
 /**
  * @fileoverview Data fetching and caching primitives for KettleJS Router
- * @module @awc/kettlejs/router/data
+ * @module @fluixi/kettlejs/router/data
  */
 
 import {  createResource,
   createSignal,
-   } from "@awc/dom"
+   } from "@fluixi/dom"
 import {
   type Accessor,
   type Setter,
   Resource
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 import {
   getHydrationData,

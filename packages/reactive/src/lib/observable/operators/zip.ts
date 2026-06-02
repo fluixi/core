@@ -1,4 +1,4 @@
-import { AsyncScheduler, Observable, Subscription } from "@awc/reactive";
+import { AsyncScheduler, Observable, Subscription } from "@fluixi/reactive";
 
 /**
  * Configuration options for zip

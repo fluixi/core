@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@awc/mix-builder',
+    name: '@fluixi/mix-builder',
     watch: false,
     globals: true,
     environment: 'node',

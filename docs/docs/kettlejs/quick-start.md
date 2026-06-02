@@ -12,7 +12,7 @@ The fastest way to start is with the KettleJS CLI:
 
 ```bash
 # Install CLI globally
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 
 # Create new project
 kettlejs new my-first-app
@@ -39,8 +39,8 @@ Let's create a simple counter component to understand KettleJS basics.
 Create `src/components/Counter/Counter.ts`:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 import './Counter.css';
 
 export const Counter: Component = () => {
@@ -140,7 +140,7 @@ Create `src/components/Counter/Counter.css`:
 Update `src/App.ts`:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
+import { html, Component } from '@fluixi/kettlejs';
 import { Counter } from './components/Counter/Counter';
 
 export const App: Component = () => {
@@ -199,7 +199,7 @@ Event handlers are simple functions:
 Let's add an effect that logs when count changes:
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive/signal';
+import { createSignal, createEffect } from '@fluixi/reactive/signal';
 
 export const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -218,7 +218,7 @@ export const Counter: Component = () => {
 Create derived state with memos:
 
 ```typescript
-import { createSignal, createMemo } from '@awc/reactive/signal';
+import { createSignal, createMemo } from '@fluixi/reactive/signal';
 
 export const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -245,9 +245,9 @@ export const Counter: Component = () => {
 Use the `Show` component for conditionals:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { Show } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { Show } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -285,9 +285,9 @@ export const Counter: Component = () => {
 Use the `For` component for lists:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { For } from '@awc/kettlejs/control-flow';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { For } from '@fluixi/kettlejs/control-flow';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const TodoList: Component = () => {
   const [todos, setTodos] = createSignal([
@@ -342,8 +342,8 @@ For web components, use `KettleElement`:
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -373,8 +373,8 @@ Use it in HTML:
 Create a component that loads data:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { createResource } from '@awc/kettlejs/resources';
+import { html, Component } from '@fluixi/kettlejs';
+import { createResource } from '@fluixi/kettlejs/resources';
 
 interface User {
   id: number;

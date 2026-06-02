@@ -1,16 +1,16 @@
 /**
  * @fileoverview defineElement() — primary functional API for KettleJS web components
- * @module @awc/element/define-element
+ * @module @fluixi/element/define-element
  */
 
-import { createSignal } from '@awc/dom';
+import { createSignal } from '@fluixi/dom';
 import type {
   PropDefinition,
   EventDefinition,
   DefineElementOptions,
   ElementRenderFn,
   KettleElementConstructor,
-} from '@awc/dom/element';
+} from '@fluixi/dom/element';
 import { camelToKebab, coerceAttribute } from './utils.js';
 import {
   createReactiveRoot,

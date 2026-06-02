@@ -1,4 +1,4 @@
-import { GetAtPath, IValueOfKey } from '@awc/utils/object';
+import { GetAtPath, IValueOfKey } from '@fluixi/utils/object';
 
 export type Primitive =
   | string

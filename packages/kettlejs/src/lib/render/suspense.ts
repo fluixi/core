@@ -1,6 +1,6 @@
 /**
  * @fileoverview Suspense Component — SolidJS-aligned architecture
- * @module @awc/kettlejs/render/suspense
+ * @module @fluixi/kettlejs/render/suspense
  *
  * Counter-based state machine: resources self-register via SuspenseContext,
  * increment on fetch start, decrement on resolve. No signal writes inside memos.
@@ -11,7 +11,7 @@ import {
   type SuspenseContextType,
   type SuspenseListContextType,
   type SuspenseListRegisteredState,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import {
   createSignal,
   createMemo,
@@ -28,7 +28,7 @@ import {
   asSuspense, 
   isComponent,
   createComponent
-} from "@awc/dom"
+} from "@fluixi/dom"
 
 // ============================================================================
 // TYPES

@@ -18,7 +18,7 @@ An effect is a function that runs automatically when any signal it reads changes
 - Side effects triggered by state changes
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -36,7 +36,7 @@ setCount(2); // Logs: "Count changed to: 2"
 ### Basic Effect
 
 ```typescript
-import { createEffect, createSignal } from '@awc/reactive';
+import { createEffect, createSignal } from '@fluixi/reactive';
 
 const [name, setName] = createSignal('Alice');
 
@@ -276,7 +276,7 @@ createEffect(() => {
 ### Debounced Effect
 
 ```typescript
-import { debounce } from '@awc/kettlejs';
+import { debounce } from '@fluixi/kettlejs';
 
 const [searchTerm, setSearchTerm] = createSignal('');
 
@@ -429,7 +429,7 @@ createEffect(() => {
 ### 4. Use untrack for Non-reactive Reads
 
 ```typescript
-import { untrack } from '@awc/reactive';
+import { untrack } from '@fluixi/reactive';
 
 const [trigger, setTrigger] = createSignal(0);
 const [data, setData] = createSignal('value');
@@ -446,7 +446,7 @@ createEffect(() => {
 ### 5. Batch Signal Updates
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 const [a, setA] = createSignal(1);
 const [b, setB] = createSignal(2);
@@ -488,7 +488,7 @@ const MyComponent = () => {
 ### With KettleElement
 
 ```typescript
-import { KettleElement } from '@awc/kettlejs';
+import { KettleElement } from '@fluixi/kettlejs';
 import { customElement } from 'lit/decorators.js';
 
 @customElement('my-element')
@@ -612,4 +612,4 @@ createEffect(() => {
 
 - [API Reference: createEffect](../api-reference/core.md#createeffect)
 - [Examples: Effect Patterns](../guides/examples.md#effects)
-- [@awc/reactive Documentation](../../reactive/effects.md)
+- [@fluixi/reactive Documentation](../../reactive/effects.md)

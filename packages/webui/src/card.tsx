@@ -1,7 +1,7 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfCard, AdfCardBody, AdfCardHeader, AdfCardFooter} from '@awc/adf-card';
-import DOM from "@awc/dom"
-// import '@awc/adf-card/adf-card.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-card/adf-card.js';
 
 
 const CardComponent = createComponent({

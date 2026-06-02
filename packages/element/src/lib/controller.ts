@@ -1,6 +1,6 @@
 /**
  * @fileoverview KettleController — ReactiveController for existing Lit elements
- * @module @awc/element/controller
+ * @module @fluixi/element/controller
  */
 
 import type { ReactiveController, ReactiveControllerHost } from 'lit';
@@ -12,7 +12,7 @@ import {
   onCleanup,
   getOwner,
   runWithOwner,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import { ensureElementIntegration } from './base.js';
 
 type Owner = any;

@@ -40,7 +40,7 @@ KettleJS is a reactive framework that combines fine-grained reactivity with lit-
 Signals are the foundation of reactivity in KettleJS:
 
 ```typescript
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -71,7 +71,7 @@ setCount(prev => prev + 1); // Functional update
 Effects run automatically when their dependencies change:
 
 ```typescript
-import { createEffect } from '@awc/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 createEffect(() => {
   console.log('Count is:', count());
@@ -110,7 +110,7 @@ createEffect(() => {
 Memos cache computed values and only recalculate when dependencies change:
 
 ```typescript
-import { createMemo } from '@awc/reactive';
+import { createMemo } from '@fluixi/reactive';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -144,7 +144,7 @@ console.log(fullName()); // "Jane Doe" (recomputed)
 The simplest way to create components:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
+import { html, Component } from '@fluixi/kettlejs';
 
 interface ButtonProps {
   label: string;
@@ -181,8 +181,8 @@ const App = () => {
 For components that need web component features:
 
 ```typescript
-import { html, createSignal } from '@awc/kettlejs';
-import { KettleElement } from '@awc/kettlejs/core';
+import { html, createSignal } from '@fluixi/kettlejs';
+import { KettleElement } from '@fluixi/kettlejs/core';
 import { customElement, property } from 'lit/decorators.js';
 
 @customElement('user-card')
@@ -237,8 +237,8 @@ Add reactivity to existing Lit elements:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('counter-element')
 export class CounterElement extends WithSignals(LitElement) {
@@ -295,7 +295,7 @@ const TodoApp = () => {
 For state shared across components:
 
 ```typescript
-import { createContext, useContext, Provider } from '@awc/kettlejs/context';
+import { createContext, useContext, Provider } from '@fluixi/kettlejs/context';
 
 // Create context
 interface AppState {
@@ -513,7 +513,7 @@ const Modal: Component<{ isOpen: boolean }> = (props) => {
 ### Basic Router Setup
 
 ```typescript
-import { createRouter, Router, Link } from '@awc/kettlejs/router';
+import { createRouter, Router, Link } from '@fluixi/kettlejs/router';
 
 const routes = [
   { path: '/', component: HomePage },
@@ -541,7 +541,7 @@ const App = () => {
 ### Route Parameters
 
 ```typescript
-import { useParams, useQuery } from '@awc/kettlejs/router';
+import { useParams, useQuery } from '@fluixi/kettlejs/router';
 
 const UserPage: Component = () => {
   const params = useParams();
@@ -572,7 +572,7 @@ const UserPage: Component = () => {
 ### Navigation
 
 ```typescript
-import { useNavigate } from '@awc/kettlejs/router';
+import { useNavigate } from '@fluixi/kettlejs/router';
 
 const LoginForm: Component = () => {
   const navigate = useNavigate();
@@ -596,7 +596,7 @@ const LoginForm: Component = () => {
 ### Using Resources
 
 ```typescript
-import { createResource } from '@awc/kettlejs/resources';
+import { createResource } from '@fluixi/kettlejs/resources';
 
 const UserProfile: Component = () => {
   const [userId, setUserId] = createSignal(1);
@@ -762,7 +762,7 @@ const DataComponent: Component = () => {
 ### Batching Updates
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 const updateMultiple = () => {
   // Without batch - triggers multiple updates
@@ -797,7 +797,7 @@ html`${For({ each: filteredAndSorted, children: renderItem })}`;
 ### Untrack for Snapshots
 
 ```typescript
-import { untrack } from '@awc/reactive';
+import { untrack } from '@fluixi/reactive';
 
 createEffect(() => {
   trigger(); // Tracked
@@ -835,7 +835,7 @@ const LazyComponent = () => {
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { render, html } from '@awc/kettlejs';
+import { render, html } from '@fluixi/kettlejs';
 
 describe('Counter', () => {
   it('increments count', async () => {
@@ -859,7 +859,7 @@ describe('Counter', () => {
 ### Testing Signals
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 describe('Signals', () => {
   it('updates effects', () => {

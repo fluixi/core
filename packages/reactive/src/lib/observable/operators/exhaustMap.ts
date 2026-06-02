@@ -1,4 +1,4 @@
-import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@awc/reactive";
+import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@fluixi/reactive";
 
 /**
  * Projects each source value to an Observable, then ignores new source values while the current projected

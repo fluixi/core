@@ -51,7 +51,7 @@ kettlejs/
 ### Installation
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ### Basic Component
@@ -59,8 +59,8 @@ npm install @awc/kettlejs @awc/reactive lit
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 class MyCounter extends KettleElement {
@@ -91,7 +91,7 @@ import {
   onUnmount,
   mergeProps,
   splitProps,
-} from '@awc/kettlejs/core';
+} from '@fluixi/kettlejs/core';
 
 // Create component with lifecycle
 const MyComponent = createComponent((props) => {
@@ -110,7 +110,7 @@ const dispose = render(MyComponent, document.getElementById('app'));
 ### KettleElement (`core/element.ts`)
 
 ```typescript
-import { KettleElement, getCurrentElement } from '@awc/kettlejs/core';
+import { KettleElement, getCurrentElement } from '@fluixi/kettlejs/core';
 
 // Base class approach
 class MyElement extends KettleElement {
@@ -133,7 +133,7 @@ import {
   ReactiveController,
   WithSignals,
   useEffect,
-} from '@awc/kettlejs/core';
+} from '@fluixi/kettlejs/core';
 
 // Pattern 1: SignalController (auto-update)
 class MyElement extends LitElement {
@@ -172,7 +172,7 @@ class MyElement extends LitElement {
 ### Show - Conditional Rendering
 
 ```typescript
-import { Show } from '@awc/kettlejs';
+import { Show } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [user, setUser] = createSignal(null);
@@ -190,7 +190,7 @@ const MyComponent = () => {
 ### For - List Rendering
 
 ```typescript
-import { For } from '@awc/kettlejs';
+import { For } from '@fluixi/kettlejs';
 
 const MyList = () => {
   const [items, setItems] = createSignal([1, 2, 3]);
@@ -209,7 +209,7 @@ const MyList = () => {
 ### Dynamic - Dynamic Components
 
 ```typescript
-import { Dynamic } from '@awc/kettlejs';
+import { Dynamic } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [component, setComponent] = createSignal(ComponentA);
@@ -226,7 +226,7 @@ const MyComponent = () => {
 ### Portal - Portal Rendering
 
 ```typescript
-import { Portal } from '@awc/kettlejs';
+import { Portal } from '@fluixi/kettlejs';
 
 const Modal = () => {
   return html`
@@ -245,7 +245,7 @@ const Modal = () => {
 ## 🗺️ Router
 
 ```typescript
-import { createRouter, Router, Link } from '@awc/kettlejs';
+import { createRouter, Router, Link } from '@fluixi/kettlejs';
 
 // Create router
 const router = createRouter({
@@ -286,7 +286,7 @@ const MyComponent = () => {
 ## 🔄 Resources
 
 ```typescript
-import { createKettleResource, createLazyResource } from '@awc/kettlejs';
+import { createKettleResource, createLazyResource } from '@fluixi/kettlejs';
 
 // Basic resource
 const [user, { refetch, mutate }] = createKettleResource(async () => {
@@ -316,7 +316,7 @@ load();
 ### Client-side Hydration
 
 ```typescript
-import { hydrateApp } from '@awc/kettlejs/core';
+import { hydrateApp } from '@fluixi/kettlejs/core';
 
 // Hydrate server-rendered app
 const app = html`<my-app></my-app>`;
@@ -330,7 +330,7 @@ import {
   renderToString,
   renderToPage,
   createHtmlDocument,
-} from '@awc/kettlejs/core';
+} from '@fluixi/kettlejs/core';
 
 // Render to string
 const html = await renderToString(app);
@@ -355,7 +355,7 @@ const doc = createHtmlDocument(content, {
 import {
   useHydrationData,
   createHydratableResource,
-} from '@awc/kettlejs/core';
+} from '@fluixi/kettlejs/core';
 
 // Use hydration data
 const data = useHydrationData('my-data', { initial: true });
@@ -371,7 +371,7 @@ const loadUser = createHydratableResource('user', async () => {
 ### Dev Server
 
 ```typescript
-import { createDevServer, startDevServer } from '@awc/kettlejs/dev-server';
+import { createDevServer, startDevServer } from '@fluixi/kettlejs/dev-server';
 
 // Simple start
 await startDevServer(3000, true);
@@ -401,7 +401,7 @@ import {
   buildClient,
   buildFullStack,
   analyzeBundle,
-} from '@awc/kettlejs/builder';
+} from '@fluixi/kettlejs/builder';
 
 // Build client
 await buildClient({
@@ -425,7 +425,7 @@ console.log('Bundle size:', stats.totalSize);
 ### Watch Mode
 
 ```typescript
-import { watch } from '@awc/kettlejs/builder';
+import { watch } from '@fluixi/kettlejs/builder';
 
 // Watch and rebuild
 await watch({
@@ -479,26 +479,26 @@ class MyComponent extends LitElement {
 
 ```typescript
 // Main entry
-import * as KettleJS from '@awc/kettlejs';
+import * as KettleJS from '@fluixi/kettlejs';
 
 // Core modules
-import * as Core from '@awc/kettlejs/core';
+import * as Core from '@fluixi/kettlejs/core';
 
 // Control flow
-import * as ControlFlow from '@awc/kettlejs/control-flow';
+import * as ControlFlow from '@fluixi/kettlejs/control-flow';
 
 // Router
-import * as Router from '@awc/kettlejs/router';
+import * as Router from '@fluixi/kettlejs/router';
 
 // Resources
-import * as Resources from '@awc/kettlejs/resources';
+import * as Resources from '@fluixi/kettlejs/resources';
 
 // Context
-import * as Context from '@awc/kettlejs/context';
+import * as Context from '@fluixi/kettlejs/context';
 
 // Dev tools
-import * as DevServer from '@awc/kettlejs/dev-server';
-import * as Builder from '@awc/kettlejs/builder';
+import * as DevServer from '@fluixi/kettlejs/dev-server';
+import * as Builder from '@fluixi/kettlejs/builder';
 ```
 
 ## 🔧 Configuration
@@ -524,9 +524,9 @@ import * as Builder from '@awc/kettlejs/builder';
 ```json
 {
   "scripts": {
-    "dev": "node -e \"import('@awc/kettlejs/dev-server').then(m => m.startDevServer(3000))\"",
-    "build": "node -e \"import('@awc/kettlejs/builder').then(m => m.build({ outDir: 'dist' }))\"",
-    "preview": "node -e \"import('@awc/kettlejs/dev-server').then(m => m.createPreviewServer())\""
+    "dev": "node -e \"import('@fluixi/kettlejs/dev-server').then(m => m.startDevServer(3000))\"",
+    "build": "node -e \"import('@fluixi/kettlejs/builder').then(m => m.build({ outDir: 'dist' }))\"",
+    "preview": "node -e \"import('@fluixi/kettlejs/dev-server').then(m => m.createPreviewServer())\""
   }
 }
 ```
@@ -534,7 +534,7 @@ import * as Builder from '@awc/kettlejs/builder';
 ## 🎯 Best Practices
 
 1. **Use KettleElement** for new components (simplest API)
-2. **Prefer signals** from @awc/reactive for state management
+2. **Prefer signals** from @fluixi/reactive for state management
 3. **Use control flow components** instead of manual conditionals
 4. **Leverage SSR** for better performance and SEO
 5. **Use the dev server** for development (HMR, fast refresh)

@@ -1,6 +1,6 @@
 // /**
 //  * @fileoverview Context API exports for KettleJS framework
-//  * @module @awc/kettlejs/context
+//  * @module @fluixi/kettlejs/context
 //  */
 
 export {

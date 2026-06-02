@@ -1,4 +1,4 @@
-import { isClass } from '@awc/utils/object';
+import { isClass } from '@fluixi/utils/object';
 
 /**
  * Check if value is a function

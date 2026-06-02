@@ -4,5 +4,13 @@
   "compilerOptions": {
     "baseUrl": "."
   },
-  "exclude": [".docusaurus", "build"]
+  "exclude": [".docusaurus", "build"],
+  "references": [
+    {
+      "path": "../packages/dom"
+    },
+    {
+      "path": "../packages/reactive"
+    }
+  ]
 }

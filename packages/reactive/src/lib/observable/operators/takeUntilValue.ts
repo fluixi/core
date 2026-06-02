@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction } from "@awc/reactive";
+import { Observable, OperatorFunction } from "@fluixi/reactive";
 
 /**
 * Takes values from the source Observable until a specified condition is met.

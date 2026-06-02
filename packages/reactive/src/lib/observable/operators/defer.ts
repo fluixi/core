@@ -1,6 +1,6 @@
-import { AsyncScheduler, Observable, Subscription } from '@awc/reactive';
-import { isIterable } from '@awc/utils';
-import { asyncScheduler } from '@awc/reactive/schedulers/async';
+import { AsyncScheduler, Observable, Subscription } from '@fluixi/reactive';
+import { isIterable } from '@fluixi/utils';
+import { asyncScheduler } from '@fluixi/reactive/schedulers/async';
 
 /**
  * Factory function for defer

@@ -76,7 +76,7 @@ function runUpdates(): void {
 Batch multiple updates to run effects only once:
 
 ```typescript
-import { batch, createSignal, createEffect } from '@awc/reactive';
+import { batch, createSignal, createEffect } from '@fluixi/reactive';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -143,7 +143,7 @@ start(() => {
 Effects created within transitions automatically get `TRANSITION` priority:
 
 ```typescript
-import { startTransition, createEffect } from '@awc/reactive';
+import { startTransition, createEffect } from '@fluixi/reactive';
 
 startTransition(() => {
   // This effect has TRANSITION priority (lowest)
@@ -199,7 +199,7 @@ if (currentTransition) {
 For advanced use cases, you can use the queue directly:
 
 ```typescript
-import { queueUpdate, runUpdates } from '@awc/reactive';
+import { queueUpdate, runUpdates } from '@fluixi/reactive';
 
 // Queue multiple operations
 queueUpdate(() => updateUI());
@@ -628,7 +628,7 @@ function logDependencies(label: string) {
 Test multiple updates:
 
 ```typescript
-import { batch, createSignal } from '@awc/reactive';
+import { batch, createSignal } from '@fluixi/reactive';
 
 test('batches updates correctly', () => {
   const [count, setCount] = createSignal(0);

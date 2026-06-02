@@ -6,8 +6,8 @@ import {
   SchedulerAction,
   SchedulerLike,
   Subscription,
-} from '@awc/reactive';
-import { isFunction } from '@awc/utils';
+} from '@fluixi/reactive';
+import { isFunction } from '@fluixi/utils';
 import { asyncScheduler } from '../../schedulers/async.js';
 /**
  * Emits a value from the source Observable only after a specified time span has passed

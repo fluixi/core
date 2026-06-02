@@ -1,15 +1,2 @@
 packages:
   - packages/*
-  - packages/kettle-apps/*
-  - packages/kettle-apps/storefront
-  - packages/kettle-apps/leuzman-backend/*
-  - packages/kettle-apps/leuzman-backend/medusa-qr
-  - packages/kettle-apps/leuzman-backend/medusa-social-commerce
-  - packages/kettle-apps/leuzman-backend/medusa-product-ext
-  - packages/kettle-apps/leuzman-backend/medusa-stories
-  - packages/kettle-apps/leuzman-backend/medusa-odoo
-  - packages/kettle-apps/leuzman-backend/medusa-barcode
-  - '!packages/kettle-apps/leuzman-store'
-  - packages/kettle-apps/adafri-auth/app/static
-overrides:
-  '@awc/kettlejs': link:packages/kettlejs

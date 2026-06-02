@@ -1,4 +1,4 @@
-import { createPortal } from '@awc/dom';
+import { createPortal } from '@fluixi/dom';
 
 /**
  * Wraps a `createComponent` result so that the rendered element is mounted into

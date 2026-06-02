@@ -10,9 +10,9 @@ Complete examples demonstrating JSX/TSX usage with KettleJS.
 ## Complete Todo App with JSX
 
 ```tsx
-import { createSignal, createEffect } from '@awc/reactive';
-import { For, Show } from '@awc/kettlejs';
-import type { JSX } from '@awc/kettlejs/jsx-runtime';
+import { createSignal, createEffect } from '@fluixi/reactive';
+import { For, Show } from '@fluixi/kettlejs';
+import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
 
 interface Todo {
   id: number;
@@ -157,8 +157,8 @@ export default TodoApp;
 ## User Dashboard with JSX
 
 ```tsx
-import { createSignal, createEffect, createMemo } from '@awc/reactive';
-import { Show, For } from '@awc/kettlejs';
+import { createSignal, createEffect, createMemo } from '@fluixi/reactive';
+import { Show, For } from '@fluixi/kettlejs';
 
 interface User {
   id: number;
@@ -300,8 +300,8 @@ export default Dashboard;
 ## Form with Validation
 
 ```tsx
-import { createSignal, createMemo } from '@awc/reactive';
-import { Show } from '@awc/kettlejs';
+import { createSignal, createMemo } from '@fluixi/reactive';
+import { Show } from '@fluixi/kettlejs';
 
 interface FormData {
   name: string;
@@ -491,8 +491,8 @@ export default RegistrationForm;
 ## Data Table with Sorting and Filtering
 
 ```tsx
-import { createSignal, createMemo } from '@awc/reactive';
-import { For, Show } from '@awc/kettlejs';
+import { createSignal, createMemo } from '@fluixi/reactive';
+import { For, Show } from '@fluixi/kettlejs';
 
 interface User {
   id: number;
@@ -655,9 +655,9 @@ export default DataTable;
 ## Modal Dialog Component
 
 ```tsx
-import { createSignal } from '@awc/reactive';
-import { Show, Portal } from '@awc/kettlejs';
-import type { JSX } from '@awc/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive';
+import { Show, Portal } from '@fluixi/kettlejs';
+import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
 
 interface ModalProps {
   isOpen: boolean;

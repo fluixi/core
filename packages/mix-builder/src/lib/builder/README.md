@@ -108,7 +108,7 @@ The builder uses a comprehensive JSON schema for configuration validation.
   "externals": ["react"],      // Global external dependencies
   "reactExternal": true,       // Treat React as external
   "litExternal": false,        // Treat Lit as external
-  "libExternal": false,        // Treat @awc/* as external
+  "libExternal": false,        // Treat @fluixi/* as external
   "nodeEnv": "production",     // "development" | "production"
   "log": true,                 // Enable build logging
   "debug": false,              // Enable debug mode
@@ -243,7 +243,7 @@ Entries can be defined as:
 # External Dependencies
 --reactExternal                     # Mark React as external
 --litExternal                       # Mark Lit as external
---libExternal                       # Mark @awc/* as external
+--libExternal                       # Mark @fluixi/* as external
 --pkgExternal                       # Mark package.json deps as external
 --skipExternal                      # Skip external processing
 

@@ -1,4 +1,4 @@
-// import { Accessor, createEffect } from '@awc/reactive';
+// import { Accessor, createEffect } from '@fluixi/reactive';
 // import {
 //   ChildPart,
 //   directive,
@@ -67,12 +67,12 @@
 
 /**
  * @fileoverview Dynamic component for rendering components dynamically in KettleJS
- * @module @awc/kettlejs/control-flow/Dynamic
+ * @module @fluixi/kettlejs/control-flow/Dynamic
  */
 
 import { html, TemplateResult, nothing } from 'lit';
-import { createEffect, createSignal, type Accessor } from '@awc/reactive';
-import { type Component, type ComponentProps, ComponentFn } from '@awc/dom';
+import { createEffect, createSignal, type Accessor } from '@fluixi/reactive';
+import { type Component, type ComponentProps, ComponentFn } from '@fluixi/dom';
 import { normalizeAccessor, renderContent, childToTemplate } from './utils.js';
 import { buildElementTemplate } from '../templates/helpers.js';
 

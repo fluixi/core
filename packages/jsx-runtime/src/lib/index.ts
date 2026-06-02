@@ -1,6 +1,6 @@
 /**
- * @fileoverview Main entry point for @awc/jsx-runtime package
- * @module @awc/jsx-runtime
+ * @fileoverview Main entry point for @fluixi/jsx-runtime package
+ * @module @fluixi/jsx-runtime
  *
  * This package provides a comprehensive JSX runtime with:
  * - Fine-grained reactive updates similar to SolidJS
@@ -46,15 +46,15 @@ export type {
 // ============================================================================
 
 // Build-time compiler utilities are NOT exported from the main browser entry.
-// Import them from '@awc/jsx-runtime/compiler' instead (Node.js only):
-//   import { createVitePlugin } from '@awc/jsx-runtime/compiler'
+// Import them from '@fluixi/jsx-runtime/compiler' instead (Node.js only):
+//   import { createVitePlugin } from '@fluixi/jsx-runtime/compiler'
 
 // ============================================================================
 // Legacy API (for backward compatibility)
 // ============================================================================
 
 // Re-export old runtime for compatibility
-export { ReactiveDOM, $, $if, litrx, delegateEvents } from '@awc/dom';
+export { ReactiveDOM, $, $if, litrx, delegateEvents } from '@fluixi/dom';
 
 // Legacy JSX config
 export interface ReactiveJSXConfig {
@@ -85,7 +85,7 @@ import {
 } from './jsx-runtime.js';
 
 export { mergeProps } from './jsx-runtime.js';
-import { createPortal, initializeIntegration, render, runtimeBatch } from '@awc/dom';
+import { createPortal, initializeIntegration, render, runtimeBatch } from '@fluixi/dom';
 
 /**
  * Create a reactive JSX API with custom configuration

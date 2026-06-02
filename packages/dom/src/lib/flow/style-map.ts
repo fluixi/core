@@ -1,4 +1,4 @@
-import { Accessor, createMemo } from '@awc/reactive/signal';
+import { Accessor, createMemo } from '@fluixi/reactive/signal';
 
 /**
  * A single style property value — static or reactive.

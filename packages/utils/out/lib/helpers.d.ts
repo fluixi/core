@@ -1,4 +1,4 @@
-import { ObjectKind, ObjectType, UndefinedOrNullType } from '@awc/utils/primitive';
+import { ObjectKind, ObjectType, UndefinedOrNullType } from '@fluixi/utils/primitive';
 /** Check if value is null */
 export declare function isNull(v: unknown): v is null;
 /** Check if value is undefined */

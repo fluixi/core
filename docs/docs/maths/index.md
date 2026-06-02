@@ -43,7 +43,7 @@ import {
   randomInt, randomFloat, randomInRange,
   
   // ... other utilities
-} from '@awc/utils/maths';
+} from '@fluixi/utils/maths';
 ```
 
 ## Quick Start
@@ -53,7 +53,7 @@ import {
 Access precise mathematical constants:
 
 ```typescript
-import { PI, E, PHI, SQRT2, Constants } from '@awc/utils/maths';
+import { PI, E, PHI, SQRT2, Constants } from '@fluixi/utils/maths';
 
 // Direct imports
 console.log(PI);    // 3.141592653589793
@@ -70,7 +70,7 @@ console.log(Constants.DEGREES_PER_RADIAN);
 Validate and narrow types with type guards:
 
 ```typescript
-import { isInt, isNumber, isPrime, isEven } from '@awc/utils/maths';
+import { isInt, isNumber, isPrime, isEven } from '@fluixi/utils/maths';
 
 isInt(42);           // true
 isInt("42");         // true (accepts string representation)
@@ -92,7 +92,7 @@ isOdd(3);            // true
 Format numbers for display:
 
 ```typescript
-import { formatNumber, formatCurrency, formatPercentage } from '@awc/utils/maths';
+import { formatNumber, formatCurrency, formatPercentage } from '@fluixi/utils/maths';
 
 formatNumber(1234567.89);
 // "1,234,567.89"
@@ -112,7 +112,7 @@ formatPercentage(0.1234);
 Generate random numbers with various distributions:
 
 ```typescript
-import { randomInt, randomFloat, randomInRange } from '@awc/utils/maths';
+import { randomInt, randomFloat, randomInRange } from '@fluixi/utils/maths';
 
 randomInt(1, 100);           // Random integer between 1 and 100
 randomFloat(0, 1);           // Random float between 0 and 1
@@ -242,7 +242,7 @@ shuffle(array)           // Shuffle array
 ### Validate User Input
 
 ```typescript
-import { isInt, isInRange, isPositive } from '@awc/utils/maths';
+import { isInt, isInRange, isPositive } from '@fluixi/utils/maths';
 
 function validateAge(input: string): number {
   if (!isInt(input)) {
@@ -266,7 +266,7 @@ validateAge("-5");   // throws Error
 ### Format Display Values
 
 ```typescript
-import { formatNumber, formatCurrency, formatPercentage } from '@awc/utils/maths';
+import { formatNumber, formatCurrency, formatPercentage } from '@fluixi/utils/maths';
 
 function formatMetrics(data: {
   revenue: number;
@@ -295,7 +295,7 @@ formatMetrics({
 ### Check Prime Numbers
 
 ```typescript
-import { isPrime } from '@awc/utils/maths';
+import { isPrime } from '@fluixi/utils/maths';
 
 function findPrimes(max: number): number[] {
   const primes: number[] = [];
@@ -316,7 +316,7 @@ findPrimes(20);
 ### Random Selection
 
 ```typescript
-import { randomInt, randomChoice, shuffle } from '@awc/utils/maths';
+import { randomInt, randomChoice, shuffle } from '@fluixi/utils/maths';
 
 // Random dice roll
 const diceRoll = () => randomInt(1, 6);
@@ -337,7 +337,7 @@ const team2 = players.filter(p => !team1.includes(p));
 ### Angle Conversions
 
 ```typescript
-import { RADIANS_PER_DEGREE, DEGREES_PER_RADIAN } from '@awc/utils/maths';
+import { RADIANS_PER_DEGREE, DEGREES_PER_RADIAN } from '@fluixi/utils/maths';
 
 function degreesToRadians(degrees: number): number {
   return degrees * RADIANS_PER_DEGREE;
@@ -354,7 +354,7 @@ radiansToDegrees(PI);   // 180
 ### Approximate Equality
 
 ```typescript
-import { approxEqual } from '@awc/utils/maths';
+import { approxEqual } from '@fluixi/utils/maths';
 
 function compareFloats(a: number, b: number): boolean {
   return approxEqual(a, b, 1e-10);
@@ -369,8 +369,8 @@ compareFloats(1.0000000001, 1.0); // true (within epsilon)
 Work with 2D and 3D vectors:
 
 ```typescript
-import { isVector2D, isVector3D } from '@awc/utils/maths';
-import type { Vector2D, Vector3D } from '@awc/utils/maths';
+import { isVector2D, isVector3D } from '@fluixi/utils/maths';
+import type { Vector2D, Vector3D } from '@fluixi/utils/maths';
 
 const v2: Vector2D = { x: 1, y: 2 };
 const v3: Vector3D = { x: 1, y: 2, z: 3 };
@@ -389,8 +389,8 @@ if (isVector3D(v3)) {
 Work with complex numbers:
 
 ```typescript
-import { isComplexNumber } from '@awc/utils/maths';
-import type { ComplexNumber } from '@awc/utils/maths';
+import { isComplexNumber } from '@fluixi/utils/maths';
+import type { ComplexNumber } from '@fluixi/utils/maths';
 
 const complex: ComplexNumber = { real: 3, imag: 4 };
 
@@ -431,8 +431,8 @@ isInt("42")  // Uses regex + Number.isInteger()
 Full TypeScript support with type guards:
 
 ```typescript
-import { isInt, isNumber, isVector2D } from '@awc/utils/maths';
-import type { Vector2D } from '@awc/utils/maths';
+import { isInt, isNumber, isVector2D } from '@fluixi/utils/maths';
+import type { Vector2D } from '@fluixi/utils/maths';
 
 function processValue(value: unknown) {
   if (isInt(value)) {
@@ -477,7 +477,7 @@ if (typeof value === 'number') {
 ### 2. Handle Edge Cases
 
 ```typescript
-import { isNumber, isSafeInteger } from '@awc/utils/maths';
+import { isNumber, isSafeInteger } from '@fluixi/utils/maths';
 
 function processNumber(value: unknown) {
   // Check if valid number
@@ -497,7 +497,7 @@ function processNumber(value: unknown) {
 ### 3. Use Constants for Precision
 
 ```typescript
-import { PI, RADIANS_PER_DEGREE } from '@awc/utils/maths';
+import { PI, RADIANS_PER_DEGREE } from '@fluixi/utils/maths';
 
 // ✅ Good: Use precise constants
 const circumference = 2 * PI * radius;
@@ -511,7 +511,7 @@ const radians = degrees * 0.0174533;      // Less precise
 ### 4. Use Approximate Equality for Floats
 
 ```typescript
-import { approxEqual } from '@awc/utils/maths';
+import { approxEqual } from '@fluixi/utils/maths';
 
 // ✅ Good: Handle floating-point errors
 if (approxEqual(0.1 + 0.2, 0.3)) {

@@ -1,4 +1,4 @@
-import { ClassType } from '@awc/utils/primitive';
+import { ClassType } from '@fluixi/utils/primitive';
 import { AnyObject, RecordObject, SelectorSegment } from './types.js';
 
 /**

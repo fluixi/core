@@ -4,8 +4,8 @@ import {
   isDOMEventTarget,
   isNodeEventEmitter,
   isOnOffTarget,
-} from '@awc/utils';
-import type { DomEventMap, EventTargetLike } from '@awc/utils';
+} from '@fluixi/utils';
+import type { DomEventMap, EventTargetLike } from '@fluixi/utils';
 import { Observable } from '../observable.js';
 
 // import { EventEmitter } from 'events';

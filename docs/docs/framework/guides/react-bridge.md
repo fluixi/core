@@ -12,7 +12,7 @@ The React Bridge provides two approaches:
 ## Installation
 
 ```bash
-npm install @awc/kettlejs @lit/react react react-dom
+npm install @fluixi/kettlejs @lit/react react react-dom
 ```
 
 ## Quick Comparison
@@ -31,7 +31,7 @@ npm install @awc/kettlejs @lit/react react react-dom
 
 ```tsx
 // Pure KettleJS with JSX
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 export function Counter() {
   const [count, setCount] = createSignal(0);
@@ -50,9 +50,9 @@ export function Counter() {
 
 ```tsx
 // KettleJS Element
-import { KettleElement } from '@awc/kettlejs';
+import { KettleElement } from '@fluixi/kettlejs';
 import { customElement } from 'lit/decorators.js';
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 import { html } from 'lit';
 
 @customElement('counter-element')
@@ -69,7 +69,7 @@ class CounterElement extends KettleElement {
 }
 
 // React Wrapper
-import { createReactComponent } from '@awc/kettlejs/react-bridge';
+import { createReactComponent } from '@fluixi/kettlejs/react-bridge';
 
 export const Counter = createReactComponent(
   'counter-element',
@@ -101,7 +101,7 @@ import {
   useSignal, 
   useKettleEffect, 
   useKettleMemo 
-} from '@awc/kettlejs/react-bridge';
+} from '@fluixi/kettlejs/react-bridge';
 
 function Counter() {
   const [count, setCount] = useSignal(0);
@@ -125,7 +125,7 @@ function Counter() {
 ### Wrapping KettleJS Components
 
 ```tsx
-import { wrapKettleElement } from '@awc/kettlejs/react-bridge';
+import { wrapKettleElement } from '@fluixi/kettlejs/react-bridge';
 import { MyKettleElement } from './my-element';
 
 export const MyComponent = wrapKettleElement(
@@ -141,7 +141,7 @@ export const MyComponent = wrapKettleElement(
 ### Using Resources
 
 ```tsx
-import { useKettleResource } from '@awc/kettlejs/react-bridge';
+import { useKettleResource } from '@fluixi/kettlejs/react-bridge';
 
 function UserProfile({ userId }: { userId: number }) {
   const { data, loading, error, refetch } = useKettleResource(
@@ -164,7 +164,7 @@ function UserProfile({ userId }: { userId: number }) {
 ### Control Flow
 
 ```tsx
-import { ReactControlFlow } from '@awc/kettlejs/react-bridge';
+import { ReactControlFlow } from '@fluixi/kettlejs/react-bridge';
 
 const { Show, For } = ReactControlFlow;
 
@@ -191,8 +191,8 @@ function TodoList({ todos }: { todos: Todo[] }) {
 import { 
   createReactProvider,
   useKettleContext 
-} from '@awc/kettlejs/react-bridge';
-import { createContext } from '@awc/kettlejs/context';
+} from '@fluixi/kettlejs/react-bridge';
+import { createContext } from '@fluixi/kettlejs/context';
 
 // Create KettleJS context
 const ThemeContext = createContext({ mode: 'light' });
@@ -220,7 +220,7 @@ function ThemedButton() {
 ### Adapter Pattern
 
 ```tsx
-import { kettleReactAdapter } from '@awc/kettlejs/react-bridge';
+import { kettleReactAdapter } from '@fluixi/kettlejs/react-bridge';
 
 // Register all components
 const { Button, Input, Card } = kettleReactAdapter.registerAll({
@@ -245,9 +245,9 @@ function Form() {
 ### HOC Pattern
 
 ```tsx
-import { withReact } from '@awc/kettlejs/react-bridge';
+import { withReact } from '@fluixi/kettlejs/react-bridge';
 import { html } from 'lit';
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const KettleCounter = () => {
   const [count, setCount] = createSignal(0);
@@ -264,7 +264,7 @@ export const Counter = withReact(KettleCounter);
 ### Error Boundary
 
 ```tsx
-import { KettleErrorBoundary } from '@awc/kettlejs/react-bridge';
+import { KettleErrorBoundary } from '@fluixi/kettlejs/react-bridge';
 
 function App() {
   return (
@@ -278,7 +278,7 @@ function App() {
 ### Performance Utilities
 
 ```tsx
-import { PerformanceUtils } from '@awc/kettlejs/react-bridge';
+import { PerformanceUtils } from '@fluixi/kettlejs/react-bridge';
 
 function SearchInput() {
   const [value, setValue] = useState('');

@@ -1,7 +1,7 @@
-import {  createMemo, isSignal, untrack } from '@awc/dom';
+import {  createMemo, isSignal, untrack } from '@fluixi/dom';
 import { normalizeAccessor, isTruthy, isLitResult } from './utils.js';
 import { makeArrayFlat } from '../dom/runtime.js';
-import { Accessor, isResource } from '@awc/reactive/signal';
+import { Accessor, isResource } from '@fluixi/reactive/signal';
 
 /**
  * Extract the resolved value type from Show's `when` prop.

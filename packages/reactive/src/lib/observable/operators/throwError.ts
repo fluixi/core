@@ -1,4 +1,4 @@
-import { AsyncScheduler, from, Observable, ObservableInput, OperatorFunction, Subscription } from "@awc/reactive";
+import { AsyncScheduler, from, Observable, ObservableInput, OperatorFunction, Subscription } from "@fluixi/reactive";
 
 /**
  * Configuration options for throwError

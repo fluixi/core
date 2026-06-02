@@ -6,7 +6,7 @@
 // import { executePromise, isObservable, isScheduler } from "./utils.js";
 // import { Subscription } from "../subscription.js";
 // import { AddEventListenerOptions, OperatorFunction } from "./types.js";
-// import { from } from '@awc/reactive'
+// import { from } from '@fluixi/reactive'
 
 // /**
 //  * Creates an Observable from a subscribe function

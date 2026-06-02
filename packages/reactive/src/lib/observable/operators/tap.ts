@@ -1,4 +1,4 @@
-import { Observable, Observer, OperatorFunction } from '@awc/reactive'
+import { Observable, Observer, OperatorFunction } from '@fluixi/reactive'
 
 /**
  * Used to perform side effects for notifications from the source Observable,

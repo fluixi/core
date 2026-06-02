@@ -4,7 +4,7 @@ A modern, reactive framework for building web applications with [lit-html](https
 
 ## Features
 
-- 🚀 **Fine-grained Reactivity** - Powered by `@awc/reactive` for efficient, surgical updates
+- 🚀 **Fine-grained Reactivity** - Powered by `@fluixi/reactive` for efficient, surgical updates
 - 🎯 **lit-html Integration** - Leverage the power and simplicity of lit-html templates
 - 🔄 **Control Flow Components** - Show, For, Switch, Portal, and Dynamic components
 - 🛣️ **Built-in Router** - Client-side routing with nested routes and lazy loading
@@ -17,11 +17,11 @@ A modern, reactive framework for building web applications with [lit-html](https
 ## Installation
 
 ```bash
-npm install @awc/kettlejs @awc/reactive lit
+npm install @fluixi/kettlejs @fluixi/reactive lit
 # or
-yarn add @awc/kettlejs @awc/reactive lit
+yarn add @fluixi/kettlejs @fluixi/reactive lit
 # or
-pnpm add @awc/kettlejs @awc/reactive lit
+pnpm add @fluixi/kettlejs @fluixi/reactive lit
 ```
 
 ## Quick Start
@@ -30,17 +30,17 @@ pnpm add @awc/kettlejs @awc/reactive lit
 
 ```bash
 # Using the CLI
-npx @awc/kettlejs new my-app
+npx @fluixi/kettlejs new my-app
 
 # Or install globally
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 kettlejs new my-app
 ```
 
 ### Basic Example
 
 ```typescript
-import { createSignal, render, html } from '@awc/kettlejs';
+import { createSignal, render, html } from '@fluixi/kettlejs';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -65,7 +65,7 @@ render(Counter, document.getElementById('app')!);
 Signals are the foundation of reactivity in KettleJS. They create reactive state that automatically updates the UI when changed.
 
 ```typescript
-import { createSignal, createEffect } from '@awc/kettlejs';
+import { createSignal, createEffect } from '@fluixi/kettlejs';
 
 const [count, setCount] = createSignal(0);
 const [name, setName] = createSignal('Alice');
@@ -84,7 +84,7 @@ setName('Bob'); // Logs: "Bob has counted to 5"
 Components are pure functions that return lit-html templates. They can use reactive primitives to manage state.
 
 ```typescript
-import { html, createSignal, Component, ComponentProps } from '@awc/kettlejs';
+import { html, createSignal, Component, ComponentProps } from '@fluixi/kettlejs';
 
 interface GreetingProps extends ComponentProps {
   initialName?: string;
@@ -113,7 +113,7 @@ KettleJS provides control flow components for conditional rendering and lists.
 #### Show - Conditional Rendering
 
 ```typescript
-import { Show, createSignal, html } from '@awc/kettlejs';
+import { Show, createSignal, html } from '@fluixi/kettlejs';
 
 const UserProfile = () => {
   const [user, setUser] = createSignal<User | null>(null);
@@ -136,7 +136,7 @@ const UserProfile = () => {
 #### For - List Rendering
 
 ```typescript
-import { For, createSignal, html } from '@awc/kettlejs';
+import { For, createSignal, html } from '@fluixi/kettlejs';
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal([
@@ -171,7 +171,7 @@ const TodoList = () => {
 #### Switch/Match - Multiple Conditions
 
 ```typescript
-import { Switch, Match, createSignal, html } from '@awc/kettlejs';
+import { Switch, Match, createSignal, html } from '@fluixi/kettlejs';
 
 const StatusView = () => {
   const [status, setStatus] = createSignal<'loading' | 'success' | 'error'>('loading');
@@ -191,7 +191,7 @@ const StatusView = () => {
 #### Portal - Render Outside Hierarchy
 
 ```typescript
-import { Portal, createSignal, Show, html } from '@awc/kettlejs';
+import { Portal, createSignal, Show, html } from '@fluixi/kettlejs';
 
 const Modal = () => {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -222,7 +222,7 @@ const Modal = () => {
 Resources handle async data fetching with built-in loading and error states.
 
 ```typescript
-import { createResource, Show, html } from '@awc/kettlejs';
+import { createResource, Show, html } from '@fluixi/kettlejs';
 
 interface User {
   id: number;
@@ -267,7 +267,7 @@ const UserDetail = () => {
 Share state across component trees without prop drilling.
 
 ```typescript
-import { createContext, useContext, Provider, html } from '@awc/kettlejs';
+import { createContext, useContext, Provider, html } from '@fluixi/kettlejs';
 
 interface Theme {
   primaryColor: string;
@@ -310,7 +310,7 @@ const App = () => {
 Built-in client-side routing with nested routes and lazy loading.
 
 ```typescript
-import { createRouter, Router, Link, useParams, html } from '@awc/kettlejs';
+import { createRouter, Router, Link, useParams, html } from '@fluixi/kettlejs';
 
 const Home = () => html`<h1>Home Page</h1>`;
 
@@ -375,7 +375,7 @@ Component types:
 ## Lifecycle Hooks
 
 ```typescript
-import { onMount, onUnmount, createSignal, html } from '@awc/kettlejs';
+import { onMount, onUnmount, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [count, setCount] = createSignal(0);
@@ -404,7 +404,7 @@ const MyComponent = () => {
 ### Derived State (Memos)
 
 ```typescript
-import { createSignal, createMemo, html } from '@awc/kettlejs';
+import { createSignal, createMemo, html } from '@fluixi/kettlejs';
 
 const ExpensiveCalculation = () => {
   const [a, setA] = createSignal(1);
@@ -429,7 +429,7 @@ const ExpensiveCalculation = () => {
 ### Batched Updates
 
 ```typescript
-import { createSignal, batch, html } from '@awc/kettlejs';
+import { createSignal, batch, html } from '@fluixi/kettlejs';
 
 const BatchExample = () => {
   const [firstName, setFirstName] = createSignal('John');
@@ -454,7 +454,7 @@ const BatchExample = () => {
 ### Error Boundaries
 
 ```typescript
-import { createSignal, Show, html } from '@awc/kettlejs';
+import { createSignal, Show, html } from '@fluixi/kettlejs';
 
 const ErrorBoundary = (props: { children: any }) => {
   const [error, setError] = createSignal<Error | null>(null);
@@ -526,7 +526,7 @@ const ErrorBoundary = (props: { children: any }) => {
 KettleJS is written in TypeScript and provides full type safety:
 
 ```typescript
-import { Component, ComponentProps, createSignal } from '@awc/kettlejs';
+import { Component, ComponentProps, createSignal } from '@fluixi/kettlejs';
 
 interface UserProps extends ComponentProps {
   userId: number;
@@ -561,7 +561,7 @@ const UserComponent: Component<UserProps> = (props) => {
 
 - ✅ Similar reactivity model and API
 - ✅ Uses lit-html for familiar template syntax
-- ✅ Integrated with @awc/reactive library
+- ✅ Integrated with @fluixi/reactive library
 - ⚠️ Different template syntax (lit-html vs JSX)
 
 ### vs Vue
@@ -591,7 +591,7 @@ KettleJS is inspired by:
 - [Documentation](https://github.com/your-org/kettlejs/docs)
 - [Examples](https://github.com/your-org/kettlejs/examples)
 - [GitHub](https://github.com/your-org/kettlejs)
-- [npm](https://www.npmjs.com/package/@awc/kettlejs)
+- [npm](https://www.npmjs.com/package/@fluixi/kettlejs)
 
 ---
 

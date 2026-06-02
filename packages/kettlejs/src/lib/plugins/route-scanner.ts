@@ -1,6 +1,6 @@
 /**
  * @fileoverview File-system route scanner
- * @module @awc/kettlejs/plugins/route-scanner
+ * @module @fluixi/kettlejs/plugins/route-scanner
  *
  * Scans a routes directory and builds a route tree following SolidStart conventions.
  * Pure utility — no bundler dependency.

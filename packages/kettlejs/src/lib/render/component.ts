@@ -1,6 +1,6 @@
 /**
  * @fileoverview Component Creation for KettleJS
- * @module @awc/kettlejs/render/component
+ * @module @fluixi/kettlejs/render/component
  *
  * Implements Section 2 of GEMINI.md: createComponent (CRITICAL)
  *
@@ -19,7 +19,7 @@ import {
   asComponent,
   CreateComponentReturnType,
   intergartionInitialized,
-} from '@awc/dom';
+} from '@fluixi/dom';
 import {
   untrack,
   onCleanup,
@@ -47,12 +47,12 @@ import {
   resumeEffects,
   createDeferred,
   getSharedConfig as getSignalSharedConfig,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
-import {createStore} from "@awc/reactive/store";
-// } from '@awc/kettlejs/rx';
+import {createStore} from "@fluixi/reactive/store";
+// } from '@fluixi/kettlejs/rx';
 
-// Note: Owner type from @awc/reactive/signal
+// Note: Owner type from @fluixi/reactive/signal
 type Owner = any;
 
 // ============================================================================
@@ -232,7 +232,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
 export function ensureIntegration(from?: string): void {
   // Always call initializeIntegration — it now merges rather than replaces,
   // so calling it multiple times is safe. createComponent lives here (not in
-  // @awc/dom) so it must be patched in every time until fully registered.
+  // @fluixi/dom) so it must be patched in every time until fully registered.
   initializeIntegration({
     signalSystem: {
       createEffect,
@@ -795,6 +795,6 @@ export function devOnly(fn: () => void): void {
 }
 
 export type { Component,
-  ComponentProps} from "@awc/dom"
+  ComponentProps} from "@fluixi/dom"
 
 

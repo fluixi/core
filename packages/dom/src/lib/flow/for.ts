@@ -1,4 +1,4 @@
-import { Accessor } from '@awc/reactive/signal';
+import { Accessor } from '@fluixi/reactive/signal';
 import {
   createMemo,
   createRoot,

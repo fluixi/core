@@ -2,7 +2,7 @@ import {
   Store,
   type Producer,
   type ReconcileOptions,
-} from '@awc/reactive/store';
+} from '@fluixi/reactive/store';
 
 /**
  * Creates a producer function for immutable updates

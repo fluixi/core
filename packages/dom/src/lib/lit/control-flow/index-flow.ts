@@ -1,8 +1,8 @@
-import { Accessor, createEffect, createSignal } from '@awc/reactive';
+import { Accessor, createEffect, createSignal } from '@fluixi/reactive';
 import { html, nothing, TemplateResult } from 'lit';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
 
-import { Component } from '@awc/dom';
+import { Component } from '@fluixi/dom';
 /**
  * Props for the Index component (non-keyed list rendering)
  * @template T - Type of items in the array

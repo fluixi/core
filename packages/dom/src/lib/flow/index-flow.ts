@@ -5,7 +5,7 @@ import {
   createSignal,
   onCleanup,
   untrack,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import { normalizeAccessor } from './utils.js';
 
 export interface IndexProps<T, U = any> {

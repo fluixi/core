@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Introduction to KettleJS
 
-**KettleJS** is a modern, reactive web framework that combines the power of fine-grained reactivity with the simplicity of lit-html templating. Built on top of Lit and leveraging signal-based reactivity from @awc/reactive, KettleJS provides a developer-friendly API for building fast, efficient web applications.
+**KettleJS** is a modern, reactive web framework that combines the power of fine-grained reactivity with the simplicity of lit-html templating. Built on top of Lit and leveraging signal-based reactivity from @fluixi/reactive, KettleJS provides a developer-friendly API for building fast, efficient web applications.
 
 ## Why KettleJS?
 
@@ -37,7 +37,7 @@ Built on familiar patterns from Lit and inspired by modern frameworks like Solid
 
 ### Reactive Primitives
 ```typescript
-import { createSignal, createEffect, createMemo } from '@awc/reactive/signal';
+import { createSignal, createEffect, createMemo } from '@fluixi/reactive/signal';
 
 // Signals - reactive state
 const [count, setCount] = createSignal(0);
@@ -57,8 +57,8 @@ const doubled = createMemo(() => count() * 2);
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -76,8 +76,8 @@ export class MyCounter extends KettleElement {
 
 #### Functional Components
 ```typescript
-import { html, Component } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { html, Component } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -93,8 +93,8 @@ export const Counter: Component = () => {
 #### JSX Support
 ```typescript
 /** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 export function Counter() {
   const [count, setCount] = createSignal(0);
@@ -109,7 +109,7 @@ export function Counter() {
 
 ### Control Flow
 ```typescript
-import { Show, For } from '@awc/kettlejs/control-flow';
+import { Show, For } from '@fluixi/kettlejs/control-flow';
 
 // Conditional rendering
 Show({
@@ -129,7 +129,7 @@ For({
 
 ### Resource Management
 ```typescript
-import { createResource } from '@awc/kettlejs/resources';
+import { createResource } from '@fluixi/kettlejs/resources';
 
 const [data, { refetch, mutate }] = createResource(
   () => userId(), // Source signal
@@ -148,7 +148,7 @@ data()        // the actual data
 
 ### Routing
 ```typescript
-import { createRouter, Route, Link } from '@awc/kettlejs/router';
+import { createRouter, Route, Link } from '@fluixi/kettlejs/router';
 
 const routes = [
   { path: '/', component: Home },
@@ -168,7 +168,7 @@ const userId = params.id;
 
 ### Context API
 ```typescript
-import { createContext, useContext, Provider } from '@awc/kettlejs/context';
+import { createContext, useContext, Provider } from '@fluixi/kettlejs/context';
 
 // Create context
 const ThemeContext = createContext('light');
@@ -198,7 +198,7 @@ Native JSX support without React dependency.
 Full React ecosystem compatibility while using KettleJS signals.
 
 ```typescript
-import { useSignal, useKettleEffect } from '@awc/kettlejs/react-bridge';
+import { useSignal, useKettleEffect } from '@fluixi/kettlejs/react-bridge';
 
 export function Counter() {
   const [count, setCount] = useSignal(0);
@@ -214,7 +214,7 @@ export function Counter() {
 ## Server-Side Rendering (SSR)
 
 ```typescript
-import { renderToString, renderToPage } from '@awc/kettlejs/core';
+import { renderToString, renderToPage } from '@fluixi/kettlejs/core';
 
 // Render to string
 const html = await renderToString(template);
@@ -251,7 +251,7 @@ KettleJS Framework
 │   ├── Component rendering
 │   ├── Hydration
 │   └── SSR utilities
-├── Reactivity (@awc/reactive)
+├── Reactivity (@fluixi/reactive)
 │   ├── Signals
 │   ├── Effects
 │   ├── Memos
@@ -309,8 +309,8 @@ Ready to build with KettleJS? Check out these guides:
 
 ## Ecosystem
 
-- **@awc/reactive** - Fine-grained reactivity library
-- **@awc/kettlejs** - Main framework
+- **@fluixi/reactive** - Fine-grained reactivity library
+- **@fluixi/kettlejs** - Main framework
 - **Vite Plugin** - Build tool integration
 - **CLI** - Project scaffolding
 - **React Bridge** - React compatibility layer

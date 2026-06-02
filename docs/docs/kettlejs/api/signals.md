@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Signals API
 
-Complete API reference for reactive signals from `@awc/reactive/signal`.
+Complete API reference for reactive signals from `@fluixi/reactive/signal`.
 
 ## Core Primitives
 
@@ -30,7 +30,7 @@ function createSignal<T>(
 
 **Example:**
 ```typescript
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 // Basic usage
 const [count, setCount] = createSignal(0);
@@ -73,7 +73,7 @@ function createEffect<T>(
 
 **Example:**
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive/signal';
+import { createSignal, createEffect } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 
@@ -128,7 +128,7 @@ function createMemo<T>(
 
 **Example:**
 ```typescript
-import { createSignal, createMemo } from '@awc/reactive/signal';
+import { createSignal, createMemo } from '@fluixi/reactive/signal';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -175,7 +175,7 @@ function createRoot<T>(
 
 **Example:**
 ```typescript
-import { createRoot, createSignal, createEffect } from '@awc/reactive/signal';
+import { createRoot, createSignal, createEffect } from '@fluixi/reactive/signal';
 
 const cleanup = createRoot((dispose) => {
   const [count, setCount] = createSignal(0);
@@ -208,7 +208,7 @@ function getOwner(): Owner | null
 
 **Example:**
 ```typescript
-import { getOwner } from '@awc/reactive/signal';
+import { getOwner } from '@fluixi/reactive/signal';
 
 function myComponent() {
   const owner = getOwner();
@@ -243,7 +243,7 @@ function runWithOwner<T>(
 
 **Example:**
 ```typescript
-import { getOwner, runWithOwner, createEffect } from '@awc/reactive/signal';
+import { getOwner, runWithOwner, createEffect } from '@fluixi/reactive/signal';
 
 const owner = getOwner();
 
@@ -273,7 +273,7 @@ function batch<T>(fn: () => T): T
 
 **Example:**
 ```typescript
-import { createSignal, createEffect, batch } from '@awc/reactive/signal';
+import { createSignal, createEffect, batch } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 const [name, setName] = createSignal('John');
@@ -306,7 +306,7 @@ function untrack<T>(fn: () => T): T
 
 **Example:**
 ```typescript
-import { createSignal, createMemo, untrack } from '@awc/reactive/signal';
+import { createSignal, createMemo, untrack } from '@fluixi/reactive/signal';
 
 const [a, setA] = createSignal(1);
 const [b, setB] = createSignal(2);
@@ -343,7 +343,7 @@ function on<T, U>(
 
 **Example:**
 ```typescript
-import { createSignal, createEffect, on } from '@awc/reactive/signal';
+import { createSignal, createEffect, on } from '@fluixi/reactive/signal';
 
 const [a, setA] = createSignal(1);
 const [b, setB] = createSignal(2);
@@ -386,7 +386,7 @@ function createReaction(
 
 **Example:**
 ```typescript
-import { createSignal, createReaction } from '@awc/reactive/signal';
+import { createSignal, createReaction } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 
@@ -423,7 +423,7 @@ function createSelector<T>(
 
 **Example:**
 ```typescript
-import { createSignal, createSelector } from '@awc/reactive/signal';
+import { createSignal, createSelector } from '@fluixi/reactive/signal';
 
 const [selected, setSelected] = createSignal('a');
 const isSelected = createSelector(selected);
@@ -566,5 +566,5 @@ createEffect(() => {
 ---
 
 **Related:**
-- [@awc/reactive Documentation](../../reactive/intro.md)
+- [@fluixi/reactive Documentation](../../reactive/intro.md)
 - [Reactivity Deep Dive](../guides/reactivity.md)

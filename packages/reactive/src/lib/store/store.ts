@@ -13,10 +13,10 @@ import {
   deepMerge,
   DiffResult,
   reconcile,
-} from '@awc/utils/object';
-import { deepEqual } from '@awc/utils/compare';
-import { isFunction } from '@awc/utils/functions';
-import { Observable } from '@awc/reactive/observable';
+} from '@fluixi/utils/object';
+import { deepEqual } from '@fluixi/utils/compare';
+import { isFunction } from '@fluixi/utils/functions';
+import { Observable } from '@fluixi/reactive/observable';
 import {
   $PROXY,
   $SIGNAL,
@@ -28,7 +28,7 @@ import {
   createMemo,
   createSignal,
   untrack,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import { Producer, ReconcileOptions } from './types.js';
 import type { SetStoreFunction as StoreSetter } from './setter.types.js';
 type PathValue<T, P extends string = never> = Immutable<T> | IValueOfKey<T, P>;

@@ -240,7 +240,7 @@ npx mix-builder --libExternal
 ```
 
 **Includes:**
-- All `@awc/*` packages
+- All `@fluixi/*` packages
 - All `@adafri/*` packages
 
 ### Node.js Preset

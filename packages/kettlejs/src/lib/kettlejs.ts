@@ -1,14 +1,14 @@
 /**
  * @fileoverview KettleJS - A reactive framework for lit-html inspired by SolidJS
- * @module @awc/kettlejs
+ * @module @fluixi/kettlejs
  * @version 0.0.1
  *
  * KettleJS is a modern reactive framework that combines the power of lit-html
- * with fine-grained reactivity from @awc/reactive, inspired by SolidJS's design.
+ * with fine-grained reactivity from @fluixi/reactive, inspired by SolidJS's design.
  *
  * @example
  * ```typescript
- * import { createSignal, render, html } from '@awc/kettlejs';
+ * import { createSignal, render, html } from '@fluixi/kettlejs';
  *
  * const Counter = () => {
  *   const [count, setCount] = createSignal(0);
@@ -41,15 +41,15 @@ import {
   createDeferred,
   setOwner,
   getSharedConfig,
-} from '@awc/dom';
-// } from '@awc/kettlejs/rx';
+} from '@fluixi/dom';
+// } from '@fluixi/kettlejs/rx';
 
 import {
   readSignal as read,
   reduceSignal as reduce,
   createDebounce,
   createSelector,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 
 import {
@@ -65,7 +65,7 @@ import {
 import { createContext, useContext } from './context/index.js';
 export * from './context/index.js';
 
-export * from '@awc/utils';
+export * from '@fluixi/utils';
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
 // import { createResource } from './resources/index.js';
@@ -83,7 +83,7 @@ import { ensureIntegration } from './render/component.js';
 export { svg, render as litRender, nothing } from 'lit';
 export type { TemplateResult, SVGTemplateResult } from 'lit';
 
-export { createReactiveJSX } from '@awc/jsx-runtime';
+export { createReactiveJSX } from '@fluixi/jsx-runtime';
 // Re-export reactive directives
 export {
   query,
@@ -128,9 +128,9 @@ export {
   $,
   html,
   litrx,
-} from '@awc/dom';
+} from '@fluixi/dom';
 
-// import {For as _For} from "@awc/dom"
+// import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
 //   /** Reactive array to iterate over — static, readonly, accessor, or signal. */
 //   each: ReadonlyArray<T> | (() => ReadonlyArray<T> | null | undefined) | Accessor<ReadonlyArray<T>> | null | undefined | false;
@@ -168,11 +168,11 @@ export {
   styleMap,
   $classMap,
   $styleMap
-} from '@awc/dom';
+} from '@fluixi/dom';
 
-// Re-export reactive primitives from @awc/reactive
+// Re-export reactive primitives from @fluixi/reactive
 
-export { createStore, untrackStore, unwrap, Store } from '@awc/reactive/store';
+export { createStore, untrackStore, unwrap, Store } from '@fluixi/reactive/store';
 
 export type {
   Accessor,
@@ -182,7 +182,7 @@ export type {
   MemoOptions,
   Resource,
   ReadSignal,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 export {
   render,
@@ -242,7 +242,7 @@ export type {
   $PortalProps,
   $DynamicProps,
   $DynamicSwitchProps,
-} from '@awc/dom';
+} from '@fluixi/dom';
 
 // Context API
 // export {
@@ -297,7 +297,7 @@ export type {
   // RouterOptions,
 } from './router/index.js';
 
-// Web Component support (re-exported from @awc/element)
+// Web Component support (re-exported from @fluixi/element)
 export {
   defineElement,
   wrapElement,
@@ -305,9 +305,9 @@ export {
   KettleLitElement,
   KettleController,
   createComponent as createJsxComponent,
-} from '@awc/element';
+} from '@fluixi/element';
 
-export type * from '@awc/element/types';
+export type * from '@fluixi/element/types';
 
 /**
  * Framework version

@@ -1,4 +1,4 @@
-import type { Add } from '@awc/utils/maths';
+import type { Add } from '@fluixi/utils/maths';
 import type {
   FilterStartsWith,
   PrimitiveType,

@@ -1,4 +1,4 @@
-# @awc/dom
+# @fluixi/dom
 
 A comprehensive reactive DOM runtime with fine-grained updates, inspired by SolidJS's dom-expressions. This package provides low-level DOM manipulation utilities that work seamlessly with signal and store systems to enable optimal, surgical DOM updates.
 
@@ -15,11 +15,11 @@ A comprehensive reactive DOM runtime with fine-grained updates, inspired by Soli
 ## Installation
 
 ```bash
-npm install @awc/dom
+npm install @fluixi/dom
 # or
-pnpm add @awc/dom
+pnpm add @fluixi/dom
 # or
-yarn add @awc/dom
+yarn add @fluixi/dom
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ yarn add @awc/dom
 ### Basic Usage
 
 ```typescript
-import { insert, createElement, setProperty } from '@awc/dom';
+import { insert, createElement, setProperty } from '@fluixi/dom';
 
 // Create an element
 const div = createElement('div');
@@ -43,8 +43,8 @@ document.body.appendChild(div);
 ### With Signals
 
 ```typescript
-import { insert, createElement } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { insert, createElement } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 
@@ -62,8 +62,8 @@ setCount(1); // DOM updates to "Count: 1"
 ### Initialize Integration
 
 ```typescript
-import { initializeIntegration } from '@awc/dom';
-import { createEffect, batch } from '@awc/reactive/signal';
+import { initializeIntegration } from '@fluixi/dom';
+import { createEffect, batch } from '@fluixi/reactive/signal';
 
 // Initialize with your reactive system
 initializeIntegration({
@@ -83,8 +83,8 @@ initializeIntegration({
 Insert dynamic content with automatic reactivity tracking.
 
 ```typescript
-import { insert, createTextNode } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { insert, createTextNode } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [text, setText] = createSignal('Hello');
 const div = document.createElement('div');
@@ -106,7 +106,7 @@ insert(div, () => text(), marker);
 Spread props onto an element with fine-grained updates.
 
 ```typescript
-import { spread, createElement } from '@awc/dom';
+import { spread, createElement } from '@fluixi/dom';
 
 const element = createElement('div');
 const props = {
@@ -121,7 +121,7 @@ spread({ element, props });
 ### Attributes & Properties
 
 ```typescript
-import { setAttribute, setProperty, setClassName, setStyle } from '@awc/dom';
+import { setAttribute, setProperty, setClassName, setStyle } from '@fluixi/dom';
 
 const div = createElement('div');
 
@@ -144,8 +144,8 @@ setStyle(div, { color: 'red', fontSize: '16px' });
 ### Dynamic Attributes & Properties
 
 ```typescript
-import { setDynamicAttribute, setDynamicProperty } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { setDynamicAttribute, setDynamicProperty } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [color, setColor] = createSignal('red');
 const div = createElement('div');
@@ -160,7 +160,7 @@ setDynamicProperty(div, 'className', () => `text-${color()}`);
 ### Event Delegation
 
 ```typescript
-import { delegateEvents, addDelegatedEventListener } from '@awc/dom';
+import { delegateEvents, addDelegatedEventListener } from '@fluixi/dom';
 
 // Setup delegation for common events
 delegateEvents(['click', 'input', 'change']);
@@ -179,8 +179,8 @@ addDelegatedEventListener(button, 'click', (e) => {
 Conditional rendering with optional fallback.
 
 ```typescript
-import { Show } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { Show } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [user, setUser] = createSignal(null);
 
@@ -203,8 +203,8 @@ Show({
 Keyed list rendering with optimal updates.
 
 ```typescript
-import { For } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { For } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [items, setItems] = createSignal([
   { id: 1, name: 'Item 1' },
@@ -227,7 +227,7 @@ For({
 Index-based list rendering (use when items change but positions don't).
 
 ```typescript
-import { Index } from '@awc/dom';
+import { Index } from '@fluixi/dom';
 
 Index({
   each: () => [1, 2, 3, 4, 5],
@@ -244,8 +244,8 @@ Index({
 Multi-way conditional rendering.
 
 ```typescript
-import { Switch, Match } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { Switch, Match } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [state, setState] = createSignal('loading');
 
@@ -273,7 +273,7 @@ Switch({
 Render content in a different DOM location.
 
 ```typescript
-import { Portal } from '@awc/dom';
+import { Portal } from '@fluixi/dom';
 
 Portal({
   mount: document.body,
@@ -286,8 +286,8 @@ Portal({
 Dynamically render components based on runtime conditions.
 
 ```typescript
-import { Dynamic } from '@awc/dom';
-import { createSignal } from '@awc/reactive/signal';
+import { Dynamic } from '@fluixi/dom';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [component, setComponent] = createSignal('div');
 
@@ -303,7 +303,7 @@ Dynamic({
 Catch and handle errors in component trees.
 
 ```typescript
-import { ErrorBoundary } from '@awc/dom';
+import { ErrorBoundary } from '@fluixi/dom';
 
 ErrorBoundary({
   fallback: (error, reset) => {
@@ -328,8 +328,8 @@ The package provides a flexible integration system that works with any reactive 
 ### Initialize with Signal System
 
 ```typescript
-import { initializeIntegration } from '@awc/dom';
-import * as signals from '@awc/reactive/signal';
+import { initializeIntegration } from '@fluixi/dom';
+import * as signals from '@fluixi/reactive/signal';
 
 initializeIntegration({
   signalSystem: {
@@ -348,8 +348,8 @@ initializeIntegration({
 ### Initialize with Store System
 
 ```typescript
-import { initializeIntegration } from '@awc/dom';
-import * as store from '@awc/reactive/store';
+import { initializeIntegration } from '@fluixi/dom';
+import * as store from '@fluixi/reactive/store';
 
 initializeIntegration({
   storeSystem: {
@@ -365,7 +365,7 @@ initializeIntegration({
 The package attempts to auto-initialize by detecting available reactive systems:
 
 ```typescript
-import { autoInitialize } from '@awc/dom';
+import { autoInitialize } from '@fluixi/dom';
 
 // Manually trigger auto-initialization
 autoInitialize();
@@ -376,7 +376,7 @@ autoInitialize();
 Register your reactive systems globally for automatic detection:
 
 ```typescript
-import { registerSignalSystem, registerStoreSystem } from '@awc/dom';
+import { registerSignalSystem, registerStoreSystem } from '@fluixi/dom';
 
 registerSignalSystem({
   createEffect: myCreateEffect,
@@ -396,9 +396,9 @@ Seamlessly use lit-html templates with reactive updates.
 ### Basic Usage
 
 ```typescript
-import { signal } from '@awc/dom/reactive';
+import { signal } from '@fluixi/dom/reactive';
 import { html } from 'lit';
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 
@@ -413,7 +413,7 @@ const template = html`
 ### Reactive Directives
 
 ```typescript
-import { signal, $if, $each } from '@awc/dom/reactive';
+import { signal, $if, $each } from '@fluixi/dom/reactive';
 import { html } from 'lit';
 
 const [items, setItems] = createSignal(['a', 'b', 'c']);
@@ -437,7 +437,7 @@ const template = html`
 ### Auto-wrapping with `rx`
 
 ```typescript
-import { rx } from '@awc/dom/reactive';
+import { rx } from '@fluixi/dom/reactive';
 
 const [name, setName] = createSignal('World');
 
@@ -452,7 +452,7 @@ const template = rx`
 ### Custom Effect System
 
 ```typescript
-import { registerEffectCreator } from '@awc/dom';
+import { registerEffectCreator } from '@fluixi/dom';
 
 registerEffectCreator((fn) => {
   // Your custom effect implementation
@@ -464,7 +464,7 @@ registerEffectCreator((fn) => {
 ### Custom Batch Function
 
 ```typescript
-import { registerBatch } from '@awc/dom';
+import { registerBatch } from '@fluixi/dom';
 
 registerBatch((fn) => {
   // Your custom batching logic
@@ -475,7 +475,7 @@ registerBatch((fn) => {
 ### Reactive Bindings
 
 ```typescript
-import { createReactiveBinding } from '@awc/dom';
+import { createReactiveBinding } from '@fluixi/dom';
 
 const cleanup = createReactiveBinding(
   () => mySignal(), // getter
@@ -492,7 +492,7 @@ cleanup();
 ### Memory Management
 
 ```typescript
-import { createRoot, onCleanup } from '@awc/dom';
+import { createRoot, onCleanup } from '@fluixi/dom';
 
 createRoot((dispose) => {
   // Set up reactive scope
@@ -521,7 +521,7 @@ createRoot((dispose) => {
 6. **Hoist static content**: Move static elements outside reactive contexts
 
 ```typescript
-import { batch, createMemo, untrack } from '@awc/dom';
+import { batch, createMemo, untrack } from '@fluixi/dom';
 
 // Batch multiple updates
 batch(() => {
@@ -552,7 +552,7 @@ import type {
   StoreSystem,
   ShowProps,
   ForProps,
-} from '@awc/dom';
+} from '@fluixi/dom';
 
 // Use types in your code
 const mySignalSystem: SignalSystem = {
@@ -577,7 +577,7 @@ const mySignalSystem: SignalSystem = {
 ### Check Integration Status
 
 ```typescript
-import { getIntegrationStatus, logIntegrationStatus } from '@awc/dom';
+import { getIntegrationStatus, logIntegrationStatus } from '@fluixi/dom';
 
 // Get status object
 const status = getIntegrationStatus();
@@ -633,8 +633,8 @@ MIT
 
 ## Related Packages
 
-- `@awc/jsx-runtime` - JSX runtime using this DOM package
-- `@awc/reactive` - Signal and store implementations
+- `@fluixi/jsx-runtime` - JSX runtime using this DOM package
+- `@fluixi/reactive` - Signal and store implementations
 - `lit` - Template literals for HTML
 
 ## Resources

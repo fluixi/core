@@ -1,5 +1,5 @@
-import { isObject } from '@awc/utils/object';
-import { isFunction } from '@awc/utils/functions';
+import { isObject } from '@fluixi/utils/object';
+import { isFunction } from '@fluixi/utils/functions';
 import { SubscriptionLike, TeardownLogic, Unsubscribable } from './types.js';
 
 /**

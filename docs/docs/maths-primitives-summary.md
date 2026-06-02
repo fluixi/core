@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Math & Primitive Utilities Summary
 
-Complete overview of the mathematical and primitive type utilities added to the `@awc/utils` package.
+Complete overview of the mathematical and primitive type utilities added to the `@fluixi/utils` package.
 
 ## 🚀 Overview
 
@@ -52,7 +52,7 @@ import {
   
   // Random
   randomInt, randomFloat, randomInRange,
-} from '@awc/utils/maths';
+} from '@fluixi/utils/maths';
 ```
 
 ### Key Features
@@ -62,7 +62,7 @@ import {
 Pre-defined constants with maximum precision:
 
 ```typescript
-import { PI, E, PHI, SQRT2, DEGREES_PER_RADIAN } from '@awc/utils/maths';
+import { PI, E, PHI, SQRT2, DEGREES_PER_RADIAN } from '@fluixi/utils/maths';
 
 const circumference = 2 * PI * radius;        // Precise π value
 const area = radius * radius * PI;
@@ -92,7 +92,7 @@ import {
   isPrime, isEven, isOdd, isPowerOfTwo,
   isPositive, isNegative, isZero,
   isInRange, approxEqual
-} from '@awc/utils/maths';
+} from '@fluixi/utils/maths';
 
 // Basic number checks
 isInt(42);                    // true
@@ -120,7 +120,7 @@ approxEqual(0.1 + 0.2, 0.3); // true (handles floating-point errors)
 **Vector and Complex Numbers:**
 
 ```typescript
-import { isVector2D, isVector3D, isComplexNumber } from '@awc/utils/maths';
+import { isVector2D, isVector3D, isComplexNumber } from '@fluixi/utils/maths';
 
 isVector2D({ x: 1, y: 2 });              // true
 isVector3D({ x: 1, y: 2, z: 3 });        // true
@@ -132,7 +132,7 @@ isComplexNumber({ real: 3, imag: 4 });   // true
 Format numbers for display:
 
 ```typescript
-import { formatNumber, formatCurrency, formatPercentage } from '@awc/utils/maths';
+import { formatNumber, formatCurrency, formatPercentage } from '@fluixi/utils/maths';
 
 // Number formatting
 formatNumber(1234567.89);                    // "1,234,567.89"
@@ -167,7 +167,7 @@ import {
   random, randomInt, randomFloat,
   randomBool, randomChoice, randomSample,
   shuffle
-} from '@awc/utils/maths';
+} from '@fluixi/utils/maths';
 
 // Basic random
 random();                              // Random float [0, 1)
@@ -199,7 +199,7 @@ import {
   
   // Date utilities
   formatDate, parseDate, addDays,
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 ```
 
 ### String Utilities (50+ functions)
@@ -211,7 +211,7 @@ import {
   toCamelCase, toPascalCase,
   toKebabCase, toSnakeCase,
   capitalize, toTitleCase
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 toCamelCase('hello-world');           // "helloWorld"
 toPascalCase('hello-world');          // "HelloWorld"
@@ -228,7 +228,7 @@ import {
   isEmpty, isEmail, isUrl,
   isAlphanumeric, isAlpha, isNumeric,
   startsWith, endsWith, includes
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 isEmpty('');                          // true
 isEmail('user@example.com');          // true
@@ -246,7 +246,7 @@ includes('hello', 'ell');            // true
 import {
   truncate, slugify, reverse,
   removeAccents, wordCount
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 truncate('Long text here', 10);      // "Long te..."
 slugify('Hello World! 2024');        // "hello-world-2024"
@@ -261,7 +261,7 @@ wordCount('Hello world');            // 2
 import {
   escapeHtml, unescapeHtml,
   escapeRegExp, escapeUnicode
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 escapeHtml('<div>Hello</div>');      // "&lt;div&gt;Hello&lt;/div&gt;"
 unescapeHtml('&lt;div&gt;');         // "<div>"
@@ -271,7 +271,7 @@ escapeRegExp('.*+?^$');              // "\\.\\*\\+\\?\\^\\$"
 ### Boolean Utilities
 
 ```typescript
-import { parseBoolean, isBoolean, toBoolean } from '@awc/utils/primitive';
+import { parseBoolean, isBoolean, toBoolean } from '@fluixi/utils/primitive';
 
 // Parse various boolean representations
 parseBoolean('true');                // true
@@ -295,7 +295,7 @@ toBoolean('');                       // false
 #### Date Formatting
 
 ```typescript
-import { formatDate } from '@awc/utils/primitive';
+import { formatDate } from '@fluixi/utils/primitive';
 
 const date = new Date('2024-01-15T10:30:00');
 
@@ -310,7 +310,7 @@ formatDate(date, 'YYYY-MM-DD HH:mm:ss');     // "2024-01-15 10:30:00"
 #### Date Manipulation
 
 ```typescript
-import { addDays, addMonths, subtractDays } from '@awc/utils/primitive';
+import { addDays, addMonths, subtractDays } from '@fluixi/utils/primitive';
 
 const date = new Date('2024-01-15');
 
@@ -325,7 +325,7 @@ subtractDays(date, 7);               // 2024-01-08
 import {
   isBefore, isAfter, isSameDay,
   isToday, isFuture, isPast
-} from '@awc/utils/primitive';
+} from '@fluixi/utils/primitive';
 
 isBefore(date1, date2);              // true/false
 isAfter(date2, date1);               // true/false
@@ -338,7 +338,7 @@ isPast(date);                        // true/false
 #### Date Calculation
 
 ```typescript
-import { diffDays, diffHours, calculateAge } from '@awc/utils/primitive';
+import { diffDays, diffHours, calculateAge } from '@fluixi/utils/primitive';
 
 const date1 = new Date('2024-01-15');
 const date2 = new Date('2024-01-22');
@@ -355,8 +355,8 @@ calculateAge(new Date('1990-01-15')); // Age in years
 ### Use Case 1: Form Validation
 
 ```typescript
-import { isInt, isInRange } from '@awc/utils/maths';
-import { isEmail, isEmpty, trim } from '@awc/utils/primitive';
+import { isInt, isInRange } from '@fluixi/utils/maths';
+import { isEmail, isEmpty, trim } from '@fluixi/utils/primitive';
 
 function validateRegistrationForm(data: {
   email: string;
@@ -390,8 +390,8 @@ function validateRegistrationForm(data: {
 ### Use Case 2: Display Formatting
 
 ```typescript
-import { formatCurrency, formatPercentage } from '@awc/utils/maths';
-import { formatDate } from '@awc/utils/primitive';
+import { formatCurrency, formatPercentage } from '@fluixi/utils/maths';
+import { formatDate } from '@fluixi/utils/primitive';
 
 function formatDashboardMetrics(data: {
   revenue: number;
@@ -421,7 +421,7 @@ formatDashboardMetrics({
 ### Use Case 3: URL Slug Generation
 
 ```typescript
-import { slugify, truncate } from '@awc/utils/primitive';
+import { slugify, truncate } from '@fluixi/utils/primitive';
 
 function generateSlug(title: string, maxLength = 50): string {
   const slug = slugify(title);
@@ -437,7 +437,7 @@ generateSlug('Very Long Title That Needs To Be Truncated', 30);
 ### Use Case 4: Random Selection
 
 ```typescript
-import { randomInt, randomChoice, shuffle } from '@awc/utils/maths';
+import { randomInt, randomChoice, shuffle } from '@fluixi/utils/maths';
 
 // Random dice roll
 function rollDice(sides: number = 6): number {
@@ -461,7 +461,7 @@ const team2 = shuffledPlayers.slice(2);
 ### Use Case 5: Safe Content Rendering
 
 ```typescript
-import { escapeHtml } from '@awc/utils/primitive';
+import { escapeHtml } from '@fluixi/utils/primitive';
 
 function renderComment(comment: string, author: string): string {
   // Escape user-provided content to prevent XSS
@@ -484,8 +484,8 @@ renderComment('<script>alert("xss")</script>', '<b>Hacker</b>');
 ### Use Case 6: Relative Time Display
 
 ```typescript
-import { diffDays, diffHours, diffMinutes } from '@awc/utils/primitive';
-import { formatDate } from '@awc/utils/primitive';
+import { diffDays, diffHours, diffMinutes } from '@fluixi/utils/primitive';
+import { formatDate } from '@fluixi/utils/primitive';
 
 function timeAgo(date: Date): string {
   const now = new Date();
@@ -538,8 +538,8 @@ function timeAgo(date: Date): string {
 Full TypeScript support with intelligent type inference:
 
 ```typescript
-import { isInt, isVector2D } from '@awc/utils/maths';
-import { isEmail } from '@awc/utils/primitive';
+import { isInt, isVector2D } from '@fluixi/utils/maths';
+import { isEmail } from '@fluixi/utils/primitive';
 
 function processValue(value: unknown) {
   // Type guards narrow types
@@ -707,4 +707,4 @@ All utilities work in:
 
 ---
 
-**Happy coding with @awc/utils!** 🎉
+**Happy coding with @fluixi/utils!** 🎉

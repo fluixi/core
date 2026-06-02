@@ -18,7 +18,7 @@
 import { directive, Directive, PartInfo, PartType } from 'lit/directive.js';
 import { noChange } from 'lit';
 import { unsafeHTML as litUnsafeHTML } from 'lit/directives/unsafe-html.js';
-import { createEffect, createRoot, untrack } from '@awc/reactive/signal';
+import { createEffect, createRoot, untrack } from '@fluixi/reactive/signal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfIcon} from '@awc/components/modules';
-import DOM from "@awc/dom"
-// import '@awc/adf-icon/adf-icon.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-icon/adf-icon.js';
 
 
 export const Icon = createComponent({

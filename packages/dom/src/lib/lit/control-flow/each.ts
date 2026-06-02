@@ -1,4 +1,4 @@
-import { createEffect } from '@awc/reactive';
+import { createEffect } from '@fluixi/reactive';
 import { noChange } from 'lit';
 import {
   ChildPart,

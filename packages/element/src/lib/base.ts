@@ -1,6 +1,6 @@
 /**
  * @fileoverview Shared integration and reactive root logic for element classes
- * @module @awc/element/base
+ * @module @fluixi/element/base
  */
 
 import {
@@ -13,7 +13,7 @@ import {
   untrack,
   getOwner,
   runWithOwner,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import {
   initializeIntegration,
   isIntegrationInitialized,
@@ -21,12 +21,12 @@ import {
   registerEffectCreator,
   registerBatch,
   insert,
-} from '@awc/dom';
+} from '@fluixi/dom';
 import { render as litRender } from 'lit';
 import { applyStyles } from './utils.js';
 
 // ============================================================================
-// Shared integration — only runs if not already done by @awc/kettlejs
+// Shared integration — only runs if not already done by @fluixi/kettlejs
 // ============================================================================
 
 export function ensureElementIntegration(): void {

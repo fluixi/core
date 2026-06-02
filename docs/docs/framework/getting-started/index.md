@@ -9,12 +9,12 @@ title: Overview
 
 ## Overview
 
-KettleJS combines the power of fine-grained reactive primitives from `@awc/reactive` with the simplicity and familiarity of lit-html templates. It provides a complete framework for building modern web applications with excellent performance, TypeScript support, and developer experience.
+KettleJS combines the power of fine-grained reactive primitives from `@fluixi/reactive` with the simplicity and familiarity of lit-html templates. It provides a complete framework for building modern web applications with excellent performance, TypeScript support, and developer experience.
 
 ## Key Features
 
 ### 🚀 Fine-Grained Reactivity
-Powered by `@awc/reactive` signals for efficient, surgical DOM updates. No virtual DOM overhead - updates happen exactly where they're needed.
+Powered by `@fluixi/reactive` signals for efficient, surgical DOM updates. No virtual DOM overhead - updates happen exactly where they're needed.
 
 ### 🎯 lit-html Integration
 Leverage the power and simplicity of lit-html templates with familiar template literal syntax. No build step required for basic development.
@@ -79,7 +79,7 @@ KettleJS is built on several key architectural principles:
 │  └──────────────┘  └─────────────────┘ │
 │                                         │
 ├─────────────────────────────────────────┤
-│          @awc/reactive (Core)           │
+│          @fluixi/reactive (Core)           │
 │  • Signals • Effects • Memos • Batch    │
 ├─────────────────────────────────────────┤
 │              lit-html                   │
@@ -88,7 +88,7 @@ KettleJS is built on several key architectural principles:
 ```
 
 ### Reactive Layer
-At the foundation is `@awc/reactive`, which provides the signal-based reactivity system. This handles all state management, dependency tracking, and effect execution.
+At the foundation is `@fluixi/reactive`, which provides the signal-based reactivity system. This handles all state management, dependency tracking, and effect execution.
 
 ### Rendering Layer
 Built on lit-html, KettleJS uses template literals for declarative UI. The reactive layer automatically triggers re-renders when signals change.

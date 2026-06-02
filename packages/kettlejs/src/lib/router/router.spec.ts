@@ -9,17 +9,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createRoot, createRenderEffect, untrack } from '@awc/reactive/signal';
+import { createRoot, createRenderEffect, untrack } from '@fluixi/reactive/signal';
 
 // ---------------------------------------------------------------------------
-// Mock @awc/dom
+// Mock @fluixi/dom
 //
 // The router (and component.ts / context.ts) depend on symbol-stamping helpers
-// and DOM insertion utilities from @awc/dom.  For unit tests we only need the
+// and DOM insertion utilities from @fluixi/dom.  For unit tests we only need the
 // symbol helpers to work; DOM insertion can be a no-op.
 // ---------------------------------------------------------------------------
 
-vi.mock('@awc/dom', async () => {
+vi.mock('@fluixi/dom', async () => {
   function stamp(sym: symbol) {
     return (v: any) => {
       if (typeof v === 'function')
