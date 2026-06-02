@@ -1,0 +1,5 @@
+packages:
+  - medusa-qr
+  - medusa-product-ext
+  - medusa-stories
+  - medusa-social-commerce

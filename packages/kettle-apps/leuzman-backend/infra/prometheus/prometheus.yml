@@ -1,0 +1,57 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: "${ENVIRONMENT:-development}"
+    project:     leuzman
+
+rule_files:
+  - "alerts/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+
+  # Medusa backend — exposes /metrics via shared-observability
+  - job_name: medusa
+    static_configs:
+      - targets: ["medusa:9000"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  # ERP worker
+  - job_name: erp-worker
+    static_configs:
+      - targets: ["erp-worker:9001"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  # POS worker
+  - job_name: pos-worker
+    static_configs:
+      - targets: ["pos-worker:9001"]
+    metrics_path: /metrics
+
+  # Barcode worker
+  - job_name: barcode-worker
+    static_configs:
+      - targets: ["barcode-worker:9001"]
+    metrics_path: /metrics
+
+  # Redis
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  # PostgreSQL
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

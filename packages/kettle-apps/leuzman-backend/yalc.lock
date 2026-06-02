@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "medusa-qr": {
+      "signature": "379e7064afdc9fca522504e39c20f671",
+      "pure": true
+    }
+  }
+}

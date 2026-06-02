@@ -1,0 +1,43 @@
+# ── Leuzman BullMQ Worker Container ──────────────────────────────────────────
+# Runs in "headless" mode — no HTTP server.
+# WORKER_MODE env selects which workers start:
+#   erp     → product, inventory, order, customer, invoice workers
+#   pos     → offline-replay, session-close workers
+#   barcode → barcode-cache, barcode-scan-log workers
+#   (unset) → all workers
+#
+# ── Stage 1: Build ─────────────────────────────────────────────────────────────
+FROM node:22-alpine AS builder
+
+RUN apk add --no-cache python3 make g++
+RUN npm install -g pnpm@10
+
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml* ./
+COPY medusa-odoo/package.json ./medusa-odoo/
+
+RUN pnpm install --frozen-lockfile
+
+COPY medusa-odoo/ ./medusa-odoo/
+RUN cd medusa-odoo && pnpm run build
+
+# ── Stage 2: Production ────────────────────────────────────────────────────────
+FROM node:22-alpine AS worker
+
+ENV NODE_ENV=production
+ENV HOME=/tmp
+
+WORKDIR /app
+
+COPY --from=builder /app/medusa-odoo/.medusa/server ./medusa-odoo/.medusa/server
+COPY --from=builder /app/node_modules ./node_modules
+
+# Worker entrypoint — runs medusa worker (executes BullMQ workers via Medusa container)
+COPY infra/worker-entrypoint.sh ./
+RUN chmod +x ./worker-entrypoint.sh
+
+# Expose metrics port for Prometheus scraping
+EXPOSE 9001
+
+ENTRYPOINT ["./worker-entrypoint.sh"]

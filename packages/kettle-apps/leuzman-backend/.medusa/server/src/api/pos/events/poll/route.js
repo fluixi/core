@@ -1,0 +1,69 @@
+"use strict";
+/**
+ * GET     /pos/events/poll?after=<cursor>  — polling fallback
+ * OPTIONS /pos/events/poll                 — CORS preflight
+ *
+ * Exported as plain functions (Medusa skips array exports).
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.enqueueEvent = enqueueEvent;
+exports.GET = GET;
+exports.OPTIONS = OPTIONS;
+const http_1 = require("@medusajs/framework/http");
+const utils_1 = require("@medusajs/framework/utils");
+const ALLOWED_RE = /^https?:\/\/localhost(:\d+)?$/;
+function setCors(req, res) {
+    const origin = req.headers?.origin ?? '';
+    if (!origin || ALLOWED_RE.test(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    }
+}
+function verifyJwt(req) {
+    const token = req.query?.token ??
+        req.headers?.authorization?.replace(/^Bearer\s+/i, '');
+    if (!token)
+        return false;
+    try {
+        const { projectConfig: { http } } = req.scope.resolve(utils_1.ContainerRegistrationKeys.CONFIG_MODULE);
+        const authCtx = (0, http_1.getAuthContextFromJwtToken)(`Bearer ${token}`, http.jwtSecret, ['bearer'], ['user'], http.jwtPublicKey, http.jwtVerifyOptions ?? http.jwtOptions);
+        if (!authCtx?.actor_id)
+            return false;
+        req.auth_context = authCtx;
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+const MAX_EVENTS = 500;
+const eventBuffer = [];
+let eventSeq = 0;
+function enqueueEvent(type, payload) {
+    eventBuffer.push({ id: ++eventSeq, type, payload });
+    if (eventBuffer.length > MAX_EVENTS)
+        eventBuffer.shift();
+}
+// ── Route handlers ────────────────────────────────────────────────────────────
+function GET(req, res) {
+    setCors(req, res);
+    if (!verifyJwt(req)) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+    }
+    const afterId = parseInt(req.query?.after ?? '0', 10);
+    const events = eventBuffer
+        .filter(e => e.id > afterId)
+        .map(e => ({ type: e.type, ...e.payload }));
+    const cursor = eventBuffer.length > 0
+        ? String(eventBuffer[eventBuffer.length - 1].id)
+        : String(afterId);
+    res.json({ events, cursor });
+}
+function OPTIONS(req, res) {
+    setCors(req, res);
+    res.sendStatus(204);
+}
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicm91dGUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi8uLi8uLi9zcmMvYXBpL3Bvcy9ldmVudHMvcG9sbC9yb3V0ZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiO0FBQUE7Ozs7O0dBS0c7O0FBdURILG9DQUdDO0FBSUQsa0JBbUJDO0FBRUQsMEJBR0M7QUFuRkQsbURBQXNFO0FBQ3RFLHFEQUFzRTtBQUV0RSxNQUFNLFVBQVUsR0FBRywrQkFBK0IsQ0FBQztBQUVuRCxTQUFTLE9BQU8sQ0FBQyxHQUFRLEVBQUUsR0FBUTtJQUNqQyxNQUFNLE1BQU0sR0FBVyxHQUFHLENBQUMsT0FBTyxFQUFFLE1BQU0sSUFBSSxFQUFFLENBQUM7SUFDakQsSUFBSSxDQUFDLE1BQU0sSUFBSSxVQUFVLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQyxFQUFFLENBQUM7UUFDdkMsR0FBRyxDQUFDLFNBQVMsQ0FBQyw2QkFBNkIsRUFBTyxNQUFNLElBQUksR0FBRyxDQUFDLENBQUM7UUFDakUsR0FBRyxDQUFDLFNBQVMsQ0FBQyxrQ0FBa0MsRUFBRSxNQUFNLENBQUMsQ0FBQztRQUMxRCxHQUFHLENBQUMsU0FBUyxDQUFDLDhCQUE4QixFQUFNLDZCQUE2QixDQUFDLENBQUM7UUFDakYsR0FBRyxDQUFDLFNBQVMsQ0FBQyw4QkFBOEIsRUFBTSxjQUFjLENBQUMsQ0FBQztJQUNwRSxDQUFDO0FBQ0gsQ0FBQztBQUVELFNBQVMsU0FBUyxDQUFDLEdBQVE7SUFDekIsTUFBTSxLQUFLLEdBQ1QsR0FBRyxDQUFDLEtBQUssRUFBRSxLQUFLO1FBQ2hCLEdBQUcsQ0FBQyxPQUFPLEVBQUUsYUFBYSxFQUFFLE9BQU8sQ0FBQyxhQUFhLEVBQUUsRUFBRSxDQUFDLENBQUM7SUFFekQsSUFBSSxDQUFDLEtBQUs7UUFBRSxPQUFPLEtBQUssQ0FBQztJQUV6QixJQUFJLENBQUM7UUFDSCxNQUFNLEVBQUUsYUFBYSxFQUFFLEVBQUUsSUFBSSxFQUFFLEVBQUUs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
