@@ -1,6 +1,6 @@
 /**
  * @fileoverview KettleJS - Solid-Compatible Fine-Grained UI Framework
- * @module @awc/kettlejs
+ * @module @fluixi/kettlejs
  * @version 0.0.1
  *
  * A fine-grained reactive framework following SolidJS principles:
@@ -13,7 +13,7 @@
  */
 
 // ============================================================================
-// REACTIVE PRIMITIVES (from @awc/reactive)
+// REACTIVE PRIMITIVES (from @fluixi/reactive)
 // ============================================================================
 
 export {
@@ -31,15 +31,15 @@ export {
   untrack,
   createDeferred,
   setOwner,
-} from '@awc/dom';
-// } from '@awc/kettlejs/rx';
+} from '@fluixi/dom';
+// } from '@fluixi/kettlejs/rx';
 
 export {
   readSignal as read,
   reduceSignal as reduce,
   createDebounce,
   createSelector,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 export type {
   Signal,
@@ -50,9 +50,9 @@ export type {
   Context,
   Resource,
   ReadSignal,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
-export { createStore, untrackStore,   Store, type StoreSetter} from '@awc/reactive/store';
+export { createStore, untrackStore,   Store, type StoreSetter} from '@fluixi/reactive/store';
 
 // ============================================================================
 // SECTION 2 — createComponent & LIFECYCLE
@@ -109,17 +109,17 @@ export type {
 // LIT-HTML INTEGRATION
 // ============================================================================
 
-// Use the wrapped html/svg from @awc/dom that process signals/memos/resources
+// Use the wrapped html/svg from @fluixi/dom that process signals/memos/resources
 // via processValues, instead of raw lit html which stringifies functions.
-export { html, svg, nothing } from '@awc/dom';
+export { html, svg, nothing } from '@fluixi/dom';
 export { render as litRender } from 'lit';
 export { LitElement } from 'lit';
 export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
 
 // ============================================================================
-// DOM UTILITIES (from @awc/dom)
+// DOM UTILITIES (from @fluixi/dom)
 // ============================================================================
-// import {For as _For, ForProps, ForPropsKeyed, ForPropsUnkeyed} from "@awc/dom"
+// import {For as _For, ForProps, ForPropsKeyed, ForPropsUnkeyed} from "@fluixi/dom"
 // export function For<T, U>(props: ForPropsKeyed<T, U>): Accessor<U[]>;
 // export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
 // export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> { return _For(props as any); }
@@ -143,7 +143,7 @@ export {
   type DynamicProps,
   type ErrorBoundaryProps,
   type PortalProps,
-} from '@awc/dom';
+} from '@fluixi/dom';
 export {
   // Framework-agnostic reactive attribute maps (return Accessor<string>)
   classMap,
@@ -157,7 +157,7 @@ export {
   $styleMap,
   // Reactive litrx directive
   litrx,
-} from '@awc/dom';
+} from '@fluixi/dom';
 
 export {
   // Control Flow
@@ -184,7 +184,7 @@ export {
   isDOMNode,
   isLitTemplateResult,
   hydrate,
-} from '@awc/dom';
+} from '@fluixi/dom';
 
 // ============================================================================
 // JSX RUNTIME
@@ -278,8 +278,8 @@ import {
   batch as _batch,
   untrack as _untrack,
   onCleanup as _onCleanup,
-} from '@awc/dom';
-// '@awc/reactive/signal';
+} from '@fluixi/dom';
+// '@fluixi/reactive/signal';
 
 import {
   createComponent as _createComponent,
@@ -312,9 +312,9 @@ export {
   // kettleElementPlugin,
   createComponent as createJsxComponent,
   type EventName
-} from '@awc/element';
+} from '@fluixi/element';
 
-export type * from '@awc/element';
+export type * from '@fluixi/element';
 
 export default {
   // Core

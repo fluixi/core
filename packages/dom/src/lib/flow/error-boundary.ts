@@ -1,4 +1,4 @@
-import { Accessor, createMemo, createSignal, createRoot, onCleanup } from '@awc/reactive/signal';
+import { Accessor, createMemo, createSignal, createRoot, onCleanup } from '@fluixi/reactive/signal';
 
 export interface ErrorBoundaryProps {
   /** Rendered when an error is caught. Receives the error as argument. */

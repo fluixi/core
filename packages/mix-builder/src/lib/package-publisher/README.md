@@ -18,9 +18,9 @@ Robust, type-safe package publisher for monorepo workspaces with version managem
 ## Installation
 
 ```bash
-npm install @awc/mix-builder
+npm install @fluixi/mix-builder
 # or
-pnpm add @awc/mix-builder
+pnpm add @fluixi/mix-builder
 ```
 
 ## Quick Start
@@ -31,7 +31,7 @@ Create `package-publish.json` in your project root:
 
 ```json
 {
-  "$schema": "./node_modules/@awc/mix-builder/schemas/publish-config.schema.json",
+  "$schema": "./node_modules/@fluixi/mix-builder/schemas/publish-config.schema.json",
   "packages": [
     "@myorg/package-a",
     "@myorg/package-b",
@@ -50,7 +50,7 @@ Create `package-publish.json` in your project root:
 ### 2. Run Publisher
 
 ```typescript
-import { publishPackages } from '@awc/mix-builder';
+import { publishPackages } from '@fluixi/mix-builder';
 
 await publishPackages();
 ```
@@ -58,7 +58,7 @@ await publishPackages();
 Or via command line:
 
 ```bash
-node -e "import('@awc/mix-builder').then(m => m.publishPackages())"
+node -e "import('@fluixi/mix-builder').then(m => m.publishPackages())"
 ```
 
 ## Configuration
@@ -477,7 +477,7 @@ For internal packages:
 ### Programmatic API
 
 ```typescript
-import { publishPackages } from '@awc/mix-builder';
+import { publishPackages } from '@fluixi/mix-builder';
 
 // Default behavior (reads package-publish.json)
 await publishPackages();
@@ -538,7 +538,7 @@ The configuration is validated against JSON Schema:
 
 ```json
 {
-  "$schema": "./node_modules/@awc/mix-builder/schemas/publish-config.schema.json"
+  "$schema": "./node_modules/@fluixi/mix-builder/schemas/publish-config.schema.json"
 }
 ```
 

@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfSelect, AdfSelectMenu, AdfSelectOption, AdfSelectToggler, AdfSelectChangedEvent} from '@awc/adf-select';
-import DOM from "@awc/dom"
-// import '@awc/adf-select/adf-select.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-select/adf-select.js';
 
 
 const SelectComponent = createComponent({

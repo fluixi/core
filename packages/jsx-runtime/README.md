@@ -1,4 +1,4 @@
-# @awc/jsx-runtime
+# @fluixi/jsx-runtime
 
 A comprehensive JSX runtime with fine-grained reactivity, inspired by SolidJS. This package provides a modern JSX implementation that supports both native JSX and lit-html templates, with seamless integration with signal and store systems for optimal performance.
 
@@ -16,11 +16,11 @@ A comprehensive JSX runtime with fine-grained reactivity, inspired by SolidJS. T
 ## Installation
 
 ```bash
-npm install @awc/jsx-runtime @awc/dom
+npm install @fluixi/jsx-runtime @fluixi/dom
 # or
-pnpm add @awc/jsx-runtime @awc/dom
+pnpm add @fluixi/jsx-runtime @fluixi/dom
 # or
-yarn add @awc/jsx-runtime @awc/dom
+yarn add @fluixi/jsx-runtime @fluixi/dom
 ```
 
 ## Quick Start
@@ -33,8 +33,8 @@ Add to your `tsconfig.json`:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/jsx-runtime",
-    "types": ["@awc/jsx-runtime"]
+    "jsxImportSource": "@fluixi/jsx-runtime",
+    "types": ["@fluixi/jsx-runtime"]
   }
 }
 ```
@@ -42,8 +42,8 @@ Add to your `tsconfig.json`:
 ### Basic Usage
 
 ```tsx
-import { render } from '@awc/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { render } from '@fluixi/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function Counter() {
   const [count, setCount] = createSignal(0);
@@ -64,7 +64,7 @@ render(<Counter />, document.getElementById('app')!);
 ### With Reactive Values
 
 ```tsx
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function App() {
   const [name, setName] = createSignal('World');
@@ -102,7 +102,7 @@ function App() {
 ### Reactive Attributes
 
 ```tsx
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 const [color, setColor] = createSignal('red');
 const [size, setSize] = createSignal(16);
@@ -185,7 +185,7 @@ const [size, setSize] = createSignal(16);
 Conditional rendering with optional fallback.
 
 ```tsx
-import { Show } from '@awc/jsx-runtime';
+import { Show } from '@fluixi/jsx-runtime';
 
 function Profile() {
   const [user, setUser] = createSignal(null);
@@ -211,7 +211,7 @@ function Profile() {
 Keyed list rendering with optimal updates.
 
 ```tsx
-import { For } from '@awc/jsx-runtime';
+import { For } from '@fluixi/jsx-runtime';
 
 function TodoList() {
   const [todos, setTodos] = createSignal([
@@ -243,7 +243,7 @@ function TodoList() {
 Index-based list rendering (use when items change but positions don't).
 
 ```tsx
-import { Index } from '@awc/jsx-runtime';
+import { Index } from '@fluixi/jsx-runtime';
 
 function NumberList() {
   const [numbers] = createSignal([1, 2, 3, 4, 5]);
@@ -265,7 +265,7 @@ function NumberList() {
 Multi-way conditional rendering.
 
 ```tsx
-import { Switch, Match } from '@awc/jsx-runtime';
+import { Switch, Match } from '@fluixi/jsx-runtime';
 
 function StatusView() {
   const [status, setStatus] = createSignal('loading');
@@ -291,7 +291,7 @@ function StatusView() {
 Render content in a different DOM location.
 
 ```tsx
-import { Portal } from '@awc/jsx-runtime';
+import { Portal } from '@fluixi/jsx-runtime';
 
 function Modal({ isOpen, children }) {
   return (
@@ -313,7 +313,7 @@ function Modal({ isOpen, children }) {
 Dynamically render components based on runtime conditions.
 
 ```tsx
-import { Dynamic } from '@awc/jsx-runtime';
+import { Dynamic } from '@fluixi/jsx-runtime';
 
 function DynamicComponent() {
   const [component, setComponent] = createSignal('div');
@@ -334,7 +334,7 @@ function DynamicComponent() {
 Catch and handle errors in component trees.
 
 ```tsx
-import { ErrorBoundary } from '@awc/jsx-runtime';
+import { ErrorBoundary } from '@fluixi/jsx-runtime';
 
 function App() {
   return (
@@ -360,7 +360,7 @@ Use lit-html templates alongside JSX.
 
 ```tsx
 import { html } from 'lit';
-import { signal } from '@awc/jsx-runtime';
+import { signal } from '@fluixi/jsx-runtime';
 
 function Component() {
   const [count, setCount] = createSignal(0);
@@ -379,7 +379,7 @@ function Component() {
 ### Helper utilities
 
 ```tsx
-import { template, templateSVG, $, $if } from '@awc/jsx-runtime';
+import { template, templateSVG, $, $if } from '@fluixi/jsx-runtime';
 
 function Component() {
   const [show, setShow] = createSignal(true);
@@ -453,7 +453,7 @@ function Counter(props: { initial?: number }) {
 ### Memoized Components
 
 ```tsx
-import { memo } from '@awc/jsx-runtime';
+import { memo } from '@fluixi/jsx-runtime';
 
 const ExpensiveComponent = memo((props: { data: any }) => {
   // Expensive rendering logic
@@ -464,7 +464,7 @@ const ExpensiveComponent = memo((props: { data: any }) => {
 ### Component Helpers
 
 ```tsx
-import { jsxComponent, defineComponent } from '@awc/jsx-runtime';
+import { jsxComponent, defineComponent } from '@fluixi/jsx-runtime';
 
 // Simple component wrapper
 const MyComponent = jsxComponent((props: Props) => {
@@ -482,7 +482,7 @@ const NamedComponent = defineComponent('MyComponent', (props: Props) => {
 ### Element Refs
 
 ```tsx
-import { createRef } from '@awc/jsx-runtime';
+import { createRef } from '@fluixi/jsx-runtime';
 
 function Component() {
   const inputRef = createRef<HTMLInputElement>();
@@ -520,7 +520,7 @@ function Component() {
 ### Forward Ref
 
 ```tsx
-import { forwardRef } from '@awc/jsx-runtime';
+import { forwardRef } from '@fluixi/jsx-runtime';
 
 const FancyInput = forwardRef<HTMLInputElement, { label: string }>(
   (props, ref) => {
@@ -586,7 +586,7 @@ import { classMap } from 'lit/directives/class-map.js';
 ### Batch Updates
 
 ```tsx
-import { jsxBatch } from '@awc/jsx-runtime';
+import { jsxBatch } from '@fluixi/jsx-runtime';
 
 function Component() {
   const [a, setA] = createSignal(0);
@@ -609,7 +609,7 @@ function Component() {
 ### Server-Side Rendering
 
 ```tsx
-import { renderToString } from '@awc/jsx-runtime';
+import { renderToString } from '@fluixi/jsx-runtime';
 
 async function handler() {
   const html = await renderToString(<App />);
@@ -622,7 +622,7 @@ async function handler() {
 ### Hydration
 
 ```tsx
-import { hydrate } from '@awc/jsx-runtime';
+import { hydrate } from '@fluixi/jsx-runtime';
 
 // Hydrate server-rendered content
 hydrate(<App />, document.getElementById('app')!);
@@ -635,7 +635,7 @@ The package includes a compiler module for build-time optimizations.
 ### Transform JSX
 
 ```typescript
-import { transform } from '@awc/jsx-runtime/compiler';
+import { transform } from '@fluixi/jsx-runtime/compiler';
 
 const result = transform(code, {
   useLitHTML: true,
@@ -654,7 +654,7 @@ console.log(result.metadata);
 // babel.config.js
 module.exports = {
   plugins: [
-    ['@awc/jsx-runtime/compiler/babel', {
+    ['@fluixi/jsx-runtime/compiler/babel', {
       useLitHTML: true,
       optimize: true,
     }]
@@ -665,7 +665,7 @@ module.exports = {
 ### TypeScript Transformer
 
 ```typescript
-import { createTypeScriptTransformer } from '@awc/jsx-runtime/compiler';
+import { createTypeScriptTransformer } from '@fluixi/jsx-runtime/compiler';
 
 const transformer = createTypeScriptTransformer({
   optimize: true,
@@ -701,7 +701,7 @@ const handleClick = () => handleClick(id);
 ### Component Types
 
 ```typescript
-import type { JSXElement, JSXComponent } from '@awc/jsx-runtime';
+import type { JSXElement, JSXComponent } from '@fluixi/jsx-runtime';
 
 // Function component type
 const Component: JSXComponent<{ name: string }> = (props) => {
@@ -717,7 +717,7 @@ function render(): JSXElement {
 ### Props Interface
 
 ```typescript
-import type { JSXProps } from '@awc/jsx-runtime';
+import type { JSXProps } from '@fluixi/jsx-runtime';
 
 interface MyProps extends JSXProps {
   title: string;
@@ -760,7 +760,7 @@ function MyComponent(props: MyProps) {
 ### Development Mode
 
 ```typescript
-import { createReactiveJSX } from '@awc/jsx-runtime';
+import { createReactiveJSX } from '@fluixi/jsx-runtime';
 
 const jsx = createReactiveJSX({
   signalSystem: mySignalSystem,
@@ -773,7 +773,7 @@ const jsx = createReactiveJSX({
 Use `defineComponent` for better debugging:
 
 ```tsx
-import { defineComponent } from '@awc/jsx-runtime';
+import { defineComponent } from '@fluixi/jsx-runtime';
 
 const MyComponent = defineComponent('MyComponent', (props) => {
   return <div>{props.children}</div>;
@@ -794,7 +794,7 @@ function Counter() {
 }
 
 // This package
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 function Counter() {
   const [count, setCount] = createSignal(0);
@@ -809,8 +809,8 @@ function Counter() {
 // Very similar! Main difference is import paths
 import { createSignal, Show, For } from 'solid-js';
 // becomes
-import { createSignal } from '@awc/reactive/signal';
-import { Show, For } from '@awc/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
+import { Show, For } from '@fluixi/jsx-runtime';
 ```
 
 ## Examples
@@ -833,8 +833,8 @@ MIT
 
 ## Related Packages
 
-- `@awc/dom` - Core reactive DOM runtime
-- `@awc/reactive` - Signal and store implementations
+- `@fluixi/dom` - Core reactive DOM runtime
+- `@fluixi/reactive` - Signal and store implementations
 - `lit` - Template literals for HTML
 
 ## Resources

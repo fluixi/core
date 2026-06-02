@@ -15,7 +15,7 @@ Let's build a simple todo application to learn the basics of KettleJS.
 
 ```bash
 # Create a new KettleJS project
-npx @awc/kettlejs new todo-app
+npx @fluixi/kettlejs new todo-app
 
 # Navigate to the project
 cd todo-app
@@ -32,7 +32,7 @@ npm run dev
 Create `src/components/TodoApp.ts`:
 
 ```typescript
-import { html, createSignal, Component, For, Show } from '@awc/kettlejs';
+import { html, createSignal, Component, For, Show } from '@fluixi/kettlejs';
 
 interface Todo {
   id: number;
@@ -343,7 +343,7 @@ h1 {
 Update `src/App.ts`:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
+import { html, Component } from '@fluixi/kettlejs';
 import { TodoApp } from './components/TodoApp';
 
 export const App: Component = () => {
@@ -439,7 +439,7 @@ Now that you've built your first KettleJS app, you can:
 
 **Local Storage Persistence:**
 ```typescript
-import { createEffect } from '@awc/kettlejs';
+import { createEffect } from '@fluixi/kettlejs';
 
 // Load from localStorage on mount
 const [todos, setTodos] = createSignal<Todo[]>(

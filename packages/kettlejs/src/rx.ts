@@ -1,25 +1,25 @@
 // /**
 //  * @fileoverview Reactive Primitives Export for KettleJS
-//  * @module @awc/kettlejs/rx
+//  * @module @fluixi/kettlejs/rx
 //  *
 //  * This module provides a convenient alias for importing reactive primitives.
-//  * It re-exports all reactive functions from @awc/reactive/signal.
+//  * It re-exports all reactive functions from @fluixi/reactive/signal.
 //  *
 //  * Usage:
 //  * ```typescript
-//  * import { createSignal, createEffect, createMemo } from '@awc/kettlejs/rx';
+//  * import { createSignal, createEffect, createMemo } from '@fluixi/kettlejs/rx';
 //  * ```
 //  *
 //  * This is equivalent to:
 //  * ```typescript
-//  * import { createSignal, createEffect, createMemo } from '@awc/reactive/signal';
+//  * import { createSignal, createEffect, createMemo } from '@fluixi/reactive/signal';
 //  * ```
 //  *
-//  * Note: The Babel plugin automatically transforms '@awc/kettlejs/rx' imports
-//  * to '@awc/reactive/signal' for optimal bundling.
+//  * Note: The Babel plugin automatically transforms '@fluixi/kettlejs/rx' imports
+//  * to '@fluixi/reactive/signal' for optimal bundling.
 //  */
 
-// // Re-export all reactive primitives from @awc/reactive/signal
+// // Re-export all reactive primitives from @fluixi/reactive/signal
 // export {
 //   // Core signals
 //   createSignal,
@@ -53,7 +53,7 @@
 //   observable,
 //   mapArray,
 //   indexArray,
-// } from '@awc/reactive/signal';
+// } from '@fluixi/reactive/signal';
 
 // // Re-export types
 // export type {
@@ -67,7 +67,7 @@
 //   EffectOptions,
 //   Memo,
 //   MemoOptions,
-// } from '@awc/reactive/signal';
+// } from '@fluixi/reactive/signal';
 
 // /**
 //  * Default export for convenience
@@ -86,7 +86,7 @@
 //   useContext,
 // };
 
-// // Note: Import from '@awc/reactive/signal' directly
+// // Note: Import from '@fluixi/reactive/signal' directly
 // import {
 //   createSignal,
 //   createEffect,
@@ -107,4 +107,4 @@
 //   observable,
 //   mapArray,
 //   indexArray,
-// } from '@awc/reactive/signal';
+// } from '@fluixi/reactive/signal';

@@ -3,7 +3,7 @@ import {
   Observable,
   OperatorFunction,
   Subscription,
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 /**
  * Configuration options for combineLatestAll

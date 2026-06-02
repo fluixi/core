@@ -19,7 +19,7 @@ Stores provide first-class support for reactive arrays with:
 ## Creating Array Stores
 
 ```typescript
-import { createStore } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
 
 // Simple array
 const [numbers, setNumbers] = createStore([1, 2, 3, 4, 5]);

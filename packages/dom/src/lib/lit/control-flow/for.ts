@@ -1,12 +1,12 @@
 /**
  * @fileoverview For component for efficient list rendering with keyed reconciliation in KettleJS
- * @module @awc/kettlejs/control-flow/For
+ * @module @fluixi/kettlejs/control-flow/For
  */
 
 import { html, TemplateResult, nothing } from 'lit';
-import { createEffect, createSignal, Accessor } from '@awc/reactive/signal';
+import { createEffect, createSignal, Accessor } from '@fluixi/reactive/signal';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
-import { Component } from '@awc/dom';
+import { Component } from '@fluixi/dom';
 
 /**
  * Props for the For component

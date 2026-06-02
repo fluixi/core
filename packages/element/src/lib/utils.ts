@@ -1,9 +1,9 @@
 /**
- * @fileoverview Utility functions for @awc/element
- * @module @awc/element/utils
+ * @fileoverview Utility functions for @fluixi/element
+ * @module @fluixi/element/utils
  */
 
-import type { PropDefinition } from '@awc/dom/element';
+import type { PropDefinition } from '@fluixi/dom/element';
 
 /**
  * Convert camelCase property name to kebab-case attribute name.

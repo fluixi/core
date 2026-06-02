@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DOM runtime now fully supports reactivity with store proxies from `@awc/reactive/store`. This allows you to use store state directly in your templates and have the DOM automatically update when the store changes.
+The DOM runtime now fully supports reactivity with store proxies from `@fluixi/reactive/store`. This allows you to use store state directly in your templates and have the DOM automatically update when the store changes.
 
 ## Key Changes
 
@@ -53,8 +53,8 @@ The store's internal tracking system records this access. When that property cha
 ### Basic Store Usage
 
 ```typescript
-import { createStore } from '@awc/reactive/store';
-import { insert } from '@awc/dom/runtime';
+import { createStore } from '@fluixi/reactive/store';
+import { insert } from '@fluixi/dom/runtime';
 
 // Create a store
 const [state, setState] = createStore({
@@ -297,7 +297,7 @@ insert(parent, () => {
 ### 1. Check if Value is a Store Proxy
 
 ```typescript
-import { isStoreProxy } from '@awc/reactive/store';
+import { isStoreProxy } from '@fluixi/reactive/store';
 
 console.log(isStoreProxy(state)); // true
 console.log(isStoreProxy(state.count)); // false (primitive)
@@ -307,7 +307,7 @@ console.log(isStoreProxy(state.user)); // true (nested object)
 ### 2. Unwrap Store for Inspection
 
 ```typescript
-import { unwrap } from '@awc/reactive/store';
+import { unwrap } from '@fluixi/reactive/store';
 
 const rawValue = unwrap(state);
 console.log(rawValue); // Plain object without proxy
@@ -316,7 +316,7 @@ console.log(rawValue); // Plain object without proxy
 ### 3. Track Signal Access
 
 ```typescript
-import { createEffect } from '@awc/reactive/signal';
+import { createEffect } from '@fluixi/reactive/signal';
 
 createEffect(() => {
   console.log('Effect running');

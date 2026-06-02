@@ -45,7 +45,7 @@ Visual overview of how JSX support is integrated into KettleJS.
               ┌──────────────▼──────────────┐
               │                             │
     ┌─────────▼─────────┐       ┌──────────▼─────────┐
-    │  @awc/reactive    │       │   KettleJS Core    │
+    │  @fluixi/reactive    │       │   KettleJS Core    │
     │                   │       │                    │
     │ • Signals         │       │ • Components       │
     │ • Effects         │       │ • KettleElement    │
@@ -92,7 +92,7 @@ const Counter = () => {
 
 ```typescript
 // TypeScript transforms JSX using our runtime
-import { jsx, jsxs } from '@awc/kettlejs/jsx-runtime';
+import { jsx, jsxs } from '@fluixi/kettlejs/jsx-runtime';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -154,7 +154,7 @@ Event Handler
 Signal Setter (setCount)
     │
     ▼
-@awc/reactive (notifies dependencies)
+@fluixi/reactive (notifies dependencies)
     │
     ▼
 Effect/Memo (if any)
@@ -197,7 +197,7 @@ Source Files (.tsx)
     ▼
 TypeScript Compiler
     │   (jsx: "react-jsx")
-    │   (jsxImportSource: "@awc/kettlejs")
+    │   (jsxImportSource: "@fluixi/kettlejs")
     │
     ▼
 Transformed JS (with jsx() calls)
@@ -225,7 +225,7 @@ tsconfig.json
     │       │
     │       └─→ Use new JSX transform
     │
-    └─→ "jsxImportSource": "@awc/kettlejs"
+    └─→ "jsxImportSource": "@fluixi/kettlejs"
             │
             └─→ Import from our jsx-runtime
 ```
@@ -253,7 +253,7 @@ Application Start
     ├─→ Load lit-html
     │   (peer dependency)
     │
-    ├─→ Load @awc/reactive
+    ├─→ Load @fluixi/reactive
     │   (signals, effects, etc.)
     │
     └─→ Initialize KettleJS

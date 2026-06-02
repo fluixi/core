@@ -1,5 +1,5 @@
-import { Observable, SchedulerLike, timer } from "@awc/reactive";
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
+import { Observable, SchedulerLike, timer } from "@fluixi/reactive";
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
 
 /**
 * Creates an Observable that emits sequential numbers in a specified interval

@@ -54,7 +54,7 @@ export function buildWithRollup() { /* ... */ }
 **Presets:**
 - `--reactExternal` - React + react-dom + all sub-paths
 - `--litExternal` - Lit + lit-html + lit-element + @lit/*
-- `--libExternal` - @awc/* + @adafri/*
+- `--libExternal` - @fluixi/* + @adafri/*
 - `--nodeExternal` - Node.js built-ins
 - `--pkgExternal` - package.json dependencies
 

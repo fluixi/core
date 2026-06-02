@@ -1,7 +1,7 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfDropdown, AdfDropdownMenu, AdfDropdownBody, AdfDropdownHeader, AdfDropdownFooter, AdfDropdownItem, AdfDropdownToggleEvent} from '@awc/adf-dropdown';
-import DOM from "@awc/dom"
-// import '@awc/adf-dropdown/adf-dropdown.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-dropdown/adf-dropdown.js';
 
 
 const DropdownComponent = createComponent({

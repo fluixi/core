@@ -15,7 +15,7 @@ Practical examples showing how to use the color management system in real-world 
 Generate a complete theme from a single brand color:
 
 ```typescript
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 function createTheme(brandColor: string) {
   const primary = new Color(brandColor);
@@ -64,7 +64,7 @@ console.log(theme);
 Generate a Material Design-style color palette:
 
 ```typescript
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 function generateMaterialPalette(baseColor: string) {
   const color = new Color(baseColor);
@@ -99,7 +99,7 @@ const green = generateMaterialPalette('#4caf50');
 Create a color picker with real-time variations:
 
 ```typescript
-import { Color, isLight } from '@awc/utils/color';
+import { Color, isLight } from '@fluixi/utils/color';
 
 function createColorVariations(hex: string) {
   if (!hex.startsWith('#')) return null;
@@ -148,7 +148,7 @@ const variations = createColorVariations('#3498db');
 Create perceptually uniform color scales for data visualization:
 
 ```typescript
-import { generateGradient, Color } from '@awc/utils/color';
+import { generateGradient, Color } from '@fluixi/utils/color';
 
 function createDataScale(
   startColor: string,
@@ -190,7 +190,7 @@ const diverging = createDivergingScale(11);
 Ensure all colors meet WCAG accessibility requirements:
 
 ```typescript
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 interface AccessibleColorSystem {
   background: string;
@@ -252,7 +252,7 @@ const darkTheme = createAccessibleColorSystem('#1a1a1a', '#3498db', '#e74c3c', '
 Test how your colors appear to colorblind users:
 
 ```typescript
-import { Color, simulateColorBlindness } from '@awc/utils/color';
+import { Color, simulateColorBlindness } from '@fluixi/utils/color';
 
 function testColorBlindness(colors: string[]) {
   const types = ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'] as const;
@@ -293,7 +293,7 @@ const analysis = testColorBlindness(brandColors);
 Implement dynamic theme switching with proper contrast:
 
 ```typescript
-import { Color, isLight } from '@awc/utils/color';
+import { Color, isLight } from '@fluixi/utils/color';
 
 interface ThemeMode {
   mode: 'light' | 'dark';
@@ -366,7 +366,7 @@ function applyTheme(theme: ThemeMode) {
 Create beautiful gradient backgrounds:
 
 ```typescript
-import { generateGradient, Color } from '@awc/utils/color';
+import { generateGradient, Color } from '@fluixi/utils/color';
 
 interface GradientConfig {
   colors: string[];
@@ -433,7 +433,7 @@ const mesh = createGradientCSS({
 Generate descriptive names for colors:
 
 ```typescript
-import { Color, getColorName } from '@awc/utils/color';
+import { Color, getColorName } from '@fluixi/utils/color';
 
 function generateColorName(hex: string): string {
   const color = new Color(hex);
@@ -489,7 +489,7 @@ const namedPalette = createNamedPalette('#3498db');
 Extract dominant colors from an image (browser):
 
 ```typescript
-import { Color, findClosestColor } from '@awc/utils/color';
+import { Color, findClosestColor } from '@fluixi/utils/color';
 
 interface DominantColor {
   color: string;
@@ -560,7 +560,7 @@ const colors = await extractDominantColors('/path/to/image.jpg', 5);
 
 ```typescript
 import React, { useState } from 'react';
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 interface ColorPickerProps {
   initialColor?: string;
@@ -637,7 +637,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 
 ```typescript
 import React, { createContext, useContext, useState } from 'react';
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 interface Theme {
   colors: {

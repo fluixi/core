@@ -1,6 +1,6 @@
 /**
  * @fileoverview Server-Side Rendering Entry Point for KettleJS
- * @module @awc/kettlejs/server
+ * @module @fluixi/kettlejs/server
  *
  * Implements Unified SSR Engine compatible with Lit and JSX.
  */
@@ -29,7 +29,7 @@ import {
 import {
   renderToString as domRenderToString,
   renderToStream as domRenderToStream,
-} from '@awc/dom/server';
+} from '@fluixi/dom/server';
 
 // ============================================================================
 // TYPES
@@ -198,7 +198,7 @@ export async function renderToStream(code: () => any): Promise<string> {
  * @example
  * ```ts
  * // entry-server.ts
- * import { startServer } from '@awc/kettlejs/server';
+ * import { startServer } from '@fluixi/kettlejs/server';
  * import App from './app';
  *
  * export default startServer(App);

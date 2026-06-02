@@ -1,4 +1,4 @@
-import { from, Observable, ObservableInput, ObservedValueOf, OperatorFunction, Subscription } from "@awc/reactive";
+import { from, Observable, ObservableInput, ObservedValueOf, OperatorFunction, Subscription } from "@fluixi/reactive";
 
 /**
  * Dictionary (object) type where all values are ObservableInputs.

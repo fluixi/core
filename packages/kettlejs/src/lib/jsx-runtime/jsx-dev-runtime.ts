@@ -1,1 +1,1 @@
-export * from '@awc/jsx-runtime/jsx-dev-runtime';
+export * from '@fluixi/jsx-runtime/jsx-dev-runtime';

@@ -4,11 +4,11 @@
     "extensions": [".ts", ".js", ".mjs"],
     "externals": [
       "lit",
-      "@awc/helpers",
+      "@fluixi/helpers",
       "lit/directives/unsafe-html.js",
       "@lit/reactive-element",
       "lit/decorators.js",
-      "@awc/adf-base"
+      "@fluixi/adf-base"
     ],
     "formats": ["es"],
     "entries": {
@@ -18,10 +18,10 @@
         "buildType": "bundled",
         "externals": [
           "lit",
-          "@awc/helpers",
+          "@fluixi/helpers",
           "lit/directives/unsafe-html.js",
           "@lit/reactive-element",
-          "@awc/adf-base"
+          "@fluixi/adf-base"
         ]
       },
       "src/adf-card.ts": {
@@ -29,10 +29,10 @@
         "buildType": "bundled",
         "externals": [
           "lit",
-          "@awc/helpers",
+          "@fluixi/helpers",
           "lit/directives/unsafe-html.js",
           "@lit/reactive-element",
-          "@awc/adf-base"
+          "@fluixi/adf-base"
         ],
         "name": "AdfCard"
       },
@@ -41,10 +41,10 @@
         "buildType": "bundled",
         "externals": [
           "lit",
-          "@awc/helpers",
+          "@fluixi/helpers",
           "lit/directives/unsafe-html.js",
           "@lit/reactive-element",
-          "@awc/adf-base"
+          "@fluixi/adf-base"
         ],
         "name": "AdfCard"
       }

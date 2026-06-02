@@ -22,7 +22,7 @@ import {
   hasObjectChanges,
   applyDiff,
   getChangedPaths,
-} from '@awc/utils/object';
+} from '@fluixi/utils/object';
 ```
 
 ## API Reference

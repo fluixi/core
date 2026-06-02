@@ -2,7 +2,7 @@
 
 ## Overview
 
-Created a comprehensive object diff utility system for the `@awc/utils` package that compares objects and tracks changes with advanced array index notation support.
+Created a comprehensive object diff utility system for the `@fluixi/utils` package that compares objects and tracks changes with advanced array index notation support.
 
 ## Files Created
 
@@ -233,7 +233,7 @@ export * from './diff.js';
 
 All functions are now available via:
 ```typescript
-import { diffObject, diffObjectDetailed, ... } from '@awc/utils/object';
+import { diffObject, diffObjectDetailed, ... } from '@fluixi/utils/object';
 ```
 
 ## Benefits

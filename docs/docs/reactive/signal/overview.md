@@ -97,7 +97,7 @@ import {
   createEffect,
   createMemo,
   batch
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 // Create a basic counter
 const [count, setCount] = createSignal(0);
@@ -130,7 +130,7 @@ import {
   catchError,
   createContext,
   useContext
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 // Non-blocking updates with transitions
 const [isPending, start] = useTransition();

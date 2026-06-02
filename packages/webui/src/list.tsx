@@ -1,7 +1,7 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfList, AdfListBody, AdfListHeader, AdfListFooter, AdfListItem} from '@awc/adf-list';
-import DOM from "@awc/dom"
-// import '@awc/adf-list/adf-list.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-list/adf-list.js';
 
 
 const ListComponent = createComponent({

@@ -1,9 +1,9 @@
 /**
  * @fileoverview Babel Plugin for Reactive JSX Transformation
- * @module @awc/babel-plugin-jsx
+ * @module @fluixi/babel-plugin-jsx
  *
  * This package provides a comprehensive Babel plugin for transforming JSX
- * with fine-grained reactivity support. It integrates with @awc/jsx-runtime
+ * with fine-grained reactivity support. It integrates with @fluixi/jsx-runtime
  * to provide optimal reactive DOM updates.
  *
  * Features:
@@ -53,7 +53,7 @@ export function createPreset(options: any = {}) {
         plugin,
         {
           runtime: 'automatic',
-          importSource: '@awc/jsx-runtime',
+          importSource: '@fluixi/jsx-runtime',
           development: process.env.NODE_ENV === 'development',
           detectReactivity: true,
           useLitHTML: true,
@@ -110,9 +110,9 @@ export const presets = {
  * ```js
  * module.exports = {
  *   plugins: [
- *     ['@awc/babel-plugin-jsx', {
+ *     ['@fluixi/babel-plugin-jsx', {
  *       runtime: 'automatic',
- *       importSource: '@awc/jsx-runtime',
+ *       importSource: '@fluixi/jsx-runtime',
  *       development: process.env.NODE_ENV === 'development',
  *     }]
  *   ]
@@ -122,7 +122,7 @@ export const presets = {
  * @example Vite Config (vite.config.ts)
  * ```ts
  * import { defineConfig } from 'vite'
- * import { babelPluginReactiveJSX } from '@awc/babel-plugin-jsx'
+ * import { babelPluginReactiveJSX } from '@fluixi/babel-plugin-jsx'
  *
  * export default defineConfig({
  *   plugins: [
@@ -151,7 +151,7 @@ export const presets = {
  *           loader: 'babel-loader',
  *           options: {
  *             plugins: [
- *               ['@awc/babel-plugin-jsx', { development: true }]
+ *               ['@fluixi/babel-plugin-jsx', { development: true }]
  *             ]
  *           }
  *         }
@@ -164,7 +164,7 @@ export const presets = {
  * @example Rollup Config (rollup.config.js)
  * ```js
  * import babel from '@rollup/plugin-babel'
- * import { babelPluginReactiveJSX } from '@awc/babel-plugin-jsx'
+ * import { babelPluginReactiveJSX } from '@fluixi/babel-plugin-jsx'
  *
  * export default {
  *   plugins: [

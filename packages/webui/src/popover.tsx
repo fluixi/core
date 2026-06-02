@@ -1,7 +1,7 @@
-import { createComponent, withPortal, withSubComponents, EventName } from '@awc/element';
+import { createComponent, withPortal, withSubComponents, EventName } from '@fluixi/element';
 import { AdfPopover, AdfPopoverMenu, AdfPopoverToggleEvent} from '@awc/adf-popover';
-import DOM from "@awc/dom"
-// import '@awc/adf-popover/adf-popover.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-popover/adf-popover.js';
 
 
 const PopoverBase = createComponent({

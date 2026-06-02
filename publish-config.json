@@ -1,7 +1,7 @@
 {
   "$schema": "./packages/mix-builder/src/lib/package-publisher/schemas/publish-config.schema.json",
-  "packages": ["reactive", "@awc/utils"],
+  "packages": ["reactive", "@fluixi/utils"],
   "excluded": [],
-  "excluded_packages": ["@awc/mix-builder"],
+  "excluded_packages": ["@fluixi/mix-builder"],
   "content": "./packages/**/*"
 }

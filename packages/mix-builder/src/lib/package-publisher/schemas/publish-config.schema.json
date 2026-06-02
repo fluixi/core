@@ -15,7 +15,7 @@
       "minItems": 1,
       "uniqueItems": true,
       "description": "List of package names to include in the publication",
-      "examples": [["@awc/core", "@awc/reactive", "@awc/utils"]]
+      "examples": [["@fluixi/core", "@fluixi/reactive", "@fluixi/utils"]]
     },
 
     "excluded": {
@@ -31,7 +31,7 @@
       "items": { "type": "string" },
       "default": [],
       "description": "Package names explicitly excluded from build and publication",
-      "examples": [["@awc/experimental", "@awc/internal"]]
+      "examples": [["@fluixi/experimental", "@fluixi/internal"]]
     },
 
     "buildConfigFile": {
@@ -160,9 +160,9 @@
 
   "examples": [
     {
-      "packages": ["@awc/core", "@awc/reactive", "@awc/utils"],
+      "packages": ["@fluixi/core", "@fluixi/reactive", "@fluixi/utils"],
       "excluded": ["internal", "examples"],
-      "excluded_packages": ["@awc/experimental"],
+      "excluded_packages": ["@fluixi/experimental"],
       "content": "**/packages/*/package.json",
       "packages_dir": "packages",
       "type": "patch",

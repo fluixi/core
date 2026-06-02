@@ -24,7 +24,7 @@ import {
   isObject,
   get, 
   set 
-} from '@awc/utils/object';
+} from '@fluixi/utils/object';
 
 // Clone an object
 const original = { user: { name: 'Alice', settings: { theme: 'dark' } } };

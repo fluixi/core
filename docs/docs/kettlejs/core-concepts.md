@@ -13,7 +13,7 @@ KettleJS uses **fine-grained reactivity** powered by signals. Unlike virtual DOM
 ### How It Works
 
 ```typescript
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 // Create a signal
 const [count, setCount] = createSignal(0);
@@ -35,7 +35,7 @@ Signals are the core primitive for reactive state in KettleJS.
 ### Creating Signals
 
 ```typescript
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 
 // Basic signal
 const [value, setValue] = createSignal(0);
@@ -97,7 +97,7 @@ Effects are side effects that run when their dependencies change.
 ### Basic Effects
 
 ```typescript
-import { createSignal, createEffect } from '@awc/reactive/signal';
+import { createSignal, createEffect } from '@fluixi/reactive/signal';
 
 const [count, setCount] = createSignal(0);
 
@@ -142,7 +142,7 @@ Memos are computed values that update automatically when dependencies change.
 ### Creating Memos
 
 ```typescript
-import { createSignal, createMemo } from '@awc/reactive/signal';
+import { createSignal, createMemo } from '@fluixi/reactive/signal';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -184,7 +184,7 @@ KettleJS supports multiple component patterns.
 Simple functions that return templates:
 
 ```typescript
-import { html, Component } from '@awc/kettlejs';
+import { html, Component } from '@fluixi/kettlejs';
 
 export const MyComponent: Component = () => {
   return html`<div>Hello World</div>`;
@@ -219,8 +219,8 @@ Web components with built-in reactivity:
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-component')
 export class MyComponent extends KettleElement {
@@ -364,7 +364,7 @@ export class MyComponent extends KettleElement {
 ### Manual Ownership
 
 ```typescript
-import { getOwner, runWithOwner } from '@awc/reactive/signal';
+import { getOwner, runWithOwner } from '@fluixi/reactive/signal';
 
 // Capture current owner
 const owner = getOwner();
@@ -402,7 +402,7 @@ setName('Jane');
 ### Manual Batching
 
 ```typescript
-import { batch } from '@awc/reactive/signal';
+import { batch } from '@fluixi/reactive/signal';
 
 batch(() => {
   setCount(1);
@@ -417,7 +417,7 @@ batch(() => {
 Sometimes you need to read a signal without creating a dependency.
 
 ```typescript
-import { untrack } from '@awc/reactive/signal';
+import { untrack } from '@fluixi/reactive/signal';
 
 const [a, setA] = createSignal(1);
 const [b, setB] = createSignal(2);

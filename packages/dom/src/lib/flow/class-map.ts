@@ -1,4 +1,4 @@
-import { Accessor, createMemo } from '@awc/reactive/signal';
+import { Accessor, createMemo } from '@fluixi/reactive/signal';
 
 /**
  * A single class condition — static boolean or a reactive function.

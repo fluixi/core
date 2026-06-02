@@ -4,8 +4,8 @@ import {
   isMemo,
   isResource,
   type Accessor,
-} from '@awc/reactive/signal';
-import { getNode, isStore } from '@awc/reactive/store';
+} from '@fluixi/reactive/signal';
+import { getNode, isStore } from '@fluixi/reactive/store';
 import { litrx } from '../directives/litrx.js';
 import { reactiveAttr } from '../directives/reactiveAttr.js';
 import {

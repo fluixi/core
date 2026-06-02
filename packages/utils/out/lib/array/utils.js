@@ -1,4 +1,4 @@
-import { isObject } from '@awc/utils/object';
+import { isObject } from '@fluixi/utils/object';
 /**
  * Type guard to check if a value is an object array
  * @param value - Value to check

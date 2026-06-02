@@ -1,6 +1,6 @@
 /**
- * @fileoverview Main entry point for @awc/dom package
- * @module @awc/dom
+ * @fileoverview Main entry point for @fluixi/dom package
+ * @module @fluixi/dom
  *
  * This package provides a comprehensive reactive DOM runtime with fine-grained updates
  * similar to SolidJS's dom-expressions. It includes:
@@ -33,8 +33,8 @@ import {
   onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
   childrens, createContext, useContext, isSignal,
   getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
-} from '@awc/reactive/signal';
-import { isStore, isStoreProxy } from '@awc/reactive/store';
+} from '@fluixi/reactive/signal';
+import { isStore, isStoreProxy } from '@fluixi/reactive/store';
 
 // Initialize integration directly from reactive imports — works in both
 // ESM dev (Vite source loading) and CJS bundles without relying on require().

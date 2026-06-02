@@ -31,7 +31,7 @@ import {
   normalizeUrl,
   isValidUrl,
   // ... other utilities
-} from '@awc/utils/url';
+} from '@fluixi/utils/url';
 ```
 
 ## Quick Start
@@ -41,7 +41,7 @@ import {
 Extract components from a URL string:
 
 ```typescript
-import { parseUrl } from '@awc/utils/url';
+import { parseUrl } from '@fluixi/utils/url';
 
 const parsed = parseUrl('https://example.com:8080/api/users?page=1#section');
 
@@ -63,7 +63,7 @@ console.log(parsed);
 Construct URLs from components:
 
 ```typescript
-import { buildUrl } from '@awc/utils/url';
+import { buildUrl } from '@fluixi/utils/url';
 
 const url = buildUrl({
   protocol: 'https',
@@ -86,7 +86,7 @@ console.log(url);
 Add, update, or remove query parameters:
 
 ```typescript
-import { addQueryParams, removeQueryParams } from '@awc/utils/url';
+import { addQueryParams, removeQueryParams } from '@fluixi/utils/url';
 
 // Add or update parameters
 const url1 = addQueryParams('https://example.com', { 
@@ -105,7 +105,7 @@ const url2 = removeQueryParams(url1, 'page');
 Extract query parameters:
 
 ```typescript
-import { parseQueryString, parseQueryStringAdvanced } from '@awc/utils/url';
+import { parseQueryString, parseQueryStringAdvanced } from '@fluixi/utils/url';
 
 // Basic parsing
 const params1 = parseQueryString('?name=John&age=30');
@@ -121,7 +121,7 @@ const params2 = parseQueryStringAdvanced('?tags=js&tags=ts&tags=node');
 Check URL validity and format:
 
 ```typescript
-import { isValidUrl, isAbsoluteUrl, isRelativeUrl } from '@awc/utils/url';
+import { isValidUrl, isAbsoluteUrl, isRelativeUrl } from '@fluixi/utils/url';
 
 isValidUrl('https://example.com');        // true
 isValidUrl('not a url');                  // false
@@ -138,7 +138,7 @@ isRelativeUrl('https://example.com');     // false
 Clean and standardize URLs:
 
 ```typescript
-import { normalizeUrl } from '@awc/utils/url';
+import { normalizeUrl } from '@fluixi/utils/url';
 
 // Remove trailing slashes, default ports
 const normalized = normalizeUrl('https://example.com:443/path/');
@@ -203,7 +203,7 @@ const sorted = normalizeUrl('https://example.com?z=1&a=2', {
 ### API URL Builder
 
 ```typescript
-import { buildUrl } from '@awc/utils/url';
+import { buildUrl } from '@fluixi/utils/url';
 
 class ApiClient {
   private baseUrl = 'https://api.example.com';
@@ -227,7 +227,7 @@ class ApiClient {
 ### Query Parameter Manager
 
 ```typescript
-import { addQueryParams, removeQueryParams, getQueryParam } from '@awc/utils/url';
+import { addQueryParams, removeQueryParams, getQueryParam } from '@fluixi/utils/url';
 
 class UrlManager {
   constructor(private url: string) {}
@@ -262,7 +262,7 @@ manager
 ### URL Sanitization for User Input
 
 ```typescript
-import { sanitizeUrl, isValidUrl } from '@awc/utils/url';
+import { sanitizeUrl, isValidUrl } from '@fluixi/utils/url';
 
 function processUserUrl(input: string): string | null {
   // Validate first
@@ -289,7 +289,7 @@ processUserUrl('javascript:alert(1)');          // null (dangerous)
 ### Link Extraction from Content
 
 ```typescript
-import { extractUrls } from '@awc/utils/url';
+import { extractUrls } from '@fluixi/utils/url';
 
 function findLinksInContent(text: string) {
   const urls = extractUrls(text, { unique: true });
@@ -316,7 +316,7 @@ const links = findLinksInContent(content);
 ### URL Path Builder
 
 ```typescript
-import { joinUrl } from '@awc/utils/url';
+import { joinUrl } from '@fluixi/utils/url';
 
 class ResourceUrlBuilder {
   constructor(private baseUrl: string) {}
@@ -342,7 +342,7 @@ builder.userPosts('123');      // 'https://api.example.com/v1/users/123/posts'
 ### URL Comparison and Origin Checking
 
 ```typescript
-import { isSameOrigin, getDomain } from '@awc/utils/url';
+import { isSameOrigin, getDomain } from '@fluixi/utils/url';
 
 function canMakeRequest(targetUrl: string): boolean {
   const currentOrigin = window.location.origin;
@@ -364,7 +364,7 @@ function canMakeRequest(targetUrl: string): boolean {
 ### URL Pattern Matching
 
 ```typescript
-import { matchesUrlPattern } from '@awc/utils/url';
+import { matchesUrlPattern } from '@fluixi/utils/url';
 
 const patterns = [
   'https://example.com/api/*',
@@ -388,7 +388,7 @@ isAllowedUrl('https://other.com/api/data');           // false
 
 ```typescript
 import { useSearchParams } from 'react-router-dom';
-import { addQueryParams, removeQueryParams } from '@awc/utils/url';
+import { addQueryParams, removeQueryParams } from '@fluixi/utils/url';
 
 function useUrlParams() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -427,7 +427,7 @@ function SearchComponent() {
 All URL utilities have full TypeScript support:
 
 ```typescript
-import { parseUrl, buildUrl, addQueryParams } from '@awc/utils/url';
+import { parseUrl, buildUrl, addQueryParams } from '@fluixi/utils/url';
 
 // Type-safe URL parsing
 const parsed = parseUrl('https://example.com');
@@ -489,7 +489,7 @@ function getCachedParams(url: string) {
 ### Always Sanitize User-Provided URLs
 
 ```typescript
-import { sanitizeUrl, isValidUrl } from '@awc/utils/url';
+import { sanitizeUrl, isValidUrl } from '@fluixi/utils/url';
 
 function processExternalLink(url: string) {
   // 1. Validate format

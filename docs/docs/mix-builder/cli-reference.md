@@ -222,7 +222,7 @@ npx mix-builder --libExternal
 ```
 
 **Includes:**
-- `@awc/*`
+- `@fluixi/*`
 - `@adafri/*`
 
 ### `--pkgExternal`

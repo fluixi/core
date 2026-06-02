@@ -220,7 +220,7 @@ The fix ensures that:
 ## Usage After Fix
 
 ```typescript
-import { diffObjectDetailed } from '@awc/utils/object';
+import { diffObjectDetailed } from '@fluixi/utils/object';
 
 const result = diffObjectDetailed(oldState, newState);
 

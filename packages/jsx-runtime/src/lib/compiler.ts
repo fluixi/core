@@ -1,6 +1,6 @@
 /**
  * @fileoverview JSX Compiler Utilities
- * @module @awc/jsx-runtime/compiler
+ * @module @fluixi/jsx-runtime/compiler
  *
  * This module provides compiler utilities for transforming JSX with fine-grained reactivity.
  * It includes helpers for:
@@ -65,7 +65,7 @@ export interface CompilerOptions {
 
   /**
    * Module to import JSX runtime from
-   * @default '@awc/jsx-runtime'
+   * @default '@fluixi/jsx-runtime'
    */
   importSource?: string;
 }
@@ -529,14 +529,14 @@ function addImports(
   options: CompilerOptions
 ): string {
   const imports: string[] = [];
-  const source = options.importSource || '@awc/jsx-runtime';
+  const source = options.importSource || '@fluixi/jsx-runtime';
 
   // Always import jsx basics
   imports.push(`import { jsx, jsxs, Fragment, spread } from '${source}';`);
 
   // Import signal directive if needed
   if (metadata.hasSignals) {
-    imports.push(`import { signal } from '@awc/dom/reactive';`);
+    imports.push(`import { signal } from '@fluixi/dom/reactive';`);
   }
 
   // Import control flow if used
@@ -546,13 +546,13 @@ function addImports(
     code.includes('<Switch')
   ) {
     imports.push(
-      `import { Show, For, Index, Switch, Match } from '@awc/dom/control-flow';`
+      `import { Show, For, Index, Switch, Match } from '@fluixi/dom/control-flow';`
     );
   }
 
   // Import event delegation if used
   if (options.delegateEvents !== false) {
-    imports.push(`import { delegateEvents } from '@awc/dom/runtime';`);
+    imports.push(`import { delegateEvents } from '@fluixi/dom/runtime';`);
   }
 
   return imports.join('\n') + '\n\n' + code;
@@ -569,9 +569,9 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
   // Import the actual Babel plugin using dynamic import for ESM
   let pluginModule = null;
   try {
-    pluginModule = await import('@awc/babel-plugin-jsx');
+    pluginModule = await import('@fluixi/babel-plugin-jsx');
   } catch (e) {
-    console.warn('Could not load @awc/babel-plugin-jsx:', e);
+    console.warn('Could not load @fluixi/babel-plugin-jsx:', e);
   }
 
   return {
@@ -582,7 +582,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
     getOptions() {
       return {
         runtime: 'automatic',
-        importSource: options.importSource || '@awc/jsx-runtime',
+        importSource: options.importSource || '@fluixi/jsx-runtime',
         pragma: options.pragma || 'jsx',
         pragmaFrag: options.pragmaFrag || 'Fragment',
         development: options.development || false,
@@ -671,7 +671,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       return {
         esbuild: {
           jsx: 'automatic',
-          jsxImportSource: options.importSource || '@awc/jsx-runtime',
+          jsxImportSource: options.importSource || '@fluixi/jsx-runtime',
         },
       };
     },

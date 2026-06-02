@@ -1,6 +1,6 @@
 /**
  * @fileoverview Production builder for KettleJS applications
- * @module @awc/kettlejs/builder
+ * @module @fluixi/kettlejs/builder
  *
  * This module provides build utilities for creating optimized production bundles
  * of KettleJS applications using Vite/Rollup.
@@ -154,7 +154,7 @@ export function kettleJSBuildPlugin(config: BuildConfig = {}): Plugin {
           },
         },
         optimizeDeps: {
-          include: ['lit', '@awc/reactive', '@awc/kettlejs'],
+          include: ['lit', '@fluixi/reactive', '@fluixi/kettlejs'],
         },
         resolve: {
           dedupe: ['lit'],
@@ -260,7 +260,7 @@ async function listFiles(
  *
  * @example
  * ```typescript
- * import { build } from '@awc/kettlejs/builder';
+ * import { build } from '@fluixi/kettlejs/builder';
  *
  * const result = await build({
  *   outDir: 'dist',
@@ -327,8 +327,8 @@ export async function build(config: BuildConfig = {}): Promise<BuildResult> {
           manualChunks: splitting
             ? {
                 lit: ['lit'],
-                reactive: ['@awc/reactive'],
-                kettlejs: ['@awc/kettlejs'],
+                reactive: ['@fluixi/reactive'],
+                kettlejs: ['@fluixi/kettlejs'],
               }
             : undefined,
         },
@@ -411,7 +411,7 @@ export async function build(config: BuildConfig = {}): Promise<BuildResult> {
  *
  * @example
  * ```typescript
- * import { buildFullStack } from '@awc/kettlejs/builder';
+ * import { buildFullStack } from '@fluixi/kettlejs/builder';
  *
  * await buildFullStack({
  *   outDir: 'dist',
@@ -433,7 +433,7 @@ export async function buildFullStack(
  *
  * @example
  * ```typescript
- * import { buildClient } from '@awc/kettlejs/builder';
+ * import { buildClient } from '@fluixi/kettlejs/builder';
  *
  * await buildClient({ minify: true });
  * ```
@@ -452,7 +452,7 @@ export async function buildClient(
  *
  * @example
  * ```typescript
- * import { watch } from '@awc/kettlejs/builder';
+ * import { watch } from '@fluixi/kettlejs/builder';
  *
  * await watch({ outDir: 'dist' });
  * ```
@@ -483,7 +483,7 @@ export async function watch(config: BuildConfig = {}): Promise<void> {
  *
  * @example
  * ```typescript
- * import { analyzeBundle } from '@awc/kettlejs/builder';
+ * import { analyzeBundle } from '@fluixi/kettlejs/builder';
  *
  * const stats = await analyzeBundle({ outDir: 'dist' });
  * console.log('Bundle stats:', stats);
@@ -524,7 +524,7 @@ export async function analyzeBundle(config: BuildConfig = {}): Promise<any> {
  *
  * @example
  * ```typescript
- * import { optimizeAssets } from '@awc/kettlejs/builder';
+ * import { optimizeAssets } from '@fluixi/kettlejs/builder';
  *
  * await build({ outDir: 'dist' });
  * await optimizeAssets('dist');

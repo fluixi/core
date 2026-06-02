@@ -7,7 +7,7 @@
     
     // JSX Configuration for KettleJS
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs",
+    "jsxImportSource": "@fluixi/kettlejs",
     
     // Module Resolution
     "moduleResolution": "bundler",

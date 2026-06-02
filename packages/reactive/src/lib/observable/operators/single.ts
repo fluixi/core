@@ -1,4 +1,4 @@
-import { AsyncScheduler, EmptyError, Observable, OperatorFunction } from "@awc/reactive";
+import { AsyncScheduler, EmptyError, Observable, OperatorFunction } from "@fluixi/reactive";
 
 /**
  * Configuration options for single

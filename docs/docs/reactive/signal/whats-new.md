@@ -65,7 +65,7 @@ batch(() => {
 Non-blocking updates for better UX:
 
 ```typescript
-import { startTransition, useTransition } from '@awc/reactive';
+import { startTransition, useTransition } from '@fluixi/reactive';
 
 // Mark updates as low priority
 await startTransition(() => {
@@ -94,7 +94,7 @@ if (isPending()) {
 Declarative async data loading:
 
 ```typescript
-import { createSuspense, trackPromise } from '@awc/reactive';
+import { createSuspense, trackPromise } from '@fluixi/reactive';
 
 const UserProfile = createSuspense(
   () => {
@@ -118,7 +118,7 @@ const UserProfile = createSuspense(
 Graceful error handling in reactive contexts:
 
 ```typescript
-import { catchError } from '@awc/reactive';
+import { catchError } from '@fluixi/reactive';
 
 const safeData = catchError(
   () => parseData(input()),
@@ -154,7 +154,7 @@ createRoot((dispose) => {
 Clean state sharing without prop drilling:
 
 ```typescript
-import { createContext, useContext } from '@awc/reactive';
+import { createContext, useContext } from '@fluixi/reactive';
 
 // Create context
 const ThemeContext = createContext({ mode: 'light' });
@@ -184,7 +184,7 @@ const theme = useContext(ThemeContext);
 Synchronous DOM updates with highest priority:
 
 ```typescript
-import { createRenderEffect } from '@awc/reactive';
+import { createRenderEffect } from '@fluixi/reactive';
 
 createRenderEffect(() => {
   // Runs synchronously after signal updates
@@ -201,7 +201,7 @@ createRenderEffect(() => {
 Manual dependency tracking:
 
 ```typescript
-import { createReaction } from '@awc/reactive';
+import { createReaction } from '@fluixi/reactive';
 
 const track = createReaction(() => {
   console.log('Changed!');
@@ -216,7 +216,7 @@ track(() => console.log(signal()));
 Explicit dependencies:
 
 ```typescript
-import { on, createEffect } from '@awc/reactive';
+import { on, createEffect } from '@fluixi/reactive';
 
 createEffect(
   on(
@@ -237,7 +237,7 @@ createEffect(
 Advanced lifecycle control:
 
 ```typescript
-import { getOwner, runWithOwner } from '@awc/reactive';
+import { getOwner, runWithOwner } from '@fluixi/reactive';
 
 // Capture owner
 const owner = getOwner();
@@ -622,7 +622,7 @@ import {
   createContext,
   useContext,
   useTransition
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 // Context
 const AppContext = createContext({ 

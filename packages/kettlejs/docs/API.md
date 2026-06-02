@@ -29,7 +29,7 @@ Renders a component into a DOM container with reactive updates.
 
 **Example:**
 ```typescript
-import { render, html } from '@awc/kettlejs';
+import { render, html } from '@fluixi/kettlejs';
 
 const App = () => html`<div>Hello World</div>`;
 const dispose = render(App, document.getElementById('app')!);
@@ -51,7 +51,7 @@ Creates a component with lifecycle management.
 
 **Example:**
 ```typescript
-import { createComponent, html, createSignal } from '@awc/kettlejs';
+import { createComponent, html, createSignal } from '@fluixi/kettlejs';
 
 const Counter = createComponent<{ initialCount: number }>((props) => {
   const [count, setCount] = createSignal(props.initialCount);
@@ -79,7 +79,7 @@ Creates a root rendering context for the application.
 
 **Example:**
 ```typescript
-import { createRoot, html } from '@awc/kettlejs';
+import { createRoot, html } from '@fluixi/kettlejs';
 
 const dispose = createRoot((dispose) => {
   return html`<div>${App()}</div>`;
@@ -104,7 +104,7 @@ Creates a reactive signal (reactive state).
 
 **Example:**
 ```typescript
-import { createSignal } from '@awc/kettlejs';
+import { createSignal } from '@fluixi/kettlejs';
 
 const [count, setCount] = createSignal(0);
 const [user, setUser] = createSignal<User | null>(null);
@@ -130,7 +130,7 @@ Creates a side effect that runs when dependencies change.
 
 **Example:**
 ```typescript
-import { createSignal, createEffect } from '@awc/kettlejs';
+import { createSignal, createEffect } from '@fluixi/kettlejs';
 
 const [count, setCount] = createSignal(0);
 
@@ -154,7 +154,7 @@ Creates derived reactive state (computed value).
 
 **Example:**
 ```typescript
-import { createSignal, createMemo } from '@awc/kettlejs';
+import { createSignal, createMemo } from '@fluixi/kettlejs';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -179,7 +179,7 @@ Batches multiple signal updates together.
 
 **Example:**
 ```typescript
-import { createSignal, batch } from '@awc/kettlejs';
+import { createSignal, batch } from '@fluixi/kettlejs';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -203,7 +203,7 @@ Runs a function without tracking dependencies.
 
 **Example:**
 ```typescript
-import { createSignal, createEffect, untrack } from '@awc/kettlejs';
+import { createSignal, createEffect, untrack } from '@fluixi/kettlejs';
 
 const [count, setCount] = createSignal(0);
 
@@ -233,7 +233,7 @@ Conditional rendering component.
 
 **Example:**
 ```typescript
-import { Show, createSignal, html } from '@awc/kettlejs';
+import { Show, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [user, setUser] = createSignal<User | null>(null);
@@ -263,7 +263,7 @@ List rendering component with keyed reconciliation.
 
 **Example:**
 ```typescript
-import { For, createSignal, html } from '@awc/kettlejs';
+import { For, createSignal, html } from '@fluixi/kettlejs';
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal([
@@ -297,7 +297,7 @@ Non-keyed list rendering with reactive items.
 
 **Example:**
 ```typescript
-import { Index, createSignal, html } from '@awc/kettlejs';
+import { Index, createSignal, html } from '@fluixi/kettlejs';
 
 const CounterList = () => {
   const [counts, setCounts] = createSignal([0, 0, 0]);
@@ -327,7 +327,7 @@ Multiple condition branches (like switch statement).
 
 **Example:**
 ```typescript
-import { Switch, Match, createSignal, html } from '@awc/kettlejs';
+import { Switch, Match, createSignal, html } from '@fluixi/kettlejs';
 
 const StatusView = () => {
   const [status, setStatus] = createSignal<'loading' | 'success' | 'error'>('loading');
@@ -360,7 +360,7 @@ Renders content outside the component hierarchy.
 
 **Example:**
 ```typescript
-import { Portal, Show, createSignal, html } from '@awc/kettlejs';
+import { Portal, Show, createSignal, html } from '@fluixi/kettlejs';
 
 const Modal = () => {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -398,7 +398,7 @@ Renders components dynamically.
 
 **Example:**
 ```typescript
-import { Dynamic, createSignal, html } from '@awc/kettlejs';
+import { Dynamic, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [viewMode, setViewMode] = createSignal<'list' | 'grid'>('list');
@@ -430,7 +430,7 @@ Creates a context for sharing state.
 
 **Example:**
 ```typescript
-import { createContext } from '@awc/kettlejs';
+import { createContext } from '@fluixi/kettlejs';
 
 interface Theme {
   primaryColor: string;
@@ -455,7 +455,7 @@ Retrieves the value of a context.
 
 **Example:**
 ```typescript
-import { createContext, useContext, html } from '@awc/kettlejs';
+import { createContext, useContext, html } from '@fluixi/kettlejs';
 
 const ThemeContext = createContext({ primaryColor: '#007bff' });
 
@@ -480,7 +480,7 @@ Provides a context value to descendants.
 
 **Example:**
 ```typescript
-import { createContext, Provider, html } from '@awc/kettlejs';
+import { createContext, Provider, html } from '@fluixi/kettlejs';
 
 const ThemeContext = createContext({ primaryColor: '#007bff' });
 
@@ -523,7 +523,7 @@ Creates a resource for async data fetching.
 
 **Example:**
 ```typescript
-import { createResource, html } from '@awc/kettlejs';
+import { createResource, html } from '@fluixi/kettlejs';
 
 interface User {
   id: number;
@@ -569,7 +569,7 @@ Creates a lazy resource that doesn't fetch until explicitly called.
 
 **Example:**
 ```typescript
-import { createLazyResource, html } from '@awc/kettlejs';
+import { createLazyResource, html } from '@fluixi/kettlejs';
 
 const UserDetail = () => {
   const [userData, { fetch: fetchUser }] = createLazyResource(
@@ -606,7 +606,7 @@ Creates a router instance.
 
 **Example:**
 ```typescript
-import { createRouter } from '@awc/kettlejs';
+import { createRouter } from '@fluixi/kettlejs';
 
 const routes = [
   { path: '/', component: Home },
@@ -631,7 +631,7 @@ Router provider component.
 
 **Example:**
 ```typescript
-import { createRouter, Router, html } from '@awc/kettlejs';
+import { createRouter, Router, html } from '@fluixi/kettlejs';
 
 const App = () => {
   const router = createRouter([...routes]);
@@ -662,7 +662,7 @@ Navigation link component.
 
 **Example:**
 ```typescript
-import { Link, html } from '@awc/kettlejs';
+import { Link, html } from '@fluixi/kettlejs';
 
 const Nav = () => html`
   <nav>
@@ -682,7 +682,7 @@ Accesses the router from context.
 
 **Example:**
 ```typescript
-import { useRouter } from '@awc/kettlejs';
+import { useRouter } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const router = useRouter();
@@ -703,7 +703,7 @@ Accesses the current location.
 
 **Example:**
 ```typescript
-import { useLocation, html } from '@awc/kettlejs';
+import { useLocation, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const location = useLocation();
@@ -722,7 +722,7 @@ Gets the navigation function.
 
 **Example:**
 ```typescript
-import { useNavigate } from '@awc/kettlejs';
+import { useNavigate } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const navigate = useNavigate();
@@ -743,7 +743,7 @@ Gets route parameters.
 
 **Example:**
 ```typescript
-import { useParams, html } from '@awc/kettlejs';
+import { useParams, html } from '@fluixi/kettlejs';
 
 // For route '/users/:id'
 const UserDetail = () => {
@@ -762,7 +762,7 @@ Gets query parameters.
 
 **Example:**
 ```typescript
-import { useQuery, html } from '@awc/kettlejs';
+import { useQuery, html } from '@fluixi/kettlejs';
 
 // For URL '/search?q=test&page=2'
 const SearchResults = () => {
@@ -789,7 +789,7 @@ Runs after the component mounts.
 
 **Example:**
 ```typescript
-import { onMount, createSignal, html } from '@awc/kettlejs';
+import { onMount, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   onMount(() => {
@@ -816,7 +816,7 @@ Runs before the component unmounts.
 
 **Example:**
 ```typescript
-import { onUnmount, createSignal, html } from '@awc/kettlejs';
+import { onUnmount, createSignal, html } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const timer = setInterval(() => console.log('tick'), 1000);
@@ -833,7 +833,7 @@ const MyComponent = () => {
 
 ### `onCleanup(callback)`
 
-Registers a cleanup function (from @awc/reactive).
+Registers a cleanup function (from @fluixi/reactive).
 
 **Parameters:**
 - `callback: () => void` - Cleanup function
@@ -842,7 +842,7 @@ Registers a cleanup function (from @awc/reactive).
 
 **Example:**
 ```typescript
-import { createEffect, onCleanup } from '@awc/kettlejs';
+import { createEffect, onCleanup } from '@fluixi/kettlejs';
 
 createEffect(() => {
   const subscription = observable.subscribe(...);
@@ -868,7 +868,7 @@ Merges multiple prop objects.
 
 **Example:**
 ```typescript
-import { mergeProps, html } from '@awc/kettlejs';
+import { mergeProps, html } from '@fluixi/kettlejs';
 
 const Button = (props: { label?: string; onClick?: () => void }) => {
   const merged = mergeProps({ label: 'Click me' }, props);
@@ -890,7 +890,7 @@ Splits props into multiple groups.
 
 **Example:**
 ```typescript
-import { splitProps } from '@awc/kettlejs';
+import { splitProps } from '@fluixi/kettlejs';
 
 const MyComponent = (props: { a: number; b: string; c: boolean }) => {
   const [group1, group2, rest] = splitProps(props, ['a', 'b'], ['c']);

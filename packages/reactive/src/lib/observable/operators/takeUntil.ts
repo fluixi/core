@@ -1,4 +1,4 @@
-import { from, Observable, ObservableInput, OperatorFunction } from "@awc/reactive";
+import { from, Observable, ObservableInput, OperatorFunction } from "@fluixi/reactive";
 
 /**
  * Takes values until a notifier Observable emits a value.

@@ -23,8 +23,8 @@ import {
   untrack,
   createRoot,
   isMemo,
-} from '@awc/reactive/signal';
-import type { Accessor } from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
+import type { Accessor } from '@fluixi/reactive/signal';
 import { isPromise } from './utils.js';
 
 

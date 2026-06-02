@@ -1,4 +1,4 @@
-import { Observable, Subscription } from '@awc/reactive/observable';
+import { Observable, Subscription } from '@fluixi/reactive/observable';
 import { Subject } from '../subject.js';
 
 // Core types

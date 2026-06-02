@@ -1,7 +1,7 @@
-import { createComponent, withPortal, withSubComponents, EventName } from '@awc/element';
+import { createComponent, withPortal, withSubComponents, EventName } from '@fluixi/element';
 import { AdfDialog, AdfDialogBody, AdfDialogContent, AdfDialogHeader, AdfDialogFooter, AdfDialogToggleEvent} from '@awc/adf-dialog';
-import DOM from "@awc/dom"
-// import '@awc/adf-dialog/adf-dialog.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-dialog/adf-dialog.js';
 
 
 const DialogBase = createComponent({

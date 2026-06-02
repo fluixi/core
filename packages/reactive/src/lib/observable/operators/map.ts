@@ -1,4 +1,4 @@
-import { mergeMap, Observable, ObservableInput, OperatorFunction } from '@awc/reactive'
+import { mergeMap, Observable, ObservableInput, OperatorFunction } from '@fluixi/reactive'
 
 /**
  * Applies a given projection function to each value emitted by the source Observable,

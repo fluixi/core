@@ -2,16 +2,16 @@
 
 ## Overview
 
-KettleJS has been updated to properly integrate with the existing `@awc/reactive` signal system and provide seamless Lit-HTML component integration. This guide explains the new architecture and how to use it.
+KettleJS has been updated to properly integrate with the existing `@fluixi/reactive` signal system and provide seamless Lit-HTML component integration. This guide explains the new architecture and how to use it.
 
 ## Architecture Changes
 
-### 1. Using Existing @awc/reactive Primitives
+### 1. Using Existing @fluixi/reactive Primitives
 
-KettleJS now **re-exports** the reactive primitives from `@awc/reactive` instead of reimplementing them:
+KettleJS now **re-exports** the reactive primitives from `@fluixi/reactive` instead of reimplementing them:
 
 ```typescript
-// ✅ Correct - Use from @awc/reactive
+// ✅ Correct - Use from @fluixi/reactive
 import { 
   createSignal, 
   createEffect, 
@@ -21,10 +21,10 @@ import {
   untrack,
   createContext,
   useContext
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 
 // ❌ Incorrect - Don't reimplement
-// createSignal is already implemented in @awc/reactive
+// createSignal is already implemented in @fluixi/reactive
 ```
 
 ### 2. Reactive Controller Pattern
@@ -33,7 +33,7 @@ The framework provides a `SignalController` that implements Lit's `ReactiveContr
 
 ```typescript
 import type { ReactiveController, ReactiveControllerHost } from 'lit';
-import { createEffect, createRoot, getOwner, runWithOwner } from '@awc/reactive';
+import { createEffect, createRoot, getOwner, runWithOwner } from '@fluixi/reactive';
 
 export class SignalController implements ReactiveController {
   private dispose?: () => void;
@@ -94,8 +94,8 @@ The simplest way to create reactive components:
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs/core/component';
-import { createSignal } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 class MyCounter extends KettleElement {
@@ -119,8 +119,8 @@ For existing LitElement classes:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
 class MyElement extends WithSignals(LitElement) {
@@ -143,8 +143,8 @@ For manual control:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs/core/reactive';
-import { createSignal } from '@awc/reactive';
+import { SignalController } from '@fluixi/kettlejs/core/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
 class MyElement extends LitElement {
@@ -161,10 +161,10 @@ class MyElement extends LitElement {
 
 ### 1. Context API
 
-Uses `@awc/reactive`'s built-in context system:
+Uses `@fluixi/reactive`'s built-in context system:
 
 ```typescript
-import { createContext, useContext } from '@awc/reactive';
+import { createContext, useContext } from '@fluixi/reactive';
 
 // Create context
 const ThemeContext = createContext({ dark: false });
@@ -183,7 +183,7 @@ class MyComponent extends KettleElement {
 Use effects within the component's reactive scope:
 
 ```typescript
-import { createEffect } from '@awc/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 class MyComponent extends KettleElement {
   private [data, setData] = createSignal(null);
@@ -209,7 +209,7 @@ class MyComponent extends KettleElement {
 Use memos for computed values:
 
 ```typescript
-import { createSignal, createMemo } from '@awc/reactive';
+import { createSignal, createMemo } from '@fluixi/reactive';
 
 class MyComponent extends KettleElement {
   private [firstName, setFirstName] = createSignal('John');
@@ -227,7 +227,7 @@ class MyComponent extends KettleElement {
 Use batch for multiple updates:
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 class MyComponent extends KettleElement {
   private [a, setA] = createSignal(0);
@@ -276,7 +276,7 @@ class ReactiveElement extends KettleElement {
 KettleJS now includes SSR and hydration support:
 
 ```typescript
-import { hydrate, isServer } from '@awc/kettlejs/ssr/hydration';
+import { hydrate, isServer } from '@fluixi/kettlejs/ssr/hydration';
 
 // Server-side
 if (isServer()) {
@@ -370,25 +370,25 @@ If you were using the old KettleJS implementation:
 
 ### Old Way:
 ```typescript
-import { createSignal, render } from '@awc/kettlejs'; // Don't do this
+import { createSignal, render } from '@fluixi/kettlejs'; // Don't do this
 ```
 
 ### New Way:
 ```typescript
-// Use reactive primitives from @awc/reactive
-import { createSignal, createEffect } from '@awc/reactive';
+// Use reactive primitives from @fluixi/reactive
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 // Use Lit for rendering
 import { html, render } from 'lit';
 
 // Use KettleElement for components
-import { KettleElement } from '@awc/kettlejs/core/component';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
 ```
 
 ## File Structure
 
 ```
-@awc/kettlejs/
+@fluixi/kettlejs/
 ├── core/
 │   ├── src/
 │   │   ├── component.ts       # KettleElement base class
@@ -414,8 +414,8 @@ import { KettleElement } from '@awc/kettlejs/core/component';
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs/core/component';
-import { createSignal, createEffect, createMemo, batch } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs/core/component';
+import { createSignal, createEffect, createMemo, batch } from '@fluixi/reactive';
 
 @customElement('todo-app')
 class TodoApp extends KettleElement {
@@ -493,7 +493,7 @@ class TodoApp extends KettleElement {
 
 ## Next Steps
 
-1. ✅ **Use existing @awc/reactive primitives** - Don't reimplement signals
+1. ✅ **Use existing @fluixi/reactive primitives** - Don't reimplement signals
 2. ✅ **Use SignalController** - For Lit integration
 3. ✅ **Extend KettleElement** - For automatic reactivity
 4. ⏳ **Add dev server** - Create Vite plugin for development
@@ -503,6 +503,6 @@ class TodoApp extends KettleElement {
 
 ## Resources
 
-- [@awc/reactive Documentation](../reactive/README.md)
+- [@fluixi/reactive Documentation](../reactive/README.md)
 - [Lit Documentation](https://lit.dev)
 - [Reactive Controller Pattern](https://lit.dev/docs/composition/controllers/)

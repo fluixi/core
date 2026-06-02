@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfFormField, AdfFormFieldChangedEvent, AdfFormFieldValueChangedEvent} from '@awc/adf-form-field';
-import DOM from "@awc/dom"
-// import '@awc/adf-form-field/adf-form-field.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-form-field/adf-form-field.js';
 
 
 export const Input = createComponent({

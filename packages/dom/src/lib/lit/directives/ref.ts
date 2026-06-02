@@ -26,7 +26,7 @@
 
 import { directive, Directive, ElementPart, PartInfo, PartType } from 'lit/directive.js';
 import { noChange } from 'lit';
-import { untrack } from '@awc/reactive/signal';
+import { untrack } from '@fluixi/reactive/signal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

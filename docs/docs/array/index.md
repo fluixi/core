@@ -30,13 +30,13 @@ import {
   groupBy,
   sortBy,
   // ... other utilities
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 ```
 
 ## Quick Start
 
 ```typescript
-import { sortBy, groupBy, sumBy, unique } from '@awc/utils/array/advanced';
+import { sortBy, groupBy, sumBy, unique } from '@fluixi/utils/array/advanced';
 
 const users = [
   { dept: 'sales', name: 'Alice', sales: 1000 },

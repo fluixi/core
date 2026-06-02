@@ -1,4 +1,4 @@
-import { mergeMap, ObservableInput, OperatorFunction } from '@awc/reactive';
+import { mergeMap, ObservableInput, OperatorFunction } from '@fluixi/reactive';
 
 /**
  * Projects each source value to an Observable which is merged in the output Observable in a serialized fashion,

@@ -1,7 +1,7 @@
-import { createComponent } from '@awc/element';
+import { createComponent } from '@fluixi/element';
 import { AdfSidenav, AdfSidenavBody, AdfSidenavHeader, AdfSidenavFooter, AdfSidenavItem, AdfSidenavToggleEvent, AdfSidenavSection, AdfSidenavSubItems} from '@awc/adf-sidenav';
-import DOM from "@awc/dom"
-// import '@awc/adf-sidenav/adf-sidenav.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-sidenav/adf-sidenav.js';
 
 
 const SidenavComponent = createComponent({

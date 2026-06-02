@@ -10,20 +10,20 @@ Get up and running with the color management system in under 5 minutes.
 
 ## Installation
 
-The color utilities are part of the `@awc/utils` package:
+The color utilities are part of the `@fluixi/utils` package:
 
 ```bash
-npm install @awc/utils
+npm install @fluixi/utils
 ```
 
 Or with your preferred package manager:
 
 ```bash
 # pnpm
-pnpm add @awc/utils
+pnpm add @fluixi/utils
 
 # yarn
-yarn add @awc/utils
+yarn add @fluixi/utils
 ```
 
 ## Basic Import
@@ -32,7 +32,7 @@ Import the color utilities you need:
 
 ```typescript
 // Import the Color class
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 // Import specific utilities
 import { 
@@ -40,7 +40,7 @@ import {
   convertColor, 
   generateGradient,
   isValidColor 
-} from '@awc/utils/color';
+} from '@fluixi/utils/color';
 ```
 
 ## Creating Colors
@@ -174,7 +174,7 @@ const oklchObj = color.getOklchObject(); // { l: 0.63, c: 0.12, h: 237, alpha: 1
 Check if colors are valid:
 
 ```typescript
-import { isValidColor } from '@awc/utils/color';
+import { isValidColor } from '@fluixi/utils/color';
 
 isValidColor('#3498db');           // true
 isValidColor('rgb(52, 152, 219)'); // true
@@ -233,7 +233,7 @@ console.log(palette);
 ### Gradient Colors
 
 ```typescript
-import { generateGradient } from '@awc/utils/color';
+import { generateGradient } from '@fluixi/utils/color';
 
 const gradient = generateGradient('#ff0000', '#0000ff', 5, 'oklch');
 // Returns 5 colors smoothly transitioning from red to blue
@@ -302,7 +302,7 @@ import type {
   RGBColor,
   HSLColor,
   ColorConversionOptions,
-} from '@awc/utils/color';
+} from '@fluixi/utils/color';
 
 const rgb: RGBColor = { r: 255, g: 0, b: 0, a: 1 };
 const format: ColorFormat = 'oklch';
@@ -399,8 +399,8 @@ When working with percentages in RGB:
 Import types explicitly:
 
 ```typescript
-import { Color } from '@awc/utils/color';
-import type { RGBColor, ColorFormat } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
+import type { RGBColor, ColorFormat } from '@fluixi/utils/color';
 ```
 
 ## Support

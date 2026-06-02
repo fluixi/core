@@ -1,6 +1,6 @@
-import { AsyncScheduler, OperatorFunction, Subscription } from "@awc/reactive";
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
-import { Subject } from "@awc/reactive";
+import { AsyncScheduler, OperatorFunction, Subscription } from "@fluixi/reactive";
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
+import { Subject } from "@fluixi/reactive";
 import {Observable} from '../observable.js'
 
 /**

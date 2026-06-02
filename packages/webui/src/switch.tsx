@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfSwitch, AdfSwitchChangeEvent} from '@awc/adf-switch';
-import DOM from "@awc/dom"
-// import '@awc/adf-switch/adf-s@awc/adf-switch.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-switch/adf-s@fluixi/adf-switch.js';
 
 
 export const Switch = createComponent({

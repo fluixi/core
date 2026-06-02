@@ -48,7 +48,7 @@ The store uses special symbols for internal access:
 ### Creating a Store
 
 ```typescript
-import { createStore } from '@awc/reactive/store';
+import { createStore } from '@fluixi/reactive/store';
 
 const [state, setState] = createStore({
   user: {
@@ -101,7 +101,7 @@ setState('user.name', 'Jane');
 Batch multiple updates to trigger effects only once:
 
 ```typescript
-import { batch } from '@awc/reactive/signal';
+import { batch } from '@fluixi/reactive/signal';
 
 batch(() => {
   setState('user', 'name', 'Jane');
@@ -129,7 +129,7 @@ store.produce(draft => {
 Or use the helper function:
 
 ```typescript
-import { produce } from '@awc/reactive/store';
+import { produce } from '@fluixi/reactive/store';
 
 const nextState = produce(currentState, draft => {
   draft.user.name = 'Jane';
@@ -172,7 +172,7 @@ store.reconcile({
 Use `unwrap()` to get the raw state without reactivity:
 
 ```typescript
-import { unwrap } from '@awc/reactive/store';
+import { unwrap } from '@fluixi/reactive/store';
 
 const raw = unwrap(state);
 // raw is not a proxy, won't trigger reactivity
@@ -186,7 +186,7 @@ const raw2 = state[$RAW];
 Access the underlying store node for advanced use cases:
 
 ```typescript
-import { getStoreNode, $NODE } from '@awc/reactive/store';
+import { getStoreNode, $NODE } from '@fluixi/reactive/store';
 
 const node = getStoreNode(state);
 // or

@@ -1,13 +1,18 @@
 {
-  "name": "@awc/jsx-runtime",
+  "name": "@fluixi/jsx-runtime",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "restricted"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "src",
     "README.md"
   ],
   "exports": {
@@ -48,20 +53,24 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@awc/babel-plugin-jsx": "workspace:*",
-    "@awc/dom": "workspace:*",
-    "@awc/reactive": "workspace:*",
+    "@fluixi/babel-plugin-jsx": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "@babel/preset-typescript": "^7.28.5",
     "@lit-labs/ssr": "^3.3.1",
     "lit": "^3.3.1",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@awc/mix-builder": "workspace:*",
+    "@fluixi/mix-builder": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/react": "^19.2.7",
     "inquirer": "^13.1.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/jsx-runtime"
   }
 }

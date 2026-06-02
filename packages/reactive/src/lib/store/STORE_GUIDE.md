@@ -877,7 +877,7 @@ Accepte jusqu'a 4 parametres pour supporter les differentes formes d'appel.
     this.mergeState(s, originalState as T);
   });
 ```
-Utilise la fonction utilitaire `set` de `@awc/utils/object` pour appliquer le changement sur le clone, puis `mergeState` pour fusionner le resultat avec le store.
+Utilise la fonction utilitaire `set` de `@fluixi/utils/object` pour appliquer le changement sur le clone, puis `mergeState` pour fusionner le resultat avec le store.
 
 ### `mergeState(partial, originalState)` — Fusion de l'Etat
 

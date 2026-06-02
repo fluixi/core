@@ -916,7 +916,7 @@ interface ContrastOptions {
 147 named colors from CSS specification:
 
 ```typescript
-import { NAMED_COLORS } from '@awc/utils/color';
+import { NAMED_COLORS } from '@fluixi/utils/color';
 
 NAMED_COLORS.red        // '#ff0000'
 NAMED_COLORS.blue       // '#0000ff'

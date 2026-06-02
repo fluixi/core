@@ -1,6 +1,6 @@
 /**
  * @fileoverview React Bridge for KettleJS using @lit/react
- * @module @awc/kettlejs/react-bridge
+ * @module @fluixi/kettlejs/react-bridge
  *
  * This module provides React wrappers for KettleJS components, enabling
  * seamless integration with React applications and the React ecosystem.

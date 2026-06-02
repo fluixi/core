@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@awc/kettlejs-test',
+    name: '@fluixi/kettlejs-test',
     watch: false,
     globals: true,
     environment: 'node',

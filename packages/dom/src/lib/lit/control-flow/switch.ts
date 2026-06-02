@@ -1,11 +1,11 @@
-import { Accessor, createEffect, createSignal } from '@awc/reactive';
+import { Accessor, createEffect, createSignal } from '@fluixi/reactive';
 import {
   childToTemplate,
   isTruthy,
   normalizeAccessor,
   renderContent,
 } from './utils.js';
-import { Component } from '@awc/dom';
+import { Component } from '@fluixi/dom';
 import { nothing, TemplateResult } from 'lit';
 
 // type Match<T = unknown> = [Accessor<boolean>, () => T];

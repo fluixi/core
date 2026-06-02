@@ -1,7 +1,7 @@
-import { createComponent, EventName } from '@awc/element';
+import { createComponent, EventName } from '@fluixi/element';
 import { AdfCheckbox, AdfCheckboxChangeEvent} from '@awc/adf-checkbox';
-import DOM from "@awc/dom"
-// import '@awc/adf-checkbox/adf-checkbox.js';
+import DOM from "@fluixi/dom"
+// import '@fluixi/adf-checkbox/adf-checkbox.js';
 
 
 export const Checkbox = createComponent({

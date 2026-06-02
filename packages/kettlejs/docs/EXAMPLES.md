@@ -19,7 +19,7 @@ A comprehensive collection of examples demonstrating KettleJS features and patte
 ### Hello World
 
 ```typescript
-import { render, html } from '@awc/kettlejs';
+import { render, html } from '@fluixi/kettlejs';
 
 const App = () => html`<h1>Hello, KettleJS!</h1>`;
 
@@ -29,7 +29,7 @@ render(App, document.getElementById('app')!);
 ### Counter
 
 ```typescript
-import { createSignal, html, render } from '@awc/kettlejs';
+import { createSignal, html, render } from '@fluixi/kettlejs';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -50,7 +50,7 @@ render(Counter, document.getElementById('app')!);
 ### Input Binding
 
 ```typescript
-import { createSignal, html } from '@awc/kettlejs';
+import { createSignal, html } from '@fluixi/kettlejs';
 
 const TextInput = () => {
   const [text, setText] = createSignal('');
@@ -76,7 +76,7 @@ const TextInput = () => {
 ### Multiple State Values
 
 ```typescript
-import { createSignal, html } from '@awc/kettlejs';
+import { createSignal, html } from '@fluixi/kettlejs';
 
 const UserForm = () => {
   const [firstName, setFirstName] = createSignal('');
@@ -121,7 +121,7 @@ const UserForm = () => {
 ### Computed Values
 
 ```typescript
-import { createSignal, createMemo, html } from '@awc/kettlejs';
+import { createSignal, createMemo, html } from '@fluixi/kettlejs';
 
 const ShoppingCart = () => {
   const [items, setItems] = createSignal([
@@ -150,7 +150,7 @@ const ShoppingCart = () => {
 ### Effects for Side Effects
 
 ```typescript
-import { createSignal, createEffect, html } from '@awc/kettlejs';
+import { createSignal, createEffect, html } from '@fluixi/kettlejs';
 
 const AutoSave = () => {
   const [content, setContent] = createSignal('');
@@ -186,7 +186,7 @@ const AutoSave = () => {
 ### Conditional Rendering with Show
 
 ```typescript
-import { Show, createSignal, html } from '@awc/kettlejs';
+import { Show, createSignal, html } from '@fluixi/kettlejs';
 
 const LoginStatus = () => {
   const [user, setUser] = createSignal<{ name: string } | null>(null);
@@ -216,7 +216,7 @@ const LoginStatus = () => {
 ### Lists with For
 
 ```typescript
-import { For, createSignal, html } from '@awc/kettlejs';
+import { For, createSignal, html } from '@fluixi/kettlejs';
 
 interface Todo {
   id: number;
@@ -288,7 +288,7 @@ const TodoList = () => {
 ### Switch/Match Pattern
 
 ```typescript
-import { Switch, Match, createSignal, html } from '@awc/kettlejs';
+import { Switch, Match, createSignal, html } from '@fluixi/kettlejs';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -332,7 +332,7 @@ const StatusDisplay = () => {
 ### Modal with Portal
 
 ```typescript
-import { Portal, Show, createSignal, html } from '@awc/kettlejs';
+import { Portal, Show, createSignal, html } from '@fluixi/kettlejs';
 
 const ModalExample = () => {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -373,7 +373,7 @@ const ModalExample = () => {
 ### Basic Resource
 
 ```typescript
-import { createResource, Show, html } from '@awc/kettlejs';
+import { createResource, Show, html } from '@fluixi/kettlejs';
 
 interface Post {
   id: number;
@@ -425,7 +425,7 @@ const PostViewer = () => {
 ### Lazy Resource
 
 ```typescript
-import { createLazyResource, Show, createSignal, html } from '@awc/kettlejs';
+import { createLazyResource, Show, createSignal, html } from '@fluixi/kettlejs';
 
 const LazyDataLoader = () => {
   const [data, { fetch: loadData }] = createLazyResource(
@@ -458,7 +458,7 @@ const LazyDataLoader = () => {
 ### Multiple Resources
 
 ```typescript
-import { createResources, Show, For, html } from '@awc/kettlejs';
+import { createResources, Show, For, html } from '@fluixi/kettlejs';
 
 const DashboardData = () => {
   const [resources, { refetchAll }] = createResources([
@@ -514,7 +514,7 @@ const DashboardData = () => {
 ### Basic Router Setup
 
 ```typescript
-import { createRouter, Router, Link, html } from '@awc/kettlejs';
+import { createRouter, Router, Link, html } from '@fluixi/kettlejs';
 
 const Home = () => html`
   <div>
@@ -565,7 +565,7 @@ const App = () => {
 ### Route Parameters
 
 ```typescript
-import { useParams, useNavigate, html } from '@awc/kettlejs';
+import { useParams, useNavigate, html } from '@fluixi/kettlejs';
 
 const UserProfile = () => {
   const params = useParams();
@@ -587,7 +587,7 @@ const UserProfile = () => {
 ### Query Parameters
 
 ```typescript
-import { useQuery, useNavigate, html } from '@awc/kettlejs';
+import { useQuery, useNavigate, html } from '@fluixi/kettlejs';
 
 const SearchResults = () => {
   const query = useQuery();
@@ -618,7 +618,7 @@ const SearchResults = () => {
 ### Theme Context
 
 ```typescript
-import { createContext, useContext, Provider, createSignal, html } from '@awc/kettlejs';
+import { createContext, useContext, Provider, createSignal, html } from '@fluixi/kettlejs';
 
 interface Theme {
   primaryColor: string;
@@ -686,7 +686,7 @@ const App = () => {
 ### Auth Context
 
 ```typescript
-import { createContextWithProvider, useContext, createSignal, html } from '@awc/kettlejs';
+import { createContextWithProvider, useContext, createSignal, html } from '@fluixi/kettlejs';
 
 interface User {
   id: number;
@@ -765,7 +765,7 @@ const LoginButton = () => {
 ### Form with Validation
 
 ```typescript
-import { createSignal, createMemo, html } from '@awc/kettlejs';
+import { createSignal, createMemo, html } from '@fluixi/kettlejs';
 
 const RegistrationForm = () => {
   const [email, setEmail] = createSignal('');
@@ -852,7 +852,7 @@ const RegistrationForm = () => {
 ### Infinite Scroll List
 
 ```typescript
-import { createSignal, createEffect, For, onMount, html } from '@awc/kettlejs';
+import { createSignal, createEffect, For, onMount, html } from '@fluixi/kettlejs';
 
 interface Item {
   id: number;
@@ -929,7 +929,7 @@ const InfiniteScrollList = () => {
 ### Debounced Search
 
 ```typescript
-import { createSignal, createEffect, createResource, Show, For, html } from '@awc/kettlejs';
+import { createSignal, createEffect, createResource, Show, For, html } from '@fluixi/kettlejs';
 
 interface SearchResult {
   id: number;

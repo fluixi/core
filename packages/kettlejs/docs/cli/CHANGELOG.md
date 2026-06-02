@@ -7,7 +7,7 @@
 #### Component Generation
 - **JSX Mode**: Native JSX runtime for KettleJS components without React dependency
   - Generates `.tsx` files with KettleJS JSX runtime imports
-  - Uses `/** @jsx h */` pragma and `@awc/kettlejs/jsx-runtime`
+  - Uses `/** @jsx h */` pragma and `@fluixi/kettlejs/jsx-runtime`
   - Supports all component types (basic, with-state, with-resource, etc.)
   
 - **React Bridge Mode**: React-compatible components with KettleJS signals
@@ -25,7 +25,7 @@
 #### Project Generation Enhancements
 - Interactive mode selection for default component mode
 - Automatic TypeScript configuration based on mode:
-  - JSX mode: `jsx: "react-jsx"` with `jsxImportSource: "@awc/kettlejs/jsx-runtime"`
+  - JSX mode: `jsx: "react-jsx"` with `jsxImportSource: "@fluixi/kettlejs/jsx-runtime"`
   - React Bridge: `jsx: "react-jsx"` with React dependencies
   - Lit-HTML: `jsx: "preserve"`
 - Automatic dependency management:
@@ -114,7 +114,7 @@ Auto-generated based on mode:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -140,7 +140,7 @@ Auto-generated based on mode:
 #### Package Dependencies
 
 **JSX Mode (No additional dependencies):**
-- Uses existing `@awc/kettlejs/jsx-runtime`
+- Uses existing `@fluixi/kettlejs/jsx-runtime`
 
 **React Bridge Mode (Auto-added):**
 ```json
@@ -187,7 +187,7 @@ kettlejs g c MyComponent --mode react-bridge
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```

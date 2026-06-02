@@ -59,7 +59,7 @@ Transitions allow you to mark updates as non-urgent, preventing them from blocki
 Mark expensive updates as low priority:
 
 ```typescript
-import { startTransition, createSignal } from '@awc/reactive';
+import { startTransition, createSignal } from '@fluixi/reactive';
 
 const [query, setQuery] = createSignal('');
 const [results, setResults] = createSignal([]);
@@ -137,7 +137,7 @@ Suspense boundaries handle async data loading, showing fallback content while da
 Create a suspense boundary:
 
 ```typescript
-import { createSuspense, trackPromise } from '@awc/reactive';
+import { createSuspense, trackPromise } from '@fluixi/reactive';
 
 const UserProfile = createSuspense(
   () => {
@@ -218,7 +218,7 @@ const App = createSuspense(
 Catch and handle errors in reactive contexts:
 
 ```typescript
-import { catchError, createEffect } from '@awc/reactive';
+import { catchError, createEffect } from '@fluixi/reactive';
 
 const safeData = catchError(
   () => {
@@ -237,7 +237,7 @@ const safeData = catchError(
 Attach error boundaries to reactive roots:
 
 ```typescript
-import { createRoot, getOwner } from '@awc/reactive';
+import { createRoot, getOwner } from '@fluixi/reactive';
 
 createRoot((dispose) => {
   const owner = getOwner();
@@ -286,7 +286,7 @@ Share data across reactive boundaries without prop drilling.
 Create a typed context:
 
 ```typescript
-import { createContext } from '@awc/reactive';
+import { createContext } from '@fluixi/reactive';
 
 interface ThemeContext {
   mode: 'light' | 'dark';
@@ -304,7 +304,7 @@ const ThemeContext = createContext<ThemeContext>({
 Provide context values:
 
 ```typescript
-import { createRoot } from '@awc/reactive';
+import { createRoot } from '@fluixi/reactive';
 
 createRoot(() => {
   ThemeContext.Provider({
@@ -324,7 +324,7 @@ createRoot(() => {
 Consume context values:
 
 ```typescript
-import { useContext } from '@awc/reactive';
+import { useContext } from '@fluixi/reactive';
 
 function ThemedButton() {
   const theme = useContext(ThemeContext);
@@ -379,7 +379,7 @@ function Button() {
 Render effects run synchronously after signals update, perfect for DOM manipulation:
 
 ```typescript
-import { createRenderEffect, createSignal } from '@awc/reactive';
+import { createRenderEffect, createSignal } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -407,7 +407,7 @@ createRenderEffect(() => {
 Manual dependency tracking for fine-grained control:
 
 ```typescript
-import { createReaction, createSignal } from '@awc/reactive';
+import { createReaction, createSignal } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 const [name, setName] = createSignal('John');
@@ -444,7 +444,7 @@ track(() => {
 The `on()` helper creates explicit dependency relationships:
 
 ```typescript
-import { on, createSignal, createEffect } from '@awc/reactive';
+import { on, createSignal, createEffect } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 const [multiplier, setMultiplier] = createSignal(2);
@@ -493,7 +493,7 @@ createEffect(
 Get the current reactive owner:
 
 ```typescript
-import { getOwner, createRoot } from '@awc/reactive';
+import { getOwner, createRoot } from '@fluixi/reactive';
 
 createRoot(() => {
   const owner = getOwner();
@@ -509,7 +509,7 @@ createRoot(() => {
 Run code with a specific owner context:
 
 ```typescript
-import { getOwner, runWithOwner, createEffect } from '@awc/reactive';
+import { getOwner, runWithOwner, createEffect } from '@fluixi/reactive';
 
 // Capture owner
 const owner = getOwner();
@@ -582,7 +582,7 @@ Suggestions:
 Get comprehensive statistics:
 
 ```typescript
-import { getNodeStats } from '@awc/reactive';
+import { getNodeStats } from '@fluixi/reactive';
 
 const stats = getNodeStats();
 
@@ -597,7 +597,7 @@ console.log('Dependencies:', stats.dependencies);
 Detect memory leaks:
 
 ```typescript
-import { findPotentialLeaks } from '@awc/reactive';
+import { findPotentialLeaks } from '@fluixi/reactive';
 
 const leaks = findPotentialLeaks();
 

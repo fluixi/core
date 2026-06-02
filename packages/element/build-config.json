@@ -1,25 +1,35 @@
 {
-  "$schema": "./node_modules/@awc/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "$schema": "./node_modules/@fluixi/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
     "target": "es2022",
-    "formats": ["es", "cjs"],
-    "entries": ["src/**/*.ts"],
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
     "rootDir": "src",
     "externals": [
-      "@awc/reactive",
-      "@awc/reactive/signal",
-      "@awc/reactive/store",
-      "@awc/jsx-runtime",
-      "@awc/dom",
-      "@awc/dom/directives",
-      "@awc/kettlejs",
-      "@awc/kettlejs/router",
-      "@awc/kettlejs/client",
-      "@awc/kettlejs/plugins",
-      "@awc/utils",
-      "@awc/*",
+      "@fluixi/reactive",
+      "@fluixi/reactive/signal",
+      "@fluixi/reactive/store",
+      "@fluixi/jsx-runtime",
+      "@fluixi/dom",
+      "@fluixi/dom/directives",
+      "@fluixi/kettlejs",
+      "@fluixi/kettlejs/router",
+      "@fluixi/kettlejs/client",
+      "@fluixi/kettlejs/plugins",
+      "@fluixi/utils",
+      "@fluixi/*",
       "vite",
       "inquirer",
       "fs-extra",
@@ -31,7 +41,7 @@
       "url",
       "react-dom",
       "react-dom/*",
-      "@awc/*",
+      "@fluixi/*",
       "@lit-labs/*",
       "@lit/*",
       "lit",
@@ -45,6 +55,7 @@
       "vinxi/*",
       "@vinxi/*",
       "execa"
-    ]
+    ],
+    "clean": true
   }
 }

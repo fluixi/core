@@ -32,7 +32,7 @@ import {
   catchError,
   never,
   debounceTime,
-} from '@awc/reactive';
+} from '@fluixi/reactive';
 import * as Rx from 'rxjs';
 
 // Mock async scheduler for time-based operators

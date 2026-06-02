@@ -11,7 +11,7 @@ KettleJS now supports JSX/TSX syntax, allowing you to use React-like component s
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs",
+    "jsxImportSource": "@fluixi/kettlejs",
     "target": "ES2020",
     "module": "ESNext"
   }
@@ -21,7 +21,7 @@ KettleJS now supports JSX/TSX syntax, allowing you to use React-like component s
 ### 2. Write JSX Components
 
 ```tsx
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -49,7 +49,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   esbuild: {
-    jsxImportSource: '@awc/kettlejs'
+    jsxImportSource: '@fluixi/kettlejs'
   }
 });
 ```
@@ -67,7 +67,7 @@ module.exports = {
         options: {
           compilerOptions: {
             jsx: 'react-jsx',
-            jsxImportSource: '@awc/kettlejs'
+            jsxImportSource: '@fluixi/kettlejs'
           }
         }
       }
@@ -116,7 +116,7 @@ const Button = (props: ButtonProps) => {
 
 ### 🔄 Control Flow
 ```tsx
-import { Show, For } from '@awc/kettlejs';
+import { Show, For } from '@fluixi/kettlejs';
 
 // Conditional rendering
 <Show when={user()} fallback={<div>Loading...</div>}>
@@ -185,7 +185,7 @@ const MyComponent = () => {
 Full type safety with IntelliSense:
 
 ```tsx
-import type { JSX } from '@awc/kettlejs/jsx-runtime';
+import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
 
 interface UserCardProps {
   user: {

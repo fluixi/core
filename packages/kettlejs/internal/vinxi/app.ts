@@ -3,7 +3,7 @@
 import { createApp as createVinxiApp } from 'vinxi';
 import { serverFunctions } from '@vinxi/server-functions/plugin';
 import path from 'path';
-import { createVitePlugin } from '@awc/kettlejs/plugins';
+import { createVitePlugin } from '@fluixi/kettlejs/plugins';
 import { BaseFileSystemRouter, cleanPath } from 'vinxi/fs-router';
 import { fileURLToPath } from 'url';
 import { cwd } from 'process';

@@ -13,7 +13,7 @@ Quick reference for the most commonly used Signal APIs and patterns.
 Create a reactive value:
 
 ```typescript
-import { createSignal } from '@awc/reactive';
+import { createSignal } from '@fluixi/reactive';
 
 const [count, setCount] = createSignal(0);
 
@@ -30,7 +30,7 @@ setCount(prev => prev + 1);
 Run side effects when dependencies change:
 
 ```typescript
-import { createEffect } from '@awc/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 createEffect(() => {
   console.log('Count:', count());
@@ -43,7 +43,7 @@ createEffect(() => {
 Create cached derived state:
 
 ```typescript
-import { createMemo } from '@awc/reactive';
+import { createMemo } from '@fluixi/reactive';
 
 const doubled = createMemo(() => count() * 2);
 // Only recalculates when count changes
@@ -54,7 +54,7 @@ const doubled = createMemo(() => count() * 2);
 Batch multiple updates (SolidJS-style with `runUpdates()`):
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 batch(() => {
   setCount(1);
@@ -68,7 +68,7 @@ batch(() => {
 Read signals without tracking:
 
 ```typescript
-import { untrack } from '@awc/reactive';
+import { untrack } from '@fluixi/reactive';
 
 createEffect(() => {
   const tracked = signal1();
@@ -86,7 +86,7 @@ createEffect(() => {
 Non-blocking updates:
 
 ```typescript
-import { startTransition } from '@awc/reactive';
+import { startTransition } from '@fluixi/reactive';
 
 await startTransition(() => {
   setLargeData(expensiveComputation());
@@ -98,7 +98,7 @@ await startTransition(() => {
 Track transition state:
 
 ```typescript
-import { useTransition } from '@awc/reactive';
+import { useTransition } from '@fluixi/reactive';
 
 const [isPending, start] = useTransition();
 
@@ -118,7 +118,7 @@ if (isPending()) {
 Async boundaries:
 
 ```typescript
-import { createSuspense, trackPromise } from '@awc/reactive';
+import { createSuspense, trackPromise } from '@fluixi/reactive';
 
 const DataView = createSuspense(
   () => {
@@ -148,7 +148,7 @@ const data = trackPromise(
 Handle errors gracefully:
 
 ```typescript
-import { catchError } from '@awc/reactive';
+import { catchError } from '@fluixi/reactive';
 
 const result = catchError(
   () => riskyOperation(),
@@ -168,7 +168,7 @@ const result = catchError(
 Create typed context:
 
 ```typescript
-import { createContext } from '@awc/reactive';
+import { createContext } from '@fluixi/reactive';
 
 const ThemeContext = createContext({
   mode: 'light' as 'light' | 'dark'
@@ -191,7 +191,7 @@ ThemeContext.Provider({
 Consume context:
 
 ```typescript
-import { useContext } from '@awc/reactive';
+import { useContext } from '@fluixi/reactive';
 
 const theme = useContext(ThemeContext);
 ```
@@ -205,7 +205,7 @@ const theme = useContext(ThemeContext);
 Synchronous DOM updates:
 
 ```typescript
-import { createRenderEffect } from '@awc/reactive';
+import { createRenderEffect } from '@fluixi/reactive';
 
 createRenderEffect(() => {
   element.textContent = signal();
@@ -217,7 +217,7 @@ createRenderEffect(() => {
 Manual dependency tracking:
 
 ```typescript
-import { createReaction } from '@awc/reactive';
+import { createReaction } from '@fluixi/reactive';
 
 const track = createReaction(() => {
   console.log('Changed!');
@@ -231,7 +231,7 @@ track(() => signal()); // Track this signal
 Explicit dependencies:
 
 ```typescript
-import { on, createEffect } from '@awc/reactive';
+import { on, createEffect } from '@fluixi/reactive';
 
 createEffect(
   on(
@@ -251,7 +251,7 @@ createEffect(
 Get current owner:
 
 ```typescript
-import { getOwner } from '@awc/reactive';
+import { getOwner } from '@fluixi/reactive';
 
 const owner = getOwner();
 ```
@@ -261,7 +261,7 @@ const owner = getOwner();
 Run with specific owner:
 
 ```typescript
-import { runWithOwner } from '@awc/reactive';
+import { runWithOwner } from '@fluixi/reactive';
 
 runWithOwner(owner, () => {
   createEffect(() => console.log('Effect'));
@@ -288,7 +288,7 @@ Enhanced warnings (automatic):
 Get node statistics:
 
 ```typescript
-import { getNodeStats } from '@awc/reactive';
+import { getNodeStats } from '@fluixi/reactive';
 
 const stats = getNodeStats();
 console.log(stats.total);
@@ -300,7 +300,7 @@ console.log(stats.byType);
 Find memory leaks:
 
 ```typescript
-import { findPotentialLeaks } from '@awc/reactive';
+import { findPotentialLeaks } from '@fluixi/reactive';
 
 const leaks = findPotentialLeaks();
 if (leaks.length > 0) {

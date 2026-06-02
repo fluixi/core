@@ -1,4 +1,4 @@
-import { Observable, Subscription } from '@awc/reactive';
+import { Observable, Subscription } from '@fluixi/reactive';
 
 /**
  * Creates an Observable that emits arrays combining the latest values from multiple input Observables.

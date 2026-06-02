@@ -1,6 +1,6 @@
 /**
  * @fileoverview Development server for KettleJS applications
- * @module @awc/kettlejs/dev-server
+ * @module @fluixi/kettlejs/dev-server
  *
  * This module provides a Vite-based development server with Hot Module Replacement (HMR)
  * and optimized for KettleJS applications.
@@ -95,7 +95,7 @@ export function kettleJSPlugin(): Plugin {
     config() {
       return {
         optimizeDeps: {
-          include: ['lit', '@awc/reactive', '@awc/kettlejs'],
+          include: ['lit', '@fluixi/reactive', '@fluixi/kettlejs'],
           exclude: [],
         },
         build: {
@@ -104,7 +104,7 @@ export function kettleJSPlugin(): Plugin {
             output: {
               manualChunks: {
                 lit: ['lit'],
-                reactive: ['@awc/reactive'],
+                reactive: ['@fluixi/reactive'],
               },
             },
           },
@@ -153,7 +153,7 @@ export function kettleJSPlugin(): Plugin {
  *
  * @example
  * ```typescript
- * import { createDevServer } from '@awc/kettlejs/dev-server';
+ * import { createDevServer } from '@fluixi/kettlejs/dev-server';
  *
  * const server = await createDevServer({
  *   port: 3000,
@@ -226,7 +226,7 @@ export async function createDevServer(
  *
  * @example
  * ```typescript
- * import { startDevServer } from '@awc/kettlejs/dev-server';
+ * import { startDevServer } from '@fluixi/kettlejs/dev-server';
  *
  * await startDevServer(3000, true);
  * ```
@@ -246,7 +246,7 @@ export async function startDevServer(
  *
  * @example
  * ```typescript
- * import { createDevServer, stopDevServer } from '@awc/kettlejs/dev-server';
+ * import { createDevServer, stopDevServer } from '@fluixi/kettlejs/dev-server';
  *
  * const server = await createDevServer();
  * // ... later
@@ -267,7 +267,7 @@ export async function stopDevServer(server: ViteDevServer): Promise<void> {
  * @example
  * ```typescript
  * import express from 'express';
- * import { createSSRMiddleware } from '@awc/kettlejs/dev-server';
+ * import { createSSRMiddleware } from '@fluixi/kettlejs/dev-server';
  *
  * const app = express();
  * const ssrMiddleware = await createSSRMiddleware({ root: './src' });
@@ -366,7 +366,7 @@ export interface PreviewServerConfig {
  *
  * @example
  * ```typescript
- * import { createPreviewServer } from '@awc/kettlejs/dev-server';
+ * import { createPreviewServer } from '@fluixi/kettlejs/dev-server';
  *
  * const server = await createPreviewServer({
  *   port: 4173,

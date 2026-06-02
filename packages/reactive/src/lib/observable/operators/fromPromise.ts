@@ -1,4 +1,4 @@
-import {AsyncScheduler, Observable} from "@awc/reactive"
+import {AsyncScheduler, Observable} from "@fluixi/reactive"
 import { asyncScheduler } from "../../schedulers/async.js";
 
 /**

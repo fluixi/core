@@ -1,4 +1,4 @@
-import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@awc/reactive";
+import { from, Observable, ObservableInput, OperatorFunction, Subscription } from "@fluixi/reactive";
 
 /**
  * Creates an output Observable which concurrently emits all values from every given input Observable.

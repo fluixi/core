@@ -1,6 +1,6 @@
 /**
  * @fileoverview SolidJS-inspired Client-Side Router for KettleJS
- * @module @awc/kettlejs/router
+ * @module @fluixi/kettlejs/router
  *
  * Key design decisions:
  * - navigate() updates a signal → reactive chain triggers DOM updates
@@ -32,16 +32,16 @@ import {
   resolveChildren,
   createComponent,
   type ComponentProps
-} from '@awc/dom';
-import type { RootOwner, Signal } from '@awc/reactive/signal';
+} from '@fluixi/dom';
+import type { RootOwner, Signal } from '@fluixi/reactive/signal';
 import { RouteDataProvider, RouteDataContext, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
-import { asOutlet, asRouter, asRoutes, html, insert, isAccessor, isComponent, isPromise, mergeProps } from '@awc/dom';
-import { Accessor } from '@awc/reactive';
-import { AnyObject, get, GetAtPath } from '@awc/utils/object';
-import { isEqual } from '@awc/utils';
-import { IsUndefined } from '@awc/utils/primitive';
-import { deepEqual } from '@awc/utils/compare';
+import { asOutlet, asRouter, asRoutes, html, insert, isAccessor, isComponent, isPromise, mergeProps } from '@fluixi/dom';
+import { Accessor } from '@fluixi/reactive';
+import { AnyObject, get, GetAtPath } from '@fluixi/utils/object';
+import { isEqual } from '@fluixi/utils';
+import { IsUndefined } from '@fluixi/utils/primitive';
+import { deepEqual } from '@fluixi/utils/compare';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

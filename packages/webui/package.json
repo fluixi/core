@@ -1,5 +1,5 @@
 {
-    "name": "@awc/webui",
+    "name": "@fluixi/webui",
     "version": "0.0.1",
     "type": "module",
     "main": "./dist/index.js",
@@ -305,15 +305,15 @@
         "@awc/adf-draggable": "link:../../../../adafri-webcomponents/packages/components/adf-draggable",
         "@awc/components": "link:../../../../adafri-webcomponents/packages/components/bundles",
         "@awc/core": "link:../../../../adafri-webcomponents/packages/core",
-        "@awc/dom": "workspace:*",
-        "@awc/element": "workspace:*",
+        "@fluixi/dom": "workspace:*",
+        "@fluixi/element": "workspace:*",
         "@awc/gads-components": "link:../../../../adafri-webcomponents/packages/components/gads-bundle",
         "@awc/helpers": "link:../../../../adafri-webcomponents/packages/helpers",
-        "@awc/jsx-runtime": "workspace:*",
+        "@fluixi/jsx-runtime": "workspace:*",
         "lit": "^3.3.1"
     },
     "devDependencies": {
-        "@awc/mix-builder": "workspace:*",
+        "@fluixi/mix-builder": "workspace:*",
         "inquirer": "^13.4.2"
     }
 }

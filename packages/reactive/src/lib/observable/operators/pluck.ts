@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction } from "@awc/reactive";
+import { Observable, OperatorFunction } from "@fluixi/reactive";
 
 // /**
 //  * Path type for nested property access

@@ -1,5 +1,5 @@
 
-import {AsyncScheduler, Observable} from "@awc/reactive"
+import {AsyncScheduler, Observable} from "@fluixi/reactive"
 
 /**
  * Configuration options for empty

@@ -5,13 +5,13 @@ Command-line interface for scaffolding KettleJS projects and components with sup
 ## Installation
 
 ```bash
-npm install -g @awc/kettlejs
+npm install -g @fluixi/kettlejs
 ```
 
 Or use with npx:
 
 ```bash
-npx @awc/kettlejs <command>
+npx @fluixi/kettlejs <command>
 ```
 
 ## Quick Start
@@ -145,7 +145,7 @@ The CLI automatically configures TypeScript based on your selected mode:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```
@@ -184,7 +184,7 @@ Ensure your `tsconfig.json` is configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@awc/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
   }
 }
 ```

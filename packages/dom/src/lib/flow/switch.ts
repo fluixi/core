@@ -1,4 +1,4 @@
-import { Accessor, createMemo } from '@awc/reactive/signal';
+import { Accessor, createMemo } from '@fluixi/reactive/signal';
 import { normalizeAccessor, isTruthy } from './utils.js';
 
 // Internal marker used by Switch to identify Match nodes.

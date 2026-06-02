@@ -1,6 +1,6 @@
 /**
  * @fileoverview KettleElement — HTMLElement base class with KettleJS reactivity
- * @module @awc/element/kettle-element
+ * @module @fluixi/element/kettle-element
  */
 
 import {

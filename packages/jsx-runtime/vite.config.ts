@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@awc/jsx-runtime',
+    name: '@fluixi/jsx-runtime',
     watch: false,
     globals: true,
     environment: 'node',

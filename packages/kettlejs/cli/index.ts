@@ -2,7 +2,7 @@
 
 /**
  * @fileoverview KettleJS CLI - Command-line interface for project and component generation
- * @module @awc/kettlejs/cli
+ * @module @fluixi/kettlejs/cli
  */
 
 import { program } from 'commander';
@@ -63,7 +63,7 @@ function generateBasicComponent(
 
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
+import { KettleElement } from '@fluixi/kettlejs';
 
 /**
  * ${name} component using KettleElement pattern
@@ -96,7 +96,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs';
+import { WithSignals } from '@fluixi/kettlejs';
 
 /**
  * ${name} component using WithSignals mixin
@@ -129,7 +129,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs';
+import { SignalController } from '@fluixi/kettlejs';
 
 /**
  * ${name} component using manual controller pattern
@@ -205,7 +205,7 @@ export default ${name};
  * @fileoverview ${name} component
  */
 
-import { html, Component, ComponentProps } from '@awc/kettlejs';
+import { html, Component, ComponentProps } from '@fluixi/kettlejs';
 
 /**
  * Props for ${name} component
@@ -359,8 +359,8 @@ export default ${name};
 
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal, createEffect } from '@awc/reactive';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
  * ${name} component with reactive state using KettleElement
@@ -420,8 +420,8 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs';
-import { createSignal, createEffect } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
  * ${name} component with reactive state using WithSignals mixin
@@ -481,8 +481,8 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs';
-import { createSignal, createEffect } from '@awc/reactive';
+import { SignalController } from '@fluixi/kettlejs';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
  * ${name} component with reactive state using manual controller
@@ -541,8 +541,8 @@ export default ${name};
  * @fileoverview ${name} component with reactive state
  */
 
-import { html, Component, ComponentProps } from '@awc/kettlejs';
-import { createSignal, createEffect } from '@awc/reactive';
+import { html, Component, ComponentProps } from '@fluixi/kettlejs';
+import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
  * Props for ${name} component
@@ -726,7 +726,7 @@ export default ${name};
  * @fileoverview ${name} component with async resource fetching
  */
 
-import { html, Component, ComponentProps, createResource, Show } from '@awc/kettlejs';
+import { html, Component, ComponentProps, createResource, Show } from '@fluixi/kettlejs';
 
 /**
  * Props for ${name} component
@@ -972,7 +972,7 @@ import {
   useNavigate,
   useLocation,
   createSignal,
-} from '@awc/kettlejs';
+} from '@fluixi/kettlejs';
 
 /**
  * Props for ${name} component
@@ -1079,7 +1079,7 @@ import {
   For,
   onMount,
   onUnmount,
-} from '@awc/kettlejs';
+} from '@fluixi/kettlejs';
 
 /**
  * Props for ${name} component
@@ -1339,8 +1339,8 @@ function generateJSXComponent(
 
   if (type === 'basic') {
     return `/** @jsx h */
-import { h, Fragment } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1360,8 +1360,8 @@ export default ${name};
 `;
   } else if (type === 'with-state') {
     return `/** @jsx h */
-import { h, Fragment } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1406,7 +1406,7 @@ function generateReactBridgeComponent(
 
   if (type === 'basic') {
     return `import React from 'react';
-import { useSignal } from '@awc/kettlejs/react-bridge';
+import { useSignal } from '@fluixi/kettlejs/react-bridge';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1426,7 +1426,7 @@ export default ${name};
 `;
   } else if (type === 'with-state') {
     return `import React from 'react';
-import { useSignal, useKettleEffect } from '@awc/kettlejs/react-bridge';
+import { useSignal, useKettleEffect } from '@fluixi/kettlejs/react-bridge';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1542,7 +1542,7 @@ function generateTestFile(name: string): string {
  */
 
 import { describe, it, expect } from 'vitest';
-import { render } from '@awc/kettlejs';
+import { render } from '@fluixi/kettlejs';
 import { ${name} } from './${name}';
 
 describe('${name}', () => {
@@ -1762,8 +1762,8 @@ async function generateProject(
       test: 'vitest',
     },
     dependencies: {
-      '@awc/kettlejs': 'workspace:*',
-      '@awc/reactive': 'workspace:*',
+      '@fluixi/kettlejs': 'workspace:*',
+      '@fluixi/reactive': 'workspace:*',
       lit: '^3.3.1',
     },
     devDependencies: {
@@ -1842,7 +1842,7 @@ async function generateProject(
   // Configure JSX based on mode
   if (mode === 'jsx') {
     tsConfig.compilerOptions.jsx = 'react-jsx';
-    tsConfig.compilerOptions.jsxImportSource = '@awc/kettlejs/jsx-runtime';
+    tsConfig.compilerOptions.jsxImportSource = '@fluixi/kettlejs/jsx-runtime';
   } else if (mode === 'react-bridge') {
     tsConfig.compilerOptions.jsx = 'react-jsx';
   } else {
@@ -1890,7 +1890,7 @@ export default defineConfig({
   const appExt = mode === 'lit-html' ? 'ts' : 'tsx';
 
   if (mode === 'jsx') {
-    mainTs = `import { render } from '@awc/kettlejs';
+    mainTs = `import { render } from '@fluixi/kettlejs';
 import { App } from './App';
 import './styles/main.css';
 
@@ -1914,7 +1914,7 @@ if (root) {
 }
 `;
   } else {
-    mainTs = `import { render, html } from '@awc/kettlejs';
+    mainTs = `import { render, html } from '@fluixi/kettlejs';
 import { App } from './App';
 import './styles/main.css';
 
@@ -2077,7 +2077,7 @@ function generateAppComponent(
 
   // Default lit-html mode
   if (template === 'full') {
-    return `import { html, createRouter, Router, Link, Component } from '@awc/kettlejs';
+    return `import { html, createRouter, Router, Link, Component } from '@fluixi/kettlejs';
 
 const Home = () => html\`
   <div>
@@ -2117,7 +2117,7 @@ export const App: Component = () => {
 `;
   }
 
-  return `import { html, createSignal, Component } from '@awc/kettlejs';
+  return `import { html, createSignal, Component } from '@fluixi/kettlejs';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -2142,8 +2142,8 @@ export default App;
  */
 function generateJSXAppComponent(template: ProjectTemplate): string {
   return `/** @jsx h */
-import { h, Fragment } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 import './styles/main.css';
 
 export function App() {
@@ -2183,7 +2183,7 @@ export default App;
  */
 function generateReactBridgeAppComponent(template: ProjectTemplate): string {
   return `import React from 'react';
-import { useSignal, useKettleEffect } from '@awc/kettlejs/react-bridge';
+import { useSignal, useKettleEffect } from '@fluixi/kettlejs/react-bridge';
 import './styles/main.css';
 
 export function App() {
@@ -2280,7 +2280,7 @@ async function generateExamplePage(
 
   if (mode === 'jsx') {
     pageCode = `/** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
 import './${pageName}.css';
 
 export function ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}Page() {
@@ -2341,8 +2341,8 @@ export default ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}Page;
 function generateTodoListComponent(mode: ComponentMode): string {
   if (mode === 'jsx') {
     return `/** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
-import { createSignal } from '@awc/reactive/signal';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
+import { createSignal } from '@fluixi/reactive/signal';
 import './todolist.css';
 
 export function TodoList() {
@@ -2382,7 +2382,7 @@ export default TodoList;
   }
 
   return `import { html } from 'lit';
-import { createSignal } from '@awc/reactive/signal';
+import { createSignal } from '@fluixi/reactive/signal';
 import './todolist.css';
 
 export const TodoList = () => {
@@ -2425,7 +2425,7 @@ export default TodoList;
 function generateUserCardComponent(mode: ComponentMode): string {
   if (mode === 'jsx') {
     return `/** @jsx h */
-import { h } from '@awc/kettlejs/jsx-runtime';
+import { h } from '@fluixi/kettlejs/jsx-runtime';
 import './usercard.css';
 
 export interface UserCardProps {
@@ -2474,8 +2474,8 @@ export default UserCard;
  */
 function generateDataFetcherComponent(mode: ComponentMode): string {
   return `import { html } from 'lit';
-import { createResource } from '@awc/kettlejs/resources';
-import { Show } from '@awc/kettlejs/control-flow';
+import { createResource } from '@fluixi/kettlejs/resources';
+import { Show } from '@fluixi/kettlejs/control-flow';
 import './datafetcher.css';
 
 async function fetchData() {

@@ -9,14 +9,14 @@ Get started with reactive stores in 5 minutes.
 ## Installation
 
 ```bash
-npm install @awc/reactive
+npm install @fluixi/reactive
 ```
 
 ## Your First Store
 
 ```typescript
-import { createStore } from '@awc/reactive';
-import { createEffect } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 // Create a store
 const [count, setCount] = createStore({ value: 0 });
@@ -34,7 +34,7 @@ setCount('value', 1);
 ## Basic Example: User Profile
 
 ```typescript
-import { createStore, createEffect, createMemo } from '@awc/reactive';
+import { createStore, createEffect, createMemo } from '@fluixi/reactive';
 
 // Define your state
 interface UserProfile {
@@ -74,7 +74,7 @@ setUser('age', 31);
 ## Working with Arrays
 
 ```typescript
-import { createStore } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
 
 interface Todo {
   id: number;
@@ -107,7 +107,7 @@ setTodos.removeAt('', 1);
 ## Nested Objects
 
 ```typescript
-import { createStore } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
 
 const [state, setState] = createStore({
   user: {
@@ -160,7 +160,7 @@ setState('name', 'Bob'); // Only second effect runs
 Combine multiple updates to trigger effects only once:
 
 ```typescript
-import { batch, createStore, createEffect } from '@awc/reactive';
+import { batch, createStore, createEffect } from '@fluixi/reactive';
 
 const [state, setState] = createStore({
   firstName: 'Alice',
@@ -189,7 +189,7 @@ console.log(runs); // 2 (initial + 1 batched update)
 ## Complete Example: Todo App
 
 ```typescript
-import { createStore, createMemo, createEffect, batch } from '@awc/reactive';
+import { createStore, createMemo, createEffect, batch } from '@fluixi/reactive';
 
 // Types
 interface Todo {

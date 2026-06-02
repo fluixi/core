@@ -1,6 +1,6 @@
 /**
  * @fileoverview DOM utilities for KettleJS
- * @module @awc/kettlejs/dom
+ * @module @fluixi/kettlejs/dom
  *
  * This module provides utilities for DOM manipulation and queries.
  */
@@ -204,7 +204,7 @@ export const JSX_PROPERTIES = new Set([
  *
  * @example
  * ```typescript
- * import { query } from '@awc/kettlejs/dom';
+ * import { query } from '@fluixi/kettlejs/dom';
  *
  * const button = query<HTMLButtonElement>('#my-button');
  * button?.click();
@@ -227,7 +227,7 @@ export function query<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { queryAll } from '@awc/kettlejs/dom';
+ * import { queryAll } from '@fluixi/kettlejs/dom';
  *
  * const buttons = queryAll<HTMLButtonElement>('button');
  * buttons.forEach(btn => btn.disabled = true);
@@ -250,7 +250,7 @@ export function queryAll<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { closest } from '@awc/kettlejs/dom';
+ * import { closest } from '@fluixi/kettlejs/dom';
  *
  * const form = closest<HTMLFormElement>(button, 'form');
  * form?.submit();
@@ -271,7 +271,7 @@ export function closest<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { addClass } from '@awc/kettlejs/dom';
+ * import { addClass } from '@fluixi/kettlejs/dom';
  *
  * addClass(element, 'active', 'visible');
  * ```
@@ -288,7 +288,7 @@ export function addClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { removeClass } from '@awc/kettlejs/dom';
+ * import { removeClass } from '@fluixi/kettlejs/dom';
  *
  * removeClass(element, 'active', 'visible');
  * ```
@@ -305,7 +305,7 @@ export function removeClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { toggleClass } from '@awc/kettlejs/dom';
+ * import { toggleClass } from '@fluixi/kettlejs/dom';
  *
  * toggleClass(element, 'active');
  * ```
@@ -323,7 +323,7 @@ export function toggleClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { hasClass } from '@awc/kettlejs/dom';
+ * import { hasClass } from '@fluixi/kettlejs/dom';
  *
  * if (hasClass(element, 'active')) {
  *   console.log('Element is active');
@@ -343,7 +343,7 @@ export function hasClass(element: Element, className: string): boolean {
  *
  * @example
  * ```typescript
- * import { setAttribute } from '@awc/kettlejs/dom';
+ * import { setAttribute } from '@fluixi/kettlejs/dom';
  *
  * setAttribute(input, 'disabled', true);
  * setAttribute(div, 'data-id', '123');
@@ -403,7 +403,7 @@ export function setAttribute(
  *
  * @example
  * ```typescript
- * import { getAttribute } from '@awc/kettlejs/dom';
+ * import { getAttribute } from '@fluixi/kettlejs/dom';
  *
  * const id = getAttribute(div, 'data-id');
  * ```
@@ -420,7 +420,7 @@ export function getAttribute(element: Element, name: string): string | null {
  *
  * @example
  * ```typescript
- * import { removeAttribute } from '@awc/kettlejs/dom';
+ * import { removeAttribute } from '@fluixi/kettlejs/dom';
  *
  * removeAttribute(input, 'disabled');
  * ```
@@ -437,7 +437,7 @@ export function removeAttribute(element: Element, name: string): void {
  *
  * @example
  * ```typescript
- * import { setStyles } from '@awc/kettlejs/dom';
+ * import { setStyles } from '@fluixi/kettlejs/dom';
  *
  * setStyles(div, {
  *   backgroundColor: 'red',
@@ -462,7 +462,7 @@ export function setStyles(
  *
  * @example
  * ```typescript
- * import { getStyle } from '@awc/kettlejs/dom';
+ * import { getStyle } from '@fluixi/kettlejs/dom';
  *
  * const color = getStyle(div, 'backgroundColor');
  * ```
@@ -482,7 +482,7 @@ export function getStyle(element: Element, property: string): string {
  *
  * @example
  * ```typescript
- * import { createElement } from '@awc/kettlejs/dom';
+ * import { createElement } from '@fluixi/kettlejs/dom';
  *
  * const button = createElement('button',
  *   { class: 'btn', disabled: true },
@@ -528,7 +528,7 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
  *
  * @example
  * ```typescript
- * import { removeChildren } from '@awc/kettlejs/dom';
+ * import { removeChildren } from '@fluixi/kettlejs/dom';
  *
  * removeChildren(container);
  * ```
@@ -547,7 +547,7 @@ export function removeChildren(element: Element): void {
  *
  * @example
  * ```typescript
- * import { appendChildren } from '@awc/kettlejs/dom';
+ * import { appendChildren } from '@fluixi/kettlejs/dom';
  *
  * appendChildren(container,
  *   createElement('div', {}, 'Child 1'),
@@ -577,7 +577,7 @@ export function appendChildren(
  *
  * @example
  * ```typescript
- * import { isVisible } from '@awc/kettlejs/dom';
+ * import { isVisible } from '@fluixi/kettlejs/dom';
  *
  * if (isVisible(element)) {
  *   console.log('Element is in viewport');
@@ -602,7 +602,7 @@ export function isVisible(element: Element): boolean {
  *
  * @example
  * ```typescript
- * import { scrollIntoView } from '@awc/kettlejs/dom';
+ * import { scrollIntoView } from '@fluixi/kettlejs/dom';
  *
  * scrollIntoView(element, { behavior: 'smooth', block: 'center' });
  * ```
@@ -622,7 +622,7 @@ export function scrollIntoView(
  *
  * @example
  * ```typescript
- * import { getOffset } from '@awc/kettlejs/dom';
+ * import { getOffset } from '@fluixi/kettlejs/dom';
  *
  * const { top, left } = getOffset(element);
  * ```
@@ -647,7 +647,7 @@ export function getOffset(element: Element): { top: number; left: number } {
  *
  * @example
  * ```typescript
- * import { delegate } from '@awc/kettlejs/dom';
+ * import { delegate } from '@fluixi/kettlejs/dom';
  *
  * const cleanup = delegate(list, 'click', '.item', (event, target) => {
  *   console.log('Clicked item:', target);
@@ -683,7 +683,7 @@ export function delegate<K extends keyof HTMLElementEventMap>(
  *
  * @example
  * ```typescript
- * import { waitForElement } from '@awc/kettlejs/dom';
+ * import { waitForElement } from '@fluixi/kettlejs/dom';
  *
  * const element = await waitForElement('#dynamic-content');
  * ```
@@ -730,7 +730,7 @@ export function waitForElement(
  *
  * @example
  * ```typescript
- * import { observeIntersection } from '@awc/kettlejs/dom';
+ * import { observeIntersection } from '@fluixi/kettlejs/dom';
  *
  * const cleanup = observeIntersection(element, (isIntersecting) => {
  *   console.log('Element visible:', isIntersecting);
@@ -764,7 +764,7 @@ export function observeIntersection(
  *
  * @example
  * ```typescript
- * import { observeResize } from '@awc/kettlejs/dom';
+ * import { observeResize } from '@fluixi/kettlejs/dom';
  *
  * const cleanup = observeResize(element, (entry) => {
  *   console.log('New size:', entry.contentRect.width, entry.contentRect.height);

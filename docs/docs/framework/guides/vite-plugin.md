@@ -5,7 +5,7 @@ Official Vite plugin with full SSR, HMR, and JSX support.
 ## Installation
 
 ```bash
-npm install @awc/kettlejs vite -D
+npm install @fluixi/kettlejs vite -D
 ```
 
 ## Basic Usage
@@ -13,7 +13,7 @@ npm install @awc/kettlejs vite -D
 ```typescript
 // vite.config.ts
 import { defineConfig } from 'vite';
-import kettle from '@awc/kettlejs/vite-plugin';
+import kettle from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [kettle()]
@@ -25,13 +25,13 @@ export default defineConfig({
 ### JSX/TSX Support
 
 ```typescript
-import kettle from '@awc/kettlejs/vite-plugin';
+import kettle from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [
     kettle({
       jsx: true,
-      jsxImportSource: '@awc/kettlejs'
+      jsxImportSource: '@fluixi/kettlejs'
     })
   ]
 });
@@ -40,7 +40,7 @@ export default defineConfig({
 ### SSR Support
 
 ```typescript
-import { kettleSSR } from '@awc/kettlejs/vite-plugin';
+import { kettleSSR } from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [
@@ -54,7 +54,7 @@ export default defineConfig({
 ### Development Mode
 
 ```typescript
-import { kettleDev } from '@awc/kettlejs/vite-plugin';
+import { kettleDev } from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [
@@ -69,7 +69,7 @@ export default defineConfig({
 ### Production Build
 
 ```typescript
-import { kettleProd } from '@awc/kettlejs/vite-plugin';
+import { kettleProd } from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [
@@ -118,7 +118,7 @@ interface KettlePluginOptions {
 
 ```typescript
 import { defineConfig } from 'vite';
-import kettle from '@awc/kettlejs/vite-plugin';
+import kettle from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [
@@ -138,7 +138,7 @@ export default defineConfig({
 
 ```typescript
 import { defineConfig } from 'vite';
-import kettle from '@awc/kettlejs/vite-plugin';
+import kettle from '@fluixi/kettlejs/vite-plugin';
 
 export default defineConfig({
   plugins: [

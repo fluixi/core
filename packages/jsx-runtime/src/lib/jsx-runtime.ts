@@ -1,6 +1,6 @@
 /**
  * @fileoverview JSX Runtime with Reactive DOM Support
- * @module @awc/jsx-runtime
+ * @module @fluixi/jsx-runtime
  *
  * Production-grade JSX runtime for the KettleJS reactive system.
  * Key design: event handlers stored as $$eventname properties on DOM nodes
@@ -31,9 +31,9 @@ import {
   removeDelegatedEventListener,
   addDelegatedEventListener,
   applyProps as domProps
-} from '@awc/dom';
+} from '@fluixi/dom';
 
-import { untrack, createSignal, createMemo,  resolveChildren } from '@awc/dom';
+import { untrack, createSignal, createMemo,  resolveChildren } from '@fluixi/dom';
 
 // ============================================================================
 // Types
@@ -370,7 +370,7 @@ export async function renderToString(element: JSXElement): Promise<string> {
 export { globalDelegatedSet as delegatedSet };
 
 // Re-export JSX namespace so TypeScript can find JSX.IntrinsicElements
-// when this module is resolved via jsxImportSource: "@awc/kettlejs"
+// when this module is resolved via jsxImportSource: "@fluixi/kettlejs"
 // Note: './jsx.d.js' resolves to jsx.d.ts (declaration file with JSX types),
 // not jsx.ts (the React bridge file).
 export type { JSX } from './jsx.d.js';

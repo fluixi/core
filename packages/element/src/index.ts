@@ -7,7 +7,7 @@ export { KettleElement } from './lib/kettle-element.js';
 export { KettleLitElement } from './lib/kettle-lit-element.js';
 export { KettleController } from './lib/controller.js';
 // kettleElementPlugin is NOT exported here (Node.js build tool).
-// Import it from '@awc/element/plugin' in vite.config.ts instead.
+// Import it from '@fluixi/element/plugin' in vite.config.ts instead.
 export type {
   DefineElementOptions,
   PropDefinition,
@@ -28,4 +28,4 @@ export type {
   PropToAttribute,
   CamelToKebab,
   ElementLifecycleCallbacks,
-} from '@awc/dom/element';
+} from '@fluixi/dom/element';

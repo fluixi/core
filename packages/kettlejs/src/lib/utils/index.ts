@@ -1,6 +1,6 @@
 /**
  * @fileoverview General utilities for KettleJS
- * @module @awc/kettlejs/utils
+ * @module @fluixi/kettlejs/utils
  *
  * This module provides general utility functions for common operations.
  */
@@ -15,7 +15,7 @@
  *
  * @example
  * ```typescript
- * import { debounce } from '@awc/kettlejs/utils';
+ * import { debounce } from '@fluixi/kettlejs/utils';
  *
  * const handleInput = debounce((value: string) => {
  *   console.log('Input:', value);
@@ -44,7 +44,7 @@ export function debounce<T extends (...args: any[]) => any>(
  *
  * @example
  * ```typescript
- * import { throttle } from '@awc/kettlejs/utils';
+ * import { throttle } from '@fluixi/kettlejs/utils';
  *
  * const handleScroll = throttle(() => {
  *   console.log('Scrolled');
@@ -75,7 +75,7 @@ export function throttle<T extends (...args: any[]) => any>(
  *
  * @example
  * ```typescript
- * import { memoize } from '@awc/kettlejs/utils';
+ * import { memoize } from '@fluixi/kettlejs/utils';
  *
  * const expensiveCalc = memoize((n: number) => {
  *   return n * n;
@@ -105,7 +105,7 @@ export function memoize<T extends (...args: any[]) => any>(fn: T): T {
  *
  * @example
  * ```typescript
- * import { deepClone } from '@awc/kettlejs/utils';
+ * import { deepClone } from '@fluixi/kettlejs/utils';
  *
  * const original = { a: 1, b: { c: 2 } };
  * const copy = deepClone(original);
@@ -155,7 +155,7 @@ export function deepClone<T>(obj: T): T {
  *
  * @example
  * ```typescript
- * import { deepMerge } from '@awc/kettlejs/utils';
+ * import { deepMerge } from '@fluixi/kettlejs/utils';
  *
  * const result = deepMerge(
  *   { a: 1, b: { c: 2 } },
@@ -200,7 +200,7 @@ export function deepMerge<T extends Record<string, any>>(
  *
  * @example
  * ```typescript
- * import { uniqueId } from '@awc/kettlejs/utils';
+ * import { uniqueId } from '@fluixi/kettlejs/utils';
  *
  * const id = uniqueId('component-');
  * // 'component-abc123def456'
@@ -218,7 +218,7 @@ export function uniqueId(prefix: string = ''): string {
  *
  * @example
  * ```typescript
- * import { formatNumber } from '@awc/kettlejs/utils';
+ * import { formatNumber } from '@fluixi/kettlejs/utils';
  *
  * formatNumber(1234567); // '1,234,567'
  * ```
@@ -236,7 +236,7 @@ export function formatNumber(num: number): string {
  *
  * @example
  * ```typescript
- * import { formatBytes } from '@awc/kettlejs/utils';
+ * import { formatBytes } from '@fluixi/kettlejs/utils';
  *
  * formatBytes(1024); // '1 KB'
  * formatBytes(1048576); // '1 MB'
@@ -261,7 +261,7 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
  *
  * @example
  * ```typescript
- * import { capitalize } from '@awc/kettlejs/utils';
+ * import { capitalize } from '@fluixi/kettlejs/utils';
  *
  * capitalize('hello'); // 'Hello'
  * ```
@@ -278,7 +278,7 @@ export function capitalize(str: string): string {
  *
  * @example
  * ```typescript
- * import { kebabCase } from '@awc/kettlejs/utils';
+ * import { kebabCase } from '@fluixi/kettlejs/utils';
  *
  * kebabCase('HelloWorld'); // 'hello-world'
  * ```
@@ -298,7 +298,7 @@ export function kebabCase(str: string): string {
  *
  * @example
  * ```typescript
- * import { camelCase } from '@awc/kettlejs/utils';
+ * import { camelCase } from '@fluixi/kettlejs/utils';
  *
  * camelCase('hello-world'); // 'helloWorld'
  * ```
@@ -317,7 +317,7 @@ export function camelCase(str: string): string {
  *
  * @example
  * ```typescript
- * import { clamp } from '@awc/kettlejs/utils';
+ * import { clamp } from '@fluixi/kettlejs/utils';
  *
  * clamp(5, 0, 10); // 5
  * clamp(-5, 0, 10); // 0
@@ -337,7 +337,7 @@ export function clamp(value: number, min: number, max: number): number {
  *
  * @example
  * ```typescript
- * import { random } from '@awc/kettlejs/utils';
+ * import { random } from '@fluixi/kettlejs/utils';
  *
  * const num = random(1, 100);
  * ```
@@ -354,7 +354,7 @@ export function random(min: number, max: number): number {
  *
  * @example
  * ```typescript
- * import { isEmpty } from '@awc/kettlejs/utils';
+ * import { isEmpty } from '@fluixi/kettlejs/utils';
  *
  * isEmpty(''); // true
  * isEmpty([]); // true
@@ -382,7 +382,7 @@ export function isEmpty(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { pick } from '@awc/kettlejs/utils';
+ * import { pick } from '@fluixi/kettlejs/utils';
  *
  * const obj = { a: 1, b: 2, c: 3 };
  * pick(obj, 'a', 'c'); // { a: 1, c: 3 }
@@ -412,7 +412,7 @@ export function pick<T extends object, K extends keyof T>(
  *
  * @example
  * ```typescript
- * import { omit } from '@awc/kettlejs/utils';
+ * import { omit } from '@fluixi/kettlejs/utils';
  *
  * const obj = { a: 1, b: 2, c: 3 };
  * omit(obj, 'b'); // { a: 1, c: 3 }
@@ -440,7 +440,7 @@ export function omit<T extends object, K extends keyof T>(
  *
  * @example
  * ```typescript
- * import { groupBy } from '@awc/kettlejs/utils';
+ * import { groupBy } from '@fluixi/kettlejs/utils';
  *
  * const users = [
  *   { name: 'Alice', role: 'admin' },
@@ -474,7 +474,7 @@ export function groupBy<T, K>(
  *
  * @example
  * ```typescript
- * import { range } from '@awc/kettlejs/utils';
+ * import { range } from '@fluixi/kettlejs/utils';
  *
  * range(0, 5); // [0, 1, 2, 3, 4, 5]
  * range(0, 10, 2); // [0, 2, 4, 6, 8, 10]
@@ -499,7 +499,7 @@ export function range(start: number, end: number, step: number = 1): number[] {
  *
  * @example
  * ```typescript
- * import { retry } from '@awc/kettlejs/utils';
+ * import { retry } from '@fluixi/kettlejs/utils';
  *
  * const data = await retry(
  *   () => fetch('/api/data').then(r => r.json()),
@@ -530,7 +530,7 @@ export async function retry<T>(
  *
  * @example
  * ```typescript
- * import { sleep } from '@awc/kettlejs/utils';
+ * import { sleep } from '@fluixi/kettlejs/utils';
  *
  * await sleep(1000); // Wait 1 second
  * ```
@@ -548,7 +548,7 @@ export function sleep(ms: number): Promise<void> {
  *
  * @example
  * ```typescript
- * import { isDefined } from '@awc/kettlejs/utils';
+ * import { isDefined } from '@fluixi/kettlejs/utils';
  *
  * const values = [1, null, 2, undefined, 3];
  * const defined = values.filter(isDefined); // [1, 2, 3]
@@ -566,7 +566,7 @@ export function isDefined<T>(value: T | null | undefined): value is T {
  *
  * @example
  * ```typescript
- * import { pipe } from '@awc/kettlejs/utils';
+ * import { pipe } from '@fluixi/kettlejs/utils';
  *
  * const transform = pipe(
  *   (x: number) => x * 2,

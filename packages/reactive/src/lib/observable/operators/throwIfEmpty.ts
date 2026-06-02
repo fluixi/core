@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, AsyncScheduler } from "@awc/reactive";
+import { Observable, OperatorFunction, AsyncScheduler } from "@fluixi/reactive";
 
 /**
  * Configuration options for throwIfEmpty

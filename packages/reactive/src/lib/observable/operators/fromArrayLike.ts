@@ -1,4 +1,4 @@
-import { AsyncScheduler, Observable } from "@awc/reactive";
+import { AsyncScheduler, Observable } from "@fluixi/reactive";
 
 /**
  * Array-like or iterable input types for fromArrayLike

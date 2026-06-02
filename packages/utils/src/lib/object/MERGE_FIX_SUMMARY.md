@@ -340,7 +340,7 @@ All tests pass:
 ## Usage After Fix
 
 ```typescript
-import { deepMerge } from '@awc/utils/object';
+import { deepMerge } from '@fluixi/utils/object';
 
 // Safe merging - no references kept
 const result = deepMerge(

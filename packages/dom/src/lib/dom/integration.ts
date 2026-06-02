@@ -1,6 +1,6 @@
 /**
  * @fileoverview Integration Module for Reactive Systems
- * @module @awc/dom/integration
+ * @module @fluixi/dom/integration
  *
  * This module provides integration between the signal/store systems
  * and the DOM runtime, enabling fine-grained reactive updates without
@@ -11,7 +11,7 @@ import { Accessor, Computation, ComputationFn, Context, EffectFn, EffectOptions,
   RootOwner, Signal, SignalOptions, 
   SuspenseContextType, SuspenseListContextType, 
   type createStore as signalStore, type createDeferred as signalDeferred, 
-  createComputed as signalComputed, setOwner as setSignalOwner } from '@awc/reactive';
+  createComputed as signalComputed, setOwner as setSignalOwner } from '@fluixi/reactive';
 import { CreateComponentReturnType, DevComponent, Resource, SignalSystem, StoreSystem } from './types.js';
 
 // ============================================================================
@@ -465,8 +465,8 @@ export function autoInitialize(): void {
     // Dynamic import approach
     if (typeof require !== 'undefined') {
       try {
-        const signalModule = require('@awc/reactive/signal');
-        const storeModule = require('@awc/reactive/store');
+        const signalModule = require('@fluixi/reactive/signal');
+        const storeModule = require('@fluixi/reactive/store');
         console.log('loading from packages');
         initializeIntegration({
           signalSystem: {

@@ -1,4 +1,4 @@
-import { AsyncScheduler, OperatorFunction, throttle } from "@awc/reactive";
+import { AsyncScheduler, OperatorFunction, throttle } from "@fluixi/reactive";
 import { asyncScheduler } from "../../schedulers/async.js";
 
 /**

@@ -1,4 +1,4 @@
-import { Observable } from '@awc/reactive';
+import { Observable } from '@fluixi/reactive';
 import {
   createSignal,
   createEffect,

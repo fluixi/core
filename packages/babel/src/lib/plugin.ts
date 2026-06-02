@@ -1,6 +1,6 @@
 /**
  * @fileoverview Comprehensive Babel Plugin for Reactive JSX Transformation
- * @module @awc/babel-plugin-jsx
+ * @module @fluixi/babel-plugin-jsx
  *
  * This plugin transforms JSX into optimized reactive DOM operations with:
  * - Fine-grained reactivity detection
@@ -40,7 +40,7 @@ export interface PluginOptions {
 
   /**
    * Import source for JSX runtime
-   * @default '@awc/jsx-runtime'
+   * @default '@fluixi/jsx-runtime'
    */
   importSource?: string;
 
@@ -106,13 +106,13 @@ export interface PluginOptions {
 
   /**
    * Module name for signal directive
-   * @default '@awc/dom'
+   * @default '@fluixi/dom'
    */
   signalModule?: string;
 
   /**
    * Module name for control flow
-   * @default '@awc/dom'
+   * @default '@fluixi/dom'
    */
   controlFlowModule?: string;
 }
@@ -197,13 +197,13 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     delegatedEvents = DELEGATABLE_EVENTS,
     optimizeControlFlow = true,
     sourceMaps = true,
-    signalModule = '@awc/dom',
-    controlFlowModule = '@awc/dom',
+    signalModule = '@fluixi/dom',
+    controlFlowModule = '@fluixi/dom',
     autoShowTransform = false,
   } = options;
 
   const pluginState: PluginStateData = {
-    libModule: '@awc/kettlejs',
+    libModule: '@fluixi/kettlejs',
     hasJSX: false,
     hasReactivity: false,
     hasLitHTML: false,
@@ -217,7 +217,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
   };
 
   return {
-    name: '@awc/babel-plugin-jsx',
+    name: '@fluixi/babel-plugin-jsx',
 
     manipulateOptions(opts, parserOpts) {
       // Enable JSX parsing
@@ -230,17 +230,17 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     },
 
     visitor: {
-      // Map @awc/kettlejs/rx imports to @awc/reactive for client-side code
+      // Map @fluixi/kettlejs/rx imports to @fluixi/reactive for client-side code
       ImportDeclaration(path, state: any) {
         const source = path.node.source.value;
 
-        // Map @awc/kettlejs/rx to @awc/reactive (client-side reactive primitives)
-        if (source === '@awc/kettlejs/rx') {
-          path.node.source = t.stringLiteral('@awc/reactive');
+        // Map @fluixi/kettlejs/rx to @fluixi/reactive (client-side reactive primitives)
+        if (source === '@fluixi/kettlejs/rx') {
+          path.node.source = t.stringLiteral('@fluixi/reactive');
         }
 
         // Also handle kettlejs server imports - keep as is for SSR
-        // @awc/kettlejs/server stays as is (includes server reactive mappings)
+        // @fluixi/kettlejs/server stays as is (includes server reactive mappings)
       },
 
       Program: {
@@ -259,7 +259,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             staticElements: new Map(),
             autoShow: autoShowTransform,
             staticCounter: 0,
-            libModule: '@awc/kettlejs',
+            libModule: '@fluixi/kettlejs',
           });
         },
 
@@ -336,7 +336,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               imports.push(
                 t.importDeclaration(
                   [t.importSpecifier(t.identifier('createMemo'), t.identifier('createMemo'))],
-                  t.stringLiteral(state.libModule ?? '@awc/kettlejs'),
+                  t.stringLiteral(state.libModule ?? '@fluixi/kettlejs'),
                 ),
               );
             }
@@ -373,7 +373,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                       t.identifier('delegateEvents')
                     ),
                   ],
-                  t.stringLiteral('@awc/jsx-runtime')
+                  t.stringLiteral('@fluixi/jsx-runtime')
                 )
               );
 

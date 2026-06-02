@@ -58,7 +58,7 @@ interface DevServerConfig {
 
 **Basic Usage:**
 ```typescript
-import { createDevServer } from '@awc/kettlejs/dev-server';
+import { createDevServer } from '@fluixi/kettlejs/dev-server';
 
 const server = await createDevServer({
   port: 3000,
@@ -70,7 +70,7 @@ console.log(`Server running at ${server.resolvedUrls?.local[0]}`);
 
 **Advanced Configuration:**
 ```typescript
-import { createDevServer } from '@awc/kettlejs/dev-server';
+import { createDevServer } from '@fluixi/kettlejs/dev-server';
 
 const server = await createDevServer({
   root: './src',
@@ -119,7 +119,7 @@ function startDevServer(port?: number, open?: boolean): Promise<ViteDevServer>
 #### Example
 
 ```typescript
-import { startDevServer } from '@awc/kettlejs/dev-server';
+import { startDevServer } from '@fluixi/kettlejs/dev-server';
 
 // Start on port 3000 and open browser
 await startDevServer(3000, true);
@@ -145,7 +145,7 @@ function stopDevServer(server: ViteDevServer): Promise<void>
 #### Example
 
 ```typescript
-import { createDevServer, stopDevServer } from '@awc/kettlejs/dev-server';
+import { createDevServer, stopDevServer } from '@fluixi/kettlejs/dev-server';
 
 const server = await createDevServer();
 
@@ -175,7 +175,7 @@ function createSSRMiddleware(config?: DevServerConfig): Promise<any>
 
 ```typescript
 import express from 'express';
-import { createSSRMiddleware } from '@awc/kettlejs/dev-server';
+import { createSSRMiddleware } from '@fluixi/kettlejs/dev-server';
 
 const app = express();
 
@@ -218,7 +218,7 @@ interface PreviewServerConfig {
 #### Example
 
 ```typescript
-import { createPreviewServer } from '@awc/kettlejs/dev-server';
+import { createPreviewServer } from '@fluixi/kettlejs/dev-server';
 
 const server = await createPreviewServer({
   port: 4173,
@@ -243,7 +243,7 @@ function kettleJSPlugin(): Plugin
 
 #### Features
 
-- Optimizes dependencies (lit, @awc/reactive, @awc/kettlejs)
+- Optimizes dependencies (lit, @fluixi/reactive, @fluixi/kettlejs)
 - Configures build target to ES2020
 - Sets up code splitting for production
 - Adds custom HMR handling
@@ -253,7 +253,7 @@ function kettleJSPlugin(): Plugin
 
 ```typescript
 import { defineConfig } from 'vite';
-import { kettleJSPlugin } from '@awc/kettlejs/dev-server';
+import { kettleJSPlugin } from '@fluixi/kettlejs/dev-server';
 
 export default defineConfig({
   plugins: [
@@ -315,7 +315,7 @@ interface BuildResult {
 
 **Basic Build:**
 ```typescript
-import { build } from '@awc/kettlejs/builder';
+import { build } from '@fluixi/kettlejs/builder';
 
 const result = await build({
   outDir: 'dist',
@@ -349,7 +349,7 @@ const result = await build({
   rollupOptions: {
     output: {
       manualChunks: {
-        vendor: ['lit', '@awc/reactive']
+        vendor: ['lit', '@fluixi/reactive']
       }
     }
   }
@@ -373,7 +373,7 @@ Same as `build()` but `ssr` is automatically set to `false`.
 #### Example
 
 ```typescript
-import { buildClient } from '@awc/kettlejs/builder';
+import { buildClient } from '@fluixi/kettlejs/builder';
 
 await buildClient({
   outDir: 'dist/client',
@@ -399,7 +399,7 @@ Same as `build()` but `ssr` is automatically set to `true`.
 #### Example
 
 ```typescript
-import { buildFullStack } from '@awc/kettlejs/builder';
+import { buildFullStack } from '@fluixi/kettlejs/builder';
 
 await buildFullStack({
   outDir: 'dist',
@@ -430,7 +430,7 @@ function watch(config?: BuildConfig): Promise<void>
 #### Example
 
 ```typescript
-import { watch } from '@awc/kettlejs/builder';
+import { watch } from '@fluixi/kettlejs/builder';
 
 // Watch and rebuild
 await watch({
@@ -470,7 +470,7 @@ Promise<{
 #### Example
 
 ```typescript
-import { analyzeBundle } from '@awc/kettlejs/builder';
+import { analyzeBundle } from '@fluixi/kettlejs/builder';
 
 const stats = await analyzeBundle({
   outDir: 'dist'
@@ -500,7 +500,7 @@ function optimizeAssets(outDir: string): Promise<void>
 #### Example
 
 ```typescript
-import { build, optimizeAssets } from '@awc/kettlejs/builder';
+import { build, optimizeAssets } from '@fluixi/kettlejs/builder';
 
 // Build first
 await build({ outDir: 'dist' });
@@ -531,7 +531,7 @@ function kettleJSBuildPlugin(config?: BuildConfig): Plugin
 
 ```typescript
 import { defineConfig } from 'vite';
-import { kettleJSBuildPlugin } from '@awc/kettlejs/builder';
+import { kettleJSBuildPlugin } from '@fluixi/kettlejs/builder';
 
 export default defineConfig({
   plugins: [
@@ -551,7 +551,7 @@ export default defineConfig({
 
 ```typescript
 // dev.js
-import { startDevServer } from '@awc/kettlejs/dev-server';
+import { startDevServer } from '@fluixi/kettlejs/dev-server';
 
 await startDevServer(3000, true);
 ```
@@ -560,7 +560,7 @@ await startDevServer(3000, true);
 
 ```typescript
 // build.js
-import { build, analyzeBundle, optimizeAssets } from '@awc/kettlejs/builder';
+import { build, analyzeBundle, optimizeAssets } from '@fluixi/kettlejs/builder';
 
 console.log('Building application...');
 
@@ -588,7 +588,7 @@ console.log('✓ Assets optimized');
 
 ```typescript
 // build-ssr.js
-import { buildFullStack } from '@awc/kettlejs/builder';
+import { buildFullStack } from '@fluixi/kettlejs/builder';
 
 await buildFullStack({
   outDir: 'dist',
@@ -606,8 +606,8 @@ console.log('✓ Client and SSR bundles built');
 
 ```typescript
 // preview.js
-import { build } from '@awc/kettlejs/builder';
-import { createPreviewServer } from '@awc/kettlejs/dev-server';
+import { build } from '@fluixi/kettlejs/builder';
+import { createPreviewServer } from '@fluixi/kettlejs/dev-server';
 
 // Build first
 await build({ outDir: 'dist' });
@@ -629,7 +629,7 @@ await createPreviewServer({
     "build": "node build.js",
     "build:ssr": "node build-ssr.js",
     "preview": "node preview.js",
-    "analyze": "node -e \"require('@awc/kettlejs/builder').analyzeBundle({ outDir: 'dist' })\""
+    "analyze": "node -e \"require('@fluixi/kettlejs/builder').analyzeBundle({ outDir: 'dist' })\""
   }
 }
 ```
@@ -662,7 +662,7 @@ import type {
   PreviewServerConfig,
   BuildConfig,
   BuildResult,
-} from '@awc/kettlejs';
+} from '@fluixi/kettlejs';
 ```
 
 ---
@@ -672,7 +672,7 @@ import type {
 All async functions can throw errors. Always wrap in try-catch:
 
 ```typescript
-import { build } from '@awc/kettlejs/builder';
+import { build } from '@fluixi/kettlejs/builder';
 
 try {
   const result = await build({ outDir: 'dist' });

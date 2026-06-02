@@ -1,10 +1,10 @@
 /**
  * @fileoverview KettleLitElement — LitElement base class with KettleJS reactivity
- * @module @awc/element/kettle-lit-element
+ * @module @fluixi/element/kettle-lit-element
  */
 
 import { LitElement } from 'lit';
-import { createRoot } from '@awc/dom';
+import { createRoot } from '@fluixi/dom';
 import { ensureElementIntegration, type ReactiveHost } from './base.js';
 
 export abstract class KettleLitElement extends LitElement {

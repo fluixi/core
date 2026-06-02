@@ -1,10 +1,10 @@
 /**
  * @fileoverview JSX Type Definitions for KettleJS
- * @module @awc/kettlejs/jsx-runtime
+ * @module @fluixi/kettlejs/jsx-runtime
  */
 
 import { TemplateResult, SVGTemplateResult } from 'lit';
-import { Accessor } from '@awc/reactive/signal';
+import { Accessor } from '@fluixi/reactive/signal';
 import type { DirectiveResult } from 'lit/directive.js';
 
 // ============================================================================
@@ -133,7 +133,7 @@ export namespace JSX {
     onBlur?: (event: FocusEvent) => void;
 
     // Form Events
-    onChange?: (event: Event) => void;
+    onChange?: (event: InputEvent) => void;
     onInput?: (event: InputEvent) => void;
     onBeforeInput?: (event: InputEvent) => void;
     onReset?: (event: Event) => void;
@@ -1248,7 +1248,7 @@ export namespace JSX {
     details: DetailsHTMLAttributes;
     dfn: HTMLAttributes;
     dialog: DialogHTMLAttributes;
-    div: HTMLAttributes;
+    div: HTMLAttributes<HTMLDivElement>;
     dl: HTMLAttributes;
     dt: HTMLAttributes;
     em: HTMLAttributes;

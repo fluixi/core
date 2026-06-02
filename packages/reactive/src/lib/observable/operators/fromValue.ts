@@ -1,4 +1,4 @@
-import {Observable, type SchedulerLike} from '@awc/reactive'
+import {Observable, type SchedulerLike} from '@fluixi/reactive'
 
 /**
  * Creates an Observable that emits a single value and then completes.

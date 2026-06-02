@@ -1,4 +1,4 @@
-import { ClassType } from '@awc/utils/primitive';
+import { ClassType } from '@fluixi/utils/primitive';
 import { RecordObject, SelectorSegment } from './types.js';
 /**
  * Checks if a value is an object (not array, function, date, etc.)

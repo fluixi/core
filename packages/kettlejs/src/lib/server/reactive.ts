@@ -1,6 +1,6 @@
 /**
  * @fileoverview Server Reactive Primitives for KettleJS
- * @module @awc/kettlejs/server/reactive
+ * @module @fluixi/kettlejs/server/reactive
  *
  * Maps reactive primitives for server-side execution
  * Following SolidJS pattern of server-specific reactive behavior
@@ -19,7 +19,7 @@ import type {
   SignalOptions,
   RootOwner,
   Context,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 // ============================================================================
 // SERVER SIGNAL

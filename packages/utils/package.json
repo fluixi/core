@@ -1,5 +1,5 @@
 {
-  "name": "@awc/utils",
+  "name": "@fluixi/utils",
   "version": "0.0.1",
   "private": false,
   "type": "module",
@@ -149,7 +149,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@awc/mix-builder": "workspace:*",
+    "@fluixi/mix-builder": "workspace:*",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

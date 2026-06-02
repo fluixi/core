@@ -31,7 +31,7 @@ import {
   pipe,
   curry,
   // ... other utilities
-} from '@awc/utils/functions';
+} from '@fluixi/utils/functions';
 ```
 
 ## Quick Start
@@ -41,7 +41,7 @@ import {
 Cache expensive function results:
 
 ```typescript
-import { memoize } from '@awc/utils/functions';
+import { memoize } from '@fluixi/utils/functions';
 
 const expensiveCalculation = memoize((n: number) => {
   console.log('Computing...');
@@ -57,7 +57,7 @@ expensiveCalculation(5); // Returns 25 from cache (no log)
 Delay function execution until after a period of inactivity:
 
 ```typescript
-import { debounce } from '@awc/utils/functions';
+import { debounce } from '@fluixi/utils/functions';
 
 const searchApi = debounce((query: string) => {
   console.log('Searching for:', query);
@@ -73,7 +73,7 @@ searchApi('hello world'); // Cancels previous, waits 300ms
 Limit function execution to once per time period:
 
 ```typescript
-import { throttle } from '@awc/utils/functions';
+import { throttle } from '@fluixi/utils/functions';
 
 const handleScroll = throttle(() => {
   console.log('Scroll position:', window.scrollY);
@@ -88,7 +88,7 @@ window.addEventListener('scroll', handleScroll);
 Combine multiple functions:
 
 ```typescript
-import { pipe, compose } from '@awc/utils/functions';
+import { pipe, compose } from '@fluixi/utils/functions';
 
 const double = (x: number) => x * 2;
 const addOne = (x: number) => x + 1;
@@ -108,7 +108,7 @@ calculate2(5); // ((5 * 2) + 1)² = 121
 Transform multi-argument functions:
 
 ```typescript
-import { curry } from '@awc/utils/functions';
+import { curry } from '@fluixi/utils/functions';
 
 const add = (a: number, b: number, c: number) => a + b + c;
 const curriedAdd = curry(add);
@@ -176,7 +176,7 @@ curriedAdd(1, 2, 3);        // 6
 ### Search Input with Debounce
 
 ```typescript
-import { debounce } from '@awc/utils/functions';
+import { debounce } from '@fluixi/utils/functions';
 
 const SearchInput = () => {
   const searchApi = debounce(async (query: string) => {
@@ -196,7 +196,7 @@ const SearchInput = () => {
 ### Scroll Event Throttling
 
 ```typescript
-import { throttle } from '@awc/utils/functions';
+import { throttle } from '@fluixi/utils/functions';
 
 const trackScroll = throttle(() => {
   const scrollPercentage = (window.scrollY / document.body.scrollHeight) * 100;
@@ -209,7 +209,7 @@ window.addEventListener('scroll', trackScroll);
 ### API Call with Retry
 
 ```typescript
-import { retry } from '@awc/utils/functions';
+import { retry } from '@fluixi/utils/functions';
 
 const fetchUser = retry(
   async (id: string) => {
@@ -231,7 +231,7 @@ const fetchUser = retry(
 ### Expensive Calculation with Memoization
 
 ```typescript
-import { memoize } from '@awc/utils/functions';
+import { memoize } from '@fluixi/utils/functions';
 
 const fibonacci = memoize((n: number): number => {
   if (n <= 1) return n;
@@ -244,7 +244,7 @@ fibonacci(40); // Fast due to memoization
 ### Data Processing Pipeline
 
 ```typescript
-import { pipe } from '@awc/utils/functions';
+import { pipe } from '@fluixi/utils/functions';
 
 const processData = pipe(
   (data: string[]) => data.filter(s => s.length > 0),
@@ -261,7 +261,7 @@ const cleaned = processData(['  Hello  ', 'WORLD', '', 'hello']);
 ### Initialize Once
 
 ```typescript
-import { once } from '@awc/utils/functions';
+import { once } from '@fluixi/utils/functions';
 
 const initializeApp = once(() => {
   console.log('Initializing...');
@@ -279,7 +279,7 @@ initializeApp(); // Returns cached result, no log
 ### Memoization Cache Management
 
 ```typescript
-import { memoize } from '@awc/utils/functions';
+import { memoize } from '@fluixi/utils/functions';
 
 const fn = memoize(expensiveOperation);
 
@@ -307,7 +307,7 @@ const fnWithTTL = memoizeWithTTL(expensiveOperation, 60000); // 1 minute
 ### Memory Leaks Prevention
 
 ```typescript
-import { debounce } from '@awc/utils/functions';
+import { debounce } from '@fluixi/utils/functions';
 
 // In components, clean up on unmount
 const debouncedFn = debounce(myFunction, 300);
@@ -321,7 +321,7 @@ debouncedFn.cancel();
 All functions have full TypeScript support with proper type inference:
 
 ```typescript
-import { memoize, curry, compose } from '@awc/utils/functions';
+import { memoize, curry, compose } from '@fluixi/utils/functions';
 
 // Type inference works correctly
 const add = memoize((a: number, b: number): number => a + b);
@@ -346,7 +346,7 @@ const output: string = composed(5); // "10"
 
 ```typescript
 import { useCallback, useEffect } from 'react';
-import { debounce } from '@awc/utils/functions';
+import { debounce } from '@fluixi/utils/functions';
 
 function useDebounce<T extends (...args: any[]) => any>(
   callback: T,

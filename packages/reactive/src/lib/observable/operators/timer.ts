@@ -1,6 +1,6 @@
-import { isScheduler, Observable, Observer, SchedulerAction, SchedulerLike } from "@awc/reactive";
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
-// import { isScheduler, Observable, SchedulerAction, SchedulerLike } from "@awc/reactive";
+import { isScheduler, Observable, Observer, SchedulerAction, SchedulerLike } from "@fluixi/reactive";
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
+// import { isScheduler, Observable, SchedulerAction, SchedulerLike } from "@fluixi/reactive";
 /**
  * Creates an Observable that emits a sequence of numbers after specified delays.
  * 

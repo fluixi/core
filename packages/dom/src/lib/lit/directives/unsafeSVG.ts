@@ -18,7 +18,7 @@
 import { directive, Directive, PartInfo, PartType } from 'lit/directive.js';
 import { noChange } from 'lit';
 import { unsafeSVG as litUnsafeSVG } from 'lit/directives/unsafe-svg.js';
-import { createEffect, createRoot, untrack } from '@awc/reactive/signal';
+import { createEffect, createRoot, untrack } from '@fluixi/reactive/signal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

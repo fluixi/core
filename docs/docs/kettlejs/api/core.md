@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Core API
 
-Complete API reference for KettleJS core module (`@awc/kettlejs/core`).
+Complete API reference for KettleJS core module (`@fluixi/kettlejs/core`).
 
 ## Component Functions
 
@@ -27,7 +27,7 @@ function render(
 
 **Example:**
 ```typescript
-import { render, html } from '@awc/kettlejs';
+import { render, html } from '@fluixi/kettlejs';
 import { App } from './App';
 
 const root = document.getElementById('app');
@@ -47,7 +47,7 @@ type Component<Props = {}> = (props?: Props) => TemplateResult
 
 **Example:**
 ```typescript
-import { html, Component } from '@awc/kettlejs';
+import { html, Component } from '@fluixi/kettlejs';
 
 interface MyComponentProps {
   title: string;
@@ -96,8 +96,8 @@ abstract view(): TemplateResult
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@awc/kettlejs';
-import { createSignal } from '@awc/reactive/signal';
+import { KettleElement } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
 export class MyCounter extends KettleElement {
@@ -196,7 +196,7 @@ function getCurrentElement(): HTMLElement | null
 
 **Example:**
 ```typescript
-import { getCurrentElement } from '@awc/kettlejs/core';
+import { getCurrentElement } from '@fluixi/kettlejs/core';
 
 function useCustomHook() {
   const element = getCurrentElement();
@@ -223,8 +223,8 @@ class SignalController {
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@awc/kettlejs/core';
-import { createSignal } from '@awc/reactive/signal';
+import { SignalController } from '@fluixi/kettlejs/core';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-component')
 export class MyComponent extends LitElement {
@@ -255,8 +255,8 @@ function WithSignals<T extends Constructor<LitElement>>(
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core';
-import { createSignal } from '@awc/reactive/signal';
+import { WithSignals } from '@fluixi/kettlejs/core';
+import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-component')
 export class MyComponent extends WithSignals(LitElement) {
@@ -288,7 +288,7 @@ function isHydrating(): boolean
 
 **Example:**
 ```typescript
-import { isHydrating } from '@awc/kettlejs/core';
+import { isHydrating } from '@fluixi/kettlejs/core';
 
 if (isHydrating()) {
   console.log('Hydrating server-rendered content');
@@ -318,7 +318,7 @@ function getHydrationData<T = any>(key: string): T | undefined
 
 **Example:**
 ```typescript
-import { getHydrationData } from '@awc/kettlejs/core';
+import { getHydrationData } from '@fluixi/kettlejs/core';
 
 const initialState = getHydrationData('app-state');
 ```
@@ -337,7 +337,7 @@ function setHydrationData<T = any>(key: string, data: T): void
 
 **Example:**
 ```typescript
-import { setHydrationData } from '@awc/kettlejs/core';
+import { setHydrationData } from '@fluixi/kettlejs/core';
 
 setHydrationData('app-state', { count: 5 });
 ```
@@ -362,7 +362,7 @@ async function renderToString(template: unknown): Promise<string>
 **Example:**
 ```typescript
 import { html } from 'lit';
-import { renderToString } from '@awc/kettlejs/core';
+import { renderToString } from '@fluixi/kettlejs/core';
 
 const app = html`<my-app></my-app>`;
 const htmlString = await renderToString(app);
@@ -385,7 +385,7 @@ function renderToStream(template: unknown): Readable
 
 **Example:**
 ```typescript
-import { renderToStream } from '@awc/kettlejs/core';
+import { renderToStream } from '@fluixi/kettlejs/core';
 
 const stream = renderToStream(template);
 stream.pipe(response);
@@ -416,7 +416,7 @@ async function renderToPage(
 
 **Example:**
 ```typescript
-import { renderToPage } from '@awc/kettlejs/core';
+import { renderToPage } from '@fluixi/kettlejs/core';
 
 const page = await renderToPage(app, {
   title: 'My App',
@@ -445,7 +445,7 @@ function createHtmlDocument(
 
 **Example:**
 ```typescript
-import { createHtmlDocument } from '@awc/kettlejs/core';
+import { createHtmlDocument } from '@fluixi/kettlejs/core';
 
 const html = '<div>Content</div>';
 const document = createHtmlDocument(html, {
@@ -471,7 +471,7 @@ function setSSRContext(context: SSRContext | null): void
 
 **Example:**
 ```typescript
-import { setSSRContext } from '@awc/kettlejs/core';
+import { setSSRContext } from '@fluixi/kettlejs/core';
 
 setSSRContext({
   url: request.url,
@@ -491,7 +491,7 @@ function getSSRContext(): SSRContext | null
 
 **Example:**
 ```typescript
-import { getSSRContext } from '@awc/kettlejs/core';
+import { getSSRContext } from '@fluixi/kettlejs/core';
 
 const context = getSSRContext();
 if (context) {
@@ -518,7 +518,7 @@ function withSSRContext<T>(
 
 **Example:**
 ```typescript
-import { withSSRContext, renderToString } from '@awc/kettlejs/core';
+import { withSSRContext, renderToString } from '@fluixi/kettlejs/core';
 
 const html = withSSRContext(
   { url: '/about', headers: {} },
@@ -548,7 +548,7 @@ function isSSR(): boolean
 
 **Example:**
 ```typescript
-import { isSSR } from '@awc/kettlejs/core';
+import { isSSR } from '@fluixi/kettlejs/core';
 
 if (isSSR()) {
   console.log('Running on server');
@@ -571,7 +571,7 @@ function onServer<T>(fn: () => T, fallback: T): T
 
 **Example:**
 ```typescript
-import { onServer } from '@awc/kettlejs/core';
+import { onServer } from '@fluixi/kettlejs/core';
 
 const data = onServer(
   () => loadFromDatabase(),
@@ -595,7 +595,7 @@ function onClient<T>(fn: () => T, fallback: T): T
 
 **Example:**
 ```typescript
-import { onClient } from '@awc/kettlejs/core';
+import { onClient } from '@fluixi/kettlejs/core';
 
 const width = onClient(
   () => window.innerWidth,
@@ -625,7 +625,7 @@ import type { TemplateResult } from 'lit';
 
 ## Related APIs
 
-- [Signals API](./signals.md) - Reactive primitives from @awc/reactive
+- [Signals API](./signals.md) - Reactive primitives from @fluixi/reactive
 - [Control Flow API](./control-flow.md) - Show, For, Dynamic components
 - [Router API](./router.md) - Routing functionality
 - [Resources API](./resources.md) - Async data management

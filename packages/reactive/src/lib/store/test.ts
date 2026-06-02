@@ -1,4 +1,4 @@
-// import { applyDiff, diffObjectDetailed, reconcile } from "@awc/utils/object";
+// import { applyDiff, diffObjectDetailed, reconcile } from "@fluixi/utils/object";
 // import { createStore, unwrap } from "./store.js";
 
 // const [get, set] = createStore([

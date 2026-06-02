@@ -1,4 +1,4 @@
-import {from, Observable, ObservableInput, ObservableInputDictionary, ObservedValueOf} from '@awc/reactive';
+import {from, Observable, ObservableInput, ObservableInputDictionary, ObservedValueOf} from '@fluixi/reactive';
 
 /**
  * Creates an Observable that waits for all input Observables to complete,

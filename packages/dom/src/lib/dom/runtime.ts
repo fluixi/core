@@ -1,6 +1,6 @@
 /**
  * @fileoverview Core Reactive DOM Runtime
- * @module @awc/dom/runtime
+ * @module @fluixi/dom/runtime
  *
  * Fine-grained reactive DOM manipulation utilities inspired by SolidJS.
  * Key design: Event delegation uses `$$eventname` properties on DOM nodes
@@ -15,7 +15,7 @@
 
 import  {
   isSignal,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
 import { isComponent } from '../component/modifiers.js';
 import { batch, createEffect, createRenderEffect, createRoot, onCleanup, resolveChildren, untrack } from './integration.js';
@@ -1623,7 +1623,7 @@ export function isAccessor<T>(value: any): value is Accessor<T> {
 // let isStoreProxyFn: ((value: any) => boolean) | undefined;
 
 // try {
-//   const storeModule = require('@awc/reactive/store');
+//   const storeModule = require('@fluixi/reactive/store');
 //   $PROXY_SYM = storeModule.$PROXY;
 //   isStoreProxyFn = storeModule.isStoreProxy;
 // } catch (e) {

@@ -1,4 +1,4 @@
-import { isSignal } from '@awc/reactive';
+import { isSignal } from '@fluixi/reactive';
 import { html as litHtml, svg as litSvg, TemplateResult } from 'lit';
 import { auto } from '../directives/utils.js';
 import { processValues } from './helpers.js';
@@ -74,7 +74,7 @@ export function svg(
  *
  * @example
  * ```typescript
- * import { rx } from '@awc/kettlejs';
+ * import { rx } from '@fluixi/kettlejs';
  *
  * const [count, setCount] = createSignal(0);
  * const [name, setName] = createSignal('User');

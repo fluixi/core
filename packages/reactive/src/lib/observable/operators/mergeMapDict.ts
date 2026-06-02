@@ -1,4 +1,4 @@
-import { forkJoin, from, map, mergeMap, Observable, ObservableInput, OperatorFunction } from "@awc/reactive";
+import { forkJoin, from, map, mergeMap, Observable, ObservableInput, OperatorFunction } from "@fluixi/reactive";
 
 /**
  * Specialized mergeMap for making multiple parallel requests and combining their results.

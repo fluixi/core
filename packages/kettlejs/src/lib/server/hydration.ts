@@ -1,6 +1,6 @@
 /**
  * @fileoverview Hydration utilities for KettleJS
- * @module @awc/kettlejs/server/hydration
+ * @module @fluixi/kettlejs/server/hydration
  *
  * Implements Section 11 of SPEC.md: HYDRATION
  * - DOM reused (no recreation)
@@ -54,7 +54,7 @@ let markerCounter = 0;
  *
  * @example
  * ```typescript
- * import { isHydrating } from '@awc/kettlejs/server';
+ * import { isHydrating } from '@fluixi/kettlejs/server';
  *
  * if (isHydrating()) {
  *   // Reuse existing DOM
@@ -90,7 +90,7 @@ export function setHydrating(state: boolean): void {
  *
  * @example
  * ```typescript
- * import { setHydrationData } from '@awc/kettlejs/server';
+ * import { setHydrationData } from '@fluixi/kettlejs/server';
  *
  * // On server
  * setHydrationData('user', { id: 1, name: 'Alice' });
@@ -110,7 +110,7 @@ export function setHydrationData(key: string, data: any): void {
  *
  * @example
  * ```typescript
- * import { getHydrationData } from '@awc/kettlejs/server';
+ * import { getHydrationData } from '@fluixi/kettlejs/server';
  *
  * // On client
  * const user = getHydrationData('user');
@@ -161,7 +161,7 @@ export function clearHydrationDataKey(key: string): void {
  *
  * @example
  * ```typescript
- * import { serializeHydrationData } from '@awc/kettlejs/server';
+ * import { serializeHydrationData } from '@fluixi/kettlejs/server';
  *
  * const html = await renderToString(() => App());
  * const script = serializeHydrationData();
@@ -188,7 +188,7 @@ export function serializeHydrationData(): string {
  *
  * @example
  * ```typescript
- * import { deserializeHydrationData } from '@awc/kettlejs/server';
+ * import { deserializeHydrationData } from '@fluixi/kettlejs/server';
  *
  * // On client startup
  * if (deserializeHydrationData()) {
@@ -245,7 +245,7 @@ export function generateMarkerID(): string {
  *
  * @example
  * ```typescript
- * import { hydrationMarker } from '@awc/kettlejs/server';
+ * import { hydrationMarker } from '@fluixi/kettlejs/server';
  *
  * const marker = hydrationMarker('component-1');
  * // Returns: <!--h:component-1-->
@@ -292,7 +292,7 @@ export function hydrationMarkerEnd(id: string): string {
  *
  * @example
  * ```typescript
- * import { createHydratableResource } from '@awc/kettlejs/server';
+ * import { createHydratableResource } from '@fluixi/kettlejs/server';
  *
  * const loadUser = createHydratableResource('user', async () => {
  *   const res = await fetch('/api/user');
@@ -338,7 +338,7 @@ export function createHydratableResource<T>(
  *
  * @example
  * ```typescript
- * import { useHydrationData } from '@awc/kettlejs/server';
+ * import { useHydrationData } from '@fluixi/kettlejs/server';
  *
  * const MyComponent = () => {
  *   const data = useHydrationData('my-data', { initial: true });
@@ -376,7 +376,7 @@ export function useHydrationData<T>(key: string, value: T | (() => T)): T {
  *
  * @example
  * ```typescript
- * import { cleanupHydration } from '@awc/kettlejs/server';
+ * import { cleanupHydration } from '@fluixi/kettlejs/server';
  *
  * // After hydration completes
  * cleanupHydration();

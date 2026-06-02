@@ -1,5 +1,5 @@
 import { isPrimitive, isUndefinedOrNull } from '../helpers.js';
-import { isObject } from '@awc/utils/object';
+import { isObject } from '@fluixi/utils/object';
 export const hasLength = (data) => {
     const type = typeof data;
     let hasValue = false;

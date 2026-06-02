@@ -1,5 +1,5 @@
-import {AsyncScheduler, Observable, OperatorFunction} from "@awc/reactive"
-import { asyncScheduler } from "@awc/reactive/schedulers/async";
+import {AsyncScheduler, Observable, OperatorFunction} from "@fluixi/reactive"
+import { asyncScheduler } from "@fluixi/reactive/schedulers/async";
 
 /**
  * Configuration options for delay

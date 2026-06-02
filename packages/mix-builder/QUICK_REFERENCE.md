@@ -77,7 +77,7 @@ npx mix-builder --builder=both --formats=esm,cjs,umd
 | `--externals` | Comma-separated packages |
 | `--reactExternal` | React + react-dom + sub-paths |
 | `--litExternal` | Lit + lit-html + @lit/* |
-| `--libExternal` | @awc/* + @adafri/* |
+| `--libExternal` | @fluixi/* + @adafri/* |
 | `--pkgExternal` | package.json deps |
 | `--nodeExternal` | Node.js built-ins |
 | `--skipExternal` | Bundle everything |

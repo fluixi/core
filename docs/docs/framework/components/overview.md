@@ -16,7 +16,7 @@ KettleJS supports four main component patterns:
 Simple functions that return templates. Perfect for most use cases.
 
 ```typescript
-import { html, createSignal, Component } from '@awc/kettlejs';
+import { html, createSignal, Component } from '@fluixi/kettlejs';
 
 const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -40,8 +40,8 @@ const Counter: Component = () => {
 Custom elements that extend KettleElement for full reactive capabilities.
 
 ```typescript
-import { html, createSignal } from '@awc/kettlejs';
-import { KettleElement } from '@awc/kettlejs/core';
+import { html, createSignal } from '@fluixi/kettlejs';
+import { KettleElement } from '@fluixi/kettlejs/core';
 import { customElement } from 'lit/decorators.js';
 
 @customElement('my-counter')
@@ -73,8 +73,8 @@ Add reactive capabilities to any LitElement.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@awc/kettlejs/core';
-import { createSignal } from '@awc/reactive';
+import { WithSignals } from '@fluixi/kettlejs/core';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 class MyCounter extends WithSignals(LitElement) {
@@ -105,8 +105,8 @@ Fine-grained control for advanced use cases.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@awc/kettlejs/core';
-import { createSignal } from '@awc/reactive';
+import { ReactiveController } from '@fluixi/kettlejs/core';
+import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
 class MyCounter extends LitElement {
@@ -265,7 +265,7 @@ const App = () => {
 Share state across component trees:
 
 ```typescript
-import { createContext, useContext, Provider } from '@awc/kettlejs/context';
+import { createContext, useContext, Provider } from '@fluixi/kettlejs/context';
 
 const ThemeContext = createContext<Theme>({ mode: 'light' });
 
@@ -330,7 +330,7 @@ const ParentComponent: Component = () => {
 ### Functional Components
 
 ```typescript
-import { onMount, onUnmount } from '@awc/kettlejs';
+import { onMount, onUnmount } from '@fluixi/kettlejs';
 
 const MyComponent: Component = () => {
   onMount(() => {
@@ -423,7 +423,7 @@ const App: Component = () => {
 ### Dynamic Styles
 
 ```typescript
-import { styleMap } from '@awc/kettlejs';
+import { styleMap } from '@fluixi/kettlejs';
 
 const DynamicComponent: Component = () => {
   const [color, setColor] = createSignal('#ff0000');

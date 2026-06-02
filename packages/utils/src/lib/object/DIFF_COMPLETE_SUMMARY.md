@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented a comprehensive object diff utility system for `@awc/utils/object` with full array index notation support (e.g., `users[0].name`, `items[2].tags[1]`). The implementation includes detailed change tracking, categorization of added/deleted/modified paths, and extensive test coverage.
+Successfully implemented a comprehensive object diff utility system for `@fluixi/utils/object` with full array index notation support (e.g., `users[0].name`, `items[2].tags[1]`). The implementation includes detailed change tracking, categorization of added/deleted/modified paths, and extensive test coverage.
 
 ---
 
@@ -354,7 +354,7 @@ import {
   getChangedPaths,
   hasObjectChanges,
   applyDiff
-} from '@awc/utils/object';
+} from '@fluixi/utils/object';
 ```
 
 ### Updated Files
@@ -424,7 +424,7 @@ if (diff.settings?.theme) {
 ## 📝 Quick Start
 
 ```typescript
-import { diffObject, getChangedPaths, diffObjectDetailed } from '@awc/utils/object';
+import { diffObject, getChangedPaths, diffObjectDetailed } from '@fluixi/utils/object';
 
 // 1. Get only changed values
 const changes = diffObject(oldData, newData);

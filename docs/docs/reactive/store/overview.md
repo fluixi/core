@@ -19,8 +19,8 @@ A **Store** is a reactive state container that provides:
 ## Quick Start
 
 ```typescript
-import { createStore } from '@awc/reactive';
-import { createEffect } from '@awc/reactive';
+import { createStore } from '@fluixi/reactive';
+import { createEffect } from '@fluixi/reactive';
 
 // Create a store
 const [user, setUser] = createStore({
@@ -251,7 +251,7 @@ setData('target.value', 2);
 Batch multiple updates to trigger effects only once:
 
 ```typescript
-import { batch } from '@awc/reactive';
+import { batch } from '@fluixi/reactive';
 
 const [state, setState] = createStore({
   count: 0,

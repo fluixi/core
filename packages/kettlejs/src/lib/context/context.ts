@@ -1,17 +1,17 @@
 // /**
-//  * @fileoverview Context API for KettleJS that wraps @awc/reactive context for Lit templates
-//  * @module @awc/kettlejs/context/context
+//  * @fileoverview Context API for KettleJS that wraps @fluixi/reactive context for Lit templates
+//  * @module @fluixi/kettlejs/context/context
 //  */
 
 import { asProvider, isPromise, type Component,createContext as createReactiveContext,
-  useContext as useReactiveContext, } from '@awc/dom';
+  useContext as useReactiveContext, } from '@fluixi/dom';
 import {
   Accessor,
   Context,
   // createContext as createReactiveContext,
   // useContext as useReactiveContext,
   isSignal,
-} from '@awc/reactive/signal';
+} from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
 ensureIntegration('index')
 // import {
@@ -19,16 +19,16 @@ ensureIntegration('index')
 //   useContext as reactiveUseContext,
 //   type CreateContext as ReactiveContext,
 //   type Accessor,
-// } from '@awc/reactive/signal';
+// } from '@fluixi/reactive/signal';
 // import { html, TemplateResult } from 'lit';
 
 // /**
-//  * Re-export Context type from @awc/reactive
+//  * Re-export Context type from @fluixi/reactive
 //  */
 // export type Context<T> = ReactiveContext<T>;
 
 // /**
-//  * Creates a new context using @awc/reactive's context system
+//  * Creates a new context using @fluixi/reactive's context system
 //  *
 //  * Contexts provide a way to pass data through the component tree without
 //  * having to pass props down manually at every level.
@@ -39,7 +39,7 @@ ensureIntegration('index')
 //  *
 //  * @example
 //  * ```typescript
-//  * import { createContext } from '@awc/kettlejs/context';
+//  * import { createContext } from '@fluixi/kettlejs/context';
 //  *
 //  * // Create a theme context
 //  * interface Theme {
@@ -70,7 +70,7 @@ ensureIntegration('index')
 // }
 
 // /**
-//  * Retrieves the value of a context using @awc/reactive's context system
+//  * Retrieves the value of a context using @fluixi/reactive's context system
 //  *
 //  * Must be called within a component that is a descendant of a Provider
 //  * for the given context, otherwise returns the default value.
@@ -81,8 +81,8 @@ ensureIntegration('index')
 //  *
 //  * @example
 //  * ```typescript
-//  * import { createContext, useContext } from '@awc/kettlejs/context';
-//  * import { KettleElement } from '@awc/kettlejs/core/component';
+//  * import { createContext, useContext } from '@fluixi/kettlejs/context';
+//  * import { KettleElement } from '@fluixi/kettlejs/core/component';
 //  * import { html } from 'lit';
 //  *
 //  * const ThemeContext = createContext({ primaryColor: '#007bff' });
@@ -162,7 +162,7 @@ export interface ProviderProps<Child> {
 /**
  * Provider component that supplies a context value to its descendants
  *
- * This wraps @awc/reactive's Provider for use with Lit templates.
+ * This wraps @fluixi/reactive's Provider for use with Lit templates.
  *
  * @template T - Type of the context value
  * @param {ContextProvider<T>} props - Component props
@@ -170,8 +170,8 @@ export interface ProviderProps<Child> {
  *
  * @example
  * ```typescript
- * import { createContext, Provider } from '@awc/kettlejs/context';
- * import { createSignal } from '@awc/reactive';
+ * import { createContext, Provider } from '@fluixi/kettlejs/context';
+ * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
  * const ThemeContext = createContext({ primaryColor: '#007bff' });
@@ -229,7 +229,7 @@ export function createProvider<T, S=Children>(props: ContextProvider<T, S>): Com
   const resolvedValue =
     typeof value === 'function' ? (value as Accessor<T>)() : value;
 
-  // Use @awc/reactive's Provider
+  // Use @fluixi/reactive's Provider
   const ReactiveProvider = context.Provider;
   // console.log('reactive provider', children)
   return ReactiveProvider({
@@ -258,8 +258,8 @@ export function createProvider<T, S=Children>(props: ContextProvider<T, S>): Com
  *
  * @example
  * ```typescript
- * import { createContextWithProvider } from '@awc/kettlejs/context';
- * import { createSignal } from '@awc/reactive';
+ * import { createContextWithProvider } from '@fluixi/kettlejs/context';
+ * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
  * const [ThemeContext, ThemeProvider] = createContextWithProvider({
@@ -310,8 +310,8 @@ export function createContextWithProvider<T, U>(
  *
  * @example
  * ```typescript
- * import { composeProviders, createContext } from '@awc/kettlejs/context';
- * import { createSignal } from '@awc/reactive';
+ * import { composeProviders, createContext } from '@fluixi/kettlejs/context';
+ * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
  * const ThemeContext = createContext({ dark: false });
@@ -366,7 +366,7 @@ export function composeProviders(
  *
  * @example
  * ```typescript
- * import { createContext, createConsumer } from '@awc/kettlejs/context';
+ * import { createContext, createConsumer } from '@fluixi/kettlejs/context';
  * import { html } from 'lit';
  *
  * const ThemeContext = createContext({ primaryColor: '#007bff' });
@@ -408,8 +408,8 @@ export function createConsumer<T>(
  *
  * @example
  * ```typescript
- * import { createContext, useProvide, Provider } from '@awc/kettlejs/context';
- * import { createSignal } from '@awc/reactive';
+ * import { createContext, useProvide, Provider } from '@fluixi/kettlejs/context';
+ * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
  * interface Counter {
@@ -464,7 +464,7 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
  *
  * @example
  * ```typescript
- * import { createContext } from '@awc/kettlejs/context';
+ * import { createContext } from '@fluixi/kettlejs/context';
  *
  * // This context won't leak to parent or sibling components
  * const LocalContext = createContext({ data: 'local' });
@@ -540,7 +540,7 @@ function resolveChildren(children: any): any {
  *
  * @example
  * ```typescript
- * import { createContext } from '@awc/kettlejs';
+ * import { createContext } from '@fluixi/kettlejs';
  *
  * // This context won't leak to parent or sibling components
  * const LocalContext = createContext({ data: 'local' });

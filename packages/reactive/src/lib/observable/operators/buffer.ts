@@ -3,8 +3,8 @@ import {
   Observable,
   OperatorFunction,
   Subscription,
-} from '@awc/reactive';
-import { asyncScheduler } from '@awc/reactive/schedulers/async';
+} from '@fluixi/reactive';
+import { asyncScheduler } from '@fluixi/reactive/schedulers/async';
 
 /**
  * Buffer closing selector function

@@ -8,14 +8,14 @@ Learn how to use the advanced array utilities in your projects.
 
 ## Installation
 
-The array utilities are part of the `@awc/utils` package. If you haven't installed it yet:
+The array utilities are part of the `@fluixi/utils` package. If you haven't installed it yet:
 
 ```bash
-npm install @awc/utils
+npm install @fluixi/utils
 # or
-yarn add @awc/utils
+yarn add @fluixi/utils
 # or
-pnpm add @awc/utils
+pnpm add @fluixi/utils
 ```
 
 ## Basic Import
@@ -23,13 +23,13 @@ pnpm add @awc/utils
 Import the functions you need from the advanced array module:
 
 ```typescript
-import { chunk, unique, groupBy, sortBy } from '@awc/utils/array/advanced';
+import { chunk, unique, groupBy, sortBy } from '@fluixi/utils/array/advanced';
 ```
 
 Or import everything:
 
 ```typescript
-import * as arrayUtils from '@awc/utils/array/advanced';
+import * as arrayUtils from '@fluixi/utils/array/advanced';
 ```
 
 ## Your First Array Operations
@@ -37,7 +37,7 @@ import * as arrayUtils from '@awc/utils/array/advanced';
 ### Basic Transformations
 
 ```typescript
-import { chunk, flatten, unique } from '@awc/utils/array/advanced';
+import { chunk, flatten, unique } from '@fluixi/utils/array/advanced';
 
 // Split array into chunks
 const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -60,7 +60,7 @@ const uniqueValues = unique(withDuplicates);
 Array utilities work seamlessly with arrays of objects:
 
 ```typescript
-import { sortBy, groupBy, pluck } from '@awc/utils/array/advanced';
+import { sortBy, groupBy, pluck } from '@fluixi/utils/array/advanced';
 
 const users = [
   { id: 1, name: 'Alice', age: 30, dept: 'Engineering' },
@@ -91,7 +91,7 @@ const names = pluck(users, 'name');
 All functions return **new arrays** and never modify the original:
 
 ```typescript
-import { sortBy } from '@awc/utils/array/advanced';
+import { sortBy } from '@fluixi/utils/array/advanced';
 
 const original = [{ age: 30 }, { age: 20 }, { age: 25 }];
 const sorted = sortBy(original, 'age');
@@ -105,7 +105,7 @@ console.log(sorted[0].age);   // 20
 Many functions support deep path access for nested objects:
 
 ```typescript
-import { sortBy, groupBy, pluck } from '@awc/utils/array/advanced';
+import { sortBy, groupBy, pluck } from '@fluixi/utils/array/advanced';
 
 const data = [
   { user: { profile: { age: 30 } } },
@@ -124,7 +124,7 @@ const ages = pluck(data, 'user.profile.age');
 Most functions accept either string keys or selector functions:
 
 ```typescript
-import { unique, groupBy, sortBy } from '@awc/utils/array/advanced';
+import { unique, groupBy, sortBy } from '@fluixi/utils/array/advanced';
 
 const products = [
   { id: 1, name: 'Widget', price: 10.99 },
@@ -151,7 +151,7 @@ const byPriceRange = groupBy(products, p => {
 Combine multiple operations for powerful data transformations:
 
 ```typescript
-import { sortBy, take, pluck } from '@awc/utils/array/advanced';
+import { sortBy, take, pluck } from '@fluixi/utils/array/advanced';
 
 const topSalespeople = 
   sortBy(employees, [{ key: 'sales', dir: 'desc' }])
@@ -170,7 +170,7 @@ const names = pluck(top5, 'name');
 ### Filtering and Mapping
 
 ```typescript
-import { filterCompact, flatMap } from '@awc/utils/array/advanced';
+import { filterCompact, flatMap } from '@fluixi/utils/array/advanced';
 
 // Filter and remove nullish values in one go
 const validUsers = filterCompact(users, u => u.isActive ? u : null);
@@ -187,7 +187,7 @@ import {
   avgBy, 
   median, 
   standardDeviation 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 const sales = [
   { rep: 'Alice', amount: 1000 },
@@ -207,7 +207,7 @@ const stdDev = standardDeviation(amounts);        // ~305
 The array utilities are fully typed with TypeScript:
 
 ```typescript
-import { groupBy, sortBy, pluck } from '@awc/utils/array/advanced';
+import { groupBy, sortBy, pluck } from '@fluixi/utils/array/advanced';
 
 interface Product {
   id: number;
@@ -235,7 +235,7 @@ const expensive = sortBy(products, 'price'); // 'price' is autocompleted
 Functions handle edge cases gracefully:
 
 ```typescript
-import { chunk, sortBy, median } from '@awc/utils/array/advanced';
+import { chunk, sortBy, median } from '@fluixi/utils/array/advanced';
 
 // Empty arrays
 chunk([], 2);           // []
@@ -266,7 +266,7 @@ const index = findIndex(sortedArray, x => x === target);
 ### Batch Large Operations
 
 ```typescript
-import { batchProcess } from '@awc/utils/array/advanced';
+import { batchProcess } from '@fluixi/utils/array/advanced';
 
 // ✅ Good: Process in batches
 await batchProcess(largeArray, 100, async (batch) => {
@@ -322,24 +322,24 @@ Now that you understand the basics, explore:
 import { 
   chunk, flatten, unique, 
   groupBy, sortBy 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 // Statistical
 import { 
   sumBy, avgBy, median, 
   standardDeviation, percentile 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 // Async
 import { 
   mapAsync, filterAsync, 
   batchProcess 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 
 // Set operations
 import { 
   difference, intersection, union 
-} from '@awc/utils/array/advanced';
+} from '@fluixi/utils/array/advanced';
 ```
 
 ## Getting Help

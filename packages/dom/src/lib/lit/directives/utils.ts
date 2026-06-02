@@ -1,4 +1,4 @@
-import { Accessor, isSignal, isMemo, isResource } from '@awc/reactive';
+import { Accessor, isSignal, isMemo, isResource } from '@fluixi/reactive';
 import { litrx } from './litrx.js';
 import { nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';

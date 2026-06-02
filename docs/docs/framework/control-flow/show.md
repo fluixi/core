@@ -10,7 +10,7 @@ The `Show` component provides conditional rendering in KettleJS. It renders chil
 ## Import
 
 ```typescript
-import { Show } from '@awc/kettlejs';
+import { Show } from '@fluixi/kettlejs';
 ```
 
 ## Signature
@@ -57,7 +57,7 @@ Content to render when the condition is truthy. Can be:
 ### Simple Boolean Condition
 
 ```typescript
-import { html, createSignal, Show } from '@awc/kettlejs';
+import { html, createSignal, Show } from '@fluixi/kettlejs';
 
 const MyComponent = () => {
   const [isVisible, setIsVisible] = createSignal(false);

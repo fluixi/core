@@ -3,7 +3,7 @@
  * Similar to @lit/react createComponent but for KettleJS JSX.
  * Types flow through the component function — no declare global needed.
  * Also works in lit-html and vanilla JS contexts.
- * @module @awc/element/wrap-element
+ * @module @fluixi/element/wrap-element
  */
 
 import type {
@@ -13,7 +13,7 @@ import type {
   InferPropType,
   ElementEventHandlers,
   KettleHTMLAttributes,
-} from '@awc/dom/element';
+} from '@fluixi/dom/element';
 
 type WrappedProps<
   P extends Record<string, PropDefinition>,

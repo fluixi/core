@@ -11,8 +11,8 @@ Resources in KettleJS provide a powerful way to manage asynchronous data fetchin
 ### Creating a Resource
 
 ```typescript
-import { createResource } from '@awc/kettlejs/resources';
-import { createSignal } from '@awc/reactive/signal';
+import { createResource } from '@fluixi/kettlejs/resources';
+import { createSignal } from '@fluixi/reactive/signal';
 
 interface User {
   id: number;
@@ -128,7 +128,7 @@ data.state === 'errored'
 
 ```typescript
 import { html } from 'lit';
-import { Show } from '@awc/kettlejs/control-flow';
+import { Show } from '@fluixi/kettlejs/control-flow';
 
 const [data] = createResource(() => userId(), fetchUser);
 
@@ -516,7 +516,7 @@ html`
 ### Search with Debounce
 
 ```typescript
-import { debounce } from '@awc/kettlejs/utils';
+import { debounce } from '@fluixi/kettlejs/utils';
 
 const [searchInput, setSearchInput] = createSignal('');
 const [debouncedSearch, setDebouncedSearch] = createSignal('');
@@ -630,8 +630,8 @@ html`
 ### Server-Side Rendering
 
 ```typescript
-import { renderToString } from '@awc/kettlejs/core';
-import { createResource } from '@awc/kettlejs/resources';
+import { renderToString } from '@fluixi/kettlejs/core';
+import { createResource } from '@fluixi/kettlejs/resources';
 
 // Server
 const [data] = createResource(
@@ -646,7 +646,7 @@ const html = await renderToString(template);
 ### Initial Data
 
 ```typescript
-import { getHydrationData } from '@awc/kettlejs/core';
+import { getHydrationData } from '@fluixi/kettlejs/core';
 
 const initialUser = getHydrationData<User>('user');
 

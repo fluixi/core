@@ -10,7 +10,7 @@ A powerful, comprehensive color management library for TypeScript/JavaScript wit
 
 ## Overview
 
-The `@awc/utils/color` package provides a professional-grade color management system that supports:
+The `@fluixi/utils/color` package provides a professional-grade color management system that supports:
 
 - **10+ Color Formats**: RGB, HSL, HSV, HWB, CMYK, LAB, LCH, OKLAB, OKLCH, XYZ
 - **Complete Conversions**: Convert between any supported color format
@@ -23,7 +23,7 @@ The `@awc/utils/color` package provides a professional-grade color management sy
 ## Quick Start
 
 ```typescript
-import { Color } from '@awc/utils/color';
+import { Color } from '@fluixi/utils/color';
 
 // Create a color
 const color = new Color('#3498db');
@@ -48,14 +48,14 @@ color.getContrastColor().toHex();  // Automatically picks black or white
 
 ## Installation
 
-The color utilities are part of the `@awc/utils` package:
+The color utilities are part of the `@fluixi/utils` package:
 
 ```bash
-npm install @awc/utils
+npm install @fluixi/utils
 # or
-pnpm add @awc/utils
+pnpm add @fluixi/utils
 # or
-yarn add @awc/utils
+yarn add @fluixi/utils
 ```
 
 ## Core Features
@@ -80,7 +80,7 @@ Support for all major color spaces:
 Convert between any color format with high accuracy:
 
 ```typescript
-import { convertColor } from '@awc/utils/color';
+import { convertColor } from '@fluixi/utils/color';
 
 const rgb = { r: 255, g: 0, b: 0, a: 1 };
 const hsl = convertColor(rgb, 'hsl');

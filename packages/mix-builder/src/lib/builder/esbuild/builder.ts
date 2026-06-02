@@ -345,7 +345,27 @@ export function buildWithEsBuild() {
     [...BASE_ARGS, ...ESBUILD_PROPS_CONFIG],
     opts
   );
-  const { entries, args, options } = build_value;
+  const { entries, args } = build_value;
+
+  // Resolve clean: CLI flag takes precedence, then build-config.json esbuild.clean
+  let shouldClean: boolean = args.clean ?? false;
+  if (!shouldClean) {
+    try {
+      const configFile = args.buildConfigFile || 'build-config.json';
+      const raw = fs.readFileSync(configFile, 'utf-8');
+      const config = JSON.parse(raw);
+      shouldClean = config?.esbuild?.clean === true;
+    } catch {}
+  }
+
+  if (shouldClean) {
+    const outdir = args.outdir || 'dist';
+    if (existsSync(outdir)) {
+      fs.rmSync(outdir, { recursive: true, force: true });
+      console.log(`🧹 Cleaned ${outdir}`);
+    }
+  }
+
   if (!args.use || args.use === 'esbuild') {
     _build(build_value).catch(console.error);
   }
