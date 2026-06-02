@@ -1,0 +1,20 @@
+# Root node_modules IS included intentionally — pre-installed by build.sh locally
+# so Docker never runs pnpm install (avoids OOM on low-RAM VPS).
+# Plugin node_modules are excluded (we ship .medusa/server built output instead).
+medusa-qr/node_modules
+medusa-product-ext/node_modules
+medusa-stories/node_modules
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.git
+.gitignore
+README.md
+.env.test
+.nyc_output
+coverage
+.DS_Store
+*.log
+dist
+build

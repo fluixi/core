@@ -1,0 +1,41 @@
+name: Deploy leuzma backend to VPS
+
+on:
+  push:
+    branches:
+      - master  # Only deploy when pushing to master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          debug: true
+          script: |
+            cd /home/ubuntu/leuzma/leuzma-backend
+            
+            export PNPM_HOME="/home/ubuntu/.nvm/versions/node/v22.13.1/bin"
+            export PATH="$PNPM_HOME:$PATH:/usr/local/bin"
+
+            # 1. Force the repo to match GitHub (Fixes the errors you had)
+            git fetch origin master
+            git reset --hard origin/master
+            
+            # 2. Rebuild and restart containers
+            # docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            pnpm run docker:up:server
+            
+            # 3. Clean up the mess (The Prune)
+            # This deletes all images that are no longer associated with a container
+            docker image prune -f
+
+            # 4. Run migrations automatically
+            # docker compose run --rm medusa npx medusa db:migrate

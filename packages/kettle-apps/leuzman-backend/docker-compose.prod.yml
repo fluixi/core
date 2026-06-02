@@ -1,0 +1,116 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: leuzman_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:         ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval:     5s
+      timeout:      5s
+      retries:      10
+      start_period: 15s
+
+    networks:
+      - internal
+
+    expose:
+      - "5432"
+
+    # security_opt:
+    #   - no-new-privileges:true
+
+    # cap_drop:
+    #   - ALL
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: leuzman_redis
+    restart: unless-stopped
+    healthcheck:
+      test:     ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout:  3s
+      retries:  5
+
+    networks:
+      - internal
+
+    expose:
+      - "6379"
+
+    command: redis-server --appendonly yes
+
+    # security_opt:
+    #   - no-new-privileges:true
+
+    # cap_drop:
+    #   - ALL
+
+
+  medusa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: leuzman_medusa
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+
+    ports:
+      - "127.0.0.1:9000:9000"
+
+    networks:
+      - internal
+
+    # security_opt:
+    #   - no-new-privileges:true
+
+    # cap_drop:
+    #   - ALL
+
+    # read_only: true
+
+    tmpfs:
+      - /tmp
+
+
+volumes:
+  postgres_data:
+    name: leuzman_postgres_data
+  medusa_data:
+    name: leuzman_medusa_data
+
+
+networks:
+  internal:
+    driver: bridge
