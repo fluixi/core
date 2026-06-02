@@ -38,6 +38,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # mix-builder dist doesn't exist at install time so pnpm skips its bin
+      # symlinks. Build it first, then reinstall so the symlinks are created.
+      - name: Bootstrap mix-builder
+        run: pnpm --filter @fluixi/mix-builder run build
+
+      - name: Relink workspace bins
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: nrwl/nx-set-shas@v4
 
       - name: Build affected

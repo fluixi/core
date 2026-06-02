@@ -52,6 +52,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bootstrap mix-builder
+        run: pnpm --filter @fluixi/mix-builder run build
+
+      - name: Relink workspace bins
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # ── Resolve version ─────────────────────────────────────────────────────
       # Tag push  → strip the leading "v"   (e.g. v0.1.0 → 0.1.0)
       # Dispatch  → use the supplied input
