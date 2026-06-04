@@ -77,24 +77,33 @@ git push
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')"
 ```
 
-When it finishes, the **"Version Packages" PR** exists on the `changeset-release/main` branch:
+When it finishes, list your open PRs — the **"Version Packages" PR** will be there:
 
 ```bash
-gh pr list --head changeset-release/main
+gh pr list
+# NUMBER  TITLE                   BRANCH                  STATE
+# 2       chore: version packages changeset-release/main  OPEN
 ```
+
+The **first column is the PR number** (here, `2`). That number is what every
+following command uses — the branch name (`changeset-release/main`) is just info.
 
 Inspect it without leaving the terminal:
 
 ```bash
-PR=$(gh pr list --head changeset-release/main --json number -q '.[0].number')
-gh pr diff "$PR"      # see the version bumps + CHANGELOG entries
+gh pr view 2      # release notes / summary
+gh pr diff 2      # exact version bumps + CHANGELOG entries
 ```
 
 ### 4. Merge the version PR (this triggers the publish)
 
 ```bash
-gh pr merge "$PR" --squash --delete-branch
+gh pr merge 2 --squash --delete-branch
 ```
+
+> Replace `2` with whatever number `gh pr list` showed.
+> Add `-R <owner>/<repo>` (e.g. `-R fluixi/wc`) **only** if you're not currently
+> inside that repo's folder.
 
 ### 5. Watch the publish & verify
 
