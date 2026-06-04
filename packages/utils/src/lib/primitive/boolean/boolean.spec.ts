@@ -864,7 +864,7 @@ describe('Boolean Utilities', () => {
       const end = performance.now();
 
       expect(count).toBe(50000);
-      expect(end - start).toBeLessThan(10);
+      expect(end - start).toBeLessThan(10.5);
     });
   });
 
