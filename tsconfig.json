@@ -10,9 +10,6 @@
       "path": "./packages/utils"
     },
     {
-      "path": "./packages/mix-builder"
-    },
-    {
       "path": "./packages/kettlejs"
     },
     {
