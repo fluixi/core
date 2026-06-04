@@ -1,4 +1,19 @@
-# KettleJS 🫖
+<div align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="120" height="120" />
+
+  <h1>@fluixi/kettlejs</h1>
+
+  <p><strong>A modern, reactive UI framework with fine-grained reactivity, routing and SSR.</strong></p>
+
+  <p>
+    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
+    <img alt="Registry" src="https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github" />
+    <img alt="Framework" src="https://img.shields.io/badge/framework-KettleJS%20%F0%9F%AB%96-ff6b35" />
+  </p>
+</div>
+
+---
 
 A modern, reactive framework for building web applications with [lit-html](https://lit.dev) and fine-grained reactivity, inspired by [SolidJS](https://www.solidjs.com/).
 

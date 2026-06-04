@@ -9,6 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
+    passWithNoTests: true,
     name: '@fluixi/babel',
     watch: false,
     globals: true,

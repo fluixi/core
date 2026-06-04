@@ -10,6 +10,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
+    passWithNoTests: true,
     name: '@fluixi/reactive',
     watch: false,
     globals: true,

@@ -1,4 +1,19 @@
-# @fluixi/jsx-runtime
+<div align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="120" height="120" />
+
+  <h1>@fluixi/jsx-runtime</h1>
+
+  <p><strong>A fine-grained JSX runtime — native JSX and lit-html templates, no virtual DOM.</strong></p>
+
+  <p>
+    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
+    <img alt="Registry" src="https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github" />
+    <img alt="JSX" src="https://img.shields.io/badge/JSX-runtime-f7df1e?logo=javascript&logoColor=black" />
+  </p>
+</div>
+
+---
 
 A comprehensive JSX runtime with fine-grained reactivity, inspired by SolidJS. This package provides a modern JSX implementation that supports both native JSX and lit-html templates, with seamless integration with signal and store systems for optimal performance.
 

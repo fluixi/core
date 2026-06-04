@@ -1,4 +1,4 @@
-import '@awc/components/index.js';
+import '@fluixi/components/index.js';
 export * from "./button"
 export * from "./card"
 export * from "./checkbox"

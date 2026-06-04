@@ -1,1 +1,0 @@
-import '@fluixi/flx-icon/registry.js';
