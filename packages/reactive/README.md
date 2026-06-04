@@ -1,17 +1,15 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="120" height="120" />
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/128x128.png" alt="Fluixi" width="120" height="120" />
+</p>
 
-  <h1>@fluixi/reactive</h1>
+# @fluixi/reactive
 
-  <p><strong>Fine-grained reactive signals, memos, effects, stores and an RxJS-style observable layer.</strong></p>
+**Fine-grained reactive signals, memos, effects, stores and an RxJS-style observable layer.**
 
-  <p>
-    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
-    <img alt="Registry" src="https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github" />
-    <img alt="Inspired by SolidJS" src="https://img.shields.io/badge/inspired%20by-SolidJS-2c4f7c" />
-  </p>
-</div>
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+![Inspired by SolidJS](https://img.shields.io/badge/inspired%20by-SolidJS-2c4f7c)
 
 ---
 

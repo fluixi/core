@@ -1,17 +1,15 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="120" height="120" />
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/128x128.png" alt="Fluixi" width="120" height="120" />
+</p>
 
-  <h1>@fluixi/element</h1>
+# @fluixi/element
 
-  <p><strong>Web Component bindings for KettleJS — define custom elements with fine-grained reactivity.</strong></p>
+**Web Component bindings for KettleJS — define custom elements with fine-grained reactivity.**
 
-  <p>
-    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
-    <img alt="Registry" src="https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github" />
-    <img alt="Web Components" src="https://img.shields.io/badge/Web%20Components-native-29abe2" />
-  </p>
-</div>
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+![Web Components](https://img.shields.io/badge/Web%20Components-native-29abe2)
 
 ---
 
