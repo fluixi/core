@@ -2,6 +2,6 @@
   "$schema": "./packages/mix-builder/src/lib/package-publisher/schemas/publish-config.schema.json",
   "packages": ["reactive", "@fluixi/utils"],
   "excluded": [],
-  "excluded_packages": ["@fluixi/mix-builder"],
+  "excluded_packages": ["@bambiste/mix-builder"],
   "content": "./packages/**/*"
 }

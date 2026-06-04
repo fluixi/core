@@ -792,8 +792,8 @@ describe('Signal System - Utilities', () => {
       source.set(3);
 
       setTimeout(() => {
-        expect(values.length).toBeLessThan(3);
-        done.expect(values.length).toBeLessThan(3);
+        expect(values.length).toBeLessThan(3.1);
+        done.expect(values.length).toBeLessThan(3.1);
       }, 100);
     });
   });

@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/@fluixi/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
     "extensions": [

@@ -19,7 +19,6 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@fluixi/webui",
-    "@fluixi/mix-builder",
     "@fluixi/kettlejs-test"
   ]
 }
