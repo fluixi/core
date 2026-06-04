@@ -433,7 +433,7 @@ export function set(
     }
 
     if (Array.isArray(params[0])) {
-      console.log('is array', [...params[0]])
+      // console.log('is array', [...params[0]])
       // if ([...params[0]].some((v) => v.title === 'S / Red / Nike')) throw new Error('stop')
         if (Array.isArray(obj)) {
           // obj = params[0];
@@ -535,7 +535,7 @@ export function set(
   }
   // Pattern 3 & 4: set(obj, "path", index, value) or set(obj, "path", index, subPath, value)
   if (typeof first === 'string' && typeof second === 'number') {
-    console.log('len 2', obj, params)
+    // console.log('len 2', obj, params)
     if (params.length === 3) {
       return setValueAtIndex(obj, first, second, third as any);
     } else if (params.length === 4) {
@@ -629,7 +629,7 @@ export function set(
   }
   if (typeof first === 'function' && typeof second === 'string') {
     if (params.length === 3) {
-      console.log('set filter')
+      // console.log('set filter')
       return setArrayValueWithFilter(
         obj,
         first,
@@ -648,7 +648,7 @@ export function set(
   }
 
   // Pattern 13: Array selectors
-  console.log('last pattern', params, _obj)
+  // console.log('last pattern', params, _obj)
   if (Array.isArray(first)) {
     if (
       params.length === 2 &&
@@ -703,9 +703,9 @@ function handleFunctionParams(
   if (!isWildcard && !finalValue) {
     finalValue = typeof value === 'function' ? value(data) : value;
   }
-  if (selector === 'person.wife.childs') {
-    console.log('final', { finalValue, data, value });
-  }
+  // if (selector === 'person.wife.childs') {
+  //   console.log('final', { finalValue, data, value });
+  // }
 
   return finalValue;
 }
@@ -834,7 +834,7 @@ export function setValueAtIndex<
   const target_copy = structuredClone(target);
   const finalValue = handleFunctionParams(selector, target_copy[index], value);
 
-  console.log('set value at index', {obj, selector, index, finalValue, value, target_copy});
+  // console.log('set value at index', {obj, selector, index, finalValue, value, target_copy});
   if (index < 0) {
     // Negative index counts from end
     const actualIndex = target.length + index;
@@ -1108,7 +1108,7 @@ export function setArrayValueWithFilter<
     throw new Error(`Target at ${selector} is not an array`);
   }
   // return setValueAtPath(obj, selector, value);
-  console.log('updating', selector, value, target)
+  // console.log('updating', selector, value, target)
 
 
 
@@ -1359,12 +1359,12 @@ export function ValueOfKey<
               if (!current[String(segment.value)] && createMissing) {
                 current[String(segment.value)] = null;
               }
-              if (
-                selector === 'person.wife.childs' &&
-                segment.value === 'childs'
-              ) {
-                console.log('cp', { current, segment });
-              }
+              // if (
+              //   selector === 'person.wife.childs' &&
+              //   segment.value === 'childs'
+              // ) {
+              //   console.log('cp', { current, segment });
+              // }
               current = current[String(segment.value)];
             }
             if (debug) {
@@ -1652,9 +1652,9 @@ export const setAtPath = <
             // }else{
 
             // }
-            if (selector === 'person.wife.childs') {
-              console.log('is array data', { current, value });
-            }
+            // if (selector === 'person.wife.childs') {
+            //   console.log('is array data', { current, value });
+            // }
             for (let i = 0; i < current.length; i++) {
               if (Array.isArray(value)) {
                 ob = fromPath(paths.join('.'), value[i]);
@@ -1676,14 +1676,14 @@ export const setAtPath = <
             };
           }
         } else {
-          if (selector === 'person.wife.childs') {
-            console.log('on property', {
-              current,
-              lastSegment,
-              value,
-              key: String(lastSegment.value),
-            });
-          }
+          // if (selector === 'person.wife.childs') {
+          //   console.log('on property', {
+          //     current,
+          //     lastSegment,
+          //     value,
+          //     key: String(lastSegment.value),
+          //   });
+          // }
           if (Array.isArray(value) && value.length === 0) {
             if (typeof current[String(lastSegment.value)] === 'undefined') {
               current[String(lastSegment.value)] = [];
@@ -1727,13 +1727,13 @@ export const setAtPath = <
                 true
               );
             } catch (e) {
-              console.log('expected on array', {
-                selector,
-                current,
-                value,
-                index,
-              });
-              console.log('current', current);
+              // console.log('expected on array', {
+              //   selector,
+              //   current,
+              //   value,
+              //   index,
+              // });
+              // console.log('current', current);
               throw Error('expected on array');
             }
           } else {
