@@ -20,7 +20,7 @@
     "experimentalDecorators": true,
     "types": ["node"]
   },
-  "include": ["src", "types/kettle.d.ts"],
+  "include": [],
   "references": [
     {
       "path": "../utils"
@@ -36,6 +36,9 @@
     },
     {
       "path": "../dom"
+    },
+    {
+      "path": "./tsconfig.lib.json"
     },
     {
       "path": "./tsconfig.node.json"
