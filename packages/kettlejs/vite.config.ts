@@ -4,6 +4,11 @@ export default defineConfig({
   resolve: {
     conditions: ['development', 'browser', 'module', 'import', 'default'],
   },
+  test: {
+    watch: false,
+    passWithNoTests: true,
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+  },
   build: {
     lib: {
       entry: 'src/index.ts',

@@ -1,4 +1,19 @@
-# @fluixi/dom
+<div align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="120" height="120" />
+
+  <h1>@fluixi/dom</h1>
+
+  <p><strong>Reactive DOM runtime with surgical fine-grained updates, SSR and lit-html integration.</strong></p>
+
+  <p>
+    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
+    <img alt="Registry" src="https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github" />
+    <img alt="lit-html" src="https://img.shields.io/badge/lit--html-compatible-324fff" />
+  </p>
+</div>
+
+---
 
 A comprehensive reactive DOM runtime with fine-grained updates, inspired by SolidJS's dom-expressions. This package provides low-level DOM manipulation utilities that work seamlessly with signal and store systems to enable optimal, surgical DOM updates.
 

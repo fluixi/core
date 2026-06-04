@@ -514,8 +514,8 @@ describe('Object Selector Utilities', () => {
 
   describe('set', () => {
     it('should set value with dot notation', () => {
-      const obj = { users: [{ name: 'Alice', lastName: 'Smith' }] };
-      set(obj, 'users', 0, 'name', 'Alice Updated');
+      let obj = { users: [{ name: 'Alice', lastName: 'Smith' }] };
+      obj = set(obj, 'users', 0, 'name', 'Alice Updated');
       // set(obj, 'users', 0, (u)=> u);
       // set(obj, 'users', 0, 'lastName', 'Smith Updated');
       // set(obj, 'users', 0, 'name', 'Alice');
@@ -523,11 +523,11 @@ describe('Object Selector Utilities', () => {
       expect(obj.users[0].name).toBe('Alice Updated');
     });
     it('should set value with index', () => {
-      const obj = { users: [{ name: 'Alice', lastName: 'Smith' }] };
-      set(obj, 'users', 0, 'name', 'Alice Updated');
-      const obj1 = { users: [{ name: 'Alice', lastName: 'Smith' }] };
+      let obj = { users: [{ name: 'Alice', lastName: 'Smith' }] };
+      obj = set(obj, 'users', 0, 'name', 'Alice Updated');
+      let obj1 = { users: [{ name: 'Alice', lastName: 'Smith' }] };
       expect(obj.users[0].name).toBe('Alice Updated');
-      set(obj1, 'users', [0, 1], (u) => {
+      obj1 = set(obj1, 'users', [0, 1], (u) => {
         if (u) {
           u.name = 'Alice Updated';
         }
@@ -537,14 +537,14 @@ describe('Object Selector Utilities', () => {
     });
 
     it('should set value with bracket notation', () => {
-      const obj = { users: [{ name: 'Alice' }] };
-      set(obj, 'users[0].name', 'Alice Updated');
+      let obj = { users: [{ name: 'Alice' }] };
+      obj = set(obj, 'users[0].name', 'Alice Updated');
       expect(obj.users[0].name).toBe('Alice Updated');
     });
 
     it('should create missing paths', () => {
-      const obj = {} as TestData;
-      set(obj, 'users[0].name', 'Alice');
+      let obj = {} as TestData;
+      obj = set(obj, 'users[0].name', 'Alice');
       expect(obj).toEqual({ users: [{ name: 'Alice' }] });
     });
 
@@ -561,15 +561,15 @@ describe('Object Selector Utilities', () => {
     // });
 
     it('should handle complex nested paths', () => {
-      const obj = structuredClone(testData);
-      set(obj, 'users', [0], (p) => {
+      let obj = structuredClone(testData);
+      obj = set(obj, 'users', [0], (p) => {
         p.name = 'Alice New';
         p.active = true;
         return p;
       });
       expect(obj.users[0]).toMatchObject({ name: 'Alice New', active: true });
 
-      set(obj, 'users', obj.users.length, (p) => {
+      obj = set(obj, 'users', obj.users.length, (p) => {
         return {
           ...structuredClone(obj.users[0]),
           id: obj.users.length,
@@ -582,31 +582,31 @@ describe('Object Selector Utilities', () => {
         active: true,
       });
 
-      set(obj, 'users', 0, { ...obj.users[0], id: 1 } as User);
+      obj = set(obj, 'users', 0, { ...obj.users[0], id: 1 } as User);
       expect(obj.users[0]).toMatchObject({
         ...structuredClone(obj.users[0]),
         id: 1,
       });
-      set(obj, 'users', (p) => p.id === 1, 'address.city', 'New York City');
+      obj = set(obj, 'users', (p) => p.id === 1, 'address.city', 'New York City');
       expect(obj.users[0]).toMatchObject({
         ...obj.users[0],
         address: { city: 'New York City' },
       });
 
-      set(obj, 'users[*].inactive', false);
+      obj = set(obj, 'users[*].inactive', false);
       expect(obj.users.every((u) => u.inactive === false)).toBe(true);
 
-      set(obj, 'users', 0, 'profile.settings', { 'theme-color': 'blue' });
+      obj = set(obj, 'users', 0, 'profile.settings', { 'theme-color': 'blue' });
       expect(obj.users[0]).toMatchObject({
         ...obj.users[0],
         profile: { settings: { 'theme-color': 'blue' } },
       });
 
-      set(obj, 'users', 1, 'profile.settings', (p) => ({
+      obj = set(obj, 'users', 1, 'profile.settings', (p) => ({
         'theme-color': 'red',
       }));
 
-      set(obj, 'users', [0, 1], 'profile.settings', { 'theme-color': 'blue' });
+      obj = set(obj, 'users', [0, 1], 'profile.settings', { 'theme-color': 'blue' });
       expect(obj.users[0]).toMatchObject({
         ...obj.users[0],
         profile: { settings: { 'theme-color': 'blue' } },
@@ -619,11 +619,11 @@ describe('Object Selector Utilities', () => {
       // set(obj, "users", [2, 7, 10], "loggedIn", false);
 
       // // Example 4: Single index
-      set(obj, 'users', 2, 'loggedIn', false);
+      obj = set(obj, 'users', 2, 'loggedIn', false);
       expect(obj.users[2].loggedIn).toBe(false);
 
       // // Example 5: String keys (if users were an object with string keys)
-      set(obj, 'users', ['wife', 'child'], 'age', 10);
+      obj = set(obj, 'users', ['wife', 'child'], 'age', 10);
       expect(
         obj.users.every(
           (user) =>
@@ -636,16 +636,16 @@ describe('Object Selector Utilities', () => {
       // // set(obj, "users");
 
       // // Example 6: Range
-      set(obj, 'users', { from: 0, to: 1 }, 'child.active', true);
+      obj = set(obj, 'users', { from: 0, to: 1 }, 'child.active', true);
       // console.log('users', obj.users)
       expect(obj.users[0].child?.active).toBe(true);
       expect(obj.users[1].child?.active).toBe(true);
 
       // // Example 7: Range with step
-      set(obj, 'users', { from: 1, to: 8, by: 1 }, 'child.active', true);
+      obj = set(obj, 'users', { from: 1, to: 8, by: 1 }, 'child.active', true);
       expect(obj.users.slice(1, 8).every((u) => u.child?.active)).toBe(true);
 
-      set(obj, 'users', { from: 0, to: 8, by: 2 }, 'child.active', false);
+      obj = set(obj, 'users', { from: 0, to: 8, by: 2 }, 'child.active', false);
       expect(
         obj.users
           .slice(0, 8)
@@ -655,7 +655,7 @@ describe('Object Selector Utilities', () => {
       ).toBe(true);
 
       // // Example 9: Filter function
-      set(
+      obj = set(
         obj,
         'users',
         (user) => user?.name!.startsWith('A'),
@@ -664,7 +664,7 @@ describe('Object Selector Utilities', () => {
       );
       expect(obj.users[0].loggedIn).toBe(false);
 
-      set(obj, 'users[0].profile.settings.theme-color', 'purple');
+      obj = set(obj, 'users[0].profile.settings.theme-color', 'purple');
       expect(obj.users[0].profile!.settings['theme-color']).toBe('purple');
     });
   });
