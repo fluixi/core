@@ -1,1 +1,1 @@
-export * from '@awc/components/index.js';
+export * from '@fluixi/components/index.js';
