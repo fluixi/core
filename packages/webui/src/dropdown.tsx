@@ -1,44 +1,44 @@
 import { createComponent } from '@fluixi/element';
-import { AdfDropdown, AdfDropdownMenu, AdfDropdownBody, AdfDropdownHeader, AdfDropdownFooter, AdfDropdownItem, AdfDropdownToggleEvent} from '@awc/adf-dropdown';
+import { FlxDropdown, FlxDropdownMenu, FlxDropdownBody, FlxDropdownHeader, FlxDropdownFooter, FlxDropdownItem, FlxDropdownToggleEvent} from '@fluixi/flx-dropdown';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-dropdown/adf-dropdown.js';
+// import '@fluixi/flx-dropdown/flx-dropdown.js';
 
 
 const DropdownComponent = createComponent({
-    tagName: "adf-dropdown",
-    elementClass: AdfDropdown,
+    tagName: "flx-dropdown",
+    elementClass: FlxDropdown,
     compiler: DOM,
-    displayName: "AdfDropdown",
+    displayName: "FlxDropdown",
 });
 const DropdownHeader = createComponent({
-    tagName: "adf-dropdown-header",
-    elementClass: AdfDropdownHeader,
+    tagName: "flx-dropdown-header",
+    elementClass: FlxDropdownHeader,
     compiler: DOM,
-    displayName: "AdfDropdownHeader",
+    displayName: "FlxDropdownHeader",
 });
 const DropdownMenu = createComponent({
-    tagName: "adf-dropdown-menu",
-    elementClass: AdfDropdownMenu,
+    tagName: "flx-dropdown-menu",
+    elementClass: FlxDropdownMenu,
     compiler: DOM,
-    displayName: "AdfDropdownMenu",
+    displayName: "FlxDropdownMenu",
 });
 const DropdownBody = createComponent({
-    tagName: "adf-dropdown-body",
-    elementClass: AdfDropdownBody,
+    tagName: "flx-dropdown-body",
+    elementClass: FlxDropdownBody,
     compiler: DOM,
-    displayName: "AdfDropdownBody",
+    displayName: "FlxDropdownBody",
 });
 const DropdownFooter = createComponent({
-    tagName: "adf-dropdown-footer",
-    elementClass: AdfDropdownFooter,
+    tagName: "flx-dropdown-footer",
+    elementClass: FlxDropdownFooter,
     compiler: DOM,
-    displayName: "AdfDropdownFooter",
+    displayName: "FlxDropdownFooter",
 });
 const DropdownItem = createComponent({
-    tagName: "adf-dropdown-item",
-    elementClass: AdfDropdownItem,
+    tagName: "flx-dropdown-item",
+    elementClass: FlxDropdownItem,
     compiler: DOM,
-    displayName: "AdfDropdownItem",
+    displayName: "FlxDropdownItem",
 });
 
 export const Dropdown = Object.assign(DropdownComponent, {

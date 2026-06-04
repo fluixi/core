@@ -1,17 +1,17 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfFormField, AdfFormFieldChangedEvent, AdfFormFieldValueChangedEvent} from '@awc/adf-form-field';
+import { FlxFormField, FlxFormFieldChangedEvent, FlxFormFieldValueChangedEvent} from '@fluixi/flx-form-field';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-form-field/adf-form-field.js';
+// import '@fluixi/flx-form-field/flx-form-field.js';
 
 
 export const Input = createComponent({
-    tagName: "adf-form-field",
-    elementClass: AdfFormField,
+    tagName: "flx-form-field",
+    elementClass: FlxFormField,
     compiler: DOM,
-    displayName: "AdfFormField",
+    displayName: "FlxFormField",
   events: {
-    onChange: 'change' as EventName<AdfFormFieldChangedEvent>,
-    onValueChange: 'valueChange' as EventName<AdfFormFieldValueChangedEvent>,
+    onChange: 'change' as EventName<FlxFormFieldChangedEvent>,
+    onValueChange: 'valueChange' as EventName<FlxFormFieldValueChangedEvent>,
   },
 });
 

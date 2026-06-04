@@ -1,1 +1,1 @@
-import '@awc/adf-icon/registry.js';
+import '@fluixi/flx-icon/registry.js';

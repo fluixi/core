@@ -1,24 +1,24 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfDraggable, AdfDraggableItem, AdfDraggableReorderEvent} from '@awc/adf-draggable';
+import { FlxDraggable, FlxDraggableItem, FlxDraggableReorderEvent} from '@fluixi/flx-draggable';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-draggable/adf-draggable.js';
+// import '@fluixi/flx-draggable/flx-draggable.js';
 
 
 const DraggableComponent = createComponent({
-    tagName: "adf-draggable",
-    elementClass: AdfDraggable,
+    tagName: "flx-draggable",
+    elementClass: FlxDraggable,
     compiler: DOM,
-    displayName: "AdfDraggable",
+    displayName: "FlxDraggable",
     events: {
-        onReorder: 'reorder' as EventName<AdfDraggableReorderEvent>
+        onReorder: 'reorder' as EventName<FlxDraggableReorderEvent>
     }
 });
 
 export const DraggableItem = createComponent({
-    tagName: "adf-drag-item",
-    elementClass: AdfDraggableItem,
+    tagName: "flx-drag-item",
+    elementClass: FlxDraggableItem,
     compiler: DOM,
-    displayName: "AdfDraggableItem"
+    displayName: "FlxDraggableItem"
 });
 
 

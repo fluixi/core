@@ -1,32 +1,32 @@
 import { createComponent } from '@fluixi/element';
-import { AdfCard, AdfCardBody, AdfCardHeader, AdfCardFooter} from '@awc/adf-card';
+import { FlxCard, FlxCardBody, FlxCardHeader, FlxCardFooter} from '@fluixi/flx-card';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-card/adf-card.js';
+// import '@fluixi/flx-card/flx-card.js';
 
 
 const CardComponent = createComponent({
-    tagName: "adf-card",
-    elementClass: AdfCard,
+    tagName: "flx-card",
+    elementClass: FlxCard,
     compiler: DOM,
-    displayName: "AdfCard",
+    displayName: "FlxCard",
 });
 const CardHeader = createComponent({
-    tagName: "adf-card-header",
-    elementClass: AdfCardHeader,
+    tagName: "flx-card-header",
+    elementClass: FlxCardHeader,
     compiler: DOM,
-    displayName: "AdfCardHeader",
+    displayName: "FlxCardHeader",
 });
 const CardBody = createComponent({
-    tagName: "adf-card-body",
-    elementClass: AdfCardBody,
+    tagName: "flx-card-body",
+    elementClass: FlxCardBody,
     compiler: DOM,
-    displayName: "AdfCardBody",
+    displayName: "FlxCardBody",
 });
 const CardFooter = createComponent({
-    tagName: "adf-card-footer",
-    elementClass: AdfCardFooter,
+    tagName: "flx-card-footer",
+    elementClass: FlxCardFooter,
     compiler: DOM,
-    displayName: "AdfCardFooter",
+    displayName: "FlxCardFooter",
 });
 
 export const Card = Object.assign(CardComponent, {

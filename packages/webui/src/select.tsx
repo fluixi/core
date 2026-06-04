@@ -1,36 +1,36 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfSelect, AdfSelectMenu, AdfSelectOption, AdfSelectToggler, AdfSelectChangedEvent} from '@awc/adf-select';
+import { FlxSelect, FlxSelectMenu, FlxSelectOption, FlxSelectToggler, FlxSelectChangedEvent} from '@fluixi/flx-select';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-select/adf-select.js';
+// import '@fluixi/flx-select/flx-select.js';
 
 
 const SelectComponent = createComponent({
-    tagName: "adf-select",
-    elementClass: AdfSelect,
+    tagName: "flx-select",
+    elementClass: FlxSelect,
     compiler: DOM,
-    displayName: "AdfSelect",
+    displayName: "FlxSelect",
     events: {
-        onChange: 'onchange' as EventName<AdfSelectChangedEvent>
+        onChange: 'onchange' as EventName<FlxSelectChangedEvent>
     }
 });
 
 const SelectMenu = createComponent({
-    tagName: "adf-select-menu",
-    elementClass: AdfSelectMenu,
+    tagName: "flx-select-menu",
+    elementClass: FlxSelectMenu,
     compiler: DOM,
-    displayName: "AdfSelectMenu",
+    displayName: "FlxSelectMenu",
 });
 const SelectOption = createComponent({
-    tagName: "adf-select-option",
-    elementClass: AdfSelectOption,
+    tagName: "flx-select-option",
+    elementClass: FlxSelectOption,
     compiler: DOM,
-    displayName: "AdfSelectOption",
+    displayName: "FlxSelectOption",
 });
 const SelectToggler = createComponent({
-    tagName: "adf-select-toggler",
-    elementClass: AdfSelectToggler,
+    tagName: "flx-select-toggler",
+    elementClass: FlxSelectToggler,
     compiler: DOM,
-    displayName: "AdfSelectToggler",
+    displayName: "FlxSelectToggler",
 });
 
 export const Select = Object.assign(SelectComponent, {

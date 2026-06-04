@@ -1,28 +1,28 @@
 import { createComponent } from '@fluixi/element';
-import { AdfDrawer, AdfDrawerContent, AdfDrawerHeader} from '@awc/adf-drawer';
+import { FlxDrawer, FlxDrawerContent, FlxDrawerHeader} from '@fluixi/flx-drawer';
 import DOM from "@fluixi/dom"
 import Sidenav from './sidenav';
-// import '@fluixi/adf-drawer/adf-drawer.js';
+// import '@fluixi/flx-drawer/flx-drawer.js';
 
 
 const DrawerComponent = createComponent({
-    tagName: "adf-drawer",
-    elementClass: AdfDrawer,
+    tagName: "flx-drawer",
+    elementClass: FlxDrawer,
     compiler: DOM,
-    displayName: "AdfDrawer",
+    displayName: "FlxDrawer",
 });
 
 export const DrawerContent = createComponent({
-    tagName: "adf-drawer-content",
-    elementClass: AdfDrawerContent,
+    tagName: "flx-drawer-content",
+    elementClass: FlxDrawerContent,
     compiler: DOM,
-    displayName: "AdfDrawerContent"
+    displayName: "FlxDrawerContent"
 });
 export const DrawerHeader = createComponent({
-    tagName: "adf-drawer-header",
-    elementClass: AdfDrawerHeader,
+    tagName: "flx-drawer-header",
+    elementClass: FlxDrawerHeader,
     compiler: DOM,
-    displayName: "AdfDrawerHeader"
+    displayName: "FlxDrawerHeader"
 });
 
 

@@ -1,16 +1,16 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfCheckbox, AdfCheckboxChangeEvent} from '@awc/adf-checkbox';
+import { FlxCheckbox, FlxCheckboxChangeEvent} from '@fluixi/flx-checkbox';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-checkbox/adf-checkbox.js';
+// import '@fluixi/flx-checkbox/flx-checkbox.js';
 
 
 export const Checkbox = createComponent({
-    tagName: "adf-checkbox",
-    elementClass: AdfCheckbox,
+    tagName: "flx-checkbox",
+    elementClass: FlxCheckbox,
     compiler: DOM,
-    displayName: "AdfCheckbox",
+    displayName: "FlxCheckbox",
   events: {
-    onChange: 'change' as EventName<AdfCheckboxChangeEvent>
+    onChange: 'change' as EventName<FlxCheckboxChangeEvent>
   },
 });
 

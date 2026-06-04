@@ -1,38 +1,38 @@
 import { createComponent } from '@fluixi/element';
-import { AdfList, AdfListBody, AdfListHeader, AdfListFooter, AdfListItem} from '@awc/adf-list';
+import { FlxList, FlxListBody, FlxListHeader, FlxListFooter, FlxListItem} from '@fluixi/flx-list';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-list/adf-list.js';
+// import '@fluixi/flx-list/flx-list.js';
 
 
 const ListComponent = createComponent({
-    tagName: "adf-list",
-    elementClass: AdfList,
+    tagName: "flx-list",
+    elementClass: FlxList,
     compiler: DOM,
-    displayName: "AdfList",
+    displayName: "FlxList",
 });
 const ListHeader = createComponent({
-    tagName: "adf-list-header",
-    elementClass: AdfListHeader,
+    tagName: "flx-list-header",
+    elementClass: FlxListHeader,
     compiler: DOM,
-    displayName: "AdfListHeader",
+    displayName: "FlxListHeader",
 });
 const ListBody = createComponent({
-    tagName: "adf-list-body",
-    elementClass: AdfListBody,
+    tagName: "flx-list-body",
+    elementClass: FlxListBody,
     compiler: DOM,
-    displayName: "AdfListBody",
+    displayName: "FlxListBody",
 });
 const ListFooter = createComponent({
-    tagName: "adf-list-footer",
-    elementClass: AdfListFooter,
+    tagName: "flx-list-footer",
+    elementClass: FlxListFooter,
     compiler: DOM,
-    displayName: "AdfListFooter",
+    displayName: "FlxListFooter",
 });
 const ListItem = createComponent({
-    tagName: "adf-list-item",
-    elementClass: AdfListItem,
+    tagName: "flx-list-item",
+    elementClass: FlxListItem,
     compiler: DOM,
-    displayName: "AdfListItem",
+    displayName: "FlxListItem",
 });
 
 export const List = Object.assign(ListComponent, {

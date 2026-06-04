@@ -1,16 +1,16 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfSwitch, AdfSwitchChangeEvent} from '@awc/adf-switch';
+import { FlxSwitch, FlxSwitchChangeEvent} from '@fluixi/flx-switch';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-switch/adf-s@fluixi/adf-switch.js';
+// import '@fluixi/flx-switch/flx-s@fluixi/flx-switch.js';
 
 
 export const Switch = createComponent({
-    tagName: "adf-switch",
-    elementClass: AdfSwitch,
+    tagName: "flx-switch",
+    elementClass: FlxSwitch,
     compiler: DOM,
-    displayName: "AdfSwitch",
+    displayName: "FlxSwitch",
   events: {
-    onChange: 'change' as EventName<AdfSwitchChangeEvent>
+    onChange: 'change' as EventName<FlxSwitchChangeEvent>
   },
 });
 
