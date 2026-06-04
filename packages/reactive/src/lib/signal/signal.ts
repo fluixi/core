@@ -1429,19 +1429,22 @@ export function createDebouncedSignal<T>(
   signal: EnhancedSignal<T>,
   delay: number
 ): EnhancedSignal<T> {
-  const [get, set] = createSignal(signal.get());
+  const debounced = createEnhancedSignal(signal.get());
   let timeout: any;
   signal.subscribe((value) => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => set(value), delay);
+    timeout = setTimeout(() => debounced.set(value), delay);
   });
   return {
-    node: get[$NODE]!,
-    get,
+    node: debounced.node,
+    get: debounced.get,
     set: signal.set,
-    subscribe: (listener) => signal.subscribe(listener),
-    dispose: signal.dispose,
-    toObservable: () => get.toObservable!(),
+    subscribe: debounced.subscribe,
+    dispose: () => {
+      clearTimeout(timeout);
+      debounced.dispose();
+    },
+    toObservable: debounced.toObservable,
   };
 }
 export function signalToObservable<T>(
