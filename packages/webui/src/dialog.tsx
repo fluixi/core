@@ -1,42 +1,42 @@
 import { createComponent, withPortal, withSubComponents, EventName } from '@fluixi/element';
-import { AdfDialog, AdfDialogBody, AdfDialogContent, AdfDialogHeader, AdfDialogFooter, AdfDialogToggleEvent} from '@awc/adf-dialog';
+import { FlxDialog, FlxDialogBody, FlxDialogContent, FlxDialogHeader, FlxDialogFooter, FlxDialogToggleEvent} from '@fluixi/flx-dialog';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-dialog/adf-dialog.js';
+// import '@fluixi/flx-dialog/flx-dialog.js';
 
 
 const DialogBase = createComponent({
-    tagName: "adf-dialog",
-    elementClass: AdfDialog,
+    tagName: "flx-dialog",
+    elementClass: FlxDialog,
     compiler: DOM,
-    displayName: "AdfDialog",
+    displayName: "FlxDialog",
     events: {
-        onToggle: 'ontoggle' as EventName<AdfDialogToggleEvent>
+        onToggle: 'ontoggle' as EventName<FlxDialogToggleEvent>
     }
 });
 
 const DialogHeader = createComponent({
-    tagName: "adf-dialog-header",
-    elementClass: AdfDialogHeader,
+    tagName: "flx-dialog-header",
+    elementClass: FlxDialogHeader,
     compiler: DOM,
-    displayName: "AdfDialogHeader",
+    displayName: "FlxDialogHeader",
 });
 const DialogContent = createComponent({
-    tagName: "adf-dialog-content",
-    elementClass: AdfDialogContent,
+    tagName: "flx-dialog-content",
+    elementClass: FlxDialogContent,
     compiler: DOM,
-    displayName: "AdfDialogContent",
+    displayName: "FlxDialogContent",
 });
 const DialogBody = createComponent({
-    tagName: "adf-dialog-body",
-    elementClass: AdfDialogBody,
+    tagName: "flx-dialog-body",
+    elementClass: FlxDialogBody,
     compiler: DOM,
-    displayName: "AdfDialogBody",
+    displayName: "FlxDialogBody",
 });
 const DialogFooter = createComponent({
-    tagName: "adf-dialog-footer",
-    elementClass: AdfDialogFooter,
+    tagName: "flx-dialog-footer",
+    elementClass: FlxDialogFooter,
     compiler: DOM,
-    displayName: "AdfDialogFooter",
+    displayName: "FlxDialogFooter",
 });
 
 export const Dialog = withSubComponents(withPortal(DialogBase), {

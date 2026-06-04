@@ -1,24 +1,24 @@
 import { createComponent, withPortal, withSubComponents, EventName } from '@fluixi/element';
-import { AdfPopover, AdfPopoverMenu, AdfPopoverToggleEvent} from '@awc/adf-popover';
+import { FlxPopover, FlxPopoverMenu, FlxPopoverToggleEvent} from '@fluixi/flx-popover';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-popover/adf-popover.js';
+// import '@fluixi/flx-popover/flx-popover.js';
 
 
 const PopoverBase = createComponent({
-    tagName: "adf-popover",
-    elementClass: AdfPopover,
+    tagName: "flx-popover",
+    elementClass: FlxPopover,
     compiler: DOM,
-    displayName: "AdfPopover",
+    displayName: "FlxPopover",
     events: {
-        onToggle: 'popover-toggle' as EventName<AdfPopoverToggleEvent>
+        onToggle: 'popover-toggle' as EventName<FlxPopoverToggleEvent>
     }
 });
 
 const PopoverMenu = createComponent({
-    tagName: "adf-popover-menu",
-    elementClass: AdfPopoverMenu,
+    tagName: "flx-popover-menu",
+    elementClass: FlxPopoverMenu,
     compiler: DOM,
-    displayName: "AdfPopoverMenu",
+    displayName: "FlxPopoverMenu",
 });
 
 export const Popover = withSubComponents(withPortal(PopoverBase), {

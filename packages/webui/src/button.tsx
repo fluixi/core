@@ -1,14 +1,14 @@
 import { createComponent } from '@fluixi/element';
-import { AdfButton} from '@awc/adf-button';
+import { FlxButton} from '@fluixi/flx-button';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-button/adf-button.js';
+// import '@fluixi/flx-button/flx-button.js';
 
 
 export const Button = createComponent({
-    tagName: "adf-button",
-    elementClass: AdfButton,
+    tagName: "flx-button",
+    elementClass: FlxButton,
     compiler: DOM,
-    displayName: "AdfButton",
+    displayName: "FlxButton",
 });
 
 export default Button

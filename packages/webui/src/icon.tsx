@@ -1,14 +1,14 @@
 import { createComponent } from '@fluixi/element';
-import { AdfIcon} from '@awc/components/modules';
+import { FlxIcon} from '@awc/components/modules';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-icon/adf-icon.js';
+// import '@fluixi/flx-icon/flx-icon.js';
 
 
 export const Icon = createComponent({
-    tagName: "adf-icon",
-    elementClass: AdfIcon,
+    tagName: "flx-icon",
+    elementClass: FlxIcon,
     compiler: DOM,
-    displayName: "AdfIcon",
+    displayName: "FlxIcon",
 });
 
 export default Icon

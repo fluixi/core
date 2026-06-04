@@ -1,16 +1,16 @@
 import { createComponent, EventName } from '@fluixi/element';
-import { AdfRadio, AdfRadioChangeEvent} from '@awc/adf-radio';
+import { FlxRadio, FlxRadioChangeEvent} from '@fluixi/flx-radio';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-radio/adf-radio.js';
+// import '@fluixi/flx-radio/flx-radio.js';
 
 
 export const Radio = createComponent({
-    tagName: "adf-radio",
-    elementClass: AdfRadio,
+    tagName: "flx-radio",
+    elementClass: FlxRadio,
     compiler: DOM,
-    displayName: "AdfRadio",
+    displayName: "FlxRadio",
   events: {
-    onChange: 'change' as EventName<AdfRadioChangeEvent>
+    onChange: 'change' as EventName<FlxRadioChangeEvent>
   },
 });
 

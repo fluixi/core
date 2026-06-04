@@ -1,50 +1,50 @@
 import { createComponent } from '@fluixi/element';
-import { AdfSidenav, AdfSidenavBody, AdfSidenavHeader, AdfSidenavFooter, AdfSidenavItem, AdfSidenavToggleEvent, AdfSidenavSection, AdfSidenavSubItems} from '@awc/adf-sidenav';
+import { FlxSidenav, FlxSidenavBody, FlxSidenavHeader, FlxSidenavFooter, FlxSidenavItem, FlxSidenavToggleEvent, FlxSidenavSection, FlxSidenavSubItems} from '@fluixi/flx-sidenav';
 import DOM from "@fluixi/dom"
-// import '@fluixi/adf-sidenav/adf-sidenav.js';
+// import '@fluixi/flx-sidenav/flx-sidenav.js';
 
 
 const SidenavComponent = createComponent({
-    tagName: "adf-sidenav",
-    elementClass: AdfSidenav,
+    tagName: "flx-sidenav",
+    elementClass: FlxSidenav,
     compiler: DOM,
-    displayName: "AdfSidenav",
+    displayName: "FlxSidenav",
 });
 const SidenavHeader = createComponent({
-    tagName: "adf-sidenav-header",
-    elementClass: AdfSidenavHeader,
+    tagName: "flx-sidenav-header",
+    elementClass: FlxSidenavHeader,
     compiler: DOM,
-    displayName: "AdfSidenavHeader",
+    displayName: "FlxSidenavHeader",
 });
 const SidenavBody = createComponent({
-    tagName: "adf-sidenav-body",
-    elementClass: AdfSidenavBody,
+    tagName: "flx-sidenav-body",
+    elementClass: FlxSidenavBody,
     compiler: DOM,
-    displayName: "AdfSidenavBody",
+    displayName: "FlxSidenavBody",
 });
 const SidenavFooter = createComponent({
-    tagName: "adf-sidenav-footer",
-    elementClass: AdfSidenavFooter,
+    tagName: "flx-sidenav-footer",
+    elementClass: FlxSidenavFooter,
     compiler: DOM,
-    displayName: "AdfSidenavFooter",
+    displayName: "FlxSidenavFooter",
 });
 const SidenavSection = createComponent({
-    tagName: "adf-sidenav-section",
-    elementClass: AdfSidenavSection,
+    tagName: "flx-sidenav-section",
+    elementClass: FlxSidenavSection,
     compiler: DOM,
-    displayName: "AdfSidenavSection",
+    displayName: "FlxSidenavSection",
 });
 const SidenavSubItems = createComponent({
-    tagName: "adf-sidenav-subitems",
-    elementClass: AdfSidenavSubItems,
+    tagName: "flx-sidenav-subitems",
+    elementClass: FlxSidenavSubItems,
     compiler: DOM,
-    displayName: "AdfSidenavSubItems",
+    displayName: "FlxSidenavSubItems",
 });
 const SidenavItem = createComponent({
-    tagName: "adf-sidenav-item",
-    elementClass: AdfSidenavItem,
+    tagName: "flx-sidenav-item",
+    elementClass: FlxSidenavItem,
     compiler: DOM,
-    displayName: "AdfSidenavItem",
+    displayName: "FlxSidenavItem",
 });
 
 export const Sidenav = Object.assign(SidenavComponent, {
