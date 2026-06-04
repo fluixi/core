@@ -36,20 +36,13 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@fluixi'
 
+      # @bambiste/mix-builder lives under a personal account, so the repo-scoped
+      # GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a PAT with read:packages
+      # for both the @bambiste and @fluixi scopes; falls back to GITHUB_TOKEN.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # mix-builder dist doesn't exist at install time so pnpm skips its bin
-      # symlinks. Build it first, then reinstall so the symlinks are created.
-      - name: Bootstrap mix-builder
-        run: pnpm --filter @fluixi/mix-builder run build
-
-      - name: Relink workspace bins
-        run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: nrwl/nx-set-shas@v4
 

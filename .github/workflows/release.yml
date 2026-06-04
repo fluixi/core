@@ -35,20 +35,14 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@fluixi'
 
+      # @bambiste/mix-builder lives under a personal account, so the repo-scoped
+      # GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a classic PAT with
+      # read:packages (for @bambiste + @fluixi) and write:packages (to publish
+      # @fluixi). Falls back to GITHUB_TOKEN when the secret isn't set.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # mix-builder dist doesn't exist at install time so pnpm skips its bin
-      # symlinks. Build it first, then reinstall so the symlinks are created.
-      - name: Bootstrap mix-builder
-        run: pnpm --filter @fluixi/mix-builder run build
-
-      - name: Relink workspace bins
-        run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
 
       # The changesets action does one of two things:
       #   1. Pending changesets present → opens/updates a "Version Packages" PR
@@ -64,4 +58,4 @@ jobs:
           commit: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
