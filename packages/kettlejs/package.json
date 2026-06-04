@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/kettlejs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Solid-Compatible Fine-Grained UI Framework",
   "private": false,
   "publishConfig": {

@@ -1,5 +1,14 @@
 # @fluixi/element
 
+## 0.0.2
+
+### Patch Changes
+
+- 254d9d3: fix: point package repository metadata at fluixi/core monorepo
+- Updated dependencies [254d9d3]
+  - @fluixi/dom@0.0.2
+  - @fluixi/reactive@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes
