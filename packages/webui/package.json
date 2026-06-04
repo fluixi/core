@@ -1,6 +1,11 @@
 {
   "name": "@fluixi/webui",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/webui"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
