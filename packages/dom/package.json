@@ -238,6 +238,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fluixi/dom"
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/dom"
   }
 }
