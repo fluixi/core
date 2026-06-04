@@ -1,5 +1,6 @@
 import { createComponent } from '@fluixi/element';
-import { FlxIcon} from '@awc/components/modules';
+// import { FlxIcon} from '@fluixi/components/modules';
+import { FlxIcon} from '@fluixi/flx-icon';
 import DOM from "@fluixi/dom"
 // import '@fluixi/flx-icon/flx-icon.js';
 
