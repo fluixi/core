@@ -13,11 +13,7 @@
     "lib": ["dom", "DOM.Iterable", "es2021", "es2015"]
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../mix-builder/tsconfig.lib.json"
-    }
-  ],
+  "references": [],
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",

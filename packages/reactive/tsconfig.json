@@ -7,9 +7,6 @@
       "path": "../utils"
     },
     {
-      "path": "../mix-builder"
-    },
-    {
       "path": "./tsconfig.lib.json"
     },
     {

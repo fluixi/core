@@ -20,9 +20,6 @@
     },
     {
       "path": "../dom/tsconfig.lib.json"
-    },
-    {
-      "path": "../mix-builder/tsconfig.lib.json"
     }
   ],
   "exclude": [

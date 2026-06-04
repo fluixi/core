@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@fluixi/utils",
+      "@fluixi/reactive",
+      "@fluixi/dom",
+      "@fluixi/element",
+      "@fluixi/babel-plugin-jsx",
+      "@fluixi/jsx-runtime",
+      "@fluixi/kettlejs"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@fluixi/webui",
+    "@fluixi/mix-builder",
+    "@fluixi/kettlejs-test"
+  ]
+}

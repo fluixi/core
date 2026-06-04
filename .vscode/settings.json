@@ -57,8 +57,8 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
     "**/.nx/**": true,
-    "**/node_modules/**": true,
-    "**/dist/**": true
+    // "**/node_modules/**": true,
+    // "**/dist/**": true
   },
   "lit-html.tags": ["html", "raw"],
   "lit-html.format.enabled": true,

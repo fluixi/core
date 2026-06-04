@@ -16,9 +16,6 @@
     },
     {
       "path": "../dom"
-    },
-    {
-      "path": "../mix-builder"
     }
   ]
 }
