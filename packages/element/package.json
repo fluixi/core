@@ -1,6 +1,11 @@
 {
   "name": "@fluixi/element",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/element"
+  },
   "private": false,
   "description": "Web Component support for KettleJS - defineElement, KettleElement, KettleLitElement, KettleController",
   "publishConfig": {

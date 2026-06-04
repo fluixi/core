@@ -108,6 +108,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fluixi/reactive"
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/reactive"
   }
 }
