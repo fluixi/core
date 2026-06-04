@@ -1,10 +1,10 @@
 {
   "name": "@fluixi/jsx-runtime",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
-    "access": "restricted"
+    "access": "public"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -62,7 +62,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@fluixi/mix-builder": "workspace:*",
+    "@bambiste/mix-builder": "*",
     "@types/babel__core": "^7.20.5",
     "@types/react": "^19.2.7",
     "inquirer": "^13.1.0",

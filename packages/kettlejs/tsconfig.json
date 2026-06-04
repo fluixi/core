@@ -32,13 +32,10 @@
       "path": "../jsx-runtime"
     },
     {
-      "path": "../mix-builder"
+      "path": "../element"
     },
     {
       "path": "../dom"
-    },
-    {
-      "path": "../element"
     },
     {
       "path": "./tsconfig.node.json"

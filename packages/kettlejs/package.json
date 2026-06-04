@@ -1,11 +1,11 @@
 {
   "name": "@fluixi/kettlejs",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Solid-Compatible Fine-Grained UI Framework",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
-    "access": "restricted"
+    "access": "public"
   },
   "type": "module",
   "main": "./src/index.ts",
@@ -129,7 +129,7 @@
     "vinxi": "^0.5.8"
   },
   "devDependencies": {
-    "@fluixi/mix-builder": "workspace:*",
+    "@bambiste/mix-builder": "*",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.9",
     "chalk": "^5.3.0",

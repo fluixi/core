@@ -1,10 +1,10 @@
 {
   "name": "@fluixi/babel-plugin-jsx",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
-    "access": "restricted"
+    "access": "public"
   },
   "files": [
     "dist",
@@ -37,7 +37,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@fluixi/mix-builder": "workspace:*",
+    "@bambiste/mix-builder": "*",
     "@babel/generator": "^7.29.1",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.27.0",

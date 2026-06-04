@@ -1,10 +1,10 @@
 {
   "name": "@fluixi/reactive",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
-    "access": "restricted"
+    "access": "public"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -95,7 +95,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@fluixi/mix-builder": "workspace:*",
+    "@bambiste/mix-builder": "*",
     "@fluixi/utils": "workspace:*",
     "tslib": "^2.3.0"
   },

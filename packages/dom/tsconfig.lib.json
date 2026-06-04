@@ -16,9 +16,6 @@
   "references": [
     {
       "path": "../reactive/tsconfig.lib.json"
-    },
-    {
-      "path": "../mix-builder/tsconfig.lib.json"
     }
   ],
   "exclude": [
