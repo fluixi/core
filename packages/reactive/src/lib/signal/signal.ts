@@ -1402,24 +1402,27 @@ export function createThrottledSignal<T>(
   signal: EnhancedSignal<T>,
   delay: number
 ): EnhancedSignal<T> {
-  const [get, set] = createSignal(signal.get());
+  const throttled = createEnhancedSignal(signal.get());
   let timeout: any;
   let lastValue: T;
   signal.subscribe((value) => {
     lastValue = value;
     if (!timeout)
       timeout = setTimeout(() => {
-        set(lastValue);
+        throttled.set(lastValue);
         timeout = null;
       }, delay);
   });
   return {
-    node: get[$NODE]!,
-    get,
+    node: throttled.node,
+    get: throttled.get,
     set: signal.set,
-    subscribe: (listener) => signal.subscribe(listener),
-    dispose: signal.dispose,
-    toObservable: () => get.toObservable!(),
+    subscribe: throttled.subscribe,
+    dispose: () => {
+      clearTimeout(timeout);
+      throttled.dispose();
+    },
+    toObservable: throttled.toObservable,
   };
 }
 export function createDebouncedSignal<T>(
