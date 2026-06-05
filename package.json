@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "nx run-many -t build -p @fluixi/utils @fluixi/reactive @fluixi/dom @fluixi/babel-plugin-jsx @fluixi/element @fluixi/jsx-runtime @fluixi/kettlejs --parallel=false",
+    "build": "nx run-many -t build -p @fluixi/utils @fluixi/reactive @fluixi/dom @fluixi/babel-plugin-jsx @fluixi/element @fluixi/jsx-runtime @fluixi/kettlejs @fluixi/webui --parallel=false",
     "build:all": "nx run-many -t build --parallel=false",
     "lint": "nx affected -t lint",
     "test": "nx affected -t test",

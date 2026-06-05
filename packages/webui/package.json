@@ -7,6 +7,11 @@
     "directory": "packages/webui"
   },
   "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -295,7 +300,7 @@
     "@fluixi/flx-vertical-card-asset": "*",
     "@fluixi/flx-draggable": "*",
     "@fluixi/components": "*",
-    "@fluixi/styles-core": "*",
+    "@fluixi/css-core": "*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/element": "workspace:*",
     "@fluixi/helpers": "*",

@@ -448,7 +448,7 @@ importers:
       '@fluixi/jsx-runtime':
         specifier: workspace:*
         version: link:../jsx-runtime
-      '@fluixi/styles-core':
+      '@fluixi/css-core':
         specifier: '*'
         version: 0.0.0
       lit:
@@ -1916,8 +1916,8 @@ packages:
     peerDependencies:
       lit: ^3.3.0
 
-  '@fluixi/styles-core@0.0.0':
-    resolution: {integrity: sha512-/mp+gvtX3RJksfIuRAp79Hep+xDCUrn+bSgLTgBqvNgM7vPZyFkYPOJopdndh4bofKV6P2K+2fUd8XuVqsSgDg==, tarball: https://npm.pkg.github.com/download/@fluixi/styles-core/0.0.0/022170723753116795d0000b27cca01418929ddf}
+  '@fluixi/css-core@0.0.0':
+    resolution: {integrity: sha512-/mp+gvtX3RJksfIuRAp79Hep+xDCUrn+bSgLTgBqvNgM7vPZyFkYPOJopdndh4bofKV6P2K+2fUd8XuVqsSgDg==, tarball: https://npm.pkg.github.com/download/@fluixi/css-core/0.0.0/022170723753116795d0000b27cca01418929ddf}
 
   '@inquirer/ansi@2.0.7':
     resolution: {integrity: sha512-3eTuUO1vH2cZm2ZKHeQxnOqlTi9EfZDGgIe3BL3I4u+rJHocr9Fz86M4fjYABPvFnQG/gGK551HqDiIcETwU6Q==}
@@ -8297,7 +8297,7 @@ snapshots:
     dependencies:
       lit: 3.3.3
 
-  '@fluixi/styles-core@0.0.0':
+  '@fluixi/css-core@0.0.0':
     dependencies:
       '@alloc/quick-lru': 5.2.0
       css-tree: 3.2.1
