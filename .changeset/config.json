@@ -18,7 +18,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@fluixi/webui",
     "@fluixi/kettlejs-test"
   ]
 }
