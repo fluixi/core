@@ -36,6 +36,6 @@
   "@fluixi/flx-vertical-card-asset": "link:../../../fluixi-webcomponents/packages/components/flx-vertical-card-asset",
   "@fluixi/flx-draggable": "link:../../../fluixi-webcomponents/packages/components/flx-draggable",
   "@fluixi/components": "link:../../../fluixi-webcomponents/packages/components/bundles",
-  "@fluixi/styles-core": "link:../../../fluixi-css/packages/core",
+  "@fluixi/css-core": "link:../../../fluixi-css/packages/css-core",
   "@fluixi/helpers": "link:../../../fluixi-webcomponents/packages/helpers"
 }

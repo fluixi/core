@@ -12,6 +12,11 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
