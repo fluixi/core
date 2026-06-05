@@ -448,9 +448,6 @@ importers:
       '@fluixi/jsx-runtime':
         specifier: workspace:*
         version: link:../jsx-runtime
-      '@fluixi/css-core':
-        specifier: '*'
-        version: 0.0.0
       lit:
         specifier: ^3.3.1
         version: 3.3.3
@@ -469,10 +466,6 @@ packages:
 
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
-
-  '@alloc/quick-lru@5.2.0':
-    resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
-    engines: {node: '>=10'}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -1915,9 +1908,6 @@ packages:
     resolution: {integrity: sha512-xttjlcLOp9y0gDjTyW4HYElJypyRl2y2/z/J3VnAgjcNb+l2pWZnVn5oyXFQpLU52c/HQ7VUXVxqa7cHLD6wkg==, tarball: https://npm.pkg.github.com/download/@fluixi/helpers/0.0.0/15351897746d81a2e21d12bfbfc7d61c75c9b085}
     peerDependencies:
       lit: ^3.3.0
-
-  '@fluixi/css-core@0.0.0':
-    resolution: {integrity: sha512-/mp+gvtX3RJksfIuRAp79Hep+xDCUrn+bSgLTgBqvNgM7vPZyFkYPOJopdndh4bofKV6P2K+2fUd8XuVqsSgDg==, tarball: https://npm.pkg.github.com/download/@fluixi/css-core/0.0.0/022170723753116795d0000b27cca01418929ddf}
 
   '@inquirer/ansi@2.0.7':
     resolution: {integrity: sha512-3eTuUO1vH2cZm2ZKHeQxnOqlTi9EfZDGgIe3BL3I4u+rJHocr9Fz86M4fjYABPvFnQG/gGK551HqDiIcETwU6Q==}
@@ -5728,6 +5718,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.2:
+    resolution: {integrity: sha512-c8jsqUZm3omBOI66G90z1Dyw5z622G8oLG+omfsHBJf3CWQTlOcwOjvOG6wtiNfW6anKm/eA39LMwMtMez2TiQ==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.2:
     resolution: {integrity: sha512-VMbMxbDeehAxpOtWJXlcUS5E8iXh6QmN+BkRX1GARS3wRaXEEgzCcB10gTQazO42tpNIya8xIyNx8fll1OFPrg==}
     engines: {node: '>= 0.8.0'}
@@ -6704,8 +6699,6 @@ snapshots:
   '@acemir/cssom@0.9.31': {}
 
   '@adobe/css-tools@4.5.0': {}
-
-  '@alloc/quick-lru@5.2.0': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
@@ -8296,14 +8289,6 @@ snapshots:
   '@fluixi/helpers@0.0.0(lit@3.3.3)':
     dependencies:
       lit: 3.3.3
-
-  '@fluixi/css-core@0.0.0':
-    dependencies:
-      '@alloc/quick-lru': 5.2.0
-      css-tree: 3.2.1
-      fast-glob: 3.3.3
-      lightningcss: 1.32.0
-      source-map: 0.7.6
 
   '@inquirer/ansi@2.0.7': {}
 
@@ -11420,6 +11405,7 @@ snapshots:
       lightningcss-linux-x64-musl: 1.32.0
       lightningcss-win32-arm64-msvc: 1.32.0
       lightningcss-win32-x64-msvc: 1.32.0
+    optional: true
 
   lines-and-columns@1.2.4: {}
 
@@ -11775,7 +11761,7 @@ snapshots:
 
   node-abi@3.92.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
     optional: true
 
   node-addon-api@7.1.1: {}
@@ -12545,6 +12531,9 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.8.1: {}
+
+  semver@7.8.2:
+    optional: true
 
   send@0.19.2:
     dependencies:
