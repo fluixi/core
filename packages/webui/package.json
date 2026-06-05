@@ -263,6 +263,9 @@
     "deps:status": "node scripts/toggle-link-deps.mjs status"
   },
   "dependencies": {
+    "@fluixi/components": "*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/element": "workspace:*",
     "@fluixi/flx-accordion": "*",
     "@fluixi/flx-alert": "*",
     "@fluixi/flx-avatar": "*",
@@ -274,6 +277,7 @@
     "@fluixi/flx-datepicker": "*",
     "@fluixi/flx-daterangepicker": "*",
     "@fluixi/flx-dialog": "*",
+    "@fluixi/flx-draggable": "*",
     "@fluixi/flx-drawer": "*",
     "@fluixi/flx-dropdown": "*",
     "@fluixi/flx-file-uploader": "*",
@@ -298,11 +302,6 @@
     "@fluixi/flx-tabs": "*",
     "@fluixi/flx-theme-selector": "*",
     "@fluixi/flx-vertical-card-asset": "*",
-    "@fluixi/flx-draggable": "*",
-    "@fluixi/components": "*",
-    "@fluixi/css-core": "*",
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/element": "workspace:*",
     "@fluixi/helpers": "*",
     "@fluixi/jsx-runtime": "workspace:*",
     "lit": "^3.3.1"
