@@ -76,9 +76,13 @@ const globalDelegatedSet = new Set<string>();
 // Helper: createComponent
 // ============================================================================
 
-function createComponent(Comp: any, props: any, options?: any): any {
-  const registered = (globalThis as any).__createComponent;
-  if (registered) return registered(Comp, props, options);
+function createComponent(Comp: any, props: any): any {
+  // Run the component untracked so reads in its body don't subscribe the caller;
+  // fine-grained updates come from the bindings inside it.
+  // NOTE: this previously routed through a globalThis.__createComponent that was
+  // never assigned, so it always hit this path. Removed that dead global; wiring
+  // this to the framework's registered component system belongs to the
+  // jsx-runtime/dom unification (it's a behavioral change that needs its own tests).
   return untrack(() => Comp(props));
 }
 
