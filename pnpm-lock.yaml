@@ -226,9 +226,6 @@ importers:
       '@vinxi/server-functions':
         specifier: ^0.5.1
         version: 0.5.1(vinxi@0.5.10(@types/node@22.19.19)(better-sqlite3@11.10.0)(db0@0.3.4(better-sqlite3@11.10.0))(encoding@0.1.13)(ioredis@5.11.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(yaml@2.9.0))
-      execa:
-        specifier: ^9.6.1
-        version: 9.6.1
       lit:
         specifier: ^3.0.0
         version: 3.3.3
@@ -260,6 +257,9 @@ importers:
       esbuild:
         specifier: ^0.27.1
         version: 0.27.7
+      execa:
+        specifier: ^9.6.1
+        version: 9.6.1
       fs-extra:
         specifier: ^11.3.3
         version: 11.3.5
