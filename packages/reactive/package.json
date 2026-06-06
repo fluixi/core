@@ -95,7 +95,6 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@bambiste/mix-builder": "*",
     "@fluixi/utils": "workspace:*",
     "tslib": "^2.3.0"
   },
@@ -104,7 +103,8 @@
     "@testing-library/user-event": "^14.6.1",
     "inquirer": "^13.1.0",
     "sdom": "^0.0.4",
-    "vite-plugin-solid": "^2.11.10"
+    "vite-plugin-solid": "^2.11.10",
+    "@bambiste/mix-builder": "*"
   },
   "repository": {
     "type": "git",
