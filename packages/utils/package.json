@@ -158,10 +158,10 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "dependencies": {
-    "@bambiste/mix-builder": "*",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "inquirer": "^13.1.0"
+    "inquirer": "^13.1.0",
+    "@bambiste/mix-builder": "*"
   }
 }
