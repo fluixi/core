@@ -186,7 +186,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
   const {
     runtime = 'automatic',
-    importSource = '@kettlejs/jsx-runtime',
+    importSource = '@fluixi/jsx-runtime',
     pragma = 'jsx',
     pragmaFrag = 'Fragment',
     development = false,
