@@ -11,7 +11,7 @@ import { $component, Component, createComponent, type ComponentProps } from '../
 import { RouteDataProvider, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
 import { asOutlet, asRouter, asRoutes, insert, isComponent, isPromise } from '@fluixi/dom';
-import { html } from '@fluixi/dom/lit';
+import { html } from '@fluixi/lit';
 import { Accessor} from '@fluixi/reactive';
 
 // --- Types ---

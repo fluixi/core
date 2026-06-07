@@ -3,7 +3,7 @@ import { noChange } from 'lit';
 import { isPromise } from './utils.js';
 import { isTemplateResult } from 'lit/directive-helpers.js';
 import { html } from '../index.js';
-import { iterateFn } from '../../dom/runtime.js';
+import { iterateFn } from '@fluixi/dom/runtime';
 
 class SuspenseDirective extends AsyncDirective {
   private pending: Set<Promise<any>> = new Set();

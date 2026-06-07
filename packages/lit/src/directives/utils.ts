@@ -3,7 +3,7 @@ import { litrx } from './litrx.js';
 import { nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { DirectiveResult } from 'lit/directive.js';
-import { iterateFn } from '../../dom/runtime.js';
+import { iterateFn } from '@fluixi/dom/runtime';
 
 type Handler = (_accessor: any) => DirectiveResult;
 

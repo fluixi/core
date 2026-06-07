@@ -5,7 +5,7 @@ import { directive, PartInfo, PartType } from 'lit/directive.js';
 import { AsyncDirective } from 'lit/async-directive.js';
 import { html } from '../templates/index.js';
 import { ChildPart, noChange, nothing } from 'lit';
-import { iterateFn } from '../../dom/runtime.js';
+import { iterateFn } from '@fluixi/dom/runtime';
 
 class AsyncFnDirective extends AsyncDirective {
   private value: any = noChange;

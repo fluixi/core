@@ -39,6 +39,9 @@
     },
     {
       "path": "../compiler/tsconfig.lib.json"
+    },
+    {
+      "path": "../lit/tsconfig.lib.json"
     }
   ],
   "exclude": [

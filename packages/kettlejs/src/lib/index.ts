@@ -111,7 +111,7 @@ export type {
 
 // Use the wrapped html/svg from @fluixi/dom that process signals/memos/resources
 // via processValues, instead of raw lit html which stringifies functions.
-export { html, svg, nothing } from '@fluixi/dom/lit';
+export { html, svg, nothing } from '@fluixi/lit';
 export { render as litRender } from 'lit';
 export { LitElement } from 'lit';
 export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
@@ -166,7 +166,7 @@ export {
   $portal,
   $if,
   $each,
-} from '@fluixi/dom/lit';
+} from '@fluixi/lit';
 
 export {
   // DOM Manipulation

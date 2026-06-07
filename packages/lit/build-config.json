@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "esbuild": {
+    "extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "target": "es2021",
+    "formats": ["es", "cjs"],
+    "entries": ["src/**/*.ts"],
+    "rootDir": "src",
+    "externals": [
+      "@fluixi/*",
+      "@fluixi/dom",
+      "@fluixi/reactive",
+      "@fluixi/reactive/signal",
+      "@fluixi/reactive/store",
+      "lit",
+      "lit/*",
+      "@lit-labs/*",
+      "@babel/*"
+    ],
+    "minify": false,
+    "clean": true
+  }
+}

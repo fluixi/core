@@ -15,13 +15,13 @@ import {
   SVG_ELEMENTS,
   toAttributeName,
   VOID_ELEMENTS,
-} from '../../dom/utils.js';
+} from '@fluixi/dom/utils';
 import { ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { live } from 'lit/directives/live.js';
 import {  isPromise } from '../directives/utils.js';
-import { iterateFn } from '../../dom/runtime.js';
+import { iterateFn } from '@fluixi/dom/runtime';
 import { asyncAppend } from '../directives/async-append.js';
 
 function isTemplateResult(value: any): value is TemplateResult {

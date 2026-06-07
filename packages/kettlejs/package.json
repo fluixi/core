@@ -118,6 +118,7 @@
     "@fluixi/dom": "workspace:*",
     "@fluixi/element": "workspace:*",
     "@fluixi/jsx-runtime": "workspace:*",
+    "@fluixi/lit": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/utils": "workspace:*",
     "@lit-labs/ssr": "^3.0.0",

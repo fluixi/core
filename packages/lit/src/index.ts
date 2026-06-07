@@ -1,4 +1,4 @@
-import { registerGlobal } from '../dom/utils.js';
+import { registerGlobal } from '@fluixi/dom/utils';
 import { litrx } from './directives/litrx.js';
 
 export * from './directives/index.js';

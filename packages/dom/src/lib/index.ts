@@ -15,7 +15,7 @@
 // Core imperative runtime + Solid-style control flow (flow/). The lit renderer
 // (templates, directives, lit control-flow) is intentionally NOT re-exported
 // here so the core barrel stays lit-free and separable — import it from
-// '@fluixi/dom/lit' (and its subpaths). This also removes the Show/For name
+// '@fluixi/lit' (and its subpaths). This also removes the Show/For name
 // collision that arose from re-exporting both flow/ and lit/control-flow/.
 export * from './dom/index.js';
 export * from './dom/integration.js';

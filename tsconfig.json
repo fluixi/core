@@ -28,6 +28,9 @@
       "path": "./packages/dom"
     },
     {
+      "path": "./packages/lit"
+    },
+    {
       "path": "./packages/element"
     },
     {
