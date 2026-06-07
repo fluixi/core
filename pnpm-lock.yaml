@@ -79,6 +79,62 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@18.16.9)(@vitest/ui@3.2.6)(jiti@2.4.2)(jsdom@27.4.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(yaml@2.9.0)
 
+  examples/counter:
+    dependencies:
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx-runtime':
+        specifier: workspace:*
+        version: link:../../packages/jsx-runtime
+      '@fluixi/kettlejs':
+        specifier: workspace:*
+        version: link:../../packages/kettlejs
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
+  examples/todo:
+    dependencies:
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx-runtime':
+        specifier: workspace:*
+        version: link:../../packages/jsx-runtime
+      '@fluixi/kettlejs':
+        specifier: workspace:*
+        version: link:../../packages/kettlejs
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   packages/babel:
     dependencies:
       '@fluixi/compiler':
