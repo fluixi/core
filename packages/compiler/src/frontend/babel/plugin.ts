@@ -953,13 +953,26 @@ function emitImperativeElement(
     );
   }
 
+  // Insert each child individually (like the jsx runtime's applyProps), so a
+  // reactive/component child that isn't the only child still gets its own
+  // reactive binding. A single insert(el, [array]) does NOT bind function
+  // elements sitting inside the array.
   if (children.length > 0) {
     state.needsInsert = true;
-    stmts.push(
-      t.expressionStatement(
-        t.callExpression(t.identifier('insert'), [elId, childrenValue(children)]),
-      ),
-    );
+    for (const child of children) {
+      const isFn =
+        t.isArrowFunctionExpression(child) ||
+        t.isFunctionExpression(child) ||
+        (t.isCallExpression(child) &&
+          t.isIdentifier(child.callee) &&
+          child.callee.name === 'createMemo');
+      const args: t.Expression[] = isFn
+        ? [t.cloneNode(elId), child, t.nullLiteral()]
+        : [t.cloneNode(elId), child];
+      stmts.push(
+        t.expressionStatement(t.callExpression(t.identifier('insert'), args)),
+      );
+    }
   }
 
   stmts.push(t.returnStatement(elId));
