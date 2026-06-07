@@ -45,9 +45,8 @@ export type {
 // Compiler Utilities
 // ============================================================================
 
-// Build-time compiler utilities are NOT exported from the main browser entry.
-// Import them from '@fluixi/jsx-runtime/compiler' instead (Node.js only):
-//   import { createVitePlugin } from '@fluixi/jsx-runtime/compiler'
+// Build-time compiler utilities live in @fluixi/compiler (Node.js only):
+//   import { createVitePlugin } from '@fluixi/compiler/integrations'
 
 // ============================================================================
 // Legacy API (for backward compatibility)

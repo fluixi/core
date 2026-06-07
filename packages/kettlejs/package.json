@@ -114,6 +114,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/element": "workspace:*",
     "@fluixi/jsx-runtime": "workspace:*",
