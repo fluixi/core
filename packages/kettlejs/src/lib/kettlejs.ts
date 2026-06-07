@@ -108,6 +108,9 @@ export {
   waitForElement,
   observeIntersection,
   observeResize,
+} from '@fluixi/dom';
+// Lit renderer symbols come from the dedicated lit surface, not the core barrel.
+export {
   createKeyedFor,
   setGlobalPortalRoot,
   getGlobalPortalRoot,
@@ -128,7 +131,7 @@ export {
   $,
   html,
   litrx,
-} from '@fluixi/dom';
+} from '@fluixi/dom/lit';
 
 // import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
@@ -166,9 +169,11 @@ export {
   type PortalProps,
   classMap,
   styleMap,
-  $classMap,
-  $styleMap
 } from '@fluixi/dom';
+export {
+  $classMap,
+  $styleMap,
+} from '@fluixi/dom/lit';
 
 // Re-export reactive primitives from @fluixi/reactive
 
@@ -242,7 +247,7 @@ export type {
   $PortalProps,
   $DynamicProps,
   $DynamicSwitchProps,
-} from '@fluixi/dom';
+} from '@fluixi/dom/lit';
 
 // Context API
 // export {

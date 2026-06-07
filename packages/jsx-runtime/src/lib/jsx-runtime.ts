@@ -20,7 +20,6 @@ import {
   delegateEvents,
   isSVGElement,
   spread,
-  html,
   asComponent,
   checkRenderType,
   makeArrayFlat,
@@ -34,6 +33,7 @@ import {
 } from '@fluixi/dom';
 
 import { createSignal, createMemo, resolveChildren, createComponent } from '@fluixi/dom';
+import { html } from '@fluixi/dom/lit';
 
 // ============================================================================
 // Types

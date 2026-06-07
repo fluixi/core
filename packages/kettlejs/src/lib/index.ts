@@ -111,7 +111,7 @@ export type {
 
 // Use the wrapped html/svg from @fluixi/dom that process signals/memos/resources
 // via processValues, instead of raw lit html which stringifies functions.
-export { html, svg, nothing } from '@fluixi/dom';
+export { html, svg, nothing } from '@fluixi/dom/lit';
 export { render as litRender } from 'lit';
 export { LitElement } from 'lit';
 export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
@@ -152,22 +152,23 @@ export {
   type ClassCondition,
   type StyleMapInput,
   type StyleValue,
+} from '@fluixi/dom';
+export {
   // Lit-specific directive versions (classList/style diff, more efficient)
   $classMap,
   $styleMap,
   // Reactive litrx directive
   litrx,
-} from '@fluixi/dom';
-
-export {
-  // Control Flow
+  // Lit control flow
   $show,
   $for,
   $switch,
   $portal,
   $if,
   $each,
+} from '@fluixi/dom/lit';
 
+export {
   // DOM Manipulation
   insert,
   spread,

@@ -10,7 +10,8 @@ import {
 import { $component, Component, createComponent, type ComponentProps } from '../render/component.js';
 import { RouteDataProvider, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
-import { asOutlet, asRouter, asRoutes, html, insert, isComponent, isPromise } from '@fluixi/dom';
+import { asOutlet, asRouter, asRoutes, insert, isComponent, isPromise } from '@fluixi/dom';
+import { html } from '@fluixi/dom/lit';
 import { Accessor} from '@fluixi/reactive';
 
 // --- Types ---

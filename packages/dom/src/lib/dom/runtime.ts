@@ -1578,7 +1578,7 @@ export function registerOncleanUp(
   (globalThis as any).__onCleanup = _onCleanup;
 }
 
-function isPromise(v: any): v is Promise<any> {
+export function isPromise(v: any): v is Promise<any> {
   return (
     (v != null &&
       (typeof v === 'object' || typeof v === 'function') &&
