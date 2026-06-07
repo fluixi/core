@@ -78,7 +78,7 @@
 import { nothing } from 'lit';
 import { Accessor, createMemo } from '@fluixi/reactive/signal';
 import { isTruthy, normalizeAccessor, renderContent } from './utils.js';
-import type { Component } from '@fluixi/dom';
+import type { Component } from '../../shared/types.js';
 /**
  * Props for the Show component
  * @template T - Type of the condition value when truthy

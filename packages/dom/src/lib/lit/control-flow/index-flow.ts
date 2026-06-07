@@ -2,7 +2,7 @@ import { Accessor, createEffect, createSignal } from '@fluixi/reactive';
 import { html, nothing, TemplateResult } from 'lit';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
 
-import { Component } from '@fluixi/dom';
+import type { Component } from '../../shared/types.js';
 /**
  * Props for the Index component (non-keyed list rendering)
  * @template T - Type of items in the array
