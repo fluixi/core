@@ -16,6 +16,9 @@
       "path": "./packages/kettlejs-test"
     },
     {
+      "path": "./packages/compiler"
+    },
+    {
       "path": "./packages/babel"
     },
     {
