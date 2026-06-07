@@ -1,4 +1,4 @@
-import {  createMemo, isSignal, untrack } from '@fluixi/dom';
+import { createMemo, isSignal, untrack } from '../dom/integration.js';
 import { normalizeAccessor, isTruthy, isLitResult } from './utils.js';
 import { makeArrayFlat } from '../dom/runtime.js';
 import { Accessor, isResource } from '@fluixi/reactive/signal';

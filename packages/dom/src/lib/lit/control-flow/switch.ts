@@ -5,7 +5,7 @@ import {
   normalizeAccessor,
   renderContent,
 } from './utils.js';
-import { Component } from '@fluixi/dom';
+import type { Component } from '../../shared/types.js';
 import { nothing, TemplateResult } from 'lit';
 
 // type Match<T = unknown> = [Accessor<boolean>, () => T];

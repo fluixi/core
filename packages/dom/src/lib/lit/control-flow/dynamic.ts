@@ -72,7 +72,7 @@
 
 import { html, TemplateResult, nothing } from 'lit';
 import { createEffect, createSignal, type Accessor } from '@fluixi/reactive';
-import { type Component, type ComponentProps, ComponentFn } from '@fluixi/dom';
+import type { Component, ComponentProps, ComponentFn } from '../../shared/types.js';
 import { normalizeAccessor, renderContent, childToTemplate } from './utils.js';
 import { buildElementTemplate } from '../templates/helpers.js';
 
