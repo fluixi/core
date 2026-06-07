@@ -9,6 +9,7 @@
  */
 export * from './ir/nodes.js';
 export * from './options.js';
+export * from './frontend/types.js';
 export * from './codegen/contract.js';
 export * from './codegen/backend.js';
 export { imperativeBackend } from './codegen/backends/imperative.js';

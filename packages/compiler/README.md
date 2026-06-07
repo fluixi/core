@@ -42,5 +42,33 @@ front-end adapters        IR              codegen backends
 - `@fluixi/compiler/integrations` — bundler plugins.
 
 `@fluixi/babel-plugin-jsx` remains as a thin re-export of `./babel` for backward
-compatibility. `@fluixi/kettlejs` re-exports `createVitePlugin` from
-`./integrations`.
+compatibility. The Vite integration is packaged as `@fluixi/vite-plugin` (which
+wraps `./integrations`); `@fluixi/kettlejs` re-exports it.
+
+## Front-ends and SWC feasibility
+
+Front-ends are the swap point at the parsing end, mirroring `CodegenBackend` at
+the emit end. They conform to the `FrontEnd` interface (`src/frontend/types.ts`):
+
+```
+FrontEnd (babel now, swc later) -> IR -> CodegenBackend -> code
+```
+
+The babel front-end (`src/frontend/babel`) is the reference implementation.
+
+**SWC feasibility.** SWC is attractive for speed, but it does not expose a
+Babel-style JS visitor API for arbitrary AST manipulation — custom transforms run
+as Rust/Wasm plugins. Two realistic paths:
+
+1. **SWC as parser + Rust transform plugin** (fastest, most work): port the JSX
+   transform to a Rust `swc_core` plugin emitting the same runtime calls. Best
+   once the IR + imperative backend stabilise, so the Rust side only has to build
+   IR and call a shared emit contract.
+2. **SWC for TS/JSX parse, transform in JS over the SWC AST** (less work, slower):
+   use `@swc/core` `parseSync` to get an AST, walk it in JS to build our IR, then
+   run the existing JS codegen. The SWC AST is walkable but not as ergonomic as
+   Babel's; the win over Babel is mainly parse speed.
+
+Recommended order: finish the AST→IR→`emit()` wiring with the babel front-end
+first (so the IR + backend are the stable contract), then add SWC via path 1 or 2
+behind the same `FrontEnd` interface — no changes needed downstream of the IR.

@@ -72,6 +72,26 @@ export interface CompilerOptions {
    * @default '@fluixi/jsx-runtime'
    */
   importSource?: string;
+
+  /**
+   * Code-generation backend.
+   * - 'jsx': emit the automatic runtime jsx()/jsxs() (default).
+   * - 'imperative': compile straight into @fluixi/dom runtime calls.
+   * @default 'jsx'
+   */
+  backend?: 'jsx' | 'imperative';
+
+  /**
+   * Module emitted runtime symbols are imported from in 'imperative' mode.
+   * @default '@fluixi/dom'
+   */
+  signalModule?: string;
+
+  /**
+   * Module control-flow components are imported from in 'imperative' mode.
+   * @default '@fluixi/dom'
+   */
+  controlFlowModule?: string;
 }
 
 export interface TransformResult {
@@ -603,6 +623,12 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         ],
         optimizeControlFlow: options.optimize !== false,
         sourceMaps: options.sourceMaps !== false,
+        // Codegen backend selection (default 'jsx').
+        backend: options.backend || 'jsx',
+        ...(options.signalModule ? { signalModule: options.signalModule } : {}),
+        ...(options.controlFlowModule
+          ? { controlFlowModule: options.controlFlowModule }
+          : {}),
       };
     },
   };
