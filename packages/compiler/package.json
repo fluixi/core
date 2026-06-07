@@ -47,7 +47,8 @@
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
-    "dev": "tsc -w -p tsconfig.lib.json"
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@babel/core": "^7.28.5",
@@ -58,11 +59,16 @@
   },
   "devDependencies": {
     "@babel/generator": "^7.29.1",
+    "@babel/plugin-transform-modules-commonjs": "^7.28.5",
     "@bambiste/mix-builder": "*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.27.0",
     "@types/babel__helper-plugin-utils": "^7.10.3",
     "cross-env": "^7.0.3",
-    "inquirer": "^14.0.2"
+    "inquirer": "^14.0.2",
+    "jsdom": "^25.0.0",
+    "vitest": "^1.6.1"
   }
 }

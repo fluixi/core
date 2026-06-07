@@ -115,6 +115,17 @@ export interface PluginOptions {
    * @default '@fluixi/dom'
    */
   controlFlowModule?: string;
+
+  /**
+   * Code-generation backend.
+   * - 'jsx': emit the automatic runtime (jsx()/jsxs()) — the runtime interprets
+   *   the calls (default, unchanged behaviour).
+   * - 'imperative': emit direct compiled calls into the @fluixi/dom runtime
+   *   (createNativeElement/spread/insert/createComponent) — no per-render jsx()
+   *   dispatch. Targets RUNTIME_CONTRACT_V1.
+   * @default 'jsx'
+   */
+  backend?: 'jsx' | 'imperative';
 }
 
 interface PluginStateData {
@@ -129,6 +140,13 @@ interface PluginStateData {
   staticElements: Map<string, t.Expression>;
   staticCounter: number;
   libModule: string;
+  backend: 'jsx' | 'imperative';
+  // imperative-backend usage flags (set during emission)
+  needsCreateNativeElement?: boolean;
+  needsInsert?: boolean;
+  needsSpread?: boolean;
+  needsCreateComponent?: boolean;
+  needsMergeProps?: boolean;
 }
 
 type PluginState = PluginPass & PluginStateData;
@@ -200,9 +218,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
     autoShowTransform = false,
+    backend = 'jsx',
   } = options;
 
   const pluginState: PluginStateData = {
+    backend,
     libModule: '@fluixi/kettlejs',
     hasJSX: false,
     hasReactivity: false,
@@ -260,6 +280,12 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             autoShow: autoShowTransform,
             staticCounter: 0,
             libModule: '@fluixi/kettlejs',
+            backend,
+            needsCreateNativeElement: false,
+            needsInsert: false,
+            needsSpread: false,
+            needsCreateComponent: false,
+            needsMergeProps: false,
           });
         },
 
@@ -296,8 +322,28 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           }
 
           if (state.hasJSX) {
-            // Add JSX runtime imports
-            if (runtime === 'automatic') {
+            if (backend === 'imperative') {
+              // Compiled imperative output: import only the runtime primitives
+              // actually emitted, straight from the dom runtime module.
+              const want: Array<[boolean, string]> = [
+                [!!state.needsCreateNativeElement, 'createNativeElement'],
+                [!!state.needsSpread, 'spread'],
+                [!!state.needsInsert, 'insert'],
+                [!!state.needsCreateComponent, 'createComponent'],
+                [!!state.needsMergeProps, 'mergeProps'],
+              ];
+              const specifiers = want
+                .filter(([need, name]) => need && !path.scope.hasBinding(name))
+                .map(([, name]) =>
+                  t.importSpecifier(t.identifier(name), t.identifier(name)),
+                );
+              if (specifiers.length > 0) {
+                imports.push(
+                  t.importDeclaration(specifiers, t.stringLiteral(signalModule)),
+                );
+              }
+            } else if (runtime === 'automatic') {
+              // Add JSX runtime imports
               const specifiers = [
                 t.importSpecifier(t.identifier('jsx'), t.identifier('jsx')),
                 t.importSpecifier(t.identifier('jsxs'), t.identifier('jsxs')),
@@ -331,12 +377,17 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               );
             }
 
-            // Add createMemo import when JSX conditionals are wrapped as memos
+            // Add createMemo import when conditionals/components are wrapped as
+            // memos. In imperative mode it comes from the dom runtime.
             if (state.needsCreateMemo && !path.scope.hasBinding('createMemo')) {
               imports.push(
                 t.importDeclaration(
                   [t.importSpecifier(t.identifier('createMemo'), t.identifier('createMemo'))],
-                  t.stringLiteral(state.libModule ?? '@fluixi/kettlejs'),
+                  t.stringLiteral(
+                    backend === 'imperative'
+                      ? signalModule
+                      : state.libModule ?? '@fluixi/kettlejs',
+                  ),
                 ),
               );
             }
@@ -373,7 +424,9 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                       t.identifier('delegateEvents')
                     ),
                   ],
-                  t.stringLiteral('@fluixi/jsx-runtime')
+                  t.stringLiteral(
+                    backend === 'imperative' ? signalModule : '@fluixi/jsx-runtime',
+                  )
                 )
               );
 
@@ -436,8 +489,10 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           }
         }
 
-        // Try to hoist static elements
-        if (hoistStatics && isStaticElement(element, state)) {
+        // Try to hoist static elements.
+        // Not in imperative mode: hoisting a live DOM node would share one node
+        // across renders. Static hoisting there needs template-clone (contract v2).
+        if (hoistStatics && backend !== 'imperative' && isStaticElement(element, state)) {
           const hoisted = hoistStaticElement(element, state);
           if (hoisted) {
             path.replaceWith(hoisted);
@@ -748,12 +803,144 @@ function transformJSXElement(
   }
 }
 
+// ============================================================================
+// Imperative backend emission
+//
+// Emits direct calls into the @fluixi/dom runtime instead of jsx()/jsxs():
+//   native element  ->  (() => { const _el = createNativeElement(tag);
+//                                 spread({ element: _el, props });
+//                                 insert(_el, children);
+//                                 return _el; })()
+//   component       ->  createMemo(() => createComponent(Comp, props))
+// This matches @fluixi/jsx-runtime's component semantics exactly while removing
+// the per-render jsx() dispatch for host elements. Targets RUNTIME_CONTRACT_V1.
+// ============================================================================
+
+// Build-time SVG detection, kept in lockstep with isSVGElement in the dom runtime.
+const SVG_TAGS = new Set([
+  'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
+  'ellipse', 'g', 'defs', 'clipPath', 'text',
+]);
+
+/** Build the props object, merging spreads via mergeProps (reactivity-preserving). */
+function buildPropsObject(
+  props: t.ObjectProperty[],
+  spreads: t.Expression[],
+  state: any,
+): t.Expression {
+  if (spreads.length > 0) {
+    state.needsMergeProps = true;
+    return t.callExpression(t.identifier('mergeProps'), [
+      ...spreads,
+      t.objectExpression(props),
+    ]);
+  }
+  return t.objectExpression(props);
+}
+
+/** Wrap children expressions into a single value for `insert` / `children` prop. */
+function childrenValue(children: t.Expression[]): t.Expression {
+  return children.length === 1 ? children[0] : t.arrayExpression(children);
+}
+
+function emitImperativeElement(
+  tag: t.Expression,
+  isNative: boolean,
+  props: t.ObjectProperty[],
+  spreads: t.Expression[],
+  children: t.Expression[],
+  state: any,
+): t.Expression {
+  if (!isNative) {
+    // Component: children belong in props, exactly like the jsx path.
+    const allProps = [...props];
+    if (children.length > 0) {
+      allProps.push(
+        t.objectProperty(t.identifier('children'), childrenValue(children)),
+      );
+    }
+    return emitComponentCall(tag, buildPropsObject(allProps, spreads, state), state);
+  }
+
+  // Native element: createNativeElement + spread (attrs only) + insert (children).
+  const tagName = (tag as t.StringLiteral).value;
+  const isSVG = SVG_TAGS.has(tagName);
+  const elId = t.identifier('_el$');
+  const stmts: t.Statement[] = [];
+
+  state.needsCreateNativeElement = true;
+  const createArgs: t.Expression[] = [tag];
+  if (isSVG) createArgs.push(t.booleanLiteral(true));
+  stmts.push(
+    t.variableDeclaration('const', [
+      t.variableDeclarator(
+        elId,
+        t.callExpression(t.identifier('createNativeElement'), createArgs),
+      ),
+    ]),
+  );
+
+  if (props.length > 0 || spreads.length > 0) {
+    state.needsSpread = true;
+    const spreadProps: t.ObjectProperty[] = [
+      t.objectProperty(t.identifier('element'), elId),
+      t.objectProperty(t.identifier('props'), buildPropsObject(props, spreads, state)),
+    ];
+    if (isSVG) {
+      spreadProps.push(t.objectProperty(t.identifier('isSVG'), t.booleanLiteral(true)));
+    }
+    stmts.push(
+      t.expressionStatement(
+        t.callExpression(t.identifier('spread'), [t.objectExpression(spreadProps)]),
+      ),
+    );
+  }
+
+  if (children.length > 0) {
+    state.needsInsert = true;
+    stmts.push(
+      t.expressionStatement(
+        t.callExpression(t.identifier('insert'), [elId, childrenValue(children)]),
+      ),
+    );
+  }
+
+  stmts.push(t.returnStatement(elId));
+  return t.callExpression(
+    t.arrowFunctionExpression([], t.blockStatement(stmts)),
+    [],
+  );
+}
+
+/**
+ * Emit a component invocation. jsx backend: `jsx(Comp, props)`. Imperative:
+ * `createMemo(() => createComponent(Comp, props))` — same shape jsx-runtime
+ * produces for components, so it stays reactive when used as a child.
+ */
+function emitComponentCall(
+  comp: t.Expression,
+  propsObj: t.Expression,
+  state: any,
+): t.Expression {
+  if (state.backend === 'imperative') {
+    state.needsCreateComponent = true;
+    state.needsCreateMemo = true;
+    return t.callExpression(t.identifier('createMemo'), [
+      t.arrowFunctionExpression(
+        [],
+        t.callExpression(t.identifier('createComponent'), [comp, propsObj]),
+      ),
+    ]);
+  }
+  return t.callExpression(t.identifier('jsx'), [comp, propsObj]);
+}
+
 function transformAutomaticElement(
   element: t.JSXElement,
   state: any,
   development: boolean,
   autoShow = true,
-): t.CallExpression {
+): t.Expression {
   const openingElement = element.openingElement;
   const children = element.children;
 
@@ -776,6 +963,18 @@ function transformAutomaticElement(
 
   // Transform children
   const transformedChildren = transformChildren(children, state, autoShow);
+
+  // Imperative backend: emit direct runtime calls instead of jsx()/jsxs().
+  if (state.backend === 'imperative') {
+    return emitImperativeElement(
+      tag,
+      isNativeElement,
+      props,
+      spreads,
+      transformedChildren,
+      state,
+    );
+  }
 
   // Add children to props if any
   if (transformedChildren.length > 0) {
@@ -883,6 +1082,12 @@ function transformJSXFragment(
   const { runtime, pragmaFrag, development } = options;
 
   const children = transformChildren(fragment.children, state, state.autoShow ?? true);
+
+  // Imperative backend: a fragment is just its children; insert() flattens arrays.
+  if (state.backend === 'imperative') {
+    if (children.length === 0) return t.nullLiteral();
+    return childrenValue(children);
+  }
 
   if (runtime === 'automatic') {
     const functionName = development
@@ -1558,10 +1763,11 @@ function buildShowCall(
     props.push(t.objectProperty(t.identifier('fallback'), fallback));
   }
 
-  return t.callExpression(t.identifier('jsx'), [
+  return emitComponentCall(
     t.identifier('Show'),
     t.objectExpression(props),
-  ]);
+    state,
+  ) as t.CallExpression;
 }
 
 // ============================================================================
