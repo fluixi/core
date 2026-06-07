@@ -54,7 +54,13 @@ the emit end. They conform to the `FrontEnd` interface (`src/frontend/types.ts`)
 FrontEnd (babel now, swc later) -> IR -> CodegenBackend -> code
 ```
 
-The babel front-end (`src/frontend/babel`) is the reference implementation.
+The babel front-end (`src/frontend/babel`) is the reference implementation. The
+AST→IR→`emit()` pipeline is implemented and tested end-to-end:
+`build-ir.ts` turns a JSX AST into IR, and `imperativeBackend.emit()` turns IR
+into runtime-call code (`build-ir.spec.ts` parses JSX, builds IR, emits, and
+executes the result in jsdom against the real `@fluixi/dom` runtime). What remains
+is to make the babel *plugin* call this pipeline by default instead of its inline
+AST codegen — a behaviour-preserving flip, since both paths emit the same calls.
 
 **SWC feasibility.** SWC is attractive for speed, but it does not expose a
 Babel-style JS visitor API for arbitrary AST manipulation — custom transforms run
@@ -69,6 +75,7 @@ as Rust/Wasm plugins. Two realistic paths:
    run the existing JS codegen. The SWC AST is walkable but not as ergonomic as
    Babel's; the win over Babel is mainly parse speed.
 
-Recommended order: finish the AST→IR→`emit()` wiring with the babel front-end
-first (so the IR + backend are the stable contract), then add SWC via path 1 or 2
-behind the same `FrontEnd` interface — no changes needed downstream of the IR.
+Now that the IR + `emit()` contract exists and is exercised, an SWC front-end can
+be added via path 1 or 2 behind the same `FrontEnd` interface — it only has to
+produce IR, and everything downstream (`emit()`, the runtime contract) is reused
+unchanged.

@@ -18,12 +18,19 @@ export type IRPropKind =
   | 'attr' | 'prop' | 'event' | 'ref' | 'class' | 'style' | 'spread';
 
 export interface IRProp {
+  /** prop/attribute name (already normalized, e.g. class -> className). Empty for spreads. */
   name: string;
-  /** raw expression code, literal, or null */
-  value: string | boolean | number | null;
-  /** true when the value must be wired with a reactive binding */
-  reactive: boolean;
   kind: IRPropKind;
+  /**
+   * A static literal value. Mutually exclusive with `expr`. Used for things like
+   * `id="x"` (string), `tabindex={3}` (number) or a valueless attr (boolean true).
+   */
+  literal?: string | number | boolean | null;
+  /** Raw JS expression code. Mutually exclusive with `literal`. */
+  expr?: string;
+  /** When true, `expr` must be wired reactively (emitted as a `() => expr` thunk). */
+  reactive?: boolean;
+  /** For kind 'event': the DOM event name + whether it is delegated. */
   event?: { name: string; delegated: boolean };
 }
 
