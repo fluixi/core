@@ -1,1 +1,2 @@
-export { createVitePlugin } from '@fluixi/compiler/integrations';
+export { fluixi, createVitePlugin } from '@fluixi/vite-plugin';
+export type { FluixiViteOptions } from '@fluixi/vite-plugin';

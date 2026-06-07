@@ -42,6 +42,9 @@
     },
     {
       "path": "../lit/tsconfig.lib.json"
+    },
+    {
+      "path": "../vite-plugin/tsconfig.lib.json"
     }
   ],
   "exclude": [
