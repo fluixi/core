@@ -32,7 +32,7 @@ front-end adapters        IR              codegen backends
 
 | backend          | contract | status                                         |
 | ---------------- | -------- | ---------------------------------------------- |
-| `imperative`     | v1       | target: `createNativeElement`/`insert`/`spread`/`delegateEvents`/`createComponent` (locked by the `@fluixi/dom` contract tests). IR-driven `emit()` is wired in a later step; today the babel front-end performs the transform. |
+| `imperative`     | v1       | live — emits `createNativeElement`/`spread`/`insert`/`createComponent` (locked by the `@fluixi/dom` contract tests). Enable via the babel front-end option `backend: 'imperative'`; default is still `jsx`. The IR-driven `emit()` (so non-babel front-ends share it) is the remaining seam. |
 | `template-clone` | v2       | future — Solid-style template clone, our own improvements. |
 
 ## Entry points
