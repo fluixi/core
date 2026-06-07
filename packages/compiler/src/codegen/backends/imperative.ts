@@ -8,18 +8,20 @@ import { RUNTIME_CONTRACT_V1 } from '../contract.js';
  * delegateEvents/createComponent (RUNTIME_CONTRACT_V1), the runtime proven by
  * the @fluixi/dom contract tests.
  *
- * NOTE: the IR-driven emit() below is the target shape. Today the actual JSX
- * transform is still performed by the babel front-end (which emits the jsx()
- * automatic runtime); wiring emit() to consume the IR and switching the
- * front-end to call it is migration Step 5.
+ * This codegen is live: the babel front-end emits it directly from the JSX AST
+ * when given `backend: 'imperative'` (see ../../frontend/babel/plugin.ts and the
+ * imperative.spec.ts runtime tests). The IR-driven emit() below — building from
+ * the host-agnostic IR rather than the AST — is the remaining seam; it lets
+ * non-babel front-ends (swc) reuse the same backend. Wiring AST -> IR -> emit()
+ * is the next refactor.
  */
 export const imperativeBackend: CodegenBackend = {
   name: 'imperative',
   contract: RUNTIME_CONTRACT_V1,
   emit(_node: IRNode, _options: CompilerOptions): CodegenResult {
     throw new Error(
-      '[compiler] imperative backend emit() not wired yet — codegen is currently ' +
-        'performed by the babel front-end. See migration Step 5.',
+      '[compiler] imperative backend IR-driven emit() not wired yet — the ' +
+        "imperative codegen currently runs in the babel front-end (backend: 'imperative').",
     );
   },
 };
