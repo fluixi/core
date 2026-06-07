@@ -31,18 +31,12 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/helper-plugin-utils": "^7.27.1",
-    "@babel/types": "^7.28.5",
+    "@fluixi/compiler": "workspace:*",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",
-    "@babel/generator": "^7.29.1",
-    "@types/babel__core": "^7.20.5",
-    "@types/babel__generator": "^7.27.0",
-    "@types/babel__helper-plugin-utils": "^7.10.3",
-    "inquirer": "^13.1.0"
+    "inquirer": "^14.0.2"
   },
   "repository": {
     "type": "git",
