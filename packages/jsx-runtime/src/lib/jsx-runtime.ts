@@ -33,7 +33,7 @@ import {
   applyProps as domProps
 } from '@fluixi/dom';
 
-import { untrack, createSignal, createMemo,  resolveChildren } from '@fluixi/dom';
+import { createSignal, createMemo, resolveChildren, createComponent } from '@fluixi/dom';
 
 // ============================================================================
 // Types
@@ -74,17 +74,14 @@ const globalDelegatedSet = new Set<string>();
 
 // ============================================================================
 // Helper: createComponent
+//
+// Both backends now instantiate components through the framework's registered
+// createComponent (imported from @fluixi/dom; kettlejs registers it via
+// registerCreateComponent). That path runs the component untracked AND applies
+// the proper owner/lifecycle handling + asComponent stamping — so the jsx and
+// imperative backends share one component-instantiation path. The dom shim
+// falls back to `() => Comp(props)` only when no system is registered.
 // ============================================================================
-
-function createComponent(Comp: any, props: any): any {
-  // Run the component untracked so reads in its body don't subscribe the caller;
-  // fine-grained updates come from the bindings inside it.
-  // NOTE: this previously routed through a globalThis.__createComponent that was
-  // never assigned, so it always hit this path. Removed that dead global; wiring
-  // this to the framework's registered component system belongs to the
-  // jsx-runtime/dom unification (it's a behavioral change that needs its own tests).
-  return untrack(() => Comp(props));
-}
 
 // ============================================================================
 // Helper: normalizeChildren
