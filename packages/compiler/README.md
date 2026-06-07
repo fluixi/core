@@ -58,9 +58,17 @@ The babel front-end (`src/frontend/babel`) is the reference implementation. The
 AST→IR→`emit()` pipeline is implemented and tested end-to-end:
 `build-ir.ts` turns a JSX AST into IR, and `imperativeBackend.emit()` turns IR
 into runtime-call code (`build-ir.spec.ts` parses JSX, builds IR, emits, and
-executes the result in jsdom against the real `@fluixi/dom` runtime). What remains
-is to make the babel *plugin* call this pipeline by default instead of its inline
-AST codegen — a behaviour-preserving flip, since both paths emit the same calls.
+executes the result in jsdom against the real `@fluixi/dom` runtime).
+
+The plugin keeps two imperative codegens and lets you pick:
+
+- `codegen: 'inline'` (default) — the plugin builds the runtime calls directly
+  from the JSX AST (no string reparse).
+- `codegen: 'ir'` — the plugin routes through the shared `build-ir` + `emit()`
+  pipeline (a small reparse) — the same path a future swc front-end reuses.
+
+Both emit identical runtime calls. Making `'ir'` the default and deleting the
+inline path is a later, behaviour-preserving flip.
 
 **SWC feasibility.** SWC is attractive for speed, but it does not expose a
 Babel-style JS visitor API for arbitrary AST manipulation — custom transforms run
