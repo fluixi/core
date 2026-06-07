@@ -224,7 +224,9 @@
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
-    "dev": "tsc -w -p tsconfig.lib.json"
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fluixi/reactive": "workspace:*",
@@ -234,7 +236,9 @@
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",
-    "inquirer": "^13.1.0"
+    "inquirer": "^13.1.0",
+    "vitest": "^1.6.1",
+    "jsdom": "^25.0.0"
   },
   "repository": {
     "type": "git",
