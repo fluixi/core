@@ -82,6 +82,13 @@ export interface CompilerOptions {
   backend?: 'jsx' | 'imperative';
 
   /**
+   * Imperative codegen path: 'inline' (plugin builds calls directly) or 'ir'
+   * (shared build-IR + backend emit() pipeline). Same output.
+   * @default 'inline'
+   */
+  codegen?: 'inline' | 'ir';
+
+  /**
    * Module emitted runtime symbols are imported from in 'imperative' mode.
    * @default '@fluixi/dom'
    */
@@ -625,6 +632,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         sourceMaps: options.sourceMaps !== false,
         // Codegen backend selection (default 'jsx').
         backend: options.backend || 'jsx',
+        ...(options.codegen ? { codegen: options.codegen } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule
           ? { controlFlowModule: options.controlFlowModule }

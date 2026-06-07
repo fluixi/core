@@ -47,8 +47,8 @@ const REQUIRE_MAP: Record<string, unknown> = {
 };
 
 /** Evaluate compiled CJS with imports resolved to the live workspace modules. */
-function load(src: string): any {
-  const code = compile(src);
+function load(src: string, options: Record<string, unknown> = IMPERATIVE): any {
+  const code = compile(src, options);
   const moduleObj = { exports: {} as any };
   const req = (id: string) => {
     if (id in REQUIRE_MAP) return REQUIRE_MAP[id];
@@ -143,5 +143,42 @@ describe('jsx backend (default) is unchanged', () => {
     );
     expect(code).toMatch(/\bjsx\(/);
     expect(code).not.toContain('createNativeElement');
+  });
+});
+
+// The plugin can route the imperative backend through the shared IR pipeline
+// (build-ir + emit) instead of its inline codegen, selected via `codegen: 'ir'`.
+const IMPERATIVE_IR = { ...IMPERATIVE, codegen: 'ir' as const };
+
+describe('imperative backend via the IR codegen path (codegen: ir)', () => {
+  it('emits the same runtime calls through the plugin', () => {
+    const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`, IMPERATIVE_IR);
+    expect(code).toContain('createNativeElement');
+    expect(code).toContain('insert');
+    expect(code).not.toMatch(/\bjsx\(/);
+  });
+
+  it('renders + stays reactive when compiled through the plugin', async () => {
+    const mod = load(`export const render = (count) => <p>{count()}</p>;`, IMPERATIVE_IR);
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(() => {
+        const [count, setCount] = S.createSignal(0);
+        const el = mod.render(count) as HTMLElement;
+        expect(el.tagName).toBe('P');
+        expect(el.textContent).toContain('0');
+        setCount(2);
+        S.flush().then(() => {
+          expect(el.textContent).toContain('2');
+          resolve();
+        }).catch(reject);
+      });
+    });
+  });
+
+  it('nests elements through the plugin', () => {
+    const mod = load(`export const render = () => <ul><li>a</li><li>b</li></ul>;`, IMPERATIVE_IR);
+    const el = mod.render() as HTMLElement;
+    expect(el.querySelectorAll('li').length).toBe(2);
+    expect(el.textContent).toBe('ab');
   });
 });

@@ -15,9 +15,12 @@ import { declare } from '@babel/helper-plugin-utils';
 import {
   NodePath,
   types as t,
+  template,
   type PluginObj,
   type PluginPass,
 } from '@babel/core';
+import { buildIR } from './build-ir.js';
+import { imperativeBackend } from '../../codegen/backends/imperative.js';
 
 // ============================================================================
 // Types
@@ -126,6 +129,18 @@ export interface PluginOptions {
    * @default 'jsx'
    */
   backend?: 'jsx' | 'imperative';
+
+  /**
+   * Which imperative codegen path to use (only relevant when backend is
+   * 'imperative'):
+   * - 'inline': the plugin builds the runtime calls directly from the JSX AST
+   *   (no string reparse). Default.
+   * - 'ir': route through the shared host-agnostic pipeline — build IR
+   *   (build-ir.ts) then run the imperative backend's emit(), reparsing the
+   *   emitted code. Same output; this is the path a future SWC front-end reuses.
+   * @default 'inline'
+   */
+  codegen?: 'inline' | 'ir';
 }
 
 interface PluginStateData {
@@ -141,6 +156,9 @@ interface PluginStateData {
   staticCounter: number;
   libModule: string;
   backend: 'jsx' | 'imperative';
+  codegen: 'inline' | 'ir';
+  /** runtime symbols emitted by the IR pipeline (codegen 'ir'), for import injection */
+  irImports: Set<string>;
   // imperative-backend usage flags (set during emission)
   needsCreateNativeElement?: boolean;
   needsInsert?: boolean;
@@ -219,10 +237,13 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     controlFlowModule = '@fluixi/dom',
     autoShowTransform = false,
     backend = 'jsx',
+    codegen = 'inline',
   } = options;
 
   const pluginState: PluginStateData = {
     backend,
+    codegen,
+    irImports: new Set<string>(),
     libModule: '@fluixi/kettlejs',
     hasJSX: false,
     hasReactivity: false,
@@ -281,6 +302,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             staticCounter: 0,
             libModule: '@fluixi/kettlejs',
             backend,
+            codegen,
+            irImports: new Set<string>(),
             needsCreateNativeElement: false,
             needsInsert: false,
             needsSpread: false,
@@ -322,7 +345,29 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           }
 
           if (state.hasJSX) {
-            if (backend === 'imperative') {
+            if (backend === 'imperative' && codegen === 'ir') {
+              // IR pipeline: import exactly the symbols emit() reported, splitting
+              // control-flow components to the control-flow module.
+              const CF = new Set([
+                'Show', 'For', 'Index', 'Switch', 'Match',
+                'Dynamic', 'ErrorBoundary', 'Portal', 'Suspense',
+              ]);
+              const all = Array.from(state.irImports as Set<string>);
+              const spec = (n: string) =>
+                t.importSpecifier(t.identifier(n), t.identifier(n));
+              const core = all.filter((s) => !CF.has(s) && !path.scope.hasBinding(s));
+              const cf = all.filter((s) => CF.has(s) && !path.scope.hasBinding(s));
+              if (core.length > 0) {
+                imports.push(
+                  t.importDeclaration(core.map(spec), t.stringLiteral(signalModule)),
+                );
+              }
+              if (cf.length > 0) {
+                imports.push(
+                  t.importDeclaration(cf.map(spec), t.stringLiteral(controlFlowModule)),
+                );
+              }
+            } else if (backend === 'imperative') {
               // Compiled imperative output: import only the runtime primitives
               // actually emitted, straight from the dom runtime module.
               const want: Array<[boolean, string]> = [
@@ -470,6 +515,13 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
       JSXElement(path, state: any) {
         state.hasJSX = true;
 
+        // IR pipeline path: build IR -> emit() -> reparse. Handles the whole
+        // subtree, so we bypass the inline transform entirely.
+        if (backend === 'imperative' && codegen === 'ir') {
+          path.replaceWith(emitViaIR(path.node, state));
+          return;
+        }
+
         const element = path.node;
         const openingElement = element.openingElement;
 
@@ -515,6 +567,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
       JSXFragment(path, state: any) {
         state.hasJSX = true;
+
+        if (backend === 'imperative' && codegen === 'ir') {
+          path.replaceWith(emitViaIR(path.node, state));
+          return;
+        }
 
         const transformed = transformJSXFragment(path.node, state, {
           runtime,
@@ -933,6 +990,20 @@ function emitComponentCall(
     ]);
   }
   return t.callExpression(t.identifier('jsx'), [comp, propsObj]);
+}
+
+/**
+ * IR-pipeline path (codegen: 'ir'): build host-agnostic IR from the JSX node, run
+ * the imperative backend's emit(), and reparse the emitted code into an AST
+ * expression. Records the runtime symbols used so Program.exit can import them.
+ * Produces the same runtime calls as the inline path — this is the route a future
+ * swc front-end reuses.
+ */
+function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
+  const ir = buildIR(node);
+  const { code, imports } = imperativeBackend.emit(ir, {} as any);
+  for (const s of imports) state.irImports.add(s);
+  return template.expression(code, { placeholderPattern: false })() as t.Expression;
 }
 
 function transformAutomaticElement(
