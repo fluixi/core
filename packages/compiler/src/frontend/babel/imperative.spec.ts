@@ -18,6 +18,10 @@ const IMPERATIVE = {
   hoistStatics: false,
 };
 
+// The plugin can route the imperative backend through the shared IR pipeline
+// (build-ir + emit) instead of its inline codegen, selected via `codegen: 'ir'`.
+const IMPERATIVE_IR = { ...IMPERATIVE, codegen: 'ir' as const };
+
 /** Run only our plugin (ESM output) — for asserting codegen shape. */
 function compileEsm(src: string, options: Record<string, unknown> = IMPERATIVE): string {
   return babel.transformSync(src, {
@@ -135,6 +139,61 @@ describe('imperative backend codegen', () => {
   });
 });
 
+// Regression: a reactive/component child that is NOT the only child must still be
+// bound reactively. The old codegen emitted insert(el, [c1, c2]) (one array), and
+// insert does not reactively bind function/component elements inside an array — so
+// a reactive child or a <Show>/<For> next to siblings rendered once and never
+// updated. The fix emits a separate insert(el, child, marker) per child (like the
+// jsx runtime's applyProps).
+
+describe('multi-child reactive child (regression)', () => {
+  // A reactive expression child beside a sibling — exercised by BOTH codegen paths.
+  for (const [label, opts] of [['inline', IMPERATIVE], ['ir', IMPERATIVE_IR]] as const) {
+    it(`${label}: a reactive child beside a sibling stays reactive`, async () => {
+      const mod = load(`export const render = (count) => <div><span class="sib">x</span>{count()}</div>;`, opts);
+      await new Promise<void>((resolve, reject) => {
+        S.createRoot(() => {
+          const [count, setCount] = S.createSignal(0);
+          const el = mod.render(count) as HTMLElement;
+          expect(el.querySelector('.sib')).toBeTruthy();
+          expect(el.textContent).toContain('0');
+          setCount(1);
+          S.flush().then(() => {
+            expect(el.textContent).toContain('1');
+            expect(el.querySelector('.sib')).toBeTruthy();
+            resolve();
+          }).catch(reject);
+        });
+      });
+    });
+  }
+
+  // A component child (Show) with a JSX fallback beside a sibling — the user's exact
+  // case. The default 'inline' path handles JSX-valued props; the 'ir' path does not
+  // yet recurse into JSX nested in expressions (see note below), so this is inline-only.
+  it('inline: a Show beside a sibling stays reactive', async () => {
+    const mod = load(
+      `import { Show } from '@fluixi/dom';
+       export const render = (on) => <div><span class="sib">x</span><Show when={on} fallback={<p class="off">off</p>}><p class="on">on</p></Show></div>;`,
+      IMPERATIVE,
+    );
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(() => {
+        const [on, setOn] = S.createSignal(false);
+        const el = mod.render(on) as HTMLElement;
+        expect(el.querySelector('.off')).toBeTruthy();
+        expect(el.querySelector('.on')).toBeNull();
+        setOn(true);
+        S.flush().then(() => {
+          expect(el.querySelector('.on')).toBeTruthy();
+          expect(el.querySelector('.off')).toBeNull();
+          resolve();
+        }).catch(reject);
+      });
+    });
+  });
+});
+
 describe('jsx backend (default) is unchanged', () => {
   it('still emits jsx()/jsxs() calls', () => {
     const code = compileEsm(
@@ -145,10 +204,6 @@ describe('jsx backend (default) is unchanged', () => {
     expect(code).not.toContain('createNativeElement');
   });
 });
-
-// The plugin can route the imperative backend through the shared IR pipeline
-// (build-ir + emit) instead of its inline codegen, selected via `codegen: 'ir'`.
-const IMPERATIVE_IR = { ...IMPERATIVE, codegen: 'ir' as const };
 
 describe('imperative backend via the IR codegen path (codegen: ir)', () => {
   it('emits the same runtime calls through the plugin', () => {

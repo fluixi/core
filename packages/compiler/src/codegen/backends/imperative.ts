@@ -107,9 +107,18 @@ function emitNode(node: IRNode, used: Set<string>): string {
         const svgFlag = node.svg ? ', isSVG: true' : '';
         parts.push(`spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag} });`);
       }
-      if (node.children.length > 0) {
+      // Insert each child individually (like the jsx runtime's applyProps), so a
+      // reactive/component child that isn't the only child still gets its own
+      // reactive binding. A single insert(el, [array]) does NOT bind function
+      // elements sitting inside the array.
+      for (const child of node.children) {
         used.add('insert');
-        parts.push(`insert(${el}, ${emitChildren(node.children, used)});`);
+        const childCode = emitNode(child, used);
+        const isFn =
+          (child.kind === 'expr' && child.reactive) ||
+          child.kind === 'component' ||
+          child.kind === 'control';
+        parts.push(isFn ? `insert(${el}, ${childCode}, null);` : `insert(${el}, ${childCode});`);
       }
       parts.push(`return ${el};`);
       return `(() => { ${parts.join(' ')} })()`;
