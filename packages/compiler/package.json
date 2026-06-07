@@ -52,13 +52,13 @@
   },
   "dependencies": {
     "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/preset-typescript": "^7.28.5",
     "@babel/types": "^7.28.5",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@babel/generator": "^7.29.1",
     "@babel/plugin-transform-modules-commonjs": "^7.28.5",
     "@bambiste/mix-builder": "*",
     "@fluixi/dom": "workspace:*",
