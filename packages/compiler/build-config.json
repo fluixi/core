@@ -19,7 +19,12 @@
     "rootDir": "src",
     "externals": [
       "@babel/*",
-      "babel"
+      "babel",
+      "fs",
+      "path",
+      "url",
+      "module",
+      "node:*"
     ],
     "clean": true
   }

@@ -35,6 +35,13 @@
       "import": "./dist/frontend/babel/index.mjs",
       "require": "./dist/frontend/babel/index.cjs",
       "default": "./dist/frontend/babel/index.js"
+    },
+    "./integrations": {
+      "development": "./src/integrations.ts",
+      "types": "./dist/integrations.d.ts",
+      "import": "./dist/integrations.mjs",
+      "require": "./dist/integrations.cjs",
+      "default": "./dist/integrations.js"
     }
   },
   "scripts": {
@@ -45,6 +52,7 @@
   "dependencies": {
     "@babel/core": "^7.28.5",
     "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5",
     "@babel/types": "^7.28.5",
     "tslib": "^2.3.0"
   },
