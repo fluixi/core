@@ -54,7 +54,7 @@ export type {
 
 // Re-export old runtime for compatibility
 export { ReactiveDOM, delegateEvents } from '@fluixi/dom';
-export { $, $if, litrx } from '@fluixi/dom/lit';
+export { $, $if, litrx } from '@fluixi/lit';
 
 // Legacy JSX config
 export interface ReactiveJSXConfig {

@@ -33,7 +33,7 @@ import {
 } from '@fluixi/dom';
 
 import { createSignal, createMemo, resolveChildren, createComponent } from '@fluixi/dom';
-import { html } from '@fluixi/dom/lit';
+import { html } from '@fluixi/lit';
 
 // ============================================================================
 // Types

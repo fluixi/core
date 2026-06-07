@@ -131,7 +131,7 @@ export {
   $,
   html,
   litrx,
-} from '@fluixi/dom/lit';
+} from '@fluixi/lit';
 
 // import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
@@ -173,7 +173,7 @@ export {
 export {
   $classMap,
   $styleMap,
-} from '@fluixi/dom/lit';
+} from '@fluixi/lit';
 
 // Re-export reactive primitives from @fluixi/reactive
 
@@ -247,7 +247,7 @@ export type {
   $PortalProps,
   $DynamicProps,
   $DynamicSwitchProps,
-} from '@fluixi/dom/lit';
+} from '@fluixi/lit';
 
 // Context API
 // export {

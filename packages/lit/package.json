@@ -1,0 +1,70 @@
+{
+  "name": "@fluixi/lit",
+  "version": "0.0.0",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "description": "The lit-html renderer for KettleJS — templates, directives and lit-based control flow. Built on @fluixi/dom.",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./directives": {
+      "development": "./src/directives/index.ts",
+      "types": "./dist/directives/index.d.ts",
+      "import": "./dist/directives/index.mjs",
+      "require": "./dist/directives/index.cjs",
+      "default": "./dist/directives/index.js"
+    },
+    "./templates": {
+      "development": "./src/templates/index.ts",
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.mjs",
+      "require": "./dist/templates/index.cjs",
+      "default": "./dist/templates/index.js"
+    },
+    "./control-flow": {
+      "development": "./src/control-flow/index.ts",
+      "types": "./dist/control-flow/index.d.ts",
+      "import": "./dist/control-flow/index.mjs",
+      "require": "./dist/control-flow/index.cjs",
+      "default": "./dist/control-flow/index.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json"
+  },
+  "dependencies": {
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "lit": "^3.3.1",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "*",
+    "inquirer": "^14.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/lit"
+  }
+}
