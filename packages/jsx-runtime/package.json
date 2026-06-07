@@ -43,7 +43,8 @@
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run copy:types",
     "copy:types": "cp ./src/lib/jsx.d.ts dist/lib",
-    "dev": "tsc -w -p tsconfig.lib.json"
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fluixi/dom": "workspace:*",
@@ -57,8 +58,10 @@
     "@types/babel__core": "^7.20.5",
     "@types/react": "^19.2.7",
     "inquirer": "^13.1.0",
+    "jsdom": "^25.0.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "vitest": "^1.6.1"
   },
   "repository": {
     "type": "git",
