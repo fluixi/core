@@ -36,7 +36,8 @@ import {
 import type { RootOwner, Signal } from '@fluixi/reactive/signal';
 import { RouteDataProvider, RouteDataContext, type RouteLoadFunc } from './data.js';
 import { createContext, useContext } from '../context/index.js';
-import { asOutlet, asRouter, asRoutes, html, insert, isAccessor, isComponent, isPromise, mergeProps } from '@fluixi/dom';
+import { asOutlet, asRouter, asRoutes, insert, isAccessor, isComponent, isPromise, mergeProps } from '@fluixi/dom';
+import { html } from '@fluixi/dom/lit';
 import { Accessor } from '@fluixi/reactive';
 import { AnyObject, get, GetAtPath } from '@fluixi/utils/object';
 import { isEqual } from '@fluixi/utils';

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// router.ts uses the lit `html` tag (lit renderer needs HTMLElement) — DOM env.
 /**
  * @fileoverview Router unit tests
  *
