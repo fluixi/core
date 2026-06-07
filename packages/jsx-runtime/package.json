@@ -37,13 +37,6 @@
       "import": "./dist/lib/jsx-dev-runtime.mjs",
       "require": "./dist/lib/jsx-dev-runtime.cjs",
       "default": "./dist/lib/jsx-dev-runtime.js"
-    },
-    "./compiler": {
-      "development": "./src/lib/compiler.ts",
-      "types": "./dist/lib/compiler.d.ts",
-      "import": "./dist/lib/compiler.mjs",
-      "require": "./dist/lib/compiler.cjs",
-      "default": "./dist/lib/compiler.js"
     }
   },
   "scripts": {
@@ -53,7 +46,6 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@lit-labs/ssr": "^3.3.1",

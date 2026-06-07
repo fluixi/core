@@ -4,8 +4,8 @@
  *
  * Build-tool adapters (vite/webpack/rollup/esbuild) plus the prop/template
  * analysis helpers that drive them. These wrap the babel front-end so a single
- * package owns all compile-time code. (Re-exported from
- * '@fluixi/jsx-runtime/compiler' for backward compatibility.)
+ * package owns all compile-time code. @fluixi/kettlejs re-exports
+ * createVitePlugin from here.
  *
  * Helpers:
  * - Detecting reactive expressions

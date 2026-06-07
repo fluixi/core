@@ -41,5 +41,6 @@ front-end adapters        IR              codegen backends
 - `@fluixi/compiler/babel` — the babel front-end (plugin + presets).
 - `@fluixi/compiler/integrations` — bundler plugins.
 
-`@fluixi/babel-plugin-jsx` and `@fluixi/jsx-runtime/compiler` remain as thin
-re-exports for backward compatibility.
+`@fluixi/babel-plugin-jsx` remains as a thin re-export of `./babel` for backward
+compatibility. `@fluixi/kettlejs` re-exports `createVitePlugin` from
+`./integrations`.
