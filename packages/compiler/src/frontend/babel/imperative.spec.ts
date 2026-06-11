@@ -194,6 +194,65 @@ describe('multi-child reactive child (regression)', () => {
   });
 });
 
+// Regression: the IR codegen must recurse into JSX nested inside expressions
+// (render-props, ternaries, .map callbacks, fallback={<p/>}, () => cond && <jsx/>).
+// build-ir compiles those nested JSX nodes back through build-ir + emit and
+// splices the generated code in (previously it stringified raw JSX -> parse error).
+describe('ir: JSX nested in expressions (regression)', () => {
+  it('a reactive conditional child that contains JSX', async () => {
+    const mod = load(
+      `export const render = (on) => <div class="host">{() => on() && <p class="inner">yo</p>}</div>;`,
+      IMPERATIVE_IR,
+    );
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(() => {
+        const [on, setOn] = S.createSignal(false);
+        const el = mod.render(on) as HTMLElement;
+        expect(el.querySelector('.inner')).toBeNull();
+        setOn(true);
+        S.flush().then(() => {
+          expect(el.querySelector('.inner')?.textContent).toBe('yo');
+          resolve();
+        }).catch(reject);
+      });
+    });
+  });
+
+  it('a Show whose fallback prop is JSX', async () => {
+    const mod = load(
+      `import { Show } from '@fluixi/dom';
+       export const render = (on) => <div><Show when={on} fallback={<p class="off">off</p>}><p class="on">on</p></Show></div>;`,
+      IMPERATIVE_IR,
+    );
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(() => {
+        const [on, setOn] = S.createSignal(false);
+        const el = mod.render(on) as HTMLElement;
+        expect(el.querySelector('.off')).toBeTruthy();
+        setOn(true);
+        S.flush().then(() => {
+          expect(el.querySelector('.on')).toBeTruthy();
+          expect(el.querySelector('.off')).toBeNull();
+          resolve();
+        }).catch(reject);
+      });
+    });
+  });
+
+  it('a render-prop returning JSX (.map)', () => {
+    const mod = load(
+      `export const render = (items) => <ul>{items().map((x) => <li class="row">{x}</li>)}</ul>;`,
+      IMPERATIVE_IR,
+    );
+    S.createRoot(() => {
+      const [items] = S.createSignal(['a', 'b', 'c']);
+      const el = mod.render(items) as HTMLElement;
+      expect(el.querySelectorAll('.row').length).toBe(3);
+      expect(el.textContent).toBe('abc');
+    });
+  });
+});
+
 describe('jsx backend (default) is unchanged', () => {
   it('still emits jsx()/jsxs() calls', () => {
     const code = compileEsm(

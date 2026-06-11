@@ -5,9 +5,16 @@
  * backend's emit() is the codegen half (IR -> code). Keeping the JSX analysis
  * here and the code generation in the backend is what lets a future swc
  * front-end reuse the exact same backend.
+ *
+ * JSX can appear nested inside arbitrary expressions (render-props, ternaries,
+ * `fallback={<p/>}`, `arr.map(x => <li/>)`, `() => cond && <div/>`, …). The IR
+ * models prop/child *expressions* as code strings, so any JSX inside such an
+ * expression is recursively compiled (build-ir -> emit) and spliced back in,
+ * with the runtime symbols it uses collected into `used` for import injection.
  */
-import { types as t } from '@babel/core';
+import { types as t, traverse, template } from '@babel/core';
 import _generate from '@babel/generator';
+import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import type {
   IRNode,
   IRProp,
@@ -17,9 +24,39 @@ import type {
 // @babel/generator's ESM/CJS interop default (its types aren't callable under nodenext).
 const generate: any = (_generate as any).default ?? (_generate as any);
 
-/** Stringify an expression AST node back to source. */
+/** Stringify an AST node back to source. */
 function gen(node: t.Node): string {
   return generate(node as any, { concise: true }).code;
+}
+
+/**
+ * Replace every JSX node nested inside `node` with the imperative code emitted
+ * for it (build-ir -> emit), so the resulting expression is plain JS. Runtime
+ * symbols used by the nested code are added to `used`.
+ */
+function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression {
+  const clone = t.cloneNode(node, true) as t.Expression;
+  const file = t.file(t.program([t.expressionStatement(clone)]));
+  let changed = false;
+  traverse(file, {
+    'JSXElement|JSXFragment'(path: any) {
+      const jsx = path.node as t.JSXElement | t.JSXFragment;
+      const { code, imports } = imperativeBackend.emit(buildIR(jsx, used), {} as any);
+      for (const s of imports) used.add(s);
+      const replacement = template.expression(code, { placeholderPattern: false })() as t.Expression;
+      path.replaceWith(replacement);
+      path.skip(); // build-ir already handled this subtree (incl. its nested JSX)
+      changed = true;
+    },
+  });
+  return changed
+    ? (file.program.body[0] as t.ExpressionStatement).expression
+    : node;
+}
+
+/** Stringify an expression, compiling any JSX nested inside it first. */
+function genExpr(node: t.Expression, used: Set<string>): string {
+  return gen(transformNestedJSX(node, used));
 }
 
 const SVG_TAGS = new Set([
@@ -70,7 +107,7 @@ function isReactiveExpr(node: t.Expression): boolean {
   return false;
 }
 
-function buildAttr(attr: t.JSXAttribute): IRProp {
+function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
   const name = attrName(attr.name);
   const isEvent = EVENT_RE.test(name);
   const kind: IRPropKind = isEvent ? 'event' : 'attr';
@@ -94,7 +131,7 @@ function buildAttr(attr: t.JSXAttribute): IRProp {
       base.literal = expr.value;
       return base;
     }
-    base.expr = gen(expr);
+    base.expr = genExpr(expr, used);
     base.reactive = isEvent ? false : isReactiveExpr(expr);
     return base;
   }
@@ -104,19 +141,20 @@ function buildAttr(attr: t.JSXAttribute): IRProp {
 
 function buildProps(
   attrs: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
+  used: Set<string>,
 ): IRProp[] {
   const props: IRProp[] = [];
   for (const a of attrs) {
     if (t.isJSXSpreadAttribute(a)) {
-      props.push({ name: '', kind: 'spread', expr: gen(a.argument) });
+      props.push({ name: '', kind: 'spread', expr: genExpr(a.argument as t.Expression, used) });
     } else if (t.isJSXAttribute(a)) {
-      props.push(buildAttr(a));
+      props.push(buildAttr(a, used));
     }
   }
   return props;
 }
 
-function buildChildren(children: t.JSXElement['children']): IRNode[] {
+function buildChildren(children: t.JSXElement['children'], used: Set<string>): IRNode[] {
   const out: IRNode[] = [];
   for (const child of children) {
     if (t.isJSXText(child)) {
@@ -126,27 +164,31 @@ function buildChildren(children: t.JSXElement['children']): IRNode[] {
     } else if (t.isJSXExpressionContainer(child)) {
       if (!t.isJSXEmptyExpression(child.expression)) {
         const expr = child.expression as t.Expression;
-        out.push({ kind: 'expr', code: gen(expr), reactive: isReactiveExpr(expr) });
+        out.push({ kind: 'expr', code: genExpr(expr, used), reactive: isReactiveExpr(expr) });
       }
     } else if (t.isJSXElement(child)) {
-      out.push(buildIR(child));
+      out.push(buildIR(child, used));
     } else if (t.isJSXFragment(child)) {
-      out.push(buildIR(child));
+      out.push(buildIR(child, used));
     } else if (t.isJSXSpreadChild(child)) {
-      out.push({ kind: 'expr', code: gen(child.expression), reactive: false });
+      out.push({ kind: 'expr', code: genExpr(child.expression as t.Expression, used), reactive: false });
     }
   }
   return out;
 }
 
-/** Build IR from a JSXElement or JSXFragment. */
-export function buildIR(node: t.JSXElement | t.JSXFragment): IRNode {
+/**
+ * Build IR from a JSXElement or JSXFragment. `used` accumulates the runtime
+ * symbols emitted for any JSX nested inside expressions (so the caller can
+ * inject the right imports).
+ */
+export function buildIR(node: t.JSXElement | t.JSXFragment, used: Set<string> = new Set()): IRNode {
   if (t.isJSXFragment(node)) {
-    return { kind: 'fragment', children: buildChildren(node.children) };
+    return { kind: 'fragment', children: buildChildren(node.children, used) };
   }
   const { tag, component } = tagInfo(node.openingElement.name);
-  const props = buildProps(node.openingElement.attributes);
-  const children = buildChildren(node.children);
+  const props = buildProps(node.openingElement.attributes, used);
+  const children = buildChildren(node.children, used);
 
   if (component) {
     return { kind: 'component', name: tag, props, children };
