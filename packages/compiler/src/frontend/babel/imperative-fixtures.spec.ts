@@ -341,6 +341,34 @@ const FIXTURES: Fixture[] = [
       });
     },
   },
+  {
+    name: 'Portal renders into a mount target (not in place)',
+    src: `import { Portal } from '@fluixi/dom';
+          export const render = (mount) => <div class="host"><span class="here">h</span><Portal mount={mount}><p class="pc">portaled</p></Portal></div>;`,
+    run: (mod) => {
+      S.createRoot(() => {
+        const mount = document.createElement('div');
+        document.body.appendChild(mount);
+        const el = resolve(mod.render(mount));
+        expect(el.querySelector('.here')).toBeTruthy();
+        expect(el.querySelector('.pc')).toBeNull();          // not in the host tree
+        expect(mount.querySelector('.pc')?.textContent).toBe('portaled'); // in the mount
+      });
+    },
+  },
+  {
+    name: 'ErrorBoundary catches a throwing child component',
+    src: `import { ErrorBoundary } from '@fluixi/dom';
+          const Risky = () => { throw new Error('boom'); };
+          export const render = () => <ErrorBoundary fallback={<p class="fb">caught</p>}><Risky /></ErrorBoundary>;`,
+    run: (mod) => {
+      S.createRoot(() => {
+        const host = document.createElement('div');
+        DOM.insert(host, mod.render());
+        expect(host.querySelector('.fb')?.textContent).toBe('caught');
+      });
+    },
+  },
 ];
 
 for (const [label, opts] of [['inline', INLINE], ['ir', IR]] as const) {
