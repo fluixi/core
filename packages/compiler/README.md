@@ -66,11 +66,11 @@ The plugin keeps two imperative codegens and lets you pick:
   from the JSX AST (no string reparse).
 - `codegen: 'ir'` — the plugin routes through the shared `build-ir` + `emit()`
   pipeline (a small reparse) — the same path a future swc front-end reuses.
-  **Experimental:** `build-ir` does not yet recurse into JSX nested inside
-  expressions (e.g. `fallback={<p/>}`, render-props like
-  `<For>{(x) => <li/>}</For>`, or `cond ? <a/> : <b/>`). Use the default
-  `'inline'` path for components that nest JSX in props/expressions until the IR
-  models nested-node prop values.
+  `build-ir` recurses into JSX nested inside expressions (`fallback={<p/>}`,
+  render-props like `<For>{(x) => <li/>}</For>`, `cond ? <a/> : <b/>`,
+  `arr.map(x => <li/>)`) by compiling those nodes back through `build-ir` +
+  `emit()` and splicing the generated code in. Still experimental, but feature-
+  complete enough for real components; `'inline'` remains the default.
 
 For host elements with multiple children, both paths emit a separate
 `insert(el, child, marker)` per child (mirroring the jsx runtime's `applyProps`)

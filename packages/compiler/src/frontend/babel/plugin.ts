@@ -1013,9 +1013,13 @@ function emitComponentCall(
  * swc front-end reuses.
  */
 function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
-  const ir = buildIR(node);
+  // `used` collects runtime symbols emitted for JSX nested inside expressions
+  // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
+  const used = new Set<string>();
+  const ir = buildIR(node, used);
   const { code, imports } = imperativeBackend.emit(ir, {} as any);
-  for (const s of imports) state.irImports.add(s);
+  for (const s of imports) used.add(s);
+  for (const s of used) state.irImports.add(s);
   return template.expression(code, { placeholderPattern: false })() as t.Expression;
 }
 
