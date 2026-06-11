@@ -212,18 +212,34 @@ function SuspenseImpl(props: SuspenseProps): any {
   //   → routeStates re-evaluates → createLevelState → lazy view created →
   //   untrack loop calls view() → throw caught with prevOwner = RE_comp →
   //   SuspenseCtx found → increment.
-  console.log('on suspense')
-  if (typeof resolvedChildren === 'function' && isSignal(resolvedChildren)) {
+  // Eagerly walk the children to force any lazy/async child to run NOW, so its
+  // createResource self-registers with the SuspenseContext stamped above (toggling
+  // the fallback). children may be a single signal/memo OR an array — the imperative
+  // backend emits component children as `[createMemo(() => createComponent(C)), " "]`,
+  // so we must recurse into arrays, not just handle a bare signal. The chain is read
+  // TRACKED (inside this render effect): while the fallback shows, the output memo
+  // returns the fallback, so this effect is the only reader keeping the resource
+  // subscribed — reading it tracked re-runs the effect when the resource resolves.
+  const triggerLazy = (val: any): void => {
+    if (Array.isArray(val)) {
+      for (const v of val) triggerLazy(v);
+      return;
+    }
+    if (typeof val === 'function' && isSignal(val)) {
+      try {
+        let cur: any = val();
+        while (typeof cur === 'function' && isSignal(cur)) cur = cur();
+        if (Array.isArray(cur)) triggerLazy(cur);
+      } catch (_) {}
+    }
+  };
+  const childrenHasSignal =
+    (typeof resolvedChildren === 'function' && isSignal(resolvedChildren)) ||
+    (Array.isArray(resolvedChildren) &&
+      resolvedChildren.some((c) => typeof c === 'function' && isSignal(c)));
+  if (childrenHasSignal) {
     createRenderEffect(() => {
-      const v = resolvedChildren();  // tracked: RE subscribes to children signal
-      untrack(() => {
-        try {
-          let val: any = v;
-          while (typeof val === 'function' && isSignal(val)) {
-            val = val();
-          }
-        } catch (_) {}
-      });
+      triggerLazy(resolvedChildren);
     });
   }
 
