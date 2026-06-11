@@ -1179,6 +1179,35 @@ export function setClassName(element: Element, value: any): void {
   element.setAttribute('class', String(value));
 }
 
+/**
+ * Apply a `classList`-style map `{ 'a b': condition }` — toggling each class on
+ * the element. A condition may be a value or a reactive accessor; when
+ * `disposers` is provided, accessor entries are wired with a render effect so
+ * they update fine-grained (Solid-style `classList`).
+ */
+export function setClassList(
+  element: Element,
+  value: any,
+  disposers?: Array<() => void>,
+): void {
+  if (!value || typeof value !== 'object') return;
+  for (const name in value) {
+    const cond = value[name];
+    const names = name.split(/\s+/).filter(Boolean);
+    if (typeof cond === 'function' && disposers) {
+      disposers.push(
+        createRenderEffect(() => {
+          const on = !!cond();
+          for (const n of names) element.classList.toggle(n, on);
+        }),
+      );
+    } else {
+      const on = !!(typeof cond === 'function' ? cond() : cond);
+      for (const n of names) element.classList.toggle(n, on);
+    }
+  }
+}
+
 export function setStyle(element: any, _value: any): void {
   let value = _value;
   while(typeof value === 'function') value = value()
@@ -1236,6 +1265,15 @@ export function spread(options: SpreadOptions): () => void {
         disposers.push(createRenderEffect(() => setClassName(element, value())));
       } else {
         setClassName(element, value);
+      }
+      continue;
+    }
+
+    if (key === 'classList') {
+      if (typeof value === 'function') {
+        disposers.push(createRenderEffect(() => setClassList(element, value())));
+      } else {
+        setClassList(element, value, disposers);
       }
       continue;
     }
@@ -1312,6 +1350,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     }
     if (key === 'class' || key === 'className') {
       setClassName(element, val); continue; }
+    if (key === 'classList') {
+      if (typeof val === 'function') createRenderEffect(() => setClassList(element, val()));
+      else setClassList(element, val);
+      continue;
+    }
     if (key === 'style') { setStyle(element as HTMLElement, val); continue; }
     if (key === 'innerHTML') {
         // let v = typeof val === 'function' ? val() : val
