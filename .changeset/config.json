@@ -10,7 +10,10 @@
       "@fluixi/element",
       "@fluixi/babel-plugin-jsx",
       "@fluixi/jsx-runtime",
-      "@fluixi/kettlejs"
+      "@fluixi/kettlejs",
+      "@fluixi/compiler",
+      "@fluixi/lit",
+      "@fluixi/vite-plugin"
     ]
   ],
   "linked": [],
