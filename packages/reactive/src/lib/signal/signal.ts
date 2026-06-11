@@ -568,11 +568,28 @@ export function createMemo<T>(
             const observerList = Array.from(observers);
             const toUpdate: Computation[] = [];
             const visited = new Set<Computation>();
-            function propagateDirty(comp: Computation): void {
-              if (comp === c || visited.has(comp)) return;
-              visited.add(comp);
+            // Mirror the signal-write propagateDirty (see createSignal.write): when an
+            // observer is itself a pure memo, recurse through it to its observers so
+            // they are marked stale too. Without this, a memo M observed by another
+            // memo N (e.g. a child route content/outlet memo gating on a parent content
+            // memo) updates M but never notifies N's downstream effects, so a deferred
+            // <Outlet/> deep in a nested layout never re-renders after its parent
+            // settles. viaPureMemo marks downstream non-pure (effects) STALE.
+            function propagateDirty(comp: Computation, viaPureMemo = false): void {
+              if (comp === c) return;
               const prevState = comp.state;
               if (prevState === RUNNING) return;
+              if (viaPureMemo && !comp.pure) {
+                if (prevState === CLEAN) {
+                  comp.state = STALE;
+                  if (Updates !== null && Updates.indexOf(comp) === -1)
+                    Updates.push(comp);
+                  else toUpdate.push(comp);
+                }
+                return;
+              }
+              if (visited.has(comp)) return;
+              visited.add(comp);
               comp.state = DIRTY;
               if (prevState === CLEAN || prevState === STALE)
                 toUpdate.push(comp);
@@ -582,6 +599,12 @@ export function createMemo<T>(
                 Updates.indexOf(comp) === -1
               )
                 Updates.push(comp);
+              if (comp.pure && comp.accessor) {
+                const memoObservers = signalObservers.get(comp.accessor as any);
+                if (memoObservers && memoObservers.size > 0)
+                  for (const o of Array.from(memoObservers))
+                    propagateDirty(o, true);
+              }
             }
             for (let i = 0; i < observerList.length; i++)
               propagateDirty(observerList[i]);
@@ -1723,11 +1746,17 @@ function runRenderComputation(c: Computation): void {
     Owner = prevOwner;
     const deferred = Updates;
     Updates = prevUpdates;
-    if (deferred !== prevUpdates && deferred && deferred.length > 0)
-      for (let i = 0; i < deferred.length; i++) {
-        const comp = deferred[i];
-        if (comp.computed || !comp.pure) updateComputation(comp);
-      }
+    // Flush computations scheduled during this render effect via the full cascade,
+    // which re-evaluates PURE MEMOS (and propagates to their observers) as well as
+    // running effects. The old loop processed only effects, so a pure memo scheduled
+    // here was left dirty and never notified its own downstream effects — e.g. a
+    // child route content/outlet memo that settled while a parent layout rendered
+    // would never re-render the child (deeply nested <Outlet/> stayed empty).
+    if (deferred !== prevUpdates && deferred && deferred.length > 0) {
+      const saved = Updates;
+      runCascadeAndEffects(deferred);
+      Updates = saved;
+    }
   }
 }
 /**
