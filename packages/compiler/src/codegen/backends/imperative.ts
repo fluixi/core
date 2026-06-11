@@ -69,8 +69,22 @@ function emitChildren(children: IRNode[], used: Set<string>): string {
 function emitComponent(name: string, props: IRProp[], children: IRNode[], used: Set<string>): string {
   used.add('createMemo');
   used.add('createComponent');
-  const childrenExpr = children.length > 0 ? emitChildren(children, used) : null;
-  return `createMemo(() => createComponent(${name}, ${emitProps(props, childrenExpr, used)}))`;
+  const spreads = props.filter((p) => p.kind === 'spread');
+  const normal = props.filter((p) => p.kind !== 'spread');
+  const entries = normal.map((p) => `${propKey(p.name)}: ${propValue(p)}`);
+  if (children.length > 0) {
+    // Children are a LAZY getter: evaluated inside the component's execution, so
+    // child components are created in the component's owner scope (preserves owner
+    // nesting for context/Suspense), after the component runs (correct provider
+    // ordering), and lazily (ErrorBoundary can still catch a throwing child).
+    entries.push(`get children() { return ${emitChildren(children, used)}; }`);
+  }
+  let obj = `{ ${entries.join(', ')} }`;
+  if (spreads.length > 0) {
+    used.add('mergeProps');
+    obj = `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
+  }
+  return `createMemo(() => createComponent(${name}, ${obj}))`;
 }
 
 function emitNode(node: IRNode, used: Set<string>): string {

@@ -78,6 +78,15 @@ describe('imperative backend codegen', () => {
     expect(code).not.toMatch(/\bjsxs\(/);
   });
 
+  it('emits component children as a lazy getter (owner nesting for context/Suspense)', () => {
+    // Children must be a getter, not an eagerly-built value — so child components
+    // are created inside the parent component's execution (nested owner scope),
+    // not as sibling memos at the call site. Critical for Suspense/lazy + providers.
+    const code = compileEsm(`export const r = () => <Wrap><span>x</span></Wrap>;`);
+    expect(code).toMatch(/get children\(\)/);
+    expect(code).not.toMatch(/children:\s*\(\(\) => \{/); // not an eager IIFE value
+  });
+
   it('builds a native element with a static attribute', () => {
     const mod = load(`export const render = () => <div id="x" title="hello" />;`);
     const el = mod.render() as HTMLElement;
