@@ -122,7 +122,14 @@ export function render(
     // Using domRender() would create a second createRoot, severing the chain.
     container.textContent = '';
     container.setAttribute('kettle-js', 'v1')
-    insert(container, result as any);
+    // Wrap the (already-computed) result in a STABLE thunk so insert() creates a
+    // top-level render effect. Without this, a static array result — e.g. the
+    // imperative backend's `[createMemo(() => createComponent(App)), " "]` — is
+    // flattened ONCE with no enclosing effect, so the nested memos are read
+    // untracked and reactive boundaries deep in the tree (Suspense fallback ->
+    // content, Outlet, Show/For) never update. The thunk returns the same result
+    // each run, so code()/Providers are not re-executed (context stays on root).
+    insert(container, () => result as any);
   });
 
   return () => {

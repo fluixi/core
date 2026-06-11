@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRoot, createSignal, createMemo, untrack, batch } from '@fluixi/reactive/signal';
-import { insert } from '@fluixi/dom';
+import { insert, createNativeElement } from '@fluixi/dom';
 import { ensureIntegration } from './render/component.js';
 import {
   createRouter,
@@ -337,7 +337,7 @@ describe('router — params and location hooks', () => {
 // ---------------------------------------------------------------------------
 
 describe('nested layouts + Outlet', () => {
-  it('renders layout component wrapping child content', () => {
+  it('renders layout component wrapping child content', async () => {
     const { Router } = makeMemRouter('/app/home');
 
     const Layout = () => {
@@ -363,11 +363,50 @@ describe('nested layouts + Outlet', () => {
       })
     );
 
+    // Outlet content is wired on a microtask (see router.ts setOutlet loop).
+    await new Promise((r) => setTimeout(r, 0));
     // Layout renders Outlet() which should contain 'home content'
     expect(container.textContent).toContain('home content');
   });
 
-  it('Outlet shows child route content and updates on navigation', () => {
+  it('renders a layout that wraps <Outlet/> in markup (deferred)', async () => {
+    // Regression: a layout like <div class="layout"><Outlet/></div> compiles the
+    // <Outlet/> to a deferred component memo (createMemo(() => createComponent(Outlet))).
+    // That memo evaluates while routeStates is still running, so the synchronous
+    // outlet write was missed and the child route rendered empty. The fix wires the
+    // outlet signals from a microtask; this asserts the child shows up after it.
+    const { Router } = makeMemRouter('/app/home');
+
+    const Layout = () => {
+      const div = createNativeElement('div') as HTMLElement;
+      div.className = 'layout';
+      insert(div, createMemo(() => createComponent(Outlet, {})), null);
+      return div;
+    };
+
+    const HomePage = () => 'home content';
+
+    renderApp(() =>
+      Router({
+        children: Routes({
+          children: [
+            Route({
+              path: '/app',
+              component: Layout,
+              children: [Route({ path: '/app/home', component: HomePage })],
+            }),
+          ],
+        }),
+      })
+    );
+
+    await new Promise((r) => setTimeout(r, 0));
+    const layout = container.querySelector('.layout');
+    expect(layout).toBeTruthy();
+    expect(layout!.textContent).toContain('home content');
+  });
+
+  it('Outlet shows child route content and updates on navigation', async () => {
     const { Router } = makeMemRouter('/app/home');
     let navigate!: Navigator;
     let layoutCallCount = 0;
@@ -399,10 +438,13 @@ describe('nested layouts + Outlet', () => {
       return result;
     });
 
+    // Outlet content is wired on a microtask (see router.ts setOutlet loop).
+    await new Promise((r) => setTimeout(r, 0));
     expect(container.textContent).toContain('home content');
     const initialLayoutCallCount = layoutCallCount;
 
     navigate('/app/settings');
+    await new Promise((r) => setTimeout(r, 0));
 
     expect(container.textContent).toContain('settings content');
     expect(container.textContent).not.toContain('home content');
@@ -808,5 +850,51 @@ describe('full app scenario', () => {
     await Promise.resolve();
 
     expect(container.textContent).toBe('lazy route content');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Imperative-backend shape: Suspense + lazy child wrapped in an array
+// ---------------------------------------------------------------------------
+// Regression for the store-admin empty render. The imperative backend emits a
+// component's children as `[createMemo(() => createComponent(C)), " "]` (an array,
+// because of trailing JSX whitespace). Two bugs broke this:
+//   1. Suspense only triggered lazy-resource registration for a bare signal child,
+//      not an array — so the fallback never showed and the resource never loaded.
+//   2. flattenArray cached a memo-stamped component (Suspense's output) by its first
+//      value, so when it switched from fallback (a node) to content (an array) the
+//      DOM never swapped — it stayed on the fallback even after the child loaded.
+//   3. render() inserted the static array result directly (no enclosing render
+//      effect), so the nested Suspense output was read untracked and never updated.
+//      The fix wraps the computed result in a stable thunk; we mount the same way.
+describe('Suspense + array-wrapped lazy child (imperative shape)', () => {
+  it('shows fallback then swaps to the lazy content', async () => {
+    ensureIntegration();
+    const Home = lazy(async () => ({ default: () => 'HOME CONTENT' }));
+    const app = () => [
+      createMemo(() =>
+        createComponent(Suspense, {
+          fallback: 'LOADING',
+          get children() {
+            return [createMemo(() => createComponent(Home, {})), ' '];
+          },
+        })
+      ),
+      ' ',
+    ];
+    // Mount exactly like render(): compute the static-array result ONCE, then insert
+    // a stable thunk so a top-level render effect tracks the nested memos. Inserting
+    // the static array directly (old render() behaviour) left it stuck on the fallback.
+    createRoot((d) => {
+      disposeApp = d;
+      const result = app();
+      insert(container, () => result);
+    });
+    expect(container.textContent).toContain('LOADING');
+
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(container.textContent).toContain('HOME CONTENT');
+    expect(container.textContent).not.toContain('LOADING');
   });
 });

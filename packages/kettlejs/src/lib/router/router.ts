@@ -118,8 +118,6 @@ interface RouteState {
   routeCtxValue: RouteContextValue;
   /** The createRoot owner for this level — used to nest child levels inside it */
   owner: RootOwner;
-  /** Update the outlet signal for this level (called after all levels are created) */
-  setOutlet: (v: any) => void;
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -510,6 +508,17 @@ export function Route(props: RouteDefinition) {
 export function Routes(props: ComponentProps) {
   const persistentData = new Map<any, any>()
 
+  // Single source of truth for the active level stack. Each level's outlet is a
+  // memo that derives its child content by index from this signal — NOT an
+  // imperatively-set per-level signal. This is what makes deeply nested
+  // markup-wrapped <Outlet/> work: the outlet memo of a child layout created
+  // MID-cascade (while its parent's outlet renders it) reads this already-set
+  // signal directly and resolves its own child immediately, instead of depending
+  // on the precise order of per-level setOutlet() writes. { equals: false } so a
+  // re-publish always re-evaluates the outlet memos (they use === so unchanged
+  // content produces no DOM churn).
+  const [levels, setLevels] = createSignal<RouteState[]>([], { equals: false });
+
   const definitions: RouteDefinition[] = filterRouter(
     Array.isArray(props.children) ? props.children.flat() : [props.children],
   );
@@ -547,7 +556,6 @@ export function Routes(props: ComponentProps) {
       _activeRouteCtx = null;
       return [];
     }
-    console.log('route match', match, prev)
 
     const { defs } = match;
     const next: RouteState[] = [];
@@ -591,10 +599,17 @@ export function Routes(props: ComponentProps) {
 
         createRoot(dispose => {
           const thisOwner = getOwner()!;
-          const [outlet, setOutlet] = createSignal<any>(null);
 
-          // Outlet starts as null — safe to call during this memo's own execution
-          // because it does NOT read routeStates(). Updated after ALL levels created.
+          // This level's outlet derives the NEXT level's content from the shared
+          // `levels` signal by index. Created here (owned by this level's root) so
+          // it is disposed with the level. Returns null until `levels` is published
+          // (after all levels are built), then this level's child content — and
+          // re-derives reactively on every navigation.
+          const outlet = createMemo(() => {
+            const ls = levels();
+            const child = ls[k + 1];
+            return child ? child.content : null;
+          });
 
           // params as a reactive memo — updates only when param values change.
           // Use deep-equality so navigating between sub-routes with the same
@@ -745,35 +760,40 @@ export function Routes(props: ComponentProps) {
           let content: any;
           let _asyncContent: (() => any) | null = null;
 
-          // Reactive gate on the immediate parent level's async content.
-          // Calling parentGate() inside createMemo creates a reactive dependency:
-          // when parent flips from null → component, this level's memo re-evaluates.
+          // Gate this level's build on the parent level having built. This keeps
+          // build order parent → child so parent Providers stamp context before a
+          // child component runs, and a parent with async data defers its child.
           const parentGate: (() => any) | null = k > 0
             ? (next[k - 1] as any)._asyncContent ?? null
             : null;
 
-          const needsDeferred = (currentData !== undefined && resolver != null) || parentGate != null;
-   
-          // Deferred path: return null until all gates pass, then build once.
+          // Deferred path: return null until the gates pass, then build once.
           // _built caches so re-evaluations don't recreate owned computations.
           let _built: any = null;
+          // Re-entrancy guard: building this level renders its <Outlet/>, which renders
+          // the next level, whose parentGate() re-enters THIS still-building memo. Report
+          // "not ready" (null) on re-entry to break the recursion; the child re-derives
+          // on the next levels publish (we re-publish once per depth — see below).
+          let _building = false;
           const contentMemo = createMemo(() => {
-            // 1. Wait for parent level's component to have executed.
-            //    createProvider stamps context on all ancestors when layout runs;
-            //    we must not run child components before that happens.
             if (parentGate && parentGate() === null) return null;
-            // 2. Wait for our own async data if applicable.
             if (resolver && !resolver[0]()) return null;
             if (_built) return _built;
-            _built = untrack(() => {
-              const v = d.component ? createComponent(d.component, {}) : null;
-              return currentData !== undefined
-                ? createComponent(RouteDataProvider, {
-                    value: currentData,
-                    children: RouteContext.Provider({ value: routeCtxValue, children: v }),
-                  })
-                : RouteContext.Provider({ value: routeCtxValue, children: v });
-            });
+            if (_building) return null;
+            _building = true;
+            try {
+              _built = untrack(() => {
+                const v = d.component ? createComponent(d.component, {}) : null;
+                return currentData !== undefined
+                  ? createComponent(RouteDataProvider, {
+                      value: currentData,
+                      children: RouteContext.Provider({ value: routeCtxValue, children: v }),
+                    })
+                  : RouteContext.Provider({ value: routeCtxValue, children: v });
+              });
+            } finally {
+              _building = false;
+            }
             return _built;
           });
 
@@ -794,7 +814,7 @@ export function Routes(props: ComponentProps) {
           //   // createMemo(() => typeof cnt === 'function' ? cnt() : cnt); 
           // }
 
-          state = { componentRef: d.component, content, _asyncContent, dispose, routeCtxValue, owner: thisOwner, setOutlet, path: d.path};
+          state = { componentRef: d.component, content, _asyncContent, dispose, routeCtxValue, owner: thisOwner, path: d.path};
           next[k] = state;
           
           // Create the next level INSIDE this createRoot's callback so that
@@ -820,19 +840,32 @@ export function Routes(props: ComponentProps) {
 
     if (next.length > 0) _activeRouteCtx = next[0].routeCtxValue;
 
-    // Update outlet signals AFTER all levels are created.
-    // Each level's outlet points to the NEXT level's content.
-    // For reused levels, setOutlet is a no-op when content hasn't changed.
-    for (let i = 0; i < next.length; i++) {
-      // if(i===next.length - 1){
-      //   next[i].setParams(currentParams);
-      // }
-      next[i].setOutlet(i + 1 < next.length ? next[i + 1].content : null);
-    }
 
     // Return the same array reference when all levels were reused (no structural
     // change). Default memo equality (===) will short-circuit routeContent.
     // if (firstChanged >= defs.length && next.length === prev.length) return prev;
+
+    // Publish the new level stack so every level's outlet memo re-derives its
+    // child content (see the `levels` signal at the top of Routes()).
+    //
+    // This is a signal WRITE, and we are inside the routeStates memo — the value
+    // is only observable after this memo's reactive cascade settles. A layout that
+    // renders <Outlet/> *deferred* (wrapped in markup, e.g. <div><Outlet/></div>)
+    // creates its outlet memo eagerly WHILE this memo is still executing, so a write
+    // fired from inside the same cascade would never re-notify it. Publishing from a
+    // clean microtask — outside any batch/cascade — propagates correctly, AND because
+    // all levels derive from this ONE signal, a child layout's outlet created later
+    // (while its parent's outlet renders it) reads the already-published stack and
+    // resolves immediately — so arbitrarily deep nesting cascades in a single publish.
+    //
+    // Consequence: nested Outlet content resolves on the next microtask, not
+    // synchronously within render()/navigate() — consistent with lazy()+Suspense.
+    // Publish the level stack on a microtask (outside the routeStates cascade) so the
+    // outlet memos derive their child content. Deferred to a clean microtask because
+    // this is a signal write and routeStates is a memo — writing inside the cascade
+    // would not re-notify an outlet memo created mid-cascade.
+    const _next = next;
+    queueMicrotask(() => setLevels(_next));
 
     return next;
   }, [], { equals: false, name: 'route-content' });
@@ -868,7 +901,6 @@ Object.defineProperty(Router, $ROUTER, { value: true, enumerable: true });
  */
 export function Outlet() {
   const ctx = getRouteCtx();
-  // if (!ctx?.outlet) return null;
   return asOutlet(createMemo(() => ctx?.outlet(), undefined, { name: 'outlet memo' }));
 }
 Object.defineProperty(Outlet, $OUTLET, { value: true, enumerable: true });

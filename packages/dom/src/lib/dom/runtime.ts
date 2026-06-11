@@ -690,14 +690,20 @@ function flattenArray(
     if (typeof item === 'function') {
       let resolved: any;
 
-      if (isComponent(item)) {
-        console.log('is compo')
-        // Component thunk — call exactly once, cache result
+      if (isComponent(item) && !isSignal(item)) {
+        // Pure component thunk (e.g. () => <div>) — call exactly once and cache so
+        // re-runs of the enclosing render effect return the same DOM nodes (keeps
+        // focus etc. stable across navigations).
+        // IMPORTANT: must check !isSignal. A memo stamped as a component (e.g. an
+        // Outlet/Routes/Suspense output returned via $component/asComponent) is BOTH
+        // isComponent AND isSignal; caching it would freeze its first value (so a
+        // boundary that later switches from a single node to an array — fallback ->
+        // children — would never update). Read those reactively in the else branch.
         if (!componentCache) componentCache = new Map();
         if (!componentCache.has(item)) componentCache.set(item, item());
         resolved = componentCache.get(item);
       } else {
-        // Signal or remaining function — read to track reactivity
+        // Signal/memo (or memo-stamped component) — read to track reactivity.
         resolved = item();
       }
 
