@@ -881,7 +881,7 @@ const SVG_TAGS = new Set([
 
 /** Build the props object, merging spreads via mergeProps (reactivity-preserving). */
 function buildPropsObject(
-  props: t.ObjectProperty[],
+  props: Array<t.ObjectProperty | t.ObjectMethod>,
   spreads: t.Expression[],
   state: any,
 ): t.Expression {
@@ -909,11 +909,18 @@ function emitImperativeElement(
   state: any,
 ): t.Expression {
   if (!isNative) {
-    // Component: children belong in props, exactly like the jsx path.
-    const allProps = [...props];
+    // Component: children go into props as a LAZY getter, so child components are
+    // created inside the component's execution (owner nesting for context/Suspense),
+    // after the component runs (provider ordering), and lazily (ErrorBoundary catch).
+    const allProps: Array<t.ObjectProperty | t.ObjectMethod> = [...props];
     if (children.length > 0) {
       allProps.push(
-        t.objectProperty(t.identifier('children'), childrenValue(children)),
+        t.objectMethod(
+          'get',
+          t.identifier('children'),
+          [],
+          t.blockStatement([t.returnStatement(childrenValue(children))]),
+        ),
       );
     }
     return emitComponentCall(tag, buildPropsObject(allProps, spreads, state), state);
