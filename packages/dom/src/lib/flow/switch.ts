@@ -76,7 +76,18 @@ export function Switch(props: SwitchProps): Accessor<any> {
   const branches = Array.isArray(props.children) ? props.children : [props.children];
 
   return createMemo(() => {
-    for (const branch of branches) {
+    for (const raw of branches) {
+      // The JSX compiler wraps <Match> in createMemo(createComponent(...)); unwrap
+      // those (and skip whitespace/other children) to reach the MatchNode. Direct
+      // Match({...}) results (lit syntax) pass through unchanged.
+      let branch: any = raw;
+      let guard = 0;
+      while (typeof branch === 'function' && !branch[MATCH_MARKER] && guard++ < 10) {
+        branch = branch();
+      }
+      if (!branch || typeof branch !== 'object' || branch[MATCH_MARKER] !== true) {
+        continue;
+      }
       const value = branch.when();
       if (isTruthy(value)) {
         return typeof branch.children === 'function'
