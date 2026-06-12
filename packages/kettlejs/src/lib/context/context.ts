@@ -582,17 +582,17 @@ export function createContext<T>(defaultValue?: T): {
   const Provider = (props: { value: T; children?: any, debug?: boolean }) => {
     if (props.debug === true) {
     }
-    // Pass children as-is to the reactive Provider.
-    // The reactive Provider evaluates function children inside its render effect,
-    // AFTER setting the context value on the owner. Eagerly resolving here would
-    // cause children to run before context is available.
+    // Pass children LAZILY (a getter). The reactive Provider reads children inside
+    // its render effect, AFTER stamping the context on the owner. Reading
+    // props.children here (e.g. `children: props.children`) evaluates the imperative
+    // `get children()` getter eagerly, so the children — and any <Outlet/> in them —
+    // render before the context is available.
     return context.Provider({
       value: props.value,
-      children: props.children,
-      // get children(){
-      //   return props.children
-      // },
-      debug: props.debug
+      get children() {
+        return props.children;
+      },
+      debug: props.debug,
     });
   };
 
