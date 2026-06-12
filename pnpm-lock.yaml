@@ -350,6 +350,9 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@fluixi/router':
+        specifier: workspace:*
+        version: link:../router
       '@fluixi/utils':
         specifier: workspace:*
         version: link:../utils
