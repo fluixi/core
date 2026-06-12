@@ -1,0 +1,32 @@
+{
+  "name": "@fluixi/router",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/router"
+  },
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  }
+}
