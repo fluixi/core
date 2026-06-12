@@ -35,6 +35,7 @@ import { deepEqual } from '@fluixi/utils/compare';
 import {
   createRouter as createCoreRouter,
   createBrowserHistory,
+  matchPath,
   type RouteDefinition,
   type MatchedRoute,
   type Router as CoreRouter,
@@ -240,38 +241,6 @@ export function Redirect(props: { to: string; replace?: boolean }) {
   return null;
 }
 
-/** Match a single pattern (`:param`, `*splat`) against a pathname. */
-function matchPath(
-  pattern: string,
-  path: string,
-  exact = false
-): { params: Record<string, string>; path: string } | null {
-  if (pattern === path) return { params: {}, path };
-  if (!exact && pattern === '/' && path.startsWith('/'))
-    return { params: {}, path: '/' };
-
-  const keys: string[] = [];
-  let regexStr = pattern
-    .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => {
-      keys.push(key);
-      return '([^/]+)';
-    })
-    .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => {
-      if (name) keys.push(name);
-      return '(.*)';
-    });
-  if (!regexStr.startsWith('/')) regexStr = '/' + regexStr;
-  if (regexStr === '') regexStr = '/';
-
-  const match = path.match(new RegExp(`^${regexStr}${exact ? '$' : '(?=/|$)'}`));
-  if (!match) return null;
-
-  const params: Record<string, string> = {};
-  keys.forEach((key, i) => {
-    params[key] = match[i + 1];
-  });
-  return { params, path: match[0] };
-}
 
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
@@ -497,6 +466,7 @@ export {
   createMemoryHistory,
   createBrowserHistory,
   matchRoutes,
+  matchPath,
 } from '@fluixi/router';
 export type {
   RouteDefinition,
