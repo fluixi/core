@@ -16,8 +16,6 @@
 import {
   createSignal,
   createMemo,
-  createRoot,
-  runWithOwner,
   createResource,
   createEffect,
   getOwner,
@@ -95,22 +93,37 @@ function renderLayer(
     data = resource as () => any;
   }
 
-  return RouteDataContext.Provider({
-    value: data,
-    get children() {
-      return LevelParamsContext.Provider({
-        value: m.params,
-        get children() {
-          return OutletContext.Provider({
-            value: { depth, ...base },
-            get children() {
-              return createComponent(m.component, {});
-            },
-          });
-        },
-      });
-    },
-  });
+  const buildPage = () =>
+    RouteDataContext.Provider({
+      value: data,
+      get children() {
+        return LevelParamsContext.Provider({
+          value: m.params,
+          get children() {
+            return OutletContext.Provider({
+              value: { depth, ...base },
+              get children() {
+                return createComponent(m.component, {});
+              },
+            });
+          },
+        });
+      },
+    });
+
+  if (!data) return buildPage();
+
+  // Gate on the data being resolved — like the old router — so the page reads
+  // ready data (rd() returns the value, not a thrown promise) and works without a
+  // Suspense boundary. Signal-gated (`ready` only flips when loading actually
+  // changes) so navigation re-renders don't re-run this and rebuild the page.
+  const res = data as () => any;
+  const isLoading = () => (res as any).loading as boolean;
+  // untrack the initial read so the enclosing render memo doesn't subscribe to the
+  // resource state (that would re-run renderLayer and recreate the resource — a loop).
+  const [ready, setReady] = createSignal(untrack(() => !isLoading()));
+  createEffect(() => setReady(!isLoading()));
+  return createMemo(() => (ready() ? buildPage() : null));
 }
 
 /**
@@ -120,47 +133,32 @@ function renderLayer(
  */
 function renderChild(ctx: OutletCtxValue): any {
   const childIdx = ctx.depth + 1;
-  const childComponent = createMemo(() => ctx.matched()[childIdx]?.component);
 
-  // The owner where the <Outlet/> lives — inside the parent layout's providers.
-  // We render the child UNDER this owner so it inherits that context. (Reading it
-  // inside the memo below would give the memo's own scope, which the deferred
-  // imperative <Outlet/> detaches from the provider chain.)
-  const outletOwner = getOwner();
-
-  // Cache the rendered child by component ref. It is built in its own createRoot so
-  // the memo re-running (this reactive core marks the whole downstream memo chain
-  // stale on any signal write, regardless of value) does not dispose or rebuild it;
-  // we only rebuild when the child's component actually changes.
-  let cachedComponent: any;
-  let cachedNode: any = null;
-  let cachedDispose: (() => void) | undefined;
-  let primed = false;
-  onCleanup(() => cachedDispose?.());
+  // Gate rendering on the child component reference through a SIGNAL, not a direct
+  // memo read. This reactive core marks the whole downstream memo chain stale on any
+  // signal write (no value check), so a memo that read `matched` would re-run on
+  // every navigation and re-render the child. A signal only notifies when its value
+  // actually changes, so the render memo below re-runs only when the route at this
+  // depth changes — sibling navigation reuses the layout, deeper navigation leaves
+  // this level untouched. The child is rendered INLINE (no detached createRoot), so
+  // it stays connected to the Suspense / context owner chain.
+  const [childComp, setChildComp] = createSignal<any>(
+    untrack(() => ctx.matched()[childIdx]?.component)
+  );
+  createEffect(() => {
+    const c = ctx.matched()[childIdx]?.component;
+    setChildComp(() => c);
+  });
 
   return createMemo(() => {
-    const component = childComponent();
-    if (primed && component === cachedComponent) return cachedNode;
-    primed = true;
-    cachedComponent = component;
-    cachedDispose?.();
-    if (!component) {
-      cachedNode = null;
-      cachedDispose = undefined;
-      return null;
-    }
+    const component = childComp();
+    if (!component) return null;
     const m = untrack(() => ctx.matched())[childIdx];
-    runWithOwner(outletOwner, () => {
-      createRoot((dispose) => {
-        cachedDispose = dispose;
-        cachedNode = renderLayer(m, childIdx, {
-          matched: ctx.matched,
-          params: ctx.params,
-          location: ctx.location,
-        });
-      });
+    return renderLayer(m, childIdx, {
+      matched: ctx.matched,
+      params: ctx.params,
+      location: ctx.location,
     });
-    return cachedNode;
   });
 }
 
