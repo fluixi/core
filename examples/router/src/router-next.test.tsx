@@ -95,9 +95,11 @@ describe('router-next adapter (imperative backend)', () => {
     expect(host.querySelector('.sb .m .leaf')?.textContent).toBe('LEAF');
   });
 
-  it('navigates between sibling routes under a shared layout', async () => {
+  it('navigates between siblings and REUSES the shared layout', async () => {
     let navigate!: (to: string) => void;
+    let layoutRuns = 0;
     const Layout = () => {
+      layoutRuns++;
       navigate = useNavigate();
       return <div class="app"><Outlet /></div>;
     };
@@ -115,11 +117,17 @@ describe('router-next adapter (imperative backend)', () => {
     render(() => <Router routes={routes} history={createMemoryHistory('/app/home')} />, host);
     await tick();
     expect(host.querySelector('.app .home')?.textContent).toBe('HOME');
+    const layoutEl = host.querySelector('.app');
 
     navigate('/app/settings');
     await tick();
     expect(host.querySelector('.app .settings')?.textContent).toBe('SETTINGS');
     expect(host.querySelector('.home')).toBeNull();
+
+    // Layout reuse: the layout component ran exactly once and the same DOM node
+    // is preserved across the sibling navigation.
+    expect(layoutRuns).toBe(1);
+    expect(host.querySelector('.app')).toBe(layoutEl);
   });
 
   it('exposes route params reactively', async () => {
