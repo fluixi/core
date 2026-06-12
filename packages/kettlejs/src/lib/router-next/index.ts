@@ -260,12 +260,14 @@ export function useLevelParams(): Record<string, string> {
 }
 
 /**
- * The resolved data for the nearest route that declared a `data` loader. Returns
- * a resource accessor (read it to subscribe; it suspends under <Suspense> while
- * loading), or undefined if no ancestor route has data.
+ * The resolved data for the nearest route that declared a `data` loader. Always
+ * returns a callable accessor (matching the old router): read it to subscribe; it
+ * suspends under <Suspense> while loading, and yields undefined when no ancestor
+ * route declared data.
  */
-export function useRouteData<T = any>(): (() => T) | undefined {
-  return useContext(RouteDataContext) as (() => T) | undefined;
+export function useRouteData<T = any>(): () => T | undefined {
+  const acc = useContext(RouteDataContext) as (() => T | undefined) | undefined;
+  return acc ?? (() => undefined);
 }
 
 /** Reactive current location. */
@@ -317,3 +319,26 @@ export type {
   NavigateOptions,
   HistoryAdapter,
 } from '@fluixi/router';
+
+// ─── Compatibility re-exports ─────────────────────────────────────────────────
+// The action/cache/lazy layer is orthogonal to routing, so re-export it from the
+// existing kettlejs router modules. This lets a route file swap its import path
+// from '@fluixi/kettlejs/router' to '@fluixi/kettlejs/router-next' wholesale.
+// NOTE: useRouteData/useNavigate/useParams/useLocation/Outlet/Link/Router above
+// are the router-next versions — do NOT pull those from the old router.
+export {
+  cache,
+  action,
+  revalidate,
+  createAsync,
+  useSubmission,
+  useAction,
+} from '../router/data.js';
+export type {
+  RouteDataArgs,
+  RouteLoadFunc,
+  Action,
+  Submission,
+  CacheFn,
+} from '../router/data.js';
+export { lazy } from '../render/lazy.js';
