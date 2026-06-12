@@ -11,6 +11,10 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.lib.json"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -24,8 +28,7 @@
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   }

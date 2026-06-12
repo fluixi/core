@@ -339,4 +339,38 @@ describe('router-next Link', () => {
     await tick(50);
     expect(host.querySelector('.to')?.textContent).toBe('TO');
   });
+
+  // storefront/pos wrap the flat plugin routes under a synthetic root layout that
+  // holds the app chrome: [{ path: '/', component: Shell, children: routes }] where
+  // children include an index ('/') plus absolute-path siblings. The chrome must
+  // persist and the page render at <Outlet/> on both direct load and navigation.
+  it('wraps a flat routes array under a synthetic root layout (index + siblings)', async () => {
+    let nav: any;
+    const pages = [
+      { path: '/', component: () => <div class="home">HOME</div> },
+      { path: '/cart', component: () => <div class="cart">CART</div> },
+    ];
+    const appRoutes = [
+      {
+        path: '/',
+        component: () => {
+          nav = useNavigate();
+          return <div class="shell"><header>chrome</header><Outlet /></div>;
+        },
+        children: pages,
+      },
+    ];
+    const host = document.createElement('div');
+    render(() => <Router routes={appRoutes} history={createMemoryHistory('/')} />, host);
+    await tick();
+    expect(host.querySelector('.shell header')?.textContent).toBe('chrome');
+    expect(host.querySelector('.shell .home')?.textContent).toBe('HOME');
+
+    nav('/cart');
+    await tick();
+    // chrome persists, only the outlet content swaps
+    expect(host.querySelector('.shell header')?.textContent).toBe('chrome');
+    expect(host.querySelector('.shell .cart')?.textContent).toBe('CART');
+    expect(host.querySelector('.home')).toBeNull();
+  });
 });
