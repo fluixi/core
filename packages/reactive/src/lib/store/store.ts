@@ -1599,7 +1599,7 @@ class Store<T> {
           }
         }
       }
-    } else if (!Array.isArray(target) && !Array.isArray(source)) {
+    } else if (!Array.isArray(target) && !Array.isArray(source) && source!==null && typeof source === 'object') {
       // Update object properties
       // Remove properties that don't exist in source
       for (const key in target) {
