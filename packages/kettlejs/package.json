@@ -67,6 +67,13 @@
       "require": "./dist/src/lib/router/index.cjs",
       "default": "./dist/src/lib/router/index.js"
     },
+    "./router-next": {
+      "development": "./src/lib/router-next/index.ts",
+      "types": "./dist/src/lib/router-next/index.d.ts",
+      "import": "./dist/src/lib/router-next/index.mjs",
+      "require": "./dist/src/lib/router-next/index.cjs",
+      "default": "./dist/src/lib/router-next/index.js"
+    },
     "./router/index": {
       "development": "./src/lib/router/index.ts",
       "types": "./dist/src/lib/router/index.d.ts",
@@ -121,6 +128,7 @@
     "@fluixi/lit": "workspace:*",
     "@fluixi/vite-plugin": "workspace:*",
     "@fluixi/reactive": "workspace:*",
+    "@fluixi/router": "workspace:*",
     "@fluixi/utils": "workspace:*",
     "@lit-labs/ssr": "^3.0.0",
     "@lit-labs/ssr-client": "^1.0.0",
