@@ -28,6 +28,9 @@ import { html } from '@fluixi/lit';
 // Reactive context (not kettlejs createProvider, which destructures children
 // eagerly) so a `get children()` getter renders AFTER the context is stamped.
 import { createContext, useContext } from '@fluixi/reactive/signal';
+import { get, type GetAtPath } from '@fluixi/utils/object';
+import type { IsUndefined } from '@fluixi/utils/primitive';
+import { deepEqual } from '@fluixi/utils/compare';
 
 import {
   createRouter as createCoreRouter,
@@ -227,6 +230,49 @@ export function Outlet() {
   return renderChild(ctx);
 }
 
+/** Navigate to `to` on mount (replace by default). Renders nothing. */
+export function Redirect(props: { to: string; replace?: boolean }) {
+  const ctx = useContext(RouterContext);
+  if (!ctx || typeof window === 'undefined') return null;
+  createEffect(() => {
+    ctx.router.navigate(props.to, { replace: props.replace !== false });
+  });
+  return null;
+}
+
+/** Match a single pattern (`:param`, `*splat`) against a pathname. */
+function matchPath(
+  pattern: string,
+  path: string,
+  exact = false
+): { params: Record<string, string>; path: string } | null {
+  if (pattern === path) return { params: {}, path };
+  if (!exact && pattern === '/' && path.startsWith('/'))
+    return { params: {}, path: '/' };
+
+  const keys: string[] = [];
+  let regexStr = pattern
+    .replace(/:([a-zA-Z0-9_]+)/g, (_, key) => {
+      keys.push(key);
+      return '([^/]+)';
+    })
+    .replace(/\*([a-zA-Z0-9_]*)/g, (_, name) => {
+      if (name) keys.push(name);
+      return '(.*)';
+    });
+  if (!regexStr.startsWith('/')) regexStr = '/' + regexStr;
+  if (regexStr === '') regexStr = '/';
+
+  const match = path.match(new RegExp(`^${regexStr}${exact ? '$' : '(?=/|$)'}`));
+  if (!match) return null;
+
+  const params: Record<string, string> = {};
+  keys.forEach((key, i) => {
+    params[key] = match[i + 1];
+  });
+  return { params, path: match[0] };
+}
+
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
 export function useRouter(): RouterCtxValue {
@@ -235,14 +281,118 @@ export function useRouter(): RouterCtxValue {
   return ctx;
 }
 
-/** Reactive merged params across all matched layers (an accessor). */
-export function useParams(): () => Record<string, string> {
-  return useRouter().params;
+/**
+ * Reactive merged params across all matched layers, as an accessor. Deep-equal
+ * memoized so it only notifies when a value actually changes (the underlying
+ * params object is rebuilt on every transition).
+ */
+export function useParams<
+  T extends Record<string, string> = Record<string, string>,
+>(): () => T {
+  const params = useRouter().params;
+  return createMemo(() => params() as T, {} as T, {
+    equals: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  });
 }
 
 /** Params introduced at the nearest matched layer. */
 export function useLevelParams(): Record<string, string> {
   return useContext(LevelParamsContext) ?? {};
+}
+
+/**
+ * Reactive accessor for a single route param. Default `===` equality on the
+ * string value, so it only re-triggers when THIS key changes — not when other
+ * params at the same level change.
+ */
+export function useParam(key: string): () => string | undefined {
+  const params = useParams();
+  return createMemo(() => params()[key]);
+}
+
+/**
+ * Derive a stable value from route params. Only re-triggers when the selector's
+ * return value changes. For object returns, pass a custom `equals`.
+ *
+ * @example
+ * const ids = useParamSelector((p) => ({ wsId: p.workspaceId, chId: p.channelId }), deepEqual);
+ */
+export function useParamSelector<T>(
+  selector: (params: Record<string, string>) => T,
+  equals?: (a: T, b: T) => boolean
+): () => T {
+  const params = useParams();
+  return createMemo(
+    () => selector(params()),
+    undefined as T,
+    equals ? { equals } : undefined
+  );
+}
+
+/**
+ * Match a path pattern against the current pathname, reactively. Returns the
+ * matched `{ params, path }` or null.
+ */
+export function useMatch(
+  path: (() => string) | string
+): () => { params: Record<string, string>; path: string } | null {
+  const location = useLocation();
+  return createMemo(() =>
+    matchPath(typeof path === 'function' ? path() : path, location.pathname)
+  );
+}
+
+/**
+ * Read/write the current query string. Returns `[params, setParams]`: `params`
+ * is a reactive accessor of the parsed query; `setParams` merges the given keys
+ * (null deletes) and navigates. Matches the old router.
+ */
+export function useSearchParams(): readonly [
+  () => Record<string, string>,
+  (next: Record<string, string | null>, options?: NavigateOptions) => void,
+] {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = createMemo(() => location.query);
+
+  const setParams = (
+    next: Record<string, string | null>,
+    options?: NavigateOptions
+  ) => {
+    const current = new URLSearchParams(location.search);
+    for (const [k, v] of Object.entries(next)) {
+      if (v === null) current.delete(k);
+      else current.set(k, v);
+    }
+    const search = current.toString();
+    navigate(location.pathname + (search ? `?${search}` : ''), options);
+  };
+
+  return [params, setParams] as const;
+}
+
+/**
+ * Stable accessor from any reactive source with deep-equal memoization. Pass a
+ * `key` to select a nested property. Only re-triggers downstream when the value
+ * (or selected field) actually changes.
+ *
+ * @example
+ * const ws = select(store.activeWorkspace);        // whole object
+ * const id = select(store.activeWorkspace, 'id');  // single field
+ */
+export function select<T, K extends string = never>(
+  source: () => T,
+  key?: K
+): () => IsUndefined<K> extends true ? T : GetAtPath<T, K> {
+  const equals = (a: any, b: any) => deepEqual(a, b);
+  if (key !== undefined) {
+    return createMemo(
+      () => get(source() as any, key as any) as any,
+      undefined,
+      { equals }
+    ) as any;
+  }
+  return createMemo(source, undefined, { equals }) as any;
 }
 
 /**
