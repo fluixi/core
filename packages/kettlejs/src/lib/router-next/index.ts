@@ -19,11 +19,14 @@ import {
   createRoot,
   runWithOwner,
   createResource,
+  createEffect,
   getOwner,
   onCleanup,
   untrack,
+  insert,
   createComponent,
 } from '@fluixi/dom';
+import { html } from '@fluixi/lit';
 // Reactive context (not kettlejs createProvider, which destructures children
 // eagerly) so a `get children()` getter renders AFTER the context is stamped.
 import { createContext, useContext } from '@fluixi/reactive/signal';
@@ -276,27 +279,69 @@ export function useRouteData<T = any>(): () => T | undefined {
 
 // ─── Link ─────────────────────────────────────────────────────────────────────
 
+type MaybeAccessor<T> = T | (() => T);
+const read = <T,>(v: MaybeAccessor<T> | undefined): T | undefined =>
+  typeof v === 'function' ? (v as () => T)() : v;
+
 export interface LinkProps {
-  href: string;
-  replace?: boolean;
-  class?: string;
+  href: MaybeAccessor<string>;
+  replace?: MaybeAccessor<boolean>;
+  /** Override active state. Defaults to current pathname === href. */
+  active?: MaybeAccessor<boolean>;
+  class?: MaybeAccessor<string>;
+  className?: MaybeAccessor<string>;
+  /** Class added while the link is active. */
+  activeClass?: MaybeAccessor<string>;
+  /** Render a lit template instead of a DOM node. */
+  lit?: boolean;
+  slot?: string;
   children?: any;
 }
 
 export function Link(props: LinkProps) {
-  const navigate = useNavigate();
+  const ctx = useContext(RouterContext);
+  const isServer = typeof document === 'undefined';
+
+  const navigate = () =>
+    ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
+
+  if (isServer || props.lit) {
+    const href = read(props.href) ?? '';
+    const cls = read(props.class) ?? '';
+    if (props.lit) {
+      return html`<a @click="${navigate}" class="${cls}">${props.children ?? ''}</a>`;
+    }
+    return `<a href="${href}" class="${cls}">${props.children ?? ''}</a>`;
+  }
+
   const a = document.createElement('a');
-  a.setAttribute('href', props.href);
-  if (props.class) a.className = props.class;
+  a.setAttribute('href', read(props.href) ?? '');
+  if (props.slot) a.slot = props.slot;
+
+  // Direct listener (not delegated) so preventDefault reliably blocks navigation.
   a.addEventListener('click', (e) => {
     const me = e as MouseEvent;
     if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey) return;
     e.preventDefault();
-    navigate(props.href, { replace: props.replace });
+    navigate();
   });
-  if (props.children != null) a.append(props.children as any);
+
+  // Keep href + active class in sync with reactive props / current location.
+  createEffect(() => {
+    const href = read(props.href) ?? '';
+    a.setAttribute('href', href);
+    const base = read(props.className ?? props.class) ?? '';
+    const activeClass = read(props.activeClass) ?? '';
+    const active = read(props.active) ?? ctx?.location().pathname === href;
+    a.className = [base, active ? activeClass : ''].filter(Boolean).join(' ');
+  });
+
+  if (props.children != null) insert(a, props.children as any);
   return a;
 }
+
+/** Alias for {@link Link}. */
+export const A = Link;
 
 // ─── Re-exports ────────────────────────────────────────────────────────────────
 
