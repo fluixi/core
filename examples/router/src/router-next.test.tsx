@@ -10,8 +10,13 @@ import { render, Suspense } from '@fluixi/kettlejs';
 import {
   Router,
   Outlet,
+  Redirect,
   useNavigate,
   useParams,
+  useParam,
+  useParamSelector,
+  useMatch,
+  useSearchParams,
   useRouteData,
   createMemoryHistory,
 } from '@fluixi/kettlejs/router-next';
@@ -281,5 +286,57 @@ describe('router-next Link', () => {
     nav('/dashboard');
     await tick(120);
     expect(host.querySelector('.dash')?.textContent).toContain('DASH 7');
+  });
+
+  // Hooks ported from the old router for API parity.
+  it('useParams<T> + useParam single key', async () => {
+    let p: any, one: any;
+    const routes = [{ path: '/u/:id', component: () => { p = useParams<{ id: string }>(); one = useParam('id'); return <div class="u">{p().id}</div>; } }];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/u/42')} />, host);
+    await tick();
+    expect(host.querySelector('.u')?.textContent).toBe('42');
+    expect(one()).toBe('42');
+  });
+
+  it('useParamSelector derives a value from params', async () => {
+    let sel: any;
+    const routes = [{ path: '/w/:ws/c/:ch', component: () => { sel = useParamSelector((x) => `${x.ws}-${x.ch}`); return <div />; } }];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/w/a/c/b')} />, host);
+    await tick();
+    expect(sel()).toBe('a-b');
+  });
+
+  it('useMatch matches the current pathname', async () => {
+    let m: any;
+    const routes = [{ path: '/p/:id', component: () => { m = useMatch('/p/:id'); return <div />; } }];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/p/9')} />, host);
+    await tick();
+    expect(m()?.params.id).toBe('9');
+  });
+
+  it('useSearchParams reads and writes the query', async () => {
+    let sp: any;
+    const routes = [{ path: '/s', component: () => { sp = useSearchParams(); return <div />; } }];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/s?q=hi')} />, host);
+    await tick();
+    expect(sp[0]().q).toBe('hi');
+    sp[1]({ q: 'bye' });
+    await tick();
+    expect(sp[0]().q).toBe('bye');
+  });
+
+  it('Redirect navigates to its target', async () => {
+    const routes = [
+      { path: '/from', component: () => <Redirect to="/to" /> },
+      { path: '/to', component: () => <div class="to">TO</div> },
+    ];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/from')} />, host);
+    await tick(50);
+    expect(host.querySelector('.to')?.textContent).toBe('TO');
   });
 });
