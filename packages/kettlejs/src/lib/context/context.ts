@@ -223,19 +223,21 @@ export interface ProviderProps<Child> {
  * ```
  */
 export function createProvider<T, S=Children>(props: ContextProvider<T, S>): Component<T> {
-  const { context, value, children, debug = false } = props;
+  const { context, value, debug = false } = props;
 
   // Resolve value if it's an accessor
   const resolvedValue =
     typeof value === 'function' ? (value as Accessor<T>)() : value;
 
-  // Use @fluixi/reactive's Provider
+  // Pass children lazily. Don't destructure props.children here — that evaluates a
+  // `get children()` getter eagerly, rendering the children (and any <Outlet/> in
+  // them) BEFORE this provider stamps its context. The reactive Provider reads
+  // children lazily, so the children render inside the stamped scope.
   const ReactiveProvider = context.Provider;
-  // console.log('reactive provider', children)
   return ReactiveProvider({
     value: resolvedValue,
-    children,
-    debug
+    get children() { return props.children; },
+    debug,
   });
 
   // // Wrap children in the reactive provider
