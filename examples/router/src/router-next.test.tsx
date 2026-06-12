@@ -12,6 +12,7 @@ import {
   Outlet,
   useNavigate,
   useParams,
+  useRouteData,
   createMemoryHistory,
 } from '@fluixi/kettlejs/router-next';
 import { lazy } from '@fluixi/kettlejs/router';
@@ -128,6 +129,35 @@ describe('router-next adapter (imperative backend)', () => {
     // is preserved across the sibling navigation.
     expect(layoutRuns).toBe(1);
     expect(host.querySelector('.app')).toBe(layoutEl);
+  });
+
+  it('loads route data (async) and exposes it via useRouteData under Suspense', async () => {
+    let loads = 0;
+    const routes = [
+      {
+        path: '/dash',
+        component: () => {
+          const data = useRouteData<{ name: string }>();
+          return <div class="dash">hi {data?.()?.name}</div>;
+        },
+        data: async () => {
+          loads++;
+          return { name: 'Ada' };
+        },
+      },
+    ];
+    const host = document.createElement('div');
+    render(
+      () => (
+        <Suspense fallback={<div class="fb">loading</div>}>
+          <Router routes={routes} history={createMemoryHistory('/dash')} />
+        </Suspense>
+      ),
+      host
+    );
+    await tick(60);
+    expect(host.querySelector('.dash')?.textContent).toContain('Ada');
+    expect(loads).toBe(1);
   });
 
   it('exposes route params reactively', async () => {
