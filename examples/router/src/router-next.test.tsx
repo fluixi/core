@@ -203,3 +203,32 @@ describe('router-next adapter (imperative backend)', () => {
     expect(host.querySelector('.user')?.textContent).toContain('42');
   });
 });
+
+import { Link, A } from '@fluixi/kettlejs/router-next';
+describe('router-next Link', () => {
+  const tick2 = async (ms = 30) => { await new Promise((r) => setTimeout(r, ms)); await flush(); };
+  it('navigates on click and applies active class', async () => {
+    const routes = [{ path: '/app', component: () => (
+      <div class="app">
+        <Link href="/app/home" class="nav" activeClass="on">home</Link>
+        <Link href="/app/settings" class="nav" activeClass="on">settings</Link>
+        <Outlet />
+      </div>
+    ), children: [
+      { path: '/app/home', component: () => <div class="home">HOME</div> },
+      { path: '/app/settings', component: () => <div class="settings">SET</div> },
+    ]}];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/app/home')} />, host);
+    await tick2();
+    const links = host.querySelectorAll('a.nav');
+    expect(links.length).toBe(2);
+    expect((links[0] as HTMLAnchorElement).getAttribute('href')).toBe('/app/home');
+    expect((links[0] as HTMLElement).className).toContain('on'); // home active
+    expect((links[1] as HTMLElement).className).not.toContain('on');
+    (links[1] as HTMLElement).click();
+    await tick2();
+    expect(host.querySelector('.settings')?.textContent).toBe('SET');
+  });
+  it('A is an alias for Link', () => { expect(A).toBe(Link); });
+});
