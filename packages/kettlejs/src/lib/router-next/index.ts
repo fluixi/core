@@ -31,6 +31,8 @@ import {
   createMemo,
   createRoot,
   createRenderEffect,
+  createResource,
+  getOwner,
   onCleanup,
   createComponent,
 } from '@fluixi/dom';
@@ -59,6 +61,19 @@ interface OutletSlot {
 const OutletContext = createContext<OutletSlot | undefined>();
 /** Params introduced at the nearest matched layer. */
 const LevelParamsContext = createContext<Record<string, string>>();
+/** Resolved data for the nearest matched layer that declared a `data` loader. */
+const RouteDataContext = createContext<(() => any) | undefined>();
+
+/** Args passed to a route's `data` loader. */
+interface RouteDataArgs {
+  params: () => Record<string, string>;
+  location: () => RouterLocation;
+}
+/** Accessors threaded into reconcile so data loaders see reactive params/location. */
+interface ReconcileDeps {
+  params: () => Record<string, string>;
+  location: () => RouterLocation;
+}
 
 // ─── Level reconciliation ────────────────────────────────────────────────────
 
@@ -74,7 +89,11 @@ interface LevelState {
 }
 
 /** Diff `matched` against the live `prev` levels, reusing the stable prefix. */
-function reconcile(matched: MatchedRoute<any>[], prev: LevelState[]): LevelState[] {
+function reconcile(
+  matched: MatchedRoute<any>[],
+  prev: LevelState[],
+  deps: ReconcileDeps
+): LevelState[] {
   // Pathless layers (no component) don't render a layer — drop them. Their params
   // still appear in the merged params exposed via RouterContext.
   const effective = matched.filter((m) => m.component);
@@ -99,13 +118,42 @@ function reconcile(matched: MatchedRoute<any>[], prev: LevelState[]): LevelState
     createRoot((dispose) => {
       const [child, setChild] = createSignal<any>(null);
       const slot: OutletSlot = { child };
+
+      // Load this level's data once (createResource integrates with the nearest
+      // Suspense and is owned by this level's root, so it is not re-fetched while
+      // the level is reused across sibling navigation).
+      let data: (() => any) | undefined;
+      const loader = (m.route as RouteDefinition<any>).data as
+        | ((args: RouteDataArgs, owner: unknown, isCancelled: () => boolean) => any)
+        | undefined;
+      if (typeof loader === 'function') {
+        let cancelled = false;
+        onCleanup(() => {
+          cancelled = true;
+        });
+        const owner = getOwner();
+        const [resource] = createResource(() =>
+          loader(
+            { params: deps.params, location: deps.location },
+            owner,
+            () => cancelled
+          )
+        );
+        data = resource as () => any;
+      }
+
       const node = OutletContext.Provider({
         value: slot,
         get children() {
-          return LevelParamsContext.Provider({
-            value: m.params,
+          return RouteDataContext.Provider({
+            value: data,
             get children() {
-              return createComponent(m.component, {});
+              return LevelParamsContext.Provider({
+                value: m.params,
+                get children() {
+                  return createComponent(m.component, {});
+                },
+              });
             },
           });
         },
@@ -161,9 +209,10 @@ export function Router<C = any>(props: RouterProps<C>) {
 
       // Reconcile whenever the match changes. Diffing reuses stable layouts so they
       // are not re-run/re-fetched on sibling navigation.
+      const deps: ReconcileDeps = { params: ctx.params, location: ctx.location };
       createRenderEffect(() => {
         const matched = state().match?.matched ?? [];
-        levels = reconcile(matched, levels);
+        levels = reconcile(matched, levels, deps);
         setRootNode(levels.length > 0 ? levels[0].node : null);
       });
 
@@ -208,6 +257,15 @@ export function useParams(): () => Record<string, string> {
 /** Params introduced at the nearest matched layer. */
 export function useLevelParams(): Record<string, string> {
   return useContext(LevelParamsContext) ?? {};
+}
+
+/**
+ * The resolved data for the nearest route that declared a `data` loader. Returns
+ * a resource accessor (read it to subscribe; it suspends under <Suspense> while
+ * loading), or undefined if no ancestor route has data.
+ */
+export function useRouteData<T = any>(): (() => T) | undefined {
+  return useContext(RouteDataContext) as (() => T) | undefined;
 }
 
 /** Reactive current location. */
