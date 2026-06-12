@@ -1,15 +1,19 @@
 /**
  * @fileoverview KettleJS adapter for the framework-agnostic @fluixi/router core.
  *
- * The core (@fluixi/router) resolves a URL to a parent → child match tree. This
- * adapter renders that tree TOP-DOWN: each layer is wrapped in an OutletContext
- * provider whose value is a thunk that renders the NEXT layer. <Outlet/> simply
- * reads that thunk and calls it.
+ * Renders the resolved match tree TOP-DOWN with LAYOUT REUSE:
  *
- * Why this fixes deeply nested <Outlet/>: there is no per-level outlet signal, no
- * deferred content memo, and no parentGate. A child is never built by re-entering
- * a still-building parent — it is a plain recursive render over a resolved array.
- * Layouts compose by construction at any depth.
+ *   - Each matched layer is rendered ONCE, in its own createRoot, and cached.
+ *   - On navigation the level stack is diffed by component reference; layers up
+ *     to the first change are reused, the rest are disposed and rebuilt.
+ *   - A layer exposes its child via an outlet SIGNAL. <Outlet/> reads that signal;
+ *     wiring each level's signal to the next level's node lets a parent's outlet
+ *     re-render when only the child changed — without re-running the parent.
+ *
+ * Why this fixes deeply nested <Outlet/>: a child is rendered in its OWN root and
+ * pushed into the parent's outlet signal. It is never built by re-entering a
+ * still-building parent (no parentGate, no deferred content memo), so layouts
+ * compose at any depth.
  */
 
 import {
@@ -22,7 +26,14 @@ import {
   type RouterLocation,
   type NavigateOptions,
 } from '@fluixi/router';
-import { createSignal, createMemo, onCleanup, createComponent } from '@fluixi/dom';
+import {
+  createSignal,
+  createMemo,
+  createRoot,
+  createRenderEffect,
+  onCleanup,
+  createComponent,
+} from '@fluixi/dom';
 // Use the REACTIVE context directly (not kettlejs createProvider): its Provider
 // reads `props.children` lazily, so a `get children()` getter is evaluated AFTER
 // the context is stamped. kettlejs's createProvider destructures children eagerly,
@@ -39,16 +50,79 @@ interface RouterCtxValue {
 
 const RouterContext = createContext<RouterCtxValue>();
 /**
- * Carries THIS level's child renderer. Boxed in an object because kettlejs's
- * createProvider RESOLVES function-valued context (it calls accessors) — a bare
- * thunk would be invoked at provide time. The object passes through untouched.
+ * Carries THIS level's outlet accessor (the child node signal). Boxed in an
+ * object because the reactive provider RESOLVES function-valued context.
  */
 interface OutletSlot {
-  render: () => any;
+  child: () => any;
 }
 const OutletContext = createContext<OutletSlot | undefined>();
-/** This level's own params (the delta it introduced). Plain object, re-provided per render. */
+/** Params introduced at the nearest matched layer. */
 const LevelParamsContext = createContext<Record<string, string>>();
+
+// ─── Level reconciliation ────────────────────────────────────────────────────
+
+interface LevelState {
+  component: any;
+  /** The rendered node for this layer (stable while the layer is reused). */
+  node: any;
+  /** Read this layer's outlet content (the next level's node, or null). */
+  child: () => any;
+  /** Set this layer's outlet content. */
+  setChild: (v: any) => void;
+  dispose: () => void;
+}
+
+/** Diff `matched` against the live `prev` levels, reusing the stable prefix. */
+function reconcile(matched: MatchedRoute<any>[], prev: LevelState[]): LevelState[] {
+  // Pathless layers (no component) don't render a layer — drop them. Their params
+  // still appear in the merged params exposed via RouterContext.
+  const effective = matched.filter((m) => m.component);
+
+  let firstChanged = 0;
+  while (
+    firstChanged < prev.length &&
+    firstChanged < effective.length &&
+    prev[firstChanged].component === effective[firstChanged].component
+  ) {
+    firstChanged++;
+  }
+
+  // Dispose changed/excess levels.
+  for (let i = firstChanged; i < prev.length; i++) prev[i].dispose();
+  const next = prev.slice(0, firstChanged);
+
+  // Build new levels (each in its own root so parent re-runs never dispose it).
+  for (let i = firstChanged; i < effective.length; i++) {
+    const m = effective[i];
+    let st!: LevelState;
+    createRoot((dispose) => {
+      const [child, setChild] = createSignal<any>(null);
+      const slot: OutletSlot = { child };
+      const node = OutletContext.Provider({
+        value: slot,
+        get children() {
+          return LevelParamsContext.Provider({
+            value: m.params,
+            get children() {
+              return createComponent(m.component, {});
+            },
+          });
+        },
+      });
+      st = { component: m.component, node, child, setChild, dispose };
+    });
+    next.push(st);
+  }
+
+  // Wire each level's outlet to the next level's node (null for the leaf). This is
+  // idempotent for reused levels (same node → signal no-ops), and re-renders the
+  // single outlet whose child actually changed.
+  for (let i = 0; i < next.length; i++) {
+    next[i].setChild(i + 1 < next.length ? next[i + 1].node : null);
+  }
+  return next;
+}
 
 // ─── Router component ────────────────────────────────────────────────────────
 
@@ -69,10 +143,6 @@ export function Router<C = any>(props: RouterProps<C>) {
 
   const [state, setState] = createSignal(router.state());
   const unsub = router.subscribe(setState);
-  onCleanup(() => {
-    unsub();
-    router.destroy();
-  });
 
   const ctx: RouterCtxValue = {
     router: router as CoreRouter<any>,
@@ -80,37 +150,30 @@ export function Router<C = any>(props: RouterProps<C>) {
     params: createMemo(() => state().match?.params ?? {}),
   };
 
-  // The view: render the resolved match tree top-down. Re-runs when the match
-  // changes (navigation). renderLevel is a plain recursion over the matched
-  // array — no re-entrant build.
-  const view = createMemo(() => {
-    const m = state().match;
-    if (!m || m.matched.length === 0) return null;
-    return renderLevel(m.matched, 0);
-  });
-
-  return RouterContext.Provider({ value: ctx, children: view });
-}
-
-/** Render matched[index] with its child wired as its <Outlet/> content. */
-function renderLevel(matched: MatchedRoute<any>[], index: number): any {
-  if (index >= matched.length) return null;
-  const level = matched[index];
-  // Pathless layout group (no component): transparently render the child.
-  if (!level.component) return renderLevel(matched, index + 1);
-
-  const slot: OutletSlot = { render: () => renderLevel(matched, index + 1) };
-  // Getters defer evaluation until AFTER each reactive provider stamps its
-  // context, so the layout component (and its <Outlet/>) can read both.
-  return OutletContext.Provider({
-    value: slot,
+  // The level stack is built inside the provider's children getter so RouterContext
+  // is already stamped — each level's createRoot then inherits it, and route
+  // components can call useRouter/useNavigate/useParams.
+  return RouterContext.Provider({
+    value: ctx,
     get children() {
-      return LevelParamsContext.Provider({
-        value: level.params,
-        get children() {
-          return createComponent(level.component, {});
-        },
+      let levels: LevelState[] = [];
+      const [rootNode, setRootNode] = createSignal<any>(null);
+
+      // Reconcile whenever the match changes. Diffing reuses stable layouts so they
+      // are not re-run/re-fetched on sibling navigation.
+      createRenderEffect(() => {
+        const matched = state().match?.matched ?? [];
+        levels = reconcile(matched, levels);
+        setRootNode(levels.length > 0 ? levels[0].node : null);
       });
+
+      onCleanup(() => {
+        unsub();
+        router.destroy();
+        for (const l of levels) l.dispose();
+      });
+
+      return rootNode;
     },
   });
 }
@@ -118,12 +181,15 @@ function renderLevel(matched: MatchedRoute<any>[], index: number): any {
 // ─── Outlet ───────────────────────────────────────────────────────────────────
 
 /**
- * Renders this layout's child route. Reads the child thunk from context and
- * calls it — a synchronous, top-down render. No outlet signal, no deferral.
+ * Renders this layout's child route. Returns a memo that tracks the outlet signal
+ * so the child updates when reconcile() pushes a new node — WITHOUT re-running the
+ * layout. A bare `slot.child()` would be read untracked (createComponent runs the
+ * component inside untrack), so it would never update on navigation.
  */
 export function Outlet() {
   const slot = useContext(OutletContext);
-  return slot ? slot.render() : null;
+  if (!slot) return null;
+  return createMemo(() => slot.child());
 }
 
 // ─── Hooks ──────────────────────────────────────────────────────────────────
