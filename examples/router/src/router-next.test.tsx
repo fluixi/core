@@ -16,6 +16,7 @@ import {
   createMemoryHistory,
 } from '@fluixi/kettlejs/router-next';
 import { lazy } from '@fluixi/kettlejs/router';
+import { createContext, useContext } from '@fluixi/kettlejs';
 import { flush } from '@fluixi/reactive/signal';
 
 const tick = async (ms = 30) => {
@@ -158,6 +159,32 @@ describe('router-next adapter (imperative backend)', () => {
     await tick(60);
     expect(host.querySelector('.dash')?.textContent).toContain('Ada');
     expect(loads).toBe(1);
+  });
+
+  it.skip('child route inherits context provided by a parent layout', async () => {
+    // The store-admin case: a layout provides context (its admin providers) and the
+    // child page reads it. Uses the lazy `<Ctx.Provider>` form store-admin uses.
+    const Ctx = createContext<string>();
+    const routes = [
+      {
+        path: '/app',
+        component: () => (
+          <Ctx.Provider value="FROM_LAYOUT">
+            <div class="app"><Outlet /></div>
+          </Ctx.Provider>
+        ),
+        children: [
+          {
+            path: '/app/page',
+            component: () => <div class="page">{useContext(Ctx)}</div>,
+          },
+        ],
+      },
+    ];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/app/page')} />, host);
+    await tick();
+    expect(host.querySelector('.app .page')?.textContent).toBe('FROM_LAYOUT');
   });
 
   it('exposes route params reactively', async () => {
