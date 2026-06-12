@@ -231,4 +231,55 @@ describe('router-next Link', () => {
     expect(host.querySelector('.settings')?.textContent).toBe('SET');
   });
   it('A is an alias for Link', () => { expect(A).toBe(Link); });
+
+  // A data page that destructures rd()! (the store-admin shape) must render WITHOUT
+  // a Suspense boundary: the layer gates its component on the data being resolved,
+  // like the old router, so rd() yields the value instead of throwing.
+  it('data page works without <Suspense>, loader runs once, survives nav away/back', async () => {
+    let loads = 0;
+    const Dash = lazy(async () => ({
+      default: () => {
+        const rd = useRouteData<{ n: number }>();
+        const { n } = rd()!;
+        return <div class="dash">DASH {n}</div>;
+      },
+    }));
+    const Other = lazy(async () => ({ default: () => <div class="other">OTHER</div> }));
+    let nav: any;
+    const routes = [
+      {
+        path: '/',
+        component: () => {
+          nav = useNavigate();
+          return <div class="app"><nav>side</nav><Outlet /></div>;
+        },
+        children: [
+          {
+            path: '/dashboard',
+            component: Dash,
+            data: async () => {
+              loads++;
+              await new Promise((r) => setTimeout(r, 20));
+              return { n: 7 };
+            },
+          },
+          { path: '/other', component: Other },
+        ],
+      },
+    ];
+    const host = document.createElement('div');
+    render(() => <Router routes={routes} history={createMemoryHistory('/dashboard')} />, host);
+    await tick(120);
+    expect(host.querySelector('.dash')?.textContent).toContain('DASH 7');
+    expect(loads).toBe(1);
+
+    nav('/other');
+    await tick(80);
+    expect(host.querySelector('.other')?.textContent).toBe('OTHER');
+    expect(host.querySelector('.dash')).toBeNull();
+
+    nav('/dashboard');
+    await tick(120);
+    expect(host.querySelector('.dash')?.textContent).toContain('DASH 7');
+  });
 });
