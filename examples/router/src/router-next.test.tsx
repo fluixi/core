@@ -161,7 +161,7 @@ describe('router-next adapter (imperative backend)', () => {
     expect(loads).toBe(1);
   });
 
-  it.skip('child route inherits context provided by a parent layout', async () => {
+  it('child route inherits context provided by a parent layout', async () => {
     // The store-admin case: a layout provides context (its admin providers) and the
     // child page reads it. Uses the lazy `<Ctx.Provider>` form store-admin uses.
     const Ctx = createContext<string>();
