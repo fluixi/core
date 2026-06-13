@@ -305,17 +305,7 @@ import {
 import { render as _render } from './render/index.js';
 // './core/index.js';
 
-export {
-  defineElement,
-  KettleElement,
-  KettleLitElement,
-  KettleController,
-  // kettleElementPlugin,
-  createComponent as createJsxComponent,
-  type EventName
-} from '@fluixi/element';
-
-export type * from '@fluixi/element';
+// Web Component support moved to @fluixi/element (wc-element repo) — import from there.
 
 export default {
   // Core

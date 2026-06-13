@@ -1,1 +1,0 @@
-export * from '@fluixi/components/index.js';
