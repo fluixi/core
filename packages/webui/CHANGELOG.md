@@ -1,5 +1,14 @@
 # @fluixi/webui
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [78dd576]
+  - @fluixi/dom@0.1.0
+  - @fluixi/jsx-runtime@0.1.0
+  - @fluixi/element@0.1.0
+
 ## 0.0.1
 
 ### Patch Changes
