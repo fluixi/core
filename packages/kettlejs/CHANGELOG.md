@@ -1,5 +1,27 @@
 # @fluixi/kettlejs
 
+## 0.2.0
+
+### Minor Changes
+
+- 614b3c3: Move web-component support to `@fluixi/element` (now its own repo, wc-element).
+
+  `@fluixi/kettlejs` no longer re-exports `defineElement`, `wrapElement`,
+  `KettleElement`, `KettleLitElement`, `KettleController`, `createComponent`
+  (`createJsxComponent`), or `kettleElementPlugin`. Import them from
+  `@fluixi/element` (and `@fluixi/element/plugin`) directly. `@fluixi/element` and
+  `@fluixi/webui` are no longer published from this repo.
+
+### Patch Changes
+
+- @fluixi/utils@0.2.0
+- @fluixi/reactive@0.2.0
+- @fluixi/dom@0.2.0
+- @fluixi/jsx-runtime@0.2.0
+- @fluixi/compiler@0.2.0
+- @fluixi/lit@0.2.0
+- @fluixi/vite-plugin@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
