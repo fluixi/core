@@ -1,5 +1,14 @@
 # @fluixi/example-counter
 
+## 0.0.3
+
+### Patch Changes
+
+- @fluixi/kettlejs@0.2.1
+- @fluixi/reactive@0.2.1
+- @fluixi/dom@0.2.1
+- @fluixi/jsx-runtime@0.2.1
+
 ## 0.0.2
 
 ### Patch Changes
