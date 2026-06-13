@@ -1,5 +1,13 @@
 # @fluixi/element
 
+## 0.1.0
+
+### Patch Changes
+
+- Updated dependencies [78dd576]
+  - @fluixi/dom@0.1.0
+  - @fluixi/reactive@0.1.0
+
 ## 0.0.1
 
 ### Patch Changes
