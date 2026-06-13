@@ -17,6 +17,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "src",
     "README.md"
   ],
   "exports": {
