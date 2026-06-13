@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "nx run-many -t build -p @fluixi/utils @fluixi/reactive @fluixi/router @fluixi/compiler @fluixi/dom @fluixi/lit @fluixi/babel-plugin-jsx @fluixi/element @fluixi/jsx-runtime @fluixi/kettlejs @fluixi/vite-plugin @fluixi/webui --parallel=false",
+    "build": "pnpm -r --filter \"./packages/*\" --workspace-concurrency=1 run build",
     "build:all": "nx run-many -t build --parallel=false",
     "lint": "nx affected -t lint",
     "test": "nx affected -t test",

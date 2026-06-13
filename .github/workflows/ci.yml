@@ -46,6 +46,15 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
+      # Build the publishable packages first (topological, via pnpm — no nx). The
+      # example vite configs import @fluixi/vite-plugin, so nx can't load the
+      # project graph until that package's dist exists; `nx affected` below would
+      # otherwise fail at graph processing on a fresh checkout.
+      - name: Build packages
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
       - name: Build affected
         run: pnpm nx affected -t build --parallel=3
         env:
