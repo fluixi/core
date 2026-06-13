@@ -1,10 +1,14 @@
 {
   "name": "@fluixi/example-router",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Routing example: providers -> Router -> Suspense -> lazy routes under the imperative backend (regression for owner-nesting / lazy children).",
-  "scripts": { "dev": "vite", "build": "vite build", "test": "vitest run" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run"
+  },
   "dependencies": {
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx-runtime": "workspace:*",
