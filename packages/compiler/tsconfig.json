@@ -4,8 +4,13 @@
   "include": [],
   "references": [
     {
+      "path": "../reactive"
+    },
+    {
+      "path": "../dom"
+    },
+    {
       "path": "./tsconfig.lib.json"
     }
-    
   ]
 }
