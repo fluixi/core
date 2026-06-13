@@ -262,28 +262,6 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
-  packages/element:
-    dependencies:
-      '@fluixi/dom':
-        specifier: workspace:*
-        version: link:../dom
-      '@fluixi/reactive':
-        specifier: workspace:*
-        version: link:../reactive
-      lit:
-        specifier: ^3.3.1
-        version: 3.3.3
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-    devDependencies:
-      '@bambiste/mix-builder':
-        specifier: '*'
-        version: 0.0.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(typescript@5.9.3)
-      inquirer:
-        specifier: ^13.2.5
-        version: 13.4.3(@types/node@22.19.19)
-
   packages/jsx-runtime:
     dependencies:
       '@fluixi/dom':
@@ -338,9 +316,6 @@ importers:
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
-      '@fluixi/element':
-        specifier: workspace:*
-        version: link:../element
       '@fluixi/jsx-runtime':
         specifier: workspace:*
         version: link:../jsx-runtime
@@ -513,142 +488,6 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
-
-  packages/webui:
-    dependencies:
-      '@fluixi/components':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/dom':
-        specifier: workspace:*
-        version: link:../dom
-      '@fluixi/element':
-        specifier: workspace:*
-        version: link:../element
-      '@fluixi/flx-accordion':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-alert':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-avatar':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-base':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-button':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-card':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-checkbox':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-cropper':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-datepicker':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-daterangepicker':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-dialog':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-draggable':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-drawer':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-dropdown':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-file-uploader':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-form-field':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-google-maps':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-horizontal-card-item':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-icon':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-lang-selector':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-list':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-oauth2':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-paginator':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-popover':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-progress':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-radio':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-scrollable-container':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-select':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-sidenav':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-slider':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-spinner':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-switch':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-table':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-tabs':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-theme-selector':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/flx-vertical-card-asset':
-        specifier: '*'
-        version: 0.0.0
-      '@fluixi/helpers':
-        specifier: '*'
-        version: 0.0.0(lit@3.3.3)
-      '@fluixi/jsx-runtime':
-        specifier: workspace:*
-        version: link:../jsx-runtime
-      lit:
-        specifier: ^3.3.1
-        version: 3.3.3
-    devDependencies:
-      '@bambiste/mix-builder':
-        specifier: '*'
-        version: 0.0.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(typescript@5.9.3)
-      inquirer:
-        specifier: ^13.4.2
-        version: 13.4.3(@types/node@22.19.19)
 
 packages:
 
@@ -2015,122 +1854,6 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fluixi/components@0.0.0':
-    resolution: {integrity: sha512-NWoyglMVkhLwOUAIch3J5LmT66bR8hi9DShjXz8EFVR1oSj3vYrSFci1oHlhDE1IXJ+uqSj9RwmMBjhGWs3Hfg==, tarball: https://npm.pkg.github.com/download/@fluixi/components/0.0.0/d676be6825aaf743500fd21d1a13a8e7f4a6e961}
-
-  '@fluixi/flx-accordion@0.0.0':
-    resolution: {integrity: sha512-b3IDkCmh4eBEJNUHO2/eK+PPyS9v9un9IImqp1gXoV7s21ff+TllrEpeqtoasZcKJxwaDcJ6k5QI0UvgGgKEcQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-accordion/0.0.0/ab5cfbbf370cbad481186ffb7df93d1c7375f415}
-
-  '@fluixi/flx-alert@0.0.0':
-    resolution: {integrity: sha512-GxTfWhJmeIcEVdpGSfkSM5KXRuDun4ekI+t50Vv4OFkYfWdLU3sNyWFEmniNQ7mnNs0GUoYzzb/LyeV/qDX9fg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-alert/0.0.0/e4ebd207675223527ae3112ffbd96f7325414f03}
-
-  '@fluixi/flx-avatar@0.0.0':
-    resolution: {integrity: sha512-ZNv8FlBlcU7OSlgt3e/gTfjPpIn/ICn5zW3IKwKoUsRo+vSy8JEt6GttFybmPs8RyQIntL/0fY5lLqRTeVCJCA==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-avatar/0.0.0/b80274970870045f0d2c767c19b42451a39277a5}
-
-  '@fluixi/flx-base@0.0.0':
-    resolution: {integrity: sha512-RT/Z0MBDewcETx1WxzlrveKUwAHr+IfiDyiWQR2mVeawsprpzlV9EuiLiMn2Ih4izXMpoe64vz6b3caGe0WdnQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-base/0.0.0/33e3f87874a46267b6a649dd415b840e8c2c5a53}
-
-  '@fluixi/flx-button@0.0.0':
-    resolution: {integrity: sha512-OboYCSHNlIXiisJsD/Npt1jSbHBR9np4eKPiuWUBBTFMK0wl3m2j1+KmYuIEI1IYf3csJNu+jmyOuaX69clxYA==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-button/0.0.0/4eec4328c73ab15427ab07e5e373154a311d5deb}
-
-  '@fluixi/flx-card@0.0.0':
-    resolution: {integrity: sha512-EvRN5kcceuQAtDPsEdURcQMzqm6G5TRnh8eUfdVD/VXybunU/l19SQaQsvnFIBCrp8Iz9DoYMcTex3nxi9CE8Q==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-card/0.0.0/3777ce4d43e5b075eb04986400bf788fed54793f}
-
-  '@fluixi/flx-checkbox@0.0.0':
-    resolution: {integrity: sha512-DsxuDl5ReQyr2hqhpRLcT6FQoz7mmRzdQtXH4D6exe/zx7nJlWaCERI1aAyi1+7bPakXA96UiamVWoh8aUYTMg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-checkbox/0.0.0/84be444b956f11d3cfbdc4750fbc318185face89}
-
-  '@fluixi/flx-cropper@0.0.0':
-    resolution: {integrity: sha512-CuR83vpfVGL+3vfPWmx5EHj1x2EhqpgzTx/f0kAuWElmVhHNJXWySvbLXHu+j4uVbUCyxbOUJHlrLSFeHYdP9w==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-cropper/0.0.0/de322a590fcbb1739f4de88563736a892d4d7cd7}
-
-  '@fluixi/flx-datepicker@0.0.0':
-    resolution: {integrity: sha512-fxg7yeqjMTsBTUhh5CCUpMY6dIcwmGYBy16ht1sQPVcYMRbaYlm3st1FOGXih1x/JG32kIJlwCrhXQpWaIQ2KA==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-datepicker/0.0.0/f419759d2127318c8ad4f7831f6ea0523412bcbd}
-
-  '@fluixi/flx-daterangepicker@0.0.0':
-    resolution: {integrity: sha512-CGphbvi1m9vzhGBa9vO/g7pr7cMRSmwVtcrFC8A2iIRugpLpSRyheIu3Ggr831xixBKt/5G3qCIP8mU9dXHUbQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-daterangepicker/0.0.0/f43495beb6ca2f6ae6edaadc8f339a78f6acc543}
-
-  '@fluixi/flx-dialog@0.0.0':
-    resolution: {integrity: sha512-NUI4t8iF9FlSZgbYmKEJxbBBxobZltQDkoCqqqTtJyvckc3ccMPj5XOlGJjPCRJ6/O1kD7nSZxreCQThIMBZHQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-dialog/0.0.0/9cbe056253218fb7055b6ed6469555f86631b5bb}
-
-  '@fluixi/flx-draggable@0.0.0':
-    resolution: {integrity: sha512-coZ/WT8ya/+UQp81UnaXXNoxHLBGovSBms8pZG/57CuRCM5XDbsGueQ079feD0ikE5Gm7/AVHUL96LYTmkSssw==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-draggable/0.0.0/08e0323b163c7dbe18484e705085bb3567a8d57a}
-
-  '@fluixi/flx-drawer@0.0.0':
-    resolution: {integrity: sha512-jOD7i8F53hoPHT5dJz/JXZdCaPMChhDxGf0fS9rLN9k3pvM9CXWXsp2kTCxPzzlj6bI/cYyo1Xd1AIQRd8eHwg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-drawer/0.0.0/255d461887f1d1f0980ef705fe54931905cd0227}
-
-  '@fluixi/flx-dropdown@0.0.0':
-    resolution: {integrity: sha512-yvwyOObN+wa6r/QWuTYgVDp0Z5E1CEtE/s4i1+cH1Be1BuIIIVIgMxDQbQA1MXmKk5tUYmbCOrturVDqjn5Spg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-dropdown/0.0.0/ee0d119437429350049b345459ca59c59c1426bc}
-
-  '@fluixi/flx-file-uploader@0.0.0':
-    resolution: {integrity: sha512-GUJnaAIfW4uB5CpPr53aO1GgzVl1I7RYl5nKrD5R54BVpunGx/pmJOko8uAFjB8V0Thlgxd5bGrihjOCXuiDiQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-file-uploader/0.0.0/43f08fbb2e84ffa43a425fa6a4ee31de8b28fa03}
-
-  '@fluixi/flx-form-field@0.0.0':
-    resolution: {integrity: sha512-rbSe5QfEgx8sRzaagO/ExxCx8Q4Es+qIdPe6AS3W1y1yVrrBXzpTUgGmtTAm+u+/hazKS4o/C4RzixM/POtysg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-form-field/0.0.0/9f0448fde29f3606964f6cc16b00df8a69b33010}
-
-  '@fluixi/flx-google-maps@0.0.0':
-    resolution: {integrity: sha512-R+zpQknOfK2QtQdkIDOBPv/1T8CcnlZ62Vh8bIjWBh8sDBiGAi6tTm42OWHKCRKRBZqJRto3/w+nMTzQxgdmvg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-google-maps/0.0.0/7563be47c2153d9c6c3247ee5a844761ab4fb94a}
-
-  '@fluixi/flx-horizontal-card-item@0.0.0':
-    resolution: {integrity: sha512-0xCc3ng+ayeVOG4QdHmo6ga1qMJphhsjCH6BO4miF4YNS9FMv/+1uHsPWX4W5N5uaPUHHYfAwca59wEAPrEPJg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-horizontal-card-item/0.0.0/d7e8818fa621b5eba3e4c039fa4ad3c88490cc3f}
-
-  '@fluixi/flx-icon@0.0.0':
-    resolution: {integrity: sha512-o3ZVgBwZZbwe/1rkTM9Ue/fN1NoYSqYFtn1hwhPtePWh9O4Ok45Sc8IzxvbLeSODZHKnMlgnGJA3DhZMZSJmpQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-icon/0.0.0/590b2b750025a64787470a17a237d49e94b0a32c}
-
-  '@fluixi/flx-lang-selector@0.0.0':
-    resolution: {integrity: sha512-1oMCCm9/n8Im9l6l76G6qssLQdtW8bz2eIeKTKqlaQkbFwfw1GznXwd2Du8X7lZE6h9aclz4eSNVokKMUpOMhg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-lang-selector/0.0.0/6f54babacd299c436cf81d710b1e6a95508e1b21}
-
-  '@fluixi/flx-list@0.0.0':
-    resolution: {integrity: sha512-HwtwdkjmMJptyw/4DD+ypxv+UiBn05nUuiqoHu7Gs7IPs7eavYYCJu+SZlny4ra6t0HeXT6qofFtydXk/qsYMg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-list/0.0.0/d99dd771151bdc0f5fc1c2970534a673938e6214}
-
-  '@fluixi/flx-oauth2@0.0.0':
-    resolution: {integrity: sha512-hfD0HEZqHMG23E6qsU5KuEG5T55mMq4gnCa2E+ORZHNn9Lp6/IDGO2a15zK2qeMwgST9+9zkLX7es5lAvWOHHw==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-oauth2/0.0.0/e3740e3bb5746449838631c82ea71be72c19af42}
-
-  '@fluixi/flx-paginator@0.0.0':
-    resolution: {integrity: sha512-X+G/41iCxse1FEBGiiaPxBjehqDYf9X4UBmFST0EV4vunpC9YPijmva8n1ZDK9wHPRN8E6fbKUmPB968Op8RoA==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-paginator/0.0.0/b2535ca20f6792ffc9204f86466cebfefd768381}
-
-  '@fluixi/flx-popover@0.0.0':
-    resolution: {integrity: sha512-+CRy43bAkj9kRiZF0sMECOLSXHMDoARu6zAbzsjRtz7LoPkR8thZ9Yl56uFXOQ+Jt2VciEBAlRtmMXnj0Nvl+Q==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-popover/0.0.0/8e43fe54b2bf82c0b9097db11f3510575688d0cb}
-
-  '@fluixi/flx-progress@0.0.0':
-    resolution: {integrity: sha512-iguVFWmA0jEjYdy3z9xIIIkOyXA3oA/V7CWB5GYunjk+E/gZDAvz0+rNgilOkz5p/AIXyYzxJG/80S1sHMBAIA==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-progress/0.0.0/7ea7df076ee4af9e653887b3f224868f6158003f}
-
-  '@fluixi/flx-radio@0.0.0':
-    resolution: {integrity: sha512-HnnjV0yCn+MllIrQjyJ9WXZv9dJ6HsebCcXgSo/k+JGvFZcrLwnjp5MhTxryTM1V25W4cFkikC2jj8gELmDzQQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-radio/0.0.0/54fd876d25e446861385556d1baf48ae566a5565}
-
-  '@fluixi/flx-scrollable-container@0.0.0':
-    resolution: {integrity: sha512-p8642mjbBw0BoId+3oNEkr8qC0dLvRoFLdrnx8lgIwZyXPldtwJIVqcFXqajwAHH1rFY4whpUcl1nzCvt2Uj5A==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-scrollable-container/0.0.0/15da03d8385f0e6a3840fc55a0851d32e6f64f78}
-
-  '@fluixi/flx-select@0.0.0':
-    resolution: {integrity: sha512-Ybc777zEe4H0HxzHzw3KLE+gOupY2BuCGlb5kU7zObTHf+s4piY8Wj2k1Rwz8xq6B26VZsB1MfXcIw/mMCX6Pg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-select/0.0.0/2f8dee81750cba212944faad1867bd848c5674d9}
-
-  '@fluixi/flx-sidenav@0.0.0':
-    resolution: {integrity: sha512-oFdgo5kXVbKEjXJaDWP1CjkXVm1j4PRdLEEl8OrkswLkllnLMAltTwo5E6tKqeiaJnIPWBMP7l6KJRZq67LYGQ==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-sidenav/0.0.0/850129d93845f78d3e47c4eaf3f8c84ecebe1319}
-
-  '@fluixi/flx-slider@0.0.0':
-    resolution: {integrity: sha512-sQ+ZJKq/vHl1EB9QFM7bgH0tfgHEw/HyeFM03i7JkGn5GMD0ydX+cwajslROpuLV7NBNkJFkW7Fy+UMYy8yR+A==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-slider/0.0.0/5bd1252cc3081e7ab1b37a31c19b3acf2bc621bb}
-
-  '@fluixi/flx-spinner@0.0.0':
-    resolution: {integrity: sha512-U4nT1GRwknwid6MuLvc948r0sVHXmnYzO7uOitCQg/ee4p9Mm44eQ9VjsW6lKA6uXNwNN2jdhtZTSMFp8h7Z1Q==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-spinner/0.0.0/a2d66552b1838adf8f2ab511d01b08fb18c9f699}
-
-  '@fluixi/flx-switch@0.0.0':
-    resolution: {integrity: sha512-oiIWLzSMKtkc8imTgxJsaVXWXdLB3HdtGgC04RUQhKgy3BbXTku2ri0Ox4QutdEe8RJH3ZmSNO7XmonISUX96A==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-switch/0.0.0/3c5849c0fa968b9d1bb20f2d4bfd9d94cbc8063a}
-
-  '@fluixi/flx-table@0.0.0':
-    resolution: {integrity: sha512-CFUbjg+F8SQRTfxT19XPCe+nLyYN2i9oudBGKsdpkqzE2oZqHUdDm6T+vRry3hysrE8IQ1LQfr/7DCkwSq4ZKw==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-table/0.0.0/70c77acafc8f3f30146aa01e278d5f2d957a00c8}
-
-  '@fluixi/flx-tabs@0.0.0':
-    resolution: {integrity: sha512-36zcUT5bOd3u0D33tMlPRRCHkI+nLj1IXqRMZOPABvUMpS1gc0RCXLV6je+uzf9N9spC6YxSfdvE/xNg9TMC/w==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-tabs/0.0.0/ca6d625461da75fe9d448488400ba90246bf1d15}
-
-  '@fluixi/flx-theme-selector@0.0.0':
-    resolution: {integrity: sha512-TDd7iD1AyrThNu4XIJru8fif24mx4nkSNSLPSeUDxGO8/Veov8N3DaCL0RkHcyFKyILLlPaIRrklmw4D3k8N1A==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-theme-selector/0.0.0/c4645558fbcfc11792f82e22cb628faf638677c6}
-
-  '@fluixi/flx-vertical-card-asset@0.0.0':
-    resolution: {integrity: sha512-VgoYi1mPGBgrJsJD5yCC8oLZuRNEq8MzAuoiOlTS8Ubt79Y/aCOelOYPcLuPIZ2GrFyS4fR91RWWQQfh9u1AIg==, tarball: https://npm.pkg.github.com/download/@fluixi/flx-vertical-card-asset/0.0.0/7ad0cb8ff79ac327ffcfc1225c01d2f369c1ed08}
-
-  '@fluixi/helpers@0.0.0':
-    resolution: {integrity: sha512-xttjlcLOp9y0gDjTyW4HYElJypyRl2y2/z/J3VnAgjcNb+l2pWZnVn5oyXFQpLU52c/HQ7VUXVxqa7cHLD6wkg==, tarball: https://npm.pkg.github.com/download/@fluixi/helpers/0.0.0/15351897746d81a2e21d12bfbfc7d61c75c9b085}
-    peerDependencies:
-      lit: ^3.3.0
-
   '@inquirer/ansi@2.0.7':
     resolution: {integrity: sha512-3eTuUO1vH2cZm2ZKHeQxnOqlTi9EfZDGgIe3BL3I4u+rJHocr9Fz86M4fjYABPvFnQG/gGK551HqDiIcETwU6Q==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^20.17.0'}
@@ -2337,9 +2060,6 @@ packages:
   '@lit-labs/ssr@3.3.1':
     resolution: {integrity: sha512-JlF1PempxvzrGEpRFrF+Ki0MHzR3HA51SK8Zv0cFpW9p0bPW4k0FeCwrElCu371UEpXF7RcaE2wgYaE1az0XKg==}
     engines: {node: '>=13.9.0'}
-
-  '@lit/context@1.1.6':
-    resolution: {integrity: sha512-M26qDE6UkQbZA2mQ3RjJ3Gzd8TxP+/0obMgE5HfkfLhEEyYE3Bui4A5XHiGPjy0MUGAyxB3QgVuw2ciS0kHn6A==}
 
   '@lit/reactive-element@2.1.2':
     resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
@@ -5075,11 +4795,6 @@ packages:
 
   lit-html@3.3.3:
     resolution: {integrity: sha512-el8M6jK2o3RXBnrSHX3ZKrsN8zEV63pSExTO1wYJz7QndGYZ8353e2a5PPX+qHe2aGayfnchQmkAojaWAREOIA==}
-
-  lit-modal-portal@0.7.1:
-    resolution: {integrity: sha512-mgffYo5n3CvTCbn+Uqrx/BnJ+fdUF+g86IJ8sIIg9m84ST1XDPUpZDatvqCrBpGj/7t4RaGTyn0QppL849/qTA==}
-    peerDependencies:
-      lit: '>=2'
 
   lit@3.3.3:
     resolution: {integrity: sha512-fycuvZg/hkpozL00lm1pEJH5nN/lr9ZXd6mJI2HSN4+Bzc+LDNdEApJ6HFbPkdFNHLvOplIIuJvxkS4XUxqirw==}
@@ -8359,259 +8074,6 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
-  '@fluixi/components@0.0.0':
-    dependencies:
-      '@fluixi/flx-accordion': 0.0.0
-      '@fluixi/flx-alert': 0.0.0
-      '@fluixi/flx-avatar': 0.0.0
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/flx-button': 0.0.0
-      '@fluixi/flx-card': 0.0.0
-      '@fluixi/flx-checkbox': 0.0.0
-      '@fluixi/flx-cropper': 0.0.0
-      '@fluixi/flx-datepicker': 0.0.0
-      '@fluixi/flx-daterangepicker': 0.0.0
-      '@fluixi/flx-dialog': 0.0.0
-      '@fluixi/flx-draggable': 0.0.0
-      '@fluixi/flx-drawer': 0.0.0
-      '@fluixi/flx-dropdown': 0.0.0
-      '@fluixi/flx-file-uploader': 0.0.0
-      '@fluixi/flx-form-field': 0.0.0
-      '@fluixi/flx-google-maps': 0.0.0
-      '@fluixi/flx-horizontal-card-item': 0.0.0
-      '@fluixi/flx-icon': 0.0.0
-      '@fluixi/flx-lang-selector': 0.0.0
-      '@fluixi/flx-list': 0.0.0
-      '@fluixi/flx-oauth2': 0.0.0
-      '@fluixi/flx-paginator': 0.0.0
-      '@fluixi/flx-popover': 0.0.0
-      '@fluixi/flx-progress': 0.0.0
-      '@fluixi/flx-radio': 0.0.0
-      '@fluixi/flx-scrollable-container': 0.0.0
-      '@fluixi/flx-select': 0.0.0
-      '@fluixi/flx-sidenav': 0.0.0
-      '@fluixi/flx-slider': 0.0.0
-      '@fluixi/flx-spinner': 0.0.0
-      '@fluixi/flx-switch': 0.0.0
-      '@fluixi/flx-table': 0.0.0
-      '@fluixi/flx-tabs': 0.0.0
-      '@fluixi/flx-theme-selector': 0.0.0
-      '@fluixi/flx-vertical-card-asset': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-      lit-html: 3.3.3
-
-  '@fluixi/flx-accordion@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-alert@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-avatar@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-base@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      '@lit/context': 1.1.6
-      lit: 3.3.3
-
-  '@fluixi/flx-button@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-card@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-checkbox@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-cropper@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-datepicker@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-daterangepicker@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-dialog@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-      lit-modal-portal: 0.7.1(lit@3.3.3)
-
-  '@fluixi/flx-draggable@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-drawer@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-dropdown@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-file-uploader@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-form-field@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-google-maps@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-horizontal-card-item@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-icon@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-lang-selector@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-list@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-oauth2@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-paginator@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-popover@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-progress@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-radio@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-scrollable-container@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-select@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-sidenav@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/flx-icon': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-slider@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-spinner@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-switch@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-table@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-tabs@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-theme-selector@0.0.0':
-    dependencies:
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/flx-vertical-card-asset@0.0.0':
-    dependencies:
-      '@fluixi/flx-base': 0.0.0
-      '@fluixi/helpers': 0.0.0(lit@3.3.3)
-      lit: 3.3.3
-
-  '@fluixi/helpers@0.0.0(lit@3.3.3)':
-    dependencies:
-      lit: 3.3.3
-
   '@inquirer/ansi@2.0.7': {}
 
   '@inquirer/checkbox@5.2.1(@types/node@22.19.19)':
@@ -8821,10 +8283,6 @@ snapshots:
       lit-html: 3.3.3
       node-fetch: 3.3.2
       parse5: 7.3.0
-
-  '@lit/context@1.1.6':
-    dependencies:
-      '@lit/reactive-element': 2.1.2
 
   '@lit/reactive-element@2.1.2':
     dependencies:
@@ -11820,10 +11278,6 @@ snapshots:
   lit-html@3.3.3:
     dependencies:
       '@types/trusted-types': 2.0.7
-
-  lit-modal-portal@0.7.1(lit@3.3.3):
-    dependencies:
-      lit: 3.3.3
 
   lit@3.3.3:
     dependencies:

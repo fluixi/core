@@ -34,12 +34,6 @@
       "path": "./packages/lit"
     },
     {
-      "path": "./packages/element"
-    },
-    {
-      "path": "./packages/webui"
-    },
-    {
       "path": "./packages/router"
     }
   ]

@@ -41,9 +41,6 @@
       "path": "../jsx-runtime"
     },
     {
-      "path": "../element"
-    },
-    {
       "path": "../dom"
     },
     {

@@ -41,9 +41,6 @@
       "path": "../jsx-runtime/tsconfig.lib.json"
     },
     {
-      "path": "../element/tsconfig.lib.json"
-    },
-    {
       "path": "../dom/tsconfig.lib.json"
     },
     {

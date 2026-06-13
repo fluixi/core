@@ -123,7 +123,6 @@
   "dependencies": {
     "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
-    "@fluixi/element": "workspace:*",
     "@fluixi/jsx-runtime": "workspace:*",
     "@fluixi/lit": "workspace:*",
     "@fluixi/vite-plugin": "workspace:*",

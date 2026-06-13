@@ -302,17 +302,8 @@ export type {
   // RouterOptions,
 } from './router/index.js';
 
-// Web Component support (re-exported from @fluixi/element)
-export {
-  defineElement,
-  wrapElement,
-  KettleElement,
-  KettleLitElement,
-  KettleController,
-  createComponent as createJsxComponent,
-} from '@fluixi/element';
-
-export type * from '@fluixi/element/types';
+// Web Component support moved to @fluixi/element (now in the wc-element repo).
+// Import { defineElement, KettleElement, createComponent, ... } from '@fluixi/element'.
 
 /**
  * Framework version

@@ -7,7 +7,6 @@
       "@fluixi/utils",
       "@fluixi/reactive",
       "@fluixi/dom",
-      "@fluixi/element",
       "@fluixi/babel-plugin-jsx",
       "@fluixi/jsx-runtime",
       "@fluixi/kettlejs",
