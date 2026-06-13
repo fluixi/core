@@ -7,10 +7,10 @@
       "path": "../reactive"
     },
     {
-      "path": "../dom"
+      "path": "../lit"
     },
     {
-      "path": "../babel"
+      "path": "../dom"
     },
     {
       "path": "./tsconfig.lib.json"

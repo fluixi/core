@@ -10,5 +10,22 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../../packages/reactive"
+    },
+    {
+      "path": "../../packages/kettlejs"
+    },
+    {
+      "path": "../../packages/jsx-runtime"
+    },
+    {
+      "path": "../../packages/dom"
+    },
+    {
+      "path": "../../packages/vite-plugin"
+    }
+  ]
 }

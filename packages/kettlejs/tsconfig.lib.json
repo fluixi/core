@@ -26,7 +26,16 @@
       "path": "../utils/tsconfig.lib.json"
     },
     {
+      "path": "../router/tsconfig.lib.json"
+    },
+    {
       "path": "../reactive/tsconfig.lib.json"
+    },
+    {
+      "path": "../vite-plugin/tsconfig.lib.json"
+    },
+    {
+      "path": "../lit/tsconfig.lib.json"
     },
     {
       "path": "../jsx-runtime/tsconfig.lib.json"
@@ -39,12 +48,6 @@
     },
     {
       "path": "../compiler/tsconfig.lib.json"
-    },
-    {
-      "path": "../lit/tsconfig.lib.json"
-    },
-    {
-      "path": "../vite-plugin/tsconfig.lib.json"
     }
   ],
   "exclude": [

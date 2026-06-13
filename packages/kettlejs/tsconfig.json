@@ -26,7 +26,16 @@
       "path": "../utils"
     },
     {
+      "path": "../router"
+    },
+    {
       "path": "../reactive"
+    },
+    {
+      "path": "../vite-plugin"
+    },
+    {
+      "path": "../lit"
     },
     {
       "path": "../jsx-runtime"
@@ -36,6 +45,9 @@
     },
     {
       "path": "../dom"
+    },
+    {
+      "path": "../compiler"
     },
     {
       "path": "./tsconfig.lib.json"
