@@ -96,7 +96,17 @@ function attrName(name: t.JSXAttribute['name']): string {
  */
 function isReactiveExpr(node: t.Expression): boolean {
   if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) return true;
-  if (t.isMemberExpression(node) || t.isOptionalMemberExpression(node)) return true;
+  if (t.isMemberExpression(node) || t.isOptionalMemberExpression(node)) {
+    // `props.children` (any `.children` access) is a stable subtree reference,
+    // not a reactive value. Compiling it to a `() => props.children` thunk adds
+    // an insert layer that fully unwraps the children's Suspense/memo to a static
+    // node, severing the reactive binding — so a nested lazy/Suspense that
+    // resolves later never propagates up through the component-children hop.
+    // Passing it through non-reactive (insert(el, props.children)) keeps the
+    // child's memo intact so insert binds to it (mirrors a direct <Outlet/>).
+    if (!node.computed && t.isIdentifier(node.property, { name: 'children' })) return false;
+    return true;
+  }
   if (t.isConditionalExpression(node)) {
     return isReactiveExpr(node.test) || isReactiveExpr(node.consequent) || isReactiveExpr(node.alternate);
   }
@@ -154,13 +164,34 @@ function buildProps(
   return props;
 }
 
+/** Canonical JSX text cleaning — kept identical to plugin.ts cleanJSXText. */
+function cleanJSXText(value: string): string {
+  const lines = value.split(/\r\n|\n|\r/);
+  let lastNonEmpty = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (/[^ \t]/.test(lines[i])) lastNonEmpty = i;
+  }
+  let out = '';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].replace(/\t/g, ' ');
+    if (i !== 0) line = line.replace(/^ +/, '');
+    if (i !== lines.length - 1) line = line.replace(/ +$/, '');
+    if (!line) continue;
+    if (i !== lastNonEmpty) line += ' ';
+    out += line;
+  }
+  return out;
+}
+
 function buildChildren(children: t.JSXElement['children'], used: Set<string>): IRNode[] {
   const out: IRNode[] = [];
   for (const child of children) {
     if (t.isJSXText(child)) {
-      const text = child.value.replace(/\s+/g, ' ');
-      if (text && text !== ' ') out.push({ kind: 'text', value: text });
-      else if (text === ' ' && out.length > 0) out.push({ kind: 'text', value: ' ' });
+      // Canonical JSX whitespace (kept in sync with plugin.ts cleanJSXText):
+      // drop whitespace-only text spanning a newline so a lone child stays lone
+      // (an array insert won't reactively bind a memo/component inside it).
+      const text = cleanJSXText(child.value);
+      if (text) out.push({ kind: 'text', value: text });
     } else if (t.isJSXExpressionContainer(child)) {
       if (!t.isJSXEmptyExpression(child.expression)) {
         const expr = child.expression as t.Expression;
