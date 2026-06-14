@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createNativeElement, insert, spread } from '@fluixi/dom';
+import { createResource } from '@fluixi/reactive/signal';
 import {
   startServer,
   renderToString,
   renderRequest,
+  renderRequestAsync,
   createHtmlDocument,
   getRequestEvent,
   runWithRequestContext,
@@ -40,6 +42,16 @@ describe('@fluixi/server', () => {
   it('renderToString with an explicit event', () => {
     const html = renderToString(() => App({ url: '/z' }), { event: { url: '/z' } });
     expect(html).toBe('<div id="app">url=/z|prop=/z</div>');
+  });
+
+  it('renderRequestAsync awaits a data loader (ALS auto-injected on import)', async () => {
+    const DataApp = ({ url }: { url: string }) => {
+      const [data] = createResource(() => new Promise<string>((r) => setTimeout(() => r(`data:${url}`), 5)));
+      const div = createNativeElement('div') as any;
+      insert(div, () => data() ?? '…', null);
+      return div;
+    };
+    expect(await renderRequestAsync(DataApp, { url: '/p' })).toBe('<div>data:/p</div>');
   });
 
   it('isolates concurrent interleaved renders (ALS auto-injected on import)', async () => {

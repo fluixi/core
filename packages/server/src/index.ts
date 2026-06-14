@@ -18,6 +18,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   renderToString,
+  renderToStringAsync,
   serializeNode,
   getRequestEvent,
   getRequestContext,
@@ -35,6 +36,7 @@ setRequestStore(new AsyncLocalStorage<RequestContext>());
 
 export {
   renderToString,
+  renderToStringAsync,
   serializeNode,
   getRequestEvent,
   getRequestContext,
@@ -90,6 +92,14 @@ export function renderRequest(app: (props: { url: string }) => any, event: Reque
   return renderToString(() => app({ url: event.url ?? '/' }), { event });
 }
 
+/** Async variant — awaits resources/Suspense before serializing. */
+export function renderRequestAsync(
+  app: (props: { url: string }) => any,
+  event: RequestEvent,
+): Promise<string> {
+  return renderToStringAsync(() => app({ url: event.url ?? '/' }), { event });
+}
+
 /** Render a full HTML document for a request. */
 export function renderRequestToPage(
   app: (props: { url: string }) => any,
@@ -112,5 +122,10 @@ export function startServer(App: (props: { url: string }) => any) {
   return {
     render: (url: string) => renderRequest(App, { url }),
     page: (url: string, opts?: DocumentOptions) => renderRequestToPage(App, { url }, opts),
+    /** async render — awaits data loaders/Suspense */
+    renderAsync: (url: string) => renderRequestAsync(App, { url }),
+    /** async full-document render */
+    pageAsync: async (url: string, opts?: DocumentOptions) =>
+      createHtmlDocument(await renderRequestAsync(App, { url }), opts),
   };
 }

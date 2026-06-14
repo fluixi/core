@@ -45,6 +45,7 @@ import {
   untrack,
   useContext,
   getSuspenseContext,
+  trackResourcePromise,
   type Setter,
   type Resource,
   type ResourceState,
@@ -205,6 +206,7 @@ export function createCachedResource<T, S = true>(
     inflight.set(ck, promise);
 
     if (!background) {
+      trackResourcePromise(promise); // server async SSR: collect & await
       setPendingP(promise);
       // Register with nearest Suspense boundary for initial loads.
       const suspCtx = _SuspenseContext && useContext(_SuspenseContext);

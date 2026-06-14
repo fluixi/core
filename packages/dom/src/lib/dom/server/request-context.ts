@@ -30,6 +30,10 @@ export interface RequestContext {
   matchedRoute: Map<unknown, unknown>;
   /** monotonic per-request id source for hydration markers (was module-global ssrMarkerId) */
   nextId(): string;
+  /** in-flight resource fetch promises collected during async SSR */
+  pending: Set<Promise<unknown>>;
+  /** resolved resource data to serialize for client hydration, keyed by SSR id */
+  data: Map<string, unknown>;
 }
 
 /** Matches AsyncLocalStorage<RequestContext> — inject one for real isolation. */
@@ -69,6 +73,8 @@ export function createRequestContext(event: RequestEvent = {}): RequestContext {
     routeData: new Map(),
     matchedRoute: new Map(),
     nextId: () => `s${id++}`,
+    pending: new Set(),
+    data: new Map(),
   };
 }
 
