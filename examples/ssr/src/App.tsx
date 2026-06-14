@@ -10,24 +10,28 @@ function fetchUser(id: number): Promise<{ name: string }> {
 }
 
 /**
- * A real app (counter + async data) written in JSX, compiled by the imperative
- * backend. The same code renders on the server (to an HTML string) and on the
- * client (to live DOM).
+ * A nested component that reads an async resource. renderToStringAsync awaits the
+ * fetch and re-renders this component's binding before serializing — so the
+ * resolved data ends up in the server HTML, through the createComponent boundary.
  *
- * Note: the data resource is read here at the app root — the SSR entry invokes
- * the root as a plain function (renderToString(() => App(props))), so its
- * reactive bindings render correctly. (Reading a suspending resource inside a
- * nested <Component/> hits a separate, pre-existing imperative-backend bug, so
- * keep loader reads at the level the renderer invokes directly.)
+ * Read the resource's non-throwing getters (.loading / .latest) rather than
+ * calling user(), which throws while pending (Suspense-style) and — without a
+ * resolving server <Suspense> — would leave the slot empty.
+ */
+function UserCard() {
+  const [user] = createResource(() => fetchUser(7));
+  const label = () => (user.loading ? 'loading…' : user.latest?.name ?? '');
+  return <p class="user">{label()}</p>;
+}
+
+/**
+ * The app: a reactive counter + a nested async-data component, written in JSX and
+ * compiled by the imperative backend. The same code renders on the server (to an
+ * HTML string) and on the client (to live DOM). The SSR entry invokes the root as
+ * a plain function (renderToString(() => App(props))), as @fluixi/server does.
  */
 export function App(props: { url?: string }) {
   const [count, setCount] = createSignal(3);
-  const [user] = createResource(() => fetchUser(7));
-  // Derived accessor (a CallExpression → reactive binding). Read the resource's
-  // non-throwing getters (.loading/.latest) rather than calling user(), which
-  // throws while pending (Suspense-style) and would leave the slot empty under
-  // a plain server render.
-  const userLabel = () => (user.loading ? 'loading…' : user.latest?.name ?? '');
 
   return (
     <main id="app">
@@ -40,7 +44,7 @@ export function App(props: { url?: string }) {
         <button class="inc" onClick={() => setCount(count() + 1)}>+</button>
       </section>
 
-      <p class="user">{userLabel()}</p>
+      <UserCard />
     </main>
   );
 }

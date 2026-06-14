@@ -43,17 +43,23 @@ The client entry logs which path it took (`server-rendered HTML present …` vs
 - **Import reactivity from one barrel.** `createSignal` and `createResource`
   both come from `@fluixi/kettlejs` so the resource's signals share the runtime's
   reactive instance.
-- **Read loaders at the app root.** The SSR entry invokes the root app as a plain
-  function (`renderToString(() => App(props))`), so its reactive bindings render.
-  Reading a *suspending* resource inside a nested `<Component/>` currently hits a
-  separate, pre-existing imperative-backend bug (the slot renders empty on client
-  and server) — keep loader reads at the level the renderer invokes directly.
+- **Async data resolves through components.** `UserCard` is a nested
+  `<Component/>` that reads a resource; `renderToStringAsync` awaits the fetch
+  and re-renders its binding before serializing — the resolved data ends up in
+  the server HTML.
 - **Use the resource's non-throwing getters** (`user.loading` / `user.latest`)
   for a server-rendered fallback. Calling `user()` throws while pending
-  (Suspense-style); server `<Suspense>` resolution is a tracked follow-up.
+  (Suspense-style), and without a resolving server `<Suspense>` that leaves the
+  slot empty.
+- **Invoke the root as a function.** The SSR entry calls `renderToString(() =>
+  App(props))` (which is what `@fluixi/server`'s `renderRequest`/`startServer`
+  do). A bare `<Component/>` as the *literal* render root has an async-update
+  edge case (the root memo is read from cache); returning elements / plain-
+  invoking avoids it.
 
 ## Known follow-ups
 
 - DOM-reuse **hydration** (client reuses server DOM instead of re-rendering).
-- Server **`<Suspense>`** boundary resolution under `renderToStringAsync`.
-- The imperative `createComponent` + suspending-resource bug noted above.
+- Server **`<Suspense>`** boundary resolution under `renderToStringAsync` (so
+  `user()`'s pending-throw shows a fallback then resolves).
+- Async update when a bare `<Component/>` is the literal render root.
