@@ -1,5 +1,19 @@
 # @fluixi/kettlejs
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [24388bb]
+  - @fluixi/dom@0.3.0
+  - @fluixi/server@0.2.0
+  - @fluixi/compiler@0.3.0
+  - @fluixi/jsx-runtime@0.3.0
+  - @fluixi/lit@0.3.0
+  - @fluixi/utils@0.3.0
+  - @fluixi/reactive@0.3.0
+  - @fluixi/vite-plugin@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
