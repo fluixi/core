@@ -26,10 +26,9 @@ import {
   type HydrationData,
 } from './hydration.js';
 
-import {
-  renderToString as domRenderToString,
-  renderToStream as domRenderToStream,
-} from '@fluixi/dom/server';
+// SSR runs through @fluixi/server: the universal renderer + request-scoping,
+// with AsyncLocalStorage injected so concurrent renders are isolated.
+import { renderToString as domRenderToString } from '@fluixi/server';
 
 // ============================================================================
 // TYPES

@@ -373,4 +373,29 @@ describe('router-next Link', () => {
     expect(host.querySelector('.shell .cart')?.textContent).toBe('CART');
     expect(host.querySelector('.home')).toBeNull();
   });
+
+  // KNOWN OPEN BUG (imperative backend): async/lazy route content threaded through
+  // a child component's {props.children} never renders — the slot stays empty.
+  // Root cause: `{props.children}` is a member expr → reactive insert that re-invokes
+  // the children getter (rebuilding a fresh lazy/Suspense subtree that re-suspends).
+  // Workaround: render <Outlet/> directly inside the layout, not via {props.children}.
+  // Skipped until the codegen + dom Suspense/insert propagation is fixed.
+  it.skip('lazy <Suspense><Outlet/> through a component {props.children} (OPEN BUG)', async () => {
+    const Page = lazy(async () => ({ default: () => <div class="page"><input class="x" /></div> }));
+    const Shell = (props: { children?: any }) => (
+      <div class="layout"><main class="slot">{props.children}</main></div>
+    );
+    const RootLayout = () => (
+      <Shell>
+        <Suspense fallback={<i>l</i>}>
+          <Outlet />
+        </Suspense>
+      </Shell>
+    );
+    const appRoutes = [{ path: '/', component: RootLayout, children: [{ path: '/p', component: Page }] }];
+    const host = document.createElement('div');
+    render(() => <Router routes={appRoutes} history={createMemoryHistory('/p')} />, host);
+    await tick(150);
+    expect(host.querySelector('.slot .x')).not.toBeNull(); // currently fails: slot is empty
+  });
 });

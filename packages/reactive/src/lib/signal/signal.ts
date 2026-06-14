@@ -215,6 +215,31 @@ export function setOwner(owner: RootOwner | null): void {
 export function getSharedConfig() {
   return sharedConfig;
 }
+
+// ── SSR injectables ─────────────────────────────────────────────────────────
+// The server (@fluixi/server via @fluixi/dom) injects these so async SSR can
+// await in-flight resource fetches and seed resources from server-serialized
+// data on the client. Both are no-ops when unset → zero client/runtime impact.
+let _resourceTracker: ((p: Promise<any>) => void) | null = null;
+/** Register a sink that receives every resource fetch promise (server: collect & await). */
+export function setResourceTracker(fn: ((p: Promise<any>) => void) | null): void {
+  _resourceTracker = fn;
+}
+/** @internal — resources report their fetch promise here. */
+export function trackResourcePromise(p: Promise<any>): void {
+  if (_resourceTracker) _resourceTracker(p);
+}
+
+let _serverDataGetter: ((id: string) => { value: any } | undefined) | null = null;
+/** Inject server-serialized resource data (client hydration: seed without refetch). */
+export function setServerDataGetter(fn: ((id: string) => { value: any } | undefined) | null): void {
+  _serverDataGetter = fn;
+}
+/** @internal — resources look up seeded data by their SSR id. */
+export function getServerData(id: string): { value: any } | undefined {
+  return _serverDataGetter ? _serverDataGetter(id) : undefined;
+}
+
 function createNodeId(): string {
   return `node_${++nodeIdCounter}_${Date.now()}`;
 }
@@ -902,6 +927,8 @@ export function createResource<T, S = true>(
   let prevKey: S | typeof UNSET = UNSET;
   let manualRefetch = false;
   const saveToCache = (data: T): void => {
+    // No localStorage on the server (SSR) — skip silently.
+    if (typeof localStorage === 'undefined') return;
     try {
       if (data)
         localStorage.setItem(
@@ -945,6 +972,7 @@ export function createResource<T, S = true>(
       });
       if (isPromise(res)) {
         setPromise(res);
+        trackResourcePromise(res); // server async SSR: collect & await
         res
           .then(
             (v) => {
