@@ -135,6 +135,37 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  examples/ssr:
+    dependencies:
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx-runtime':
+        specifier: workspace:*
+        version: link:../../packages/jsx-runtime
+      '@fluixi/kettlejs':
+        specifier: workspace:*
+        version: link:../../packages/kettlejs
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   examples/todo:
     dependencies:
       '@fluixi/dom':
@@ -328,6 +359,9 @@ importers:
       '@fluixi/router':
         specifier: workspace:*
         version: link:../router
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../server
       '@fluixi/utils':
         specifier: workspace:*
         version: link:../utils
@@ -450,6 +484,15 @@ importers:
         version: 2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@6.4.3(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(yaml@2.9.0))
 
   packages/router: {}
+
+  packages/server:
+    dependencies:
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
 
   packages/utils:
     dependencies:

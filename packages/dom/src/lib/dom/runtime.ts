@@ -19,6 +19,15 @@ import  {
 import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
 import { isComponent } from '../component/modifiers.js';
 import { batch, createEffect, createRenderEffect, createRoot, onCleanup, resolveChildren, untrack } from './integration.js';
+import {
+  isServer,
+  ServerElement,
+  ServerText,
+  ServerComment,
+  isDomNode,
+  isDomElement,
+  isDomText,
+} from './server/nodes.js';
 
 
 function getElementFingerprint(el: Element): string {
@@ -136,6 +145,7 @@ const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resi
  * Stores handlers as `element.$$eventname = handler` properties.
  */
 export function delegateEvents(eventNames: string[]): void {
+  if (isServer) return; // no document to attach to; events are inert in SSR
   for (const name of eventNames) {
     if (delegatedSet.has(name) || NON_DELEGATED.has(name)) continue;
     delegatedSet.add(name);
@@ -207,6 +217,7 @@ export function isFunction(value: any): value is Function {
 }
 
 function createTextNode(value: string): Text {
+  if (isServer) return new ServerText(value) as unknown as Text;
   if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 3) {
     const node = hydrationCursor as Text;
     hydrationCursor = hydrationCursor.nextSibling;
@@ -217,6 +228,7 @@ function createTextNode(value: string): Text {
 }
 
 function createMarker(value: string): Comment {
+  if (isServer) return new ServerComment(value) as unknown as Comment;
   if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 8) {
     const node = hydrationCursor as Comment;
     if (node.data === value) {
@@ -228,6 +240,7 @@ function createMarker(value: string): Comment {
 }
 
 export function createNativeElement(tag: string, isSVG = false): Element {
+  if (isServer) return new ServerElement(tag, isSVG) as unknown as Element;
   if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 1) {
     const node = hydrationCursor as Element;
     if (node.tagName.toLowerCase() === tag.toLowerCase()) {
@@ -580,8 +593,8 @@ export function insertExpression(
       current = cleanChildren(parent, current, marker);
     }
 
-    if (current && current instanceof Text) {
-      current.data = value as string;
+    if (current && isDomText(current)) {
+      (current as Text).data = value as string;
       return current;
     }
 
@@ -594,7 +607,7 @@ export function insertExpression(
     return node;
   }
 
-  if (value instanceof Node) {
+  if (isDomNode(value)) {
     if (Array.isArray(current)) {
       if (current.length === 0) {
         insertBefore(parent, value, marker);
@@ -794,7 +807,7 @@ function flattenArray(
       continue;
     }
 
-    if (item instanceof Node) {
+    if (isDomNode(item)) {
       result.push(item);
       continue;
     }
@@ -1244,7 +1257,7 @@ export function spread(options: SpreadOptions): () => void {
     skipChildren = false,
   } = options;
 
-  if (!element || !(element instanceof Element)) {
+  if (!element || !isDomElement(element)) {
     console.error('[spread] Error: element is not a DOM Element!');
     return () => {};
   }
@@ -1466,6 +1479,57 @@ export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
   return target;
 }
 
+type SplitArgs<T, K extends (keyof T)[][]> = {
+  [P in keyof K]: Pick<T, Extract<K[P][number], keyof T>>;
+};
+
+/**
+ * Split a (possibly reactive) props object into groups of keys plus a `rest`,
+ * preserving reactivity — each returned object is a Proxy whose `get` forwards
+ * to the original `props`, so a getter/signal-backed prop stays live.
+ *
+ *   const [local, rest] = splitProps(props, ['class', 'id']);
+ *   //   local.class tracks props.class; rest has everything else.
+ *
+ * Mirrors Solid's splitProps. Descriptors are exposed as accessors (not eager
+ * values) so spreading a group stays reactive, and forced `configurable` avoids
+ * Proxy invariant errors when `props` has non-configurable descriptors.
+ */
+export function splitProps<T extends object, K extends (keyof T)[][]>(
+  props: T,
+  ...keys: K
+): [...SplitArgs<T, K>, Omit<T, K[number][number]>] {
+  const taken = new Set<string | symbol>();
+  for (const group of keys) for (const k of group) taken.add(k as string | symbol);
+
+  const descriptor = (p: string | symbol): PropertyDescriptor => ({
+    enumerable: true,
+    configurable: true,
+    get: () => (props as any)[p],
+  });
+
+  const groups = keys.map((group) => {
+    const keySet = new Set<string | symbol>(group as (string | symbol)[]);
+    return new Proxy({} as any, {
+      get: (_, p) => (keySet.has(p) ? (props as any)[p] : undefined),
+      has: (_, p) => keySet.has(p) && p in (props as any),
+      ownKeys: () => Array.from(keySet).filter((k) => k in (props as any)),
+      getOwnPropertyDescriptor: (_, p) =>
+        keySet.has(p) && p in (props as any) ? descriptor(p) : undefined,
+    });
+  });
+
+  const rest = new Proxy({} as any, {
+    get: (_, p) => (taken.has(p) ? undefined : (props as any)[p]),
+    has: (_, p) => !taken.has(p) && p in (props as any),
+    ownKeys: () => Reflect.ownKeys(props).filter((k) => !taken.has(k)),
+    getOwnPropertyDescriptor: (_, p) =>
+      !taken.has(p) && p in (props as any) ? descriptor(p) : undefined,
+  });
+
+  return [...groups, rest] as any;
+}
+
 
 
 // ============================================================================
@@ -1476,7 +1540,7 @@ export function handleRef(ref: any, element: Element): void {
   if (!ref) return;
 
   // Swapped-argument guard
-  if (ref instanceof Node) {
+  if (isDomNode(ref)) {
     const actualRef = element as unknown as any;
     const actualElement = ref as unknown as Element;
     if (!actualRef) return;
@@ -1550,7 +1614,7 @@ export function createPortal(children: any, element: any, props?: any) {
             }
           });
         });
-      } else if (nodes instanceof Node) {
+      } else if (isDomNode(nodes)) {
         container.appendChild(nodes);
         cleanups.push(() => {
           console.log('on cleanup nodes', nodes, nodes.parentNode, container)
