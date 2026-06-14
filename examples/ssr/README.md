@@ -57,9 +57,18 @@ The client entry logs which path it took (`server-rendered HTML present …` vs
   edge case (the root memo is read from cache); returning elements / plain-
   invoking avoids it.
 
+## Hydration
+
+`entry-client.tsx` calls **`hydrate()`** when server-rendered HTML is present:
+the client reuses the existing DOM and wires events/reactivity in place — no
+re-render. The counter is interactive immediately on the server-rendered nodes
+(`src/hydrate.test.tsx` asserts node reuse + a working click).
+
 ## Known follow-ups
 
-- DOM-reuse **hydration** (client reuses server DOM instead of re-rendering).
-- Server **`<Suspense>`** boundary resolution under `renderToStringAsync` (so
-  `user()`'s pending-throw shows a fallback then resolves).
+- **Resource-data transport** — the async user data is refetched on the client
+  and briefly re-renders (the resolved value isn't yet serialized + reseeded, so
+  a server `User #7` flashes back through `loading…`). The hooks exist
+  (`setServerDataGetter` in `@fluixi/reactive`); wiring is pending.
+- Server **`<Suspense>`** resolution under `renderToStringAsync`.
 - Async update when a bare `<Component/>` is the literal render root.

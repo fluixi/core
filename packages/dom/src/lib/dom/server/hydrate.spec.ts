@@ -9,19 +9,36 @@ import {
   hydrate,
 } from '@fluixi/dom';
 
-// Build the same tree on server and client.
+// Build the same tree on server and client, mirroring exactly what the
+// imperative codegen emits: each element is a nested IIFE, fully built (incl.
+// its children) before being inserted into its parent — so siblings are created
+// in document order, which is what the hydration cursor walks.
 function App() {
   const [n, setN] = createSignal(0);
-  const root = createNativeElement('div') as any;
-  spread({ element: root, props: { id: 'app' } });
-  const label = createNativeElement('span') as any;
-  insert(label, () => `count:${n()}`, null);
-  const btn = createNativeElement('button') as any;
-  spread({ element: btn, props: { onClick: () => setN(n() + 1) } });
-  insert(btn, 'inc', null);
-  insert(root, label, null);
-  insert(root, btn, null);
-  return root;
+  return (() => {
+    const root = createNativeElement('div') as any;
+    spread({ element: root, props: { id: 'app' } });
+    insert(
+      root,
+      (() => {
+        const span = createNativeElement('span') as any;
+        insert(span, () => `count:${n()}`, null);
+        return span;
+      })(),
+      null,
+    );
+    insert(
+      root,
+      (() => {
+        const btn = createNativeElement('button') as any;
+        spread({ element: btn, props: { onClick: () => setN(n() + 1) } });
+        insert(btn, 'inc', null);
+        return btn;
+      })(),
+      null,
+    );
+    return root;
+  })();
 }
 
 describe('SSR → client handoff', () => {
@@ -50,16 +67,23 @@ describe('SSR → client handoff', () => {
   // events/reactivity onto those — leaving the server DOM inert. Needs a
   // cursor descend/ascend rework of insert's hydration path. Documented; fix
   // is its own focused pass.
-  it.skip('hydrate reuses server DOM without re-rendering (OPEN — cursor descent)', async () => {
+  it('hydrate reuses server DOM (no recreation) and wires events/reactivity', async () => {
     const html = renderToString(() => App());
     const container = document.createElement('div');
+    document.body.appendChild(container);
     container.innerHTML = html;
     const serverSpan = container.querySelector('span');
     const serverBtn = container.querySelector('button');
 
     hydrate(() => App(), container);
 
+    // same node objects → hydration reused them rather than recreating
     expect(container.querySelector('span')).toBe(serverSpan);
+    expect(container.querySelector('button')).toBe(serverBtn);
+    // no duplicate render (still one span / one button)
+    expect(container.querySelectorAll('span').length).toBe(1);
+    expect(container.querySelectorAll('button').length).toBe(1);
+
     serverBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await flush();
     expect(container.querySelector('span')!.textContent).toBe('count:1');
