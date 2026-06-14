@@ -128,6 +128,7 @@
     "@fluixi/vite-plugin": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/router": "workspace:*",
+    "@fluixi/server": "workspace:*",
     "@fluixi/utils": "workspace:*",
     "@lit-labs/ssr": "^3.0.0",
     "@lit-labs/ssr-client": "^1.0.0",

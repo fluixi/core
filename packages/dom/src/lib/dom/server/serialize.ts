@@ -3,7 +3,7 @@
  * text/attributes are escaped, style is emitted from cssText + camelCase props,
  * innerHTML is passed through verbatim.
  */
-import { ServerNode, ServerElement, ServerText, ServerComment, ServerStyle } from './nodes.js';
+import { ServerStyle, NODE_ELEMENT, NODE_TEXT, NODE_COMMENT } from './nodes.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -28,7 +28,8 @@ function camelToKebab(k: string): string {
   return k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
 }
 
-function serializeStyle(style: ServerStyle): string {
+function serializeStyle(style: ServerStyle | undefined): string {
+  if (!style) return '';
   const parts: string[] = [];
   if (style.cssText) parts.push(style.cssText.trim().replace(/;\s*$/, ''));
   for (const key of Object.keys(style)) {
@@ -40,7 +41,7 @@ function serializeStyle(style: ServerStyle): string {
   return parts.join('; ');
 }
 
-function serializeAttrs(el: ServerElement): string {
+function serializeAttrs(el: any): string {
   let out = '';
   // style comes from the style object, not the attribute map, unless set as a
   // plain attribute string (setStyle uses cssText; spread style="..." → cssText).
@@ -67,23 +68,28 @@ export function serializeNode(node: any): string {
   if (typeof node === 'function') return serializeNode(node());
   if (Array.isArray(node)) return node.map(serializeNode).join('');
 
-  if (node instanceof ServerText) return escapeText(node.data);
-  if (node instanceof ServerComment) return `<!--${node.data}-->`;
-
-  if (node instanceof ServerElement) {
-    const tag = node.localName;
-    const open = `<${tag}${serializeAttrs(node)}>`;
-    if (VOID_ELEMENTS.has(tag)) return open;
-    const inner =
-      node.rawHTML != null
-        ? node.rawHTML
-        : node.childNodes.map(serializeNode).join('');
-    return `${open}${inner}</${tag}>`;
+  // Duck-type on nodeType rather than `instanceof`: a node can come from a
+  // different bundled copy of @fluixi/dom (separate package entry points), so
+  // class identity is unreliable across the renderToString boundary.
+  switch (node.nodeType) {
+    case NODE_TEXT:
+      return escapeText(node.data ?? '');
+    case NODE_COMMENT:
+      return `<!--${node.data ?? ''}-->`;
+    case NODE_ELEMENT: {
+      const tag = node.localName;
+      const open = `<${tag}${serializeAttrs(node)}>`;
+      if (VOID_ELEMENTS.has(tag)) return open;
+      const inner =
+        node.rawHTML != null
+          ? node.rawHTML
+          : (node.childNodes ?? []).map(serializeNode).join('');
+      return `${open}${inner}</${tag}>`;
+    }
   }
 
-  if (node instanceof ServerNode) {
-    return node.childNodes.map(serializeNode).join('');
-  }
+  // Any other node-like value with children (fragments etc.).
+  if (Array.isArray(node.childNodes)) return node.childNodes.map(serializeNode).join('');
 
   // Unknown value (e.g. a stray object) — render nothing rather than [object].
   return '';
