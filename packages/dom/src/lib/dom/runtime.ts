@@ -28,6 +28,14 @@ import {
   isDomElement,
   isDomText,
 } from './server/nodes.js';
+import {
+  hydration,
+  hydrateElement,
+  hydrateText,
+  hydrateMarker,
+  isAdopted,
+  ascendPast,
+} from './hydration.js';
 
 
 function getElementFingerprint(el: Element): string {
@@ -199,13 +207,6 @@ export function isDelegatedEvent(name: string): boolean {
 }
 
 // ============================================================================
-// Hydration state
-// ============================================================================
-
-let isHydrating = false;
-let hydrationCursor: Node | null = null;
-
-// ============================================================================
 // Utilities
 // ============================================================================
 
@@ -218,38 +219,27 @@ export function isFunction(value: any): value is Function {
 
 function createTextNode(value: string): Text {
   if (isServer) return new ServerText(value) as unknown as Text;
-  if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 3) {
-    const node = hydrationCursor as Text;
-    hydrationCursor = hydrationCursor.nextSibling;
-    if (node.nodeValue !== value) node.nodeValue = value;
-    return node;
+  if (hydration.active) {
+    const node = hydrateText(value);
+    if (node) return node;
   }
   return document.createTextNode(value);
 }
 
 function createMarker(value: string): Comment {
   if (isServer) return new ServerComment(value) as unknown as Comment;
-  if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 8) {
-    const node = hydrationCursor as Comment;
-    if (node.data === value) {
-      hydrationCursor = hydrationCursor.nextSibling;
-      return node;
-    }
+  if (hydration.active) {
+    const node = hydrateMarker(value);
+    if (node) return node;
   }
   return document.createComment(value);
 }
 
 export function createNativeElement(tag: string, isSVG = false): Element {
   if (isServer) return new ServerElement(tag, isSVG) as unknown as Element;
-  if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 1) {
-    const node = hydrationCursor as Element;
-    if (node.tagName.toLowerCase() === tag.toLowerCase()) {
-      // DESCEND into the matched element: subsequent createNativeElement/insert
-      // calls (which build this element's children, depth-first) consume from
-      // here. insert() ascends back to node.nextSibling once the subtree is done.
-      hydrationCursor = node.firstChild;
-      return node;
-    }
+  if (hydration.active) {
+    const node = hydrateElement(tag);
+    if (node) return node;
   }
   return isSVG
     ? document.createElementNS(SVG_NAMESPACE, tag)
@@ -604,7 +594,7 @@ export function insertExpression(
     const node = createTextNode(value as string);
     if (current && (current as Node).parentNode === parent) {
       parent.replaceChild(node, current as Node);
-    } else if (!(isHydrating && node.parentNode === parent)) {
+    } else if (!isAdopted(parent, node)) {
       // during hydration createTextNode reuses the in-place server text node and
       // already advanced the cursor — don't re-insert (that would reorder).
       insertBefore(parent, node, marker);
@@ -616,8 +606,8 @@ export function insertExpression(
     // Hydration: the node was already produced from the server DOM (reused by
     // createNativeElement) and sits in `parent` in place — adopt it without
     // re-inserting, and ascend the cursor past its (already-walked) subtree.
-    if (isHydrating && (value as Node).parentNode === parent) {
-      hydrationCursor = (value as Node).nextSibling;
+    if (isAdopted(parent, value as Node)) {
+      ascendPast(value as Node);
       return value;
     }
     if (Array.isArray(current)) {
@@ -1119,10 +1109,8 @@ export function cleanChildren(
 // ============================================================================
 
 function insertBefore(parent: Node, node: Node, marker?: Node) {
-  if (isHydrating) {
-    if (node.parentNode === parent) return;
-  }
-  
+  if (hydration.active && node.parentNode === parent) return;
+
   if (marker) {
     if (marker.parentNode === parent) {
       parent.insertBefore(node, marker);
@@ -1784,8 +1772,8 @@ export function render<T>(
 
   createRoot((dispose) => {
     runtimeBatch(() => {
-      // Clear container
-      if (!isHydrating) {
+      // Clear container (but not when hydrating — we reuse the server DOM).
+      if (!hydration.active) {
         container.textContent = '';
       }
 
@@ -1806,14 +1794,6 @@ export function render<T>(
   };
 }
 
-
-export function hydrate<T>(element: T, container: Element) {
-  isHydrating = true;
-  hydrationCursor = container.firstChild;
-  try {
-    return render(element, container);
-  } finally {
-    isHydrating = false;
-    hydrationCursor = null;
-  }
-}
+// hydrate() lives in ./hydration.js (the DOM-reuse hydration feature). Re-export
+// it here so the existing import path (`@fluixi/dom` → runtime) keeps working.
+export { hydrate } from './hydration.js';
