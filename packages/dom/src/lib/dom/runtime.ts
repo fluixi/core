@@ -244,7 +244,10 @@ export function createNativeElement(tag: string, isSVG = false): Element {
   if (isHydrating && hydrationCursor && hydrationCursor.nodeType === 1) {
     const node = hydrationCursor as Element;
     if (node.tagName.toLowerCase() === tag.toLowerCase()) {
-      hydrationCursor = hydrationCursor.nextSibling;
+      // DESCEND into the matched element: subsequent createNativeElement/insert
+      // calls (which build this element's children, depth-first) consume from
+      // here. insert() ascends back to node.nextSibling once the subtree is done.
+      hydrationCursor = node.firstChild;
       return node;
     }
   }
@@ -601,13 +604,22 @@ export function insertExpression(
     const node = createTextNode(value as string);
     if (current && (current as Node).parentNode === parent) {
       parent.replaceChild(node, current as Node);
-    } else {
+    } else if (!(isHydrating && node.parentNode === parent)) {
+      // during hydration createTextNode reuses the in-place server text node and
+      // already advanced the cursor — don't re-insert (that would reorder).
       insertBefore(parent, node, marker);
     }
     return node;
   }
 
   if (isDomNode(value)) {
+    // Hydration: the node was already produced from the server DOM (reused by
+    // createNativeElement) and sits in `parent` in place — adopt it without
+    // re-inserting, and ascend the cursor past its (already-walked) subtree.
+    if (isHydrating && (value as Node).parentNode === parent) {
+      hydrationCursor = (value as Node).nextSibling;
+      return value;
+    }
     if (Array.isArray(current)) {
       if (current.length === 0) {
         insertBefore(parent, value, marker);
