@@ -1479,6 +1479,57 @@ export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
   return target;
 }
 
+type SplitArgs<T, K extends (keyof T)[][]> = {
+  [P in keyof K]: Pick<T, Extract<K[P][number], keyof T>>;
+};
+
+/**
+ * Split a (possibly reactive) props object into groups of keys plus a `rest`,
+ * preserving reactivity — each returned object is a Proxy whose `get` forwards
+ * to the original `props`, so a getter/signal-backed prop stays live.
+ *
+ *   const [local, rest] = splitProps(props, ['class', 'id']);
+ *   //   local.class tracks props.class; rest has everything else.
+ *
+ * Mirrors Solid's splitProps. Descriptors are exposed as accessors (not eager
+ * values) so spreading a group stays reactive, and forced `configurable` avoids
+ * Proxy invariant errors when `props` has non-configurable descriptors.
+ */
+export function splitProps<T extends object, K extends (keyof T)[][]>(
+  props: T,
+  ...keys: K
+): [...SplitArgs<T, K>, Omit<T, K[number][number]>] {
+  const taken = new Set<string | symbol>();
+  for (const group of keys) for (const k of group) taken.add(k as string | symbol);
+
+  const descriptor = (p: string | symbol): PropertyDescriptor => ({
+    enumerable: true,
+    configurable: true,
+    get: () => (props as any)[p],
+  });
+
+  const groups = keys.map((group) => {
+    const keySet = new Set<string | symbol>(group as (string | symbol)[]);
+    return new Proxy({} as any, {
+      get: (_, p) => (keySet.has(p) ? (props as any)[p] : undefined),
+      has: (_, p) => keySet.has(p) && p in (props as any),
+      ownKeys: () => Array.from(keySet).filter((k) => k in (props as any)),
+      getOwnPropertyDescriptor: (_, p) =>
+        keySet.has(p) && p in (props as any) ? descriptor(p) : undefined,
+    });
+  });
+
+  const rest = new Proxy({} as any, {
+    get: (_, p) => (taken.has(p) ? undefined : (props as any)[p]),
+    has: (_, p) => !taken.has(p) && p in (props as any),
+    ownKeys: () => Reflect.ownKeys(props).filter((k) => !taken.has(k)),
+    getOwnPropertyDescriptor: (_, p) =>
+      !taken.has(p) && p in (props as any) ? descriptor(p) : undefined,
+  });
+
+  return [...groups, rest] as any;
+}
+
 
 
 // ============================================================================
