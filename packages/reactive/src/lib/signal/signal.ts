@@ -70,6 +70,8 @@ export interface Computation {
   accessor?: Accessor<any>;
   renderEffect?: boolean;
   suspense?: SuspenseContextType;
+  /** set once dispose() has run — a disposed computation must never re-run. */
+  disposed?: boolean;
 }
 export interface ReactiveNode {
   id: string;
@@ -508,7 +510,7 @@ function runComputation(c: Computation, value: any): void {
   }
 }
 function updateComputation(c: Computation): void {
-  if (!c.fn || c.state === CLEAN) return;
+  if (c.disposed || !c.fn || c.state === CLEAN) return;
   if (c.state === DIRTY || c.state === STALE || c.state === RUNNING) {
     if (c.cleanups) {
       for (let i = 0; i < c.cleanups.length; i++) c.cleanups[i]();
@@ -523,6 +525,9 @@ function updateComputation(c: Computation): void {
   }
 }
 function dispose(c: Computation): void {
+  // Mark first so a resume triggered during teardown (e.g. a Suspense boundary
+  // decrementing as a now-resolved promise settles) can't re-run this node.
+  c.disposed = true;
   if (c.sources) {
     for (const source of c.sources) {
       const observers = signalObservers.get(source);
