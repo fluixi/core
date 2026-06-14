@@ -1453,6 +1453,29 @@ function shouldAutoWrapAttrExpression(
 // Children Transformation
 // ============================================================================
 
+/**
+ * Canonical JSX text cleaning (matches babel/React/Solid): trim line-boundary
+ * whitespace, collapse runs to single spaces, and drop text that is only
+ * whitespace spanning a newline. Returns '' when the node is insignificant.
+ */
+function cleanJSXText(value: string): string {
+  const lines = value.split(/\r\n|\n|\r/);
+  let lastNonEmpty = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (/[^ \t]/.test(lines[i])) lastNonEmpty = i;
+  }
+  let out = '';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].replace(/\t/g, ' ');
+    if (i !== 0) line = line.replace(/^ +/, '');
+    if (i !== lines.length - 1) line = line.replace(/ +$/, '');
+    if (!line) continue;
+    if (i !== lastNonEmpty) line += ' ';
+    out += line;
+  }
+  return out;
+}
+
 function transformChildren(
   children: Array<
     | t.JSXText
@@ -1468,15 +1491,15 @@ function transformChildren(
 
   for (const child of children) {
     if (t.isJSXText(child)) {
-      // Preserve whitespace between elements, but normalize line breaks
-      const text = child.value.replace(/\s+/g, ' ');
-      // Only skip completely empty text nodes
-      if (text && text !== ' ') {
-        result.push(t.stringLiteral(text));
-      } else if (text === ' ' && result.length > 0) {
-        // Preserve single space between expressions
-        result.push(t.stringLiteral(' '));
-      }
+      // Canonical JSX whitespace handling (as React/Solid): whitespace-only text
+      // that spans a line break is insignificant and dropped; inline runs collapse
+      // to a single space. This matters beyond cosmetics — keeping a `" "` text
+      // node next to a child turns `props.children` into an ARRAY, and an array
+      // insert doesn't reactively bind a memo/component sitting inside it (so a
+      // nested lazy/<Suspense> never updates). Dropping the stray whitespace keeps
+      // a lone child a lone child, so insert binds it reactively.
+      const text = cleanJSXText(child.value);
+      if (text) result.push(t.stringLiteral(text));
     } else if (t.isJSXExpressionContainer(child)) {
       if (!t.isJSXEmptyExpression(child.expression)) {
         const expr = child.expression as t.Expression;
@@ -1878,6 +1901,16 @@ function shouldAutoWrapExpression(expr: t.Expression): boolean {
   // Member expressions: store.property, user.name, etc.
   // These need wrapping so property access happens inside an effect
   if (t.isMemberExpression(expr) || t.isOptionalMemberExpression(expr)) {
+    // `props.children` (any `.children`) is a stable subtree reference, not a
+    // reactive value. Wrapping it in `() => props.children` adds an insert layer
+    // that fully unwraps the children's Suspense/memo to a static node, severing
+    // the reactive binding — so a nested lazy/<Suspense> that resolves later
+    // never propagates up through the component-children hop. Pass it through
+    // non-reactive (insert(el, props.children)) so insert binds to the child's
+    // own memo, exactly like a directly-rendered <Outlet/>.
+    if (!expr.computed && t.isIdentifier(expr.property, { name: 'children' })) {
+      return false;
+    }
     return true;
   }
 
