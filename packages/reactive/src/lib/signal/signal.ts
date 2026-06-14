@@ -240,6 +240,26 @@ export function getServerData(id: string): { value: any } | undefined {
   return _serverDataGetter ? _serverDataGetter(id) : undefined;
 }
 
+let _resourceIdSource: (() => string) | null = null;
+/** Inject a stable per-resource id source (server render order / hydration order). */
+export function setResourceIdSource(fn: (() => string) | null): void {
+  _resourceIdSource = fn;
+}
+/** @internal — a resource asks for its SSR id at creation; undefined on a plain client. */
+export function nextResourceId(): string | undefined {
+  return _resourceIdSource ? _resourceIdSource() : undefined;
+}
+
+let _resourceDataSink: ((id: string, value: any) => void) | null = null;
+/** Inject a sink for resolved resource values (server: collect for serialization). */
+export function setResourceDataSink(fn: ((id: string, value: any) => void) | null): void {
+  _resourceDataSink = fn;
+}
+/** @internal — a resource reports its resolved value here. */
+export function reportResourceData(id: string, value: any): void {
+  if (_resourceDataSink) _resourceDataSink(id, value);
+}
+
 function createNodeId(): string {
   return `node_${++nodeIdCounter}_${Date.now()}`;
 }
@@ -910,12 +930,18 @@ export function createResource<T, S = true>(
     if (fetcherFn && typeof fetcherFn === 'object') options = fetcherFn as any;
   }
   const { initialValue, name } = options;
-  const [value, setValue] = createSignal<T | undefined>(options.initialValue, {
-    equals: false,
-  });
+  // SSR data transport: a stable per-render id; on the client, seed from the
+  // server-serialized value so hydration doesn't refetch (and doesn't flash).
+  const __ssrId = nextResourceId();
+  const __seed = __ssrId !== undefined ? getServerData(__ssrId) : undefined;
+  let skipFirstFetch = __seed !== undefined;
+  const [value, setValue] = createSignal<T | undefined>(
+    __seed !== undefined ? (__seed.value as T) : options.initialValue,
+    { equals: false },
+  );
   const [error, setError] = createSignal<any>(undefined, { equals: false });
   const [state, setState] = createSignal<ResourceState>(
-    options.initialValue !== undefined ? 'ready' : 'unresolved',
+    __seed !== undefined || options.initialValue !== undefined ? 'ready' : 'unresolved',
     { equals: false }
   );
   const [promise, setPromise] = createSignal<Promise<T> | undefined>(
@@ -955,6 +981,12 @@ export function createResource<T, S = true>(
     manualRefetch = false;
     if (prevKey !== UNSET && (val as any) === prevKey && !isManual) return;
     prevKey = val;
+    // Seeded from server data during hydration — value is already set, skip the
+    // first fetch (still tracked the source above, so later refetches work).
+    if (skipFirstFetch) {
+      skipFirstFetch = false;
+      return;
+    }
     let cancelled = false;
     onCleanup(() => (cancelled = true));
     const currentState = untrack(state);
@@ -977,6 +1009,7 @@ export function createResource<T, S = true>(
           .then(
             (v) => {
               if (cancelled) return;
+              if (__ssrId !== undefined) reportResourceData(__ssrId, v); // server: collect for serialization
               batch(() => {
                 setValue(() => v);
                 saveToCache(v);

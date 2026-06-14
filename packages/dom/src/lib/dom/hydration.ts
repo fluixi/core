@@ -19,6 +19,7 @@
  * render path is unaffected.
  */
 import { render } from './runtime.js';
+import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 
 export const hydration: { active: boolean; cursor: Node | null } = {
   active: false,
@@ -73,10 +74,23 @@ export function ascendPast(node: Node): void {
 export function hydrate<T>(element: T, container: Element): () => void {
   hydration.active = true;
   hydration.cursor = container.firstChild;
+
+  // Seed resources from server-serialized data (window.__FX_DATA__) so they
+  // don't refetch — ids match by creation order (the server assigns r0, r1, …
+  // in the same order this hydration render creates them). hydrate() is
+  // synchronous, so setting these module-globals around it is safe.
+  const data: Record<string, unknown> | null =
+    (typeof window !== 'undefined' && (window as any).__FX_DATA__) || null;
+  let rid = 0;
+  setResourceIdSource(() => `r${rid++}`);
+  setServerDataGetter(data ? (id) => (id in data ? { value: data[id] } : undefined) : null);
+
   try {
     return render(element, container);
   } finally {
     hydration.active = false;
     hydration.cursor = null;
+    setResourceIdSource(null);
+    setServerDataGetter(null);
   }
 }

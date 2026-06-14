@@ -6,13 +6,19 @@
  * disposed afterwards.
  */
 import { createRoot } from '../integration.js';
-import { setResourceTracker, flush } from '@fluixi/reactive/signal';
+import {
+  setResourceTracker,
+  setResourceIdSource,
+  setResourceDataSink,
+  flush,
+} from '@fluixi/reactive/signal';
 import { isServer, setServerMode } from './nodes.js';
 import { serializeNode } from './serialize.js';
 import {
   createRequestContext,
   runWithRequestContext,
   getRequestContext,
+  type RequestContext,
   type RequestEvent,
 } from './request-context.js';
 
@@ -41,17 +47,38 @@ export function renderToString(app: () => any, options: RenderOptions = {}): str
   }
 }
 
-// Install the resource tracker once (never unset). It routes each in-flight
-// resource promise to the *current* request context — so concurrent async
-// renders stay isolated (with an AsyncLocalStorage store injected) instead of a
-// per-call setter clobbering a sibling render's sink.
-let _trackerInstalled = false;
-function ensureResourceTracker(): void {
-  if (_trackerInstalled) return;
-  _trackerInstalled = true;
+// Install the SSR resource hooks once (never unset). They route to the *current*
+// request context — so concurrent async renders stay isolated (with an
+// AsyncLocalStorage store injected) instead of a per-call setter clobbering a
+// sibling render's sink.
+let _hooksInstalled = false;
+function ensureResourceHooks(): void {
+  if (_hooksInstalled) return;
+  _hooksInstalled = true;
   setResourceTracker((p) => {
     getRequestContext()?.pending.add(p);
   });
+  // Stable id (creation order) the client matches during hydration.
+  setResourceIdSource(() => getRequestContext()?.nextResourceId() ?? '');
+  // Resolved values are collected for serialization into the page.
+  setResourceDataSink((id, value) => {
+    if (id) getRequestContext()?.data.set(id, value);
+  });
+}
+
+const FX_DATA_VAR = '__FX_DATA__';
+
+/**
+ * Serialize the collected resource data into an inline script the client reads
+ * before hydrating (seeds resources so they don't refetch). Empty when no data.
+ */
+export function serializeResourceData(ctx: RequestContext): string {
+  if (ctx.data.size === 0) return '';
+  const obj: Record<string, unknown> = {};
+  for (const [k, v] of ctx.data) obj[k] = v;
+  // JSON with `<` escaped so a string value can't break out of the <script>.
+  const json = JSON.stringify(obj).replace(/</g, '\\u003c');
+  return `<script>window.${FX_DATA_VAR}=${json}</script>`;
 }
 
 /** Bound on resolve→refetch waterfalls so a buggy loader can't spin forever. */
@@ -68,7 +95,7 @@ export async function renderToStringAsync(
 ): Promise<string> {
   const prev = isServer;
   setServerMode(true);
-  ensureResourceTracker();
+  ensureResourceHooks();
   const ctx = createRequestContext(options.event);
   try {
     return await runWithRequestContext(ctx, async () => {
@@ -87,7 +114,8 @@ export async function renderToStringAsync(
         // the tree reflects resolved data (and any waterfall fetch registers).
         await flush();
       }
-      const html = serializeNode(tree);
+      // Serialize the resolved resource data so the client seeds it (no refetch).
+      const html = serializeNode(tree) + serializeResourceData(ctx);
       dispose();
       return html;
     });

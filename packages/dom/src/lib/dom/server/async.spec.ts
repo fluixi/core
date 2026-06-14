@@ -19,7 +19,10 @@ describe('renderToStringAsync — resources', () => {
       insert(div, () => data() ?? 'loading…', null);
       return div;
     };
-    expect(await renderToStringAsync(() => App())).toBe('<div>LOADED</div>');
+    const html = await renderToStringAsync(() => App());
+    expect(html).toContain('<div>LOADED</div>');
+    // resolved data is also serialized for client hydration
+    expect(html).toContain('window.__FX_DATA__');
   });
 
   it('resolves a waterfall of two dependent resources', async () => {
@@ -31,7 +34,7 @@ describe('renderToStringAsync — resources', () => {
       insert(div, () => b() ?? '…', null);
       return div;
     };
-    expect(await renderToStringAsync(() => App())).toBe('<div>AB</div>');
+    expect(await renderToStringAsync(() => App())).toContain('<div>AB</div>');
   });
 
   it('renders loader-free content too (no pending → resolves immediately)', async () => {
