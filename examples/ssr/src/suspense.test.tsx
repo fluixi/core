@@ -29,12 +29,13 @@ describe('server Suspense', () => {
     expect(html).toContain('__FX_DATA__'); // resolved data serialized for hydration
   });
 
-  // OPEN: sync renderToString() of a <Suspense> whose child kicks off a fetching
-  // resource hangs the process — the fetch (timer/promise) is started but never
-  // settled (no async drain) and the boundary keeps it subscribed, so the event
-  // loop never drains. Use renderToStringAsync for Suspense content; sync render
-  // of a Suspense+resource needs the in-flight fetch cleaned up on dispose.
-  it.skip('sync render shows the fallback (OPEN — hangs: resource fetch not cleaned up)', () => {
+  // Regression for the sync-render hang: rendering a <Suspense> whose child kicks
+  // off a fetching resource used to spin forever — when renderToString disposed
+  // the root, the resource's settle was cancelled (stayed loading), but the
+  // boundary's decrement (firing as the now-resolved promise settled) kept
+  // resuming the disposed effect, which re-threw the resolved promise → sync
+  // re-fire. Fixed by marking computations disposed so they never re-run.
+  it('sync render shows the fallback and does not hang', () => {
     expect(renderToString(() => App())).toContain('loading…');
   });
 });
