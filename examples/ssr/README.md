@@ -23,6 +23,21 @@ pnpm --filter @fluixi/example-ssr dev       # client-only dev
 `src/ssr.test.tsx` is the verifiable artifact: it compiles `App.tsx` and asserts
 the produced HTML for both the sync shell and the async (data-resolved) render.
 
+### Is it really SSR (vs. client render)?
+
+`dev` is **client-only** (empty `#root`, the browser renders). `serve` is **real
+SSR** (the server sends fully-rendered HTML, then the client takes over). To see
+the difference on `localhost:5174`:
+
+- **View Source** (not the inspector) — SSR shows the full `<main>…</main>` in the
+  raw HTML; client-only shows an empty `<div id="root">`.
+- **Disable JavaScript** — with `serve` the content still renders; with `dev` the
+  page is blank.
+- **`curl http://localhost:5174/`** — the bytes already contain `User #7` (no JS ran).
+
+The client entry logs which path it took (`server-rendered HTML present …` vs
+`no SSR content …`).
+
 ## Patterns worth noting
 
 - **Import reactivity from one barrel.** `createSignal` and `createResource`
