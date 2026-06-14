@@ -30,9 +30,11 @@ export interface RequestContext {
   matchedRoute: Map<unknown, unknown>;
   /** monotonic per-request id source for hydration markers (was module-global ssrMarkerId) */
   nextId(): string;
+  /** monotonic per-request resource id (creation order) — matched on the client */
+  nextResourceId(): string;
   /** in-flight resource fetch promises collected during async SSR */
   pending: Set<Promise<unknown>>;
-  /** resolved resource data to serialize for client hydration, keyed by SSR id */
+  /** resolved resource data to serialize for client hydration, keyed by resource id */
   data: Map<string, unknown>;
 }
 
@@ -68,11 +70,13 @@ export function setRequestStore(store: RequestStore | null): void {
 
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
   let id = 0;
+  let rid = 0;
   return {
     event,
     routeData: new Map(),
     matchedRoute: new Map(),
     nextId: () => `s${id++}`,
+    nextResourceId: () => `r${rid++}`,
     pending: new Set(),
     data: new Map(),
   };

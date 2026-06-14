@@ -64,11 +64,16 @@ the client reuses the existing DOM and wires events/reactivity in place — no
 re-render. The counter is interactive immediately on the server-rendered nodes
 (`src/hydrate.test.tsx` asserts node reuse + a working click).
 
+## Resource-data transport (no hydration flash)
+
+`renderToStringAsync` serializes resolved `createResource` data into an inline
+`<script>window.__FX_DATA__=…</script>`. On the client, `hydrate()` reads it and
+**seeds** the matching resources (ids match by creation order), so they don't
+refetch — the async data renders straight away, no `User #7 → loading… → User
+#7` flash. (`src/hydrate-data.test.tsx` asserts the seed + no-flash.)
+
 ## Known follow-ups
 
-- **Resource-data transport** — the async user data is refetched on the client
-  and briefly re-renders (the resolved value isn't yet serialized + reseeded, so
-  a server `User #7` flashes back through `loading…`). The hooks exist
-  (`setServerDataGetter` in `@fluixi/reactive`); wiring is pending.
 - Server **`<Suspense>`** resolution under `renderToStringAsync`.
 - Async update when a bare `<Component/>` is the literal render root.
+- Hydration of `Show`/`For` arrays + dev mismatch detection.
