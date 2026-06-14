@@ -927,6 +927,8 @@ export function createResource<T, S = true>(
   let prevKey: S | typeof UNSET = UNSET;
   let manualRefetch = false;
   const saveToCache = (data: T): void => {
+    // No localStorage on the server (SSR) — skip silently.
+    if (typeof localStorage === 'undefined') return;
     try {
       if (data)
         localStorage.setItem(
