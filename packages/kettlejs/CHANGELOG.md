@@ -1,5 +1,23 @@
 # @fluixi/kettlejs
 
+## 0.4.0-next.3
+
+### Patch Changes
+
+- 2371819: Remove the unused experimental vinxi integration: the `internal/vinxi/*` app/runtime,
+  the `src/preset/vinxi.ts` stub, the `@fluixi/kettlejs/app` export it backed, and the
+  `vinxi` + `@vinxi/server-functions` dependencies. It was never wired up or used by any
+  app. (A future meta-framework will be built fresh on `@fluixi/server` + `@fluixi/vite-plugin`
+  - `@fluixi/router`, not on vinxi.)
+  * @fluixi/utils@0.4.0-next.3
+  * @fluixi/reactive@0.4.0-next.3
+  * @fluixi/dom@0.4.0-next.3
+  * @fluixi/jsx-runtime@0.4.0-next.3
+  * @fluixi/compiler@0.4.0-next.3
+  * @fluixi/lit@0.4.0-next.3
+  * @fluixi/vite-plugin@0.4.0-next.3
+  * @fluixi/server@0.3.0-next.3
+
 ## 0.4.0-next.2
 
 ### Patch Changes
