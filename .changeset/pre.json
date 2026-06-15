@@ -27,6 +27,7 @@
     "hydration",
     "imperative-default",
     "ir-component-props",
+    "map-array",
     "props-children-async",
     "provider-lazy-children",
     "render-stream",
