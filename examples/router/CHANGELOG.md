@@ -1,5 +1,15 @@
 # @fluixi/example-router
 
+## 0.0.5-next.2
+
+### Patch Changes
+
+- Updated dependencies [97cc220]
+  - @fluixi/reactive@0.4.0-next.2
+  - @fluixi/dom@0.4.0-next.2
+  - @fluixi/jsx-runtime@0.4.0-next.2
+  - @fluixi/kettlejs@0.4.0-next.2
+
 ## 0.0.5-next.1
 
 ### Patch Changes
