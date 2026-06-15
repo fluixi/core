@@ -289,6 +289,23 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    // Regression: IR wrapped component prop *values* in `() => …` thunks (unlike
+    // inline), so a prop like `history={createMemoryHistory()}` reached the
+    // component as a function — `history.get is not a function`. Component props
+    // must be passed as values (the createComponent call already sits in a memo).
+    name: 'component prop (call expr) is passed as a value, not a thunk',
+    src: `const makeApi = () => ({ get: () => 'V' });
+          const Box = (p) => <span class="box" data-kind={typeof p.api}>{p.api.get()}</span>;
+          export const render = () => <Box api={makeApi()} />;`,
+    run: (mod: any) => {
+      const host = document.createElement('div');
+      DOM.insert(host, mod.render());
+      const el = host.querySelector('.box');
+      expect(el?.getAttribute('data-kind')).toBe('object'); // not 'function'
+      expect(el?.textContent).toBe('V');
+    },
+  },
+  {
     name: 'For with removal + reorder (keyed)',
     src: `import { For } from '@fluixi/dom';
           export const render = (items) => <ul><For each={items}>{(it) => <li class="row" data-id={it.id}>{it.t}</li>}</For></ul>;`,
