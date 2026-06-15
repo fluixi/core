@@ -9,6 +9,7 @@ import {
   // createComputed,
 } from '../dom/integration.js';
 import { normalizeAccessor } from './utils.js';
+import { hydrateAdvancePast } from '../dom/hydration.js';
 
 type EachSource<T> =
   | ReadonlyArray<T>
@@ -191,6 +192,7 @@ export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> {
                   )
                 : typeof props.children === 'function' && props.children(getItem as any, idx)
             ) as any;
+            hydrateAdvancePast(rendered); // ascend cursor past this item (hydration)
           });
 
           nextEntries.push({ rendered, dispose, setIndex });
@@ -242,6 +244,7 @@ export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> {
           rendered = (Array.isArray(props.children)
             ? props.children.map((c) => (typeof c === 'function' ? c(item, idx) : c))
             : props.children(item as any, idx)) as any;
+          hydrateAdvancePast(rendered); // ascend cursor past this item (hydration)
         });
 
         nextEntries.push({ rendered, dispose, setIndex });
