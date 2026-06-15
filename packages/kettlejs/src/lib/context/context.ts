@@ -222,21 +222,68 @@ export interface ProviderProps<Child> {
  * }
  * ```
  */
-export function createProvider<T, S=Children>(props: ContextProvider<T, S>): Component<T> {
-  const { context, value, debug = false } = props;
+let _warnedEagerProvider = false;
+function warnEagerProvider(): void {
+  if (_warnedEagerProvider) return;
+  _warnedEagerProvider = true;
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') return;
+  console.warn(
+    '[fluixi] createProvider({ context, value, children }) reads `children` eagerly: ' +
+    'the object literal materialises `children` BEFORE the context is stamped, so a ' +
+    'routed <Outlet/> that has siblings inside the provider renders detached and its ' +
+    'descendants see no context under SSR. Use the lazy form instead:\n' +
+    '  createProvider(Context, value, props)   // children stays a getter\n' +
+    '  // or JSX:  <Context.Provider value={…}>{props.children}</Context.Provider>',
+  );
+}
+
+/**
+ * Lazy-safe form — pass the component's `props` so `children` is read through a
+ * getter (inside the stamped scope), never materialised early. This is the
+ * recommended way to wrap an <Outlet/>.
+ *
+ *   function ThemeProvider(props) {
+ *     return createProvider(ThemeContext, theme, props);
+ *   }
+ */
+export function createProvider<T>(
+  context: Context<T>,
+  value: T | Accessor<T>,
+  props: { children?: any },
+): Component<T>;
+/**
+ * @deprecated Eager form — `{ context, value, children }` reads `children` before
+ * the context is stamped (see warnEagerProvider). Use `createProvider(context,
+ * value, props)` or `<Context.Provider>` instead.
+ */
+export function createProvider<T, S = Children>(props: ContextProvider<T, S>): Component<T>;
+export function createProvider<T, S = Children>(
+  a: Context<T> | ContextProvider<T, S>,
+  value?: T | Accessor<T>,
+  childProps?: { children?: any },
+): Component<T> {
+  // Distinguish the two overloads: a Context (from createContext) exposes `.Provider`,
+  // whereas the deprecated form's first arg is the props object (which has `.context`).
+  const isLazyForm = !!(a as any)?.Provider;
+
+  const context = (isLazyForm ? (a as Context<T>) : (a as ContextProvider<T, S>).context);
+  const rawValue = isLazyForm ? value : (a as ContextProvider<T, S>).value;
+  const debug = isLazyForm ? false : ((a as ContextProvider<T, S>).debug ?? false);
+
+  if (!isLazyForm) warnEagerProvider();
 
   // Resolve value if it's an accessor
   const resolvedValue =
-    typeof value === 'function' ? (value as Accessor<T>)() : value;
+    typeof rawValue === 'function' ? (rawValue as Accessor<T>)() : (rawValue as T);
 
-  // Pass children lazily. Don't destructure props.children here — that evaluates a
-  // `get children()` getter eagerly, rendering the children (and any <Outlet/> in
-  // them) BEFORE this provider stamps its context. The reactive Provider reads
-  // children lazily, so the children render inside the stamped scope.
-  const ReactiveProvider = context.Provider;
-  return ReactiveProvider({
+  // Always read children through a getter so they render INSIDE the stamped scope.
+  // For the lazy form `childProps.children` is still a getter here (untouched); for
+  // the eager form the caller already materialised it, so this can only mitigate,
+  // not fully fix — hence the deprecation warning above.
+  const sourceProps = isLazyForm ? childProps : (a as ContextProvider<T, S>);
+  return context.Provider({
     value: resolvedValue,
-    get children() { return props.children; },
+    get children() { return (sourceProps as any)?.children; },
     debug,
   });
 
@@ -295,7 +342,9 @@ export function createContextWithProvider<T, U>(
   const context = createContext(defaultValue);
 
   const provider = (props: Omit<ContextProvider<T, U>, 'context'>) => {
-    return createProvider({ context, ...props });
+    // Lazy-safe form so children (which may contain an <Outlet/>) render inside
+    // the stamped scope.
+    return createProvider(context, props.value as T, props as { children?: any });
   };
 
   return [context, provider];
@@ -350,10 +399,10 @@ export function composeProviders(
   const [context, value] = contexts[0];
   const remaining = contexts.slice(1);
 
-  return createProvider({
-    context,
-    value,
-    children: composeProviders(remaining, children) as any,
+  // Lazy-safe form: defer the nested children behind a getter so each provider
+  // stamps its context before the inner providers/children render.
+  return createProvider(context, value, {
+    get children() { return composeProviders(remaining, children) as any; },
   });
 }
 
