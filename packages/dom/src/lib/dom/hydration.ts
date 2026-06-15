@@ -68,6 +68,20 @@ export function ascendPast(node: Node): void {
 }
 
 /**
+ * After a control-flow item (For/Index/Show child) builds its node(s), ascend the
+ * cursor past it so the NEXT sibling item reuses the right server node. The item's
+ * own createNativeElement descended into it; without this, item 2+ would be built
+ * from a stale (descended) cursor and recreated fresh. No-op outside hydration.
+ */
+export function hydrateAdvancePast(rendered: unknown): void {
+  if (!hydration.active || rendered == null) return;
+  const last = Array.isArray(rendered) ? rendered[rendered.length - 1] : rendered;
+  if (last && typeof (last as any).nodeType === 'number') {
+    hydration.cursor = (last as Node).nextSibling;
+  }
+}
+
+/**
  * Hydrate `element` over the server-rendered markup already in `container`:
  * reuse the existing DOM and wire events/reactivity in place (no re-render).
  */
