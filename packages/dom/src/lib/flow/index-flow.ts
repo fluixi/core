@@ -7,6 +7,7 @@ import {
   untrack,
 } from '@fluixi/reactive/signal';
 import { normalizeAccessor } from './utils.js';
+import { hydrateAdvancePast } from '../dom/hydration.js';
 
 export interface IndexProps<T, U = any> {
   /** Reactive array to iterate over. */
@@ -81,6 +82,7 @@ export function Index<T, U = any>(props: IndexProps<T, U>): Accessor<U[] | any> 
           const [itemSignal, setItemSignal] = createSignal<T>(item);
           setItem = setItemSignal as (v: T) => void;
           rendered = props.children(itemSignal, i);
+          hydrateAdvancePast(rendered); // ascend cursor past this item (hydration)
         });
 
         slots.push({ rendered, setItem, dispose });
