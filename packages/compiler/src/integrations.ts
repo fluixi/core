@@ -75,9 +75,9 @@ export interface CompilerOptions {
 
   /**
    * Code-generation backend.
-   * - 'jsx': emit the automatic runtime jsx()/jsxs() (default).
-   * - 'imperative': compile straight into @fluixi/dom runtime calls.
-   * @default 'jsx'
+   * - 'imperative': compile straight into @fluixi/dom runtime calls (default).
+   * - 'jsx': emit the automatic runtime jsx()/jsxs().
+   * @default 'imperative'
    */
   backend?: 'jsx' | 'imperative';
 
@@ -630,8 +630,8 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         ],
         optimizeControlFlow: options.optimize !== false,
         sourceMaps: options.sourceMaps !== false,
-        // Codegen backend selection (default 'jsx').
-        backend: options.backend || 'jsx',
+        // Codegen backend selection (default 'imperative').
+        backend: options.backend || 'imperative',
         ...(options.codegen ? { codegen: options.codegen } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule
