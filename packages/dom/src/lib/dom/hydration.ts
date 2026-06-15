@@ -26,6 +26,28 @@ export const hydration: { active: boolean; cursor: Node | null } = {
   cursor: null,
 };
 
+// Tree-shaken out of production bundles (vite/esbuild statically replace
+// process.env.NODE_ENV), so the mismatch checks cost nothing in prod.
+const DEV =
+  typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production';
+
+/** Dev-only: warn when the cursor node diverges from what the client builds. */
+function warnMismatch(expected: string, found: Node): void {
+  const f =
+    found.nodeType === 1
+      ? `<${(found as Element).tagName.toLowerCase()}>`
+      : found.nodeType === 3
+        ? `text ${JSON.stringify((found.nodeValue ?? '').slice(0, 24))}`
+        : found.nodeType === 8
+          ? 'comment'
+          : 'node';
+  console.warn(
+    `[fluixi] hydration mismatch: expected ${expected} but the server DOM has ${f}. ` +
+      `Server and client rendered different markup; recreating this node on the client. ` +
+      `Check for non-deterministic render (Date.now(), Math.random(), browser-only branches, untransported data).`,
+  );
+}
+
 /** Reuse the matched element at the cursor and descend into its children. */
 export function hydrateElement(tag: string): Element | null {
   const c = hydration.cursor;
@@ -33,6 +55,7 @@ export function hydrateElement(tag: string): Element | null {
     hydration.cursor = c.firstChild;
     return c as Element;
   }
+  if (DEV && c) warnMismatch(`<${tag}>`, c);
   return null;
 }
 
@@ -44,6 +67,10 @@ export function hydrateText(value: string): Text | null {
     if ((c as Text).nodeValue !== value) (c as Text).nodeValue = value;
     return c as Text;
   }
+  // Empty text is an insertion-anchor marker (createTextNode('')), not real
+  // content — the server serializes it to nothing, so a "missing" empty text is
+  // expected, never a real divergence. Only warn for non-empty text.
+  if (DEV && c && value !== '') warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
   return null;
 }
 
