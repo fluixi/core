@@ -1,11 +1,4 @@
-import {
-  Accessor,
-  createMemo,
-  createRoot,
-  createSignal,
-  onCleanup,
-  untrack,
-} from '@fluixi/reactive/signal';
+import { Accessor, indexArray } from '@fluixi/reactive/signal';
 import { normalizeAccessor } from './utils.js';
 import { hydrateAdvancePast } from '../dom/hydration.js';
 
@@ -25,12 +18,6 @@ export interface IndexProps<T, U = any> {
   children: (item: Accessor<T>, index: number) => U;
 }
 
-type Slot<T, U> = {
-  rendered: U;
-  setItem: (item: T) => void;
-  dispose: () => void;
-};
-
 /**
  * Non-keyed list rendering — mirrors SolidJS `<Index>`.
  *
@@ -49,60 +36,13 @@ type Slot<T, U> = {
  */
 export function Index<T, U = any>(props: IndexProps<T, U>): Accessor<U[] | any> {
   const each = normalizeAccessor(props.each as T[]);
-
-  let slots: Slot<T, U>[] = [];
-
-  onCleanup(() => {
-    for (const s of slots) s.dispose();
-    slots = [];
-  });
-
-  return createMemo<U[] | any>(() => {
-    const list = each() ?? [];
-
-    if (list.length === 0) {
-      for (const s of slots) s.dispose();
-      slots = [];
-      return props.fallback ?? null;
-    }
-
-    const prevLen = slots.length;
-    const nextLen = list.length;
-
-    // Grow: create new slots for added positions.
-    if (nextLen > prevLen) {
-      for (let i = prevLen; i < nextLen; i++) {
-        const item = list[i];
-        let rendered!: U;
-        let setItem!: (v: T) => void;
-        let dispose!: () => void;
-
-        createRoot((d) => {
-          dispose = d;
-          const [itemSignal, setItemSignal] = createSignal<T>(item);
-          setItem = setItemSignal as (v: T) => void;
-          rendered = props.children(itemSignal, i);
-          hydrateAdvancePast(rendered); // ascend cursor past this item (hydration)
-        });
-
-        slots.push({ rendered, setItem, dispose });
-      }
-    }
-
-    // Shrink: dispose trailing slots.
-    if (nextLen < prevLen) {
-      for (let i = nextLen; i < prevLen; i++) {
-        slots[i].dispose();
-      }
-      slots = slots.slice(0, nextLen);
-    }
-
-    // Update changed items (by value) within the surviving range.
-    const surviveLen = Math.min(prevLen, nextLen);
-    for (let i = 0; i < surviveLen; i++) {
-      untrack(() => slots[i].setItem(list[i]));
-    }
-
-    return slots.map((s) => s.rendered);
-  });
+  return indexArray<T, U>(
+    each,
+    (item, index) => {
+      const rendered = props.children(item, index);
+      hydrateAdvancePast(rendered); // ascend cursor past this item (hydration)
+      return rendered;
+    },
+    { fallback: () => props.fallback ?? null },
+  );
 }
