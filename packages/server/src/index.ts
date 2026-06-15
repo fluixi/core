@@ -57,20 +57,10 @@ export interface DocumentOptions {
   bodyAttributes?: string;
 }
 
-/** Wrap rendered content in a complete HTML document. */
-export function createHtmlDocument(content: string, options: DocumentOptions = {}): string {
-  const {
-    title = 'Fluixi App',
-    lang = 'en',
-    stylesheets = [],
-    scripts = [],
-    head = '',
-    bodyAttributes = '',
-  } = options;
-
+/** The document up to (and including) the open <body> — flushable before content. */
+function documentShell(options: DocumentOptions = {}): string {
+  const { title = 'Fluixi App', lang = 'en', stylesheets = [], head = '', bodyAttributes = '' } = options;
   const styleTags = stylesheets.map((href) => `<link rel="stylesheet" href="${href}">`).join('\n    ');
-  const scriptTags = scripts.map((src) => `<script type="module" src="${src}"></script>`).join('\n    ');
-
   return `<!DOCTYPE html>
 <html lang="${lang}">
   <head>
@@ -81,10 +71,22 @@ export function createHtmlDocument(content: string, options: DocumentOptions = {
     ${head}
   </head>
   <body${bodyAttributes ? ' ' + bodyAttributes : ''}>
-    ${content}
+    `;
+}
+
+/** The trailing scripts + closing tags — flushed after the app content. */
+function documentClose(options: DocumentOptions = {}): string {
+  const { scripts = [] } = options;
+  const scriptTags = scripts.map((src) => `<script type="module" src="${src}"></script>`).join('\n    ');
+  return `
     ${scriptTags}
   </body>
 </html>`;
+}
+
+/** Wrap rendered content in a complete HTML document. */
+export function createHtmlDocument(content: string, options: DocumentOptions = {}): string {
+  return documentShell(options) + content + documentClose(options);
 }
 
 /** Render a request to an HTML string, exposing the event via getRequestEvent(). */
@@ -110,6 +112,37 @@ export function renderRequestToPage(
 }
 
 /**
+ * Render a request to a web `ReadableStream<Uint8Array>` — works in Node 18+,
+ * Deno, Bun, and edge/worker runtimes (which want a web stream, not a Node
+ * Readable). The document **shell** (`<head>` + open `<body>`) is flushed
+ * immediately so the browser can start loading assets, then the app HTML
+ * (awaiting data loaders/Suspense) and the closing tags follow.
+ *
+ * Progressive out-of-order Suspense streaming is a later pass; today the body is
+ * a single chunk emitted after the async render resolves.
+ */
+export function renderToStream(
+  app: (props: { url: string }) => any,
+  event: RequestEvent,
+  options: DocumentOptions = {},
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        controller.enqueue(encoder.encode(documentShell(options))); // flush shell first
+        const content = await renderRequestAsync(app, event); // awaits resources
+        controller.enqueue(encoder.encode(content));
+        controller.enqueue(encoder.encode(documentClose(options)));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+/**
  * Server entry helper — returns render/page closures bound to an app.
  *
  * @example
@@ -127,5 +160,7 @@ export function startServer(App: (props: { url: string }) => any) {
     /** async full-document render */
     pageAsync: async (url: string, opts?: DocumentOptions) =>
       createHtmlDocument(await renderRequestAsync(App, { url }), opts),
+    /** web ReadableStream of the document (shell flushed first) */
+    stream: (url: string, opts?: DocumentOptions) => renderToStream(App, { url }, opts),
   };
 }

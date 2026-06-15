@@ -6,6 +6,7 @@ import {
   renderToString,
   renderRequest,
   renderRequestAsync,
+  renderToStream,
   createHtmlDocument,
   getRequestEvent,
   runWithRequestContext,
@@ -13,6 +14,51 @@ import {
 } from './index.js';
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function collectStream(stream: ReadableStream<Uint8Array>): Promise<string[]> {
+  const reader = stream.getReader();
+  const dec = new TextDecoder();
+  const chunks: string[] = [];
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    chunks.push(dec.decode(value));
+  }
+  return chunks;
+}
+
+describe('@fluixi/server renderToStream', () => {
+  const DataApp = ({ url }: { url: string }) => {
+    const [data] = createResource(() => new Promise<string>((r) => setTimeout(() => r(`d:${url}`), 5)));
+    const div = createNativeElement('div') as any;
+    insert(div, () => data() ?? '…', null);
+    return div;
+  };
+
+  it('flushes the document shell first, then the resolved content, then closes', async () => {
+    const stream = renderToStream(DataApp, { url: '/p' }, { title: 'T', scripts: ['/client.js'] });
+    const chunks = await collectStream(stream);
+
+    // shell is its own (first) chunk — before the body content
+    expect(chunks[0]).toContain('<title>T</title>');
+    expect(chunks[0]).toContain('<body');
+    expect(chunks[0]).not.toContain('d:/p'); // content not in the shell
+
+    const full = chunks.join('');
+    expect(full).toContain('<div>d:/p</div>'); // awaited data resolved
+    expect(full).toContain('/client.js'); // close chunk scripts
+    expect(full.trimEnd().endsWith('</html>')).toBe(true);
+    expect(chunks.length).toBeGreaterThanOrEqual(2); // shell flushed separately
+  });
+
+  it('startServer().stream returns a web ReadableStream', async () => {
+    const { stream } = startServer(DataApp);
+    const s = stream('/x');
+    expect(s).toBeInstanceOf(ReadableStream);
+    const full = (await collectStream(s)).join('');
+    expect(full).toContain('<div>d:/x</div>');
+  });
+});
 
 const App = ({ url }: { url: string }) => {
   const div = createNativeElement('div') as any;
