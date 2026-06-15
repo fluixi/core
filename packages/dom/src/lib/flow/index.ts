@@ -7,6 +7,9 @@ export type { ForProps, ForPropsKeyed, ForPropsUnkeyed } from './for.js';
 export { Index } from './index-flow.js';
 export type { IndexProps } from './index-flow.js';
 
+// The reactive list-reconciliation primitives that back <For>/<Index>.
+export { mapArray, keyArray, indexArray } from '@fluixi/reactive/signal';
+
 export { Switch, Match } from './switch.js';
 export type { SwitchProps, MatchProps, MatchNode } from './switch.js';
 
