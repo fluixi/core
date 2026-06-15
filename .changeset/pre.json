@@ -19,5 +19,16 @@
     "@fluixi/utils": "0.3.0",
     "@fluixi/vite-plugin": "0.3.0"
   },
-  "changesets": []
+  "changesets": [
+    "dispose-no-rerun",
+    "hydrate-controlflow",
+    "hydrate-index",
+    "hydrate-mismatch",
+    "hydration",
+    "imperative-default",
+    "ir-component-props",
+    "props-children-async",
+    "render-stream",
+    "resource-data-transport"
+  ]
 }
