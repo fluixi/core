@@ -1,5 +1,7 @@
 # @fluixi/compiler
 
+## 0.4.0-next.2
+
 ## 0.4.0-next.1
 
 ## 0.4.0-next.0
