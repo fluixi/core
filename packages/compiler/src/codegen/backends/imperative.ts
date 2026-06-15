@@ -47,6 +47,19 @@ function propValue(p: IRProp): string {
   return JSON.stringify(p.literal ?? true);
 }
 
+/**
+ * Component props are passed as VALUES, not thunks (unlike native-element attrs).
+ * The whole `createComponent(...)` call sits inside a `createMemo`, so reading a
+ * signal in a prop re-evaluates when the memo re-runs — no per-prop thunk needed.
+ * This matches the inline codegen; wrapping a prop like
+ * `history={createMemoryHistory()}` in `() => …` would hand the component a
+ * function instead of the value (e.g. `history.get is not a function`).
+ */
+function componentPropValue(p: IRProp): string {
+  if (p.expr !== undefined) return `(${p.expr})`;
+  return JSON.stringify(p.literal ?? true);
+}
+
 /** Build a props object literal (or mergeProps(...) when spreads are present). */
 function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<string>): string {
   const spreads = props.filter((p) => p.kind === 'spread');
@@ -71,7 +84,7 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
-  const entries = normal.map((p) => `${propKey(p.name)}: ${propValue(p)}`);
+  const entries = normal.map((p) => `${propKey(p.name)}: ${componentPropValue(p)}`);
   if (children.length > 0) {
     // Children are a LAZY getter: evaluated inside the component's execution, so
     // child components are created in the component's owner scope (preserves owner
