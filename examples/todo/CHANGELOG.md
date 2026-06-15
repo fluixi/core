@@ -1,5 +1,15 @@
 # @fluixi/example-todo
 
+## 0.0.5-next.1
+
+### Patch Changes
+
+- Updated dependencies [910be36]
+  - @fluixi/kettlejs@0.4.0-next.1
+  - @fluixi/reactive@0.4.0-next.1
+  - @fluixi/dom@0.4.0-next.1
+  - @fluixi/jsx-runtime@0.4.0-next.1
+
 ## 0.0.5-next.0
 
 ### Patch Changes
