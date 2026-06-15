@@ -36,10 +36,7 @@ describe('hydrate control-flow', () => {
     expect(Array.from(container.querySelectorAll('li')).map((l) => l.textContent)).toEqual(['a', 'b', 'c']);
   });
 
-  // OPEN (separate from hydration): Index renders correctly on the client (2 items
-  // → 2 nodes) but renderToString() emits an extra node server-side. That's an
-  // Index *server-render* bug, not the For/Show hydration ascend; tracked separately.
-  it.skip('Index: reuses server list items and stays reactive (OPEN — Index SSR emits extra)', async () => {
+  it('Index: reuses server list items and stays reactive', async () => {
     let setItems: any;
     const App = () => {
       const [items, set] = createSignal(['x', 'y']);
