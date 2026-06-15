@@ -17,7 +17,6 @@
     "dist",
     "src",
     "types",
-    "internal",
     "README.md"
   ],
   "exports": {
@@ -38,13 +37,6 @@
       "import": "./dist/src/lib/server/reactive.mjs",
       "require": "./dist/src/lib/server/reactive.cjs",
       "default": "./dist/src/lib/server/reactive.js"
-    },
-    "./app": {
-      "development": "./internal/vinxi/app.ts",
-      "types": "./dist/internal/vinxi/app.d.ts",
-      "import": "./dist/internal/vinxi/app.js",
-      "require": "./dist/internal/vinxi/app.cjs",
-      "default": "./dist/internal/vinxi/app.js"
     },
     "./server": {
       "development": "./src/lib/server/index.ts",
@@ -132,11 +124,9 @@
     "@fluixi/utils": "workspace:*",
     "@lit-labs/ssr": "^3.0.0",
     "@lit-labs/ssr-client": "^1.0.0",
-    "@vinxi/server-functions": "^0.5.1",
     "lit": "^3.0.0",
     "lit-html": "^3.0.0",
-    "vite-plugin-node-polyfills": "^0.25.0",
-    "vinxi": "^0.5.8"
+    "vite-plugin-node-polyfills": "^0.25.0"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",
