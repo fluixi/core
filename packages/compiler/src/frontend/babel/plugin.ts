@@ -121,12 +121,12 @@ export interface PluginOptions {
 
   /**
    * Code-generation backend.
+   * - 'imperative' (default): emit direct compiled calls into the @fluixi/dom
+   *   runtime (createNativeElement/spread/insert/createComponent) — no per-render
+   *   jsx() dispatch. Targets RUNTIME_CONTRACT_V1.
    * - 'jsx': emit the automatic runtime (jsx()/jsxs()) — the runtime interprets
-   *   the calls (default, unchanged behaviour).
-   * - 'imperative': emit direct compiled calls into the @fluixi/dom runtime
-   *   (createNativeElement/spread/insert/createComponent) — no per-render jsx()
-   *   dispatch. Targets RUNTIME_CONTRACT_V1.
-   * @default 'jsx'
+   *   the calls.
+   * @default 'imperative'
    */
   backend?: 'jsx' | 'imperative';
 
@@ -236,7 +236,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
     autoShowTransform = false,
-    backend = 'jsx',
+    backend = 'imperative',
     codegen = 'inline',
   } = options;
 

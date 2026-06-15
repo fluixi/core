@@ -19,13 +19,22 @@ describe('@fluixi/vite-plugin', () => {
     expect(p.config().esbuild.jsx).toBe('automatic');
   });
 
-  it('jsx backend (default) emits jsx() calls', async () => {
+  it('jsx backend (opt-in) emits jsx() calls', async () => {
     const code = await runTransform(
-      { importSource: '@fluixi/jsx-runtime' },
+      { backend: 'jsx', importSource: '@fluixi/jsx-runtime' },
       'export const A = (x) => <div id="a">{x()}</div>;',
     );
     expect(code).toMatch(/jsx\(/);
     expect(code).not.toContain('createNativeElement');
+  });
+
+  it('imperative is the default backend', async () => {
+    const code = await runTransform(
+      { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' },
+      'export const A = (x) => <div id="a">{x()}</div>;',
+    );
+    expect(code).toContain('createNativeElement'); // default is now imperative
+    expect(code).not.toMatch(/\bjsx\(/);
   });
 
   it('imperative backend emits @fluixi/dom runtime calls', async () => {

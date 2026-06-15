@@ -262,11 +262,11 @@ describe('ir: JSX nested in expressions (regression)', () => {
   });
 });
 
-describe('jsx backend (default) is unchanged', () => {
-  it('still emits jsx()/jsxs() calls', () => {
+describe('jsx backend (opt-in) is unchanged', () => {
+  it('still emits jsx()/jsxs() calls when backend: jsx', () => {
     const code = compileEsm(
       `export const r = (x) => <div id="a">{x()}</div>;`,
-      { importSource: '@fluixi/jsx-runtime' },
+      { backend: 'jsx', importSource: '@fluixi/jsx-runtime' },
     );
     expect(code).toMatch(/\bjsx\(/);
     expect(code).not.toContain('createNativeElement');
