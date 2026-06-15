@@ -30,6 +30,7 @@
     "map-array",
     "props-children-async",
     "provider-lazy-children",
+    "remove-vinxi",
     "render-stream",
     "resource-data-transport"
   ]
