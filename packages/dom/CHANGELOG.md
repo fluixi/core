@@ -1,5 +1,48 @@
 # @fluixi/dom
 
+## 0.4.0
+
+### Minor Changes
+
+- 80aded7: True DOM-reuse hydration. `hydrate()` now reuses the server-rendered DOM instead
+  of re-rendering: the hydration cursor descends into a matched element's children
+  (`createNativeElement`) and ascends past a placed child once its subtree is done
+  (`insert`), matching the depth-first shape the imperative codegen emits.
+  `insertExpression` adopts server nodes already in place. All changes are behind
+  `isHydrating`, so the normal client render path is unchanged.
+- 9effed1: Resource-data transport for hydration (no flash). `renderToStringAsync` now
+  serializes resolved `createResource` values into an inline
+  `<script>window.__FX_DATA__=…</script>`; on the client `hydrate()` seeds the
+  matching resources (ids matched by creation order) so they don't refetch — the
+  async data renders immediately instead of flashing through the loading fallback.
+  Also extracts the DOM-reuse hydration out of `runtime.ts` into a dedicated
+  `hydration.ts`.
+
+### Patch Changes
+
+- 7395dc9: Hydration now works for `For` (and `Show`) control-flow. Hydrating a server-
+  rendered list used to add duplicate/extra nodes and break reconciliation: each
+  `For` item's `createNativeElement` descended into its node, but nothing ascended
+  the hydration cursor between siblings, so items 2+ were rebuilt fresh. `For` now
+  advances the cursor past each rendered item (`hydrateAdvancePast`, no-op outside
+  hydration), so server list items are reused and stay reactive. `Show` already
+  worked; both are covered by tests. (`Index` SSR has a separate, pre-existing
+  extra-node bug — tracked separately.)
+- 7a2cdcd: Hydration now works for `Index` too (same fix as `For` in the previous release):
+  each item ascends the hydration cursor past its rendered node so server list
+  items are reused instead of rebuilt. `Index` SSR was already correct — this was a
+  missing-ascend hydration bug, not a server-render one.
+- a46d4cf: Dev-only hydration mismatch detection. When `hydrate()` walks the server DOM and
+  the cursor node diverges from what the client builds (different tag/type), it logs
+  a warning pointing at the likely cause (non-deterministic render, browser-only
+  branches, untransported data). Tree-shaken out of production via
+  `process.env.NODE_ENV`, so it costs nothing in prod. Only warns on a present-but-
+  wrong node; empty-text insertion markers (which the server serializes to nothing)
+  are not flagged.
+- Updated dependencies [fd33c30]
+- Updated dependencies [9effed1]
+  - @fluixi/reactive@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

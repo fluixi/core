@@ -1,5 +1,18 @@
 # @fluixi/lit
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [fd33c30]
+- Updated dependencies [7395dc9]
+- Updated dependencies [7a2cdcd]
+- Updated dependencies [a46d4cf]
+- Updated dependencies [80aded7]
+- Updated dependencies [9effed1]
+  - @fluixi/reactive@0.4.0
+  - @fluixi/dom@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes
