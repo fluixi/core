@@ -28,6 +28,7 @@
     "imperative-default",
     "ir-component-props",
     "props-children-async",
+    "provider-lazy-children",
     "render-stream",
     "resource-data-transport"
   ]
