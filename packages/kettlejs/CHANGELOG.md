@@ -1,5 +1,19 @@
 # @fluixi/kettlejs
 
+## 0.4.0-next.5
+
+### Patch Changes
+
+- c6f7593: Fix `<Suspense>` + `lazy()` under async SSR: register the boundary's lazy-trigger effect in its resume list so a resolved lazy child re-renders during the drain (and its own resource is awaited) instead of serialising the fallback.
+  - @fluixi/utils@0.4.0-next.5
+  - @fluixi/reactive@0.4.0-next.5
+  - @fluixi/dom@0.4.0-next.5
+  - @fluixi/jsx-runtime@0.4.0-next.5
+  - @fluixi/compiler@0.4.0-next.5
+  - @fluixi/lit@0.4.0-next.5
+  - @fluixi/vite-plugin@0.4.0-next.5
+  - @fluixi/server@0.3.0-next.5
+
 ## 0.4.0-next.4
 
 ### Patch Changes
