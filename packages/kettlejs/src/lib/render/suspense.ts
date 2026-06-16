@@ -137,12 +137,10 @@ function SuspenseImpl(props: SuspenseProps): any {
   const store: SuspenseContextType = {
     increment: () => {
       const inF = untrack(inFallback)
-      // console.log('routeMatch suspense incre', props)
       counter++;
       if (!inF) setInFallback(true);
     },
     decrement: () => {
-      // console.log('suspense decrement')
       counter--;
       if (counter <= 0) {
         counter = 0;
@@ -239,6 +237,14 @@ function SuspenseImpl(props: SuspenseProps): any {
       resolvedChildren.some((c) => typeof c === 'function' && isSignal(c)));
   if (childrenHasSignal) {
     createRenderEffect(() => {
+      // Register this effect in the boundary's resume list. resumeEffects() clears
+      // the list after firing, so we re-add on every run. When a lazy/async child's
+      // load resolves and the boundary decrements to 0, resumeEffects re-runs this
+      // effect — re-walking the now-resolved child so ITS own resource self-registers
+      // during the async-SSR drain. Without this the resolved lazy child only
+      // re-renders at serialize time (after the drain exited) → fallback serialised.
+      const self = getOwner();
+      if (self && effects.indexOf(self) === -1) effects.push(self);
       triggerLazy(resolvedChildren);
     });
   }
