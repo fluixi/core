@@ -28,6 +28,7 @@
     "hydration",
     "imperative-default",
     "ir-component-props",
+    "lazy-suspense-async-ssr",
     "map-array",
     "props-children-async",
     "provider-lazy-children",

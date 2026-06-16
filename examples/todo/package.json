@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-todo",
-  "version": "0.0.5-next.4",
+  "version": "0.0.5-next.5",
   "private": true,
   "type": "module",
   "description": "Todo example (For, Show, input + events) proving the KettleJS stack in a real DOM.",
