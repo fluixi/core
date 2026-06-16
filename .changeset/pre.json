@@ -21,6 +21,7 @@
   },
   "changesets": [
     "dispose-no-rerun",
+    "full-areas-spend",
     "hydrate-controlflow",
     "hydrate-index",
     "hydrate-mismatch",
