@@ -495,7 +495,6 @@ function runComputation(c: Computation, value: any): void {
   } catch (err) {
     if (isPromise(err)) {
       const ctx = _SuspenseContext && useContext(_SuspenseContext);
-      console.log('thow comp', err, ctx);
       if (ctx) {
         ctx.increment();
         (err as Promise<unknown>).finally(() => ctx.decrement());
