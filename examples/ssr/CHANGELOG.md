@@ -1,5 +1,26 @@
 # @fluixi/example-ssr
 
+## 0.0.3-next.4
+
+### Patch Changes
+
+- 21d2c18: ---
+
+  "@fluixi/kettlejs": patch
+
+  ***
+
+  Tidy kettlejs internals: remove the dead `dev-server/` and `builder/` stubs and
+  ~4,500 lines of extensionless router scratch files (`actual`/`curr`/`known`/`lts`/
+  `rs`/`rt`) — all unexported and unimportable. No public API change.
+
+- Updated dependencies [21d2c18]
+  - @fluixi/jsx-runtime@0.4.0-next.4
+  - @fluixi/kettlejs@0.4.0-next.4
+  - @fluixi/reactive@0.4.0-next.4
+  - @fluixi/server@0.3.0-next.4
+  - @fluixi/dom@0.4.0-next.4
+
 ## 0.0.3-next.3
 
 ### Patch Changes
