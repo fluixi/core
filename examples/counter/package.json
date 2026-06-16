@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-counter",
-  "version": "0.0.5-next.4",
+  "version": "0.0.5-next.5",
   "private": true,
   "type": "module",
   "description": "Counter example proving the KettleJS stack (vite-plugin -> compiler -> jsx-runtime -> dom) renders + reacts in a real DOM.",

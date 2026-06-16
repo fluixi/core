@@ -1,5 +1,7 @@
 # @fluixi/utils
 
+## 0.4.0-next.5
+
 ## 0.4.0-next.4
 
 ### Patch Changes
