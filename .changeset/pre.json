@@ -36,6 +36,7 @@
     "imperative-default",
     "ir-component-props",
     "kettle-routes-polyfills-optout",
+    "kettlejs-reduce-lit-coupling",
     "lazy-suspense-async-ssr",
     "map-array",
     "props-children-async",
@@ -45,6 +46,7 @@
     "resource-data-transport",
     "router-outlet-async-ssr",
     "serialize-in-root-owner",
+    "start-deploy-adapters",
     "use-navigate-ssr-safe"
   ]
 }

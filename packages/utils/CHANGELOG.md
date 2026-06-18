@@ -1,5 +1,7 @@
 # @fluixi/utils
 
+## 0.4.0-next.12
+
 ## 0.4.0-next.11
 
 ## 0.4.0-next.10

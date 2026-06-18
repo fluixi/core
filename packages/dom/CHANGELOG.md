@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 0.4.0-next.12
+
+### Patch Changes
+
+- @fluixi/reactive@0.4.0-next.12
+
 ## 0.4.0-next.11
 
 ### Patch Changes
