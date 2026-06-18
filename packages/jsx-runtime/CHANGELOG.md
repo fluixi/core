@@ -1,5 +1,13 @@
 # @fluixi/jsx-runtime
 
+## 0.4.0-next.8
+
+### Patch Changes
+
+- @fluixi/reactive@0.4.0-next.8
+- @fluixi/dom@0.4.0-next.8
+- @fluixi/lit@0.4.0-next.8
+
 ## 0.4.0-next.7
 
 ### Patch Changes
