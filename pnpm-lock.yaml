@@ -166,6 +166,31 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  examples/start-app:
+    dependencies:
+      '@fluixi/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/kettlejs':
+        specifier: workspace:*
+        version: link:../../packages/kettlejs
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../../packages/start
+    devDependencies:
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   examples/todo:
     dependencies:
       '@fluixi/dom':
@@ -209,6 +234,12 @@ importers:
       inquirer:
         specifier: ^14.0.2
         version: 14.0.2(@types/node@22.19.19)
+
+  packages/cli:
+    dependencies:
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../start
 
   packages/compiler:
     dependencies:
@@ -487,6 +518,18 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
+
+  packages/start:
+    dependencies:
+      '@fluixi/kettlejs':
+        specifier: workspace:*
+        version: link:../kettlejs
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../server
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/utils:
     dependencies:
