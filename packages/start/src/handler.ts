@@ -1,4 +1,8 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import { createServer as createHttpServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http';
+import { stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
+import { join, extname } from 'node:path';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -78,5 +82,60 @@ export function toNodeHandler(handler: FetchHandler) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const response = await handler(nodeToRequest(req));
     await sendResponse(res, response);
+  };
+}
+
+export interface ServeNodeOptions {
+  port?: number;
+  onListen?: (port: number) => void;
+}
+
+/** The reference **Node adapter**: serve a `FetchHandler` over `node:http`. */
+export function serveNode(handler: FetchHandler, opts: ServeNodeOptions = {}): Server {
+  const port = opts.port ?? 3000;
+  const node = toNodeHandler(handler);
+  const server = createHttpServer((req, res) => {
+    node(req, res).catch((e) => {
+      res.statusCode = 500;
+      res.end(String((e as any)?.stack || e));
+    });
+  });
+  server.listen(port, () =>
+    opts.onListen ? opts.onListen(port) : console.log(`  fluixi → http://localhost:${port}`),
+  );
+  return server;
+}
+
+const MIME: Record<string, string> = {
+  '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
+  '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
+  '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.map': 'application/json',
+};
+
+/**
+ * Wrap a handler to serve static files from `dir` first (for filesystem runtimes —
+ * Node/Bun/Deno). Edge runtimes serve assets via the platform, so they use the bare
+ * handler instead.
+ */
+export function withStaticFiles(handler: FetchHandler, dir: string): FetchHandler {
+  return async (request) => {
+    const { pathname } = new URL(request.url);
+    if (pathname !== '/' && extname(pathname)) {
+      const file = join(dir, decodeURIComponent(pathname));
+      try {
+        const s = await stat(file);
+        if (s.isFile()) {
+          const body = Readable.toWeb(createReadStream(file)) as unknown as ReadableStream;
+          return new Response(body, {
+            headers: {
+              'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
+              'content-length': String(s.size),
+            },
+          });
+        }
+      } catch { /* not a static file → fall through to SSR */ }
+    }
+    return handler(request);
   };
 }

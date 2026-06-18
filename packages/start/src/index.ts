@@ -17,5 +17,10 @@ export {
   toNodeHandler,
   nodeToRequest,
   sendResponse,
+  serveNode,
+  withStaticFiles,
 } from './handler.js';
-export type { FetchHandler, RenderFn } from './handler.js';
+export type { FetchHandler, RenderFn, ServeNodeOptions } from './handler.js';
+// Deploy adapters: the portable prod handler + the node/web reference adapters.
+export { createProdHandler, nodeAdapter, webAdapter } from './adapter.js';
+export type { Adapter, AdapterContext } from './adapter.js';
