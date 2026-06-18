@@ -27,6 +27,7 @@
     "hydrate-index",
     "hydrate-mismatch",
     "hydration-event-replay",
+    "hydration-marker-mismatch-warning",
     "hydration",
     "imperative-default",
     "ir-component-props",
@@ -38,6 +39,7 @@
     "render-stream",
     "resource-data-transport",
     "router-outlet-async-ssr",
+    "serialize-in-root-owner",
     "use-navigate-ssr-safe"
   ]
 }
