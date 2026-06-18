@@ -36,6 +36,7 @@
     "remove-vinxi",
     "render-stream",
     "resource-data-transport",
-    "router-outlet-async-ssr"
+    "router-outlet-async-ssr",
+    "use-navigate-ssr-safe"
   ]
 }
