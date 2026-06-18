@@ -11,6 +11,8 @@ import {
   setResourceIdSource,
   setResourceDataSink,
   setEagerStaleEffects,
+  getOwner,
+  runWithOwner,
   flush,
 } from '@fluixi/reactive/signal';
 import { isServer, setServerMode } from './nodes.js';
@@ -109,19 +111,28 @@ export async function renderToStringAsync(
   try {
     return await runWithRequestContext(ctx, async () => {
       let tree: any;
+      let rootOwner: any = null;
       let dispose: () => void = () => {};
       createRoot((d) => {
         dispose = d;
+        rootOwner = getOwner();
         tree = typeof app === 'function' ? app() : app;
       });
+      // Serialize INSIDE the render root's owner. The probe/serialize below force
+      // lazy subtrees to render, which can CREATE resources; running with the root as
+      // owner makes those resources owned by the root, so dispose() cancels them. If
+      // we serialized with Owner=null (the default after createRoot returns), a
+      // resource created during serialize would be unowned → never cancelled → it
+      // settles AFTER the response is serialized and the root disposed, re-running an
+      // effect on a torn-down/detached tree (the storefront's "page shows, then errors
+      // ~2-3s later" crash). Wrapped because a suspended read may throw its promise.
+      const probe = () => {
+        try { runWithOwner(rootOwner, () => serializeNode(tree)); } catch { /* suspended read — resource self-registered */ }
+      };
       // Force the (lazily-built) component tree to evaluate so every resource/lazy
       // load is created and self-registers in ctx.pending BEFORE we drain. A tree
-      // behind deferred memos (e.g. a router <Outlet/>) renders NOTHING until
-      // serialize, so without this probe the drain sees empty pending, exits, and
-      // serializes the fallback. We discard the string; the reactive insert effects
-      // it creates re-run on settle (see the signal.ts propagateDirty fix). Wrapped
-      // because a suspended read may throw its promise.
-      try { serializeNode(tree); } catch { /* suspended read — resource self-registered */ }
+      // behind deferred memos (e.g. a router <Outlet/>) renders NOTHING until serialize.
+      probe();
       let rounds = 0;
       while (ctx.pending.size > 0 && rounds++ < MAX_ASYNC_ROUNDS) {
         const batch = Array.from(ctx.pending);
@@ -132,10 +143,10 @@ export async function renderToStringAsync(
         await flush();
         // Re-probe: a freshly-resolved lazy/route reveals its OWN resources only
         // when its subtree is evaluated — force that so they register for the next round.
-        try { serializeNode(tree); } catch { /* still suspended — fine */ }
+        probe();
       }
       // Serialize the resolved resource data so the client seeds it (no refetch).
-      const html = serializeNode(tree) + serializeResourceData(ctx);
+      const html = runWithOwner(rootOwner, () => serializeNode(tree)) + serializeResourceData(ctx);
       dispose();
       return html;
     });
