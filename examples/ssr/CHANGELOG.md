@@ -1,5 +1,16 @@
 # @fluixi/example-ssr
 
+## 0.0.3-next.6
+
+### Patch Changes
+
+- Updated dependencies [901c975]
+  - @fluixi/reactive@0.4.0-next.6
+  - @fluixi/dom@0.4.0-next.6
+  - @fluixi/jsx-runtime@0.4.0-next.6
+  - @fluixi/kettlejs@0.4.0-next.6
+  - @fluixi/server@0.3.0-next.6
+
 ## 0.0.3-next.5
 
 ### Patch Changes
