@@ -1,0 +1,50 @@
+{
+  "name": "@fluixi/start",
+  "version": "0.0.0",
+  "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/start"
+  },
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "development": "./src/config.ts",
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js",
+      "default": "./dist/config.js"
+    }
+  },
+  "dependencies": {
+    "@fluixi/kettlejs": "workspace:*",
+    "@fluixi/server": "workspace:*"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0"
+  }
+}

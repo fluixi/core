@@ -17,6 +17,12 @@ export interface KettleRoutesPluginOptions {
   routesDir?: string;
   /** File extensions to scan. Default: ['.tsx', '.ts', '.jsx', '.js'] */
   extensions?: string[];
+  /**
+   * Inject browser polyfills for Node built-ins (Buffer/process/global/fs/path) via
+   * vite-plugin-node-polyfills. Default `true` (back-compat). Set `false` for SSR
+   * (the injected shims break server rendering); `@fluixi/start` passes `false`.
+   */
+  polyfills?: boolean;
 }
 
 const VIRTUAL_MODULE_ID = 'virtual:kettle-routes';
@@ -48,13 +54,16 @@ export function kettleRoutesPlugin(
 
   let projectRoot = '';
 
-  // nodePolyfills is only applied in serve (dev) mode so the route scanner can
-  // use Node.js built-ins (fs, path) without Rollup complaints during production builds.
-  const polyfillsPlugin = Object.assign(
-    {},
-    nodePolyfills({ include: ['fs', 'path'] }),
-    { apply: 'serve' as const }
-  );
+  // nodePolyfills injects `vite-plugin-node-polyfills/shims/*` (browser polyfills for
+  // Buffer/process/global/fs/path) into transformed modules. It's needed by some apps
+  // for the BROWSER, but it BREAKS SSR — Node already has those globals, and the
+  // injected CJS shim can't be ESM-evaluated (and often can't be resolved at all:
+  // "Cannot find module .../shims/buffer"). So it's opt-out: on by default for
+  // back-compat, but SSR-first setups (e.g. @fluixi/start) pass `polyfills: false`.
+  const usePolyfills = options.polyfills !== false;
+  const polyfillsPlugin = usePolyfills
+    ? Object.assign({}, nodePolyfills({ include: ['fs', 'path'] }), { apply: 'serve' as const })
+    : null;
 
   const routesPlugin = {
     name: 'kettle-routes',
@@ -126,5 +135,5 @@ export function kettleRoutesPlugin(
 
   // Vite flattens plugin arrays automatically — consumers just use:
   //   plugins: [kettleRoutesPlugin({ routesDir: 'src/routes' })]
-  return [polyfillsPlugin, routesPlugin];
+  return polyfillsPlugin ? [polyfillsPlugin, routesPlugin] : [routesPlugin];
 }

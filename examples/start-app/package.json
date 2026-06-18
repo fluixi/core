@@ -1,0 +1,23 @@
+{
+  "name": "@fluixi/example-start",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Meta-framework example: zero-config dev/build/start via @fluixi/start + the fluixi CLI (file routing + SSR + hydration).",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start"
+  },
+  "dependencies": {
+    "@fluixi/cli": "workspace:*",
+    "@fluixi/start": "workspace:*",
+    "@fluixi/kettlejs": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/server": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
