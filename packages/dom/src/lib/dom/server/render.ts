@@ -10,6 +10,7 @@ import {
   setResourceTracker,
   setResourceIdSource,
   setResourceDataSink,
+  setEagerStaleEffects,
   flush,
 } from '@fluixi/reactive/signal';
 import { isServer, setServerMode } from './nodes.js';
@@ -84,6 +85,9 @@ export function serializeResourceData(ctx: RequestContext): string {
 /** Bound on resolve→refetch waterfalls so a buggy loader can't spin forever. */
 const MAX_ASYNC_ROUNDS = 50;
 
+/** Ref-count of in-flight async renders, to scope eager stale-effect scheduling. */
+let eagerDepth = 0;
+
 /**
  * Async SSR: render, then await every resource fetch the render kicked off,
  * letting their settle() re-run the render effects in place, until the tree is
@@ -96,6 +100,11 @@ export async function renderToStringAsync(
   const prev = isServer;
   setServerMode(true);
   ensureResourceHooks();
+  // Enable eager stale-effect scheduling for the duration of the async drain so the
+  // <Suspense> output insert effect re-runs when a boundary resolves. Ref-counted so
+  // concurrent async renders don't disable it for each other; only ever on while a
+  // server render is in flight, so the client never sees it.
+  if (eagerDepth++ === 0) setEagerStaleEffects(true);
   const ctx = createRequestContext(options.event);
   try {
     return await runWithRequestContext(ctx, async () => {
@@ -131,6 +140,7 @@ export async function renderToStringAsync(
       return html;
     });
   } finally {
+    if (--eagerDepth === 0) setEagerStaleEffects(false);
     setServerMode(prev);
   }
 }
