@@ -17,11 +17,15 @@
     "@fluixi/router": "0.1.1",
     "@fluixi/server": "0.2.0",
     "@fluixi/utils": "0.3.0",
-    "@fluixi/vite-plugin": "0.3.0"
+    "@fluixi/vite-plugin": "0.3.0",
+    "@fluixi/example-start": "0.0.0",
+    "@fluixi/cli": "0.0.0",
+    "@fluixi/start": "0.0.0"
   },
   "changesets": [
     "dispose-no-rerun",
     "fix-client-hydration-loop",
+    "fluixi-meta-framework-skeleton",
     "full-areas-spend",
     "hydrate-controlflow",
     "hydrate-index",
@@ -31,6 +35,7 @@
     "hydration",
     "imperative-default",
     "ir-component-props",
+    "kettle-routes-polyfills-optout",
     "lazy-suspense-async-ssr",
     "map-array",
     "props-children-async",
