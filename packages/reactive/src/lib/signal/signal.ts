@@ -184,6 +184,15 @@ let Listener: Computation | null = null;
 let Updates: Computation[] | null = null;
 let Effects: Computation[] | null = null;
 let ExecCount = 0;
+
+// When true, a signal write eagerly schedules a stale effect reached through a
+// pure memo (see propagateDirty). Server-only — the SSR async drain turns it on so
+// the <Suspense> output insert effect re-runs during the drain. OFF on the client
+// (default) to keep the loop-breaking lazy-STALE behavior.
+let _eagerStaleEffects = false;
+export function setEagerStaleEffects(v: boolean): void {
+  _eagerStaleEffects = v;
+}
 let Pending = false;
 /** Depth of user-initiated batch() calls. Incremented on batch entry, decremented on exit. */
 let BatchDepth = 0;
@@ -392,19 +401,21 @@ export function createSignal<T>(
           const prevState = comp.state;
           if (prevState === RUNNING && comp === Listener) return;
           if (viaPureMemo && !comp.pure) {
-            // Mark the downstream effect STALE *and schedule it* — mirroring the
-            // memo-recompute propagateDirty below. Marking STALE without scheduling
-            // left the effect stranded: a later memo recompute would skip it (only
-            // schedules when prevState === CLEAN, but it's now STALE), so it never
-            // re-ran. Surfaced as a <Suspense> output insert effect (downstream of
-            // inFallback via the pure output memo) not re-rendering when inFallback
-            // flips false during async SSR — the resolved children never replaced the
-            // fallback in the serialized tree.
             if (prevState === CLEAN) {
               comp.state = STALE;
-              if (Updates !== null && Updates.indexOf(comp) === -1)
-                Updates.push(comp);
-              else toUpdate.push(comp);
+              // Eagerly SCHEDULE the stale effect — but ONLY when enabled (server SSR
+              // drain). There is no scheduler/read loop on the server to re-run a
+              // stranded STALE effect, so the <Suspense> output insert effect wouldn't
+              // re-render on the inFallback flip and the resolved children never
+              // replaced the fallback in the serialized tree. On the CLIENT this stays
+              // OFF: eager scheduling here removes a loop-breaker and can spin a
+              // memo↔effect cycle forever (froze the storefront after hydration). The
+              // client keeps the lazy behavior — the effect re-runs when next read.
+              if (_eagerStaleEffects) {
+                if (Updates !== null && Updates.indexOf(comp) === -1)
+                  Updates.push(comp);
+                else toUpdate.push(comp);
+              }
             }
             return;
           }
