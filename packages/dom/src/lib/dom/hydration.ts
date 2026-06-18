@@ -81,6 +81,9 @@ export function hydrateMarker(value: string): Comment | null {
     hydration.cursor = c.nextSibling;
     return c as Comment;
   }
+  // Empty markers ARE serialized (`<!---->`), so unlike empty text a missing/diverged
+  // marker is a real structural divergence — warn in dev.
+  if (DEV && c) warnMismatch(`marker <!--${value.slice(0, 24)}-->`, c);
   return null;
 }
 
