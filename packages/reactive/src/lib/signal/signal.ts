@@ -392,7 +392,20 @@ export function createSignal<T>(
           const prevState = comp.state;
           if (prevState === RUNNING && comp === Listener) return;
           if (viaPureMemo && !comp.pure) {
-            if (prevState === CLEAN) comp.state = STALE;
+            // Mark the downstream effect STALE *and schedule it* — mirroring the
+            // memo-recompute propagateDirty below. Marking STALE without scheduling
+            // left the effect stranded: a later memo recompute would skip it (only
+            // schedules when prevState === CLEAN, but it's now STALE), so it never
+            // re-ran. Surfaced as a <Suspense> output insert effect (downstream of
+            // inFallback via the pure output memo) not re-rendering when inFallback
+            // flips false during async SSR — the resolved children never replaced the
+            // fallback in the serialized tree.
+            if (prevState === CLEAN) {
+              comp.state = STALE;
+              if (Updates !== null && Updates.indexOf(comp) === -1)
+                Updates.push(comp);
+              else toUpdate.push(comp);
+            }
             return;
           }
           if (visited.has(comp)) return;
