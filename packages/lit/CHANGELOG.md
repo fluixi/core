@@ -1,5 +1,13 @@
 # @fluixi/lit
 
+## 0.4.0-next.6
+
+### Patch Changes
+
+- Updated dependencies [901c975]
+  - @fluixi/reactive@0.4.0-next.6
+  - @fluixi/dom@0.4.0-next.6
+
 ## 0.4.0-next.5
 
 ### Patch Changes

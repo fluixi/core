@@ -1,5 +1,15 @@
 # @fluixi/example-counter
 
+## 0.0.5-next.6
+
+### Patch Changes
+
+- Updated dependencies [901c975]
+  - @fluixi/reactive@0.4.0-next.6
+  - @fluixi/dom@0.4.0-next.6
+  - @fluixi/jsx-runtime@0.4.0-next.6
+  - @fluixi/kettlejs@0.4.0-next.6
+
 ## 0.0.5-next.5
 
 ### Patch Changes
