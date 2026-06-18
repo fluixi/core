@@ -1,0 +1,21 @@
+/**
+ * @fluixi/start — the Fluixi meta-framework.
+ *
+ * Packages the dev server, build, and production SSR server over @fluixi/server +
+ * Vite, so apps stop hand-rolling server.mjs. Use the `fluixi` CLI (dev/build/start)
+ * or call the commands programmatically.
+ */
+export { defineConfig, resolveConfig, loadConfig } from './config.js';
+export type { FluixiConfig, ResolvedConfig } from './config.js';
+export { dev } from './commands/dev.js';
+export { build } from './commands/build.js';
+export { start } from './commands/start.js';
+export { injectApp } from './internal.js';
+// The runtime-neutral request layer — the seam adapters (edge/worker/Bun/Deno) build on.
+export {
+  createRequestHandler,
+  toNodeHandler,
+  nodeToRequest,
+  sendResponse,
+} from './handler.js';
+export type { FetchHandler, RenderFn } from './handler.js';
