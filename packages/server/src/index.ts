@@ -55,11 +55,37 @@ export interface DocumentOptions {
   scripts?: string[];
   head?: string;
   bodyAttributes?: string;
+  /** Emit the pre-hydration event-capture script in <head> (default true). */
+  eventReplay?: boolean;
+}
+
+/** Discrete events captured before hydration and replayed by startClient. */
+export const EVENT_REPLAY_TYPES = ['click', 'input', 'change', 'submit', 'keydown'];
+
+/**
+ * Inline script that records events fired BEFORE hydration so the client can
+ * replay them once the delegated handlers are wired (see startClient →
+ * replayEvents). Must run early — emit it near the top of <head>. Records only
+ * `{type, target}`; since hydration REUSES the server DOM nodes, each recorded
+ * target stays live for replay. Custom servers that don't use createHtmlDocument
+ * should inject this string into their <head> themselves.
+ */
+export function eventCaptureScript(): string {
+  const t = JSON.stringify(EVENT_REPLAY_TYPES);
+  // Minified IIFE: queue events on window.__FX_REPLAY__ via capture-phase
+  // listeners; expose __FX_REPLAY_STOP__ so the client detaches them after replay.
+  return (
+    `<script>(function(){var q=window.__FX_REPLAY__=[],t=${t},` +
+    `r=function(e){q.push({type:e.type,target:e.target})},i=0;` +
+    `for(;i<t.length;i++)document.addEventListener(t[i],r,true);` +
+    `window.__FX_REPLAY_STOP__=function(){for(var j=0;j<t.length;j++)` +
+    `document.removeEventListener(t[j],r,true)}})();</script>`
+  );
 }
 
 /** The document up to (and including) the open <body> — flushable before content. */
 function documentShell(options: DocumentOptions = {}): string {
-  const { title = 'Fluixi App', lang = 'en', stylesheets = [], head = '', bodyAttributes = '' } = options;
+  const { title = 'Fluixi App', lang = 'en', stylesheets = [], head = '', bodyAttributes = '', eventReplay = true } = options;
   const styleTags = stylesheets.map((href) => `<link rel="stylesheet" href="${href}">`).join('\n    ');
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -67,6 +93,7 @@ function documentShell(options: DocumentOptions = {}): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
+    ${eventReplay ? eventCaptureScript() : ''}
     ${styleTags}
     ${head}
   </head>
