@@ -1,5 +1,19 @@
 # @fluixi/kettlejs
 
+## 0.4.0-next.11
+
+### Patch Changes
+
+- 1a15bce: `kettleRoutesPlugin` now accepts `polyfills?: boolean` (default `true`, back-compat). The injected `vite-plugin-node-polyfills` shims break SSR (resolution + CJS-in-ESM); SSR-first setups pass `polyfills: false`. `@fluixi/start` does this so server rendering works out of the box.
+  - @fluixi/utils@0.4.0-next.11
+  - @fluixi/reactive@0.4.0-next.11
+  - @fluixi/dom@0.4.0-next.11
+  - @fluixi/jsx-runtime@0.4.0-next.11
+  - @fluixi/compiler@0.4.0-next.11
+  - @fluixi/lit@0.4.0-next.11
+  - @fluixi/vite-plugin@0.4.0-next.11
+  - @fluixi/server@0.3.0-next.11
+
 ## 0.4.0-next.10
 
 ### Patch Changes
