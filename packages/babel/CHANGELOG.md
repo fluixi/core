@@ -1,5 +1,11 @@
 # @fluixi/babel-plugin-jsx
 
+## 0.4.0-next.6
+
+### Patch Changes
+
+- @fluixi/compiler@0.4.0-next.6
+
 ## 0.4.0-next.5
 
 ### Patch Changes

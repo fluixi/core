@@ -34,6 +34,7 @@
     "provider-lazy-children",
     "remove-vinxi",
     "render-stream",
-    "resource-data-transport"
+    "resource-data-transport",
+    "router-outlet-async-ssr"
   ]
 }
