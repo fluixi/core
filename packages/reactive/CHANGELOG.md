@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 0.4.0-next.11
+
+### Patch Changes
+
+- @fluixi/utils@0.4.0-next.11
+
 ## 0.4.0-next.10
 
 ### Patch Changes
