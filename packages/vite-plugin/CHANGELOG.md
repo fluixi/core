@@ -1,5 +1,11 @@
 # @fluixi/vite-plugin
 
+## 0.4.0-next.7
+
+### Patch Changes
+
+- @fluixi/compiler@0.4.0-next.7
+
 ## 0.4.0-next.6
 
 ### Patch Changes
