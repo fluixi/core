@@ -244,10 +244,26 @@ export function Redirect(props: { to: string; replace?: boolean }) {
 
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
+// Safe stub returned by useRouter on the SERVER when no RouterContext is on the owner
+// chain. That happens during a late/detached re-render — e.g. a slow data resource
+// settling AFTER renderToStringAsync already serialized the response and disposed the
+// root — whose output is discarded. Returning this (instead of throwing) prevents a
+// floating rejection that crashes the dev server / shows an error overlay seconds
+// after the page already rendered.
+const _ssrRouterStub: RouterCtxValue = {
+  router: { navigate: () => {} } as unknown as CoreRouter<any>,
+  location: () =>
+    ({ pathname: '', search: '', hash: '', query: {} }) as unknown as RouterLocation,
+  params: () => ({}),
+};
+
 export function useRouter(): RouterCtxValue {
   const ctx = useContext(RouterContext);
-  if (!ctx) throw new Error('[router-next] useRouter must be used within <Router>');
-  return ctx;
+  if (ctx) return ctx;
+  // On the server, degrade to a no-op stub (see above). On the client, a missing
+  // router is genuine misuse — throw.
+  if (typeof window === 'undefined') return _ssrRouterStub;
+  throw new Error('[router-next] useRouter must be used within <Router>');
 }
 
 /**
@@ -380,6 +396,9 @@ export function useLocation(): RouterLocation {
 }
 
 export function useNavigate(): (to: string, options?: NavigateOptions) => void {
+  // useRouter is SSR-safe (returns a no-op stub on the server when the context is
+  // detached), so navigation degrades to a no-op during SSR and only throws on
+  // genuine client-side misuse outside <Router>.
   const { router } = useRouter();
   return (to, options) => router.navigate(to, options);
 }
