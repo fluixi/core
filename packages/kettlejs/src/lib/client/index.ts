@@ -101,11 +101,42 @@ export function startClient(
     deserializeHydrationData();
     setHydrating(true);
     domHydrate(() => App(), container as HTMLElement);
+    // Handlers are now wired (delegated $$listeners attach during the hydration
+    // render) — replay any events the user fired before hydration.
+    replayEvents();
     setTimeout(() => {
       setHydrating(false);
       cleanupHydration();
     }, 100);
   } else {
     render(() => App(), container as HTMLElement);
+  }
+}
+
+/**
+ * Replay events captured before hydration by the server's eventCaptureScript
+ * (window.__FX_REPLAY__). Hydration REUSES the server DOM, so each recorded target
+ * is still live — re-dispatch a synthetic event on it so the app's delegated
+ * handlers fire. Discrete events only (click/input/change/submit/keydown). No-op
+ * when the capture script wasn't emitted (no queue).
+ */
+function replayEvents(): void {
+  if (typeof window === 'undefined') return;
+  const w = window as any;
+  if (typeof w.__FX_REPLAY_STOP__ === 'function') w.__FX_REPLAY_STOP__();
+  const queue = w.__FX_REPLAY__;
+  w.__FX_REPLAY__ = undefined;
+  w.__FX_REPLAY_STOP__ = undefined;
+  if (!Array.isArray(queue) || queue.length === 0) return;
+  for (const rec of queue) {
+    const target: any = rec && rec.target;
+    // Skip targets dropped by a hydration mismatch (recreated, not reconnected).
+    if (!target || target.isConnected === false || typeof target.dispatchEvent !== 'function') continue;
+    const type: string = rec.type;
+    const ev =
+      type === 'click'
+        ? new MouseEvent(type, { bubbles: true, cancelable: true })
+        : new Event(type, { bubbles: true, cancelable: true });
+    target.dispatchEvent(ev);
   }
 }
