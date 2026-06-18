@@ -24,7 +24,6 @@ import {
   insert,
   createComponent,
 } from '@fluixi/dom';
-import { html } from '@fluixi/lit';
 // Reactive context (not kettlejs createProvider, which destructures children
 // eagerly) so a `get children()` getter renders AFTER the context is stamped.
 import { createContext, useContext } from '@fluixi/reactive/signal';
@@ -428,8 +427,6 @@ export interface LinkProps {
   className?: MaybeAccessor<string>;
   /** Class added while the link is active. */
   activeClass?: MaybeAccessor<string>;
-  /** Render a lit template instead of a DOM node. */
-  lit?: boolean;
   slot?: string;
   children?: any;
 }
@@ -441,12 +438,9 @@ export function Link(props: LinkProps) {
   const navigate = () =>
     ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
 
-  if (isServer || props.lit) {
+  if (isServer) {
     const href = read(props.href) ?? '';
     const cls = read(props.class) ?? '';
-    if (props.lit) {
-      return html`<a @click="${navigate}" class="${cls}">${props.children ?? ''}</a>`;
-    }
     return `<a href="${href}" class="${cls}">${props.children ?? ''}</a>`;
   }
 
