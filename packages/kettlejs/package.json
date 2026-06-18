@@ -122,8 +122,6 @@
     "@fluixi/router": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/utils": "workspace:*",
-    "@lit-labs/ssr": "^3.0.0",
-    "@lit-labs/ssr-client": "^1.0.0",
     "lit": "^3.0.0",
     "lit-html": "^3.0.0",
     "vite-plugin-node-polyfills": "^0.25.0"
