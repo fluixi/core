@@ -105,6 +105,14 @@ export async function renderToStringAsync(
         dispose = d;
         tree = typeof app === 'function' ? app() : app;
       });
+      // Force the (lazily-built) component tree to evaluate so every resource/lazy
+      // load is created and self-registers in ctx.pending BEFORE we drain. A tree
+      // behind deferred memos (e.g. a router <Outlet/>) renders NOTHING until
+      // serialize, so without this probe the drain sees empty pending, exits, and
+      // serializes the fallback. We discard the string; the reactive insert effects
+      // it creates re-run on settle (see the signal.ts propagateDirty fix). Wrapped
+      // because a suspended read may throw its promise.
+      try { serializeNode(tree); } catch { /* suspended read — resource self-registered */ }
       let rounds = 0;
       while (ctx.pending.size > 0 && rounds++ < MAX_ASYNC_ROUNDS) {
         const batch = Array.from(ctx.pending);
@@ -113,6 +121,9 @@ export async function renderToStringAsync(
         // resource settle() queues the dependent render effects — run them so
         // the tree reflects resolved data (and any waterfall fetch registers).
         await flush();
+        // Re-probe: a freshly-resolved lazy/route reveals its OWN resources only
+        // when its subtree is evaluated — force that so they register for the next round.
+        try { serializeNode(tree); } catch { /* still suspended — fine */ }
       }
       // Serialize the resolved resource data so the client seeds it (no refetch).
       const html = serializeNode(tree) + serializeResourceData(ctx);
