@@ -26,6 +26,7 @@
     "hydrate-controlflow",
     "hydrate-index",
     "hydrate-mismatch",
+    "hydration-event-replay",
     "hydration",
     "imperative-default",
     "ir-component-props",
