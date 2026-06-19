@@ -1,4 +1,5 @@
 import type { ResolvedConfig } from './config.js';
+import type { FetchHandler } from './handler.js';
 
 /**
  * The kettlejs build plugins @fluixi/start provides by default: file-based routing
@@ -29,6 +30,28 @@ export function injectApp(template: string, appHtml: string, mountId = 'root'): 
     return template.replace('<!--ssr-outlet-->', appHtml);
   }
   return template.replace('</body>', `<div id="${mountId}">${appHtml}</div></body>`);
+}
+
+/**
+ * Wrap a fetch handler so a thrown/rejected error becomes a 500 instead of an
+ * unhandled rejection. `createRequestHandler` already guards the renderer; this
+ * covers the middleware chain that wraps it. `onError` lets dev map the stack first.
+ */
+export function guardHandler(
+  handler: FetchHandler,
+  onError?: (e: unknown) => void,
+): FetchHandler {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (e: any) {
+      onError?.(e);
+      return new Response(String(e?.stack || e), {
+        status: 500,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      });
+    }
+  };
 }
 
 let _guardsInstalled = false;

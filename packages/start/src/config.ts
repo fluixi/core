@@ -23,6 +23,8 @@ export interface FluixiConfig {
   mountId?: string;
   /** File-routes directory (passed to kettleRoutesPlugin). Default: src/routes */
   routesDir?: string;
+  /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
+  middleware?: string;
   /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
   ssrNoExternal?: string[];
 }
@@ -47,6 +49,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     template: config.template ?? 'index.html',
     mountId: config.mountId ?? 'root',
     routesDir: config.routesDir ?? 'src/routes',
+    middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
   };
 }
