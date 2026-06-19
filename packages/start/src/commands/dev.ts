@@ -1,10 +1,11 @@
 import { createServer as createHttp } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { injectApp, installCrashGuards, fluixiPlugins } from '../internal.js';
-import { createRequestHandler, toNodeHandler } from '../handler.js';
+import { injectApp, installCrashGuards, fluixiPlugins, guardHandler } from '../internal.js';
+import { createRequestHandler, toNodeHandler, type FetchHandler } from '../handler.js';
+import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 
 /**
  * Dev server: Vite in middleware mode compiles the app on the fly; the server
@@ -24,7 +25,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   let vite: any;
   // App render → a runtime-neutral fetch handler. In dev, "render" is Vite
   // ssrLoadModule + transformIndexHtml; the same handler shape powers prod + adapters.
-  const handler = createRequestHandler(async (url) => {
+  const renderHandler = createRequestHandler(async (url) => {
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
     const render = mod.render ?? mod.default;
     try {
@@ -35,6 +36,16 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       throw e;
     }
   });
+
+  // Optional request middleware. Loaded per request via ssrLoadModule so edits hot-
+  // reload (no server restart); guardHandler turns a middleware throw into a 500.
+  const hasMiddleware = existsSync(resolve(cfg.root, cfg.middleware));
+  const handler: FetchHandler = hasMiddleware
+    ? guardHandler(async (request) => {
+        const mwMod = await vite.ssrLoadModule('/' + cfg.middleware);
+        return composeMiddleware(normalizeMiddleware(mwMod), renderHandler)(request);
+      }, (e) => vite.ssrFixStacktrace?.(e))
+    : renderHandler;
   const nodeHandler = toNodeHandler(handler);
   const http = createHttp((req, res) => {
     // Vite middleware first (static assets + HMR), then our handler for app routes.
