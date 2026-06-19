@@ -10,7 +10,7 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
-  "description": "KettleJS JSX compiler — host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
+  "description": "Fluixi JSX compiler — host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
   "type": "module",
   "files": [
     "dist",

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive directive for KettleJS — fine-grained reactivity in Lit templates.
+ * @fileoverview Reactive directive for Fluixi — fine-grained reactivity in Lit templates.
  *
  * Architecture:
  * - `render()` returns the INITIAL value (computed via untrack, no side effects).

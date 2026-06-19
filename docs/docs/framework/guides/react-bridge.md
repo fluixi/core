@@ -1,18 +1,18 @@
-# React Bridge - Using KettleJS with React
+# React Bridge - Using Fluixi with React
 
-Complete integration between KettleJS and React using `@lit/react`.
+Complete integration between Fluixi and React using `@lit/react`.
 
 ## Overview
 
 The React Bridge provides two approaches:
 
-1. **Native JSX Runtime** - Pure KettleJS with JSX syntax
+1. **Native JSX Runtime** - Pure Fluixi with JSX syntax
 2. **React Bridge (@lit/react)** - Full React ecosystem compatibility
 
 ## Installation
 
 ```bash
-npm install @fluixi/kettlejs @lit/react react react-dom
+npm install @fluixi/core @lit/react react react-dom
 ```
 
 ## Quick Comparison
@@ -20,17 +20,17 @@ npm install @fluixi/kettlejs @lit/react react react-dom
 | Feature | Native JSX | React Bridge |
 |---------|-----------|--------------|
 | Syntax | JSX | JSX/React |
-| Reactivity | KettleJS Signals | React State + Signals |
-| Components | KettleJS | React Components |
+| Reactivity | Fluixi Signals | React State + Signals |
+| Components | Fluixi | React Components |
 | Ecosystem | Limited | Full React |
 | Performance | Excellent | Good |
 | Learning Curve | Low | Medium |
-| Best For | Pure KettleJS | React Integration |
+| Best For | Pure Fluixi | React Integration |
 
 ## Native JSX Runtime
 
 ```tsx
-// Pure KettleJS with JSX
+// Pure Fluixi with JSX
 import { createSignal } from '@fluixi/reactive';
 
 export function Counter() {
@@ -49,14 +49,14 @@ export function Counter() {
 ### Basic Usage
 
 ```tsx
-// KettleJS Element
-import { KettleElement } from '@fluixi/kettlejs';
+// Fluixi Element
+import { FluixiElement } from '@fluixi/core';
 import { customElement } from 'lit/decorators.js';
 import { createSignal } from '@fluixi/reactive';
 import { html } from 'lit';
 
 @customElement('counter-element')
-class CounterElement extends KettleElement {
+class CounterElement extends FluixiElement {
   private [count, setCount] = createSignal(0);
   
   view() {
@@ -69,7 +69,7 @@ class CounterElement extends KettleElement {
 }
 
 // React Wrapper
-import { createReactComponent } from '@fluixi/kettlejs/react-bridge';
+import { createReactComponent } from '@fluixi/core/react-bridge';
 
 export const Counter = createReactComponent(
   'counter-element',
@@ -87,7 +87,7 @@ import React from 'react';
 function App() {
   return (
     <div>
-      <h1>React App with KettleJS</h1>
+      <h1>React App with Fluixi</h1>
       <Counter />
     </div>
   );
@@ -99,18 +99,18 @@ function App() {
 ```tsx
 import { 
   useSignal, 
-  useKettleEffect, 
-  useKettleMemo 
-} from '@fluixi/kettlejs/react-bridge';
+  useFluixiEffect, 
+  useFluixiMemo 
+} from '@fluixi/core/react-bridge';
 
 function Counter() {
   const [count, setCount] = useSignal(0);
   
-  useKettleEffect(() => {
+  useFluixiEffect(() => {
     console.log('Count:', count());
   });
   
-  const doubled = useKettleMemo(() => count() * 2);
+  const doubled = useFluixiMemo(() => count() * 2);
   
   return (
     <div>
@@ -122,14 +122,14 @@ function Counter() {
 }
 ```
 
-### Wrapping KettleJS Components
+### Wrapping Fluixi Components
 
 ```tsx
-import { wrapKettleElement } from '@fluixi/kettlejs/react-bridge';
-import { MyKettleElement } from './my-element';
+import { wrapFluixiElement } from '@fluixi/core/react-bridge';
+import { MyFluixiElement } from './my-element';
 
-export const MyComponent = wrapKettleElement(
-  MyKettleElement,
+export const MyComponent = wrapFluixiElement(
+  MyFluixiElement,
   'my-element',
   {
     onUpdate: 'update',
@@ -141,10 +141,10 @@ export const MyComponent = wrapKettleElement(
 ### Using Resources
 
 ```tsx
-import { useKettleResource } from '@fluixi/kettlejs/react-bridge';
+import { useFluixiResource } from '@fluixi/core/react-bridge';
 
 function UserProfile({ userId }: { userId: number }) {
-  const { data, loading, error, refetch } = useKettleResource(
+  const { data, loading, error, refetch } = useFluixiResource(
     () => userId,
     (id) => fetch(`/api/users/${id}`).then(r => r.json())
   );
@@ -164,7 +164,7 @@ function UserProfile({ userId }: { userId: number }) {
 ### Control Flow
 
 ```tsx
-import { ReactControlFlow } from '@fluixi/kettlejs/react-bridge';
+import { ReactControlFlow } from '@fluixi/core/react-bridge';
 
 const { Show, For } = ReactControlFlow;
 
@@ -190,11 +190,11 @@ function TodoList({ todos }: { todos: Todo[] }) {
 ```tsx
 import { 
   createReactProvider,
-  useKettleContext 
-} from '@fluixi/kettlejs/react-bridge';
-import { createContext } from '@fluixi/kettlejs/context';
+  useFluixiContext 
+} from '@fluixi/core/react-bridge';
+import { createContext } from '@fluixi/core/context';
 
-// Create KettleJS context
+// Create Fluixi context
 const ThemeContext = createContext({ mode: 'light' });
 
 // Create React provider
@@ -210,7 +210,7 @@ function App() {
 }
 
 function ThemedButton() {
-  const theme = useKettleContext(ThemeContext);
+  const theme = useFluixiContext(ThemeContext);
   return <button style={{ background: theme.mode === 'dark' ? '#333' : '#fff' }}>
     Themed Button
   </button>;
@@ -220,10 +220,10 @@ function ThemedButton() {
 ### Adapter Pattern
 
 ```tsx
-import { kettleReactAdapter } from '@fluixi/kettlejs/react-bridge';
+import { fluixiReactAdapter } from '@fluixi/core/react-bridge';
 
 // Register all components
-const { Button, Input, Card } = kettleReactAdapter.registerAll({
+const { Button, Input, Card } = fluixiReactAdapter.registerAll({
   'my-button': { class: ButtonElement, events: { onClick: 'click' } },
   'my-input': { class: InputElement, events: { onInput: 'input' } },
   'my-card': { class: CardElement }
@@ -245,11 +245,11 @@ function Form() {
 ### HOC Pattern
 
 ```tsx
-import { withReact } from '@fluixi/kettlejs/react-bridge';
+import { withReact } from '@fluixi/core/react-bridge';
 import { html } from 'lit';
 import { createSignal } from '@fluixi/reactive';
 
-const KettleCounter = () => {
+const FluixiCounter = () => {
   const [count, setCount] = createSignal(0);
   return html`
     <button @click=${() => setCount(count() + 1)}>
@@ -258,19 +258,19 @@ const KettleCounter = () => {
   `;
 };
 
-export const Counter = withReact(KettleCounter);
+export const Counter = withReact(FluixiCounter);
 ```
 
 ### Error Boundary
 
 ```tsx
-import { KettleErrorBoundary } from '@fluixi/kettlejs/react-bridge';
+import { FluixiErrorBoundary } from '@fluixi/core/react-bridge';
 
 function App() {
   return (
-    <KettleErrorBoundary fallback={<div>Error occurred</div>}>
-      <MyKettleComponents />
-    </KettleErrorBoundary>
+    <FluixiErrorBoundary fallback={<div>Error occurred</div>}>
+      <MyFluixiComponents />
+    </FluixiErrorBoundary>
   );
 }
 ```
@@ -278,7 +278,7 @@ function App() {
 ### Performance Utilities
 
 ```tsx
-import { PerformanceUtils } from '@fluixi/kettlejs/react-bridge';
+import { PerformanceUtils } from '@fluixi/core/react-bridge';
 
 function SearchInput() {
   const [value, setValue] = useState('');
@@ -295,7 +295,7 @@ function SearchInput() {
 ## When to Use Each Approach
 
 ### Use Native JSX When:
-- Building pure KettleJS applications
+- Building pure Fluixi applications
 - Maximum performance is critical
 - No React dependencies needed
 - Simple component structure
@@ -309,7 +309,7 @@ function SearchInput() {
 
 ## Migration Guide
 
-### From React to KettleJS
+### From React to Fluixi
 
 ```tsx
 // React
@@ -323,11 +323,11 @@ function Counter() {
   return <button onClick={() => setCount(count + 1)}>{count}</button>;
 }
 
-// KettleJS with React Bridge
+// Fluixi with React Bridge
 function Counter() {
   const [count, setCount] = useSignal(0);
   
-  useKettleEffect(() => {
+  useFluixiEffect(() => {
     console.log('Count:', count());
   });
   
@@ -339,9 +339,9 @@ function Counter() {
 
 1. **Choose One Approach** - Don't mix native JSX and React Bridge in same component
 2. **Use Adapter** - Register all components upfront
-3. **Error Boundaries** - Wrap KettleJS components
+3. **Error Boundaries** - Wrap Fluixi components
 4. **Performance** - Use debounce/throttle utilities
-5. **Testing** - Test both KettleJS and React integration
+5. **Testing** - Test both Fluixi and React integration
 
 ## See Also
 

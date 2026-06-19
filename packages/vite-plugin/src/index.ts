@@ -1,9 +1,9 @@
 /**
- * @fileoverview @fluixi/vite-plugin — the Vite integration for KettleJS.
+ * @fileoverview @fluixi/vite-plugin — the Vite integration for Fluixi.
  * @module @fluixi/vite-plugin
  *
  * Thin, well-typed wrapper around @fluixi/compiler's vite integration. It sets
- * the esbuild jsxImportSource and runs the KettleJS JSX transform, with a choice
+ * the esbuild jsxImportSource and runs the Fluixi JSX transform, with a choice
  * of codegen backend:
  *   - 'jsx' (default): emit the automatic runtime jsx()/jsxs()
  *   - 'imperative': compile straight into @fluixi/dom runtime calls
@@ -14,7 +14,7 @@ import { createVitePlugin, type CompilerOptions } from '@fluixi/compiler/integra
 export type FluixiViteOptions = CompilerOptions;
 
 /**
- * KettleJS Vite plugin.
+ * Fluixi Vite plugin.
  *
  * @example
  * ```ts
@@ -32,6 +32,6 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
 
 export default fluixi;
 
-// Backwards-compatible alias (matches the name kettlejs has historically used).
+// Backwards-compatible alias (matches the name fluixi has historically used).
 export { createVitePlugin };
 export type { CompilerOptions };

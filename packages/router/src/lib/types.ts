@@ -3,7 +3,7 @@
  *
  * The core is generic over the component payload type `C` — it never calls or
  * instantiates a component, it only carries the reference through to the match
- * result. A view adapter (kettlejs, react, …) decides what `C` is and how to
+ * result. A view adapter (fluixi, react, …) decides what `C` is and how to
  * render it. This keeps the core pure and unit-testable with plain values.
  */
 

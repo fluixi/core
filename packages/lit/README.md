@@ -1,6 +1,6 @@
 # @fluixi/lit
 
-The lit-html renderer for KettleJS: reactive `html`/`svg` template tags, the lit
+The lit-html renderer for Fluixi: reactive `html`/`svg` template tags, the lit
 directives (`litrx`, `classMap`/`styleMap`, `repeat`, `ref`, `ifDefined`,
 `unsafeHTML`, …) and the lit-based control flow (`$show`/`$for`/`$switch`/
 `$portal`/…).

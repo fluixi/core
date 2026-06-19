@@ -5,7 +5,7 @@ title: Signals
 
 # Signals
 
-Signals are the foundation of reactivity in KettleJS. They provide a way to create reactive state that automatically notifies subscribers when the value changes.
+Signals are the foundation of reactivity in Fluixi. They provide a way to create reactive state that automatically notifies subscribers when the value changes.
 
 ## What is a Signal?
 
@@ -177,7 +177,7 @@ By default, signals use strict equality (`===`) to compare values. You can provi
 
 ```typescript
 // Deep equality for objects
-import { deepEqual } from '@fluixi/kettlejs';
+import { deepEqual } from '@fluixi/core';
 
 const [user, setUser] = createSignal<User>(
   { name: 'Alice', age: 30 },

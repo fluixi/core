@@ -5,11 +5,11 @@ title: Installation
 
 # Installation
 
-This guide will help you install KettleJS and set up your development environment.
+This guide will help you install Fluixi and set up your development environment.
 
 ## Prerequisites
 
-Before installing KettleJS, ensure you have the following:
+Before installing Fluixi, ensure you have the following:
 
 - **Node.js** version 16.x or higher
 - **npm**, **yarn**, or **pnpm** package manager
@@ -20,39 +20,39 @@ Before installing KettleJS, ensure you have the following:
 ### Using npm
 
 ```bash
-npm install @fluixi/kettlejs @fluixi/reactive lit
+npm install @fluixi/core @fluixi/reactive lit
 ```
 
 ### Using yarn
 
 ```bash
-yarn add @fluixi/kettlejs @fluixi/reactive lit
+yarn add @fluixi/core @fluixi/reactive lit
 ```
 
 ### Using pnpm
 
 ```bash
-pnpm add @fluixi/kettlejs @fluixi/reactive lit
+pnpm add @fluixi/core @fluixi/reactive lit
 ```
 
 ## Create a New Project
 
-The easiest way to get started is using the KettleJS CLI:
+The easiest way to get started is using the Fluixi CLI:
 
 ### Install CLI Globally
 
 ```bash
-npm install -g @fluixi/kettlejs
+npm install -g @fluixi/core
 ```
 
 ### Create Project
 
 ```bash
 # Interactive mode - will prompt for options
-kettlejs new my-app
+fluixi new my-app
 
 # Or with specific template
-kettlejs new my-app --template full
+fluixi new my-app --template full
 
 # Navigate to project
 cd my-app
@@ -69,7 +69,7 @@ npm run dev
 The CLI provides several project templates:
 
 ### `minimal`
-- Basic KettleJS setup
+- Basic Fluixi setup
 - No router or additional features
 - Perfect for learning or simple apps
 
@@ -93,15 +93,15 @@ If you prefer to set up manually:
 ### 1. Create Project Directory
 
 ```bash
-mkdir my-kettlejs-app
-cd my-kettlejs-app
+mkdir my-fluixi-app
+cd my-fluixi-app
 npm init -y
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-npm install @fluixi/kettlejs @fluixi/reactive lit
+npm install @fluixi/core @fluixi/reactive lit
 npm install -D typescript vite @types/node
 ```
 
@@ -145,7 +145,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['lit', '@fluixi/reactive', '@fluixi/kettlejs']
+    include: ['lit', '@fluixi/reactive', '@fluixi/core']
   }
 });
 ```
@@ -179,7 +179,7 @@ touch index.html
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KettleJS App</title>
+  <title>Fluixi App</title>
 </head>
 <body>
   <div id="app"></div>
@@ -191,14 +191,14 @@ touch index.html
 ### 8. Create `src/App.ts`
 
 ```typescript
-import { html, createSignal, Component } from '@fluixi/kettlejs';
+import { html, createSignal, Component } from '@fluixi/core';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
 
   return html`
     <div>
-      <h1>Welcome to KettleJS!</h1>
+      <h1>Welcome to Fluixi!</h1>
       <p>Count: ${count()}</p>
       <button @click=${() => setCount(count() + 1)}>
         Increment
@@ -211,7 +211,7 @@ export const App: Component = () => {
 ### 9. Create `src/index.ts`
 
 ```typescript
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 import { App } from './App';
 
 const root = document.getElementById('app');
@@ -290,7 +290,7 @@ createEffect(() => {
 setCount(1); // Should log: "Count: 1"
 setCount(2); // Should log: "Count: 2"
 
-console.log('✅ KettleJS is working!');
+console.log('✅ Fluixi is working!');
 ```
 
 Run it:
@@ -303,7 +303,7 @@ node --loader tsx test.ts
 
 ## TypeScript Configuration
 
-For optimal TypeScript experience with KettleJS:
+For optimal TypeScript experience with Fluixi:
 
 ### Enable Strict Mode
 
@@ -368,7 +368,7 @@ export default defineConfig({
 
 ## Next Steps
 
-Now that you have KettleJS installed, you can:
+Now that you have Fluixi installed, you can:
 
 - Follow the [Quick Start Guide](./quick-start.md) to build your first app
 - Learn about [Core Concepts](../core-concepts/signals.md)
@@ -408,6 +408,6 @@ If the build fails:
 ### Getting Help
 
 - Check the [FAQ](../guides/faq.md)
-- Search [GitHub Issues](https://github.com/adafri/kettlejs/issues)
-- Ask on [Discord](https://discord.gg/kettlejs)
-- Post on [Stack Overflow](https://stackoverflow.com/questions/tagged/kettlejs) with tag `kettlejs`
+- Search [GitHub Issues](https://github.com/adafri/fluixi/issues)
+- Ask on [Discord](https://discord.gg/fluixi)
+- Post on [Stack Overflow](https://stackoverflow.com/questions/tagged/fluixi) with tag `fluixi`

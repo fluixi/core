@@ -50,7 +50,7 @@ It writes a file under `.changeset/`, e.g. `.changeset/funny-otters-sing.md`:
 
 ```markdown
 ---
-"@fluixi/kettlejs": patch
+"@fluixi/core": patch
 ---
 
 Fix debounced signal subscriptions
@@ -112,7 +112,7 @@ gh pr merge 2 --squash --delete-branch
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')"
 
 # confirm the new versions are live
-npm view @fluixi/kettlejs version --registry=https://npm.pkg.github.com/
+npm view @fluixi/core version --registry=https://npm.pkg.github.com/
 ```
 
 Done — packages are published.
@@ -141,7 +141,7 @@ To make a package versionable on its own, drop it from `fixed` in
 // .changeset/config.json
 {
   "fixed": [["@fluixi/utils", "@fluixi/reactive"]],  // smaller group, or [] for fully independent
-  "ignore": ["@fluixi/webui", "@fluixi/kettlejs-test"]
+  "ignore": ["@fluixi/webui", "@fluixi/core-test"]
 }
 ```
 

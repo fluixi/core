@@ -5,18 +5,18 @@ title: Components Overview
 
 # Components Overview
 
-KettleJS provides multiple ways to create components, giving you flexibility to choose the pattern that best fits your needs.
+Fluixi provides multiple ways to create components, giving you flexibility to choose the pattern that best fits your needs.
 
 ## Component Patterns
 
-KettleJS supports four main component patterns:
+Fluixi supports four main component patterns:
 
 ### 1. Functional Components
 
 Simple functions that return templates. Perfect for most use cases.
 
 ```typescript
-import { html, createSignal, Component } from '@fluixi/kettlejs';
+import { html, createSignal, Component } from '@fluixi/core';
 
 const Counter: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -35,17 +35,17 @@ const Counter: Component = () => {
 - Rapid prototyping
 - Components that don't need custom element features
 
-### 2. KettleElement Base Class
+### 2. FluixiElement Base Class
 
-Custom elements that extend KettleElement for full reactive capabilities.
+Custom elements that extend FluixiElement for full reactive capabilities.
 
 ```typescript
-import { html, createSignal } from '@fluixi/kettlejs';
-import { KettleElement } from '@fluixi/kettlejs/core';
+import { html, createSignal } from '@fluixi/core';
+import { FluixiElement } from '@fluixi/core/core';
 import { customElement } from 'lit/decorators.js';
 
 @customElement('my-counter')
-class MyCounter extends KettleElement {
+class MyCounter extends FluixiElement {
   private [count, setCount] = createSignal(0);
   
   view() {
@@ -73,7 +73,7 @@ Add reactive capabilities to any LitElement.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/kettlejs/core';
+import { WithSignals } from '@fluixi/core/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -105,7 +105,7 @@ Fine-grained control for advanced use cases.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@fluixi/kettlejs/core';
+import { ReactiveController } from '@fluixi/core/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -133,7 +133,7 @@ class MyCounter extends LitElement {
 
 ## Comparison
 
-| Feature | Functional | KettleElement | WithSignals | Controllers |
+| Feature | Functional | FluixiElement | WithSignals | Controllers |
 |---------|-----------|---------------|-------------|-------------|
 | Simplicity | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
 | Custom Elements | ❌ | ✅ | ✅ | ✅ |
@@ -160,17 +160,17 @@ const Button: Component<{ label: string; onClick: () => void }> = (props) => {
 };
 ```
 
-### Use KettleElement When:
+### Use FluixiElement When:
 
 - You need a custom element
-- You want full KettleJS features
+- You want full Fluixi features
 - Component lifecycle management is important
 - Building a component library
 
 ```typescript
 // Perfect for reusable custom elements
 @customElement('app-button')
-class AppButton extends KettleElement {
+class AppButton extends FluixiElement {
   @property() label = 'Click me';
   
   view() {
@@ -265,7 +265,7 @@ const App = () => {
 Share state across component trees:
 
 ```typescript
-import { createContext, useContext, Provider } from '@fluixi/kettlejs/context';
+import { createContext, useContext, Provider } from '@fluixi/core/context';
 
 const ThemeContext = createContext<Theme>({ mode: 'light' });
 
@@ -330,7 +330,7 @@ const ParentComponent: Component = () => {
 ### Functional Components
 
 ```typescript
-import { onMount, onUnmount } from '@fluixi/kettlejs';
+import { onMount, onUnmount } from '@fluixi/core';
 
 const MyComponent: Component = () => {
   onMount(() => {
@@ -345,11 +345,11 @@ const MyComponent: Component = () => {
 };
 ```
 
-### KettleElement
+### FluixiElement
 
 ```typescript
 @customElement('my-element')
-class MyElement extends KettleElement {
+class MyElement extends FluixiElement {
   connectedCallback() {
     super.connectedCallback();
     console.log('Element connected');
@@ -386,7 +386,7 @@ const StyledComponent: Component = () => {
 import { css } from 'lit';
 
 @customElement('styled-element')
-class StyledElement extends KettleElement {
+class StyledElement extends FluixiElement {
   static styles = css`
     :host {
       display: block;
@@ -423,7 +423,7 @@ const App: Component = () => {
 ### Dynamic Styles
 
 ```typescript
-import { styleMap } from '@fluixi/kettlejs';
+import { styleMap } from '@fluixi/core';
 
 const DynamicComponent: Component = () => {
   const [color, setColor] = createSignal('#ff0000');
@@ -528,7 +528,7 @@ const GrandChild: Component = () => {
 ## Next Steps
 
 - Learn about [Functional Components](./functional-components.md) in detail
-- Explore [KettleElement](./kettle-element.md) features
+- Explore [FluixiElement](./fluixi-element.md) features
 - Understand [Component Lifecycle](./lifecycle.md)
 - See [Component Patterns](../guides/component-patterns.md) examples
 

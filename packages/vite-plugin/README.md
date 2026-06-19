@@ -1,7 +1,7 @@
 # @fluixi/vite-plugin
 
-The Vite plugin for KettleJS. It sets the esbuild `jsxImportSource` and runs the
-KettleJS JSX transform (via `@fluixi/compiler`), with a choice of codegen backend.
+The Vite plugin for Fluixi. It sets the esbuild `jsxImportSource` and runs the
+Fluixi JSX transform (via `@fluixi/compiler`), with a choice of codegen backend.
 
 ```ts
 import { defineConfig } from 'vite';
@@ -21,4 +21,4 @@ export default defineConfig({
 Options are `@fluixi/compiler`'s `CompilerOptions` (`importSource`, `backend`,
 `signalModule`, `controlFlowModule`, `delegateEvents`, `sourceMaps`, …).
 
-`@fluixi/kettlejs` re-exports `fluixi`/`createVitePlugin` from here.
+`@fluixi/core` re-exports `fluixi`/`createVitePlugin` from here.

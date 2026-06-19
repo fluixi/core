@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive attribute directive for KettleJS / lit-html.
+ * @fileoverview Reactive attribute directive for Fluixi / lit-html.
  *
  * Handles reactive values in ATTRIBUTE, PROPERTY, and BOOLEAN_ATTRIBUTE
  * binding positions.

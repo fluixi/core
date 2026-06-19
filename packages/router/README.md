@@ -2,7 +2,7 @@
 
 Framework-agnostic router **core**: URL → a resolved match tree + navigation.
 No reactivity, no DOM, no view framework — just pure state and a `subscribe` API.
-View adapters (kettlejs, react, …) render the match tree **top-down**, which makes
+View adapters (fluixi, react, …) render the match tree **top-down**, which makes
 deeply nested layout/outlet rendering work by construction. See [DESIGN.md](./DESIGN.md).
 
 ```ts
@@ -34,8 +34,8 @@ router.state().match.params; // { id: '42' }
 
 `match.matched` is parent → child. An adapter folds from the deepest child upward,
 passing each rendered child to its parent as the parent's outlet — all concrete
-values, never a deferred build. That inverts the old kettlejs router's lazy,
+values, never a deferred build. That inverts the old fluixi router's lazy,
 re-entrant outlet cascade (the source of the "nested `<Outlet/>` renders empty"
 bug) into a straightforward top-down composition.
 
-Status: core only. Kettlejs adapter + store-admin migration are later steps.
+Status: core only. Fluixijs adapter + store-admin migration are later steps.

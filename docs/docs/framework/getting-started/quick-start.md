@@ -5,17 +5,17 @@ title: Quick Start
 
 # Quick Start
 
-This guide will walk you through building your first KettleJS application in just a few minutes.
+This guide will walk you through building your first Fluixi application in just a few minutes.
 
-## Your First KettleJS App
+## Your First Fluixi App
 
-Let's build a simple todo application to learn the basics of KettleJS.
+Let's build a simple todo application to learn the basics of Fluixi.
 
 ### Step 1: Create the Project
 
 ```bash
-# Create a new KettleJS project
-npx @fluixi/kettlejs new todo-app
+# Create a new Fluixi project
+npx @fluixi/core new todo-app
 
 # Navigate to the project
 cd todo-app
@@ -32,7 +32,7 @@ npm run dev
 Create `src/components/TodoApp.ts`:
 
 ```typescript
-import { html, createSignal, Component, For, Show } from '@fluixi/kettlejs';
+import { html, createSignal, Component, For, Show } from '@fluixi/core';
 
 interface Todo {
   id: number;
@@ -97,7 +97,7 @@ export const TodoApp: Component = () => {
 
   return html`
     <div class="todo-app">
-      <h1>KettleJS Todo App</h1>
+      <h1>Fluixi Todo App</h1>
 
       <!-- Input section -->
       <div class="input-section">
@@ -343,7 +343,7 @@ h1 {
 Update `src/App.ts`:
 
 ```typescript
-import { html, Component } from '@fluixi/kettlejs';
+import { html, Component } from '@fluixi/core';
 import { TodoApp } from './components/TodoApp';
 
 export const App: Component = () => {
@@ -361,7 +361,7 @@ Update `index.html` to include styles:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KettleJS Todo App</title>
+  <title>Fluixi Todo App</title>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
@@ -433,13 +433,13 @@ Bind input values to signals for reactive forms.
 
 ## What's Next?
 
-Now that you've built your first KettleJS app, you can:
+Now that you've built your first Fluixi app, you can:
 
 ### Add More Features
 
 **Local Storage Persistence:**
 ```typescript
-import { createEffect } from '@fluixi/kettlejs';
+import { createEffect } from '@fluixi/core';
 
 // Load from localStorage on mount
 const [todos, setTodos] = createSignal<Todo[]>(
@@ -600,7 +600,7 @@ If you get stuck:
 
 - Check the [API Reference](../api-reference/core.md)
 - Browse [Examples](../guides/examples.md)
-- Ask on [Discord](https://discord.gg/kettlejs)
-- Search [GitHub Issues](https://github.com/adafri/kettlejs/issues)
+- Ask on [Discord](https://discord.gg/fluixi)
+- Search [GitHub Issues](https://github.com/adafri/fluixi/issues)
 
 Happy coding! 🫖

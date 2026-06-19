@@ -1,4 +1,4 @@
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 import { Counter } from './App';
 
 const root = document.getElementById('app');

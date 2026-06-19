@@ -138,7 +138,7 @@ export type ElementAttributes<P extends Record<string, PropDefinition>> = {
 };
 
 /** HTMLElement with typed setProp/getProp */
-export interface TypedKettleElement<P extends Record<string, PropDefinition>>
+export interface TypedFluixiElement<P extends Record<string, PropDefinition>>
   extends HTMLElement {
   setProp<K extends string & keyof P>(
     name: K,
@@ -148,14 +148,14 @@ export interface TypedKettleElement<P extends Record<string, PropDefinition>>
 }
 
 /** Constructor type returned by defineElement — carries tag name + prop types + event types */
-export interface KettleElementConstructor<
+export interface FluixiElementConstructor<
   Tag extends string = string,
   P extends Record<string, PropDefinition> = Record<string, PropDefinition>,
   E extends Record<string, EventDefinition> = Record<string, EventDefinition>
 > {
-  new (): TypedKettleElement<P>;
+  new (): TypedFluixiElement<P>;
   observedAttributes: string[];
-  readonly prototype: TypedKettleElement<P>;
+  readonly prototype: TypedFluixiElement<P>;
   readonly __tag: Tag;
   readonly __props: P;
   readonly __events: E;
@@ -166,7 +166,7 @@ export interface KettleElementConstructor<
 // ============================================================================
 
 /**
- * Extract the JSX attributes interface from a KettleElementConstructor.
+ * Extract the JSX attributes interface from a FluixiElementConstructor.
  * Use in `declare global { interface HTMLElementTagNameMap }`.
  *
  * @example
@@ -174,43 +174,43 @@ export interface KettleElementConstructor<
  * const MyCounter = defineElement('my-counter', ..., { props: { name: { type: String } } });
  * declare global {
  *   interface HTMLElementTagNameMap {
- *     'my-counter': KettleElementInstance<typeof MyCounter>;
+ *     'my-counter': FluixiElementInstance<typeof MyCounter>;
  *   }
  * }
  * ```
  */
-export type KettleElementInstance<T> = T extends KettleElementConstructor<
+export type FluixiElementInstance<T> = T extends FluixiElementConstructor<
   any,
   infer P
 >
-  ? TypedKettleElement<P>
+  ? TypedFluixiElement<P>
   : HTMLElement;
 
 /**
- * Extract JSX-compatible attributes from a KettleElementConstructor.
+ * Extract JSX-compatible attributes from a FluixiElementConstructor.
  * For use in JSX IntrinsicElements augmentation.
  *
  * @example
  * ```ts
- * declare module '@fluixi/jsx-runtime/jsx' {
+ * declare module '@fluixi/jsx/jsx' {
  *   namespace JSX {
  *     interface IntrinsicElements {
- *       'my-counter': KettleElementJSXAttributes<typeof MyCounter>;
+ *       'my-counter': FluixiElementJSXAttributes<typeof MyCounter>;
  *     }
  *   }
  * }
  * ```
  */
-export type KettleElementJSXAttributes<T> = T extends KettleElementConstructor<
+export type FluixiElementJSXAttributes<T> = T extends FluixiElementConstructor<
   any,
   infer P,
   infer E
 >
-  ? ElementAttributes<P> & ElementEventHandlers<E> & KettleHTMLAttributes
-  : KettleHTMLAttributes;
+  ? ElementAttributes<P> & ElementEventHandlers<E> & FluixiHTMLAttributes
+  : FluixiHTMLAttributes;
 
 /** Base HTML attributes for custom elements in JSX */
-export interface KettleHTMLAttributes {
+export interface FluixiHTMLAttributes {
   id?: string;
   class?: string;
   className?: string;

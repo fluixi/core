@@ -20,7 +20,7 @@
 
 ## ✨ Overview
 
-**Fluixi Core** is the engine behind **KettleJS** — a fine-grained reactive UI framework with a Solid-compatible signal model. It is split into small, focused, independently-publishable packages so you can adopt only what you need: the reactivity core, the DOM renderer, the JSX runtime, web-component bindings, or the full framework with routing and SSR.
+**Fluixi Core** is the engine behind **Fluixi** — a fine-grained reactive UI framework with a Solid-compatible signal model. It is split into small, focused, independently-publishable packages so you can adopt only what you need: the reactivity core, the DOM renderer, the JSX runtime, web-component bindings, or the full framework with routing and SSR.
 
 ```ts
 import { createSignal, createEffect } from '@fluixi/reactive/signal';
@@ -37,10 +37,10 @@ setCount((c) => c + 1);                                // → "count is 1"
 | [`@fluixi/utils`](packages/utils) | Zero-dependency, strongly-typed utilities — primitives, objects, maths, arrays, color, DOM. |
 | [`@fluixi/reactive`](packages/reactive) | Fine-grained reactivity — signals, memos, effects, stores, and an RxJS-style observable layer. |
 | [`@fluixi/dom`](packages/dom) | Reactive DOM runtime with SSR, control-flow, and lit-html integration. |
-| [`@fluixi/element`](packages/element) | Web Component bindings — `defineElement`, `KettleElement`, `KettleLitElement`, controllers. |
+| [`@fluixi/element`](packages/element) | Web Component bindings — `defineElement`, `FluixiElement`, `FluixiLitElement`, controllers. |
 | [`@fluixi/babel-plugin-jsx`](packages/babel) | Babel plugin that compiles JSX into fine-grained reactive DOM calls. |
-| [`@fluixi/jsx-runtime`](packages/jsx-runtime) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + compiler glue for KettleJS JSX. |
-| [`@fluixi/kettlejs`](packages/kettlejs) | The framework — components, router, client/server entry points, and SSR. |
+| [`@fluixi/jsx`](packages/jsx) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + compiler glue for Fluixi JSX. |
+| [`@fluixi/core`](packages/core) | The framework — components, router, client/server entry points, and SSR. |
 | [`@fluixi/webui`](packages/webui) | Ready-made web-component UI library (buttons, dialogs, forms, and more). |
 
 ### Architecture
@@ -48,7 +48,7 @@ setCount((c) => c + 1);                                // → "count is 1"
 ```
 @fluixi/utils ──► @fluixi/reactive ──► @fluixi/dom ──► @fluixi/element ──┐
                                           │                              │
-                                          ├──► @fluixi/jsx-runtime ──────┼──► @fluixi/kettlejs ──► @fluixi/webui
+                                          ├──► @fluixi/jsx ──────┼──► @fluixi/core ──► @fluixi/webui
                                           │                              │
 @fluixi/babel-plugin-jsx ─────────────────┴──────────────────────────────┘
 ```
@@ -73,7 +73,7 @@ export NODE_AUTH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 **3.** Install what you need:
 
 ```sh
-pnpm add @fluixi/kettlejs    # the full framework
+pnpm add @fluixi/core    # the full framework
 # …or just the reactivity core
 pnpm add @fluixi/reactive
 ```

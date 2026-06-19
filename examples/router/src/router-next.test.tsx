@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 //
-// Regression for the framework-agnostic router (@fluixi/router) + its kettlejs
-// adapter (@fluixi/kettlejs/router-next). This example uses the IMPERATIVE backend
+// Regression for the framework-agnostic router (@fluixi/router) + its fluixi
+// adapter (@fluixi/core/router-next). This example uses the IMPERATIVE backend
 // (see vite.config.ts) — store-admin's backend — so these prove the adapter works
 // with deferred <Outlet/> AND renders deeply nested layouts (the case the old
-// kettlejs router could not render).
+// fluixi router could not render).
 import { describe, it, expect } from 'vitest';
-import { render, Suspense } from '@fluixi/kettlejs';
+import { render, Suspense } from '@fluixi/core';
 import {
   Router,
   Outlet,
@@ -19,9 +19,9 @@ import {
   useSearchParams,
   useRouteData,
   createMemoryHistory,
-} from '@fluixi/kettlejs/router-next';
-import { lazy } from '@fluixi/kettlejs/router-next';
-import { createContext, useContext } from '@fluixi/kettlejs';
+} from '@fluixi/core/router-next';
+import { lazy } from '@fluixi/core/router-next';
+import { createContext, useContext } from '@fluixi/core';
 import { flush } from '@fluixi/reactive/signal';
 
 const tick = async (ms = 30) => {
@@ -209,7 +209,7 @@ describe('router-next adapter (imperative backend)', () => {
   });
 });
 
-import { Link, A } from '@fluixi/kettlejs/router-next';
+import { Link, A } from '@fluixi/core/router-next';
 describe('router-next Link', () => {
   const tick2 = async (ms = 30) => { await new Promise((r) => setTimeout(r, ms)); await flush(); };
   it('navigates on click and applies active class', async () => {

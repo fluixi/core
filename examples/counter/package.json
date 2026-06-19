@@ -3,7 +3,7 @@
   "version": "0.0.5-next.13",
   "private": true,
   "type": "module",
-  "description": "Counter example proving the KettleJS stack (vite-plugin -> compiler -> jsx-runtime -> dom) renders + reacts in a real DOM.",
+  "description": "Counter example proving the Fluixi stack (vite-plugin -> compiler -> jsx-runtime -> dom) renders + reacts in a real DOM.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@fluixi/dom": "workspace:*",
-    "@fluixi/jsx-runtime": "workspace:*",
-    "@fluixi/kettlejs": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {

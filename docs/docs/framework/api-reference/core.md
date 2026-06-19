@@ -5,7 +5,7 @@ title: Core API Reference
 
 # Core API Reference
 
-Complete API reference for KettleJS core functionality.
+Complete API reference for Fluixi core functionality.
 
 ## Signals
 
@@ -618,7 +618,7 @@ const VERSION: string = '0.0.1'
 Framework name.
 
 ```typescript
-const FRAMEWORK_NAME: string = 'KettleJS'
+const FRAMEWORK_NAME: string = 'Fluixi'
 ```
 
 ## See Also

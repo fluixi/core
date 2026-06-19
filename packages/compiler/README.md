@@ -1,6 +1,6 @@
 # @fluixi/compiler
 
-The host-agnostic JSX compiler for KettleJS. It owns all compile-time code:
+The host-agnostic JSX compiler for Fluixi. It owns all compile-time code:
 parsing front-ends, the intermediate representation, and the code generators.
 
 ## Pipeline
@@ -43,7 +43,7 @@ front-end adapters        IR              codegen backends
 
 `@fluixi/babel-plugin-jsx` remains as a thin re-export of `./babel` for backward
 compatibility. The Vite integration is packaged as `@fluixi/vite-plugin` (which
-wraps `./integrations`); `@fluixi/kettlejs` re-exports it.
+wraps `./integrations`); `@fluixi/core` re-exports it.
 
 ## Front-ends and SWC feasibility
 

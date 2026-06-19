@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `unsafeSVG` directive for KettleJS / lit-html.
+ * @fileoverview Reactive `unsafeSVG` directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `unsafeSVG` that supports reactive values.
  * The SVG string may be a plain value, a signal, or any zero-arg function.

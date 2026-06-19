@@ -5,9 +5,9 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     
-    // JSX Configuration for KettleJS
+    // JSX Configuration for Fluixi
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs",
+    "jsxImportSource": "@fluixi/core",
     
     // Module Resolution
     "moduleResolution": "bundler",

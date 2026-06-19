@@ -1,6 +1,6 @@
 /**
- * @fileoverview Portal component for rendering content outside the component hierarchy in KettleJS
- * @module @fluixi/kettlejs/control-flow/Portal
+ * @fileoverview Portal component for rendering content outside the component hierarchy in Fluixi
+ * @module @fluixi/core/control-flow/Portal
  */
 
 import { html, render as litRender, TemplateResult, nothing } from 'lit';
@@ -172,7 +172,7 @@ export function $portal(props: $PortalProps): TemplateResult | typeof nothing {
   // Create portal container
   const createPortalContainer = (mountTarget: HTMLElement) => {
     const container = document.createElement('div');
-    container.setAttribute('data-kettle-portal', 'true');
+    container.setAttribute('data-fluixi-portal', 'true');
 
     if (props.useShadow) {
       renderRoot = container.attachShadow({ mode: 'open' });

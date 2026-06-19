@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { fluixi } from './index.js';
 
-// Validate the plugin end-to-end: its transform() runs the KettleJS JSX compile,
+// Validate the plugin end-to-end: its transform() runs the Fluixi JSX compile,
 // honouring the selected backend. transform() only needs babel (no vite server).
 async function runTransform(opts: any, code: string): Promise<string> {
   const plugin: any = fluixi(opts);
@@ -21,7 +21,7 @@ describe('@fluixi/vite-plugin', () => {
 
   it('jsx backend (opt-in) emits jsx() calls', async () => {
     const code = await runTransform(
-      { backend: 'jsx', importSource: '@fluixi/jsx-runtime' },
+      { backend: 'jsx', importSource: '@fluixi/jsx' },
       'export const A = (x) => <div id="a">{x()}</div>;',
     );
     expect(code).toMatch(/jsx\(/);

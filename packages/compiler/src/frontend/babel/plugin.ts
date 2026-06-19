@@ -43,7 +43,7 @@ export interface PluginOptions {
 
   /**
    * Import source for JSX runtime
-   * @default '@fluixi/jsx-runtime'
+   * @default '@fluixi/jsx'
    */
   importSource?: string;
 
@@ -222,7 +222,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
   const {
     runtime = 'automatic',
-    importSource = '@fluixi/jsx-runtime',
+    importSource = '@fluixi/jsx',
     pragma = 'jsx',
     pragmaFrag = 'Fragment',
     development = false,
@@ -244,7 +244,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     backend,
     codegen,
     irImports: new Set<string>(),
-    libModule: '@fluixi/kettlejs',
+    libModule: '@fluixi/core',
     hasJSX: false,
     hasReactivity: false,
     hasLitHTML: false,
@@ -271,17 +271,17 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     },
 
     visitor: {
-      // Map @fluixi/kettlejs/rx imports to @fluixi/reactive for client-side code
+      // Map @fluixi/core/rx imports to @fluixi/reactive for client-side code
       ImportDeclaration(path, state: any) {
         const source = path.node.source.value;
 
-        // Map @fluixi/kettlejs/rx to @fluixi/reactive (client-side reactive primitives)
-        if (source === '@fluixi/kettlejs/rx') {
+        // Map @fluixi/core/rx to @fluixi/reactive (client-side reactive primitives)
+        if (source === '@fluixi/core/rx') {
           path.node.source = t.stringLiteral('@fluixi/reactive');
         }
 
-        // Also handle kettlejs server imports - keep as is for SSR
-        // @fluixi/kettlejs/server stays as is (includes server reactive mappings)
+        // Also handle fluixi server imports - keep as is for SSR
+        // @fluixi/core/server stays as is (includes server reactive mappings)
       },
 
       Program: {
@@ -300,7 +300,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             staticElements: new Map(),
             autoShow: autoShowTransform,
             staticCounter: 0,
-            libModule: '@fluixi/kettlejs',
+            libModule: '@fluixi/core',
             backend,
             codegen,
             irImports: new Set<string>(),
@@ -431,7 +431,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                   t.stringLiteral(
                     backend === 'imperative'
                       ? signalModule
-                      : state.libModule ?? '@fluixi/kettlejs',
+                      : state.libModule ?? '@fluixi/core',
                   ),
                 ),
               );
@@ -470,7 +470,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                     ),
                   ],
                   t.stringLiteral(
-                    backend === 'imperative' ? signalModule : '@fluixi/jsx-runtime',
+                    backend === 'imperative' ? signalModule : '@fluixi/jsx',
                   )
                 )
               );
@@ -663,9 +663,9 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               // Transform: ${exp} -> ${watch(() => exp)}
               expPath.replaceWith(
                 //t.identifier('litrx')
-                // t.identifier('(window as any).KettleJS.litrx')
+                // t.identifier('(window as any).Fluixi.litrx')
                 t.callExpression(
-                  t.identifier('((window as any).KettleJS.litrx || litrx)'),
+                  t.identifier('((window as any).Fluixi.litrx || litrx)'),
                   [t.arrowFunctionExpression([], node as t.Expression)]
                 )
               );
@@ -869,7 +869,7 @@ function transformJSXElement(
 //                                 insert(_el, children);
 //                                 return _el; })()
 //   component       ->  createMemo(() => createComponent(Comp, props))
-// This matches @fluixi/jsx-runtime's component semantics exactly while removing
+// This matches @fluixi/jsx's component semantics exactly while removing
 // the per-render jsx() dispatch for host elements. Targets RUNTIME_CONTRACT_V1.
 // ============================================================================
 
@@ -1785,7 +1785,7 @@ function isJSXNode(node: t.Node): node is t.JSXElement | t.JSXFragment {
 
 /**
  * Returns true when `expr` (or a zero-arg arrow wrapping it) is a JSXElement
- * whose tag is one of the KettleJS control-flow components (For, Switch, Index,
+ * whose tag is one of the Fluixi control-flow components (For, Switch, Index,
  * Show, Portal, Dynamic, ErrorBoundary, Suspense).  These must NOT be wrapped in
  * createMemo — a plain `() => expr` arrow is sufficient and avoids double-tracking.
  */

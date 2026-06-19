@@ -1,7 +1,7 @@
 # Examples
 
-Runnable apps that prove the KettleJS stack works end-to-end in a real DOM:
-JSX → `@fluixi/vite-plugin` → `@fluixi/compiler` → `@fluixi/jsx-runtime` →
+Runnable apps that prove the Fluixi stack works end-to-end in a real DOM:
+JSX → `@fluixi/vite-plugin` → `@fluixi/compiler` → `@fluixi/jsx` →
 `@fluixi/dom` runtime → the DOM.
 
 Each example has a Vitest spec (jsdom) that renders the app and asserts on the

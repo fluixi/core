@@ -3,30 +3,30 @@ sidebar_position: 1
 title: Cli Guide
 ---
 
-# KettleJS CLI Documentation
+# Fluixi CLI Documentation
 
-The KettleJS CLI provides powerful scaffolding tools to create projects and components with support for multiple rendering modes including lit-html, native JSX, and React Bridge.
+The Fluixi CLI provides powerful scaffolding tools to create projects and components with support for multiple rendering modes including lit-html, native JSX, and React Bridge.
 
 ## Installation
 
 ```bash
-npm install -g @fluixi/kettlejs
+npm install -g @fluixi/core
 ```
 
 Or use with npx:
 
 ```bash
-npx @fluixi/kettlejs <command>
+npx @fluixi/core <command>
 ```
 
 ## Commands
 
 ### `new [project-name]`
 
-Create a new KettleJS project with interactive prompts.
+Create a new Fluixi project with interactive prompts.
 
 ```bash
-kettlejs new my-app
+fluixi new my-app
 ```
 
 **Interactive Prompts:**
@@ -36,7 +36,7 @@ kettlejs new my-app
 
 **Example:**
 ```bash
-kettlejs new my-kettle-app
+fluixi new my-fluixi-app
 # Follow the prompts to configure your project
 ```
 
@@ -47,8 +47,8 @@ Generate components with various patterns and modes.
 **Aliases:** `generate`, `g`
 
 ```bash
-kettlejs generate component MyComponent
-kettlejs g c MyComponent
+fluixi generate component MyComponent
+fluixi g c MyComponent
 ```
 
 **Options:**
@@ -61,7 +61,7 @@ kettlejs g c MyComponent
 Run without arguments for interactive prompts:
 
 ```bash
-kettlejs generate component
+fluixi generate component
 ```
 
 You'll be prompted for:
@@ -76,18 +76,18 @@ You'll be prompted for:
 Display CLI information and help.
 
 ```bash
-kettlejs info
+fluixi info
 ```
 
 ## Component Modes
 
 ### 1. Lit-HTML Mode (Default)
 
-Native KettleJS with lit-html templates.
+Native Fluixi with lit-html templates.
 
 **Generate:**
 ```bash
-kettlejs g c Counter --mode lit-html --type with-state
+fluixi g c Counter --mode lit-html --type with-state
 ```
 
 **Output:**
@@ -113,21 +113,21 @@ export const Counter = (props: { initialCount?: number }) => {
 - Native lit-html templates
 - Reactive signals
 - Small bundle size
-- Full KettleJS features
+- Full Fluixi features
 
 ### 2. JSX Mode
 
-Native JSX runtime for KettleJS (no React dependency).
+Native JSX runtime for Fluixi (no React dependency).
 
 **Generate:**
 ```bash
-kettlejs g c Counter --mode jsx --type with-state
+fluixi g c Counter --mode jsx --type with-state
 ```
 
 **Output:**
 ```tsx
 /** @jsx h */
-import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { h, Fragment } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './counter.css';
 
@@ -150,7 +150,7 @@ export function Counter({ initialCount = 0 }: CounterProps) {
 
 **Features:**
 - JSX syntax without React
-- KettleJS reactive signals
+- Fluixi reactive signals
 - Compiles to lit-html templates
 - Type-safe with TypeScript
 
@@ -162,24 +162,24 @@ Your `tsconfig.json` will be configured automatically:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```
 
 ### 3. React Bridge Mode
 
-React-compatible components with KettleJS signals.
+React-compatible components with Fluixi signals.
 
 **Generate:**
 ```bash
-kettlejs g c Counter --mode react-bridge --type with-state
+fluixi g c Counter --mode react-bridge --type with-state
 ```
 
 **Output:**
 ```tsx
 import React from 'react';
-import { useSignal, useKettleEffect } from '@fluixi/kettlejs/react-bridge';
+import { useSignal, useFluixiEffect } from '@fluixi/core/react-bridge';
 import './counter.css';
 
 export interface CounterProps {
@@ -189,7 +189,7 @@ export interface CounterProps {
 export function Counter({ initialCount = 0 }: CounterProps) {
   const [count, setCount] = useSignal(initialCount);
 
-  useKettleEffect(() => {
+  useFluixiEffect(() => {
     console.log('Count changed:', count());
   });
 
@@ -206,7 +206,7 @@ export function Counter({ initialCount = 0 }: CounterProps) {
 **Features:**
 - Full React compatibility
 - Use React ecosystem libraries
-- KettleJS reactive signals
+- Fluixi reactive signals
 - Works with React DevTools
 
 **Dependencies:**
@@ -228,7 +228,7 @@ React dependencies will be added automatically:
 Simple component with no state management.
 
 ```bash
-kettlejs g c MyComponent -t basic
+fluixi g c MyComponent -t basic
 ```
 
 ### With State
@@ -236,7 +236,7 @@ kettlejs g c MyComponent -t basic
 Component with reactive state using signals.
 
 ```bash
-kettlejs g c Counter -t with-state
+fluixi g c Counter -t with-state
 ```
 
 ### With Resource
@@ -244,7 +244,7 @@ kettlejs g c Counter -t with-state
 Component with async data fetching.
 
 ```bash
-kettlejs g c UserList -t with-resource
+fluixi g c UserList -t with-resource
 ```
 
 ### With Router
@@ -252,7 +252,7 @@ kettlejs g c UserList -t with-resource
 Component with router integration.
 
 ```bash
-kettlejs g c HomePage -t with-router
+fluixi g c HomePage -t with-router
 ```
 
 ### Full
@@ -260,17 +260,17 @@ kettlejs g c HomePage -t with-router
 Component with all features (state, resources, router).
 
 ```bash
-kettlejs g c Dashboard -t full
+fluixi g c Dashboard -t full
 ```
 
 ## Component Patterns (Lit-HTML Mode Only)
 
-### KettleElement (Recommended)
+### FluixiElement (Recommended)
 
-Extends the KettleElement base class.
+Extends the FluixiElement base class.
 
 ```bash
-kettlejs g c MyComponent --pattern kettlelement
+fluixi g c MyComponent --pattern fluixilement
 ```
 
 ### WithSignals
@@ -278,7 +278,7 @@ kettlejs g c MyComponent --pattern kettlelement
 Mixin that adds signals to LitElement.
 
 ```bash
-kettlejs g c MyComponent --pattern withsignals
+fluixi g c MyComponent --pattern withsignals
 ```
 
 ### Controller
@@ -286,7 +286,7 @@ kettlejs g c MyComponent --pattern withsignals
 Manual approach using SignalController.
 
 ```bash
-kettlejs g c MyComponent --pattern controller
+fluixi g c MyComponent --pattern controller
 ```
 
 ### Functional
@@ -294,7 +294,7 @@ kettlejs g c MyComponent --pattern controller
 Function-based component (legacy).
 
 ```bash
-kettlejs g c MyComponent --pattern functional
+fluixi g c MyComponent --pattern functional
 ```
 
 ## Project Templates
@@ -331,7 +331,7 @@ Complete setup with all features.
 ### Create a New JSX Project
 
 ```bash
-kettlejs new my-jsx-app
+fluixi new my-jsx-app
 # Select: jsx as default mode
 # Select: standard template
 ```
@@ -339,7 +339,7 @@ kettlejs new my-jsx-app
 ### Create a React Bridge Project
 
 ```bash
-kettlejs new my-react-app
+fluixi new my-react-app
 # Select: react-bridge as default mode
 # Select: full template
 ```
@@ -347,25 +347,25 @@ kettlejs new my-react-app
 ### Generate a Lit-HTML Component
 
 ```bash
-kettlejs g c UserCard -t with-state -p components/UserCard/UserCard.ts
+fluixi g c UserCard -t with-state -p components/UserCard/UserCard.ts
 ```
 
 ### Generate a JSX Component
 
 ```bash
-kettlejs g c UserCard -t with-state -m jsx -p components/UserCard/UserCard.tsx
+fluixi g c UserCard -t with-state -m jsx -p components/UserCard/UserCard.tsx
 ```
 
 ### Generate a React Bridge Component
 
 ```bash
-kettlejs g c UserCard -t with-resource -m react-bridge -p components/UserCard/UserCard.tsx
+fluixi g c UserCard -t with-resource -m react-bridge -p components/UserCard/UserCard.tsx
 ```
 
 ### Interactive Component Generation
 
 ```bash
-kettlejs generate component
+fluixi generate component
 # Follow the interactive prompts
 ```
 
@@ -403,7 +403,7 @@ For each component, the CLI generates:
 
 **Use Lit-HTML when:**
 - You want the smallest bundle size
-- You prefer native KettleJS experience
+- You prefer native Fluixi experience
 - You don't need React ecosystem libraries
 
 **Use JSX when:**
@@ -448,7 +448,7 @@ Ensure your `tsconfig.json` is correctly configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```
@@ -473,7 +473,7 @@ export default defineConfig({
   esbuild: {
     jsxFactory: 'h',
     jsxFragment: 'Fragment',
-    jsxInject: `import { h, Fragment } from '@fluixi/kettlejs/jsx-runtime'`,
+    jsxInject: `import { h, Fragment } from '@fluixi/core/jsx-runtime'`,
   },
 });
 ```
@@ -484,7 +484,7 @@ export default defineConfig({
 
 ```bash
 # Generate new JSX version
-kettlejs g c MyComponent -m jsx
+fluixi g c MyComponent -m jsx
 
 # Convert template literals to JSX
 # html`<div>${value}</div>` → <div>{value}</div>
@@ -494,12 +494,12 @@ kettlejs g c MyComponent -m jsx
 
 ```bash
 # Generate React Bridge component
-kettlejs g c MyComponent -m react-bridge
+fluixi g c MyComponent -m react-bridge
 
 # Replace hooks:
 # useState → useSignal
-# useEffect → useKettleEffect
-# useMemo → useKettleMemo
+# useEffect → useFluixiEffect
+# useMemo → useFluixiMemo
 ```
 
 ## Advanced Usage
@@ -509,7 +509,7 @@ kettlejs g c MyComponent -m react-bridge
 You can extend the CLI by creating custom templates in your project:
 
 ```
-.kettlejs/
+.fluixi/
 └── templates/
     ├── component.template.ts
     └── page.template.ts
@@ -521,10 +521,10 @@ Use different modes for different environments:
 
 ```bash
 # Development with React DevTools
-kettlejs g c MyComponent -m react-bridge
+fluixi g c MyComponent -m react-bridge
 
 # Production with smaller bundle
-kettlejs g c MyComponent -m jsx
+fluixi g c MyComponent -m jsx
 ```
 
 ## Related Documentation
@@ -536,6 +536,6 @@ kettlejs g c MyComponent -m jsx
 
 ## Support
 
-- GitHub Issues: [github.com/your-org/kettlejs/issues](https://github.com/your-org/kettlejs/issues)
-- Documentation: [kettlejs.dev](https://kettlejs.dev)
-- Discord: [discord.gg/kettlejs](https://discord.gg/kettlejs)
+- GitHub Issues: [github.com/your-org/fluixi/issues](https://github.com/your-org/fluixi/issues)
+- Documentation: [fluixi.dev](https://fluixi.dev)
+- Discord: [discord.gg/fluixi](https://discord.gg/fluixi)

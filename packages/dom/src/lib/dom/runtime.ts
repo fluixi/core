@@ -286,7 +286,7 @@ export function fnName(fn: Function) {
  * iterateFn — resolves a value by calling through plain function wrappers.
  *
  * CRITICAL: Must stop at signals/memos/resources ($SIGNAL marker) and
- * component thunks (kettle-component marker). Without this:
+ * component thunks (fluixi-component marker). Without this:
  *  - components returning memos get unwrapped to static values, losing reactivity
  *  - lazy component createMemo re-triggers C(props) → infinite recursion
  */

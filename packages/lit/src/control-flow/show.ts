@@ -71,8 +71,8 @@
 // export const $show = directive(ShowDirective);
 
 /**
- * @fileoverview Show component for conditional rendering in KettleJS
- * @module @fluixi/kettlejs/control-flow/Show
+ * @fileoverview Show component for conditional rendering in Fluixi
+ * @module @fluixi/core/control-flow/Show
  */
 
 import { nothing } from 'lit';

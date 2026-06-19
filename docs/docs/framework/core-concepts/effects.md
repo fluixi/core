@@ -5,7 +5,7 @@ title: Effects
 
 # Effects
 
-Effects are a core reactive primitive in KettleJS that allow you to run side effects in response to signal changes. They automatically track dependencies and re-run when those dependencies change.
+Effects are a core reactive primitive in Fluixi that allow you to run side effects in response to signal changes. They automatically track dependencies and re-run when those dependencies change.
 
 ## What is an Effect?
 
@@ -276,7 +276,7 @@ createEffect(() => {
 ### Debounced Effect
 
 ```typescript
-import { debounce } from '@fluixi/kettlejs';
+import { debounce } from '@fluixi/core';
 
 const [searchTerm, setSearchTerm] = createSignal('');
 
@@ -485,14 +485,14 @@ const MyComponent = () => {
 };
 ```
 
-### With KettleElement
+### With FluixiElement
 
 ```typescript
-import { KettleElement } from '@fluixi/kettlejs';
+import { FluixiElement } from '@fluixi/core';
 import { customElement } from 'lit/decorators.js';
 
 @customElement('my-element')
-class MyElement extends KettleElement {
+class MyElement extends FluixiElement {
   private [count, setCount] = createSignal(0);
 
   connectedCallback() {

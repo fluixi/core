@@ -1,11 +1,11 @@
 ---
 sidebar_position: 1
-title: Complete Guide to KettleJS
+title: Complete Guide to Fluixi
 ---
 
-# Complete Guide to KettleJS
+# Complete Guide to Fluixi
 
-A comprehensive guide to building modern web applications with KettleJS.
+A comprehensive guide to building modern web applications with Fluixi.
 
 ## Table of Contents
 
@@ -23,9 +23,9 @@ A comprehensive guide to building modern web applications with KettleJS.
 
 ## Introduction
 
-KettleJS is a reactive framework that combines fine-grained reactivity with lit-html templates. It provides a SolidJS-like API with the familiar template syntax of Lit.
+Fluixi is a reactive framework that combines fine-grained reactivity with lit-html templates. It provides a SolidJS-like API with the familiar template syntax of Lit.
 
-### Why KettleJS?
+### Why Fluixi?
 
 - **Fine-Grained Reactivity**: Updates happen at the signal level, not component level
 - **No Virtual DOM**: Direct DOM manipulation for better performance
@@ -37,7 +37,7 @@ KettleJS is a reactive framework that combines fine-grained reactivity with lit-
 
 ### Signals: Reactive State
 
-Signals are the foundation of reactivity in KettleJS:
+Signals are the foundation of reactivity in Fluixi:
 
 ```typescript
 import { createSignal } from '@fluixi/reactive';
@@ -144,7 +144,7 @@ console.log(fullName()); // "Jane Doe" (recomputed)
 The simplest way to create components:
 
 ```typescript
-import { html, Component } from '@fluixi/kettlejs';
+import { html, Component } from '@fluixi/core';
 
 interface ButtonProps {
   label: string;
@@ -176,17 +176,17 @@ const App = () => {
 };
 ```
 
-### KettleElement: Custom Elements
+### FluixiElement: Custom Elements
 
 For components that need web component features:
 
 ```typescript
-import { html, createSignal } from '@fluixi/kettlejs';
-import { KettleElement } from '@fluixi/kettlejs/core';
+import { html, createSignal } from '@fluixi/core';
+import { FluixiElement } from '@fluixi/core/core';
 import { customElement, property } from 'lit/decorators.js';
 
 @customElement('user-card')
-export class UserCard extends KettleElement {
+export class UserCard extends FluixiElement {
   @property() userId: number = 0;
   
   private [user, setUser] = createSignal<User | null>(null);
@@ -237,7 +237,7 @@ Add reactivity to existing Lit elements:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/kettlejs/core';
+import { WithSignals } from '@fluixi/core/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('counter-element')
@@ -295,7 +295,7 @@ const TodoApp = () => {
 For state shared across components:
 
 ```typescript
-import { createContext, useContext, Provider } from '@fluixi/kettlejs/context';
+import { createContext, useContext, Provider } from '@fluixi/core/context';
 
 // Create context
 interface AppState {
@@ -513,7 +513,7 @@ const Modal: Component<{ isOpen: boolean }> = (props) => {
 ### Basic Router Setup
 
 ```typescript
-import { createRouter, Router, Link } from '@fluixi/kettlejs/router';
+import { createRouter, Router, Link } from '@fluixi/core/router';
 
 const routes = [
   { path: '/', component: HomePage },
@@ -541,7 +541,7 @@ const App = () => {
 ### Route Parameters
 
 ```typescript
-import { useParams, useQuery } from '@fluixi/kettlejs/router';
+import { useParams, useQuery } from '@fluixi/core/router';
 
 const UserPage: Component = () => {
   const params = useParams();
@@ -572,7 +572,7 @@ const UserPage: Component = () => {
 ### Navigation
 
 ```typescript
-import { useNavigate } from '@fluixi/kettlejs/router';
+import { useNavigate } from '@fluixi/core/router';
 
 const LoginForm: Component = () => {
   const navigate = useNavigate();
@@ -596,7 +596,7 @@ const LoginForm: Component = () => {
 ### Using Resources
 
 ```typescript
-import { createResource } from '@fluixi/kettlejs/resources';
+import { createResource } from '@fluixi/core/resources';
 
 const UserProfile: Component = () => {
   const [userId, setUserId] = createSignal(1);
@@ -835,7 +835,7 @@ const LazyComponent = () => {
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { render, html } from '@fluixi/kettlejs';
+import { render, html } from '@fluixi/core';
 
 describe('Counter', () => {
   it('increments count', async () => {
@@ -970,7 +970,7 @@ const GrandChild = () => {
 
 ## Conclusion
 
-KettleJS provides a powerful, reactive framework for building modern web applications. Key takeaways:
+Fluixi provides a powerful, reactive framework for building modern web applications. Key takeaways:
 
 - Use **signals** for reactive state
 - Use **effects** for side effects
@@ -983,7 +983,7 @@ KettleJS provides a powerful, reactive framework for building modern web applica
 
 For more information, check out:
 - [API Reference](../api-reference/core.md)
-- [Examples Repository](https://github.com/adafri/kettlejs-examples)
-- [Community Discord](https://discord.gg/kettlejs)
+- [Examples Repository](https://github.com/adafri/fluixi-examples)
+- [Community Discord](https://discord.gg/fluixi)
 
 Happy coding! 🫖

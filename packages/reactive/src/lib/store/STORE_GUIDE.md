@@ -37,7 +37,7 @@ Un store est un **objet d'etat reactif** avec une reactivite fine au niveau de c
 
 **Comparaison avec SolidJS :**
 - SolidJS : `const [state, setState] = createStore({ user: { name: "John" } })`
-- KettleJS : meme API, meme semantique — `state` est un proxy, `setState` est le setter
+- Fluixi : meme API, meme semantique — `state` est un proxy, `setState` est le setter
 
 ---
 

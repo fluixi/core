@@ -4,17 +4,17 @@ tmp/
 out-tsc/
 *.tsbuildinfo
 
-packges/kettle-apps/**/dist
-packges/kettle-apps/**/out
-packges/kettle-apps/leuzman-backend/**/dist
-packges/kettle-apps/pos/out
-packges/kettle-apps/pos/release
-packges/kettle-apps/pos/packages
-packges/kettle-apps/pos-native/.expo
-packges/kettle-apps/dev.db
-packges/kettle-apps/dev.db-shm
-packges/kettle-apps/dev.db-wal
-packges/kettle-apps/stage
+packges/fluixi-apps/**/dist
+packges/fluixi-apps/**/out
+packges/fluixi-apps/leuzman-backend/**/dist
+packges/fluixi-apps/pos/out
+packges/fluixi-apps/pos/release
+packges/fluixi-apps/pos/packages
+packges/fluixi-apps/pos-native/.expo
+packges/fluixi-apps/dev.db
+packges/fluixi-apps/dev.db-shm
+packges/fluixi-apps/dev.db-wal
+packges/fluixi-apps/stage
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .pnp
@@ -100,7 +100,7 @@ Desktop.ini
 /typings
 
 # ─── Project-specific exclusions ─────────────────────────────────────────────
-packages/kettle-apps/adafri-api
-packages/kettle-apps/adafri-auth
-packages/kettle-test/
-# packages/kettlejs/docs
+packages/fluixi-apps/adafri-api
+packages/fluixi-apps/adafri-auth
+packages/fluixi-test/
+# packages/core/docs

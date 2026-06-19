@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `repeat` directive for KettleJS / lit-html.
+ * @fileoverview Reactive `repeat` directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `repeat` where the items array can be a
  * reactive signal or accessor.  When the array changes, lit's keyed reconciler

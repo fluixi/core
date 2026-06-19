@@ -1,6 +1,6 @@
 /**
- * @fileoverview Data fetching and caching primitives for KettleJS Router
- * @module @fluixi/kettlejs/router/data
+ * @fileoverview Data fetching and caching primitives for Fluixi Router
+ * @module @fluixi/core/router/data
  */
 
 import {

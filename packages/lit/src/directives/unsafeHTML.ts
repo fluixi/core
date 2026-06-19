@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `unsafeHTML` directive for KettleJS / lit-html.
+ * @fileoverview Reactive `unsafeHTML` directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `unsafeHTML` that supports reactive values.
  * The HTML string may be a plain value, a signal, or any zero-arg function.

@@ -1,6 +1,6 @@
 import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
-import { Suspense } from '@fluixi/kettlejs';
-import { routes } from 'virtual:kettle-routes';
+import { Suspense } from '@fluixi/core';
+import { routes } from 'virtual:fluixi-routes';
 
 // Shell layout around the routed page. File-routes (src/routes/*) are lazy, so the
 // <Outlet/> sits under <Suspense> — async SSR resolves their content server-side.

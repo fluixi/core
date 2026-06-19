@@ -5,12 +5,12 @@ title: Show Component
 
 # Show Component
 
-The `Show` component provides conditional rendering in KettleJS. It renders children when a condition is truthy, otherwise renders a fallback.
+The `Show` component provides conditional rendering in Fluixi. It renders children when a condition is truthy, otherwise renders a fallback.
 
 ## Import
 
 ```typescript
-import { Show } from '@fluixi/kettlejs';
+import { Show } from '@fluixi/core';
 ```
 
 ## Signature
@@ -57,7 +57,7 @@ Content to render when the condition is truthy. Can be:
 ### Simple Boolean Condition
 
 ```typescript
-import { html, createSignal, Show } from '@fluixi/kettlejs';
+import { html, createSignal, Show } from '@fluixi/core';
 
 const MyComponent = () => {
   const [isVisible, setIsVisible] = createSignal(false);

@@ -1,5 +1,5 @@
 ---
-"@fluixi/kettlejs": minor
+"@fluixi/core": minor
 ---
 
 `createProvider` gets a lazy-safe overload so a provider can wrap an `<Outlet/>`

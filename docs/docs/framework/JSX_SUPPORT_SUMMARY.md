@@ -2,9 +2,9 @@
 title: JSX/TSX Support Summary
 ---
 
-# JSX/TSX Support in KettleJS
+# JSX/TSX Support in Fluixi
 
-KettleJS now has full JSX/TSX support, making it compatible with the React ecosystem and tooling!
+Fluixi now has full JSX/TSX support, making it compatible with the React ecosystem and tooling!
 
 ## What's Been Added
 
@@ -69,7 +69,7 @@ KettleJS now has full JSX/TSX support, making it compatible with the React ecosy
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs"
+    "jsxImportSource": "@fluixi/core"
   }
 }
 ```
@@ -143,7 +143,7 @@ const Counter = () => {
 
 ### Source Files
 ```
-packages/kettlejs/src/lib/jsx-runtime/
+packages/core/src/lib/jsx-runtime/
 ├── jsx-runtime.ts      (395 lines) - Core JSX transformation
 ├── jsx.d.ts           (807 lines) - Type definitions
 └── index.ts           (92 lines)  - Exports
@@ -170,10 +170,10 @@ docs/docs/framework/guides/
 ## Next Steps
 
 Users can now:
-1. Use JSX/TSX syntax with KettleJS
+1. Use JSX/TSX syntax with Fluixi
 2. Leverage React tooling and ecosystem
 3. Migrate from React more easily
-4. Use familiar syntax while getting KettleJS performance
+4. Use familiar syntax while getting Fluixi performance
 5. Mix JSX and lit-html templates as needed
 
 ## Compatibility
@@ -192,7 +192,7 @@ Users can now:
 ## Example Project Structure
 
 ```
-my-kettlejs-app/
+my-fluixi-app/
 ├── src/
 │   ├── components/
 │   │   ├── Button.tsx          # JSX components

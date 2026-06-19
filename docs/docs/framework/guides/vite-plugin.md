@@ -1,11 +1,11 @@
-# Vite Plugin for KettleJS
+# Vite Plugin for Fluixi
 
 Official Vite plugin with full SSR, HMR, and JSX support.
 
 ## Installation
 
 ```bash
-npm install @fluixi/kettlejs vite -D
+npm install @fluixi/core vite -D
 ```
 
 ## Basic Usage
@@ -13,10 +13,10 @@ npm install @fluixi/kettlejs vite -D
 ```typescript
 // vite.config.ts
 import { defineConfig } from 'vite';
-import kettle from '@fluixi/kettlejs/vite-plugin';
+import fluixi from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
-  plugins: [kettle()]
+  plugins: [fluixi()]
 });
 ```
 
@@ -25,13 +25,13 @@ export default defineConfig({
 ### JSX/TSX Support
 
 ```typescript
-import kettle from '@fluixi/kettlejs/vite-plugin';
+import fluixi from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettle({
+    fluixi({
       jsx: true,
-      jsxImportSource: '@fluixi/kettlejs'
+      jsxImportSource: '@fluixi/core'
     })
   ]
 });
@@ -40,11 +40,11 @@ export default defineConfig({
 ### SSR Support
 
 ```typescript
-import { kettleSSR } from '@fluixi/kettlejs/vite-plugin';
+import { fluixiSSR } from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettleSSR({
+    fluixiSSR({
       ssrEntry: 'src/entry-server.ts'
     })
   ]
@@ -54,11 +54,11 @@ export default defineConfig({
 ### Development Mode
 
 ```typescript
-import { kettleDev } from '@fluixi/kettlejs/vite-plugin';
+import { fluixiDev } from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettleDev({
+    fluixiDev({
       hmr: true,
       sourcemap: true
     })
@@ -69,11 +69,11 @@ export default defineConfig({
 ### Production Build
 
 ```typescript
-import { kettleProd } from '@fluixi/kettlejs/vite-plugin';
+import { fluixiProd } from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettleProd({
+    fluixiProd({
       sourcemap: false
     })
   ]
@@ -83,7 +83,7 @@ export default defineConfig({
 ## Options
 
 ```typescript
-interface KettlePluginOptions {
+interface FluixiPluginOptions {
   jsx?: boolean;
   jsxImportSource?: string;
   ssr?: boolean;
@@ -118,11 +118,11 @@ interface KettlePluginOptions {
 
 ```typescript
 import { defineConfig } from 'vite';
-import kettle from '@fluixi/kettlejs/vite-plugin';
+import fluixi from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettle({
+    fluixi({
       jsx: true,
       ssr: true,
       hmr: true,
@@ -138,11 +138,11 @@ export default defineConfig({
 
 ```typescript
 import { defineConfig } from 'vite';
-import kettle from '@fluixi/kettlejs/vite-plugin';
+import fluixi from '@fluixi/core/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    kettle({
+    fluixi({
       jsx: true,
       ssr: false
     })

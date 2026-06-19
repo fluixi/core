@@ -6,7 +6,7 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
-  "description": "Vite plugin for KettleJS — compiles JSX via @fluixi/compiler (jsx or imperative backend).",
+  "description": "Vite plugin for Fluixi — compiles JSX via @fluixi/compiler (jsx or imperative backend).",
   "type": "module",
   "files": [
     "dist",

@@ -1,7 +1,7 @@
 import type { CompilerOptions } from '../options.js';
 
 /**
- * A front-end adapter parses source (TS/JSX) and runs the KettleJS JSX transform
+ * A front-end adapter parses source (TS/JSX) and runs the Fluixi JSX transform
  * for one module, producing code (and a source map). Front-ends are the swap
  * point at the *parsing* end of the pipeline, mirroring CodegenBackend at the
  * emit end:

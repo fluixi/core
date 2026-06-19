@@ -60,7 +60,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
 
   vite = await createServer({
     root: cfg.root,
-    plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (kettlejs)
+    plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (fluixi)
     server: { middlewareMode: true, hmr: { server: http } },
     appType: 'custom',
     ssr: cfg.ssrNoExternal.length ? { noExternal: cfg.ssrNoExternal } : undefined,

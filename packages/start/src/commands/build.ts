@@ -6,7 +6,7 @@ import { fluixiPlugins } from '../internal.js';
 
 /**
  * Production build: a client bundle (browser, with an SSR manifest) and a server
- * bundle (the entry that renders HTML). @fluixi/start provides the kettlejs plugins
+ * bundle (the entry that renders HTML). @fluixi/start provides the fluixi plugins
  * (file routing + JSX/SSR transform), so the app's vite.config keeps only app bits.
  */
 export async function build(config: FluixiConfig = {}): Promise<void> {

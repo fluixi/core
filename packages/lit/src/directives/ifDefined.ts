@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `ifDefined` directive for KettleJS / lit-html.
+ * @fileoverview Reactive `ifDefined` directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `ifDefined` that supports reactive values.
  * When the resolved value is `null` or `undefined` the attribute is removed
