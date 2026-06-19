@@ -47,8 +47,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "tslib": "^2.3.0"
   },
@@ -60,11 +58,17 @@
     "jsdom": "^25.0.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "vitest": "^1.6.1"
+    "vitest": "^1.6.1",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/jsx"
+  },
+  "peerDependencies": {
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
   }
 }

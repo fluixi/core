@@ -82,7 +82,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "stream": "^0.0.3",
     "tslib": "^2.3.0"
@@ -91,11 +90,15 @@
     "@bambiste/mix-builder": "*",
     "inquirer": "^13.1.0",
     "vitest": "^1.6.1",
-    "jsdom": "^25.0.0"
+    "jsdom": "^25.0.0",
+    "@fluixi/reactive": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/dom"
+  },
+  "peerDependencies": {
+    "@fluixi/reactive": "workspace:*"
   }
 }

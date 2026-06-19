@@ -53,18 +53,22 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
     "lit": "^3.3.1",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",
-    "inquirer": "^14.0.2"
+    "inquirer": "^14.0.2",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/lit"
+  },
+  "peerDependencies": {
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
   }
 }
