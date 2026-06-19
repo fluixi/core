@@ -1,5 +1,14 @@
 # @fluixi/cli
 
+## 0.1.0-next.2
+
+### Patch Changes
+
+- Updated dependencies [7d38a50]
+- Updated dependencies [eb302cb]
+- Updated dependencies [992c196]
+  - @fluixi/start@0.1.0-next.2
+
 ## 0.1.0-next.1
 
 ### Patch Changes
