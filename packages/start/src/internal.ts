@@ -33,6 +33,38 @@ export function injectApp(template: string, appHtml: string, mountId = 'root'): 
 }
 
 /**
+ * Split the template at the mount point for streaming: `head` is everything up to and
+ * including the open mount tag (flushed first so the browser fetches assets while the
+ * server awaits data); `tail` is the close tag onward (client script + `</body>`).
+ * Mirrors injectApp's three cases (mount div, `<!--ssr-outlet-->`, before `</body>`).
+ */
+export function splitTemplate(template: string, mountId = 'root'): { head: string; tail: string } {
+  const mount = new RegExp(`<div id=["']${mountId}["']\\s*>\\s*</div>`);
+  const m = template.match(mount);
+  if (m && m.index !== undefined) {
+    return {
+      head: template.slice(0, m.index) + `<div id="${mountId}">`,
+      tail: `</div>` + template.slice(m.index + m[0].length),
+    };
+  }
+  const outlet = template.indexOf('<!--ssr-outlet-->');
+  if (outlet !== -1) {
+    return {
+      head: template.slice(0, outlet),
+      tail: template.slice(outlet + '<!--ssr-outlet-->'.length),
+    };
+  }
+  const body = template.indexOf('</body>');
+  if (body !== -1) {
+    return {
+      head: template.slice(0, body) + `<div id="${mountId}">`,
+      tail: `</div>` + template.slice(body),
+    };
+  }
+  return { head: template, tail: '' };
+}
+
+/**
  * Wrap a fetch handler so a thrown/rejected error becomes a 500 instead of an
  * unhandled rejection. `createRequestHandler` already guards the renderer; this
  * covers the middleware chain that wraps it. `onError` lets dev map the stack first.

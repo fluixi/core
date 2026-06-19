@@ -170,6 +170,34 @@ export function renderToStream(
 }
 
 /**
+ * Render a request to a web `ReadableStream<Uint8Array>` of JUST the app content —
+ * NO document shell. For hosts that own the surrounding HTML document (e.g. a
+ * `@fluixi/start` app streaming its `index.html` around the app body): the host
+ * flushes the document head first, then pipes this body stream into the mount point,
+ * then the document tail. The content includes the `__FX_DATA__` resource-transport
+ * script (it's part of the async render output), so hydration seeds without refetch.
+ *
+ * Single chunk today (the async render resolves fully before emitting); progressive
+ * out-of-order Suspense streaming is a later pass — same signature.
+ */
+export function renderToBodyStream(
+  app: (props: { url: string }) => any,
+  event: RequestEvent,
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        controller.enqueue(encoder.encode(await renderRequestAsync(app, event)));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+}
+
+/**
  * Server entry helper — returns render/page closures bound to an app.
  *
  * @example
@@ -189,5 +217,7 @@ export function startServer(App: (props: { url: string }) => any) {
       createHtmlDocument(await renderRequestAsync(App, { url }), opts),
     /** web ReadableStream of the document (shell flushed first) */
     stream: (url: string, opts?: DocumentOptions) => renderToStream(App, { url }, opts),
+    /** web ReadableStream of the app body only (host owns the document) */
+    bodyStream: (url: string) => renderToBodyStream(App, { url }),
   };
 }

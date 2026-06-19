@@ -4,10 +4,11 @@ import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
-import { injectApp, guardHandler } from './internal.js';
+import { injectApp, splitTemplate, guardHandler } from './internal.js';
 import {
   createRequestHandler,
   serveNode,
+  streamDocument,
   withStaticFiles,
   type FetchHandler,
 } from './handler.js';
@@ -24,8 +25,21 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const template = await readFile(join(clientDir, 'index.html'), 'utf-8');
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
   const mod = await import(pathToFileURL(serverEntry).href);
-  const render = mod.render ?? mod.default;
-  const core = createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
+
+  // Streaming when the entry exports `renderStream` (a body stream): flush the split
+  // template head first, pipe the body, then the tail. Else inject the string render.
+  let core: FetchHandler;
+  if (typeof mod.renderStream === 'function') {
+    const { head, tail } = splitTemplate(template, cfg.mountId);
+    core = async (request) => {
+      const url = new URL(request.url);
+      const body = await mod.renderStream(url.pathname + url.search, request);
+      return streamDocument(head, body, tail);
+    };
+  } else {
+    const render = mod.render ?? mod.default;
+    core = createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
+  }
 
   // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
   const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');

@@ -3,13 +3,19 @@ import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { defineConfig, resolveConfig, loadConfig } from './config.js';
-import { injectApp } from './internal.js';
+import { injectApp, splitTemplate } from './internal.js';
+import { streamDocument } from './handler.js';
 import {
   defineMiddleware,
   composeMiddleware,
   normalizeMiddleware,
   type Middleware,
 } from './middleware.js';
+
+const streamOf = (s: string) =>
+  new ReadableStream<Uint8Array>({
+    start(c) { c.enqueue(new TextEncoder().encode(s)); c.close(); },
+  });
 
 // Temp config dirs live INSIDE the package — vitest's vite-node only loads files
 // under the project root, and `loadConfig` import()s the config by absolute path.
@@ -177,5 +183,50 @@ describe('@fluixi/start middleware', () => {
   it('rejects if a middleware calls next() twice', async () => {
     const bad: Middleware = async (_r, next) => { await next(); return next(); };
     await expect(composeMiddleware([bad], core)(req())).rejects.toThrow(/more than once/);
+  });
+});
+
+describe('@fluixi/start streaming', () => {
+  it('splits at the mount div (head ends with open tag, tail starts with close)', () => {
+    const { head, tail } = splitTemplate('<body><div id="root"></div><script src="/c.js"></script></body>');
+    expect(head).toBe('<body><div id="root">');
+    expect(tail).toBe('</div><script src="/c.js"></script></body>');
+  });
+
+  it('splits at a custom mountId', () => {
+    const { head, tail } = splitTemplate('<div id="app"></div>', 'app');
+    expect(head).toBe('<div id="app">');
+    expect(tail).toBe('</div>');
+  });
+
+  it('splits at the <!--ssr-outlet--> marker (no wrapping div)', () => {
+    const { head, tail } = splitTemplate('<body><!--ssr-outlet--></body>');
+    expect(head).toBe('<body>');
+    expect(tail).toBe('</body>');
+  });
+
+  it('falls back to before </body>', () => {
+    const { head, tail } = splitTemplate('<body>x</body>');
+    expect(head).toBe('<body>x<div id="root">');
+    expect(tail).toBe('</div></body>');
+  });
+
+  it('re-injecting split parts equals injectApp', () => {
+    const tpl = '<html><body><div id="root"></div><script src="/c.js"></script></body></html>';
+    const { head, tail } = splitTemplate(tpl);
+    expect(head + 'APP' + tail).toBe(injectApp(tpl, 'APP'));
+  });
+
+  it('streamDocument flushes head, pipes body, then tail (200, text/html)', async () => {
+    const res = streamDocument('<head></head><div id="root">', streamOf('BODY'), '</div></body>');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    expect(await res.text()).toBe('<head></head><div id="root">BODY</div></body>');
+  });
+
+  it('streamDocument errors the stream if the body errors', async () => {
+    const bad = new ReadableStream<Uint8Array>({ start(c) { c.error(new Error('boom')); } });
+    const res = streamDocument('<head>', bad, '</body>');
+    await expect(res.text()).rejects.toThrow();
   });
 });

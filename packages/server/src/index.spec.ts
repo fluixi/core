@@ -7,6 +7,7 @@ import {
   renderRequest,
   renderRequestAsync,
   renderToStream,
+  renderToBodyStream,
   createHtmlDocument,
   getRequestEvent,
   runWithRequestContext,
@@ -57,6 +58,21 @@ describe('@fluixi/server renderToStream', () => {
     expect(s).toBeInstanceOf(ReadableStream);
     const full = (await collectStream(s)).join('');
     expect(full).toContain('<div>d:/x</div>');
+  });
+
+  it('renderToBodyStream streams the app body only — no document shell', async () => {
+    const full = (await collectStream(renderToBodyStream(DataApp, { url: '/p' }))).join('');
+    expect(full).toContain('<div>d:/p</div>'); // awaited data resolved
+    expect(full).not.toContain('<!DOCTYPE'); // host owns the document
+    expect(full).not.toContain('<body');
+    expect(full).not.toContain('<title>');
+  });
+
+  it('startServer().bodyStream returns a body-only ReadableStream', async () => {
+    const { bodyStream } = startServer(DataApp);
+    const s = bodyStream('/y');
+    expect(s).toBeInstanceOf(ReadableStream);
+    expect((await collectStream(s)).join('')).toContain('<div>d:/y</div>');
   });
 });
 
