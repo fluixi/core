@@ -1,5 +1,19 @@
 # @fluixi/example-start
 
+## 0.0.1-next.4
+
+### Patch Changes
+
+- Updated dependencies [bbf21b9]
+- Updated dependencies [bbf21b9]
+  - @fluixi/server@1.0.0-next.14
+  - @fluixi/core@1.0.0-next.14
+  - @fluixi/jsx@1.0.0-next.14
+  - @fluixi/start@0.1.0-next.4
+  - @fluixi/cli@0.1.0-next.4
+  - @fluixi/reactive@1.0.0-next.14
+  - @fluixi/dom@1.0.0-next.14
+
 ## 0.0.1-next.3
 
 ### Patch Changes

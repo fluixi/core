@@ -1,5 +1,21 @@
 # @fluixi/server
 
+## 1.0.0-next.14
+
+### Minor Changes
+
+- bbf21b9: Guarantee a single runtime instance. `@fluixi/dom` + `@fluixi/reactive` (the renderer
+  integration + signal core — both hold module-global state) are now `peerDependencies`
+  of the runtime extensions (`@fluixi/jsx`, `@fluixi/lit`, `@fluixi/server`), and
+  `@fluixi/reactive` is a peer of `@fluixi/dom`. They're provided once by `@fluixi/core`
+  (or by installing `@fluixi/dom` + `@fluixi/reactive` directly). This prevents a
+  duplicate reactive runtime where signals from one copy don't drive effects in another.
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-next.14
+- @fluixi/dom@1.0.0-next.14
+
 ## 0.3.0-next.13
 
 ### Minor Changes
