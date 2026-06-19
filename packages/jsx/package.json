@@ -53,11 +53,8 @@
   "devDependencies": {
     "@bambiste/mix-builder": "*",
     "@types/babel__core": "^7.20.5",
-    "@types/react": "^19.2.7",
     "inquirer": "^13.1.0",
     "jsdom": "^25.0.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
     "vitest": "^1.6.1",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*"

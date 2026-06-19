@@ -203,13 +203,6 @@ export function hydrate(element: JSX.Element, container: Element): () => void {
   return render(element, container);
 }
 
-export {
-  getJSX,
-  loadReact,
-  ensureReactInit,
-  type ComponentChild,
-} from './jsx.js';
-
 // ============================================================================
 // Re-export JSX namespace types
 // ============================================================================

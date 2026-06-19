@@ -19,3 +19,8 @@ Drop the "kettle" name now that the org is fluixi. BREAKING — no aliases.
 - The `@fluixi/kettlejs-test` test harness → `@fluixi/core-test`.
 
 No API/behavior changes — names only.
+
+Also removes the dead React bridge from `@fluixi/jsx` (`jsx.ts`: `getJSX`/`loadReact`/
+`ensureReactInit`/`ComponentChild` — exported but unused, only a lazy `import('react')`),
+dropping the `react`/`react-dom`/`@types/react` dev deps. `@fluixi/jsx` no longer pulls
+React in any form.
