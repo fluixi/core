@@ -1,5 +1,21 @@
 # @fluixi/start
 
+## 0.1.0-next.3
+
+### Minor Changes
+
+- ccf61af: Add the `@fluixi/start/router` subpath, re-exporting `@fluixi/kettlejs/router-next`
+  (Router, Outlet, Link, the hooks, `createMemoryHistory`/`createBrowserHistory`, the
+  data layer, types). Apps get routing from the meta-framework's own surface — a single,
+  stable dependency — instead of reaching into kettlejs internals:
+
+  ```ts
+  import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
+  ```
+
+  Framework primitives (Suspense, lazy, signals, components) still come from
+  `@fluixi/kettlejs`; only routing lives here.
+
 ## 0.1.0-next.2
 
 ### Minor Changes

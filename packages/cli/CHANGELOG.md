@@ -1,5 +1,12 @@
 # @fluixi/cli
 
+## 0.1.0-next.3
+
+### Patch Changes
+
+- Updated dependencies [ccf61af]
+  - @fluixi/start@0.1.0-next.3
+
 ## 0.1.0-next.2
 
 ### Patch Changes
