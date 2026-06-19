@@ -1,6 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { defineConfig, resolveConfig } from './config.js';
+import { describe, it, expect, afterEach } from 'vitest';
+import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join, dirname } from 'node:path';
+import { defineConfig, resolveConfig, loadConfig } from './config.js';
 import { injectApp } from './internal.js';
+
+// Temp config dirs live INSIDE the package — vitest's vite-node only loads files
+// under the project root, and `loadConfig` import()s the config by absolute path.
+const baseDir = dirname(fileURLToPath(import.meta.url));
 
 describe('@fluixi/start config', () => {
   it('defineConfig is identity', () => {
@@ -24,6 +31,67 @@ describe('@fluixi/start config', () => {
     expect(c.port).toBe(3010);
     expect(c.mountId).toBe('app');
     expect(c.ssrNoExternal).toEqual(['x']);
+  });
+});
+
+describe('@fluixi/start loadConfig', () => {
+  const dirs: string[] = [];
+  function makeDir(files: Record<string, string>): string {
+    const dir = mkdtempSync(join(baseDir, 'fluixi-cfg-'));
+    dirs.push(dir);
+    for (const [name, content] of Object.entries(files)) {
+      writeFileSync(join(dir, name), content);
+    }
+    return dir;
+  }
+  afterEach(() => {
+    while (dirs.length) rmSync(dirs.pop()!, { recursive: true, force: true });
+  });
+
+  it('returns {} when no config file exists', async () => {
+    const dir = makeDir({});
+    expect(await loadConfig(dir)).toEqual({});
+  });
+
+  it('loads a plain .mjs config', async () => {
+    const dir = makeDir({ 'fluixi.config.mjs': `export default { port: 4100 };` });
+    expect((await loadConfig(dir)).port).toBe(4100);
+  });
+
+  it('loads a TypeScript config (strips TS-only syntax)', async () => {
+    const dir = makeDir({
+      'fluixi.config.ts': [
+        `interface Cfg { port: number }`,
+        `const c: Cfg = { port: 4123 };`,
+        `export default { port: c.port, routesDir: 'src/pages' as string };`,
+      ].join('\n'),
+    });
+    const cfg = await loadConfig(dir);
+    expect(cfg.port).toBe(4123);
+    expect(cfg.routesDir).toBe('src/pages');
+  });
+
+  it('bundles relative imports in a TS config and leaves no temp files', async () => {
+    const dir = makeDir({
+      '_routes.ts': `export const ROUTES = 'src/views';`,
+      'fluixi.config.ts': [
+        `import { ROUTES } from './_routes.js';`,
+        `export default { routesDir: ROUTES, port: 4200 as const };`,
+      ].join('\n'),
+    });
+    const cfg = await loadConfig(dir);
+    expect(cfg.routesDir).toBe('src/views');
+    expect(cfg.port).toBe(4200);
+    // the temp `.timestamp-*.mjs` is cleaned up
+    expect(readdirSync(dir).some((f) => f.includes('.timestamp-'))).toBe(false);
+  });
+
+  it('prefers .ts over .mjs when both exist', async () => {
+    const dir = makeDir({
+      'fluixi.config.ts': `export default { port: 1 };`,
+      'fluixi.config.mjs': `export default { port: 2 };`,
+    });
+    expect((await loadConfig(dir)).port).toBe(1);
   });
 });
 
