@@ -1,5 +1,74 @@
 # @fluixi/kettlejs
 
+## 0.4.0-next.13
+
+### Minor Changes
+
+- 2b6fcd3: Keep lit fully out of the core module graph — fixes `HTMLElement is not defined`
+  when SSR-rendering / prod-serving an app (e.g. via `@fluixi/start`).
+
+  The real culprit was the file-routing codegen: `kettleRoutesPlugin` emitted
+  `import { lazy, runWithOwner } from '@fluixi/kettlejs/router'` (the old, lit-coupled
+  router) into `virtual:kettle-routes`. That statically pulled `@fluixi/lit` → `lit`,
+  which `extends HTMLElement` at module init, so the server bundle threw on import —
+  and because lit was static in the graph, the lazy `import('lit')` elsewhere couldn't
+  be split out either. Codegen now imports `lazy` from `router-next` (lit-free); the
+  unused `runWithOwner` is dropped.
+
+  Also scrubbed the remaining lit pulls from the core entries so lit lives **only** in
+  `@fluixi/lit`:
+
+  - `@fluixi/kettlejs` main entry + `lib/index` barrel: removed the `html`/`svg`/
+    `nothing`/`litRender`/`LitElement`/`$show`/`$for`/`$switch`/`$portal`/`$if`/`$each`/
+    `$classMap`/`$styleMap`/`litrx`/`createReactiveJSX` re-exports; `Router`/`Link`/etc.
+    now come from `router-next`; `render/index` lazily imports lit client-only.
+  - `@fluixi/jsx-runtime`: dropped the `$`/`$if`/`litrx` re-export and the unused
+    `html`/`svg`/`nothing` value imports (→ `import type`); removed the dead
+    `@fluixi/lit` + `@lit-labs/ssr` dependencies.
+  - `@fluixi/dom`: `TemplateResult` is now a type-only import.
+
+  BREAKING: import lit symbols (`html`, `svg`, `nothing`, `LitElement`, `$show`/`$for`/
+  `$switch`/`$portal`/`$if`/`$each`, `$classMap`/`$styleMap`, `litrx`) from `@fluixi/lit`
+  directly instead of from `@fluixi/kettlejs`.
+
+- 2b6fcd3: Retire the old `@fluixi/kettlejs/router`. `router-next` (the framework-agnostic
+  `@fluixi/router` core + its kettlejs adapter) is now the only router, and it already
+  covered every real feature — hooks (`useRouter`/`useLocation`/`useNavigate`/`useParams`/
+  `useParam`/`useParamSelector`/`useMatch`/`useSearchParams`/`select`), the data layer
+  (`cache`/`action`/`revalidate`/`createAsync`/`useSubmission`/`useAction`/`useRouteData`),
+  `Outlet`/`Link`/`A`/`Redirect`, lazy routes, and nested layouts.
+
+  The old router was the last lit-coupled module in the core (its `<Router>`/`<Routes>`/
+  `<Route>` JSX imported `html` from `@fluixi/lit`), so removing it takes lit fully out of
+  the router path too.
+
+  Changes:
+
+  - Removed the `./router`, `./router/index`, and `./router.js` package exports and the
+    `router/{router,rt,fs-router,index}.ts` implementation.
+  - Moved the shared route-data layer to `router-next/data.ts` (it's re-exported from
+    `@fluixi/kettlejs/router-next`); added a `runWithOwner` re-export there for parity.
+
+  BREAKING: import routing from `@fluixi/kettlejs/router-next` instead of
+  `@fluixi/kettlejs/router`. The declarative `<Routes>`/`<Route>` JSX is replaced by the
+  `routes` prop: `<Router routes={routes} />` (wrap in `<Suspense>` for lazy routes). The
+  dead `createFileRoutes`/fs-router helper is gone (file routing is the `kettleRoutesPlugin`
+
+  - `virtual:kettle-routes`).
+
+### Patch Changes
+
+- Updated dependencies [2b6fcd3]
+- Updated dependencies [eb302cb]
+  - @fluixi/jsx-runtime@0.4.0-next.13
+  - @fluixi/dom@0.4.0-next.13
+  - @fluixi/server@0.3.0-next.13
+  - @fluixi/compiler@0.4.0-next.13
+  - @fluixi/lit@0.4.0-next.13
+  - @fluixi/utils@0.4.0-next.13
+  - @fluixi/reactive@0.4.0-next.13
+  - @fluixi/vite-plugin@0.4.0-next.13
+
 ## 0.4.0-next.12
 
 ### Patch Changes
