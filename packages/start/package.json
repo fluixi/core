@@ -38,6 +38,12 @@
       "types": "./dist/config.d.ts",
       "import": "./dist/config.js",
       "default": "./dist/config.js"
+    },
+    "./router": {
+      "development": "./src/router.ts",
+      "types": "./dist/router.d.ts",
+      "import": "./dist/router.js",
+      "default": "./dist/router.js"
     }
   },
   "dependencies": {

@@ -1,4 +1,4 @@
-import { Router, Outlet, createMemoryHistory } from '@fluixi/kettlejs/router-next';
+import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
 import { Suspense } from '@fluixi/kettlejs';
 import { routes } from 'virtual:kettle-routes';
 
