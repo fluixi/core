@@ -1,5 +1,14 @@
 # @fluixi/start
 
+## 0.1.0-next.4
+
+### Patch Changes
+
+- Updated dependencies [bbf21b9]
+- Updated dependencies [bbf21b9]
+  - @fluixi/server@1.0.0-next.14
+  - @fluixi/core@1.0.0-next.14
+
 ## 0.1.0-next.3
 
 ### Minor Changes
