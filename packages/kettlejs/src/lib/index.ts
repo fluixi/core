@@ -109,12 +109,10 @@ export type {
 // LIT-HTML INTEGRATION
 // ============================================================================
 
-// Use the wrapped html/svg from @fluixi/dom that process signals/memos/resources
-// via processValues, instead of raw lit html which stringifies functions.
-export { html, svg, nothing } from '@fluixi/lit';
-export { render as litRender } from 'lit';
-export { LitElement } from 'lit';
-export type { TemplateResult, SVGTemplateResult, PropertyValues } from 'lit';
+// Lit (html/svg/nothing/litRender/LitElement and the $-directives below) lives in
+// @fluixi/lit — import it from there directly. It is NOT re-exported here: lit extends
+// HTMLElement at module init, so re-exporting it dragged lit into SSR/prod server bundles
+// (HTMLElement is not defined). Keeping this barrel lit-free keeps the core out of that.
 
 // ============================================================================
 // DOM UTILITIES (from @fluixi/dom)
@@ -153,20 +151,9 @@ export {
   type StyleMapInput,
   type StyleValue,
 } from '@fluixi/dom';
-export {
-  // Lit-specific directive versions (classList/style diff, more efficient)
-  $classMap,
-  $styleMap,
-  // Reactive litrx directive
-  litrx,
-  // Lit control flow
-  $show,
-  $for,
-  $switch,
-  $portal,
-  $if,
-  $each,
-} from '@fluixi/lit';
+// Lit-specific directives ($classMap/$styleMap/litrx) and lit control flow
+// ($show/$for/$switch/$portal/$if/$each) live in @fluixi/lit — import from there.
+// (Framework-agnostic classMap/styleMap above come from @fluixi/dom and stay here.)
 
 export {
   // DOM Manipulation

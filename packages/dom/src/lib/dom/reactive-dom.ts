@@ -1,5 +1,5 @@
 import { $SIGNAL, Accessor, Signal, Store } from '@fluixi/reactive';
-import { TemplateResult } from 'lit';
+import type { TemplateResult } from 'lit';
 import { ComponentObserver, Effect, SignalSystem } from './types.js';
 
 class ComponentObserverImpl implements ComponentObserver {
