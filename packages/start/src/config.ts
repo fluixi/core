@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { writeFile, unlink } from 'node:fs/promises';
+import { resolve, isAbsolute } from 'node:path';
 
 /**
  * Fluixi app config. Place in `fluixi.config.{ts,js,mjs}` at the app root and wrap
@@ -50,17 +51,71 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
   };
 }
 
+// Config filenames probed, in order. TS first so a `.ts` config wins over a stray
+// build artifact; `.mts`/`.mjs`/`.js` cover plain-ESM configs.
+const CONFIG_NAMES = [
+  'fluixi.config.ts',
+  'fluixi.config.mts',
+  'fluixi.config.mjs',
+  'fluixi.config.js',
+] as const;
+
 /**
- * Load `fluixi.config.{mjs,js}` from the app root. TS config support (via a
- * loader) is a follow-up; for now an mjs/js config or no config both work.
+ * Load `fluixi.config.{ts,mts,mjs,js}` from the app root. TypeScript configs are
+ * bundled on the fly with esbuild and imported; plain ESM is imported directly.
+ * No config is fine too — every field has a default.
  */
 export async function loadConfig(root = process.cwd()): Promise<FluixiConfig> {
-  for (const name of ['fluixi.config.mjs', 'fluixi.config.js']) {
+  for (const name of CONFIG_NAMES) {
     const file = resolve(root, name);
-    if (existsSync(file)) {
-      const mod = await import(pathToFileURL(file).href);
-      return (mod.default ?? mod) as FluixiConfig;
-    }
+    if (existsSync(file)) return loadConfigFile(file);
   }
   return {};
+}
+
+async function loadConfigFile(file: string): Promise<FluixiConfig> {
+  // Plain ESM (.mjs/.js) — import directly, no transform needed.
+  if (!/\.[mc]?ts$/.test(file)) {
+    const mod = await import(pathToFileURL(file).href);
+    return (mod.default ?? mod) as FluixiConfig;
+  }
+
+  // TypeScript — bundle with esbuild, keeping bare specifiers external so
+  // `import { defineConfig } from '@fluixi/start'` and node builtins resolve from
+  // the app. Relative imports (shared constants, env helpers) ARE bundled in. The
+  // output is written to a temp `.mjs` beside the source so those externals resolve
+  // against the app's node_modules, then imported and removed.
+  const esbuild = await import('esbuild');
+  const { outputFiles } = await esbuild.build({
+    entryPoints: [file],
+    bundle: true,
+    write: false,
+    format: 'esm',
+    platform: 'node',
+    target: `node${process.versions.node.split('.')[0]}`,
+    sourcemap: 'inline',
+    plugins: [
+      {
+        name: 'fluixi:externalize-bare',
+        setup(b: any) {
+          b.onResolve({ filter: /.*/ }, (args: any) => {
+            if (args.kind === 'entry-point') return null;
+            if (args.path.startsWith('.') || isAbsolute(args.path)) return null;
+            return { path: args.path, external: true };
+          });
+        },
+      },
+    ],
+  });
+
+  const tempFile = `${file}.timestamp-${Date.now()}-${Math.random()
+    .toString(16)
+    .slice(2)}.mjs`;
+  await writeFile(tempFile, outputFiles[0].text);
+  try {
+    const mod = await import(pathToFileURL(tempFile).href);
+    return (mod.default ?? mod) as FluixiConfig;
+  } finally {
+    await unlink(tempFile).catch(() => {});
+  }
 }
