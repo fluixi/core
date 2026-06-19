@@ -1,5 +1,12 @@
 # @fluixi/lit
 
+## 1.0.0-next.14
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-next.14
+- @fluixi/dom@1.0.0-next.14
+
 ## 0.4.0-next.13
 
 ### Patch Changes

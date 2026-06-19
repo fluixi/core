@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/reactive",
-  "version": "0.4.0-next.13",
+  "version": "1.0.0-next.14",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
