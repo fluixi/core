@@ -42,7 +42,8 @@
   },
   "dependencies": {
     "@fluixi/kettlejs": "workspace:*",
-    "@fluixi/server": "workspace:*"
+    "@fluixi/server": "workspace:*",
+    "esbuild": "^0.27.1"
   },
   "peerDependencies": {
     "vite": "^5.0.0"
