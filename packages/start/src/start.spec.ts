@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { defineConfig, resolveConfig, loadConfig } from './config.js';
 import { injectApp } from './internal.js';
+import {
+  defineMiddleware,
+  composeMiddleware,
+  normalizeMiddleware,
+  type Middleware,
+} from './middleware.js';
 
 // Temp config dirs live INSIDE the package — vitest's vite-node only loads files
 // under the project root, and `loadConfig` import()s the config by absolute path.
@@ -112,5 +118,64 @@ describe('@fluixi/start injectApp', () => {
 
   it('falls back to before </body>', () => {
     expect(injectApp('<body></body>', 'APP')).toBe('<body><div id="root">APP</div></body>');
+  });
+});
+
+describe('@fluixi/start middleware', () => {
+  const req = () => new Request('http://x/admin');
+  const core = async () => new Response('RENDERED', { status: 200 });
+
+  it('defineMiddleware normalizes single + array', () => {
+    const a: Middleware = (_r, n) => n();
+    expect(defineMiddleware(a)).toEqual([a]);
+    expect(defineMiddleware([a, a])).toHaveLength(2);
+  });
+
+  it('normalizeMiddleware reads the default export (array / fn / none)', () => {
+    const a: Middleware = (_r, n) => n();
+    expect(normalizeMiddleware({ default: [a] })).toEqual([a]);
+    expect(normalizeMiddleware({ default: a })).toEqual([a]);
+    expect(normalizeMiddleware({ default: undefined })).toEqual([]);
+    expect(normalizeMiddleware(null)).toEqual([]);
+  });
+
+  it('empty chain returns the core handler unchanged', () => {
+    expect(composeMiddleware([], core)).toBe(core);
+  });
+
+  it('runs middleware in order, then the core', async () => {
+    const order: string[] = [];
+    const mw: Middleware[] = [
+      async (_r, next) => { order.push('a:before'); const res = await next(); order.push('a:after'); return res; },
+      async (_r, next) => { order.push('b:before'); const res = await next(); order.push('b:after'); return res; },
+    ];
+    const res = await composeMiddleware(mw, async () => { order.push('core'); return core(req()); })(req());
+    expect(await res.text()).toBe('RENDERED');
+    expect(order).toEqual(['a:before', 'b:before', 'core', 'b:after', 'a:after']);
+  });
+
+  it('short-circuits without calling the core (guard/redirect)', async () => {
+    let coreRan = false;
+    const redirect: Middleware = () => new Response(null, { status: 302, headers: { location: '/login' } });
+    const res = await composeMiddleware([redirect], async () => { coreRan = true; return core(req()); })(req());
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('/login');
+    expect(coreRan).toBe(false);
+  });
+
+  it('can adjust the downstream response (add a header)', async () => {
+    const addHeader: Middleware = async (_r, next) => {
+      const res = await next();
+      res.headers.set('x-powered-by', 'fluixi');
+      return res;
+    };
+    const res = await composeMiddleware([addHeader], core)(req());
+    expect(res.headers.get('x-powered-by')).toBe('fluixi');
+    expect(await res.text()).toBe('RENDERED');
+  });
+
+  it('rejects if a middleware calls next() twice', async () => {
+    const bad: Middleware = async (_r, next) => { await next(); return next(); };
+    await expect(composeMiddleware([bad], core)(req())).rejects.toThrow(/more than once/);
   });
 });

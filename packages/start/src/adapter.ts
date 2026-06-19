@@ -1,15 +1,17 @@
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
-import { injectApp } from './internal.js';
+import { injectApp, guardHandler } from './internal.js';
 import {
   createRequestHandler,
   serveNode,
   withStaticFiles,
   type FetchHandler,
 } from './handler.js';
+import { composeMiddleware, normalizeMiddleware } from './middleware.js';
 
 /**
  * Build the production SSR fetch handler from a `fluixi build` output (dist/server +
@@ -23,7 +25,13 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
   const mod = await import(pathToFileURL(serverEntry).href);
   const render = mod.render ?? mod.default;
-  return createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
+  const core = createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
+
+  // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
+  const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');
+  if (!existsSync(mwFile)) return core;
+  const mwMod = await import(pathToFileURL(mwFile).href);
+  return guardHandler(composeMiddleware(normalizeMiddleware(mwMod), core));
 }
 
 export interface AdapterContext {
