@@ -3,8 +3,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { injectApp, installCrashGuards, fluixiPlugins, guardHandler } from '../internal.js';
-import { createRequestHandler, toNodeHandler, type FetchHandler } from '../handler.js';
+import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler } from '../internal.js';
+import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 
 /**
@@ -25,17 +25,23 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   let vite: any;
   // App render → a runtime-neutral fetch handler. In dev, "render" is Vite
   // ssrLoadModule + transformIndexHtml; the same handler shape powers prod + adapters.
-  const renderHandler = createRequestHandler(async (url) => {
+  // If the entry exports `renderStream`, stream: transform+split the template, flush
+  // the head, pipe the body stream, then the tail. guardHandler maps pre-flush errors
+  // (a streaming error after the head is out can only truncate the response).
+  const renderHandler: FetchHandler = guardHandler(async (request) => {
+    const url = new URL(request.url);
+    const path = url.pathname + url.search;
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
-    const render = mod.render ?? mod.default;
-    try {
-      const appHtml = await render(url); // sync or async
-      return await vite.transformIndexHtml(url, injectApp(template, appHtml, cfg.mountId));
-    } catch (e: any) {
-      vite.ssrFixStacktrace?.(e); // dev: map the stack back to source
-      throw e;
+    if (typeof mod.renderStream === 'function') {
+      const shell = await vite.transformIndexHtml(path, template);
+      const { head, tail } = splitTemplate(shell, cfg.mountId);
+      return streamDocument(head, await mod.renderStream(path, request), tail);
     }
-  });
+    const render = mod.render ?? mod.default;
+    const appHtml = await render(path); // sync or async
+    const html = await vite.transformIndexHtml(path, injectApp(template, appHtml, cfg.mountId));
+    return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+  }, (e) => vite.ssrFixStacktrace?.(e));
 
   // Optional request middleware. Loaded per request via ssrLoadModule so edits hot-
   // reload (no server restart); guardHandler turns a middleware throw into a 500.

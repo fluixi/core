@@ -10,7 +10,7 @@ export type { FluixiConfig, ResolvedConfig } from './config.js';
 export { dev } from './commands/dev.js';
 export { build } from './commands/build.js';
 export { start } from './commands/start.js';
-export { injectApp } from './internal.js';
+export { injectApp, splitTemplate } from './internal.js';
 // The runtime-neutral request layer — the seam adapters (edge/worker/Bun/Deno) build on.
 export {
   createRequestHandler,
@@ -18,9 +18,10 @@ export {
   nodeToRequest,
   sendResponse,
   serveNode,
+  streamDocument,
   withStaticFiles,
 } from './handler.js';
-export type { FetchHandler, RenderFn, ServeNodeOptions } from './handler.js';
+export type { FetchHandler, RenderFn, StreamRenderFn, ServeNodeOptions } from './handler.js';
 // Deploy adapters: the portable prod handler + the node/web reference adapters.
 export { createProdHandler, nodeAdapter, webAdapter } from './adapter.js';
 export type { Adapter, AdapterContext } from './adapter.js';

@@ -17,6 +17,48 @@ export type RenderFn = (url: string, request: Request) => string | Promise<strin
 /** Web-standard request handler. */
 export type FetchHandler = (request: Request) => Promise<Response>;
 
+/** Produce a web `ReadableStream` of the app body (no document shell) for a URL. */
+export type StreamRenderFn = (
+  url: string,
+  request: Request,
+) => ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>>;
+
+/**
+ * Compose a streamed HTML Response: flush `head` immediately (browser starts fetching
+ * assets while the server awaits data), then pipe the app `body` stream into the mount
+ * point, then `tail` (client script + closing tags). A render error after the head is
+ * flushed can only error the stream (status is already 200) — truncated HTML; callers
+ * should guard the pre-flush path for a real 500.
+ */
+export function streamDocument(
+  head: string,
+  body: ReadableStream<Uint8Array>,
+  tail: string,
+): Response {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        controller.enqueue(enc.encode(head));
+        const reader = body.getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          controller.enqueue(value);
+        }
+        controller.enqueue(enc.encode(tail));
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  });
+}
+
 /** Wrap a render function as a fetch handler (Node/Bun/Deno/edge-portable). */
 export function createRequestHandler(render: RenderFn): FetchHandler {
   return async (request) => {
