@@ -499,12 +499,14 @@ export {
   createAsync,
   useSubmission,
   useAction,
-} from '../router/data.js';
+} from './data.js';
 export type {
   RouteDataArgs,
   RouteLoadFunc,
   Action,
   Submission,
   CacheFn,
-} from '../router/data.js';
+} from './data.js';
 export { lazy } from '../render/lazy.js';
+// Parity with the retired '@fluixi/kettlejs/router' barrel (route codegen used it).
+export { runWithOwner } from '@fluixi/dom';

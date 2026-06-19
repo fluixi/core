@@ -20,7 +20,7 @@ import {
   useRouteData,
   createMemoryHistory,
 } from '@fluixi/kettlejs/router-next';
-import { lazy } from '@fluixi/kettlejs/router';
+import { lazy } from '@fluixi/kettlejs/router-next';
 import { createContext, useContext } from '@fluixi/kettlejs';
 import { flush } from '@fluixi/reactive/signal';
 

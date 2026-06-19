@@ -255,9 +255,9 @@ export type {
 // } from './resources/index.js';
 
 // Router — from router-next (the framework-agnostic router). The old lit-based router
-// (./router) is no longer re-exported here: it imported `html` from @fluixi/lit, which
-// dragged lit (extends HTMLElement at module init) into the core/SSR graph. Apps that
-// still need the old router import it from '@fluixi/kettlejs/router' directly.
+// (./router) has been removed: it imported `html` from @fluixi/lit, which dragged lit
+// (extends HTMLElement at module init) into the core/SSR graph. router-next is the
+// only router now; `<Router routes={...}/>` replaces the old `<Routes>`/`<Route>` JSX.
 export {
   Router,
   Link,
