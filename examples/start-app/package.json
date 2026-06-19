@@ -12,10 +12,11 @@
   "dependencies": {
     "@fluixi/cli": "workspace:*",
     "@fluixi/start": "workspace:*",
-    "@fluixi/kettlejs": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/dom": "workspace:*",
-    "@fluixi/server": "workspace:*"
+    "@fluixi/server": "workspace:*",
+    "@fluixi/jsx": "workspace:*"
   },
   "devDependencies": {
     "vite": "^5.0.0"

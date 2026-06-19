@@ -646,7 +646,7 @@ MIT
 
 ## Related Packages
 
-- `@fluixi/jsx-runtime` - JSX runtime using this DOM package
+- `@fluixi/jsx` - JSX runtime using this DOM package
 - `@fluixi/reactive` - Signal and store implementations
 - `lit` - Template literals for HTML
 

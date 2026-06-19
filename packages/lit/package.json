@@ -6,7 +6,7 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
-  "description": "The lit-html renderer for KettleJS — templates, directives and lit-based control flow. Built on @fluixi/dom.",
+  "description": "The lit-html renderer for Fluixi — templates, directives and lit-based control flow. Built on @fluixi/dom.",
   "type": "module",
   "files": [
     "dist",

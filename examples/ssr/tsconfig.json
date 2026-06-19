@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
-    "jsxImportSource": "@fluixi/kettlejs",
+    "jsxImportSource": "@fluixi/jsx",
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true,
@@ -13,8 +13,8 @@
   "include": ["src", "server.mjs"],
   "references": [
     { "path": "../../packages/reactive" },
-    { "path": "../../packages/kettlejs" },
-    { "path": "../../packages/jsx-runtime" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/jsx" },
     { "path": "../../packages/dom" },
     { "path": "../../packages/server" },
     { "path": "../../packages/vite-plugin" }

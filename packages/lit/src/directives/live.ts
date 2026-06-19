@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `live` directive for KettleJS / lit-html.
+ * @fileoverview Reactive `live` directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `live` that supports reactive values.
  * Like lit's `live`, it always checks the *current DOM value* before

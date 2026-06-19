@@ -3,7 +3,7 @@
   "version": "0.0.5-next.13",
   "private": true,
   "type": "module",
-  "description": "Todo example (For, Show, input + events) proving the KettleJS stack in a real DOM.",
+  "description": "Todo example (For, Show, input + events) proving the Fluixi stack in a real DOM.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@fluixi/dom": "workspace:*",
-    "@fluixi/jsx-runtime": "workspace:*",
-    "@fluixi/kettlejs": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {

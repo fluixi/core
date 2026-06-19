@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
-    "jsxImportSource": "@fluixi/kettlejs",
+    "jsxImportSource": "@fluixi/jsx",
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true,

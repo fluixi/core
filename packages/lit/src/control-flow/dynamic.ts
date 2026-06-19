@@ -66,8 +66,8 @@
 // export const $dynamic = directive(DynamicDirective);
 
 /**
- * @fileoverview Dynamic component for rendering components dynamically in KettleJS
- * @module @fluixi/kettlejs/control-flow/Dynamic
+ * @fileoverview Dynamic component for rendering components dynamically in Fluixi
+ * @module @fluixi/core/control-flow/Dynamic
  */
 
 import { html, TemplateResult, nothing } from 'lit';

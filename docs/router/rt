@@ -270,9 +270,9 @@ export function Router(
   }));
 }
 
-const $ROUTES = Symbol.for('kettle-routes');
-const $ROUTER = Symbol.for('kettle-router');
-const $OUTLET = Symbol.for('kettle-outlet');
+const $ROUTES = Symbol.for('fluixi-routes');
+const $ROUTER = Symbol.for('fluixi-router');
+const $OUTLET = Symbol.for('fluixi-outlet');
 export function Route(props: RouteDefinition) {
   return props;
 }

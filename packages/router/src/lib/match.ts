@@ -3,7 +3,7 @@
  *
  * `matchRoutes(routes, pathname)` resolves a pathname to a parent → child
  * {@link RouteMatch}. No side effects, no reactivity — same input, same output.
- * Ported from the kettlejs router's matcher and made framework-agnostic.
+ * Ported from the fluixi router's matcher and made framework-agnostic.
  */
 
 import type { MatchedRoute, RouteDefinition, RouteMatch } from './types.js';

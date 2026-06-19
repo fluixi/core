@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive `ref` and `bindRef` directives for KettleJS / lit-html.
+ * @fileoverview Reactive `ref` and `bindRef` directives for Fluixi / lit-html.
  *
  * Two exports:
  *

@@ -2,9 +2,9 @@
 title: JSX Architecture
 ---
 
-# KettleJS JSX/TSX Architecture
+# Fluixi JSX/TSX Architecture
 
-Visual overview of how JSX support is integrated into KettleJS.
+Visual overview of how JSX support is integrated into Fluixi.
 
 ## Architecture Diagram
 
@@ -45,10 +45,10 @@ Visual overview of how JSX support is integrated into KettleJS.
               ┌──────────────▼──────────────┐
               │                             │
     ┌─────────▼─────────┐       ┌──────────▼─────────┐
-    │  @fluixi/reactive    │       │   KettleJS Core    │
+    │  @fluixi/reactive    │       │   Fluixi Core    │
     │                   │       │                    │
     │ • Signals         │       │ • Components       │
-    │ • Effects         │       │ • KettleElement    │
+    │ • Effects         │       │ • FluixiElement    │
     │ • Memos           │       │ • Controllers      │
     │ • Batch           │       │ • Lifecycle        │
     └─────────┬─────────┘       └──────────┬─────────┘
@@ -92,7 +92,7 @@ const Counter = () => {
 
 ```typescript
 // TypeScript transforms JSX using our runtime
-import { jsx, jsxs } from '@fluixi/kettlejs/jsx-runtime';
+import { jsx, jsxs } from '@fluixi/core/jsx-runtime';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -197,7 +197,7 @@ Source Files (.tsx)
     ▼
 TypeScript Compiler
     │   (jsx: "react-jsx")
-    │   (jsxImportSource: "@fluixi/kettlejs")
+    │   (jsxImportSource: "@fluixi/core")
     │
     ▼
 Transformed JS (with jsx() calls)
@@ -225,7 +225,7 @@ tsconfig.json
     │       │
     │       └─→ Use new JSX transform
     │
-    └─→ "jsxImportSource": "@fluixi/kettlejs"
+    └─→ "jsxImportSource": "@fluixi/core"
             │
             └─→ Import from our jsx-runtime
 ```
@@ -256,7 +256,7 @@ Application Start
     ├─→ Load @fluixi/reactive
     │   (signals, effects, etc.)
     │
-    └─→ Initialize KettleJS
+    └─→ Initialize Fluixi
         (components, router, etc.)
 ```
 
@@ -284,7 +284,7 @@ DOM Update
 Result: Fast! ⚡
 ```
 
-## Comparison: React vs KettleJS JSX
+## Comparison: React vs Fluixi JSX
 
 ### React Flow
 ```
@@ -300,7 +300,7 @@ Reconciliation
 DOM Update
 ```
 
-### KettleJS JSX Flow
+### Fluixi JSX Flow
 ```
 Signal Change
     │

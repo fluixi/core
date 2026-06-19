@@ -2,18 +2,18 @@ import type { ResolvedConfig } from './config.js';
 import type { FetchHandler } from './handler.js';
 
 /**
- * The kettlejs build plugins @fluixi/start provides by default: file-based routing
- * (kettleRoutesPlugin → virtual:kettle-routes) + the JSX/SSR transform
- * (createVitePlugin). This is what makes start "sit on top of kettlejs" — apps get
+ * The fluixi build plugins @fluixi/start provides by default: file-based routing
+ * (fluixiRoutesPlugin → virtual:fluixi-routes) + the JSX/SSR transform
+ * (createVitePlugin). This is what makes start "sit on top of fluixi" — apps get
  * zero-config routing + SSR. Apps using `fluixi dev|build` should therefore NOT add
  * these to their own vite.config (start owns them); keep vite.config for app-specific
  * bits only (optimizeDeps, ssr.noExternal via config, etc.).
  */
 export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
-  const { createVitePlugin, kettleRoutesPlugin } = await import('@fluixi/kettlejs/plugins');
+  const { createVitePlugin, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
   // polyfills:false — the meta-framework is SSR-first; the browser node-polyfill shims
   // break server rendering. Apps that need Buffer/process in the browser opt in later.
-  return [kettleRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }), createVitePlugin()];
+  return [fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }), createVitePlugin()];
 }
 
 /**

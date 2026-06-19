@@ -1,6 +1,6 @@
 /**
- * @fileoverview File System Router Generator for KettleJS
- * @module @fluixi/kettlejs/router/fs-router
+ * @fileoverview File System Router Generator for Fluixi
+ * @module @fluixi/core/router/fs-router
  *
  * Utilities to generate route definitions from file system structure
  * compatible with Vite's import.meta.glob.
@@ -41,7 +41,7 @@ export function createFileRoutes(
   options: FileRouterOptions = {}
 ): RouteDefinition[] {
   console.warn(
-    '[KettleJS] createFileRoutes is deprecated. Use kettleRoutesPlugin from @fluixi/kettlejs/plugins instead.'
+    '[Fluixi] createFileRoutes is deprecated. Use fluixiRoutesPlugin from @fluixi/core/plugins instead.'
   );
   const root = options.root || '/src/routes';
   const routes: RouteDefinition[] = [];
@@ -165,7 +165,7 @@ export function createFileRoutes(
 
       // Calculate relative path
       // This is complex because we normalized full paths.
-      // kettlejs router expects full paths or relative?
+      // fluixi router expects full paths or relative?
       // The router implementation uses `path.match(regex)`.
       // If nesting, children paths should be relative?
       // "const fullPath = basePath + route.path;" -> Yes, relative.

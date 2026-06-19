@@ -4,7 +4,7 @@
 
 # @fluixi/babel-plugin-jsx
 
-**Compiles JSX into fine-grained reactive DOM calls for KettleJS — no virtual DOM.**
+**Compiles JSX into fine-grained reactive DOM calls for Fluixi — no virtual DOM.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -15,7 +15,7 @@
 
 ## ✨ Overview
 
-`@fluixi/babel-plugin-jsx` is the compile-time half of Fluixi's JSX support. It transforms JSX at build time into direct, surgical DOM operations wired to signals — so updates touch only the nodes that actually change, with no diffing and no virtual DOM. It pairs with the runtime in [`@fluixi/jsx-runtime`](../jsx-runtime).
+`@fluixi/babel-plugin-jsx` is the compile-time half of Fluixi's JSX support. It transforms JSX at build time into direct, surgical DOM operations wired to signals — so updates touch only the nodes that actually change, with no diffing and no virtual DOM. It pairs with the runtime in [`@fluixi/jsx`](../jsx-runtime).
 
 ## 📦 Installation
 
@@ -45,7 +45,7 @@ Or via the automatic JSX runtime in `tsconfig.json`:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/jsx-runtime"
+    "jsxImportSource": "@fluixi/jsx"
   }
 }
 ```
@@ -61,7 +61,7 @@ into fine-grained DOM instructions that update only the text node bound to `coun
 ## 📋 Requirements
 
 - **@babel/core** ≥ 7.27
-- Use together with [`@fluixi/jsx-runtime`](../jsx-runtime) at runtime.
+- Use together with [`@fluixi/jsx`](../jsx-runtime) at runtime.
 
 ## 📄 License
 

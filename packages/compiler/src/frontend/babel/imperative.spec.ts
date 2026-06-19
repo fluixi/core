@@ -266,7 +266,7 @@ describe('jsx backend (opt-in) is unchanged', () => {
   it('still emits jsx()/jsxs() calls when backend: jsx', () => {
     const code = compileEsm(
       `export const r = (x) => <div id="a">{x()}</div>;`,
-      { backend: 'jsx', importSource: '@fluixi/jsx-runtime' },
+      { backend: 'jsx', importSource: '@fluixi/jsx' },
     );
     expect(code).toMatch(/\bjsx\(/);
     expect(code).not.toContain('createNativeElement');

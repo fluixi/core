@@ -1,10 +1,10 @@
 /**
- * @fileoverview Bundler integrations for the KettleJS compiler.
+ * @fileoverview Bundler integrations for the Fluixi compiler.
  * @module @fluixi/compiler/integrations
  *
  * Build-tool adapters (vite/webpack/rollup/esbuild) plus the prop/template
  * analysis helpers that drive them. These wrap the babel front-end so a single
- * package owns all compile-time code. @fluixi/kettlejs re-exports
+ * package owns all compile-time code. @fluixi/core re-exports
  * createVitePlugin from here.
  *
  * Helpers:
@@ -69,7 +69,7 @@ export interface CompilerOptions {
 
   /**
    * Module to import JSX runtime from
-   * @default '@fluixi/jsx-runtime'
+   * @default '@fluixi/jsx'
    */
   importSource?: string;
 
@@ -560,7 +560,7 @@ function addImports(
   options: CompilerOptions
 ): string {
   const imports: string[] = [];
-  const source = options.importSource || '@fluixi/jsx-runtime';
+  const source = options.importSource || '@fluixi/jsx';
 
   // Always import jsx basics
   imports.push(`import { jsx, jsxs, Fragment, spread } from '${source}';`);
@@ -607,14 +607,14 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
   }
 
   return {
-    name: 'awc-jsx-runtime',
+    name: 'babel-fluixi-jsx',
     plugin: pluginModule ? pluginModule.default || pluginModule : null,
 
     // Provide options mapping
     getOptions() {
       return {
         runtime: 'automatic',
-        importSource: options.importSource || '@fluixi/jsx-runtime',
+        importSource: options.importSource || '@fluixi/jsx',
         pragma: options.pragma || 'jsx',
         pragmaFrag: options.pragmaFrag || 'Fragment',
         development: options.development || false,
@@ -702,7 +702,7 @@ function tryRequire(moduleName: string): any {
  */
 export function createVitePlugin<T>(options: CompilerOptions = {}): T {
   return {
-    name: 'awc-jsx-runtime',
+    name: 'vite-fluixi-jsx',
 
     enforce: 'pre' as const,
 
@@ -710,7 +710,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       return {
         esbuild: {
           jsx: 'automatic',
-          jsxImportSource: options.importSource || '@fluixi/jsx-runtime',
+          jsxImportSource: options.importSource || '@fluixi/jsx',
         },
       };
     },
@@ -864,7 +864,7 @@ export function createWebpackLoader(options: CompilerOptions = {}) {
  */
 export function createRollupPlugin(options: CompilerOptions = {}) {
   return {
-    name: 'awc-jsx-runtime',
+    name: 'rollup-fluixi-jsx',
 
     async transform(code: string, id: string) {
       const babelPlugin = await createBabelPlugin(options);
@@ -909,7 +909,7 @@ export function createRollupPlugin(options: CompilerOptions = {}) {
  */
 export function createESBuildPlugin(options: CompilerOptions = {}) {
   return {
-    name: 'awc-jsx-runtime',
+    name: 'esbuild-fluixi-jsx',
 
     setup(build: any) {
       build.onLoad({ filter: /\.[jt]sx$/ }, async (args: any) => {

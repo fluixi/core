@@ -163,9 +163,9 @@ function getRouteCtx(): RouteContextValue | undefined {
 
 // ─── Symbols ──────────────────────────────────────────────────────────────────
 
-const $ROUTES = Symbol.for('kettle-routes');
-const $ROUTER = Symbol.for('kettle-router');
-const $OUTLET = Symbol.for('kettle-outlet');
+const $ROUTES = Symbol.for('fluixi-routes');
+const $ROUTER = Symbol.for('fluixi-router');
+const $OUTLET = Symbol.for('fluixi-outlet');
 
 // ─── createRouter ─────────────────────────────────────────────────────────────
 

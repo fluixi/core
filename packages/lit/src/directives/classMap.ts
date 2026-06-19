@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive classMap directive for KettleJS / lit-html.
+ * @fileoverview Reactive classMap directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `classMap` that fully supports reactive values:
  *

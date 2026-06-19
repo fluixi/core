@@ -1,5 +1,5 @@
 /**
- * @fluixi/compiler — host-agnostic JSX compiler for KettleJS.
+ * @fluixi/compiler — host-agnostic JSX compiler for Fluixi.
  *
  * Pipeline: front-end adapters (babel now, swc later) → IR → analyze →
  * transform → codegen backends (imperative now, template-clone later) emitting
