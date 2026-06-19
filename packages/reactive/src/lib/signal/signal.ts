@@ -166,7 +166,7 @@ interface ErrorBoundary {
 export const $SIGNAL = Symbol.for('signal');
 export const $MEMO = Symbol.for('memo');
 export const $RESOURCE = Symbol.for('resource');
-export const $PROXY = Symbol('kettle-proxy');
+export const $PROXY = Symbol('fluixi-proxy');
 const $NODE = Symbol.for('signal-node');
 const $COMP = Symbol.for('component-node');
 export const __DEV__ = process.env.NODE_ENV !== 'production';
@@ -1231,20 +1231,20 @@ export function getSignalNode(value: any) {
 export function isComponent(value: any) {
   return (
     typeof value === 'function' &&
-    value[Symbol.for('kettle-component')] === true
+    value[Symbol.for('fluixi-component')] === true
   );
 }
 export function isSuspense(value: any) {
   return (
-    typeof value === 'function' && value[Symbol.for('kettle-suspense')] === true
+    typeof value === 'function' && value[Symbol.for('fluixi-suspense')] === true
   );
 }
 export function isProvider(value: any) {
   return (
-    typeof value === 'function' && value[Symbol.for('kettle-provider')] === true
+    typeof value === 'function' && value[Symbol.for('fluixi-provider')] === true
   );
 }
-const _KETTLE_COMPONENT_SYM = Symbol.for('kettle-component');
+const _FLUIXI_COMPONENT_SYM = Symbol.for('fluixi-component');
 function resolveProviderChildren(children: any): any {
   if (typeof children === 'function' && !children.length) {
     const result = children();

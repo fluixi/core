@@ -5,7 +5,7 @@ title: Migration Guide
 
 # Migration Guide
 
-This guide helps you migrate to KettleJS from other popular frameworks.
+This guide helps you migrate to Fluixi from other popular frameworks.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This guide helps you migrate to KettleJS from other popular frameworks.
 
 ### Concepts Mapping
 
-| React | KettleJS | Notes |
+| React | Fluixi | Notes |
 |-------|----------|-------|
 | `useState` | `createSignal` | Similar API but signals are functions |
 | `useEffect` | `createEffect` | Auto-tracks dependencies |
@@ -42,7 +42,7 @@ setCount(count + 1);
 setUser({ name: 'Alice' });
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const [count, setCount] = createSignal(0);
 const [user, setUser] = createSignal(null);
@@ -65,7 +65,7 @@ useEffect(() => {
 }, [count]); // Manual dependency array
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 createEffect(() => {
   console.log('Count:', count()); // Auto-tracked
@@ -85,7 +85,7 @@ const fullName = useMemo(() => {
 }, [firstName, lastName]);
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const fullName = createMemo(() => {
   return `${firstName()} ${lastName()}`;
@@ -110,7 +110,7 @@ const Button: React.FC<ButtonProps> = ({ label, onClick }) => {
 };
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 interface ButtonProps extends ComponentProps {
   label: string;
@@ -139,7 +139,7 @@ const Button: Component<ButtonProps> = (props) => {
 {user && <UserProfile user={user} />}
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${Show({
   when: () => isLoggedIn(),
@@ -162,7 +162,7 @@ ${Show({
 ))}
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${For({
   each: items,
@@ -188,7 +188,7 @@ const Consumer = () => {
 };
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const ThemeContext = createContext('light');
 
@@ -208,7 +208,7 @@ const Consumer = () => {
 
 ### Key Differences
 
-1. **No Virtual DOM**: KettleJS updates DOM directly
+1. **No Virtual DOM**: Fluixi updates DOM directly
 2. **No Re-renders**: Fine-grained reactivity means no component re-renders
 3. **Signals are Functions**: Must call `count()` to read value
 4. **Auto-tracking**: No manual dependency arrays
@@ -218,7 +218,7 @@ const Consumer = () => {
 
 ### Concepts Mapping
 
-| Vue 3 | KettleJS | Notes |
+| Vue 3 | Fluixi | Notes |
 |-------|----------|-------|
 | `ref` | `createSignal` | Similar concept |
 | `computed` | `createMemo` | Same purpose |
@@ -243,7 +243,7 @@ count.value++;
 user.value = { name: 'Alice' };
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const [count, setCount] = createSignal(0);
 const [user, setUser] = createSignal(null);
@@ -265,7 +265,7 @@ const fullName = computed(() => {
 });
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const fullName = createMemo(() => {
   return `${firstName()} ${lastName()}`;
@@ -285,7 +285,7 @@ watchEffect(() => {
 });
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 // Use effect with prev value
 createEffect((prev = 0) => {
@@ -316,7 +316,7 @@ defineProps<{
 </script>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 interface ButtonProps extends ComponentProps {
   label: string;
@@ -342,7 +342,7 @@ const Button: Component<ButtonProps> = (props) => {
 <div v-show="isVisible">Toggle visibility</div>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${Show({
   when: isVisible,
@@ -365,7 +365,7 @@ html`<div style="display: ${isVisible() ? 'block' : 'none'}">
 </li>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${For({
   each: items,
@@ -375,13 +375,13 @@ ${For({
 
 ## From SolidJS
 
-KettleJS is heavily inspired by SolidJS, so migration is straightforward!
+Fluixi is heavily inspired by SolidJS, so migration is straightforward!
 
 ### Main Differences
 
-1. **Templates**: KettleJS uses lit-html instead of JSX
+1. **Templates**: Fluixi uses lit-html instead of JSX
 2. **Rendering**: Uses lit-html's rendering engine
-3. **Custom Elements**: Native integration with KettleElement
+3. **Custom Elements**: Native integration with FluixiElement
 
 ### Signal Syntax
 
@@ -397,7 +397,7 @@ setCount(5);
 setCount(c => c + 1);
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 // Identical!
 const [count, setCount] = createSignal(0);
@@ -422,7 +422,7 @@ const Counter = () => {
 };
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -444,7 +444,7 @@ const Counter = () => {
 </Show>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${Show({
   when: user,
@@ -462,7 +462,7 @@ ${Show({
 </For>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${For({
   each: items,
@@ -474,7 +474,7 @@ ${For({
 
 ### Concepts Mapping
 
-| Svelte | KettleJS | Notes |
+| Svelte | Fluixi | Notes |
 |--------|----------|-------|
 | `let` | `createSignal` | Different syntax |
 | `$:` | `createMemo` | Explicit instead of magic |
@@ -497,7 +497,7 @@ ${For({
 </script>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const [count, setCount] = createSignal(0);
 
@@ -524,7 +524,7 @@ createEffect(() => {
 </button>
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 interface ButtonProps extends ComponentProps {
   label: string;
@@ -551,7 +551,7 @@ const Button: Component<ButtonProps> = (props) => {
 {/if}
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${Show({
   when: condition,
@@ -569,7 +569,7 @@ ${Show({
 {/each}
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 ${For({
   each: items,
@@ -579,7 +579,7 @@ ${For({
 
 ## From Lit
 
-Since KettleJS uses lit-html, migration is very smooth!
+Since Fluixi uses lit-html, migration is very smooth!
 
 ### Adding Reactivity
 
@@ -599,7 +599,7 @@ class MyCounter extends LitElement {
 }
 ```
 
-**KettleJS (WithSignals):**
+**Fluixi (WithSignals):**
 ```typescript
 @customElement('my-counter')
 class MyCounter extends WithSignals(LitElement) {
@@ -615,10 +615,10 @@ class MyCounter extends WithSignals(LitElement) {
 }
 ```
 
-**KettleJS (KettleElement):**
+**Fluixi (FluixiElement):**
 ```typescript
 @customElement('my-counter')
-class MyCounter extends KettleElement {
+class MyCounter extends FluixiElement {
   private [count, setCount] = createSignal(0);
   
   view() {
@@ -633,7 +633,7 @@ class MyCounter extends KettleElement {
 
 ### Gradual Migration
 
-You can gradually adopt KettleJS in a Lit project:
+You can gradually adopt Fluixi in a Lit project:
 
 ```typescript
 // Keep existing Lit components
@@ -642,9 +642,9 @@ class LitComponent extends LitElement {
   // ... existing code
 }
 
-// Add new components with KettleElement
-@customElement('kettle-component')
-class KettleComponent extends KettleElement {
+// Add new components with FluixiElement
+@customElement('fluixi-component')
+class FluixiComponent extends FluixiElement {
   // ... new reactive code
 }
 
@@ -661,9 +661,9 @@ class EnhancedComponent extends WithSignals(LitElement) {
 
 ### Concepts Mapping
 
-| Angular | KettleJS | Notes |
+| Angular | Fluixi | Notes |
 |---------|----------|-------|
-| Component | Component/KettleElement | Similar concept |
+| Component | Component/FluixiElement | Similar concept |
 | Service | Context + Signals | Different approach |
 | `@Input()` | Props | Functional approach |
 | `@Output()` | Event callbacks | Use functions |
@@ -692,7 +692,7 @@ class CounterComponent {
 }
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -720,7 +720,7 @@ class MyComponent {
 }
 ```
 
-**KettleJS:**
+**Fluixi:**
 ```typescript
 const DataServiceContext = createContext<DataService>({
   getData: async () => {}
@@ -760,7 +760,7 @@ Spend time understanding signals, effects, and memos before diving deep.
 
 ### 4. Use TypeScript
 
-KettleJS has excellent TypeScript support. Use it!
+Fluixi has excellent TypeScript support. Use it!
 
 ### 5. Follow the Patterns
 
@@ -798,7 +798,7 @@ setUser({ ...user(), name: 'Alice' });
 
 ### Missing Dependencies
 
-In KettleJS, dependencies are auto-tracked, so this isn't an issue!
+In Fluixi, dependencies are auto-tracked, so this isn't an issue!
 
 ```typescript
 // No manual dependency arrays needed!
@@ -814,12 +814,12 @@ After migrating:
 1. Optimize with [Performance Guide](./performance.md)
 2. Add routing with [Router Guide](./routing.md)
 3. Review [Best Practices](./best-practices.md)
-4. Join the [Discord Community](https://discord.gg/kettlejs)
+4. Join the [Discord Community](https://discord.gg/fluixi)
 
 ## Getting Help
 
-- [GitHub Discussions](https://github.com/adafri/kettlejs/discussions)
-- [Discord](https://discord.gg/kettlejs)
-- [Stack Overflow](https://stackoverflow.com/questions/tagged/kettlejs)
+- [GitHub Discussions](https://github.com/adafri/fluixi/discussions)
+- [Discord](https://discord.gg/fluixi)
+- [Stack Overflow](https://stackoverflow.com/questions/tagged/fluixi)
 
 Good luck with your migration! 🫖

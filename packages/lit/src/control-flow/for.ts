@@ -1,6 +1,6 @@
 /**
- * @fileoverview For component for efficient list rendering with keyed reconciliation in KettleJS
- * @module @fluixi/kettlejs/control-flow/For
+ * @fileoverview For component for efficient list rendering with keyed reconciliation in Fluixi
+ * @module @fluixi/core/control-flow/For
  */
 
 import { html, TemplateResult, nothing } from 'lit';

@@ -1,0 +1,66 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    // "moduleResolution": "bundler",
+    "types": ["node"],
+    "lib": ["dom", "DOM.Iterable", "es2021", "es2015"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "cli/**/*.ts",
+    "internal/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "references": [
+    {
+      "path": "../utils/tsconfig.lib.json"
+    },
+    {
+      "path": "../router/tsconfig.lib.json"
+    },
+    {
+      "path": "../reactive/tsconfig.lib.json"
+    },
+    {
+      "path": "../vite-plugin/tsconfig.lib.json"
+    },
+    {
+      "path": "../lit/tsconfig.lib.json"
+    },
+    {
+      "path": "../jsx/tsconfig.lib.json"
+    },
+    {
+      "path": "../dom/tsconfig.lib.json"
+    },
+    {
+      "path": "../compiler/tsconfig.lib.json"
+    }
+  ],
+  "exclude": [
+    "vite.config.ts",
+    "vite.config.mts",
+    "vitest.config.ts",
+    "vitest.config.mts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.tsx",
+    "src/**/*.test.js",
+    "src/**/*.spec.js",
+    "src/**/*.test.jsx",
+    "src/**/*.spec.jsx",
+    "src/lib/render/susp-working.ts",
+    "src/lib/router/router1.ts"
+  ]
+}

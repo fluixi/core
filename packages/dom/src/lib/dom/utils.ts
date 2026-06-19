@@ -1,6 +1,6 @@
 /**
- * @fileoverview DOM utilities for KettleJS
- * @module @fluixi/kettlejs/dom
+ * @fileoverview DOM utilities for Fluixi
+ * @module @fluixi/core/dom
  *
  * This module provides utilities for DOM manipulation and queries.
  */
@@ -204,7 +204,7 @@ export const JSX_PROPERTIES = new Set([
  *
  * @example
  * ```typescript
- * import { query } from '@fluixi/kettlejs/dom';
+ * import { query } from '@fluixi/core/dom';
  *
  * const button = query<HTMLButtonElement>('#my-button');
  * button?.click();
@@ -227,7 +227,7 @@ export function query<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { queryAll } from '@fluixi/kettlejs/dom';
+ * import { queryAll } from '@fluixi/core/dom';
  *
  * const buttons = queryAll<HTMLButtonElement>('button');
  * buttons.forEach(btn => btn.disabled = true);
@@ -250,7 +250,7 @@ export function queryAll<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { closest } from '@fluixi/kettlejs/dom';
+ * import { closest } from '@fluixi/core/dom';
  *
  * const form = closest<HTMLFormElement>(button, 'form');
  * form?.submit();
@@ -271,7 +271,7 @@ export function closest<T extends Element = Element>(
  *
  * @example
  * ```typescript
- * import { addClass } from '@fluixi/kettlejs/dom';
+ * import { addClass } from '@fluixi/core/dom';
  *
  * addClass(element, 'active', 'visible');
  * ```
@@ -288,7 +288,7 @@ export function addClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { removeClass } from '@fluixi/kettlejs/dom';
+ * import { removeClass } from '@fluixi/core/dom';
  *
  * removeClass(element, 'active', 'visible');
  * ```
@@ -305,7 +305,7 @@ export function removeClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { toggleClass } from '@fluixi/kettlejs/dom';
+ * import { toggleClass } from '@fluixi/core/dom';
  *
  * toggleClass(element, 'active');
  * ```
@@ -323,7 +323,7 @@ export function toggleClass(element: Element, ...classes: string[]): void {
  *
  * @example
  * ```typescript
- * import { hasClass } from '@fluixi/kettlejs/dom';
+ * import { hasClass } from '@fluixi/core/dom';
  *
  * if (hasClass(element, 'active')) {
  *   console.log('Element is active');
@@ -343,7 +343,7 @@ export function hasClass(element: Element, className: string): boolean {
  *
  * @example
  * ```typescript
- * import { setAttribute } from '@fluixi/kettlejs/dom';
+ * import { setAttribute } from '@fluixi/core/dom';
  *
  * setAttribute(input, 'disabled', true);
  * setAttribute(div, 'data-id', '123');
@@ -403,7 +403,7 @@ export function setAttribute(
  *
  * @example
  * ```typescript
- * import { getAttribute } from '@fluixi/kettlejs/dom';
+ * import { getAttribute } from '@fluixi/core/dom';
  *
  * const id = getAttribute(div, 'data-id');
  * ```
@@ -420,7 +420,7 @@ export function getAttribute(element: Element, name: string): string | null {
  *
  * @example
  * ```typescript
- * import { removeAttribute } from '@fluixi/kettlejs/dom';
+ * import { removeAttribute } from '@fluixi/core/dom';
  *
  * removeAttribute(input, 'disabled');
  * ```
@@ -437,7 +437,7 @@ export function removeAttribute(element: Element, name: string): void {
  *
  * @example
  * ```typescript
- * import { setStyles } from '@fluixi/kettlejs/dom';
+ * import { setStyles } from '@fluixi/core/dom';
  *
  * setStyles(div, {
  *   backgroundColor: 'red',
@@ -462,7 +462,7 @@ export function setStyles(
  *
  * @example
  * ```typescript
- * import { getStyle } from '@fluixi/kettlejs/dom';
+ * import { getStyle } from '@fluixi/core/dom';
  *
  * const color = getStyle(div, 'backgroundColor');
  * ```
@@ -482,7 +482,7 @@ export function getStyle(element: Element, property: string): string {
  *
  * @example
  * ```typescript
- * import { createElement } from '@fluixi/kettlejs/dom';
+ * import { createElement } from '@fluixi/core/dom';
  *
  * const button = createElement('button',
  *   { class: 'btn', disabled: true },
@@ -528,7 +528,7 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
  *
  * @example
  * ```typescript
- * import { removeChildren } from '@fluixi/kettlejs/dom';
+ * import { removeChildren } from '@fluixi/core/dom';
  *
  * removeChildren(container);
  * ```
@@ -547,7 +547,7 @@ export function removeChildren(element: Element): void {
  *
  * @example
  * ```typescript
- * import { appendChildren } from '@fluixi/kettlejs/dom';
+ * import { appendChildren } from '@fluixi/core/dom';
  *
  * appendChildren(container,
  *   createElement('div', {}, 'Child 1'),
@@ -577,7 +577,7 @@ export function appendChildren(
  *
  * @example
  * ```typescript
- * import { isVisible } from '@fluixi/kettlejs/dom';
+ * import { isVisible } from '@fluixi/core/dom';
  *
  * if (isVisible(element)) {
  *   console.log('Element is in viewport');
@@ -602,7 +602,7 @@ export function isVisible(element: Element): boolean {
  *
  * @example
  * ```typescript
- * import { scrollIntoView } from '@fluixi/kettlejs/dom';
+ * import { scrollIntoView } from '@fluixi/core/dom';
  *
  * scrollIntoView(element, { behavior: 'smooth', block: 'center' });
  * ```
@@ -622,7 +622,7 @@ export function scrollIntoView(
  *
  * @example
  * ```typescript
- * import { getOffset } from '@fluixi/kettlejs/dom';
+ * import { getOffset } from '@fluixi/core/dom';
  *
  * const { top, left } = getOffset(element);
  * ```
@@ -647,7 +647,7 @@ export function getOffset(element: Element): { top: number; left: number } {
  *
  * @example
  * ```typescript
- * import { delegate } from '@fluixi/kettlejs/dom';
+ * import { delegate } from '@fluixi/core/dom';
  *
  * const cleanup = delegate(list, 'click', '.item', (event, target) => {
  *   console.log('Clicked item:', target);
@@ -683,7 +683,7 @@ export function delegate<K extends keyof HTMLElementEventMap>(
  *
  * @example
  * ```typescript
- * import { waitForElement } from '@fluixi/kettlejs/dom';
+ * import { waitForElement } from '@fluixi/core/dom';
  *
  * const element = await waitForElement('#dynamic-content');
  * ```
@@ -730,7 +730,7 @@ export function waitForElement(
  *
  * @example
  * ```typescript
- * import { observeIntersection } from '@fluixi/kettlejs/dom';
+ * import { observeIntersection } from '@fluixi/core/dom';
  *
  * const cleanup = observeIntersection(element, (isIntersecting) => {
  *   console.log('Element visible:', isIntersecting);
@@ -764,7 +764,7 @@ export function observeIntersection(
  *
  * @example
  * ```typescript
- * import { observeResize } from '@fluixi/kettlejs/dom';
+ * import { observeResize } from '@fluixi/core/dom';
  *
  * const cleanup = observeResize(element, (entry) => {
  *   console.log('New size:', entry.contentRect.width, entry.contentRect.height);
@@ -833,7 +833,7 @@ export function isDOMNode(value: any): value is Node {
   return value instanceof Node;
 }
 
-export function registerGlobal(key: string, value: any, _Key = 'KettleJS') {
+export function registerGlobal(key: string, value: any, _Key = 'Fluixi') {
   if (typeof globalThis !== 'undefined') {
     if (typeof (globalThis as any)[_Key] === 'undefined') {
       (globalThis as any)[_Key] = {};
@@ -843,7 +843,7 @@ export function registerGlobal(key: string, value: any, _Key = 'KettleJS') {
     }
   }
 }
-export function getGlobal(key: string, value?: any, _Key = 'KettleJS') {
+export function getGlobal(key: string, value?: any, _Key = 'Fluixi') {
   if (typeof globalThis !== 'undefined') {
     if (typeof (globalThis as any)[_Key] !== 'undefined') {
       if (typeof (globalThis as any)[_Key][key] !== 'undefined') {

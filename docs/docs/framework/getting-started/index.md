@@ -3,13 +3,13 @@ sidebar_position: 1
 title: Overview
 ---
 
-# KettleJS Framework
+# Fluixi Framework
 
-**KettleJS** is a modern, reactive framework for building web applications with [lit-html](https://lit.dev) and fine-grained reactivity, inspired by [SolidJS](https://www.solidjs.com/).
+**Fluixi** is a modern, reactive framework for building web applications with [lit-html](https://lit.dev) and fine-grained reactivity, inspired by [SolidJS](https://www.solidjs.com/).
 
 ## Overview
 
-KettleJS combines the power of fine-grained reactive primitives from `@fluixi/reactive` with the simplicity and familiarity of lit-html templates. It provides a complete framework for building modern web applications with excellent performance, TypeScript support, and developer experience.
+Fluixi combines the power of fine-grained reactive primitives from `@fluixi/reactive` with the simplicity and familiarity of lit-html templates. It provides a complete framework for building modern web applications with excellent performance, TypeScript support, and developer experience.
 
 ## Key Features
 
@@ -45,11 +45,11 @@ Seamlessly integrate with existing Lit projects through mixins and reactive cont
 
 ## Architecture
 
-KettleJS is built on several key architectural principles:
+Fluixi is built on several key architectural principles:
 
 ```
 ┌─────────────────────────────────────────┐
-│           KettleJS Framework            │
+│           Fluixi Framework            │
 ├─────────────────────────────────────────┤
 │                                         │
 │  ┌──────────────┐  ┌─────────────────┐ │
@@ -91,12 +91,12 @@ KettleJS is built on several key architectural principles:
 At the foundation is `@fluixi/reactive`, which provides the signal-based reactivity system. This handles all state management, dependency tracking, and effect execution.
 
 ### Rendering Layer
-Built on lit-html, KettleJS uses template literals for declarative UI. The reactive layer automatically triggers re-renders when signals change.
+Built on lit-html, Fluixi uses template literals for declarative UI. The reactive layer automatically triggers re-renders when signals change.
 
 ### Component Layer
 Multiple ways to create components:
 - **Functional Components**: Pure functions returning templates
-- **KettleElement**: Base class extending LitElement
+- **FluixiElement**: Base class extending LitElement
 - **WithSignals Mixin**: Add reactivity to any Lit element
 - **Reactive Controllers**: Fine-grained reactive control
 
@@ -105,7 +105,7 @@ High-level features like routing, resources, context, and control flow component
 
 ## Component Patterns
 
-KettleJS supports multiple component patterns to fit different use cases:
+Fluixi supports multiple component patterns to fit different use cases:
 
 ### 1. Functional Components
 ```typescript
@@ -119,10 +119,10 @@ const Counter = () => {
 };
 ```
 
-### 2. KettleElement Base Class
+### 2. FluixiElement Base Class
 ```typescript
 @customElement('my-counter')
-class MyCounter extends KettleElement {
+class MyCounter extends FluixiElement {
   private [count, setCount] = createSignal(0);
   
   view() {
@@ -170,7 +170,7 @@ class MyCounter extends LitElement {
 
 ## Philosophy
 
-KettleJS is designed around several core principles:
+Fluixi is designed around several core principles:
 
 ### Fine-Grained Reactivity
 Updates happen at the signal level, not the component level. When a signal changes, only the specific DOM nodes that depend on it are updated.
@@ -194,15 +194,15 @@ Built on web standards and established libraries (lit-html, custom elements) rat
 
 Ready to dive in? Check out these resources:
 
-- [Installation Guide](./getting-started/installation.md) - Get KettleJS set up in your project
-- [Quick Start](./getting-started/quick-start.md) - Build your first KettleJS app
+- [Installation Guide](./getting-started/installation.md) - Get Fluixi set up in your project
+- [Quick Start](./getting-started/quick-start.md) - Build your first Fluixi app
 - [Core Concepts](./core-concepts/signals.md) - Understand reactivity fundamentals
 - [Components Guide](./components/functional-components.md) - Learn component patterns
 - [API Reference](./api-reference/core.md) - Complete API documentation
 
 ## Comparison with Other Frameworks
 
-| Feature | KettleJS | React | SolidJS | Vue | Svelte |
+| Feature | Fluixi | React | SolidJS | Vue | Svelte |
 |---------|----------|-------|---------|-----|--------|
 | Reactivity Model | Fine-grained signals | Virtual DOM | Fine-grained signals | Proxy-based | Compiled |
 | Template Syntax | lit-html | JSX | JSX | Template strings | Template files |
@@ -215,14 +215,14 @@ Ready to dive in? Check out these resources:
 
 ## Community & Support
 
-- **GitHub**: [github.com/adafri/kettlejs](https://github.com/adafri/kettlejs)
+- **GitHub**: [github.com/adafri/fluixi](https://github.com/adafri/fluixi)
 - **Discord**: Join our community server
-- **Twitter**: [@KettleJS](https://twitter.com/kettlejs)
-- **Stack Overflow**: Tag your questions with `kettlejs`
+- **Twitter**: [@Fluixi](https://twitter.com/fluixi)
+- **Stack Overflow**: Tag your questions with `fluixi`
 
 ## Contributing
 
-We welcome contributions! See our [Contributing Guide](https://github.com/adafri/kettlejs/blob/main/CONTRIBUTING.md) for details on:
+We welcome contributions! See our [Contributing Guide](https://github.com/adafri/fluixi/blob/main/CONTRIBUTING.md) for details on:
 
 - Reporting bugs
 - Suggesting features
@@ -231,7 +231,7 @@ We welcome contributions! See our [Contributing Guide](https://github.com/adafri
 
 ## License
 
-KettleJS is [MIT licensed](https://github.com/adafri/kettlejs/blob/main/LICENSE).
+Fluixi is [MIT licensed](https://github.com/adafri/fluixi/blob/main/LICENSE).
 
 ---
 

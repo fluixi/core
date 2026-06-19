@@ -1,8 +1,8 @@
 ---
-'@fluixi/jsx-runtime': patch
+'@fluixi/jsx': patch
 '@fluixi/vite-plugin': patch
 '@fluixi/compiler': patch
-'@fluixi/kettlejs': patch
+'@fluixi/core': patch
 '@fluixi/reactive': patch
 '@fluixi/example-counter': patch
 '@fluixi/example-router': patch
@@ -17,10 +17,10 @@
 
 ---
 
-"@fluixi/kettlejs": patch
+"@fluixi/core": patch
 
 ---
 
-Tidy kettlejs internals: remove the dead `dev-server/` and `builder/` stubs and
+Tidy fluixi internals: remove the dead `dev-server/` and `builder/` stubs and
 ~4,500 lines of extensionless router scratch files (`actual`/`curr`/`known`/`lts`/
 `rs`/`rt`) — all unexported and unimportable. No public API change.

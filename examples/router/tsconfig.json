@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
-    "jsxImportSource": "@fluixi/kettlejs",
+    "jsxImportSource": "@fluixi/jsx",
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true,
@@ -16,10 +16,10 @@
       "path": "../../packages/reactive"
     },
     {
-      "path": "../../packages/kettlejs"
+      "path": "../../packages/core"
     },
     {
-      "path": "../../packages/jsx-runtime"
+      "path": "../../packages/jsx"
     },
     {
       "path": "../../packages/dom"

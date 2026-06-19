@@ -10,10 +10,10 @@
       "path": "./packages/utils"
     },
     {
-      "path": "./packages/kettlejs"
+      "path": "./packages/core"
     },
     {
-      "path": "./packages/kettlejs-test"
+      "path": "./packages/core-test"
     },
     {
       "path": "./packages/compiler"
@@ -25,7 +25,7 @@
       "path": "./packages/babel"
     },
     {
-      "path": "./packages/jsx-runtime"
+      "path": "./packages/jsx"
     },
     {
       "path": "./packages/dom"

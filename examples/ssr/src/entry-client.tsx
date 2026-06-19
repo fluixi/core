@@ -1,4 +1,4 @@
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 import { hydrate } from '@fluixi/dom';
 import { App } from './App';
 

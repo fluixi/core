@@ -21,7 +21,7 @@ export interface FluixiConfig {
   template?: string;
   /** Element id the app HTML is injected into (`<div id="…"></div>`). Default: root */
   mountId?: string;
-  /** File-routes directory (passed to kettleRoutesPlugin). Default: src/routes */
+  /** File-routes directory (passed to fluixiRoutesPlugin). Default: src/routes */
   routesDir?: string;
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;

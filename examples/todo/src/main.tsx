@@ -1,4 +1,4 @@
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 import { TodoApp } from './App';
 
 const root = document.getElementById('app');

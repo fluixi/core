@@ -4,64 +4,64 @@
 
 
 export function asRouter(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-router'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-router'), { value: true, enumerable: true });
   return value
 }
 export function asRoutes(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-routes'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-routes'), { value: true, enumerable: true });
   return value
 }
 export function asRoute(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-route'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-route'), { value: true, enumerable: true });
   return value
 }
 export function asOutlet(value: any) {
   if(typeof value!== 'function') return value
-  Object.defineProperty(value, Symbol.for('kettle-outlet'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-outlet'), { value: true, enumerable: true });
   return value
 }
 export function asProvider(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-provider'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-provider'), { value: true, enumerable: true });
   return value
 }
 export function asContext(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-context'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-context'), { value: true, enumerable: true });
   return value
 }
 export function asComponent(value: any) {
   if(typeof value!== 'function') return value
-  Object.defineProperty(value, Symbol.for('kettle-component'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-component'), { value: true, enumerable: true });
   return value
 }
 export function asSuspense(value: any) {
-  Object.defineProperty(value, Symbol.for('kettle-suspense'), { value: true, enumerable: true });
+  Object.defineProperty(value, Symbol.for('fluixi-suspense'), { value: true, enumerable: true });
   return value
 }
 
 
 export function isRouter(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-router')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-router')] === true
 }
 export function isRoutes(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-routes')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-routes')] === true
 }
 export function isRoute(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-route')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-route')] === true
 }
 export function isOutlet(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-outlet')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-outlet')] === true
 }
 export function isProvider(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-provider')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-provider')] === true
 }
 export function isContext(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-context')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-context')] === true
 }
 export function isComponent(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-component')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-component')] === true
 }
 export function isSuspense(value: any) {
-  return typeof value === 'function' && value[Symbol.for('kettle-suspense')] === true
+  return typeof value === 'function' && value[Symbol.for('fluixi-suspense')] === true
 }
 
 

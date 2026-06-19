@@ -3,9 +3,9 @@ sidebar_position: 2
 title: Cli Guide
 ---
 
-# KettleJS CLI Guide
+# Fluixi CLI Guide
 
-Complete guide for using the KettleJS Command Line Interface to scaffold projects and components.
+Complete guide for using the Fluixi Command Line Interface to scaffold projects and components.
 
 ## Table of Contents
 
@@ -23,16 +23,16 @@ Complete guide for using the KettleJS Command Line Interface to scaffold project
 
 ## Installation
 
-The KettleJS CLI is included with the `@fluixi/kettlejs` package:
+The Fluixi CLI is included with the `@fluixi/core` package:
 
 ```bash
-npm install @fluixi/kettlejs
+npm install @fluixi/core
 ```
 
-The CLI is available as the `kettlejs` command:
+The CLI is available as the `fluixi` command:
 
 ```bash
-npx kettlejs --help
+npx fluixi --help
 ```
 
 ---
@@ -40,16 +40,16 @@ npx kettlejs --help
 ## Commands Overview
 
 ```bash
-kettlejs <command> [options]
+fluixi <command> [options]
 
 Commands:
-  kettlejs create [name]      Create a new KettleJS project
-  kettlejs generate [type]    Generate a component
-  kettlejs g [type]           Alias for generate
-  kettlejs dev                Start development server
-  kettlejs build              Build for production
-  kettlejs --version          Show version number
-  kettlejs --help             Show help
+  fluixi create [name]      Create a new Fluixi project
+  fluixi generate [type]    Generate a component
+  fluixi g [type]           Alias for generate
+  fluixi dev                Start development server
+  fluixi build              Build for production
+  fluixi --version          Show version number
+  fluixi --help             Show help
 ```
 
 ---
@@ -59,28 +59,28 @@ Commands:
 Generate components with the `generate` or `g` command:
 
 ```bash
-kettlejs generate component
-kettlejs g component
+fluixi generate component
+fluixi g component
 ```
 
 ### Component Patterns
 
-KettleJS supports four different component patterns. Choose the one that best fits your needs:
+Fluixi supports four different component patterns. Choose the one that best fits your needs:
 
-#### 1. KettleElement Pattern (⭐ Recommended)
+#### 1. FluixiElement Pattern (⭐ Recommended)
 
 **Best for:** New projects, maximum simplicity, automatic reactivity
 
-Extends the `KettleElement` base class with a `view()` method pattern. Provides automatic signal tracking and the cleanest API.
+Extends the `FluixiElement` base class with a `view()` method pattern. Provides automatic signal tracking and the cleanest API.
 
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { KettleElement } from '@fluixi/kettlejs';
+import { FluixiElement } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
-export class MyCounter extends KettleElement {
+export class MyCounter extends FluixiElement {
   private count = createSignal(0);
 
   view() {
@@ -112,7 +112,7 @@ Uses a mixin to add signal support to any LitElement. Great for migrating existi
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/kettlejs';
+import { WithSignals } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -148,7 +148,7 @@ Uses `SignalController` for manual reactive management. Provides the most contro
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@fluixi/kettlejs';
+import { SignalController } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -183,7 +183,7 @@ export class MyCounter extends LitElement {
 Traditional function-based components. Good for simple presentational components but doesn't support signals natively.
 
 ```typescript
-import { html, Component, ComponentProps } from '@fluixi/kettlejs';
+import { html, Component, ComponentProps } from '@fluixi/core';
 
 export interface MyCounterProps extends ComponentProps {
   count: number;
@@ -242,10 +242,10 @@ Includes:
 - Event handlers
 - Example counter implementation
 
-Generated code example (KettleElement pattern):
+Generated code example (FluixiElement pattern):
 ```typescript
 @customElement('my-counter')
-export class MyCounter extends KettleElement {
+export class MyCounter extends FluixiElement {
   private count = createSignal(0);
   private message = createSignal('');
 
@@ -327,7 +327,7 @@ Includes everything from above in a comprehensive example.
 Run without arguments for interactive prompts:
 
 ```bash
-kettlejs generate component
+fluixi generate component
 ```
 
 You'll be prompted for:
@@ -340,7 +340,7 @@ You'll be prompted for:
 2. **Component pattern** (choose your preferred approach)
    ```
    ? Component pattern:
-     ❯ KettleElement (Recommended - extends KettleElement base class)
+     ❯ FluixiElement (Recommended - extends FluixiElement base class)
        WithSignals (Mixin - adds signals to LitElement)
        Controller (Manual - uses SignalController)
        Functional (Legacy - function-based component)
@@ -368,9 +368,9 @@ You'll be prompted for:
 Provide all options via flags:
 
 ```bash
-kettlejs generate component \
+fluixi generate component \
   --name MyCounter \
-  --pattern kettlelement \
+  --pattern fluixilement \
   --type with-state \
   --path components/MyCounter/MyCounter.ts
 ```
@@ -379,7 +379,7 @@ kettlejs generate component \
 
 - `--name <name>` - Component name (PascalCase)
 - `--pattern <pattern>` - Component pattern
-  - `kettlelement` (recommended)
+  - `fluixilement` (recommended)
   - `withsignals`
   - `controller`
   - `functional`
@@ -395,17 +395,17 @@ kettlejs generate component \
 
 ## Project Generation
 
-Create a new KettleJS project:
+Create a new Fluixi project:
 
 ```bash
-kettlejs create my-app
+fluixi create my-app
 ```
 
 **Interactive prompts:**
 
 1. **Project name**
    ```
-   ? Project name: my-kettlejs-app
+   ? Project name: my-fluixi-app
    ```
 
 2. **Template**
@@ -419,7 +419,7 @@ kettlejs create my-app
 **Generated structure:**
 
 ```
-my-kettlejs-app/
+my-fluixi-app/
 ├── src/
 │   ├── components/
 │   │   └── App.ts
@@ -435,13 +435,13 @@ my-kettlejs-app/
 
 ## Examples
 
-### Example 1: Create a Basic Counter (KettleElement)
+### Example 1: Create a Basic Counter (FluixiElement)
 
 ```bash
-kettlejs g component
+fluixi g component
 
 ? Component name: Counter
-? Component pattern: KettleElement (Recommended)
+? Component pattern: FluixiElement (Recommended)
 ? Component features: With State
 ? Component path: components/Counter/Counter.ts
 
@@ -453,7 +453,7 @@ kettlejs g component
 ### Example 2: Migrate Existing Lit Component
 
 ```bash
-kettlejs g component
+fluixi g component
 
 ? Component name: ExistingComponent
 ? Component pattern: WithSignals (Mixin)
@@ -466,9 +466,9 @@ kettlejs g component
 ### Example 3: Create Advanced Component with Resources
 
 ```bash
-kettlejs g component \
+fluixi g component \
   --name UserProfile \
-  --pattern kettlelement \
+  --pattern fluixilement \
   --type with-resource \
   --path components/UserProfile/UserProfile.ts
 ```
@@ -476,10 +476,10 @@ kettlejs g component \
 ### Example 4: Create Full-Featured Component
 
 ```bash
-kettlejs g component
+fluixi g component
 
 ? Component name: Dashboard
-? Component pattern: KettleElement (Recommended)
+? Component pattern: FluixiElement (Recommended)
 ? Component features: Full (All features)
 ? Component path: components/Dashboard/Dashboard.ts
 
@@ -493,7 +493,7 @@ kettlejs g component
 ### Example 5: Create Simple Presentational Component
 
 ```bash
-kettlejs g component
+fluixi g component
 
 ? Component name: Button
 ? Component pattern: Functional (Legacy)
@@ -520,12 +520,12 @@ Do you need reactive state?
       │
       Do you need fine-grained control over reactivity?
       ├─ Yes → Controller Pattern
-      └─ No → KettleElement Pattern ⭐ (Recommended)
+      └─ No → FluixiElement Pattern ⭐ (Recommended)
 ```
 
 ### Pattern Comparison Table
 
-| Feature | KettleElement | WithSignals | Controller | Functional |
+| Feature | FluixiElement | WithSignals | Controller | Functional |
 |---------|--------------|-------------|------------|------------|
 | Automatic Updates | ✅ | ✅ | ✅ | ❌ |
 | Signal Support | ✅ | ✅ | ✅ | ❌ |
@@ -572,7 +572,7 @@ src/
 
 ### 3. Pattern Selection
 
-- **Default:** Start with KettleElement pattern
+- **Default:** Start with FluixiElement pattern
 - **Migration:** Use WithSignals for existing Lit components
 - **Advanced:** Use Controller when you need custom reactive logic
 - **Simple:** Use Functional for presentational components without state
@@ -638,7 +638,7 @@ view() {
 **Issue:** Type errors in generated component
 
 **Solution:**
-1. Ensure `@fluixi/kettlejs` is installed
+1. Ensure `@fluixi/core` is installed
 2. Check tsconfig.json includes experimental decorators
 3. Install missing dependencies
 
@@ -655,11 +655,11 @@ view() {
 
 ## CLI Configuration
 
-Create a `.kettlejsrc.json` file in your project root for custom defaults:
+Create a `.fluixirc.json` file in your project root for custom defaults:
 
 ```json
 {
-  "componentPattern": "kettlelement",
+  "componentPattern": "fluixilement",
   "componentPath": "src/components",
   "generateTests": true,
   "generateStyles": true,
@@ -673,10 +673,10 @@ Create a `.kettlejsrc.json` file in your project root for custom defaults:
 
 ### Custom Templates
 
-Override default templates by creating a `.kettlejs/templates` directory:
+Override default templates by creating a `.fluixi/templates` directory:
 
 ```
-.kettlejs/
+.fluixi/
 └── templates/
     ├── component.ts.template
     ├── test.ts.template
@@ -685,7 +685,7 @@ Override default templates by creating a `.kettlejs/templates` directory:
 
 ### Hooks
 
-Add custom logic with lifecycle hooks in `.kettlejsrc.json`:
+Add custom logic with lifecycle hooks in `.fluixirc.json`:
 
 ```json
 {
@@ -701,7 +701,7 @@ Add custom logic with lifecycle hooks in `.kettlejsrc.json`:
 ## Version History
 
 - **v0.0.1** - Initial release with component patterns
-- Added KettleElement, WithSignals, and Controller patterns
+- Added FluixiElement, WithSignals, and Controller patterns
 - Full state management support
 - Interactive CLI with pattern selection
 

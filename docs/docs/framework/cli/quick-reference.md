@@ -3,31 +3,31 @@ sidebar_position: 3
 title: Quick reference
 ---
 
-# KettleJS CLI Quick Reference
+# Fluixi CLI Quick Reference
 
 ## Installation
 
 ```bash
-npm install -g @fluixi/kettlejs
+npm install -g @fluixi/core
 ```
 
 ## Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `kettlejs new [name]` | - | Create new project |
-| `kettlejs generate <type> [name]` | `g` | Generate component |
-| `kettlejs info` | - | Show CLI info |
-| `kettlejs --help` | `-h` | Show help |
-| `kettlejs --version` | `-v` | Show version |
+| `fluixi new [name]` | - | Create new project |
+| `fluixi generate <type> [name]` | `g` | Generate component |
+| `fluixi info` | - | Show CLI info |
+| `fluixi --help` | `-h` | Show help |
+| `fluixi --version` | `-v` | Show version |
 
 ## Generate Component
 
 ### Basic Syntax
 
 ```bash
-kettlejs generate component <name> [options]
-kettlejs g c <name> [options]
+fluixi generate component <name> [options]
+fluixi g c <name> [options]
 ```
 
 ### Options
@@ -37,14 +37,14 @@ kettlejs g c <name> [options]
 | `--type` | `-t` | `basic`, `with-state`, `with-resource`, `with-router`, `full` | `basic` |
 | `--mode` | `-m` | `lit-html`, `jsx`, `react-bridge` | `lit-html` |
 | `--path` | `-p` | File path | `components/<Name>/<Name>.ts` |
-| `--pattern` | - | `kettlelement`, `withsignals`, `controller`, `functional` | `functional` |
+| `--pattern` | - | `fluixilement`, `withsignals`, `controller`, `functional` | `functional` |
 
 ## Component Modes
 
 ### Lit-HTML (Default)
 
 ```bash
-kettlejs g c Counter --mode lit-html
+fluixi g c Counter --mode lit-html
 ```
 
 **Output:** `Counter.ts`
@@ -61,13 +61,13 @@ export const Counter = () => {
 ### JSX
 
 ```bash
-kettlejs g c Counter --mode jsx
+fluixi g c Counter --mode jsx
 ```
 
 **Output:** `Counter.tsx`
 ```tsx
 /** @jsx h */
-import { h } from '@fluixi/kettlejs/jsx-runtime';
+import { h } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 
 export function Counter() {
@@ -79,13 +79,13 @@ export function Counter() {
 ### React Bridge
 
 ```bash
-kettlejs g c Counter --mode react-bridge
+fluixi g c Counter --mode react-bridge
 ```
 
 **Output:** `Counter.tsx`
 ```tsx
 import React from 'react';
-import { useSignal } from '@fluixi/kettlejs/react-bridge';
+import { useSignal } from '@fluixi/core/react-bridge';
 
 export function Counter() {
   const [count, setCount] = useSignal(0);
@@ -97,56 +97,56 @@ export function Counter() {
 
 | Type | Description | Example |
 |------|-------------|---------|
-| `basic` | Simple component | `kettlejs g c Card -t basic` |
-| `with-state` | With reactive state | `kettlejs g c Counter -t with-state` |
-| `with-resource` | With async data | `kettlejs g c UserList -t with-resource` |
-| `with-router` | With routing | `kettlejs g c HomePage -t with-router` |
-| `full` | All features | `kettlejs g c Dashboard -t full` |
+| `basic` | Simple component | `fluixi g c Card -t basic` |
+| `with-state` | With reactive state | `fluixi g c Counter -t with-state` |
+| `with-resource` | With async data | `fluixi g c UserList -t with-resource` |
+| `with-router` | With routing | `fluixi g c HomePage -t with-router` |
+| `full` | All features | `fluixi g c Dashboard -t full` |
 
 ## Quick Examples
 
 ### Create JSX Project
 
 ```bash
-kettlejs new my-jsx-app
+fluixi new my-jsx-app
 # Select: jsx mode
 ```
 
 ### Create React Bridge Project
 
 ```bash
-kettlejs new my-react-app
+fluixi new my-react-app
 # Select: react-bridge mode
 ```
 
 ### Generate Basic Component
 
 ```bash
-kettlejs g c MyComponent
+fluixi g c MyComponent
 ```
 
 ### Generate Component with State (JSX)
 
 ```bash
-kettlejs g c Counter -t with-state -m jsx
+fluixi g c Counter -t with-state -m jsx
 ```
 
 ### Generate Component with Resource (React Bridge)
 
 ```bash
-kettlejs g c UserList -t with-resource -m react-bridge
+fluixi g c UserList -t with-resource -m react-bridge
 ```
 
 ### Generate Full-Featured Component
 
 ```bash
-kettlejs g c Dashboard -t full -p pages/Dashboard/Dashboard.tsx -m jsx
+fluixi g c Dashboard -t full -p pages/Dashboard/Dashboard.tsx -m jsx
 ```
 
 ### Interactive Mode
 
 ```bash
-kettlejs g c
+fluixi g c
 # Follow prompts
 ```
 
@@ -194,7 +194,7 @@ For each component, generates:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```
@@ -214,7 +214,7 @@ For each component, generates:
 ### Start New Project
 
 ```bash
-kettlejs new my-app
+fluixi new my-app
 cd my-app
 npm install
 npm run dev
@@ -223,19 +223,19 @@ npm run dev
 ### Add Component
 
 ```bash
-kettlejs g c MyComponent -t with-state
+fluixi g c MyComponent -t with-state
 ```
 
 ### Add Page Component
 
 ```bash
-kettlejs g c HomePage -t with-router -p pages/Home/HomePage.tsx
+fluixi g c HomePage -t with-router -p pages/Home/HomePage.tsx
 ```
 
 ### Add Feature Module
 
 ```bash
-kettlejs g c UserProfile -t full -p features/user/UserProfile.tsx
+fluixi g c UserProfile -t full -p features/user/UserProfile.tsx
 ```
 
 ## Troubleshooting
@@ -247,7 +247,7 @@ kettlejs g c UserProfile -t full -p features/user/UserProfile.tsx
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```
@@ -265,13 +265,13 @@ Check that you're using the correct render function:
 
 **Lit-HTML:**
 ```typescript
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 render(MyComponent, document.getElementById('app'));
 ```
 
 **JSX:**
 ```typescript
-import { render } from '@fluixi/kettlejs';
+import { render } from '@fluixi/core';
 render(MyComponent, document.getElementById('app'));
 ```
 
@@ -300,6 +300,6 @@ createRoot(document.getElementById('app')).render(<MyComponent />);
 
 ## Support
 
-- Issues: [GitHub Issues](https://github.com/your-org/kettlejs/issues)
-- Docs: [kettlejs.dev](https://kettlejs.dev)
-- Discord: [Join Community](https://discord.gg/kettlejs)
+- Issues: [GitHub Issues](https://github.com/your-org/fluixi/issues)
+- Docs: [fluixi.dev](https://fluixi.dev)
+- Discord: [Join Community](https://discord.gg/fluixi)

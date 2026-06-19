@@ -1,5 +1,5 @@
 /**
- * @fileoverview Babel front-end adapter for the KettleJS compiler.
+ * @fileoverview Babel front-end adapter for the Fluixi compiler.
  * @module @fluixi/compiler/babel
  *
  * This is one of the compiler's front-end adapters: it parses with @babel and
@@ -35,7 +35,7 @@ export function createPreset(options: any = {}) {
         plugin,
         {
           runtime: 'automatic',
-          importSource: '@fluixi/jsx-runtime',
+          importSource: '@fluixi/jsx',
           development: process.env.NODE_ENV === 'development',
           detectReactivity: true,
           useLitHTML: true,

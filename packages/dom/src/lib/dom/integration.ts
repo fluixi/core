@@ -46,7 +46,7 @@ export interface IntegrationOptions {
 // ============================================================================
 
 // Shared state stored on globalThis so all bundle instances of this module share one reference.
-// Without this, each pre-bundled chunk (e.g. @awc_kettlejs.js, @awc_jsx-runtime.js) would
+// Without this, each pre-bundled chunk (e.g. @awc_fluixi.js, @awc_jsx-runtime.js) would
 // get its own isolated copy of these variables and call initializeIntegration() independently.
 const _integrationStateKey = '__awc_dom_integration__';
 const _state: { sys: SignalSystem | null; store: StoreSystem | null; ok: boolean } =
@@ -73,7 +73,7 @@ export function initializeIntegration(options: IntegrationOptions = {}): void {
   } else {
     // Subsequent calls: merge — only overwrite null/undefined slots so that
     // the first full initialisation is never discarded, but missing pieces
-    // (e.g. createComponent from kettlejs) can be patched in later.
+    // (e.g. createComponent from fluixi) can be patched in later.
     if (signalSystem && _state.sys) {
       for (const key of Object.keys(signalSystem) as (keyof typeof signalSystem)[]) {
         if (signalSystem[key] != null && _state.sys[key] == null) {

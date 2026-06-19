@@ -1,0 +1,68 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "esbuild": {
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
+    "target": "es2022",
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts",
+      "cli/**/*.ts"
+    ],
+    "rootDir": "./",
+    "externals": [
+      "@fluixi/reactive",
+      "@fluixi/reactive/signal",
+      "@fluixi/reactive/store",
+      "@fluixi/jsx",
+      "@fluixi/dom",
+      "@fluixi/dom/directives",
+      "@fluixi/core",
+      "@fluixi/core/client",
+      "@fluixi/core/plugins",
+      "@fluixi/utils",
+      "@fluixi/*",
+      "vite",
+      "inquirer",
+      "fs-extra",
+      "process",
+      "path",
+      "fs",
+      "child_process",
+      "events",
+      "url",
+      "react-dom",
+      "react-dom/*",
+      "@fluixi/*",
+      "@lit-labs/*",
+      "@lit/*",
+      "lit",
+      "lit/*",
+      "stream",
+      "http",
+      "esbuild",
+      "@babel/core",
+      "@types/babel__core",
+      "vinxi",
+      "vinxi/*",
+      "@vinxi/*",
+      "execa",
+      "vite-plugin-node-polyfills"
+    ],
+    "copyFiles": [
+      {
+        "from": "types/fluixi.d.ts",
+        "to": "./dist/fluixi.d.ts"
+      }
+    ],
+    "clean": true
+  }
+}

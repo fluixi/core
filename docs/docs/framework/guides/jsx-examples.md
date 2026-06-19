@@ -5,14 +5,14 @@ title: JSX Examples
 
 # JSX/TSX Examples
 
-Complete examples demonstrating JSX/TSX usage with KettleJS.
+Complete examples demonstrating JSX/TSX usage with Fluixi.
 
 ## Complete Todo App with JSX
 
 ```tsx
 import { createSignal, createEffect } from '@fluixi/reactive';
-import { For, Show } from '@fluixi/kettlejs';
-import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
+import { For, Show } from '@fluixi/core';
+import type { JSX } from '@fluixi/core/jsx-runtime';
 
 interface Todo {
   id: number;
@@ -84,7 +84,7 @@ const TodoApp = () => {
 
   return (
     <div className="todo-app">
-      <h1>KettleJS Todo App</h1>
+      <h1>Fluixi Todo App</h1>
 
       <div className="input-section">
         <input
@@ -158,7 +158,7 @@ export default TodoApp;
 
 ```tsx
 import { createSignal, createEffect, createMemo } from '@fluixi/reactive';
-import { Show, For } from '@fluixi/kettlejs';
+import { Show, For } from '@fluixi/core';
 
 interface User {
   id: number;
@@ -301,7 +301,7 @@ export default Dashboard;
 
 ```tsx
 import { createSignal, createMemo } from '@fluixi/reactive';
-import { Show } from '@fluixi/kettlejs';
+import { Show } from '@fluixi/core';
 
 interface FormData {
   name: string;
@@ -492,7 +492,7 @@ export default RegistrationForm;
 
 ```tsx
 import { createSignal, createMemo } from '@fluixi/reactive';
-import { For, Show } from '@fluixi/kettlejs';
+import { For, Show } from '@fluixi/core';
 
 interface User {
   id: number;
@@ -656,8 +656,8 @@ export default DataTable;
 
 ```tsx
 import { createSignal } from '@fluixi/reactive';
-import { Show, Portal } from '@fluixi/kettlejs';
-import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
+import { Show, Portal } from '@fluixi/core';
+import type { JSX } from '@fluixi/core/jsx-runtime';
 
 interface ModalProps {
   isOpen: boolean;

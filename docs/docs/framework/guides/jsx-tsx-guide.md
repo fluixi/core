@@ -3,16 +3,16 @@ sidebar_position: 10
 title: JSX/TSX Guide
 ---
 
-# Using JSX/TSX with KettleJS
+# Using JSX/TSX with Fluixi
 
-KettleJS supports JSX/TSX syntax, allowing you to use React-like component syntax while benefiting from KettleJS's fine-grained reactivity and lit-html performance.
+Fluixi supports JSX/TSX syntax, allowing you to use React-like component syntax while benefiting from Fluixi's fine-grained reactivity and lit-html performance.
 
 ## Setup
 
 ### 1. Install Dependencies
 
 ```bash
-npm install @fluixi/kettlejs @fluixi/reactive lit
+npm install @fluixi/core @fluixi/reactive lit
 ```
 
 ### 2. Configure TypeScript
@@ -26,7 +26,7 @@ Update your `tsconfig.json`:
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/kettlejs",
+    "jsxImportSource": "@fluixi/core",
     "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
@@ -47,7 +47,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   esbuild: {
-    jsxImportSource: '@fluixi/kettlejs',
+    jsxImportSource: '@fluixi/core',
     jsxFactory: 'jsx',
     jsxFragment: 'Fragment'
   }
@@ -67,7 +67,7 @@ module.exports = {
         options: {
           compilerOptions: {
             jsx: 'react-jsx',
-            jsxImportSource: '@fluixi/kettlejs'
+            jsxImportSource: '@fluixi/core'
           }
         }
       }
@@ -260,7 +260,7 @@ const FormExample = () => {
 ### Using Show Component
 
 ```tsx
-import { Show } from '@fluixi/kettlejs';
+import { Show } from '@fluixi/core';
 
 const UserProfile = () => {
   const [user, setUser] = createSignal<User | null>(null);
@@ -323,7 +323,7 @@ const NotificationExample = () => {
 ### Using For Component
 
 ```tsx
-import { For } from '@fluixi/kettlejs';
+import { For } from '@fluixi/core';
 
 interface Todo {
   id: number;
@@ -333,7 +333,7 @@ interface Todo {
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal<Todo[]>([
-    { id: 1, text: 'Learn KettleJS', done: false },
+    { id: 1, text: 'Learn Fluixi', done: false },
     { id: 2, text: 'Build an app', done: false }
   ]);
 
@@ -438,7 +438,7 @@ const ClassMapExample = () => {
 ### Using Fragment
 
 ```tsx
-import { Fragment } from '@fluixi/kettlejs/jsx-runtime';
+import { Fragment } from '@fluixi/core/jsx-runtime';
 
 const MultiElement = () => {
   return (
@@ -470,7 +470,7 @@ const MultiElement = () => {
 ### Using ref Directive
 
 ```tsx
-import { ref } from '@fluixi/kettlejs';
+import { ref } from '@fluixi/core';
 
 const RefExample = () => {
   let inputRef: HTMLInputElement | null = null;
@@ -491,7 +491,7 @@ const RefExample = () => {
 ### With createRef
 
 ```tsx
-import { createRef } from '@fluixi/kettlejs';
+import { createRef } from '@fluixi/core';
 
 const RefObjectExample = () => {
   const inputRef = createRef<HTMLInputElement>();
@@ -697,11 +697,11 @@ const ReactCounter = () => {
 };
 ```
 
-#### KettleJS
+#### Fluixi
 ```tsx
 import { createSignal, createEffect } from '@fluixi/reactive';
 
-const KettleCounter = () => {
+const FluixiCounter = () => {
   const [count, setCount] = createSignal(0);
 
   createEffect(() => {
@@ -800,10 +800,10 @@ const DataTable = (props: { items: Item[] }) => {
 
 ```tsx
 // If you get type errors, you might need to import JSX namespace
-import type { JSX } from '@fluixi/kettlejs/jsx-runtime';
+import type { JSX } from '@fluixi/core/jsx-runtime';
 
 // Or add to tsconfig.json:
-// "types": ["@fluixi/kettlejs/jsx-runtime"]
+// "types": ["@fluixi/core/jsx-runtime"]
 ```
 
 ### Event Handler Types
@@ -824,4 +824,4 @@ const handleSubmit = (e: Event) => { /* ... */ };
 
 ---
 
-**Note**: JSX/TSX support in KettleJS is experimental but fully functional. Report any issues on [GitHub](https://github.com/adafri/kettlejs/issues).
+**Note**: JSX/TSX support in Fluixi is experimental but fully functional. Report any issues on [GitHub](https://github.com/adafri/fluixi/issues).

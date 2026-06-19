@@ -1,4 +1,4 @@
-import { createSignal } from '@fluixi/kettlejs';
+import { createSignal } from '@fluixi/core';
 
 /** A tiny reactive counter — fine-grained updates, no virtual DOM. */
 export function Counter(props: { start?: number }) {

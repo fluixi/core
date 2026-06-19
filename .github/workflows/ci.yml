@@ -67,4 +67,4 @@ jobs:
       # the inferred `tsc --build --emitDeclarationOnly` typecheck doesn't apply to
       # them (TS5069). They're type-exercised by their vitest runs instead.
       - name: Typecheck affected
-        run: pnpm nx affected -t typecheck --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr
+        run: pnpm nx affected -t typecheck --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start

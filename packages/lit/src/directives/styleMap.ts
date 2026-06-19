@@ -1,5 +1,5 @@
 /**
- * @fileoverview Reactive styleMap directive for KettleJS / lit-html.
+ * @fileoverview Reactive styleMap directive for Fluixi / lit-html.
  *
  * Drop-in replacement for lit's `styleMap` that fully supports reactive values:
  *

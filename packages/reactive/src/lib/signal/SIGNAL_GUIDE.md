@@ -132,7 +132,7 @@ Fournit par le composant Suspense via le systeme de contexte. Les ressources (`c
 export const $SIGNAL = Symbol.for('signal');    // Marque une fonction comme signal
 export const $MEMO = Symbol.for('memo');        // Marque une fonction comme memo
 export const $RESOURCE = Symbol.for('resource'); // Marque une fonction comme resource
-export const $PROXY = Symbol('kettle-proxy');    // Marque un proxy de store
+export const $PROXY = Symbol('fluixi-proxy');    // Marque un proxy de store
 const $NODE = Symbol.for('signal-node');         // Cle pour acceder au ReactiveNode
 const $COMP = Symbol.for('component-node');      // Marque un composant (devComponent)
 ```

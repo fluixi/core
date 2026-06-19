@@ -74,7 +74,7 @@ export function svg(
  *
  * @example
  * ```typescript
- * import { rx } from '@fluixi/kettlejs';
+ * import { rx } from '@fluixi/core';
  *
  * const [count, setCount] = createSignal(0);
  * const [name, setName] = createSignal('User');

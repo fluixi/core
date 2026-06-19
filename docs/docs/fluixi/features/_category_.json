@@ -1,0 +1,11 @@
+{
+  "label": "Features",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "Fluixi Features",
+    "description": "Explore the powerful features of Fluixi including control flow, resource management, routing, context API, and more.",
+    "slug": "/fluixi/features"
+  },
+  "collapsed": false
+}
