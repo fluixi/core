@@ -38,15 +38,21 @@
     "kettle-routes-polyfills-optout",
     "kettlejs-reduce-lit-coupling",
     "lazy-suspense-async-ssr",
+    "lit-out-of-core-ssr-crash",
     "map-array",
     "props-children-async",
     "provider-lazy-children",
     "remove-vinxi",
     "render-stream",
     "resource-data-transport",
+    "retire-old-router",
     "router-outlet-async-ssr",
     "serialize-in-root-owner",
+    "server-body-stream",
     "start-deploy-adapters",
+    "start-middleware",
+    "start-streaming-ssr",
+    "start-ts-config",
     "use-navigate-ssr-safe"
   ]
 }
