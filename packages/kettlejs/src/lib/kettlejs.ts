@@ -70,20 +70,19 @@ export * from '@fluixi/utils';
 // import { createContext, useContext } from './render/component.js';
 // import { createResource } from './resources/index.js';
 import {
-  // createRouter,
   Link,
   Router,
   useNavigate,
   useRouter,
-} from './router/index.js';
-import { html, nothing } from 'lit';
+} from './router-next/index.js';
 import { ensureIntegration } from './render/component.js';
 
-// Re-export lit-html essentials
-export { svg, render as litRender, nothing } from 'lit';
-export type { TemplateResult, SVGTemplateResult } from 'lit';
+// Lit lives in @fluixi/lit — import html/svg/nothing/LitElement from there directly.
+// The core @fluixi/kettlejs entry no longer pulls lit (keeps it out of SSR bundles).
 
-export { createReactiveJSX } from '@fluixi/jsx-runtime';
+// createReactiveJSX (a deprecated legacy adapter) lived here but pulled the jsx-runtime
+// `.` entry into the core graph. It's gone — compiled JSX uses the jsx-runtime subpath
+// directly, and nothing in the framework needs the adapter.
 // Re-export reactive directives
 export {
   query,
@@ -109,29 +108,9 @@ export {
   observeIntersection,
   observeResize,
 } from '@fluixi/dom';
-// Lit renderer symbols come from the dedicated lit surface, not the core barrel.
-export {
-  createKeyedFor,
-  setGlobalPortalRoot,
-  getGlobalPortalRoot,
-  createFixedPortal,
-  createFixedDynamic,
-  createPolymorphic,
-  $show,
-  $match,
-  $switch,
-  $for,
-  $index,
-  $if,
-  $portal,
-  $globalPortal,
-  $dynamic,
-  $dynamicSwitch,
-  $each,
-  $,
-  html,
-  litrx,
-} from '@fluixi/lit';
+// Lit renderer symbols ($show/$match/portal helpers/html/litrx/…) live in @fluixi/lit —
+// import them from there. They are intentionally NOT re-exported here so the core
+// entry stays lit-free (and out of server bundles).
 
 // import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
@@ -170,10 +149,6 @@ export {
   classMap,
   styleMap,
 } from '@fluixi/dom';
-export {
-  $classMap,
-  $styleMap,
-} from '@fluixi/lit';
 
 // Re-export reactive primitives from @fluixi/reactive
 
@@ -279,28 +254,24 @@ export type {
 //   ResourceSource,
 // } from './resources/index.js';
 
-// Router
+// Router — from router-next (the framework-agnostic router). The old lit-based router
+// (./router) is no longer re-exported here: it imported `html` from @fluixi/lit, which
+// dragged lit (extends HTMLElement at module init) into the core/SSR graph. Apps that
+// still need the old router import it from '@fluixi/kettlejs/router' directly.
 export {
-  // createRouter,
   Router,
   Link,
   useRouter,
   useLocation,
   useNavigate,
   useParams,
-  // useQuery,
-  // useIsActive,
-} from './router/index.js';
+} from './router-next/index.js';
 
 export type {
-  // RouteParams,
-  // QueryParams,
-  Location,
+  RouterLocation as Location,
   RouteDefinition,
-  // RouteProps,
   NavigateOptions,
-  // RouterOptions,
-} from './router/index.js';
+} from './router-next/index.js';
 
 // Web Component support moved to @fluixi/element (now in the wc-element repo).
 // Import { defineElement, KettleElement, createComponent, ... } from '@fluixi/element'.
@@ -387,10 +358,6 @@ export default {
   useNavigate,
   read,
   reduce,
-
-  // Lit
-  html,
-  nothing,
 
   // Meta
   VERSION,

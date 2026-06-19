@@ -7,7 +7,7 @@
  * (SolidJS delegation pattern) for reliable bubbling and preventDefault support.
  */
 
-import { svg, TemplateResult, nothing, SVGTemplateResult } from 'lit';
+import type { TemplateResult, SVGTemplateResult } from 'lit';
 
 import {
   insert,
@@ -33,7 +33,6 @@ import {
 } from '@fluixi/dom';
 
 import { createSignal, createMemo, resolveChildren, createComponent } from '@fluixi/dom';
-import { html } from '@fluixi/lit';
 
 // ============================================================================
 // Types
