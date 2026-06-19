@@ -1,5 +1,5 @@
 import { Suspense, createContext, createProvider } from '@fluixi/kettlejs';
-import { Router, Routes, lazy } from '@fluixi/kettlejs/router';
+import { Router, lazy } from '@fluixi/kettlejs/router-next';
 
 // Two transparent providers wrapping the router — mirrors a real app shell where
 // the Router (and its lazy routes) live *inside* context providers.
@@ -14,11 +14,9 @@ export default function App() {
   return (
     <LocaleProvider>
       <ThemeProvider>
-        <Router>
-          <Suspense fallback={<div class="loading">Loading…</div>}>
-            <Routes children={routes} />
-          </Suspense>
-        </Router>
+        <Suspense fallback={<div class="loading">Loading…</div>}>
+          <Router routes={routes} />
+        </Suspense>
       </ThemeProvider>
     </LocaleProvider>
   );

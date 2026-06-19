@@ -29,7 +29,6 @@
       "@fluixi/dom",
       "@fluixi/dom/directives",
       "@fluixi/kettlejs",
-      "@fluixi/kettlejs/router",
       "@fluixi/kettlejs/client",
       "@fluixi/kettlejs/plugins",
       "@fluixi/utils"

@@ -16,15 +16,15 @@ import {
   registerLitRender,
   insert,
 } from '@fluixi/dom';
-import { render as litRender } from 'lit';
 import {
   ensureIntegration,
 } from './component.js';
 
-// Register Lit's render function with the DOM runtime
-// This allows reactive updates to properly render Lit templates
+// Register Lit's render function with the DOM runtime so reactive updates can render
+// Lit templates. CLIENT-ONLY and lazily imported: lit extends HTMLElement at module
+// init, so a static import would crash SSR — this keeps lit out of server bundles.
 if (typeof window !== 'undefined') {
-  registerLitRender(litRender);
+  import('lit').then((lit) => registerLitRender(lit.render));
 }
 
 const isServer = typeof window === 'undefined';
