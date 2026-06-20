@@ -44,12 +44,19 @@
       "types": "./dist/router.d.ts",
       "import": "./dist/router.js",
       "default": "./dist/router.js"
+    },
+    "./server-fn": {
+      "development": "./src/server-fn.ts",
+      "types": "./dist/server-fn.d.ts",
+      "import": "./dist/server-fn.js",
+      "default": "./dist/server-fn.js"
     }
   },
   "dependencies": {
     "@fluixi/core": "workspace:*",
     "@fluixi/server": "workspace:*",
-    "esbuild": "^0.27.1"
+    "esbuild": "^0.27.1",
+    "@fluixi/compiler": "workspace:*"
   },
   "peerDependencies": {
     "vite": "^5.0.0"
