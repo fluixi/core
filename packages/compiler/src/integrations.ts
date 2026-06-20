@@ -962,17 +962,59 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 
 export { transformServerFunctions } from './frontend/babel/server-functions.js';
 import { transformServerFunctions as _txServerFns } from './frontend/babel/server-functions.js';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join as _join } from 'node:path';
+
+const SERVER_FNS_VMOD = 'virtual:fluixi-server-fns';
+
+/** Recursively find source files containing the `"use server"` directive under `dir`. */
+function findServerFnModules(dir: string, out: string[] = []): string[] {
+  let entries: any[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    if (e.name === 'node_modules' || e.name === 'dist' || e.name.startsWith('.')) continue;
+    const full = _join(dir, e.name);
+    if (e.isDirectory()) findServerFnModules(full, out);
+    else if (/\.[jt]sx?$/.test(e.name)) {
+      try {
+        if (readFileSync(full, 'utf8').includes('use server')) out.push(full);
+      } catch {
+        /* unreadable — skip */
+      }
+    }
+  }
+  return out;
+}
 
 /**
- * Vite plugin that applies the `"use server"` transform: client builds get RPC stubs,
- * server builds register the function bodies. Runs alongside the JSX plugin (separate
- * concern). `enforce:'pre'` so it runs on the raw source before other transforms.
+ * Vite plugin for `"use server"`: applies the transform (client→RPC stub, server→register
+ * the body), and provides `virtual:fluixi-server-fns` — side-effect imports of every
+ * module that defines a server function. The server entry imports it so ALL server
+ * functions register at startup (including those in lazy routes, which would otherwise
+ * register only when their chunk loads → an RPC registry miss). The client never imports
+ * it. `enforce:'pre'` so it runs on the raw source before other transforms.
  */
 export function serverFunctionsVitePlugin<T = any>(): T {
-  const root = process.cwd();
+  let root = process.cwd();
   return {
     name: 'fluixi-server-functions',
     enforce: 'pre' as const,
+    configResolved(config: any) {
+      root = config.root || root;
+    },
+    resolveId(id: string) {
+      return id === SERVER_FNS_VMOD ? '\0' + SERVER_FNS_VMOD : null;
+    },
+    load(id: string) {
+      if (id !== '\0' + SERVER_FNS_VMOD) return null;
+      const mods = findServerFnModules(_join(root, 'src'));
+      // Side-effect import each so its top-level $$registerServerFn(...) runs.
+      return mods.map((m) => `import ${JSON.stringify(m)};`).join('\n') + '\n';
+    },
     transform(code: string, id: string, opts?: { ssr?: boolean }) {
       if (!/\.[jt]sx?$/.test(id)) return null;
       if (!code.includes('use server')) return null;
