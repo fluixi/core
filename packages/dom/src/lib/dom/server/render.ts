@@ -72,13 +72,48 @@ function ensureResourceHooks(): void {
 const FX_DATA_VAR = '__FX_DATA__';
 
 /**
+ * Optional redactor: transform (or drop) each resource value before it's serialized
+ * into `__FX_DATA__`. Resource data is embedded in the page HTML and visible to anyone,
+ * so use this to strip server-only fields (tokens, password hashes, internal ids).
+ * Return the value to serialize, or `undefined` to omit the entry entirely (the client
+ * then refetches that resource instead of seeding it). Server-only, app-wide.
+ *
+ *   setDataRedactor((value) => {
+ *     if (value && typeof value === 'object' && 'passwordHash' in value) {
+ *       const { passwordHash, ...safe } = value as any;
+ *       return safe;
+ *     }
+ *     return value;
+ *   });
+ */
+type DataRedactor = (value: unknown, id: string) => unknown;
+let _redactor: DataRedactor | null = null;
+export function setDataRedactor(fn: DataRedactor | null): void {
+  _redactor = fn;
+}
+
+/**
  * Serialize the collected resource data into an inline script the client reads
  * before hydrating (seeds resources so they don't refetch). Empty when no data.
+ * Each value passes through the redactor (if set) first.
  */
 export function serializeResourceData(ctx: RequestContext): string {
   if (ctx.data.size === 0) return '';
   const obj: Record<string, unknown> = {};
-  for (const [k, v] of ctx.data) obj[k] = v;
+  for (const [k, v] of ctx.data) {
+    let out: unknown = v;
+    if (_redactor) {
+      // A throwing redactor must not crash the render or leak — omit on error.
+      try {
+        out = _redactor(v, k);
+      } catch {
+        continue;
+      }
+    }
+    if (out === undefined) continue; // redacted → omit (client refetches)
+    obj[k] = out;
+  }
+  if (Object.keys(obj).length === 0) return '';
   // JSON with `<` escaped so a string value can't break out of the <script>.
   const json = JSON.stringify(obj).replace(/</g, '\\u003c');
   return `<script>window.${FX_DATA_VAR}=${json}</script>`;

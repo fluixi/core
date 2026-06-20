@@ -17,7 +17,13 @@ export {
   isServerNodeValue,
 } from './nodes.js';
 export { serializeNode } from './serialize.js';
-export { renderToString, renderToStringAsync, type RenderOptions } from './render.js';
+export {
+  renderToString,
+  renderToStringAsync,
+  serializeResourceData,
+  setDataRedactor,
+  type RenderOptions,
+} from './render.js';
 export {
   setRequestStore,
   createRequestContext,
