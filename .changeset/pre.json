@@ -20,9 +20,12 @@
     "@fluixi/vite-plugin": "0.3.0",
     "@fluixi/example-start": "0.0.0",
     "@fluixi/cli": "0.0.0",
-    "@fluixi/start": "0.0.0"
+    "@fluixi/start": "0.0.0",
+    "@fluixi/create": "0.0.0"
   },
   "changesets": [
+    "cli-generate",
+    "create-fluixi",
     "dispose-no-rerun",
     "fix-client-hydration-loop",
     "fluixi-meta-framework-skeleton",
