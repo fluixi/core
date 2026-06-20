@@ -1,6 +1,5 @@
 import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
 import { Suspense } from '@fluixi/core';
-import './actions.js'; // eager import → registers the server function
 import { routes } from 'virtual:fluixi-routes';
 
 // Shell layout around the routed page. File-routes (src/routes/*) are lazy, so the
