@@ -3,6 +3,7 @@ import {
   $$registerServerFn,
   isServerFnRequest,
   handleServerFn,
+  setServerFnContextRunner,
   SERVER_FN_ENDPOINT,
 } from './server-fn.js';
 
@@ -51,5 +52,19 @@ describe('@fluixi/start server functions', () => {
     $$registerServerFn('same:0', () => 'ok');
     const res = await handleServerFn(rpc('same:0', [], { origin: 'http://localhost' }));
     expect(res.status).toBe(200);
+  });
+
+  it('runs the fn through the injected context runner + applies response headers', async () => {
+    let sawRequest: Request | undefined;
+    setServerFnContextRunner((request, run) => {
+      sawRequest = request;
+      return { result: Promise.resolve(run()), responseHeaders: { 'set-cookie': 'sid=1' } };
+    });
+    $$registerServerFn('ctx:0', () => 'hi');
+    const res = await handleServerFn(rpc('ctx:0', []));
+    expect(sawRequest).toBeInstanceOf(Request); // fn ran inside the runner
+    expect(res.headers.get('set-cookie')).toBe('sid=1'); // header propagated to the response
+    expect(await res.json()).toBe('hi');
+    setServerFnContextRunner(null); // reset for other tests
   });
 });
