@@ -54,6 +54,7 @@
     "router-outlet-async-ssr",
     "serialize-in-root-owner",
     "server-body-stream",
+    "server-functions",
     "start-deploy-adapters",
     "start-middleware",
     "start-router-subpath",
