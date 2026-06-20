@@ -1,9 +1,38 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/128x128.png" alt="Fluixi" width="120" height="120" />
+</p>
+
 # @fluixi/router
 
-Framework-agnostic router **core**: URL → a resolved match tree + navigation.
-No reactivity, no DOM, no view framework — just pure state and a `subscribe` API.
-View adapters (fluixi, react, …) render the match tree **top-down**, which makes
+**Framework-agnostic router core — URL → a resolved match tree + navigation.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
+
+---
+
+## ✨ Overview
+
+`@fluixi/router` is the routing **core** — pure state and a `subscribe` API, with **no
+reactivity, no DOM, no view framework**. View adapters (the Fluixi adapter lives in
+[`@fluixi/core/router-next`](../core)) render the match tree **top-down**, which makes
 deeply nested layout/outlet rendering work by construction. See [DESIGN.md](./DESIGN.md).
+
+## 📦 Installation
+
+```ini
+# .npmrc
+@fluixi:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+```sh
+pnpm add @fluixi/router
+```
+
+## 🚀 Usage
 
 ```ts
 import { createRouter, createMemoryHistory } from '@fluixi/router';
@@ -23,19 +52,21 @@ router.navigate('/app/user/42');
 router.state().match.params; // { id: '42' }
 ```
 
-## API
+## 📖 API
 
-- `matchRoutes(routes, pathname)` — pure matcher → `RouteMatch | null`.
-- `createRouter({ routes, history, base? })` → `Router` with `state()`,
-  `subscribe()`, `navigate()`, `match()`, `destroy()`.
-- `createMemoryHistory(initial?)` / `createBrowserHistory()` — pluggable history.
+| Export | What |
+| --- | --- |
+| `matchRoutes(routes, pathname)` | pure matcher → `RouteMatch \| null` |
+| `createRouter({ routes, history, base? })` | `Router` with `state()`, `subscribe()`, `navigate()`, `match()`, `destroy()` |
+| `createMemoryHistory(initial?)` / `createBrowserHistory()` | pluggable history adapters |
 
-## Rendering contract
+## 🧭 Rendering contract
 
 `match.matched` is parent → child. An adapter folds from the deepest child upward,
-passing each rendered child to its parent as the parent's outlet — all concrete
-values, never a deferred build. That inverts the old fluixi router's lazy,
-re-entrant outlet cascade (the source of the "nested `<Outlet/>` renders empty"
-bug) into a straightforward top-down composition.
+passing each rendered child to its parent as that parent's outlet — all concrete values,
+never a deferred build. That top-down composition is what makes deeply nested `<Outlet/>`
+rendering work at any depth.
 
-Status: core only. Fluixijs adapter + store-admin migration are later steps.
+## 📄 License
+
+[MIT](./LICENSE) © [Fluixi](https://fluixi.dev)
