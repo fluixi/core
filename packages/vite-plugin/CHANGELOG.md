@@ -1,5 +1,12 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-next.15
+
+### Patch Changes
+
+- Updated dependencies [53ba1b0]
+  - @fluixi/compiler@1.0.0-next.15
+
 ## 1.0.0-next.14
 
 ### Patch Changes
