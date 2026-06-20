@@ -1,5 +1,13 @@
-// A server function: the body runs only on the server; the client gets an RPC stub.
-export const getServerTime = async (): Promise<string> => {
+// A server function: body runs only on the server. getRequestEvent() exposes the
+// request (headers, url, cookies) inside it.
+import { getRequestEvent } from '@fluixi/server';
+
+export const whoami = async (): Promise<{ url: string; ua: string }> => {
   'use server';
-  return new Date().toISOString();
+  const event = getRequestEvent();
+  const req = event?.request as Request | undefined;
+  return {
+    url: event?.url ?? '?',
+    ua: req?.headers.get('user-agent') ?? 'unknown',
+  };
 };

@@ -1012,8 +1012,10 @@ export function serverFunctionsVitePlugin<T = any>(): T {
     load(id: string) {
       if (id !== '\0' + SERVER_FNS_VMOD) return null;
       const mods = findServerFnModules(_join(root, 'src'));
-      // Side-effect import each so its top-level $$registerServerFn(...) runs.
-      return mods.map((m) => `import ${JSON.stringify(m)};`).join('\n') + '\n';
+      // First wire the request-context bridge (server-only), then side-effect import each
+      // server-fn module so its top-level $$registerServerFn(...) runs.
+      const setup = `import '@fluixi/start/server-fn-setup';\n`;
+      return setup + mods.map((m) => `import ${JSON.stringify(m)};`).join('\n') + '\n';
     },
     transform(code: string, id: string, opts?: { ssr?: boolean }) {
       if (!/\.[jt]sx?$/.test(id)) return null;

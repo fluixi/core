@@ -50,6 +50,12 @@
       "types": "./dist/server-fn.d.ts",
       "import": "./dist/server-fn.js",
       "default": "./dist/server-fn.js"
+    },
+    "./server-fn-setup": {
+      "development": "./src/server-fn-setup.ts",
+      "types": "./dist/server-fn-setup.d.ts",
+      "import": "./dist/server-fn-setup.js",
+      "default": "./dist/server-fn-setup.js"
     }
   },
   "dependencies": {
