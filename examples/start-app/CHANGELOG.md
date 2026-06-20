@@ -1,5 +1,12 @@
 # @fluixi/example-start
 
+## 0.0.1-next.5
+
+### Patch Changes
+
+- Updated dependencies [6354c48]
+  - @fluixi/cli@0.1.0-next.5
+
 ## 0.0.1-next.4
 
 ### Patch Changes
