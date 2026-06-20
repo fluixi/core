@@ -1,0 +1,23 @@
+{
+  "name": "fluixi-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start"
+  },
+  "dependencies": {
+    "@fluixi/cli": "next",
+    "@fluixi/start": "next",
+    "@fluixi/core": "next",
+    "@fluixi/jsx": "next",
+    "@fluixi/server": "next",
+    "@fluixi/reactive": "next",
+    "@fluixi/dom": "next"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
