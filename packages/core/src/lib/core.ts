@@ -148,6 +148,10 @@ export {
   type PortalProps,
   classMap,
   styleMap,
+  Island,
+  hydrateIslands,
+  type IslandProps,
+  type IslandRegistry,
 } from '@fluixi/dom';
 
 // Re-export reactive primitives from @fluixi/reactive
