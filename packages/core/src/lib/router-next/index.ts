@@ -473,6 +473,61 @@ export function Link(props: LinkProps) {
 /** Alias for {@link Link}. */
 export const A = Link;
 
+import type { Action } from './data.js';
+
+export interface FormProps {
+  /** The action to run on submit (typically wrapping a `"use server"` function). */
+  action: Action<any, any>;
+  /** Extra class on the <form>. */
+  class?: string;
+  children?: any;
+  [key: string]: any;
+}
+
+/**
+ * A `<form>` wired to an action: on submit it builds `FormData` from the form and calls
+ * `action(formData)` (which tracks submission state via `useSubmission`), without a full
+ * page navigation. The markup carries `method="post"` + `action={action.url}` so it's
+ * progressive-enhancement-ready.
+ *
+ *   <Form action={save}>
+ *     <input name="title" />
+ *     <button>Save</button>
+ *   </Form>
+ */
+export function Form(props: FormProps) {
+  const action = props.action;
+  const cls = (props.className ?? props.class) as string | undefined; // compiler passes class→className
+  const url = (action as any).url ?? '';
+
+  if (typeof document === 'undefined') {
+    return `<form method="post" action="${url}"${cls ? ` class="${cls}"` : ''}></form>`;
+  }
+
+  const form = document.createElement('form');
+  form.setAttribute('method', 'post');
+  if (url) form.setAttribute('action', url);
+  if (cls) form.setAttribute('class', cls);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'action' || k === 'children' || k === 'class' || k === 'className') continue;
+    if (v != null && typeof v !== 'function') form.setAttribute(k, String(v));
+  }
+
+  // Direct listener so preventDefault reliably blocks the native submit/navigation.
+  // Fields are passed as a plain object so a `"use server"` action (JSON RPC) gets them
+  // unchanged. (Multipart/file uploads are a follow-up.)
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    Promise.resolve((action as any)(data)).catch(() => {
+      /* error is captured in the submission state via useSubmission */
+    });
+  });
+
+  if (props.children != null) insert(form, props.children as any);
+  return form;
+}
+
 // ─── Re-exports ────────────────────────────────────────────────────────────────
 
 export {
