@@ -1,5 +1,14 @@
 # @fluixi/cli
 
+## 0.1.0-next.5
+
+### Minor Changes
+
+- 6354c48: Add `fluixi generate <kind> <name>` (alias `g`): scaffold a `component` (→
+  `src/components/<Name>.tsx`), a file-based `route` (→ `src/routes/<path>.tsx`, dynamic
+  segments like `blog/[id]` supported), or `middleware` (→ `src/middleware.ts`) into the
+  current app.
+
 ## 0.1.0-next.4
 
 ### Patch Changes
