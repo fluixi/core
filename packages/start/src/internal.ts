@@ -11,9 +11,16 @@ import type { FetchHandler } from './handler.js';
  */
 export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   const { createVitePlugin, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
+  const { serverFunctionsVitePlugin } = await import('@fluixi/compiler/integrations');
   // polyfills:false — the meta-framework is SSR-first; the browser node-polyfill shims
   // break server rendering. Apps that need Buffer/process in the browser opt in later.
-  return [fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }), createVitePlugin()];
+  // serverFunctionsVitePlugin applies the "use server" transform (client RPC stub /
+  // server registration) per-build via the ssr flag.
+  return [
+    serverFunctionsVitePlugin(),
+    fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }),
+    createVitePlugin(),
+  ];
 }
 
 /**

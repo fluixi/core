@@ -505,6 +505,9 @@ importers:
 
   packages/start:
     dependencies:
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
