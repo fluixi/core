@@ -1,0 +1,25 @@
+{
+  "name": "@fluixi/create",
+  "version": "0.0.0",
+  "description": "Scaffold a new Fluixi app — `npm create @fluixi <dir>`.",
+  "type": "module",
+  "bin": {
+    "create-fluixi": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/create"
+  }
+}
