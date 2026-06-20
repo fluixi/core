@@ -11,6 +11,8 @@ function RootLayout() {
         <a href="/">home</a>
         {' · '}
         <a href="/about">about</a>
+        {' · '}
+        <a href="/guestbook">guestbook</a>
       </nav>
       <main>
         <Suspense fallback={<p>loading…</p>}>

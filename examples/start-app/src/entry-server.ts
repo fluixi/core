@@ -1,7 +1,18 @@
 // SSR entry — @fluixi/start's dev/build/start load this. It calls `renderStream`
 // (streaming: head flushed first, body streamed) when present, else `render` (string).
 import App from './app.js';
-import { renderRequestAsync, renderToBodyStream } from '@fluixi/server';
+import { renderRequestAsync, renderToBodyStream, setDataRedactor } from '@fluixi/server';
+
+// Strip server-only fields (a per-message `secret`) from the data serialized into the
+// page (window.__FX_DATA__), so they never reach the client.
+setDataRedactor((value) => {
+  if (Array.isArray(value)) {
+    return value.map((m) =>
+      m && typeof m === 'object' && 'secret' in m ? { ...m, secret: undefined } : m,
+    );
+  }
+  return value;
+});
 
 export function render(url: string): Promise<string> {
   return renderRequestAsync(App, { url });
