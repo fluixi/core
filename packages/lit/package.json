@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/lit",
-  "version": "1.0.0-next.14",
+  "version": "1.0.0-next.15",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",

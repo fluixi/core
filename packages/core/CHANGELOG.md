@@ -1,5 +1,19 @@
 # @fluixi/kettlejs
 
+## 1.0.0-next.15
+
+### Patch Changes
+
+- Updated dependencies [53ba1b0]
+  - @fluixi/compiler@1.0.0-next.15
+  - @fluixi/vite-plugin@1.0.0-next.15
+  - @fluixi/utils@1.0.0-next.15
+  - @fluixi/reactive@1.0.0-next.15
+  - @fluixi/dom@1.0.0-next.15
+  - @fluixi/jsx@1.0.0-next.15
+  - @fluixi/lit@1.0.0-next.15
+  - @fluixi/server@1.0.0-next.15
+
 ## 1.0.0-next.14
 
 ### Minor Changes
