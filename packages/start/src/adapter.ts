@@ -41,9 +41,17 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     core = createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
   }
 
+  // Server-function RPC dispatch. The entry-server module re-exports the dispatcher, so
+  // it shares the registry that the app's "use server" modules populated (a separate
+  // node-imported copy would have an empty registry).
+  if (typeof mod.handleServerFn === 'function' && typeof mod.isServerFnRequest === 'function') {
+    const render = core;
+    core = (request) => (mod.isServerFnRequest(request) ? mod.handleServerFn(request) : render(request));
+  }
+
   // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
   const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');
-  if (!existsSync(mwFile)) return core;
+  if (!existsSync(mwFile)) return guardHandler(core);
   const mwMod = await import(pathToFileURL(mwFile).href);
   return guardHandler(composeMiddleware(normalizeMiddleware(mwMod), core));
 }

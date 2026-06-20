@@ -955,6 +955,32 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 // Exports
 // ============================================================================
 
+
+// ============================================================================
+// "use server" — server functions vite plugin
+// ============================================================================
+
+export { transformServerFunctions } from './frontend/babel/server-functions.js';
+import { transformServerFunctions as _txServerFns } from './frontend/babel/server-functions.js';
+
+/**
+ * Vite plugin that applies the `"use server"` transform: client builds get RPC stubs,
+ * server builds register the function bodies. Runs alongside the JSX plugin (separate
+ * concern). `enforce:'pre'` so it runs on the raw source before other transforms.
+ */
+export function serverFunctionsVitePlugin<T = any>(): T {
+  const root = process.cwd();
+  return {
+    name: 'fluixi-server-functions',
+    enforce: 'pre' as const,
+    transform(code: string, id: string, opts?: { ssr?: boolean }) {
+      if (!/\.[jt]sx?$/.test(id)) return null;
+      if (!code.includes('use server')) return null;
+      return _txServerFns(code, { ssr: !!opts?.ssr, filename: id, root });
+    },
+  } as T;
+}
+
 export default {
   // Analysis
   analyzeProp,

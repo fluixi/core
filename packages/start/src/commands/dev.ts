@@ -32,6 +32,11 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     const url = new URL(request.url);
     const path = url.pathname + url.search;
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
+    // Server-function RPC: the ssr-loaded entry shares the registry the app's
+    // "use server" modules populated (same vite module graph).
+    if (typeof mod.isServerFnRequest === 'function' && mod.isServerFnRequest(request)) {
+      return mod.handleServerFn(request);
+    }
     if (typeof mod.renderStream === 'function') {
       const shell = await vite.transformIndexHtml(path, template);
       const { head, tail } = splitTemplate(shell, cfg.mountId);
