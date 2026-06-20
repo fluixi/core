@@ -32,25 +32,54 @@ setCount((c) => c + 1);                                // → "count is 1"
 
 ## 🧩 Packages
 
+**Foundation & rendering**
+
 | Package | Description |
 | --- | --- |
 | [`@fluixi/utils`](packages/utils) | Zero-dependency, strongly-typed utilities — primitives, objects, maths, arrays, color, DOM. |
 | [`@fluixi/reactive`](packages/reactive) | Fine-grained reactivity — signals, memos, effects, stores, and an RxJS-style observable layer. |
-| [`@fluixi/dom`](packages/dom) | Reactive DOM runtime with SSR, control-flow, and lit-html integration. |
-| [`@fluixi/element`](packages/element) | Web Component bindings — `defineElement`, `FluixiElement`, `FluixiLitElement`, controllers. |
+| [`@fluixi/dom`](packages/dom) | Reactive DOM runtime — control-flow, hydration, and the universal SSR string renderer. |
+| [`@fluixi/lit`](packages/lit) | Optional lit-html renderer — `html` templates, directives, lit control flow. |
+
+**JSX & compiler**
+
+| Package | Description |
+| --- | --- |
+| [`@fluixi/jsx`](packages/jsx) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + the `jsxImportSource` for Fluixi JSX. |
 | [`@fluixi/babel-plugin-jsx`](packages/babel) | Babel plugin that compiles JSX into fine-grained reactive DOM calls. |
-| [`@fluixi/jsx`](packages/jsx) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + compiler glue for Fluixi JSX. |
-| [`@fluixi/core`](packages/core) | The framework — components, router, client/server entry points, and SSR. |
-| [`@fluixi/webui`](packages/webui) | Ready-made web-component UI library (buttons, dialogs, forms, and more). |
+| [`@fluixi/compiler`](packages/compiler) | The JSX compiler — host-agnostic IR, codegen backends, and the `"use server"` transform. |
+| [`@fluixi/vite-plugin`](packages/vite-plugin) | The Vite plugin — JSX transform + codegen backend selection. |
+
+**Framework**
+
+| Package | Description |
+| --- | --- |
+| [`@fluixi/core`](packages/core) | The framework — components, lifecycle, control flow, context, router (`router-next`), client/server entries. |
+| [`@fluixi/router`](packages/router) | Framework-agnostic router core — URL → match tree + navigation (no DOM/reactivity). |
+| [`@fluixi/server`](packages/server) | Server-side rendering — request-scoped, streaming, hydration transport. |
+
+**Meta-framework & tooling**
+
+| Package | Description |
+| --- | --- |
+| [`@fluixi/start`](packages/start) | The meta-framework — zero-config dev/build/start with SSR, file routing, middleware, server functions. |
+| [`@fluixi/cli`](packages/cli) | The `fluixi` CLI — dev/build/start + `fluixi generate`. |
+| [`@fluixi/create`](packages/create) | App scaffolder — `npm create @fluixi <dir>` (SSR or SPA). |
+
+> Web components (`@fluixi/element`) and the `@fluixi/ui-*` component library live in the
+> separate [**wc-element**](https://github.com/fluixi/wc-element) repo.
 
 ### Architecture
 
 ```
-@fluixi/utils ──► @fluixi/reactive ──► @fluixi/dom ──► @fluixi/element ──┐
-                                          │                              │
-                                          ├──► @fluixi/jsx ──────┼──► @fluixi/core ──► @fluixi/webui
-                                          │                              │
-@fluixi/babel-plugin-jsx ─────────────────┴──────────────────────────────┘
+@fluixi/utils ─► @fluixi/reactive ─► @fluixi/dom ─┬─► @fluixi/lit
+                                                  │
+@fluixi/babel-plugin-jsx ─► @fluixi/compiler ◄────┤   @fluixi/router
+              │                    ▲              │        │
+              └─► @fluixi/jsx      └ @fluixi/vite-plugin    ▼
+                       └──────────────────────────► @fluixi/core ─► @fluixi/server
+                                                          │              │
+                                                          └──► @fluixi/start ─► @fluixi/cli ─► @fluixi/create
 ```
 
 ## 🚀 Quick start
@@ -76,6 +105,13 @@ export NODE_AUTH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 pnpm add @fluixi/core    # the full framework
 # …or just the reactivity core
 pnpm add @fluixi/reactive
+```
+
+### Or scaffold a full-stack app
+
+```sh
+npm create @fluixi my-app   # SSR (file routing + hydration) or SPA — prompted
+cd my-app && pnpm install && pnpm dev
 ```
 
 ## 🛠️ Local development
