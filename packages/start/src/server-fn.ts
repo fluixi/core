@@ -24,6 +24,21 @@ export function $$createServerReference(id: string) {
   return (...args: any[]) => callServer(id, args);
 }
 
+/**
+ * Runs a server function inside a request context so `getRequestEvent()` (request,
+ * headers, cookies) works inside it. Injected by `@fluixi/start/server-fn-setup` (which
+ * bridges `@fluixi/server`'s AsyncLocalStorage) so this module stays client-safe — no
+ * node imports here. `event.responseHeaders` set inside the fn are returned to the host.
+ */
+type ContextRunner = (
+  request: Request,
+  run: () => any,
+) => { result: Promise<any>; responseHeaders?: Record<string, string> };
+let contextRunner: ContextRunner | null = null;
+export function setServerFnContextRunner(runner: ContextRunner | null): void {
+  contextRunner = runner;
+}
+
 async function callServer(id: string, args: any[]): Promise<any> {
   const res = await fetch(SERVER_FN_ENDPOINT, {
     method: 'POST',
@@ -73,11 +88,18 @@ export async function handleServerFn(request: Request): Promise<Response> {
   }
 
   try {
-    const result = await fn(...args);
-    return new Response(JSON.stringify(result ?? null), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    });
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    let result: any;
+    if (contextRunner) {
+      // Run inside the request context so getRequestEvent() works in the fn; collect any
+      // response headers (e.g. Set-Cookie) the fn set on the event.
+      const ran = contextRunner(request, () => fn(...args));
+      result = await ran.result;
+      Object.assign(headers, ran.responseHeaders || {});
+    } else {
+      result = await fn(...args);
+    }
+    return new Response(JSON.stringify(result ?? null), { status: 200, headers });
   } catch (e: any) {
     return new Response(String(e?.message || e), { status: 500 });
   }
