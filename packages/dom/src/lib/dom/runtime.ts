@@ -399,10 +399,6 @@ function _createInsertEffect(
         } finally {
           _insertDepth--;
         }
-        // createRoot(() => {
-        // });
-      }else{
-        console.log('in cache');
       }
       value = componentCache.get(getAccessor as Function)!;
       while (typeof value === 'function' && isSignal(value)) value = value();
@@ -429,13 +425,7 @@ function _createInsertEffect(
             } finally {
               _insertDepth--;
             }
-          }else{
-            console.log('in cache');
           }
-          // if (!componentCache.has(value)) {
-          //   // createRoot(() => {
-          //   // });
-          // }
           value = componentCache.get(value)!;
         } else if (isSignal(value)) {
           value = (value as Function)();
@@ -1796,4 +1786,4 @@ export function render<T>(
 
 // hydrate() lives in ./hydration.js (the DOM-reuse hydration feature). Re-export
 // it here so the existing import path (`@fluixi/dom` → runtime) keeps working.
-export { hydrate } from './hydration.js';
+export { hydrate, captureHydrationCursor, runHydrationAt } from './hydration.js';

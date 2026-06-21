@@ -474,7 +474,8 @@ export function Link(props: LinkProps) {
     });
   }
 
-  if (props.children != null) insert(a, props.children as any);
+  const linkChildren = props.children; // read once (getter builds fresh nodes per access)
+  if (linkChildren != null) insert(a, linkChildren as any);
   return a;
 }
 
@@ -536,7 +537,11 @@ export function Form(props: FormProps) {
     });
   }
 
-  if (props.children != null) insert(form, props.children as any);
+  // Read children ONCE: the compiler emits `get children()` as a getter that builds fresh
+  // nodes on every access, so reading it twice (here + the null check) created a duplicate
+  // set — under hydration that meant two <input>s in the form.
+  const children = props.children;
+  if (children != null) insert(form, children as any);
   return form;
 }
 

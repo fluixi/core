@@ -94,13 +94,11 @@ export function startClient(
     );
   }
 
-  // Hydrate only when explicitly requested (`{ hydrate: true }`) or when the server
-  // emitted the `__FLUIXI_HYDRATION__` marker. NOTE: auto-hydrating on "container has
-  // children" was tried and reverted — DOM-reuse hydration does not yet handle lazy
-  // file-routes (they resolve async, after the sync hydration pass, and render a SECOND
-  // copy of the route next to the un-hydrated server one → visible duplication). Until
-  // per-boundary async hydration lands, an SSR'd app without the marker does a fresh
-  // client render (clears the container first → correct, just not a true hydrate).
+  // Hydrate when explicitly requested (`{ hydrate: true }`) or when the server emits the
+  // `__FLUIXI_HYDRATION__` marker (so SSR'd apps auto-hydrate). Lazy-route, text-ordering,
+  // and component-children hydration are all fixed: sections/list items and native children
+  // passed to a COMPONENT (e.g. `<Form><input/><button/></Form>`) now hydrate in place, in
+  // order, with no duplication (void elements no longer strand the cursor).
   const shouldHydrate =
     options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
 
