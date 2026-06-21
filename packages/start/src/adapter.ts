@@ -24,7 +24,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const clientDir = resolve(cfg.root, 'dist/client');
   const template = await readFile(join(clientDir, 'index.html'), 'utf-8');
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
-  const mod = await import(pathToFileURL(serverEntry).href);
+  const mod = await import(/* @vite-ignore */ pathToFileURL(serverEntry).href);
 
   // Streaming when the entry exports `renderStream` (a body stream): flush the split
   // template head first, pipe the body, then the tail. Else inject the string render.
@@ -52,7 +52,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
   const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');
   if (!existsSync(mwFile)) return guardHandler(core);
-  const mwMod = await import(pathToFileURL(mwFile).href);
+  const mwMod = await import(/* @vite-ignore */ pathToFileURL(mwFile).href);
   return guardHandler(composeMiddleware(normalizeMiddleware(mwMod), core));
 }
 

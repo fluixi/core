@@ -94,8 +94,14 @@ export function startClient(
     );
   }
 
+  // Hydrate when the mount container already holds server-rendered markup (an SSR'd
+  // page), unless overridden. The old check only looked for a `__FLUIXI_HYDRATION__`
+  // marker, which `@fluixi/server`/`@fluixi/start` don't emit — so start apps silently
+  // fell back to a fresh client render (server DOM discarded, resources never seeded).
   const shouldHydrate =
-    options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
+    options.hydrate ??
+    (!!document.getElementById('__FLUIXI_HYDRATION__') ||
+      (container as Element).childNodes.length > 0);
 
   if (shouldHydrate) {
     deserializeHydrationData();

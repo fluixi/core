@@ -1,16 +1,23 @@
-// Showcase route: combines a Form action + a "use server" function (with getRequestEvent)
+// Showcase route: combines a Form action + "use server" functions (with getRequestEvent)
 // + a data-loaded resource. The message list is SSR'd (awaited), the secret field is
-// redacted from __FX_DATA__ (see entry-server.ts), and signing posts via the RPC endpoint.
+// redacted from __FX_DATA__ (see entry-server.ts), and signing posts via the RPC endpoint
+// then updates the list in place.
 import { createResource } from '@fluixi/reactive/signal';
 import { For } from '@fluixi/core';
 import { Form, action } from '@fluixi/core/router-next';
 import { addMessage, getMessages, type Message } from '../actions.js';
 
-// action() wraps the server function with submission tracking; <Form> posts the fields.
-const sign = action(addMessage, 'guestbook');
-
 export default function Guestbook() {
-  const [messages, { refetch }] = createResource<Message[]>(getMessages);
+  // SSR-loaded list (seeded on the client from __FX_DATA__, no refetch).
+  const [messages, { mutate }] = createResource<Message[]>(getMessages);
+
+  // The action calls the server function (RPC), then mutates the resource with the
+  // returned list so the UI updates immediately. <Form> tracks submission state.
+  const sign = action(async (data: { text?: string }) => {
+    const updated = await addMessage(data);
+    mutate(() => updated);
+    return updated;
+  }, 'guestbook');
 
   return (
     <section class="guestbook">
