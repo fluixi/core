@@ -1,5 +1,59 @@
 # @fluixi/start
 
+## 0.1.0-next.6
+
+### Minor Changes
+
+- 43a36e2: `getRequestEvent()` now works inside a `"use server"` function — access the request,
+  headers, and cookies:
+
+  ```ts
+  import { getRequestEvent } from '@fluixi/server';
+
+  const whoami = async () => {
+    'use server';
+    const req = getRequestEvent()?.request as Request;
+    return req.headers.get('user-agent');
+  };
+  ```
+
+  The RPC dispatcher runs the function inside `@fluixi/server`'s request context (wired by
+  a server-only `@fluixi/start/server-fn-setup` bridge that `virtual:fluixi-server-fns`
+  imports, keeping the `@fluixi/start/server-fn` runtime client-safe). Response headers set
+  on the event (e.g. `Set-Cookie`) are returned with the RPC response.
+
+### Patch Changes
+
+- eb95b6c: Docs: rewrite the package READMEs in the canonical format (logo, badges, overview,
+  install, usage, license) and bring them up to date — streaming SSR, middleware, server
+  functions, `fluixi generate`, and the SSR/SPA scaffold. Adds the missing `@fluixi/create`
+  README. (The root README's package list + architecture were also corrected.)
+- f30d5e9: Server functions in lazy routes now register reliably. `serverFunctionsVitePlugin`
+  provides `virtual:fluixi-server-fns` — side-effect imports of every module containing a
+  `"use server"` directive (found by scanning `src/`). The server entry imports it, so all
+  server functions register at startup, including those in lazy-loaded routes that would
+  otherwise register only when their chunk loads (causing an RPC registry miss → 404). The
+  client never imports the virtual module.
+- 3932e9d: SSR fixes:
+
+  - **`<Form>` and `<Link>` render real elements on the server.** Both returned an HTML
+    _string_ on the server, which the serializer escaped as text (`&lt;form&gt;…`) — breaking
+    the element and the hydration cursor. They now build a real element via the runtime
+    (server `ServerNode` / client DOM).
+  - **`@fluixi/start`**: `/* @vite-ignore */` on the runtime dynamic imports
+    (config/entry-server/middleware) to silence Vite's import-analysis warnings in `dev`.
+
+- Updated dependencies [42730d1]
+- Updated dependencies [ef9231f]
+- Updated dependencies [ea5c098]
+- Updated dependencies [eb95b6c]
+- Updated dependencies [43a36e2]
+- Updated dependencies [f30d5e9]
+- Updated dependencies [3932e9d]
+  - @fluixi/core@1.0.0-next.16
+  - @fluixi/server@1.0.0-next.16
+  - @fluixi/compiler@1.0.0-next.16
+
 ## 0.1.0-next.5
 
 ### Minor Changes

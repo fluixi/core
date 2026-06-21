@@ -1,5 +1,16 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-next.16
+
+### Patch Changes
+
+- Updated dependencies [ef9231f]
+- Updated dependencies [ea5c098]
+- Updated dependencies [3932e9d]
+- Updated dependencies [ea5c098]
+  - @fluixi/dom@1.0.0-next.16
+  - @fluixi/reactive@1.0.0-next.16
+
 ## 1.0.0-next.15
 
 ### Patch Changes
