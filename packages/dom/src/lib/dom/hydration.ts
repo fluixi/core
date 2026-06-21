@@ -61,16 +61,18 @@ export function hydrateElement(tag: string): Element | null {
 
 /** Reuse the text node at the cursor (syncing its value) and advance. */
 export function hydrateText(value: string): Text | null {
+  // Empty text is a CLIENT-ONLY insertion-anchor marker (createTextNode('') in insert()) —
+  // the server serialized nothing for it. It must NOT consume a server text node (doing so
+  // blanked the real content node next to it and threw off the cursor: `text <small>…` →
+  // `<small>…text`). Always create it fresh.
+  if (value === '') return null;
   const c = hydration.cursor;
   if (c && c.nodeType === 3) {
     hydration.cursor = c.nextSibling;
     if ((c as Text).nodeValue !== value) (c as Text).nodeValue = value;
     return c as Text;
   }
-  // Empty text is an insertion-anchor marker (createTextNode('')), not real
-  // content — the server serializes it to nothing, so a "missing" empty text is
-  // expected, never a real divergence. Only warn for non-empty text.
-  if (DEV && c && value !== '') warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
+  if (DEV && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
   return null;
 }
 

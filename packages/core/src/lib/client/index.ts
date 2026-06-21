@@ -94,13 +94,13 @@ export function startClient(
     );
   }
 
-  // Hydrate only when explicitly requested (`{ hydrate: true }`) or when the server
-  // emitted the `__FLUIXI_HYDRATION__` marker. lazy() now resumes hydration at its
-  // server-DOM position when the module loads (no section duplication — see
-  // lazy-hydrate.test), and resources seed across the async boundary, but hydration of
-  // complex list-item children (text + nested elements) inside a resumed boundary still
-  // has an ordering residual. Until that's solved, SSR'd apps without the marker do a
-  // fresh client render (which works cleanly), so this stays opt-in.
+  // Hydrate only when explicitly requested (`{ hydrate: true }`) or when the server emits
+  // the `__FLUIXI_HYDRATION__` marker. Lazy-route + text-ordering hydration are fixed
+  // (sections/list items hydrate in place, correct order, no duplication), but native
+  // children passed to a COMPONENT (e.g. `<Form><input/></Form>`) whose compiled `children`
+  // getter is read at more than one point still duplicate under hydration. Until that's
+  // resolved, SSR'd apps without the marker do a fresh client render (which works cleanly),
+  // so auto-hydration stays opt-in.
   const shouldHydrate =
     options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
 
