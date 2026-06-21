@@ -30,8 +30,18 @@ export interface RequestContext {
   matchedRoute: Map<unknown, unknown>;
   /** monotonic per-request id source for hydration markers (was module-global ssrMarkerId) */
   nextId(): string;
-  /** monotonic per-request resource id (creation order) — matched on the client */
+  /**
+   * Per-request resource id (creation order) — matched on the client. Outside an island
+   * the id is global creation order (`r0`, `r1`, …). Inside an island scope it is namespaced
+   * and counted PER island (`Counter#0:r0`, …) so the client, which hydrates each island
+   * independently and restarts its local counter, reproduces the same ids and seeds each
+   * island's resources from `__FX_DATA__` without a global render.
+   */
   nextResourceId(): string;
+  /** Allocate the next namespace for an island of this name (doc/render order): `name#N`. */
+  nextIslandNamespace(name: string): string;
+  /** Run `fn` with resource ids scoped to island `ns` (server: namespaced creation order). */
+  withResourceScope<T>(ns: string, fn: () => T): T;
   /** in-flight resource fetch promises collected during async SSR */
   pending: Set<Promise<unknown>>;
   /** resolved resource data to serialize for client hydration, keyed by resource id */
@@ -71,12 +81,36 @@ export function setRequestStore(store: RequestStore | null): void {
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
   let id = 0;
   let rid = 0;
+  // Active island scope (namespace) and a per-namespace resource counter, so each island's
+  // resources are numbered from 0 independently of global render order.
+  let scope: string | null = null;
+  const scopeCounters = new Map<string, number>();
+  const islandCounts = new Map<string, number>();
   return {
     event,
     routeData: new Map(),
     matchedRoute: new Map(),
     nextId: () => `s${id++}`,
-    nextResourceId: () => `r${rid++}`,
+    nextResourceId: () => {
+      if (scope === null) return `r${rid++}`;
+      const n = scopeCounters.get(scope) ?? 0;
+      scopeCounters.set(scope, n + 1);
+      return `${scope}:r${n}`;
+    },
+    nextIslandNamespace: (name) => {
+      const n = islandCounts.get(name) ?? 0;
+      islandCounts.set(name, n + 1);
+      return `${name}#${n}`;
+    },
+    withResourceScope(ns, fn) {
+      const prev = scope;
+      scope = ns;
+      try {
+        return fn();
+      } finally {
+        scope = prev;
+      }
+    },
     pending: new Set(),
     data: new Map(),
   };
