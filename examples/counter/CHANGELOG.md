@@ -1,5 +1,15 @@
 # @fluixi/example-counter
 
+## 0.0.5-next.17
+
+### Patch Changes
+
+- Updated dependencies [a1c29ec]
+  - @fluixi/dom@1.0.0-next.17
+  - @fluixi/core@1.0.0-next.17
+  - @fluixi/jsx@1.0.0-next.17
+  - @fluixi/reactive@1.0.0-next.17
+
 ## 0.0.5-next.16
 
 ### Patch Changes
