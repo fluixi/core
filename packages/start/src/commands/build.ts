@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins } from '../internal.js';
+import { wordmark, step, done, c } from '../ui.js';
 
 /**
  * Production build: a client bundle (browser, with an SSR manifest) and a server
@@ -10,18 +11,22 @@ import { fluixiPlugins } from '../internal.js';
  * (file routing + JSX/SSR transform), so the app's vite.config keeps only app bits.
  */
 export async function build(config: FluixiConfig = {}): Promise<void> {
+  const startedAt = Date.now();
   const cfg = resolveConfig(config);
   const { build: viteBuild } = await import('vite');
   const plugins = await fluixiPlugins(cfg);
 
-  console.log('  fluixi build → client');
+  process.stdout.write(`\n  ${wordmark()}  ${c.gray('building for production')}\n\n`);
+
+  step('client bundle');
   await viteBuild({
     root: cfg.root,
     plugins,
+    logLevel: 'warn',
     build: { outDir: 'dist/client', ssrManifest: true, emptyOutDir: true },
   });
 
-  console.log('  fluixi build → server');
+  step('server bundle');
   await viteBuild({
     root: cfg.root,
     plugins,
@@ -37,10 +42,11 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
   // entry-server.js). createProdHandler picks up dist/server/middleware.js if present.
   const middlewareSrc = resolve(cfg.root, cfg.middleware);
   if (existsSync(middlewareSrc)) {
-    console.log('  fluixi build → middleware');
+    step('middleware');
     await viteBuild({
       root: cfg.root,
       plugins,
+      logLevel: 'warn',
       ssr: { noExternal: cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined },
       build: {
         outDir: 'dist/server',
@@ -50,5 +56,7 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     });
   }
 
-  console.log('  fluixi build → done (dist/client + dist/server)');
+  const ms = Date.now() - startedAt;
+  process.stdout.write('\n');
+  done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/client + dist/server')}\n`);
 }

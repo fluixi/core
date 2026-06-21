@@ -10,5 +10,5 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "fluixi.config.mjs", "vite.config.ts"]
+  "include": ["src", "fluixi.config.ts"]
 }
