@@ -25,7 +25,9 @@
   },
   "changesets": [
     "cli-generate",
+    "cli-ux-redesign",
     "create-fluixi",
+    "create-ssr-tsconfig-fix",
     "dispose-no-rerun",
     "fix-client-hydration-loop",
     "fluixi-meta-framework-skeleton",
@@ -43,6 +45,7 @@
     "hydration",
     "imperative-default",
     "ir-component-props",
+    "island-resource-seeding",
     "islands",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
