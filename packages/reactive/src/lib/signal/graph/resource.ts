@@ -1,0 +1,192 @@
+/**
+ * createResource ported onto the TC39 core (L0+L1 via the compat layer). This is
+ * ADDITIVE — the legacy `createResource` in ../signal.ts stays intact; this is the
+ * parallel implementation that runs on the new graph.
+ *
+ * Resources are the one part of the surface that touches framework-coupled bits, so
+ * they're ported by hand. The SSR transport hooks (`nextResourceId`/`getServerData`/
+ * `trackResourcePromise`/`reportResourceData`) are standalone module functions, so we
+ * REUSE them from ../signal.ts — same `__FX_DATA__` seeding + async-SSR drain as legacy.
+ *
+ * Suspense boundary integration (throwing the pending promise to a boundary that
+ * increments/decrements) lands with the Suspense port; the throwing getter is here so
+ * a boundary built on the new effect can catch it.
+ */
+import {
+  createSignal,
+  createEffect,
+  batch,
+  untrack,
+  onCleanup,
+} from './compat.js';
+// Standalone SSR hooks — reused verbatim so seeding/drain behaviour matches legacy.
+import {
+  nextResourceId,
+  getServerData,
+  trackResourcePromise,
+  reportResourceData,
+} from '../signal.js';
+
+type ResourceState = 'unresolved' | 'pending' | 'ready' | 'refreshing' | 'errored';
+
+function isPromise(v: unknown): v is Promise<unknown> {
+  return !!v && typeof (v as { then?: unknown }).then === 'function';
+}
+
+export interface ResourceActions<T> {
+  mutate: (v: T | ((prev: T | undefined) => T)) => unknown;
+  refetch: () => void;
+}
+export type ResourceReturn<T> = [
+  resource: (() => T | undefined) & {
+    loading: boolean;
+    error: unknown;
+    latest: T | undefined;
+    state: ResourceState;
+  },
+  actions: ResourceActions<T>,
+];
+
+const UNSET = Symbol();
+
+/**
+ * createResource(fetcher, options?) or createResource(source, fetcher, options?).
+ * Matches the legacy state machine + SSR seeding (no first fetch when seeded).
+ */
+export function createResource<T, S = true>(
+  source: unknown,
+  fetcherFn?: unknown,
+  options: { initialValue?: T; name?: string } = {},
+): ResourceReturn<T> {
+  let s: () => S;
+  let fetcher: (v: S, info: { value: T | undefined; refetching: boolean }) => T | Promise<T>;
+  if (typeof fetcherFn === 'function') {
+    s = typeof source === 'function' ? (source as () => S) : () => source as S;
+    fetcher = fetcherFn as typeof fetcher;
+  } else {
+    s = () => true as unknown as S;
+    fetcher = source as typeof fetcher;
+    if (fetcherFn && typeof fetcherFn === 'object') options = fetcherFn as typeof options;
+  }
+
+  // SSR data transport: stable id; on the client seed from server-serialized value.
+  const ssrId = nextResourceId();
+  const seed = ssrId !== undefined ? getServerData(ssrId) : undefined;
+  let skipFirstFetch = seed !== undefined;
+
+  const [value, setValue] = createSignal<T | undefined>(
+    seed !== undefined ? (seed.value as T) : options.initialValue,
+    { equals: false },
+  );
+  const [error, setError] = createSignal<unknown>(undefined, { equals: false });
+  const [state, setState] = createSignal<ResourceState>(
+    seed !== undefined || options.initialValue !== undefined ? 'ready' : 'unresolved',
+    { equals: false },
+  );
+  const [promise, setPromise] = createSignal<Promise<T> | undefined>(undefined, { equals: false });
+  const [track, trigger] = createSignal(undefined, { equals: false });
+
+  let prevKey: S | typeof UNSET = UNSET;
+  let manualRefetch = false;
+
+  createEffect(() => {
+    const val = s();
+    track();
+    if (val === false || val === null || val === undefined) {
+      prevKey = UNSET;
+      batch(() => {
+        setState('unresolved');
+        setPromise(undefined);
+        setError(undefined);
+      });
+      return;
+    }
+    const isManual = manualRefetch;
+    manualRefetch = false;
+    if (prevKey !== UNSET && (val as unknown) === prevKey && !isManual) return;
+    prevKey = val;
+    if (skipFirstFetch) {
+      skipFirstFetch = false;
+      return; // seeded — source tracked, but no first fetch (no flash on hydration)
+    }
+    let cancelled = false;
+    onCleanup(() => (cancelled = true));
+    const currentState = untrack(state);
+    const currentValue = untrack(value);
+    const isRefreshing = currentState === 'ready' || currentState === 'refreshing';
+    batch(() => {
+      setState(isRefreshing ? 'refreshing' : 'pending');
+      setError(undefined);
+    });
+    try {
+      const res = fetcher(val, { value: currentValue, refetching: isRefreshing });
+      if (isPromise(res)) {
+        setPromise(res as Promise<T>);
+        trackResourcePromise(res); // server async SSR: collect & await
+        (res as Promise<T>).then(
+          (v) => {
+            if (cancelled) return;
+            if (ssrId !== undefined) reportResourceData(ssrId, v); // serialize for hydration
+            batch(() => {
+              setValue(() => v);
+              setState('ready');
+              setPromise(undefined);
+            });
+          },
+          (e) => {
+            if (cancelled) return;
+            batch(() => {
+              setError(e);
+              setState('errored');
+              setPromise(undefined);
+            });
+          },
+        );
+      } else {
+        batch(() => {
+          setValue(() => res as T);
+          setState('ready');
+          setPromise(undefined);
+        });
+      }
+    } catch (e) {
+      if (cancelled) return;
+      batch(() => {
+        setError(e);
+        setState('errored');
+        setPromise(undefined);
+      });
+    }
+  });
+
+  const loading = () => {
+    const st = state();
+    return st === 'pending' || st === 'refreshing';
+  };
+  const resource = (() => {
+    const e = error();
+    if (e) throw e;
+    if (loading()) {
+      const p = promise();
+      if (p) throw p; // suspends — a boundary on the new effect catches this
+    }
+    return value();
+  }) as ResourceReturn<T>[0];
+  Object.defineProperties(resource, {
+    state: { get: state },
+    loading: { get: loading },
+    error: { get: error },
+    latest: { get: value },
+  });
+
+  return [
+    resource,
+    {
+      mutate: setValue as ResourceActions<T>['mutate'],
+      refetch: () => {
+        manualRefetch = true;
+        trigger(undefined);
+      },
+    },
+  ];
+}
