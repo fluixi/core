@@ -88,6 +88,34 @@ export function createEffect<T>(
   });
 }
 
+/**
+ * createComputed — an EAGER, owner-managed reactive computation (returns void).
+ * Unlike a lazy memo it runs immediately and re-runs eagerly when a dep changes;
+ * used for derivations with side effects (e.g. store internals). On L1 that is an
+ * eager effect whose dispose is owned by the current scope.
+ */
+export function createComputed<T>(fn: (prev?: T) => T, value?: T): void {
+  let prev = value;
+  l1effect(() => {
+    prev = fn(prev) as T;
+  });
+}
+
+/**
+ * createRenderEffect — an effect that runs in the render phase. For the reactive
+ * core this is an eager effect (the render-vs-commit timing distinction is a DOM-
+ * layer concern); returns a dispose like createEffect.
+ */
+export function createRenderEffect<T>(
+  fn: (prev?: T) => T | (() => void),
+  value?: T,
+): () => void {
+  let prev = value;
+  return l1effect(() => {
+    prev = fn(prev) as T;
+  });
+}
+
 /** batch — coalesce writes so dependent effects flush once. */
 export function batch<T>(fn: () => T): T {
   return l1batch(fn);
