@@ -6,6 +6,7 @@ import { resolveConfig } from '../config.js';
 import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler } from '../internal.js';
 import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
+import { devReady } from '../ui.js';
 
 /**
  * Dev server: Vite in middleware mode compiles the app on the fly; the server
@@ -13,6 +14,7 @@ import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
  * entry hydrates. Generalizes the hand-rolled server.mjs pattern.
  */
 export async function dev(config: FluixiConfig = {}): Promise<void> {
+  const startedAt = Date.now();
   const cfg = resolveConfig(config);
   installCrashGuards();
 
@@ -71,7 +73,5 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     ssr: cfg.ssrNoExternal.length ? { noExternal: cfg.ssrNoExternal } : undefined,
   });
 
-  http.listen(cfg.port, () =>
-    console.log(`  fluixi dev → http://localhost:${cfg.port}`),
-  );
+  http.listen(cfg.port, () => devReady({ port: cfg.port, startedAt }));
 }
