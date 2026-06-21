@@ -94,6 +94,13 @@ export function startClient(
     );
   }
 
+  // Hydrate only when explicitly requested (`{ hydrate: true }`) or when the server
+  // emitted the `__FLUIXI_HYDRATION__` marker. NOTE: auto-hydrating on "container has
+  // children" was tried and reverted — DOM-reuse hydration does not yet handle lazy
+  // file-routes (they resolve async, after the sync hydration pass, and render a SECOND
+  // copy of the route next to the un-hydrated server one → visible duplication). Until
+  // per-boundary async hydration lands, an SSR'd app without the marker does a fresh
+  // client render (clears the container first → correct, just not a true hydrate).
   const shouldHydrate =
     options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
 
