@@ -92,6 +92,35 @@ export function isAdopted(parent: Node, node: Node): boolean {
   return hydration.active && node.parentNode === parent;
 }
 
+/**
+ * Capture the current hydration cursor (the server node about to be hydrated), or null
+ * when not hydrating. An async boundary (lazy/Suspense) records this when it's created,
+ * then resumes hydration there once its content resolves — see runHydrationAt.
+ */
+export function captureHydrationCursor(): Node | null {
+  return hydration.active ? hydration.cursor : null;
+}
+
+/**
+ * Resume hydration with the cursor at `cursor` for the duration of `fn`, then restore.
+ * Lets an async boundary hydrate its server DOM in place when its content arrives AFTER
+ * the initial synchronous pass (a lazy file-route resolving later) — instead of building
+ * a fresh, duplicate subtree. No-op (just runs `fn`) when `cursor` is null.
+ */
+export function runHydrationAt<T>(cursor: Node | null, fn: () => T): T {
+  if (!cursor || cursor.parentNode == null) return fn();
+  const prevActive = hydration.active;
+  const prevCursor = hydration.cursor;
+  hydration.active = true;
+  hydration.cursor = cursor;
+  try {
+    return fn();
+  } finally {
+    hydration.active = prevActive;
+    hydration.cursor = prevCursor;
+  }
+}
+
 /** Ascend the cursor past an adopted node's (already-walked) subtree. */
 export function ascendPast(node: Node): void {
   hydration.cursor = node.nextSibling;
@@ -132,9 +161,13 @@ export function hydrate<T>(element: T, container: Element): () => void {
   try {
     return render(element, container);
   } finally {
+    // Stop DOM-reuse hydration after the synchronous pass (client renders must not
+    // hydrate). But KEEP the resource id source + server-data getter active: lazy
+    // file-routes create their resources asynchronously, after this returns, and still
+    // need to seed from __FX_DATA__ by creation order. Leaving them active is harmless —
+    // post-hydration client resources get later ids not present in __FX_DATA__, so they
+    // simply fetch.
     hydration.active = false;
     hydration.cursor = null;
-    setResourceIdSource(null);
-    setServerDataGetter(null);
   }
 }

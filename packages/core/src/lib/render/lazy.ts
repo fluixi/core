@@ -11,7 +11,7 @@
  *     before the component is rendered.
  */
 
-import { Component, ComponentProps, createMemo, createResource, createSignal, } from '@fluixi/dom';
+import { Component, ComponentProps, createMemo, createResource, createSignal, captureHydrationCursor, runHydrationAt } from '@fluixi/dom';
 import { Accessor, untrack } from '@fluixi/reactive/signal';
 
 // ─── Public types ────────────────────────────────────────────────────────────
@@ -47,6 +47,12 @@ export function lazy<T extends (...args: any[]) => any>(
   // The single in-flight / completed promise.  Idempotent: subsequent calls
   // to load() return the same promise instead of re-importing the module.
   let promise: Promise<any> | undefined;
+
+  // When this lazy boundary is first rendered DURING hydration, the cursor points at the
+  // server-rendered DOM for this component (it isn't loaded yet, so the sync pass can't
+  // hydrate it). We capture that node and, once the module resolves, resume hydration
+  // there so the resolved component reuses the server DOM instead of building a duplicate.
+  let hydrationCursor: Node | null = null;
   
 
   function load(): Promise<any> {
@@ -74,6 +80,8 @@ export function lazy<T extends (...args: any[]) => any>(
     // at the component (not memo) level so its internal effect is owned by this
     // component instance and is not cancelled by memo re-evaluation.
     if(!component){
+      // Hydrating + not yet loaded → remember the server DOM position for this boundary.
+      hydrationCursor = captureHydrationCursor();
       const [resource] = createResource(() => promise || load());
       component = resource
       // setComp(resource)
@@ -101,18 +109,16 @@ export function lazy<T extends (...args: any[]) => any>(
     return createMemo(() => {
       const C = component!();
       if (!C) {
-        // Module still loading — throw the promise so Suspense boundaries catch it.
-        // The throw propagates to createMemo's catch block which calls
-        // ctx.increment() on the nearest SuspenseContext found via useContext.
-        // throw promise || load();
+        // Module still loading — Suspense keeps showing the fallback (driven by the
+        // resource's loading state). The server DOM stays in place under hydration.
         return undefined
       }
-      // return res;
-      // if(untrack(resolved)) {
-      //     // console.log('resolved is', resolved())
-      //     return resolved()
-      //   }
-        const res = typeof C==="function" ? untrack(() => C!(props)) : C
+      // Resume hydration at the captured server position (use it once) so the resolved
+      // component adopts the server DOM in place instead of rendering a duplicate.
+      const cursor = hydrationCursor; hydrationCursor = null;
+      const res = typeof C==="function"
+        ? untrack(() => runHydrationAt(cursor, () => C!(props)))
+        : C
         setResolved(()=>res)
         return res
         // return typeof C==="function" ? untrack(() => C!(props)) : C
