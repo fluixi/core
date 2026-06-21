@@ -91,19 +91,40 @@ function enqueue(e: EffectNode): void {
   }
 }
 
+let flushing = false;
+
 /** Drain all pending effects now (synchronously). */
 export function flushSync(): void {
   scheduled = false;
+  // Re-entrancy guard: an effect that writes a signal during its run re-enqueues;
+  // the running loop below picks that up, so a nested flushSync must be a no-op
+  // (otherwise the same queue drains twice).
+  if (flushing) return;
+  flushing = true;
   let guard = 0;
-  while (queue.length) {
-    if (++guard > 100000) throw new Error('[fluixi] effect flush did not settle (cycle?)');
-    const batchOf = queue;
-    queue = [];
-    for (const e of batchOf) {
-      e.queued = false;
-      if (!e.disposed) e.run();
+  try {
+    while (queue.length) {
+      if (++guard > 100000) throw new Error('[fluixi] effect flush did not settle (cycle?)');
+      const batchOf = queue;
+      queue = [];
+      for (const e of batchOf) {
+        e.queued = false;
+        if (!e.disposed) e.run();
+      }
     }
+  } finally {
+    flushing = false;
   }
+}
+
+/**
+ * Run pending effects after a write completes — but only at the top level (not
+ * inside a batch). A single write thus marks the WHOLE graph dirty first, then
+ * flushes once (legacy-equivalent synchronous effects, glitch-free). The `flushing`
+ * guard makes a write inside an effect a no-op here (the running loop drains it).
+ */
+export function afterWrite(): void {
+  if (batchDepth === 0) flushSync();
 }
 
 /** Group writes so dependent effects flush once, at the end. */
