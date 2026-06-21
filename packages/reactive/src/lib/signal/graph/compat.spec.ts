@@ -3,6 +3,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  createComputed,
   createRoot,
   onCleanup,
   batch,
@@ -93,6 +94,17 @@ describe('compat — createEffect (synchronous flush on write, legacy semantics)
     expect(run).toHaveBeenCalledTimes(1);
     setA(2);
     expect(run).toHaveBeenCalledTimes(2); // once, not twice
+  });
+});
+
+describe('compat — createComputed (eager)', () => {
+  it('runs immediately and re-runs eagerly on dep change', () => {
+    const [a, setA] = createSignal(1);
+    const [mirror, setMirror] = createSignal(0);
+    createComputed(() => setMirror(a() * 10)); // eager derivation with a side effect
+    expect(mirror()).toBe(10); // ran immediately
+    setA(3);
+    expect(mirror()).toBe(30); // re-ran eagerly (synchronously)
   });
 });
 
