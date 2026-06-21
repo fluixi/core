@@ -72,7 +72,10 @@ export class State<T> extends Source {
     this._value = next;
     this.version++;
     // Push: direct observers are DIRTY, their transitive observers are CHECK.
-    if (this.observers) for (const o of this.observers) o.markDirty(DIRTY);
+    // Snapshot first — a synchronous scheduler can re-run an effect mid-propagation,
+    // which re-subscribes (mutates `observers`); iterating the live Set would then
+    // re-visit the re-added node forever. (Matches the legacy Array.from(observers).)
+    if (this.observers) for (const o of [...this.observers]) o.markDirty(DIRTY);
     notifyWatchers(this);
   }
 
@@ -163,7 +166,7 @@ export class Computed<T> extends Source {
     if (changed) {
       this.version++;
       // Our value moved → observers that were merely CHECK must now recompute.
-      if (this.observers) for (const o of this.observers) o.markDirty(DIRTY);
+      if (this.observers) for (const o of [...this.observers]) o.markDirty(DIRTY);
       notifyWatchers(this);
     }
   }
@@ -178,7 +181,7 @@ export class Computed<T> extends Source {
     const wasClean = this.state === CLEAN;
     this.state = level;
     if (wasClean) {
-      if (this.observers) for (const o of this.observers) o.markDirty(CHECK);
+      if (this.observers) for (const o of [...this.observers]) o.markDirty(CHECK);
       notifyWatchers(this);
     }
   }
@@ -192,7 +195,7 @@ export class Computed<T> extends Source {
 
 function notifyWatchers(node: Source): void {
   if (!node.watchers) return;
-  for (const w of node.watchers) w._notify(node);
+  for (const w of [...node.watchers]) w._notify(node);
 }
 
 /**
