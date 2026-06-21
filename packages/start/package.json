@@ -27,6 +27,12 @@
   },
   "exports": {
     "./package.json": "./package.json",
+    "./ui": {
+      "development": "./src/ui.ts",
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js",
+      "default": "./dist/ui.js"
+    },
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",

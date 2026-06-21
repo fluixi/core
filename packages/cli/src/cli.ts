@@ -1,24 +1,31 @@
 #!/usr/bin/env node
 import { loadConfig, dev, build, start } from '@fluixi/start';
+import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
 
-const USAGE = `fluixi — the Fluixi command-line tool
-
-Usage: fluixi <command>
-
-Commands:
-  dev                       Start the SSR dev server (Vite middleware + HMR)
-  build                     Build the client + server bundles for production
-  start                     Run the production SSR server (after build)
-  generate <kind> <name>    Scaffold a component / route / middleware (alias: g)
-
-New project: npm create @fluixi <dir>
-`;
+function usage(): string {
+  const cmd = (name: string, desc: string) =>
+    `  ${c.cyan(name.padEnd(25))}${c.gray(desc)}`;
+  return [
+    '',
+    `  ${wordmark()}  ${c.gray('the Fluixi command-line tool')}`,
+    '',
+    `  ${c.bold('Usage')}  ${c.gray('fluixi <command>')}`,
+    '',
+    cmd('dev', 'start the SSR dev server (Vite middleware + HMR)'),
+    cmd('build', 'build the client + server bundles for production'),
+    cmd('start', 'run the production SSR server (after build)'),
+    cmd('generate <kind> <name>', 'scaffold a component / route / middleware  ' + c.dim('(alias: g)')),
+    '',
+    `  ${c.gray('New project:')}  ${c.cyan('npm create @fluixi')} ${c.gray('<dir>')}`,
+    '',
+  ].join('\n');
+}
 
 async function main(): Promise<void> {
   const cmd = process.argv[2];
   if (!cmd || cmd === '-h' || cmd === '--help') {
-    console.log(USAGE);
+    console.log(usage());
     process.exit(cmd ? 0 : 1);
   }
 
@@ -41,13 +48,13 @@ async function main(): Promise<void> {
       await start(config);
       break;
     default:
-      console.error(`Unknown command: ${cmd}\n`);
-      console.log(USAGE);
+      console.error(`\n  ${c.red('✗')} Unknown command: ${c.bold(cmd)}`);
+      console.log(usage());
       process.exit(1);
   }
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error(`\n  ${c.red('✗')} ${e?.message ?? e}\n`);
   process.exit(1);
 });

@@ -7,6 +7,7 @@
  */
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, relative, basename } from 'node:path';
+import { c } from '@fluixi/start/ui';
 
 const GEN_USAGE = `Usage: fluixi generate <kind> <name>
 
@@ -26,13 +27,14 @@ function pascal(s: string): string {
 }
 
 function write(file: string, content: string): void {
+  const rel = relative(process.cwd(), file);
   if (existsSync(file)) {
-    console.error(`✗ ${relative(process.cwd(), file)} already exists`);
+    console.error(`  ${c.red('✗')} ${rel} ${c.gray('already exists')}`);
     process.exit(1);
   }
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, content);
-  console.log(`✓ created ${relative(process.cwd(), file)}`);
+  console.log(`  ${c.green('✓')} ${c.gray('created')} ${c.cyan(rel)}`);
 }
 
 const component = (Name: string) =>
@@ -88,6 +90,6 @@ export function generate(kind: string | undefined, name: string | undefined): vo
 }
 
 function fail(msg: string): void {
-  console.error(`✗ ${msg}`);
+  console.error(`  ${c.red('✗')} ${msg}`);
   process.exit(1);
 }
