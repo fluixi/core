@@ -1,5 +1,30 @@
 # @fluixi/create
 
+## 0.1.0-next.2
+
+### Minor Changes
+
+- fdfa579: Redesigned CLI experience. A gradient `fluixi` wordmark and a clean, colored layout
+  across the toolchain (zero new dependencies — hand-rolled ANSI that degrades to plain
+  text when not a TTY / under `NO_COLOR`):
+
+  - **`fluixi dev`** now prints a proper "ready" panel — timing plus `Local` and `Network`
+    URLs — instead of a single `localhost:PORT` line.
+  - **`fluixi build`** shows a wordmark header, per-step lines, and a timed `built` summary.
+  - **`fluixi --help`** / `generate` use the wordmark, colored commands, and ✓/✗ markers.
+  - **`npm create @fluixi`** gets a modern interactive flow: gradient intro, gutter prompts,
+    and an arrow-key App-mode selector (SSR/SPA), with a styled "Next steps" outro.
+  - New `@fluixi/start/ui` export (shared color/wordmark/panel helpers) honoring
+    `NO_COLOR`/`FORCE_COLOR`.
+
+### Patch Changes
+
+- fdfa579: Fix the SSR template's `tsconfig.json`: it referenced `fluixi.config.mjs` and a
+  non-existent `vite.config.ts` in `include` (the template ships `fluixi.config.ts`), and
+  declared `types: ["node"]` without `@types/node` installed. The `include` now matches the
+  scaffolded files and `@types/node` is added to devDependencies, so a fresh SSR app
+  typechecks out of the box.
+
 ## 0.1.0-next.1
 
 ### Patch Changes
