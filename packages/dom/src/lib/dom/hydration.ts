@@ -26,6 +26,17 @@ export const hydration: { active: boolean; cursor: Node | null } = {
   cursor: null,
 };
 
+// HTML void elements never have children. They must NOT be descended into during
+// hydration: their `firstChild` is null, so `cursor = firstChild` would strand the
+// cursor and the next sibling (e.g. the `<button>` after an `<input>` in a
+// component's array children) would be recreated fresh instead of adopted. For
+// these we ascend straight to `nextSibling`. (Matches VOID_ELEMENTS in the
+// server serializer.)
+const VOID_ELEMENTS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+
 // Tree-shaken out of production bundles (vite/esbuild statically replace
 // process.env.NODE_ENV), so the mismatch checks cost nothing in prod.
 const DEV =
@@ -52,7 +63,9 @@ function warnMismatch(expected: string, found: Node): void {
 export function hydrateElement(tag: string): Element | null {
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
-    hydration.cursor = c.firstChild;
+    // Void elements have no children to walk — ascend to the sibling instead of
+    // descending into a null firstChild (which would strand the cursor).
+    hydration.cursor = VOID_ELEMENTS.has(tag.toLowerCase()) ? c.nextSibling : c.firstChild;
     return c as Element;
   }
   if (DEV && c) warnMismatch(`<${tag}>`, c);
