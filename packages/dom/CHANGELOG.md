@@ -1,5 +1,72 @@
 # @fluixi/dom
 
+## 1.0.0-next.16
+
+### Minor Changes
+
+- ef9231f: `__FX_DATA__` redaction. Resource data resolved during SSR is serialized into the page
+  (`window.__FX_DATA__`) so the client seeds resources without refetching — but it's
+  visible to anyone viewing source. `setDataRedactor((value, id) => …)` transforms or drops
+  each value before serialization: return the value to embed, or `undefined` to omit the
+  entry (the client then refetches that resource). A throwing redactor omits rather than
+  leaks. Exported from `@fluixi/dom` and `@fluixi/server`.
+
+  ```ts
+  import { setDataRedactor } from '@fluixi/server';
+  setDataRedactor((v) => {
+    if (v && typeof v === 'object' && 'passwordHash' in v) {
+      const { passwordHash, ...safe } = v as any;
+      return safe;
+    }
+    return v;
+  });
+  ```
+
+- 3932e9d: Islands — partial hydration. `<Island component={C} props={p} name="C" />` server-renders
+  a component inside a `<fluixi-island>` boundary (props serialized as a JSON attribute);
+  `hydrateIslands(registry)` — the client entry instead of `startClient(App)` — finds every
+  boundary, looks it up by name, and hydrates **only** that subtree in place. The rest of the
+  page stays inert static HTML (no client JS executed for it). Re-exported from `@fluixi/core`.
+
+  ```tsx
+  // page (SSR): <Island name="Counter" component={Counter} props={{ start: 0 }} />
+  // client entry:
+  import { hydrateIslands } from '@fluixi/core';
+  hydrateIslands({ Counter });
+  ```
+
+  (The `Index` SSR extra-node bug and dev hydration-mismatch warnings — also tracked under
+  hydration follow-ups — were already resolved.)
+
+- ea5c098: Lazy-route hydration + hydration correctness fixes.
+
+  - **Lazy-route hydration** — a `lazy()` component loads async, after the synchronous
+    hydration pass, so it used to render a fresh, duplicate subtree next to the un-hydrated
+    server one. `lazy()` now captures its server-DOM position (`captureHydrationCursor`) and
+    resumes hydration there when the module resolves (`runHydrationAt`), reusing the server
+    DOM in place. `hydrate()` keeps resource seeding (`__FX_DATA__`) active after the sync
+    pass so lazy-route resources still seed.
+  - **Text-ordering fix** — an empty-text positioning marker (`createTextNode('')` from
+    `insert`) was consuming and blanking the adjacent server content node during hydration,
+    reversing siblings (`text <small>…` → `<small>…text`). Empty markers are client-only
+    anchors and are now created fresh, never consuming a server node. (Fixes a general
+    hydration-ordering bug, not just lazy.)
+  - **`<Form>`/`<Link>` read `children` once** — the compiler's `children` getter builds
+    fresh nodes on every access, so reading it twice produced duplicate nodes.
+
+  New `@fluixi/dom` exports: `captureHydrationCursor`, `runHydrationAt`. Auto-hydration of
+  SSR'd apps stays opt-in pending a remaining component-children duplication.
+
+### Patch Changes
+
+- ea5c098: Fix hydration duplicating native children that follow a void element when passed
+  through a component. `hydrateElement` descended into a void element's (null)
+  `firstChild`, stranding the cursor so the next sibling — e.g. the `<button>` after
+  an `<input>` in `<Form><input/><button/></Form>` — was rebuilt fresh and appended.
+  Void elements (`input`, `br`, `img`, …) now ascend to `nextSibling` instead of
+  descending. This was the last bug gating default auto-hydration of SSR'd apps.
+  - @fluixi/reactive@1.0.0-next.16
+
 ## 1.0.0-next.15
 
 ### Patch Changes

@@ -1,5 +1,70 @@
 # @fluixi/kettlejs
 
+## 1.0.0-next.16
+
+### Minor Changes
+
+- 42730d1: Add a `<Form action={...}>` component (`@fluixi/core/router-next`) for form-driven
+  actions. On submit it builds the form's fields into a plain object and calls the action
+  (typically wrapping a `"use server"` function), preventing a full navigation and tracking
+  submission state via `useSubmission`:
+
+  ```tsx
+  <Form action={save}>
+    <input name="title" />
+    <button>Save</button>
+  </Form>
+  ```
+
+  The markup carries `method="post"` + `action={action.url}` so it's progressive-
+  enhancement-ready. (Multipart/file uploads and no-JS submission are follow-ups.)
+
+### Patch Changes
+
+- ea5c098: Lazy-route hydration + hydration correctness fixes.
+
+  - **Lazy-route hydration** — a `lazy()` component loads async, after the synchronous
+    hydration pass, so it used to render a fresh, duplicate subtree next to the un-hydrated
+    server one. `lazy()` now captures its server-DOM position (`captureHydrationCursor`) and
+    resumes hydration there when the module resolves (`runHydrationAt`), reusing the server
+    DOM in place. `hydrate()` keeps resource seeding (`__FX_DATA__`) active after the sync
+    pass so lazy-route resources still seed.
+  - **Text-ordering fix** — an empty-text positioning marker (`createTextNode('')` from
+    `insert`) was consuming and blanking the adjacent server content node during hydration,
+    reversing siblings (`text <small>…` → `<small>…text`). Empty markers are client-only
+    anchors and are now created fresh, never consuming a server node. (Fixes a general
+    hydration-ordering bug, not just lazy.)
+  - **`<Form>`/`<Link>` read `children` once** — the compiler's `children` getter builds
+    fresh nodes on every access, so reading it twice produced duplicate nodes.
+
+  New `@fluixi/dom` exports: `captureHydrationCursor`, `runHydrationAt`. Auto-hydration of
+  SSR'd apps stays opt-in pending a remaining component-children duplication.
+
+- 3932e9d: SSR fixes:
+
+  - **`<Form>` and `<Link>` render real elements on the server.** Both returned an HTML
+    _string_ on the server, which the serializer escaped as text (`&lt;form&gt;…`) — breaking
+    the element and the hydration cursor. They now build a real element via the runtime
+    (server `ServerNode` / client DOM).
+  - **`@fluixi/start`**: `/* @vite-ignore */` on the runtime dynamic imports
+    (config/entry-server/middleware) to silence Vite's import-analysis warnings in `dev`.
+
+- Updated dependencies [ef9231f]
+- Updated dependencies [ea5c098]
+- Updated dependencies [3932e9d]
+- Updated dependencies [ea5c098]
+- Updated dependencies [eb95b6c]
+- Updated dependencies [43a36e2]
+- Updated dependencies [f30d5e9]
+  - @fluixi/dom@1.0.0-next.16
+  - @fluixi/server@1.0.0-next.16
+  - @fluixi/compiler@1.0.0-next.16
+  - @fluixi/jsx@1.0.0-next.16
+  - @fluixi/lit@1.0.0-next.16
+  - @fluixi/vite-plugin@1.0.0-next.16
+  - @fluixi/utils@1.0.0-next.16
+  - @fluixi/reactive@1.0.0-next.16
+
 ## 1.0.0-next.15
 
 ### Patch Changes

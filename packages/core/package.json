@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/core",
-  "version": "1.0.0-next.15",
+  "version": "1.0.0-next.16",
   "description": "Solid-Compatible Fine-Grained UI Framework",
   "private": false,
   "publishConfig": {
