@@ -79,7 +79,7 @@ export async function loadConfig(root = process.cwd()): Promise<FluixiConfig> {
 async function loadConfigFile(file: string): Promise<FluixiConfig> {
   // Plain ESM (.mjs/.js) — import directly, no transform needed.
   if (!/\.[mc]?ts$/.test(file)) {
-    const mod = await import(pathToFileURL(file).href);
+    const mod = await import(/* @vite-ignore */ pathToFileURL(file).href);
     return (mod.default ?? mod) as FluixiConfig;
   }
 
@@ -116,7 +116,7 @@ async function loadConfigFile(file: string): Promise<FluixiConfig> {
     .slice(2)}.mjs`;
   await writeFile(tempFile, outputFiles[0].text);
   try {
-    const mod = await import(pathToFileURL(tempFile).href);
+    const mod = await import(/* @vite-ignore */ pathToFileURL(tempFile).href);
     return (mod.default ?? mod) as FluixiConfig;
   } finally {
     await unlink(tempFile).catch(() => {});

@@ -23,6 +23,8 @@ import {
   untrack,
   insert,
   createComponent,
+  createNativeElement,
+  setAttribute,
 } from '@fluixi/dom';
 // Reactive context (not fluixi createProvider, which destructures children
 // eagerly) so a `get children()` getter renders AFTER the context is stamped.
@@ -438,33 +440,39 @@ export function Link(props: LinkProps) {
   const navigate = () =>
     ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
 
-  if (isServer) {
-    const href = read(props.href) ?? '';
-    const cls = read(props.class) ?? '';
-    return `<a href="${href}" class="${cls}">${props.children ?? ''}</a>`;
+  // createNativeElement branches on isServer → a real ServerNode <a> (serialized as a true
+  // element, not an escaped string) on the server, a real DOM <a> on the client.
+  const a = createNativeElement('a') as any;
+  setAttribute(a, 'href', read(props.href) ?? '');
+  if (props.slot) setAttribute(a, 'slot', read(props.slot) as string);
+
+  // Client only (ServerNode has no addEventListener). Direct listener (not delegated) so
+  // preventDefault reliably blocks navigation.
+  if (typeof a.addEventListener === 'function') {
+    a.addEventListener('click', (e: MouseEvent) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      navigate();
+    });
+  } else {
+    // Server: set the static class so the markup matches the client's first render.
+    const base = (read(props.className ?? props.class) ?? '') as string;
+    if (base) setAttribute(a, 'class', base);
   }
 
-  const a = document.createElement('a');
-  a.setAttribute('href', read(props.href) ?? '');
-  if (props.slot) a.slot = props.slot;
-
-  // Direct listener (not delegated) so preventDefault reliably blocks navigation.
-  a.addEventListener('click', (e) => {
-    const me = e as MouseEvent;
-    if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey) return;
-    e.preventDefault();
-    navigate();
-  });
-
-  // Keep href + active class in sync with reactive props / current location.
-  createEffect(() => {
-    const href = read(props.href) ?? '';
-    a.setAttribute('href', href);
-    const base = read(props.className ?? props.class) ?? '';
-    const activeClass = read(props.activeClass) ?? '';
-    const active = read(props.active) ?? ctx?.location().pathname === href;
-    a.className = [base, active ? activeClass : ''].filter(Boolean).join(' ');
-  });
+  // Client only: keep href + active class in sync with reactive props / location.
+  // (Skipped on the server — `a` is a ServerNode without these DOM setters; the static
+  // href/class were set above.)
+  if (typeof a.addEventListener === 'function') {
+    createEffect(() => {
+      const href = read(props.href) ?? '';
+      a.setAttribute('href', href);
+      const base = read(props.className ?? props.class) ?? '';
+      const activeClass = read(props.activeClass) ?? '';
+      const active = read(props.active) ?? ctx?.location().pathname === href;
+      a.className = [base, active ? activeClass : ''].filter(Boolean).join(' ');
+    });
+  }
 
   if (props.children != null) insert(a, props.children as any);
   return a;
@@ -500,29 +508,33 @@ export function Form(props: FormProps) {
   const cls = (props.className ?? props.class) as string | undefined; // compiler passes class→className
   const url = (action as any).url ?? '';
 
-  if (typeof document === 'undefined') {
-    return `<form method="post" action="${url}"${cls ? ` class="${cls}"` : ''}></form>`;
-  }
-
-  const form = document.createElement('form');
-  form.setAttribute('method', 'post');
-  if (url) form.setAttribute('action', url);
-  if (cls) form.setAttribute('class', cls);
+  // createNativeElement/setAttribute branch on isServer, so this builds a real ServerNode
+  // <form> on the server (serialized as a true element, NOT an escaped string) and a real
+  // DOM <form> on the client — hydration reuses the same element.
+  const form = createNativeElement('form') as any;
+  setAttribute(form, 'method', 'post');
+  if (url) setAttribute(form, 'action', url);
+  if (cls) setAttribute(form, 'class', cls);
   for (const [k, v] of Object.entries(props)) {
     if (k === 'action' || k === 'children' || k === 'class' || k === 'className') continue;
-    if (v != null && typeof v !== 'function') form.setAttribute(k, String(v));
+    if (v != null && typeof v !== 'function') setAttribute(form, k, String(v));
   }
 
-  // Direct listener so preventDefault reliably blocks the native submit/navigation.
-  // Fields are passed as a plain object so a `"use server"` action (JSON RPC) gets them
-  // unchanged. (Multipart/file uploads are a follow-up.)
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(form));
-    Promise.resolve((action as any)(data)).catch(() => {
-      /* error is captured in the submission state via useSubmission */
+  // Client only (ServerNode has no addEventListener). Direct listener so preventDefault
+  // reliably blocks the native submit/navigation. Fields are passed as a plain object so
+  // a `"use server"` action (JSON RPC) gets them unchanged. (File uploads are a follow-up.)
+  if (typeof form.addEventListener === 'function') {
+    form.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      const data: Record<string, any> = {};
+      new FormData(form).forEach((v, k) => {
+        data[k] = v;
+      });
+      Promise.resolve((action as any)(data)).catch(() => {
+        /* error is captured in the submission state via useSubmission */
+      });
     });
-  });
+  }
 
   if (props.children != null) insert(form, props.children as any);
   return form;
