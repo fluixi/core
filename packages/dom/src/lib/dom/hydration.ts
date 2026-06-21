@@ -158,8 +158,17 @@ export function hydrateAdvancePast(rendered: unknown): void {
 /**
  * Hydrate `element` over the server-rendered markup already in `container`:
  * reuse the existing DOM and wire events/reactivity in place (no re-render).
+ *
+ * `options.resourceNamespace` scopes resource ids for partial (island) hydration:
+ * each island hydrates independently and restarts its local counter, so the server
+ * namespaced that island's resource ids the same way (`Counter#0:r0`, …). Omitted for
+ * a whole-app hydrate, where global creation order (`r0`, `r1`, …) already lines up.
  */
-export function hydrate<T>(element: T, container: Element): () => void {
+export function hydrate<T>(
+  element: T,
+  container: Element,
+  options?: { resourceNamespace?: string },
+): () => void {
   hydration.active = true;
   hydration.cursor = container.firstChild;
 
@@ -169,8 +178,9 @@ export function hydrate<T>(element: T, container: Element): () => void {
   // synchronous, so setting these module-globals around it is safe.
   const data: Record<string, unknown> | null =
     (typeof window !== 'undefined' && (window as any).__FX_DATA__) || null;
+  const ns = options?.resourceNamespace;
   let rid = 0;
-  setResourceIdSource(() => `r${rid++}`);
+  setResourceIdSource(() => (ns ? `${ns}:r${rid++}` : `r${rid++}`));
   setServerDataGetter(data ? (id) => (id in data ? { value: data[id] } : undefined) : null);
 
   try {
