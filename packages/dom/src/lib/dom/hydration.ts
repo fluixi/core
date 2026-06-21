@@ -26,6 +26,17 @@ export const hydration: { active: boolean; cursor: Node | null } = {
   cursor: null,
 };
 
+// HTML void elements never have children. They must NOT be descended into during
+// hydration: their `firstChild` is null, so `cursor = firstChild` would strand the
+// cursor and the next sibling (e.g. the `<button>` after an `<input>` in a
+// component's array children) would be recreated fresh instead of adopted. For
+// these we ascend straight to `nextSibling`. (Matches VOID_ELEMENTS in the
+// server serializer.)
+const VOID_ELEMENTS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+
 // Tree-shaken out of production bundles (vite/esbuild statically replace
 // process.env.NODE_ENV), so the mismatch checks cost nothing in prod.
 const DEV =
@@ -52,7 +63,9 @@ function warnMismatch(expected: string, found: Node): void {
 export function hydrateElement(tag: string): Element | null {
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
-    hydration.cursor = c.firstChild;
+    // Void elements have no children to walk — ascend to the sibling instead of
+    // descending into a null firstChild (which would strand the cursor).
+    hydration.cursor = VOID_ELEMENTS.has(tag.toLowerCase()) ? c.nextSibling : c.firstChild;
     return c as Element;
   }
   if (DEV && c) warnMismatch(`<${tag}>`, c);
@@ -61,16 +74,18 @@ export function hydrateElement(tag: string): Element | null {
 
 /** Reuse the text node at the cursor (syncing its value) and advance. */
 export function hydrateText(value: string): Text | null {
+  // Empty text is a CLIENT-ONLY insertion-anchor marker (createTextNode('') in insert()) —
+  // the server serialized nothing for it. It must NOT consume a server text node (doing so
+  // blanked the real content node next to it and threw off the cursor: `text <small>…` →
+  // `<small>…text`). Always create it fresh.
+  if (value === '') return null;
   const c = hydration.cursor;
   if (c && c.nodeType === 3) {
     hydration.cursor = c.nextSibling;
     if ((c as Text).nodeValue !== value) (c as Text).nodeValue = value;
     return c as Text;
   }
-  // Empty text is an insertion-anchor marker (createTextNode('')), not real
-  // content — the server serializes it to nothing, so a "missing" empty text is
-  // expected, never a real divergence. Only warn for non-empty text.
-  if (DEV && c && value !== '') warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
+  if (DEV && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
   return null;
 }
 
@@ -90,6 +105,35 @@ export function hydrateMarker(value: string): Comment | null {
 /** True when hydrating and `node` is already server-rendered in `parent`. */
 export function isAdopted(parent: Node, node: Node): boolean {
   return hydration.active && node.parentNode === parent;
+}
+
+/**
+ * Capture the current hydration cursor (the server node about to be hydrated), or null
+ * when not hydrating. An async boundary (lazy/Suspense) records this when it's created,
+ * then resumes hydration there once its content resolves — see runHydrationAt.
+ */
+export function captureHydrationCursor(): Node | null {
+  return hydration.active ? hydration.cursor : null;
+}
+
+/**
+ * Resume hydration with the cursor at `cursor` for the duration of `fn`, then restore.
+ * Lets an async boundary hydrate its server DOM in place when its content arrives AFTER
+ * the initial synchronous pass (a lazy file-route resolving later) — instead of building
+ * a fresh, duplicate subtree. No-op (just runs `fn`) when `cursor` is null.
+ */
+export function runHydrationAt<T>(cursor: Node | null, fn: () => T): T {
+  if (!cursor || cursor.parentNode == null) return fn();
+  const prevActive = hydration.active;
+  const prevCursor = hydration.cursor;
+  hydration.active = true;
+  hydration.cursor = cursor;
+  try {
+    return fn();
+  } finally {
+    hydration.active = prevActive;
+    hydration.cursor = prevCursor;
+  }
 }
 
 /** Ascend the cursor past an adopted node's (already-walked) subtree. */
@@ -132,9 +176,13 @@ export function hydrate<T>(element: T, container: Element): () => void {
   try {
     return render(element, container);
   } finally {
+    // Stop DOM-reuse hydration after the synchronous pass (client renders must not
+    // hydrate). But KEEP the resource id source + server-data getter active: lazy
+    // file-routes create their resources asynchronously, after this returns, and still
+    // need to seed from __FX_DATA__ by creation order. Leaving them active is harmless —
+    // post-hydration client resources get later ids not present in __FX_DATA__, so they
+    // simply fetch.
     hydration.active = false;
     hydration.cursor = null;
-    setResourceIdSource(null);
-    setServerDataGetter(null);
   }
 }
