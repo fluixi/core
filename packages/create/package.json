@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/create",
-  "version": "0.1.0-next.0",
+  "version": "0.1.0-next.1",
   "description": "Scaffold a new Fluixi app — `npm create @fluixi <dir>`.",
   "type": "module",
   "bin": {

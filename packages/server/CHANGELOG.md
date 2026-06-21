@@ -1,5 +1,40 @@
 # @fluixi/server
 
+## 1.0.0-next.16
+
+### Minor Changes
+
+- ef9231f: `__FX_DATA__` redaction. Resource data resolved during SSR is serialized into the page
+  (`window.__FX_DATA__`) so the client seeds resources without refetching — but it's
+  visible to anyone viewing source. `setDataRedactor((value, id) => …)` transforms or drops
+  each value before serialization: return the value to embed, or `undefined` to omit the
+  entry (the client then refetches that resource). A throwing redactor omits rather than
+  leaks. Exported from `@fluixi/dom` and `@fluixi/server`.
+
+  ```ts
+  import { setDataRedactor } from '@fluixi/server';
+  setDataRedactor((v) => {
+    if (v && typeof v === 'object' && 'passwordHash' in v) {
+      const { passwordHash, ...safe } = v as any;
+      return safe;
+    }
+    return v;
+  });
+  ```
+
+### Patch Changes
+
+- eb95b6c: Docs: rewrite the package READMEs in the canonical format (logo, badges, overview,
+  install, usage, license) and bring them up to date — streaming SSR, middleware, server
+  functions, `fluixi generate`, and the SSR/SPA scaffold. Adds the missing `@fluixi/create`
+  README. (The root README's package list + architecture were also corrected.)
+- Updated dependencies [ef9231f]
+- Updated dependencies [ea5c098]
+- Updated dependencies [3932e9d]
+- Updated dependencies [ea5c098]
+  - @fluixi/dom@1.0.0-next.16
+  - @fluixi/reactive@1.0.0-next.16
+
 ## 1.0.0-next.15
 
 ### Patch Changes
