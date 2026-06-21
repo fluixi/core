@@ -1,14 +1,13 @@
 // Showcase route: combines a Form action + "use server" functions (with getRequestEvent)
-// + a data-loaded resource. The message list is SSR'd (awaited), the secret field is
-// redacted from __FX_DATA__ (see entry-server.ts), and signing posts via the RPC endpoint
-// then updates the list in place.
+// + an SSR-loaded resource. The message list is server-rendered (awaited) and seeded on
+// the client from __FX_DATA__; the secret field is redacted (see entry-server.ts); signing
+// posts via the RPC endpoint then updates the list in place.
 import { createResource } from '@fluixi/reactive/signal';
 import { For } from '@fluixi/core';
 import { Form, action } from '@fluixi/core/router-next';
 import { addMessage, getMessages, type Message } from '../actions.js';
 
 export default function Guestbook() {
-  // SSR-loaded list (seeded on the client from __FX_DATA__, no refetch).
   const [messages, { mutate }] = createResource<Message[]>(getMessages);
 
   // The action calls the server function (RPC), then mutates the resource with the
@@ -30,7 +29,9 @@ export default function Guestbook() {
       </Form>
 
       <ul>
-        <For each={() => messages() ?? []}>
+        {/* .latest returns the resolved value without throwing into Suspense while
+            pending, so the list renders during SSR + after hydration without suspending. */}
+        <For each={() => messages.latest ?? []}>
           {(m: Message) => (
             <li>
               {m.text} <small>— {m.ua}</small>
