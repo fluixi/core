@@ -5,7 +5,7 @@
  * before serializing. Both wrap the render in createRoot so effects/owner are
  * disposed afterwards.
  */
-import { createRoot } from '../integration.js';
+import { createRoot } from '@fluixi/reactive/signal';
 import {
   setResourceTracker,
   setResourceIdSource,
