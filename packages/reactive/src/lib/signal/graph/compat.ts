@@ -33,6 +33,10 @@ setScheduler(() => {});
 
 const $SIGNAL = Symbol.for('signal');
 const $MEMO = Symbol.for('memo');
+// The legacy createSignal attaches a ReactiveNode (with a live `.value`/`.version`)
+// under this symbol; consumers like the store read `signal[$NODE].value` to gate
+// updates. compat exposes a matching node-like view so those consumers work unchanged.
+const $NODE = Symbol.for('signal-node');
 
 export type Accessor<T> = () => T;
 export type Setter<T> = (value: T | ((prev: T) => T)) => T;
@@ -40,6 +44,9 @@ export type Signal<T> = [get: Accessor<T>, set: Setter<T>];
 export interface SignalOptions<T> {
   equals?: ((a: T, b: T) => boolean) | false;
   name?: string;
+}
+export interface MemoOptions<T> extends SignalOptions<T> {
+  initial?: T;
 }
 
 /** createSignal — a writable cell, returned as the legacy `[get, set]` tuple. */
@@ -54,6 +61,18 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
     return v;
   }) as Setter<T>;
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
+  // Node-like view for consumers (e.g. the store) that read `signal[$NODE].value`.
+  Object.defineProperty(read, $NODE, {
+    value: {
+      get value() {
+        return state.peek();
+      },
+      get version() {
+        return state.version;
+      },
+    },
+    enumerable: false,
+  });
   return [read, write];
 }
 
