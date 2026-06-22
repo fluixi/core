@@ -22,14 +22,49 @@ jobs:
   # Gate: build + test + typecheck must be green before we version/publish.
   # On a "Version Packages" push this just defers opening the PR until green;
   # on a publish push (PR merged) it blocks `pnpm release` if anything is red.
-  ci:
-    name: CI gate
-    uses: ./.github/workflows/ci.yml
-    secrets: inherit
+  # Inlined (not a reusable-workflow call) for predictable startup/permissions.
+  test-gate:
+    name: CI gate (build + test + typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com/
+          scope: '@fluixi'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # Build the publishable packages (topological, via pnpm), then run the full
+      # test + typecheck across every package (run-many, not affected — a publish
+      # must validate everything it's about to ship). Examples are vitest/noEmit
+      # fixtures, so they're excluded from the tsc typecheck (TS5069).
+      - name: Build packages
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Test
+        run: pnpm nx run-many -t test --parallel=3
+
+      - name: Typecheck
+        run: pnpm nx run-many -t typecheck --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start
 
   release:
     name: Version or publish
-    needs: ci
+    needs: test-gate
     runs-on: ubuntu-latest
 
     steps:
