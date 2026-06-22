@@ -3,10 +3,9 @@
  * @module @fluixi/core/router/data
  */
 
-import {  createResource,
-  createSignal,
-   } from "@fluixi/dom"
 import {
+  createResource,
+  createSignal,
   type Accessor,
   type Setter,
   Resource

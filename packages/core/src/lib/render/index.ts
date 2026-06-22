@@ -9,7 +9,7 @@
  * Following SolidJS structure: render logic separated from component creation
  */
 
-import { createRoot } from '@fluixi/dom';
+import { createRoot } from '@fluixi/reactive/signal';
 import {
   isDOMNode,
   delegateEvents,

@@ -11,8 +11,14 @@
  *     before the component is rendered.
  */
 
-import { Component, ComponentProps, createMemo, createResource, createSignal, captureHydrationCursor, runHydrationAt } from '@fluixi/dom';
-import { Accessor, untrack } from '@fluixi/reactive/signal';
+import { Component, ComponentProps, captureHydrationCursor, runHydrationAt } from '@fluixi/dom';
+import {
+  Accessor,
+  untrack,
+  createMemo,
+  createResource,
+  createSignal,
+} from '@fluixi/reactive/signal';
 
 // ─── Public types ────────────────────────────────────────────────────────────
 

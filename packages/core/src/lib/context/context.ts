@@ -3,8 +3,8 @@
 //  * @module @fluixi/core/context/context
 //  */
 
-import { asProvider, isPromise, type Component,createContext as createReactiveContext,
-  useContext as useReactiveContext, } from '@fluixi/dom';
+import { asProvider, isPromise, type Component } from '@fluixi/dom';
+import { createContext as createReactiveContext, useContext as useReactiveContext } from '@fluixi/reactive/signal';
 import {
   Accessor,
   Context,
