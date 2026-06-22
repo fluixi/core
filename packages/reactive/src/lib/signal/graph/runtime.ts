@@ -85,6 +85,15 @@ export function setSuspendHandler(
   G.onSuspend = fn;
 }
 
+/** Report a suspended read (thrown promise) to the nearest boundary from the current owner. */
+export function reportSuspend(promise: Promise<unknown>): boolean {
+  if (G.onSuspend) {
+    G.onSuspend(promise, G.owner);
+    return true;
+  }
+  return false;
+}
+
 /** Register how a thrown error is routed to an error boundary. Return true if handled. */
 export function setErrorHandler(
   fn: ((error: unknown, owner: Owner | null) => boolean) | null,
