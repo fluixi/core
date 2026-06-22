@@ -29,6 +29,20 @@ export type {
   ComponentObserver,
 } from './dom/types.js';
 
+// Reactive primitives live in @fluixi/reactive/signal. @fluixi/dom re-exports them
+// straight from the core (no integration-bridge wrappers) so existing
+// `import { createSignal } from '@fluixi/dom'` consumers keep working unchanged.
+// The integration bridge now only carries framework-provided glue (createComponent).
+export {
+  createSignal, createEffect, createMemo, createRenderEffect,
+  createRoot, createComputed, createResource, createDeferred,
+  onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
+  childrens as resolveChildren, createContext, useContext, isSignal,
+  getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
+  getSharedConfig,
+} from '@fluixi/reactive/signal';
+export { createStore } from '@fluixi/reactive/store';
+
 import { initializeIntegration, autoInitialize, intergartionInitialized } from './dom/integration.js';
 import * as runtime from './dom/index.js';
 import {
@@ -37,8 +51,9 @@ import {
   onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
   childrens, createContext, useContext, isSignal,
   getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
+  getSharedConfig,
 } from '@fluixi/reactive/signal';
-import { isStore, isStoreProxy } from '@fluixi/reactive/store';
+import { isStore, isStoreProxy, createStore } from '@fluixi/reactive/store';
 
 // Initialize integration directly from reactive imports — works in both
 // ESM dev (Vite source loading) and CJS bundles without relying on require().
@@ -64,6 +79,14 @@ if (!intergartionInitialized()) {
 
 export default {
   ...runtime,
+  // Reactive primitives now come straight from the core (not the integration bridge),
+  // so the default export still carries them for `import DOM from '@fluixi/dom'` consumers.
+  createSignal, createEffect, createMemo, createRenderEffect,
+  createRoot, createComputed, createResource, createDeferred,
+  onCleanup, batch, untrack, getOwner, runWithOwner, setOwner,
+  resolveChildren: childrens, createContext, useContext, isSignal,
+  getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
+  getSharedConfig, createStore,
   initializeIntegration,
   autoInitialize,
 };

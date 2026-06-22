@@ -21,6 +21,8 @@ import {
   getOwner,
   onCleanup,
   untrack,
+} from '@fluixi/reactive/signal';
+import {
   insert,
   createComponent,
   createNativeElement,
@@ -581,4 +583,4 @@ export type {
 } from './data.js';
 export { lazy } from '../render/lazy.js';
 // Parity with the retired '@fluixi/core/router' barrel (route codegen used it).
-export { runWithOwner } from '@fluixi/dom';
+export { runWithOwner } from '@fluixi/reactive/signal';

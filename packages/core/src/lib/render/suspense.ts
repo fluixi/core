@@ -11,8 +11,6 @@ import {
   type SuspenseContextType,
   type SuspenseListContextType,
   type SuspenseListRegisteredState,
-} from '@fluixi/reactive/signal';
-import {
   createSignal,
   createMemo,
   createEffect,
@@ -25,6 +23,8 @@ import {
   getSuspenseContext,
   getSuspenseListContext,
   resumeEffects,
+} from '@fluixi/reactive/signal';
+import {
   asSuspense, 
   isComponent,
   createComponent

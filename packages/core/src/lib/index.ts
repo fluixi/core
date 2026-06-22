@@ -31,7 +31,7 @@ export {
   untrack,
   createDeferred,
   setOwner,
-} from '@fluixi/dom';
+} from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
 export {
@@ -266,8 +266,7 @@ import {
   batch as _batch,
   untrack as _untrack,
   onCleanup as _onCleanup,
-} from '@fluixi/dom';
-// '@fluixi/reactive/signal';
+} from '@fluixi/reactive/signal';
 
 import {
   createComponent as _createComponent,
