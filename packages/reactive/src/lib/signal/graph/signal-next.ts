@@ -71,6 +71,9 @@ export {
 } from './error-boundary.js';
 
 // The raw TC39 primitive surface (Signal.State / Computed / subtle.Watcher)
+// `Signal` is the TC39 namespace VALUE (Signal.State/Computed/subtle…). The legacy `[get,set]`
+// tuple type is exported as `SignalTuple` (via `export *` above) — a value and a type of the
+// same name can't be re-exported together, so consumers use `SignalTuple<T>` for the tuple.
 export { Signal } from './index.js';
 
 // Marker symbols consumers use to detect signals/proxies (e.g. the store, which builds

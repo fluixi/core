@@ -260,7 +260,7 @@ export function ensureIntegration(from?: string): void {
       createDeferred,
       getSharedConfig: getSignalSharedConfig,
       setOwner,
-    },
+    } as any,
   });
 
   registerEffectCreator(createEffect);

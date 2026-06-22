@@ -11,7 +11,7 @@ import {
   ResourceReturn,
   ResourceSource,
   RootOwner,
-  Signal,
+  SignalTuple,
   SignalOptions,
   SuspenseContextType,
   SuspenseListContextType,
@@ -114,7 +114,7 @@ export interface SignalSystem {
   createSignal?: <T>(
     _value: T,
     options?: SignalOptions<T> | undefined
-  ) => Signal<T>;
+  ) => SignalTuple<T>;
   isReactive?: (fn: any) => boolean;
   createComponent: <T extends (props?: any) => any, U = any>(
     Comp: T,

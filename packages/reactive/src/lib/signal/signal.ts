@@ -30,7 +30,7 @@ export interface Accessor<T> {
   [$SIGNAL]?: boolean;
 }
 export type Setter<T> = (value: T | ((prev: T) => T)) => void;
-export type Signal<T> = [Accessor<T>, Setter<T>];
+export type SignalTuple<T> = [Accessor<T>, Setter<T>];
 export interface SignalOptions<T> {
   equals?: false | EqualityFn<T>;
   name?: string;
@@ -53,7 +53,7 @@ export interface RootOwner {
 export interface Computation {
   fn: ComputationFn<any> | EffectFn;
   state: number;
-  sources: Signal<any>[] | null;
+  sources: SignalTuple<any>[] | null;
   sourceSlots: number[] | null;
   value?: any;
   owned: Computation[] | null;
@@ -197,7 +197,7 @@ let Pending = false;
 /** Depth of user-initiated batch() calls. Incremented on batch entry, decremented on exit. */
 let BatchDepth = 0;
 const MAX_ITERATIONS = 1000000;
-const signalObservers = new WeakMap<Signal<any>, Set<Computation>>();
+const signalObservers = new WeakMap<SignalTuple<any>, Set<Computation>>();
 /** Active transition — non-null while startTransition's fn is running or effects are deferred. */
 let Transition: TransitionState | null = null;
 const errorHandlers: ErrorBoundary[] = [];
@@ -360,7 +360,7 @@ function propagate(observerList: Computation[], propagator: (arg: any) => any) {
 export function createSignal<T>(
   _value: T,
   options?: SignalOptions<T>
-): Signal<T> {
+): SignalTuple<T> {
   let value = _value;
   if (typeof value === 'object' && value && $PROXY in (value as any))
     delete (value as any)[$PROXY];
@@ -368,7 +368,7 @@ export function createSignal<T>(
     equals: options?.equals === false ? undefined : options?.equals,
     name: options?.name,
   });
-  const s: Signal<T> = [read, write];
+  const s: SignalTuple<T> = [read, write];
   signalObservers.set(s, new Set());
   let lastObs;
   function read(): T {
@@ -862,7 +862,7 @@ export function createSelector<T, U = T>(
   source: () => T,
   fn: (key: U, value: T) => boolean = (k, v) => (k as any) === (v as any)
 ): (key: U) => boolean {
-  const map = new Map<U, Signal<boolean>>();
+  const map = new Map<U, SignalTuple<boolean>>();
   createEffect(() => {
     const value = source();
     for (const [key, signal] of map) {

@@ -53,7 +53,7 @@ if (!intergartionInitialized()) {
       getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
       createComponent: null as any,
       getSharedConfig: null as any,
-    },
+    } as any,
     storeSystem: {
       isStore,
       isStoreProxy,

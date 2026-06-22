@@ -13,7 +13,7 @@
  */
 
 import type {
-  Signal,
+  SignalTuple,
   Accessor,
   Setter,
   SignalOptions,
@@ -33,8 +33,8 @@ import type {
  *
  * @template T
  * @param {T} value - Initial value
- * @param {SignalOptions<T>} options - Signal options (ignored on server)
- * @returns {Signal<T>} Tuple of [getter, setter]
+ * @param {SignalOptions<T>} options - SignalTuple options (ignored on server)
+ * @returns {SignalTuple<T>} Tuple of [getter, setter]
  *
  * @example
  * ```typescript
@@ -48,7 +48,7 @@ import type {
 export function createSignal<T>(
   value: T,
   options?: SignalOptions<T>
-): Signal<T> {
+): SignalTuple<T> {
   // Server: Simple read/write, no reactivity
   let current = value;
 
@@ -529,7 +529,7 @@ export const isClient = false;
 // TYPE EXPORTS
 // ============================================================================
 
-export type { Signal, Accessor, Setter, SignalOptions, RootOwner, Context };
+export type { SignalTuple, Accessor, Setter, SignalOptions, RootOwner, Context };
 
 // ============================================================================
 // COMPATIBILITY

@@ -239,7 +239,7 @@ export {
 } from './reactive.js';
 
 export type {
-  Signal,
+  SignalTuple,
   Accessor,
   Setter,
   SignalOptions,

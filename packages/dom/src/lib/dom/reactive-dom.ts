@@ -9,7 +9,7 @@ class ComponentObserverImpl implements ComponentObserver {
   track<T>(getter: () => T): T {
     if (ReactiveDOM.currentObserver === this) {
       const signal = getter as Accessor<T>;
-      if (signal[$SIGNAL]) {
+      if ((signal as any)[$SIGNAL]) {
         this.dependencies.add(signal);
       }
     }
