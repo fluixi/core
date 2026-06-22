@@ -1,5 +1,11 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.9
+
+### Patch Changes
+
+- @fluixi/start@0.1.0-alpha.8
+
 ## 0.1.0-next.8
 
 ### Minor Changes

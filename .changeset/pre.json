@@ -66,12 +66,14 @@
     "server-fn-request-event",
     "server-fns-lazy",
     "server-functions",
+    "slim-integration-bridge",
     "ssr-hydration-fixes",
     "start-deploy-adapters",
     "start-middleware",
     "start-router-subpath",
     "start-streaming-ssr",
     "start-ts-config",
+    "tc39-signal-core",
     "use-navigate-ssr-safe"
   ]
 }

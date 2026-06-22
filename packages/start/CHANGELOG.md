@@ -1,5 +1,14 @@
 # @fluixi/start
 
+## 0.1.0-alpha.8
+
+### Patch Changes
+
+- Updated dependencies [8f4c8cf]
+  - @fluixi/core@1.0.0-alpha.18
+  - @fluixi/compiler@1.0.0-alpha.18
+  - @fluixi/server@1.0.0-alpha.18
+
 ## 0.1.0-next.7
 
 ### Minor Changes
