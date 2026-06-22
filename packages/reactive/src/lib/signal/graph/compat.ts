@@ -22,7 +22,7 @@ import {
   flushSync,
 } from './runtime.js';
 
-export { createRoot, onCleanup, getOwner, runWithOwner } from './runtime.js';
+export { createRoot, onCleanup, getOwner, setOwner, runWithOwner } from './runtime.js';
 
 // Compat owns all flush points (afterWrite / batch), so the host scheduler is a
 // no-op: enqueue only QUEUES; a write marks the whole graph then flushes once via

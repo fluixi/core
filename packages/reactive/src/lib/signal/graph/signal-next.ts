@@ -35,6 +35,7 @@ export {
   createRoot,
   onCleanup,
   getOwner,
+  setOwner,
   runWithOwner,
   batch,
   untrack,

@@ -96,6 +96,13 @@ export function getOwner(): Owner | null {
   return G.owner;
 }
 
+/** Set the current owner directly, returning the previous one. (Framework render glue.) */
+export function setOwner(owner: Owner | null): Owner | null {
+  const prev = G.owner;
+  G.owner = owner;
+  return prev;
+}
+
 export function runWithOwner<T>(owner: Owner | null, fn: () => T): T {
   const prev = G.owner;
   G.owner = owner;
