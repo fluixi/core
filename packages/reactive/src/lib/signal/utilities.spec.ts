@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createSignal } from './signal.js';
+import { createSignal } from '@fluixi/reactive/signal';
 import {
   mapSignal as map,
   filterSignal as filter,
