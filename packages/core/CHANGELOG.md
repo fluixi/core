@@ -1,5 +1,32 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.18
+
+### Patch Changes
+
+- 8f4c8cf: Slim the `@fluixi/dom` integration bridge to framework glue only.
+
+  Reactive signal primitives are no longer wrapped by the integration bridge — they
+  are imported straight from `@fluixi/reactive/signal` and unified across separately
+  bundled packages via the graph's `globalThis` singleton. `dom/integration.ts` now
+  carries only the non-core glue (`createComponent` + bridge/store plumbing).
+
+  `@fluixi/dom` re-exports the reactive primitives from the core, so existing
+  `import { … } from '@fluixi/dom'` consumers keep working unchanged. `@fluixi/core`
+  (`context`, `router-next`, the reactive re-export barrel) now imports those
+  primitives directly from `@fluixi/reactive/signal`.
+
+- Updated dependencies [8f4c8cf]
+- Updated dependencies [6ccf203]
+  - @fluixi/dom@1.0.0-alpha.18
+  - @fluixi/reactive@1.0.0-alpha.18
+  - @fluixi/compiler@1.0.0-alpha.18
+  - @fluixi/jsx@1.0.0-alpha.18
+  - @fluixi/lit@1.0.0-alpha.18
+  - @fluixi/server@1.0.0-alpha.18
+  - @fluixi/utils@1.0.0-alpha.18
+  - @fluixi/vite-plugin@1.0.0-alpha.18
+
 ## 1.0.0-next.17
 
 ### Patch Changes

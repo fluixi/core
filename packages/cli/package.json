@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/cli",
-  "version": "0.1.0-next.8",
+  "version": "0.1.0-alpha.9",
   "description": "The `fluixi` command-line tool — dev/build/start (via @fluixi/start) and, later, scaffolding + generators.",
   "repository": {
     "type": "git",
