@@ -126,6 +126,21 @@ export function untrack<T>(fn: () => T): T {
   return l0untrack(fn);
 }
 
+/**
+ * startTransition — run `fn`'s updates as one batch. (Minimal port: the concurrent
+ * time-slicing/deferral of the legacy implementation is a later refinement; the
+ * batched-commit semantics that callers rely on are preserved.)
+ */
+export function startTransition(fn: () => void): Promise<void> {
+  l1batch(fn);
+  return Promise.resolve();
+}
+
+/** useTransition — `[isPending, startTransition]`. isPending is synchronous here (no deferral). */
+export function useTransition(): [() => boolean, (fn: () => void) => Promise<void>] {
+  return [() => false, startTransition];
+}
+
 /** Force any pending effects to run now. */
 export { flushSync as flush };
 
