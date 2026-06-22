@@ -38,27 +38,6 @@
       "require": "./dist/lib/helpers/index.cjs",
       "default": "./dist/lib/helpers/index.js"
     },
-    "./actions": {
-      "development": "./src/lib/actions/index.ts",
-      "types": "./dist/lib/actions/index.d.ts",
-      "import": "./dist/lib/actions/index.mjs",
-      "require": "./dist/lib/actions/index.cjs",
-      "default": "./dist/lib/actions/index.js"
-    },
-    "./schedulers": {
-      "development": "./src/lib/schedulers/index.ts",
-      "types": "./dist/lib/schedulers/index.d.ts",
-      "import": "./dist/lib/schedulers/index.mjs",
-      "require": "./dist/lib/schedulers/index.cjs",
-      "default": "./dist/lib/schedulers/index.js"
-    },
-    "./schedulers/async": {
-      "development": "./src/lib/schedulers/async.ts",
-      "types": "./dist/lib/schedulers/async.d.ts",
-      "import": "./dist/lib/schedulers/async.mjs",
-      "require": "./dist/lib/schedulers/async.cjs",
-      "default": "./dist/lib/schedulers/async.js"
-    },
     "./store": {
       "development": "./src/lib/store/index.ts",
       "types": "./dist/lib/store/index.d.ts",
@@ -72,13 +51,6 @@
       "import": "./dist/lib/signal/index.mjs",
       "require": "./dist/lib/signal/index.cjs",
       "default": "./dist/lib/signal/index.js"
-    },
-    "./rx": {
-      "development": "./src/lib/rx.ts",
-      "types": "./dist/lib/rx.d.ts",
-      "import": "./dist/lib/rx.mjs",
-      "require": "./dist/lib/rx.cjs",
-      "default": "./dist/lib/rx.js"
     },
     "./signal-next": {
       "development": "./src/lib/signal/graph/signal-next.ts",
