@@ -14,7 +14,7 @@
  * Licensed under MIT.
  */
 import { isFunction } from '@fluixi/utils/functions';
-import { Observable } from '@fluixi/reactive/observable';
+import { Observable } from '../observable/observable.js';
 import { deepClone } from '@fluixi/utils/object';
 import { isPromise } from '@fluixi/utils';
 export type EqualityFn<T> = (a: T, b: T) => boolean;

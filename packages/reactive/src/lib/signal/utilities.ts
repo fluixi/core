@@ -12,7 +12,7 @@ import {
   createMemo,
   createEffect,
 } from './signal.js';
-import { Observable } from '@fluixi/reactive/observable';
+import { Observable } from '../observable/observable.js';
 
 // ============================================================================
 // TRANSFORMATION UTILITIES
