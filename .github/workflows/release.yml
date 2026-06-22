@@ -18,8 +18,17 @@ permissions:
   pull-requests: write  # open/update the "Version Packages" PR
 
 jobs:
+  # Gate: build + test + typecheck must be green before we version/publish.
+  # On a "Version Packages" push this just defers opening the PR until green;
+  # on a publish push (PR merged) it blocks `pnpm release` if anything is red.
+  ci:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   release:
     name: Version or publish
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:
