@@ -79,6 +79,13 @@
       "import": "./dist/lib/rx.mjs",
       "require": "./dist/lib/rx.cjs",
       "default": "./dist/lib/rx.js"
+    },
+    "./signal-next": {
+      "development": "./src/lib/signal/graph/signal-next.ts",
+      "types": "./dist/lib/signal/graph/signal-next.d.ts",
+      "import": "./dist/lib/signal/graph/signal-next.mjs",
+      "require": "./dist/lib/signal/graph/signal-next.cjs",
+      "default": "./dist/lib/signal/graph/signal-next.js"
     }
   },
   "scripts": {

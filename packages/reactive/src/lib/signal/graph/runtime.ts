@@ -75,13 +75,21 @@ export function provide<T, R>(context: Context<T>, value: T, fn: () => R): R {
   }
 }
 
-// ── Suspend hook (injected by the Suspense layer; TC39/L1 stays decoupled) ───
+// ── Suspend / error hooks (injected by the boundary layers; L1 stays decoupled) ──
 let onSuspend: ((promise: Promise<unknown>, owner: Owner | null) => void) | null = null;
 /** Register how a thrown promise (a suspended read) is reported to a boundary. */
 export function setSuspendHandler(
   fn: ((promise: Promise<unknown>, owner: Owner | null) => void) | null,
 ): void {
   onSuspend = fn;
+}
+
+let onError: ((error: unknown, owner: Owner | null) => boolean) | null = null;
+/** Register how a thrown error is routed to an error boundary. Return true if handled. */
+export function setErrorHandler(
+  fn: ((error: unknown, owner: Owner | null) => boolean) | null,
+): void {
+  onError = fn;
 }
 
 export function getOwner(): Owner | null {
@@ -241,6 +249,8 @@ class EffectNode {
         onSuspend(e as Promise<unknown>, this.owner);
         return;
       }
+      // Route a real error to the nearest error boundary; rethrow if none handled it.
+      if (onError && onError(e, this.owner)) return;
       throw e;
     }
   }
