@@ -16,6 +16,8 @@
  * actually changed (equality-gated). Reads outside a tracking scope don't subscribe.
  */
 
+import { G } from './state.js';
+
 // Node states. CHECK = "a source may have changed — verify on read" (your STALE);
 // DIRTY = "definitely recompute"; CLEAN = "cached value is current".
 const CLEAN = 0;
@@ -23,11 +25,8 @@ const CHECK = 1;
 const DIRTY = 2;
 type NodeState = typeof CLEAN | typeof CHECK | typeof DIRTY;
 
-/** The computation currently evaluating — reads inside it subscribe to it. (was `Listener`) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let currentConsumer: Computed<any> | null = null;
-/** When true, reads don't subscribe (untrack / peeking). */
-let currentlyUntracked = false;
+// The current consumer + untrack flag live on the shared globalThis-backed state (G)
+// so duplicate module copies share one graph. `consumer`/`untracked` proxy them.
 
 /** A thing that can be depended upon: holds observers + a monotonic version. */
 abstract class Source {
@@ -44,8 +43,8 @@ abstract class Source {
 
   /** Link the current consumer (if any) as an observer of this node. */
   protected track(): void {
-    if (currentlyUntracked) return;
-    const consumer = currentConsumer;
+    if (G.untracked) return;
+    const consumer = G.consumer;
     if (!consumer) return;
     (this.observers ??= new Set()).add(consumer);
     (consumer.sources ??= new Set()).add(this);
@@ -104,7 +103,7 @@ export class Computed<T> extends Source {
 
   get(): T {
     // Cycle guard: a computed reading itself.
-    if (currentConsumer === this) {
+    if (G.consumer === this) {
       throw new Error('Signal.Computed cannot read itself');
     }
     this.track();
@@ -135,10 +134,10 @@ export class Computed<T> extends Source {
       for (const s of this.sources) s.observers?.delete(this);
       this.sources.clear();
     }
-    const prevConsumer = currentConsumer;
-    const prevUntracked = currentlyUntracked;
-    currentConsumer = this;
-    currentlyUntracked = false;
+    const prevConsumer = G.consumer;
+    const prevUntracked = G.untracked;
+    G.consumer = this;
+    G.untracked = false;
     let next: T;
     let threw = false;
     let err: unknown;
@@ -149,8 +148,8 @@ export class Computed<T> extends Source {
       err = e;
       next = this._value as T;
     } finally {
-      currentConsumer = prevConsumer;
-      currentlyUntracked = prevUntracked;
+      G.consumer = prevConsumer;
+      G.untracked = prevUntracked;
     }
 
     const changed =
@@ -245,18 +244,18 @@ export class Watcher {
 
 /** Signal.subtle.untrack — run `fn` without subscribing the current consumer. */
 export function untrack<T>(fn: () => T): T {
-  if (currentlyUntracked) return fn();
-  currentlyUntracked = true;
+  if (G.untracked) return fn();
+  G.untracked = true;
   try {
     return fn();
   } finally {
-    currentlyUntracked = false;
+    G.untracked = false;
   }
 }
 
 /** Signal.subtle.currentComputed — the computed currently evaluating, or null. */
 export function currentComputed(): Computed<unknown> | null {
-  return currentConsumer;
+  return G.consumer;
 }
 
 /** Whether a node currently has observers/watchers (Signal.subtle.hasSinks). */

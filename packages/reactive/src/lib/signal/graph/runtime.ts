@@ -15,6 +15,7 @@
  * notify only schedules; the actual re-run (a tracked recompute) happens on flush.
  */
 import { Computed, Watcher } from './core.js';
+import { G } from './state.js';
 
 // ── Ownership (TC39 has none) ────────────────────────────────────────────────
 export interface Owner {
@@ -25,7 +26,8 @@ export interface Owner {
   contexts: Map<symbol, unknown> | null;
 }
 
-let currentOwner: Owner | null = null;
+// Owner / scheduler / boundary-hook state all live on the shared globalThis-backed G
+// (see ./state.ts) so duplicate module copies share one graph.
 
 function makeOwner(parent: Owner | null): Owner {
   return { cleanups: null, owned: null, parent, contexts: null };
@@ -43,7 +45,7 @@ export function createContext<T>(defaultValue?: T): Context<T> {
 
 /** Read the nearest provided value for `context`, or its default. */
 export function useContext<T>(context: Context<T>): T | undefined {
-  let o = currentOwner;
+  let o = G.owner;
   while (o) {
     if (o.contexts && o.contexts.has(context.id)) return o.contexts.get(context.id) as T;
     o = o.parent;
@@ -63,53 +65,51 @@ export function readContextFrom<T>(owner: Owner | null, context: Context<T>): T 
 
 /** Run `fn` in a child scope that provides `value` for `context`. */
 export function provide<T, R>(context: Context<T>, value: T, fn: () => R): R {
-  const owner = makeOwner(currentOwner);
+  const owner = makeOwner(G.owner);
   (owner.contexts = new Map()).set(context.id, value);
-  if (currentOwner) (currentOwner.owned ??= []).push(owner);
-  const prev = currentOwner;
-  currentOwner = owner;
+  if (G.owner) (G.owner.owned ??= []).push(owner);
+  const prev = G.owner;
+  G.owner = owner;
   try {
     return fn();
   } finally {
-    currentOwner = prev;
+    G.owner = prev;
   }
 }
 
 // ── Suspend / error hooks (injected by the boundary layers; L1 stays decoupled) ──
-let onSuspend: ((promise: Promise<unknown>, owner: Owner | null) => void) | null = null;
 /** Register how a thrown promise (a suspended read) is reported to a boundary. */
 export function setSuspendHandler(
   fn: ((promise: Promise<unknown>, owner: Owner | null) => void) | null,
 ): void {
-  onSuspend = fn;
+  G.onSuspend = fn;
 }
 
-let onError: ((error: unknown, owner: Owner | null) => boolean) | null = null;
 /** Register how a thrown error is routed to an error boundary. Return true if handled. */
 export function setErrorHandler(
   fn: ((error: unknown, owner: Owner | null) => boolean) | null,
 ): void {
-  onError = fn;
+  G.onError = fn;
 }
 
 export function getOwner(): Owner | null {
-  return currentOwner;
+  return G.owner;
 }
 
 export function runWithOwner<T>(owner: Owner | null, fn: () => T): T {
-  const prev = currentOwner;
-  currentOwner = owner;
+  const prev = G.owner;
+  G.owner = owner;
   try {
     return fn();
   } finally {
-    currentOwner = prev;
+    G.owner = prev;
   }
 }
 
 /** Register a teardown for the current owner scope. */
 export function onCleanup(fn: () => void): void {
-  if (!currentOwner) return; // no owner → not retained, runs never (matches Solid)
-  (currentOwner.cleanups ??= []).push(fn);
+  if (!G.owner) return; // no owner → not retained, runs never (matches Solid)
+  (G.owner.cleanups ??= []).push(fn);
 }
 
 function disposeOwner(owner: Owner): void {
@@ -125,82 +125,73 @@ function disposeOwner(owner: Owner): void {
 
 /** Create a root reactive scope with explicit disposal (TC39 has no ownership). */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
-  const owner = makeOwner(currentOwner);
-  if (currentOwner) (currentOwner.owned ??= []).push(owner);
-  const prev = currentOwner;
-  currentOwner = owner;
+  const owner = makeOwner(G.owner);
+  if (G.owner) (G.owner.owned ??= []).push(owner);
+  const prev = G.owner;
+  G.owner = owner;
   try {
     return fn(() => disposeOwner(owner));
   } finally {
-    currentOwner = prev;
+    G.owner = prev;
   }
 }
 
-// ── Scheduler (TC39 has none) ────────────────────────────────────────────────
-let queue: EffectNode[] = [];
-let scheduled = false;
-let batchDepth = 0;
-/** Pluggable host scheduler (e.g. queueMicrotask). Override for SSR/tests. */
-let hostSchedule: (run: () => void) => void = (run) =>
-  typeof queueMicrotask === 'function' ? queueMicrotask(run) : Promise.resolve().then(run);
-
+// ── Scheduler (TC39 has none) — state on G (see ./state.ts) ───────────────────
 export function setScheduler(fn: ((run: () => void) => void) | null): void {
-  hostSchedule = fn ?? ((run) => Promise.resolve().then(run));
+  G.hostSchedule = fn ?? ((run) => void Promise.resolve().then(run));
 }
 
 function enqueue(e: EffectNode): void {
   if (e.queued) return;
   e.queued = true;
-  queue.push(e);
-  if (!scheduled && batchDepth === 0) {
-    scheduled = true;
-    hostSchedule(flushSync);
+  G.queue.push(e);
+  if (!G.scheduled && G.batchDepth === 0) {
+    G.scheduled = true;
+    G.hostSchedule(flushSync);
   }
 }
 
-let flushing = false;
-
 /** Drain all pending effects now (synchronously). */
 export function flushSync(): void {
-  scheduled = false;
+  G.scheduled = false;
   // Re-entrancy guard: an effect that writes a signal during its run re-enqueues;
   // the running loop below picks that up, so a nested flushSync must be a no-op
-  // (otherwise the same queue drains twice).
-  if (flushing) return;
-  flushing = true;
+  // (otherwise the same G.queue drains twice).
+  if (G.flushing) return;
+  G.flushing = true;
   let guard = 0;
   try {
-    while (queue.length) {
+    while (G.queue.length) {
       if (++guard > 100000) throw new Error('[fluixi] effect flush did not settle (cycle?)');
-      const batchOf = queue;
-      queue = [];
+      const batchOf = G.queue;
+      G.queue = [];
       for (const e of batchOf) {
         e.queued = false;
         if (!e.disposed) e.run();
       }
     }
   } finally {
-    flushing = false;
+    G.flushing = false;
   }
 }
 
 /**
  * Run pending effects after a write completes — but only at the top level (not
  * inside a batch). A single write thus marks the WHOLE graph dirty first, then
- * flushes once (legacy-equivalent synchronous effects, glitch-free). The `flushing`
+ * flushes once (legacy-equivalent synchronous effects, glitch-free). The `G.flushing`
  * guard makes a write inside an effect a no-op here (the running loop drains it).
  */
 export function afterWrite(): void {
-  if (batchDepth === 0) flushSync();
+  if (G.batchDepth === 0) flushSync();
 }
 
 /** Group writes so dependent effects flush once, at the end. */
 export function batch<T>(fn: () => T): T {
-  batchDepth++;
+  G.batchDepth++;
   try {
     return fn();
   } finally {
-    if (--batchDepth === 0) flushSync();
+    if (--G.batchDepth === 0) flushSync();
   }
 }
 
@@ -213,11 +204,11 @@ class EffectNode {
   disposed = false;
 
   constructor(fn: () => void | (() => void)) {
-    this.owner = makeOwner(currentOwner);
+    this.owner = makeOwner(G.owner);
     // Tie disposal to the creating scope: when the parent owner tears down it must
     // fully dispose this effect (unwatch + body cleanups), not just run the body
     // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
-    if (currentOwner) (currentOwner.cleanups ??= []).push(() => this.dispose());
+    if (G.owner) (G.owner.cleanups ??= []).push(() => this.dispose());
 
     // The Computed runs the user fn inside a tracking scope + this effect's owner,
     // so reads subscribe and onCleanup/nested roots attach here.
@@ -245,12 +236,12 @@ class EffectNode {
       // A suspended read (createResource while pending) throws its promise. Report
       // it to the nearest Suspense boundary; the effect re-runs via normal
       // reactivity once the resource's state signal changes. Other errors propagate.
-      if (e && typeof (e as { then?: unknown }).then === 'function' && onSuspend) {
-        onSuspend(e as Promise<unknown>, this.owner);
+      if (e && typeof (e as { then?: unknown }).then === 'function' && G.onSuspend) {
+        G.onSuspend(e as Promise<unknown>, this.owner);
         return;
       }
       // Route a real error to the nearest error boundary; rethrow if none handled it.
-      if (onError && onError(e, this.owner)) return;
+      if (G.onError && G.onError(e, this.owner)) return;
       throw e;
     }
   }
@@ -263,7 +254,7 @@ class EffectNode {
   }
 }
 
-/** A re-running side effect. Runs once now, then again (scheduled) when deps change. */
+/** A re-running side effect. Runs once now, then again (G.scheduled) when deps change. */
 export function effect(fn: () => void | (() => void)): () => void {
   const node = new EffectNode(fn);
   return () => node.dispose();
