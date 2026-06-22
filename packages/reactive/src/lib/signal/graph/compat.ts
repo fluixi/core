@@ -21,6 +21,8 @@ import {
   afterWrite,
   flushSync,
   reportSuspend,
+  getOwner,
+  runWithOwner,
 } from './runtime.js';
 
 function isThenable(v: unknown): v is Promise<unknown> {
@@ -88,21 +90,26 @@ export function createMemo<T>(
   options?: SignalOptions<T>,
 ): Accessor<T> {
   let prev = value;
+  // Capture the owner at creation so the memo's fn (and any component it renders, e.g.
+  // a lazy route) runs under THIS scope's owner — preserving context up the owner chain
+  // even when the memo recomputes later (async SSR drain). Matches legacy memo semantics.
+  const owner = getOwner();
   const c = new Computed<T>(
-    () => {
-      try {
-        return (prev = fn(prev));
-      } catch (e) {
-        // A suspended read (resource/lazy while pending) throws its promise. Legacy
-        // memos keep their previous value and let a Suspense boundary handle it,
-        // rather than rethrowing the promise as an error.
-        if (isThenable(e)) {
-          reportSuspend(e);
-          return prev as T;
+    () =>
+      runWithOwner(owner, () => {
+        try {
+          return (prev = fn(prev));
+        } catch (e) {
+          // A suspended read (resource/lazy while pending) throws its promise. Legacy
+          // memos keep their previous value and let a Suspense boundary handle it,
+          // rather than rethrowing the promise as an error.
+          if (isThenable(e)) {
+            reportSuspend(e);
+            return prev as T;
+          }
+          throw e;
         }
-        throw e;
-      }
-    },
+      }),
     { equals: options?.equals },
   );
   const read = (() => c.get()) as Accessor<T>;
