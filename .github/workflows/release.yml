@@ -16,6 +16,7 @@ permissions:
   contents: write   # create version-bump commits and tags
   packages: write   # publish to GitHub Packages
   pull-requests: write  # open/update the "Version Packages" PR
+  actions: read     # required by the reusable CI gate (nx-set-shas / nx affected)
 
 jobs:
   # Gate: build + test + typecheck must be green before we version/publish.
