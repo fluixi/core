@@ -21,9 +21,68 @@ export interface Owner {
   cleanups: Array<() => void> | null;
   owned: Owner[] | null;
   parent: Owner | null;
+  /** Context values provided at this scope — useContext walks up the parent chain. */
+  contexts: Map<symbol, unknown> | null;
 }
 
 let currentOwner: Owner | null = null;
+
+function makeOwner(parent: Owner | null): Owner {
+  return { cleanups: null, owned: null, parent, contexts: null };
+}
+
+// ── Context (TC39 has none — lives on the owner tree) ────────────────────────
+export interface Context<T> {
+  id: symbol;
+  defaultValue: T | undefined;
+}
+
+export function createContext<T>(defaultValue?: T): Context<T> {
+  return { id: Symbol('context'), defaultValue };
+}
+
+/** Read the nearest provided value for `context`, or its default. */
+export function useContext<T>(context: Context<T>): T | undefined {
+  let o = currentOwner;
+  while (o) {
+    if (o.contexts && o.contexts.has(context.id)) return o.contexts.get(context.id) as T;
+    o = o.parent;
+  }
+  return context.defaultValue;
+}
+
+/** Read `context` starting from a specific owner chain (not the current scope). */
+export function readContextFrom<T>(owner: Owner | null, context: Context<T>): T | undefined {
+  let o = owner;
+  while (o) {
+    if (o.contexts && o.contexts.has(context.id)) return o.contexts.get(context.id) as T;
+    o = o.parent;
+  }
+  return context.defaultValue;
+}
+
+/** Run `fn` in a child scope that provides `value` for `context`. */
+export function provide<T, R>(context: Context<T>, value: T, fn: () => R): R {
+  const owner = makeOwner(currentOwner);
+  (owner.contexts = new Map()).set(context.id, value);
+  if (currentOwner) (currentOwner.owned ??= []).push(owner);
+  const prev = currentOwner;
+  currentOwner = owner;
+  try {
+    return fn();
+  } finally {
+    currentOwner = prev;
+  }
+}
+
+// ── Suspend hook (injected by the Suspense layer; TC39/L1 stays decoupled) ───
+let onSuspend: ((promise: Promise<unknown>, owner: Owner | null) => void) | null = null;
+/** Register how a thrown promise (a suspended read) is reported to a boundary. */
+export function setSuspendHandler(
+  fn: ((promise: Promise<unknown>, owner: Owner | null) => void) | null,
+): void {
+  onSuspend = fn;
+}
 
 export function getOwner(): Owner | null {
   return currentOwner;
@@ -58,7 +117,7 @@ function disposeOwner(owner: Owner): void {
 
 /** Create a root reactive scope with explicit disposal (TC39 has no ownership). */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
-  const owner: Owner = { cleanups: null, owned: null, parent: currentOwner };
+  const owner = makeOwner(currentOwner);
   if (currentOwner) (currentOwner.owned ??= []).push(owner);
   const prev = currentOwner;
   currentOwner = owner;
@@ -146,7 +205,7 @@ class EffectNode {
   disposed = false;
 
   constructor(fn: () => void | (() => void)) {
-    this.owner = { cleanups: null, owned: null, parent: currentOwner };
+    this.owner = makeOwner(currentOwner);
     // Tie disposal to the creating scope: when the parent owner tears down it must
     // fully dispose this effect (unwatch + body cleanups), not just run the body
     // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
@@ -172,7 +231,18 @@ class EffectNode {
   run(): void {
     if (this.disposed) return;
     this.watcher.getPending(); // clear pending; reading re-arms the watcher
-    this.computed.get(); // recompute if dirty (re-runs the effect body)
+    try {
+      this.computed.get(); // recompute if dirty (re-runs the effect body)
+    } catch (e) {
+      // A suspended read (createResource while pending) throws its promise. Report
+      // it to the nearest Suspense boundary; the effect re-runs via normal
+      // reactivity once the resource's state signal changes. Other errors propagate.
+      if (e && typeof (e as { then?: unknown }).then === 'function' && onSuspend) {
+        onSuspend(e as Promise<unknown>, this.owner);
+        return;
+      }
+      throw e;
+    }
   }
 
   dispose(): void {
