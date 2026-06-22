@@ -41,7 +41,7 @@ import {
   createDeferred,
   setOwner,
   getSharedConfig,
-} from '@fluixi/dom';
+} from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
 import {

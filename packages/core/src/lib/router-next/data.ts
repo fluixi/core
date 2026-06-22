@@ -137,7 +137,7 @@ export function revalidate(key: string | ((key: string) => boolean)) {
   }
 
   // Bump version to trigger reactive refresh in createAsync consumers
-  setRevalidationVersion((v) => v + 1);
+  setRevalidationVersion((v: number) => v + 1);
 }
 
 // ============================================================================

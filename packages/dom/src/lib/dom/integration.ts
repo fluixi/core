@@ -8,7 +8,7 @@
  */
 
 import { Accessor, Computation, ComputationFn, Context, EffectFn, EffectOptions, MemoOptions, 
-  RootOwner, Signal, SignalOptions, 
+  RootOwner, SignalTuple, SignalOptions, 
   SuspenseContextType, SuspenseListContextType, 
   type createStore as signalStore, type createDeferred as signalDeferred, 
   createComputed as signalComputed, setOwner as setSignalOwner } from '@fluixi/reactive';
@@ -20,7 +20,7 @@ import { CreateComponentReturnType, DevComponent, Resource, SignalSystem, StoreS
 
 export interface IntegrationOptions {
   /**
-   * Signal system to integrate
+   * SignalTuple system to integrate
    */
   signalSystem?: SignalSystem;
 
@@ -108,7 +108,7 @@ export function isIntegrationInitialized(): boolean {
 }
 
 // ============================================================================
-// Signal System Access
+// SignalTuple System Access
 // ============================================================================
 
 /**
@@ -167,7 +167,7 @@ export function createComponent<T extends (props?: any) => any, U = any>(Comp: T
   console.log('create component not found');
   return (() => Comp(props)) as any;
 }
-export function createSignal<T>(initialValue: T, options?: SignalOptions<T> | undefined): Signal<T> {
+export function createSignal<T>(initialValue: T, options?: SignalOptions<T> | undefined): SignalTuple<T> {
   if (_state.sys?.createSignal) return _state.sys.createSignal(initialValue, options);
   console.log('create signal not found');
   return [() => initialValue, () => {}];
@@ -413,7 +413,7 @@ export function isReactive(value: any): boolean {
  * Resolve a potentially reactive value
  */
 export function resolveReactive<T>(value: T | (() => T)): T {
-  // Signal accessor
+  // SignalTuple accessor
   if (typeof value === 'function' && (value as any).length === 0) {
     return (value as () => T)();
   }
@@ -577,11 +577,11 @@ export function logIntegrationStatus(): void {
   const status = getIntegrationStatus();
   console.group('🔗 DOM Integration Status');
   console.log('Initialized:', status.initialized);
-  console.log('Signal System:', status.hasSignalSystem ? '✓' : '✗');
+  console.log('SignalTuple System:', status.hasSignalSystem ? '✓' : '✗');
   console.log('Store System:', status.hasStoreSystem ? '✓' : '✗');
 
   if (status.signalFeatures) {
-    console.group('Signal Features');
+    console.group('SignalTuple Features');
     console.table(status.signalFeatures);
     console.groupEnd();
   }
