@@ -4,14 +4,8 @@
  * @version 1.0.0
  */
 
-import {
-  type Accessor,
-  type MemoOptions,
-  type EnhancedSignal,
-  createSignal,
-  createMemo,
-  createEffect,
-} from './signal.js';
+import { type Accessor, type MemoOptions, type EnhancedSignal } from './signal.js';
+import { createSignal, createMemo, createEffect } from './graph/compat.js';
 import { Observable } from '../observable/observable.js';
 
 // ============================================================================
