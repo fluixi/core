@@ -16,7 +16,7 @@ import {
 } from '@fluixi/utils/object';
 import { deepEqual } from '@fluixi/utils/compare';
 import { isFunction } from '@fluixi/utils/functions';
-import { Observable } from '@fluixi/reactive/observable';
+import { Observable } from '../observable/observable.js';
 import {
   $PROXY,
   $SIGNAL,
