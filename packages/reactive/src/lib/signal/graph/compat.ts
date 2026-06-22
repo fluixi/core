@@ -51,6 +51,8 @@ export type Signal<T> = [get: Accessor<T>, set: Setter<T>];
 export interface SignalOptions<T> {
   equals?: ((a: T, b: T) => boolean) | false;
   name?: string;
+  /** Legacy passthrough flags (ignored by the TC39 core); kept for option compatibility. */
+  internal?: boolean;
 }
 export interface MemoOptions<T> extends SignalOptions<T> {
   initial?: T;
