@@ -58,3 +58,11 @@ export {
 
 // The raw TC39 primitive surface (Signal.State / Computed / subtle.Watcher)
 export { Signal } from './index.js';
+
+// Marker symbols consumers use to detect signals/proxies (e.g. the store, which builds
+// only on the public primitives). $SIGNAL uses the global registry — identical to the
+// legacy `Symbol.for('signal')` — so detection is interoperable. Defined locally (not
+// re-exported from legacy) so signal-next has no import dependency on signal.ts here,
+// which would create an async-resolution cycle when consumers alias signal → signal-next.
+export const $SIGNAL = Symbol.for('signal');
+export const $PROXY = Symbol.for('fluixi-proxy');
