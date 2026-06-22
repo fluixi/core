@@ -20,7 +20,12 @@ import {
   setScheduler,
   afterWrite,
   flushSync,
+  reportSuspend,
 } from './runtime.js';
+
+function isThenable(v: unknown): v is Promise<unknown> {
+  return !!v && typeof (v as { then?: unknown }).then === 'function';
+}
 
 export { createRoot, onCleanup, getOwner, setOwner, runWithOwner } from './runtime.js';
 
@@ -83,7 +88,23 @@ export function createMemo<T>(
   options?: SignalOptions<T>,
 ): Accessor<T> {
   let prev = value;
-  const c = new Computed<T>(() => (prev = fn(prev)), { equals: options?.equals });
+  const c = new Computed<T>(
+    () => {
+      try {
+        return (prev = fn(prev));
+      } catch (e) {
+        // A suspended read (resource/lazy while pending) throws its promise. Legacy
+        // memos keep their previous value and let a Suspense boundary handle it,
+        // rather than rethrowing the promise as an error.
+        if (isThenable(e)) {
+          reportSuspend(e);
+          return prev as T;
+        }
+        throw e;
+      }
+    },
+    { equals: options?.equals },
+  );
   const read = (() => c.get()) as Accessor<T>;
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
   return read;
