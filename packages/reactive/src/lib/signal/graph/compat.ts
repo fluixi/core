@@ -161,7 +161,17 @@ export function useTransition(): [() => boolean, (fn: () => void) => Promise<voi
 }
 
 /** Force any pending effects to run now. */
-export { flushSync as flush };
+export { flushSync };
+
+/**
+ * flush — drain pending effects, returning a Promise (legacy `flush()` is async; many
+ * callers do `flush().then(...)`). Effects already flush synchronously on each write via
+ * afterWrite, so this just settles any remainder and resolves.
+ */
+export function flush(): Promise<void> {
+  flushSync();
+  return Promise.resolve();
+}
 
 /**
  * on(deps, fn, { defer }) — an explicit-dependency helper. Reads `deps` (tracked),

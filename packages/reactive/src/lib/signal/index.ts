@@ -1,11 +1,11 @@
-export * from './signal.js';
-export * from './utilities.js';
-export * from './cached-resource.js';
-export * from './list.js';
-
-// L0 — the TC39-shaped graph core (Signal.State / Computed / subtle.Watcher).
-// Additive: the existing createSignal/createMemo/createEffect API is unchanged and
-// will be re-pointed onto this core in a later increment.
-export { Signal } from './graph/index.js';
-
-// export { createDeferred } from './utilities.js';
+/**
+ * `@fluixi/reactive/signal` — now the TC39 core. This re-exports the complete reactive
+ * API running on the TC39 Signals graph (graph/signal-next.ts): the full legacy surface
+ * with the core primitives (createSignal/createMemo/createEffect/createRoot/…) swapped to
+ * the new graph, plus `Signal.State`/`Computed`/`subtle.Watcher`, resources, Suspense,
+ * context, and error boundaries.
+ *
+ * The pre-TC39 implementation is preserved, byte-for-byte, behind the explicit
+ * `@fluixi/reactive/signal-legacy` entry (./index-legacy.ts).
+ */
+export * from './graph/signal-next.js';

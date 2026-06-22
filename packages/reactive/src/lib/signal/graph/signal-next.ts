@@ -10,7 +10,20 @@
  * Coverage: signals, memos, effects, computed, render effects, roots, ownership,
  * batch, untrack, on, transitions (minimal), context, resources (+ SSR seeding),
  * Suspense, and error boundaries — all on the TC39 graph.
+ *
+ * As a complete drop-in for `@fluixi/reactive/signal`, it first re-exports the FULL
+ * legacy surface (operators, list helpers, schedulers, etc.), then OVERRIDES the core
+ * reactive primitives below with the TC39 implementations — explicit named re-exports
+ * take precedence over this star, so consumers get the new core for those. (Legacy
+ * operators that still hold their own module state run on the legacy graph until ported.)
+ *
+ * The legacy surface is pulled from the SOURCE modules directly (not `../index.js`, which
+ * now re-exports THIS file — importing it here would be a cycle).
  */
+export * from '../signal.js';
+export * from '../utilities.js';
+export * from '../cached-resource.js';
+export * from '../list.js';
 
 // Core primitives + scheduling (L2 compat over L0/L1)
 export {
@@ -29,10 +42,10 @@ export {
   flush,
   startTransition,
   useTransition,
-  type Accessor,
-  type Setter,
-  type Signal as SignalTuple,
-  type SignalOptions,
+  // Note: the value re-exports above override the legacy ones from `export *`, but the
+  // TYPE re-exports are intentionally NOT pulled from compat — the legacy `Accessor`/
+  // `Signal`/`SignalOptions` types (a superset, incl. `toObservable`) win, so consumers
+  // like the store keep type-checking. (Runtime is identical; only the surface type differs.)
 } from './compat.js';
 
 // Context (owner-tree)

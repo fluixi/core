@@ -1,4 +1,4 @@
-import { batch, createEffect, createMemo } from '../signal/index.js';
+import { batch, createEffect, createMemo } from '@fluixi/reactive/signal';
 import { createStore, unwrap } from './store.js';
 
 interface Base {

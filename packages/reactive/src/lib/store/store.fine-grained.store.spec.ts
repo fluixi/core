@@ -15,7 +15,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore } from './store.js';
-import { createEffect, createMemo, batch } from '../signal/signal.js';
+import { createEffect, createMemo, batch } from '@fluixi/reactive/signal';
 
 describe('Store Fine-Grained Reactivity', () => {
   describe('Property-Level Tracking', () => {

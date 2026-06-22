@@ -86,6 +86,13 @@
       "import": "./dist/lib/signal/graph/signal-next.mjs",
       "require": "./dist/lib/signal/graph/signal-next.cjs",
       "default": "./dist/lib/signal/graph/signal-next.js"
+    },
+    "./signal-legacy": {
+      "development": "./src/lib/signal/index-legacy.ts",
+      "types": "./dist/lib/signal/index-legacy.d.ts",
+      "import": "./dist/lib/signal/index-legacy.mjs",
+      "require": "./dist/lib/signal/index-legacy.cjs",
+      "default": "./dist/lib/signal/index-legacy.js"
     }
   },
   "scripts": {
