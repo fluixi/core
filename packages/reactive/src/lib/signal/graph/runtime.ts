@@ -37,10 +37,19 @@ function makeOwner(parent: Owner | null): Owner {
 export interface Context<T> {
   id: symbol;
   defaultValue: T | undefined;
+  /** Component that stamps `value` for descendants: `<Ctx.Provider value=… >children</…>`. */
+  Provider: (props: { value: T; children?: unknown }) => unknown;
 }
 
 export function createContext<T>(defaultValue?: T): Context<T> {
-  return { id: Symbol('context'), defaultValue };
+  const id = Symbol('context');
+  const Provider = (props: { value: T; children?: unknown }): unknown => {
+    // Stamp the value on the current owner; descendants rendered under it (or its
+    // children) resolve it via useContext walking up the owner chain.
+    if (G.owner) (G.owner.contexts ??= new Map()).set(id, props.value);
+    return props.children;
+  };
+  return { id, defaultValue, Provider };
 }
 
 /** Read the nearest provided value for `context`, or its default. */
