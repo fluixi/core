@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRoot, createSignal, onCleanup } from './signal.js';
+import { createRoot, createSignal, onCleanup } from '@fluixi/reactive/signal';
 import { mapArray, keyArray, indexArray } from './list.js';
 
 describe('mapArray (reference-keyed)', () => {

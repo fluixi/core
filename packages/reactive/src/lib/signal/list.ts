@@ -8,7 +8,7 @@
  * this is what keeps list items owner-stable (the thing ad-hoc array handling gets
  * wrong).
  */
-import { type Accessor, createMemo, createRoot, createSignal, onCleanup, untrack } from './signal.js';
+import { type Accessor, createMemo, createRoot, createSignal, onCleanup, untrack } from './graph/compat.js';
 
 type ListSource<T> = Accessor<readonly T[] | null | undefined | false>;
 
