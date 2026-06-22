@@ -8,7 +8,7 @@ name: Release
 # from the stable `latest` line on main.
 on:
   push:
-    branches: [main, next]
+    branches: [main, next, alpha]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
