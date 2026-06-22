@@ -18,7 +18,10 @@ import  {
 } from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
 import { isComponent } from '../component/modifiers.js';
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, resolveChildren, untrack } from './integration.js';
+// Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
+// this duplication-safe). The integration bridge is only for framework-provided glue that is
+// NOT in the reactive core (e.g. createComponent).
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, childrens as resolveChildren, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   ServerElement,
