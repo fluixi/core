@@ -18,7 +18,7 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
-      "exclude": ["docs/*"],
+      "exclude": ["docs/*", "packages/create/template-*/**"],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
@@ -33,6 +33,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
+      "exclude": ["packages/create/template-*/**"],
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",

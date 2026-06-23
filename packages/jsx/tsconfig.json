@@ -7,9 +7,6 @@
       "path": "../reactive"
     },
     {
-      "path": "../lit"
-    },
-    {
       "path": "../dom"
     },
     {

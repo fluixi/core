@@ -38,6 +38,12 @@
     },
     {
       "path": "./packages/server"
+    },
+    {
+      "path": "./packages/start"
+    },
+    {
+      "path": "./packages/cli"
     }
   ]
 }
