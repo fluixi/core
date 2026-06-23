@@ -12,7 +12,8 @@
       "@fluixi/core",
       "@fluixi/compiler",
       "@fluixi/lit",
-      "@fluixi/vite-plugin"
+      "@fluixi/vite-plugin",
+      "@fluixi/session"
     ]
   ],
   "linked": [],
