@@ -30,7 +30,9 @@ export {
   runWithRequestContext,
   getRequestContext,
   getRequestEvent,
+  getLocals,
   type RequestStore,
   type RequestContext,
   type RequestEvent,
+  type RequestLocals,
 } from './request-context.js';

@@ -12,6 +12,18 @@
  * for a single sync render; concurrency isolation comes from the injected ALS.
  */
 
+/**
+ * Per-request mutable bag for data middleware attaches and loaders / server functions /
+ * the render read back (e.g. the authenticated user). Augment it from app/binding code:
+ *
+ *   declare module '@fluixi/dom' {
+ *     interface RequestLocals { auth?: { user: User | null } }
+ *   }
+ */
+export interface RequestLocals {
+  [key: string]: unknown;
+}
+
 export interface RequestEvent {
   /** request URL/path being rendered */
   url?: string;
@@ -19,6 +31,8 @@ export interface RequestEvent {
   request?: unknown;
   /** response headers/status the render wants to set */
   responseHeaders?: Record<string, string>;
+  /** Mutable per-request data set by middleware, read by loaders/server fns/render. */
+  locals?: RequestLocals;
   [key: string]: unknown;
 }
 
@@ -79,6 +93,7 @@ export function setRequestStore(store: RequestStore | null): void {
 }
 
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
+  if (!event.locals) event.locals = {}; // ensure the locals bag exists for this request
   let id = 0;
   let rid = 0;
   // Active island scope (namespace) and a per-namespace resource counter, so each island's
@@ -126,4 +141,16 @@ export function getRequestContext(): RequestContext | undefined {
 
 export function getRequestEvent(): RequestEvent | undefined {
   return getRequestContext()?.event;
+}
+
+/**
+ * The current request's mutable `locals` bag (created if absent). Returns a fresh empty
+ * object when called outside a request context, so reads never throw. This is the seam
+ * middleware writes (e.g. `getLocals().auth = …`) and loaders / server functions read.
+ */
+export function getLocals(): RequestLocals {
+  const event = getRequestEvent();
+  if (!event) return {};
+  if (!event.locals) event.locals = {};
+  return event.locals;
 }
