@@ -74,6 +74,9 @@ function askSelect(label: string, choices: Choice[]): Promise<string> {
     const finish = () => {
       input.off('keypress', onKey);
       if (input.isTTY) input.setRawMode(false);
+      // emitKeypressEvents() resumed stdin to read keys; pause it again or the
+      // live stdin handle keeps the event loop alive and the CLI never exits.
+      input.pause();
       output.write(`${BAR}\n`);
     };
     input.on('keypress', onKey);
