@@ -1,0 +1,76 @@
+{
+  "name": "@fluixi/auth",
+  "version": "1.0.0-alpha.24",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "description": "Server-first auth for Fluixi — native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./server": {
+      "development": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.cjs",
+      "default": "./dist/server.js"
+    },
+    "./client": {
+      "development": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.mjs",
+      "require": "./dist/client.cjs",
+      "default": "./dist/client.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "*",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
+    "@fluixi/start": "workspace:*",
+    "cross-env": "^7.0.3",
+    "inquirer": "^14.0.2"
+  },
+  "peerDependencies": {
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
+    "@fluixi/start": "workspace:*",
+    "better-auth": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "@fluixi/server": {
+      "optional": true
+    },
+    "@fluixi/start": {
+      "optional": true
+    },
+    "better-auth": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/auth"
+  }
+}

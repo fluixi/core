@@ -1,0 +1,9 @@
+dist
+tmp
+out-tsc
+node_modules
+out/
+/coverage
+.DS_Store
+.npmrc
+vite.config.*.timestamp*
