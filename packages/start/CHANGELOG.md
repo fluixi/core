@@ -1,5 +1,14 @@
 # @fluixi/start
 
+## 0.1.0-alpha.11
+
+### Patch Changes
+
+- Updated dependencies [12dd974]
+  - @fluixi/core@1.0.0-alpha.21
+  - @fluixi/compiler@1.0.0-alpha.21
+  - @fluixi/server@1.0.0-alpha.21
+
 ## 0.1.0-alpha.10
 
 ### Patch Changes

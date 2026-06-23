@@ -48,6 +48,7 @@
     "ir-component-props",
     "island-resource-seeding",
     "islands",
+    "iso-export-barrel",
     "isomorphic-state",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
