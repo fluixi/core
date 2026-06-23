@@ -1,5 +1,22 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.21
+
+### Patch Changes
+
+- 12dd974: Fix: export `createIsomorphicState` from the public barrel. It was added to `lib/index.ts`,
+  but the package entry re-exports `lib/core.ts`, so `alpha.20` shipped the implementation
+  without exposing it on `@fluixi/core`. Re-exported from `lib/core.ts` so consumers can
+  actually import it.
+  - @fluixi/utils@1.0.0-alpha.21
+  - @fluixi/reactive@1.0.0-alpha.21
+  - @fluixi/dom@1.0.0-alpha.21
+  - @fluixi/jsx@1.0.0-alpha.21
+  - @fluixi/compiler@1.0.0-alpha.21
+  - @fluixi/lit@1.0.0-alpha.21
+  - @fluixi/vite-plugin@1.0.0-alpha.21
+  - @fluixi/server@1.0.0-alpha.21
+
 ## 1.0.0-alpha.20
 
 ### Minor Changes
