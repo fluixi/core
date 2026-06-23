@@ -123,12 +123,41 @@ export function renderRequest(app: (props: { url: string }) => any, event: Reque
   return renderToString(() => app({ url: event.url ?? '/' }), { event });
 }
 
+// Isomorphic request state (paired with @fluixi/core's createIsomorphicState). The
+// two halves communicate only through this globalThis registry — no import edge, so
+// the client half stays free of this server module.
+const ISO_REGISTRY_KEY = '__fluixi_iso_states__';
+const ISO_SEED_PREFIX = '__iso:';
+
+/**
+ * Resolve every registered isomorphic state for THIS request (before the app renders):
+ * run its `server(event)` resolver, set its signal so the server render reads the value,
+ * and stash it in the request data so it serializes into `window.__FX_DATA__` and the
+ * client seeds from the same value (no hydration mismatch, no refetch). Passed as the
+ * `preload` hook to the renderer; runs inside the request context.
+ */
+export async function preloadServerState(event?: RequestEvent): Promise<void> {
+  const reg = (globalThis as any)[ISO_REGISTRY_KEY] as
+    | Map<string, { server: (e: any) => any; set: (v: any) => void }>
+    | undefined;
+  if (!reg || reg.size === 0) return;
+  const ctx = getRequestContext();
+  for (const [key, st] of reg) {
+    const value = await st.server(event);
+    st.set(value); // populate the signal for the server render
+    ctx?.data.set(ISO_SEED_PREFIX + key, value); // → client seed
+  }
+}
+
 /** Async variant — awaits resources/Suspense before serializing. */
 export function renderRequestAsync(
   app: (props: { url: string }) => any,
   event: RequestEvent,
 ): Promise<string> {
-  return renderToStringAsync(() => app({ url: event.url ?? '/' }), { event });
+  return renderToStringAsync(() => app({ url: event.url ?? '/' }), {
+    event,
+    preload: preloadServerState,
+  });
 }
 
 /** Render a full HTML document for a request. */
