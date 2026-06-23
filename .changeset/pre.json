@@ -48,6 +48,7 @@
     "ir-component-props",
     "island-resource-seeding",
     "islands",
+    "isomorphic-state",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
     "lit-out-of-core-ssr-crash",
@@ -77,6 +78,7 @@
     "start-streaming-ssr",
     "start-ts-config",
     "tc39-signal-core",
+    "tc39-type-regressions",
     "use-navigate-ssr-safe"
   ]
 }

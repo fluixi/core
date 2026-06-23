@@ -1,5 +1,14 @@
 # @fluixi/lit
 
+## 1.0.0-alpha.20
+
+### Patch Changes
+
+- Updated dependencies [8640cac]
+- Updated dependencies [3043097]
+  - @fluixi/dom@1.0.0-alpha.20
+  - @fluixi/reactive@1.0.0-alpha.20
+
 ## 1.0.0-alpha.19
 
 ### Patch Changes
