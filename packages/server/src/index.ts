@@ -23,6 +23,7 @@ import {
   setDataRedactor,
   getRequestEvent,
   getRequestContext,
+  getLocals,
   runWithRequestContext,
   createRequestContext,
   setRequestStore,
@@ -42,13 +43,14 @@ export {
   setDataRedactor,
   getRequestEvent,
   getRequestContext,
+  getLocals,
   runWithRequestContext,
   createRequestContext,
   setRequestStore,
   isServer,
   setServerMode,
 };
-export type { RequestContext, RequestEvent, RequestStore, RenderOptions } from '@fluixi/dom';
+export type { RequestContext, RequestEvent, RequestLocals, RequestStore, RenderOptions } from '@fluixi/dom';
 
 export interface DocumentOptions {
   title?: string;
