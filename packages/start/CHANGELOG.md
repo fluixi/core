@@ -1,5 +1,13 @@
 # @fluixi/start
 
+## 0.1.0-alpha.9
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.19
+- @fluixi/core@1.0.0-alpha.19
+- @fluixi/server@1.0.0-alpha.19
+
 ## 0.1.0-alpha.8
 
 ### Patch Changes
