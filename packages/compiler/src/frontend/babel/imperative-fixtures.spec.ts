@@ -386,6 +386,32 @@ const FIXTURES: Fixture[] = [
       });
     },
   },
+  {
+    // Regression: a resource rendered through control flow. The resource accessor
+    // must be isResource/isSignal-detectable so Show's `.loading` gate and insert's
+    // reactive read work — otherwise it freezes on the fallback (compat dropped the
+    // $RESOURCE/$SIGNAL markers; this guards them end-to-end through the codegen).
+    name: 'Show gated on resource loading',
+    src: `import { Show } from '@fluixi/dom';
+          export const render = (data) => <Show when={() => !data.loading} fallback={<p class="load">loading</p>}>{() => <p class="val">{data()}</p>}</Show>;`,
+    run: async (mod) => {
+      await S.createRoot(async () => {
+        let resolve!: (v: string) => void;
+        const p = new Promise<string>((r) => { resolve = r; });
+        const [data] = S.createResource(() => p);
+        const host = document.createElement('div');
+        DOM.insert(host, mod.render(data));
+        expect(host.querySelector('.load')).toBeTruthy();
+        expect(host.querySelector('.val')).toBeNull();
+        resolve('OK');
+        await p.catch(() => {});
+        await S.flush();
+        await S.flush();
+        expect(host.querySelector('.val')).toBeTruthy();
+        expect(host.textContent).toContain('OK');
+      });
+    },
+  },
 ];
 
 for (const [label, opts] of [['inline', INLINE], ['ir', IR]] as const) {
