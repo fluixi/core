@@ -87,6 +87,9 @@ export {
   clientOnly,
 } from './env/index.js';
 
+// Theme store — detect → persist → apply → toggle + no-flash head script.
+export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
+
 export * from '@fluixi/utils';
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
