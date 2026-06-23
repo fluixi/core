@@ -38,12 +38,15 @@ export interface Context<T> {
   id: symbol;
   defaultValue: T | undefined;
   /** Component that stamps `value` for descendants: `<Ctx.Provider value=… >children</…>`. */
-  Provider: (props: { value: T; children?: unknown; debug?: boolean }) => unknown;
+  // Returns `any` (not `unknown`) so a component whose body is `return Ctx.Provider(…)`
+  // — e.g. <Router> — stays a valid JSX component. `unknown` is not assignable to the
+  // JSX element type, which surfaced as TS2786 "X cannot be used as a JSX component".
+  Provider: (props: { value: T; children?: unknown; debug?: boolean }) => any;
 }
 
 export function createContext<T>(defaultValue?: T): Context<T> {
   const id = Symbol('context');
-  const Provider = (props: { value: T; children?: unknown; debug?: boolean }): unknown => {
+  const Provider = (props: { value: T; children?: unknown; debug?: boolean }): any => {
     // Stamp the value on the current owner; descendants rendered under it (or its
     // children) resolve it via useContext walking up the owner chain.
     if (G.owner) (G.owner.contexts ??= new Map()).set(id, props.value);
