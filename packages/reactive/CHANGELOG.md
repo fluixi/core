@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.25
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.25
+
 ## 1.0.0-alpha.24
 
 ### Patch Changes
