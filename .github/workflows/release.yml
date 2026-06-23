@@ -59,15 +59,10 @@ jobs:
       # on a nested scaffolding template (packages/create/template-spa/vite.config.ts);
       # pnpm only runs each package's `test` script and never touches that config.
       #
-      # Exclusions:
-      #  - @fluixi/compiler: its imperative-fixtures suite has 10 pre-existing
-      #    control-flow failures (For/Switch/Index/Dynamic) from the in-progress
-      #    imperative codegen work — they predate this gate and must be fixed on
-      #    their own, not block every prerelease. Re-include once green.
-      #  - @fluixi/cli: has a `test` script but no test files, so `vitest run`
-      #    exits 1 ("no test files"). Re-include once it has tests.
+      # Exclusion: @fluixi/cli has a `test` script but no test files, so
+      # `vitest run` exits 1 ("no test files"). Re-include once it has tests.
       - name: Test
-        run: pnpm -r --filter "./packages/*" --filter "!@fluixi/compiler" --filter "!@fluixi/cli" test
+        run: pnpm -r --filter "./packages/*" --filter "!@fluixi/cli" test
 
   release:
     name: Version or publish

@@ -115,6 +115,11 @@ export function createMemo<T>(
     { equals: options?.equals },
   );
   const read = (() => c.get()) as Accessor<T>;
+  // A memo IS a readable reactive accessor — stamp $SIGNAL (matching the legacy
+  // createMemo) so `isSignal(memo)` is true. Without this, the DOM runtime's
+  // insert() fails to recognise a control-flow memo (For/Switch/Index/Dynamic)
+  // as reactive, caches it as a component, and freezes it → updates never apply.
+  Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
   return read;
 }
