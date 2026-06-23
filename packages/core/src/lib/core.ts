@@ -65,6 +65,14 @@ import {
 import { createContext, useContext } from './context/index.js';
 export * from './context/index.js';
 
+// Isomorphic request state (server-resolved → serialized → client-seeded). Public
+// barrel is lib/core.ts (src/index.ts re-exports it), so the export must live here.
+export {
+  createIsomorphicState,
+  type IsomorphicState,
+  type IsomorphicOptions,
+} from './isomorphic.js';
+
 export * from '@fluixi/utils';
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
