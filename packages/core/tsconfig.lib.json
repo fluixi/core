@@ -26,6 +26,9 @@
       "path": "../utils/tsconfig.lib.json"
     },
     {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
       "path": "../router/tsconfig.lib.json"
     },
     {

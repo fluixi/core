@@ -10,5 +10,28 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "fluixi.config.mjs", "vite.config.ts"]
+  "include": ["src", "fluixi.config.mjs", "vite.config.ts"],
+  "references": [
+    {
+      "path": "../../packages/jsx"
+    },
+    {
+      "path": "../../packages/server"
+    },
+    {
+      "path": "../../packages/dom"
+    },
+    {
+      "path": "../../packages/reactive"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/cli"
+    },
+    {
+      "path": "../../packages/start"
+    }
+  ]
 }

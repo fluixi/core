@@ -15,10 +15,16 @@
     "lib": ["es2022", "dom"]
   },
   "include": ["src/**/*.ts"],
-  "references": [],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "dist"
-  ]
+  "references": [
+    {
+      "path": "../compiler/tsconfig.lib.json"
+    },
+    {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
+      "path": "../core/tsconfig.lib.json"
+    }
+  ],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist"]
 }

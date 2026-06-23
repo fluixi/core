@@ -4,6 +4,15 @@
   "include": [],
   "references": [
     {
+      "path": "../compiler"
+    },
+    {
+      "path": "../server"
+    },
+    {
+      "path": "../core"
+    },
+    {
       "path": "./tsconfig.lib.json"
     }
   ]
