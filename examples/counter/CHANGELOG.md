@@ -1,5 +1,14 @@
 # @fluixi/example-counter
 
+## 0.0.5-alpha.22
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.22
+- @fluixi/reactive@1.0.0-alpha.22
+- @fluixi/dom@1.0.0-alpha.22
+- @fluixi/jsx@1.0.0-alpha.22
+
 ## 0.0.5-alpha.21
 
 ### Patch Changes
