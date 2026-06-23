@@ -1,5 +1,34 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.19
+
+### Patch Changes
+
+- e6ad857: Fix control-flow reactivity on the TC39 signal core: stamp `$SIGNAL` on `createMemo`
+  accessors.
+
+  The compat `createMemo` only marked its accessor with `$MEMO`, not `$SIGNAL`, so
+  `isSignal(memo)` returned `false` (the legacy `createMemo` stamped both). The DOM
+  runtime's `insert()` relies on `isSignal` to recognise a control-flow memo
+  (`For`/`Switch`/`Index`/`Dynamic`) as reactive; without it the memo fell into the
+  component cache and was frozen after first render — initial output was correct but
+  updates never applied. Stamping `$SIGNAL` (matching the legacy memo) restores
+  fine-grained updates for all control-flow components. Fixes the 10 `@fluixi/compiler`
+  imperative-fixtures failures.
+
+- f2e3b2a: Fix resource reactivity/detection on the TC39 signal core: stamp `$RESOURCE` and
+  `$SIGNAL` on `createResource` accessors.
+
+  The compat `createResource` stamped neither marker, so `isResource()` and
+  `isSignal()` both returned `false` (the legacy `createResource` stamps both). The
+  DOM runtime/control-flow use these: `isResource` gates `Show` on a resource's
+  `.loading`, and `isSignal` lets `insert()` read the resource reactively instead of
+  caching/freezing it. Without the markers a resource rendered through control flow
+  wouldn't show its fallback while loading and wouldn't update once resolved. Sibling
+  of the `createMemo` `$SIGNAL` fix; restores legacy detection parity.
+
+  - @fluixi/utils@1.0.0-alpha.19
+
 ## 1.0.0-alpha.18
 
 ### Minor Changes

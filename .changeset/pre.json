@@ -26,6 +26,7 @@
   "changesets": [
     "cli-generate",
     "cli-ux-redesign",
+    "create-exit-hang",
     "create-fluixi",
     "create-ssr-tsconfig-fix",
     "dispose-no-rerun",
@@ -51,6 +52,7 @@
     "lazy-suspense-async-ssr",
     "lit-out-of-core-ssr-crash",
     "map-array",
+    "memo-issignal-marker",
     "peer-runtime-singletons",
     "props-children-async",
     "provider-lazy-children",
@@ -59,6 +61,7 @@
     "rename-kettlejs-to-core",
     "render-stream",
     "resource-data-transport",
+    "resource-detection-markers",
     "retire-old-router",
     "router-outlet-async-ssr",
     "serialize-in-root-owner",
