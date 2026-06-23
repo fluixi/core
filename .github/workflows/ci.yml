@@ -64,13 +64,13 @@ jobs:
         env:
           NODE_ENV: production
 
-      # Exclude @fluixi/cli (no test files yet → vitest exits 1) and the example apps.
-      # Examples pin @fluixi/* to published dist-tags, so their tests run against the
-      # LAST PUBLISHED release, not this PR's code — a Version PR that fixes a bug would
-      # be blocked by examples still testing the old published (buggy) version. They're
-      # consumer fixtures, validated post-publish, not a gate on the source under review.
+      # Examples use workspace:* deps, so their tests DO validate this PR's source —
+      # they're real regression gates and stay IN. (Two known pre-existing failures are
+      # `it.skip`-ped with tracking notes in the example specs, not hidden here.)
+      # Only @fluixi/cli is excluded: it has a `test` script but no test files, so
+      # `vitest run` exits 1.
       - name: Test affected
-        run: pnpm nx affected -t test --parallel=3 --exclude=@fluixi/cli,@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start
+        run: pnpm nx affected -t test --parallel=3 --exclude=@fluixi/cli
 
       # The examples are vite/vitest regression fixtures (noEmit, non-composite), so
       # the inferred `tsc --build --emitDeclarationOnly` typecheck doesn't apply to
