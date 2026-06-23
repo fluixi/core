@@ -1,5 +1,12 @@
 # @fluixi/lit
 
+## 1.0.0-alpha.23
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.23
+- @fluixi/dom@1.0.0-alpha.23
+
 ## 1.0.0-alpha.22
 
 ### Patch Changes
