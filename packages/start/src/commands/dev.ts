@@ -45,7 +45,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       return streamDocument(head, await mod.renderStream(path, request), tail);
     }
     const render = mod.render ?? mod.default;
-    const appHtml = await render(path); // sync or async
+    const appHtml = await render(path, request); // sync or async; request enables the locals bridge
     const html = await vite.transformIndexHtml(path, injectApp(template, appHtml, cfg.mountId));
     return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }, (e) => vite.ssrFixStacktrace?.(e));

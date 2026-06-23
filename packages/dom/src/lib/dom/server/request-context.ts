@@ -93,7 +93,12 @@ export function setRequestStore(store: RequestStore | null): void {
 }
 
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
-  if (!event.locals) event.locals = {}; // ensure the locals bag exists for this request
+  // Seed the locals bag: if the event carries the platform request, ADOPT the bag that
+  // middleware wrote via getRequestLocals(request) (the middleware→render bridge); else
+  // start a fresh empty one. Either way the render's getLocals() sees the right object.
+  if (!event.locals) {
+    event.locals = event.request ? getRequestLocals(event.request as object) : {};
+  }
   let id = 0;
   let rid = 0;
   // Active island scope (namespace) and a per-namespace resource counter, so each island's
@@ -153,4 +158,26 @@ export function getLocals(): RequestLocals {
   if (!event) return {};
   if (!event.locals) event.locals = {};
   return event.locals;
+}
+
+// ─── middleware → render bridge ─────────────────────────────────────────────────
+// Middleware runs on the raw platform request, OUTSIDE the render's request context.
+// This WeakMap associates a per-request locals bag with that request object; the render
+// adopts it in createRequestContext when the app forwards `request` on the event. Keyed
+// by the request, so concurrent requests stay isolated and entries GC with the request.
+const _requestLocals = new WeakMap<object, RequestLocals>();
+
+/**
+ * The mutable `locals` bag for a platform request object (created on first access).
+ * Middleware writes here (e.g. `getRequestLocals(request).auth = …`) before calling
+ * `next()`; the render then reads the same object via `getLocals()`. Pairs with the app
+ * entry forwarding `request` on the render event (`renderRequestAsync(App, { url, request })`).
+ */
+export function getRequestLocals(request: object): RequestLocals {
+  let bag = _requestLocals.get(request);
+  if (!bag) {
+    bag = {};
+    _requestLocals.set(request, bag);
+  }
+  return bag;
 }

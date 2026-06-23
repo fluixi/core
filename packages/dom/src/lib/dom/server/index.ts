@@ -31,6 +31,7 @@ export {
   getRequestContext,
   getRequestEvent,
   getLocals,
+  getRequestLocals,
   type RequestStore,
   type RequestContext,
   type RequestEvent,
