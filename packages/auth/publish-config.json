@@ -1,0 +1,4 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/src/lib/package-publisher/schemas/publish-config.schema.json",
+  "packages": ["."]
+}
