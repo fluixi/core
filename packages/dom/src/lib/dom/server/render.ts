@@ -154,8 +154,10 @@ export async function renderToStringAsync(
     return await runWithRequestContext(ctx, async () => {
       // Resolve request-scoped state (region/locale/session) BEFORE the app renders,
       // inside the request context so it can read the event and write into ctx.data
-      // for client transfer. Runs once per request.
-      await options.preload?.(options.event);
+      // for client transfer. Runs once per request. Guarded so the no-preload path
+      // keeps its original synchronous flow into createRoot (an extra `await undefined`
+      // tick here reorders the lazy/Suspense drain and breaks hydration).
+      if (options.preload) await options.preload(options.event);
       let tree: any;
       let rootOwner: any = null;
       let dispose: () => void = () => {};
