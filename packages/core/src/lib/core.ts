@@ -69,9 +69,23 @@ export * from './context/index.js';
 // barrel is lib/core.ts (src/index.ts re-exports it), so the export must live here.
 export {
   createIsomorphicState,
+  createIsomorphicStore,
   type IsomorphicState,
   type IsomorphicOptions,
+  type IsomorphicStore,
+  type IsomorphicStoreOptions,
 } from './isomorphic.js';
+
+// Universal env utilities — isomorphic storage + safe browser-global access, so app
+// modules import these instead of touching localStorage/window/document directly.
+export {
+  isServer,
+  isClient,
+  storage,
+  createMemoryStorage,
+  env,
+  clientOnly,
+} from './env/index.js';
 
 export * from '@fluixi/utils';
 // import { createContext, Provider, useContext } from './context/index.js';
