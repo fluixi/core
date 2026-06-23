@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-counter",
-  "version": "0.0.5-alpha.21",
+  "version": "0.0.5-alpha.22",
   "private": true,
   "type": "module",
   "description": "Counter example proving the Fluixi stack (vite-plugin -> compiler -> jsx-runtime -> dom) renders + reacts in a real DOM.",

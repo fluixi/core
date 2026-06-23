@@ -73,6 +73,7 @@
     "server-functions",
     "slim-integration-bridge",
     "ssr-hydration-fixes",
+    "ssr-resilience",
     "start-deploy-adapters",
     "start-middleware",
     "start-router-subpath",
