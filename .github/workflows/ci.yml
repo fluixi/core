@@ -55,8 +55,12 @@ jobs:
         env:
           NODE_ENV: production
 
+      # Exclude the example apps from the build: they're consumer fixtures that pin
+      # @fluixi/* to published dist-tags (not workspace:*), so e.g. @fluixi/example-start's
+      # `fluixi build` can't find the CLI bin in CI ("fluixi: not found"). The publishable
+      # packages are what the build must validate; examples are exercised via their tests.
       - name: Build affected
-        run: pnpm nx affected -t build --parallel=3
+        run: pnpm nx affected -t build --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start
         env:
           NODE_ENV: production
 
