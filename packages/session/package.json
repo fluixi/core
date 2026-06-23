@@ -1,0 +1,54 @@
+{
+  "name": "@fluixi/session",
+  "version": "1.0.0-alpha.23",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "description": "Client-side session lifecycle for Fluixi — createSession: bring a backend adapter, get token/user signals, isAuthenticated, persistence, hydrate and automatic token refresh. (The full server-first auth engine lives in @fluixi/auth.)",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "*",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "cross-env": "^7.0.3",
+    "inquirer": "^14.0.2"
+  },
+  "peerDependencies": {
+    "@fluixi/core": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/session"
+  }
+}
