@@ -83,6 +83,7 @@
     "start-ts-config",
     "tc39-signal-core",
     "tc39-type-regressions",
+    "theme-session-primitives",
     "use-navigate-ssr-safe"
   ]
 }
