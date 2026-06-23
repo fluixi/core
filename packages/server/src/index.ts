@@ -143,9 +143,16 @@ export async function preloadServerState(event?: RequestEvent): Promise<void> {
   if (!reg || reg.size === 0) return;
   const ctx = getRequestContext();
   for (const [key, st] of reg) {
-    const value = await st.server(event);
-    st.set(value); // populate the signal for the server render
-    ctx?.data.set(ISO_SEED_PREFIX + key, value); // → client seed
+    try {
+      const value = await st.server(event);
+      st.set(value); // populate the signal for the server render
+      ctx?.data.set(ISO_SEED_PREFIX + key, value); // → client seed
+    } catch (err) {
+      // A failing resolver (e.g. the backend is down/restarting) must NOT abort the
+      // whole render. Leave the state at its fallback, skip its seed, and let the
+      // client resolve/retry after hydration. Resilient SSR degrades, never blanks.
+      console.error(`[fluixi] isomorphic state "${key}" failed to resolve on the server:`, err);
+    }
   }
 }
 
@@ -187,15 +194,19 @@ export function renderToStream(
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      controller.enqueue(encoder.encode(documentShell(options))); // flush shell first
       try {
-        controller.enqueue(encoder.encode(documentShell(options))); // flush shell first
         const content = await renderRequestAsync(app, event); // awaits resources
         controller.enqueue(encoder.encode(content));
-        controller.enqueue(encoder.encode(documentClose(options)));
-        controller.close();
       } catch (err) {
-        controller.error(err);
+        // SSR failed (e.g. backend down). The head/shell is already flushed (status 200),
+        // so we can't send a 500. Emit an EMPTY body and still close the document so it
+        // stays well-formed and the client bundle renders the app client-side (CSR
+        // fallback) — degrade, never blank-and-truncate.
+        console.error('[fluixi] SSR render failed — falling back to client render:', err);
       }
+      controller.enqueue(encoder.encode(documentClose(options)));
+      controller.close();
     },
   });
 }
@@ -220,10 +231,14 @@ export function renderToBodyStream(
     async start(controller) {
       try {
         controller.enqueue(encoder.encode(await renderRequestAsync(app, event)));
-        controller.close();
       } catch (err) {
-        controller.error(err);
+        // SSR failed (e.g. backend down) and the host already flushed the document head.
+        // Emit an EMPTY body and close cleanly so the page stays well-formed and the
+        // client bundle renders the app client-side, instead of erroring/truncating the
+        // stream into a blank page.
+        console.error('[fluixi] SSR render failed — falling back to client render:', err);
       }
+      controller.close();
     },
   });
 }
