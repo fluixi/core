@@ -1,5 +1,14 @@
 # @fluixi/start
 
+## 0.1.0-alpha.10
+
+### Patch Changes
+
+- Updated dependencies [8640cac]
+  - @fluixi/core@1.0.0-alpha.20
+  - @fluixi/server@1.0.0-alpha.20
+  - @fluixi/compiler@1.0.0-alpha.20
+
 ## 0.1.0-alpha.9
 
 ### Patch Changes
