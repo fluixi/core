@@ -28,6 +28,13 @@ import {
 export interface RenderOptions {
   /** request being rendered — exposed to the app via getRequestEvent() */
   event?: RequestEvent;
+  /**
+   * Runs ONCE inside the request context, before the app renders. Use it to resolve
+   * request-scoped state the render depends on (region, locale, session) and seed it
+   * into the request data so the client hydrates from the same value. @fluixi/server
+   * passes `preloadServerState` here to drive `createIsomorphicState`.
+   */
+  preload?: (event?: RequestEvent) => void | Promise<void>;
 }
 
 export function renderToString(app: () => any, options: RenderOptions = {}): string {
@@ -145,6 +152,10 @@ export async function renderToStringAsync(
   const ctx = createRequestContext(options.event);
   try {
     return await runWithRequestContext(ctx, async () => {
+      // Resolve request-scoped state (region/locale/session) BEFORE the app renders,
+      // inside the request context so it can read the event and write into ctx.data
+      // for client transfer. Runs once per request.
+      await options.preload?.(options.event);
       let tree: any;
       let rootOwner: any = null;
       let dispose: () => void = () => {};

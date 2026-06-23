@@ -87,6 +87,13 @@ export {
 } from './render/index.js';
 
 export * from './context/index.js';
+
+// Isomorphic request state (server-resolved → serialized → client-seeded).
+export {
+  createIsomorphicState,
+  type IsomorphicState,
+  type IsomorphicOptions,
+} from './isomorphic.js';
 import {Component, ComponentProps, LifecycleCallback, LazyComponent, RefObject, SuspenseProps} from './render/index.js';
 export type {
   Component,
