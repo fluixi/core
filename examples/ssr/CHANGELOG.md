@@ -1,5 +1,16 @@
 # @fluixi/example-ssr
 
+## 0.0.3-alpha.22
+
+### Patch Changes
+
+- Updated dependencies [91e6e33]
+  - @fluixi/server@1.0.0-alpha.22
+  - @fluixi/core@1.0.0-alpha.22
+  - @fluixi/reactive@1.0.0-alpha.22
+  - @fluixi/dom@1.0.0-alpha.22
+  - @fluixi/jsx@1.0.0-alpha.22
+
 ## 0.0.3-alpha.21
 
 ### Patch Changes
