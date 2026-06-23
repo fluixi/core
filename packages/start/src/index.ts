@@ -28,3 +28,7 @@ export type { Adapter, AdapterContext } from './adapter.js';
 // Request middleware — a `(request, next) => Response` chain run before render.
 export { defineMiddleware, composeMiddleware, normalizeMiddleware } from './middleware.js';
 export type { Middleware, MiddlewareNext } from './middleware.js';
+// Middleware→render locals bridge: write `getRequestLocals(request).x = …` in middleware;
+// read it back in loaders/server-fns/render via getLocals() (the app entry forwards
+// `request` on the render event — `renderRequestAsync(App, { url, request })`).
+export { getRequestLocals, getLocals, type RequestLocals } from '@fluixi/server';

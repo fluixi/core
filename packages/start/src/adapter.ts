@@ -38,7 +38,9 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     };
   } else {
     const render = mod.render ?? mod.default;
-    core = createRequestHandler(async (url) => injectApp(template, await render(url), cfg.mountId));
+    core = createRequestHandler(async (url, request) =>
+      injectApp(template, await render(url, request), cfg.mountId),
+    );
   }
 
   // Server-function RPC dispatch. The entry-server module re-exports the dispatcher, so
