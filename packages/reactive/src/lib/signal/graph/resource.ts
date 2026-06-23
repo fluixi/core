@@ -178,6 +178,12 @@ export function createResource<T, S = true>(
     error: { get: error },
     latest: { get: value },
   });
+  // Stamp the detection markers the legacy createResource sets (signal.ts) so the
+  // DOM runtime/control-flow recognise a resource accessor: $RESOURCE for
+  // isResource() (e.g. Show's `.loading` gate) and $SIGNAL for isSignal() so
+  // insert() reads it reactively instead of caching/freezing it.
+  Object.defineProperty(resource, Symbol.for('resource'), { value: true, enumerable: true });
+  Object.defineProperty(resource, Symbol.for('signal'), { value: true, enumerable: true });
 
   return [
     resource,

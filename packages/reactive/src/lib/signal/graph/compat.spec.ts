@@ -165,3 +165,34 @@ describe('compat — createRoot', () => {
     expect(seen).toEqual([1, 2]);
   });
 });
+
+// Regression: the DOM runtime detects reactivity via marker symbols ($SIGNAL via
+// isSignal, $RESOURCE via isResource). insert()/control-flow treat a non-signal
+// function as a component → cache & FREEZE it after first render. The TC39 compat
+// layer once dropped these markers (memos had only $MEMO; resources had none),
+// which froze For/Switch/Index/Dynamic and resource reads after the first paint.
+// Keep them tagged to match the legacy core.
+describe('compat — reactive detection markers (legacy parity)', () => {
+  const $SIGNAL = Symbol.for('signal');
+  const $RESOURCE = Symbol.for('resource');
+
+  it('createSignal and createMemo accessors are tagged $SIGNAL', () => {
+    createRoot((d) => {
+      const [a] = createSignal(1);
+      const m = createMemo(() => a() + 1);
+      expect((a as any)[$SIGNAL]).toBe(true);
+      expect((m as any)[$SIGNAL]).toBe(true); // memos MUST be isSignal-detectable
+      d();
+    });
+  });
+
+  it('createResource accessor is tagged $RESOURCE and $SIGNAL', async () => {
+    const { createResource } = await import('./resource.js');
+    createRoot((d) => {
+      const [r] = createResource(async () => 1);
+      expect((r as any)[$RESOURCE]).toBe(true); // isResource() (Show .loading gate)
+      expect((r as any)[$SIGNAL]).toBe(true);   // isSignal() (insert reads reactively)
+      d();
+    });
+  });
+});
