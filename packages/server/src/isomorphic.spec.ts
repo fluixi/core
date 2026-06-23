@@ -36,4 +36,46 @@ describe('@fluixi/server — isomorphic request state', () => {
     delete (globalThis as any).__fluixi_iso_states__;
     await expect(preloadServerState({ url: '/' })).resolves.toBeUndefined();
   });
+
+  it('a failing resolver (backend down) does NOT abort — render still resolves', async () => {
+    (globalThis as any).__fluixi_iso_states__ = new Map();
+    register('ok', () => 'fine');
+    (globalThis as any).__fluixi_iso_states__.set('boom', {
+      server: () => Promise.reject(new Error('backend down')),
+      set: () => {},
+    });
+    // preload swallows the rejection…
+    await expect(preloadServerState({ url: '/' })).resolves.toBeUndefined();
+    // …and a render that depends on the registry still produces output.
+    const App = () => {
+      const div = createNativeElement('div') as any;
+      insert(div, () => 'still here', null);
+      return div;
+    };
+    const html = await renderRequestAsync(App, { url: '/' });
+    expect(html).toContain('still here');
+  });
+});
+
+describe('@fluixi/server — streaming SSR resilience', () => {
+  it('renderToBodyStream degrades to an empty body (no stream error) when the render throws', async () => {
+    const { renderToBodyStream } = await import('./index.js');
+    const Boom = () => {
+      throw new Error('render blew up (e.g. a rejected resource on a dead backend)');
+    };
+    const stream = renderToBodyStream(Boom as any, { url: '/' });
+    // Must NOT reject/error the stream — it closes cleanly so the client renders CSR.
+    const reader = stream.getReader();
+    let errored = false;
+    try {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+    } catch {
+      errored = true;
+    }
+    expect(errored).toBe(false);
+  });
 });
