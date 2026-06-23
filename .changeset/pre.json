@@ -50,6 +50,7 @@
     "islands",
     "iso-export-barrel",
     "isomorphic-state",
+    "isomorphic-store-env-utils",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
     "lit-out-of-core-ssr-crash",
