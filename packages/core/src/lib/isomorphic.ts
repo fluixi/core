@@ -17,7 +17,7 @@
  * That is fine for a single default value; per-user, per-request isolation wants the
  * request-scoped (AsyncLocalStorage) store — a follow-up.
  */
-import { createSignal, type Accessor } from '@fluixi/reactive/signal';
+import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
 
 const REGISTRY_KEY = '__fluixi_iso_states__';
 const SEED_PREFIX = '__iso:';
@@ -72,4 +72,106 @@ export function createIsomorphicState<T>(
   registry().set(key, { server: options.server, set: set as (v: any) => void });
 
   return { value, set: set as (v: T | undefined) => void, key };
+}
+
+// ─── createIsomorphicStore ─────────────────────────────────────────────────────
+//
+// The object-shaped sibling of createIsomorphicState: for an isomorphic value that
+// is a RECORD ({ active, list }, { region, regions }, …). It removes the boilerplate
+// that piles up when you hand-roll this on top of the single-value primitive:
+//
+//   • per-field accessors (so JSX reads `store.fields.region()`, fine-grained)
+//   • a field setter that PRESERVES the other fields (no `{ ...current, k: v }` by hand)
+//   • a built-in `ensureInit()` — memoised once + retry-on-failure — that runs the
+//     async `client` resolver exactly once on a pure-SPA cold load and is a NO-OP
+//     when the server already seeded the value (kills the duplicate cold-load fetch)
+//   • optional localStorage `persist` mirror on every write
+//
+// Server-resolve / serialize / client-seed all flow through createIsomorphicState, so
+// the @fluixi/server half (preloadServerState) needs no changes.
+
+export interface IsomorphicStore<T extends Record<string, any>> {
+  /** Reactive accessor for the whole record (always defined — falls back to `fallback`). */
+  value: Accessor<T>;
+  /** Per-field reactive accessors, one for every key of `fallback`. */
+  fields: { [K in keyof T]: Accessor<T[K]> };
+  /** Replace the whole record. */
+  set: (v: T) => void;
+  /** Update ONE field, preserving the rest. */
+  setField: <K extends keyof T>(key: K, val: T[K]) => void;
+  /**
+   * Run the async `client` resolver exactly once (memoised; the promise is reset on
+   * failure so a later call can retry). A NO-OP when the value was server-seeded — the
+   * server already resolved and transferred it, so there is nothing to fetch.
+   */
+  ensureInit: () => Promise<void>;
+  /** Stable serialization key. */
+  key: string;
+}
+
+export interface IsomorphicStoreOptions<T> {
+  /** Resolve the record on the server for THIS request (receives the RequestEvent). */
+  server: (event: any) => T | Promise<T>;
+  /** Resolve the record on a pure-SPA cold load (no server seed). Run once by ensureInit(). */
+  client?: () => T | Promise<T>;
+  /** Value before resolution / the per-field accessor key set. Required for a store. */
+  fallback: T;
+  /** localStorage key to mirror the record into on every write (optional). */
+  persist?: string;
+}
+
+export function createIsomorphicStore<T extends Record<string, any>>(
+  key: string,
+  options: IsomorphicStoreOptions<T>,
+): IsomorphicStore<T> {
+  // Whether the server transferred a value for this key (read BEFORE the base state
+  // consumes the seed). When true, ensureInit() must not refetch on the client.
+  const seeded = readSeed<T>(key) !== undefined;
+
+  const base = createIsomorphicState<T>(key, {
+    server: options.server,
+    fallback: options.fallback,
+  });
+
+  const value: Accessor<T> = () => base.value() ?? options.fallback;
+
+  const persistWrite = (v: T): void => {
+    if (!options.persist || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(options.persist, JSON.stringify(v));
+    } catch {
+      /* quota / private mode — persistence is best-effort */
+    }
+  };
+
+  const set = (v: T): void => {
+    base.set(v);
+    persistWrite(v);
+  };
+  const setField = <K extends keyof T>(k: K, val: T[K]): void => {
+    set({ ...value(), [k]: val });
+  };
+
+  const fields = {} as { [K in keyof T]: Accessor<T[K]> };
+  for (const k of Object.keys(options.fallback) as (keyof T)[]) {
+    fields[k] = createMemo(() => value()[k]);
+  }
+
+  let initPromise: Promise<void> | null = null;
+  const ensureInit = (): Promise<void> => {
+    if (seeded || !options.client) return Promise.resolve();
+    if (!initPromise) {
+      initPromise = Promise.resolve(options.client())
+        .then((v) => {
+          set(v);
+        })
+        .catch((e) => {
+          initPromise = null; // allow a retry on the next call
+          throw e;
+        });
+    }
+    return initPromise;
+  };
+
+  return { value, fields, set, setField, ensureInit, key };
 }
