@@ -52,7 +52,21 @@ const UNSET = Symbol();
 /**
  * createResource(fetcher, options?) or createResource(source, fetcher, options?).
  * Matches the legacy state machine + SSR seeding (no first fetch when seeded).
+ *
+ * The two typed overloads infer `T` from the fetcher's return — without them the
+ * `unknown` implementation signature gives every call site `ResourceReturn<{}>`,
+ * so the accessor loses its type (the regression seen after the TC39-core switch).
  */
+type ResourceFetcherInfo<T> = { value: T | undefined; refetching: boolean };
+export function createResource<T>(
+  fetcher: (k: true, info: ResourceFetcherInfo<T>) => T | Promise<T>,
+  options?: { initialValue?: T; name?: string },
+): ResourceReturn<T>;
+export function createResource<T, S>(
+  source: S | false | null | undefined | (() => S | false | null | undefined),
+  fetcher: (k: S, info: ResourceFetcherInfo<T>) => T | Promise<T>,
+  options?: { initialValue?: T; name?: string },
+): ResourceReturn<T>;
 export function createResource<T, S = true>(
   source: unknown,
   fetcherFn?: unknown,
