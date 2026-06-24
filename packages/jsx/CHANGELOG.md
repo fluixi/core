@@ -1,5 +1,12 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.26
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.26
+- @fluixi/dom@1.0.0-alpha.26
+
 ## 1.0.0-alpha.25
 
 ### Patch Changes
