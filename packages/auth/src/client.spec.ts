@@ -59,3 +59,21 @@ describe('@fluixi/auth/client', () => {
     expect(navigate).toHaveBeenCalledWith('/403');
   });
 });
+
+describe('@fluixi/auth/client — { session } overload', () => {
+  it('drives useUser from a reactive session and syncs reactively', async () => {
+    const { createSignal } = await import('@fluixi/core');
+    const [user, setUser] = createSignal<{ id: string } | null>(null);
+    const login = vi.fn(async () => {});
+    const { useUser, useSignIn, protectedRoute } = createAuthHooks({
+      session: { user, login },
+      navigate: () => {},
+    });
+    expect(useUser()()).toBeNull();
+    setUser({ id: 'u1' });
+    expect(useUser()()).toEqual({ id: 'u1' }); // framework-owned sync, no app effect
+    await useSignIn()('a@b.c', 'pw');
+    expect(login).toHaveBeenCalledWith('a@b.c', 'pw'); // passthrough signature
+    expect(protectedRoute(() => 'ok')({})).toBe('ok');
+  });
+});

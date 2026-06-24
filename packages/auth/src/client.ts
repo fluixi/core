@@ -3,14 +3,15 @@
  *
  * The session is an isomorphic store: resolved on the server from `locals.auth`
  * (serialized into the page) and seeded synchronously on the client → no auth flash, no
- * post-hydration refetch (which Better Auth's bare client does). On a pure-SPA load it
- * falls back to the Better Auth client's `getSession()`.
+ * post-hydration refetch. Two ways to drive it:
+ *   • `{ client }` — a Better Auth client.
+ *   • `{ session }` — an existing reactive session (e.g. @fluixi/session's createSession or
+ *     any `{ user(), login?, logout? }`). The framework OWNS the reactive sync, so apps stop
+ *     hand-writing a `createEffect` to mirror their store into the auth hooks.
  *
- * Client-only deps: @fluixi/core (isomorphic store + env) and @fluixi/dom's pure
- * `getLocals` — NO @fluixi/server / @fluixi/start, so this never reaches the server engine
- * or Node into the browser bundle.
+ * Client-only deps: @fluixi/core + @fluixi/dom's pure `getLocals` — never @fluixi/server.
  */
-import { createIsomorphicStore, env } from '@fluixi/core';
+import { createIsomorphicStore, createEffect, createRoot, env } from '@fluixi/core';
 import { getLocals } from '@fluixi/dom';
 import {
   AUTH_LOCALS_KEY,
@@ -20,44 +21,67 @@ import {
 } from './types.js';
 
 export interface ProtectedRouteOptions {
-  /** Redirect authenticated users away (login/register pages). */
   guestOnly?: boolean;
-  /** Require this role; else redirect to `forbiddenPath`. */
   role?: string;
 }
 
-export interface AuthHooksOptions {
-  /** A Better Auth client (`createAuthClient(...)`). */
-  client: BetterAuthClient;
-  /** Navigate for `protectedRoute` redirects (default: `window.location.assign`). */
-  navigate?: (to: string) => void;
-  loginPath?: string; // default '/login'
-  homePath?: string; // default '/'
-  forbiddenPath?: string; // default '/403'
+/** Any reactive session with a `user` accessor (e.g. @fluixi/session's createSession). */
+export interface SessionLike<U = AuthUser> {
+  user: () => U | null;
+  login?: (...args: any[]) => Promise<unknown>;
+  logout?: () => Promise<unknown>;
 }
 
-export function createAuthHooks<U = AuthUser>(options: AuthHooksOptions) {
+export interface AuthHooksOptions<U = AuthUser> {
+  /** A Better Auth client (`createAuthClient(...)`). Mutually exclusive with `session`. */
+  client?: BetterAuthClient;
+  /** An existing reactive session — the framework syncs it into the hooks for you. */
+  session?: SessionLike<U>;
+  /** Navigate for `protectedRoute` redirects (default: `window.location.assign`). */
+  navigate?: (to: string) => void;
+  loginPath?: string;
+  homePath?: string;
+  forbiddenPath?: string;
+}
+
+export function createAuthHooks<U = AuthUser>(options: AuthHooksOptions<U>) {
+  const sess = options.session;
+
   const store = createIsomorphicStore<SessionData<U>>('auth', {
     // Server: read what authMiddleware put on locals → serialized for the client to seed.
     server: () => (getLocals()[AUTH_LOCALS_KEY] as SessionData<U>) ?? { user: null, session: null },
-    // Pure-SPA cold load (no server seed): ask the Better Auth client.
-    client: async () => normalize<U>(await options.client.getSession()),
+    // SPA cold load: from the provided session, else the Better Auth client.
+    client: async () =>
+      sess
+        ? { user: sess.user(), session: null }
+        : normalize<U>(await options.client!.getSession()),
     fallback: { user: null, session: null },
   });
 
+  // `{ session }` path: the framework owns the reactive bridge (no app-level effect).
+  if (sess) {
+    const apply = (): void => store.set({ user: sess.user(), session: null });
+    apply(); // immediate, so a first protectedRoute read isn't stale
+    createRoot(() => createEffect(apply));
+  }
+
   const refresh = async (): Promise<void> => {
-    store.set(normalize<U>(await options.client.getSession()));
+    store.set(sess ? { user: sess.user(), session: null } : normalize<U>(await options.client!.getSession()));
   };
 
-  const signIn = async (creds: { email: string; password: string; rememberMe?: boolean }): Promise<void> => {
-    await options.client.signIn.email(creds);
-    await refresh();
-  };
+  const signIn = sess
+    ? ((...args: any[]) => sess.login?.(...args) ?? Promise.resolve())
+    : async (creds: { email: string; password: string; rememberMe?: boolean }) => {
+        await options.client!.signIn.email(creds);
+        await refresh();
+      };
 
-  const signOut = async (): Promise<void> => {
-    await options.client.signOut();
-    store.set({ user: null, session: null });
-  };
+  const signOut = sess
+    ? () => sess.logout?.() ?? Promise.resolve()
+    : async () => {
+        await options.client!.signOut();
+        store.set({ user: null, session: null });
+      };
 
   const go = (to: string): void => (options.navigate ?? ((t) => env.window?.location.assign(t)))(to);
 
@@ -76,11 +100,8 @@ export function createAuthHooks<U = AuthUser>(options: AuthHooksOptions) {
   }
 
   return {
-    /** Reactive accessor for the current user (seeded from SSR). */
     useUser: () => store.fields.user,
-    /** Reactive accessor for the current session. */
     useSession: () => store.fields.session,
-    /** `{ user, session, isAuthenticated, signIn, signOut }`. */
     useAuth: () => ({
       user: store.fields.user,
       session: store.fields.session,
@@ -90,11 +111,8 @@ export function createAuthHooks<U = AuthUser>(options: AuthHooksOptions) {
     }),
     useSignIn: () => signIn,
     useSignOut: () => signOut,
-    /** Re-pull the session from the Better Auth client. */
     refresh,
-    /** Wrap a route component: authed-only (default), `guestOnly`, or `role`-gated. */
     protectedRoute,
-    /** The underlying isomorphic store (escape hatch). */
     store,
   };
 }

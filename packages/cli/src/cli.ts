@@ -15,7 +15,7 @@ function usage(): string {
     cmd('dev', 'start the SSR dev server (Vite middleware + HMR)'),
     cmd('build', 'build the client + server bundles for production'),
     cmd('start', 'run the production SSR server (after build)'),
-    cmd('generate <kind> <name>', 'scaffold a component / route / middleware  ' + c.dim('(alias: g)')),
+    cmd('generate <kind> <name>', 'scaffold a component / route / middleware / auth  ' + c.dim('(alias: g)')),
     '',
     `  ${c.gray('New project:')}  ${c.cyan('npm create @fluixi')} ${c.gray('<dir>')}`,
     '',

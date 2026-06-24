@@ -118,4 +118,14 @@ export async function requirePermission(
   if (!ok) throw new AuthError(403, opts?.redirectTo);
 }
 
+// Cookie API — proper, secure-by-default cookie management (parse/serialize/request reads).
+export {
+  parseCookies,
+  serializeCookie,
+  deleteCookie,
+  getCookie,
+  getCookies,
+  type CookieOptions,
+} from './cookies.js';
+
 export type { SessionData, AuthUser, BetterAuthServer } from './types.js';
