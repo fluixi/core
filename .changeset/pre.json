@@ -27,6 +27,7 @@
   },
   "changesets": [
     "auth-bindings",
+    "auth-session-cookies-cli",
     "cli-generate",
     "cli-ux-redesign",
     "create-exit-hang",
