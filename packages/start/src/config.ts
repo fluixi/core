@@ -11,6 +11,13 @@ import { resolve, isAbsolute } from 'node:path';
 export interface FluixiConfig {
   /** App root directory. Default: process.cwd(). */
   root?: string;
+  /**
+   * Render mode. `true` (default) = SSR: the server entry renders HTML per request. `false`
+   * = SPA: the server serves the static shell and the client renders — but you still get the
+   * full @fluixi/start server (file routing, middleware, env, and `/_server` server functions).
+   * The same app code runs either way; flip this to choose where the first paint happens.
+   */
+  ssr?: boolean;
   /** Dev/prod server port. Default: 3000. */
   port?: number;
   /** Server entry exporting `render(url): string | Promise<string>`. Default: src/entry-server.ts */
@@ -43,6 +50,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
   const root = resolve(config.root ?? process.cwd());
   return {
     root,
+    ssr: config.ssr ?? true,
     port: config.port ?? 3000,
     serverEntry: config.serverEntry ?? 'src/entry-server.ts',
     clientEntry: config.clientEntry ?? 'src/entry-client.ts',
