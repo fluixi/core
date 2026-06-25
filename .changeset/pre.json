@@ -82,6 +82,7 @@
     "ssr-hydration-fixes",
     "ssr-resilience",
     "start-deploy-adapters",
+    "start-di-and-spa",
     "start-env-and-serverfn-autowire",
     "start-middleware",
     "start-router-subpath",
