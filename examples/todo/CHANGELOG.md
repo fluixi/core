@@ -1,5 +1,14 @@
 # @fluixi/example-todo
 
+## 0.0.5-alpha.27
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.27
+- @fluixi/dom@1.0.0-alpha.27
+- @fluixi/jsx@1.0.0-alpha.27
+- @fluixi/core@1.0.0-alpha.27
+
 ## 0.0.5-alpha.26
 
 ### Patch Changes
