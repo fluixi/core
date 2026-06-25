@@ -77,3 +77,46 @@ describe('@fluixi/auth/client — { session } overload', () => {
     expect(protectedRoute(() => 'ok')({})).toBe('ok');
   });
 });
+
+describe('@fluixi/auth/client — RBAC surface', () => {
+  type Perms = { products: { edit: boolean } };
+
+  function rbacSession(role: string | null) {
+    const perms: Record<string, Perms> = {
+      admin: { products: { edit: true } },
+      viewer: { products: { edit: false } },
+    };
+    return {
+      user: () => (role ? { id: 'u1', role } : null),
+      roles: () => (role ? [role] : []),
+      permissions: () => (role ? perms[role] : undefined),
+      can: (check: (p: Perms) => boolean) => (role ? check(perms[role]) : false),
+    };
+  }
+
+  it('usePermissions / useCan reflect the session permission set', () => {
+    const { usePermissions, useCan } = createAuthHooks<any, Perms>({ session: rbacSession('viewer') });
+    expect(usePermissions()()).toEqual({ products: { edit: false } });
+    expect(useCan()((p) => p.products.edit)).toBe(false);
+  });
+
+  it('Can renders children only when the permission holds', () => {
+    const { Can } = createAuthHooks<any, Perms>({ session: rbacSession('admin') });
+    expect((Can({ perform: (p) => p.products.edit, children: 'EDIT' }) as any)()).toBe('EDIT');
+    expect((Can({ perform: (p) => !p.products.edit, children: 'X', fallback: 'NO' }) as any)()).toBe('NO');
+  });
+
+  it('protectedRoute gates on a permission and on roles[]', () => {
+    const navigate = vi.fn();
+    const hooks = createAuthHooks<any, Perms>({ session: rbacSession('viewer'), navigate });
+    expect(hooks.protectedRoute(() => 'ok', { permission: (p) => p.products.edit })({})).toBeNull();
+    expect(hooks.protectedRoute(() => 'ok', { roles: ['admin', 'viewer'] })({})).toBe('ok');
+    expect(navigate).toHaveBeenCalledWith('/403');
+  });
+
+  it('Protect hides a section when the user lacks the permission', () => {
+    const { Protect } = createAuthHooks<any, Perms>({ session: rbacSession('viewer') });
+    expect((Protect({ permission: (p) => p.products.edit, children: 'panel', fallback: null }) as any)()).toBeNull();
+    expect((Protect({ role: 'viewer', children: 'panel' }) as any)()).toBe('panel');
+  });
+});
