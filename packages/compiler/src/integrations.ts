@@ -1013,9 +1013,13 @@ export function serverFunctionsVitePlugin<T = any>(): T {
       if (id !== '\0' + SERVER_FNS_VMOD) return null;
       const mods = findServerFnModules(_join(root, 'src'));
       // First wire the request-context bridge (server-only), then side-effect import each
-      // server-fn module so its top-level $$registerServerFn(...) runs.
+      // server-fn module so its top-level $$registerServerFn(...) runs, then re-export the
+      // dispatcher so the host can route /_server through THIS module graph (sharing the
+      // registry the imports populated) — apps don't need to re-export it from entry-server.
       const setup = `import '@fluixi/start/server-fn-setup';\n`;
-      return setup + mods.map((m) => `import ${JSON.stringify(m)};`).join('\n') + '\n';
+      const imports = mods.map((m) => `import ${JSON.stringify(m)};`).join('\n');
+      const dispatcher = `\nexport { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn';\n`;
+      return setup + imports + dispatcher;
     },
     transform(code: string, id: string, opts?: { ssr?: boolean }) {
       if (!/\.[jt]sx?$/.test(id)) return null;

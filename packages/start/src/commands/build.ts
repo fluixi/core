@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { fluixiPlugins } from '../internal.js';
+import { fluixiPlugins, loadServerEnv } from '../internal.js';
 import { wordmark, step, done, c } from '../ui.js';
 
 /**
@@ -13,6 +13,7 @@ import { wordmark, step, done, c } from '../ui.js';
 export async function build(config: FluixiConfig = {}): Promise<void> {
   const startedAt = Date.now();
   const cfg = resolveConfig(config);
+  await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
   const { build: viteBuild } = await import('vite');
   const plugins = await fluixiPlugins(cfg);
 

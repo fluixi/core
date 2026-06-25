@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler } from '../internal.js';
+import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { devReady } from '../ui.js';
@@ -17,6 +17,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   const startedAt = Date.now();
   const cfg = resolveConfig(config);
   installCrashGuards();
+  await loadServerEnv(cfg.root, 'development'); // .env → process.env (server-only secrets)
 
   const { createServer } = await import('vite');
   const template = readFileSync(resolve(cfg.root, cfg.template), 'utf-8');
@@ -33,12 +34,14 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   const renderHandler: FetchHandler = guardHandler(async (request) => {
     const url = new URL(request.url);
     const path = url.pathname + url.search;
-    const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
-    // Server-function RPC: the ssr-loaded entry shares the registry the app's
-    // "use server" modules populated (same vite module graph).
-    if (typeof mod.isServerFnRequest === 'function' && mod.isServerFnRequest(request)) {
-      return mod.handleServerFn(request);
+    // Server-function RPC: auto-wired. Load the registry vmod (registers every "use server"
+    // fn + wires the request-context runner + re-exports the dispatcher) and route /_server
+    // through it — no need for the app's entry-server to re-export anything.
+    if (url.pathname === '/_server') {
+      const sf = await vite.ssrLoadModule(SERVER_FNS_VMOD);
+      if (sf.isServerFnRequest(request)) return sf.handleServerFn(request);
     }
+    const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
     if (typeof mod.renderStream === 'function') {
       const shell = await vite.transformIndexHtml(path, template);
       const { head, tail } = splitTemplate(shell, cfg.mountId);

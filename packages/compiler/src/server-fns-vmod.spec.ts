@@ -24,4 +24,17 @@ describe('virtual:fluixi-server-fns', () => {
     expect(code).toContain('routes/lazy.tsx');
     expect(code).not.toContain('plain.ts'); // no directive → not imported
   });
+
+  it('re-exports the dispatcher so the host auto-wires /_server (no entry-server re-export)', () => {
+    const root = mkdtempSync(join(tmpdir(), 'fx-sfn-'));
+    dirs.push(root);
+    mkdirSync(join(root, 'src'), { recursive: true });
+    const p: any = serverFunctionsVitePlugin();
+    p.configResolved({ root });
+    const code = p.load('\0virtual:fluixi-server-fns') as string;
+    expect(code).toContain("import '@fluixi/start/server-fn-setup'"); // request-context bridge
+    expect(code).toContain(
+      "export { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn'",
+    );
+  });
 });
