@@ -41,6 +41,12 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       const sf = await vite.ssrLoadModule(SERVER_FNS_VMOD);
       if (sf.isServerFnRequest(request)) return sf.handleServerFn(request);
     }
+    // SPA mode: serve the static shell; the client entry renders. The server still ran
+    // (server functions above + middleware below), there's just no SSR render pass.
+    if (!cfg.ssr) {
+      const html = await vite.transformIndexHtml(path, template);
+      return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
     if (typeof mod.renderStream === 'function') {
       const shell = await vite.transformIndexHtml(path, template);

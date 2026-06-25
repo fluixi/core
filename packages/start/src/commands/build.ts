@@ -27,17 +27,22 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     build: { outDir: 'dist/client', ssrManifest: true, emptyOutDir: true },
   });
 
-  step('server bundle');
-  await viteBuild({
-    root: cfg.root,
-    plugins,
-    ssr: { noExternal: cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined },
-    build: {
-      outDir: 'dist/server',
-      ssr: resolve(cfg.root, cfg.serverEntry),
-      emptyOutDir: true,
-    },
-  });
+  // SSR builds a server bundle that renders HTML. A SPA may still ship one — only for server
+  // functions / middleware — so build it when the entry exists; a pure static SPA skips it.
+  const serverEntrySrc = resolve(cfg.root, cfg.serverEntry);
+  if (cfg.ssr || existsSync(serverEntrySrc)) {
+    step('server bundle');
+    await viteBuild({
+      root: cfg.root,
+      plugins,
+      ssr: { noExternal: cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined },
+      build: {
+        outDir: 'dist/server',
+        ssr: serverEntrySrc,
+        emptyOutDir: true,
+      },
+    });
+  }
 
   // Optional request middleware → its own server entry (emptyOutDir:false keeps
   // entry-server.js). createProdHandler picks up dist/server/middleware.js if present.
