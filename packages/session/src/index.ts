@@ -1,14 +1,21 @@
 /**
- * @fluixi/session — `createSession`: the client-side session lifecycle as a reusable
- * primitive. (The full server-first auth engine — OAuth/MFA/orgs/RBAC — is @fluixi/auth.)
+ * @fluixi/session — the client session lifecycle + access control as reusable primitives.
  *
- * You provide a small backend ADAPTER (how to log in, fetch the user, log out, and —
- * optionally — refresh a token); the framework owns everything else: token/user
- * signals, `isAuthenticated`, loading/error state, persistence (via @fluixi/core's
- * universal `storage`, so it's SSR-safe), the hydrate-on-load flow, and automatic
- * token refresh before expiry. Apps stop rewriting the same ~100 lines of session glue.
+ * You provide a small backend ADAPTER (login / fetchUser / logout / optional refresh);
+ * the framework owns token + user signals, a status state-machine, persistence (SSR-safe
+ * via @fluixi/core's universal `storage`), the hydrate-on-load flow, automatic refresh
+ * before expiry, role/permission derivation, and an unauthorized (session-expiry) guard.
+ * Apps stop rewriting the same ~150 lines of session glue. (The server-first auth engine —
+ * OAuth / MFA / orgs / cookies — is @fluixi/auth.)
+ *
+ * ── SECURITY BOUNDARY ─────────────────────────────────────────────────────────
+ * `roles()`, `permissions()` and `can()` are a CLIENT-SIDE UI affordance: they decide what
+ * to RENDER, never what is ALLOWED. A client can forge any role, so authorization MUST be
+ * enforced by the backend on every request. Read `can(...)` as "should I show this button",
+ * and let the server reject unauthorized calls regardless. The `unauthorized` guard below
+ * exists precisely because the server — not the client — is the authority.
  */
-import { createSignal, type Accessor } from '@fluixi/reactive/signal';
+import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
 import { storage, isClient } from '@fluixi/core';
 
 /** A token plus, optionally, its expiry as an epoch-ms timestamp. */
@@ -33,25 +40,163 @@ export interface SessionAdapter<U, C, R = unknown> {
   getExpiry?: (token: string) => number | null;
 }
 
+// ─── Access control (client-side RBAC) ─────────────────────────────────────────
+
+export type Role = string;
+
+/**
+ * Declarative role → permission mapping. `P` is YOUR permission shape — a nested capability
+ * object, a flat `Set`, a Better-Auth-style `{ resource: action[] }` statement, whatever you
+ * check against. `Q` is the QUERY you pass to `can()` — by default a predicate `(p) => bool`,
+ * but supply a `match` to use a declarative query instead (a `'resource:action'` string, an
+ * object, a CASL ability, …). The framework derives the active role(s), hands you the matching
+ * permission set, and runs your matcher; it does not prescribe either shape.
+ */
+export interface AccessControl<U, P, Q = (p: P) => boolean> {
+  /**
+   * Derive the user's role(s) from ANY user field — `u => u?.metadata?.access` returns
+   * whatever word lives there. Return one role, several, or null. Optional: omit it when
+   * `permissions` is a resolver that reads the user directly.
+   */
+  getRole?: (user: U | null) => Role | Role[] | null | undefined;
+  /**
+   * Either a static role → permission map, OR a resolver that derives the permission set
+   * straight from the user (when access isn't a fixed matrix — e.g. computed from user
+   * flags / fields). The resolver also receives the derived roles.
+   */
+  permissions: Record<Role, P> | ((user: U | null, roles: Role[]) => P | undefined);
+  /** Permissions for an unauthenticated / unknown-role user (default: undefined). */
+  guest?: P;
+  /** Combine permission sets when a user has multiple roles (default: last role wins). */
+  merge?: (sets: P[]) => P;
+  /**
+   * Interpret a `can(query)` call. Default: the query IS a predicate, run as
+   * `query(permissions)`. Override for declarative queries — `match: (perms, q: string) =>
+   * perms.has(q)` → `can('products:edit')`. The `user` is passed too, so a check can read a
+   * user field directly: `match: (_p, q, user) => user?.metadata?.access === q`.
+   */
+  match?: (permissions: P, query: Q, user: U | null) => boolean;
+}
+
+// ─── Unauthorized guard (session expiry) ───────────────────────────────────────
+
+export interface FetchGuardOptions {
+  /** The fetch to wrap (default: the global fetch). */
+  fetch?: typeof fetch;
+  /** Status that signals an expired/invalid session (default 401). */
+  status?: number;
+  /** Narrow which responses count as expiry — e.g. your API origin, minus the login route. */
+  shouldHandle?: (url: string, response: Response) => boolean;
+  /** Fired at most once until `reset()` — so one expired session isn't reported N times. */
+  onUnauthorized: () => void;
+}
+
+export type GuardedFetch = typeof fetch & { reset: () => void };
+
+const requestUrl = (input: RequestInfo | URL): string =>
+  input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
+
+/**
+ * Wrap a fetch so a chosen status (401) trips `onUnauthorized` once. Returns a NEW fetch —
+ * pass it to your SDK / data layer. Nothing global is mutated: this is the standards-clean
+ * way to react to an expired session. (For SDKs that only ever call the global `fetch`,
+ * `installGlobalFetchGuard` is the explicit escape hatch.)
+ */
+export function createFetchGuard(opts: FetchGuardOptions): GuardedFetch {
+  const base = opts.fetch ?? globalThis.fetch.bind(globalThis);
+  const status = opts.status ?? 401;
+  let tripped = false;
+  const guarded = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const res = await base(input as any, init);
+    if (res.status === status && !tripped) {
+      if (!opts.shouldHandle || opts.shouldHandle(requestUrl(input), res)) {
+        tripped = true;
+        opts.onUnauthorized();
+      }
+    }
+    return res;
+  }) as GuardedFetch;
+  guarded.reset = () => {
+    tripped = false;
+  };
+  return guarded;
+}
+
+/**
+ * Replace the GLOBAL `fetch` with a guarded one. A deliberate global side effect — use it
+ * only when your SDK gives you no way to inject a custom fetch (e.g. Medusa's JS SDK).
+ * No-op on the server. Returns an uninstaller that restores the original fetch.
+ */
+export function installGlobalFetchGuard(opts: FetchGuardOptions): () => void {
+  if (!isClient) return () => {};
+  const original = globalThis.fetch.bind(globalThis);
+  const guarded = createFetchGuard({ ...opts, fetch: original });
+  (globalThis as any).fetch = guarded;
+  (installGlobalFetchGuard as any)._reset = guarded.reset;
+  return () => {
+    (globalThis as any).fetch = original;
+  };
+}
+
+// ─── Session ───────────────────────────────────────────────────────────────────
+
 export type SessionOp = 'login' | 'register' | 'hydrate' | 'refresh';
 
-export interface SessionOptions<U, C, R = unknown> extends SessionAdapter<U, C, R> {
+/** The lifecycle state. Derived; read it instead of juggling isLoading + flags by hand. */
+export type SessionStatus =
+  | 'idle' // no token, not busy
+  | 'authenticating' // a login/register/hydrate/refresh is in flight
+  | 'authenticated' // a token is held
+  | 'expired' // the unauthorized guard tripped (token rejected by the server)
+  | 'error'; // the last op threw
+
+export interface UnauthorizedOptions {
+  /** Status that means "session expired" (default 401). */
+  status?: number;
+  /** Narrow which responses count — e.g. only your API, excluding the login endpoint. */
+  shouldHandle?: (url: string, response: Response) => boolean;
+  /**
+   * Patch the GLOBAL fetch. Needed when your data layer always uses the global `fetch`
+   * (Medusa's SDK). Default false — prefer wiring `session.guardedFetch` into your SDK.
+   */
+  installGlobal?: boolean;
+  /** What to do when the session expires (default: mark expired + logout). */
+  onExpiry?: () => void;
+}
+
+export interface SessionOptions<U, C, R = unknown, P = unknown, Q = (p: P) => boolean>
+  extends SessionAdapter<U, C, R> {
   /** localStorage keys (defaults: `fx_session_token` / `fx_session_user`). */
   storageKeys?: { token?: string; user?: string; expiry?: string };
   /** Refresh this many ms BEFORE expiry (default 60_000). */
   refreshSkewMs?: number;
+  /** Client-side RBAC — see the security note at the top of this file. */
+  access?: AccessControl<U, P, Q>;
+  /** React to server "session expired" (401) responses. */
+  unauthorized?: UnauthorizedOptions;
   onLogin?: (user: U) => void;
   onLogout?: () => void;
   onRefresh?: (token: string) => void;
+  onExpired?: () => void;
   onError?: (err: unknown, op: SessionOp) => void;
 }
 
-export interface Session<U, C, R = unknown> {
+export interface Session<U, C, R = unknown, P = unknown, Q = (p: P) => boolean> {
   user: Accessor<U | null>;
   token: Accessor<string | null>;
   isAuthenticated: Accessor<boolean>;
   isLoading: Accessor<boolean>;
   error: Accessor<unknown | null>;
+  /** Lifecycle state-machine value. */
+  status: Accessor<SessionStatus>;
+  /** True once the server rejected the token (401 via the unauthorized guard). */
+  expired: Accessor<boolean>;
+  /** The active user's role(s) (empty when unauthenticated / no `access`). */
+  roles: Accessor<Role[]>;
+  /** The active permission set (UI affordance only — see the security note). */
+  permissions: Accessor<P | undefined>;
+  /** Check the active permission set with your matcher (default: a predicate). `false` when there is none. */
+  can: (query: Q) => boolean;
   login: (creds: C) => Promise<void>;
   register: (data: R) => Promise<void>;
   logout: () => Promise<void>;
@@ -61,18 +206,25 @@ export interface Session<U, C, R = unknown> {
   refresh: () => Promise<void>;
   /** Update the cached user (e.g. after a profile edit). */
   updateUser: (user: U) => void;
+  /** A 401-guarded fetch (present when `unauthorized` is configured) for SDKs that accept one. */
+  guardedFetch?: GuardedFetch;
 }
 
 const normalize = (r: string | TokenResult): TokenResult =>
   typeof r === 'string' ? { token: r } : r;
 
-export function createSession<U, C = { email: string; password: string }, R = unknown>(
-  options: SessionOptions<U, C, R>,
-): Session<U, C, R> {
+export function createSession<
+  U,
+  C = { email: string; password: string },
+  R = unknown,
+  P = unknown,
+  Q = (p: P) => boolean,
+>(options: SessionOptions<U, C, R, P, Q>): Session<U, C, R, P, Q> {
   const TOKEN_KEY = options.storageKeys?.token ?? 'fx_session_token';
   const USER_KEY = options.storageKeys?.user ?? 'fx_session_user';
   const EXP_KEY = options.storageKeys?.expiry ?? 'fx_session_exp';
   const skew = options.refreshSkewMs ?? 60_000;
+  const access = options.access;
 
   const readUser = (): U | null => {
     try {
@@ -86,6 +238,41 @@ export function createSession<U, C = { email: string; password: string }, R = un
   const [token, setTokenSig] = createSignal<string | null>(storage.getItem(TOKEN_KEY));
   const [isLoading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<unknown | null>(null);
+  const [expired, setExpired] = createSignal(false);
+
+  // ── Derived access control ──────────────────────────────────────────────────
+  const roles = createMemo<Role[]>(() => {
+    const r = access?.getRole?.(user());
+    if (r == null) return [];
+    return Array.isArray(r) ? r : [r];
+  });
+  const permissions = createMemo<P | undefined>(() => {
+    if (!access) return undefined;
+    const rs = roles();
+    // Resolver form: derive the set straight from the user (no fixed matrix).
+    if (typeof access.permissions === 'function') return access.permissions(user(), rs) ?? access.guest;
+    // Record form: look the role(s) up in the matrix, merging when there are several.
+    const map = access.permissions;
+    const sets = rs.map((r) => map[r]).filter((s): s is P => s != null);
+    if (sets.length === 0) return access.guest;
+    if (sets.length === 1) return sets[0];
+    return access.merge ? access.merge(sets) : sets[sets.length - 1];
+  });
+  // Default matcher: the query IS a predicate. A custom `match` swaps in declarative queries.
+  const matcher =
+    access?.match ??
+    ((p: P, q: Q): boolean => (typeof q === 'function' ? (q as (p: P) => boolean)(p) : false));
+  const can = (query: Q): boolean => {
+    const p = permissions();
+    return p != null ? matcher(p, query, user()) : false;
+  };
+
+  const status = createMemo<SessionStatus>(() => {
+    if (isLoading()) return 'authenticating';
+    if (expired()) return 'expired';
+    if (error()) return 'error';
+    return token() ? 'authenticated' : 'idle';
+  });
 
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -143,18 +330,53 @@ export function createSession<U, C = { email: string; password: string }, R = un
     });
   }
 
-  const session: Session<U, C, R> = {
+  // ── Unauthorized guard wiring ────────────────────────────────────────────────
+  let guard: GuardedFetch | undefined;
+  if (options.unauthorized) {
+    const onExpiry =
+      options.unauthorized.onExpiry ??
+      (() => {
+        void session.logout();
+      });
+    const handler = (): void => {
+      setExpired(true);
+      options.onExpired?.();
+      onExpiry();
+    };
+    guard = createFetchGuard({
+      status: options.unauthorized.status,
+      shouldHandle: options.unauthorized.shouldHandle,
+      onUnauthorized: handler,
+    });
+    if (options.unauthorized.installGlobal) {
+      installGlobalFetchGuard({
+        status: options.unauthorized.status,
+        shouldHandle: options.unauthorized.shouldHandle,
+        onUnauthorized: handler,
+      });
+    }
+  }
+
+  const session: Session<U, C, R, P, Q> = {
     user,
     token,
     isAuthenticated: () => token() !== null,
     isLoading,
     error,
+    status,
+    expired,
+    roles,
+    permissions,
+    can,
+    guardedFetch: guard,
 
     async login(creds: C): Promise<void> {
       await run('login', async () => {
         persistToken(normalize(await options.login(creds)));
         const u = await options.fetchUser(token()!);
         persistUser(u);
+        setExpired(false);
+        guard?.reset();
         options.onLogin?.(u);
       });
     },
@@ -166,6 +388,8 @@ export function createSession<U, C = { email: string; password: string }, R = un
           persistToken(normalize(res));
           const u = await options.fetchUser(token()!);
           persistUser(u);
+          setExpired(false);
+          guard?.reset();
           options.onLogin?.(u);
         }
       });
@@ -183,6 +407,7 @@ export function createSession<U, C = { email: string; password: string }, R = un
       storage.removeItem(EXP_KEY);
       setTokenSig(null);
       setUser(null);
+      guard?.reset();
       options.onLogout?.();
     },
 
