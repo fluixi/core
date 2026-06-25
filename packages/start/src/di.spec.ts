@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { createRoot } from '@fluixi/core';
-import { createRequestContext, runWithRequestContext } from '@fluixi/dom';
+import {
+  createRequestContext,
+  runWithRequestContext,
+  renderToStringAsync,
+  createNativeElement,
+  insert,
+} from '@fluixi/dom';
 import {
   injectionToken,
   inject,
@@ -93,5 +99,39 @@ describe('@fluixi/start/di', () => {
     const T = injectionToken<string>('T');
     const inj = createInjector([{ provide: T, useValue: 'explicit' }], null);
     expect(runInInjectionContext(inj, () => inject(T))).toBe('explicit');
+  });
+
+  // The storefront pattern: a request-scoped service (e.g. RegionService) injected during an
+  // SSR render. Each request gets its own instance — no cross-request leak — while the SAME
+  // code on the client resolves a singleton.
+  it('a request-scoped service is injected during SSR render and isolated per request', async () => {
+    interface RegionService {
+      id: string;
+      set(id: string): void;
+    }
+    const Region = injectionToken<RegionService>('Region', {
+      factory: () => ({ id: '', set(id) { this.id = id; } }),
+    });
+
+    // A component that injects the service and renders its current region.
+    const RegionBadge = () => {
+      const region = inject(Region);
+      const el = createNativeElement('span') as any;
+      insert(el, () => `region:${region.id}`, null);
+      return el;
+    };
+
+    // Two independent SSR requests resolve the region differently.
+    const a = await renderToStringAsync(() => {
+      inject(Region).set('us'); // e.g. resolved from the request's cookie/geo
+      return RegionBadge();
+    });
+    const b = await renderToStringAsync(() => {
+      inject(Region).set('fr');
+      return RegionBadge();
+    });
+
+    expect(a).toContain('region:us');
+    expect(b).toContain('region:fr'); // request B never saw request A's instance
   });
 });
