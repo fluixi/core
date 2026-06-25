@@ -1,6 +1,29 @@
 import type { ResolvedConfig } from './config.js';
 import type { FetchHandler } from './handler.js';
 
+/** The virtual module that registers every `"use server"` fn + re-exports the dispatcher. */
+export const SERVER_FNS_VMOD = 'virtual:fluixi-server-fns';
+
+/**
+ * Load env files into `process.env` for SERVER code — the framework's environment manager.
+ *
+ * SECURITY MODEL (Vite-aligned): only `VITE_`-prefixed vars are exposed to the client (via
+ * `import.meta.env`, inlined into the browser bundle). Everything else is server-only. This
+ * loads ALL vars (`.env`, `.env.local`, `.env.[mode]`, `.env.[mode].local`) into `process.env`
+ * so loaders + `"use server"` functions can read secrets — WITHOUT ever exposing non-`VITE_`
+ * vars to the browser. A real (OS) env var always wins, so deploys/secret managers override files.
+ *
+ * Result: `process.env.STRIPE_SECRET` works on the server and never ships to the web; only
+ * `VITE_*` reaches the client. Apps stop hand-rolling dotenv loaders + risking secret leaks.
+ */
+export async function loadServerEnv(root: string, mode: string): Promise<void> {
+  const { loadEnv } = await import('vite');
+  const env = loadEnv(mode, root, ''); // '' prefix = ALL vars (server-only via process.env)
+  for (const [k, v] of Object.entries(env)) {
+    if (process.env[k] === undefined) process.env[k] = v; // real env wins
+  }
+}
+
 /**
  * The fluixi build plugins @fluixi/start provides by default: file-based routing
  * (fluixiRoutesPlugin → virtual:fluixi-routes) + the JSX/SSR transform

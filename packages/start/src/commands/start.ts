@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { installCrashGuards } from '../internal.js';
+import { installCrashGuards, loadServerEnv } from '../internal.js';
 import { createProdHandler, nodeAdapter } from '../adapter.js';
 
 /**
@@ -13,6 +13,7 @@ import { createProdHandler, nodeAdapter } from '../adapter.js';
 export async function start(config: FluixiConfig = {}): Promise<void> {
   const cfg = resolveConfig(config);
   installCrashGuards();
+  await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
 
   const clientDir = resolve(cfg.root, 'dist/client');
   const handler = await createProdHandler(cfg);
