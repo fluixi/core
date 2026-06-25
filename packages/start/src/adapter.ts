@@ -24,12 +24,19 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const clientDir = resolve(cfg.root, 'dist/client');
   const template = await readFile(join(clientDir, 'index.html'), 'utf-8');
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
-  const mod = await import(/* @vite-ignore */ pathToFileURL(serverEntry).href);
+  // SPA apps may ship no server entry (or one only for server functions) — import if present.
+  const mod = existsSync(serverEntry)
+    ? await import(/* @vite-ignore */ pathToFileURL(serverEntry).href)
+    : {};
 
   // Streaming when the entry exports `renderStream` (a body stream): flush the split
   // template head first, pipe the body, then the tail. Else inject the string render.
   let core: FetchHandler;
-  if (typeof mod.renderStream === 'function') {
+  if (!cfg.ssr) {
+    // SPA: the page is the static shell; the client entry renders it. Server functions +
+    // middleware still run through this handler — there's just no SSR render pass.
+    core = createRequestHandler(async () => template);
+  } else if (typeof mod.renderStream === 'function') {
     const { head, tail } = splitTemplate(template, cfg.mountId);
     core = async (request) => {
       const url = new URL(request.url);

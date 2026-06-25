@@ -62,11 +62,18 @@
       "types": "./dist/server-fn-setup.d.ts",
       "import": "./dist/server-fn-setup.js",
       "default": "./dist/server-fn-setup.js"
+    },
+    "./di": {
+      "development": "./src/di.ts",
+      "types": "./dist/di.d.ts",
+      "import": "./dist/di.js",
+      "default": "./dist/di.js"
     }
   },
   "dependencies": {
     "@fluixi/core": "workspace:*",
     "@fluixi/server": "workspace:*",
+    "@fluixi/dom": "workspace:*",
     "esbuild": "^0.27.1",
     "@fluixi/compiler": "workspace:*"
   },
