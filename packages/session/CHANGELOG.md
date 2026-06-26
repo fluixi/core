@@ -1,5 +1,14 @@
 # @fluixi/session
 
+## 1.0.0-alpha.30
+
+### Patch Changes
+
+- Updated dependencies [8cb37e5]
+- Updated dependencies [da3aace]
+  - @fluixi/core@1.0.0-alpha.30
+  - @fluixi/reactive@1.0.0-alpha.30
+
 ## 1.0.0-alpha.29
 
 ### Patch Changes
