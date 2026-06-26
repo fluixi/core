@@ -41,6 +41,7 @@
     "fluixi-routes-polyfills-optout",
     "form-action",
     "full-areas-spend",
+    "fx-data-csp",
     "fx-data-redaction",
     "hydrate-controlflow",
     "hydrate-index",
