@@ -17,6 +17,7 @@ import {
 } from '@fluixi/reactive/signal';
 import { isServer, setServerMode } from './nodes.js';
 import { serializeNode } from './serialize.js';
+import { escapeFxJson, FX_DATA_ID } from './fx-data.js';
 import {
   createRequestContext,
   runWithRequestContext,
@@ -76,8 +77,6 @@ function ensureResourceHooks(): void {
   });
 }
 
-const FX_DATA_VAR = '__FX_DATA__';
-
 /**
  * Optional redactor: transform (or drop) each resource value before it's serialized
  * into `__FX_DATA__`. Resource data is embedded in the page HTML and visible to anyone,
@@ -121,9 +120,11 @@ export function serializeResourceData(ctx: RequestContext): string {
     obj[k] = out;
   }
   if (Object.keys(obj).length === 0) return '';
-  // JSON with `<` escaped so a string value can't break out of the <script>.
-  const json = JSON.stringify(obj).replace(/</g, '\\u003c');
-  return `<script>window.${FX_DATA_VAR}=${json}</script>`;
+  // Non-executable JSON block (CSP-friendly; never runs as JS), escaped with the standard
+  // SSR-JSON set so no value can break out of the <script>. The client reads it via
+  // getServerData() → JSON.parse(textContent).
+  const json = escapeFxJson(JSON.stringify(obj));
+  return `<script type="application/json" id="${FX_DATA_ID}">${json}</script>`;
 }
 
 /** Bound on resolve→refetch waterfalls so a buggy loader can't spin forever. */

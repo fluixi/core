@@ -21,8 +21,8 @@ describe('renderToStringAsync — resources', () => {
     };
     const html = await renderToStringAsync(() => App());
     expect(html).toContain('<div>LOADED</div>');
-    // resolved data is also serialized for client hydration
-    expect(html).toContain('window.__FX_DATA__');
+    // resolved data is also serialized for client hydration — as a non-executable JSON block
+    expect(html).toContain('<script type="application/json" id="__FX_DATA__">');
   });
 
   it('resolves a waterfall of two dependent resources', async () => {
