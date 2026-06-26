@@ -1,5 +1,6 @@
 ---
 "@fluixi/core": minor
+"@fluixi/start": minor
 ---
 
 Built-in i18n — `@fluixi/core/i18n`. Reactive, SSR-correct internationalization, no dependency.
@@ -25,5 +26,13 @@ setLocale('fr');                  // reactive — every t() re-evaluates
   functions, and loaders. (This is exactly why it sidesteps the "useLocale() undefined under SSR
   on a lazy route" failure — there's no provider owner-chain to lose.)
 - **Platform-native** — pluralization via `Intl.PluralRules`, numbers/dates via
-  `Intl.NumberFormat`/`Intl.DateTimeFormat`. Nested dot-path keys, `{param}` interpolation,
-  fallback-locale, and a `detectLocale(acceptLanguage, locales)` helper.
+  `Intl.NumberFormat`/`Intl.DateTimeFormat`. Nested **and** flat dotted keys, `{param}`
+  interpolation, fallback-locale, and a `detectLocale(acceptLanguage, locales)` helper.
+
+`@fluixi/start` — **translation auto-discovery + config**. `fluixi.config`'s `i18n` option
+(default `src/i18n`, or `false` to disable, or `{ dir, defaultLocale, locales }`) makes the
+build scan `<dir>/<locale>.json` and expose them as `virtual:fluixi-i18n`
+(`{ messages, locales, defaultLocale }`) — feed it to `createI18n` in one line. The virtual
+modules' TypeScript declarations (`virtual:fluixi-i18n` AND `virtual:fluixi-server-fns`) are now
+**auto-generated** into `src/fluixi-start-env.d.ts` (like the routes plugin's `fluixi-env.d.ts`),
+so apps never hand-write a `declare module` block.
