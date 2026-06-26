@@ -34,20 +34,39 @@ export interface Messages {
   readonly [key: string]: MessageValue | Messages;
 }
 
-export interface I18nConfig<L extends string> {
+/**
+ * The union of every valid translation key in `M` — `t()` autocompletes these and flags typos.
+ * Flat keys (`'welcome'`, `'nav.dashboard'`) and nested trees (`'cart.items'`) both work; a
+ * plural map (`{ one, other }`) is a leaf. Falls open to `string` when `M` is just `Messages`.
+ */
+export type MessageKey<M> = M extends Record<string, string>
+  ? keyof M & string // all-string object: flat keys (incl. dotted) + plural leaves
+  : M extends object
+    ? {
+        [K in keyof M & string]: M[K] extends string
+          ? K
+          : M[K] extends Record<string, string>
+            ? K // plural leaf
+            : M[K] extends object
+              ? `${K}.${MessageKey<M[K]>}` // only leaf paths (not the intermediate branch)
+              : K;
+      }[keyof M & string]
+    : string;
+
+export interface I18nConfig<L extends string, M extends Record<L, Messages> = Record<L, Messages>> {
   /** Default / fallback locale. */
   locale: L;
   /** Supported locales. */
   locales: readonly L[];
-  /** Messages per locale (nested; a leaf is a string or a plural map). */
-  messages: Record<L, Messages>;
+  /** Messages per locale (nested; a leaf is a string or a plural map). Keys are inferred for `t`. */
+  messages: M;
   /** Persist the chosen locale on the client. Default: a year-long `locale` cookie. */
   persist?: (locale: L) => void;
 }
 
-export interface I18n<L extends string> {
-  /** Translate a dot-path key with optional params; a `count` param triggers pluralization. */
-  t: (key: string, params?: Record<string, unknown>) => string;
+export interface I18n<L extends string, K extends string = string> {
+  /** Translate a key (autocompleted from your messages) with optional params; `count` pluralizes. */
+  t: (key: K | (string & {}), params?: Record<string, unknown>) => string;
   /** Format a number for the active locale (`Intl.NumberFormat`). */
   n: (value: number, options?: Intl.NumberFormatOptions) => string;
   /** Format a date for the active locale (`Intl.DateTimeFormat`). */
@@ -78,7 +97,9 @@ function cookiePersist(locale: string): void {
   }
 }
 
-export function createI18n<L extends string>(config: I18nConfig<L>): I18n<L> {
+export function createI18n<L extends string, const M extends Record<L, Messages>>(
+  config: I18nConfig<L, M>,
+): I18n<L, MessageKey<M[keyof M]>> {
   const persist = config.persist ?? cookiePersist;
   // Client: a reactive signal seeded from the server-resolved locale (so hydration matches).
   const [clientLocale, setClientLocale] = createSignal<L>(readSeed<L>() ?? config.locale);
