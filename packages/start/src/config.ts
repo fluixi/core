@@ -34,10 +34,25 @@ export interface FluixiConfig {
   middleware?: string;
   /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
   ssrNoExternal?: string[];
+  /**
+   * Built-in i18n auto-discovery. Scans `<dir>/<locale>.json` and exposes them as
+   * `virtual:fluixi-i18n` (`{ messages, locales, defaultLocale }`) to feed `createI18n`.
+   * `false` disables it; an object configures the folder / locales / default. Default: enabled
+   * with `src/i18n` — a no-op until that folder has `*.json` files, so it's effectively opt-in.
+   */
+  i18n?: boolean | { dir?: string; defaultLocale?: string; locales?: string[] };
 }
 
-export type ResolvedConfig = Required<Omit<FluixiConfig, 'ssrNoExternal'>> & {
+/** Resolved i18n discovery config (or `false` when disabled). */
+export interface ResolvedI18n {
+  dir: string;
+  defaultLocale?: string;
+  locales?: string[];
+}
+
+export type ResolvedConfig = Required<Omit<FluixiConfig, 'ssrNoExternal' | 'i18n'>> & {
   ssrNoExternal: string[];
+  i18n: ResolvedI18n | false;
 };
 
 /** Identity helper for editor types in `fluixi.config.ts`. */
@@ -59,6 +74,18 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     routesDir: config.routesDir ?? 'src/routes',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
+    i18n: resolveI18n(config.i18n),
+  };
+}
+
+/** `false` → disabled; otherwise a folder (default `src/i18n`) + optional locales/default. */
+function resolveI18n(i18n: FluixiConfig['i18n']): ResolvedI18n | false {
+  if (i18n === false) return false;
+  const opts = typeof i18n === 'object' ? i18n : {};
+  return {
+    dir: opts.dir ?? 'src/i18n',
+    defaultLocale: opts.defaultLocale,
+    locales: opts.locales,
   };
 }
 

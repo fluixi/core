@@ -52,6 +52,13 @@
       "require": "./dist/src/lib/client/index.cjs",
       "default": "./dist/src/lib/client/index.js"
     },
+    "./i18n": {
+      "development": "./src/lib/i18n/index.ts",
+      "types": "./dist/src/lib/i18n/index.d.ts",
+      "import": "./dist/src/lib/i18n/index.mjs",
+      "require": "./dist/src/lib/i18n/index.cjs",
+      "default": "./dist/src/lib/i18n/index.js"
+    },
     "./router-next": {
       "development": "./src/lib/router-next/index.ts",
       "types": "./dist/src/lib/router-next/index.d.ts",
