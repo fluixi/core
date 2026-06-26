@@ -77,7 +77,7 @@ describe('Island', () => {
     expect(html).toContain('>Beta</span>');
 
     // Extract the seeded data the server emitted and expose it like a real page would.
-    const m = html.match(/window\.__FX_DATA__=(\{.*?\})<\/script>/);
+    const m = html.match(/<script type="application\/json" id="__FX_DATA__">(\{.*?\})<\/script>/);
     expect(m).toBeTruthy();
     const seeded = JSON.parse(m![1]);
     // Namespaced per island instance (render order), counter restarts per island.
@@ -86,7 +86,7 @@ describe('Island', () => {
 
     const container = document.createElement('div');
     document.body.appendChild(container);
-    container.innerHTML = html.replace(/<script>.*?<\/script>/g, '');
+    container.innerHTML = html.replace(/<script[^>]*>.*?<\/script>/g, '');
 
     hydrateIslands({ W: Widget });
     await flush();

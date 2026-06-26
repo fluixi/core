@@ -25,7 +25,7 @@
  *     setLocale('fr');                // reactive — every t() re-evaluates
  */
 import { createSignal, type Accessor } from '@fluixi/reactive/signal';
-import { getRequestContext } from '@fluixi/dom';
+import { getRequestContext, getServerData } from '@fluixi/dom';
 
 /** A leaf message: a plain string, or a plural map keyed by CLDR category (`one`/`other`/…). */
 export type MessageValue = string | { readonly [pluralCategory: string]: string };
@@ -84,7 +84,7 @@ const IS_SERVER = typeof document === 'undefined';
 
 function readSeed<L>(): L | undefined {
   if (IS_SERVER) return undefined;
-  const data = (globalThis as { __FX_DATA__?: Record<string, unknown> }).__FX_DATA__;
+  const data = getServerData();
   return data ? (data[SEED_KEY] as L | undefined) : undefined;
 }
 
