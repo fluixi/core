@@ -19,9 +19,9 @@ describe('resource-data transport (no hydration flash)', () => {
     expect(html).toContain('User #7'); // resolved data in the HTML
     expect(html).toContain('__FX_DATA__'); // + the seed script
 
-    // emulate the inline script: innerHTML doesn't execute <script>, so pull the
-    // payload out and set it like the browser would before the client module runs
-    const m = html.match(/__FX_DATA__=(\{.*?\})<\/script>/);
+    // pull the JSON transport out and set the global like getServerData would read it
+    // (innerHTML doesn't run <script> blocks, so we seed it manually for the test)
+    const m = html.match(/<script type="application\/json" id="__FX_DATA__">(\{.*?\})<\/script>/);
     expect(m).toBeTruthy();
     (window as any).__FX_DATA__ = JSON.parse(m![1]);
 

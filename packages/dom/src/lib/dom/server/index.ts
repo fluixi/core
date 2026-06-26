@@ -17,6 +17,7 @@ export {
   isServerNodeValue,
 } from './nodes.js';
 export { serializeNode } from './serialize.js';
+export { getServerData, escapeFxJson, FX_DATA_ID } from './fx-data.js';
 export {
   renderToString,
   renderToStringAsync,

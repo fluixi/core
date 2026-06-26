@@ -115,7 +115,7 @@ describe('@fluixi/server', () => {
     };
     const html = await renderRequestAsync(DataApp, { url: '/p' });
     expect(html).toContain('<div>data:/p</div>');
-    expect(html).toContain('window.__FX_DATA__'); // resolved data serialized for hydration
+    expect(html).toContain('<script type="application/json" id="__FX_DATA__">'); // serialized for hydration
   });
 
   it('isolates concurrent interleaved renders (ALS auto-injected on import)', async () => {

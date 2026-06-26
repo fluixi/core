@@ -136,8 +136,8 @@ const ISO_SEED_PREFIX = '__iso:';
 /**
  * Resolve every registered isomorphic state for THIS request (before the app renders):
  * run its `server(event)` resolver, set its signal so the server render reads the value,
- * and stash it in the request data so it serializes into `window.__FX_DATA__` and the
- * client seeds from the same value (no hydration mismatch, no refetch). Passed as the
+ * and stash it in the request data so it serializes into the `__FX_DATA__` JSON transport
+ * and the client seeds from the same value (no hydration mismatch, no refetch). Passed as the
  * `preload` hook to the renderer; runs inside the request context.
  */
 export async function preloadServerState(event?: RequestEvent): Promise<void> {

@@ -20,6 +20,7 @@
  */
 import { render } from './runtime.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
+import { getServerData } from './server/fx-data.js';
 
 export const hydration: { active: boolean; cursor: Node | null } = {
   active: false,
@@ -172,12 +173,11 @@ export function hydrate<T>(
   hydration.active = true;
   hydration.cursor = container.firstChild;
 
-  // Seed resources from server-serialized data (window.__FX_DATA__) so they
+  // Seed resources from server-serialized data (the __FX_DATA__ transport) so they
   // don't refetch — ids match by creation order (the server assigns r0, r1, …
   // in the same order this hydration render creates them). hydrate() is
   // synchronous, so setting these module-globals around it is safe.
-  const data: Record<string, unknown> | null =
-    (typeof window !== 'undefined' && (window as any).__FX_DATA__) || null;
+  const data: Record<string, unknown> | null = getServerData();
   const ns = options?.resourceNamespace;
   let rid = 0;
   setResourceIdSource(() => (ns ? `${ns}:r${rid++}` : `r${rid++}`));

@@ -18,6 +18,7 @@
  * request-scoped (AsyncLocalStorage) store — a follow-up.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
+import { getServerData } from '@fluixi/dom';
 
 const REGISTRY_KEY = '__fluixi_iso_states__';
 const SEED_PREFIX = '__iso:';
@@ -52,7 +53,7 @@ export interface IsomorphicOptions<T> {
 /** The server seed for `key`, if the page was server-rendered. */
 function readSeed<T>(key: string): T | undefined {
   if (typeof window === 'undefined') return undefined;
-  const data = (window as any).__FX_DATA__;
+  const data = getServerData();
   return data ? (data[SEED_PREFIX + key] as T | undefined) : undefined;
 }
 
