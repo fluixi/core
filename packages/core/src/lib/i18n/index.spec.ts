@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
-import { createI18n, detectLocale } from './index.js';
+import { describe, it, expect, expectTypeOf } from 'vitest';
+import { createI18n, detectLocale, type MessageKey } from './index.js';
 
 const messages = {
   en: {
@@ -67,5 +67,26 @@ describe('@fluixi/core/i18n', () => {
     expect(detectLocale('fr-FR,fr;q=0.9,en;q=0.8', ['en', 'fr'])).toBe('fr');
     expect(detectLocale('en-US', ['en', 'fr'])).toBe('en');
     expect(detectLocale('de-DE,de;q=0.9', ['en', 'fr'])).toBeUndefined();
+  });
+
+  it('infers translation keys for t() — leaf paths only (autocomplete)', () => {
+    // MessageKey derives the leaf-key union: flat, plural leaves, and nested dot-paths —
+    // but NOT intermediate branch keys (`cart`, `nested.deep`), which would render objects.
+    type M = {
+      welcome: string;
+      'nav.dashboard': string; // flat dotted
+      cart: { items: { one: string; other: string } };
+      nested: { deep: { key: string } };
+    };
+    expectTypeOf<MessageKey<M>>().toEqualTypeOf<
+      'welcome' | 'nav.dashboard' | 'cart.items' | 'nested.deep.key'
+    >();
+
+    // And t() accepts them (autocompleted at the call site).
+    const i = make();
+    i.t('welcome', { name: 'Ada' });
+    i.t('cart.items', { count: 2 });
+    i.t('nested.deep.key');
+    expectTypeOf<'welcome'>().toMatchTypeOf<Parameters<typeof i.t>[0]>();
   });
 });
