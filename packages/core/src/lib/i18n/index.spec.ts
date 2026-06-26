@@ -25,6 +25,15 @@ describe('@fluixi/core/i18n', () => {
     expect(make().t('nested.deep.key')).toBe('deep en');
   });
 
+  it('resolves a FLAT dotted key (e.g. "nav.dashboard") as well as nested trees', () => {
+    const i = createI18n({
+      locale: 'en',
+      locales: ['en'] as const,
+      messages: { en: { 'nav.dashboard': 'Dashboard' } },
+    });
+    expect(i.t('nav.dashboard')).toBe('Dashboard');
+  });
+
   it('pluralizes via Intl.PluralRules', () => {
     const { t } = make();
     expect(t('cart.items', { count: 1 })).toBe('1 item');

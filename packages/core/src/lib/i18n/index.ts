@@ -104,7 +104,13 @@ export function createI18n<L extends string>(config: I18nConfig<L>): I18n<L> {
   }
 
   function resolve(loc: L, key: string): MessageValue | undefined {
-    let node: unknown = config.messages[loc];
+    const bundle = config.messages[loc] as Record<string, unknown> | undefined;
+    if (bundle == null) return undefined;
+    // Flat key first — supports dotted flat keys like `nav.dashboard` (not just nested trees).
+    const flat = bundle[key];
+    if (flat !== undefined) return flat as MessageValue;
+    // Else walk the dot-path through a nested message tree.
+    let node: unknown = bundle;
     for (const part of key.split('.')) {
       if (node == null || typeof node !== 'object') return undefined;
       node = (node as Record<string, unknown>)[part];
