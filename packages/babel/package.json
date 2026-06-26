@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/babel-plugin-jsx",
-  "version": "1.0.0-alpha.30",
+  "version": "1.0.0-alpha.31",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
