@@ -33,20 +33,28 @@ import {
   type RequestEvent,
 } from '@fluixi/dom';
 
-// Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage in a
-// runtime-agnostic way so @fluixi/server LOADS on edge: prefer a global ALS (Cloudflare
-// Workers with nodejs_compat, Deno, Bun all expose it), else dynamically import node:async_hooks
-// (Node — a static import would fail to resolve on edge), else fall back to the sync store.
+// Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage SYNCHRONOUSLY
+// (the async drain reads the request context across awaits, so it must be set before the first
+// render) while staying edge-safe (no static `node:async_hooks` import) and build-safe (no
+// top-level await — esbuild rejects it on es2020 targets):
+//   1. a global ALS (Cloudflare Workers + nodejs_compat, Deno, Bun all expose it), else
+//   2. `process.getBuiltinModule('node:async_hooks')` (Node 20.16+/22+ — sync builtin access,
+//      no import statement), else fall back to the sync store.
 type ALSCtor = new <T>() => { getStore(): T | undefined; run<R>(s: T, fn: () => R): R };
-const AsyncLocalStorage: ALSCtor | undefined =
-  (globalThis as { AsyncLocalStorage?: ALSCtor }).AsyncLocalStorage ??
-  (await import('node:async_hooks').then((m) => m.AsyncLocalStorage as unknown as ALSCtor).catch(() => undefined));
-
-if (AsyncLocalStorage) {
-  setRequestStore(new AsyncLocalStorage<RequestContext>());
+function resolveALS(): ALSCtor | undefined {
+  const g = (globalThis as { AsyncLocalStorage?: ALSCtor }).AsyncLocalStorage;
+  if (g) return g;
+  const proc = (globalThis as { process?: { getBuiltinModule?: (id: string) => { AsyncLocalStorage?: ALSCtor } } }).process;
+  try {
+    return proc?.getBuiltinModule?.('node:async_hooks')?.AsyncLocalStorage;
+  } catch {
+    return undefined;
+  }
+}
+const ALS = resolveALS();
+if (ALS) {
+  setRequestStore(new ALS<RequestContext>());
 } else {
-  // No ALS (a bare edge runtime). The sync store works for one render at a time but can't
-  // isolate concurrent async renders sharing an isolate — enable a Node/Workers compat flag.
   console.warn('[fluixi/server] AsyncLocalStorage unavailable — using a sync request store (no async isolation across concurrent requests)');
 }
 
