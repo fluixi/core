@@ -10,6 +10,7 @@ export type { FluixiConfig, ResolvedConfig } from './config.js';
 export { dev } from './commands/dev.js';
 export { build } from './commands/build.js';
 export { start } from './commands/start.js';
+export { prerender } from './commands/prerender.js';
 export { injectApp, splitTemplate } from './internal.js';
 // The runtime-neutral request layer — the seam adapters (edge/worker/Bun/Deno) build on.
 export {
@@ -28,6 +29,9 @@ export type { Adapter, AdapterContext } from './adapter.js';
 // Request middleware — a `(request, next) => Response` chain run before render.
 export { defineMiddleware, composeMiddleware, normalizeMiddleware } from './middleware.js';
 export type { Middleware, MiddlewareNext } from './middleware.js';
+// HTTP interceptors — request/response/error pipeline around fetch (server-fn RPC + app fetch).
+export { addInterceptor, clearInterceptors, fetchWithInterceptors } from './interceptors.js';
+export type { Interceptor } from './interceptors.js';
 // Middleware→render locals bridge: write `getRequestLocals(request).x = …` in middleware;
 // read it back in loaders/server-fns/render via getLocals() (the app entry forwards
 // `request` on the render event — `renderRequestAsync(App, { url, request })`).

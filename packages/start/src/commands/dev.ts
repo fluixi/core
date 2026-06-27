@@ -6,6 +6,7 @@ import { resolveConfig } from '../config.js';
 import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
+import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
 
 /**
@@ -40,6 +41,11 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     if (url.pathname === '/_server') {
       const sf = await vite.ssrLoadModule(SERVER_FNS_VMOD);
       if (sf.isServerFnRequest(request)) return sf.handleServerFn(request);
+    }
+    // File-based API routes (src/api/** → /api/*) — auto-wired, no entry change needed.
+    if (isApiPath(url.pathname)) {
+      const api = await vite.ssrLoadModule(API_VIRTUAL_MODULE);
+      if (api.isApiRequest(request)) return api.handleApiRequest(request);
     }
     // SPA mode: serve the static shell; the client entry renders. The server still ran
     // (server functions above + middleware below), there's just no SSR render pass.
