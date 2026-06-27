@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/session",
-  "version": "1.0.0-alpha.31",
+  "version": "1.0.0-alpha.32",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",

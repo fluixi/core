@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.32
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.32
+
 ## 1.0.0-alpha.31
 
 ### Minor Changes
