@@ -6,7 +6,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction'] },
   {
     group: { en: 'Reactivity', fr: 'Réactivité' },
-    slugs: ['signals', 'derived-values', 'effects', 'stores', 'async'],
+    slugs: ['signals', 'derived-values', 'effects', 'stores', 'async', 'tc39-signals'],
   },
   {
     group: { en: 'Components', fr: 'Composants' },
