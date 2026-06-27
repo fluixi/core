@@ -1,0 +1,25 @@
+{
+  "name": "@fluixi/playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@babel/standalone": "^7.25.0",
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/devtools": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "monaco-editor": "^0.52.0"
+  },
+  "devDependencies": {
+    "@fluixi/vite-plugin": "workspace:*",
+    "@types/babel__standalone": "^7.1.7",
+    "vite": "^5.0.0"
+  }
+}

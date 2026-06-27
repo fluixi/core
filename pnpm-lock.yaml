@@ -107,6 +107,28 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  examples/playground:
+    dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   examples/router:
     dependencies:
       '@fluixi/core':
@@ -417,6 +439,12 @@ importers:
 
   packages/create: {}
 
+  packages/devtools:
+    devDependencies:
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+
   packages/dom:
     dependencies:
       lit:
@@ -617,6 +645,43 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
+  playground:
+    dependencies:
+      '@babel/standalone':
+        specifier: ^7.25.0
+        version: 7.29.7
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../packages/compiler
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@fluixi/devtools':
+        specifier: workspace:*
+        version: link:../packages/devtools
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../packages/reactive
+      monaco-editor:
+        specifier: ^0.52.0
+        version: 0.52.2
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../packages/vite-plugin
+      '@types/babel__standalone':
+        specifier: ^7.1.7
+        version: 7.1.9
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
 packages:
 
@@ -1205,6 +1270,10 @@ packages:
 
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/standalone@7.29.7':
+    resolution: {integrity: sha512-oFh9XoGL20UuHIeIuBQHOvF7r2dOCRnZW0r4SageGb9SWnt6HhbuPLREykNaEnP7/SRpMUwr50SSMJLrmeHvnQ==}
     engines: {node: '>=6.9.0'}
 
   '@babel/template@7.29.7':
@@ -2637,6 +2706,9 @@ packages:
 
   '@types/babel__helper-plugin-utils@7.10.3':
     resolution: {integrity: sha512-FcLBBPXInqKfULB2nvOBskQPcnSMZ0s1Y2q76u9H1NPPWaLcTeq38xBeKfF/RBUECK333qeaqRdYoPSwW7rTNQ==}
+
+  '@types/babel__standalone@7.1.9':
+    resolution: {integrity: sha512-IcCNPLqpevUD7UpV8QB0uwQPOyoOKACFf0YtYWRHcmxcakaje4Q7dbG2+jMqxw/I8Zk0NHvEps66WwS7z/UaaA==}
 
   '@types/babel__template@7.4.4':
     resolution: {integrity: sha512-h/NUaSyG5EyxBIp8YRxo4RMe2/qQgvyowRwVMzhYhBCONbW8PUsg4lkFMrhgZhUe5z3L3MiLDuvyJ/CaPa2A8A==}
@@ -4503,6 +4575,9 @@ packages:
 
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
+
+  monaco-editor@0.52.2:
+    resolution: {integrity: sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ==}
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -6527,6 +6602,8 @@ snapshots:
 
   '@babel/runtime@7.29.7': {}
 
+  '@babel/standalone@7.29.7': {}
+
   '@babel/template@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
@@ -7812,6 +7889,15 @@ snapshots:
   '@types/babel__helper-plugin-utils@7.10.3':
     dependencies:
       '@types/babel__core': 7.20.5
+
+  '@types/babel__standalone@7.1.9':
+    dependencies:
+      '@babel/parser': 7.29.7
+      '@babel/types': 7.29.7
+      '@types/babel__core': 7.20.5
+      '@types/babel__generator': 7.27.0
+      '@types/babel__template': 7.4.4
+      '@types/babel__traverse': 7.28.0
 
   '@types/babel__template@7.4.4':
     dependencies:
@@ -9847,6 +9933,8 @@ snapshots:
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.4
+
+  monaco-editor@0.52.2: {}
 
   mri@1.2.0: {}
 
