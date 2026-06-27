@@ -1,6 +1,5 @@
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL } from './nav.js';
-import './styles.css';
 
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/…)
 // so each version has its own route wrapper — the router merges the inner [lang]/[slug] params.
