@@ -57,7 +57,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         </aside>
 
         <main class="d-main">
-          <article class="prose" innerHTML={() => doc?.html ?? '<h1>Not found</h1>'} />
+          <article class="prose" innerHTML={(() => doc?.html ?? '<h1>Not found</h1>') as unknown as string} />
           <nav class="d-pager">
             {prev ? (
               <a class="pager" href={link(prev)}>
