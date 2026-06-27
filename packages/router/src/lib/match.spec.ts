@@ -51,6 +51,22 @@ describe('matchRoutes', () => {
     expect(matchRoutes([{ path: '/home', component: Home }], '/nope')).toBeNull();
   });
 
+  it('tolerates a trailing slash (static hosts canonicalise /a/b → /a/b/)', () => {
+    const routes: RouteDefinition[] = [
+      {
+        path: '/v1',
+        component: A,
+        children: [{ path: '/v1/:lang/:slug', component: Leaf }],
+      },
+    ];
+    const m = matchRoutes(routes, '/v1/en/introduction/')!;
+    expect(m).not.toBeNull();
+    expect(m.matched.map((x) => x.component)).toEqual([A, Leaf]);
+    expect(m.params).toEqual({ lang: 'en', slug: 'introduction' });
+    // root is preserved (not stripped to empty)
+    expect(matchRoutes([{ path: '/', component: Home }], '/')!.matched[0].component).toBe(Home);
+  });
+
   it('resolves a nested layout → page tree (parent → child)', () => {
     const routes: RouteDefinition[] = [
       {
