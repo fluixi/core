@@ -1,0 +1,22 @@
+{
+  "name": "@fluixi/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "node build.mjs",
+    "start": "fluixi start"
+  },
+  "dependencies": {
+    "@fluixi/cli": "workspace:*",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
+    "@fluixi/start": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
