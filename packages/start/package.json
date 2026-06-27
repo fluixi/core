@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/start",
-  "version": "0.1.0-alpha.20",
-  "description": "The Fluixi meta-framework \u2014 dev server, build, and production SSR server over @fluixi/server + Vite.",
+  "version": "0.1.0-alpha.21",
+  "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
