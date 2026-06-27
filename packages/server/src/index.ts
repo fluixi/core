@@ -15,7 +15,6 @@
  * No vinxi coupling — the meta-framework was never wired into the render path;
  * SSR is a plain function you call from any server (Express/Hono/Nitro/worker).
  */
-import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   renderToString,
   renderToStringAsync,
@@ -34,8 +33,22 @@ import {
   type RequestEvent,
 } from '@fluixi/dom';
 
-// Enable request-scoped isolation for concurrent async renders.
-setRequestStore(new AsyncLocalStorage<RequestContext>());
+// Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage in a
+// runtime-agnostic way so @fluixi/server LOADS on edge: prefer a global ALS (Cloudflare
+// Workers with nodejs_compat, Deno, Bun all expose it), else dynamically import node:async_hooks
+// (Node — a static import would fail to resolve on edge), else fall back to the sync store.
+type ALSCtor = new <T>() => { getStore(): T | undefined; run<R>(s: T, fn: () => R): R };
+const AsyncLocalStorage: ALSCtor | undefined =
+  (globalThis as { AsyncLocalStorage?: ALSCtor }).AsyncLocalStorage ??
+  (await import('node:async_hooks').then((m) => m.AsyncLocalStorage as unknown as ALSCtor).catch(() => undefined));
+
+if (AsyncLocalStorage) {
+  setRequestStore(new AsyncLocalStorage<RequestContext>());
+} else {
+  // No ALS (a bare edge runtime). The sync store works for one render at a time but can't
+  // isolate concurrent async renders sharing an isolate — enable a Node/Workers compat flag.
+  console.warn('[fluixi/server] AsyncLocalStorage unavailable — using a sync request store (no async isolation across concurrent requests)');
+}
 
 export {
   renderToString,
