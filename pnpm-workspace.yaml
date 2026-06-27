@@ -2,3 +2,4 @@ packages:
   - packages/*
   - "!packages/mix-builder"
   - examples/*
+  - playground
