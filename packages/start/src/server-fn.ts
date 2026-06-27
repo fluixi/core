@@ -39,8 +39,15 @@ export function setServerFnContextRunner(runner: ContextRunner | null): void {
   contextRunner = runner;
 }
 
+// The fetch the RPC client uses. Pluggable so interceptors (auth headers, 401 handling,
+// retry) apply to server-function calls — `addInterceptor` swaps in the intercepted fetch.
+let _fetch: typeof fetch = (...a) => fetch(...a);
+export function setServerFnFetch(f: typeof fetch): void {
+  _fetch = f;
+}
+
 async function callServer(id: string, args: any[]): Promise<any> {
-  const res = await fetch(SERVER_FN_ENDPOINT, {
+  const res = await _fetch(SERVER_FN_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json', [HEADER]: id },
     body: JSON.stringify(args),

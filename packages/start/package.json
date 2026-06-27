@@ -68,6 +68,12 @@
       "types": "./dist/di.d.ts",
       "import": "./dist/di.js",
       "default": "./dist/di.js"
+    },
+    "./api": {
+      "development": "./src/api.ts",
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js",
+      "default": "./dist/api.js"
     }
   },
   "dependencies": {

@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
+import { prerender } from './prerender.js';
 import { wordmark, step, done, c } from '../ui.js';
 
 /**
@@ -60,6 +61,12 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
         emptyOutDir: false,
       },
     });
+  }
+
+  // SSG: prerender routes to static HTML in dist/client (config-driven).
+  if (cfg.prerender) {
+    process.stdout.write('\n');
+    await prerender(config);
   }
 
   const ms = Date.now() - startedAt;

@@ -58,6 +58,12 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     core = (request) => (mod.isServerFnRequest(request) ? mod.handleServerFn(request) : render(request));
   }
 
+  // File-based API routes — the entry-server re-exports them from virtual:fluixi-api.
+  if (typeof mod.handleApiRequest === 'function' && typeof mod.isApiRequest === 'function') {
+    const next = core;
+    core = (request) => (mod.isApiRequest(request) ? mod.handleApiRequest(request) : next(request));
+  }
+
   // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
   const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');
   if (!existsSync(mwFile)) return guardHandler(core);
