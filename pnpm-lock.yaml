@@ -79,6 +79,43 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@18.16.9)(@vitest/ui@3.2.6)(jiti@2.4.2)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(yaml@2.9.0)
 
+  docs:
+    dependencies:
+      '@fluixi/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../packages/reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../packages/server
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../packages/start
+      highlight.js:
+        specifier: ^11.10.0
+        version: 11.11.1
+      marked:
+        specifier: ^14.1.0
+        version: 14.1.4
+      marked-highlight:
+        specifier: ^2.1.4
+        version: 2.2.4(marked@14.1.4)
+    devDependencies:
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   examples/counter:
     dependencies:
       '@fluixi/core':
@@ -3988,6 +4025,10 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
+
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
@@ -4510,6 +4551,16 @@ packages:
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
     engines: {node: '>=10'}
+
+  marked-highlight@2.2.4:
+    resolution: {integrity: sha512-PZxisNMJDduSjc0q6uvjsnqqHCXc9s0eyzxDO9sB1eNGJnd/H1/Fu+z6g/liC1dfJdFW4SftMwMlLvsBhUPrqQ==}
+    peerDependencies:
+      marked: '>=4 <19'
+
+  marked@14.1.4:
+    resolution: {integrity: sha512-vkVZ8ONmUdPnjCKc5uTRvmkRbx4EAi2OkTOXmfTDhZz3OFqMNBM1oTTWwTr4HY4uAEojhzPf+Fy8F1DWa3Sndg==}
+    engines: {node: '>= 18'}
+    hasBin: true
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -9312,6 +9363,8 @@ snapshots:
 
   he@1.2.0: {}
 
+  highlight.js@11.11.1: {}
+
   hmac-drbg@1.0.1:
     dependencies:
       hash.js: 1.1.7
@@ -9882,6 +9935,12 @@ snapshots:
   make-dir@4.0.0:
     dependencies:
       semver: 7.8.1
+
+  marked-highlight@2.2.4(marked@14.1.4):
+    dependencies:
+      marked: 14.1.4
+
+  marked@14.1.4: {}
 
   math-intrinsics@1.1.0: {}
 
