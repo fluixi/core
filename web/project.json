@@ -5,7 +5,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "fluixi build",
+        "command": "node build.mjs",
         "cwd": "web"
       },
       "dependsOn": ["^build"]

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "fluixi dev",
-    "build": "fluixi build",
+    "build": "node build.mjs",
     "start": "fluixi start"
   },
   "dependencies": {
