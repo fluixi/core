@@ -8,6 +8,14 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
     group: { en: 'Reactivity', fr: 'Réactivité' },
     slugs: ['signals', 'derived-values', 'effects', 'stores', 'async'],
   },
+  {
+    group: { en: 'Components', fr: 'Composants' },
+    slugs: ['components', 'control-flow', 'lifecycle'],
+  },
+  {
+    group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },
+    slugs: ['routing', 'server-functions', 'api-routes', 'middleware', 'static-generation', 'dependency-injection', 'i18n'],
+  },
 ];
 
 /** Flat reading order across all groups (for prev/next). */
