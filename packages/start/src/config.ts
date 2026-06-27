@@ -30,6 +30,8 @@ export interface FluixiConfig {
   mountId?: string;
   /** File-routes directory (passed to fluixiRoutesPlugin). Default: src/routes */
   routesDir?: string;
+  /** File-based API routes directory; files export GET/POST/… handlers served at `/api/*`. Default: src/api */
+  apiDir?: string;
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;
   /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
@@ -41,6 +43,13 @@ export interface FluixiConfig {
    * with `src/i18n` — a no-op until that folder has `*.json` files, so it's effectively opt-in.
    */
   i18n?: boolean | { dir?: string; defaultLocale?: string; locales?: string[] };
+  /**
+   * Static Site Generation. When set, `fluixi build` prerenders routes to static HTML in
+   * `dist/client` (served by any static host; hydrates on the client). `true` prerenders `/`
+   * and crawls internal `<a href>` links. An object sets explicit `routes` (for dynamic paths
+   * with no incoming link) and toggles `crawl`. Requires `ssr: true` (it renders to prerender).
+   */
+  prerender?: boolean | { routes?: string[]; crawl?: boolean };
 }
 
 /** Resolved i18n discovery config (or `false` when disabled). */
@@ -50,9 +59,16 @@ export interface ResolvedI18n {
   locales?: string[];
 }
 
-export type ResolvedConfig = Required<Omit<FluixiConfig, 'ssrNoExternal' | 'i18n'>> & {
+/** Resolved SSG config (or `false` when disabled). */
+export interface ResolvedPrerender {
+  routes: string[];
+  crawl: boolean;
+}
+
+export type ResolvedConfig = Required<Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender'>> & {
   ssrNoExternal: string[];
   i18n: ResolvedI18n | false;
+  prerender: ResolvedPrerender | false;
 };
 
 /** Identity helper for editor types in `fluixi.config.ts`. */
@@ -72,9 +88,21 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     template: config.template ?? 'index.html',
     mountId: config.mountId ?? 'root',
     routesDir: config.routesDir ?? 'src/routes',
+    apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
     i18n: resolveI18n(config.i18n),
+    prerender: resolvePrerender(config.prerender),
+  };
+}
+
+/** `false`/unset → disabled; `true` → crawl from `/`; object → explicit routes + crawl toggle. */
+function resolvePrerender(prerender: FluixiConfig['prerender']): ResolvedPrerender | false {
+  if (!prerender) return false;
+  const opts = typeof prerender === 'object' ? prerender : {};
+  return {
+    routes: opts.routes?.length ? opts.routes : ['/'],
+    crawl: opts.crawl ?? true,
   };
 }
 

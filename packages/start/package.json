@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/start",
   "version": "0.1.0-alpha.20",
-  "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
+  "description": "The Fluixi meta-framework \u2014 dev server, build, and production SSR server over @fluixi/server + Vite.",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
@@ -68,6 +68,12 @@
       "types": "./dist/di.d.ts",
       "import": "./dist/di.js",
       "default": "./dist/di.js"
+    },
+    "./api": {
+      "development": "./src/api.ts",
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js",
+      "default": "./dist/api.js"
     }
   },
   "dependencies": {
