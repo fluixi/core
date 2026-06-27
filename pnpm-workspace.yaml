@@ -3,3 +3,4 @@ packages:
   - "!packages/mix-builder"
   - examples/*
   - playground
+  - web
