@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/devtools",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.0",
   "description": "Live inspector for the Fluixi reactive graph — instrument signals/memos/effects and visualize propagation.",
   "type": "module",
   "exports": {
