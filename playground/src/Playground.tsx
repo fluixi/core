@@ -81,7 +81,7 @@ export function Playground() {
     raf = requestAnimationFrame(tick);
   }
 
-  function run() {
+  async function run() {
     current?.dispose();
     view ??= createGraphView(svgEl, {
       onSelect: (n) => {
@@ -93,7 +93,7 @@ export function Playground() {
     view.clear();
     let code = '';
     try {
-      code = compile(editor.getValue());
+      code = await compile(editor.getValue()); // babel is lazy-loaded on first run
       setCompiled(code);
     } catch (e) {
       setError(e instanceof Error ? `Compile · ${e.message}` : String(e));

@@ -1,19 +1,33 @@
 // In-browser JSX → imperative runtime, via @babel/standalone hosting the real Fluixi babel plugin.
-import * as Babel from '@babel/standalone';
-// default export is the babel plugin
-import fluixiPlugin from '@fluixi/compiler/babel';
+// Babel (~2-3 MB) is dynamically imported on first compile, so it's not in the initial bundle —
+// the editor loads fast and babel only ships when you hit Run.
+type BabelStandalone = {
+  registerPlugin(name: string, plugin: unknown): void;
+  transform(code: string, opts: unknown): { code?: string };
+};
 
-let registered = false;
-function ensure() {
-  if (registered) return;
-  (Babel as unknown as { registerPlugin(n: string, p: unknown): void }).registerPlugin('fluixi', fluixiPlugin);
-  registered = true;
+let babel: BabelStandalone | null = null;
+let loading: Promise<BabelStandalone> | null = null;
+
+async function ensureBabel(): Promise<BabelStandalone> {
+  if (babel) return babel;
+  if (!loading) {
+    loading = Promise.all([import('@babel/standalone'), import('@fluixi/compiler/babel')]).then(
+      ([Babel, plugin]) => {
+        const b = Babel as unknown as BabelStandalone;
+        b.registerPlugin('fluixi', (plugin as { default: unknown }).default);
+        babel = b;
+        return b;
+      },
+    );
+  }
+  return loading;
 }
 
 // Compile a JSX/TSX snippet to imperative code (createNativeElement/insert/…). Throws on syntax error.
-export function compile(code: string): string {
-  ensure();
-  const out = Babel.transform(code, {
+export async function compile(code: string): Promise<string> {
+  const b = await ensureBabel();
+  const out = b.transform(code, {
     filename: 'snippet.tsx',
     configFile: false,
     babelrc: false,
