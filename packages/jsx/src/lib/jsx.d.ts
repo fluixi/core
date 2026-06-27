@@ -347,8 +347,8 @@ export namespace JSX {
     // Children
     children?: Element;
 
-    // innerHTML / textContent
-    innerHTML?: string;
+    // innerHTML / textContent (a static value or a reactive accessor)
+    innerHTML?: string | (() => string);
     textContent?: string | number;
   }
 

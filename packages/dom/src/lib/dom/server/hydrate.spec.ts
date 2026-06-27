@@ -89,3 +89,37 @@ describe('SSR → client handoff', () => {
     expect(container.querySelector('span')!.textContent).toBe('count:1');
   });
 });
+
+describe('static innerHTML prop', () => {
+  // Regression: spread used to always call val() on innerHTML, so a plain string
+  // threw ("val is not a function") and aborted the render mid-walk — wiping the
+  // whole root on hydration. A static value must just be assigned.
+  function HtmlApp(markup: string) {
+    return (() => {
+      const root = createNativeElement('article') as any;
+      spread({ element: root, props: { class: 'prose', innerHTML: markup } });
+      return root;
+    })();
+  }
+
+  it('assigns a string innerHTML on render', () => {
+    const container = document.createElement('div');
+    render(() => HtmlApp('<h1>Hello</h1>'), container);
+    expect(container.querySelector('h1')!.textContent).toBe('Hello');
+  });
+
+  it('survives hydration over matching server HTML', () => {
+    const markup = '<h1>Intro</h1><p>body</p>';
+    const html = renderToString(() => HtmlApp(markup));
+    expect(html).toContain('<h1>Intro</h1>');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    container.innerHTML = html;
+    hydrate(() => HtmlApp(markup), container);
+
+    // content still present after hydration (was wiped by the throw before the fix)
+    expect(container.querySelector('h1')!.textContent).toBe('Intro');
+    expect(container.querySelector('p')!.textContent).toBe('body');
+  });
+});

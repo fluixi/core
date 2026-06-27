@@ -1369,18 +1369,19 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     }
     if (key === 'style') { setStyle(element as HTMLElement, val); continue; }
     if (key === 'innerHTML') {
-        // let v = typeof val === 'function' ? val() : val
-        // while(typeof v === 'function') v = v()
-              const dispose = createEffect(() => {
-                let v = val()
-                while(typeof v === 'function') v = v();
-                (element as any).innerHTML = v;
-              });
-              onCleanup(()=>{
-                dispose()
-              })
-              // (element as any).innerHTML = val;
-                // console.log('inner html is', v);
+      // Accept a static string OR a reactive accessor. A function is wrapped in an effect so
+      // updates apply; a plain value is set once. (The previous code always called val(), which
+      // threw on a static string — wiping content during hydration.)
+      if (typeof val === 'function') {
+        const dispose = createEffect(() => {
+          let v: unknown = (val as () => unknown)();
+          while (typeof v === 'function') v = (v as () => unknown)();
+          (element as any).innerHTML = v;
+        });
+        onCleanup(() => dispose());
+      } else {
+        (element as any).innerHTML = val;
+      }
       continue;
     }
     // Special case: <input>/<textarea> value — use DOM property assignment, not
