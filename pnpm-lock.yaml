@@ -683,6 +683,34 @@ importers:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  web:
+    dependencies:
+      '@fluixi/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../packages/reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../packages/server
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../packages/start
+    devDependencies:
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
 packages:
 
   '@acemir/cssom@0.9.31':
