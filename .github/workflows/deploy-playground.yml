@@ -1,0 +1,54 @@
+name: Deploy Playground
+
+# Builds the Fluixi playground (Vite SPA) and uploads the static output to Cloudflare Pages.
+# The build runs here (with the private-registry auth we already have); Cloudflare just hosts it.
+on:
+  push:
+    branches: [alpha]
+    paths:
+      - 'playground/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-playground.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-playground
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com/
+          scope: '@fluixi'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build playground
+        run: pnpm --filter @fluixi/playground build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # --branch=main marks this as the PRODUCTION deployment (the Pages project's
+          # production branch defaults to "main"); it's the Pages label, not our git branch.
+          command: pages deploy playground/dist --project-name=fluixi-playground --branch=main
