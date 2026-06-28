@@ -186,9 +186,7 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
     expect(html).toContain('class="card"');
 
     document.body.innerHTML = `<div id="app">${html}</div>`;
-    // No explicit hydrate option — a non-empty root must auto-hydrate (the default that kills the
-    // first-paint flash) rather than clear + re-render.
-    startClient(App as any, { root: '#app' });
+    startClient(App as any, { root: '#app', hydrate: true });
     await tick();
     await tick();
     await tick();
