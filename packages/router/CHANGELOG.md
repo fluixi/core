@@ -1,5 +1,11 @@
 # @fluixi/router
 
+## 0.1.2-alpha.0
+
+### Patch Changes
+
+- 076dbb4: Tolerate a trailing slash when matching routes. Static hosts (e.g. Cloudflare Pages) canonicalise `/a/b` to `/a/b/`; leaf routes match exactly, so the stray slash matched nothing and rendered an empty root after hydration. The matcher now strips a trailing slash (root `/` preserved).
+
 ## 0.1.1
 
 ### Patch Changes
