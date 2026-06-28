@@ -1,9 +1,15 @@
 import { createSignal } from '@fluixi/core';
+import { seo } from '@fluixi/start/head';
 import './landing.css';
 
+const SITE = 'https://fluixi.com';
 const DOCS_URL = 'https://docs.fluixi.com';
 const PLAYGROUND_URL = 'https://playground.fluixi.com';
 const GITHUB_URL = 'https://github.com/fluixi/core';
+
+const TITLE = 'Fluixi — the reactive framework, compiled';
+const DESC =
+  'Fluixi is a fine-grained reactive, compiled, full-stack web framework: SSR, streaming, SSG, file routing, server functions, DI, i18n, islands and edge — on a TC39-signals core.';
 
 const FEATURES: { glyph: string; title: string; body: string; tone: string }[] = [
   { glyph: '◆', tone: 'state', title: 'Fine-grained reactivity', body: 'A TC39-Signals graph updates exactly the DOM that changed — no virtual DOM, no diffing, no re-renders.' },
@@ -204,6 +210,24 @@ function Footer() {
 }
 
 export default function Home() {
+  // Page metadata — rendered into <head> on the server (this page is SSG) and kept reactive on
+  // the client. Gives crawlers a canonical URL + rich link previews (the robots.txt/sitemap live
+  // in public/).
+  seo({
+    title: TITLE,
+    description: DESC,
+    canonical: `${SITE}/`,
+    og: {
+      type: 'website',
+      siteName: 'Fluixi',
+      url: `${SITE}/`,
+      title: TITLE,
+      description: DESC,
+      image: { url: `${SITE}/og.png`, width: 1200, height: 630, alt: 'Fluixi' },
+    },
+    twitter: { card: 'summary_large_image', title: TITLE, description: DESC, image: `${SITE}/og.png` },
+  });
+
   return (
     <div class="page">
       <Nav />
