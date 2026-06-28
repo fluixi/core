@@ -1,5 +1,21 @@
 # @fluixi/server
 
+## 1.0.0-alpha.34
+
+### Minor Changes
+
+- 6f8a9d4: Wire @fluixi/head into the framework (zero-config SEO). renderRequestAsync collects seo()/useHead metadata during SSR and carries it back; @fluixi/start lifts it into <head>/<html> for SSR + prerender. startClient mounts the head registry so it hydrates (server tags reused by key) and updates live, including on route transitions (seo() auto-disposes on owner unmount). Apps just call seo({...}) — no setup.
+
+### Patch Changes
+
+- Updated dependencies [f0926b6]
+- Updated dependencies [bec9d21]
+- Updated dependencies [6f8a9d4]
+- Updated dependencies [0c2ecb7]
+  - @fluixi/dom@1.0.0-alpha.34
+  - @fluixi/head@0.1.0-alpha.1
+  - @fluixi/reactive@1.0.0-alpha.34
+
 ## 1.0.0-alpha.33
 
 ### Patch Changes
