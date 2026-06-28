@@ -63,6 +63,14 @@ export interface StartClientOptions {
   root?: string | HTMLElement;
   /** Force hydration mode. Default: auto-detect from __FLUIXI_HYDRATION__ marker */
   hydrate?: boolean;
+  /**
+   * The app's route tree (the same array passed to <Router routes={…}/>). When provided,
+   * the lazy chunk(s) for the route matching the current URL are downloaded and awaited
+   * BEFORE hydration, so each lazy file-route resolves synchronously and adopts the server
+   * DOM in place (no fallback, no duplicate). Passing this also enables auto-hydration of a
+   * server-rendered (non-empty) root, giving flash-free hydration with zero extra config.
+   */
+  routes?: any[];
 }
 
 /**
@@ -80,7 +88,7 @@ export interface StartClientOptions {
  * startClient(App);
  * ```
  */
-export function startClient(
+export async function startClient(
   App: (props?: any) => any,
   options: StartClientOptions = {}
 ) {
@@ -96,18 +104,16 @@ export function startClient(
   }
 
   // Hydrate when explicitly requested (`{ hydrate: true }`), when the server emits the
-  // `__FLUIXI_HYDRATION__` marker, OR — the common case — when the mount root already holds
-  // server-rendered content (a non-empty root means SSR/SSG ran, so reuse that DOM instead of
-  // clearing it and re-rendering, which causes a first-paint flash). A client-only app mounts
-  // into an empty `<div id="root">`, so `firstElementChild` is null and it client-renders.
-  // Lazy-route, text-ordering, component-children, and nested Router/Suspense/Outlet hydration
-  // all reuse the server DOM in place (no duplication).
-  // Opt-in: hydrate only when explicitly asked (`{ hydrate: true }`) or when the server emits the
-  // `__FLUIXI_HYDRATION__` marker. A non-empty root used to auto-hydrate, but DOM-reuse hydration
-  // still duplicates apps with async lazy file-routes (the route chunk resolves after the hydration
-  // pass and rebuilds fresh). Until that's fixed, default to the render() path (correct; a brief
-  // first-paint re-render) rather than risk a duplicated tree.
-  const shouldHydrate = options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
+  // `__FLUIXI_HYDRATION__` marker, or — with a route tree in hand — when the mount root already
+  // holds server-rendered content. A non-empty root means SSR/SSG ran, so reuse that DOM instead
+  // of clearing and re-rendering (which flashes). Auto-hydration is gated on `routes` because
+  // hydrating an app with async lazy file-routes is only safe once those chunks are preloaded
+  // (below) — without the route tree we can't preload, so we fall back to the render() path. A
+  // client-only app mounts into an empty `<div id="root">` (firstElementChild null) → client render.
+  const hasServerDom =
+    !!document.getElementById('__FLUIXI_HYDRATION__') ||
+    (!!options.routes && (container as Element).firstElementChild != null);
+  const shouldHydrate = options.hydrate ?? hasServerDom;
 
   // Active head registry for this document — seo()/useHead() during the app render register here;
   // mountHead reconciles it into <head> after mount (reusing server tags by key) and keeps it live.
@@ -115,6 +121,14 @@ export function startClient(
   setActiveHead(head);
 
   if (shouldHydrate) {
+    // Preload the lazy chunk(s) for the current route so they resolve synchronously during the
+    // hydration render — the lazy boundary then adopts the server DOM in place instead of
+    // resolving a tick later and rebuilding a duplicate. Dynamic import keeps the router out of
+    // client-only bundles that never pass `routes`.
+    if (options.routes && options.routes.length) {
+      const { preloadRoutes } = await import('../router-next/index.js');
+      await preloadRoutes(options.routes, window.location.pathname);
+    }
     deserializeHydrationData();
     setHydrating(true);
     domHydrate(() => App(), container as HTMLElement);

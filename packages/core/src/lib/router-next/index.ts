@@ -38,6 +38,7 @@ import { deepEqual } from '@fluixi/utils/compare';
 import {
   createRouter as createCoreRouter,
   createBrowserHistory,
+  matchRoutes,
   matchPath,
   type RouteDefinition,
   type MatchedRoute,
@@ -545,6 +546,30 @@ export function Form(props: FormProps) {
   const children = props.children;
   if (children != null) insert(form, children as any);
   return form;
+}
+
+// ─── Hydration preload ───────────────────────────────────────────────────────────
+
+/**
+ * Download the lazy component chunks for the route(s) matching `pathname` and resolve when
+ * they're all loaded. Await this BEFORE hydrating: once each matched lazy file-route is
+ * resolved it renders synchronously on the first pass (no Suspense fallback, no late
+ * re-render), so hydration adopts the server DOM in place instead of building a duplicate
+ * subtree next to it. No-op for routes with no lazy components. Safe to call when the URL
+ * matches nothing (resolves immediately).
+ */
+export async function preloadRoutes<C = any>(
+  routes: RouteDefinition<C>[],
+  pathname: string,
+): Promise<void> {
+  const match = matchRoutes(routes, pathname);
+  if (!match) return;
+  const loads: Promise<unknown>[] = [];
+  for (const m of match.matched) {
+    const c = m.component as { preload?: () => Promise<unknown> } | undefined;
+    if (c && typeof c.preload === 'function') loads.push(c.preload());
+  }
+  await Promise.all(loads);
 }
 
 // ─── Re-exports ────────────────────────────────────────────────────────────────
