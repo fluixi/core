@@ -1,5 +1,12 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.26
+
+### Patch Changes
+
+- Updated dependencies [bdcc4a5]
+  - @fluixi/start@0.1.0-alpha.25
+
 ## 0.1.0-alpha.25
 
 ### Patch Changes

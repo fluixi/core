@@ -1,5 +1,13 @@
 # @fluixi/server
 
+## 1.0.0-alpha.35
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.35
+- @fluixi/dom@1.0.0-alpha.35
+- @fluixi/head@0.1.0-alpha.2
+
 ## 1.0.0-alpha.34
 
 ### Minor Changes
