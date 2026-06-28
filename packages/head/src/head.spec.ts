@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { createRoot } from '@fluixi/reactive/signal';
 import { createHead, resolveHead, renderHead, runWithHead, seo } from './index.js';
 import { jsonld } from './jsonld.js';
 import { generateRobots, generateSitemap, generateSitemapIndex } from './sitemap.js';
+import { encodeHeadMarker, extractHeadMarker } from './transport.js';
 import type { HeadTag } from './types.js';
 
 const meta = (tags: HeadTag[], pred: (a: Record<string, string>) => boolean) =>
@@ -58,6 +60,18 @@ describe('resolve + dedupe', () => {
     runWithHead(h, () => seo({ title: 'Active' }));
     expect(title(resolveHead(h).tags)!.children).toBe('Active');
   });
+
+  it('drops a source when its owner unmounts — client route transitions', () => {
+    const h = createHead();
+    let dispose!: () => void;
+    createRoot((d) => {
+      dispose = d;
+      runWithHead(h, () => seo({ meta: [{ name: 'robots', content: 'noindex' }] }));
+    });
+    expect(resolveHead(h).tags.some((t) => t.tag === 'meta')).toBe(true);
+    dispose();
+    expect(resolveHead(h).tags).toHaveLength(0);
+  });
 });
 
 describe('SSR serialize', () => {
@@ -106,5 +120,23 @@ describe('robots.txt + sitemap.xml', () => {
     expect(xml).toContain('hreflang="fr"');
     expect(xml).toContain('<image:loc>https://x/og.png</image:loc>');
     expect(generateSitemapIndex([{ loc: 'https://x/sitemap-1.xml' }])).toContain('<sitemapindex');
+  });
+});
+
+describe('head transport (SSR marker)', () => {
+  it('round-trips head + html attrs through a body marker', () => {
+    const h = createHead();
+    h.push({ lang: 'fr', title: 'T', description: 'd' });
+    const marker = encodeHeadMarker(renderHead(h));
+    const body = `<div id="root">hi</div>`;
+    const { head, body: cleaned } = extractHeadMarker(marker + body);
+    expect(cleaned).toBe(body); // marker stripped
+    expect(head!.htmlAttrs).toEqual({ lang: 'fr' });
+    expect(head!.headHtml).toContain('<title');
+    expect(head!.headHtml).toContain('name="description"');
+  });
+  it('emits nothing when no head was used', () => {
+    expect(encodeHeadMarker(renderHead(createHead()))).toBe('');
+    expect(extractHeadMarker('<div>plain</div>')).toEqual({ head: null, body: '<div>plain</div>' });
   });
 });

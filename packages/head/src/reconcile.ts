@@ -68,6 +68,7 @@ function apply(tags: HeadTag[], htmlAttrs: Record<string, string>): void {
 export function mountHead(head: HeadRegistry): () => void {
   return createRoot((dispose) => {
     createEffect(() => {
+      head.version(); // re-run when sources are added/removed (route transitions)
       const { tags, htmlAttrs } = resolveHead(head);
       apply(tags, htmlAttrs);
     });

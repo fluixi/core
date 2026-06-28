@@ -47,6 +47,9 @@
       "path": "../dom/tsconfig.lib.json"
     },
     {
+      "path": "../head/tsconfig.lib.json"
+    },
+    {
       "path": "../compiler/tsconfig.lib.json"
     }
   ],

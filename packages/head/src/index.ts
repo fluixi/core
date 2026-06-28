@@ -37,6 +37,7 @@ export {
 } from './core.js';
 
 export { renderHead, renderHtmlAttrs, MANAGED_ATTR, KEY_ATTR, type SerializedHead } from './serialize.js';
+export { encodeHeadMarker, extractHeadMarker } from './transport.js';
 export { mountHead } from './reconcile.js';
 export { jsonld } from './jsonld.js';
 export * as components from './components.js';

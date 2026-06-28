@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
+import { extractHeadMarker } from '@fluixi/head';
 import type { ResolvedConfig } from './config.js';
 import type { FetchHandler } from './handler.js';
 
@@ -250,6 +251,31 @@ export function splitTemplate(template: string, mountId = 'root'): { head: strin
     };
   }
   return { head: template, tail: '' };
+}
+
+/** Set/replace an attribute on the template's <html> tag (e.g. lang). */
+function setHtmlAttr(html: string, name: string, value: string): string {
+  const existing = new RegExp(`(<html\\b[^>]*?)\\s${name}="[^"]*"`, 'i');
+  if (existing.test(html)) return html.replace(existing, `$1 ${name}="${value}"`);
+  return html.replace(/<html\b/i, `<html ${name}="${value}"`);
+}
+
+/**
+ * Inject the rendered app into the mount point AND lift any @fluixi/head metadata (carried back as
+ * a marker by renderRequestAsync) into <head> + <html>. If the page set a title, the template's own
+ * <title> is dropped so there's only one. No marker → identical to injectApp.
+ */
+export function injectAppAndHead(template: string, rendered: string, mountId = 'root'): string {
+  const { head, body } = extractHeadMarker(rendered);
+  let html = injectApp(template, body, mountId);
+  if (head) {
+    if (head.headHtml) {
+      if (/<title[\s>]/i.test(head.headHtml)) html = html.replace(/<title>[\s\S]*?<\/title>/i, '');
+      html = html.replace('</head>', `${head.headHtml}</head>`);
+    }
+    for (const [k, v] of Object.entries(head.htmlAttrs)) html = setHtmlAttr(html, k, v);
+  }
+  return html;
 }
 
 /**

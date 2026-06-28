@@ -33,7 +33,9 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "@fluixi/head": "workspace:*"
+  },
   "peerDependencies": {
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*"
