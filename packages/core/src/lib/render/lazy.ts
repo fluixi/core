@@ -11,13 +11,12 @@
  *     before the component is rendered.
  */
 
-import { Component, ComponentProps, captureHydrationCursor, runHydrationAt } from '@fluixi/dom';
+import { Component, ComponentProps } from '@fluixi/dom';
 import {
   Accessor,
   untrack,
   createMemo,
   createResource,
-  createSignal,
 } from '@fluixi/reactive/signal';
 
 // ─── Public types ────────────────────────────────────────────────────────────
@@ -39,194 +38,57 @@ export function lazy<T extends (...args: any[]) => any>(
   loader: () => Promise<{ default: T }>,
   options?: LazyOptions,
 ): T & { preload: () => Promise<void> } {
-  const lazyCache = new WeakMap();
-  // ── Module-level state ─────────────────────────────────────────────────────
-  // Shared across every instance of this lazy component so that the first
-  // render that triggers loading benefits all subsequent renders.
-  
-  // The resolved component function (undefined until the module loads).
-  // createSignal here is fine at module level — signals need no owner.
-  // const [comp, setComp] = createSignal<T | undefined>(undefined);
+  // The resolved component, set once the module loads. The whole hydration story turns on
+  // this: when it's already set when LazyWrapper renders — because the route was preloaded
+  // before hydration (see startClient → preloadRoutes) — we render it SYNCHRONOUSLY on the
+  // first pass. No resource, no Suspense fallback, no late re-render. So the lazy file-route
+  // adopts the server DOM in place instead of resolving a tick later and building a duplicate
+  // next to it. The async path below is only for a cold client navigation.
+  let resolved: Component | undefined;
+
+  // Single in-flight / completed import. Idempotent: repeat calls reuse the same promise.
+  let promise: Promise<Component> | undefined;
+
+  // Suspense-tracked resource, created lazily on the cold (not-preloaded) path only.
   let component: Accessor<Component | undefined> | undefined;
-  const [resolved, setResolved] = createSignal<any | undefined>(undefined)
 
-  // The single in-flight / completed promise.  Idempotent: subsequent calls
-  // to load() return the same promise instead of re-importing the module.
-  let promise: Promise<any> | undefined;
-
-  // When this lazy boundary is first rendered DURING hydration, the cursor points at the
-  // server-rendered DOM for this component (it isn't loaded yet, so the sync pass can't
-  // hydrate it). We capture that node and, once the module resolves, resume hydration
-  // there so the resolved component reuses the server DOM instead of building a duplicate.
-  let hydrationCursor: Node | null = null;
-  
-
-  function load(): Promise<any> {
+  function load(): Promise<Component> {
     if (!promise) {
-      promise = loader().then((mod) => {
-        // Functional setter form `() => value` prevents the setter from
-        // interpreting the component function as an updater callback.
-        // setComp(() => mod.default);
-        return mod.default
-      });
-      // component = comp
+      promise = loader().then((mod) => (resolved = mod.default));
     }
     return promise;
   }
 
-  // ── Optional eager preload ─────────────────────────────────────────────────
-  if (options?.preload) {
-    load();
-  }
+  if (options?.preload) load();
 
-  // ── Component wrapper ──────────────────────────────────────────────────────
   const LazyWrapper = ((props: any) => {
-    // createResource registers the loading promise with the nearest Suspense
-    // boundary via trackPromise / context.increment().  The resource is created
-    // at the component (not memo) level so its internal effect is owned by this
-    // component instance and is not cancelled by memo re-evaluation.
-    if(!component){
-      // Hydrating + not yet loaded → remember the server DOM position for this boundary.
-      hydrationCursor = captureHydrationCursor();
-      const [resource] = createResource(() => promise || load());
-      component = resource
-      // setComp(resource)
-      // If the component is not yet loaded, show the fallback.
-      // if (resource.loading) return options?.fallback;
-  
-      // If the component has failed to load, show the error.
-      if (resource.error) throw resource.error;
+    // Fast path: module already loaded (eager preload, or preloaded before hydration).
+    // Render straight through — under hydration this consumes the cursor in place.
+    if (resolved) {
+      const C = resolved;
+      return untrack(() => C(props));
     }
 
-    // setComp(resource())
-
-    // Pure memo: reads `comp` (the shared signal) — creates no side effects.
-    //   • While loading  → comp() === undefined → return undefined
-    //                      Suspense boundary keeps showing the fallback.
-    //   • After load     → comp() === RealComponent → call it with props
-    //                      Suspense switches to content.
-    //
-    // untrack() around the component call ensures the component's own reactive
-    // primitives are NOT tracked as dependencies of this memo.
-//     const C = comp();
-// if (!C) return undefined;
-// return untrack(() => C(props));
-// if(lazyCache.has(loader)) return untrack(lazyCache.get(loader))
+    // Cold path: not loaded yet (client-side navigation to a route whose chunk hasn't been
+    // fetched). Register the import with the nearest Suspense via createResource so the
+    // fallback shows while it downloads, then swap in the component once it resolves.
+    if (!component) {
+      const [resource] = createResource(() => load());
+      component = resource;
+      if (resource.error) throw resource.error;
+    }
     return createMemo(() => {
       const C = component!();
-      if (!C) {
-        // Module still loading — Suspense keeps showing the fallback (driven by the
-        // resource's loading state). The server DOM stays in place under hydration.
-        return undefined
-      }
-      // Resume hydration at the captured server position (use it once) so the resolved
-      // component adopts the server DOM in place instead of rendering a duplicate.
-      const cursor = hydrationCursor; hydrationCursor = null;
-      const res = typeof C==="function"
-        ? untrack(() => runHydrationAt(cursor, () => C!(props)))
-        : C
-        setResolved(()=>res)
-        return res
-        // return typeof C==="function" ? untrack(() => C!(props)) : C
-    }, undefined, {name: "lazy"});
+      return C ? untrack(() => C(props)) : undefined;
+    }, undefined, { name: 'lazy' });
   }) as unknown as T & { preload: () => Promise<void> };
 
-  // ── Preload API ────────────────────────────────────────────────────────────
-  // Callers can kick off the download before the component enters the view:
-  //   <a onMouseEnter={() => LazyFoo.preload()}>…</a>
-  //   router.prefetch(LazyFoo)
-  LazyWrapper.preload = load;
+  // Callers (link hover, router prefetch, the hydration preload pass) start the download
+  // before the component enters the view: <a onMouseEnter={() => LazyFoo.preload()}>.
+  LazyWrapper.preload = () => load().then(() => undefined);
   (LazyWrapper as any).$lazy = true;
   (LazyWrapper as any).loader = loader;
 
   return LazyWrapper;
 }
 
-export function lazy1<T extends (...args: any[]) => any>(
-  loader: () => Promise<{ default: T }>
-): T {
-  let loading: Promise<{ default: T }> | undefined;
-  let component: Accessor<Component | undefined>;
-
-
-  console.log('lazy for loader', loader)
-  const [resolved, setResolved] = createSignal<Component | undefined>(undefined)
-  const LazyComponent = ((props: any) => {
-    // if(loaded.has(loader)){
-    //   console.log('lazy run for loader', loader, loaded.get(loader))
-    //   return ()=> loaded.get(loader)
-    // }
-    if (!loading) {
-      loading = loader().then((m) => {
-        setResolved(()=>m.default)
-        return m;
-      });
-      component = resolved
-    }
-
-    // Resource-based integration: self-registers with nearest Suspense.
-    // createResource's internal effect calls the fetcher, which returns
-    // the promise. trackPromise (called inside createResource's effect
-    // via the suspense context) increments the counter. When the promise
-    // resolves, the counter decrements → loading goes false.
-    // const [resource] = createResource(() => loading ? loading.then((m) => m.default) : null);
-    const [resource] = createResource(() =>
-      loading!.then((m) => m.default)
-    );
-
-    component = resource as any
-    // if(!loaded.has(loader)){
-    //   loaded.set(loader, component)
-      
-    // }else{
-    //   component = resolved
-    // }
-
-
-
-
-
-    // Memo: undefined while loading (Suspense shows fallback),
-    // rendered component after (Suspense shows content).
-    // iterateFn MUST stop at signals/memos (isSignal check) to prevent
-    // infinite recursion when the rendered template is processed.
-    // if(!initial){
-    //   initial = true
-    //       return createMemo(() => {
-    //   let C = component();
-    //     // console.log('lazy load',C )
-    //   if (C) {
-    //     return untrack(() => (C as any)(props));
-    //   }
-    //   return undefined;
-    // });
-    // }
-    // return createMemo(() => {
-    //   let C = component();
-    //   return untrack(()=>{
-    //     // console.log('lazy load',C , loader)
-    //     if (C) {
-    //       // if(loaded.has(loader)){
-    //       //   return untrack(()=>loaded.get(loader))
-    //       // }
-    //       // const tracked = untrack(() => (C as any)(props))
-    //       // loaded.set(loader, C)
-    //       return untrack(() => (C as any)(props));
-    //     }
-    //     return undefined;
-    //   })
-    // })
-    return createMemo(() => {
-      let C = component();
-        console.log('lazy load',C )
-      if (C) {
-        return untrack(() => (C as any)(props));
-      }
-      return undefined;
-    });
-  }) as unknown as T;
-
-  (LazyComponent as any).$lazy = true;
-
-  return LazyComponent;
-}
