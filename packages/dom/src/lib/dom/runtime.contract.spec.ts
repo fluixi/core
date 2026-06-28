@@ -42,6 +42,21 @@ describe('spread', () => {
       });
     });
   });
+
+  it('SVG element: an attribute that collides with a read-only DOM property uses setAttribute', () => {
+    // The codegen doesn't flag nested SVG elements (<linearGradient>, <stop>), so spread gets
+    // isSVG=false. For a real SVG node, a key like `x1` IS `in element` (a read-only
+    // SVGAnimatedLength) — the old `!isSVG && key in element` check took the property branch and
+    // threw "Cannot set property x1". spread must detect SVG by namespaceURI and use setAttribute.
+    S.createRoot(() => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      // jsdom may not implement x1; define a getter-only prop to reproduce the read-only collision.
+      Object.defineProperty(el, 'x1', { get: () => undefined, configurable: true });
+      expect(() => spread({ element: el, props: { x1: '0', x2: '1' } } as any)).not.toThrow();
+      expect(el.getAttribute('x1')).toBe('0');
+      expect(el.getAttribute('x2')).toBe('1');
+    });
+  });
 });
 
 describe('event delegation', () => {
