@@ -1260,6 +1260,14 @@ export function spread(options: SpreadOptions): () => void {
     return () => {};
   }
 
+  // Trust the element's real namespace over the compile-time isSVG flag: the codegen only marks
+  // some SVG elements (e.g. <svg>/<defs>) and misses nested ones (<linearGradient>, <stop>). For
+  // an actually-SVG element, a key like `x1` IS `in element` (read-only SVGAnimatedLength), so the
+  // property branch below would throw "Cannot set property x1". Detecting SVG by namespaceURI keeps
+  // those on the setAttribute path. (Matters under hydration, where we adopt the real, correctly
+  // namespaced server node.)
+  const elementIsSVG = isSVG || (element as any).namespaceURI === SVG_NAMESPACE;
+
   const disposers: (() => void)[] = [];
 
   for (const key in props) {
@@ -1306,10 +1314,10 @@ export function spread(options: SpreadOptions): () => void {
       continue;
     }
 
-    if (JSX_PROPERTIES.has(key) || (!isSVG && key in element)) {
+    if (JSX_PROPERTIES.has(key) || (!elementIsSVG && key in element)) {
       disposers.push(setDynamicProperty(element, key, value));
     } else {
-      disposers.push(setDynamicAttribute(element, key, value, isSVG));
+      disposers.push(setDynamicAttribute(element, key, value, elementIsSVG));
     }
   }
 
