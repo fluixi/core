@@ -102,10 +102,12 @@ export function startClient(
   // into an empty `<div id="root">`, so `firstElementChild` is null and it client-renders.
   // Lazy-route, text-ordering, component-children, and nested Router/Suspense/Outlet hydration
   // all reuse the server DOM in place (no duplication).
-  const shouldHydrate =
-    options.hydrate ??
-    (!!document.getElementById('__FLUIXI_HYDRATION__') ||
-      (container as Element).firstElementChild != null);
+  // Opt-in: hydrate only when explicitly asked (`{ hydrate: true }`) or when the server emits the
+  // `__FLUIXI_HYDRATION__` marker. A non-empty root used to auto-hydrate, but DOM-reuse hydration
+  // still duplicates apps with async lazy file-routes (the route chunk resolves after the hydration
+  // pass and rebuilds fresh). Until that's fixed, default to the render() path (correct; a brief
+  // first-paint re-render) rather than risk a duplicated tree.
+  const shouldHydrate = options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
 
   // Active head registry for this document — seo()/useHead() during the app render register here;
   // mountHead reconciles it into <head> after mount (reusing server tags by key) and keeps it live.
