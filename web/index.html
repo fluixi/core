@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Fallback title only — the home route's seo() owns title/description/canonical/og and
+         injects them into <head> at prerender (and keeps them reactive on the client). -->
     <title>Fluixi — the reactive framework, compiled</title>
-    <meta name="description" content="Fluixi is a fine-grained reactive, compiled, full-stack web framework: SSR, streaming, SSG, file routing, server functions, DI, i18n, islands and edge — on a TC39-signals core." />
   </head>
   <body>
     <div id="root"></div>
