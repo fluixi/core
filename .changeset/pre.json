@@ -107,6 +107,7 @@
     "start-ssg",
     "start-streaming-ssr",
     "start-ts-config",
+    "svg-hydration-spread",
     "tc39-signal-core",
     "tc39-type-regressions",
     "theme-session-primitives",

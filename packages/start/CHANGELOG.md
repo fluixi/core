@@ -1,5 +1,16 @@
 # @fluixi/start
 
+## 0.1.0-alpha.26
+
+### Patch Changes
+
+- Updated dependencies [9b6215f]
+  - @fluixi/dom@1.0.0-alpha.36
+  - @fluixi/compiler@1.0.0-alpha.36
+  - @fluixi/core@1.0.0-alpha.36
+  - @fluixi/server@1.0.0-alpha.36
+  - @fluixi/head@0.1.0-alpha.3
+
 ## 0.1.0-alpha.25
 
 ### Patch Changes
