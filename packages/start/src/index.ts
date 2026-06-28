@@ -11,7 +11,7 @@ export { dev } from './commands/dev.js';
 export { build } from './commands/build.js';
 export { start } from './commands/start.js';
 export { prerender } from './commands/prerender.js';
-export { injectApp, splitTemplate } from './internal.js';
+export { injectApp, injectAppAndHead, splitTemplate } from './internal.js';
 // The runtime-neutral request layer — the seam adapters (edge/worker/Bun/Deno) build on.
 export {
   createRequestHandler,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createNativeElement, insert, spread } from '@fluixi/dom';
 import { createResource } from '@fluixi/reactive/signal';
+import { seo, extractHeadMarker } from '@fluixi/head';
 import {
   startServer,
   renderToString,
@@ -99,6 +100,23 @@ describe('@fluixi/server', () => {
 
   it('createHtmlDocument wraps content', () => {
     expect(createHtmlDocument('<p>hi</p>', { lang: 'fr' })).toContain('<html lang="fr">');
+  });
+
+  it('collects seo() head during render and carries it back as a marker', async () => {
+    const SeoApp = ({ url }: { url: string }) => {
+      seo({ title: 'P', description: 'hi', lang: 'fr', canonical: 'https://x' + url });
+      const div = createNativeElement('div') as any;
+      insert(div, () => 'body', null);
+      return div;
+    };
+    const html = await renderRequestAsync(SeoApp, { url: '/p' });
+    const { head, body } = extractHeadMarker(html);
+    expect(head).not.toBeNull();
+    expect(head!.headHtml).toContain('<title');
+    expect(head!.headHtml).toContain('name="description"');
+    expect(head!.headHtml).toContain('rel="canonical" href="https://x/p"');
+    expect(head!.htmlAttrs).toEqual({ lang: 'fr' });
+    expect(body).toContain('body');
   });
 
   it('renderToString with an explicit event', () => {

@@ -3,7 +3,8 @@ import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { defineConfig, resolveConfig, loadConfig } from './config.js';
-import { injectApp, splitTemplate } from './internal.js';
+import { injectApp, injectAppAndHead, splitTemplate } from './internal.js';
+import { encodeHeadMarker } from '@fluixi/head';
 import { streamDocument } from './handler.js';
 import {
   defineMiddleware,
@@ -124,6 +125,29 @@ describe('@fluixi/start injectApp', () => {
 
   it('falls back to before </body>', () => {
     expect(injectApp('<body></body>', 'APP')).toBe('<body><div id="root">APP</div></body>');
+  });
+});
+
+describe('@fluixi/start injectAppAndHead', () => {
+  const tpl = '<html lang="en"><head><title>Old</title></head><body><div id="root"></div></body></html>';
+
+  it('lifts the head marker into <head> + <html>, dropping the template title', () => {
+    const marker = encodeHeadMarker({
+      headHtml: '<title data-fh>P</title><meta name="description" content="d" data-fh>',
+      htmlAttrs: { lang: 'fr' },
+    });
+    const html = injectAppAndHead(tpl, marker + 'APP');
+    expect(html).toContain('<html lang="fr">');
+    expect(html).not.toContain('<title>Old</title>');
+    expect(html).toContain('<title data-fh>P</title>');
+    expect(html).toContain('name="description"');
+    expect(html).toContain('<div id="root">APP</div>');
+  });
+
+  it('equals injectApp when there is no head marker', () => {
+    expect(injectAppAndHead('<body><div id="root"></div></body>', 'APP')).toBe(
+      '<body><div id="root">APP</div></body>',
+    );
   });
 });
 

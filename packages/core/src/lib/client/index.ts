@@ -21,6 +21,7 @@ import {
 } from '../server/hydration.js';
 import { render } from '../render/index.js';
 import { ensureIntegration } from '../render/component.js';
+import { createHead, setActiveHead, mountHead } from '@fluixi/head';
 ensureIntegration('client index');
 // console.log('client called')
 // Register Lit support in @fluixi/dom
@@ -106,6 +107,11 @@ export function startClient(
     (!!document.getElementById('__FLUIXI_HYDRATION__') ||
       (container as Element).firstElementChild != null);
 
+  // Active head registry for this document — seo()/useHead() during the app render register here;
+  // mountHead reconciles it into <head> after mount (reusing server tags by key) and keeps it live.
+  const head = createHead();
+  setActiveHead(head);
+
   if (shouldHydrate) {
     deserializeHydrationData();
     setHydrating(true);
@@ -120,6 +126,8 @@ export function startClient(
   } else {
     render(() => App(), container as HTMLElement);
   }
+
+  mountHead(head);
 }
 
 /**
