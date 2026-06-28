@@ -1,5 +1,40 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.35
+
+### Minor Changes
+
+- bdcc4a5: Flash-free hydration for lazy file-routes — preload the route chunk before hydrating.
+
+  A server-rendered app with code-split file-routes used to render twice on hydration: the lazy boundary rendered empty on the first pass (chunk not loaded), then re-rendered when the chunk resolved a tick later — building a fresh subtree next to the server DOM instead of adopting it. The app flashed and, with auto-hydration on, duplicated.
+
+  Now the matched route's chunk is downloaded and awaited _before_ hydration, so each lazy route resolves synchronously on the first pass and adopts the server DOM in place.
+
+  - `lazy()` renders synchronously once its module is resolved (no resource/Suspense/late re-render); a cold client-side navigation still suspends and shows the fallback.
+  - New `preloadRoutes(routes, pathname)` (`@fluixi/core/router-next`, re-exported by `@fluixi/start/router`): matches the URL and preloads the matched route's lazy chunks.
+  - `startClient` takes a `routes` option and awaits `preloadRoutes` before hydrating. Passing `routes` also enables auto-hydration of a server-rendered (non-empty) root — flash-free with no extra config. Apps without it keep the plain client-render path.
+
+  ```ts
+  // entry-client.ts
+  import App, { appRoutes } from './app';
+  startClient(App, { root: '#root', routes: appRoutes });
+  ```
+
+  The SSR scaffold (`create-fluixi`) wires this up and ships a small `seo()` example in the index route.
+
+### Patch Changes
+
+- f3122c2: Revert auto-hydrate-on-non-empty-root to opt-in. A non-empty mount root used to auto-hydrate, but DOM-reuse hydration still duplicates apps with async lazy file-routes (the route chunk resolves after the hydration pass and rebuilds a second copy). Until that's fixed, startClient defaults to the render() path again (correct output, with a brief first-paint re-render); pass `{ hydrate: true }` to opt in.
+  - @fluixi/utils@1.0.0-alpha.35
+  - @fluixi/reactive@1.0.0-alpha.35
+  - @fluixi/dom@1.0.0-alpha.35
+  - @fluixi/jsx@1.0.0-alpha.35
+  - @fluixi/compiler@1.0.0-alpha.35
+  - @fluixi/lit@1.0.0-alpha.35
+  - @fluixi/vite-plugin@1.0.0-alpha.35
+  - @fluixi/head@0.1.0-alpha.2
+  - @fluixi/server@1.0.0-alpha.35
+
 ## 1.0.0-alpha.34
 
 ### Minor Changes
