@@ -25,9 +25,10 @@ import {
   resumeEffects,
 } from '@fluixi/reactive/signal';
 import {
-  asSuspense, 
+  asSuspense,
   isComponent,
-  createComponent
+  createComponent,
+  runWithoutHydration
 } from "@fluixi/dom"
 
 // ============================================================================
@@ -193,7 +194,10 @@ function SuspenseImpl(props: SuspenseProps): any {
 
   const resolvedChildren = children;
   // const resolvedChildren = instantiateOnce(children);
-  const resolvedFallback = instantiateOnce(props.fallback ?? null);
+  // Instantiate the fallback off the hydration cursor: it's built once eagerly but isn't shown
+  // when the server already rendered content (inFallback === false), and letting its DOM creation
+  // walk the hydration cursor would adopt the real server node and duplicate the tree.
+  const resolvedFallback = runWithoutHydration(() => instantiateOnce(props.fallback ?? null));
 
   // Re-eval: use a reactive render effect to track the top-level children signal.
   // On every run (initial + whenever children changes), unwrap the signal chain

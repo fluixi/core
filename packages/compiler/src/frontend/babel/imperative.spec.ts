@@ -87,6 +87,18 @@ describe('imperative backend codegen', () => {
     expect(code).not.toMatch(/children:\s*\(\(\) => \{/); // not an eager IIFE value
   });
 
+  it('emits an inline JSX component prop as a lazy getter (both codegens)', () => {
+    // <Suspense fallback={<div/>}> — the fallback must be a getter, not an eager IIFE built
+    // when the props object is constructed. Eager construction walks the hydration cursor and
+    // adopts the real server node, duplicating the tree on hydration. Inline AND IR must agree.
+    const src = `export const r = () => <Wrap fallback={<div class="fb" />}>hi</Wrap>;`;
+    for (const opts of [IMPERATIVE, IMPERATIVE_IR]) {
+      const code = compileEsm(src, opts);
+      expect(code).toMatch(/get fallback\(\)/);
+      expect(code).not.toMatch(/fallback:\s*\(\(\) =>/); // not an eager IIFE value
+    }
+  });
+
   it('builds a native element with a static attribute', () => {
     const mod = load(`export const render = () => <div id="x" title="hello" />;`);
     const el = mod.render() as HTMLElement;

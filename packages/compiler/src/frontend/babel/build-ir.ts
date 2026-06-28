@@ -143,6 +143,7 @@ function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
     }
     base.expr = genExpr(expr, used);
     base.reactive = isEvent ? false : isReactiveExpr(expr);
+    if (t.isJSXElement(expr) || t.isJSXFragment(expr)) base.jsxElement = true;
     return base;
   }
   base.literal = true;

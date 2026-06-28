@@ -84,7 +84,12 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
-  const entries = normal.map((p) => `${propKey(p.name)}: ${componentPropValue(p)}`);
+  const entries = normal.map((p) =>
+    // Inline JSX prop → lazy getter (see IRProp.jsxElement); otherwise an eager value.
+    p.jsxElement
+      ? `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`
+      : `${propKey(p.name)}: ${componentPropValue(p)}`,
+  );
   if (children.length > 0) {
     // Children are a LAZY getter: evaluated inside the component's execution, so
     // child components are created in the component's owner scope (preserves owner
