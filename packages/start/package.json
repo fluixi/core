@@ -51,6 +51,12 @@
       "import": "./dist/router.js",
       "default": "./dist/router.js"
     },
+    "./head": {
+      "development": "./src/head.ts",
+      "types": "./dist/head.d.ts",
+      "import": "./dist/head.js",
+      "default": "./dist/head.js"
+    },
     "./server-fn": {
       "development": "./src/server-fn.ts",
       "types": "./dist/server-fn.d.ts",
@@ -80,6 +86,7 @@
     "@fluixi/core": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/dom": "workspace:*",
+    "@fluixi/head": "workspace:*",
     "esbuild": "^0.27.1",
     "@fluixi/compiler": "workspace:*"
   },

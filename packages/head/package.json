@@ -1,0 +1,31 @@
+{
+  "name": "@fluixi/head",
+  "version": "0.1.0-alpha.0",
+  "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi — title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/",
+    "access": "public"
+  },
+  "dependencies": {
+    "@fluixi/reactive": "workspace:*"
+  }
+}
