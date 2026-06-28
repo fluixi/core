@@ -94,13 +94,17 @@ export function startClient(
     );
   }
 
-  // Hydrate when explicitly requested (`{ hydrate: true }`) or when the server emits the
-  // `__FLUIXI_HYDRATION__` marker (so SSR'd apps auto-hydrate). Lazy-route, text-ordering,
-  // and component-children hydration are all fixed: sections/list items and native children
-  // passed to a COMPONENT (e.g. `<Form><input/><button/></Form>`) now hydrate in place, in
-  // order, with no duplication (void elements no longer strand the cursor).
+  // Hydrate when explicitly requested (`{ hydrate: true }`), when the server emits the
+  // `__FLUIXI_HYDRATION__` marker, OR — the common case — when the mount root already holds
+  // server-rendered content (a non-empty root means SSR/SSG ran, so reuse that DOM instead of
+  // clearing it and re-rendering, which causes a first-paint flash). A client-only app mounts
+  // into an empty `<div id="root">`, so `firstElementChild` is null and it client-renders.
+  // Lazy-route, text-ordering, component-children, and nested Router/Suspense/Outlet hydration
+  // all reuse the server DOM in place (no duplication).
   const shouldHydrate =
-    options.hydrate ?? !!document.getElementById('__FLUIXI_HYDRATION__');
+    options.hydrate ??
+    (!!document.getElementById('__FLUIXI_HYDRATION__') ||
+      (container as Element).firstElementChild != null);
 
   if (shouldHydrate) {
     deserializeHydrationData();

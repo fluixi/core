@@ -1790,4 +1790,4 @@ export function render<T>(
 
 // hydrate() lives in ./hydration.js (the DOM-reuse hydration feature). Re-export
 // it here so the existing import path (`@fluixi/dom` → runtime) keeps working.
-export { hydrate, captureHydrationCursor, runHydrationAt } from './hydration.js';
+export { hydrate, captureHydrationCursor, runHydrationAt, runWithoutHydration } from './hydration.js';
