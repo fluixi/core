@@ -1,5 +1,18 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.34
+
+### Patch Changes
+
+- f0926b6: fix: support a static (non-function) `innerHTML` prop. The client handler always called the value
+  as an accessor (`val()`), so a plain string like `innerHTML="<b>x</b>"` threw — and during
+  hydration it wiped the element's content. It now sets a string directly and only wraps a function
+  in an effect. `@fluixi/jsx` types `innerHTML` as `string | (() => string)` to match.
+- Updated dependencies [f0926b6]
+- Updated dependencies [0c2ecb7]
+  - @fluixi/dom@1.0.0-alpha.34
+  - @fluixi/reactive@1.0.0-alpha.34
+
 ## 1.0.0-alpha.33
 
 ### Patch Changes

@@ -1,5 +1,37 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.34
+
+### Minor Changes
+
+- 6f8a9d4: Wire @fluixi/head into the framework (zero-config SEO). renderRequestAsync collects seo()/useHead metadata during SSR and carries it back; @fluixi/start lifts it into <head>/<html> for SSR + prerender. startClient mounts the head registry so it hydrates (server tags reused by key) and updates live, including on route transitions (seo() auto-disposes on owner unmount). Apps just call seo({...}) — no setup.
+
+### Patch Changes
+
+- 0c2ecb7: Fix whole-app hydration duplicating the tree (rendering it 2–3×) for nested Router/Suspense/Outlet apps — the shape every `@fluixi/start` app has.
+
+  Inline JSX passed to a **component** prop (e.g. `<Suspense fallback={<div/>}>`) compiled to an eager IIFE built when the props object was constructed. During hydration that walked the hydration cursor, and a same-tag fallback `<div>` adopted the real server content node, stranding the cursor so the content rebuilt fresh next to the server DOM. Now:
+
+  - Inline-JSX component props compile to **lazy getters** (like `children`) in both imperative codegens (inline + IR).
+  - `@fluixi/dom` adds `runWithoutHydration`, and Suspense instantiates its fallback off the hydration cursor.
+  - `startClient` **auto-hydrates a non-empty mount root** — reusing the server DOM instead of clearing and re-rendering, which removes the first-paint re-render flash. A client-only app (empty `#root`) still client-renders.
+
+- Updated dependencies [f0926b6]
+- Updated dependencies [bec9d21]
+- Updated dependencies [6f8a9d4]
+- Updated dependencies [0c2ecb7]
+- Updated dependencies [076dbb4]
+  - @fluixi/dom@1.0.0-alpha.34
+  - @fluixi/jsx@1.0.0-alpha.34
+  - @fluixi/head@0.1.0-alpha.1
+  - @fluixi/server@1.0.0-alpha.34
+  - @fluixi/compiler@1.0.0-alpha.34
+  - @fluixi/router@0.1.2-alpha.0
+  - @fluixi/lit@1.0.0-alpha.34
+  - @fluixi/vite-plugin@1.0.0-alpha.34
+  - @fluixi/utils@1.0.0-alpha.34
+  - @fluixi/reactive@1.0.0-alpha.34
+
 ## 1.0.0-alpha.33
 
 ### Patch Changes
