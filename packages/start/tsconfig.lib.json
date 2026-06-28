@@ -20,13 +20,16 @@
       "path": "../compiler/tsconfig.lib.json"
     },
     {
+      "path": "../head/tsconfig.lib.json"
+    },
+    {
+      "path": "../dom/tsconfig.lib.json"
+    },
+    {
       "path": "../server/tsconfig.lib.json"
     },
     {
       "path": "../core/tsconfig.lib.json"
-    },
-    {
-      "path": "../head/tsconfig.lib.json"
     }
   ],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist"]
