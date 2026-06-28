@@ -30,6 +30,13 @@ export interface IRProp {
   expr?: string;
   /** When true, `expr` must be wired reactively (emitted as a `() => expr` thunk). */
   reactive?: boolean;
+  /**
+   * `expr` is an inline JSX element/fragment passed as a component prop (e.g.
+   * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter — like children — so the DOM is
+   * built only when the component reads the prop, not eagerly when the props object is
+   * constructed (which during hydration would walk the cursor and duplicate the tree).
+   */
+  jsxElement?: boolean;
   /** For kind 'event': the DOM event name + whether it is delegated. */
   event?: { name: string; delegated: boolean };
 }

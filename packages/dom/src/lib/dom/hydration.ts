@@ -143,6 +143,25 @@ export function ascendPast(node: Node): void {
 }
 
 /**
+ * Run `fn` with DOM-reuse hydration temporarily OFF, restoring the cursor afterwards.
+ * For building a DETACHED subtree mid-hydration that must NOT consume the cursor — e.g. a
+ * Suspense fallback that the boundary instantiates eagerly but isn't currently showing. Without
+ * this, the fallback's `createNativeElement('div')` would adopt a same-tag server node (the real
+ * content), overwrite it, and strand the cursor — duplicating the tree on hydration.
+ */
+export function runWithoutHydration<T>(fn: () => T): T {
+  if (!hydration.active) return fn();
+  const prevCursor = hydration.cursor;
+  hydration.active = false;
+  try {
+    return fn();
+  } finally {
+    hydration.active = true;
+    hydration.cursor = prevCursor;
+  }
+}
+
+/**
  * After a control-flow item (For/Index/Show child) builds its node(s), ascend the
  * cursor past it so the NEXT sibling item reuses the right server node. The item's
  * own createNativeElement descended into it; without this, item 2+ would be built

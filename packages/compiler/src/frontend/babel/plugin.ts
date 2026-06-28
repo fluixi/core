@@ -903,7 +903,7 @@ function childrenValue(children: t.Expression[]): t.Expression {
 function emitImperativeElement(
   tag: t.Expression,
   isNative: boolean,
-  props: t.ObjectProperty[],
+  props: Array<t.ObjectProperty | t.ObjectMethod>,
   spreads: t.Expression[],
   children: t.Expression[],
   state: any,
@@ -1270,8 +1270,8 @@ function transformAttributes(
   attributes: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
   state: any,
   isNativeElement = true
-): { props: t.ObjectProperty[]; spreads: t.Expression[] } {
-  const props: t.ObjectProperty[] = [];
+): { props: Array<t.ObjectProperty | t.ObjectMethod>; spreads: t.Expression[] } {
+  const props: Array<t.ObjectProperty | t.ObjectMethod> = [];
   const spreads: t.Expression[] = [];
 
   for (const attr of attributes) {
@@ -1293,7 +1293,25 @@ function transformAttributes(
       const key = isValidJSIdentifier(name)
         ? t.identifier(name)
         : t.stringLiteral(name);
-      props.push(t.objectProperty(key, value));
+
+      // Inline JSX passed to a COMPONENT prop (e.g. <Suspense fallback={<div/>}>) becomes a
+      // LAZY getter — same as children. Otherwise it's an eager IIFE built when the props object
+      // is constructed; during hydration that walks the hydration cursor and adopts the real
+      // server node (a fallback `<div>` matches the content `<div>` by tag), duplicating the
+      // tree. As a getter the node is only built when the component actually reads the prop.
+      const raw = attr.value;
+      const isInlineJsx =
+        t.isJSXElement(raw) ||
+        t.isJSXFragment(raw) ||
+        (t.isJSXExpressionContainer(raw) &&
+          (t.isJSXElement(raw.expression) || t.isJSXFragment(raw.expression)));
+      if (!isNativeElement && isInlineJsx) {
+        props.push(
+          t.objectMethod('get', key, [], t.blockStatement([t.returnStatement(value)])),
+        );
+      } else {
+        props.push(t.objectProperty(key, value));
+      }
     }
   }
 
