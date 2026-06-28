@@ -1,0 +1,5 @@
+# https://docs.fluixi.com
+User-agent: *
+Allow: /
+
+Sitemap: https://docs.fluixi.com/sitemap.xml
