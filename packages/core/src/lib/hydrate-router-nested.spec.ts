@@ -172,13 +172,13 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
       function RootLayout() {
         return <Suspense fallback={<div class="fb" />}><Outlet /></Suspense>;
       }
-      const appRoutes = [{ path: '/', component: RootLayout, children: [{ path: '/', component: HomeLazy }] }];
+      export const appRoutes = [{ path: '/', component: RootLayout, children: [{ path: '/', component: HomeLazy }] }];
       export function App(props) {
         const history = typeof window === 'undefined' ? createMemoryHistory((props && props.url) || '/') : undefined;
         return <Router routes={appRoutes} history={history} />;
       }
     `;
-    const { App } = load(src);
+    const { App, appRoutes } = load(src);
 
     setServerMode(true);
     const html = await renderToStringAsync(() => App({ url: '/' }));
@@ -186,7 +186,9 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
     expect(html).toContain('class="card"');
 
     document.body.innerHTML = `<div id="app">${html}</div>`;
-    startClient(App as any, { root: '#app', hydrate: true });
+    // Real apps pass their route tree so startClient preloads the matched lazy chunk before
+    // hydrating — that's what makes the lazy route resolve synchronously and adopt the server DOM.
+    await startClient(App as any, { root: '#app', hydrate: true, routes: appRoutes });
     await tick();
     await tick();
     await tick();

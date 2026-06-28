@@ -21,7 +21,9 @@ function RootLayout() {
   );
 }
 
-const appRoutes = [{ path: '/', component: RootLayout, children: routes as any }];
+// Exported so entry-client can hand it to startClient — it preloads the current route's
+// lazy chunk before hydrating, so the server-rendered DOM is adopted in place (flash-free).
+export const appRoutes = [{ path: '/', component: RootLayout, children: routes as any }];
 
 export default function App(props?: { url?: string }) {
   // On the server, match the request URL (memory history); on the client, default
