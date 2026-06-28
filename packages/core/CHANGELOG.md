@@ -1,5 +1,20 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.36
+
+### Patch Changes
+
+- Updated dependencies [9b6215f]
+  - @fluixi/dom@1.0.0-alpha.36
+  - @fluixi/compiler@1.0.0-alpha.36
+  - @fluixi/jsx@1.0.0-alpha.36
+  - @fluixi/lit@1.0.0-alpha.36
+  - @fluixi/server@1.0.0-alpha.36
+  - @fluixi/utils@1.0.0-alpha.36
+  - @fluixi/reactive@1.0.0-alpha.36
+  - @fluixi/vite-plugin@1.0.0-alpha.36
+  - @fluixi/head@0.1.0-alpha.3
+
 ## 1.0.0-alpha.35
 
 ### Minor Changes
