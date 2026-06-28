@@ -47,6 +47,9 @@
       "path": "../dom"
     },
     {
+      "path": "../head"
+    },
+    {
       "path": "../compiler"
     },
     {

@@ -110,7 +110,8 @@
     "@fluixi/utils": "workspace:*",
     "lit": "^3.0.0",
     "lit-html": "^3.0.0",
-    "vite-plugin-node-polyfills": "^0.25.0"
+    "vite-plugin-node-polyfills": "^0.25.0",
+    "@fluixi/head": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",

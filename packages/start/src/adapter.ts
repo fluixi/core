@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
-import { injectApp, splitTemplate, guardHandler } from './internal.js';
+import { injectAppAndHead, splitTemplate, guardHandler } from './internal.js';
 import {
   createRequestHandler,
   serveNode,
@@ -46,7 +46,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   } else {
     const render = mod.render ?? mod.default;
     core = createRequestHandler(async (url, request) =>
-      injectApp(template, await render(url, request), cfg.mountId),
+      injectAppAndHead(template, await render(url, request), cfg.mountId),
     );
   }
 

@@ -400,6 +400,9 @@ importers:
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
+      '@fluixi/head':
+        specifier: workspace:*
+        version: link:../head
       '@fluixi/jsx':
         specifier: workspace:*
         version: link:../jsx
@@ -600,6 +603,10 @@ importers:
   packages/router: {}
 
   packages/server:
+    dependencies:
+      '@fluixi/head':
+        specifier: workspace:*
+        version: link:../head
     devDependencies:
       '@fluixi/dom':
         specifier: workspace:*

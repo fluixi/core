@@ -1,3 +1,4 @@
+import { getOwner, onCleanup, createSignal, type Accessor } from '@fluixi/reactive/signal';
 import type {
   HeadInput,
   HeadSource,
@@ -36,18 +37,26 @@ function robotsToString(r: string | RobotsMeta): string {
 export interface HeadRegistry {
   /** Ordered sources — layouts register before pages, so later entries override. */
   readonly sources: HeadSource[];
+  /** Bumps when a source is added/removed — read it in an effect to re-run on route changes. */
+  readonly version: Accessor<number>;
   push(input: HeadSource): () => void;
 }
 
 export function createHead(): HeadRegistry {
   const sources: HeadSource[] = [];
+  const [version, bump] = createSignal(0);
   return {
     sources,
+    version,
     push(input) {
       sources.push(input);
+      bump((n) => n + 1);
       return () => {
         const i = sources.indexOf(input);
-        if (i !== -1) sources.splice(i, 1);
+        if (i !== -1) {
+          sources.splice(i, 1);
+          bump((n) => n + 1);
+        }
       };
     },
   };
@@ -85,7 +94,12 @@ export function useHead(input: HeadSource): () => void {
     }
     return () => {};
   }
-  return h.push(input);
+  const dispose = h.push(input);
+  // Drop the source when the owner (page/layout component) unmounts — this is what makes route
+  // transitions update the head on the client. NOT on the server: there it's a single render and
+  // we serialize the head before the root disposes, so the source must survive until then.
+  if (typeof window !== 'undefined' && getOwner()) onCleanup(dispose);
+  return dispose;
 }
 
 /** Ergonomic alias — `seo({ title, description })`. */

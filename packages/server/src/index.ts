@@ -32,6 +32,7 @@ import {
   type RequestContext,
   type RequestEvent,
 } from '@fluixi/dom';
+import { createHead, setActiveHead, renderHead, encodeHeadMarker } from '@fluixi/head';
 
 // Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage SYNCHRONOUSLY
 // (the async drain reads the request context across awaits, so it must be set before the first
@@ -186,10 +187,23 @@ export function renderRequestAsync(
   app: (props: { url: string }) => any,
   event: RequestEvent,
 ): Promise<string> {
-  return renderToStringAsync(() => app({ url: event.url ?? '/' }), {
-    event,
-    preload: preloadServerState,
-  });
+  // Collect @fluixi/head metadata registered via seo()/useHead during the render, and prepend it
+  // as an (inert) marker the adapter/prerender lifts into <head>. No seo() → no marker, no change.
+  // NB: active head is a module global here — fine for sequential prerender/SSG; concurrent live
+  // SSR scoping rides on the request context (a later pass).
+  const head = createHead();
+  setActiveHead(head);
+  return renderToStringAsync(() => app({ url: event.url ?? '/' }), { event, preload: preloadServerState }).then(
+    (body) => {
+      const marker = encodeHeadMarker(renderHead(head));
+      setActiveHead(null);
+      return marker + body;
+    },
+    (err) => {
+      setActiveHead(null);
+      throw err;
+    },
+  );
 }
 
 /** Render a full HTML document for a request. */
