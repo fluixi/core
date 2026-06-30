@@ -338,7 +338,7 @@ export function createProvider<T, S = Children>(
  */
 export function createContextWithProvider<T, U>(
   defaultValue: T
-): [Context<T>, (props: Omit<ContextProvider<T, U>, 'context'>) => Component] {
+): [Context<T>, (props: Omit<ContextProvider<T, U>, 'context'>) => Component<T>] {
   const context = createContext(defaultValue);
 
   const provider = (props: Omit<ContextProvider<T, U>, 'context'>) => {
