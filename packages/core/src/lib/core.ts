@@ -177,6 +177,21 @@ export {
   hydrateIslands,
   type IslandProps,
   type IslandRegistry,
+  // Prop helpers (Solid-compatible): merge prop sources (later `undefined` falls through) and
+  // split a reactive props object into groups + rest. The compiler emits mergeProps for JSX spreads.
+  mergeProps,
+  splitProps,
+  // Component typing (Solid parity): annotate `const C: Component<Props> = (props) => …`.
+  // ParentComponent adds optional `children`; VoidComponent forbids them; FlowComponent requires them.
+  type ComponentFn,
+  type ComponentChild,
+  type ComponentOrElement,
+  type ParentProps,
+  type ParentComponent,
+  type VoidProps,
+  type VoidComponent,
+  type FlowProps,
+  type FlowComponent,
 } from '@fluixi/dom';
 
 // Re-export reactive primitives from @fluixi/reactive
