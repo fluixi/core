@@ -63,6 +63,8 @@ interface OutletCtxValue {
   matched: () => MatchedRoute<any>[];
   params: () => Record<string, string>;
   location: () => RouterLocation;
+  /** Only set on the ROOT: rendered when nothing matched, instead of a blank page. */
+  notFound?: () => any;
 }
 const OutletContext = createContext<OutletCtxValue | undefined>();
 
@@ -160,7 +162,12 @@ function renderChild(ctx: OutletCtxValue): any {
 
   return createMemo(() => {
     const component = childComp();
-    if (!component) return null;
+    if (!component) {
+      // No route at this depth. At the ROOT (the only ctx carrying `notFound`) that means the
+      // URL matched nothing — render the not-found fallback instead of a blank page. Nested
+      // Outlets have no `notFound`, so they stay null (a missing child is just an empty Outlet).
+      return ctx.notFound ? ctx.notFound() : null;
+    }
     const m = untrack(() => ctx.matched())[childIdx];
     return renderLayer(m, childIdx, {
       matched: ctx.matched,
@@ -170,12 +177,51 @@ function renderChild(ctx: OutletCtxValue): any {
   });
 }
 
+/**
+ * Resolve the Router's `notFound` prop to a renderable view. A component is instantiated; an
+ * element/value is returned as-is; when omitted, a minimal built-in 404 keeps the page from
+ * rendering blank. Prefer a catch-all file route (`[...slug].tsx` → `*`) when the 404 should sit
+ * inside your layout — this prop is the app-level fallback for an otherwise unmatched URL.
+ */
+function renderNotFound(notFound: any): any {
+  if (notFound == null) return buildDefaultNotFound();
+  return typeof notFound === 'function' ? createComponent(notFound, {}) : notFound;
+}
+
+/** Minimal, unstyled-enough default 404 (single element so it hydrates cleanly). */
+function buildDefaultNotFound(): any {
+  const el = createNativeElement('div');
+  setAttribute(el, 'class', 'fx-not-found');
+  setAttribute(el, 'role', 'main');
+  setAttribute(
+    el,
+    'style',
+    'min-height:60vh;display:grid;place-content:center;gap:.25rem;text-align:center;' +
+      'font-family:system-ui,-apple-system,sans-serif',
+  );
+  const h1 = createNativeElement('h1');
+  setAttribute(h1, 'style', 'margin:0;font-size:2.5rem;font-weight:700');
+  insert(h1, '404');
+  const p = createNativeElement('p');
+  setAttribute(p, 'style', 'margin:0;opacity:.7');
+  insert(p, 'This page could not be found.');
+  el.appendChild(h1);
+  el.appendChild(p);
+  return el;
+}
+
 // ─── Router ────────────────────────────────────────────────────────────────────
 
 export interface RouterProps<C = any> {
   routes: RouteDefinition<C>[];
   base?: string;
   history?: HistoryAdapter;
+  /**
+   * Rendered when the current URL matches no route — a component, an element, or any renderable.
+   * Defaults to a minimal built-in 404 so an unmatched URL never renders a blank page. For a 404
+   * that keeps your layout/chrome, add a catch-all file route instead (`[...slug].tsx` → `*`).
+   */
+  notFound?: any;
 }
 
 export function Router<C = any>(props: RouterProps<C>) {
@@ -211,6 +257,8 @@ export function Router<C = any>(props: RouterProps<C>) {
     matched,
     params: ctx.params,
     location: ctx.location,
+    // Only the root carries this — renderChild shows it when the URL matched nothing.
+    notFound: () => renderNotFound(props.notFound),
   };
 
   // Build the root view once, lazily, inside the provider's children getter: the
