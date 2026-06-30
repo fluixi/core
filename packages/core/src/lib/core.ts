@@ -181,17 +181,19 @@ export {
   // split a reactive props object into groups + rest. The compiler emits mergeProps for JSX spreads.
   mergeProps,
   splitProps,
-  // Component typing (Solid parity): annotate `const C: Component<Props> = (props) => …`.
-  // ParentComponent adds optional `children`; VoidComponent forbids them; FlowComponent requires them.
+  // Component typing: annotate `const C: Component<Props> = (props) => …` (or the FxComponent/FxC
+  // brand aliases). FxParent adds optional `children`; FxVoid forbids them; FxFlow requires them.
   type ComponentFn,
   type ComponentChild,
   type ComponentOrElement,
-  type ParentProps,
-  type ParentComponent,
-  type VoidProps,
-  type VoidComponent,
-  type FlowProps,
-  type FlowComponent,
+  type FxComponent,
+  type FxC,
+  type FxParentProps,
+  type FxParent,
+  type FxVoidProps,
+  type FxVoid,
+  type FxFlowProps,
+  type FxFlow,
 } from '@fluixi/dom';
 
 // Re-export reactive primitives from @fluixi/reactive

@@ -12,12 +12,12 @@ mergeProps({ value: 1 }, { value: undefined }).value; // 1 (was undefined)
 mergeProps({ value: 1 }, { value: 2 }).value;         // 2
 ```
 
-**`Component` typing (dom):** `Component<P>` is now a proper function type — `(props: P) => …` — so you can annotate Solid-style and have `props` actually typed:
+**`Component` typing (dom):** `Component<P>` is now a proper function type — `(props: P) => …` — so you can annotate it and have `props` actually typed:
 
 ```ts
 const Greeting: Component<{ name: string }> = (props) => <h1>{props.name}</h1>;
 ```
 
-Previously `Component<P>` was `ComponentFn<P> | ComponentChild` (which includes `any`), erasing all prop checking. New parity types: `ParentComponent`/`ParentProps` (optional children), `VoidComponent`/`VoidProps` (no children), `FlowComponent`/`FlowProps` (required children), and `ComponentOrElement` for the loose "function-or-rendered-node" shape some internals pass around.
+Previously `Component<P>` was `ComponentFn<P> | ComponentChild` (which includes `any`), erasing all prop checking. Fluixi-branded helper types: `FxComponent`/`FxC` (aliases of `Component`), `FxParent`/`FxParentProps` (optional children), `FxVoid`/`FxVoidProps` (no children), `FxFlow`/`FxFlowProps` (required children), and `ComponentOrElement` for the loose "function-or-rendered-node" shape some internals pass around.
 
-**`@fluixi/core` re-exports:** `mergeProps`, `splitProps`, and the component/prop types (`Component`, `ComponentProps`, `ComponentFn`, `ComponentChild`, `ComponentOrElement`, `Parent*`, `Void*`, `Flow*`) are now exported from `@fluixi/core` — no more reaching into `@fluixi/dom` for them.
+**`@fluixi/core` re-exports:** `mergeProps`, `splitProps`, and the component/prop types (`Component`, `ComponentProps`, `ComponentFn`, `ComponentChild`, `ComponentOrElement`, `FxComponent`, `FxC`, `Fx{Parent,Void,Flow}` + their `*Props`) are now exported from `@fluixi/core` — no more reaching into `@fluixi/dom` for them.

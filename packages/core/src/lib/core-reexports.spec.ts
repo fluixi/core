@@ -3,9 +3,11 @@ import { mergeProps, splitProps } from './core.js';
 import type {
   Component,
   ComponentProps,
-  ParentComponent,
-  VoidComponent,
-  FlowComponent,
+  FxComponent,
+  FxC,
+  FxParent,
+  FxVoid,
+  FxFlow,
 } from './core.js';
 
 describe('@fluixi/core re-exports prop helpers from @fluixi/dom', () => {
@@ -24,20 +26,25 @@ describe('@fluixi/core re-exports prop helpers from @fluixi/dom', () => {
 });
 
 describe('Component typing (compile-time)', () => {
-  it('Component<Props> types props (Solid-style annotation)', () => {
+  it('Component<Props> types props; FxComponent/FxC are brand aliases', () => {
     const Greeting: Component<{ name: string }> = (props) => `Hi ${props.name}`;
     expect(Greeting({ name: 'Ada' })).toBe('Hi Ada');
+
+    const Branded: FxComponent<{ name: string }> = (props) => props.name;
+    expect(Branded({ name: 'b' })).toBe('b');
+    const Short: FxC<{ name: string }> = (props) => props.name;
+    expect(Short({ name: 's' })).toBe('s');
   });
 
-  it('ParentComponent allows children; VoidComponent and FlowComponent are usable', () => {
-    const Layout: ParentComponent<{ title: string }> = (props) =>
+  it('FxParent allows children; FxVoid forbids them; FxFlow requires them', () => {
+    const Layout: FxParent<{ title: string }> = (props) =>
       `${props.title}:${props.children ?? ''}`;
     expect(Layout({ title: 't', children: 'c' })).toBe('t:c');
 
-    const Icon: VoidComponent<{ glyph: string }> = (props) => props.glyph;
+    const Icon: FxVoid<{ glyph: string }> = (props) => props.glyph;
     expect(Icon({ glyph: '★' })).toBe('★');
 
-    const Wrap: FlowComponent<{}, string> = (props) => props.children.toUpperCase();
+    const Wrap: FxFlow<{}, string> = (props) => props.children.toUpperCase();
     expect(Wrap({ children: 'x' })).toBe('X');
   });
 

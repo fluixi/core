@@ -6,7 +6,7 @@
 import { html, TemplateResult, nothing } from 'lit';
 import { createEffect, createSignal, Accessor } from '@fluixi/reactive/signal';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
-import type { Component } from '@fluixi/dom';
+import type { ComponentOrElement as Component } from '@fluixi/dom';
 
 /**
  * Props for the For component

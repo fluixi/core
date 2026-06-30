@@ -5,7 +5,7 @@
 
 import { html, render as litRender, TemplateResult, nothing } from 'lit';
 import { createEffect, createSignal, Accessor } from '@fluixi/reactive/signal';
-import type { Component, ComponentProps } from '@fluixi/dom';
+import type { ComponentOrElement as Component, ComponentProps } from '@fluixi/dom';
 import { childToTemplate, normalizeAccessor, renderContent } from './utils.js';
 
 /**
