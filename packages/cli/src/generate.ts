@@ -39,9 +39,17 @@ function write(file: string, content: string): void {
 }
 
 const component = (Name: string) =>
-  `export function ${Name}() {
-  return <div class="${Name.toLowerCase()}">${Name}</div>;
-}
+  `import type { Component, ComponentChild } from '@fluixi/core';
+
+export type ${Name}Props = {
+  children?: ComponentChild;
+};
+
+// Typed component: \`props\` is inferred from ${Name}Props. Use FxParent/FxVoid/FxFlow
+// from '@fluixi/core' for children-required/forbidden variants.
+export const ${Name}: Component<${Name}Props> = (props) => {
+  return <div class="${Name.toLowerCase()}">{props.children ?? '${Name}'}</div>;
+};
 `;
 
 const route = (Name: string) =>

@@ -1470,15 +1470,45 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
   }
 }
 
+/**
+ * Merge several (possibly reactive) prop sources into one, last-source-wins — but a later
+ * source's `undefined` does NOT clobber an earlier defined value; it falls through to it. This
+ * is what makes `mergeProps(defaults, props)` work, and why the compiler can emit
+ * `mergeProps(...spreads, baseProps)` for JSX spreads (`<div {...a} {...b} />`) without a missing
+ * `b.x` wiping `a.x`.
+ *
+ * Like Solid's mergeProps (and `splitProps` above), the result is a Proxy that resolves each key
+ * LAZILY off the sources — getter/signal-backed props stay live (re-read on every access, not
+ * snapshotted), and the key set is the union across all sources (so dynamic prop objects work).
+ */
 export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
-  const target = {} as T;
-  for (const source of sources) {
-    if (!source) continue;
-    const descriptors = Object.getOwnPropertyDescriptors(source);
-    Object.defineProperties(target, descriptors);
-  }
-  // console.log('target is', target)
-  return target;
+  // Last defined (non-undefined) value wins; scan sources from the end so a later `undefined`
+  // falls through to an earlier source. Reads `source[key]` live each call — no snapshot.
+  const resolve = (key: string | symbol): any => {
+    for (let i = sources.length - 1; i >= 0; i--) {
+      const s = sources[i] as any;
+      if (s && key in s && s[key] !== undefined) return s[key];
+    }
+    return undefined;
+  };
+  const hasKey = (key: string | symbol): boolean => {
+    for (const s of sources) if (s && key in (s as any)) return true;
+    return false;
+  };
+
+  return new Proxy({} as any, {
+    get: (_, key) => resolve(key),
+    has: (_, key) => hasKey(key),
+    ownKeys: () => {
+      const keys = new Set<string | symbol>();
+      for (const s of sources) if (s) for (const k of Reflect.ownKeys(s as object)) keys.add(k);
+      return [...keys];
+    },
+    getOwnPropertyDescriptor: (_, key) =>
+      hasKey(key)
+        ? { enumerable: true, configurable: true, get: () => resolve(key) }
+        : undefined,
+  }) as T;
 }
 
 type SplitArgs<T, K extends (keyof T)[][]> = {

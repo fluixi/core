@@ -1,4 +1,4 @@
-import type { Component, ComponentChild } from '@fluixi/dom';
+import type { ComponentOrElement as Component, ComponentChild } from '@fluixi/dom';
 import { html } from 'lit';
 import { Accessor } from '@fluixi/reactive';
 import { nothing, TemplateResult } from 'lit';

@@ -177,6 +177,23 @@ export {
   hydrateIslands,
   type IslandProps,
   type IslandRegistry,
+  // Prop helpers (Solid-compatible): merge prop sources (later `undefined` falls through) and
+  // split a reactive props object into groups + rest. The compiler emits mergeProps for JSX spreads.
+  mergeProps,
+  splitProps,
+  // Component typing: annotate `const C: Component<Props> = (props) => …` (or the FxComponent/FxC
+  // brand aliases). FxParent adds optional `children`; FxVoid forbids them; FxFlow requires them.
+  type ComponentFn,
+  type ComponentChild,
+  type ComponentOrElement,
+  type FxComponent,
+  type FxC,
+  type FxParentProps,
+  type FxParent,
+  type FxVoidProps,
+  type FxVoid,
+  type FxFlowProps,
+  type FxFlow,
 } from '@fluixi/dom';
 
 // Re-export reactive primitives from @fluixi/reactive
