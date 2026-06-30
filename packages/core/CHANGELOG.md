@@ -1,5 +1,55 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.37
+
+### Minor Changes
+
+- fd5a896: Solid-compatible prop helpers + component typing, and re-export them from `@fluixi/core`.
+
+  **`mergeProps` (dom):** a later source's `undefined` no longer clobbers an earlier defined value — it falls through to it (Solid's contract). Previously `mergeProps(defaults, props)` lost `defaults` whenever `props.x` was `undefined`, and since the compiler emits `mergeProps(...spreads, baseProps)` for JSX spreads, `<div {...a} {...b} />` with `b.x === undefined` wiped `a.x`. It's now a lazy Proxy (like `splitProps`): keys resolve last-defined-wins across the union of sources, reactively (getter/signal-backed props re-read on every access, never snapshotted).
+
+  ```ts
+  mergeProps({ value: 1 }, { value: undefined }).value; // 1 (was undefined)
+  mergeProps({ value: 1 }, { value: 2 }).value; // 2
+  ```
+
+  **`Component` typing (dom):** `Component<P>` is now a proper function type — `(props: P) => …` — so you can annotate it and have `props` actually typed:
+
+  ```ts
+  const Greeting: Component<{ name: string }> = (props) => (
+    <h1>{props.name}</h1>
+  );
+  ```
+
+  Previously `Component<P>` was `ComponentFn<P> | ComponentChild` (which includes `any`), erasing all prop checking. Fluixi-branded helper types: `FxComponent`/`FxC` (aliases of `Component`), `FxParent`/`FxParentProps` (optional children), `FxVoid`/`FxVoidProps` (no children), `FxFlow`/`FxFlowProps` (required children), and `ComponentOrElement` for the loose "function-or-rendered-node" shape some internals pass around.
+
+  **`@fluixi/core` re-exports:** `mergeProps`, `splitProps`, and the component/prop types (`Component`, `ComponentProps`, `ComponentFn`, `ComponentChild`, `ComponentOrElement`, `FxComponent`, `FxC`, `Fx{Parent,Void,Flow}` + their `*Props`) are now exported from `@fluixi/core` — no more reaching into `@fluixi/dom` for them.
+
+  **`@fluixi/cli`:** `fluixi generate component <Name>` now scaffolds a typed component — a `<Name>Props` type and a `Component<<Name>Props>` annotation (was an untyped `export function`).
+
+- 63976b7: `<Router>` no longer renders a blank page for an unmatched URL.
+
+  When the current URL matches no route, the router now renders a fallback instead of nothing. Pass `notFound` (a component, element, or any renderable) to control it; omit it for a minimal built-in 404. It clears reactively when you navigate to a matched route, and works under SSR.
+
+  ```tsx
+  <Router routes={routes} notFound={NotFound} />
+  ```
+
+  A catch-all file route (`[...slug].tsx` → `*`) still takes precedence — use that when the 404 should render inside your layout; `notFound` is the app-level fallback for everything else.
+
+### Patch Changes
+
+- Updated dependencies [fd5a896]
+  - @fluixi/dom@1.0.0-alpha.37
+  - @fluixi/compiler@1.0.0-alpha.37
+  - @fluixi/jsx@1.0.0-alpha.37
+  - @fluixi/lit@1.0.0-alpha.37
+  - @fluixi/server@1.0.0-alpha.37
+  - @fluixi/utils@1.0.0-alpha.37
+  - @fluixi/reactive@1.0.0-alpha.37
+  - @fluixi/vite-plugin@1.0.0-alpha.37
+  - @fluixi/head@0.1.0-alpha.4
+
 ## 1.0.0-alpha.36
 
 ### Patch Changes
