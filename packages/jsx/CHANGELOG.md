@@ -1,5 +1,14 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.40
+
+### Patch Changes
+
+- 853c4bb: Widen `hidden`, `tabindex`/`tabIndex` to `T | Accessor<T>` so a reactive `() => …` type-checks without a cast (as `class`/`style` already do; `aria-*` were widened previously).
+- Updated dependencies [853c4bb]
+  - @fluixi/dom@1.0.0-alpha.40
+  - @fluixi/reactive@1.0.0-alpha.40
+
 ## 1.0.0-alpha.39
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @fluixi/session
 
+## 1.0.0-alpha.40
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.40
+- @fluixi/reactive@1.0.0-alpha.40
+
 ## 1.0.0-alpha.39
 
 ### Patch Changes
