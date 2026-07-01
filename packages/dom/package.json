@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/dom",
-  "version": "1.0.0-alpha.38",
+  "version": "1.0.0-alpha.39",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
