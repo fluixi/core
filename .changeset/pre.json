@@ -38,6 +38,7 @@
     "create-ssr-tsconfig-fix",
     "devtools",
     "dispose-no-rerun",
+    "dom-bare-controlflow-return",
     "dom-innerhtml-static",
     "dom-setattribute-null-removes",
     "fix-client-hydration-loop",
