@@ -3,8 +3,27 @@ name: CI
 on:
   push:
     branches: [main]
+    # The package CI validates the publishable packages; changes that only touch the
+    # apps (deployed by Cloudflare), docs, markdown, or changesets don't need it.
+    paths-ignore:
+      - '**/*.md'
+      - '.changeset/**'
+      - 'web/**'
+      - 'docs/**'
+      - 'my-portfolio/**'
+      - 'playground/**'
+      - '.vscode/**'
   pull_request:
     branches: [main, next, alpha]
+    paths-ignore:
+      - '**/*.md'
+      - '.changeset/**'
+      - 'web/**'
+      - 'docs/**'
+      - 'my-portfolio/**'
+      - 'playground/**'
+      - '.vscode/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,6 +38,10 @@ jobs:
   ci:
     name: Build & Test
     runs-on: ubuntu-latest
+    # Skip the auto-generated "Version Packages" PR: its source is unchanged from the feature
+    # PR that already passed, and release.yml re-gates it before publishing. Avoids a full
+    # redundant Build & Test per release.
+    if: ${{ github.event_name != 'pull_request' || !startsWith(github.head_ref, 'changeset-release/') }}
 
     steps:
       - uses: actions/checkout@v4
