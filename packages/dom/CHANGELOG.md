@@ -1,5 +1,12 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.40
+
+### Patch Changes
+
+- 853c4bb: Fire non-delegated `onX` event handlers. Handlers for non-bubbling events (`focus`, `blur`, `pointerenter`, `pointerleave`, `mouseenter`, `mouseleave`, `load`, `error`, …) were stored but never attached, so they silently dropped. `addDelegatedEventListener` now attaches a direct listener for those events (removed on cleanup), matching dom-expressions; delegated events (click/keydown/…) are unchanged.
+  - @fluixi/reactive@1.0.0-alpha.40
+
 ## 1.0.0-alpha.39
 
 ### Patch Changes
