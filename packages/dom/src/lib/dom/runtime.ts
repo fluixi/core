@@ -149,7 +149,7 @@ const templateCache = new Map<string, HTMLTemplateElement>();
 const delegatedSet = new Set<string>();
 
 // Events that don't bubble — must use direct addEventListener
-const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize', 'mouseenter', 'mouseleave']);
+const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize', 'mouseenter', 'mouseleave', 'pointerenter', 'pointerleave', 'gotpointercapture', 'lostpointercapture']);
 
 /**
  * Register global delegated event listener for the given event names.
@@ -190,7 +190,19 @@ export function addDelegatedEventListener(
   handler: EventListener
 ): void {
   (element as any)[`$$${name}`] = handler;
-  if (!delegatedSet.has(name) && !NON_DELEGATED.has(name)) {
+  if (NON_DELEGATED.has(name)) {
+    // Non-bubbling event (focus/blur/pointerenter/…): document delegation can't observe it, so
+    // attach a direct listener once. A stable forwarder reads $$name so updating the handler
+    // doesn't churn addEventListener/removeEventListener.
+    const key = `__fx_${name}`;
+    if (!(element as any)[key]) {
+      const forwarder = (e: Event) => { (element as any)[`$$${name}`]?.(e); };
+      element.addEventListener(name, forwarder);
+      (element as any)[key] = forwarder;
+    }
+    return;
+  }
+  if (!delegatedSet.has(name)) {
     delegateEvents([name]);
   }
 }
@@ -200,6 +212,12 @@ export function addDelegatedEventListener(
  */
 export function removeDelegatedEventListener(element: Element, name: string): void {
   delete (element as any)[`$$${name}`];
+  const key = `__fx_${name}`;
+  const forwarder = (element as any)[key];
+  if (forwarder) {
+    element.removeEventListener(name, forwarder);
+    delete (element as any)[key];
+  }
 }
 
 /**
@@ -1379,7 +1397,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
           // addEventListener/removeEventListener churn when a reactive scope re-runs,
           // which would silently drop the listener via onCleanup before re-adding it.
           (element as any)[`$$${name}`] = val;
-          const listenerKey = `__awc_${name}`;
+          const listenerKey = `__fx_${name}`;
           if (!(element as any)[listenerKey]) {
             const forwarder = (e: Event) => { (element as any)[`$$${name}`]?.(e); };
             element.addEventListener(name, forwarder);

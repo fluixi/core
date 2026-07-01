@@ -144,3 +144,40 @@ describe('bare control-flow return with sibling-updated context', () => {
     expect(document.querySelector('[role="dialog"]')).toBeTruthy();
   });
 });
+
+describe('owner wiring in control-flow thunks', () => {
+  it('#2 fires onMount for a component created inside a <Show> child thunk', async () => {
+    const src = `
+      import { createSignal, onMount, Show } from '@fluixi/core';
+      let mounted = 0;
+      function Inner() { onMount(() => { mounted++; }); return <div role="dialog" />; }
+      const [open, setOpen] = createSignal(false);
+      export function App() { return <Show when={() => open()}>{() => <Inner />}</Show>; }
+      export function toggle() { setOpen(true); }
+      export function count() { return mounted; }
+    `;
+    const mod = load(src);
+    document.body.innerHTML = '<div id="app"></div>';
+    DOM.render(() => mod.App(), document.getElementById('app'));
+    await tick();
+    mod.toggle();
+    await tick(); await tick();
+    expect(mod.count()).toBe(1);
+  });
+
+  it('#3 resolves each sibling provider for a consumer inside Portal+Show', async () => {
+    const src = `
+      import { createContext, useContext, Portal, Show } from '@fluixi/core';
+      const Ctx = createContext();
+      function Menu(props) { return <Ctx.Provider value={{ id: props.id }}>{props.children}</Ctx.Provider>; }
+      function Content() { const c = useContext(Ctx); return <Portal><Show when={() => true}>{() => <div class="item" data-id={c.id} />}</Show></Portal>; }
+      export function App() { return <><Menu id="A"><Content /></Menu><Menu id="B"><Content /></Menu></>; }
+    `;
+    const { App } = load(src);
+    document.body.innerHTML = '<div id="app"></div>';
+    DOM.render(() => App(), document.getElementById('app'));
+    await tick(); await tick();
+    const ids = [...document.querySelectorAll('.item')].map((e) => e.getAttribute('data-id')).sort();
+    expect(ids).toEqual(['A', 'B']);
+  });
+});
