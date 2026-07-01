@@ -11,6 +11,13 @@ import type { DirectiveResult } from 'lit/directive.js';
 // Helper Types
 // ============================================================================
 
+/**
+ * A prop value that may be a static value or a reactive accessor. The automatic JSX runtime
+ * applies a function-valued prop as a reactive render effect, so any attribute typed with this
+ * accepts `() => value` without a cast.
+ */
+type Reactive<T> = T | Accessor<T>;
+
 type HTMLDir = 'ltr' | 'rtl' | 'auto';
 type HTMLAutocapitalize = 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';
 type HTMLInputMode = 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
@@ -52,62 +59,62 @@ export namespace JSX {
   // ============================================================================
 
   export interface AriaAttributes {
-    'aria-activedescendant'?: string;
-    'aria-atomic'?: boolean | 'true' | 'false';
-    'aria-autocomplete'?: 'none' | 'inline' | 'list' | 'both';
-    'aria-braillelabel'?: string;
-    'aria-brailleroledescription'?: string;
-    'aria-busy'?: boolean | 'true' | 'false';
-    'aria-checked'?: boolean | 'true' | 'false' | 'mixed';
-    'aria-colcount'?: number;
-    'aria-colindex'?: number;
-    'aria-colindextext'?: string;
-    'aria-colspan'?: number;
-    'aria-controls'?: string;
-    'aria-current'?: boolean | 'true' | 'false' | 'page' | 'step' | 'location' | 'date' | 'time';
-    'aria-describedby'?: string;
-    'aria-description'?: string;
-    'aria-details'?: string;
-    'aria-disabled'?: boolean | 'true' | 'false';
+    'aria-activedescendant'?: Reactive<string>;
+    'aria-atomic'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-autocomplete'?: Reactive<'none' | 'inline' | 'list' | 'both'>;
+    'aria-braillelabel'?: Reactive<string>;
+    'aria-brailleroledescription'?: Reactive<string>;
+    'aria-busy'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-checked'?: Reactive<boolean | 'true' | 'false' | 'mixed'>;
+    'aria-colcount'?: Reactive<number>;
+    'aria-colindex'?: Reactive<number>;
+    'aria-colindextext'?: Reactive<string>;
+    'aria-colspan'?: Reactive<number>;
+    'aria-controls'?: Reactive<string>;
+    'aria-current'?: Reactive<boolean | 'true' | 'false' | 'page' | 'step' | 'location' | 'date' | 'time'>;
+    'aria-describedby'?: Reactive<string>;
+    'aria-description'?: Reactive<string>;
+    'aria-details'?: Reactive<string>;
+    'aria-disabled'?: Reactive<boolean | 'true' | 'false'>;
     /** @deprecated */
-    'aria-dropeffect'?: 'none' | 'copy' | 'execute' | 'link' | 'move' | 'popup';
-    'aria-errormessage'?: string;
-    'aria-expanded'?: boolean | 'true' | 'false';
-    'aria-flowto'?: string;
+    'aria-dropeffect'?: Reactive<'none' | 'copy' | 'execute' | 'link' | 'move' | 'popup'>;
+    'aria-errormessage'?: Reactive<string>;
+    'aria-expanded'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-flowto'?: Reactive<string>;
     /** @deprecated */
-    'aria-grabbed'?: boolean | 'true' | 'false';
-    'aria-haspopup'?: boolean | 'true' | 'false' | 'menu' | 'listbox' | 'tree' | 'grid' | 'dialog';
-    'aria-hidden'?: boolean | 'true' | 'false';
-    'aria-invalid'?: boolean | 'true' | 'false' | 'grammar' | 'spelling';
-    'aria-keyshortcuts'?: string;
-    'aria-label'?: string;
-    'aria-labelledby'?: string;
-    'aria-level'?: number;
-    'aria-live'?: 'off' | 'assertive' | 'polite';
-    'aria-modal'?: boolean | 'true' | 'false';
-    'aria-multiline'?: boolean | 'true' | 'false';
-    'aria-multiselectable'?: boolean | 'true' | 'false';
-    'aria-orientation'?: 'horizontal' | 'vertical';
-    'aria-owns'?: string;
-    'aria-placeholder'?: string;
-    'aria-posinset'?: number;
-    'aria-pressed'?: boolean | 'true' | 'false' | 'mixed';
-    'aria-readonly'?: boolean | 'true' | 'false';
-    'aria-relevant'?: 'additions' | 'additions removals' | 'additions text' | 'all' | 'removals' | 'removals additions' | 'removals text' | 'text' | 'text additions' | 'text removals';
-    'aria-required'?: boolean | 'true' | 'false';
-    'aria-roledescription'?: string;
-    'aria-rowcount'?: number;
-    'aria-rowindex'?: number;
-    'aria-rowindextext'?: string;
-    'aria-rowspan'?: number;
-    'aria-selected'?: boolean | 'true' | 'false';
-    'aria-setsize'?: number;
-    'aria-sort'?: 'none' | 'ascending' | 'descending' | 'other';
-    'aria-valuemax'?: number;
-    'aria-valuemin'?: number;
-    'aria-valuenow'?: number;
-    'aria-valuetext'?: string;
-    role?: string;
+    'aria-grabbed'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-haspopup'?: Reactive<boolean | 'true' | 'false' | 'menu' | 'listbox' | 'tree' | 'grid' | 'dialog'>;
+    'aria-hidden'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-invalid'?: Reactive<boolean | 'true' | 'false' | 'grammar' | 'spelling'>;
+    'aria-keyshortcuts'?: Reactive<string>;
+    'aria-label'?: Reactive<string>;
+    'aria-labelledby'?: Reactive<string>;
+    'aria-level'?: Reactive<number>;
+    'aria-live'?: Reactive<'off' | 'assertive' | 'polite'>;
+    'aria-modal'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-multiline'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-multiselectable'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-orientation'?: Reactive<'horizontal' | 'vertical'>;
+    'aria-owns'?: Reactive<string>;
+    'aria-placeholder'?: Reactive<string>;
+    'aria-posinset'?: Reactive<number>;
+    'aria-pressed'?: Reactive<boolean | 'true' | 'false' | 'mixed'>;
+    'aria-readonly'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-relevant'?: Reactive<'additions' | 'additions removals' | 'additions text' | 'all' | 'removals' | 'removals additions' | 'removals text' | 'text' | 'text additions' | 'text removals'>;
+    'aria-required'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-roledescription'?: Reactive<string>;
+    'aria-rowcount'?: Reactive<number>;
+    'aria-rowindex'?: Reactive<number>;
+    'aria-rowindextext'?: Reactive<string>;
+    'aria-rowspan'?: Reactive<number>;
+    'aria-selected'?: Reactive<boolean | 'true' | 'false'>;
+    'aria-setsize'?: Reactive<number>;
+    'aria-sort'?: Reactive<'none' | 'ascending' | 'descending' | 'other'>;
+    'aria-valuemax'?: Reactive<number>;
+    'aria-valuemin'?: Reactive<number>;
+    'aria-valuenow'?: Reactive<number>;
+    'aria-valuetext'?: Reactive<string>;
+    role?: Reactive<string>;
   }
 
   // ============================================================================
@@ -1203,11 +1210,11 @@ export namespace JSX {
     zoomAndPan?: string;
 
     // SVG specific aria
-    'aria-label'?: string;
-    'aria-labelledby'?: string;
-    'aria-describedby'?: string;
-    'aria-hidden'?: boolean | 'true' | 'false';
-    role?: string;
+    'aria-label'?: Reactive<string>;
+    'aria-labelledby'?: Reactive<string>;
+    'aria-describedby'?: Reactive<string>;
+    'aria-hidden'?: Reactive<boolean | 'true' | 'false'>;
+    role?: Reactive<string>;
 
     // Catch-all for vendor/custom SVG attributes
     [key: string]: any;
