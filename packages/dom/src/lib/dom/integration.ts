@@ -55,7 +55,7 @@ export interface IntegrationOptions {
 // Shared state stored on globalThis so all bundle instances of this module share one reference.
 // Without this, each pre-bundled chunk (e.g. @awc_fluixi.js, @awc_jsx-runtime.js) would
 // get its own isolated copy of these variables and call initializeIntegration() independently.
-const _integrationStateKey = '__awc_dom_integration__';
+const _integrationStateKey = '__fx_dom_integration__';
 const _state: { sys: SignalSystem | null; store: StoreSystem | null; ok: boolean } =
   ((globalThis as any)[_integrationStateKey] ??= { sys: null, store: null, ok: false });
 

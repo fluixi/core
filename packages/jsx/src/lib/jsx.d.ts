@@ -298,7 +298,7 @@ export namespace JSX {
     /** @deprecated */
     exportparts?: string;
     exportParts?: string;
-    hidden?: boolean;
+    hidden?: Reactive<boolean>;
     id?: string | Accessor<string>;
     inert?: boolean;
     inputmode?: HTMLInputMode;
@@ -312,8 +312,8 @@ export namespace JSX {
     spellCheck?: boolean;
     spellcheck?: boolean;
     style?: string | Record<string, string | number> | Accessor<string>;
-    tabIndex?: number;
-    tabindex?: number;
+    tabIndex?: Reactive<number>;
+    tabindex?: Reactive<number>;
     title?: string | Accessor<string>;
     translate?: 'yes' | 'no';
 
@@ -923,8 +923,8 @@ export namespace JSX {
     ref?: ((el: T) => void) | { current: T | null };
     key?: string | number;
     children?: Element | Element[];
-    tabIndex?: number;
-    tabindex?: number;
+    tabIndex?: Reactive<number>;
+    tabindex?: Reactive<number>;
     lang?: string;
     xml_lang?: string;
 
