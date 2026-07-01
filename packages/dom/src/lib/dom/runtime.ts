@@ -635,9 +635,18 @@ export function insertExpression(
       ? [current as Node]
       : [];
 
-      flattenArray(value, array, parent, marker, true, componentCache);
-      // console.log('flattening', currentArray, array)
-    return reconcileArrays(parent, currentArray, array, marker);
+    // Collect reactive members so each gets its own fine-grained insert effect instead of being
+    // read inline in this (enclosing) render effect.
+    const reactiveSlots: Array<{ marker: Node; sig: any }> = [];
+    flattenArray(value, array, parent, marker, true, componentCache, reactiveSlots);
+    const reconciled = reconcileArrays(parent, currentArray, array, marker);
+    // Markers are now in the DOM — wire a per-slot reactive insert. insert() sets up a nested
+    // render effect that re-inserts the member's content before its marker on change, so a bare
+    // control-flow component return (<Show>/<Switch>/<For>) updates in place.
+    for (const slot of reactiveSlots) {
+      insert(parent, slot.sig, slot.marker);
+    }
+    return reconciled;
   }
 
   if (t === 'object' && value !== null && typeof value === 'object') {
@@ -673,7 +682,13 @@ function flattenArray(
   parent: Node,
   marker?: Node,
   track = true,
-  componentCache?: Map<Function, any>
+  componentCache?: Map<Function, any>,
+  // When provided, a reactive member is NOT read inline (which would subscribe the enclosing
+  // render effect and re-render the whole subtree on change). Instead it emits a placeholder
+  // marker and records itself here; the array caller wires a fine-grained insert() per slot
+  // after the markers are placed. This is what makes a bare control-flow component return
+  // (a memo, e.g. <Show>) update in place, like an element child does.
+  reactiveSlots?: Array<{ marker: Node; sig: any }>
 ): void {
   count+=1
   
@@ -738,6 +753,15 @@ function flattenArray(
 
       if (typeof resolved === 'function') {
         if (isSignal(resolved)) {
+          // Defer to a per-slot insert effect (see reactiveSlots) so a reactive member updates
+          // in place instead of re-rendering the enclosing subtree. Only the synchronous array
+          // path collects slots; async/promise resolutions fall back to the inline read below.
+          if (reactiveSlots) {
+            const slot = createTextNode('');
+            result.push(slot);
+            reactiveSlots.push({ marker: slot, sig: resolved });
+            continue;
+          }
           // Read the signal — tracked inside the enclosing render effect.
           // CRITICAL: Use flattenArray recursively (NOT normalizeValue) so
           // component thunks inside the result go through componentCache.
@@ -772,8 +796,8 @@ function flattenArray(
       }
 
       // resolved is not a function
-      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, track, componentCache);
-      else flattenArray([resolved], result, parent, marker, track, componentCache);
+      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, track, componentCache, reactiveSlots);
+      else flattenArray([resolved], result, parent, marker, track, componentCache, reactiveSlots);
       continue;
     }
 
@@ -798,7 +822,7 @@ function flattenArray(
     }
 
     if (Array.isArray(item)) {
-      flattenArray(item, result, parent, marker, track, componentCache);
+      flattenArray(item, result, parent, marker, track, componentCache, reactiveSlots);
       continue;
     }
 
