@@ -352,24 +352,25 @@ export function hasClass(element: Element, className: string): boolean {
 export function setAttribute(
   element: Element,
   name: string,
-  value: string | number | boolean,
+  value: unknown,
   isSVG = false
 ): void {
-  if (typeof value === 'boolean') {
-    if (value) {
-      element.setAttribute(name, '');
-    } else {
-      element.removeAttribute(name);
-    }
-  } else {
-    if(typeof value === 'object' && value){
-      element.setAttribute(name, JSON.stringify(value));
-
-    }else{
-      element.setAttribute(name, String(value));
-
-    }
+  // null/undefined/false REMOVE the attribute (a conditionally-absent attribute must be omitted,
+  // not rendered as ="undefined"/"false"); true renders as the empty string. Matches Solid's
+  // dom-expressions semantics.
+  if (value == null || value === false) {
+    element.removeAttribute(name);
+    return;
   }
+  if (value === true) {
+    element.setAttribute(name, '');
+    return;
+  }
+  if (typeof value === 'object') {
+    element.setAttribute(name, JSON.stringify(value));
+    return;
+  }
+  element.setAttribute(name, String(value));
 }
 
 // /**
