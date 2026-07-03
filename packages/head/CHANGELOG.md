@@ -1,5 +1,11 @@
 # @fluixi/head
 
+## 0.1.0-alpha.10
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.43
+
 ## 0.1.0-alpha.9
 
 ### Patch Changes
