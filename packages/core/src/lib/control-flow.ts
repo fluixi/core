@@ -1,5 +1,4 @@
 import { type ShowProps as _ShowProps } from '@fluixi/dom';
-import { type JSX } from '@fluixi/jsx';
 export type ShowProps<T> = _ShowProps<T, JSX.Element>;
 export {
   Show,
