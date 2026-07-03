@@ -1,5 +1,5 @@
 import { Accessor, mapArray, keyArray } from '@fluixi/reactive/signal';
-import { normalizeAccessor } from './utils.js';
+import { resolveReactiveProp } from './utils.js';
 import { hydrateAdvancePast } from '../dom/hydration.js';
 
 type EachSource<T> =
@@ -76,7 +76,10 @@ export type ForProps<T, U = any> = ForPropsUnkeyed<T, U> | ForPropsKeyed<T, U>;
 export function For<T, U>(props: ForPropsKeyed<T, U>): Accessor<U[]>;
 export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
 export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> {
-  const each = normalizeAccessor(props.each as any);
+  // Read `each` lazily through the prop getter so `each={items()}` re-runs inside
+  // mapArray's tracking memo (fine-grained keyed diffing), while `each={items}` still
+  // works — resolveReactiveProp unwraps the accessor form once.
+  const each = resolveReactiveProp<ReadonlyArray<T>>(() => props.each as any);
   const fallback = () => props.fallback ?? null;
 
   // Render the children (a fn, or an array of fn/values) for one item, then

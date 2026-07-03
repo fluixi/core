@@ -185,6 +185,22 @@ const CONTROL_FLOW_COMPONENTS = new Set([
   'Suspense',
 ]);
 
+// Control-flow components read a single reactive *value* prop inside their own tracking
+// scope. Emit that prop as a getter (like `children`) so reading it re-runs the caller's
+// expression — otherwise `each={items()}` / `when={cond()}` snapshot once and never update.
+// The runtime routes these through `resolveReactiveProp`, which also unwraps the accessor
+// form (`each={items}`), so all three shapes work with no compiler-side ambiguity.
+//
+// Excluded on purpose: `Dynamic.component` (a component IS a function, so the value can't be
+// told apart from an accessor — its idiomatic `component={signal}` form already reacts) and
+// `Portal.mount` (read once at mount, not a reactive value).
+const CONTROL_FLOW_VALUE_PROPS: Record<string, string> = {
+  Show: 'when',
+  For: 'each',
+  Index: 'each',
+  Match: 'when',
+};
+
 const REACTIVE_PATTERNS = {
   signalCall: /\w+\(\)$/,
   storeAccess: /\w+\.\w+/,
@@ -1053,7 +1069,8 @@ function transformAutomaticElement(
   const { props, spreads } = transformAttributes(
     openingElement.attributes,
     state,
-    isNativeElement
+    isNativeElement,
+    t.isJSXIdentifier(openingElement.name) ? openingElement.name.name : ''
   );
 
   // Transform children
@@ -1137,7 +1154,8 @@ function transformClassicElement(
   const { props, spreads } = transformAttributes(
     openingElement.attributes,
     state,
-    isNativeElement
+    isNativeElement,
+    t.isJSXIdentifier(openingElement.name) ? openingElement.name.name : ''
   );
   const transformedChildren = transformChildren(children, state, state.autoShow ?? true);
 
@@ -1269,10 +1287,12 @@ function isValidJSIdentifier(name: string): boolean {
 function transformAttributes(
   attributes: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
   state: any,
-  isNativeElement = true
+  isNativeElement = true,
+  tagName = ''
 ): { props: Array<t.ObjectProperty | t.ObjectMethod>; spreads: t.Expression[] } {
   const props: Array<t.ObjectProperty | t.ObjectMethod> = [];
   const spreads: t.Expression[] = [];
+  const cfValueProp = CONTROL_FLOW_VALUE_PROPS[tagName];
 
   for (const attr of attributes) {
     if (t.isJSXSpreadAttribute(attr)) {
@@ -1305,7 +1325,10 @@ function transformAttributes(
         t.isJSXFragment(raw) ||
         (t.isJSXExpressionContainer(raw) &&
           (t.isJSXElement(raw.expression) || t.isJSXFragment(raw.expression)));
-      if (!isNativeElement && isInlineJsx) {
+      // Control-flow reactive value prop (each/when/component/mount): emit as a getter so
+      // reading it re-runs the caller's expression inside the component's tracking scope.
+      const isCfValueProp = !isNativeElement && name === cfValueProp;
+      if ((!isNativeElement && isInlineJsx) || isCfValueProp) {
         props.push(
           t.objectMethod('get', key, [], t.blockStatement([t.returnStatement(value)])),
         );

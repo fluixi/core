@@ -1,5 +1,5 @@
 import { Accessor, createMemo } from '@fluixi/reactive/signal';
-import { normalizeAccessor, isTruthy } from './utils.js';
+import { resolveReactiveProp, isTruthy } from './utils.js';
 
 // Internal marker used by Switch to identify Match nodes.
 const MATCH_MARKER = Symbol('match');
@@ -34,7 +34,9 @@ export interface MatchNode<T = any> {
 export function Match<T>(props: MatchProps<T>): MatchNode<T> {
   return {
     [MATCH_MARKER]: true,
-    when: normalizeAccessor(props.when),
+    // Lazy read through the prop getter — Switch calls `branch.when()` inside its memo,
+    // so `when={cond()}` reacts; `when={cond}` unwraps via resolveReactiveProp.
+    when: resolveReactiveProp(() => props.when),
     children: props.children,
   } as MatchNode<T>;
 }

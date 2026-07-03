@@ -1,5 +1,5 @@
 import { Accessor, indexArray } from '@fluixi/reactive/signal';
-import { normalizeAccessor } from './utils.js';
+import { resolveReactiveProp } from './utils.js';
 import { hydrateAdvancePast } from '../dom/hydration.js';
 
 export interface IndexProps<T, U = any> {
@@ -35,7 +35,7 @@ export interface IndexProps<T, U = any> {
  * Index({ each: items, children: (item, i) => html`<li>${i} — ${item().name}</li>` })
  */
 export function Index<T, U = any>(props: IndexProps<T, U>): Accessor<U[] | any> {
-  const each = normalizeAccessor(props.each as T[]);
+  const each = resolveReactiveProp<T[]>(() => props.each as any);
   return indexArray<T, U>(
     each,
     (item, index) => {
