@@ -47,10 +47,23 @@ export interface Context<T> {
 export function createContext<T>(defaultValue?: T): Context<T> {
   const id = Symbol('context');
   const Provider = (props: { value: T; children?: unknown; debug?: boolean }): any => {
-    // Stamp the value on the current owner; descendants rendered under it (or its
-    // children) resolve it via useContext walking up the owner chain.
-    if (G.owner) (G.owner.contexts ??= new Map()).set(id, props.value);
-    return props.children;
+    // Stamp the value on a DEDICATED child owner, then read `children` under it — never
+    // on the current owner directly. Two sibling <Ctx.Provider> elements used inline (no
+    // wrapping component) run under the SAME ambient owner, so stamping there lets the
+    // second clobber the first's entry — every descendant then resolves the last value.
+    // A child scope isolates each Provider; because createMemo captures the owner at
+    // creation, the children memos built while reading `props.children` here capture this
+    // scope and resolve the right value even when rendered lazily (Portal/Show/For).
+    const parent = G.owner;
+    const owner = makeOwner(parent);
+    (owner.contexts = new Map()).set(id, props.value);
+    if (parent) (parent.owned ??= []).push(owner);
+    G.owner = owner;
+    try {
+      return props.children;
+    } finally {
+      G.owner = parent;
+    }
   };
   return { id, defaultValue, Provider };
 }
