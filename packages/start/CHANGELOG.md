@@ -1,5 +1,15 @@
 # @fluixi/start
 
+## 0.1.0-alpha.31
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.41
+- @fluixi/core@1.0.0-alpha.41
+- @fluixi/dom@1.0.0-alpha.41
+- @fluixi/head@0.1.0-alpha.8
+- @fluixi/server@1.0.0-alpha.41
+
 ## 0.1.0-alpha.30
 
 ### Patch Changes
