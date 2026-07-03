@@ -33,6 +33,7 @@
     "cli-generate",
     "cli-ux-redesign",
     "context-provider-child-owner",
+    "control-flow-reactive-props",
     "core-i18n",
     "create-exit-hang",
     "create-fluixi",
