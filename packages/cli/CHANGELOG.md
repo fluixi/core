@@ -1,5 +1,13 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.33
+
+### Patch Changes
+
+- 3f0e665: Fix control flow `Show` types to support JSX.Element because before it was required to use `<Show>{()=><Component />}</Show>` the fix now directly allow `<Show><Component /></Show>`
+- Updated dependencies [3f0e665]
+  - @fluixi/start@0.1.0-alpha.32
+
 ## 0.1.0-alpha.32
 
 ### Patch Changes

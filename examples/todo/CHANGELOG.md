@@ -1,5 +1,16 @@
 # @fluixi/example-todo
 
+## 0.0.5-alpha.42
+
+### Patch Changes
+
+- 3f0e665: Fix control flow `Show` types to support JSX.Element because before it was required to use `<Show>{()=><Component />}</Show>` the fix now directly allow `<Show><Component /></Show>`
+- Updated dependencies [3f0e665]
+  - @fluixi/reactive@1.0.0-alpha.42
+  - @fluixi/core@1.0.0-alpha.42
+  - @fluixi/dom@1.0.0-alpha.42
+  - @fluixi/jsx@1.0.0-alpha.42
+
 ## 0.0.5-alpha.41
 
 ### Patch Changes
