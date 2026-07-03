@@ -30,6 +30,16 @@ const CONTROL_COMPONENT: Record<string, string> = {
   suspense: 'Suspense',
 };
 
+// Control-flow reactive value props emitted as getters so the runtime re-runs the caller's
+// expression inside the component's tracking scope (fixes `each={items()}`/`when={cond()}`).
+// Kept in sync with CONTROL_FLOW_VALUE_PROPS in frontend/babel/plugin.ts (inline codegen).
+const CONTROL_FLOW_VALUE_PROPS: Record<string, string> = {
+  Show: 'when',
+  For: 'each',
+  Index: 'each',
+  Match: 'when',
+};
+
 function isIdent(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
@@ -84,9 +94,10 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
+  const cfValueProp = CONTROL_FLOW_VALUE_PROPS[name];
   const entries = normal.map((p) =>
-    // Inline JSX prop → lazy getter (see IRProp.jsxElement); otherwise an eager value.
-    p.jsxElement
+    // Inline JSX prop, or a control-flow reactive value prop → lazy getter; else eager value.
+    p.jsxElement || p.name === cfValueProp
       ? `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`
       : `${propKey(p.name)}: ${componentPropValue(p)}`,
   );

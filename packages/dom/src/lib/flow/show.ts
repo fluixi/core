@@ -1,5 +1,5 @@
 import { createMemo, isSignal, untrack } from '@fluixi/reactive/signal';
-import { normalizeAccessor, isTruthy, isLitResult } from './utils.js';
+import { normalizeAccessor, resolveReactiveProp, isTruthy, isLitResult } from './utils.js';
 import { makeArrayFlat } from '../dom/runtime.js';
 import { Accessor, isResource } from '@fluixi/reactive/signal';
 
@@ -52,7 +52,10 @@ export interface ShowProps<T, W = any> {
 //   });
 // }
 export function Show<T>(props: ShowProps<T>): any {
-  const when = normalizeAccessor(props.when);
+  // Read `when` lazily through the prop getter so `when={cond()}` re-runs the caller's
+  // expression inside these memos (reactive), while `when={cond}` / `when={() => cond}`
+  // still work — resolveReactiveProp unwraps the accessor form once.
+  const when = resolveReactiveProp<T>(() => props.when as any);
   // const {when} = props
   const value = createMemo(when, undefined)
     const cond = createMemo(value, undefined)
