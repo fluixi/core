@@ -9,7 +9,7 @@ import { Accessor, isResource } from '@fluixi/reactive/signal';
 export type ShowValue<T> = T extends () => infer V ? V : NonNullable<T extends () => infer V ? V : T>;
 
 
-export interface ShowProps<T> {
+export interface ShowProps<T, W = any> {
   /** Reactive condition. When truthy, renders children. */
   when: T | Accessor<T> | null | undefined | false;
   /** Content rendered when `when` is falsy. */
@@ -21,7 +21,7 @@ export interface ShowProps<T> {
    * JSX:    <Show when={user()}>{(u) => <span>{u.name}</span>}</Show>
    * lit:    Show({ when: user, children: (u) => html`<span>${u.name}</span>` })
    */
-  children: ((val: ShowValue<T>) => any);
+  children: W | ((val: ShowValue<T>) => any);
   debug?: boolean
 }
 
@@ -122,57 +122,57 @@ export function Show<T>(props: ShowProps<T>): any {
     { name: 'show'}
   );
 }
-export function Show1<T>(props: ShowProps<T>): any {
-  const when = normalizeAccessor(props.when);
-  return createMemo(
-    () => {
-      if (isResource(when)) {
-        if (when.loading) {
-          return props.fallback ?? null;
-        }
-      }
-      const value = when();
-      if (isTruthy(value)) {
-        let children = props.children;
-        // handle children on jsx
-        // if(Array.isArray(children)) {
-        //   children = makeArrayFlat(children);
-        //   // console.log('is truthy', children);
-        //   // if(children)
-        //   // children = (children as any[]).map((c: any) => typeof c === 'function' ? c(value) : c) as any;
-        //   // return children;
-        // }
-        if (typeof children === 'function' && !isLitResult(children)) {
-          if (isSignal<any>(value)) {
-            // value = (value as any)() as any;
-            return (children as (item: T) => any)((value as any)());
-          }
-          return (children as (item: T) => any)(value as T);
-        }
-        return children;
-        // return typeof props.children === 'function'
-        //   ? props.children(value)
-        //   : props.children;
-      }
-      // let value =
-      //   typeof condition === 'function' ? (condition as () => T)() : condition;
-      // if (value != null && value !== false) {
-      //   // console.log('value', value);
-      //   const children = props.children;
-      //   if (typeof children === 'function' && !isLitResult(children)) {
-      //     if (isSignal<any>(value)) {
-      //       value = (value as any)() as any;
-      //     }
-      //     return (children as (item: T) => any)(value as T);
-      //   }
-      //   return children;
-      // }
-      return props.fallback ?? null;
-    },
-    undefined,
-    { name: 'show' }
-  );
-}
+// export function Show1<T>(props: ShowProps<T>): any {
+//   const when = normalizeAccessor(props.when);
+//   return createMemo(
+//     () => {
+//       if (isResource(when)) {
+//         if (when.loading) {
+//           return props.fallback ?? null;
+//         }
+//       }
+//       const value = when();
+//       if (isTruthy(value)) {
+//         let children = props.children;
+//         // handle children on jsx
+//         // if(Array.isArray(children)) {
+//         //   children = makeArrayFlat(children);
+//         //   // console.log('is truthy', children);
+//         //   // if(children)
+//         //   // children = (children as any[]).map((c: any) => typeof c === 'function' ? c(value) : c) as any;
+//         //   // return children;
+//         // }
+//         if (typeof children === 'function' && !isLitResult(children)) {
+//           if (isSignal<any>(value)) {
+//             // value = (value as any)() as any;
+//             return (children as (item: T) => any)((value as any)());
+//           }
+//           return (children as (item: T) => any)(value as T);
+//         }
+//         return children;
+//         // return typeof props.children === 'function'
+//         //   ? props.children(value)
+//         //   : props.children;
+//       }
+//       // let value =
+//       //   typeof condition === 'function' ? (condition as () => T)() : condition;
+//       // if (value != null && value !== false) {
+//       //   // console.log('value', value);
+//       //   const children = props.children;
+//       //   if (typeof children === 'function' && !isLitResult(children)) {
+//       //     if (isSignal<any>(value)) {
+//       //       value = (value as any)() as any;
+//       //     }
+//       //     return (children as (item: T) => any)(value as T);
+//       //   }
+//       //   return children;
+//       // }
+//       return props.fallback ?? null;
+//     },
+//     undefined,
+//     { name: 'show' }
+//   );
+// }
 
       // if (isTruthy(value)) {
       //   const children = props.children;
