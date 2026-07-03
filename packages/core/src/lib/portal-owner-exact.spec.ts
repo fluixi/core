@@ -1,0 +1,97 @@
+// @vitest-environment jsdom
+// The UI-lib's EXACT repro: context Provider used directly as a JSX element
+// (no intermediate wrapper component), compiled with vite-plugin options.
+import { describe, it, expect, beforeAll } from 'vitest';
+import * as babel from '@babel/core';
+import imperativePlugin from '@fluixi/compiler/babel';
+import * as DOM from '@fluixi/dom';
+import * as S from '@fluixi/reactive/signal';
+import * as Fluixi from '@fluixi/core';
+import { ensureIntegration } from './render/component.js';
+
+function cjsTransform({ types: t }: any): any {
+  return {
+    visitor: {
+      ImportDeclaration(path: any) {
+        const source = path.node.source.value;
+        const props: any[] = [];
+        let nsName: string | null = null;
+        let defName: string | null = null;
+        for (const s of path.node.specifiers) {
+          if (t.isImportDefaultSpecifier(s)) defName = s.local.name;
+          else if (t.isImportNamespaceSpecifier(s)) nsName = s.local.name;
+          else props.push(t.objectProperty(t.identifier(s.imported.name), t.identifier(s.local.name), false, s.imported.name === s.local.name));
+        }
+        const req = t.callExpression(t.identifier('require'), [t.stringLiteral(source)]);
+        const decls: any[] = [];
+        if (nsName) decls.push(t.variableDeclarator(t.identifier(nsName), req));
+        if (defName) decls.push(t.variableDeclarator(t.identifier(defName), t.memberExpression(req, t.identifier('default'))));
+        if (props.length) decls.push(t.variableDeclarator(t.objectPattern(props), req));
+        if (!decls.length) return path.remove();
+        path.replaceWith(t.variableDeclaration('const', decls));
+      },
+      ExportNamedDeclaration(path: any) {
+        if (path.node.declaration) {
+          const decl = path.node.declaration;
+          const names: string[] = [];
+          if (t.isVariableDeclaration(decl)) for (const d of decl.declarations) names.push(d.id.name);
+          else if (decl.id) names.push(decl.id.name);
+          path.replaceWithMultiple([
+            decl,
+            ...names.map((n) => t.expressionStatement(t.assignmentExpression('=', t.memberExpression(t.identifier('exports'), t.identifier(n)), t.identifier(n)))),
+          ]);
+        }
+      },
+    },
+  };
+}
+
+const REQUIRE_MAP: Record<string, unknown> = {
+  '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi,
+};
+
+function load(src: string, opts: any): any {
+  const step1 = babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[imperativePlugin as any, opts]] })!.code!;
+  const code = babel.transformSync(step1, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsTransform] })!.code!;
+  const m = { exports: {} as any };
+  const req = (id: string) => { if (id in REQUIRE_MAP) return REQUIRE_MAP[id]; throw new Error('unexpected require: ' + id); };
+  new Function('exports', 'require', 'module', code)(m.exports, req, m);
+  return m.exports;
+}
+
+const tick = () => new Promise((r) => setTimeout(r, 0));
+beforeAll(() => ensureIntegration());
+
+const SRC = `
+  import { createContext, useContext, Portal, Show } from '@fluixi/core';
+  const ctx = createContext('V');
+  const Provider = ctx.Provider;
+  const useValue = () => useContext(ctx);
+  const Consumer = () => <span class="v" data-v={useValue()} />;
+  const Wrapper = (p) => <Portal><Show when={() => true}>{() => p.children}</Show></Portal>;
+  export function App() {
+    return <>
+      <Provider value="A"><Wrapper><Consumer /></Wrapper></Provider>
+      <Provider value="B"><Wrapper><Consumer /></Wrapper></Provider>
+    </>;
+  }
+`;
+
+const VITE_OPTS = { backend: 'imperative' as const, importSource: '@fluixi/jsx', hoistStatics: true, optimizeControlFlow: true, signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
+
+async function run(opts: any): Promise<string[]> {
+  const { App } = load(SRC, opts);
+  document.body.innerHTML = '<div id="app"></div>';
+  DOM.render(() => App(), document.getElementById('app'));
+  await tick(); await tick();
+  return [...document.querySelectorAll('.v')].map((e) => e.getAttribute('data-v')!).sort();
+}
+
+describe('direct Provider element + Portal/Show + props.children', () => {
+  it('vite opts (hoist + optimizeControlFlow)', async () => {
+    expect(await run(VITE_OPTS)).toEqual(['A', 'B']);
+  });
+  it('no optimize', async () => {
+    expect(await run({ ...VITE_OPTS, hoistStatics: false, optimizeControlFlow: false })).toEqual(['A', 'B']);
+  });
+});

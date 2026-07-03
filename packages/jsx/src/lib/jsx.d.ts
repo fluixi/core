@@ -15,8 +15,12 @@ import type { DirectiveResult } from 'lit/directive.js';
  * A prop value that may be a static value or a reactive accessor. The automatic JSX runtime
  * applies a function-valued prop as a reactive render effect, so any attribute typed with this
  * accepts `() => value` without a cast.
+ *
+ * The accessor may return `undefined` to omit the attribute reactively — `setAttribute`
+ * removes the attr on `undefined`/`null`/`false` — so `() => (cond ? 'true' : undefined)`
+ * type-checks without a cast.
  */
-type Reactive<T> = T | Accessor<T>;
+type Reactive<T> = T | undefined | Accessor<T | undefined>;
 
 type HTMLDir = 'ltr' | 'rtl' | 'auto';
 type HTMLAutocapitalize = 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';
@@ -566,27 +570,27 @@ export namespace JSX {
     height?: number | string;
     incremental?: boolean;
     list?: string;
-    max?: number | string;
-    maxLength?: number;
-    maxlength?: number;
-    min?: number | string;
-    minLength?: number;
-    minlength?: number;
-    multiple?: boolean;
+    max?: Reactive<number | string>;
+    maxLength?: Reactive<number>;
+    maxlength?: Reactive<number>;
+    min?: Reactive<number | string>;
+    minLength?: Reactive<number>;
+    minlength?: Reactive<number>;
+    multiple?: Reactive<boolean>;
     name?: string;
-    pattern?: string;
+    pattern?: Reactive<string>;
     placeholder?: string | Accessor<string>;
     popoverTarget?: string;
     popovertarget?: string;
     popoverTargetAction?: 'hide' | 'show' | 'toggle';
     popovertargetaction?: 'hide' | 'show' | 'toggle';
-    readOnly?: boolean;
-    readonly?: boolean;
-    required?: boolean;
+    readOnly?: Reactive<boolean>;
+    readonly?: Reactive<boolean>;
+    required?: Reactive<boolean>;
     results?: number;
-    size?: number;
+    size?: Reactive<number>;
     src?: string;
-    step?: number | string;
+    step?: Reactive<number | string>;
     indeterminate?: boolean | Accessor<boolean>;
     type?:
       | 'button'
@@ -786,10 +790,10 @@ export namespace JSX {
     autofocus?: boolean;
     disabled?: boolean | Accessor<boolean>;
     form?: string;
-    multiple?: boolean;
+    multiple?: Reactive<boolean>;
     name?: string;
-    required?: boolean;
-    size?: number;
+    required?: Reactive<boolean>;
+    size?: Reactive<number>;
     value?: string | ReadonlyArray<string> | number | Accessor<string | number>;
   }
 
@@ -854,15 +858,15 @@ export namespace JSX {
     dirname?: string;
     disabled?: boolean | Accessor<boolean>;
     form?: string;
-    maxLength?: number;
-    maxlength?: number;
-    minLength?: number;
-    minlength?: number;
+    maxLength?: Reactive<number>;
+    maxlength?: Reactive<number>;
+    minLength?: Reactive<number>;
+    minlength?: Reactive<number>;
     name?: string;
     placeholder?: string | Accessor<string>;
-    readOnly?: boolean;
-    readonly?: boolean;
-    required?: boolean;
+    readOnly?: Reactive<boolean>;
+    readonly?: Reactive<boolean>;
+    required?: Reactive<boolean>;
     rows?: number;
     value?: string | ReadonlyArray<string> | Accessor<string>;
     wrap?: 'hard' | 'soft' | 'off';
