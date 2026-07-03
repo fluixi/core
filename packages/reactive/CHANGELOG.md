@@ -1,5 +1,12 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.41
+
+### Patch Changes
+
+- 82606b9: Isolate each context Provider in its own owner scope. `Ctx.Provider` stamped its value on the current reactive owner, so two sibling `<Ctx.Provider>` used inline as JSX elements ran under the same owner and the second clobbered the first — every descendant (including children rendered lazily through Portal/Show/For) then resolved the last provider's value. The Provider now opens a dedicated child owner and reads its children under it, so siblings no longer overwrite each other.
+  - @fluixi/utils@1.0.0-alpha.41
+
 ## 1.0.0-alpha.40
 
 ### Patch Changes

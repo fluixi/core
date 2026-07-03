@@ -1,5 +1,7 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.41
+
 ## 1.0.0-alpha.40
 
 ## 1.0.0-alpha.39

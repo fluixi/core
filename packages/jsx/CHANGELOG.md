@@ -1,5 +1,14 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.41
+
+### Patch Changes
+
+- 82606b9: Widen reactive attribute types. `Reactive<T>` now accepts an accessor that returns `undefined` (`T | undefined | Accessor<T | undefined>`), so a conditionally-omitted attribute like `aria-disabled={() => (disabled() ? 'true' : undefined)}` type-checks without a cast — setAttribute already removes the attr on undefined/null/false. Also typed the native form attributes `required`, `readonly`/`readOnly`, `min`, `max`, `step`, `maxlength`/`maxLength`, `minlength`/`minLength`, `multiple`, `size`, `pattern` as `Reactive<>` on input/textarea/select, matching `disabled`.
+- Updated dependencies [82606b9]
+  - @fluixi/reactive@1.0.0-alpha.41
+  - @fluixi/dom@1.0.0-alpha.41
+
 ## 1.0.0-alpha.40
 
 ### Patch Changes
