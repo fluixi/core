@@ -154,23 +154,6 @@ export {
 // }
 // export const For = <T>(props: ForProps<T>) => _For(props as any) as JSX.Element;
 export {
-  Show,
-  For,
-  Index,
-  Switch,
-  Match,
-  Dynamic,
-  ErrorBoundary,
-  Portal,
-  type ShowProps,
-  type ForProps,
-  type IndexProps,
-  type SwitchProps,
-  type MatchProps,
-  type MatchNode,
-  type DynamicProps,
-  type ErrorBoundaryProps,
-  type PortalProps,
   classMap,
   styleMap,
   Island,
@@ -195,6 +178,8 @@ export {
   type FxFlowProps,
   type FxFlow,
 } from '@fluixi/dom';
+
+export * from "./control-flow.js"
 
 // Re-export reactive primitives from @fluixi/reactive
 

@@ -12,5 +12,28 @@
     "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../packages/server"
+    },
+    {
+      "path": "../packages/reactive"
+    },
+    {
+      "path": "../packages/jsx"
+    },
+    {
+      "path": "../packages/dom"
+    },
+    {
+      "path": "../packages/core"
+    },
+    {
+      "path": "../packages/cli"
+    },
+    {
+      "path": "../packages/start"
+    }
+  ]
 }

@@ -1,5 +1,4 @@
 import { createSignal } from '@fluixi/core';
-
 /** A tiny reactive counter — fine-grained updates, no virtual DOM. */
 export function Counter(props: { start?: number }) {
   const [count, setCount] = createSignal(props.start ?? 0);

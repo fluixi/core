@@ -128,27 +128,7 @@ export type {
 // export function For<T, U>(props: ForPropsKeyed<T, U>): Accessor<U[]>;
 // export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
 // export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> { return _For(props as any); }
-export {
-  Show,
-  For,
-  Index,
-  Switch,
-  Match,
-  Dynamic,
-  ErrorBoundary,
-  Portal,
-  type ShowProps,
-  type ForProps,
-  type ForPropsKeyed,
-  type ForPropsUnkeyed,
-  type IndexProps,
-  type SwitchProps,
-  type MatchProps,
-  type MatchNode,
-  type DynamicProps,
-  type ErrorBoundaryProps,
-  type PortalProps,
-} from '@fluixi/dom';
+
 export {
   // Framework-agnostic reactive attribute maps (return Accessor<string>)
   classMap,
@@ -158,6 +138,7 @@ export {
   type StyleMapInput,
   type StyleValue,
 } from '@fluixi/dom';
+export * from './control-flow.js';
 // Lit-specific directives ($classMap/$styleMap/litrx) and lit control flow
 // ($show/$for/$switch/$portal/$if/$each) live in @fluixi/lit — import from there.
 // (Framework-agnostic classMap/styleMap above come from @fluixi/dom and stay here.)

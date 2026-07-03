@@ -2,9 +2,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { onCleanup, createEffect, createSignal, flush } from '@fluixi/reactive/signal';
 import { render, Portal, Show, createNativeElement } from '@fluixi/dom';
-import { ensureIntegration } from '../../../../core/src/lib/render/component.js';
+// import { ensureIntegration } from '../../../../core/src/lib/render/component.js';
 
-beforeAll(() => ensureIntegration());
+// beforeAll(() => ensureIntegration());
 
 describe('Portal disposal', () => {
   it('disposes portal content and removes the container when the render root is disposed', () => {
