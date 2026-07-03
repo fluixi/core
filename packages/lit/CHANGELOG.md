@@ -1,5 +1,13 @@
 # @fluixi/lit
 
+## 1.0.0-alpha.41
+
+### Patch Changes
+
+- Updated dependencies [82606b9]
+  - @fluixi/reactive@1.0.0-alpha.41
+  - @fluixi/dom@1.0.0-alpha.41
+
 ## 1.0.0-alpha.40
 
 ### Patch Changes
