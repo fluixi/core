@@ -1,5 +1,13 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.42
+
+### Patch Changes
+
+- 3f0e665: Fix control flow `Show` types to support JSX.Element because before it was required to use `<Show>{()=><Component />}</Show>` the fix now directly allow `<Show><Component /></Show>`
+- Updated dependencies [3f0e665]
+  - @fluixi/compiler@1.0.0-alpha.42
+
 ## 1.0.0-alpha.41
 
 ### Patch Changes
