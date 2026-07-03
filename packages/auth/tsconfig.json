@@ -2,5 +2,24 @@
   "extends": "../../tsconfig.base.json",
   "files": [],
   "include": [],
-  "references": [{ "path": "./tsconfig.lib.json" }]
+  "references": [
+    {
+      "path": "../start"
+    },
+    {
+      "path": "../server"
+    },
+    {
+      "path": "../reactive"
+    },
+    {
+      "path": "../dom"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "./tsconfig.lib.json"
+    }
+  ]
 }
