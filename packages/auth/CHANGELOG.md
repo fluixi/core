@@ -1,5 +1,15 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.46
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.46
+- @fluixi/start@0.1.0-alpha.36
+- @fluixi/reactive@1.0.0-alpha.46
+- @fluixi/dom@1.0.0-alpha.46
+- @fluixi/server@1.0.0-alpha.46
+
 ## 1.0.0-alpha.45
 
 ### Patch Changes
