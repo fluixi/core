@@ -1328,7 +1328,18 @@ function transformAttributes(
       // Control-flow reactive value prop (each/when/component/mount): emit as a getter so
       // reading it re-runs the caller's expression inside the component's tracking scope.
       const isCfValueProp = !isNativeElement && name === cfValueProp;
-      if ((!isNativeElement && isInlineJsx) || isCfValueProp) {
+      // A reactive component prop (`prop={sig()}`, `prop={store.x}`) must be a getter, not an
+      // eager value: eager reads the signal inside the enclosing `createMemo(() =>
+      // createComponent(Comp, props))`, so the memo re-creates the WHOLE component on every
+      // change (a <Portal> then re-mounts and piles up). As a getter the component is created
+      // once and reactivity flows through the getter into the component's own effects.
+      const rawExpr =
+        t.isJSXExpressionContainer(raw) && !t.isJSXEmptyExpression(raw.expression)
+          ? (raw.expression as t.Expression)
+          : null;
+      const isReactiveComponentProp =
+        !isNativeElement && !!rawExpr && shouldAutoWrapAttrExpression(rawExpr, name);
+      if ((!isNativeElement && isInlineJsx) || isCfValueProp || isReactiveComponentProp) {
         props.push(
           t.objectMethod('get', key, [], t.blockStatement([t.returnStatement(value)])),
         );
