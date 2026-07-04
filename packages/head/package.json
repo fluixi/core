@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/head",
-  "version": "0.1.0-alpha.12",
+  "version": "0.1.0-alpha.13",
   "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi — title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
   "type": "module",
   "exports": {

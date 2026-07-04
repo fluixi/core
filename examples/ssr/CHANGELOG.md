@@ -1,5 +1,15 @@
 # @fluixi/example-ssr
 
+## 0.0.3-alpha.46
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.46
+- @fluixi/reactive@1.0.0-alpha.46
+- @fluixi/dom@1.0.0-alpha.46
+- @fluixi/jsx@1.0.0-alpha.46
+- @fluixi/server@1.0.0-alpha.46
+
 ## 0.0.3-alpha.45
 
 ### Patch Changes
