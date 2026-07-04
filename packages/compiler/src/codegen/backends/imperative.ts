@@ -96,8 +96,12 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   const normal = props.filter((p) => p.kind !== 'spread');
   const cfValueProp = CONTROL_FLOW_VALUE_PROPS[name];
   const entries = normal.map((p) =>
-    // Inline JSX prop, or a control-flow reactive value prop → lazy getter; else eager value.
-    p.jsxElement || p.name === cfValueProp
+    // Getter when: inline JSX prop, a control-flow reactive value prop, or any reactive
+    // component prop (`prop={sig()}`). A reactive prop MUST be a getter — an eager value reads
+    // the signal inside `createMemo(() => createComponent(...))`, re-creating the whole
+    // component on every change (a <Portal> then piles up). As a getter the component is built
+    // once and reactivity flows through the getter into its own effects.
+    p.jsxElement || p.name === cfValueProp || p.reactive
       ? `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`
       : `${propKey(p.name)}: ${componentPropValue(p)}`,
   );
