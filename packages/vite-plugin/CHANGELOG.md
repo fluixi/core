@@ -1,5 +1,11 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.44
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.44
+
 ## 1.0.0-alpha.43
 
 ### Patch Changes
