@@ -661,8 +661,19 @@ export function insertExpression(
     // Markers are now in the DOM — wire a per-slot reactive insert. insert() sets up a nested
     // render effect that re-inserts the member's content before its marker on change, so a bare
     // control-flow component return (<Show>/<Switch>/<For>) updates in place.
+    //
+    // The per-slot content lives OUTSIDE the reconcile array (only the marker is tracked), so if
+    // this enclosing effect re-runs with a shorter array — e.g. a <For> item dropped, or its child
+    // resolved to a memo (Provider -> component) — reconcile removes the marker but would orphan the
+    // content. Register a cleanup that removes the slot's nodes when its effect is torn down. This
+    // only fires when the enclosing effect re-runs (the array itself changed); an in-place update
+    // (e.g. <Show> toggling) never re-runs this effect, so it keeps updating in place.
     for (const slot of reactiveSlots) {
-      insert(parent, slot.sig, slot.marker);
+      const disposeSlot = insert(parent, slot.sig, slot.marker) as () => Node | Node[] | null;
+      onCleanup(() => {
+        cleanChildren(parent, disposeSlot());
+        if (slot.marker.parentNode === parent) parent.removeChild(slot.marker);
+      });
     }
     return reconciled;
   }
