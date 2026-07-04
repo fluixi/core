@@ -50,6 +50,7 @@
     "fluixi-meta-framework-skeleton",
     "fluixi-reduce-lit-coupling",
     "fluixi-routes-polyfills-optout",
+    "for-reactive-slot-removal",
     "form-action",
     "full-areas-spend",
     "fx-data-csp",
