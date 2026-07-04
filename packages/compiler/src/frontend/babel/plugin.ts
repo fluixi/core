@@ -939,6 +939,7 @@ function emitImperativeElement(
         ),
       );
     }
+
     return emitComponentCall(tag, buildPropsObject(allProps, spreads, state), state);
   }
 
@@ -1046,6 +1047,36 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   return template.expression(code, { placeholderPattern: false })() as t.Expression;
 }
 
+
+//This method will convert props to lazy props like 
+function lazyProps(properties: (t.ObjectProperty | t.ObjectMethod)[]) {
+  return properties.map((prop) => {
+    // Only transform normal properties (e.g., { open: variable })
+    // Skip methods, spread elements, or already existing getters
+    if (t.isObjectProperty(prop)) {
+      // Handle potential computed properties (like {[someKey]: variable})
+      const key = prop.key as any;
+      const computed = prop.computed;
+      const value = prop.value as any;
+
+      // Create a getter method: get key() { return value; }
+      return t.objectMethod(
+        'get', // Kind of method
+        key, // Property key
+        [], // Getters take no arguments
+        t.blockStatement([
+          // Body: { return value; }
+          t.returnStatement(value),
+        ]),
+        computed // Preserve computed status if true
+      );
+    }
+
+    // Keep existing ObjectMethods (like get already there, or regular methods) as-is
+    return prop;
+  });
+};
+
 function transformAutomaticElement(
   element: t.JSXElement,
   state: any,
@@ -1081,7 +1112,7 @@ function transformAutomaticElement(
     return emitImperativeElement(
       tag,
       isNativeElement,
-      props,
+      lazyProps(props),
       spreads,
       transformedChildren,
       state,
