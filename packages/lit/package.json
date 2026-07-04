@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/lit",
-  "version": "1.0.0-alpha.44",
+  "version": "1.0.0-alpha.45",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
