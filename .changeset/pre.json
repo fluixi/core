@@ -32,6 +32,7 @@
     "auth-session-cookies-cli",
     "cli-generate",
     "cli-ux-redesign",
+    "component-reactive-prop-getters",
     "context-provider-child-owner",
     "control-flow-reactive-props",
     "core-i18n",
