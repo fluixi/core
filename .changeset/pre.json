@@ -79,6 +79,7 @@
     "jsx-omittable-and-form-attrs",
     "jsx-reactive-aria",
     "jsx-reactive-attr-types",
+    "lazy-props-scope-and-uniform",
     "lazy-route-hydration-preload",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",

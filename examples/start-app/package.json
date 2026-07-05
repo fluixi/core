@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-start",
-  "version": "0.0.1-alpha.37",
+  "version": "0.0.1-alpha.38",
   "private": true,
   "type": "module",
   "description": "Meta-framework example: zero-config dev/build/start via @fluixi/start + the fluixi CLI (file routing + SSR + hydration).",
