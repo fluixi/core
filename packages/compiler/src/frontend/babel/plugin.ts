@@ -1097,12 +1097,21 @@ function transformAutomaticElement(
     /^[a-z]/.test(openingElement.name.name);
 
   // Transform attributes to props object
-  const { props, spreads } = transformAttributes(
+  const attrs = transformAttributes(
     openingElement.attributes,
     state,
     isNativeElement,
     t.isJSXIdentifier(openingElement.name) ? openingElement.name.name : ''
   );
+  let props = attrs.props;
+  const spreads = attrs.spreads;
+
+  // Component props become lazy getters so the component is created ONCE and reactivity flows
+  // through the getter (a reactive `prop={sig()}` read eagerly would re-create the whole
+  // component via the enclosing createMemo, so a <Portal> re-mounts and piles up). Static props
+  // as getters are harmless. Native-element attrs must NOT be wrapped: they already carry their
+  // own reactivity as `() => expr` thunks that `spread` consumes.
+  if (!isNativeElement) props = lazyProps(props);
 
   // Transform children
   const transformedChildren = transformChildren(children, state, autoShow);
@@ -1112,7 +1121,7 @@ function transformAutomaticElement(
     return emitImperativeElement(
       tag,
       isNativeElement,
-      lazyProps(props),
+      props,
       spreads,
       transformedChildren,
       state,
