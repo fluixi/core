@@ -1,5 +1,7 @@
 # @fluixi/utils
 
+## 1.0.0-alpha.48
+
 ## 1.0.0-alpha.47
 
 ## 1.0.0-alpha.46
