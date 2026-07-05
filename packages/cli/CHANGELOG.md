@@ -1,5 +1,11 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.39
+
+### Patch Changes
+
+- @fluixi/start@0.1.0-alpha.38
+
 ## 0.1.0-alpha.38
 
 ### Patch Changes
