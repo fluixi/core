@@ -1,14 +1,15 @@
-import { Accessor, createRoot, onCleanup } from '@fluixi/reactive/signal';
-import { insert } from '../dom/runtime.js';
+import { createRoot, onCleanup } from '@fluixi/reactive/signal';
+import { handleRef, insert } from '../dom/runtime.js';
 
-export interface PortalProps {
+export interface PortalProps<Children = any> {
   /**
    * The DOM node to mount content into.
    * Defaults to `document.body`.
    */
   mount?: Element | (() => Element);
   /** Content to render inside the portal. */
-  children: any;
+  children: Children;
+  ref?: {current: Element | HTMLElement | HTMLDivElement | null};
 }
 
 /**
@@ -43,7 +44,10 @@ export function Portal(props: PortalProps): null {
     container.style.display = 'contents';
     const target = getMount();
     target.appendChild(container);
-    insert(container, props.children);
+    const inserted = insert(container, props.children);
+    if(inserted) {
+      handleRef(props.ref, container);
+    }
   });
 
   onCleanup(() => {
