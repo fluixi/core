@@ -30,16 +30,6 @@ const CONTROL_COMPONENT: Record<string, string> = {
   suspense: 'Suspense',
 };
 
-// Control-flow reactive value props emitted as getters so the runtime re-runs the caller's
-// expression inside the component's tracking scope (fixes `each={items()}`/`when={cond()}`).
-// Kept in sync with CONTROL_FLOW_VALUE_PROPS in frontend/babel/plugin.ts (inline codegen).
-const CONTROL_FLOW_VALUE_PROPS: Record<string, string> = {
-  Show: 'when',
-  For: 'each',
-  Index: 'each',
-  Match: 'when',
-};
-
 function isIdent(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
@@ -94,16 +84,13 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
-  const cfValueProp = CONTROL_FLOW_VALUE_PROPS[name];
-  const entries = normal.map((p) =>
-    // Getter when: inline JSX prop, a control-flow reactive value prop, or any reactive
-    // component prop (`prop={sig()}`). A reactive prop MUST be a getter — an eager value reads
-    // the signal inside `createMemo(() => createComponent(...))`, re-creating the whole
-    // component on every change (a <Portal> then piles up). As a getter the component is built
-    // once and reactivity flows through the getter into its own effects.
-    p.jsxElement || p.name === cfValueProp || p.reactive
-      ? `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`
-      : `${propKey(p.name)}: ${componentPropValue(p)}`,
+  // ALL component props are emitted as getters (Solid model): reading a signal in a prop
+  // eagerly inside `createMemo(() => createComponent(...))` would re-create the whole component
+  // on every change (a <Portal> then piles up). As getters the component is built ONCE and
+  // reactivity flows through the getter into its own effects. Static props as getters are
+  // harmless (they return the same value). Matches lazyProps() in the inline codegen.
+  const entries = normal.map(
+    (p) => `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`,
   );
   if (children.length > 0) {
     // Children are a LAZY getter: evaluated inside the component's execution, so
