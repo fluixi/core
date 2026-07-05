@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-router",
-  "version": "0.0.5-alpha.47",
+  "version": "0.0.5-alpha.48",
   "private": true,
   "type": "module",
   "description": "Routing example: providers -> Router -> Suspense -> lazy routes under the imperative backend (regression for owner-nesting / lazy children).",

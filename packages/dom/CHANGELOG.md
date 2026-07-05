@@ -1,5 +1,17 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.48
+
+### Minor Changes
+
+- 7da8345: Add ref support to `PortalProps` and handle the ref on `Portal` `createRoot` method.
+  So consumer components could bind ref to have the native `Portal` wrapper.
+  Usefull when whant portal styling or wrappper DOM manipultaions.
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.48
+
 ## 1.0.0-alpha.47
 
 ### Patch Changes
