@@ -23,6 +23,24 @@ export function encodeHeadMarker(head: SerializedHead): string {
   return `<!--fh:${b64encode(JSON.stringify(head))}-->`;
 }
 
+/**
+ * Client-side safety net: remove any `<!--fh:…-->` transport comment left inside the hydration
+ * container. A correct adapter/prerender/dev server lifts the marker into <head> before it reaches
+ * the browser, but a streaming or custom server can leave it in the body. Since encodeHeadMarker
+ * prepends it, an un-extracted marker is the mount root's first child — where it strands the
+ * hydration cursor (the walk expects the app's first element, finds a comment, and rebuilds the
+ * whole tree next to the server DOM → duplicate). The client rebuilds the head from seo()/useHead
+ * during hydration, so the marker's payload isn't needed here — just drop the node.
+ */
+export function stripHeadMarker(container: ParentNode): void {
+  for (let n = container.firstChild; n; n = n.nextSibling) {
+    if (n.nodeType === 8 && (n as Comment).data.startsWith('fh:')) {
+      n.parentNode?.removeChild(n);
+      return;
+    }
+  }
+}
+
 /** Pull the head marker out of rendered HTML, returning the head and the cleaned body. */
 export function extractHeadMarker(html: string): { head: SerializedHead | null; body: string } {
   const m = html.match(RE);

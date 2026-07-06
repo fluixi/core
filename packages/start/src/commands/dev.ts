@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { injectApp, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
+import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
@@ -61,7 +61,11 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     }
     const render = mod.render ?? mod.default;
     const appHtml = await render(path, request); // sync or async; request enables the locals bridge
-    const html = await vite.transformIndexHtml(path, injectApp(template, appHtml, cfg.mountId));
+    // injectAppAndHead (not injectApp): lift the @fluixi/head marker renderRequestAsync prepends to
+    // the body into <head> + <html>, exactly like the prod adapter/prerender. Plain injectApp left
+    // the `<!--fh:…-->` marker as the mount root's first child, which stranded the hydration cursor
+    // (whole tree rebuilt → duplicated) AND skipped dev SEO. No marker → identical to injectApp.
+    const html = await vite.transformIndexHtml(path, injectAppAndHead(template, appHtml, cfg.mountId));
     return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }, (e) => vite.ssrFixStacktrace?.(e));
 
