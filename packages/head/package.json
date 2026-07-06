@@ -25,7 +25,10 @@
     "registry": "https://npm.pkg.github.com/",
     "access": "public"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@fluixi/reactive": "workspace:*"
+  },
+  "devDependencies": {
     "@fluixi/reactive": "workspace:*"
   }
 }
