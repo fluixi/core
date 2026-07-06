@@ -1,5 +1,26 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.50
+
+### Patch Changes
+
+- f93989f: Fix page content duplicated on hydration when `seo()`/`useHead()` is used in dev.
+
+  `@fluixi/head` carries a page's SEO back from SSR as an inert `<!--fh:…-->` comment prepended to the body; the server lifts it into `<head>` and strips it via `injectAppAndHead`. The prod adapter and prerender did this, but the dev server used plain `injectApp`, leaving the marker as the mount root's first child. The hydration cursor started on that comment, never matched the app's first element, and rebuilt the whole tree next to the server DOM — a duplicated page. (Dev also emitted no head tags as a result.)
+
+  Dev now uses `injectAppAndHead`, so the marker is lifted into `<head>`/`<html>` exactly like prod. As a safety net for streaming/custom servers, `stripHeadMarker` drops any stray leading `fh:` comment on the client before hydration.
+
+- Updated dependencies [f93989f]
+  - @fluixi/head@0.1.0-alpha.17
+  - @fluixi/server@1.0.0-alpha.50
+  - @fluixi/utils@1.0.0-alpha.50
+  - @fluixi/reactive@1.0.0-alpha.50
+  - @fluixi/dom@1.0.0-alpha.50
+  - @fluixi/jsx@1.0.0-alpha.50
+  - @fluixi/compiler@1.0.0-alpha.50
+  - @fluixi/lit@1.0.0-alpha.50
+  - @fluixi/vite-plugin@1.0.0-alpha.50
+
 ## 1.0.0-alpha.49
 
 ### Patch Changes
