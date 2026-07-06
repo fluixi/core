@@ -48,6 +48,7 @@
     "dom-setattribute-null-removes",
     "fix-client-hydration-loop",
     "fix-control-flow-show-types",
+    "fix-fluixi-head-dependencies",
     "fluixi-head",
     "fluixi-meta-framework-skeleton",
     "fluixi-reduce-lit-coupling",
