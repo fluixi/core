@@ -22,10 +22,40 @@ import { render } from './runtime.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
 
-export const hydration: { active: boolean; cursor: Node | null } = {
+// `parents` is a stack of the elements the cursor has DESCENDED into (via hydrateElement).
+// It lets the cursor auto-ascend when a sibling list is exhausted: after an element is fully
+// built its cursor sits at `null` (past its last child), and the NEXT sibling — built by user
+// code like `list.map(...)`, which never routes each item through insert()/ascendPast — would
+// otherwise hydrate against that stranded cursor and build fresh (duplicating the server node).
+// `recoverCursor` pops back up to a parent's nextSibling in that case. See hydrate-nested-map.
+export const hydration: { active: boolean; cursor: Node | null; parents: Node[] } = {
   active: false,
   cursor: null,
+  parents: [],
 };
+
+/**
+ * Re-sync the cursor onto the next adoptable server node. Two things can leave it off-target
+ * after an element subtree is built by user code (e.g. `list.map(...)`):
+ *   - it's `null` — the current sibling list is exhausted; ascend to an open parent's next
+ *     sibling (possibly several levels for a deeply-nested last child), and
+ *   - it's a client-only empty-text insertion anchor (`createTextNode('')` that insert() appends
+ *     to a parent) — not adoptable, so skip past it.
+ * Loop until a real node is found or there's nothing left to ascend to.
+ */
+function recoverCursor(): void {
+  for (;;) {
+    while (
+      hydration.cursor &&
+      hydration.cursor.nodeType === 3 &&
+      (hydration.cursor as Text).data === ''
+    ) {
+      hydration.cursor = hydration.cursor.nextSibling;
+    }
+    if (hydration.cursor != null || !hydration.parents.length) return;
+    hydration.cursor = hydration.parents.pop()!.nextSibling;
+  }
+}
 
 // HTML void elements never have children. They must NOT be descended into during
 // hydration: their `firstChild` is null, so `cursor = firstChild` would strand the
@@ -62,11 +92,18 @@ function warnMismatch(expected: string, found: Node): void {
 
 /** Reuse the matched element at the cursor and descend into its children. */
 export function hydrateElement(tag: string): Element | null {
+  recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
     // Void elements have no children to walk — ascend to the sibling instead of
-    // descending into a null firstChild (which would strand the cursor).
-    hydration.cursor = VOID_ELEMENTS.has(tag.toLowerCase()) ? c.nextSibling : c.firstChild;
+    // descending into a null firstChild (which would strand the cursor). Non-void elements
+    // are pushed onto `parents` so the cursor can ascend past them once their subtree is done.
+    if (VOID_ELEMENTS.has(tag.toLowerCase())) {
+      hydration.cursor = c.nextSibling;
+    } else {
+      hydration.parents.push(c);
+      hydration.cursor = c.firstChild;
+    }
     return c as Element;
   }
   if (DEV && c) warnMismatch(`<${tag}>`, c);
@@ -80,6 +117,7 @@ export function hydrateText(value: string): Text | null {
   // blanked the real content node next to it and threw off the cursor: `text <small>…` →
   // `<small>…text`). Always create it fresh.
   if (value === '') return null;
+  recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 3) {
     hydration.cursor = c.nextSibling;
@@ -92,6 +130,7 @@ export function hydrateText(value: string): Text | null {
 
 /** Reuse a matching comment marker at the cursor and advance. */
 export function hydrateMarker(value: string): Comment | null {
+  recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 8 && (c as Comment).data === value) {
     hydration.cursor = c.nextSibling;
@@ -127,18 +166,27 @@ export function runHydrationAt<T>(cursor: Node | null, fn: () => T): T {
   if (!cursor || cursor.parentNode == null) return fn();
   const prevActive = hydration.active;
   const prevCursor = hydration.cursor;
+  const prevParents = hydration.parents;
   hydration.active = true;
   hydration.cursor = cursor;
+  hydration.parents = []; // fresh descent stack for the resumed subtree
   try {
     return fn();
   } finally {
     hydration.active = prevActive;
     hydration.cursor = prevCursor;
+    hydration.parents = prevParents;
   }
 }
 
-/** Ascend the cursor past an adopted node's (already-walked) subtree. */
+/**
+ * Ascend the cursor past an adopted node's (already-walked) subtree. If the node is an open
+ * parent we descended into, pop it (and anything still open above it) off the stack so
+ * recoverCursor doesn't later re-ascend through a node we've already closed.
+ */
 export function ascendPast(node: Node): void {
+  const idx = hydration.parents.lastIndexOf(node);
+  if (idx !== -1) hydration.parents.length = idx;
   hydration.cursor = node.nextSibling;
 }
 
@@ -152,12 +200,15 @@ export function ascendPast(node: Node): void {
 export function runWithoutHydration<T>(fn: () => T): T {
   if (!hydration.active) return fn();
   const prevCursor = hydration.cursor;
+  const prevParents = hydration.parents;
   hydration.active = false;
+  hydration.parents = [];
   try {
     return fn();
   } finally {
     hydration.active = true;
     hydration.cursor = prevCursor;
+    hydration.parents = prevParents;
   }
 }
 
@@ -171,7 +222,7 @@ export function hydrateAdvancePast(rendered: unknown): void {
   if (!hydration.active || rendered == null) return;
   const last = Array.isArray(rendered) ? rendered[rendered.length - 1] : rendered;
   if (last && typeof (last as any).nodeType === 'number') {
-    hydration.cursor = (last as Node).nextSibling;
+    ascendPast(last as Node); // pops the item off `parents` too, keeping the stack consistent
   }
 }
 
@@ -191,6 +242,7 @@ export function hydrate<T>(
 ): () => void {
   hydration.active = true;
   hydration.cursor = container.firstChild;
+  hydration.parents = [];
 
   // Seed resources from server-serialized data (the __FX_DATA__ transport) so they
   // don't refetch — ids match by creation order (the server assigns r0, r1, …
@@ -213,5 +265,6 @@ export function hydrate<T>(
     // simply fetch.
     hydration.active = false;
     hydration.cursor = null;
+    hydration.parents = [];
   }
 }
