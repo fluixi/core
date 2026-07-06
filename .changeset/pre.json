@@ -40,6 +40,7 @@
     "create-exit-hang",
     "create-fluixi",
     "create-ssr-tsconfig-fix",
+    "dev-head-marker-hydration",
     "devtools",
     "dispose-no-rerun",
     "dom-bare-controlflow-return",
