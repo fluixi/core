@@ -21,7 +21,7 @@ import {
 } from '../server/hydration.js';
 import { render } from '../render/index.js';
 import { ensureIntegration } from '../render/component.js';
-import { createHead, setActiveHead, mountHead } from '@fluixi/head';
+import { createHead, setActiveHead, mountHead, stripHeadMarker } from '@fluixi/head';
 ensureIntegration('client index');
 // console.log('client called')
 // Register Lit support in @fluixi/dom
@@ -119,6 +119,12 @@ export async function startClient(
   // mountHead reconciles it into <head> after mount (reusing server tags by key) and keeps it live.
   const head = createHead();
   setActiveHead(head);
+
+  // Drop a stray `<!--fh:…-->` head-transport comment if the server left one in the mount root
+  // (streaming / custom servers that don't lift it into <head>). It would otherwise be the cursor's
+  // first node and strand hydration — rebuilding the whole tree as a duplicate. Harmless no-op when
+  // the server already extracted it (the supported adapter/prerender/dev paths do).
+  stripHeadMarker(container as Element);
 
   if (shouldHydrate) {
     // Preload the lazy chunk(s) for the current route so they resolve synchronously during the
