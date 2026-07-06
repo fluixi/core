@@ -1,5 +1,12 @@
 # @fluixi/head
 
+## 0.1.0-alpha.16
+
+### Patch Changes
+
+- 6620476: Add `@fluixi/reactive` to devDependencies on `@fluixi/head` and remove it has a direct dependency
+  - @fluixi/reactive@1.0.0-alpha.49
+
 ## 0.1.0-alpha.15
 
 ### Patch Changes

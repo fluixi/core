@@ -1,5 +1,14 @@
 # @fluixi/server
 
+## 1.0.0-alpha.49
+
+### Patch Changes
+
+- Updated dependencies [6620476]
+  - @fluixi/head@0.1.0-alpha.16
+  - @fluixi/reactive@1.0.0-alpha.49
+  - @fluixi/dom@1.0.0-alpha.49
+
 ## 1.0.0-alpha.48
 
 ### Patch Changes
