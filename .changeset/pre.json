@@ -66,6 +66,7 @@
     "hydrate-optin",
     "hydrate-void-children",
     "hydration-event-replay",
+    "hydration-mapped-array-adopt",
     "hydration-marker-mismatch-warning",
     "hydration-nested-suspense",
     "hydration",
