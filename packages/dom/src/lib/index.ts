@@ -58,7 +58,6 @@ import { isStore, isStoreProxy, createStore } from '@fluixi/reactive/store';
 // Initialize integration directly from reactive imports — works in both
 // ESM dev (Vite source loading) and CJS bundles without relying on require().
 if (!intergartionInitialized()) {
-  console.log('initializations')
   initializeIntegration({
     signalSystem: {
       createSignal, createEffect, createMemo, createRenderEffect,
