@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/dom",
-  "version": "1.0.0-alpha.51",
+  "version": "1.0.0-alpha.52",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/",
@@ -12,7 +12,11 @@
     "README.md"
   ],
   "type": "module",
-  "sideEffects": ["./dist/index.js", "./dist/index.cjs", "./dist/index.mjs"],
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/index.cjs",
+    "./dist/index.mjs"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
