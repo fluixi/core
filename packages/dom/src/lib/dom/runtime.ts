@@ -1495,7 +1495,6 @@ export function createPortal(children: any, element: any, props?: any) {
       } else if (isDomNode(nodes)) {
         container.appendChild(nodes);
         cleanups.push(() => {
-          console.log('on cleanup nodes', nodes, nodes.parentNode, container)
           if (nodes.parentNode === container) {
             container.removeChild(nodes);
           }

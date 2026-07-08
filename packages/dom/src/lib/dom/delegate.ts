@@ -25,7 +25,6 @@ export function delegateEvents(eventNames: string[]) {
             const handler = node["$$" + name];
             
             if (handler) {
-            console.log('delegating', node)
           handler.call(node, event);
 
           // stopPropagation support

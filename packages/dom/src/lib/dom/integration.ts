@@ -127,7 +127,6 @@ export function getSignalSystem(): SignalSystem | null {
 
 export function createComponent<T extends (props?: any) => any, U = any>(Comp: T, props?: U | undefined): CreateComponentReturnType<T, U> {
   if (_state.sys?.createComponent) return _state.sys.createComponent(Comp, props);
-  console.log('create component not found');
   return (() => Comp(props)) as any;
 }
 
@@ -271,7 +270,6 @@ export function autoInitialize(): void {
       try {
         const signalModule = require('@fluixi/reactive/signal');
         const storeModule = require('@fluixi/reactive/store');
-        console.log('loading from packages');
         initializeIntegration({
           signalSystem: {
             createEffect: signalModule.createEffect,
@@ -374,30 +372,6 @@ export function getIntegrationStatus() {
   };
 }
 
-/**
- * Print integration status to console
- */
-export function logIntegrationStatus(): void {
-  const status = getIntegrationStatus();
-  console.group('🔗 DOM Integration Status');
-  console.log('Initialized:', status.initialized);
-  console.log('SignalTuple System:', status.hasSignalSystem ? '✓' : '✗');
-  console.log('Store System:', status.hasStoreSystem ? '✓' : '✗');
-
-  if (status.signalFeatures) {
-    console.group('SignalTuple Features');
-    console.table(status.signalFeatures);
-    console.groupEnd();
-  }
-
-  if (status.storeFeatures) {
-    console.group('Store Features');
-    console.table(status.storeFeatures);
-    console.groupEnd();
-  }
-
-  console.groupEnd();
-}
 
 // ============================================================================
 // Exports
@@ -428,5 +402,4 @@ export default {
   registerSignalSystem,
   registerStoreSystem,
   getIntegrationStatus,
-  logIntegrationStatus,
 };

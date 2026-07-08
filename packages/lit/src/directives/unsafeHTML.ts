@@ -5,7 +5,7 @@
  * The HTML string may be a plain value, a signal, or any zero-arg function.
  * When the value changes, the inner HTML of the part is replaced.
  *
- * ⚠️  This directive injects raw HTML.  Never use it with untrusted input.
+ * This directive injects raw HTML.  Never use it with untrusted input.
  *
  *   // Static (same as lit's unsafeHTML)
  *   ${unsafeHTML('<b>bold</b>')}

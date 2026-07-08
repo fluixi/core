@@ -233,7 +233,6 @@ class StoreNode<T> {
   }
   trackSelf() {
     const track = this.getDataNode(this.path, this.value)();
-    console.log('[Track Self]', track, this.SELF);
     if(Array.isArray(track)){
         return track[0];
     }
