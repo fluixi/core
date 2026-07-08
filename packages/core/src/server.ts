@@ -8,7 +8,7 @@
  * IMPORTANT: Server Reactive Behavior
  * ====================================
  * This module maps reactive primitives to server-appropriate behavior,
- * following SolidJS pattern and GEMINI.md Section 4 (SERVER MODE):
+ * following the SolidJS server model:
  *
  * - createSignal: Returns snapshot value (no reactivity)
  * - createEffect: Runs once, no tracking, no scheduling

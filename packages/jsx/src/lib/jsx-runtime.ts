@@ -90,18 +90,7 @@ function normalizeChildren(children: any): any {
   if (children === undefined || children === null || children === false) return null;
 
   if (Array.isArray(children)) {
-    const flattened = children.map(normalizeChildren).flat();
-    // return makeArrayFlat(
-    //   flattened.filter(
-    //     (f: any) =>
-    //       f != null && f !== false && !(typeof f === 'string' && f.trim().length === 0)
-    //   )
-    // );
-    return flattened
-    // .filter(
-    //   (f: any) =>
-    //     f != null && f !== false && !(typeof f === 'string' && f.trim().length === 0)
-    // )
+    return children.map(normalizeChildren).flat();
   }
 
   return children;
@@ -118,36 +107,30 @@ function normalizeChildren(children: any): any {
  * - Fragment → children array
  */
 export function jsx(type: any, props: any, key?: string): JSXElement {
-  // console.log('jsx runtime', type, props)
   if (type == null) return null;
 
   const p = props || {};
   if (key !== undefined) p.key = key;
 
-  // Handle Fragment
   if (type === Fragment) {
-    // return resolveChildren(()=>asComponent(normalizeChildren(p.children))) as any;
-    return createMemo(()=>asComponent(normalizeChildren(p.children))) as any;
+    return createMemo(() => asComponent(normalizeChildren(p.children))) as any;
   }
 
-  // Handle component functions
   if (typeof type === 'function') {
     const { type: renderType } = checkRenderType(type);
 
-    // Context Provider — call directly without memo wrapper
+    // Context Provider is called directly — no memo wrapper.
     if (
       (type as any).$$typeof === Symbol.for('react.provider') ||
       renderType === 'provider'
     ) {
-      // alert('jsx provider')
-      return  type(p);
+      return type(p);
     }
 
     if (isSSR) return { type, props: p } as any;
 
-    // Wrap component in createMemo so it's reactive
-    // return createComponent(type, p) as any as JSXElement;
-    return createMemo(() => createComponent(type, p), undefined, {name: 'jsx component'}) as any as JSXElement;
+    // Wrap in a memo so the component is reactive.
+    return createMemo(() => createComponent(type, p), undefined, { name: 'jsx component' }) as any as JSXElement;
   }
 
   // Handle string tags (native elements)
@@ -176,107 +159,23 @@ function createNativeElement(tag: string, props: any): any {
     ? document.createElementNS('http://www.w3.org/2000/svg', tag)
     : document.createElement(tag);
 
-  // console.log('apply', element.tagName)
   applyProps(element, props, isSVG);
 
   return element;
 }
 
-// ============================================================================
-// applyProps — applies JSX props to a DOM element
-//
-// CRITICAL: Event handlers are stored as $$eventname properties on elements.
-// The global delegated listener reads node.$$click directly — no Map lookups.
-// This correctly handles e.preventDefault() and stopPropagation().
-// ============================================================================
-
+// Apply JSX props to a DOM element (via domProps), then insert its children.
 function applyProps(element: Element, props: any, isSVG: boolean): void {
-  // console.log('apply props', element, props)
-  for (const key in props) {
-    if (key === 'children') continue;
+  domProps(element, props, isSVG);
 
-    const value = props[key];
-    domProps(element, props, isSVG)
-    continue;
-  
-    // // Ref
-    // if (key === 'ref') {
-    //   handleRef(value, element);
-    //   continue;
-    // }
-  
-    // // Event handlers — use $$eventname property for delegation
-    // if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) {
-    //   // onXxx pattern — event handler
-    //   const eventName = key.slice(2).toLowerCase();
-    //   if (typeof value === 'function') {
-    //     // Store handler directly on the element
-    //     (element as any)[`$$${eventName}`] = value;
-    //     // Ensure global listener is registered for this event
-    //     if (!globalDelegatedSet.has(eventName)) {
-    //       globalDelegatedSet.add(eventName);
-    //       delegateEvents([eventName]);
-    //     }
-    //   }
-    //   continue;
-    // }
-  
-    // // Style
-    // if (key === 'style') {
-    //   if (typeof value === 'function') {
-    //     createRenderEffect(() => setStyle(element as HTMLElement, value()));
-    //   } else {
-    //     setStyle(element as HTMLElement, value);
-    //   }
-    //   continue;
-    // }
-  
-    // // Class / className / classList
-    // if (key === 'class' || key === 'className' || key === 'classList') {
-    //   if (typeof value === 'function') {
-    //     createRenderEffect(() => setClassName(element, value()));
-    //   } else {
-    //     setClassName(element, value);
-    //   }
-    //   continue;
-    // }
-  
-    // // innerHTML
-    // if (key === 'innerHTML') {
-    //   (element as any).innerHTML = value;
-    //   continue;
-    // }
-  
-    // // spread
-    // if (key === 'spread') {
-    //   spread({ element, props: value, isSVG, skipChildren: true });
-    //   continue;
-    // }
-  
-    // // Reactive attribute: function value → render effect
-    // if (typeof value === 'function' && !isSignal(value)) {
-    //   createRenderEffect(() => setAttribute(element, key, (value as Function)()));
-    // } else {
-    //   setAttribute(element, key, value, isSVG);
-    // }
-  }
-  
-  // Handle children
   if (props && props.children !== undefined) {
-    const children = resolveChildren(()=>props.children);
-    // props.children
+    const children = resolveChildren(() => props.children);
     if (Array.isArray(children)) {
-      // const asFn = children.some(c=>typeof c === 'function')
-      // console.log('resolving children', children)
-      // if(asFn){
-        
-      // }
       children.forEach((c: any) => {
         insert(element, c, (typeof c === 'function' ? null : undefined) as any);
       });
     } else {
       insert(element, children, (typeof children === 'function' ? null : undefined) as any);
-      // insert(element, children);
     }
   }
 }

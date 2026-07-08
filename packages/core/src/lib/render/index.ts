@@ -2,7 +2,7 @@
  * @fileoverview Client-Side Rendering for Fluixi
  * @module @fluixi/core/render
  *
- * Implements Section 7 of GEMINI.md: RENDERING (CLIENT)
+ * Client-side rendering:
  * - Real DOM
  * - Fine-grained mutation
  *

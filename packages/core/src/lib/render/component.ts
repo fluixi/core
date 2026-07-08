@@ -1,14 +1,6 @@
 /**
- * @fileoverview Component Creation for Fluixi
- * @module @fluixi/core/render/component
- *
- * Implements Section 2 of GEMINI.md: createComponent (CRITICAL)
- *
- * This module provides ONLY component creation logic.
- * Following SolidJS structure, this does NOT include:
- * - Context (managed by reactive system)
- * - Rendering (moved to render/index.ts)
- * - SSR (moved to server/)
+ * Component creation for Fluixi. Component-creation logic only — context lives in
+ * the reactive system, rendering in render/index.ts, and SSR in server/.
  */
 
 import {
@@ -32,8 +24,6 @@ import {
   createRoot,
   runWithOwner,
   createComputed,
-  // createContext as createReactiveContext,
-  // useContext as useReactiveContext,
   devComponent,
   __DEV__,
   createRenderEffect,
@@ -50,9 +40,8 @@ import {
 } from '@fluixi/reactive/signal';
 
 import {createStore} from "@fluixi/reactive/store";
-// } from '@fluixi/core/rx';
 
-// Note: Owner type from @fluixi/reactive/signal
+// Owner type comes from @fluixi/reactive/signal.
 type Owner = any;
 
 // ============================================================================
@@ -109,24 +98,6 @@ export const DEV =
 // TYPES
 // ============================================================================
 
-/**
- * Component props type
- */
-// export interface ComponentProps {
-//   children?: any;
-//   [key: string]: any;
-// }
-
-// /**
-//  * Component function type
-//  */
-// export type Component<P = ComponentProps, Return = any> = (props?: P) => Return;
-
-
-
-/**
- * Lifecycle callback type
- */
 export type LifecycleCallback = {
   mounted?: boolean;
   (): void | (() => void);
@@ -217,18 +188,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   });
 }
 
-/**
- * Integration initialized flag
- */
-// let integrationInitialized = false;
-
-// ============================================================================
-// Integration Setup
-// ============================================================================
-
-/**
- * Initialize integration with reactive system
- */
+// Initialize integration with the reactive system.
 export function ensureIntegration(from?: string): void {
   // Always call initializeIntegration — it now merges rather than replaces,
   // so calling it multiple times is safe. createComponent lives here (not in
@@ -269,22 +229,10 @@ export function ensureIntegration(from?: string): void {
 
 }
 
-// ============================================================================
-// SECTION 2 — createComponent (CRITICAL)
-// ============================================================================
-
 /**
- * Create and execute a component
- *
- * Section 2 — createComponent responsibilities:
- * - Create Owner ✓
- * - Untrack execution ✓
- * - Capture output ✓
- * - Lazy children ✓
- * - Context propagation ✓ (via sharedConfig)
- * - Cleanup attachment ✓
- *
- * Section 1: Components execute once, never re-execute
+ * Create and execute a component once. Opens an Owner, runs the component untracked,
+ * captures its output, keeps children lazy, propagates context (via sharedConfig), and
+ * attaches cleanup. Components execute once and never re-execute.
  *
  * @template P - Props type
  * @param {Component<P>} Comp - Component function
@@ -471,39 +419,10 @@ export { onCleanup };
  * };
  * ```
  */
-export function workingUseEffect(callback: () => void | (() => void), debug?: boolean): void {
+export function useEffect(callback: () => void | (() => void)): void {
   const lc = getOwnerLifecycle();
-  // if(debug){
-  // }
-  console.log('setting effect', callback, lc)
-  // if (lc) {
-  //   // if(lc.scheduled) return;
-  //   // Attach to Owner — will be created as an effect AFTER all onMount callbacks.
-  //   lc.effects.push(callback);
-  //   scheduleLifecycleFlush(lc);
-  // } else {
-  // }
-  // No Owner (rare). Create the effect immediately.
-    let cleanup: (() => void) | void;
-  
-    createRenderEffect(() => {
-      if (cleanup) cleanup();
-      cleanup = callback();
-    });
-  
-    onCleanup(() => {
-      // console.log('cleanup', cleanup)
-      if (cleanup) cleanup();
-    });
-}
-export function useEffect(callback: () => void | (() => void), debug?: boolean): void {
-  const lc = getOwnerLifecycle();
-  // if(debug){
-  // }
-  // console.log('setting effect', callback, lc)
   if (lc) {
-    // if(lc.scheduled) return;
-    // Attach to Owner — will be created as an effect AFTER all onMount callbacks.
+    // Attach to the Owner — created as an effect after all onMount callbacks.
     lc.effects.push(callback);
     scheduleLifecycleFlush(lc);
   } else {
@@ -516,14 +435,12 @@ export function useEffect(callback: () => void | (() => void), debug?: boolean):
     });
 
     onCleanup(() => {
-      // console.log('cleanup', cleanup)
       if (cleanup) cleanup();
     });
   }
 }
 
 
-// export {createRenderEffect as useEffect}
 
 /**
  * Create a memoized computed value
