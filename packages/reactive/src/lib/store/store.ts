@@ -360,7 +360,6 @@ class StoreNode<T> {
         if(key === '__proxy') return true;
         // if(key === '__track') {
         //   return node.SELF?.()};
-        // console.log('get', { key, target, receiver, isSelf: key === $SELF });
         // ---- Solid internals ----
         // if (key === '__track') return node.node;
         // if (key === '$') return node.track.bind(node);
@@ -370,7 +369,6 @@ class StoreNode<T> {
           // //   value: true,
           // //   enumerable: true,
           // // });
-          // console.log('get', { key, target, receiver, accessor });
           // return accessor;
           const res = (target as any)[key.replace('$', '')];
           const result = () => res;
@@ -394,7 +392,6 @@ class StoreNode<T> {
         if (key === $HAS) return (k: PropertyKey) => k in target;
         if (key === $SELF) {
           node.SELF?.();
-          // console.log('tracking self');
           // node.trackSelf();
           return receiver;
         }
@@ -407,9 +404,7 @@ class StoreNode<T> {
 
         // ---- property tracking ----
         node.getDataNode(key, target[key])()
-        // const tracked = node.value
         if(key==='__track'){
-          console.log('is tracking', target);
           if(Array.isArray(target)){
             return node.trackSelf();
           }
@@ -418,7 +413,6 @@ class StoreNode<T> {
         
         const value = target[key];
         // if(Array.isArray(target)) {
-        //   console.log('store map', target, key, value);
         // }
 
         // ---- array mutators ----
@@ -475,7 +469,6 @@ class StoreNode<T> {
             // return (...args: any[]) => value.apply(receiver, args);
           }
           if (key === 'map') {
-            // console.log('map', {target, receiver});
             // node.SELF?.()
           //       return (...args: any[]) =>{
           //     const result = value.apply(target, args);
@@ -884,7 +877,6 @@ function createDataNode(initial?: any): DataNode {
   //   if(typeof value!=="undefined"){
   //     if(!deepEqual(untrack(()=>get()),value)){
   //       set(value)
-  //       console.log('setting node', value)
   //     }
   //   }
   // }
@@ -944,7 +936,6 @@ class Store<T> {
     if (key === '[*]' && Array.isArray(this.proxy)) {
       const reactiveArray = this.proxy.map((item) => this._reactive(item));
       const node = this.getRootNode();
-      console.log('reactive is procy array', reactiveArray);
       // if (node) {
       //   // return reactiveArray || [];
       //   // const [sig] = node.getPropSignal(key!, reactiveArray);
@@ -965,7 +956,6 @@ class Store<T> {
     // let node = this.root.getPropSignal(key!);
     // const proxyValue = (this.proxy as any)[key!];
     // const value = node[0]();
-    // console.log('node  is', { node, key });
     if (node) {
       // if (typeof value === 'undefined' || value !== proxyValue) {
       //   node[1](proxyValue);
@@ -980,7 +970,6 @@ class Store<T> {
       if (node) {
         const [s, set] = node.getPropSignal(key!);
         set(value);
-        // console.log('s', s());
         return s;
       }
       return null;
@@ -1230,7 +1219,6 @@ class Store<T> {
         value1 as any,
         value2 as any
       );
-      // console.log('set done', s)
       this.mergeState(s, originalState as T);
     });
   }
@@ -1366,10 +1354,8 @@ class Store<T> {
 
     const newArray = current.slice();
     const item = newArray.pop();
-    // console.log('before pop');
     this.reconcilePath(path, newArray as any, { merge: false });
     // this.set(path as any, newArray as any);
-    // console.log('after pop');
     return item;
   }
 
@@ -1386,10 +1372,8 @@ class Store<T> {
 
     const newArray = current.slice();
     const item = newArray.shift();
-    // console.log('before pop');
     this.reconcilePath(path, newArray as any, { merge: false });
     // this.set(path as any, newArray as any);
-    // console.log('after pop');
     return item;
   }
 
@@ -1496,8 +1480,6 @@ class Store<T> {
         const bDepth = (b as string).split('.').length;
         return bDepth - aDepth; // Deepest first
       });
-      let hasP = false;
-      
       // First, trigger all signals with the NEW values from the diff.
       // This must happen BEFORE mutating the data, so signal equality checks work correctly.
       for (const path of sortedPaths) {
@@ -1514,24 +1496,15 @@ class Store<T> {
         if (!this.isChanged(diff, pathStr)) {
           continue;
         }
-        if(!hasP){
-          hasP= pathStr==='options[0].values[0]'
-        }
         this.triggerPathSignals(pathStr, value, partial);
       }
-      // console.log('merge state', diff, paths);
       
       // Now apply the diff to the actual current state
       const actualCurrentState = this.getRawState();
-      // applyDiff(actualCurrentState as any, diff.changes, true);
       reconcile(newValue, { keepRef: true})(actualCurrentState);
-      if(hasP){
-
-        console.log('actual state', actualCurrentState, diff);
-      }
 
       // Update child node values to reflect the new data
-      this.updateChildNodeValues(actualCurrentState, hasP);
+      this.updateChildNodeValues(actualCurrentState);
 
       // Special handling for arrays: trigger length signal if array length changed
       if (Array.isArray(partial) && Array.isArray(currentState)) {
@@ -1554,17 +1527,12 @@ class Store<T> {
   /**
    * Updates child node values to reflect the new state
    */
-  private updateChildNodeValues(state: any, debug?: boolean): void {
+  private updateChildNodeValues(state: any): void {
     // Recursively update all child nodes with their new values from state
     for (const [key, childNode] of this.root.children.entries()) {
       const newValue = get(state, key as any);
-      if(debug){
-        console.log('updateChildNodeValues', key, newValue)
-      }
       if (newValue !== undefined) {
         // Mutate the existing value object in place to keep proxy references valid
-        // throw Error('mutate')
-        // console.log('mutate value', newValue, childNode.value)
         this.mutateValue(childNode.value, newValue);
         // Recursively update nested children
         this.updateChildNodeValuesRecursive(childNode, newValue);
@@ -1725,7 +1693,6 @@ class Store<T> {
       // (this.proxy as any)[$SELF];
       const n = dataNode && ((dataNode as any)[Symbol.for('signal-node')]);
       if (dataNode && n && n.value!==value) {
-        // console.log('node', n)
         dataNode.$(value);
       }
       // Invalidate the cached child StoreNode proxy for this property so that
@@ -1812,10 +1779,7 @@ class Store<T> {
         const firstProp = pathParts[0];
         const remainingPath = pathParts.slice(1).join('.');
 
-        let childNode = this.root.children.get(firstProp);
-                if(pathStr==='options[0].values[0]'){
-          console.log('spath', {pathStr,remainingPath, childNode})
-        }
+        const childNode = this.root.children.get(firstProp);
         if (childNode && remainingPath) {
           this.triggerNestedSignal(childNode, remainingPath, value);
         }
@@ -1869,7 +1833,6 @@ class Store<T> {
     }
     let current: any = this.root.getProxy();
     // if (Array.isArray(value)) {
-    //   console.log('create path', { current, value, parts });
     // }
     setValueAtPath(current, parts.join('.'), value);
     this.root.getProxy();
@@ -1912,18 +1875,13 @@ class Store<T> {
     }
 
     // const current = node.get()();
-    // const current = node.get();
     const current = node.getRaw();
     const nextValue = isFunction(value)
       ? (value as (prev: any) => any)(current)
       : value;
-    if (Array.isArray(nextValue)) {
-      console.log('reconciling', { nextValue, value });
-    }
 
     const reconciled = node.reconcile(nextValue, options);
     if (!deepEqual(reconciled, current)) {
-      // console.log('node reconciled');
       node.set(reconciled);
     }
   }

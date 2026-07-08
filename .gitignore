@@ -4,17 +4,6 @@ tmp/
 out-tsc/
 *.tsbuildinfo
 
-packges/fluixi-apps/**/dist
-packges/fluixi-apps/**/out
-packges/fluixi-apps/leuzman-backend/**/dist
-packges/fluixi-apps/pos/out
-packges/fluixi-apps/pos/release
-packges/fluixi-apps/pos/packages
-packges/fluixi-apps/pos-native/.expo
-packges/fluixi-apps/dev.db
-packges/fluixi-apps/dev.db-shm
-packges/fluixi-apps/dev.db-wal
-packges/fluixi-apps/stage
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .pnp
@@ -25,16 +14,14 @@ package-lock.json
 yarn.lock
 
 # ─── Environment & secrets ────────────────────────────────────────────────────
-# Rule: commit *.example / *.docker templates, never the real values.
+# Commit *.example templates only, never real values.
 .env
 .env.local
 .env.*.local
 .env.production
 .env.staging
 .env.development
-
-# Docker local overrides (real credentials, never commit)
-.env.docker.local
+.npmrc.local
 
 # Private keys, certs
 *.pem
@@ -99,8 +86,3 @@ Desktop.ini
 /connect.lock
 /typings
 
-# ─── Project-specific exclusions ─────────────────────────────────────────────
-packages/fluixi-apps/adafri-api
-packages/fluixi-apps/adafri-auth
-packages/fluixi-test/
-# packages/core/docs
