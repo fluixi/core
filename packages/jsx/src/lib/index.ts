@@ -52,8 +52,7 @@ export type {
 // Legacy API (for backward compatibility)
 // ============================================================================
 
-// Re-export old runtime for compatibility
-export { ReactiveDOM, delegateEvents } from '@fluixi/dom';
+export { delegateEvents } from '@fluixi/dom';
 // Lit helpers ($, $if, litrx) live in @fluixi/lit — import them from there directly.
 // Not re-exported here so the jsx-runtime entry stays lit-free (keeps lit, which extends
 // HTMLElement at module init, out of SSR/prod server bundles).
