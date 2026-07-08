@@ -22,7 +22,7 @@
  * `props` instead.)
  */
 import { createNativeElement, insert } from './runtime.js';
-import { isServer } from './server/nodes.js';
+import { isServer } from './server/host.js';
 import { getRequestContext } from './server/request-context.js';
 import { setAttribute } from './utils.js';
 import { hydrate } from './hydration.js';

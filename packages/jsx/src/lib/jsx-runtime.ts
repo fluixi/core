@@ -16,7 +16,6 @@ import {
   setStyle,
   handleRef,
   isAccessor,
-  createRenderEffect,
   delegateEvents,
   isSVGElement,
   spread,
@@ -32,7 +31,8 @@ import {
   applyProps as domProps
 } from '@fluixi/dom';
 
-import { createSignal, createMemo, resolveChildren, createComponent } from '@fluixi/dom';
+import { createComponent } from '@fluixi/dom';
+import { createSignal, createMemo, createRenderEffect, childrens as resolveChildren } from '@fluixi/reactive/signal';
 
 // ============================================================================
 // Types

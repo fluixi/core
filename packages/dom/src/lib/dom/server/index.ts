@@ -7,13 +7,15 @@
 export {
   isServer,
   setServerMode,
+  isDomNode,
+  isDomElement,
+  isDomText,
+} from './host.js';
+export {
   ServerNode,
   ServerElement,
   ServerText,
   ServerComment,
-  isDomNode,
-  isDomElement,
-  isDomText,
   isServerNodeValue,
 } from './nodes.js';
 export { serializeNode } from './serialize.js';

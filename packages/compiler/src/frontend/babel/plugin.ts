@@ -120,6 +120,13 @@ export interface PluginOptions {
   controlFlowModule?: string;
 
   /**
+   * Where reactive primitives (createMemo) are imported from — the signal core,
+   * not the dom runtime.
+   * @default '@fluixi/reactive/signal'
+   */
+  reactiveModule?: string;
+
+  /**
    * Code-generation backend.
    * - 'imperative' (default): emit direct compiled calls into the @fluixi/dom
    *   runtime (createNativeElement/spread/insert/createComponent) — no per-render
@@ -251,6 +258,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     sourceMaps = true,
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
+    reactiveModule = '@fluixi/reactive/signal',
     autoShowTransform = false,
     backend = 'imperative',
     codegen = 'inline',
@@ -368,11 +376,23 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                 'Show', 'For', 'Index', 'Switch', 'Match',
                 'Dynamic', 'ErrorBoundary', 'Portal', 'Suspense',
               ]);
+              // Reactive primitives come from the signal core, not the dom module.
+              const REACTIVE = new Set([
+                'createMemo', 'createEffect', 'createRenderEffect', 'createRoot',
+                'createSignal', 'onCleanup', 'batch', 'untrack',
+              ]);
               const all = Array.from(state.irImports as Set<string>);
               const spec = (n: string) =>
                 t.importSpecifier(t.identifier(n), t.identifier(n));
-              const core = all.filter((s) => !CF.has(s) && !path.scope.hasBinding(s));
-              const cf = all.filter((s) => CF.has(s) && !path.scope.hasBinding(s));
+              const unbound = (s: string) => !path.scope.hasBinding(s);
+              const reactive = all.filter((s) => REACTIVE.has(s) && unbound(s));
+              const core = all.filter((s) => !CF.has(s) && !REACTIVE.has(s) && unbound(s));
+              const cf = all.filter((s) => CF.has(s) && unbound(s));
+              if (reactive.length > 0) {
+                imports.push(
+                  t.importDeclaration(reactive.map(spec), t.stringLiteral(reactiveModule)),
+                );
+              }
               if (core.length > 0) {
                 imports.push(
                   t.importDeclaration(core.map(spec), t.stringLiteral(signalModule)),
@@ -438,15 +458,15 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               );
             }
 
-            // Add createMemo import when conditionals/components are wrapped as
-            // memos. In imperative mode it comes from the dom runtime.
+            // createMemo (wraps conditionals/components) is a reactive primitive,
+            // so it comes from the reactive module, not dom.
             if (state.needsCreateMemo && !path.scope.hasBinding('createMemo')) {
               imports.push(
                 t.importDeclaration(
                   [t.importSpecifier(t.identifier('createMemo'), t.identifier('createMemo'))],
                   t.stringLiteral(
                     backend === 'imperative'
-                      ? signalModule
+                      ? reactiveModule
                       : state.libModule ?? '@fluixi/core',
                   ),
                 ),

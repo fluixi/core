@@ -1,20 +1,19 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createSignal } from '@fluixi/reactive/signal';
+import { createSignal, createMemo } from '@fluixi/reactive/signal';
 import {
   renderToString,
   createNativeElement,
   insert,
   spread,
   createComponent,
-  createMemo,
   registerCreateComponent,
 } from '@fluixi/dom';
 import { Show } from '../../flow/show.js';
 import { For } from '../../flow/for.js';
 
-// Wire a faithful component runner (the barrel auto-inits with createComponent:
-// null). Mirrors the runtime contract spec — Comp(props) lets components read
-// props (including the `get children()` getter the codegen emits).
+// Wire a faithful component runner (createComponent is unregistered until core
+// calls registerCreateComponent). Mirrors the runtime contract spec — Comp(props)
+// lets components read props (including the `get children()` getter the codegen emits).
 beforeAll(() => {
   registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
 });

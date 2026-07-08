@@ -14,24 +14,18 @@
  * style, classList, and no-op event listeners.
  */
 
+import { SERVER_NODE } from './host.js';
+
 export const NODE_ELEMENT = 1;
 export const NODE_TEXT = 3;
 export const NODE_COMMENT = 8;
 
 // ---------------------------------------------------------------------------
-// Server mode flag (live binding — runtime.ts imports `isServer` and branches
-// on it; setServerMode flips it for renderToString and for tests running under
-// jsdom where `document` exists). Default: true when there is no document.
-// ---------------------------------------------------------------------------
-export let isServer = typeof document === 'undefined';
-export function setServerMode(on: boolean): void {
-  isServer = on;
-}
-
-// ---------------------------------------------------------------------------
 // Base node — the linked-tree mechanics insert() relies on.
 // ---------------------------------------------------------------------------
 export abstract class ServerNode {
+  // Brand the host.ts guards check for (lets them skip an instanceof on these classes).
+  readonly [SERVER_NODE] = true;
   abstract nodeType: number;
   parentNode: ServerElement | null = null;
   childNodes: ServerNode[] = [];
@@ -292,29 +286,7 @@ export class ServerElement extends ServerNode {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Guards — combine real-DOM checks (client) with server-node checks. Written so
-// they are correct in both environments without reading the isServer flag:
-// `Element`/`Node`/`Text` are undefined under Node, so we typeof-guard them.
-// On the client these reduce to the original `instanceof` checks (no server
-// nodes exist), keeping the client path's behavior identical.
-// ---------------------------------------------------------------------------
-// These are typed as predicates over the DOM types (Node/Element/Text) because
-// that is the static type the runtime sees — on the server the object is a
-// ServerNode but the leaf factories cast it to the DOM type. The predicate
-// preserves the same TS narrowing the original `instanceof` checks gave.
+// Server-only; serialize.ts uses it. The client-facing guards are in host.ts.
 export function isServerNodeValue(x: any): x is ServerNode {
   return x instanceof ServerNode;
-}
-export function isDomNode(x: any): x is Node {
-  if (x instanceof ServerNode) return true;
-  return typeof Node !== 'undefined' && x instanceof Node;
-}
-export function isDomElement(x: any): x is Element {
-  if (x instanceof ServerElement) return true;
-  return typeof Element !== 'undefined' && x instanceof Element;
-}
-export function isDomText(x: any): x is Text {
-  if (x instanceof ServerText) return true;
-  return typeof Text !== 'undefined' && x instanceof Text;
 }

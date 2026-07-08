@@ -15,8 +15,22 @@ import {
   runWithOwner,
   flush,
 } from '@fluixi/reactive/signal';
-import { isServer, setServerMode } from './nodes.js';
+import { isServer, setServerMode, registerServerNodes } from './host.js';
+import { ServerElement, ServerText, ServerComment } from './nodes.js';
 import { serializeNode } from './serialize.js';
+
+// Register the node classes with the runtime seam on first render. Done from here
+// (not the client barrel) so the classes only load on the server.
+let _nodesRegistered = false;
+function ensureServerNodes(): void {
+  if (_nodesRegistered) return;
+  _nodesRegistered = true;
+  registerServerNodes({
+    createElement: (tag, isSVG) => new ServerElement(tag, isSVG),
+    createText: (value) => new ServerText(value),
+    createComment: (value) => new ServerComment(value),
+  });
+}
 import { escapeFxJson, FX_DATA_ID } from './fx-data.js';
 import {
   createRequestContext,
@@ -40,6 +54,7 @@ export interface RenderOptions {
 
 export function renderToString(app: () => any, options: RenderOptions = {}): string {
   const prev = isServer;
+  ensureServerNodes();
   setServerMode(true);
   const ctx = createRequestContext(options.event);
   try {
@@ -143,6 +158,7 @@ export async function renderToStringAsync(
   options: RenderOptions = {},
 ): Promise<string> {
   const prev = isServer;
+  ensureServerNodes();
   setServerMode(true);
   ensureResourceHooks();
   // Enable eager stale-effect scheduling for the duration of the async drain so the

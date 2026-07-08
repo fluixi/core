@@ -33,10 +33,9 @@ import * as os from 'os';
 // ---------------------------------------------------------------------------
 
 vi.mock('@fluixi/dom', async () => {
-  // @fluixi/dom re-exports the reactive primitives (createSignal, createMemo,
-  // createRoot, batch, untrack, useContext, getSuspenseContext, …). Spread the
-  // real reactive module so signal-based code works in node; the dom render
-  // helpers that touch a live DOM are stubbed in the overrides below.
+  // Spread the real reactive module into the dom mock so signal-based code
+  // (createSignal/createMemo/createRoot/…) works in node; the dom render helpers
+  // that touch a live DOM are stubbed in the overrides below.
   const reactive = await vi.importActual<Record<string, unknown>>(
     '@fluixi/reactive/signal',
   );
