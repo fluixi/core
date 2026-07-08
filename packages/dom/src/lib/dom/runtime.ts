@@ -306,7 +306,7 @@ export function fnName(fn: Function) {
 /**
  * iterateFn — resolves a value by calling through plain function wrappers.
  *
- * CRITICAL: Must stop at signals/memos/resources ($SIGNAL marker) and
+ * Must stop at signals/memos/resources ($SIGNAL marker) and
  * component thunks (fluixi-component marker). Without this:
  *  - components returning memos get unwrapped to static values, losing reactivity
  *  - lazy component createMemo re-triggers C(props) → infinite recursion
@@ -360,7 +360,7 @@ function _createInsertEffect(
     let value: any;
 
     // ── 0. If accessor itself is a component thunk (not a signal/memo), call it once via cache ──
-    // IMPORTANT: must check !isSignal to avoid caching reactive values that are also
+    // must check !isSignal to avoid caching reactive values that are also
     // stamped as components (e.g. memos returned from components via $component/asComponent).
     if (isComponent(getAccessor as any) && !isSignal(getAccessor as any)) {
       if (!componentCache.has(getAccessor as Function)) {
@@ -670,7 +670,7 @@ function flattenArray(
         // Pure component thunk (e.g. () => <div>) — call exactly once and cache so
         // re-runs of the enclosing render effect return the same DOM nodes (keeps
         // focus etc. stable across navigations).
-        // IMPORTANT: must check !isSignal. A memo stamped as a component (e.g. an
+        // must check !isSignal. A memo stamped as a component (e.g. an
         // Outlet/Routes/Suspense output returned via $component/asComponent) is BOTH
         // isComponent AND isSignal; caching it would freeze its first value (so a
         // boundary that later switches from a single node to an array — fallback ->
@@ -716,7 +716,7 @@ function flattenArray(
             continue;
           }
           // Read the signal — tracked inside the enclosing render effect.
-          // CRITICAL: Use flattenArray recursively (NOT normalizeValue) so
+          // Use flattenArray recursively (NOT normalizeValue) so
           // component thunks inside the result go through componentCache.
           let val = resolved();
           while (typeof val === 'function' && isSignal(val)) val = val();
