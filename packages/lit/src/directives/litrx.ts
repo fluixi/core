@@ -32,7 +32,6 @@ function getSignal(accessor: any) {
   if (typeof accessor === 'function') {
     const node = accessor[Symbol.for('signal-node')]
     if (node) {
-    console.log('initial accessor', node)
     }
   }
 }
@@ -120,7 +119,6 @@ class ReactiveDirective extends Directive {
     // Same accessor with active effect → nothing to do.
     // The existing effect will push updates via _$setValue.
     if (this.currentAccessor === accessor && this.disposeRoot) {
-      console.log('lit rex')
       return noChange;
     }
 
@@ -162,11 +160,9 @@ class ReactiveDirective extends Directive {
     //         }
     //       }
     //     } catch (error) {
-    //       console.error('Error in reactive directive:', error);
     //     }
     //   });
     this.disposeRoot = createRoot((dispose) => {
-      console.log('lit root')
       createEffect(() => {
         try {
           let newValue = accessor();
@@ -175,7 +171,6 @@ class ReactiveDirective extends Directive {
           }
 
           if (isFirstRun) {
-            // console.log('new a', newValue)
             // Skip _$setValue on first run — render() returns the initial
             // value to lit-html. Calling _$setValue here would double-process
             // the template (especially TemplateResults with inner directives).

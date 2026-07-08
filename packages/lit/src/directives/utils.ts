@@ -18,12 +18,10 @@ export function rxDirective<T extends (...args: any[]) => any>(
 ): T {
   return ((...args: any[]) => {
     const processedArgs = args.map((arg) => {
-      console.log('arg', arg);
       if (isSignal(arg) || typeof arg === 'function') {
         // If the directive returns a function, we need to handle it specially
         return handler(() => {
           const value = iterateFn(arg);
-          console.log('value', value);
           return typeof value === 'function' ? value() : value;
         });
       }
@@ -41,12 +39,9 @@ export function asyncRxDirective<T extends (...args: any[]) => any>(
       if (isSignal(arg) || typeof arg === 'function') {
         // If the directive returns a function, we need to handle it specially
         const value = iterateFn(arg);
-        console.log('arg', value);
         return handler(async () => {
-          console.log('handler');
           if (isPromise(value)) {
             const v = await value;
-            console.log('value', v);
             return v;
           } else {
             return typeof value === 'function' ? value() : value;

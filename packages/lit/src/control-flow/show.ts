@@ -162,7 +162,6 @@ export function $show<T>(props: $ShowProps<T>): any {
   return createMemo(() => {
     const whenAccessor = normalizeAccessor(props.when);
     const value = whenAccessor();
-    console.log('memo show', value);
 
     if (isTruthy(value)) {
       if (typeof props.children === 'function') {

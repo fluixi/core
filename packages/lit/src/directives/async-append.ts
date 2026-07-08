@@ -29,12 +29,10 @@ class AsyncFnDirective extends AsyncDirective {
   }
 
   async render(fn: any, fallback = nothing) {
-    console.log('render directive', fn, fallback, this);
     this.setValue(fallback);
 
     try {
       const result = iterateFn(await fn);
-      console.log('result', result);
       if (this.part) {
         this.part._$setValue(result);
       } else {
@@ -42,7 +40,6 @@ class AsyncFnDirective extends AsyncDirective {
       }
       // this.setValue(html`${result}`);
     } catch (e) {
-      console.log('e', e);
       this.setValue(html`<pre>Error</pre>`);
     }
 

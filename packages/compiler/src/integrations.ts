@@ -766,23 +766,13 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
           }
         }
 
-        // IMPORTANT: Only use our custom babel plugin for JSX transformation
-        // Do NOT use @babel/preset-react as it will transform spreads with Object.assign
-        // which breaks store proxy reactivity
+        // Only our custom babel plugin handles JSX — never @babel/preset-react, which
+        // rewrites spreads with Object.assign and breaks store-proxy reactivity.
         if (babelPlugin && babelPlugin.plugin) {
-          // console.log('[createVitePlugin] Adding custom babel plugin');
           plugins.push([babelPlugin.plugin, babelPlugin.getOptions()]);
         } else {
-          console.log(
-            '[createVitePlugin] WARNING: Custom babel plugin not found!'
-          );
+          console.warn('[createVitePlugin] custom babel plugin not found');
         }
-
-        // console.log('[createVitePlugin] Babel config:', {
-        //   presets: presets.length,
-        //   plugins: plugins.length,
-        //   hasCustomPlugin: !!(babelPlugin && babelPlugin.plugin),
-        // });
 
         const result = await babel.transformAsync(code, {
           filename: id,

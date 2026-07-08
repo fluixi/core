@@ -207,7 +207,6 @@ export const $each = <T>() => directive(EachDirective<T>);
 //           }
 //         }
 //       } catch (err) {
-//         console.error('Error in each() directive:', err);
 //       }
 //     });
 

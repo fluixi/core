@@ -50,7 +50,6 @@ export function html(
   //   // Child content position: wrap reactive accessors with litrx
   //   return auto(value);
   // });
-  // console.log('html done')
   return litHtml(strings, ...processedValues);
 }
 
