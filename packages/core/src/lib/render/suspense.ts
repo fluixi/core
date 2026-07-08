@@ -181,7 +181,7 @@ function SuspenseImpl(props: SuspenseProps): any {
   // The SuspenseCtx is already set on the owner above, so createResource
   // calls inside lazy/async children will find it via useContext.
   //
-  // IMPORTANT: Do NOT call thunks inside the output memo below — that would
+  // Do NOT call thunks inside the output memo below — that would
   // recreate the entire component tree on every inFallback toggle, causing
   // the infinite insert loop the user reported.
   function instantiateOnce(val: any): any {

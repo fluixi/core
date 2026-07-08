@@ -5,7 +5,7 @@
  * This module provides server-side rendering and hydration utilities.
  * Import from '@fluixi/core/server' for SSR functionality.
  *
- * IMPORTANT: Server Reactive Behavior
+ * Server Reactive Behavior
  * ====================================
  * This module maps reactive primitives to server-appropriate behavior,
  * following the SolidJS server model:
