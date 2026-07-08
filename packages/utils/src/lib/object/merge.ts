@@ -184,7 +184,6 @@ export function mergeArrays<T>(
 }
 
 function mergeInPlace(target: any, source: any) {
-  console.log('merging in place', target, source)
   for (const key in source) {
     const tVal = target[key];
     const sVal = source[key];
@@ -257,7 +256,6 @@ export function deepMergeWithOptions<T extends object>(
   const isArrayMerge = Array.isArray(result);
   for (const source of sources) {
     if (source && Array.isArray(source) !== isArrayMerge) {
-      console.log('throw err', result, source);
       throw new Error('Cannot mix arrays and objects in deepMergeWithOptions');
     }
   }

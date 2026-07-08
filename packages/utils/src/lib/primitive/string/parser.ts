@@ -520,7 +520,6 @@
 //   }
 // }
 
-// // Helper to apply reviver recursively
 // function applyReviver(
 //   holder: Record<string, any>,
 //   key: string,
@@ -546,83 +545,13 @@
 //   return reviver.call(holder, key, value);
 // }
 
-// // Usage examples with type safety
-// // interface User {
-// //   name: string;
-// //   age: number;
-// //   email?: string;
-// //   tags: string[];
-// //   metadata: {
-// //     created: Date;
-// //     active: boolean;
-// //   };
-// // }
 
-// // const userString = `{
-// //   name: "John Doe",
-// //   age: 30,
-// //   tags: ["admin", "user",],
-// //   metadata: {
-// //     created: "2024-01-01",
-// //     active: true
-// //   }
-// // }`;
 
-// // try {
-// //   const user = parseObjectString<User>(userString, {
-// //     allowUnquotedKeys: true,
-// //     allowTrailingCommas: true,
-// //     allowSingleQuotes: true,
-// //     allowComments: true,
-// //     reviver(key, value) {
-// //       if (key === 'created') {
-// //         return new Date(value);
-// //       }
-// //       return value;
-// //     }
-// //   });
 
-// //   console.log('Parsed user:', user);
-// //   console.log('Name:', user.name); // TypeScript knows this is string
-// //   console.log('Age:', user.age);   // TypeScript knows this is number
-// //   console.log('Metadata created:', user.metadata.created); // TypeScript knows this is Date
-// // } catch (error) {
-// //   if (error instanceof ParseError) {
-// //     console.error('Parse error:', error.message);
-// //   } else {
-// //     console.error('Error:', error);
-// //   }
-// // }
 
-// // // Test various edge cases
-// // const testCases = [
-// //   // Valid JavaScript object literals
-// //   `{name: "John", age: 30}`,
-// //   `{'name': 'John', "age": 30}`,
-// //   `{arr: [1, 2, 3,], nested: {a: 1}}`,
-// //   `{/* comment */ name: "John" // inline comment\n, age: 30}`,
-// //   `{null: null, true: true, false: false}`,
   
-// //   // Should fail
-// //   `{name: John}`, // Unquoted string value
-// //   `{name: "John" age: 30}`, // Missing comma
-// //   `[1, 2, 3,,]`, // Double comma
-// // ];
 
-// // console.log('\nTesting edge cases:');
-// // for (const test of testCases) {
-// //   try {
-// //     const result = parseObjectString(test, { strict: true });
-// //     console.log(`✓ ${test.slice(0, 30)}... => Success`);
-// //   } catch (error) {
-// //     if (error instanceof ParseError) {
-// //       console.log(`✗ ${test.slice(0, 30)}... => ${error.message}`);
-// //     }
-// //   }
-// // }
 
-// // Export for use in other modules
-// // export { parseObjectString, ParseError, type ParserOptions };
 
 /**
  * Fix the regex patterns in the custom parse function
@@ -925,7 +854,6 @@ function simpleJsObjectParse(str: string): any {
   }
 }
 
-// // Usage examples
 // console.log('Testing regex fixes:');
 
 // const testCases = [
