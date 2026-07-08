@@ -47,6 +47,7 @@
     "dom-innerhtml-static",
     "dom-non-delegated-events",
     "dom-setattribute-null-removes",
+    "dom-slim-client-runtime",
     "fix-client-hydration-loop",
     "fix-control-flow-show-types",
     "fix-fluixi-head-dependencies",
