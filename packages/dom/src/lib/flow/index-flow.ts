@@ -1,6 +1,6 @@
 import { Accessor, indexArray } from '@fluixi/reactive/signal';
 import { resolveReactiveProp } from './utils.js';
-import { hydrateAdvancePast } from '../dom/hydration.js';
+import { hydrateAdvancePast } from '../dom/hydration-state.js';
 
 export interface IndexProps<T, U = any> {
   /** Reactive array to iterate over. */

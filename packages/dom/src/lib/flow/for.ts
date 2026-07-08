@@ -1,6 +1,6 @@
 import { Accessor, mapArray, keyArray } from '@fluixi/reactive/signal';
 import { resolveReactiveProp } from './utils.js';
-import { hydrateAdvancePast } from '../dom/hydration.js';
+import { hydrateAdvancePast } from '../dom/hydration-state.js';
 
 type EachSource<T> =
   | ReadonlyArray<T>

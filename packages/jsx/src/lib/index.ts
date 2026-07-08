@@ -86,7 +86,8 @@ import {
 } from './jsx-runtime.js';
 
 export { mergeProps } from './jsx-runtime.js';
-import { createPortal, initializeIntegration, render, runtimeBatch } from '@fluixi/dom';
+import { createPortal, initializeIntegration, render } from '@fluixi/dom';
+import { batch } from '@fluixi/reactive/signal';
 
 /**
  * Create a reactive JSX API with custom configuration
@@ -106,7 +107,7 @@ export function createReactiveJSX(config: ReactiveJSXConfig): ReactiveJSXAPI {
     render: (element: any, container: any) => {
       if (!container) return;
 
-      runtimeBatch(() => {
+      batch(() => {
         while (container.firstChild) {
           container.removeChild(container.firstChild);
         }
@@ -122,7 +123,7 @@ export function createReactiveJSX(config: ReactiveJSXConfig): ReactiveJSXAPI {
         }
       });
     },
-    batch: runtimeBatch,
+    batch,
   };
 }
 

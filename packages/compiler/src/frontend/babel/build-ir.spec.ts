@@ -38,7 +38,8 @@ function compile(src: string): { code: string; imports: string[] } {
 function evalExpr(src: string, vars: Record<string, any> = {}): any {
   const { code, imports } = compile(src);
   const runtimeNames = imports;
-  const runtimeVals = runtimeNames.map((n) => (DOM as any)[n]);
+  // Runtime fns come from @fluixi/dom; reactive primitives (createMemo) from the signal core.
+  const runtimeVals = runtimeNames.map((n) => (DOM as any)[n] ?? (S as any)[n]);
   const userNames = Object.keys(vars);
   const userVals = userNames.map((k) => vars[k]);
   // eslint-disable-next-line no-new-func

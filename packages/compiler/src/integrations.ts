@@ -99,6 +99,12 @@ export interface CompilerOptions {
    * @default '@fluixi/dom'
    */
   controlFlowModule?: string;
+
+  /**
+   * Where reactive primitives (createMemo) are imported from in 'imperative' mode.
+   * @default '@fluixi/reactive/signal'
+   */
+  reactiveModule?: string;
 }
 
 export interface TransformResult {
@@ -637,6 +643,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         ...(options.controlFlowModule
           ? { controlFlowModule: options.controlFlowModule }
           : {}),
+        ...(options.reactiveModule ? { reactiveModule: options.reactiveModule } : {}),
       };
     },
   };

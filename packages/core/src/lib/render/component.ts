@@ -4,13 +4,9 @@
  */
 
 import {
-  initializeIntegration,
-  registerBatch,
-  registerEffectCreator,
   registerCreateComponent,
   asComponent,
   CreateComponentReturnType,
-  intergartionInitialized,
 } from '@fluixi/dom';
 import {
   untrack,
@@ -188,45 +184,10 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   });
 }
 
-// Initialize integration with the reactive system.
+// Give the dom runtime our createComponent. It gets everything else (effects,
+// memos, …) from @fluixi/reactive directly.
 export function ensureIntegration(from?: string): void {
-  // Always call initializeIntegration — it now merges rather than replaces,
-  // so calling it multiple times is safe. createComponent lives here (not in
-  // @fluixi/dom) so it must be patched in every time until fully registered.
-  initializeIntegration({
-    signalSystem: {
-      createEffect,
-      createRenderEffect,
-      createRoot,
-      createMemo,
-      createSignal,
-      resolveChildren: childrens,
-      batch,
-      untrack,
-      getOwner,
-      runWithOwner,
-      onCleanup,
-      createComponent,
-      devComponent,
-      createResource,
-      createContext,
-      useContext,
-      getSuspenseContext,
-      getSuspenseListContext,
-      createComputed,
-      resumeEffects,
-      isSignal,
-      createStore,
-      createDeferred,
-      getSharedConfig: getSignalSharedConfig,
-      setOwner,
-    } as any,
-  });
-
-  registerEffectCreator(createEffect);
-  registerBatch(batch);
   registerCreateComponent(createComponent as any);
-
 }
 
 /**

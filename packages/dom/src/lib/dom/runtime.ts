@@ -24,21 +24,17 @@ import { isComponent } from '../component/modifiers.js';
 import { batch, createEffect, createRenderEffect, createRoot, onCleanup, childrens as resolveChildren, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
-  ServerElement,
-  ServerText,
-  ServerComment,
+  getServerNodes,
   isDomNode,
   isDomElement,
   isDomText,
-} from './server/nodes.js';
+} from './server/host.js';
 import {
   hydration,
-  hydrateElement,
-  hydrateText,
-  hydrateMarker,
+  getHydrationWalker,
   isAdopted,
   ascendPast,
-} from './hydration.js';
+} from './hydration-state.js';
 
 
 function getElementFingerprint(el: Element): string {
@@ -239,27 +235,27 @@ export function isFunction(value: any): value is Function {
 }
 
 function createTextNode(value: string): Text {
-  if (isServer) return new ServerText(value) as unknown as Text;
+  if (isServer) return getServerNodes().createText(value) as unknown as Text;
   if (hydration.active) {
-    const node = hydrateText(value);
+    const node = getHydrationWalker()?.hydrateText(value);
     if (node) return node;
   }
   return document.createTextNode(value);
 }
 
 function createMarker(value: string): Comment {
-  if (isServer) return new ServerComment(value) as unknown as Comment;
+  if (isServer) return getServerNodes().createComment(value) as unknown as Comment;
   if (hydration.active) {
-    const node = hydrateMarker(value);
+    const node = getHydrationWalker()?.hydrateMarker(value);
     if (node) return node;
   }
   return document.createComment(value);
 }
 
 export function createNativeElement(tag: string, isSVG = false): Element {
-  if (isServer) return new ServerElement(tag, isSVG) as unknown as Element;
+  if (isServer) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
   if (hydration.active) {
-    const node = hydrateElement(tag);
+    const node = getHydrationWalker()?.hydrateElement(tag);
     if (node) return node;
   }
   return isSVG
@@ -1540,34 +1536,6 @@ export function escapeHTML(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function runtimeBatch(fn: () => void): void {
-  if (typeof (globalThis as any).__batch === 'function') {
-    (globalThis as any).__batch(fn);
-  } else {
-    fn();
-  }
-}
-
-export function registerBatch(batchFn: (fn: () => void) => void): void {
-  (globalThis as any).__batch = batchFn;
-}
-
-// export function registerCreateComponent(
-//   _createComponent: (fn: () => any, props?: any) => any
-// ): void {
-//   (globalThis as any).__createComponent = _createComponent;
-// }
-export function registerCreateRoot(
-  _createRoot: (fn: <T>(fn: (dispose: () => void) => T)=> T) => any
-): void {
-  (globalThis as any).__createRoot = _createRoot;
-}
-export function registerOncleanUp(
-  _onCleanup: (fn: () => void) => void
-): void {
-  (globalThis as any).__onCleanup = _onCleanup;
-}
-
 export function isPromise(v: any): v is Promise<any> {
   return (
     (v != null &&
@@ -1575,26 +1543,6 @@ export function isPromise(v: any): v is Promise<any> {
       typeof (v as any).then === 'function') ||
     v instanceof Promise
   );
-}
-
-// ============================================================================
-// Batch & scheduling registration helpers
-// ============================================================================
-
-export function registerEffectCreator(creator: (fn: () => void) => () => void): void {
-  (globalThis as any).__createEffect = creator;
-}
-export function registerRenderEffectCreator(creator: (fn: () => void) => () => void): void {
-  (globalThis as any).__createRenderEffect = creator;
-}
-export function registerCreateRootCreator(creator: (fn: () => void) => () => void): void {
-  (globalThis as any).__createRoot = creator;
-}
-export function registerCreateMemoCreator(creator: any): void {
-  (globalThis as any).__createMemo = creator;
-}
-export function registeronCleanupCreator(creator: any): void {
-  (globalThis as any).__onCleanup = creator;
 }
 
 // ============================================================================
@@ -1623,7 +1571,7 @@ export function render<T>(
   // This is critical for context propagation (Provider/useContext).
 
   createRoot((dispose) => {
-    runtimeBatch(() => {
+    batch(() => {
       // Clear container (but not when hydrating — we reuse the server DOM).
       if (!hydration.active) {
         container.textContent = '';
@@ -1646,6 +1594,3 @@ export function render<T>(
   };
 }
 
-// hydrate() lives in ./hydration.js (the DOM-reuse hydration feature). Re-export
-// it here so the existing import path (`@fluixi/dom` → runtime) keeps working.
-export { hydrate, captureHydrationCursor, runHydrationAt, runWithoutHydration } from './hydration.js';

@@ -1,22 +1,24 @@
 export * from './utils.js';
 export * from './runtime.js';
 export * from './integration.js';
-// Only the server node classes + guards belong in the client runtime barrel — the
-// runtime's leaf factories reference them in their `isServer` branches. The string
-// renderer (renderToString/serialize/request-context) is SSR-only and heavier; it is
-// re-exported as named bindings from the package entry (index.ts) so bundlers can
-// tree-shake it out of client builds, and it lives on the `@fluixi/dom/server` subpath.
+// Client barrel exposes only the server seam (flag + guards). The ServerNode
+// classes are registered through host.ts and exported from @fluixi/dom/server, so
+// they stay out of client bundles.
 export {
   isServer,
   setServerMode,
-  ServerNode,
-  ServerElement,
-  ServerText,
-  ServerComment,
   isDomNode,
   isDomElement,
   isDomText,
-  isServerNodeValue,
-} from './server/nodes.js';
+} from './server/host.js';
 export { Island, hydrateIslands, type IslandProps, type IslandRegistry } from './island.js';
+// hydrate() is the heavy DOM-reuse walker — its own module so render-only apps
+// tree-shake it. The small cursor helpers stay in the weightless state module.
+export { hydrate } from './hydration.js';
+export {
+  captureHydrationCursor,
+  runHydrationAt,
+  runWithoutHydration,
+  hydrateAdvancePast,
+} from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'
