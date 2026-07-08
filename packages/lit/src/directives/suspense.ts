@@ -14,7 +14,6 @@ class SuspenseDirective extends AsyncDirective {
     this.resolveChildren(children, fallback);
     if (isPromise(fallback)) {
       let r = await fallback;
-      console.log('susp', children, r);
       this.setValue(r);
       return r;
     }
@@ -24,7 +23,6 @@ class SuspenseDirective extends AsyncDirective {
   private async resolveChildren(children: () => any, fallback: any) {
     try {
       const result = iterateFn(children);
-      // console.log('resolving', result);
 
       if (isPromise(result)) {
         this.pending.add(result);
@@ -32,7 +30,6 @@ class SuspenseDirective extends AsyncDirective {
         if (isPromise(resolved)) {
           resolved = iterateFn(await resolved);
         }
-        // console.log('res', resolved);
         this.pending.delete(result);
 
         if (!this.isDisconnected && this.pending.size === 0) {
@@ -50,7 +47,6 @@ class SuspenseDirective extends AsyncDirective {
                 this.pending.delete(promise);
                 if (!this.isDisconnected && this.pending.size === 0) {
                   this.resolveTemplate(result).then((resolved) => {
-                    // console.log('resolved', resolved);
                     this.setValue(resolved);
                   });
                 }

@@ -170,11 +170,9 @@ function isShow(accessor: any) {
   if (typeof accessor === 'function') {
     const node = accessor[Symbol.for('signal-node')];
     if (node && node.name === 'show') {
-      console.log('initial accessor helpers', accessor);
       return true;
     }
   } else if (accessor.name.toLowerCase() === 'show') {
-    console.log('initial name', accessor);
   }
   return false;
 }
@@ -182,10 +180,8 @@ function getSignal(accessor: any) {
   if (typeof accessor === 'function') {
     const node = accessor[Symbol.for('signal-node')];
     if (node && node.name === 'show') {
-      console.log('initial accessor helpers', node);
     }
   } else if (accessor.name.toLowerCase() === 'show') {
-    console.log('initial name', accessor);
   }
 }
 
@@ -233,7 +229,6 @@ export function processValues(
       // reactiveAttr, so setAttribute receives the full attribute string.
       const interp = getInterpolationParts(strings, i);
       if (interp) {
-        console.log('interp', interp);
         baseInput = wrapWithInterpolation(baseInput, interp.prefix, interp.suffix);
       }
 
@@ -243,7 +238,6 @@ export function processValues(
         return value;
       }
       if (isSignal(value) || isMemo(value) || isResource(value)) {
-      // console.log('processing value', value[Symbol.for('signal-node')]);
       try {
         return litrx(value);
       } catch (e) {
@@ -274,9 +268,7 @@ export function processValues(
     if (isTemplateResult(value)) {
       return processObject(value);
       // const l = value.values.slice(1);
-      // console.log('l', l);
       // if (Array.isArray(l) && l.length === 1 && Array.isArray(l[0])) {
-      //   console.log('is template result', l);
       //   value.values = [value.values[0], [processValues(l[0]! as any[])]];
       // } else {
       //   value.values = [value.values[0], processValues(value.values.slice(1))];
@@ -289,16 +281,13 @@ export function processValues(
     }
 
     if (typeof value === 'function' && !isPromise(value)) {
-      // console.log('initial name', value.name)
       // Unwrap function layers one step at a time.
       // Stop if we hit a reactive primitive (signal/memo/resource)
       // so it can be wrapped with litrx for fine-grained tracking.
       while (typeof value === 'function' && !isPromise(value)) {
         if (isSignal(value) || isMemo(value) || isResource(value)) {
-          // console.log('on r', value[Symbol.for('signal-node')])
           return litrx(value);
         }
-        console.log('is fn', value, strings?.[i]);
         // return litrx(value);
         value = value();
         if (Array.isArray(value)) {
@@ -368,7 +357,6 @@ export function processValues(
 //     //     // item = asyncAppend(item);
 //     //   }
 //     // }
-//     console.log('on arr', item);
 //     return item;
 //   });
 //   return values;
@@ -435,11 +423,9 @@ export function buildElementTemplate(
   // Start opening tag
   strings.push(`<${tag}`);
 
-  // console.log('element', Object.entries(props));
   // Process all props - NO NEED to manually wrap signals here
   // because our html/svg functions will do it automatically
   for (const [key, value] of Object.entries(props)) {
-    // console.log('process array jsx template', key, value);
     if (value === undefined || value === null || key === 'children') {
       continue;
     }
@@ -462,7 +448,6 @@ export function buildElementTemplate(
     // Handle event handlers
     if (isEventHandler(key)) {
       const eventName = getLitEventName(key);
-      console.log('binding', eventName);
       strings[strings.length - 1] += ` @${eventName}=`;
       values.push(value);
       strings.push('');
