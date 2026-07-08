@@ -242,74 +242,6 @@ export function createReactiveBinding<T>(
   });
 }
 
-// ============================================================================
-// Auto-initialization
-// ============================================================================
-
-/**
- * Attempt to auto-initialize with available systems
- */
-export function autoInitialize(): void {
-  if (_state.ok) return;
-
-  // Try to find signal system in global scope
-  const globalAny = globalThis as any;
-
-  if (globalAny.__reactiveSignalSystem) {
-    initializeIntegration({
-      signalSystem: globalAny.__reactiveSignalSystem,
-      storeSystem: globalAny.__reactiveStoreSystem,
-    });
-    return;
-  }
-
-  // Try to import from packages
-  try {
-    // Dynamic import approach
-    if (typeof require !== 'undefined') {
-      try {
-        const signalModule = require('@fluixi/reactive/signal');
-        const storeModule = require('@fluixi/reactive/store');
-        initializeIntegration({
-          signalSystem: {
-            createEffect: signalModule.createEffect,
-            batch: signalModule.batch,
-            createMemo: signalModule.createMemo,
-            untrack: signalModule.untrack,
-            getOwner: signalModule.getOwner,
-            runWithOwner: signalModule.runWithOwner,
-            createRoot: signalModule.createRoot,
-            onCleanup: signalModule.onCleanup,
-            resolveChildren: signalModule.childrens,
-            devComponent: signalModule.devComponent,
-            createResource: signalModule.createResource,
-            createContext: signalModule.createContext,
-            useContext: signalModule.useContext,
-            isSignal: signalModule.isSignal,
-            getSuspenseContext: signalModule.getSuspenseContext,
-            getSuspenseListContext: signalModule.getSuspenseListContext,
-            resumeEffects: signalModule.resumeEffects,
-            createComputed: signalModule.createComputed,
-            createStore: signalModule.createStore,
-            createComponent: null as any,
-            createDeferred: signalModule.createDeferred,
-            setOwner: signalModule.setOwner,
-            getSharedConfig: signalModule.getSharedConfig
-          },
-          storeSystem: {
-            isStore: storeModule.isStore,
-            unwrap: storeModule.unwrap,
-            isStoreProxy: storeModule.isStoreProxy,
-          },
-        });
-      } catch (e) {
-        // Module not available, continue
-      }
-    }
-  } catch (e) {
-    // Import failed, continue without integration
-  }
-}
 
 // ============================================================================
 // Global Registration
@@ -398,7 +330,6 @@ export default {
   isReactive,
   resolveReactive,
   createReactiveBinding,
-  autoInitialize,
   registerSignalSystem,
   registerStoreSystem,
   getIntegrationStatus,

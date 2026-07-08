@@ -7,7 +7,6 @@ const DOM = {
     createTemplate: _DOM.createTemplate,
     cloneTemplate: _DOM.cloneTemplate,
     resetIntegration: _DOM.resetIntegration,
-    autoInitialize: _DOM.autoInitialize,
     createEffect: _DOM.createEffect,
     createRenderEffect: _DOM.createRenderEffect,
     untrack: _DOM.untrack,

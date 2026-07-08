@@ -43,7 +43,34 @@ export {
 } from '@fluixi/reactive/signal';
 export { createStore } from '@fluixi/reactive/store';
 
-import { initializeIntegration, autoInitialize, intergartionInitialized } from './dom/integration.js';
+// SSR string renderer + request context. Re-exported as named bindings (not spread into a
+// barrel), so a client-only bundle that never references them tree-shakes them out — they
+// also live on the `@fluixi/dom/server` subpath. The node classes/guards (isServer, etc.)
+// come from the runtime barrel above; keep them out of this list to avoid duplicate exports.
+export {
+  renderToString,
+  renderToStringAsync,
+  serializeNode,
+  serializeResourceData,
+  setDataRedactor,
+  getServerData,
+  escapeFxJson,
+  FX_DATA_ID,
+  setRequestStore,
+  createRequestContext,
+  runWithRequestContext,
+  getRequestContext,
+  getRequestEvent,
+  getLocals,
+  getRequestLocals,
+  type RenderOptions,
+  type RequestStore,
+  type RequestContext,
+  type RequestEvent,
+  type RequestLocals,
+} from './dom/server/index.js';
+
+import { initializeIntegration, intergartionInitialized } from './dom/integration.js';
 import * as runtime from './dom/index.js';
 import {
   createSignal, createEffect, createMemo, createRenderEffect,
@@ -87,5 +114,4 @@ export default {
   getSuspenseContext, getSuspenseListContext, resumeEffects, devComponent,
   getSharedConfig, createStore,
   initializeIntegration,
-  autoInitialize,
 };
