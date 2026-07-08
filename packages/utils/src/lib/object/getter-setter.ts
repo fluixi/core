@@ -663,7 +663,6 @@ export function set(
     }
   }
 
-  console.log('params not found', params);
   throw new Error(`Invalid set parameters: ${JSON.stringify(params)}`);
 }
 
@@ -696,8 +695,6 @@ function handleFunctionParams(
         if (!finalValue) finalValue = [];
         finalValue.push(v);
       }
-    } else {
-      console.log('is wildcard but not array');
     }
   }
   if (!isWildcard && !finalValue) {
@@ -1269,9 +1266,6 @@ export function ValueOfKey<
     if (current === null && !createMissing) {
       return undefined;
     }
-    if (debug) {
-      console.log('current is', current, segment, isLast);
-    }
 
     const nextSegment = segments[i + 1];
     switch (segment.type) {
@@ -1367,9 +1361,6 @@ export function ValueOfKey<
               // }
               current = current[String(segment.value)];
             }
-            if (debug) {
-              console.log('current is after', current);
-            }
             if (nextSegment) {
               continue;
             }
@@ -1387,9 +1378,6 @@ export function ValueOfKey<
               : {};
           current = current[String(segment.value)];
         } else {
-          if (debug) {
-            console.log('is undefined');
-          }
           return undefined;
         }
         break;

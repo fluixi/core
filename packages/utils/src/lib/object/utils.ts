@@ -493,9 +493,6 @@ export function toJSONString(value: any, space = 0) {
       for (const k of keys) {
         const s = ser(v[k], next);
         if (s !== undefined) {
-          if (s.includes('icon.')) {
-            console.log('s', s);
-          }
           if (!space) parts.push(`"${esc(k)}":${s}`);
           else parts.push(`${gap(next)}"${esc(k)}": ${s}`);
         }
