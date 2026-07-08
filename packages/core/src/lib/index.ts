@@ -8,8 +8,6 @@
  * - Fine-grained reactivity (no VDOM)
  * - Server-side rendering with hydration
  * - JSX and Lit-html support
- *
- * Compliant with SPEC.md specification.
  */
 
 // ============================================================================
@@ -185,49 +183,12 @@ export const VERSION = '0.0.1';
 export const FRAMEWORK_NAME = 'Fluixi';
 
 /**
- * Compliance with SPEC.md specification
- */
-export const COMPLIANCE = {
-  // Section 0: Core Principles
-  componentsExecuteOnce: true,
-  noComponentReexecution: true,
-  fineGrainedUpdates: true,
-  directDOMMutation: true,
-  noVirtualDOM: true,
-  jsxLitEquivalence: true,
-  serverSnapshot: true,
-
-  // Section 1-13
-  componentModel: true, // Section 1
-  createComponent: true, // Section 2
-  childrenHandling: true, // Section 3
-  reactiveSystem: true, // Section 4
-  ownership: true, // Section 5
-  jsxSupport: true, // Section 6
-  rendering: true, // Section 7
-  controlFlow: true, // Section 8
-  context: true, // Section 9
-  litHTML: true, // Section 10
-  hydration: true, // Section 11
-  noForbidden: true, // Section 12
-  fullCompliance: true, // Section 13
-};
-
-/**
- * Check if framework is fully compliant
- */
-export function checkCompliance(): boolean {
-  return Object.values(COMPLIANCE).every((v) => v === true);
-}
-
-/**
  * Get framework info
  */
 export function getFrameworkInfo() {
   return {
     name: FRAMEWORK_NAME,
     version: VERSION,
-    compliant: checkCompliance(),
     features: {
       ssr: true,
       hydration: true,
@@ -316,7 +277,6 @@ export default {
   // Metadata
   VERSION,
   FRAMEWORK_NAME,
-  checkCompliance,
   getFrameworkInfo,
 };
 

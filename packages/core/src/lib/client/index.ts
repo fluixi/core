@@ -23,7 +23,6 @@ import { render } from '../render/index.js';
 import { ensureIntegration } from '../render/component.js';
 import { createHead, setActiveHead, mountHead, stripHeadMarker } from '@fluixi/head';
 ensureIntegration('client index');
-// console.log('client called')
 // Register Lit support in @fluixi/dom
 // This allows JSX/DOM engine to render Lit TemplateResults
 // registerLitRender(litRenderFn);

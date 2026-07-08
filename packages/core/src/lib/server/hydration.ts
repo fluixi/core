@@ -2,7 +2,7 @@
  * @fileoverview Hydration utilities for Fluixi
  * @module @fluixi/core/server/hydration
  *
- * Implements Section 11 of SPEC.md: HYDRATION
+ * Hydration:
  * - DOM reused (no recreation)
  * - No component execution (components ran on server)
  * - Bindings reattached

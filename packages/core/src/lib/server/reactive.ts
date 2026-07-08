@@ -5,7 +5,7 @@
  * Maps reactive primitives for server-side execution
  * Following SolidJS pattern of server-specific reactive behavior
  *
- * Section 4 of SPEC.md: SERVER MODE
+ * Server mode:
  * - Signals read-only snapshot
  * - Effects run once
  * - No scheduling
@@ -132,7 +132,6 @@ export function createMemo<T>(
   value?: T,
   options?: any
 ): Accessor<T> {
-  console.log('memo there')
   // Server: Compute once, no reactivity
   const computed = fn(value);
   return (() => computed) as Accessor<T>;
