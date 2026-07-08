@@ -1055,7 +1055,6 @@ export function createResource<T, S = true>(
             }
           )
           .catch((e) => {
-            console.log('resource failed', e);
             if (cancelled) return;
             batch(() => {
               setError(e);
@@ -1078,7 +1077,6 @@ export function createResource<T, S = true>(
       }
     } catch (e) {
       if (cancelled) return;
-      console.log('resource exception', e);
       batch(() => {
         setError(e);
         setState('errored');

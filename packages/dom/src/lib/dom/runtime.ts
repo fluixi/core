@@ -332,55 +332,6 @@ export function iterateFn(item: any): any {
 }
 
 // ============================================================================
-// createRenderEffect — re-export from reactive system
-// ============================================================================
-
-/**
- * Create a reactive render effect. Re-runs when its signal dependencies change.
- * Returns a dispose function.
- */
-
-// function createRenderEffect(fn: () => void): (()=>void) {
-//   if (typeof (globalThis as any).__createRenderEffect === 'function') {
-//     // console.log('render effect found');
-//     return (globalThis as any).__createRenderEffect(fn);
-//   } else {
-//     console.log('render effect not found');
-//     return fn() as any;
-//   }
-// }
-// function createEffect(fn: () => void): () => void {
-//   if (typeof (globalThis as any).__createEffect === 'function') {
-//     // console.log('effect found');
-//    return  (globalThis as any).__createEffect(fn);
-//   } else {
-//     console.log('effect not found');
-//     return ()=>{
-//       fn();
-
-//     }
-//   }
-// }
-// function createRoot<T>(fn: (dispose: () => void) => T): T | void {
-//   if (typeof (globalThis as any).__createRoot === 'function') {
-//     console.log('create root found');
-//     (globalThis as any).__createRoot(fn) as T;
-//   } else {
-//     console.log('create root not found');
-//     // fn() as any;
-//   }
-// }
-// function onCleanup(fn: Cleanup): void {
-//   if (typeof (globalThis as any).__onCleanup === 'function') {
-//     // console.log('on cleanup found');
-//     (globalThis as any).__onCleanup(fn);
-//   } else {
-//     console.log('on cleanup not found');
-//     // fn() as any;
-//   }
-// }
-
-// ============================================================================
 // Insert depth guard
 // ============================================================================
 
@@ -522,28 +473,14 @@ export function insertExpression(
   current?: Node | Node[] | null,
   componentCache?: Map<Function, any>
 ): Node | Node[] | null {
-  // if (count > 100) throw('insertExpression')
   if (value == null || typeof value === 'boolean') {
     return cleanChildren(parent, current, marker);
   }
-  // console.log('runtime insert', value);
 
   if (typeof value === 'function') {
     while (typeof value === 'function') {
       value = (value as Function)();
     }
-    // if (isComponent(value) && !isSignal(value)) {
-    //   // Component thunk — must be called via componentCache (not here)
-    //   return current ?? null;
-    // }
-    // // Non-component functions: call defensively to unwrap plain wrappers
-    // while (typeof value === 'function' && !isSignal(value) && !isComponent(value)) {
-    //   value = (value as Function)();
-    // }
-    // if (typeof value === 'function') {
-    //   // Reached a signal or component thunk — cannot handle here
-    //   return current ?? null;
-    // }
   }
 
   if (value == null || typeof value === 'boolean') {
@@ -695,16 +632,10 @@ export function insertExpression(
   return cleanChildren(parent, current, marker);
 }
 
-// ============================================================================
-// flattenArray
-//
-// CRITICAL FIX: When a signal is read and its result is a component thunk
-// (e.g. routerMemo() returns SuspenseThunk), use flattenArray recursively
-// (NOT normalizeValue) so component thunks go through componentCache.
-// This ensures Suspense/Routes/outlet signals are stable across navigations.
-// ============================================================================
-
-let count = 0
+// flattenArray — flatten a children array to DOM nodes. A signal whose result is a
+// component thunk (e.g. a router memo returning a SuspenseThunk) is recursed through
+// flattenArray, not read inline, so the thunk goes through componentCache and stays
+// stable across navigations.
 function flattenArray(
   arr: any[],
   result: Node[],
@@ -719,9 +650,6 @@ function flattenArray(
   // (a memo, e.g. <Show>) update in place, like an element child does.
   reactiveSlots?: Array<{ marker: Node; sig: any }>
 ): void {
-  count+=1
-  
-
   for (let i = 0; i < arr.length; i++) {
     let item = arr[i];
 
@@ -735,10 +663,6 @@ function flattenArray(
 
     if (item == null || typeof item === 'boolean') continue;
 
-    // if(count > 200) {
-    //   console.log('flatten broken', item)
-    //   throw Error('cache')
-    // }
     if (typeof item === 'function') {
       let resolved: any;
 
@@ -802,24 +726,6 @@ function flattenArray(
           }else flattenArray([val], result, parent, marker, track, componentCache);
           continue;
         }
-        // if (isComponent(resolved)) {
-        //   if (!componentCache) componentCache = new Map();
-        //   if (!componentCache.has(resolved)) componentCache.set(resolved, resolved());
-        //   const inst = componentCache.get(resolved);
-        //   if (inst == null || typeof inst === 'boolean') continue;
-        //   if (typeof inst === 'function' && isSignal(inst)) {
-        //     let val = inst();
-        //     while (typeof val === 'function' && isSignal(val)) val = val();
-        //     if (val == null || typeof val === 'boolean') continue;
-        //     if (Array.isArray(val)) flattenArray(val, result, parent, marker, track, componentCache);
-        //     else flattenArray([val], result, parent, marker, track, componentCache);
-        //   } else if (Array.isArray(inst)) {
-        //     flattenArray(inst, result, parent, marker, track, componentCache);
-        //   } else {
-        //     flattenArray([inst], result, parent, marker, track, componentCache);
-        //   }
-        //   continue;
-        // }
         // Other function type — skip
         continue;
       }
@@ -895,65 +801,6 @@ function flattenArray(
     result.push(createTextNode(String(item)));
   }
 }
-
-// function normalizeValue(value: any, result: Node[]): void {
-//   if (value == null || typeof value === 'boolean') return;
-
-//   while (typeof value === 'function' && !isPromise(value)) {
-//     value = value();
-//     if (value == null || typeof value === 'boolean') return;
-//   }
-
-//   if (isPromise(value)) {
-//     const placeholder = createTextNode('');
-//     result.push(placeholder);
-//     (value as Promise<any>)
-//       .then((resolved) => {
-//         if (placeholder.parentNode) {
-//           const parent = placeholder.parentNode;
-//           const tempNodes: Node[] = [];
-//           normalizeValue(resolved, tempNodes);
-//           for (const node of tempNodes) parent.insertBefore(node, placeholder);
-//           parent.removeChild(placeholder);
-//         }
-//       })
-//       .catch((err) => console.error('Error resolving promise in normalizeValue:', err));
-//     return;
-//   }
-
-//   if (value instanceof Node) { result.push(value); return; }
-
-//   if (
-//     typeof value === 'object' &&
-//     value !== null &&
-//     ('_$litType$' in value || '_$litDirective$' in value)
-//   ) {
-//     const nodes = renderLitToNodes(value);
-//     for (const node of nodes) result.push(node);
-//     return;
-//   }
-
-//   if (Array.isArray(value)) {
-//     for (const item of value) normalizeValue(item, result);
-//     return;
-//   }
-
-//   if (typeof value === 'string' || typeof value === 'number') {
-//     result.push(createTextNode(String(value)));
-//     return;
-//   }
-
-//   if (typeof value === 'object' && value !== null && 'type' in value && 'props' in value) {
-//     const jsxValue = value as { type: any; props: any };
-//     if (typeof jsxValue.type === 'function') {
-//       const resolved = jsxValue.type(jsxValue.props || {});
-//       normalizeValue(resolved, result);
-//       return;
-//     }
-//   }
-
-//   result.push(createTextNode(String(value)));
-// }
 
 // ============================================================================
 // reconcileArrays
@@ -1070,60 +917,6 @@ function reconcileArrays(
   return b;
 }
 
-// function reconcileArrays(
-//   parent: Node,
-//   a: Node[],
-//   b: Node[],
-//   marker?: Node
-// ): Node[] {
-//   // Step 1: remove from the DOM any a-node not present in b.
-//   // The bSet is built from the original b references.  After step 2 may
-//   // replace some entries with clones, so we rebuild a clean set for removal.
-//   if (a.length > 0) {
-//     const bSet = new Set<Node>(b);
-//     for (let i = a.length - 1; i >= 0; i--) {
-//       if (!bSet.has(a[i]) && a[i].parentNode === parent) {
-//         parent.removeChild(a[i]);
-//         // if(a[i].textContent.trim() !== '') {
-//         // }else{
-//         //   console.log('skip remove', a[i].textContent.trim(), b);
-//         // }
-//       }
-//     }
-//   }
-
-//   // Step 2: insert / reorder b-nodes right-to-left.
-//   //
-//   // CRITICAL: The Babel plugin hoists fully-static elements (e.g. an empty
-//   // <span>) to a single module-level DOM node.  When the same node appears in
-//   // the `b` array of *multiple* parents (e.g. several list rows), inserting it
-//   // into the second parent would silently steal it from the first.  To prevent
-//   // this we clone any node that already lives in a *different* parent and
-//   // update the returned array so that future reconciles track the clone instead
-//   // of the original.
-//   //
-//   // Nodes that are already in THIS parent are reused / reordered as normal —
-//   // cloning is only necessary for cross-parent theft.
-//   const out: Node[] = b.slice(); // copy; entries may be replaced by clones
-//   let after: Node | undefined = marker;
-//   for (let i = b.length - 1; i >= 0; i--) {
-//     let node = out[i];
-//     if (node.parentNode !== null && node.parentNode !== parent) {
-//       // Already owned by another parent — clone so we don't steal it.
-//       node = node.cloneNode(true) as Node;
-//       out[i] = node;
-//     }
-//     const alreadyPlaced =
-//       node.parentNode === parent &&
-//       node.nextSibling === (after ?? null);
-//     if (!alreadyPlaced) {
-//       insertBefore(parent, node, after);
-//     }
-//     after = node;
-//   }
-
-//   return out;
-// }
 
 // ============================================================================
 // cleanChildren
@@ -1813,32 +1606,7 @@ export function isAccessor<T>(value: any): value is Accessor<T> {
   return typeof value === 'function' && value.length === 0 && isSignal(value);
 }
 
-// ============================================================================
-// isStoreProxy — lazy load store utils
-// ============================================================================
-
-// let $PROXY_SYM: symbol | undefined;
-// let isStoreProxyFn: ((value: any) => boolean) | undefined;
-
-// try {
-//   const storeModule = require('@fluixi/reactive/store');
-//   $PROXY_SYM = storeModule.$PROXY;
-//   isStoreProxyFn = storeModule.isStoreProxy;
-// } catch (e) {
-//   // Store module not available
-// }
-
-// export function isStoreProxy(value: any): boolean {
-//   if (!value || typeof value !== 'object') return false;
-//   if (isStoreProxyFn) return isStoreProxyFn(value);
-//   if ($PROXY_SYM) return $PROXY_SYM in value;
-//   return false;
-// }
-
-/**
- * Render a JSX element to a DOM container
- * Handles nested arrays, functions, promises, and various node types
- */
+/** Render a JSX element into a DOM container (nested arrays, thunks, promises, and node types). */
 export function render<T>(
   element: T,
   container: Element,

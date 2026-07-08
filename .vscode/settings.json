@@ -8,47 +8,19 @@
   "js/ts.tsserver.log": "off",
   "js/ts.tsserver.useSyntaxServer": "auto",
   "typescript.tsconfig": "tsconfig.json",
-  "js/ts.preferences.autoImportFileExcludePatterns": [
-    "**/node_modules/@medusajs/**",
-    "**/node_modules/.pnpm/@medusajs+**",
-    "**/node_modules/@types/**"
-  ],
+  "js/ts.preferences.autoImportFileExcludePatterns": ["**/node_modules/@types/**"],
   "js/ts.tsserver.watchOptions": {
-    "excludeDirectories": [
-      "**/.nx/**",
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/packages/fluixi-apps/adafri-auth/**",
-      "**/packages/fluixi-apps/adafri-api/**",
-      "**/packages/fluixi-apps/adafri/**",
-      "**/packages/fluixi-apps/my-fluixi-app/**",
-      "**/packages/fluixi-apps/fluixi-jsx/**",
-      "**/adafri-webcomponents/**"
-    ]
+    "excludeDirectories": ["**/.nx/**", "**/node_modules/**", "**/dist/**"]
   },
   "files.watcherExclude": {
     "**/.nx/**": true,
     "**/node_modules/**": true,
-    "**/dist/**": true,
-    "**/packages/fluixi-apps/adafri-auth/**": true,
-    "**/packages/fluixi-apps/adafri-api/**": true,
-    "**/packages/fluixi-apps/adafri/**": true,
-    "**/packages/fluixi-apps/my-fluixi-app/**": true,
-    "**/packages/fluixi-apps/fluixi-jsx/**": true,
-    "**/packages/webui/node_modules/**": true,
-    "**/packages/webui/dist/**": true
+    "**/dist/**": true
   },
   "search.exclude": {
     "**/node_modules/**": true,
     "**/dist/**": true,
-    "**/.nx/**": true,
-    "**/packages/fluixi-apps/adafri-auth/**": true,
-    "**/packages/fluixi-apps/adafri-api/**": true,
-    "**/packages/fluixi-apps/adafri/**": true,
-    "**/packages/fluixi-apps/my-fluixi-app/**": true,
-    "**/packages/fluixi-apps/fluixi-jsx/**": true,
-    "**/packages/webui/node_modules/**": true,
-    "**/packages/webui/dist/**": true
+    "**/.nx/**": true
   },
   "files.exclude": {
     "**/.git": true,
@@ -56,9 +28,7 @@
     "**/.hg": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "**/.nx/**": true,
-    // "**/node_modules/**": true,
-    // "**/dist/**": true
+    "**/.nx/**": true
   },
   "lit-html.tags": ["html", "raw"],
   "lit-html.format.enabled": true,
