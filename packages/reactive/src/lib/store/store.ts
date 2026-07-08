@@ -1,9 +1,8 @@
 import {
   type IValueOfKey,
-  // type SetterParamsType,
   type SelectorFor,
   type Flatten,
-  applyDiff,
+  type DiffResult,
   deepClone,
   diffObjectDetailed,
   set,
@@ -11,12 +10,11 @@ import {
   setValueAtPath,
   getPaths,
   deepMerge,
-  DiffResult,
   reconcile,
 } from '@fluixi/utils/object';
 import { deepEqual } from '@fluixi/utils/compare';
 import { isFunction } from '@fluixi/utils/functions';
-import { Observable } from '../observable/observable.js';
+import type { Observable } from '../observable/observable.js';
 import {
   $PROXY,
   $SIGNAL,
