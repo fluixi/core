@@ -42,6 +42,9 @@ export {
 // Derived utilities ported onto the TC39 graph — live in ./graph/derived.js.
 import { createSelector, createDeferred, createDebounce } from './graph/derived.js';
 export { createSelector, createDeferred, createDebounce };
+// Reactive children resolver (was the mis-named `childrens`) — ./graph/children.js.
+import { readChildren } from './graph/children.js';
+export { readChildren };
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type EffectFn = () => void | (() => void);
 export type ComputationFn<T> = (prev?: T) => T;
@@ -1119,34 +1122,6 @@ export function createContext<T>(defaultValue?: T): {
   const Provider = createProvider(id);
   return { id, Provider, defaultValue };
 }
-export function childrens(fn: any) {
-  const children = createMemo(fn);
-  const memo = __DEV__
-    ? createMemo(() => resolveProviderChildren(children()), undefined, {
-        name: 'children',
-      })
-    : createMemo(() => resolveProviderChildren(children()));
-  return memo;
-}
-const _FLUIXI_COMPONENT_SYM = Symbol.for('fluixi-component');
-function resolveProviderChildren(children: any): any {
-  if (typeof children === 'function' && !children.length) {
-    const result = children();
-    if (isSignal(result)) return result;
-    return resolveProviderChildren(result);
-  }
-  if (Array.isArray(children)) {
-    const results: any[] = [];
-    for (let i = 0; i < children.length; i++) {
-      const result = resolveProviderChildren(children[i]);
-      Array.isArray(result)
-        ? results.push.apply(results, result)
-        : results.push(result);
-    }
-    return results;
-  }
-  return children as any;
-}
 export function createProvider<T>(id: symbol) {
   return (props: { value: T; children: any; debug?: boolean }) => {
     let _node: any = Owner;
@@ -1163,7 +1138,7 @@ export function createProvider<T>(id: symbol) {
           if (!owner.contexts) owner.contexts = new Map();
           owner.contexts.set(id, props.value);
         }
-        return childrens(() => props.children);
+        return readChildren(() => props.children);
       });
     });
     return provider;

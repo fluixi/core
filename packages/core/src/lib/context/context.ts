@@ -3,14 +3,12 @@
 //  * @module @fluixi/core/context/context
 //  */
 
-import { asProvider, isPromise, type Component } from '@fluixi/dom';
+import { asProvider, type Component } from '@fluixi/dom';
 import { createContext as createReactiveContext, useContext as useReactiveContext } from '@fluixi/reactive/signal';
 import {
   Accessor,
   Context,
-  // createContext as createReactiveContext,
-  // useContext as useReactiveContext,
-  isSignal,
+  readChildren,
 } from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
 ensureIntegration('index')
@@ -392,8 +390,7 @@ export function composeProviders(
   children: Children
 ): Component {
   if (contexts.length === 0) {
-    return resolveChildren(children);
-    // Array.isArray(children) ? html`${children}` : children;
+    return readChildren(() => children) as unknown as Component;
   }
 
   const [context, value] = contexts[0];
@@ -565,22 +562,6 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
  * `
  * ```
  */
-function resolveChildren(children: any): any {
-  if (Array.isArray(children)) {
-    return children.map(resolveChildren);
-  }
-  let value = children;
-  while (typeof value === 'function' && !isPromise(value) && !isSignal(value)) {
-    value = value();
-  }
-  return value;
-  // if (typeof children === 'function') {
-  //   const res = children();
-  //   if (isDOMNode(res) || Array.isArray(res)) return res;
-  //   return children;
-  // }
-  // return children;
-}
 
 /**
  * Creates a scoped context that only exists within a specific component tree

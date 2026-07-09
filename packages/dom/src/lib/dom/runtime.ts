@@ -21,7 +21,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // NOT in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, childrens as resolveChildren, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -1468,7 +1468,7 @@ export function createPortal(children: any, element: any, props?: any) {
 
   // 2. Use the 'children' helper to resolve the reactive content
   // This ensures that if children are a function or signal, they are tracked.
-  const resolved = resolveChildren(() => children);
+  const resolved = readChildren(() => children);
   const cleanups: any[] = [];
 
   batch(()=>{
