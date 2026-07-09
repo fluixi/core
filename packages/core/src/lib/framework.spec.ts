@@ -91,6 +91,7 @@ vi.mock('@fluixi/dom', async () => {
 
     isPromise: (v: any) => v != null && typeof (v as any).then === 'function',
     isDOMNode: () => false,
+    runWithoutHydration: (fn: any) => fn(),
 
     html:   (...args: any[]) => args,
     insert: vi.fn(),
@@ -321,8 +322,11 @@ describe('Context & Provider', () => {
 // 2. Suspense
 // ===========================================================================
 
-// TODO: rendering-coupled — needs the real reactive↔dom integration (jsdom).
-  // Covered by framework.integration.spec.ts. Re-enable if migrated off the @fluixi/dom mock.
+// Skipped: these assert an old contract where Suspense() returns the value directly,
+  // but it returns a memo, and this file's @fluixi/dom mock re-runs the component on every
+  // call (fresh boundary per read) so the promise-resolution cases can't hold. The real
+  // behaviour — client fallback, sync/async SSR, resolve transitions — is covered end to
+  // end in examples/ssr (suspense.test, suspense-client.test) against the real runtime.
   describe.skip('Suspense', () => {
   let disposeRoot: (() => void) | null = null;
 
