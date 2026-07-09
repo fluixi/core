@@ -329,11 +329,7 @@ describe('router-next Link', () => {
     expect(sp[0]().q).toBe('bye');
   });
 
-  // KNOWN PRE-EXISTING BUG (tracked): <Redirect> calls router.navigate() inside a
-  // createEffect during render, but the target route doesn't render here. The rest of
-  // the router suite is green (this session's reactivity fixes took it from 8 fails → 1).
-  // Unskip when Redirect-during-render navigation is fixed. Not a regression.
-  it.skip('Redirect navigates to its target', async () => {
+  it('Redirect navigates to its target', async () => {
     const routes = [
       { path: '/from', component: () => <Redirect to="/to" /> },
       { path: '/to', component: () => <div class="to">TO</div> },
