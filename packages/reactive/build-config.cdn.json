@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "esbuild": {
+    "extensions": [".ts"],
+    "target": "es2021",
+    "formats": ["iife"],
+    "platform": "browser",
+    "minify": true,
+    "noExternal": true,
+    "outdir": "dist/cdn",
+    "rootDir": "src/cdn",
+    "entries": {
+      "src/cdn/signal.ts": { "globalName": "Signal", "formats": ["iife"] },
+      "src/cdn/reactive.ts": { "globalName": "Fluixi", "formats": ["iife"] }
+    }
+  }
+}
