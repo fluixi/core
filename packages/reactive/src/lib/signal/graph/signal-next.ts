@@ -38,6 +38,18 @@ export {
   makeArrayFlat,
 } from './detect.js';
 
+// SSR resource injectables — sourced from the TC39-owned module, not signal.js.
+export {
+  setResourceTracker,
+  trackResourcePromise,
+  setServerDataGetter,
+  getServerData,
+  setResourceIdSource,
+  nextResourceId,
+  setResourceDataSink,
+  reportResourceData,
+} from './ssr-hooks.js';
+
 // Core primitives + scheduling (L2 compat over L0/L1)
 export {
   createSignal,
