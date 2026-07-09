@@ -11,6 +11,8 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/cdn/reactive.global.js",
+  "jsdelivr": "./dist/cdn/reactive.global.js",
   "files": [
     "dist",
     "src",
@@ -83,7 +85,8 @@
     "test:res": "vitest --run ./src/lib/signal/resources.spec.ts",
     "test:solid-signal": "vitest --run ./src/lib/signal/signal.solid.spec.tsx",
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
+    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
     "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
@@ -98,7 +101,7 @@
     "inquirer": "^13.1.0",
     "sdom": "^0.0.4",
     "vite-plugin-solid": "^2.11.10",
-    "@bambiste/mix-builder": "*"
+    "@bambiste/mix-builder": "next"
   },
   "repository": {
     "type": "git",
