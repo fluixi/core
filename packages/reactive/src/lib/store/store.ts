@@ -5,13 +5,42 @@ import {
   type DiffResult,
   deepClone,
   diffObjectDetailed,
-  set,
   get,
   setValueAtPath,
   getPaths,
   deepMerge,
   reconcile,
 } from '@fluixi/utils/object';
+
+// The store's setter shapes, without the utils `set` (which bundles ~22kb of exotic
+// index/range/filter branches the store never exposes). Covers path+value, path+
+// updater (incl. `[*]` wildcards and dotted/indexed paths — via setValueAtPath), a
+// whole-state callback, an object merge, `[path, val]` batch tuples, and a
+// path + subPath-segments + value form. Mirrors the shapes the store tests exercise.
+function leanStoreSet(obj: any, first: any, second: any, third: any): any {
+  // set(state => newState) — whole-state updater
+  if (typeof first === 'function' && second === undefined) {
+    const r = first(obj);
+    return r === undefined ? obj : r;
+  }
+  // set([[path, valueOrFn], ...]) — batch tuples
+  if (Array.isArray(first) && second === undefined) {
+    for (const entry of first) {
+      if (Array.isArray(entry)) leanStoreSet(obj, entry[0], entry[1], undefined);
+    }
+    return obj;
+  }
+  // set(partial) — merge a partial object into the root
+  if (first && typeof first === 'object' && !Array.isArray(first) && second === undefined) {
+    return deepMerge(obj, first);
+  }
+  // set(path, [seg, …], value) — path plus sub-path segments, e.g. set('person', ['name'], 'x')
+  if (Array.isArray(second) && third !== undefined) {
+    return setValueAtPath(obj, `${first}.${second.join('.')}`, third);
+  }
+  // set(path, value | updater) — the common form
+  return setValueAtPath(obj, first, second);
+}
 import { deepEqual } from '@fluixi/utils/compare';
 import { isFunction } from '@fluixi/utils/functions';
 import type { Observable } from '../observable/observable.js';
@@ -1209,13 +1238,7 @@ class Store<T> {
     const state_clone = untrack(()=>deepClone(structuredClone(originalState)));
 
     batch(() => {
-      const s = set(
-        state_clone as any,
-        path as any,
-        value as any,
-        value1 as any,
-        value2 as any
-      );
+      const s = leanStoreSet(state_clone as any, path, value, value1);
       this.mergeState(s, originalState as T);
     });
   }
