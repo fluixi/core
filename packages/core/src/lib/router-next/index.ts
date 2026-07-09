@@ -287,8 +287,13 @@ export function Outlet() {
 export function Redirect(props: { to: string; replace?: boolean }) {
   const ctx = useContext(RouterContext);
   if (!ctx || typeof window === 'undefined') return null;
-  createEffect(() => {
-    ctx.router.navigate(props.to, { replace: props.replace !== false });
+  // Navigate AFTER the current render commits. Navigating during render (an effect
+  // running mid-render) updated the location but the route never re-matched, so the
+  // target never showed. Guard against firing if this Redirect is torn down first.
+  let cancelled = false;
+  onCleanup(() => (cancelled = true));
+  queueMicrotask(() => {
+    if (!cancelled) ctx.router.navigate(props.to, { replace: props.replace !== false });
   });
   return null;
 }
