@@ -25,6 +25,19 @@ export * from '../utilities.js';
 export * from '../cached-resource.js';
 export * from '../list.js';
 
+// Detection guards + helpers — sourced from the TC39-owned module (not signal.js),
+// so they survive once signal.ts is retired. Explicit re-export wins over the star.
+export {
+  __DEV__,
+  isSignal,
+  isMemo,
+  isResource,
+  isComponent,
+  isSuspense,
+  isProvider,
+  makeArrayFlat,
+} from './detect.js';
+
 // Core primitives + scheduling (L2 compat over L0/L1)
 export {
   createSignal,
