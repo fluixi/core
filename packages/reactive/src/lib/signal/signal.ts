@@ -39,6 +39,9 @@ export {
   isProvider,
   makeArrayFlat,
 };
+// Derived utilities ported onto the TC39 graph — live in ./graph/derived.js.
+import { createSelector, createDeferred, createDebounce } from './graph/derived.js';
+export { createSelector, createDeferred, createDebounce };
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type EffectFn = () => void | (() => void);
 export type ComputationFn<T> = (prev?: T) => T;
@@ -859,32 +862,6 @@ export function onCleanup(fn: Cleanup): void {
     else Owner.cleanups.push(fn);
   }
 }
-export function createSelector<T, U = T>(
-  source: () => T,
-  fn: (key: U, value: T) => boolean = (k, v) => (k as any) === (v as any)
-): (key: U) => boolean {
-  const map = new Map<U, SignalTuple<boolean>>();
-  createEffect(() => {
-    const value = source();
-    for (const [key, signal] of map) {
-      const [get, set] = signal;
-      const match = fn(key, value);
-      if (get() !== match) set(match);
-    }
-  });
-  return (key: U): boolean => {
-    let signal = map.get(key);
-    if (!signal) {
-      const [get, set] = createSignal(false);
-      signal = [get, set];
-      map.set(key, signal);
-      const value = source();
-      const match = fn(key, value);
-      set(match);
-    }
-    return signal[0]();
-  };
-}
 export type Resource<T> = Accessor<T | undefined> & {
   state: 'unresolved' | 'pending' | 'ready' | 'refreshing' | 'errored';
   loading: boolean;
@@ -1117,59 +1094,6 @@ export function createResource<T, S = true>(
       },
     },
   ];
-}
-export function createDeferred<T>(
-  source: Accessor<T>,
-  options?: { timeoutMs?: number; equals?: false | EqualityFn<T> }
-): Accessor<T> {
-  const [delayed, setDelayed] = createSignal(source(), options);
-  createEffect(() => {
-    const v = source();
-    if (options?.timeoutMs)
-      setTimeout(() => setDelayed(() => v), options.timeoutMs);
-    else if (typeof requestIdleCallback === 'function')
-      requestIdleCallback(() => setDelayed(() => v));
-    else Promise.resolve().then(() => setDelayed(() => v));
-  });
-  return delayed;
-}
-/**
- * createDebounce — wraps any function with debounce behaviour, RxJS-style.
- *
- * The returned function delays invoking `fn` until `delay` ms have elapsed
- * since the last call. Pending timers are automatically cancelled when the
- * owning component is disposed (via `onCleanup`).
- */
-export function createDebounce<T extends (...args: any[]) => any>(
-  fn: T,
-  delay: number
-): T {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const debounced = (...args: Parameters<T>): void => {
-    if (timer !== undefined) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = undefined;
-      if (args.length > 0) {
-        let element = args[args.length - 1];
-        if (typeof element === 'object' && element && !element.tagName && element.target && element.target.tagName) {
-          element = element.target;
-        }
-          if (
-            element &&
-            typeof element === 'object' &&
-            element.tagName &&
-            (element.tagName.toLowerCase() === 'input' ||
-              element.tagName.toLowerCase() === 'textarea')
-          )
-            element.focus();
-      }
-      fn(...args);
-    }, delay);
-  };
-  onCleanup(() => {
-    if (timer !== undefined) clearTimeout(timer);
-  });
-  return debounced as unknown as T;
 }
 export function getOwner(): RootOwner | null {
   return Owner;
