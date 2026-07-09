@@ -213,13 +213,9 @@ let Effects: Computation[] | null = null;
 let ExecCount = 0;
 
 // When true, a signal write eagerly schedules a stale effect reached through a
-// pure memo (see propagateDirty). Server-only — the SSR async drain turns it on so
-// the <Suspense> output insert effect re-runs during the drain. OFF on the client
-// (default) to keep the loop-breaking lazy-STALE behavior.
-let _eagerStaleEffects = false;
-export function setEagerStaleEffects(v: boolean): void {
-  _eagerStaleEffects = v;
-}
+// Legacy propagateDirty flag. Never enabled anymore — SSR runs on the TC39 graph,
+// which schedules its own re-runs, so this is always off (dead branch below).
+const _eagerStaleEffects = false;
 let Pending = false;
 /** Depth of user-initiated batch() calls. Incremented on batch entry, decremented on exit. */
 let BatchDepth = 0;
