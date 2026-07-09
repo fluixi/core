@@ -20,7 +20,18 @@
  * The legacy surface is pulled from the SOURCE modules directly (not `../index.js`, which
  * now re-exports THIS file — importing it here would be a cycle).
  */
-export * from '../signal.js';
+// Types only from the legacy file — its runtime values are all provided by the TC39
+// core below (this used to be a value `export *`, which just re-exported dead legacy
+// implementations for the explicit exports to shadow). Type-only = weightless.
+// Context and ResourceReturn come from the TC39 modules (runtime.js / resource.js).
+export type {
+  Accessor, Setter, SignalOptions, SignalTuple, MemoOptions, EqualityFn,
+  EffectFn, EffectOptions, ComputationFn, Computation, Cleanup, DerivedFn, AsyncFn,
+  Resource, ResourceFetcher, ResourceSource, ResourceOptions, ResourceState,
+  RootOwner, ReactiveNode, Trigger, EnhancedTrigger, EnhancedSignal, AsyncSignal,
+  LazySignal, SignalWithHistory,
+  SuspenseContextType, SuspenseListContextType, SuspenseListRegisteredState,
+} from '../signal.js';
 export * from '../utilities.js';
 export * from '../cached-resource.js';
 export * from '../list.js';
