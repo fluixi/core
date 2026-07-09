@@ -30,7 +30,6 @@ import {
   getSuspenseListContext,
   resumeEffects,
   createDeferred,
-  getSharedConfig as getSignalSharedConfig,
 } from '@fluixi/reactive/signal';
 
 import {createStore} from "@fluixi/reactive/store";

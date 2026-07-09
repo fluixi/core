@@ -40,7 +40,6 @@ import {
   untrack,
   createDeferred,
   setOwner,
-  getSharedConfig,
 } from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
@@ -210,7 +209,6 @@ export {
   useMemo,
   useEventListener,
   useCallback,
-  getSharedConfig as getRenderSharedConfig,
   lazy,
   Suspense,
   SuspenseList,
@@ -336,7 +334,6 @@ export {
   untrack,
   useContext,
   setOwner,
-  getSharedConfig,
   read,
   reduce,
 };
@@ -366,7 +363,6 @@ export default {
   untrack,
   useContext,
   setOwner,
-  getSharedConfig,
   // Control Flow
   // Show,
   // For,
