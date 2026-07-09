@@ -19,13 +19,13 @@ import {
   untrack,
   onCleanup,
 } from './compat.js';
-// Standalone SSR hooks — reused verbatim so seeding/drain behaviour matches legacy.
+// Standalone SSR hooks — graph-agnostic injectables.
 import {
   nextResourceId,
   getServerData,
   trackResourcePromise,
   reportResourceData,
-} from '../signal.js';
+} from './ssr-hooks.js';
 
 type ResourceState = 'unresolved' | 'pending' | 'ready' | 'refreshing' | 'errored';
 
