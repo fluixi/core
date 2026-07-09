@@ -50,6 +50,9 @@ export {
   reportResourceData,
 } from './ssr-hooks.js';
 
+// Derived utilities on the TC39 graph.
+export { createSelector, createDeferred, createDebounce } from './derived.js';
+
 // Core primitives + scheduling (L2 compat over L0/L1)
 export {
   createSignal,
