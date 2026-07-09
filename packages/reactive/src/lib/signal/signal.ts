@@ -196,7 +196,6 @@ export const $MEMO = Symbol.for('memo');
 export const $RESOURCE = Symbol.for('resource');
 export const $PROXY = Symbol('fluixi-proxy');
 const $NODE = Symbol.for('signal-node');
-const $COMP = Symbol.for('component-node');
 const CLEAN = 0;
 const STALE = 1;
 const DIRTY = 2;
@@ -1402,36 +1401,6 @@ export function trackPromise<T>(promise: Promise<T>): Promise<T> {
   ctx.increment();
   promise.finally(() => ctx.decrement());
   return promise;
-}
-export function devComponent<P, V>(Comp: (props?: P) => V, props?: P): V {
-  const c = {
-    fn: () => Comp(props),
-    state: 0,
-    sources: null,
-    sourceSlots: null,
-    owned: null,
-    cleanups: null,
-    owner: Owner,
-    context: null,
-    contexts: null,
-    pure: true,
-    updatedAt: null,
-    value: undefined,
-  } as unknown as Computation;
-  if (Owner) {
-    if (!Owner.owned) Owner.owned = [c];
-    else Owner.owned.push(c);
-  }
-  const prevOwner = Owner;
-  Owner = c as unknown as RootOwner;
-  try {
-    return untrack(() => {
-      Object.assign(Comp, { [$COMP]: true });
-      return Comp(props);
-    });
-  } finally {
-    Owner = prevOwner;
-  }
 }
 export type Context<T> = {
   Provider: (props: { value: T; children: any; debug?: boolean }) => any;

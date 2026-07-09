@@ -20,7 +20,6 @@ import {
   createRoot,
   runWithOwner,
   createComputed,
-  devComponent,
   __DEV__,
   createRenderEffect,
   trackPromise,
@@ -108,7 +107,7 @@ export interface RefObject<T> {
 // ============================================================================
 // OWNER-BASED LIFECYCLE COORDINATION
 // ============================================================================
-// Every component has a reactive Owner (from devComponent or createRoot).
+// Every component has a reactive Owner (from createRoot).
 // onMount and useEffect attach callbacks to the Owner via a Symbol-keyed
 // property. A single queueMicrotask per Owner flushes them in order:
 //   1. All onMount callbacks run first
@@ -243,8 +242,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   //   return untrack(() => value(props))
   // }
   const component = (typeof value === 'function')
-    ? isDev() ? devComponent(value, props) : untrack(() => value(props))
-    // ? isDev() ? devComponent(value, props) : devComponent(value, props)
+    ? untrack(() => value(props))
     : value;
   // Only stamp $name and $COMPONENT on functions/objects — primitives (strings, numbers)
   // cannot have properties added in strict mode and would throw TypeError.
