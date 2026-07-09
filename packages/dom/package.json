@@ -16,6 +16,8 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/cdn/dom.global.js",
+  "jsdelivr": "./dist/cdn/dom.global.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -77,7 +79,8 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
+    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -88,7 +91,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "*",
+    "@bambiste/mix-builder": "next",
     "inquirer": "^13.1.0",
     "vitest": "^1.6.1",
     "jsdom": "^25.0.0",
