@@ -17,6 +17,28 @@ import { isFunction } from '@fluixi/utils/functions';
 import { Observable } from '../observable/observable.js';
 import { deepClone } from '@fluixi/utils/object';
 import { isPromise } from '@fluixi/utils';
+// Detection guards + helpers now live in the TC39-owned ./graph/detect.js
+// (graph-agnostic). Imported for internal use, re-exported below for the surface.
+import {
+  __DEV__,
+  isSignal,
+  isMemo,
+  isResource,
+  isComponent,
+  isSuspense,
+  isProvider,
+  makeArrayFlat,
+} from './graph/detect.js';
+export {
+  __DEV__,
+  isSignal,
+  isMemo,
+  isResource,
+  isComponent,
+  isSuspense,
+  isProvider,
+  makeArrayFlat,
+};
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type EffectFn = () => void | (() => void);
 export type ComputationFn<T> = (prev?: T) => T;
@@ -169,7 +191,6 @@ export const $RESOURCE = Symbol.for('resource');
 export const $PROXY = Symbol('fluixi-proxy');
 const $NODE = Symbol.for('signal-node');
 const $COMP = Symbol.for('component-node');
-export const __DEV__ = process.env.NODE_ENV !== 'production';
 const CLEAN = 0;
 const STALE = 1;
 const DIRTY = 2;
@@ -1203,32 +1224,6 @@ export function childrens(fn: any) {
     : createMemo(() => resolveProviderChildren(children()));
   return memo;
 }
-export function makeArrayFlat(values: any[]) {
-  if (!Array.isArray(values)) return values;
-  if (values.length === 2 && values[1] === ' ') {
-    if (Array.isArray(values[0])) return makeArrayFlat(values[0]);
-    if (typeof values[0] === 'function') return values[0];
-    return values[0];
-  }
-  if (values.length === 1 && typeof values[0] === 'function') return values[0];
-  return values;
-}
-export function isComponent(value: any) {
-  return (
-    typeof value === 'function' &&
-    value[Symbol.for('fluixi-component')] === true
-  );
-}
-export function isSuspense(value: any) {
-  return (
-    typeof value === 'function' && value[Symbol.for('fluixi-suspense')] === true
-  );
-}
-export function isProvider(value: any) {
-  return (
-    typeof value === 'function' && value[Symbol.for('fluixi-provider')] === true
-  );
-}
 const _FLUIXI_COMPONENT_SYM = Symbol.for('fluixi-component');
 function resolveProviderChildren(children: any): any {
   if (typeof children === 'function' && !children.length) {
@@ -1346,17 +1341,6 @@ export function useTransition(): [
 ] {
   ensureTransPending();
   return [_transPending!, startTransition];
-}
-export function isSignal<T extends any>(value: any): value is Accessor<T> {
-  return (
-    typeof value === 'function' && (value as Accessor<any>)[$SIGNAL] === true
-  );
-}
-export function isMemo<T>(value: any): value is Accessor<T> {
-  return typeof value === 'function' && value[$MEMO] === true;
-}
-export function isResource<T>(value: any): value is Resource<T> {
-  return typeof value === 'function' && value[$RESOURCE] === true;
 }
 export function on<T extends readonly unknown[], U>(
   deps: () => [...T],
