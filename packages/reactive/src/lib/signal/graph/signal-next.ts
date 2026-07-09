@@ -53,6 +53,9 @@ export {
 // Derived utilities on the TC39 graph.
 export { createSelector, createDeferred, createDebounce } from './derived.js';
 
+// Reactive children resolver.
+export { readChildren } from './children.js';
+
 // Core primitives + scheduling (L2 compat over L0/L1)
 export {
   createSignal,

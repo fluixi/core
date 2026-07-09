@@ -32,7 +32,7 @@ import {
 } from '@fluixi/dom';
 
 import { createComponent } from '@fluixi/dom';
-import { createSignal, createMemo, createRenderEffect, childrens as resolveChildren } from '@fluixi/reactive/signal';
+import { createSignal, createMemo, createRenderEffect, readChildren } from '@fluixi/reactive/signal';
 
 // ============================================================================
 // Types
@@ -169,7 +169,7 @@ function applyProps(element: Element, props: any, isSVG: boolean): void {
   domProps(element, props, isSVG);
 
   if (props && props.children !== undefined) {
-    const children = resolveChildren(() => props.children);
+    const children = readChildren(() => props.children);
     if (Array.isArray(children)) {
       children.forEach((c: any) => {
         insert(element, c, (typeof c === 'function' ? null : undefined) as any);

@@ -24,7 +24,6 @@ import {
   __DEV__,
   createRenderEffect,
   trackPromise,
-  childrens,
   createResource,
   createContext,
   useContext,
