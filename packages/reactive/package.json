@@ -60,6 +60,13 @@
       "require": "./dist/lib/signal/graph/signal-next.cjs",
       "default": "./dist/lib/signal/graph/signal-next.js"
     },
+    "./core": {
+      "development": "./src/lib/signal/graph/index.ts",
+      "types": "./dist/lib/signal/graph/index.d.ts",
+      "import": "./dist/lib/signal/graph/index.mjs",
+      "require": "./dist/lib/signal/graph/index.cjs",
+      "default": "./dist/lib/signal/graph/index.js"
+    },
     "./signal-legacy": {
       "development": "./src/lib/signal/index-legacy.ts",
       "types": "./dist/lib/signal/index-legacy.d.ts",
