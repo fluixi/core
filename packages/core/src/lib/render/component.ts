@@ -22,13 +22,9 @@ import {
   createComputed,
   __DEV__,
   createRenderEffect,
-  trackPromise,
   createResource,
   createContext,
   useContext,
-  getSuspenseContext,
-  getSuspenseListContext,
-  resumeEffects,
   createDeferred,
 } from '@fluixi/reactive/signal';
 
