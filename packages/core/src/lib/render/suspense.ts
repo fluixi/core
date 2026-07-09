@@ -10,6 +10,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  createRenderEffect,
   isSignal,
   useContext,
   createContext,
@@ -98,6 +99,22 @@ function SuspenseImpl(props: SuspenseProps): any {
   // Read the children under the boundary so the memos they create capture its owner;
   // then a suspended resource read inside them throws to THIS boundary, not the parent.
   const children = provideSuspense(boundary, () => props.children);
+
+  // Instantiate the children now, in their own effect under the boundary. A suspended
+  // resource read inside them throws here synchronously — a sibling of the output memo
+  // below — so the increment reschedules the output cleanly (matching the canary). If we
+  // only rendered children through the output's return, the resource read would be nested
+  // inside the output's own insert effect, which then never re-runs to show the fallback.
+  provideSuspense(boundary, () => {
+    createRenderEffect(() => {
+      const c = children;
+      if (Array.isArray(c)) {
+        for (const x of c) if (typeof x === 'function' && isSignal(x)) x();
+      } else if (typeof c === 'function' && isSignal(c)) {
+        c();
+      }
+    });
+  });
 
   // A raw promise child: track it directly on the boundary.
   const [resolved, setResolved] = createSignal<any>(undefined);

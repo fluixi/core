@@ -20,14 +20,12 @@ function App() {
   );
 }
 
-// KNOWN PRE-EXISTING GAP (fails identically on the legacy suspense, verified): the
-// render effect that reads a suspended resource is owned by the insert site, not the
-// Suspense boundary, so the throw never reaches the boundary → the client fallback
-// isn't shown (content is built once the resource resolves). Async SSR works (it
-// awaits + re-renders). Unskip when the DOM runtime renders Suspense children under
-// the boundary's owner.
+// Client-side Suspense: the fallback shows while a resource is pending, then swaps to
+// content. Works because SuspenseImpl instantiates the children in their own effect
+// under the boundary at setup, so the suspended read increments the boundary before
+// the output's first show decision (see core/render/suspense.ts).
 describe('client Suspense fallback', () => {
-  it.skip('shows the fallback while pending, then swaps to content', async () => {
+  it('shows the fallback while pending, then swaps to content', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     render(() => App(), container);
