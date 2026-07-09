@@ -1213,19 +1213,6 @@ export function makeArrayFlat(values: any[]) {
   if (values.length === 1 && typeof values[0] === 'function') return values[0];
   return values;
 }
-/**
- * Resolve children values for Provider — flatten arrays, call thunks,
- * but preserve signals/memos for reactive tracking.
- */
-export function isChildren(value: any) {
-  if (typeof value === 'function' && value[$NODE]?.name !== 'children')
-    return value[$NODE];
-  return undefined;
-}
-export function getSignalNode(value: any) {
-  if (isSignal(value) && value[$NODE]) return value[$NODE];
-  return undefined;
-}
 export function isComponent(value: any) {
   return (
     typeof value === 'function' &&
@@ -1304,302 +1291,6 @@ export function flush(): Promise<void> {
     });
   });
 }
-export function createEnhancedSignal<T>(
-  initialValue: T,
-  options: SignalOptions<T> = {}
-): EnhancedSignal<T> {
-  const [get, set] = createSignal(initialValue, options);
-  const node = get[$NODE]!;
-  const subscriptions = new Set<(value: T) => void>();
-  const subscribe = (listener: (value: T) => void): (() => void) => {
-    subscriptions.add(listener);
-    return () => subscriptions.delete(listener);
-  };
-  const dispose = (): void => {
-    subscriptions.clear();
-    unregisterNode(node);
-  };
-  const toObservable = (): Observable<T> =>
-    new Observable<T>((observer) => {
-      const unsubscribe = subscribe((value) => observer.next(value));
-      return () => unsubscribe();
-    });
-  const enhancedSet: Setter<T> = (value) => {
-    set(value);
-    const newValue = get();
-    for (const listener of subscriptions) {
-      try {
-        listener(newValue);
-      } catch (error) {
-        console.error('Subscription error:', error);
-      }
-    }
-  };
-  return { get, set: enhancedSet, subscribe, dispose, toObservable, node };
-}
-export function createAsyncSignal<T, Args extends any[] = []>(
-  initialValue: T,
-  asyncFn: AsyncFn<T, Args>,
-  options: SignalOptions<T> = {}
-): AsyncSignal<T, Args> {
-  const [get, set] = createSignal<T>(initialValue, options);
-  const [loading, setLoading] = createSignal<boolean>(false);
-  const [error, setError] = createSignal<Error | null>(null);
-  const node = get[$NODE]!;
-  node.type = 'async';
-  const execute = async (...args: Args): Promise<T> => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (isPromise(asyncFn)) {
-        const result = await asyncFn;
-        set(result);
-        return result;
-      } else {
-        const result = await asyncFn(...args);
-        set(result);
-        return result;
-      }
-    } catch (err) {
-      const errorObj = err instanceof Error ? err : new Error(String(err));
-      setError(errorObj);
-      throw errorObj;
-    } finally {
-      setLoading(false);
-    }
-  };
-  return { get, set, loading, error, execute, reload: execute, node };
-}
-export function createSignalWithHistory<T>(
-  initialValue: T,
-  options: { maxHistory?: number } = {}
-): SignalWithHistory<T> {
-  const { maxHistory = 50 } = options;
-  const [get, set] = createSignal<T>(initialValue);
-  const history: T[] = [initialValue];
-  let currentIndex = 0;
-  const node = get[$NODE]!;
-  const enhancedSet: Setter<T> = (newValue) => {
-    const oldValue = get();
-    const finalValue =
-      typeof newValue === 'function'
-        ? (newValue as (prev: T) => T)(oldValue)
-        : newValue;
-    if (currentIndex < history.length - 1) history.splice(currentIndex + 1);
-    history.push(finalValue);
-    if (history.length > maxHistory) history.shift();
-    else currentIndex++;
-    set(finalValue);
-  };
-  const undo = (): boolean => {
-    if (currentIndex > 0) {
-      currentIndex--;
-      set(history[currentIndex]);
-      return true;
-    }
-    return false;
-  };
-  const redo = (): boolean => {
-    if (currentIndex < history.length - 1) {
-      currentIndex++;
-      set(history[currentIndex]);
-      return true;
-    }
-    return false;
-  };
-  return {
-    get,
-    set: enhancedSet,
-    undo,
-    redo,
-    canUndo: (): boolean => currentIndex > 0,
-    canRedo: (): boolean => currentIndex < history.length - 1,
-    history: (): T[] => [...history],
-    currentIndex: (): number => currentIndex,
-    node,
-  };
-}
-export function createTrigger(): Trigger {
-  const [get, set] = createSignal(0);
-  const node = get[$NODE]!;
-  const trigger = (): void => {
-    get();
-  };
-  trigger.subscribe = (fn: () => void): (() => void) => {
-    set((n) => (n as number) + 1);
-    return createEffect(() => {
-      get();
-      fn();
-    });
-  };
-  trigger.node = node;
-  return trigger;
-}
-export function createDerivedTrigger<T>(
-  fn: DerivedFn<T>,
-  options: {
-    equals?: EqualityFn<T>;
-    name?: string;
-    fireImmediately?: boolean;
-  } = {}
-): EnhancedTrigger<T> {
-  const { equals, name, fireImmediately = false } = options;
-  const node = createReactiveNode('derived', undefined as T, { equals, name });
-  const [trigger, setTrigger] = createSignal<T>(undefined as T, {
-    equals,
-    name,
-  });
-  let lastValue: T | undefined;
-  let isComputing = false;
-  let isInitialized = false;
-  const triggerEffect = createEffect(() => {
-    if (isComputing) return;
-    isComputing = true;
-    const newValue = fn();
-    isComputing = false;
-    const eq = equals || defaultEquals;
-    if (!isInitialized || !eq(lastValue as T, newValue) || fireImmediately) {
-      isInitialized = true;
-      lastValue = newValue;
-      setTrigger(newValue);
-    }
-  });
-  const enhancedTrigger = ((): T => trigger()) as EnhancedTrigger<T>;
-  enhancedTrigger.dispose = triggerEffect;
-  enhancedTrigger.getLastValue = (): T | undefined => lastValue;
-  enhancedTrigger.forceUpdate = (): void => {
-    const newValue = fn();
-    lastValue = newValue;
-    setTrigger(newValue);
-  };
-  enhancedTrigger.node = node;
-  return enhancedTrigger;
-}
-export function createLazySignal<T>(
-  fn: () => T,
-  options: SignalOptions<T> = {}
-): LazySignal<T> {
-  const { equals, name } = options;
-  let computed = false;
-  let value: T;
-  let error: Error | undefined;
-  const [get, set] = createSignal<T>(undefined as T, { equals, name });
-  const node = get[$NODE]!;
-  const lazyGet = (): T => {
-    if (!computed) {
-      computed = true;
-      try {
-        value = fn();
-        set(value);
-      } catch (err) {
-        error = err instanceof Error ? err : new Error(String(err));
-        throw error;
-      }
-    }
-    if (error) throw error;
-    return get();
-  };
-  lazyGet.reset = (): void => {
-    computed = false;
-    value = undefined as T;
-    error = undefined;
-    set(undefined as T);
-  };
-  lazyGet.node = node;
-  return lazyGet;
-}
-export function createThrottledSignal<T>(
-  signal: EnhancedSignal<T>,
-  delay: number
-): EnhancedSignal<T> {
-  const throttled = createEnhancedSignal(signal.get());
-  let timeout: any;
-  let lastValue: T;
-  signal.subscribe((value) => {
-    lastValue = value;
-    if (!timeout)
-      timeout = setTimeout(() => {
-        throttled.set(lastValue);
-        timeout = null;
-      }, delay);
-  });
-  return {
-    node: throttled.node,
-    get: throttled.get,
-    set: signal.set,
-    subscribe: throttled.subscribe,
-    dispose: () => {
-      clearTimeout(timeout);
-      throttled.dispose();
-    },
-    toObservable: throttled.toObservable,
-  };
-}
-export function createDebouncedSignal<T>(
-  signal: EnhancedSignal<T>,
-  delay: number
-): EnhancedSignal<T> {
-  const debounced = createEnhancedSignal(signal.get());
-  let timeout: any;
-  signal.subscribe((value) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => debounced.set(value), delay);
-  });
-  return {
-    node: debounced.node,
-    get: debounced.get,
-    set: signal.set,
-    subscribe: debounced.subscribe,
-    dispose: () => {
-      clearTimeout(timeout);
-      debounced.dispose();
-    },
-    toObservable: debounced.toObservable,
-  };
-}
-export function signalToObservable<T>(
-  signal: Accessor<T> | EnhancedSignal<T>
-): Observable<T> {
-  const getter = typeof signal === 'function' ? signal : signal.get;
-  if (!isFunction(signal) && (signal as any).toObservable)
-    return (signal as any).toObservable();
-  return new Observable<T>((observer) => {
-    let first = true;
-    const dispose = createEffect(() => {
-      const value = getter();
-      if (!first) observer.next(value);
-      first = false;
-    });
-    return () => dispose();
-  });
-}
-export function observableToSignal<T>(
-  observable: Observable<T>,
-  initialValue: T,
-  options?: SignalOptions<T>
-): EnhancedSignal<T> {
-  const signal = createEnhancedSignal(initialValue, options);
-  const subscription = observable.subscribe({
-    next: (value) => signal.set(value),
-    error: (error) => console.error('Observable error:', error),
-    complete: () => {
-      (signal as any)._complete = true;
-    },
-  });
-  const originalDispose = signal.dispose;
-  (signal as any).dispose = () => {
-    subscription.unsubscribe();
-    originalDispose.call(signal);
-  };
-  return signal;
-}
-export function fromObservable<T>(
-  observable: Observable<T>,
-  initialValue: T,
-  options?: SignalOptions<T>
-): EnhancedSignal<T> {
-  return observableToSignal(observable, initialValue, options);
-}
 /**
  * startTransition — defer non-critical effect updates.
  *
@@ -1656,45 +1347,6 @@ export function useTransition(): [
   ensureTransPending();
   return [_transPending!, startTransition];
 }
-export function enableDevMode(): void {}
-export function getRegisteredNodes(): ReactiveNode[] {
-  if (!__DEV__) return [];
-  const nodes: ReactiveNode[] = [];
-  for (const ref of nodeRegistry.values()) {
-    const node = ref.deref();
-    if (node) nodes.push(node);
-  }
-  return nodes;
-}
-export function getNodeStats(): {
-  total: number;
-  byType: Record<string, number>;
-} {
-  const nodes = getRegisteredNodes();
-  const byType: Record<string, number> = {};
-  nodes.forEach((node) => {
-    byType[node.type] = (byType[node.type] || 0) + 1;
-  });
-  return { total: nodes.length, byType };
-}
-export function getReactiveGraph(): any {
-  const graph: any = { roots: [], computations: [] };
-  function collectOwner(owner: RootOwner, level = 0) {
-    if (owner.owned) {
-      for (const comp of owner.owned) {
-        graph.computations.push({
-          level,
-          pure: comp.pure,
-          state: comp.state,
-          sourcesCount: comp.sources?.length ?? 0,
-        });
-        if (comp.owned) collectOwner(comp as any, level + 1);
-      }
-    }
-  }
-  if (Owner) collectOwner(Owner);
-  return graph;
-}
 export function isSignal<T extends any>(value: any): value is Accessor<T> {
   return (
     typeof value === 'function' && (value as Accessor<any>)[$SIGNAL] === true
@@ -1720,38 +1372,6 @@ export function on<T extends readonly unknown[], U>(
       return prev as U;
     }
     return untrack(() => fn(values, prev));
-  };
-}
-export function createReaction(
-  onInvalidate: () => void
-): (fn: () => void) => void {
-  let trackingComp: Computation | null = null;
-  return (fn: () => void) => {
-    if (trackingComp) dispose(trackingComp);
-    trackingComp = {
-      fn: onInvalidate,
-      state: DIRTY,
-      sources: null,
-      sourceSlots: null,
-      owned: null,
-      cleanups: null,
-      owner: Owner,
-      contexts: null,
-      pure: false,
-      updatedAt: null,
-    };
-    if (Owner) {
-      if (!Owner.owned) Owner.owned = [trackingComp];
-      else Owner.owned.push(trackingComp);
-    }
-    const prevListener = Listener;
-    Listener = trackingComp;
-    try {
-      fn();
-      trackingComp.state = CLEAN;
-    } finally {
-      Listener = prevListener;
-    }
   };
 }
 /**
@@ -1914,17 +1534,8 @@ export function onResolve(fn: () => void): void {
     });
   else fn();
 }
-export function isSuspended(): boolean {
-  const ctx = _SuspenseContext && useContext(_SuspenseContext);
-  return ctx ? ctx.inFallback() : false;
-}
 export function setScheduler(scheduler: (fn: () => void) => void): void {
   Scheduler = scheduler;
-}
-export function scheduleMicrotask(fn: () => void): void {
-  if (Scheduler) Scheduler(fn);
-  else if (typeof queueMicrotask === 'function') queueMicrotask(fn);
-  else Promise.resolve().then(fn);
 }
 export function trackPromise<T>(promise: Promise<T>): Promise<T> {
   const ctx = _SuspenseContext && useContext(_SuspenseContext);
@@ -1932,34 +1543,6 @@ export function trackPromise<T>(promise: Promise<T>): Promise<T> {
   ctx.increment();
   promise.finally(() => ctx.decrement());
   return promise;
-}
-export function catchException<T>(
-  fn: () => T,
-  handler: (error: Error) => T
-): T {
-  const boundary: ErrorBoundary = {
-    errors: [],
-    handler: (error: Error) => {
-      boundary.errors.push(error);
-    },
-    reset: () => {
-      boundary.errors = [];
-    },
-  };
-  errorHandlers.push(boundary);
-  try {
-    const result = fn();
-    if (boundary.errors.length > 0) {
-      errorHandlers.pop();
-      return handler(boundary.errors[0]);
-    }
-    errorHandlers.pop();
-    return result;
-  } catch (error) {
-    errorHandlers.pop();
-    boundary.handler(error as Error);
-    return handler(error as Error);
-  }
 }
 export function devComponent<P, V>(Comp: (props?: P) => V, props?: P): V {
   const c = {
@@ -2012,33 +1595,15 @@ export default {
   createContext,
   useContext,
   flush,
-  createEnhancedSignal,
-  createAsyncSignal,
-  createSignalWithHistory,
-  createTrigger,
-  createDerivedTrigger,
-  createLazySignal,
-  createThrottledSignal,
-  createDebouncedSignal,
-  signalToObservable,
-  observableToSignal,
-  fromObservable,
   startTransition,
   useTransition,
-  enableDevMode,
-  getRegisteredNodes,
-  getNodeStats,
-  getReactiveGraph,
   isSignal,
   on,
-  createReaction,
   createRenderEffect,
   getSuspenseContext,
   getSuspenseListContext,
   resumeEffects,
   onResolve,
-  isSuspended,
   setScheduler,
-  scheduleMicrotask,
   trackPromise,
 };

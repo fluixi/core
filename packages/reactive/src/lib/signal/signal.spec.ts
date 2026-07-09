@@ -6,34 +6,22 @@ import {
   batch,
   createRoot,
   createSelector,
-  createDerivedTrigger,
   startTransition,
   useTransition,
   // createSuspense,
   trackPromise,
-  catchException,
   createContext,
   useContext,
   createRenderEffect,
-  createReaction,
   on,
   getOwner,
   runWithOwner,
-  getNodeStats,
   // findPotentialLeaks,
-  createEnhancedSignal,
-  createAsyncSignal,
-  createSignalWithHistory,
-  createThrottledSignal,
-  createDebouncedSignal,
-  createTrigger,
   createResource,
-  enableDevMode,
   untrack,
 } from './signal.js';
 
 // Enable DEV mode for tests
-enableDevMode();
 
 describe('Signal System - Core Features', () => {
   describe('createSignal', () => {
@@ -384,42 +372,8 @@ describe('Signal System - Advanced Features', () => {
   // });
 
   describe('Error Boundaries', () => {
-    it('should catch errors', () => {
-      const result = catchException(
-        () => {
-          throw new Error('Test error');
-        },
-        (error) => {
-          expect(error.message).toBe('Test error');
-          return 'fallback';
-        }
-      );
-      expect(result).toBe('fallback');
-    });
 
-    it('should return normal value when no error', () => {
-      const result = catchException(
-        () => 'success',
-        () => 'fallback'
-      );
-      expect(result).toBe('success');
-    });
 
-    it('should handle errors in effects', () => {
-      let errorCaught = false;
-      catchException(
-        () => {
-          createEffect(() => {
-            throw new Error('Effect error');
-          });
-        },
-        (error) => {
-          errorCaught = true;
-          return null;
-        }
-      );
-      expect(errorCaught).toBe(true);
-    });
   });
 
   describe('Context API', () => {
@@ -543,21 +497,6 @@ describe('Signal System - Advanced Features', () => {
       expect(cleanups).toBeGreaterThan(0);
     });
 
-    it('should create reactions', () => {
-      const [count, setCount] = createSignal(0);
-      let invalidations = 0;
-      const track = createReaction(() => {
-        invalidations++;
-      });
-
-      track(() => {
-        count();
-      });
-
-      expect(invalidations).toBe(0);
-      setCount(1);
-      expect(invalidations).toBe(1);
-    });
 
     it('should support explicit dependencies with on()', () => {
       const [a, setA] = createSignal(1);
@@ -645,66 +584,7 @@ describe('Signal System - Advanced Features', () => {
 });
 
 describe('Signal System - Utilities', () => {
-  describe('createEnhancedSignal', () => {
-    it('should create signal with enhanced features', () => {
-      const signal = createEnhancedSignal(0);
-      expect(signal.get()).toBe(0);
-      signal.set(5);
-      expect(signal.get()).toBe(5);
-    });
 
-    it('should support subscriptions', () => {
-      const signal = createEnhancedSignal(0);
-      const values: number[] = [];
-      const unsubscribe = signal.subscribe((value) => {
-        values.push(value);
-      });
-
-      signal.set(1);
-      signal.set(2);
-      signal.set(3);
-
-      unsubscribe();
-      signal.set(4);
-
-      expect(values).toEqual([1, 2, 3]);
-    });
-
-    it('should convert to observable', () => {
-      const signal = createEnhancedSignal(0);
-      const observable = signal.toObservable();
-      expect(observable).toBeDefined();
-    });
-  });
-
-  describe('createAsyncSignal', () => {
-    it('should handle async operations', async () => {
-      const asyncFn = async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        return 'loaded';
-      };
-
-      const signal = createAsyncSignal(undefined, asyncFn);
-      expect(signal.loading()).toBe(false);
-
-      const promise = signal.execute();
-      expect(signal.loading()).toBe(true);
-
-      await promise;
-      expect(signal.loading()).toBe(false);
-      expect(signal.get()).toBe('loaded');
-    });
-
-    it('should handle errors', async () => {
-      const asyncFn = async () => {
-        throw new Error('Test error');
-      };
-
-      const signal = createAsyncSignal(undefined, asyncFn);
-      await signal.execute().catch(() => {});
-      expect(signal.error()).toBeDefined();
-    });
-  });
 
   describe('createMemo (lazy behavior)', () => {
     it('should compute value lazily', () => {
@@ -727,107 +607,9 @@ describe('Signal System - Utilities', () => {
     });
   });
 
-  describe('createSignalWithHistory', () => {
-    it('should track history', () => {
-      const signal = createSignalWithHistory(0);
-      signal.set(1);
-      signal.set(2);
-      signal.set(3);
 
-      expect(signal.get()).toBe(3);
-      expect(signal.history()).toEqual([0, 1, 2, 3]);
-    });
 
-    it('should support undo', () => {
-      const signal = createSignalWithHistory(0);
-      signal.set(1);
-      signal.set(2);
 
-      expect(signal.get()).toBe(2);
-      signal.undo();
-      expect(signal.get()).toBe(1);
-      signal.undo();
-      expect(signal.get()).toBe(0);
-    });
-
-    it('should support redo', () => {
-      const signal = createSignalWithHistory(0);
-      signal.set(1);
-      signal.set(2);
-      signal.undo();
-      signal.undo();
-
-      expect(signal.get()).toBe(0);
-      signal.redo();
-      expect(signal.get()).toBe(1);
-      signal.redo();
-      expect(signal.get()).toBe(2);
-    });
-
-    it('should check canUndo and canRedo', () => {
-      const signal = createSignalWithHistory(0);
-      expect(signal.canUndo()).toBe(false);
-      expect(signal.canRedo()).toBe(false);
-
-      signal.set(1);
-      expect(signal.canUndo()).toBe(true);
-      expect(signal.canRedo()).toBe(false);
-
-      signal.undo();
-      expect(signal.canUndo()).toBe(false);
-      expect(signal.canRedo()).toBe(true);
-    });
-  });
-
-  describe('createThrottledSignal', () => {
-    it('should throttle updates', async () => {
-      const source = createEnhancedSignal(0);
-      const throttled = createThrottledSignal(source, 50);
-
-      const values: number[] = [];
-      throttled.subscribe((value) => values.push(value));
-
-      source.set(1);
-      source.set(2);
-      source.set(3);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(values.length).toBeLessThan(3);
-    });
-  });
-
-  describe('createDebouncedSignal', () => {
-    it('should debounce updates', async () => {
-      const source = createEnhancedSignal(0);
-      const debounced = createDebouncedSignal(source, 50);
-
-      const values: number[] = [];
-      debounced.subscribe((value) => values.push(value));
-
-      source.set(1);
-      source.set(2);
-      source.set(3);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(values).toEqual([3]);
-    });
-  });
-
-  describe('createTrigger', () => {
-    it('should create manual trigger', () => {
-      const trigger = createTrigger();
-      let runs = 0;
-
-      createEffect(() => {
-        trigger();
-        runs++;
-      });
-
-      expect(runs).toBe(1);
-      trigger.subscribe(() => {});
-      expect(runs).toBeGreaterThan(1);
-    });
-  });
 
   describe('createSelector', () => {
     it('should create keyed selector', () => {
@@ -890,28 +672,6 @@ describe('Signal System - Utilities', () => {
 });
 
 describe('Signal System - Debugging', () => {
-  describe('getNodeStats', () => {
-    it('should return node statistics', () => {
-      const [a, setA] = createSignal(1);
-      const [b, setB] = createSignal(2);
-      createMemo(() => a() + b());
-
-      const stats = getNodeStats();
-      expect(stats.total).toBeGreaterThan(0);
-      expect(stats.byType).toBeDefined();
-    });
-
-    it('should track node types', () => {
-      createSignal(1);
-      createSignal(2);
-      const [count, setCount] = createSignal(0);
-      createMemo(() => count() * 2);
-
-      const stats = getNodeStats();
-      expect(stats.byType.signal).toBeGreaterThan(0);
-      expect(stats.byType.memo).toBeGreaterThan(0);
-    });
-  });
 
   // describe('findPotentialLeaks', () => {
   //   it('should find nodes with no observers', () => {
@@ -983,26 +743,6 @@ describe('Signal System - Integration Tests', () => {
     expect(runs).toBeGreaterThan(initialRuns);
   });
 
-  it('should handle error boundaries with effects', () => {
-    let errorHandled = false;
-
-    catchException(
-      () => {
-        const [count, setCount] = createSignal(0);
-        createEffect(() => {
-          if (count() > 5) {
-            throw new Error('Count too high');
-          }
-        });
-        setCount(10);
-      },
-      (error) => {
-        errorHandled = true;
-      }
-    );
-
-    expect(errorHandled).toBe(true);
-  });
 
   it('should combine context with effects', () => {
     const ConfigContext = createContext({ apiUrl: '/api' });
@@ -1059,16 +799,6 @@ describe('Signal System - Integration Tests', () => {
     expect(outerDisposed).toBe(true);
   });
 
-  it('should track performance with getNodeStats', () => {
-    // Create various reactive nodes
-    const signals = Array.from({ length: 5 }, () => createSignal(0));
-    const memos = signals.map(([s]) => createMemo(() => s() * 2));
-
-    const stats = getNodeStats();
-    expect(stats.total).toBeGreaterThanOrEqual(10); // 5 signals + 5 memos
-    expect(stats.byType.signal).toBeGreaterThanOrEqual(5);
-    expect(stats.byType.memo).toBeGreaterThanOrEqual(5);
-  });
 
   it('should support conditional tracking', () => {
     const [tracked, setTracked] = createSignal(1);
@@ -1237,25 +967,6 @@ describe('Signal System - Edge Cases', () => {
     expect(runs).toBe(1);
   });
 
-  it('should handle multiple subscriptions to enhanced signal', () => {
-    const signal = createEnhancedSignal(0);
-    const values1: number[] = [];
-    const values2: number[] = [];
-
-    const unsub1 = signal.subscribe((v) => values1.push(v));
-    const unsub2 = signal.subscribe((v) => values2.push(v));
-
-    signal.set(1);
-    signal.set(2);
-
-    unsub1();
-    signal.set(3);
-
-    unsub2();
-
-    expect(values1).toEqual([1, 2]);
-    expect(values2).toEqual([1, 2, 3]);
-  });
 });
 
 describe('Signal System - Performance', () => {
