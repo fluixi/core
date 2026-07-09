@@ -29,17 +29,10 @@ describe('server Suspense', () => {
     expect(html).toContain('__FX_DATA__'); // resolved data serialized for hydration
   });
 
-  // Regression for the sync-render hang: rendering a <Suspense> whose child kicks
-  // off a fetching resource used to spin forever — when renderToString disposed
-  // the root, the resource's settle was cancelled (stayed loading), but the
-  // boundary's decrement (firing as the now-resolved promise settled) kept
-  // resuming the disposed effect, which re-threw the resolved promise → sync
-  // re-fire. Fixed by marking computations disposed so they never re-run.
-  // KNOWN PRE-EXISTING BUG (tracked): sync renderToString emits the Suspense
-  // fallback's wrapper element (`<p class="user">`) but DROPS its text child, so
-  // 'loading…' is missing. renderToStringAsync (above) works. Unskip when the sync
-  // fallback-children path is fixed. Not a regression — fails identically pre-session.
-  it.skip('sync render shows the fallback and does not hang', () => {
+  // Sync render (no await) shows the fallback: the resource is still pending, so the
+  // boundary is in fallback and renderToString serializes the fallback markup. The
+  // resource's settle is cancelled when the root disposes, so it never re-fires.
+  it('sync render shows the fallback and does not hang', () => {
     expect(renderToString(() => App())).toContain('loading…');
   });
 });
