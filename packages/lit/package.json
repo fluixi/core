@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/lit",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -37,7 +38,8 @@
   "type": "module",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",

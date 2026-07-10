@@ -1,6 +1,7 @@
 {
   "name": "create-fluixi",
   "version": "0.1.0-alpha.5",
+  "license": "MIT",
   "description": "Scaffold a new Fluixi app — `npm create fluixi <dir>`.",
   "type": "module",
   "bin": {
@@ -10,7 +11,8 @@
     "dist",
     "template-ssr",
     "template-spa",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/start",
   "version": "0.1.0-alpha.43",
+  "license": "MIT",
   "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
   "repository": {
     "type": "git",
@@ -66,7 +67,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.lib.json",

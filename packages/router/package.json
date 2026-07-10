@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/router",
   "version": "0.1.2-alpha.1",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
@@ -29,7 +30,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     "./package.json": "./package.json",
