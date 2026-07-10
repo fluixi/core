@@ -1,7 +1,7 @@
 ---
 "@fluixi/start": minor
 "@fluixi/cli": minor
-"@fluixi/create": minor
+"create-fluixi": minor
 ---
 
 Redesigned CLI experience. A gradient `fluixi` wordmark and a clean, colored layout

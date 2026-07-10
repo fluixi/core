@@ -1,5 +1,5 @@
 ---
-"@fluixi/create": patch
+"create-fluixi": patch
 ---
 
 Fix `create-fluixi` hanging after scaffolding in interactive mode.
