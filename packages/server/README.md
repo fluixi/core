@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/server?logo=npm)](https://www.npmjs.com/package/@fluixi/server)
 ![SSR](https://img.shields.io/badge/SSR-streaming%20%2B%20hydration-2c4f7c)
 
 ---
@@ -31,12 +31,6 @@ No meta-framework coupling — SSR is a plain function you call from any server 
 Hono, a worker, or [`@fluixi/start`](../start)).
 
 ## 📦 Installation
-
-```ini
-# .npmrc
-@fluixi:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
 
 ```sh
 pnpm add @fluixi/server

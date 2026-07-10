@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/vite-plugin?logo=npm)](https://www.npmjs.com/package/@fluixi/vite-plugin)
 ![Vite](https://img.shields.io/badge/built%20on-Vite-646cff?logo=vite&logoColor=white)
 
 ---
@@ -21,12 +21,6 @@ re-exports `fluixi`/`createVitePlugin` from here, and [`@fluixi/start`](../start
 in automatically — use this plugin directly for a plain (non-meta-framework) Vite app.
 
 ## 📦 Installation
-
-```ini
-# .npmrc
-@fluixi:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
 
 ```sh
 pnpm add -D @fluixi/vite-plugin

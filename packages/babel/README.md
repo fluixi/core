@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/babel-plugin-jsx?logo=npm)](https://www.npmjs.com/package/@fluixi/babel-plugin-jsx)
 ![Babel](https://img.shields.io/badge/Babel-plugin-f9dc3e?logo=babel&logoColor=black)
 
 ---
@@ -18,12 +18,6 @@
 `@fluixi/babel-plugin-jsx` is the compile-time half of Fluixi's JSX support. It transforms JSX at build time into direct, surgical DOM operations wired to signals — so updates touch only the nodes that actually change, with no diffing and no virtual DOM. It pairs with the runtime in [`@fluixi/jsx`](../jsx-runtime).
 
 ## 📦 Installation
-
-```ini
-# .npmrc
-@fluixi:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
 
 ```sh
 pnpm add -D @fluixi/babel-plugin-jsx
