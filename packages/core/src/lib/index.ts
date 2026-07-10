@@ -32,12 +32,11 @@ export {
 } from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
+export { createDebounce, createSelector } from '@fluixi/reactive/signal';
 export {
   readSignal as read,
   reduceSignal as reduce,
-  createDebounce,
-  createSelector,
-} from '@fluixi/reactive/signal';
+} from '@fluixi/reactive/operators';
 
 export type {
   Signal,
@@ -47,8 +46,8 @@ export type {
   RootOwner as Owner,
   Context,
   Resource,
-  ReadSignal,
 } from '@fluixi/reactive/signal';
+export type { ReadSignal } from '@fluixi/reactive/operators';
 
 export { createStore, untrackStore,   Store, type StoreSetter} from '@fluixi/reactive/store';
 
