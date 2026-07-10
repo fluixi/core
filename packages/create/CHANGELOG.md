@@ -1,5 +1,11 @@
 # @fluixi/create
 
+## 0.1.0-alpha.6
+
+### Patch Changes
+
+- e005c4c: Add the `license` field (MIT) and bundle a `LICENSE` file in every package, so npm shows the license and ships it in the tarball.
+
 ## 0.1.0-alpha.5
 
 ### Patch Changes

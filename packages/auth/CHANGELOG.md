@@ -1,5 +1,17 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.54
+
+### Patch Changes
+
+- e005c4c: Add the `license` field (MIT) and bundle a `LICENSE` file in every package, so npm shows the license and ships it in the tarball.
+- Updated dependencies [e005c4c]
+  - @fluixi/core@1.0.0-alpha.54
+  - @fluixi/dom@1.0.0-alpha.54
+  - @fluixi/reactive@1.0.0-alpha.54
+  - @fluixi/server@1.0.0-alpha.54
+  - @fluixi/start@0.1.0-alpha.44
+
 ## 1.0.0-alpha.53
 
 ### Patch Changes
