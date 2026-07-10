@@ -5,6 +5,7 @@
     "moduleResolution": "Bundler",
     "jsx": "preserve",
     "jsxImportSource": "@fluixi/jsx",
+    "resolveJsonModule": true,
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true,
