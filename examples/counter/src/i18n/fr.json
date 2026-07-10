@@ -1,0 +1,16 @@
+{
+  "title": "Compteur Fluixi",
+  "clicks": {
+    "one": "{count} clic jusqu'ici",
+    "other": "{count} clics jusqu'ici"
+  },
+  "actions": {
+    "increment": "Incrémenter",
+    "decrement": "Décrémenter",
+    "reset": "Réinitialiser"
+  },
+  "footer": {
+    "language": "Langue",
+    "madeWith": "Conçu avec Fluixi"
+  }
+}
