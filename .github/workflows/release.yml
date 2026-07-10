@@ -93,11 +93,15 @@ jobs:
         with:
           version: 10
 
+      # NOTE: no `registry-url` here on purpose — it writes a temp .npmrc via
+      # NPM_CONFIG_USERCONFIG that authenticates npm with NODE_AUTH_TOKEN (the GitHub
+      # PAT), overriding the per-registry tokens the "Configure registry auth" step
+      # writes to ~/.npmrc. Dual-registry auth (npm + GitHub Packages) must come from
+      # ~/.npmrc. (Re-add registry-url only alongside npm provenance, once public.)
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org/
 
       # @bambiste/mix-builder lives on GitHub Packages under a personal account, so
       # the repo-scoped GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a classic PAT
