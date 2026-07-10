@@ -1,5 +1,5 @@
 ---
-"@fluixi/create": patch
+"create-fluixi": patch
 ---
 
 Fix the SSR template's `tsconfig.json`: it referenced `fluixi.config.mjs` and a

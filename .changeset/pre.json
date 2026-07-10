@@ -13,7 +13,7 @@
     "@fluixi/compiler": "1.0.0-next.17",
     "@fluixi/core": "1.0.0-next.17",
     "@fluixi/core-test": "0.0.0",
-    "@fluixi/create": "0.1.0-next.2",
+    "create-fluixi": "0.1.0-next.2",
     "@fluixi/dom": "1.0.0-next.17",
     "@fluixi/jsx": "1.0.0-next.17",
     "@fluixi/lit": "1.0.0-next.17",

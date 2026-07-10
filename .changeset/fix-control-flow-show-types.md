@@ -7,7 +7,7 @@
 '@fluixi/example-counter': patch
 '@fluixi/session': patch
 '@fluixi/example-router': patch
-'@fluixi/create': patch
+'create-fluixi': patch
 '@fluixi/router': patch
 '@fluixi/server': patch
 '@fluixi/babel-plugin-jsx': patch

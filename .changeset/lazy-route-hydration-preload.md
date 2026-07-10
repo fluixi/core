@@ -1,7 +1,7 @@
 ---
 "@fluixi/core": minor
 "@fluixi/start": patch
-"@fluixi/create": patch
+"create-fluixi": patch
 ---
 
 Flash-free hydration for lazy file-routes — preload the route chunk before hydrating.
