@@ -43,12 +43,11 @@ import {
 } from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
+import { createDebounce, createSelector } from '@fluixi/reactive/signal';
 import {
   readSignal as read,
   reduceSignal as reduce,
-  createDebounce,
-  createSelector,
-} from '@fluixi/reactive/signal';
+} from '@fluixi/reactive/operators';
 
 
 import {
@@ -191,8 +190,8 @@ export type {
   SignalOptions,
   MemoOptions,
   Resource,
-  ReadSignal,
 } from '@fluixi/reactive/signal';
+export type { ReadSignal } from '@fluixi/reactive/operators';
 
 export {
   render,

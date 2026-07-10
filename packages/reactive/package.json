@@ -75,6 +75,20 @@
       "import": "./dist/lib/signal/index-legacy.mjs",
       "require": "./dist/lib/signal/index-legacy.cjs",
       "default": "./dist/lib/signal/index-legacy.js"
+    },
+    "./operators": {
+      "development": "./src/lib/signal/utilities.ts",
+      "types": "./dist/lib/signal/utilities.d.ts",
+      "import": "./dist/lib/signal/utilities.mjs",
+      "require": "./dist/lib/signal/utilities.cjs",
+      "default": "./dist/lib/signal/utilities.js"
+    },
+    "./cached-resource": {
+      "development": "./src/lib/signal/cached-resource.ts",
+      "types": "./dist/lib/signal/cached-resource.d.ts",
+      "import": "./dist/lib/signal/cached-resource.mjs",
+      "require": "./dist/lib/signal/cached-resource.cjs",
+      "default": "./dist/lib/signal/cached-resource.js"
     }
   },
   "scripts": {

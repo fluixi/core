@@ -32,8 +32,10 @@ export type {
   LazySignal, SignalWithHistory,
   SuspenseContextType, SuspenseListContextType, SuspenseListRegisteredState,
 } from '../signal.js';
-export * from '../utilities.js';
-export * from '../cached-resource.js';
+// Signal operators (`@fluixi/reactive/operators`) and the cached-resource helper
+// (`@fluixi/reactive/cached-resource`) live on their own subpaths — cached-resource
+// still runs on the legacy graph, and keeping both out of the default entry lets the
+// legacy `signal.js` fully tree-shake. `list.ts` stays: dom <For>/<Index> use it.
 export * from '../list.js';
 
 // Detection guards + helpers — sourced from the TC39-owned module (not signal.js),
