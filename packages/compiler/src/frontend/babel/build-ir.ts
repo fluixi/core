@@ -55,11 +55,11 @@ function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression
 }
 
 /** Stringify an expression, compiling any JSX nested inside it first. */
-function genExpr(node: t.Expression, used: Set<string>): string {
+export function genExpr(node: t.Expression, used: Set<string>): string {
   return gen(transformNestedJSX(node, used));
 }
 
-const SVG_TAGS = new Set([
+export const SVG_TAGS = new Set([
   'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
   'ellipse', 'g', 'defs', 'clipPath', 'text',
 ]);
@@ -94,7 +94,7 @@ function attrName(name: t.JSXAttribute['name']): string {
  * accesses (e.g. `count()`, `store.value`) are wired reactively; bare
  * identifiers and literals are passed through as-is.
  */
-function isReactiveExpr(node: t.Expression): boolean {
+export function isReactiveExpr(node: t.Expression): boolean {
   if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) return true;
   if (t.isMemberExpression(node) || t.isOptionalMemberExpression(node)) {
     // `props.children` (any `.children` access) is a stable subtree reference,
@@ -166,7 +166,7 @@ function buildProps(
 }
 
 /** Canonical JSX text cleaning — kept identical to plugin.ts cleanJSXText. */
-function cleanJSXText(value: string): string {
+export function cleanJSXText(value: string): string {
   const lines = value.split(/\r\n|\n|\r/);
   let lastNonEmpty = 0;
   for (let i = 0; i < lines.length; i++) {
