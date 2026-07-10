@@ -47,6 +47,9 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          # Set so the .npmrc ${NPM_TOKEN} substitutes cleanly (a failed substitution
+          # drops all registry auth, incl. @bambiste). Not otherwise used at install.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Build the publishable packages topologically. Each lib's build runs
       # `tsc` for its typings, so a successful build is also the typecheck gate.
@@ -96,6 +99,9 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          # Set so the .npmrc ${NPM_TOKEN} substitutes cleanly (a failed substitution
+          # drops all registry auth, incl. @bambiste). Not otherwise used at install.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # The changesets action does one of two things:
       #   1. Pending changesets present → opens/updates a "Version Packages" PR
