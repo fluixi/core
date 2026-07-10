@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/lit?logo=npm)](https://www.npmjs.com/package/@fluixi/lit)
 ![Built on lit-html](https://img.shields.io/badge/built%20on-lit--html-324fff)
 
 ---
@@ -22,12 +22,6 @@ extends `HTMLElement` at module init) stays out of the core/SSR graph — import
 from here, never from `@fluixi/core`.
 
 ## 📦 Installation
-
-```ini
-# .npmrc
-@fluixi:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
 
 ```sh
 pnpm add @fluixi/lit

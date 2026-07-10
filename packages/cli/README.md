@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/cli?logo=npm)](https://www.npmjs.com/package/@fluixi/cli)
 
 ---
 
@@ -26,12 +26,6 @@ fluixi generate <kind> <name> # scaffold into the current app (alias: g)
 ```
 
 ## 📦 Installation
-
-```ini
-# .npmrc
-@fluixi:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
 
 ```sh
 pnpm add -D @fluixi/cli

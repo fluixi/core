@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+[![npm](https://img.shields.io/npm/v/@fluixi/jsx?logo=npm)](https://www.npmjs.com/package/@fluixi/jsx)
 ![JSX](https://img.shields.io/badge/JSX-runtime-f7df1e?logo=javascript&logoColor=black)
 
 ---
