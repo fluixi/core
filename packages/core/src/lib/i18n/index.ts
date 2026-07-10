@@ -34,24 +34,30 @@ export interface Messages {
   readonly [key: string]: MessageValue | Messages;
 }
 
+/** CLDR plural categories. An object keyed *only* by these is a plural leaf, not a subtree. */
+type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other';
+
 /**
  * The union of every valid translation key in `M` — `t()` autocompletes these and flags typos.
- * Flat keys (`'welcome'`, `'nav.dashboard'`) and nested trees (`'cart.items'`) both work; a
- * plural map (`{ one, other }`) is a leaf. Falls open to `string` when `M` is just `Messages`.
+ * Flat keys (`'welcome'`, `'nav.dashboard'`), nested trees (`'cart.items'`, `'nested.deep.key'`),
+ * and plural maps (`{ one, other }` → a leaf) all work. Only *leaf* paths are emitted, never the
+ * intermediate branch (`'nav'`, `'cart'`). Falls open to `string` when `M` is just `Messages`.
+ *
+ * A subtree and a plural map are both `Record<string, string>` structurally, so the plural leaf is
+ * detected by its keys being CLDR categories — not by "all children are strings" (which wrongly
+ * truncated `nav: { dashboard, settings }` to `'nav'`).
  */
-export type MessageKey<M> = M extends Record<string, string>
-  ? keyof M & string // all-string object: flat keys (incl. dotted) + plural leaves
-  : M extends object
-    ? {
-        [K in keyof M & string]: M[K] extends string
-          ? K
-          : M[K] extends Record<string, string>
-            ? K // plural leaf
-            : M[K] extends object
-              ? `${K}.${MessageKey<M[K]>}` // only leaf paths (not the intermediate branch)
-              : K;
-      }[keyof M & string]
-    : string;
+export type MessageKey<M> = M extends object
+  ? {
+      [K in keyof M & string]: M[K] extends string
+        ? K // string leaf
+        : [keyof M[K]] extends [PluralCategory]
+          ? K // plural leaf (keys are CLDR categories)
+          : M[K] extends object
+            ? `${K}.${MessageKey<M[K]>}` // recurse — leaf paths only, not the branch key
+            : K;
+    }[keyof M & string]
+  : string;
 
 export interface I18nConfig<L extends string, M extends Record<L, Messages> = Record<L, Messages>> {
   /** Default / fallback locale. */

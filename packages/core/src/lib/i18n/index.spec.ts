@@ -77,9 +77,17 @@ describe('@fluixi/core/i18n', () => {
       'nav.dashboard': string; // flat dotted
       cart: { items: { one: string; other: string } };
       nested: { deep: { key: string } };
+      // A subtree whose children are ALL strings must still recurse to each leaf —
+      // NOT collapse to the branch key `settings` (regression: it looked like a plural map).
+      settings: { theme: string; lang: string };
     };
     expectTypeOf<MessageKey<M>>().toEqualTypeOf<
-      'welcome' | 'nav.dashboard' | 'cart.items' | 'nested.deep.key'
+      | 'welcome'
+      | 'nav.dashboard'
+      | 'cart.items'
+      | 'nested.deep.key'
+      | 'settings.theme'
+      | 'settings.lang'
     >();
 
     // And t() accepts them (autocompleted at the call site).
