@@ -1,5 +1,11 @@
 # @fluixi/router
 
+## 0.1.2-alpha.2
+
+### Patch Changes
+
+- e005c4c: Add the `license` field (MIT) and bundle a `LICENSE` file in every package, so npm shows the license and ships it in the tarball.
+
 ## 0.1.2-alpha.1
 
 ### Patch Changes

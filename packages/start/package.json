@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/start",
-  "version": "0.1.0-alpha.43",
+  "version": "0.1.0-alpha.44",
   "license": "MIT",
   "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
   "repository": {

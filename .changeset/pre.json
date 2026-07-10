@@ -89,6 +89,7 @@
     "lazy-route-hydration-preload",
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
+    "license-metadata",
     "lit-out-of-core-ssr-crash",
     "map-array",
     "memo-issignal-marker",

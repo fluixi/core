@@ -1,5 +1,11 @@
 # @fluixi/devtools
 
+## 0.2.0-alpha.2
+
+### Patch Changes
+
+- e005c4c: Add the `license` field (MIT) and bundle a `LICENSE` file in every package, so npm shows the license and ships it in the tarball.
+
 ## 0.2.0-alpha.1
 
 ### Patch Changes
