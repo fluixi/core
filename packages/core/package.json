@@ -4,8 +4,68 @@
   "description": "Solid-Compatible Fine-Grained UI Framework",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./types": {
+        "types": "./dist/fluixi.d.ts"
+      },
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "import": "./dist/src/index.mjs",
+        "require": "./dist/src/index.cjs",
+        "default": "./dist/src/index.js"
+      },
+      "./rx": {
+        "types": "./dist/src/lib/server/reactive.d.ts",
+        "import": "./dist/src/lib/server/reactive.mjs",
+        "require": "./dist/src/lib/server/reactive.cjs",
+        "default": "./dist/src/lib/server/reactive.js"
+      },
+      "./server": {
+        "types": "./dist/src/lib/server/index.d.ts",
+        "import": "./dist/src/lib/server/index.mjs",
+        "require": "./dist/src/lib/server/index.cjs",
+        "default": "./dist/src/lib/server/index.js"
+      },
+      "./client": {
+        "types": "./dist/src/lib/client/index.d.ts",
+        "import": "./dist/src/lib/client/index.mjs",
+        "require": "./dist/src/lib/client/index.cjs",
+        "default": "./dist/src/lib/client/index.js"
+      },
+      "./i18n": {
+        "types": "./dist/src/lib/i18n/index.d.ts",
+        "import": "./dist/src/lib/i18n/index.mjs",
+        "require": "./dist/src/lib/i18n/index.cjs",
+        "default": "./dist/src/lib/i18n/index.js"
+      },
+      "./router-next": {
+        "types": "./dist/src/lib/router-next/index.d.ts",
+        "import": "./dist/src/lib/router-next/index.mjs",
+        "require": "./dist/src/lib/router-next/index.cjs",
+        "default": "./dist/src/lib/router-next/index.js"
+      },
+      "./jsx-runtime": {
+        "types": "./dist/src/lib/jsx-runtime/index.d.ts",
+        "import": "./dist/src/lib/jsx-runtime/index.mjs",
+        "require": "./dist/src/lib/jsx-runtime/index.cjs",
+        "default": "./dist/src/lib/jsx-runtime/index.js"
+      },
+      "./jsx-dev-runtime": {
+        "types": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.d.ts",
+        "import": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.mjs",
+        "require": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.cjs",
+        "default": "./dist/src/lib/jsx-runtime/jsx-dev-runtime.js"
+      },
+      "./plugins": {
+        "types": "./dist/src/lib/plugins/index.d.ts",
+        "import": "./dist/src/lib/plugins/index.mjs",
+        "require": "./dist/src/lib/plugins/index.cjs",
+        "default": "./dist/src/lib/plugins/index.js"
+      },
+      "./lib/*": "./src/lib/*"
+    }
   },
   "type": "module",
   "main": "./src/index.ts",
@@ -17,7 +77,6 @@
   },
   "files": [
     "dist",
-    "src",
     "types",
     "README.md"
   ],

@@ -3,14 +3,22 @@
   "version": "1.0.0-alpha.52",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      }
+    }
   },
   "description": "Vite plugin for Fluixi — compiles JSX via @fluixi/compiler (jsx or imperative backend).",
   "type": "module",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "main": "./dist/index.js",

@@ -3,8 +3,29 @@
   "version": "1.0.0-alpha.52",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./jsx-runtime": {
+        "types": "./dist/lib/jsx-runtime.d.ts",
+        "import": "./dist/lib/jsx-runtime.mjs",
+        "require": "./dist/lib/jsx-runtime.cjs",
+        "default": "./dist/lib/jsx-runtime.js"
+      },
+      "./jsx-dev-runtime": {
+        "types": "./dist/lib/jsx-dev-runtime.d.ts",
+        "import": "./dist/lib/jsx-dev-runtime.mjs",
+        "require": "./dist/lib/jsx-dev-runtime.cjs",
+        "default": "./dist/lib/jsx-dev-runtime.js"
+      }
+    }
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -12,7 +33,6 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "exports": {

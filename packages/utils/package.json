@@ -8,8 +8,119 @@
   },
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./primitive": {
+        "types": "./dist/lib/primitive/index.d.ts",
+        "import": "./dist/lib/primitive/index.mjs",
+        "require": "./dist/lib/primitive/index.cjs",
+        "default": "./dist/lib/primitive/index.js"
+      },
+      "./primitive/types": {
+        "types": "./dist/lib/primitive/types/index.d.ts",
+        "import": "./dist/lib/primitive/types/index.mjs",
+        "require": "./dist/lib/primitive/types/index.cjs",
+        "default": "./dist/lib/primitive/types/index.js"
+      },
+      "./object": {
+        "types": "./dist/lib/object/index.d.ts",
+        "import": "./dist/lib/object/index.mjs",
+        "require": "./dist/lib/object/index.cjs",
+        "default": "./dist/lib/object/index.js"
+      },
+      "./object/types": {
+        "types": "./dist/lib/object/types/index.d.ts",
+        "import": "./dist/lib/object/types/index.mjs",
+        "require": "./dist/lib/object/types/index.cjs",
+        "default": "./dist/lib/object/types/index.js"
+      },
+      "./maths": {
+        "types": "./dist/lib/maths/index.d.ts",
+        "import": "./dist/lib/maths/index.mjs",
+        "require": "./dist/lib/maths/index.cjs",
+        "default": "./dist/lib/maths/index.js"
+      },
+      "./maths/types": {
+        "types": "./dist/lib/maths/types/index.d.ts",
+        "import": "./dist/lib/maths/types/index.mjs",
+        "require": "./dist/lib/maths/types/index.cjs",
+        "default": "./dist/lib/maths/types/index.js"
+      },
+      "./maths/fn": {
+        "types": "./dist/lib/maths/fn/index.d.ts",
+        "import": "./dist/lib/maths/fn/index.mjs",
+        "require": "./dist/lib/maths/fn/index.cjs",
+        "default": "./dist/lib/maths/fn/index.js"
+      },
+      "./maths/constants": {
+        "types": "./dist/lib/maths/constants.d.ts",
+        "import": "./dist/lib/maths/constants.mjs",
+        "require": "./dist/lib/maths/constants.cjs",
+        "default": "./dist/lib/maths/constants.js"
+      },
+      "./maths/guards": {
+        "types": "./dist/lib/maths/guards.d.ts",
+        "import": "./dist/lib/maths/guards.mjs",
+        "require": "./dist/lib/maths/guards.cjs",
+        "default": "./dist/lib/maths/guards.js"
+      },
+      "./dom": {
+        "types": "./dist/lib/dom/index.d.ts",
+        "import": "./dist/lib/dom/index.mjs",
+        "require": "./dist/lib/dom/index.cjs",
+        "default": "./dist/lib/dom/index.js"
+      },
+      "./dom/types": {
+        "types": "./dist/lib/dom/types/index.d.ts",
+        "import": "./dist/lib/dom/types/index.mjs",
+        "require": "./dist/lib/dom/types/index.cjs",
+        "default": "./dist/lib/dom/types/index.js"
+      },
+      "./functions": {
+        "types": "./dist/lib/functions/index.d.ts",
+        "import": "./dist/lib/functions/index.mjs",
+        "require": "./dist/lib/functions/index.cjs",
+        "default": "./dist/lib/functions/index.js"
+      },
+      "./compare": {
+        "types": "./dist/lib/compare/index.d.ts",
+        "import": "./dist/lib/compare/index.mjs",
+        "require": "./dist/lib/compare/index.cjs",
+        "default": "./dist/lib/compare/index.js"
+      },
+      "./functions/types": {
+        "types": "./dist/lib/functions/types/index.d.ts",
+        "import": "./dist/lib/functions/types/index.mjs",
+        "require": "./dist/lib/functions/types/index.cjs",
+        "default": "./dist/lib/functions/types/index.js"
+      },
+      "./array": {
+        "types": "./dist/lib/array/index.d.ts",
+        "import": "./dist/lib/array/index.mjs",
+        "require": "./dist/lib/array/index.cjs",
+        "default": "./dist/lib/array/index.js"
+      },
+      "./array/types": {
+        "types": "./dist/lib/array/types/index.d.ts",
+        "import": "./dist/lib/array/types/index.mjs",
+        "require": "./dist/lib/array/types/index.cjs",
+        "default": "./dist/lib/array/types/index.js"
+      },
+      "./color": {
+        "types": "./dist/lib/color/index.d.ts",
+        "import": "./dist/lib/color/index.mjs",
+        "require": "./dist/lib/color/index.cjs",
+        "default": "./dist/lib/color/index.js"
+      }
+    }
   },
   "type": "module",
   "sideEffects": false,
@@ -18,7 +129,6 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "exports": {

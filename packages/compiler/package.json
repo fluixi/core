@@ -7,14 +7,34 @@
     "directory": "packages/compiler"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./babel": {
+        "types": "./dist/frontend/babel/index.d.ts",
+        "import": "./dist/frontend/babel/index.mjs",
+        "require": "./dist/frontend/babel/index.cjs",
+        "default": "./dist/frontend/babel/index.js"
+      },
+      "./integrations": {
+        "types": "./dist/integrations.d.ts",
+        "import": "./dist/integrations.mjs",
+        "require": "./dist/integrations.cjs",
+        "default": "./dist/integrations.js"
+      }
+    }
   },
   "description": "Fluixi JSX compiler — host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
   "type": "module",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "main": "./dist/index.js",

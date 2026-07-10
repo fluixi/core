@@ -18,7 +18,7 @@
 `@fluixi/start` is `dev`, `build`, and production `start` over [`@fluixi/server`](../server)
 + Vite, so apps stop hand-rolling a `server.mjs`. This package is the **runtime**
 (programmatic commands + config); the `fluixi` CLI lives in [`@fluixi/cli`](../cli), and
-you scaffold a new app with [`@fluixi/create`](../create) (`npm create @fluixi`).
+you scaffold a new app with [`create-fluixi`](../create) (`npm create fluixi`).
 
 ```bash
 fluixi dev      # SSR dev server (Vite middleware + HMR)
