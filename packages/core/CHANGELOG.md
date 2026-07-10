@@ -1,5 +1,21 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.53
+
+### Patch Changes
+
+- 370feff: Fix `i18n` `t()` key autocomplete for nested messages. A subtree whose children are all strings (e.g. `nav: { dashboard, settings }`) was truncated to the branch key (`'nav'`) instead of recursing to the leaf paths (`'nav.dashboard' | 'nav.settings'`), because it looked structurally identical to a plural map. Plural maps are now detected by their CLDR-category keys (`one`/`other`/…), so real subtrees recurse and every leaf key is suggested and type-checked.
+- Updated dependencies [9b06063]
+  - @fluixi/reactive@1.0.0-alpha.53
+  - @fluixi/compiler@1.0.0-alpha.53
+  - @fluixi/dom@1.0.0-alpha.53
+  - @fluixi/head@0.1.0-alpha.20
+  - @fluixi/jsx@1.0.0-alpha.53
+  - @fluixi/lit@1.0.0-alpha.53
+  - @fluixi/server@1.0.0-alpha.53
+  - @fluixi/utils@1.0.0-alpha.53
+  - @fluixi/vite-plugin@1.0.0-alpha.53
+
 ## 1.0.0-alpha.52
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @fluixi/example-counter
 
+## 0.0.5-alpha.53
+
+### Patch Changes
+
+- Updated dependencies [370feff]
+- Updated dependencies [9b06063]
+  - @fluixi/core@1.0.0-alpha.53
+  - @fluixi/reactive@1.0.0-alpha.53
+  - @fluixi/dom@1.0.0-alpha.53
+  - @fluixi/jsx@1.0.0-alpha.53
+
 ## 0.0.5-alpha.52
 
 ### Patch Changes
