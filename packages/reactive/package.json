@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/reactive",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -78,7 +79,8 @@
   "jsdelivr": "./dist/cdn/reactive.global.js",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     "./package.json": "./package.json",

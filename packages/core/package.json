@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/core",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "description": "Solid-Compatible Fine-Grained UI Framework",
   "private": false,
   "publishConfig": {
@@ -78,7 +79,8 @@
   "files": [
     "dist",
     "types",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     "./types": {

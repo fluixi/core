@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/babel-plugin-jsx",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -17,7 +18,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/auth",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -25,7 +26,8 @@
   "type": "module",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     "./package.json": "./package.json",

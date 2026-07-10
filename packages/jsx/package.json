@@ -1,6 +1,7 @@
 {
   "name": "@fluixi/jsx",
   "version": "1.0.0-alpha.53",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -33,7 +34,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     "./package.json": "./package.json",
