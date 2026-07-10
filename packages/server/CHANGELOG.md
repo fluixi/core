@@ -1,5 +1,17 @@
 # @fluixi/server
 
+## 1.0.0-alpha.55
+
+### Patch Changes
+
+- 5cfb7a6: Add a `description` field to packages that were missing one. Without it, npm's profile/list view fell back to the first README line — the raw `<p align="center">` logo block — instead of a summary.
+- daa7af2: Update READMEs for public npm: drop the GitHub Packages `.npmrc` install instructions (no auth needed on public npm) and replace the GitHub Packages registry badge with an npm version badge.
+- Updated dependencies [5cfb7a6]
+- Updated dependencies [daa7af2]
+  - @fluixi/dom@1.0.0-alpha.55
+  - @fluixi/reactive@1.0.0-alpha.55
+  - @fluixi/head@0.1.0-alpha.22
+
 ## 1.0.0-alpha.54
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # @fluixi/start
 
+## 0.1.0-alpha.45
+
+### Patch Changes
+
+- daa7af2: Update READMEs for public npm: drop the GitHub Packages `.npmrc` install instructions (no auth needed on public npm) and replace the GitHub Packages registry badge with an npm version badge.
+- Updated dependencies [5cfb7a6]
+- Updated dependencies [daa7af2]
+  - @fluixi/dom@1.0.0-alpha.55
+  - @fluixi/server@1.0.0-alpha.55
+  - @fluixi/compiler@1.0.0-alpha.55
+  - @fluixi/core@1.0.0-alpha.55
+  - @fluixi/head@0.1.0-alpha.22
+
 ## 0.1.0-alpha.44
 
 ### Patch Changes
