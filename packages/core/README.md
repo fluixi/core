@@ -8,33 +8,31 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
-![Framework](https://img.shields.io/badge/framework-Fluixi%20%F0%9F%AB%96-ff6b35)
+[![npm](https://img.shields.io/npm/v/@fluixi/core?logo=npm)](https://www.npmjs.com/package/@fluixi/core)
 
 ---
 
-A modern, reactive framework for building web applications with [lit-html](https://lit.dev) and fine-grained reactivity, inspired by [SolidJS](https://www.solidjs.com/).
+A modern, reactive UI framework with JSX, fine-grained reactivity, routing and SSR. Components compile to direct DOM operations — no virtual DOM, surgical updates.
 
 ## Features
 
-- 🚀 **Fine-grained Reactivity** - Powered by `@fluixi/reactive` for efficient, surgical updates
-- 🎯 **lit-html Integration** - Leverage the power and simplicity of lit-html templates
-- 🔄 **Control Flow Components** - Show, For, Switch, Portal, and Dynamic components
+- 🚀 **Fine-grained Reactivity** - Signals and memos drive surgical DOM updates, no virtual DOM
+- 🧩 **JSX** - Compiled to direct DOM instructions via `@fluixi/vite-plugin`
+- 🔄 **Control Flow Components** - Show, For, Switch, Portal, and Dynamic
 - 🛣️ **Built-in Router** - Client-side routing with nested routes and lazy loading
-- 📡 **Resource Management** - Async data fetching with automatic loading states
+- 📡 **Resource Management** - Async data fetching with automatic loading states + Suspense
 - 🎭 **Context API** - Share state across component trees without prop drilling
+- 🖥️ **SSR + Hydration** - Server rendering with flash-free hydration (via `@fluixi/start`)
 - 🏗️ **TypeScript First** - Full type safety and excellent IDE support
-- 🛠️ **CLI Tools** - Project and component generators for rapid development
-- 📦 **Zero Runtime Overhead** - Compile-time optimizations for minimal bundle size
 
 ## Installation
 
 ```bash
-npm install @fluixi/core @fluixi/reactive lit
+npm install @fluixi/core @fluixi/reactive
 # or
-yarn add @fluixi/core @fluixi/reactive lit
+pnpm add @fluixi/core @fluixi/reactive
 # or
-pnpm add @fluixi/core @fluixi/reactive lit
+yarn add @fluixi/core @fluixi/reactive
 ```
 
 ## Quick Start
@@ -42,570 +40,230 @@ pnpm add @fluixi/core @fluixi/reactive lit
 ### Creating a New Project
 
 ```bash
-# Using the CLI
-npx @fluixi/core new my-app
-
-# Or install globally
-npm install -g @fluixi/core
-fluixi new my-app
+npm create fluixi my-app
+# or: pnpm create fluixi my-app
 ```
 
 ### Basic Example
 
-```typescript
-import { createSignal, render, html } from '@fluixi/core';
+```tsx
+import { createSignal, render } from '@fluixi/core';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
 
-  return html`
+  return (
     <div>
-      <h1>Count: ${count()}</h1>
-      <button @click=${() => setCount(count() + 1)}>Increment</button>
-      <button @click=${() => setCount(count() - 1)}>Decrement</button>
-      <button @click=${() => setCount(0)}>Reset</button>
+      <h1>Count: {count()}</h1>
+      <button onClick={() => setCount(count() + 1)}>Increment</button>
+      <button onClick={() => setCount(count() - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
     </div>
-  `;
+  );
 };
 
-render(Counter, document.getElementById('app')!);
+render(() => <Counter />, document.getElementById('app')!);
 ```
+
+> JSX is compiled by `@fluixi/vite-plugin`. Scaffold a ready-to-run app with `npm create fluixi`.
 
 ## Core Concepts
 
 ### Signals
 
-Signals are the foundation of reactivity in Fluixi. They create reactive state that automatically updates the UI when changed.
+Signals are reactive state. Reading one inside an effect or JSX subscribes to it; setting it updates only what depends on it.
 
-```typescript
+```tsx
 import { createSignal, createEffect } from '@fluixi/core';
 
 const [count, setCount] = createSignal(0);
 const [name, setName] = createSignal('Alice');
 
-// Effects run automatically when dependencies change
 createEffect(() => {
-  console.log(`${name()} has counted to ${count()}`);
+  console.log(`${name()} counted to ${count()}`);
 });
 
-setCount(5); // Logs: "Alice has counted to 5"
-setName('Bob'); // Logs: "Bob has counted to 5"
+setCount(5);      // "Alice counted to 5"
+setName('Bob');   // "Bob counted to 5"
 ```
 
 ### Components
 
-Components are pure functions that return lit-html templates. They can use reactive primitives to manage state.
+Components are plain functions that return JSX. Props are reactive — read them where you use them.
 
-```typescript
-import { html, createSignal, Component, ComponentProps } from '@fluixi/core';
-
-interface GreetingProps extends ComponentProps {
-  initialName?: string;
+```tsx
+function Greeting(props: { name: string }) {
+  return <h1>Hello, {props.name}!</h1>;
 }
 
-const Greeting: Component<GreetingProps> = (props) => {
-  const [name, setName] = createSignal(props.initialName || 'World');
-
-  return html`
-    <div>
-      <h1>Hello, ${name()}!</h1>
-      <input
-        type="text"
-        .value=${name()}
-        @input=${(e: Event) => setName((e.target as HTMLInputElement).value)}
-      />
-    </div>
-  `;
-};
+// <Greeting name="World" />
 ```
 
 ### Control Flow
 
-Fluixi provides control flow components for conditional rendering and lists.
+Use control-flow components instead of ternaries and `.map()` so updates stay fine-grained.
 
-#### Show - Conditional Rendering
+```tsx
+import { Show, For, Switch, Match } from '@fluixi/core';
 
-```typescript
-import { Show, createSignal, html } from '@fluixi/core';
+// Show — conditional rendering (child callback receives the narrowed value)
+<Show when={() => user()} fallback={<p>Please log in</p>}>
+  {(u) => <p>Welcome, {u.name}!</p>}
+</Show>
 
-const UserProfile = () => {
-  const [user, setUser] = createSignal<User | null>(null);
-  const [loading, setLoading] = createSignal(true);
+// For — keyed list rendering (index is an accessor)
+<For each={todos()}>
+  {(todo, i) => <li>{i() + 1}. {todo.text}</li>}
+</For>
 
-  return html`
-    ${Show({
-      when: loading,
-      fallback: Show({
-        when: user,
-        fallback: html`<p>No user found</p>`,
-        children: (u) => html`<p>Welcome, ${u.name}!</p>`
-      }),
-      children: html`<p>Loading...</p>`
-    })}
-  `;
-};
+// Switch / Match — multi-branch
+<Switch fallback={<p>Idle</p>}>
+  <Match when={() => status() === 'loading'}><p>Loading…</p></Match>
+  <Match when={() => status() === 'success'}><p>Done!</p></Match>
+  <Match when={() => status() === 'error'}><p>Error</p></Match>
+</Switch>
 ```
 
-#### For - List Rendering
+`Portal`, `Dynamic`, `Index`, and `ErrorBoundary` are also exported.
 
-```typescript
-import { For, createSignal, html } from '@fluixi/core';
+### Resources & Suspense
 
-const TodoList = () => {
-  const [todos, setTodos] = createSignal([
-    { id: 1, text: 'Learn Fluixi', done: false },
-    { id: 2, text: 'Build an app', done: false },
-  ]);
+`createResource` fetches async data and tracks loading/error. `<Suspense>` shows a fallback while it's pending (works on the client and during SSR).
 
-  return html`
-    <ul>
-      ${For({
-        each: todos,
-        children: (todo, index) => html`
-          <li>
-            <input
-              type="checkbox"
-              .checked=${todo.done}
-              @change=${(e) => {
-                const newTodos = [...todos()];
-                newTodos[index].done = e.target.checked;
-                setTodos(newTodos);
-              }}
-            />
-            ${todo.text}
-          </li>
-        `
-      })}
-    </ul>
-  `;
-};
-```
+```tsx
+import { createSignal, createResource, Suspense } from '@fluixi/core';
 
-#### Switch/Match - Multiple Conditions
+function UserCard() {
+  const [id] = createSignal(1);
+  const [user] = createResource(id, (id) =>
+    fetch(`/api/users/${id}`).then((r) => r.json())
+  );
 
-```typescript
-import { Switch, Match, createSignal, html } from '@fluixi/core';
-
-const StatusView = () => {
-  const [status, setStatus] = createSignal<'loading' | 'success' | 'error'>('loading');
-
-  return html`
-    ${Switch({
-      children: [
-        Match({ when: () => status() === 'loading', children: html`<p>Loading...</p>` }),
-        Match({ when: () => status() === 'success', children: html`<p>Success!</p>` }),
-        Match({ when: () => status() === 'error', children: html`<p>Error!</p>` })
-      ]
-    })}
-  `;
-};
-```
-
-#### Portal - Render Outside Hierarchy
-
-```typescript
-import { Portal, createSignal, Show, html } from '@fluixi/core';
-
-const Modal = () => {
-  const [isOpen, setIsOpen] = createSignal(false);
-
-  return html`
-    <button @click=${() => setIsOpen(true)}>Open Modal</button>
-
-    ${Show({
-      when: isOpen,
-      children: Portal({
-        children: html`
-          <div class="modal-overlay">
-            <div class="modal-content">
-              <h2>Modal Title</h2>
-              <p>Modal content goes here</p>
-              <button @click=${() => setIsOpen(false)}>Close</button>
-            </div>
-          </div>
-        `
-      })
-    })}
-  `;
-};
-```
-
-### Resources
-
-Resources handle async data fetching with built-in loading and error states.
-
-```typescript
-import { createResource, Show, html } from '@fluixi/core';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <p>{user()?.name}</p>
+    </Suspense>
+  );
 }
-
-const fetchUser = async (id: number): Promise<User> => {
-  const response = await fetch(`/api/users/${id}`);
-  return response.json();
-};
-
-const UserDetail = () => {
-  const [userId, setUserId] = createSignal(1);
-  const [user, { refetch }] = createResource(() => userId(), fetchUser);
-
-  return html`
-    ${Show({
-      when: user.loading,
-      fallback: Show({
-        when: user.error,
-        fallback: Show({
-          when: user,
-          children: (u) => html`
-            <div>
-              <h2>${u.name}</h2>
-              <p>${u.email}</p>
-              <button @click=${refetch}>Refresh</button>
-            </div>
-          `
-        }),
-        children: html`<p>Error: ${user.error?.message}</p>`
-      }),
-      children: html`<p>Loading user...</p>`
-    })}
-  `;
-};
 ```
-
-### Context API
-
-Share state across component trees without prop drilling.
-
-```typescript
-import { createContext, useContext, Provider, html } from '@fluixi/core';
-
-interface Theme {
-  primaryColor: string;
-  secondaryColor: string;
-}
-
-const ThemeContext = createContext<Theme>({
-  primaryColor: '#007bff',
-  secondaryColor: '#6c757d'
-});
-
-const ThemedButton = () => {
-  const theme = useContext(ThemeContext);
-
-  return html`
-    <button style="background: ${theme.primaryColor}">
-      Themed Button
-    </button>
-  `;
-};
-
-const App = () => {
-  const theme = { primaryColor: '#28a745', secondaryColor: '#dc3545' };
-
-  return Provider({
-    context: ThemeContext,
-    value: theme,
-    children: html`
-      <div>
-        <h1>My App</h1>
-        ${ThemedButton()}
-      </div>
-    `
-  });
-};
-```
-
-### Router
-
-Built-in client-side routing with nested routes and lazy loading.
-
-```typescript
-import { createRouter, Router, Link, useParams, html } from '@fluixi/core';
-
-const Home = () => html`<h1>Home Page</h1>`;
-
-const UserDetail = () => {
-  const params = useParams();
-  return html`<h1>User ${params.id}</h1>`;
-};
-
-const routes = [
-  { path: '/', component: Home },
-  { path: '/users/:id', component: UserDetail },
-  { path: '/about', component: () => html`<h1>About</h1>` }
-];
-
-const App = () => {
-  const router = createRouter(routes);
-
-  return Router({
-    router,
-    children: html`
-      <div>
-        <nav>
-          ${Link({ href: '/', children: 'Home' })}
-          ${Link({ href: '/about', children: 'About' })}
-        </nav>
-        <main id="content"></main>
-      </div>
-    `
-  });
-};
-```
-
-## CLI Commands
-
-### Create a New Project
-
-```bash
-# Interactive mode
-fluixi new
-
-# With options
-fluixi new my-app --template full
-```
-
-### Generate a Component
-
-```bash
-# Interactive mode
-fluixi generate component
-
-# With options
-fluixi g c MyComponent --type with-state --path components/MyComponent/MyComponent.ts
-```
-
-Component types:
-- `basic` - Simple component
-- `with-state` - Component with reactive state
-- `with-resource` - Component with async data fetching
-- `with-router` - Component with router integration
-- `full` - Full-featured component with all features
-
-## Lifecycle Hooks
-
-```typescript
-import { onMount, onUnmount, createSignal, html } from '@fluixi/core';
-
-const MyComponent = () => {
-  const [count, setCount] = createSignal(0);
-
-  onMount(() => {
-    console.log('Component mounted');
-    const interval = setInterval(() => setCount(c => c + 1), 1000);
-
-    // Cleanup function
-    return () => {
-      console.log('Component unmounting');
-      clearInterval(interval);
-    };
-  });
-
-  onUnmount(() => {
-    console.log('Additional cleanup');
-  });
-
-  return html`<div>Count: ${count()}</div>`;
-};
-```
-
-## Advanced Patterns
-
-### Derived State (Memos)
-
-```typescript
-import { createSignal, createMemo, html } from '@fluixi/core';
-
-const ExpensiveCalculation = () => {
-  const [a, setA] = createSignal(1);
-  const [b, setB] = createSignal(2);
-
-  // Memo caches the result and only recalculates when dependencies change
-  const sum = createMemo(() => {
-    console.log('Calculating sum...');
-    return a() + b();
-  });
-
-  return html`
-    <div>
-      <p>Sum: ${sum()}</p>
-      <button @click=${() => setA(a() + 1)}>Increment A</button>
-      <button @click=${() => setB(b() + 1)}>Increment B</button>
-    </div>
-  `;
-};
-```
-
-### Batched Updates
-
-```typescript
-import { createSignal, batch, html } from '@fluixi/core';
-
-const BatchExample = () => {
-  const [firstName, setFirstName] = createSignal('John');
-  const [lastName, setLastName] = createSignal('Doe');
-
-  const updateName = () => {
-    batch(() => {
-      setFirstName('Jane');
-      setLastName('Smith');
-    }); // UI updates only once
-  };
-
-  return html`
-    <div>
-      <p>${firstName()} ${lastName()}</p>
-      <button @click=${updateName}>Update Name</button>
-    </div>
-  `;
-};
-```
-
-### Error Boundaries
-
-```typescript
-import { createSignal, Show, html } from '@fluixi/core';
-
-const ErrorBoundary = (props: { children: any }) => {
-  const [error, setError] = createSignal<Error | null>(null);
-
-  try {
-    return html`
-      ${Show({
-        when: () => !error(),
-        fallback: html`<div>Error: ${error()?.message}</div>`,
-        children: props.children
-      })}
-    `;
-  } catch (e) {
-    setError(e as Error);
-    return html`<div>Error: ${(e as Error).message}</div>`;
-  }
-};
-```
-
-## API Reference
-
-### Core
-
-- `createSignal(initialValue, options?)` - Create a reactive signal
-- `createEffect(fn)` - Run side effects when dependencies change
-- `createMemo(fn)` - Create derived reactive state
-- `createComponent(fn)` - Create a component with lifecycle management
-- `render(component, container)` - Render a component into the DOM
-- `onMount(fn)` - Run code when component mounts
-- `onUnmount(fn)` - Run code when component unmounts
-- `batch(fn)` - Batch multiple updates together
-- `untrack(fn)` - Run code without tracking dependencies
-
-### Control Flow
-
-- `Show({ when, fallback?, children })` - Conditional rendering
-- `For({ each, fallback?, children })` - List rendering
-- `Index({ each, fallback?, children })` - Non-keyed list rendering
-- `Switch({ fallback?, children })` - Multiple condition branches
-- `Match({ when, children })` - Condition branch in Switch
-- `Portal({ mount?, children })` - Render outside component tree
-- `Dynamic({ component, props?, children? })` - Render dynamic components
 
 ### Context
 
-- `createContext(defaultValue, name?)` - Create a context
-- `useContext(context)` - Access context value
-- `Provider({ context, value, children })` - Provide context value
+Share state down the tree without prop drilling.
 
-### Resources
+```tsx
+import { createContext, useContext } from '@fluixi/core';
 
-- `createResource(source, fetcher, options?)` - Create async resource
-- `createResources([...])` - Create multiple resources
-- `createLazyResource(source, fetcher, options?)` - Create lazy resource
+const ThemeContext = createContext<'light' | 'dark'>('light');
+
+function App() {
+  return (
+    <ThemeContext.Provider value="dark">
+      <Toolbar />
+    </ThemeContext.Provider>
+  );
+}
+
+function Toolbar() {
+  const theme = useContext(ThemeContext);
+  return <div class={theme}>…</div>;
+}
+```
 
 ### Router
 
-- `createRouter(routes, options?)` - Create router instance
-- `Router({ router, children })` - Router provider component
-- `Link({ href, children })` - Navigation link
-- `useRouter()` - Access router instance
-- `useLocation()` - Access current location
-- `useNavigate()` - Get navigation function
-- `useParams()` - Get route parameters
-- `useQuery()` - Get query parameters
+The router takes a `routes` config; nested routes render through `<Outlet />`, and `lazy()` code-splits.
 
-## TypeScript Support
+```tsx
+import { render } from '@fluixi/core';
+import { Router, Outlet, lazy } from '@fluixi/core/router-next';
 
-Fluixi is written in TypeScript and provides full type safety:
+const routes = [
+  {
+    path: '/',
+    component: () => (
+      <div class="app">
+        <nav>…</nav>
+        <Outlet />
+      </div>
+    ),
+    children: [
+      { path: '', component: () => <h1>Home</h1> },
+      { path: 'about', component: lazy(() => import('./About')) },
+    ],
+  },
+];
 
-```typescript
-import { Component, ComponentProps, createSignal } from '@fluixi/core';
-
-interface UserProps extends ComponentProps {
-  userId: number;
-  onUserLoad?: (user: User) => void;
-}
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-const UserComponent: Component<UserProps> = (props) => {
-  const [user, setUser] = createSignal<User | null>(null);
-
-  // TypeScript knows the types of all signals and props
-  return html`<div>${user()?.name}</div>`;
-};
+render(() => <Router routes={routes} />, document.getElementById('app')!);
 ```
 
-## Comparison with Other Frameworks
+## Lifecycle Hooks
 
-### vs React
+```tsx
+import { onMount, onCleanup } from '@fluixi/core';
 
-- ✅ No virtual DOM - direct DOM updates for better performance
-- ✅ True fine-grained reactivity without re-renders
-- ✅ Simpler mental model - no hooks rules or dependency arrays
-- ✅ Smaller bundle size
-- ⚠️ Smaller ecosystem (but growing!)
+function Clock() {
+  const [now, setNow] = createSignal(Date.now());
 
-### vs SolidJS
+  onMount(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    onCleanup(() => clearInterval(id));
+  });
 
-- ✅ Similar reactivity model and API
-- ✅ Uses lit-html for familiar template syntax
-- ✅ Integrated with @fluixi/reactive library
-- ⚠️ Different template syntax (lit-html vs JSX)
+  return <time>{new Date(now()).toLocaleTimeString()}</time>;
+}
+```
 
-### vs Vue
+## Derived State & Batching
 
-- ✅ More explicit reactivity with signals
-- ✅ Better TypeScript inference
-- ✅ Lighter weight
-- ⚠️ No single-file components
+```tsx
+import { createSignal, createMemo, batch } from '@fluixi/core';
 
-## Contributing
+const [first, setFirst] = createSignal('Ada');
+const [last, setLast] = createSignal('Lovelace');
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+// Memo — cached, recomputes only when a dependency changes
+const fullName = createMemo(() => `${first()} ${last()}`);
+
+// Batch — coalesce multiple writes into one update
+batch(() => {
+  setFirst('Grace');
+  setLast('Hopper');
+});
+```
+
+## SSR
+
+Server rendering, hydration, file-based routing and the dev/build tooling live in [`@fluixi/start`](https://www.npmjs.com/package/@fluixi/start). Scaffold an SSR app with `npm create fluixi` and pick the SSR template.
+
+## TypeScript
+
+Fluixi is written in TypeScript and ships full types. Configure JSX in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "@fluixi/jsx"
+  }
+}
+```
+
+## Ecosystem
+
+| Package | Purpose |
+| --- | --- |
+| `@fluixi/core` | Framework façade — components, control flow, router, render |
+| `@fluixi/reactive` | Signals, memos, effects, store |
+| `@fluixi/dom` | The DOM rendering runtime |
+| `@fluixi/start` | SSR, hydration, file routing, dev/build |
+| `@fluixi/vite-plugin` | JSX compile (Vite) |
+| `create-fluixi` | App scaffolder (`npm create fluixi`) |
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Credits
-
-Fluixi is inspired by:
-- [SolidJS](https://www.solidjs.com/) - For the reactivity model and API design
-- [Lit](https://lit.dev/) - For the template system
-- The [TC39 Signals Proposal](https://github.com/tc39/proposal-signals)
+MIT
 
 ## Links
 
-- [Documentation](https://github.com/your-org/fluixi/docs)
-- [Examples](https://github.com/your-org/fluixi/examples)
-- [GitHub](https://github.com/your-org/fluixi)
 - [npm](https://www.npmjs.com/package/@fluixi/core)
-
----
-
-Made with ☕ by the Adafri team
