@@ -17,7 +17,7 @@ function usage(): string {
     cmd('start', 'run the production SSR server (after build)'),
     cmd('generate <kind> <name>', 'scaffold a component / route / middleware / auth  ' + c.dim('(alias: g)')),
     '',
-    `  ${c.gray('New project:')}  ${c.cyan('npm create @fluixi')} ${c.gray('<dir>')}`,
+    `  ${c.gray('New project:')}  ${c.cyan('npm create fluixi')} ${c.gray('<dir>')}`,
     '',
   ].join('\n');
 }

@@ -48,10 +48,10 @@ fluixi g middleware             # → src/middleware.ts
 
 ## 🆕 New project
 
-Scaffolding a whole app is [`@fluixi/create`](../create), not the CLI:
+Scaffolding a whole app is [`create-fluixi`](../create), not the CLI:
 
 ```bash
-npm create @fluixi my-app      # or: pnpm create @fluixi my-app
+npm create fluixi my-app      # or: pnpm create fluixi my-app
 ```
 
 The dev/build/start logic + config live in [`@fluixi/start`](../start) — see its README

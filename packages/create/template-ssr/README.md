@@ -1,6 +1,6 @@
 # Fluixi app
 
-Scaffolded with `npm create @fluixi`. SSR + file-based routing + hydration via
+Scaffolded with `npm create fluixi`. SSR + file-based routing + hydration via
 [`@fluixi/start`](https://www.npmjs.com/package/@fluixi/start).
 
 ```bash

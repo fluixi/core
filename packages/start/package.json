@@ -9,8 +9,56 @@
   },
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js",
+        "default": "./dist/ui.js"
+      },
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js",
+        "default": "./dist/config.js"
+      },
+      "./router": {
+        "types": "./dist/router.d.ts",
+        "import": "./dist/router.js",
+        "default": "./dist/router.js"
+      },
+      "./head": {
+        "types": "./dist/head.d.ts",
+        "import": "./dist/head.js",
+        "default": "./dist/head.js"
+      },
+      "./server-fn": {
+        "types": "./dist/server-fn.d.ts",
+        "import": "./dist/server-fn.js",
+        "default": "./dist/server-fn.js"
+      },
+      "./server-fn-setup": {
+        "types": "./dist/server-fn-setup.d.ts",
+        "import": "./dist/server-fn-setup.js",
+        "default": "./dist/server-fn-setup.js"
+      },
+      "./di": {
+        "types": "./dist/di.d.ts",
+        "import": "./dist/di.js",
+        "default": "./dist/di.js"
+      },
+      "./api": {
+        "types": "./dist/api.d.ts",
+        "import": "./dist/api.js",
+        "default": "./dist/api.js"
+      }
+    }
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +66,6 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "scripts": {

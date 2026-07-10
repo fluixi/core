@@ -2,13 +2,13 @@
   <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/128x128.png" alt="Fluixi" width="120" height="120" />
 </p>
 
-# @fluixi/create
+# create-fluixi
 
-**Scaffold a new Fluixi app — `npm create @fluixi <dir>`.**
+**Scaffold a new Fluixi app — `npm create fluixi <dir>`.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Registry](https://img.shields.io/badge/registry-GitHub%20Packages-181717?logo=github)
+![npm](https://img.shields.io/npm/v/create-fluixi?logo=npm)
 
 ---
 
@@ -17,11 +17,11 @@
 Run via your package manager's `create` shortcut — no install needed:
 
 ```bash
-npm create @fluixi my-app
+npm create fluixi my-app
 # or
-pnpm create @fluixi my-app
+pnpm create fluixi my-app
 # or
-yarn create @fluixi my-app
+yarn create fluixi my-app
 ```
 
 It prompts for a project name and a **mode**, or take them on the command line:

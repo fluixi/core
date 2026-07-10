@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `npm create @fluixi <dir>` — scaffold a new Fluixi app. Prompts for a name and a
+ * `npm create fluixi <dir>` — scaffold a new Fluixi app. Prompts for a name and a
  * mode (SSR via @fluixi/start, or SPA via vite + @fluixi/vite-plugin), unless given on
  * the command line: `create-fluixi my-app --spa` / `--ssr`. Zero runtime deps — the
  * styled prompts (gradient wordmark, gutter, arrow-key select) are hand-rolled ANSI.

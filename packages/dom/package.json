@@ -3,12 +3,62 @@
   "version": "1.0.0-alpha.52",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./element": {
+        "types": "./dist/lib/element/index.d.ts",
+        "import": "./dist/lib/element/index.mjs",
+        "require": "./dist/lib/element/index.cjs",
+        "default": "./dist/lib/element/index.js"
+      },
+      "./dom": {
+        "types": "./dist/lib/dom/dom.d.ts",
+        "import": "./dist/lib/dom/dom.mjs",
+        "require": "./dist/lib/dom/dom.cjs",
+        "default": "./dist/lib/dom/dom.js"
+      },
+      "./server": {
+        "types": "./dist/lib/dom/server-renderer.d.ts",
+        "import": "./dist/lib/dom/server-renderer.mjs",
+        "require": "./dist/lib/dom/server-renderer.cjs",
+        "default": "./dist/lib/dom/server-renderer.js"
+      },
+      "./runtime": {
+        "types": "./dist/lib/dom/runtime.d.ts",
+        "import": "./dist/lib/dom/runtime.mjs",
+        "require": "./dist/lib/dom/runtime.cjs",
+        "default": "./dist/lib/dom/runtime.js"
+      },
+      "./integration": {
+        "types": "./dist/lib/dom/integration.d.ts",
+        "import": "./dist/lib/dom/integration.mjs",
+        "require": "./dist/lib/dom/integration.cjs",
+        "default": "./dist/lib/dom/integration.js"
+      },
+      "./control-flow": {
+        "types": "./dist/lib/dom/control-flow.d.ts",
+        "import": "./dist/lib/dom/control-flow.mjs",
+        "require": "./dist/lib/dom/control-flow.cjs",
+        "default": "./dist/lib/dom/control-flow.js"
+      },
+      "./utils": {
+        "types": "./dist/lib/dom/utils.d.ts",
+        "import": "./dist/lib/dom/utils.mjs",
+        "require": "./dist/lib/dom/utils.cjs",
+        "default": "./dist/lib/dom/utils.js"
+      }
+    }
   },
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "type": "module",

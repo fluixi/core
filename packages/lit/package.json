@@ -3,14 +3,40 @@
   "version": "1.0.0-alpha.52",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
-    "access": "public"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./directives": {
+        "types": "./dist/directives/index.d.ts",
+        "import": "./dist/directives/index.mjs",
+        "require": "./dist/directives/index.cjs",
+        "default": "./dist/directives/index.js"
+      },
+      "./templates": {
+        "types": "./dist/templates/index.d.ts",
+        "import": "./dist/templates/index.mjs",
+        "require": "./dist/templates/index.cjs",
+        "default": "./dist/templates/index.js"
+      },
+      "./control-flow": {
+        "types": "./dist/control-flow/index.d.ts",
+        "import": "./dist/control-flow/index.mjs",
+        "require": "./dist/control-flow/index.cjs",
+        "default": "./dist/control-flow/index.js"
+      }
+    }
   },
   "description": "The lit-html renderer for Fluixi — templates, directives and lit-based control flow. Built on @fluixi/dom.",
   "type": "module",
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "main": "./dist/index.js",

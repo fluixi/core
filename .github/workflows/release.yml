@@ -14,7 +14,8 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
   contents: write   # create version-bump commits and tags
-  packages: write   # publish to GitHub Packages
+  packages: read    # read @bambiste build tooling from GitHub Packages
+  id-token: write   # npm publish provenance (OIDC)
   pull-requests: write  # open/update the "Version Packages" PR
   actions: read     # required by the reusable CI gate (nx-set-shas / nx affected)
 
@@ -39,9 +40,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://npm.pkg.github.com/
-          scope: '@fluixi'
 
+      # Registry routing/auth comes from the repo .npmrc (@fluixi → npm, @bambiste
+      # → GitHub Packages). NODE_AUTH_TOKEN authenticates the @bambiste install.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
@@ -85,13 +86,12 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://npm.pkg.github.com/
-          scope: '@fluixi'
+          registry-url: https://registry.npmjs.org/
 
-      # @bambiste/mix-builder lives under a personal account, so the repo-scoped
-      # GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a classic PAT with
-      # read:packages (for @bambiste + @fluixi) and write:packages (to publish
-      # @fluixi). Falls back to GITHUB_TOKEN when the secret isn't set.
+      # @bambiste/mix-builder lives on GitHub Packages under a personal account, so
+      # the repo-scoped GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a classic PAT
+      # with read:packages (for @bambiste). Falls back to GITHUB_TOKEN when unset.
+      # Registry routing is driven by the repo .npmrc.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
@@ -101,7 +101,7 @@ jobs:
       #   1. Pending changesets present → opens/updates a "Version Packages" PR
       #      that bumps package.json versions and writes CHANGELOGs
       #   2. "Version Packages" PR just merged (no changesets left) → runs
-      #      `pnpm release` which builds then publishes to GitHub Packages
+      #      `pnpm release` (build + `changeset publish`) → publishes to npm.
       - name: Create version PR or publish
         uses: changesets/action@v1
         with:
@@ -110,9 +110,14 @@ jobs:
           title: 'chore: version packages'
           commit: 'chore: version packages'
         env:
-          # PACKAGES_TOKEN = classic PAT (repo + read:packages + write:packages).
-          # As a real-user token it can open the "Version Packages" PR even when
-          # the org disables "Allow GitHub Actions to create and approve PRs".
-          # Falls back to GITHUB_TOKEN when the secret isn't set.
+          # GITHUB_TOKEN: git ops + opening the "Version Packages" PR. PACKAGES_TOKEN
+          # (real-user PAT) lets the PR be created even when the org disables
+          # "Allow GitHub Actions to create and approve PRs"; falls back to GITHUB_TOKEN.
           GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          # NODE_AUTH_TOKEN: reads @bambiste (GitHub Packages) during the build.
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          # NPM_TOKEN: publishes @fluixi/* + create-fluixi to public npm (repo .npmrc).
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Provenance: enable ONLY after the repo is public (it hard-fails on a
+          # private repo). Uncomment once visibility is flipped:
+          # NPM_CONFIG_PROVENANCE: true

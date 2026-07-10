@@ -1,7 +1,7 @@
 {
-  "name": "@fluixi/create",
+  "name": "create-fluixi",
   "version": "0.1.0-alpha.5",
-  "description": "Scaffold a new Fluixi app — `npm create @fluixi <dir>`.",
+  "description": "Scaffold a new Fluixi app — `npm create fluixi <dir>`.",
   "type": "module",
   "bin": {
     "create-fluixi": "./dist/index.js"
@@ -13,7 +13,7 @@
     "README.md"
   ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/",
+    "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
   "scripts": {
