@@ -25,7 +25,8 @@
     "@fluixi/utils": "1.0.0-next.17",
     "@fluixi/vite-plugin": "1.0.0-next.17",
     "@fluixi/devtools": "0.1.0",
-    "@fluixi/head": "0.1.0-alpha.0"
+    "@fluixi/head": "0.1.0-alpha.0",
+    "@fluixi/testing": "0.1.0-alpha.0"
   },
   "changesets": [
     "auth-bindings",
@@ -71,6 +72,7 @@
     "hydration-marker-mismatch-warning",
     "hydration-nested-suspense",
     "hydration",
+    "i18n-nested-key-autocomplete",
     "i18n-typed-discovery",
     "i18n-typed-keys",
     "imperative-default",
@@ -127,6 +129,7 @@
     "start-ssg",
     "start-streaming-ssr",
     "start-ts-config",
+    "store-proxy-write",
     "svg-hydration-spread",
     "tc39-signal-core",
     "tc39-type-regressions",
