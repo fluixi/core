@@ -8,9 +8,10 @@ Each example has a Vitest spec (jsdom) that renders the app and asserts on the
 produced DOM + reactivity, so they double as integration tests.
 
 | example   | shows |
-| --------- | ----- |
-| `counter` | signals, a native element, delegated events, fine-grained text updates |
-| `todo`    | `For` (keyed list), `Show` (empty state), input binding, remove handlers |
+| ------------- | ----- |
+| `counter`     | signals, a native element, delegated events, fine-grained text updates |
+| `todo`        | `For` (keyed list), `Show` (empty state), input binding, remove handlers |
+| `lit-counter` | the same counter authored with lit `` html`` `` templates, compiled through the shared IR (`fluixi({ format: 'lit' })`) — no lit-html runtime |
 
 ```bash
 pnpm --filter @fluixi/example-counter dev      # run in a browser
