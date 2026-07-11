@@ -13,6 +13,7 @@
   "dependencies": {
     "@fluixi/dom": "workspace:*",
     "@fluixi/core": "workspace:*",
+    "@fluixi/lit": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {

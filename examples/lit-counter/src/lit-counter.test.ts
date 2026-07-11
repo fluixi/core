@@ -52,4 +52,23 @@ describe('lit-html counter compiled through the shared IR', () => {
     expect(host.querySelector('.warn')?.textContent).toBe('below zero');
     expect(host.querySelector('.value')?.className).toContain('neg');
   });
+
+  it('renders a nested-composition list (${list.map(x => html`...`)}) reactively', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    render(() => Counter({ start: 0 }), host);
+
+    expect(host.querySelectorAll('.ticks li').length).toBe(0);
+
+    const inc = host.querySelector('.inc') as HTMLButtonElement;
+    inc.click();
+    inc.click();
+    inc.click();
+    await flush();
+
+    const items = host.querySelectorAll('.ticks li');
+    expect(items.length).toBe(3);
+    expect(items[0].textContent).toContain('tick 1');
+    expect(items[2].textContent).toContain('tick 3');
+  });
 });
