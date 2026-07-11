@@ -89,6 +89,19 @@ export interface CompilerOptions {
   codegen?: 'inline' | 'ir';
 
   /**
+   * Authoring syntaxes to compile: 'jsx' (default), 'lit' (also compile
+   * `` html`...` `` templates through the shared IR pipeline), or 'both'.
+   * @default 'jsx'
+   */
+  format?: 'jsx' | 'lit' | 'both';
+
+  /**
+   * Tag name marking a lit template for compilation (when `format` includes lit).
+   * @default 'html'
+   */
+  litTag?: string;
+
+  /**
    * Module emitted runtime symbols are imported from in 'imperative' mode.
    * @default '@fluixi/dom'
    */
@@ -639,6 +652,8 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         // Codegen backend selection (default 'imperative').
         backend: options.backend || 'imperative',
         ...(options.codegen ? { codegen: options.codegen } : {}),
+        ...(options.format ? { format: options.format } : {}),
+        ...(options.litTag ? { litTag: options.litTag } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule
           ? { controlFlowModule: options.controlFlowModule }

@@ -20,7 +20,9 @@ import {
   type PluginPass,
 } from '@babel/core';
 import { buildIR } from './build-ir.js';
+import { buildIRFromLit } from './build-ir-lit.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
+import type { IRNode } from '../../ir/nodes.js';
 
 // ============================================================================
 // Types
@@ -148,6 +150,24 @@ export interface PluginOptions {
    * @default 'inline'
    */
   codegen?: 'inline' | 'ir';
+
+  /**
+   * Which authoring syntaxes to compile:
+   * - 'jsx' (default): only JSX elements/fragments.
+   * - 'lit': also compile `` html`...` `` tagged templates through the shared IR
+   *   pipeline (imperative backend). Off the JSX path — same runtime output.
+   * - 'both': JSX and `html``` templates in the same file.
+   * Lit compilation targets the imperative backend.
+   * @default 'jsx'
+   */
+  format?: 'jsx' | 'lit' | 'both';
+
+  /**
+   * Tag name that marks a lit template for compilation (when `format` includes
+   * lit). Other tagged templates are left untouched.
+   * @default 'html'
+   */
+  litTag?: string;
 }
 
 interface PluginStateData {
@@ -262,7 +282,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     autoShowTransform = false,
     backend = 'imperative',
     codegen = 'inline',
+    format = 'jsx',
+    litTag = 'html',
   } = options;
+
+  const compileLit = format === 'lit' || format === 'both';
 
   const pluginState: PluginStateData = {
     backend,
@@ -315,6 +339,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             hasJSX: false,
             hasReactivity: false,
             hasLitHTML: false,
+            hasLitIR: false,
             needsSignalImport: false,
             needsLitrxImport: false,
             needsControlFlowImport: false,
@@ -368,10 +393,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             }
           }
 
-          if (state.hasJSX) {
-            if (backend === 'imperative' && codegen === 'ir') {
-              // IR pipeline: import exactly the symbols emit() reported, splitting
-              // control-flow components to the control-flow module.
+          if (state.hasJSX || state.hasLitIR) {
+            if (state.irImports.size > 0) {
+              // IR pipeline (JSX codegen:'ir' and/or lit templates): import exactly
+              // the symbols emit() reported, splitting control-flow components to
+              // the control-flow module.
               const CF = new Set([
                 'Show', 'For', 'Index', 'Switch', 'Match',
                 'Dynamic', 'ErrorBoundary', 'Portal', 'Suspense',
@@ -403,7 +429,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                   t.importDeclaration(cf.map(spec), t.stringLiteral(controlFlowModule)),
                 );
               }
-            } else if (backend === 'imperative') {
+            }
+            if (state.hasJSX && backend === 'imperative' && codegen !== 'ir') {
               // Compiled imperative output: import only the runtime primitives
               // actually emitted, straight from the dom runtime module.
               const want: Array<[boolean, string]> = [
@@ -423,7 +450,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                   t.importDeclaration(specifiers, t.stringLiteral(signalModule)),
                 );
               }
-            } else if (runtime === 'automatic') {
+            } else if (state.hasJSX && runtime === 'automatic') {
               // Add JSX runtime imports
               const specifiers = [
                 t.importSpecifier(t.identifier('jsx'), t.identifier('jsx')),
@@ -649,13 +676,18 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         // no-op
       },
       TaggedTemplateExpression(path, state) {
-        // const expressions = t.isTaggedTemplateExpression(path.node)
-        //   ? (path as NodePath<t.TemplateLiteral>).get('expressions')
-        //   : [(path as NodePath<t.JSXExpressionContainer>).get('expression')];
+        // Compile `html`...`` templates through the shared IR pipeline: same IR
+        // the JSX front-end builds, same imperative backend, same runtime calls.
+        if (
+          compileLit &&
+          backend === 'imperative' &&
+          t.isIdentifier(path.node.tag) &&
+          path.node.tag.name === litTag
+        ) {
+          path.replaceWith(emitLitViaIR(path.node, state));
+          return;
+        }
 
-        // if (t.isJSXExpressionContainer(path.node)) {
-        //   console.log('is jsx');
-        // }
         const { tag, quasi } = path.node;
 
         // 1. Only target html`...`
@@ -1065,6 +1097,45 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   return template.expression(code, { placeholderPattern: false })() as t.Expression;
+}
+
+/**
+ * Lit-pipeline path: build IR from a `` html`...` `` template, emit through the
+ * imperative backend, reparse. Mirrors emitViaIR — the whole point is that lit
+ * and JSX share one IR + one backend. Collects runtime imports and the delegated
+ * events used so Program.exit wires them.
+ */
+function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
+  const used = new Set<string>();
+  const ir = buildIRFromLit(node, used);
+  const { code, imports } = imperativeBackend.emit(ir, {} as any);
+  for (const s of imports) used.add(s);
+  for (const s of used) state.irImports.add(s);
+  collectRuntimeNeeds(ir, state);
+  state.hasLitIR = true;
+  return template.expression(code, { placeholderPattern: false })() as t.Expression;
+}
+
+/**
+ * Walk the lit IR for things Program.exit wires: delegated events (-> the
+ * delegateEvents([...]) call) and control-flow component names used as tags
+ * (-> auto-import from the control-flow module, like the inline JSX path).
+ */
+function collectRuntimeNeeds(node: IRNode, state: any): void {
+  if (node.kind === 'component' && CONTROL_FLOW_COMPONENTS.has(node.name)) {
+    state.controlFlowComponents.add(node.name);
+    state.needsControlFlowImport = true;
+  }
+  if (node.kind === 'element' || node.kind === 'component' || node.kind === 'control') {
+    if ('props' in node) {
+      for (const p of node.props) {
+        if (p.kind === 'event' && p.event?.delegated) state.delegatedEvents.add(p.event.name);
+      }
+    }
+  }
+  if ('children' in node && node.children) {
+    for (const c of node.children) collectRuntimeNeeds(c, state);
+  }
 }
 
 

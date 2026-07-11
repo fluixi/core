@@ -62,6 +62,59 @@ describe('lit → shared compiler (spike)', () => {
     expect(lit.code).toBe(jsx.code);
   });
 
+  it('matches: capitalized tag compiles as a component', () => {
+    const lit = emitLit('html`<Show when=${cond()}>${body()}</Show>`');
+    const jsx = emitJSX('(<Show when={cond()}>{body()}</Show>)');
+    expect(lit.code).toBe(jsx.code);
+    expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+  });
+
+  it('matches: For control flow with a render-prop child', () => {
+    const lit = emitLit('html`<For each=${items()}>${(x) => x}</For>`');
+    const jsx = emitJSX('(<For each={items()}>{(x) => x}</For>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('matches: member-expression component tag', () => {
+    const lit = emitLit('html`<Ctx.Provider value=${v()}>${kids}</Ctx.Provider>`');
+    const jsx = emitJSX('(<Ctx.Provider value={v()}>{kids}</Ctx.Provider>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('matches: mixed text + hole attribute value (reactive template literal)', () => {
+    const lit = emitLit('html`<div class="box ${active()}"></div>`');
+    const jsx = emitJSX('(<div class={`box ${active()}`}></div>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('matches: quoted single hole === unquoted single hole', () => {
+    const q = emitLit('html`<input value="${name()}" />`');
+    const u = emitLit('html`<input value=${name()} />`');
+    expect(q.code).toBe(u.code);
+  });
+
+  it('matches: spread ${obj} in tag position', () => {
+    const lit = emitLit('html`<div ${props}>hi</div>`');
+    const jsx = emitJSX('(<div {...props}>hi</div>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('matches: html comments are dropped like JSX comments', () => {
+    const lit = emitLit('html`<div><!-- note -->${x()}</div>`');
+    const jsx = emitJSX('(<div>{/* note */}{x()}</div>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('raw-text element keeps its content verbatim and interpolates holes', () => {
+    (S as any); // keep import
+    const [css, setCss] = S.createSignal('a{}');
+    const el = run(emitLit('html`<style>.x{} ${css()}</style>`'), { css }) as HTMLStyleElement;
+    expect(el.tagName).toBe('STYLE');
+    expect(el.textContent).toContain('.x{}');
+    expect(el.textContent).toContain('a{}');
+    setCss('b{}');
+  });
+
   it('the emitted lit code actually renders, reacts, and handles events', async () => {
     (DOM as any).delegateEvents(['click']); // install the delegated click listener
     const [label, setLabel] = S.createSignal('hi');
