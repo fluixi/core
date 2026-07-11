@@ -13,7 +13,6 @@
 
 import { declare } from '@babel/helper-plugin-utils';
 import {
-  NodePath,
   types as t,
   template,
   type PluginObj,
@@ -341,7 +340,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             hasLitHTML: false,
             hasLitIR: false,
             needsSignalImport: false,
-            needsLitrxImport: false,
             needsControlFlowImport: false,
             needsCreateMemo: false,
             controlFlowComponents: new Set(),
@@ -375,19 +373,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                     ),
                   ],
                   t.stringLiteral(signalModule)
-                )
-              );
-            }
-            if (state.needsLitrxImport && !path.scope.hasBinding('litrx')) {
-              imports.push(
-                t.importDeclaration(
-                  [
-                    t.importSpecifier(
-                      t.identifier('litrx'),
-                      t.identifier('litrx')
-                    ),
-                  ],
-                  t.stringLiteral(state.libModule)
                 )
               );
             }
@@ -676,233 +661,23 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         // no-op
       },
       TaggedTemplateExpression(path, state) {
-        // Compile `html`...`` templates through the shared IR pipeline: same IR
-        // the JSX front-end builds, same imperative backend, same runtime calls.
+        // Compile `html`...`` (and `svg`...``) templates through the shared IR
+        // pipeline: same IR the JSX front-end builds, same imperative backend,
+        // same runtime calls.
         if (
           compileLit &&
           backend === 'imperative' &&
           t.isIdentifier(path.node.tag) &&
-          path.node.tag.name === litTag
+          (path.node.tag.name === litTag || path.node.tag.name === 'svg')
         ) {
           path.replaceWith(emitLitViaIR(path.node, state));
           return;
         }
-
-        const { tag, quasi } = path.node;
-
-        // 1. Only target html`...`
-        // if (!t.isIdentifier(tag) || tag.name !== 'html') return;
-
-        path
-          .get('quasi')
-          .get('expressions')
-          .forEach((expPath, index) => {
-            const node = expPath.node;
-
-            // 2. Attribute Check: Look at the string part right before the expression
-            // Lit attributes look like: name="${exp}" or @click="${exp}"
-            const prevStringPart = quasi.quasis[index].value.raw;
-            const isAttribute =
-              prevStringPart.trim().endsWith('=') ||
-              prevStringPart.match(/@[\w-]+$/);
-
-            if (isAttribute) return; // Skip wrapping event listeners or attributes
-
-            // 3. Narrowing for Signal Calls: count()
-            // const isSignalCall = t.isCallExpression(node);
-            const isSignalCall = false;
-
-            // 4. Narrowing for Member Access: item.$name
-            let isReactiveMember = false;
-            if (t.isMemberExpression(node)) {
-              const property = node.property;
-              // Use Type Guard to narrow from Expression | PrivateName to Identifier
-              if (t.isIdentifier(property)) {
-                // console.log('exp', node);
-                (property as any).name = property.name.replace('$', '');
-                state.needsLitrxImport = true;
-                isReactiveMember = true;
-                // if (property.name.startsWith('$')) {
-                // }
-              }
-            }
-
-            if (isSignalCall || isReactiveMember) {
-              // Transform: ${exp} -> ${watch(() => exp)}
-              expPath.replaceWith(
-                //t.identifier('litrx')
-                // t.identifier('(window as any).Fluixi.litrx')
-                t.callExpression(
-                  t.identifier('((window as any).Fluixi.litrx || litrx)'),
-                  [t.arrowFunctionExpression([], node as t.Expression)]
-                )
-              );
-            }
-          });
       },
-      // 'JSXExpressionContainer|TaggedTemplateExpression'(path, state) {
-      //   const expressions = t.isTaggedTemplateExpression(path.node)
-      //     ? (path as NodePath<t.TemplateLiteral>).get('expressions')
-      //     : [(path as NodePath<t.JSXExpressionContainer>).get('expression')];
-
-      //   if (t.isJSXExpressionContainer(path.node)) {
-      //     console.log('is jsx');
-      //   }
-      //   console.log('exp', expressions);
-      //   // const { tag, quasi } = path.node;
-
-      //   // 1. Only target html`...`
-      //   // if (!t.isIdentifier(tag) || tag.name !== 'html') return;
-
-      //   // path
-      //   //   .get('quasi')
-      //   //   .get('expressions')
-      //   //   .forEach((expPath, index) => {
-      //   //     const node = expPath.node;
-
-      //   //     // 2. Attribute Check: Look at the string part right before the expression
-      //   //     // Lit attributes look like: name="${exp}" or @click="${exp}"
-      //   //     const prevStringPart = quasi.quasis[index].value.raw;
-      //   //     const isAttribute =
-      //   //       prevStringPart.trim().endsWith('=') ||
-      //   //       prevStringPart.match(/@[\w-]+$/);
-
-      //   //     if (isAttribute) return; // Skip wrapping event listeners or attributes
-
-      //   //     // 3. Narrowing for Signal Calls: count()
-      //   //     // const isSignalCall = t.isCallExpression(node);
-      //   //     const isSignalCall = false;
-
-      //   //     // 4. Narrowing for Member Access: item.$name
-      //   //     let isReactiveMember = false;
-      //   //     if (t.isMemberExpression(node)) {
-      //   //       const property = node.property;
-      //   //       // Use Type Guard to narrow from Expression | PrivateName to Identifier
-      //   //       if (t.isIdentifier(property)) {
-      //   //         if (property.name.startsWith('$')) {
-      //   //           (property as any).name = property.name.replace('$', '');
-      //   //           console.log('node', node);
-      //   //           state.needsLitrxImport = true;
-      //   //           isReactiveMember = true;
-      //   //         }
-      //   //       }
-      //   //     }
-
-      //   //     if (isSignalCall || isReactiveMember) {
-      //   //       // Transform: ${exp} -> ${watch(() => exp)}
-      //   //       expPath.replaceWith(
-      //   //         t.callExpression(t.identifier('litrx'), [
-      //   //           t.arrowFunctionExpression([], node as t.Expression),
-      //   //         ])
-      //   //       );
-      //   //     }
-      //   //   });
-      //   // path
-      //   //   .get('quasi')
-      //   //   .get('expressions')
-      //   if (t.isTaggedTemplateExpression(path.node)) {
-      //     expressions.forEach((expPath, index) => {
-      //       const node = expPath.node;
-      //       if (!node || t.isJSXEmptyExpression(node)) return;
-      //       // 1. Skip Attributes (@click, id=, etc)
-      //       if (t.isTaggedTemplateExpression(path.node)) {
-      //         const { tag, quasi } = path.node;
-      //         const prevString = quasi.quasis[index].value.raw;
-      //         if (
-      //           prevString.trim().endsWith('=') ||
-      //           prevString.match(/@[\w-]+$/)
-      //         ) {
-      //           return;
-      //         }
-      //       }
-
-      //       let shouldWrap = false;
-      //       let newNode: t.Expression = node as t.Expression;
-      //       let property: t.Expression;
-      //       // 2. Handle Member Expressions (e.g., user.$name)
-      //       if (t.isMemberExpression(node) && t.isIdentifier(node.property)) {
-      //         const propName = node.property.name;
-      //         property = node.property;
-
-      //         // Check where the object (e.g., 'user') came from
-      //         const objectName = t.isIdentifier(node.object)
-      //           ? node.object.name
-      //           : null;
-      //         const binding = objectName
-      //           ? expPath.scope.getBinding(objectName)
-      //           : null;
-
-      //         // Identify if the source is one of our reactive hooks
-      //         const isReactiveSource =
-      //           binding &&
-      //           t.isVariableDeclarator(binding.path.node) &&
-      //           t.isCallExpression(binding.path.node.init) &&
-      //           t.isIdentifier(binding.path.node.init.callee) &&
-      //           ['useReducer', 'createStore', 'useContext'].includes(
-      //             binding.path.node.init.callee.name
-      //           );
-      //         if (isReactiveSource || propName.startsWith('$')) {
-      //           shouldWrap = true;
-      //           state.needsLitrxImport = true;
-      //           console.log('nnedd wrap');
-      //           // TRANSFORM: Strip the '$' for the runtime Proxy access
-      //           // user.$name -> user.name
-      //         }
-      //         if (propName.startsWith('$')) {
-      //           if (property) {
-      //             (property as any).name = propName.replace('$', '');
-      //             newNode = t.memberExpression(node.object, property);
-      //           }
-      //         }
-      //       }
-
-      //       // // 3. Handle Signal Calls: count()
-      //       // if (t.isCallExpression(node)) {
-      //       //   shouldWrap = true;
-      //       // }
-
-      //       if (shouldWrap) {
-      //         state.needsLitrxImport = true;
-      //         expPath.replaceWith(
-      //           t.callExpression(t.identifier('litrx'), [
-      //             t.arrowFunctionExpression([], newNode),
-      //           ])
-      //         );
-      //       }
-      //     });
-      //   } else {
-      //     console.log('jsx', expressions);
-      //   }
-      // },
     },
   };
 });
 
-function needReativeTransform(
-  node: any,
-  expPath: NodePath<t.Expression | t.TSType>
-): boolean {
-  if (t.isMemberExpression(node) && t.isIdentifier(node.property)) {
-    // const propName = node.property.name;
-    // property = node.property;
-
-    // Check where the object (e.g., 'user') came from
-    const objectName = t.isIdentifier(node.object) ? node.object.name : null;
-    const binding = objectName ? expPath.scope.getBinding(objectName) : null;
-
-    // Identify if the source is one of our reactive hooks
-    const isReactiveSource =
-      binding &&
-      t.isVariableDeclarator(binding.path.node) &&
-      t.isCallExpression(binding.path.node.init) &&
-      t.isIdentifier(binding.path.node.init.callee) &&
-      ['useReducer', 'createStore', 'useContext', 'useLocation'].includes(
-        binding.path.node.init.callee.name
-      );
-    return isReactiveSource || false;
-  }
-  return false;
-}
 // ============================================================================
 // JSX Transformation
 // ============================================================================
@@ -1107,7 +882,8 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
  */
 function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
   const used = new Set<string>();
-  const ir = buildIRFromLit(node, used);
+  const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
+  const ir = buildIRFromLit(node, used, { svg });
   const { code, imports } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
