@@ -39,12 +39,9 @@ function toKebab(prop: string): string {
  * The memo re-evaluates whenever any reactive dependency inside the map
  * changes.
  *
- * Works in both JSX and lit-html without any renderer-specific code:
- *  - JSX:      `<div style={styleMap({ color: textColor })} />`
- *  - lit-html: `style=${styleMap({ color: textColor })}`
- *
- * For lit-html the `processValues` helper detects the memo (via `$SIGNAL`)
- * and wraps it with `litrx` automatically.
+ * Works in both JSX and html`` templates without renderer-specific code:
+ *  - JSX:  `<div style={styleMap({ color: textColor })} />`
+ *  - html: `style=${styleMap({ color: textColor })}`
  *
  * @example
  * // Static

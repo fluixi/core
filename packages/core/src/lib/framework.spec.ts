@@ -68,7 +68,6 @@ vi.mock('@fluixi/dom', async () => {
     hydrate: vi.fn(),
     captureHydrationCursor: () => null,
     runHydrationAt: (_cursor: any, fn: () => any) => fn(),
-    registerLitRender: vi.fn(),
     intergartionInitialized: false,
     For: (props: any) => props,
     asComponent:  stamp($COMPONENT),

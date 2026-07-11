@@ -4,56 +4,96 @@
 
 # @fluixi/lit
 
-**The lit-html renderer for Fluixi — templates, directives, and lit-based control flow.**
+**Write Fluixi UIs with `` html`` `` templates instead of JSX — compiled to `@fluixi/dom` runtime calls. No lit runtime ships.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 [![npm](https://img.shields.io/npm/v/@fluixi/lit?logo=npm)](https://www.npmjs.com/package/@fluixi/lit)
-![Built on lit-html](https://img.shields.io/badge/built%20on-lit--html-324fff)
 
 ---
 
-## ✨ Overview
+## Overview
 
-`@fluixi/lit` is the **optional** lit-html authoring layer, built on [`@fluixi/dom`](../dom).
-Fluixi's default path is JSX (compiled to fine-grained DOM calls); `@fluixi/lit` is for
-apps that prefer `html` tagged-template syntax. It lives in its own package so lit (which
-extends `HTMLElement` at module init) stays out of the core/SSR graph — import lit symbols
-from here, never from `@fluixi/core`.
+`@fluixi/lit` is the **no-JSX authoring layer** for Fluixi. You write `` html`...` ``
+tagged templates; the `@fluixi/compiler` (via `format: 'lit'`) turns them into the
+**same fine-grained `@fluixi/dom` calls JSX compiles to** — `createNativeElement` /
+`spread` / `insert` / `createComponent`. The template is compiled away: **no lit-html
+runtime, no virtual DOM, no re-render**. A `` html`` `` template and its JSX twin emit
+byte-identical code.
 
-## 📦 Installation
+The tag itself (`html`/`svg`) is a compile-time marker — it never executes.
+
+## Installation
 
 ```sh
 pnpm add @fluixi/lit
 ```
 
-## 🚀 Usage
+## Setup
 
 ```ts
-import { createSignal } from '@fluixi/reactive/signal';
-import { html, litrx, render } from '@fluixi/lit';
+// vite.config.ts
+import { fluixi } from '@fluixi/vite-plugin';
 
-function Counter() {
-  const [count, setCount] = createSignal(0);
-  return html`
-    <button @click=${() => setCount(count() + 1)}>
-      count: ${litrx(count)}
-    </button>
-  `;
-}
-
-render(Counter(), document.getElementById('app')!);
+export default {
+  plugins: [fluixi({ format: 'lit' })], // 'lit' | 'both' (JSX + html``)
+};
 ```
 
-## 🧩 Exports
+```ts
+import { createSignal } from '@fluixi/core';
+import { html, Show } from '@fluixi/lit';
 
-- **Templates** — `html`, `svg`, `nothing`, `render`, `litrx` (reactive interpolation).
-- **Directives** — `$classMap`, `$styleMap`, and the lit directive set.
-- **Control flow** — `$show`, `$for`, `$switch`, `$portal`, `$if`, `$each`.
+function Counter() {
+  const [n, set] = createSignal(0);
+  return html`
+    <div class="counter ${n() < 0 ? 'neg' : 'pos'}">
+      <button @click=${() => set(n() - 1)}>-</button>
+      <span>${n()}</span>
+      <button @click=${() => set(n() + 1)}>+</button>
+      <Show when=${n() < 0}><p>below zero</p></Show>
+    </div>
+  `;
+}
+```
 
-For framework-agnostic control flow / class+style maps that don't pull lit, use
-[`@fluixi/dom`](../dom)'s `Show`/`For`/`classMap`/`styleMap` instead.
+## Supported syntax
 
-## 📄 License
+| feature | example | compiles to |
+| --- | --- | --- |
+| child interpolation | `<h1>${title()}</h1>` | reactive `insert` |
+| attribute | `id=${id}` / `value="${x()}"` | attr, reactive when the hole is |
+| mixed attr value | `class="a ${x()}"` | reactive template-literal |
+| event | `@click=${fn}` | delegated (or direct) listener |
+| property | `.value=${v}` | `setProperty` |
+| boolean | `?disabled=${cond}` | attribute toggle |
+| spread | `<div ${props}>` | `spread` / `mergeProps` |
+| `ref` | `ref=${el => …}` | `handleRef` |
+| class object | `class=${classMap({...})}` | `classList` |
+| style object | `style=${styleMap({...})}` | `setStyle` |
+| control flow | `<Show when=${c}>…</Show>` | `createComponent(Show, …)` (auto-imported) |
+| nested templates | `${list().map(x => html`<li>${x}</li>`)}` | compiled child list |
+| `svg` | `` svg`<circle r=${r} />` `` | SVG-namespaced elements |
+
+Control flow (`Show`, `For`, `Index`, `Switch`, `Match`, `Dynamic`, `Portal`,
+`ErrorBoundary`) and `classMap`/`styleMap` are re-exported here for convenience — the
+compiler also auto-imports any control-flow tag you use in a template. Mount with
+`@fluixi/core`'s `render` / `startClient`, like any Fluixi app.
+
+## Not lit
+
+This is **lit-inspired syntax, Fluixi semantics** — not a lit-html reimplementation:
+
+- **No custom `Directive` classes.** A lit directive is runtime code that drives lit's
+  `Part` lifecycle; there is no Part here. Use the props above (`ref`, `classList`,
+  `style`, `innerHTML`) and control-flow components instead.
+- **No `guard` / `cache` / `live`.** They exist to bail lit out of whole-template
+  re-renders. Fine-grained reactivity updates only what changed, so they're unnecessary.
+- **No `unsafeHTML` directive.** Set raw markup with the `innerHTML` prop.
+- **No `render()` / `TemplateResult`.** Templates compile to DOM nodes.
+
+See `examples/lit-counter` for a full app.
+
+## License
 
 [MIT](./LICENSE) © [Fluixi](https://fluixi.dev)

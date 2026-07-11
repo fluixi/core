@@ -613,9 +613,6 @@ export function insertExpression(
 
   if (t === 'object' && value !== null && typeof value === 'object') {
     const objValue = value as Record<string, any>;
-    if ('_$litType$' in objValue || '_$litDirective$' in objValue) {
-      return insertExpression(parent, renderLitToNodes(value), marker, current);
-    }
     if ('type' in objValue && 'props' in objValue) {
       const jsxValue = objValue as { type: any; props: any };
       if (typeof jsxValue.type === 'function') {
@@ -759,16 +756,6 @@ function flattenArray(
 
     if (isDomNode(item)) {
       result.push(item);
-      continue;
-    }
-
-    if (
-      typeof item === 'object' &&
-      item !== null &&
-      ('_$litType$' in item || '_$litDirective$' in item)
-    ) {
-      const nodes = renderLitToNodes(item);
-      for (const node of nodes) result.push(node);
       continue;
     }
 
@@ -1425,37 +1412,6 @@ export function handleRef(ref: any, element: Element): void {
 
   if (typeof ref === 'function') ref(element);
   else if (typeof ref === 'object' && 'current' in ref) ref.current = element;
-}
-
-// ============================================================================
-// Lit integration
-// ============================================================================
-
-let litRenderFn: ((template: any, container: any) => void) | null = null;
-
-export function registerLitRender(render: (template: any, container: any) => void): void {
-  litRenderFn = render;
-}
-
-export function renderLitToNodes(template: any): Node[] {
-  const nodes: Node[] = [];
-
-  if (!litRenderFn) {
-    console.warn('Lit render not registered. Call registerLitRender first.');
-    return nodes;
-  }
-
-  try {
-    const tempContainer = document.createElement('div');
-    litRenderFn!(template, tempContainer);
-    while (tempContainer.firstChild) {
-      nodes.push(tempContainer.firstChild);
-      tempContainer.removeChild(tempContainer.firstChild);
-    }
-  } catch (e) {
-    console.warn('Could not render Lit template:', e);
-  }
-  return nodes;
 }
 
 // ============================================================================

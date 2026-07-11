@@ -7,8 +7,6 @@
  * (SolidJS delegation pattern) for reliable bubbling and preventDefault support.
  */
 
-import type { TemplateResult, SVGTemplateResult } from 'lit';
-
 import {
   insert,
   setAttribute,
@@ -39,8 +37,6 @@ import { createSignal, createMemo, createRenderEffect, readChildren } from '@flu
 // ============================================================================
 
 export type JSXElement =
-  | TemplateResult
-  | SVGTemplateResult
   | Node
   | string
   | number

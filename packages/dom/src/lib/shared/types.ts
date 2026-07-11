@@ -18,7 +18,6 @@ export type ComponentChild =
   | undefined
   | ComponentChild[]
   | (() => ComponentChild)
-  | import('lit').TemplateResult
   | (() => any)
   | any;
 

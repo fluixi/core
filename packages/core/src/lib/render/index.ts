@@ -13,19 +13,11 @@ import { createRoot } from '@fluixi/reactive/signal';
 import {
   isDOMNode,
   delegateEvents,
-  registerLitRender,
   insert,
 } from '@fluixi/dom';
 import {
   ensureIntegration,
 } from './component.js';
-
-// Register Lit's render function with the DOM runtime so reactive updates can render
-// Lit templates. CLIENT-ONLY and lazily imported: lit extends HTMLElement at module
-// init, so a static import would crash SSR — this keeps lit out of server bundles.
-if (typeof window !== 'undefined') {
-  import('lit').then((lit) => registerLitRender(lit.render));
-}
 
 const isServer = typeof window === 'undefined';
 
@@ -76,15 +68,10 @@ export interface RenderOptions {
  * ```typescript
  * import { render } from '@fluixi/core';
  * import { createSignal } from '@fluixi/reactive';
- * import { html } from 'lit';
  *
  * const App = () => {
  *   const [count, setCount] = createSignal(0);
- *   return html`
- *     <button @click=${() => setCount(count() + 1)}>
- *       Count: ${count()}
- *     </button>
- *   `;
+ *   return <button onClick={() => setCount(count() + 1)}>Count: {count()}</button>;
  * };
  *
  * const dispose = render(App, document.getElementById('app'));
