@@ -142,7 +142,32 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
+  examples/lit-counter:
+    dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   examples/playground:
     dependencies:
@@ -192,7 +217,7 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   examples/ssr:
     dependencies:
@@ -223,7 +248,7 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   examples/start-app:
     dependencies:
@@ -279,7 +304,7 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/auth:
     dependencies:
@@ -390,7 +415,7 @@ importers:
         version: 25.0.1
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/core:
     dependencies:
@@ -469,7 +494,7 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.0.0
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/core-test:
     dependencies:
@@ -511,7 +536,7 @@ importers:
         version: 25.0.1
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/head:
     devDependencies:
@@ -548,7 +573,7 @@ importers:
         version: 25.0.1
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   packages/lit:
     dependencies:
@@ -719,7 +744,7 @@ importers:
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
       vitest:
         specifier: ^1.6.1
-        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
   playground:
     dependencies:
@@ -11282,7 +11307,7 @@ snapshots:
     optionalDependencies:
       vite: 6.4.3(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(yaml@2.9.0)
 
-  vitest@1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0):
+  vitest@1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -11318,7 +11343,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6(vitest@3.2.6))(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0):
+  vitest@1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
