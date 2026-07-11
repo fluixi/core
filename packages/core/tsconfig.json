@@ -38,9 +38,6 @@
       "path": "../vite-plugin"
     },
     {
-      "path": "../lit"
-    },
-    {
       "path": "../jsx"
     },
     {

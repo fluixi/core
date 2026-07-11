@@ -23,9 +23,6 @@ import { render } from '../render/index.js';
 import { ensureIntegration } from '../render/component.js';
 import { createHead, setActiveHead, mountHead, stripHeadMarker } from '@fluixi/head';
 ensureIntegration('client index');
-// Register Lit support in @fluixi/dom
-// This allows JSX/DOM engine to render Lit TemplateResults
-// registerLitRender(litRenderFn);
 
 // Connect the reactive system (signals, effects, batch) to the DOM runtime.
 // Without this, createRenderEffect in @fluixi/dom is a one-shot call that never

@@ -13,28 +13,10 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
-      },
-      "./directives": {
-        "types": "./dist/directives/index.d.ts",
-        "import": "./dist/directives/index.mjs",
-        "require": "./dist/directives/index.cjs",
-        "default": "./dist/directives/index.js"
-      },
-      "./templates": {
-        "types": "./dist/templates/index.d.ts",
-        "import": "./dist/templates/index.mjs",
-        "require": "./dist/templates/index.cjs",
-        "default": "./dist/templates/index.js"
-      },
-      "./control-flow": {
-        "types": "./dist/control-flow/index.d.ts",
-        "import": "./dist/control-flow/index.mjs",
-        "require": "./dist/control-flow/index.cjs",
-        "default": "./dist/control-flow/index.js"
       }
     }
   },
-  "description": "The lit-html renderer for Fluixi — templates, directives and lit-based control flow. Built on @fluixi/dom.",
+  "description": "lit-style html`` templates for Fluixi, compiled to @fluixi/dom runtime calls — no lit runtime. The no-JSX authoring layer.",
   "type": "module",
   "files": [
     "dist",
@@ -52,27 +34,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
-    },
-    "./directives": {
-      "development": "./src/directives/index.ts",
-      "types": "./dist/directives/index.d.ts",
-      "import": "./dist/directives/index.mjs",
-      "require": "./dist/directives/index.cjs",
-      "default": "./dist/directives/index.js"
-    },
-    "./templates": {
-      "development": "./src/templates/index.ts",
-      "types": "./dist/templates/index.d.ts",
-      "import": "./dist/templates/index.mjs",
-      "require": "./dist/templates/index.cjs",
-      "default": "./dist/templates/index.js"
-    },
-    "./control-flow": {
-      "development": "./src/control-flow/index.ts",
-      "types": "./dist/control-flow/index.d.ts",
-      "import": "./dist/control-flow/index.mjs",
-      "require": "./dist/control-flow/index.cjs",
-      "default": "./dist/control-flow/index.js"
     }
   },
   "scripts": {
@@ -82,13 +43,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "lit": "^3.3.1",
-    "tslib": "^2.3.0"
+    "@fluixi/dom": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",
-    "inquirer": "^14.0.2",
-    "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "repository": {
@@ -97,7 +55,6 @@
     "directory": "packages/lit"
   },
   "peerDependencies": {
-    "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   }
 }

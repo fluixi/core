@@ -235,22 +235,6 @@ export {
 //   LifecycleCallback,
 // } from './core/index.js';
 
-export type {
-  // Show,
-  // Match,
-  // Switch,
-  // For,
-  // Index,
-  // Portal,
-  $ShowProps,
-  $MatchProps,
-  $SwitchProps,
-  $ForProps,
-  $IndexProps,
-  $PortalProps,
-  $DynamicProps,
-  $DynamicSwitchProps,
-} from '@fluixi/lit';
 
 // Context API
 // export {

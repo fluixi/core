@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
-// The lit renderer drives real DOM via lit-html, so it needs a browser-like
-// environment. jsdom is enough for the directive/control-flow reactivity tests.
+// The re-exported control flow touches the DOM runtime, so tests run in jsdom.
 export default defineConfig({
   test: {
     environment: 'jsdom',

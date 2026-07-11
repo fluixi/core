@@ -12,11 +12,7 @@
       "@fluixi/dom",
       "@fluixi/reactive",
       "@fluixi/reactive/signal",
-      "@fluixi/reactive/store",
-      "lit",
-      "lit/*",
-      "@lit-labs/*",
-      "@babel/*"
+      "@fluixi/reactive/store"
     ],
     "minify": false,
     "clean": true

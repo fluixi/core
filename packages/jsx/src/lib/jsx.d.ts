@@ -3,9 +3,7 @@
  * @module @fluixi/core/jsx-runtime
  */
 
-import { TemplateResult, SVGTemplateResult } from 'lit';
 import { Accessor } from '@fluixi/reactive/signal';
-import type { DirectiveResult } from 'lit/directive.js';
 
 // ============================================================================
 // Helper Types
@@ -45,8 +43,6 @@ export namespace JSX {
   // ============================================================================
 
   export type Element =
-    | TemplateResult
-    | SVGTemplateResult
     | Node
     | string
     | number
@@ -54,9 +50,22 @@ export namespace JSX {
     | null
     | undefined
     | Element[]
-    | DirectiveResult<any>
     | HTMLElement | Accessor<any>
     | globalThis.Element;
+
+  // ============================================================================
+  // Style
+  // ============================================================================
+
+  /**
+   * A `style` object: known camelCase CSS properties (autocompleted from the DOM
+   * `CSSStyleDeclaration`), custom `--*` properties, plus a string fallback for
+   * anything not in the lib. Values may be strings or numbers.
+   */
+  export type CSSProperties =
+    & { [K in Exclude<keyof CSSStyleDeclaration, 'length' | 'parentRule'>]?: string | number }
+    & { [key: `--${string}`]: string | number }
+    & { [key: string]: string | number | undefined };
 
   // ============================================================================
   // ARIA Attributes
@@ -315,7 +324,7 @@ export namespace JSX {
     slot?: string;
     spellCheck?: boolean;
     spellcheck?: boolean;
-    style?: string | Record<string, string | number> | Accessor<string>;
+    style?: string | CSSProperties | Accessor<string | CSSProperties>;
     tabIndex?: Reactive<number>;
     tabindex?: Reactive<number>;
     title?: string | Accessor<string>;

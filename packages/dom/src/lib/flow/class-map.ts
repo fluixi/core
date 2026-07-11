@@ -27,12 +27,9 @@ export type ClassMapInput =
  * class string.  The memo re-evaluates whenever any reactive dependency
  * inside the map changes.
  *
- * Works in both JSX and lit-html without any renderer-specific code:
- *  - JSX:      `<div class={classMap({ active: isActive })} />`
- *  - lit-html: `class=${classMap({ active: isActive })}`
- *
- * For lit-html the `processValues` helper detects the memo (via `$SIGNAL`)
- * and wraps it with `litrx` automatically.
+ * Works in both JSX and html`` templates without renderer-specific code:
+ *  - JSX:  `<div class={classMap({ active: isActive })} />`
+ *  - html: `class=${classMap({ active: isActive })}`
  *
  * @example
  * // Static

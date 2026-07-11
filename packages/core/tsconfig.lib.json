@@ -38,9 +38,6 @@
       "path": "../vite-plugin/tsconfig.lib.json"
     },
     {
-      "path": "../lit/tsconfig.lib.json"
-    },
-    {
       "path": "../jsx/tsconfig.lib.json"
     },
     {
