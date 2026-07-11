@@ -41,7 +41,9 @@ function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression
   let changed = false;
   const emitInto = (path: any, code: string, imports: string[]) => {
     for (const s of imports) used.add(s);
-    path.replaceWith(template.expression(code, { placeholderPattern: false })() as t.Expression);
+    // parse as TS: a hole/arrow param may carry a type annotation ((x: T) => …);
+    // preset-typescript strips it downstream, but the reparse must accept it.
+    path.replaceWith(template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression);
     path.skip(); // build-ir already handled this subtree (incl. anything nested)
     changed = true;
   };
