@@ -53,7 +53,7 @@ describe('lit-html counter compiled through the shared IR', () => {
     expect(host.querySelector('.value')?.className).toContain('neg');
   });
 
-  it('renders a nested-composition list (${list.map(x => html`...`)}) reactively', async () => {
+  it('renders a keyed <For> list of nested html`` templates reactively', async () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     render(() => Counter({ start: 0 }), host);
@@ -70,5 +70,28 @@ describe('lit-html counter compiled through the shared IR', () => {
     expect(items.length).toBe(3);
     expect(items[0].textContent).toContain('tick 1');
     expect(items[2].textContent).toContain('tick 3');
+  });
+
+  it('<For> reuses existing rows when the list grows (no full rebuild)', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    render(() => Counter({ start: 0 }), host);
+
+    const inc = host.querySelector('.inc') as HTMLButtonElement;
+    inc.click();
+    inc.click();
+    await flush();
+
+    const before = Array.from(host.querySelectorAll('.ticks li'));
+    expect(before.length).toBe(2);
+
+    inc.click(); // grow [1,2] -> [1,2,3]
+    await flush();
+
+    const after = Array.from(host.querySelectorAll('.ticks li'));
+    expect(after.length).toBe(3);
+    // keyed: the first two <li> nodes are the SAME DOM elements, not rebuilt
+    expect(after[0]).toBe(before[0]);
+    expect(after[1]).toBe(before[1]);
   });
 });
