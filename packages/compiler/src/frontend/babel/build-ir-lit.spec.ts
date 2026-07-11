@@ -33,7 +33,7 @@ function findNode(src: string, type: string, plugins: string[]): any {
 const emitJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXElement', ['jsx'])), {} as any);
 const emitFragJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXFragment', ['jsx'])), {} as any);
 const emitLit = (src: string, svg = false) =>
-  imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', []), new Set(), { svg }), {} as any);
+  imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', ['typescript']), new Set(), { svg }), {} as any);
 
 /** Run emitted code against the real @fluixi/dom runtime in jsdom. */
 function run(res: { code: string; imports: string[] }, vars: Record<string, any> = {}): any {
@@ -111,6 +111,13 @@ describe('lit → shared compiler (spike)', () => {
     const jsx = emitJSX('(<ul>{items().map((x) => <li>{x}</li>)}</ul>)');
     expect(lit.code).toBe(jsx.code);
     expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+  });
+
+  it('handles a typed arrow param in a hole (TS annotation survives reparse)', () => {
+    // (n: number) => … in a hole must not break the emitted-code reparse.
+    const lit = emitLit('html`<For each=${xs()}>${(n: number) => html`<li>${n}</li>`}</For>`');
+    expect(lit.code).toContain('createComponent(For');
+    expect(lit.code).toContain('createNativeElement("li")');
   });
 
   it('matches: nested html`` in a ternary hole', () => {

@@ -871,7 +871,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   const { code, imports } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
-  return template.expression(code, { placeholderPattern: false })() as t.Expression;
+  return template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
 }
 
 /**
@@ -889,7 +889,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
   state.hasLitIR = true;
-  return template.expression(code, { placeholderPattern: false })() as t.Expression;
+  return template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
 }
 
 /**
