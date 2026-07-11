@@ -1,43 +1,52 @@
 # lit-counter
 
-The counter, authored with lit-html `` html`` `` templates instead of JSX.
+A Fluixi app authored with lit-html `` html`` `` templates instead of JSX.
 
 The point: `` html`` `` runs through the **same compiler** JSX does. The
 `@fluixi/vite-plugin` with `format: 'lit'` stitches the template, scans it, and
 builds the shared host-agnostic IR — then the imperative backend emits the exact
 same `@fluixi/dom` runtime calls (`createNativeElement` / `spread` / `insert` /
 `createComponent`). There is **no lit-html runtime** in the output; the template
-is compiled away.
+is compiled away. `html` (from `@fluixi/lit`) is a compile-time marker — it never
+runs.
 
 ```ts
-import { html } from './html';
+import { html, For } from '@fluixi/lit';
 
 return html`
   <div class="counter">
     <button class="dec" @click=${() => setCount(count() - 1)}>-</button>
     <span class="value ${tone()}">${count()}</span>
-    <Show when=${count() < 0}>
-      <p class="warn">below zero</p>
-    </Show>
+    <Show when=${count() < 0}><p class="warn">below zero</p></Show>
+    <ul><For each=${items()}>${(x) => html`<li>${x}</li>`}</For></ul>
   </div>
 `;
 ```
 
-What it exercises:
+## What it covers
 
-- `@click=${fn}` — delegated events (the plugin injects `delegateEvents([...])`)
-- `${count()}` — fine-grained reactive text
-- `class="value ${tone()}"` — a mixed static + reactive attribute value
-- `<Show when=${…}>` — a control-flow component, auto-imported by the compiler
+- **`src/App.ts`** — the counter: delegated `@click`, reactive text, a mixed
+  `class="value ${tone()}"` value, `<Show>`, and a keyed `<For>` of nested
+  `` html`` `` templates.
+- **`src/Ssr.ts`** — an SSR-capable app: async `createResource` + `<Suspense>`.
+  Renders on the server and hydrates on the client.
 
-The `html` tag (`src/html.ts`) is a typed stub; it only exists for the editor and
-as a guard — every call is replaced at compile time.
+The same features work as in JSX because the compiled output is identical.
+Control flow (`Show`/`For`/…) is auto-imported by the compiler; higher-level
+pieces (`Suspense`, `Router`, `createResource`) you import from `@fluixi/core`.
+
+## Run
 
 ```bash
-pnpm --filter @fluixi/example-lit-counter dev     # run in a browser
-pnpm --filter @fluixi/example-lit-counter test    # real-DOM proof (jsdom)
+pnpm --filter @fluixi/example-lit-counter dev     # client-only, in a browser
+pnpm --filter @fluixi/example-lit-counter serve   # real SSR + hydration server (http://localhost:5176)
+pnpm --filter @fluixi/example-lit-counter test    # jsdom proofs: DOM, SSR, Suspense, routing
 pnpm --filter @fluixi/example-lit-counter build   # production build
 ```
+
+`serve` runs `server.mjs`: Vite compiles the `` html`` `` templates on the fly,
+`@fluixi/server` renders `SsrApp` to HTML per request (awaiting resources +
+resolving `<Suspense>`), and `src/entry-client.ts` hydrates it in the browser.
 
 Compare `src/App.ts` here with `../counter/src/App.tsx` — different syntax, same
 runtime output.
