@@ -42,9 +42,7 @@
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
-  "dependencies": {
-    "tslib": "^2.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@bambiste/mix-builder": "*",
     "@fluixi/dom": "workspace:*",

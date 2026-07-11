@@ -42,8 +42,7 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
-    "tslib": "^2.3.0"
+    "@fluixi/compiler": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "*",

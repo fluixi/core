@@ -272,9 +272,7 @@
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
-  "dependencies": {
-    "tslib": "^2.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "inquirer": "^13.1.0",
     "@bambiste/mix-builder": "*"
