@@ -32,7 +32,8 @@ function findNode(src: string, type: string, plugins: string[]): any {
 
 const emitJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXElement', ['jsx'])), {} as any);
 const emitFragJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXFragment', ['jsx'])), {} as any);
-const emitLit = (src: string) => imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', [])), {} as any);
+const emitLit = (src: string, svg = false) =>
+  imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', []), new Set(), { svg }), {} as any);
 
 /** Run emitted code against the real @fluixi/dom runtime in jsdom. */
 function run(res: { code: string; imports: string[] }, vars: Record<string, any> = {}): any {
@@ -103,6 +104,27 @@ describe('lit → shared compiler (spike)', () => {
     const lit = emitLit('html`<div><!-- note -->${x()}</div>`');
     const jsx = emitJSX('(<div>{/* note */}{x()}</div>)');
     expect(lit.code).toBe(jsx.code);
+  });
+
+  it('matches: nested html`` in a child hole (composition)', () => {
+    const lit = emitLit('html`<ul>${items().map((x) => html`<li>${x}</li>`)}</ul>`');
+    const jsx = emitJSX('(<ul>{items().map((x) => <li>{x}</li>)}</ul>)');
+    expect(lit.code).toBe(jsx.code);
+    expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+  });
+
+  it('matches: nested html`` in a ternary hole', () => {
+    const lit = emitLit('html`<div>${ok() ? html`<b>y</b>` : html`<i>n</i>`}</div>`');
+    const jsx = emitJSX('(<div>{ok() ? <b>y</b> : <i>n</i>}</div>)');
+    expect(lit.code).toBe(jsx.code);
+  });
+
+  it('svg`` marks the whole subtree as SVG', () => {
+    const svg = emitLit('svg`<svg><g><unknownTag /></g></svg>`', true);
+    // every element created with the SVG flag (createNativeElement(tag, true))
+    expect(svg.code).not.toMatch(/createNativeElement\("unknownTag"\)/);
+    expect(svg.code).toMatch(/createNativeElement\("unknownTag", true\)/);
+    expect(svg.code).toMatch(/createNativeElement\("g", true\)/);
   });
 
   it('raw-text element keeps its content verbatim and interpolates holes', () => {

@@ -67,7 +67,7 @@ type ValuePart = { text: string } | { hole: number };
 /** Recursive-descent scan of the stitched HTML string into IR. */
 class Scanner {
   private pos = 0;
-  constructor(private src: string, private holes: Hole[]) {}
+  constructor(private src: string, private holes: Hole[], private svg = false) {}
 
   private peek(): string {
     return this.src[this.pos];
@@ -158,7 +158,8 @@ class Scanner {
 
   private mkElement(tag: string, component: boolean, props: IRProp[], children: IRNode[]): IRNode {
     if (component) return { kind: 'component', name: tag, props, children };
-    return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false };
+    // svg`` puts the whole subtree in the SVG namespace; html`` relies on known tags.
+    return { kind: 'element', tag, svg: this.svg || SVG_TAGS.has(tag), props, children, static: false };
   }
 
   /** Read a raw-text element body (only holes break the text run). */
@@ -326,12 +327,14 @@ class Scanner {
 }
 
 /**
- * Build IR from a lit `` html`...` `` TaggedTemplateExpression. `used` collects
- * runtime symbols emitted for any JSX nested inside a hole expression.
+ * Build IR from a lit `` html`...` `` (or `` svg`...` ``) TaggedTemplateExpression.
+ * `used` collects runtime symbols emitted for anything nested inside a hole
+ * expression. Pass `svg: true` for an `` svg`...` `` root.
  */
 export function buildIRFromLit(
   node: t.TaggedTemplateExpression,
   used: Set<string> = new Set(),
+  opts: { svg?: boolean } = {},
 ): IRNode {
   const quasi = node.quasi;
   const holes: Hole[] = quasi.expressions.map((e) => {
@@ -339,7 +342,7 @@ export function buildIRFromLit(
     return { code: genExpr(expr, used), reactive: isReactiveExpr(expr) };
   });
 
-  const scanner = new Scanner(stitch(quasi), holes);
+  const scanner = new Scanner(stitch(quasi), holes, opts.svg);
   const nodes = scanner.parseNodes();
   if (nodes.length === 1) return nodes[0];
   return { kind: 'fragment', children: nodes };

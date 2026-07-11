@@ -15,6 +15,7 @@
 import { types as t, traverse, template } from '@babel/core';
 import _generate from '@babel/generator';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
+import { buildIRFromLit } from './build-ir-lit.js';
 import type {
   IRNode,
   IRProp,
@@ -38,15 +39,26 @@ function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression
   const clone = t.cloneNode(node, true) as t.Expression;
   const file = t.file(t.program([t.expressionStatement(clone)]));
   let changed = false;
+  const emitInto = (path: any, code: string, imports: string[]) => {
+    for (const s of imports) used.add(s);
+    path.replaceWith(template.expression(code, { placeholderPattern: false })() as t.Expression);
+    path.skip(); // build-ir already handled this subtree (incl. anything nested)
+    changed = true;
+  };
   traverse(file, {
     'JSXElement|JSXFragment'(path: any) {
       const jsx = path.node as t.JSXElement | t.JSXFragment;
       const { code, imports } = imperativeBackend.emit(buildIR(jsx, used), {} as any);
-      for (const s of imports) used.add(s);
-      const replacement = template.expression(code, { placeholderPattern: false })() as t.Expression;
-      path.replaceWith(replacement);
-      path.skip(); // build-ir already handled this subtree (incl. its nested JSX)
-      changed = true;
+      emitInto(path, code, imports);
+    },
+    // Nested lit templates compose: ${cond ? html`…` : html`…`},
+    // ${list.map(x => html`<li>${x}</li>`)}. Compile them the same way.
+    TaggedTemplateExpression(path: any) {
+      const tag = path.node.tag;
+      if (!t.isIdentifier(tag) || (tag.name !== 'html' && tag.name !== 'svg')) return;
+      const ir = buildIRFromLit(path.node, used, { svg: tag.name === 'svg' });
+      const { code, imports } = imperativeBackend.emit(ir, {} as any);
+      emitInto(path, code, imports);
     },
   });
   return changed
