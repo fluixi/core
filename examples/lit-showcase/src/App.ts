@@ -6,9 +6,10 @@ import { html } from '@fluixi/core';
 // from @fluixi/core) are ALL auto-imported by the compiler. Read props as
 // `props.x` — never destructure (props are getters; destructuring freezes them).
 
-// ── A plain component (static tag) ──────────────────────────────────────────
-function Card(props: { title?: string, children?: unknown }) {
-  return html`<div class="box"><strong>${props.title}</strong> <slot-note>${props.children}</slot-note></div>`;
+// ── A component with a named slot ────────────────────────────────────────────
+// `<Card><span slot="header">…</span>body</Card>` → props.header + props.children.
+function Card(props: { header?: unknown; children?: unknown }) {
+  return html`<div class="box"><strong>${props.header}</strong> — ${props.children}</div>`;
 }
 
 // ── A custom `use:` directive: focus the element on mount ───────────────────
@@ -147,10 +148,10 @@ export const App: Component<{ name?: string}> = (props) => {
         </Portal>
       </section>
   
-      <!-- components: static + dynamic + slot via children -->
+      <!-- components + named slots -->
       <section>
-        <h2>components</h2>
-        <Card title="dynamic tag"><em>child</em></Card>
+        <h2>components + named slots</h2>
+        <Card><span slot="header">Header slot</span><em>default child</em></Card>
       </section>
   
       <!-- svg (namespaced) -->

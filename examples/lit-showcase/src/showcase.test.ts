@@ -25,6 +25,9 @@ describe('lit-showcase App', () => {
     expect(circle?.namespaceURI).toBe('http://www.w3.org/2000/svg');
     // two-way input exists
     expect(root.querySelector('input')).toBeTruthy();
+    // named slot: Card renders its header slot + default child
+    expect(root.textContent).toContain('Header slot');
+    expect(root.textContent).toContain('default child');
   });
 
   it('reacts: clicking +1 updates the count text', () => {
