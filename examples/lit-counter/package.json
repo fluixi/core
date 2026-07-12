@@ -14,11 +14,11 @@
   "dependencies": {
     "@fluixi/dom": "workspace:*",
     "@fluixi/core": "workspace:*",
-    "@fluixi/lit": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {
+    "@fluixi/ts-plugin": "workspace:*",
     "@fluixi/vite-plugin": "workspace:*",
     "jsdom": "^25.0.0",
     "vite": "^5.0.0",

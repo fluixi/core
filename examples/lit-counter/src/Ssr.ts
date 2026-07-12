@@ -1,5 +1,5 @@
 import { createSignal, createResource } from '@fluixi/core';
-import { html } from '@fluixi/lit';
+import { html } from '@fluixi/core';
 
 // An html``-authored app that exercises SSR + async resources + hydration through
 // the compiled template. It renders on the server (renderToString) and hydrates on
@@ -27,10 +27,15 @@ function UserCard() {
 // Renders an EMPTY string while loading — a case that used to duplicate on
 // hydration (the server rendered content, the client rendered '' during the brief
 // load, orphaning the server node). Now hydrates in place.
-function AsyncName() {
+// Accepts a reactive `titlXe` prop and forwards it. NOTE: read it as `props.title`,
+// never destructure (`const { title } = props`) — props are getters, so
+// destructuring reads the value ONCE and freezes it (that's why the bare
+// `.title=${`…${count()}`}` looked non-reactive). Accessing `props.title` inside
+// the template re-reads the getter, so it stays reactive with either form.
+function AsyncName(props: { title?: string }) {
   const [user] = createResource(() => fetchUser(9));
   const nm = () => (user.loading ? '' : user().name ?? '');
-  return html`<span class="async">${nm()}</span>`;
+  return html`<span class="async">${props.title}: ${nm()}</span>`;
 }
 
 export function SsrApp(props: { url?: string }) {
@@ -44,8 +49,12 @@ export function SsrApp(props: { url?: string }) {
         <span class="value">${count()}</span>
         <button class="inc" @click=${() => setCount(count() + 1)}>+</button>
       </section>
+      <div if=${count() === 3}>is 3</div>
+      <div else>not 3</div>
+      <div if=${count() > 3}>above 3</div>
+      <div if=${count() > 5}>above 5</div>
       <UserCard />
-      <AsyncName />
+      <AsyncName .title=${`test props ${count()}`} />
     </main>
   `;
 }
