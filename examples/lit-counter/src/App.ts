@@ -1,5 +1,5 @@
 import { createSignal } from '@fluixi/core';
-import { html } from '@fluixi/lit';
+import { html } from '@fluixi/core';
 
 // A fine-grained reactive counter written with lit html`` instead of JSX.
 // `html`, `Show`, etc. come from @fluixi/lit; the template is compiled to
@@ -20,7 +20,7 @@ export function Counter(props: { start?: number }) {
       <Show when=${count() < 0}>
         <p class="warn">below zero</p>
       </Show>
-      <ul class="ticks">
+      <ul class="ticks" if=${history().length > 0}>
         <For each=${history()}>${(n: number) => html`<li>tick ${n}</li>`}</For>
       </ul>
     </div>
