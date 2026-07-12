@@ -279,6 +279,9 @@ export {
 export {lazy} from "./lazy.js"
 export type {LazyOptions, LazyComponent} from "./lazy.js"
 
+export { Await } from './await.js';
+export type { AwaitProps } from './await.js';
+
 export type {
   Component,
   ComponentProps,

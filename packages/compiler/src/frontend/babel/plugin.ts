@@ -209,11 +209,12 @@ const CONTROL_FLOW_COMPONENTS = new Set([
   'Dynamic',
   'ErrorBoundary',
   'Suspense',
+  'Await',
 ]);
 
 // Control-flow components that live in @fluixi/core, NOT @fluixi/dom — they must
 // be auto-imported from core (dom doesn't export them).
-const CORE_ONLY_CONTROL_FLOW = new Set(['Suspense', 'SuspenseList']);
+const CORE_ONLY_CONTROL_FLOW = new Set(['Suspense', 'SuspenseList', 'Await']);
 
 // Control-flow components read a single reactive *value* prop inside their own tracking
 // scope. Emit that prop as a getter (like `children`) so reading it re-runs the caller's

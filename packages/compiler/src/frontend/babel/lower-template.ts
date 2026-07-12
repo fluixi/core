@@ -135,6 +135,16 @@ class Lowerer {
   }
 
   private lowerElement(el: ElementNode): IRNode {
+    // `<component is=${C} …>…</component>` → `<Dynamic component=${C} …>` (a
+    // reactive component swap). Dynamic reads `component` via normalizeAccessor,
+    // so it must be an ACCESSOR `() => C` (a bare function would be mis-called).
+    const isAttr = el.attributes.find((a): a is AttributeNode => a.kind === 'Attribute' && a.name === 'is');
+    if (el.tag === 'component' && isAttr && isAttr.value && isAttr.value.kind === 'hole') {
+      const rest = el.attributes.filter((a) => a !== isAttr);
+      const node = this.lowerComponent({ ...el, kind: 'Component', tag: 'Dynamic', tagHole: null, attributes: rest }) as IRNode & { props: IRProp[] };
+      node.props.unshift({ name: 'component', kind: 'attr', expr: `() => (${this.hole(isAttr.value.hole).code})` });
+      return node;
+    }
     return {
       kind: 'element',
       tag: el.tag,

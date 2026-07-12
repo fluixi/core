@@ -321,6 +321,30 @@ describe('lit use directives', () => {
   });
 });
 
+describe('lit <component is> and <Await>', () => {
+  it('<component is=${C}> lowers to <Dynamic component>', () => {
+    const code = compileEsm('export const r = (C) => html`<component is=${C} title="x">body</component>`;');
+    expect(code).toContain('createComponent(Dynamic');
+    expect(flat(code)).toContain('get component()');
+    expect(code).toMatch(/import \{[^}]*\bDynamic\b[^}]*\} from "@fluixi\/dom"/);
+  });
+
+  it('<component is=${C}> renders the component at runtime', () => {
+    const mod = load('export const render = (C) => html`<component is=${C} />`;');
+    const Comp = () => { const b = document.createElement('b'); b.textContent = 'dyn'; return b; };
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(Comp));
+    expect(host.querySelector('b')?.textContent).toBe('dyn');
+  });
+
+  it('<Await value=${p}> auto-imports Await from @fluixi/core', () => {
+    const code = compileEsm('export const r = (p) => html`<Await value=${p}>${(v) => v}</Await>`;');
+    expect(code).toContain('createComponent(Await');
+    expect(code).toMatch(/import \{[^}]*\bAwait\b[^}]*\} from "@fluixi\/core"/);
+    expect(flat(code)).toContain('get value()');
+  });
+});
+
 describe('lit named slots', () => {
   it('a child with slot="name" becomes a named prop; the rest are children', () => {
     const code = compileEsm(
