@@ -321,6 +321,38 @@ describe('lit use directives', () => {
   });
 });
 
+describe('lit named slots', () => {
+  it('a child with slot="name" becomes a named prop; the rest are children', () => {
+    const code = compileEsm(
+      'export const r = (Card) => html`<${Card}><div slot="header">H</div><span>body</span></${Card}>`;',
+    );
+    expect(flat(code)).toContain('get header()'); // slot -> named prop
+    expect(code).toContain('createComponent(Card');
+    expect(code).toContain('body'); // default child preserved
+  });
+
+  it('the component receives props.header and props.children at runtime', () => {
+    const mod = load(
+      'function Card(props) { return html`<section><h1>${props.header}</h1><main>${props.children}</main></section>`; }\n' +
+        'export const render = () => html`<Card><em slot="header">Title</em><p>Body</p></Card>`;',
+    );
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render());
+    expect(host.querySelector('h1 em')?.textContent).toBe('Title');
+    expect(host.querySelector('main p')?.textContent).toBe('Body');
+  });
+
+  it('multiple children with the same slot name group into one', () => {
+    const mod = load(
+      'function List(props) { return html`<ul>${props.items}</ul>`; }\n' +
+        'export const render = () => html`<List><li slot="items">a</li><li slot="items">b</li></List>`;',
+    );
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render());
+    expect(host.querySelectorAll('ul li').length).toBe(2);
+  });
+});
+
 describe('lit framework components (static tags auto-import)', () => {
   it('static <Portal> auto-imports from dom, <Suspense> from core', () => {
     const code = compileEsm(

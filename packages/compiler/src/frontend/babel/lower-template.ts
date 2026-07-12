@@ -149,12 +149,41 @@ class Lowerer {
     // `<${Comp} />`: the tag is an interpolated expression — use the hole's code
     // as the component identity, so `createComponent(<expr>, …)` is emitted.
     const name = el.tagHole != null ? this.hole(el.tagHole).code : el.tag;
-    return {
-      kind: 'component',
-      name,
-      props: this.lowerAttributes(el.attributes),
-      children: this.lowerChildren(el.children),
-    };
+    const props = this.lowerAttributes(el.attributes);
+
+    // Named slots: a child with `slot="header"` becomes `props.header` (a lazy
+    // getter, like `children`); the rest stay the default `children`. This is the
+    // Solid convention — the component reads `props.header` / `props.children`.
+    const { slots, rest } = this.partitionSlots(el.children);
+    for (const [slotName, nodes] of slots) {
+      const ir = nodes.length === 1 ? nodes[0] : { kind: 'fragment' as const, children: nodes };
+      props.push({ name: slotName, kind: 'attr', expr: this.emit(ir), jsxElement: true });
+    }
+
+    return { kind: 'component', name, props, children: this.lowerChildren(rest) };
+  }
+
+  /** Split a component's children into named slots (`slot="x"`) and the rest. */
+  private partitionSlots(children: TemplateNode[]): { slots: Map<string, IRNode[]>; rest: TemplateNode[] } {
+    const slots = new Map<string, IRNode[]>();
+    const rest: TemplateNode[] = [];
+    for (const child of children) {
+      if (child.kind === 'Element' || child.kind === 'Component') {
+        const slot = child.attributes.find(
+          (a): a is AttributeNode => a.kind === 'Attribute' && a.name === 'slot',
+        );
+        if (slot && slot.value && slot.value.kind === 'static') {
+          const stripped = { ...child, attributes: child.attributes.filter((a) => a !== slot) };
+          const ir = stripped.kind === 'Element' ? this.lowerElement(stripped) : this.lowerComponent(stripped);
+          const bucket = slots.get(slot.value.value) ?? [];
+          bucket.push(ir);
+          slots.set(slot.value.value, bucket);
+          continue;
+        }
+      }
+      rest.push(child);
+    }
+    return { slots, rest };
   }
 
   // --- control-flow sugar -------------------------------------------------
