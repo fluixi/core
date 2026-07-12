@@ -1,0 +1,56 @@
+{
+  "name": "@fluixi/template-parser",
+  "version": "0.1.0-alpha.0",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "description": "The Fluixi html`` template parser: a dependency-free tokenizer + recursive-descent parser producing a located, recoverable Template AST. The shared foundation for the compiler, language server, TypeScript plugin, and Biome plugin.",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "*",
+    "cross-env": "^7.0.3",
+    "inquirer": "^14.0.2",
+    "vitest": "^1.6.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/template-parser"
+  }
+}

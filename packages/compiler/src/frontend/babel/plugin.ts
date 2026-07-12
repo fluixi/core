@@ -211,6 +211,10 @@ const CONTROL_FLOW_COMPONENTS = new Set([
   'Suspense',
 ]);
 
+// Control-flow components that live in @fluixi/core, NOT @fluixi/dom — they must
+// be auto-imported from core (dom doesn't export them).
+const CORE_ONLY_CONTROL_FLOW = new Set(['Suspense', 'SuspenseList']);
+
 // Control-flow components read a single reactive *value* prop inside their own tracking
 // scope. Emit that prop as a getter (like `children`) so reading it re-runs the caller's
 // expression — otherwise `each={items()}` / `when={cond()}` snapshot once and never update.
@@ -281,7 +285,10 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     autoShowTransform = false,
     backend = 'imperative',
     codegen = 'inline',
-    format = 'jsx',
+    // `both` by default: JSX and html`` are compiled out of the box, so
+    // `fluixi()` needs no `format` option. Injected imports are deduped, so a
+    // file mixing the two styles won't redeclare a binding.
+    format = 'both',
     litTag = 'html',
   } = options;
 
@@ -494,17 +501,20 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               const unbound = (Array.from(state.controlFlowComponents) as string[]).filter(
                 (name) => !path.scope.hasBinding(name),
               );
-              if (unbound.length > 0) {
-                const specifiers = unbound.map((name) =>
-                  t.importSpecifier(t.identifier(name), t.identifier(name)),
+              // Suspense/SuspenseList live in @fluixi/core, not @fluixi/dom, so
+              // they must be auto-imported from core (importing them from the dom
+              // controlFlowModule would resolve to nothing). Everything else comes
+              // from controlFlowModule.
+              const coreModule = state.libModule ?? '@fluixi/core';
+              const fromCore = unbound.filter((n) => CORE_ONLY_CONTROL_FLOW.has(n));
+              const fromDom = unbound.filter((n) => !CORE_ONLY_CONTROL_FLOW.has(n));
+              const declFor = (names: string[], mod: string) =>
+                t.importDeclaration(
+                  names.map((name) => t.importSpecifier(t.identifier(name), t.identifier(name))),
+                  t.stringLiteral(mod),
                 );
-                imports.push(
-                  t.importDeclaration(
-                    specifiers,
-                    t.stringLiteral(controlFlowModule),
-                  ),
-                );
-              }
+              if (fromDom.length > 0) imports.push(declFor(fromDom, controlFlowModule));
+              if (fromCore.length > 0) imports.push(declFor(fromCore, coreModule));
             }
 
             // Add event delegation setup if needed
@@ -551,11 +561,12 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             }
           }
 
-          // Add all imports at the top
+          // Add all imports at the top, deduped. When a file mixes inline JSX
+          // and html`` (format 'both'), the two injection paths can each emit an
+          // import for the same module/name — merge per-module and drop repeated
+          // specifiers so we never redeclare a binding.
           if (imports.length > 0) {
-            // console.log('imports are', imports);
-            // console.log('imports', imports);
-            path.node.body.unshift(...imports);
+            path.node.body.unshift(...dedupeImports(imports));
           }
         },
       },
@@ -872,6 +883,38 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   return template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
+}
+
+/**
+ * Merge injected import declarations so no module/name pair is imported twice.
+ * Named imports from the same module collapse into one declaration with unique
+ * specifiers; anything non-trivial (default/namespace/side-effect) passes through
+ * untouched. Order is preserved by first appearance.
+ */
+function dedupeImports(imports: t.ImportDeclaration[]): t.ImportDeclaration[] {
+  const byModule = new Map<string, { decl: t.ImportDeclaration; names: Set<string> }>();
+  const out: t.ImportDeclaration[] = [];
+  for (const decl of imports) {
+    const source = decl.source.value;
+    const allNamed = decl.specifiers.every((s) => t.isImportSpecifier(s));
+    if (!allNamed) { out.push(decl); continue; }
+    const existing = byModule.get(source);
+    if (!existing) {
+      const names = new Set(
+        decl.specifiers.map((s) => ((s as t.ImportSpecifier).local.name)),
+      );
+      byModule.set(source, { decl, names });
+      out.push(decl);
+      continue;
+    }
+    for (const s of decl.specifiers as t.ImportSpecifier[]) {
+      if (!existing.names.has(s.local.name)) {
+        existing.names.add(s.local.name);
+        existing.decl.specifiers.push(s);
+      }
+    }
+  }
+  return out;
 }
 
 /**

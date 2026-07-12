@@ -956,6 +956,41 @@ export function setProperty(element: any, name: string, value: any): void {
   else element[name] = value;
 }
 
+/**
+ * Apply `use:` custom directives. `value` is an array of `[directive, accessor?]`
+ * pairs (the compiler's normalized shape); each directive is called
+ * `directive(element, accessor)`. A bare function or single pair is tolerated so
+ * the runtime is usable directly too.
+ */
+/**
+ * Attach a NATIVE event listener (bypassing delegation) for `on:name` /
+ * `@name.capture` bindings. `value` is a handler or `[handler, options]` where
+ * options is an `AddEventListenerOptions` (`{ capture, once, passive }`).
+ * Returns a disposer that removes the listener.
+ */
+export function addNativeEventListener(element: Element, name: string, value: any): () => void {
+  let handler = value;
+  let options: AddEventListenerOptions | undefined;
+  if (Array.isArray(value)) { handler = value[0]; options = value[1]; }
+  if (typeof handler !== 'function') return () => {};
+  element.addEventListener(name, handler as EventListener, options);
+  return () => element.removeEventListener(name, handler as EventListener, options);
+}
+
+export function applyUse(element: Element, value: any): void {
+  const call = (dir: any, accessor?: any) => {
+    if (typeof dir === 'function') dir(element, accessor ?? (() => undefined));
+  };
+  if (typeof value === 'function') { call(value); return; }
+  if (!Array.isArray(value)) return;
+  // A single [fn, accessor] pair, or an array of such pairs.
+  if (typeof value[0] === 'function') { call(value[0], value[1]); return; }
+  for (const pair of value) {
+    if (Array.isArray(pair)) call(pair[0], pair[1]);
+    else call(pair);
+  }
+}
+
 export function setDynamicAttribute(
   element: Element,
   name: string,
@@ -1112,6 +1147,21 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'ref') { handleRef(value, element); continue; }
 
+    // Custom directives: `use=${dir}` / `use:name` / `use:name=${opts}`. The
+    // compiler normalizes to an array of [directive, accessor?] pairs; each is
+    // called with the element (accessor optional). Directives register their own
+    // onCleanup, so run them in the current reactive owner.
+    if (key === 'use') { applyUse(element, value); continue; }
+
+    // Native event binding: `on:click` / `@click.capture` / `@input.passive`.
+    // Value is a handler or `[handler, options]`. Uses addEventListener (bypasses
+    // delegation) so capture/once/passive work. Must precede the `on`-delegated
+    // branch below (both start with "on").
+    if (key.startsWith('on:')) {
+      disposers.push(addNativeEventListener(element, key.slice(3), value));
+      continue;
+    }
+
     if (key === 'class' || key === 'className') {
       if (typeof value === 'function') {
         disposers.push(createRenderEffect(() => setClassName(element, value())));
@@ -1178,6 +1228,8 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     const val = props[key];
     if (key === 'ref') { handleRef(val, element); continue; }
     if (key === 'children') continue;
+    if (key === 'use') { applyUse(element, val); continue; }
+    if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
     if (key.startsWith('on') && key.length > 2) {
       const name = key.slice(2).toLowerCase();
       if (typeof val === 'function') {
