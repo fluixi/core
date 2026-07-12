@@ -1,5 +1,4 @@
 ---
-"@fluixi/lit": patch
 "@fluixi/vite-plugin": patch
 "@fluixi/reactive": patch
 "@fluixi/start": patch

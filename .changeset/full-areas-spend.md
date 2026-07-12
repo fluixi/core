@@ -12,7 +12,6 @@
 '@fluixi/example-todo': patch
 '@fluixi/example-ssr': patch
 '@fluixi/dom': patch
-'@fluixi/lit': patch
 ---
 
 ---
