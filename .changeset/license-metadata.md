@@ -9,7 +9,6 @@
 "@fluixi/dom": patch
 "@fluixi/head": patch
 "@fluixi/jsx": patch
-"@fluixi/lit": patch
 "@fluixi/reactive": patch
 "@fluixi/router": patch
 "@fluixi/server": patch
