@@ -34,23 +34,45 @@ const EVENT_TYPES: Record<string, string> = {
 
 /** The role a template hole plays, if it's a typed callback slot. */
 type HoleRole =
-  | { kind: 'each'; eachHole: number }
+  | { kind: 'each'; eachHole: number } // item is the element type
+  | { kind: 'indexEach'; eachHole: number } // <Index>: item is an accessor () => T
+  | { kind: 'show'; whenHole: number } // <Show>: value is the narrowed truthy `when`
   | { kind: 'event'; event: string };
 
 /** Map every hole index that is a typed callback to its role. */
 function holeRoles(nodes: readonly TemplateNode[], out: Map<number, HoleRole>): void {
+  const renderChildren = (node: TemplateNode, role: HoleRole): void => {
+    if ('children' in node && node.children) {
+      for (const child of node.children) if (child.kind === 'Expression') out.set(child.hole, role);
+    }
+  };
+
   for (const node of nodes) {
     if (node.kind === 'Element' || node.kind === 'Component') {
       // event handlers: @click / on:click / onClick
       for (const a of node.attributes) {
         if (a.kind === 'EventBinding') out.set(a.hole, { kind: 'event', event: a.name.toLowerCase() });
       }
-      // each render callback: the single Expression child of an element with `each`
-      const each = node.attributes.find((a) => a.kind === 'EachDirective');
-      if (each && each.kind === 'EachDirective') {
-        for (const child of node.children) {
-          if (child.kind === 'Expression') out.set(child.hole, { kind: 'each', eachHole: each.hole });
-        }
+
+      // `each` directive on an element → For-style item.
+      const eachDir = node.attributes.find((a) => a.kind === 'EachDirective');
+      if (eachDir && eachDir.kind === 'EachDirective') {
+        renderChildren(node, { kind: 'each', eachHole: eachDir.hole });
+      }
+
+      // Control-flow components with a render-prop child.
+      if (node.kind === 'Component') {
+        const propHole = (name: string): number | undefined => {
+          const a = node.attributes.find(
+            (x) => x.kind === 'Attribute' && x.name === name && x.value != null && x.value.kind === 'hole',
+          );
+          return a && a.kind === 'Attribute' && a.value && a.value.kind === 'hole' ? a.value.hole : undefined;
+        };
+        const eachHole = propHole('each');
+        if ((node.tag === 'For') && eachHole !== undefined) renderChildren(node, { kind: 'each', eachHole });
+        if (node.tag === 'Index' && eachHole !== undefined) renderChildren(node, { kind: 'indexEach', eachHole });
+        const whenHole = propHole('when');
+        if (node.tag === 'Show' && whenHole !== undefined) renderChildren(node, { kind: 'show', whenHole });
       }
     }
     if ('children' in node && node.children) holeRoles(node.children, out);
@@ -105,10 +127,15 @@ export function inferParamAt(
   let typeText: string | undefined;
   if (role.kind === 'event') {
     typeText = EVENT_TYPES[role.event] ?? 'Event';
+  } else if (role.kind === 'show') {
+    // <Show when=${cond}>${(value) => …}: value is the narrowed truthy `when`.
+    const when = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]));
+    typeText = checker.typeToString(when);
   } else {
+    // each / For (plain item) or Index (accessor () => item).
     const arrType = checker.getTypeAtLocation(holeExprs[role.eachHole]);
     const elem = arrType.getNumberIndexType();
-    if (elem) typeText = checker.typeToString(elem);
+    if (elem) typeText = role.kind === 'indexEach' ? `() => ${checker.typeToString(elem)}` : checker.typeToString(elem);
   }
   if (!typeText) return undefined;
   return { paramName, typeText, start: id.getStart(sf), length: id.getWidth(sf) };
