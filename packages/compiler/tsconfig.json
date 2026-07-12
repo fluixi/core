@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../template-parser"
+    },
+    {
       "path": "../reactive"
     },
     {

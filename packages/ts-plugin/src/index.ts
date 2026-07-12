@@ -1,0 +1,60 @@
+/**
+ * Fluixi TypeScript language-service plugin.
+ *
+ * TypeScript treats a `` html`...` `` template as an opaque string, so a
+ * component referenced only by tag — `<UserCard/>` — is never seen as used and
+ * gets a "declared but never used" report. This plugin proxies the language
+ * service and drops those reports for any binding that IS referenced through a
+ * template component tag (detected by reparsing the template with
+ * `@fluixi/template-parser`).
+ *
+ * Enable it in a project's tsconfig (using the workspace TypeScript version):
+ *   { "compilerOptions": { "plugins": [{ "name": "@fluixi/ts-plugin" }] } }
+ */
+import type * as ts from 'typescript';
+import { shouldSuppress, usedComponentTags } from './collect.js';
+import { componentQuickInfo } from './hover.js';
+
+// Minimal shapes from tsserverlibrary — declared locally so the plugin can type
+// only against the main `typescript` module (which owns LanguageService).
+interface PluginCreateInfo {
+  languageService: ts.LanguageService;
+}
+interface PluginModule {
+  create(info: PluginCreateInfo): ts.LanguageService;
+}
+
+/** tsserver calls this with the TS module instance the editor is running. */
+function init(modules: { typescript: typeof ts }): PluginModule {
+  const ts = modules.typescript;
+  return {
+    create(info: PluginCreateInfo): ts.LanguageService {
+      const ls = info.languageService;
+
+      const proxy: Record<string, unknown> = Object.create(null);
+      for (const key of Object.keys(ls) as Array<keyof ts.LanguageService>) {
+        const member = ls[key];
+        proxy[key] = typeof member === 'function' ? (member as Function).bind(ls) : member;
+      }
+
+      const filter = <T extends ts.Diagnostic>(fileName: string, diagnostics: T[]): T[] => {
+        const sourceFile = ls.getProgram()?.getSourceFile(fileName);
+        if (!sourceFile) return diagnostics;
+        const used = usedComponentTags(ts, sourceFile);
+        if (used.size === 0) return diagnostics;
+        return diagnostics.filter((d) => !shouldSuppress(ts, sourceFile, d, used));
+      };
+
+      proxy.getSemanticDiagnostics = (fileName: string) => filter(fileName, ls.getSemanticDiagnostics(fileName));
+      proxy.getSuggestionDiagnostics = (fileName: string) => filter(fileName, ls.getSuggestionDiagnostics(fileName));
+
+      // Hover a `<Component>` tag inside html`` → show its TS signature.
+      proxy.getQuickInfoAtPosition = (fileName: string, position: number) =>
+        ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
+
+      return proxy as unknown as ts.LanguageService;
+    },
+  };
+}
+
+export = init;

@@ -1,0 +1,35 @@
+{
+  "name": "@fluixi/ts-plugin",
+  "version": "0.1.0-alpha.0",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "description": "TypeScript language-service plugin for Fluixi: teaches tsserver that component tags used inside html`` templates (e.g. <UserCard/>) count as references, so they aren't flagged as unused.",
+  "type": "commonjs",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --external:typescript --outfile=dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fluixi/template-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.9.0",
+    "vitest": "^1.6.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/ts-plugin"
+  }
+}

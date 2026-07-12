@@ -128,6 +128,16 @@ export function isReactiveExpr(node: t.Expression): boolean {
     return isReactiveExpr(node.left as t.Expression) || isReactiveExpr(node.right as t.Expression);
   }
   if (t.isTemplateLiteral(node)) return node.expressions.some((e) => isReactiveExpr(e as t.Expression));
+  // Object/array literals are reactive when any value inside is — so
+  // `class=${{ active: active() }}` / `style=${{ width: w() }}` react per update.
+  if (t.isObjectExpression(node)) {
+    return node.properties.some(
+      (p) => t.isObjectProperty(p) && !p.computed && isReactiveExpr(p.value as t.Expression),
+    );
+  }
+  if (t.isArrayExpression(node)) {
+    return node.elements.some((e) => e != null && !t.isSpreadElement(e) && isReactiveExpr(e as t.Expression));
+  }
   return false;
 }
 

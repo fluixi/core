@@ -98,12 +98,37 @@ describe('lit front-end (format: lit)', () => {
     expect(code).toContain('createComponent');
   });
 
-  it('leaves html`` untouched under the default format (jsx)', () => {
+  it('compiles html`` by DEFAULT (format defaults to `both` — no option needed)', () => {
     const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
       backend: 'imperative',
       hoistStatics: false,
     });
+    expect(code).toContain('createNativeElement');
+    expect(code).not.toContain('html`'); // template consumed
+  });
+
+  it('leaves html`` untouched when format is explicitly `jsx`', () => {
+    const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
+      backend: 'imperative',
+      hoistStatics: false,
+      format: 'jsx',
+    });
     expect(code).not.toContain('createNativeElement');
     expect(code).toContain('html`');
+  });
+
+  it('a file mixing JSX + html`` (format both) does not duplicate imports', () => {
+    const code = babel.transformSync(
+      'export const a = () => <div>jsx</div>;\nexport const b = () => html`<span>lit</span>`;',
+      { filename: 't.tsx', configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] },
+        plugins: [[plugin, { backend: 'imperative', format: 'both', hoistStatics: false, signalModule: '@fluixi/dom' }]] },
+    )!.code!;
+    // both styles compiled
+    expect(code).toContain('createNativeElement');
+    // no module imported twice, no name redeclared
+    const importLines = code.split('\n').filter((l) => /^import /.test(l));
+    const fromDom = importLines.filter((l) => /from "@fluixi\/dom"/.test(l));
+    expect(fromDom.length).toBeLessThanOrEqual(1);
+    expect((code.match(/import \{[^}]*\bcreateNativeElement\b/g) || []).length).toBe(1);
   });
 });
