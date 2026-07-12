@@ -100,8 +100,11 @@ import {
 } from './router-next/index.js';
 import { ensureIntegration } from './render/component.js';
 
-// Lit lives in @fluixi/lit — import html/svg/nothing/LitElement from there directly.
-// The core @fluixi/core entry no longer pulls lit (keeps it out of SSR bundles).
+// html`` / svg`` template markers — the no-JSX authoring surface. They live in
+// @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
+// `import { html } from '@fluixi/core'` works. Inert typed functions — no lit runtime.
+export { html, svg } from '@fluixi/dom';
+export type { TemplateResult, Reactive } from '@fluixi/dom';
 
 // createReactiveJSX (a deprecated legacy adapter) lived here but pulled the jsx-runtime
 // `.` entry into the core graph. It's gone — compiled JSX uses the jsx-runtime subpath
@@ -131,9 +134,7 @@ export {
   observeIntersection,
   observeResize,
 } from '@fluixi/dom';
-// Lit renderer symbols ($show/$match/portal helpers/html/litrx/…) live in @fluixi/lit —
-// import them from there. They are intentionally NOT re-exported here so the core
-// entry stays lit-free (and out of server bundles).
+// (No lit runtime exists anymore — html`` compiles to @fluixi/dom calls.)
 
 // import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {

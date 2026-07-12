@@ -11,7 +11,6 @@
       "@fluixi/jsx",
       "@fluixi/core",
       "@fluixi/compiler",
-      "@fluixi/lit",
       "@fluixi/vite-plugin",
       "@fluixi/session",
       "@fluixi/auth"

@@ -109,14 +109,7 @@ export type {
 
 // export type { RenderOptions } from './render/index.js';
 
-// ============================================================================
-// LIT-HTML INTEGRATION
-// ============================================================================
-
-// Lit (html/svg/nothing/litRender/LitElement and the $-directives below) lives in
-// @fluixi/lit — import it from there directly. It is NOT re-exported here: lit extends
-// HTMLElement at module init, so re-exporting it dragged lit into SSR/prod server bundles
-// (HTMLElement is not defined). Keeping this barrel lit-free keeps the core out of that.
+// html`` / svg`` markers are re-exported from the main entry (lib/core.ts).
 
 // ============================================================================
 // DOM UTILITIES (from @fluixi/dom)
@@ -136,9 +129,6 @@ export {
   type StyleValue,
 } from '@fluixi/dom';
 export * from './control-flow.js';
-// Lit-specific directives ($classMap/$styleMap/litrx) and lit control flow
-// ($show/$for/$switch/$portal/$if/$each) live in @fluixi/lit — import from there.
-// (Framework-agnostic classMap/styleMap above come from @fluixi/dom and stay here.)
 
 export {
   // DOM Manipulation
