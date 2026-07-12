@@ -82,9 +82,20 @@ function hydrateElement(tag: string): Element | null {
 
 /** Reuse the text node at the cursor (syncing its value) and advance. */
 function hydrateText(value: string): Text | null {
-  // Empty text is a client-only insertion anchor (createTextNode('') in insert()); the
-  // server serialized nothing for it, so never consume a server text node — build fresh.
-  if (value === '') return null;
+  if (value === '') {
+    // Empty reactive CONTENT (anchors bypass this via createTextNode(_, true)). When the
+    // client renders '' but the server rendered NON-empty content here (e.g. a resource's
+    // loading state, resolved on the server), adopt+clear that server text node — else it
+    // is orphaned and duplicates once the value resolves ("User #9User #9"). A genuinely
+    // empty text (no server node, cursor not at a non-empty text node) builds fresh.
+    const c = hydration.cursor;
+    if (c && c.nodeType === 3 && (c as Text).data !== '') {
+      hydration.cursor = c.nextSibling;
+      (c as Text).data = '';
+      return c as Text;
+    }
+    return null;
+  }
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 3) {

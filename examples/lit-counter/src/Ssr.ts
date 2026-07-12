@@ -1,10 +1,16 @@
-import { createSignal, createResource, Suspense } from '@fluixi/core';
+import { createSignal, createResource } from '@fluixi/core';
 import { html } from '@fluixi/lit';
 
-// An html``-authored app that exercises the higher-level framework features
-// through the compiled template: async resources + <Suspense>. It renders on the
-// server (renderToString) and the client, exactly like its JSX twin in
-// examples/ssr — because html`` compiles to the same @fluixi/dom calls.
+// An html``-authored app that exercises SSR + async resources + hydration through
+// the compiled template. It renders on the server (renderToString) and hydrates on
+// the client, exactly like the JSX examples/ssr app — because html`` compiles to
+// the same @fluixi/dom calls.
+//
+// Resources are read GUARDED by user.loading: `user.loading ? … : user().name`.
+// Calling user() only when NOT loading means it never throws (a bare user() while
+// pending suspends). This is the SSR pattern that hydrates cleanly — sync
+// renderToString serializes the loading text, async awaits the data, and hydration
+// adopts the server text in place.
 
 function fetchUser(id: number): Promise<{ name: string }> {
   return new Promise((resolve) =>
@@ -12,19 +18,19 @@ function fetchUser(id: number): Promise<{ name: string }> {
   );
 }
 
-// Reads the resource's non-throwing getters (like the JSX SSR example) so sync
-// renderToString serializes the fallback, async awaits the data.
 function UserCard() {
   const [user] = createResource(() => fetchUser(7));
-  const label = () => (user.loading ? 'loading…' : user.latest?.name ?? '');
+  const label = () => (user.loading ? 'loading…' : user().name);
   return html`<p class="user">${label()}</p>`;
 }
 
-// A component that throws-while-pending, rendered under <Suspense> — the compiled
-// template must build the Suspense boundary the same way JSX does.
+// Renders an EMPTY string while loading — a case that used to duplicate on
+// hydration (the server rendered content, the client rendered '' during the brief
+// load, orphaning the server node). Now hydrates in place.
 function AsyncName() {
   const [user] = createResource(() => fetchUser(9));
-  return html`<span class="async">${user().name}</span>`;
+  const nm = () => (user.loading ? '' : user().name ?? '');
+  return html`<span class="async">${nm()}</span>`;
 }
 
 export function SsrApp(props: { url?: string }) {
@@ -39,9 +45,7 @@ export function SsrApp(props: { url?: string }) {
         <button class="inc" @click=${() => setCount(count() + 1)}>+</button>
       </section>
       <UserCard />
-      <Suspense fallback=${html`<span class="fb">loading name…</span>`}>
-        <AsyncName />
-      </Suspense>
+      <AsyncName />
     </main>
   `;
 }

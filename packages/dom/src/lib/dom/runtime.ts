@@ -234,9 +234,12 @@ export function isFunction(value: any): value is Function {
   return typeof value === 'function';
 }
 
-function createTextNode(value: string): Text {
+function createTextNode(value: string, anchor = false): Text {
   if (isServer) return getServerNodes().createText(value) as unknown as Text;
-  if (hydration.active) {
+  // Anchors/placeholders (insert markers) are client-only insertion points — the server
+  // serialized nothing for them, so they must never adopt a server text node. Only real
+  // content goes through the hydration walker.
+  if (hydration.active && !anchor) {
     const node = getHydrationWalker()?.hydrateText(value);
     if (node) return node;
   }
@@ -432,7 +435,7 @@ export function insert(
   }
 
   if (marker !== undefined && !marker) {
-    marker = createTextNode('');
+    marker = createTextNode('', true);
     parent.appendChild(marker);
   }
 
@@ -485,7 +488,7 @@ export function insertExpression(
 
   // Handle promises
   if (isPromise(value)) {
-    const placeholder = createTextNode('');
+    const placeholder = createTextNode('', true);
     if (Array.isArray(current)) {
       if (current.length > 0) {
         parent.replaceChild(placeholder, current[0]);
@@ -703,7 +706,7 @@ function flattenArray(
           // in place instead of re-rendering the enclosing subtree. Only the synchronous array
           // path collects slots; async/promise resolutions fall back to the inline read below.
           if (reactiveSlots) {
-            const slot = createTextNode('');
+            const slot = createTextNode('', true);
             result.push(slot);
             reactiveSlots.push({ marker: slot, sig: resolved });
             continue;
@@ -730,7 +733,7 @@ function flattenArray(
     }
 
     if (isPromise(item)) {
-      const placeholder = createTextNode('');
+      const placeholder = createTextNode('', true);
       result.push(placeholder);
       (item as Promise<any>)
         .then((resolved) => {

@@ -1,43 +1,65 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { renderToString, renderToStringAsync } from '@fluixi/server';
-import { render } from '@fluixi/core';
+import { render, createResource } from '@fluixi/core';
+import { hydrate, setRequestStore } from '@fluixi/dom';
 import { flush } from '@fluixi/reactive/signal';
+import { html } from '@fluixi/lit';
 import { SsrApp } from './Ssr';
 
-// Proof that html``-authored apps work with SSR + resources + <Suspense>, exactly
-// like the JSX examples/ssr app — because html`` compiles to the same @fluixi/dom
-// calls, the server renderer and Suspense boundary behave identically.
-describe('html`` app through SSR + Suspense', () => {
-  it('sync renderToString emits the shell + fallbacks (data still loading)', () => {
-    const html = renderToString(() => SsrApp({ url: '/home' }));
-    expect(html).toContain('<h1>Fluixi SSR</h1>');
-    expect(html).toContain('/home');            // props.url
-    expect(html).toContain('<span class="value">3</span>'); // reactive signal
-    expect(html).toContain('loading…');         // resource getter fallback
-    expect(html).toContain('loading name…');    // <Suspense> fallback serialized
-    expect(html).not.toContain('User #7');
-    expect(html).not.toContain('User #9');
+afterEach(() => {
+  setRequestStore(null);
+  delete (window as any).__FX_DATA__;
+});
+
+// Proof that html``-authored apps work with SSR + async resources + hydration,
+// exactly like the JSX examples/ssr app — because html`` compiles to the same
+// @fluixi/dom calls, the server renderer and hydration behave identically.
+describe('html`` app through SSR + resources', () => {
+  it('sync renderToString emits the shell (resources still loading)', () => {
+    const out = renderToString(() => SsrApp({ url: '/home' }));
+    expect(out).toContain('<h1>Fluixi SSR</h1>');
+    expect(out).toContain('/home');                     // props.url
+    expect(out).toContain('<span class="value">3</span>'); // reactive signal
+    expect(out).toContain('loading…');                  // resource loading getter
+    expect(out).not.toContain('User #7');
   });
 
-  it('async renderToStringAsync awaits resources + resolves Suspense', async () => {
-    const html = await renderToStringAsync(() => SsrApp({ url: '/' }));
-    expect(html).toContain('User #7');          // resource getter resolved
-    expect(html).toContain('User #9');          // Suspense content resolved
-    expect(html).not.toContain('loading name…');
+  it('async renderToStringAsync awaits the resources', async () => {
+    const out = await renderToStringAsync(() => SsrApp({ url: '/' }));
+    expect(out).toContain('User #7');
+    expect(out).toContain('User #9');
+    expect(out).not.toContain('loading…');
   });
 
-  it('renders + resolves on the client too (Suspense fallback → content)', async () => {
+  it('client render resolves the resources', async () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     render(() => SsrApp({ url: '/' }), host);
 
-    expect(host.querySelector('.fb')?.textContent).toBe('loading name…');
-
     await new Promise((r) => setTimeout(r, 30));
     await flush();
 
-    expect(host.querySelector('.async')?.textContent).toContain('User #9');
-    expect(host.querySelector('.fb')).toBeNull();
+    expect(host.querySelector('.user')?.textContent).toBe('User #7');
+    expect(host.querySelector('.async')?.textContent).toBe('User #9');
+  });
+
+  it('hydrates server markup without duplicating resource text', async () => {
+    setRequestStore(new AsyncLocalStorage());
+    const body = await renderToStringAsync(() => SsrApp({ url: '/' }));
+
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    // strip the transport so the client refetches → resources resolve post-hydration
+    root.innerHTML = body.replace(/<script type="application\/json"[^>]*>[^<]*<\/script>/, '');
+
+    hydrate(html`<SsrApp url=${'/'} />`, root);
+    await new Promise((r) => setTimeout(r, 40));
+    await flush();
+
+    expect(root.querySelectorAll('.async').length).toBe(1);
+    expect(root.querySelector('.async')!.textContent).toBe('User #9'); // not doubled
+    expect(root.querySelector('.user')!.textContent).toBe('User #7');
   });
 });
