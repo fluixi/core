@@ -14,7 +14,7 @@
 import type * as ts from 'typescript';
 import { shouldSuppress, usedComponentTags } from './collect.js';
 import { componentQuickInfo } from './hover.js';
-import { paramQuickInfo } from './infer.js';
+import { paramQuickInfo, inferParamAt } from './infer.js';
 
 // Minimal shapes from tsserverlibrary — declared locally so the plugin can type
 // only against the main `typescript` module (which owns LanguageService).
@@ -38,12 +38,23 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         proxy[key] = typeof member === 'function' ? (member as Function).bind(ls) : member;
       }
 
+      // "Parameter implicitly has an 'any' type" (7006) + its suggestion (7044):
+      // drop them for a callback param we can infer from the html`` template, so
+      // the inferred type isn't reported as an implicit-any error.
+      const IMPLICIT_ANY = new Set([7006, 7044]);
+
       const filter = <T extends ts.Diagnostic>(fileName: string, diagnostics: T[]): T[] => {
-        const sourceFile = ls.getProgram()?.getSourceFile(fileName);
-        if (!sourceFile) return diagnostics;
+        const program = ls.getProgram();
+        const sourceFile = program?.getSourceFile(fileName);
+        if (!program || !sourceFile) return diagnostics;
         const used = usedComponentTags(ts, sourceFile);
-        if (used.size === 0) return diagnostics;
-        return diagnostics.filter((d) => !shouldSuppress(ts, sourceFile, d, used));
+        return diagnostics.filter((d) => {
+          if (used.size > 0 && shouldSuppress(ts, sourceFile, d, used)) return false;
+          if (IMPLICIT_ANY.has(d.code) && d.start !== undefined && inferParamAt(ts, program, sourceFile, d.start)) {
+            return false;
+          }
+          return true;
+        });
       };
 
       proxy.getSemanticDiagnostics = (fileName: string) => filter(fileName, ls.getSemanticDiagnostics(fileName));
