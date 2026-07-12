@@ -14,6 +14,7 @@
 import type * as ts from 'typescript';
 import { shouldSuppress, usedComponentTags } from './collect.js';
 import { componentQuickInfo } from './hover.js';
+import { paramQuickInfo } from './infer.js';
 
 // Minimal shapes from tsserverlibrary — declared locally so the plugin can type
 // only against the main `typescript` module (which owns LanguageService).
@@ -48,9 +49,13 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       proxy.getSemanticDiagnostics = (fileName: string) => filter(fileName, ls.getSemanticDiagnostics(fileName));
       proxy.getSuggestionDiagnostics = (fileName: string) => filter(fileName, ls.getSuggestionDiagnostics(fileName));
 
-      // Hover a `<Component>` tag inside html`` → show its TS signature.
-      proxy.getQuickInfoAtPosition = (fileName: string, position: number) =>
-        ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
+      // Hover inside html``: a callback param (each item / event) gets its
+      // inferred type; a `<Component>` tag shows its TS signature.
+      proxy.getQuickInfoAtPosition = (fileName: string, position: number) => {
+        const inferred = paramQuickInfo(ts, ls, fileName, position);
+        if (inferred) return inferred;
+        return ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
+      };
 
       return proxy as unknown as ts.LanguageService;
     },
