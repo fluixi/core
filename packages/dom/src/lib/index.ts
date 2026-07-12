@@ -12,12 +12,13 @@
  * - Integration with signal and store systems
  */
 
-// Core imperative runtime + Solid-style control flow (flow/). The lit renderer
-// (templates, directives, lit control-flow) is intentionally NOT re-exported
-// here so the core barrel stays lit-free and separable — import it from
-// '@fluixi/lit' (and its subpaths). This also removes the Show/For name
-// collision that arose from re-exporting both flow/ and lit/control-flow/.
+// Core imperative runtime + Solid-style control flow (flow/).
 export * from './dom/index.js';
+
+// html`` / svg`` template markers (compiled away by `format: 'lit'`). These are
+// the no-JSX authoring surface; @fluixi/core re-exports them for convenience.
+export { html, svg } from './html.js';
+export type { TemplateResult, Reactive } from './html.js';
 export * from './dom/integration.js';
 export * from './shared/types.js';
 export * from './component/index.js';

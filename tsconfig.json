@@ -4,6 +4,9 @@
   "files": [],
   "references": [
     {
+      "path": "./packages/template-parser"
+    },
+    {
       "path": "./packages/reactive"
     },
     {
@@ -29,9 +32,6 @@
     },
     {
       "path": "./packages/dom"
-    },
-    {
-      "path": "./packages/lit"
     },
     {
       "path": "./packages/router"
