@@ -11,15 +11,14 @@ afterEach(() => {
   delete (window as any).__FX_DATA__;
 });
 
-// Does the <Suspense> SSR-hydration duplicate happen with JSX too? Same repro as
-// examples/lit-counter/src/hydrate-suspense.test.ts, authored in JSX.
-// PROOF the <Suspense> SSR-hydration duplicate is a FRAMEWORK bug, not lit-specific:
-// this JSX-authored twin of examples/lit-counter's SsrApp dupes identically.
-// Root cause: on hydration the parent insert effect subscribes to the boundary's
-// inFallback (it unwraps the Suspense output memo inline), so when the resource
-// resolves it re-runs and re-instantiates the whole Suspense subtree — SuspenseImpl
-// runs twice, and props.children (a fresh memo per access) builds the child twice.
-// Skipped until the Suspense+hydration reconciliation is fixed.
+// KNOWN, still-open framework bug (NOT lit-specific — JSX and html`` behave the
+// same). A component that reads a resource with a THROWING accessor (`user().name`)
+// under <Suspense> suspends during hydration, so its content isn't adopted; when the
+// resource resolves post-hydration it rebuilds and duplicates ("User #9User #9").
+// Distinct from the empty-reactive-text bug that WAS fixed in @fluixi/dom
+// hydration.ts — the idiomatic non-throwing pattern (user.loading/user.latest, see
+// examples/lit-counter SsrApp) hydrates cleanly. Skipped until the
+// suspend-during-hydrate reconciliation is fixed.
 describe('JSX <Suspense> SSR + hydrate — duplicate check', () => {
   it.skip('does not double the Suspense content on hydration', async () => {
     setRequestStore(new AsyncLocalStorage());
