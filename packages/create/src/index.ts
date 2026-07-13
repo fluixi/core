@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * `npm create fluixi <dir>` — scaffold a new Fluixi app. Prompts for a name and a
- * mode (SSR via @fluixi/start, or SPA via vite + @fluixi/vite-plugin), unless given on
- * the command line: `create-fluixi my-app --spa` / `--ssr`. Zero runtime deps — the
- * styled prompts (gradient wordmark, gutter, arrow-key select) are hand-rolled ANSI.
+ * `npm create fluixi <dir>` — scaffold a new Fluixi app. Prompts for a name, a mode
+ * (SSR via @fluixi/start, or SPA via vite + @fluixi/vite-plugin), and a template syntax
+ * (JSX or html``), unless given on the command line: `create-fluixi my-app --spa --html`
+ * (`--ssr`/`--spa`, `--jsx`/`--html`). The html`` variant is JSX-free — plain `.ts`
+ * sources, no `jsx` in tsconfig. Zero runtime deps — the styled prompts (gradient
+ * wordmark, gutter, arrow-key select) are hand-rolled ANSI.
  */
 import { cpSync, renameSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename, join } from 'node:path';
@@ -88,8 +90,10 @@ async function main(): Promise<void> {
   let dir = args.find((a) => !a.startsWith('-'));
   let mode: 'ssr' | 'spa' | undefined =
     args.includes('--spa') ? 'spa' : args.includes('--ssr') ? 'ssr' : undefined;
+  let format: 'jsx' | 'html' | undefined =
+    args.includes('--html') ? 'html' : args.includes('--jsx') ? 'jsx' : undefined;
 
-  const interactive = input.isTTY && (!dir || !mode);
+  const interactive = input.isTTY && (!dir || !mode || !format);
   if (interactive) {
     output.write(`\n${c.gray('┌')}  ${gradient('◆')} ${c.bold(gradient('create-fluixi'))}\n${BAR}\n`);
     if (!dir) dir = await askText('Project name', 'fluixi-app');
@@ -99,9 +103,16 @@ async function main(): Promise<void> {
         { value: 'spa', label: 'SPA', hint: 'client-only · vite' },
       ])) as 'ssr' | 'spa';
     }
+    if (!format) {
+      format = (await askSelect('Template syntax', [
+        { value: 'jsx', label: 'JSX', hint: 'default · .tsx · html`` works inline too' },
+        { value: 'html', label: 'html``', hint: 'no JSX · plain .ts · @fluixi/ts-plugin' },
+      ])) as 'jsx' | 'html';
+    }
   }
   dir = dir ?? 'fluixi-app';
   mode = mode ?? 'ssr';
+  format = format ?? 'jsx';
 
   const target = resolve(dir);
   const name = basename(target);
@@ -110,7 +121,8 @@ async function main(): Promise<void> {
     exit(1);
   }
 
-  cpSync(here(mode === 'spa' ? '../template-spa' : '../template-ssr'), target, { recursive: true });
+  const template = `../template-${mode}${format === 'html' ? '-html' : ''}`;
+  cpSync(here(template), target, { recursive: true });
 
   // npm strips a real .gitignore from published packages → restore it from _gitignore.
   const gi = join(target, '_gitignore');
@@ -122,7 +134,7 @@ async function main(): Promise<void> {
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
   // Outro + next steps. The leading gutter only makes sense after the intro/prompts.
-  const tag = mode === 'ssr' ? c.cyan('SSR') : c.cyan('SPA');
+  const tag = `${c.cyan(mode.toUpperCase())} ${c.gray('·')} ${c.cyan(format === 'html' ? 'html``' : 'JSX')}`;
   if (interactive) output.write(`${BAR}\n`);
   else output.write('\n');
   output.write(`${c.green('◇')}  ${c.green('Created')} ${c.bold(name)} ${c.gray('·')} ${tag}\n${c.gray('└')}\n\n`);
