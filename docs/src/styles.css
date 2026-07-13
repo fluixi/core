@@ -56,7 +56,7 @@ a { color: inherit; text-decoration: none; }
 .pager b { font-size: 15px; color: var(--text); }
 
 /* prose — rendered markdown */
-.prose { font-size: 16px; line-height: 1.72; color: #d3d8e3; }
+.prose { font-size: 16px; line-height: 1.72; color: #d3d8e3; overflow-wrap: break-word; }
 .prose > *:first-child { margin-top: 0; }
 .prose h1 { font-size: 38px; line-height: 1.15; letter-spacing: -1px; font-weight: 800; margin: 0 0 22px; color: var(--text); }
 .prose h2 { font-size: 25px; letter-spacing: -.4px; font-weight: 700; margin: 46px 0 16px; color: var(--text); }
@@ -73,6 +73,23 @@ a { color: inherit; text-decoration: none; }
 .prose :not(pre) > code { font-family: var(--mono); font-size: .86em; color: var(--accent); background: #5eead412; border: 1px solid #5eead420; padding: 1px 6px; border-radius: 6px; }
 .prose pre { margin: 22px 0; padding: 18px 20px; background: #0a0c14; border: 1px solid var(--line); border-radius: 13px; overflow-x: auto; }
 .prose pre code { font-family: var(--mono); font-size: 13.5px; line-height: 1.65; color: #c6d0e0; }
+.prose img { max-width: 100%; height: auto; }
+
+/* tables — themed + horizontally scrollable so wide tables never overflow the page */
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-overflow-scrolling: touch;
+}
+.prose thead th { background: var(--panel-2); color: var(--text); font-weight: 700; white-space: nowrap; }
+.prose th, .prose td { padding: 10px 15px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.prose tbody tr:nth-child(even) td { background: #ffffff05; }
+.prose td code { white-space: nowrap; }
 
 /* highlight.js — Fluixi dark theme */
 .hljs-comment, .hljs-quote { color: #5b6273; font-style: italic; }
@@ -89,7 +106,21 @@ a { color: inherit; text-decoration: none; }
 .hljs-addition { color: #34d399; }
 
 @media (max-width: 880px) {
-  .d-body { grid-template-columns: 1fr; }
+  .d-body { grid-template-columns: 1fr; min-width: 0; }
   .d-sidebar { display: none; }
-  .d-main { padding: 32px 22px 70px; }
+  .d-main { padding: 32px 22px 70px; min-width: 0; }
+  .prose h1 { font-size: 31px; }
+  .prose h2 { font-size: 22px; }
+}
+
+@media (max-width: 560px) {
+  .d-head { padding: 0 14px; gap: 8px; }
+  .d-brand { font-size: 15px; }
+  .d-actions { gap: 10px; }
+  .ver > span { display: none; }        /* keep the select, drop the "Version" label */
+  .d-link { font-size: 13px; }
+  .d-main { padding: 26px 16px 60px; }
+  .prose { font-size: 15.5px; }
+  .prose h1 { font-size: 27px; letter-spacing: -.5px; }
+  .prose pre { padding: 14px 15px; border-radius: 11px; }
 }
