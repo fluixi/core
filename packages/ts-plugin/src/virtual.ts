@@ -32,11 +32,25 @@ const EVENT_MAP_KEYS = new Set(Object.keys({
 
 /** Typed helpers the virtual document calls. Declared once at the top. */
 const PRELUDE =
+  // Control-flow components (Show/For/Suspense/…) so their prop types are known
+  // even when the user relies on the compiler auto-importing them.
+  "import * as __fxCF from '@fluixi/core';\n" +
   'declare const __fxEach: <T>(items: ArrayLike<T> | Iterable<T> | null | undefined, render: (item: T, index: () => number) => any) => any;\n' +
   'declare const __fxIndex: <T>(items: ArrayLike<T> | Iterable<T> | null | undefined, render: (item: () => T, index: number) => any) => any;\n' +
   'declare const __fxShow: <T>(when: T, render: (value: NonNullable<T>) => any) => any;\n' +
   'declare const __fxOn: <K extends string>(name: K, handler: (event: K extends keyof HTMLElementEventMap ? HTMLElementEventMap[K] : Event) => any) => any;\n' +
-  'declare const __fxExpr: (value: any) => any;\n';
+  // ref callback on an element: `el` is the element type for that tag.
+  'declare const __fxRef: <K extends string>(tag: K, ref: (el: K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement) => any) => any;\n' +
+  'declare const __fxExpr: (value: any) => any;\n' +
+  // Check a props object against a component\'s parameter type P. `NoInfer` keeps
+  // P inferred ONLY from the component (not the props arg), giving real prop
+  // name completion + hover + value checking.
+  'declare function __fxProps<P>(comp: (props: P, ...rest: any[]) => any, props: NoInfer<P>): any;\n';
+
+/** Components that live in the control-flow namespace, referenced as __fxCF.X. */
+const CONTROL_FLOW = new Set([
+  'Show', 'For', 'Index', 'Switch', 'Match', 'Dynamic', 'ErrorBoundary', 'Suspense', 'SuspenseList', 'Await', 'Portal',
+]);
 
 /** A region that maps 1:1 between source and virtual (unchanged code, or a hole). */
 export interface Segment {
@@ -46,11 +60,18 @@ export interface Segment {
   genEnd: number;
   /** True for an embedded `${…}` hole (vs. copied unchanged code). */
   hole?: boolean;
+  /** True for a component prop-name key (mapped for hover, not for completion). */
+  key?: boolean;
 }
 
 /** True when a source offset lies inside an embedded template hole. */
 export function inHole(segments: readonly Segment[], pos: number): boolean {
   return segments.some((s) => s.hole && pos >= s.srcStart && pos <= s.srcEnd);
+}
+
+/** True when a source offset lies on a mapped component prop-name key. */
+export function inKey(segments: readonly Segment[], pos: number): boolean {
+  return segments.some((s) => s.key && pos >= s.srcStart && pos <= s.srcEnd);
 }
 
 export interface Virtual {
@@ -114,6 +135,11 @@ interface TemplateInfo {
   holes: TS.Expression[];
 }
 
+/** True when a hole expression is an inline function (arrow/function). */
+function isFn(ts: typeof TS, node: TS.Expression): boolean {
+  return ts.isArrowFunction(node) || ts.isFunctionExpression(node);
+}
+
 function collectTemplates(ts: typeof TS, sf: TS.SourceFile): TemplateInfo[] {
   const out: TemplateInfo[] = [];
   const visit = (node: TS.Node): void => {
@@ -137,7 +163,8 @@ type Role =
   | { kind: 'eachRender'; arrayHole: number }
   | { kind: 'indexRender'; arrayHole: number }
   | { kind: 'showRender'; whenHole: number }
-  | { kind: 'event'; event: string };
+  | { kind: 'event'; event: string }
+  | { kind: 'ref'; tag: string };
 
 /** Walk the parsed AST → per-hole role, and which holes are "consumed" as partners. */
 function analyze(nodes: readonly TemplateNode[], roles: Map<number, Role>, consumed: Set<number>): void {
@@ -150,6 +177,7 @@ function analyze(nodes: readonly TemplateNode[], roles: Map<number, Role>, consu
     if (node.kind === 'Element' || node.kind === 'Component') {
       for (const a of node.attributes) {
         if (a.kind === 'EventBinding') roles.set(a.hole, { kind: 'event', event: a.name.toLowerCase() });
+        if (a.kind === 'RefBinding' && node.kind === 'Element') roles.set(a.hole, { kind: 'ref', tag: node.tag });
       }
       const eachDir = node.attributes.find((a) => a.kind === 'EachDirective');
       const propHole = (name: string): number | undefined => {
@@ -199,7 +227,63 @@ function emitTemplate(
     segments.push({ srcStart: s, srcEnd: e, genStart, genEnd: gen.length, hole: true });
   };
 
+  const isIdent = (t: string) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(t);
+  // emit an object key from source, mapped when it's a plain identifier
+  const putKey = (start: number, text: string): void => {
+    const genStart = gen.length;
+    if (isIdent(text)) {
+      gen += text;
+      segments.push({ srcStart: start, srcEnd: start + text.length, genStart, genEnd: gen.length, key: true });
+    } else {
+      gen += JSON.stringify(text);
+    }
+  };
+
   const calls: Array<() => void> = [];
+
+  // Per-component props object → prop name completion + hover + value checking.
+  const walkComponents = (nodes: readonly TemplateNode[]): void => {
+    for (const node of nodes) {
+      if (node.kind === 'Component') calls.push(componentPropsEmitter(node));
+      if ('children' in node && node.children) walkComponents(node.children);
+    }
+  };
+
+  function componentPropsEmitter(node: Extract<TemplateNode, { kind: 'Component' }>): () => void {
+    return () => {
+      gen += '__fxProps(';
+      if (node.tagHole != null) putHole(node.tagHole);
+      else if (CONTROL_FLOW.has(node.tag)) gen += `__fxCF.${node.tag}`;
+      else gen += node.tag; // user component / member path in the file's scope
+      gen += ', { ';
+      let first = true;
+      const entry = (keyStart: number, keyText: string, emitValue: () => void) => {
+        if (!first) gen += ', ';
+        first = false;
+        putKey(keyStart, keyText);
+        gen += ': ';
+        emitValue();
+      };
+      for (const a of node.attributes) {
+        if (a.kind === 'Attribute') {
+          const keyStart = a.boolean ? a.loc.start + 1 : a.loc.start;
+          const v = a.value;
+          entry(keyStart, a.name, () => {
+            if (!v) { gen += 'true'; }
+            else if (v.kind === 'static') { gen += JSON.stringify(v.value); }
+            else if (v.kind === 'hole') { putHole(v.hole); }
+            else { gen += 'undefined as any'; } // mixed value
+          });
+        } else if (a.kind === 'PropertyBinding') {
+          entry(a.loc.start + 1, a.name, () => putHole(a.hole));
+        }
+        // events/spreads/directives are not modelled as component props here
+      }
+      gen += ' })';
+    };
+  }
+  walkComponents(root.children);
+
   for (let i = 0; i < tpl.holes.length; i++) {
     if (consumed.has(i)) continue;
     const role = roles.get(i);
@@ -212,6 +296,9 @@ function emitTemplate(
     } else if (role && role.kind === 'event') {
       const key = EVENT_MAP_KEYS.has(role.event) ? role.event : role.event;
       calls.push(() => { gen += `__fxOn(${JSON.stringify(key)}, `; putHole(i); gen += ')'; });
+    } else if (role && role.kind === 'ref' && isFn(ts, tpl.holes[i])) {
+      const tag = role.tag;
+      calls.push(() => { gen += `__fxRef(${JSON.stringify(tag)}, `; putHole(i); gen += ')'; });
     } else {
       calls.push(() => { gen += '__fxExpr('; putHole(i); gen += ')'; });
     }
