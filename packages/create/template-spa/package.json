@@ -9,13 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fluixi/core": "next",
-    "@fluixi/jsx": "next",
-    "@fluixi/dom": "next",
-    "@fluixi/reactive": "next"
+    "@fluixi/core": "alpha",
+    "@fluixi/jsx": "alpha",
+    "@fluixi/dom": "alpha",
+    "@fluixi/reactive": "alpha"
   },
   "devDependencies": {
-    "@fluixi/vite-plugin": "next",
+    "@fluixi/ts-plugin": "alpha",
+    "@fluixi/vite-plugin": "alpha",
     "vite": "^5.0.0"
   }
 }

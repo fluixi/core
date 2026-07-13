@@ -1,0 +1,24 @@
+{
+  "name": "fluixi-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start"
+  },
+  "dependencies": {
+    "@fluixi/cli": "alpha",
+    "@fluixi/start": "alpha",
+    "@fluixi/core": "alpha",
+    "@fluixi/server": "alpha",
+    "@fluixi/reactive": "alpha",
+    "@fluixi/dom": "alpha"
+  },
+  "devDependencies": {
+    "@fluixi/ts-plugin": "alpha",
+    "@types/node": "^20.0.0",
+    "vite": "^5.0.0"
+  }
+}

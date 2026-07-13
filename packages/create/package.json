@@ -11,6 +11,8 @@
     "dist",
     "template-ssr",
     "template-spa",
+    "template-ssr-html",
+    "template-spa-html",
     "README.md",
     "LICENSE"
   ],
