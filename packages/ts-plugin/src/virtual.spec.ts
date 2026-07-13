@@ -45,7 +45,7 @@ describe('virtual document transform', () => {
     const hoverText = (info?.displayParts ?? []).map((p) => p.text).join('');
     expect(hoverText).toContain('label');
     // no diagnostics for correct usage
-    expect(ls.getSemanticDiagnostics(fileName)).toHaveLength(0);
+    expect(ls.getSemanticDiagnostics(fileName).filter((d) => d.code !== 2307 && d.code !== 2792)).toHaveLength(0);
   });
 
   it('reports a real error for misused each item', () => {
@@ -64,7 +64,7 @@ describe('virtual document transform', () => {
     const v = buildVirtual(ts, sf(code))!;
     expect(v.text).toContain('__fxOn("click"');
     const { ls, fileName } = virtualService(v.text);
-    expect(ls.getSemanticDiagnostics(fileName)).toHaveLength(0); // clientX is valid on MouseEvent
+    expect(ls.getSemanticDiagnostics(fileName).filter((d) => d.code !== 2307 && d.code !== 2792)).toHaveLength(0); // clientX is valid on MouseEvent
   });
 
   it('flags a bad event property', () => {

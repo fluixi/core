@@ -19,6 +19,7 @@ import type * as ts from 'typescript';
 import { shouldSuppress, usedComponentTags } from './collect.js';
 import { componentQuickInfo } from './hover.js';
 import { paramQuickInfo, inferParamAt } from './infer.js';
+import { componentPropCompletions } from './props.js';
 import { VirtualService } from './virtual-service.js';
 import { mapCompletions, mapDiagnostic, mapQuickInfo } from './bridge.js';
 
@@ -78,7 +79,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
           for (const d of get(fileName)) {
             if (d.start === undefined) continue;
             const m = mapDiagnostic(vs, fileName, d);
-            if (m && m.start !== undefined && vs.inHole(fileName, m.start)) {
+            if (m && m.start !== undefined && (vs.inHole(fileName, m.start) || vs.inKey(fileName, m.start))) {
               out.push({ ...m, file: sourceFile } as ts.Diagnostic);
             }
           }
@@ -98,7 +99,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       // Hover: virtual (fully typed) if in a hole and it works; else the inferred
       // param hover; else the real hover / component-tag hover.
       proxy.getQuickInfoAtPosition = (fileName: string, position: number) => {
-        if (vs && vs.inHole(fileName, position)) {
+        if (vs && (vs.inHole(fileName, position) || vs.inKey(fileName, position))) {
           try {
             const gen = vs.toGen(fileName, position);
             if (gen !== -1) {
@@ -112,7 +113,8 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         return ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
       };
 
-      // Completion: virtual (typed) inside a hole if it works; else the real one.
+      // Completion: virtual (typed) inside a hole; component prop names in a
+      // component tag's attribute area; else the real one.
       proxy.getCompletionsAtPosition = (fileName: string, position: number, options: unknown, formatting?: unknown) => {
         if (vs && vs.inHole(fileName, position)) {
           try {
@@ -123,6 +125,17 @@ function init(modules: { typescript: typeof ts }): PluginModule {
             }
           } catch { /* fall through */ }
         }
+        try {
+          const props = componentPropCompletions(ts, ls, fileName, position);
+          if (props) {
+            return {
+              isGlobalCompletion: false,
+              isMemberCompletion: false,
+              isNewIdentifierLocation: false,
+              entries: props,
+            } as ts.CompletionInfo;
+          }
+        } catch { /* fall through */ }
         return ls.getCompletionsAtPosition(fileName, position, options as any, formatting as any);
       };
 

@@ -6,7 +6,7 @@
  * per-file {@link Segment} map so results land back on the real template.
  */
 import type * as TS from 'typescript';
-import { buildVirtual, toGenerated, toSource, inHole, type Segment } from './virtual.js';
+import { buildVirtual, toGenerated, toSource, inHole, inKey, type Segment } from './virtual.js';
 
 export class VirtualService {
   private ls: TS.LanguageService;
@@ -72,6 +72,12 @@ export class VirtualService {
   inHole(fileName: string, pos: number): boolean {
     const segs = this.virtual(fileName)?.segments;
     return segs ? inHole(segs, pos) : false;
+  }
+
+  /** True when a SOURCE position lies on a mapped component prop-name key. */
+  inKey(fileName: string, pos: number): boolean {
+    const segs = this.virtual(fileName)?.segments;
+    return segs ? inKey(segs, pos) : false;
   }
 }
 

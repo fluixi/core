@@ -82,3 +82,55 @@ describe('plugin end-to-end (virtual document)', () => {
     expect(ls.getSemanticDiagnostics(fileName).length).toBeGreaterThan(0);
   });
 });
+
+describe('component prop completion + hover', () => {
+  it('completes a partial component prop name', () => {
+    const code =
+      'function Card(props: { alpha?: string; beta?: number }) { return null as any; }\n' +
+      'const t = html`<Card al></Card>`;';
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('<Card al') + '<Card al'.length; // after `al`
+    const list = ls.getCompletionsAtPosition(fileName, pos, {});
+    const names = (list?.entries ?? []).map((e: ts.CompletionEntry) => e.name);
+    expect(names).toContain('alpha');
+    expect(names).toContain('beta');
+  });
+
+  it('hovers a component prop name showing its type', () => {
+    const code =
+      'function Card(props: { header?: string }) { return null as any; }\n' +
+      'const t = html`<Card header=${"x"}></Card>`;';
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('header=');
+    const info = ls.getQuickInfoAtPosition(fileName, pos);
+    const text = (info?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('');
+    expect(text).toContain('header');
+    expect(text).toContain('string');
+  });
+
+  it('type-checks a wrong prop value', () => {
+    const code =
+      'function Card(props: { count?: number }) { return null as any; }\n' +
+      'const t = html`<Card count=${"nope"}></Card>`;';
+    const { ls, fileName } = plugin(code);
+    const diags = ls.getSemanticDiagnostics(fileName);
+    expect(diags.some((d: ts.Diagnostic) => String(d.messageText).includes('count') || String(d.messageText).includes('number'))).toBe(true);
+  });
+});
+
+describe('ref element type inference', () => {
+  it('infers the element type in a ref callback', () => {
+    const code = 'const t = html`<input ref=${(el) => el.value}></input>`;';
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('el.value');
+    const info = ls.getQuickInfoAtPosition(fileName, pos);
+    const text = (info?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('');
+    expect(text).toContain('HTMLInputElement');
+  });
+
+  it('flags a property not on the inferred element', () => {
+    const code = 'const t = html`<input ref=${(el) => el.nope}></input>`;';
+    const { ls, fileName } = plugin(code);
+    expect(ls.getSemanticDiagnostics(fileName).some((d: ts.Diagnostic) => String(d.messageText).includes('nope'))).toBe(true);
+  });
+});
