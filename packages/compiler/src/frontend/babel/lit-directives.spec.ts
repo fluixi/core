@@ -88,6 +88,37 @@ describe('lit directives — class: / style:', () => {
   });
 });
 
+describe('lit forced bindings — prop: / attr: / bool:', () => {
+  it('prop:x forces a DOM property (no reflected attribute)', () => {
+    const mod = load('export const render = () => html`<div prop:foo=${42}></div>`;');
+    const el = mod.render() as HTMLElement;
+    expect((el as any).foo).toBe(42);
+    expect(el.getAttribute('foo')).toBeNull();
+  });
+
+  it('prop:x stays reactive through a hole', () => {
+    const mod = load('export const render = (v) => html`<div prop:foo=${v()}></div>`;');
+    const [v, setV] = S.createSignal(1);
+    const el = mod.render(v) as HTMLElement;
+    expect((el as any).foo).toBe(1);
+    setV(2);
+    S.flush();
+    expect((el as any).foo).toBe(2);
+  });
+
+  it('attr:x forces an attribute', () => {
+    const mod = load('export const render = () => html`<div attr:foo=${"bar"}></div>`;');
+    expect((mod.render() as HTMLElement).getAttribute('foo')).toBe('bar');
+  });
+
+  it('bool:x toggles a boolean attribute by truthiness', () => {
+    const on = load('export const render = () => html`<button bool:disabled=${1}></button>`;').render() as HTMLElement;
+    expect(on.hasAttribute('disabled')).toBe(true);
+    const off = load('export const render = () => html`<button bool:disabled=${0}></button>`;').render() as HTMLElement;
+    expect(off.hasAttribute('disabled')).toBe(false);
+  });
+});
+
 describe('lit directives — bind:', () => {
   it('bind:value expands to value + onInput on a signal tuple', () => {
     const code = compileEsm('export const r = (name) => html`<input bind:value=${name} />`;');

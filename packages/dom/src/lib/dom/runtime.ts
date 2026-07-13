@@ -1018,6 +1018,19 @@ export function setDynamicProperty(element: any, name: string, accessor: any): (
   });
 }
 
+// Boolean attribute (`bool:name`): truthy renders the empty string, falsy removes it.
+// setAttribute already does that for true/false, so coerce with !!.
+export function setDynamicBoolAttribute(element: Element, name: string, accessor: any): () => void {
+  if (typeof accessor !== 'function') {
+    setAttribute(element, name, !!accessor);
+    return () => {};
+  }
+  return createRenderEffect(() => {
+    const value = (accessor as () => unknown)();
+    setAttribute(element, name, !!value);
+  });
+}
+
 /**
  * Set className. Accepts string | string[] | Record<string,boolean> | null.
  */
@@ -1162,6 +1175,21 @@ export function spread(options: SpreadOptions): () => void {
       continue;
     }
 
+    // Forced bindings: prop:x always assigns the property, attr:x always sets the
+    // attribute, bool:x toggles a boolean attribute — skipping the heuristic below.
+    if (key.startsWith('prop:')) {
+      disposers.push(setDynamicProperty(element, key.slice(5), value));
+      continue;
+    }
+    if (key.startsWith('attr:')) {
+      disposers.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
+      continue;
+    }
+    if (key.startsWith('bool:')) {
+      disposers.push(setDynamicBoolAttribute(element, key.slice(5), value));
+      continue;
+    }
+
     if (key === 'class' || key === 'className') {
       if (typeof value === 'function') {
         disposers.push(createRenderEffect(() => setClassName(element, value())));
@@ -1230,6 +1258,10 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     if (key === 'children') continue;
     if (key === 'use') { applyUse(element, val); continue; }
     if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
+    // Forced bindings — see spread().
+    if (key.startsWith('prop:')) { setDynamicProperty(element, key.slice(5), val); continue; }
+    if (key.startsWith('attr:')) { setDynamicAttribute(element, key.slice(5), val, isSVG); continue; }
+    if (key.startsWith('bool:')) { setDynamicBoolAttribute(element, key.slice(5), val); continue; }
     if (key.startsWith('on') && key.length > 2) {
       const name = key.slice(2).toLowerCase();
       if (typeof val === 'function') {
