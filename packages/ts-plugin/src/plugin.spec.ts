@@ -134,3 +134,30 @@ describe('ref element type inference', () => {
     expect(ls.getSemanticDiagnostics(fileName).some((d: ts.Diagnostic) => String(d.messageText).includes('nope'))).toBe(true);
   });
 });
+
+describe('control-flow prop hover + use inference', () => {
+  it('hovers Show when/fallback and Portal mount (inline types, no @fluixi/core)', () => {
+    const showCode = 'const cond = true;\nconst t = html`<Show when=${cond} fallback=${"x"}>hi</Show>`;';
+    const { ls: ls1, fileName: f1 } = plugin(showCode);
+    const w = ls1.getQuickInfoAtPosition(f1, showCode.indexOf('when='));
+    expect((w?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('')).toContain('when');
+    const portalCode = 'const t = html`<Portal mount=${document.body}>x</Portal>`;';
+    const { ls: ls2, fileName: f2 } = plugin(portalCode);
+    const m = ls2.getQuickInfoAtPosition(f2, portalCode.indexOf('mount='));
+    expect((m?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('')).toContain('mount');
+  });
+
+  it('completes control-flow prop names', () => {
+    const code = 'const t = html`<Show wh></Show>`;';
+    const { ls, fileName } = plugin(code);
+    const list = ls.getCompletionsAtPosition(fileName, code.indexOf('<Show wh') + '<Show wh'.length, {});
+    expect((list?.entries ?? []).map((e: ts.CompletionEntry) => e.name)).toContain('when');
+  });
+
+  it('use callback infers the element type', () => {
+    const code = 'const t = html`<input use=${(el) => el.value}></input>`;';
+    const { ls, fileName } = plugin(code);
+    const info = ls.getQuickInfoAtPosition(fileName, code.indexOf('el.value'));
+    expect((info?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('')).toContain('HTMLInputElement');
+  });
+});

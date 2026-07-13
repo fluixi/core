@@ -32,9 +32,23 @@ const EVENT_MAP_KEYS = new Set(Object.keys({
 
 /** Typed helpers the virtual document calls. Declared once at the top. */
 const PRELUDE =
-  // Control-flow components (Show/For/Suspense/…) so their prop types are known
-  // even when the user relies on the compiler auto-importing them.
-  "import * as __fxCF from '@fluixi/core';\n" +
+  // Control-flow component prop types, declared inline so they ALWAYS resolve
+  // (no dependency on @fluixi/core being importable from the virtual document).
+  // Prop shapes drive hover + value checking on when/each/fallback/mount/…;
+  // render-prop children are typed separately by __fxEach/__fxShow.
+  'declare const __fxCF: {\n' +
+  '  Show: <T>(props: { when: T; fallback?: unknown; children?: unknown }) => any;\n' +
+  '  For: <T>(props: { each: readonly T[] | undefined | null; fallback?: unknown; by?: (item: T) => unknown; children?: unknown }) => any;\n' +
+  '  Index: <T>(props: { each: readonly T[] | undefined | null; fallback?: unknown; children?: unknown }) => any;\n' +
+  '  Switch: (props: { fallback?: unknown; children?: unknown }) => any;\n' +
+  '  Match: <T>(props: { when: T; children?: unknown }) => any;\n' +
+  '  Suspense: (props: { fallback?: unknown; children?: unknown }) => any;\n' +
+  '  SuspenseList: (props: { revealOrder: "forwards" | "backwards" | "together"; children?: unknown }) => any;\n' +
+  '  Portal: (props: { mount?: Node; useShadow?: boolean; children?: unknown }) => any;\n' +
+  '  ErrorBoundary: (props: { fallback?: unknown; children?: unknown }) => any;\n' +
+  '  Dynamic: (props: { component: unknown; [k: string]: unknown }) => any;\n' +
+  '  Await: <T>(props: { value: Promise<T> | (() => Promise<T>); fallback?: unknown; children?: unknown }) => any;\n' +
+  '};\n' +
   'declare const __fxEach: <T>(items: ArrayLike<T> | Iterable<T> | null | undefined, render: (item: T, index: () => number) => any) => any;\n' +
   'declare const __fxIndex: <T>(items: ArrayLike<T> | Iterable<T> | null | undefined, render: (item: () => T, index: number) => any) => any;\n' +
   'declare const __fxShow: <T>(when: T, render: (value: NonNullable<T>) => any) => any;\n' +
@@ -177,7 +191,9 @@ function analyze(nodes: readonly TemplateNode[], roles: Map<number, Role>, consu
     if (node.kind === 'Element' || node.kind === 'Component') {
       for (const a of node.attributes) {
         if (a.kind === 'EventBinding') roles.set(a.hole, { kind: 'event', event: a.name.toLowerCase() });
+        // ref + use callbacks on an element both receive the element as first arg.
         if (a.kind === 'RefBinding' && node.kind === 'Element') roles.set(a.hole, { kind: 'ref', tag: node.tag });
+        if (a.kind === 'UseDirective' && a.hole != null && node.kind === 'Element') roles.set(a.hole, { kind: 'ref', tag: node.tag });
       }
       const eachDir = node.attributes.find((a) => a.kind === 'EachDirective');
       const propHole = (name: string): number | undefined => {
