@@ -86,3 +86,6 @@ Desktop.ini
 /connect.lock
 /typings
 
+
+# ─── Claude Code (local) ────────────────────────────────────────────────────────
+.claude/
