@@ -119,3 +119,41 @@ describe('AST -> IR -> emit() pipeline', () => {
     });
   });
 });
+
+describe('Solid-style JSX directives (parity)', () => {
+  it('routes use:name into a single normalized `use` prop', () => {
+    const ir: any = buildIR(parseJSX('(<div use:tooltip={opts} use:autofocus></div>)'));
+    const use = ir.props.find((p: any) => p.name === 'use');
+    expect(use).toBeDefined();
+    expect(use.expr).toBe('[[tooltip, () => (opts)], [autofocus]]');
+  });
+
+  it('runs a use: directive with the element + options accessor', () => {
+    const seen: any[] = [];
+    const tooltip = (el: Element, value: () => any) => { seen.push([el.tagName, value()]); };
+    S.createRoot(() => {
+      evalExpr('(<div use:tooltip={{ text: "hi" }}></div>)', { tooltip });
+    });
+    expect(seen).toEqual([['DIV', { text: 'hi' }]]);
+  });
+
+  it('binds a native listener via on: (bypassing delegation)', () => {
+    let n = 0;
+    const el = evalExpr('(<div on:click={h}></div>)', { h: () => { n++; } }) as HTMLElement;
+    el.dispatchEvent(new MouseEvent('click')); // no bubbling — delegation would miss it
+    expect(n).toBe(1);
+  });
+
+  it('oncapture:click attaches a capture-phase native listener', () => {
+    const ir: any = buildIR(parseJSX('(<button oncapture:click={h}></button>)'));
+    const p = ir.props.find((x: any) => x.name === 'on:click');
+    expect(p).toBeDefined();
+    expect(p.expr).toBe('[h, { capture: true }]');
+  });
+
+  it('toggles classes via classList', () => {
+    const el = evalExpr('(<div classList={{ active: true, hidden: false }}></div>)') as HTMLElement;
+    expect(el.classList.contains('active')).toBe(true);
+    expect(el.classList.contains('hidden')).toBe(false);
+  });
+});
