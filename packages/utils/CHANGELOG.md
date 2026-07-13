@@ -1,5 +1,11 @@
 # @fluixi/utils
 
+## 1.0.0-alpha.56
+
+### Patch Changes
+
+- 59ddb69: Drop the unused `tslib` dependency. `importHelpers` is on in tsconfig, but these packages ship esbuild-bundled output that inlines the TS helpers — nothing in the published code imports `tslib`, so it was dead weight in `dependencies`.
+
 ## 1.0.0-alpha.55
 
 ### Patch Changes
