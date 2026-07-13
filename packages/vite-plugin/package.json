@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/vite-plugin",
-  "version": "1.0.0-alpha.56",
+  "version": "1.0.0-alpha.57",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -16,7 +16,7 @@
       }
     }
   },
-  "description": "Vite plugin for Fluixi \u2014 compiles JSX via @fluixi/compiler (jsx or imperative backend).",
+  "description": "Vite plugin for Fluixi — compiles JSX via @fluixi/compiler (jsx or imperative backend).",
   "type": "module",
   "files": [
     "dist",

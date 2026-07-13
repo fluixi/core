@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/testing",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -16,7 +16,7 @@
       }
     }
   },
-  "description": "Minimal test helpers for Fluixi components \u2014 render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
+  "description": "Minimal test helpers for Fluixi components — render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
   "type": "module",
   "files": [
     "dist",
