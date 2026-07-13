@@ -5,18 +5,37 @@
  *   fluixi g route blog/[id]         → src/routes/blog/[id].tsx
  *   fluixi g middleware              → src/middleware.ts
  */
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, relative, basename } from 'node:path';
 import { c } from '@fluixi/start/ui';
 
 const GEN_USAGE = `Usage: fluixi generate <kind> <name>
 
 Kinds:
-  component <Name>      a reusable component        → src/components/<Name>.tsx
-  route <path>          a file-based route page     → src/routes/<path>.tsx
+  component <Name>      a reusable component        → src/components/<Name>.{tsx,ts}
+  route <path>          a file-based route page     → src/routes/<path>.{tsx,ts}
   middleware            the request middleware file → src/middleware.ts
   auth                  @fluixi/auth wiring         → auth.config + auth.client + middleware + /api/auth route
+
+Component/route syntax follows the project (JSX → .tsx, html\`\` → .ts); override with --jsx / --html.
 `;
+
+/**
+ * Which template syntax to emit. Explicit --jsx/--html wins; otherwise infer from
+ * the project — an app whose tsconfig doesn't configure `jsx` is html``-authored.
+ */
+function detectFormat(): 'jsx' | 'html' {
+  const args = process.argv.slice(3);
+  if (args.includes('--html')) return 'html';
+  if (args.includes('--jsx')) return 'jsx';
+  try {
+    const ts = JSON.parse(readFileSync(resolve('tsconfig.json'), 'utf8'));
+    if (ts?.compilerOptions && !ts.compilerOptions.jsx) return 'html';
+  } catch {
+    // no/invalid tsconfig — fall back to JSX
+  }
+  return 'jsx';
+}
 
 function pascal(s: string): string {
   return s
@@ -59,6 +78,35 @@ const route = (Name: string) =>
       <h1>${Name}</h1>
     </section>
   );
+}
+`;
+
+// html`` variants — plain .ts, no JSX. Emitted when the project is html``-authored
+// (no `jsx` in tsconfig) or with --html.
+const componentHtml = (Name: string) =>
+  `import type { Component, ComponentChild } from '@fluixi/core';
+import { html } from '@fluixi/core';
+
+export type ${Name}Props = {
+  children?: ComponentChild;
+};
+
+// Typed component: \`props\` is inferred from ${Name}Props. Use FxParent/FxVoid/FxFlow
+// from '@fluixi/core' for children-required/forbidden variants.
+export const ${Name}: Component<${Name}Props> = (props) => {
+  return html\`<div class="${Name.toLowerCase()}">\${props.children ?? '${Name}'}</div>\`;
+};
+`;
+
+const routeHtml = (Name: string) =>
+  `import { html } from '@fluixi/start';
+
+export default function ${Name}() {
+  return html\`
+    <section>
+      <h1>${Name}</h1>
+    </section>
+  \`;
 }
 `;
 
@@ -125,13 +173,16 @@ export function generate(kind: string | undefined, name: string | undefined): vo
     case 'c': {
       if (!name) return fail('component name required, e.g. `fluixi g component Button`');
       const Name = pascal(name);
-      write(resolve('src/components', `${Name}.tsx`), component(Name));
+      const html = detectFormat() === 'html';
+      write(resolve('src/components', `${Name}.${html ? 'ts' : 'tsx'}`), (html ? componentHtml : component)(Name));
       break;
     }
     case 'route':
     case 'r': {
       if (!name) return fail('route path required, e.g. `fluixi g route about`');
-      write(resolve('src/routes', `${name}.tsx`), route(pascal(basename(name))));
+      const html = detectFormat() === 'html';
+      const Name = pascal(basename(name));
+      write(resolve('src/routes', `${name}.${html ? 'ts' : 'tsx'}`), (html ? routeHtml : route)(Name));
       break;
     }
     case 'middleware':
