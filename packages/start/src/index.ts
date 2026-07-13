@@ -7,6 +7,9 @@
  */
 export { defineConfig, resolveConfig, loadConfig } from './config.js';
 export type { FluixiConfig, ResolvedConfig } from './config.js';
+// The html``/svg`` template tags — so a meta-framework app can author without JSX:
+// `import { html } from '@fluixi/start'`. Inert markers; the compiler lowers them.
+export { html, svg } from '@fluixi/core';
 export { dev } from './commands/dev.js';
 export { build } from './commands/build.js';
 export { start } from './commands/start.js';
