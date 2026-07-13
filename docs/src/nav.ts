@@ -3,7 +3,7 @@
 import type { Lang } from './content.js';
 
 export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
-  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction'] },
+  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart'] },
   {
     group: { en: 'Reactivity', fr: 'Réactivité' },
     slugs: ['signals', 'derived-values', 'effects', 'stores', 'async', 'tc39-signals'],
@@ -11,6 +11,10 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   {
     group: { en: 'Components', fr: 'Composants' },
     slugs: ['components', 'control-flow', 'lifecycle'],
+  },
+  {
+    group: { en: 'Templates', fr: 'Templates' },
+    slugs: ['html-templates', 'directives'],
   },
   {
     group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },
