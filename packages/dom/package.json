@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/dom",
-  "version": "1.0.0-alpha.56",
-  "description": "Reactive DOM runtime for Fluixi \u2014 surgical fine-grained updates, SSR and hydration.",
+  "version": "1.0.0-alpha.57",
+  "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
   "private": false,
   "publishConfig": {

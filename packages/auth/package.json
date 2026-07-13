@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/auth",
-  "version": "1.0.0-alpha.56",
+  "version": "1.0.0-alpha.57",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -22,7 +22,7 @@
       }
     }
   },
-  "description": "Server-first auth for Fluixi \u2014 native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
+  "description": "Server-first auth for Fluixi — native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
   "type": "module",
   "files": [
     "dist",

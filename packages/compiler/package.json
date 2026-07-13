@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/compiler",
-  "version": "1.0.0-alpha.56",
+  "version": "1.0.0-alpha.57",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
       }
     }
   },
-  "description": "Fluixi JSX compiler \u2014 host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
+  "description": "Fluixi JSX compiler — host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
   "type": "module",
   "files": [
     "dist",
