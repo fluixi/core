@@ -56,7 +56,7 @@ const PRELUDE =
   // ref callback on an element: `el` is the element type for that tag.
   'declare const __fxRef: <K extends string>(tag: K, ref: (el: K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement) => any) => any;\n' +
   'declare const __fxExpr: (value: any) => any;\n' +
-  // Check a props object against a component\'s parameter type P. `NoInfer` keeps
+  // Check a props object against a component's parameter type P. `NoInfer` keeps
   // P inferred ONLY from the component (not the props arg), giving real prop
   // name completion + hover + value checking.
   'declare function __fxProps<P>(comp: (props: P, ...rest: any[]) => any, props: NoInfer<P>): any;\n';
