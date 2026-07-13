@@ -2,9 +2,14 @@ import { describe, it, expect } from 'vitest';
 import ts from 'typescript';
 import init from './index.js';
 
+// `html`/`svg` are imported in real code; declare them globally in a separate
+// file so the tag resolves WITHOUT shifting the user-code positions.
+const GLOBALS = '/globals.d.ts';
+const GLOBALS_SRC = 'declare function html(s: TemplateStringsArray, ...v: any[]): any;\ndeclare function svg(s: TemplateStringsArray, ...v: any[]): any;\n';
+
 /** Create the plugin over a real language service + host for one file. */
 function plugin(code: string, fileName = '/a.tsx') {
-  const files: Record<string, string> = { [fileName]: code };
+  const files: Record<string, string> = { [fileName]: code, [GLOBALS]: GLOBALS_SRC };
   const host: ts.LanguageServiceHost = {
     getScriptFileNames: () => Object.keys(files),
     getScriptVersion: () => '1',
