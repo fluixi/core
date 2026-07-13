@@ -357,6 +357,10 @@ export namespace JSX {
     [key: `?${string}`]: boolean;
     [key: `@${string}`]: EventListener;
 
+    // use:dir / oncapture:event (on:event already covered above)
+    [key: `use:${string}`]: any;
+    [key: `oncapture:${string}`]: (event: any) => void;
+
     // Data attributes
     [key: `data-${string}`]: string | number | boolean | undefined;
 

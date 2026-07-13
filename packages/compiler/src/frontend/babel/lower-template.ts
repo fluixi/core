@@ -321,7 +321,8 @@ class Lowerer {
           // [name, () => opts]. `name` is an in-scope identifier (like Solid).
           const dir = a.name ?? (a.hole != null ? this.hole(a.hole).code : null);
           if (!dir) break;
-          usePairs.push(a.name != null && a.hole != null ? `[${dir}, () => ${this.hole(a.hole).code}]` : `[${dir}]`);
+          // parens so an object literal opts isn't read as a block body
+          usePairs.push(a.name != null && a.hole != null ? `[${dir}, () => (${this.hole(a.hole).code})]` : `[${dir}]`);
           break;
         }
       }

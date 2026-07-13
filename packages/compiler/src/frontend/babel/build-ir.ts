@@ -144,6 +144,8 @@ export function isReactiveExpr(node: t.Expression): boolean {
 function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
   const name = attrName(attr.name);
   const isEvent = EVENT_RE.test(name);
+  // on: passes through to the runtime as a native listener; a handler, never reactive
+  const isHandler = isEvent || name.startsWith('on:');
   const kind: IRPropKind = isEvent ? 'event' : 'attr';
   const base: IRProp = { name, kind };
   if (isEvent) {
@@ -166,7 +168,7 @@ function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
       return base;
     }
     base.expr = genExpr(expr, used);
-    base.reactive = isEvent ? false : isReactiveExpr(expr);
+    base.reactive = isHandler ? false : isReactiveExpr(expr);
     if (t.isJSXElement(expr) || t.isJSXFragment(expr)) base.jsxElement = true;
     return base;
   }
@@ -174,18 +176,52 @@ function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
   return base;
 }
 
+/** Attribute value as JS code (expr or string), or null when valueless. */
+function attrExprCode(attr: t.JSXAttribute, used: Set<string>): string | null {
+  const v = attr.value;
+  if (v == null) return null;
+  if (t.isStringLiteral(v)) return JSON.stringify(v.value);
+  if (t.isJSXExpressionContainer(v) && !t.isJSXEmptyExpression(v.expression)) {
+    return genExpr(v.expression as t.Expression, used);
+  }
+  return null;
+}
+
 function buildProps(
   attrs: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
   used: Set<string>,
 ): IRProp[] {
   const props: IRProp[] = [];
+  const usePairs: string[] = []; // Solid `use:name` directives → one `use` prop
   for (const a of attrs) {
     if (t.isJSXSpreadAttribute(a)) {
       props.push({ name: '', kind: 'spread', expr: genExpr(a.argument as t.Expression, used) });
-    } else if (t.isJSXAttribute(a)) {
-      props.push(buildAttr(a, used));
+      continue;
     }
+    if (!t.isJSXAttribute(a)) continue;
+
+    const ns = t.isJSXNamespacedName(a.name) ? a.name.namespace.name : null;
+    // use:name / use:name={opts} -> [dir, () => opts] pair; dir is an in-scope fn
+    if (ns === 'use') {
+      const dir = (a.name as t.JSXNamespacedName).name.name;
+      used.add(dir); // keep the import
+      const opts = attrExprCode(a, used);
+      // parens around the body so an object literal isn't read as a block
+      usePairs.push(opts != null ? `[${dir}, () => (${opts})]` : `[${dir}]`);
+      continue;
+    }
+    // oncapture:name -> native on:name with { capture: true }
+    if (ns === 'oncapture') {
+      const evt = (a.name as t.JSXNamespacedName).name.name.toLowerCase();
+      const h = attrExprCode(a, used) ?? 'undefined';
+      props.push({ name: 'on:' + evt, kind: 'attr', expr: `[${h}, { capture: true }]` });
+      continue;
+    }
+
+    props.push(buildAttr(a, used));
   }
+  // one `use` prop = array of [dir, accessor?] pairs
+  if (usePairs.length > 0) props.push({ name: 'use', kind: 'attr', expr: `[${usePairs.join(', ')}]` });
   return props;
 }
 
