@@ -1,5 +1,18 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.47
+
+### Minor Changes
+
+- 537a0b9: `fluixi generate` emits html`` components/routes (plain `.ts`) when the project is
+html``-authored — detected from the tsconfig (no `jsx`), or forced with `--html` / `--jsx`.
+  JSX projects still generate `.tsx` as before.
+
+### Patch Changes
+
+- Updated dependencies [d9a5cc4]
+  - @fluixi/start@0.1.0-alpha.46
+
 ## 0.1.0-alpha.46
 
 ### Patch Changes

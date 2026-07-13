@@ -1,5 +1,28 @@
 # @fluixi/start
 
+## 0.1.0-alpha.46
+
+### Minor Changes
+
+- d9a5cc4: Re-export `html` and `svg` from `@fluixi/start`, so a meta-framework app can author
+  templates without JSX: `import { html } from '@fluixi/start'`.
+
+### Patch Changes
+
+- Updated dependencies [59ddb69]
+- Updated dependencies [59ddb69]
+- Updated dependencies [8b7f398]
+- Updated dependencies [e183e9a]
+- Updated dependencies [59ddb69]
+- Updated dependencies [4b911bc]
+- Updated dependencies [59ddb69]
+- Updated dependencies [e09bc16]
+  - @fluixi/core@1.0.0-alpha.56
+  - @fluixi/dom@1.0.0-alpha.56
+  - @fluixi/compiler@1.0.0-alpha.56
+  - @fluixi/server@1.0.0-alpha.56
+  - @fluixi/head@1.0.0-alpha.23
+
 ## 0.1.0-alpha.45
 
 ### Patch Changes

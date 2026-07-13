@@ -1,5 +1,42 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.56
+
+### Minor Changes
+
+- e183e9a: html`` templates: full feature support, and @fluixi/lit folded into @fluixi/dom.
+
+  - `fluixi()` now compiles both JSX and html``by default (no`format` option).
+  - Directives: if/else, each/key, bind:, class:, style: (+ class/style object
+    syntax), ref, use/use:, html= raw, boolean/property bindings.
+  - Events: native `on:click` plus modifiers (.capture/.once/.passive/.prevent/
+    .stop/.self); `@click`/`onClick` stay delegated.
+  - Components: dynamic `<${Comp}/>`, named slots (`slot="name"` → `props.name`),
+    `<component is=${C}>` (→ Dynamic), and a new `Await` component.
+  - `html`/`svg` markers and their types now live in @fluixi/dom and are
+    re-exported from @fluixi/core; the separate `@fluixi/lit` package is removed.
+
+### Patch Changes
+
+- 59ddb69: Remove the lit-html runtime bridge from the framework — no `lit` dependency remains anywhere. `@fluixi/core` no longer lazily `import('lit')` to register a lit renderer on the client (this was also the "Lit is in dev mode" console warning); `@fluixi/dom` drops `registerLitRender`/`renderLitToNodes` and the `_$litType$`/`_$litDirective$` insert-path branches; `@fluixi/dom` and `@fluixi/jsx` drop their remaining lit type imports (`TemplateResult`/`SVGTemplateResult`/`DirectiveResult`, which were redundant in the render-type unions). Authoring with ` html` `` templates now goes through the compiled path (`@fluixi/lit`+ the compiler's`format: 'lit'`), not a runtime renderer.
+- Updated dependencies [59ddb69]
+- Updated dependencies [59ddb69]
+- Updated dependencies [8b7f398]
+- Updated dependencies [e183e9a]
+- Updated dependencies [59ddb69]
+- Updated dependencies [59ddb69]
+- Updated dependencies [4b911bc]
+- Updated dependencies [59ddb69]
+- Updated dependencies [e09bc16]
+  - @fluixi/dom@1.0.0-alpha.56
+  - @fluixi/jsx@1.0.0-alpha.56
+  - @fluixi/compiler@1.0.0-alpha.56
+  - @fluixi/utils@1.0.0-alpha.56
+  - @fluixi/vite-plugin@1.0.0-alpha.56
+  - @fluixi/reactive@1.0.0-alpha.56
+  - @fluixi/server@1.0.0-alpha.56
+  - @fluixi/head@1.0.0-alpha.23
+
 ## 1.0.0-alpha.55
 
 ### Patch Changes
