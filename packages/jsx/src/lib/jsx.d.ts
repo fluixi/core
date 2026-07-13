@@ -361,6 +361,12 @@ export namespace JSX {
     [key: `use:${string}`]: any;
     [key: `oncapture:${string}`]: (event: any) => void;
 
+    // Forced bindings: prop:x sets a DOM property, attr:x sets an attribute,
+    // bool:x toggles a boolean attribute (bypassing the property/attribute heuristic)
+    [key: `prop:${string}`]: Reactive<any>;
+    [key: `attr:${string}`]: Reactive<string | number | boolean | undefined>;
+    [key: `bool:${string}`]: Reactive<boolean | undefined>;
+
     // Data attributes
     [key: `data-${string}`]: string | number | boolean | undefined;
 

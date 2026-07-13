@@ -156,4 +156,38 @@ describe('Solid-style JSX directives (parity)', () => {
     expect(el.classList.contains('active')).toBe(true);
     expect(el.classList.contains('hidden')).toBe(false);
   });
+
+  it('prop:x forces a DOM property (no reflected attribute)', () => {
+    const el = evalExpr('(<div prop:foo={42}></div>)') as HTMLElement;
+    expect((el as any).foo).toBe(42);
+    expect(el.getAttribute('foo')).toBeNull();
+  });
+
+  it('attr:x forces an attribute', () => {
+    const el = evalExpr('(<div attr:foo={"bar"}></div>)') as HTMLElement;
+    expect(el.getAttribute('foo')).toBe('bar');
+  });
+
+  it('bool:x toggles a boolean attribute by truthiness', () => {
+    const on = evalExpr('(<button bool:disabled={1}></button>)') as HTMLElement;
+    expect(on.hasAttribute('disabled')).toBe(true);
+    expect(on.getAttribute('disabled')).toBe('');
+    const off = evalExpr('(<button bool:disabled={0}></button>)') as HTMLElement;
+    expect(off.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('prop:x stays reactive', async () => {
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(() => {
+        const [v, setV] = S.createSignal(1);
+        const el = evalExpr('(<div prop:foo={v()}></div>)', { v }) as HTMLElement;
+        expect((el as any).foo).toBe(1);
+        setV(2);
+        S.flush().then(() => {
+          expect((el as any).foo).toBe(2);
+          resolve();
+        }).catch(reject);
+      });
+    });
+  });
 });
