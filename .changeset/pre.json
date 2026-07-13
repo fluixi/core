@@ -110,6 +110,7 @@
     "mergeprops-solid-compat",
     "package-descriptions",
     "peer-runtime-singletons",
+    "portal-onmount-cleanup-leak",
     "portal-ref-support",
     "props-children-async",
     "provider-lazy-children",
