@@ -6,7 +6,7 @@
  * per-file {@link Segment} map so results land back on the real template.
  */
 import type * as TS from 'typescript';
-import { buildVirtual, toGenerated, toSource, type Segment } from './virtual.js';
+import { buildVirtual, toGenerated, toSource, inHole, type Segment } from './virtual.js';
 
 export class VirtualService {
   private ls: TS.LanguageService;
@@ -15,29 +15,21 @@ export class VirtualService {
 
   constructor(private ts: typeof TS, private host: TS.LanguageServiceHost) {
     const self = this;
-    const virtualHost: TS.LanguageServiceHost = {
-      ...host,
-      getScriptSnapshot(fileName) {
-        const v = self.virtual(fileName);
-        if (v) return self.ts.ScriptSnapshot.fromString(v.text);
-        return host.getScriptSnapshot(fileName);
+    // Delegate EVERYTHING to the real host (methods may live on its prototype in
+    // the real tsserver, which a shallow spread would miss), overriding only the
+    // snapshot so the second service sees the virtual text.
+    const virtualHost = new Proxy(host, {
+      get(target, prop, receiver) {
+        if (prop === 'getScriptSnapshot') {
+          return (fileName: string) => {
+            const v = self.virtual(fileName);
+            return v ? self.ts.ScriptSnapshot.fromString(v.text) : target.getScriptSnapshot(fileName);
+          };
+        }
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
       },
-      getScriptVersion(fileName) {
-        // Bump when the source changes; the virtual text is derived from it.
-        return host.getScriptVersion(fileName);
-      },
-    };
-    // Bind through-methods so the host keeps working (project references etc.).
-    for (const key of Object.keys(host) as Array<keyof TS.LanguageServiceHost>) {
-      const member = host[key];
-      if (typeof member === 'function' && !(key in virtualHost && virtualHost[key] !== host[key])) {
-        (virtualHost as Record<string, unknown>)[key] = (member as Function).bind(host);
-      }
-    }
-    virtualHost.getScriptSnapshot = ((fileName: string) => {
-      const v = self.virtual(fileName);
-      return v ? self.ts.ScriptSnapshot.fromString(v.text) : host.getScriptSnapshot(fileName);
-    }) as TS.LanguageServiceHost['getScriptSnapshot'];
+    }) as TS.LanguageServiceHost;
 
     this.ls = ts.createLanguageService(virtualHost, ts.createDocumentRegistry());
   }
@@ -74,6 +66,12 @@ export class VirtualService {
   toSrc(fileName: string, pos: number): number {
     const segs = this.virtual(fileName)?.segments;
     return segs ? toSource(segs, pos) : -1;
+  }
+
+  /** True when a SOURCE position lies inside an embedded `${…}` hole. */
+  inHole(fileName: string, pos: number): boolean {
+    const segs = this.virtual(fileName)?.segments;
+    return segs ? inHole(segs, pos) : false;
   }
 }
 

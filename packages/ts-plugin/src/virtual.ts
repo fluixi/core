@@ -44,6 +44,13 @@ export interface Segment {
   srcEnd: number;
   genStart: number;
   genEnd: number;
+  /** True for an embedded `${…}` hole (vs. copied unchanged code). */
+  hole?: boolean;
+}
+
+/** True when a source offset lies inside an embedded template hole. */
+export function inHole(segments: readonly Segment[], pos: number): boolean {
+  return segments.some((s) => s.hole && pos >= s.srcStart && pos <= s.srcEnd);
 }
 
 export interface Virtual {
@@ -189,7 +196,7 @@ function emitTemplate(
     const [s, e] = holeSrc(i);
     const genStart = gen.length;
     gen += srcText.slice(s, e);
-    segments.push({ srcStart: s, srcEnd: e, genStart, genEnd: gen.length });
+    segments.push({ srcStart: s, srcEnd: e, genStart, genEnd: gen.length, hole: true });
   };
 
   const calls: Array<() => void> = [];
