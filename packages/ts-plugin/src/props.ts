@@ -54,6 +54,99 @@ export function componentPropCompletions(
   return entries.length ? entries : undefined;
 }
 
+/**
+ * Hover for a component prop NAME (e.g. the cursor on `header` in `<Card header=…>`).
+ * Resolves the prop's type from the component's props for user components, or a
+ * known signature for the auto-imported control-flow ones.
+ */
+export function componentPropHover(
+  ts: typeof TS,
+  ls: TS.LanguageService,
+  fileName: string,
+  position: number,
+): TS.QuickInfo | undefined {
+  const program = ls.getProgram();
+  const sf = program?.getSourceFile(fileName);
+  if (!program || !sf) return undefined;
+  const template = templateAt(ts, sf, position);
+  if (!template) return undefined;
+
+  const hit = propNameAt(ts, sf, template.template, position);
+  if (!hit) return undefined;
+
+  let typeText: string | undefined;
+  const cf = CONTROL_FLOW_PROP_TYPES[hit.tag];
+  if (cf) {
+    typeText = cf[hit.prop];
+    if (!typeText) return undefined;
+  } else if (hit.tag) {
+    const checker = program.getTypeChecker();
+    const decl = findDeclaration(ts, sf, hit.tag.split('.')[0]);
+    const propsType = decl && firstParamType(ts, checker, checker.getTypeAtLocation(decl));
+    const sym = propsType && propsType.getProperty(hit.prop);
+    if (!sym) return undefined;
+    typeText = checker.typeToString(checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? decl!));
+  }
+  if (!typeText) return undefined;
+
+  return {
+    kind: ts.ScriptElementKind.memberVariableElement,
+    kindModifiers: '',
+    textSpan: { start: hit.start, length: hit.prop.length },
+    displayParts: [
+      { text: '(', kind: 'punctuation' },
+      { text: 'property', kind: 'text' },
+      { text: ')', kind: 'punctuation' },
+      { text: ' ', kind: 'space' },
+      { text: hit.prop, kind: 'propertyName' },
+      { text: ':', kind: 'punctuation' },
+      { text: ' ', kind: 'space' },
+      { text: typeText, kind: 'text' },
+    ],
+    documentation: [],
+  };
+}
+
+interface PropHit { tag: string; prop: string; start: number; }
+
+/** If `position` sits on a component prop NAME, return the tag + prop name + span. */
+function propNameAt(ts: typeof TS, sf: TS.SourceFile, tpl: TS.TemplateLiteral, position: number): PropHit | undefined {
+  const { root } = parseTemplate(templatePieces(ts, tpl, sf));
+  let hit: PropHit | undefined;
+  const walk = (nodes: readonly TemplateNode[]): void => {
+    for (const node of nodes) {
+      if (node.kind === 'Component') {
+        const c = node as ComponentNode;
+        for (const a of c.attributes) {
+          if ((a.kind === 'Attribute' || a.kind === 'PropertyBinding' || a.kind === 'BindDirective') && 'loc' in a) {
+            const start = a.loc.start;
+            if (position >= start && position <= start + a.name.length) hit = { tag: c.tag, prop: a.name, start };
+          }
+        }
+      }
+      if (!hit && 'children' in node && node.children) walk(node.children);
+      if (hit) return;
+    }
+  };
+  walk(root.children);
+  return hit;
+}
+
+/** Hover text (the prop's type) for the auto-imported control-flow components. */
+const CONTROL_FLOW_PROP_TYPES: Record<string, Record<string, string>> = {
+  Show: { when: 'T', fallback: 'JSX.Element', keyed: 'boolean' },
+  For: { each: 'readonly T[] | undefined | null', fallback: 'JSX.Element', by: '(item: T) => unknown' },
+  Index: { each: 'readonly T[] | undefined | null', fallback: 'JSX.Element' },
+  Switch: { fallback: 'JSX.Element' },
+  Match: { when: 'T' },
+  Suspense: { fallback: 'JSX.Element' },
+  SuspenseList: { revealOrder: '"forwards" | "backwards" | "together"', tail: '"collapsed" | "hidden"' },
+  Portal: { mount: 'Node', useShadow: 'boolean', isSVG: 'boolean' },
+  ErrorBoundary: { fallback: 'JSX.Element | ((err: unknown, reset: () => void) => JSX.Element)' },
+  Dynamic: { component: 'Component | string' },
+  Await: { value: 'Promise<T> | (() => Promise<T>)', fallback: 'JSX.Element' },
+};
+
 /** Known prop names for the auto-imported control-flow components. */
 const CONTROL_FLOW_PROPS: Record<string, string[]> = {
   Show: ['when', 'fallback', 'keyed'],

@@ -32,12 +32,36 @@ const EVENT_TYPES: Record<string, string> = {
   animationend: 'AnimationEvent', transitionend: 'TransitionEvent',
 };
 
+/** Tag name → the DOM interface an element of that tag has. */
+const TAG_ELEMENTS: Record<string, string> = {
+  a: 'HTMLAnchorElement', area: 'HTMLAreaElement', audio: 'HTMLAudioElement',
+  br: 'HTMLBRElement', button: 'HTMLButtonElement', canvas: 'HTMLCanvasElement',
+  data: 'HTMLDataElement', datalist: 'HTMLDataListElement', dialog: 'HTMLDialogElement',
+  div: 'HTMLDivElement', dl: 'HTMLDListElement', embed: 'HTMLEmbedElement',
+  fieldset: 'HTMLFieldSetElement', form: 'HTMLFormElement', h1: 'HTMLHeadingElement',
+  h2: 'HTMLHeadingElement', h3: 'HTMLHeadingElement', h4: 'HTMLHeadingElement',
+  h5: 'HTMLHeadingElement', h6: 'HTMLHeadingElement', hr: 'HTMLHRElement',
+  iframe: 'HTMLIFrameElement', img: 'HTMLImageElement', input: 'HTMLInputElement',
+  label: 'HTMLLabelElement', legend: 'HTMLLegendElement', li: 'HTMLLIElement',
+  link: 'HTMLLinkElement', map: 'HTMLMapElement', menu: 'HTMLMenuElement',
+  meter: 'HTMLMeterElement', object: 'HTMLObjectElement', ol: 'HTMLOListElement',
+  optgroup: 'HTMLOptGroupElement', option: 'HTMLOptionElement', output: 'HTMLOutputElement',
+  p: 'HTMLParagraphElement', picture: 'HTMLPictureElement', pre: 'HTMLPreElement',
+  progress: 'HTMLProgressElement', q: 'HTMLQuoteElement', select: 'HTMLSelectElement',
+  slot: 'HTMLSlotElement', source: 'HTMLSourceElement', span: 'HTMLSpanElement',
+  table: 'HTMLTableElement', tbody: 'HTMLTableSectionElement', td: 'HTMLTableCellElement',
+  template: 'HTMLTemplateElement', textarea: 'HTMLTextAreaElement', tfoot: 'HTMLTableSectionElement',
+  th: 'HTMLTableCellElement', thead: 'HTMLTableSectionElement', time: 'HTMLTimeElement',
+  tr: 'HTMLTableRowElement', track: 'HTMLTrackElement', ul: 'HTMLUListElement', video: 'HTMLVideoElement',
+};
+
 /** The role a template hole plays, if it's a typed callback slot. */
 type HoleRole =
   | { kind: 'each'; eachHole: number } // item is the element type
   | { kind: 'indexEach'; eachHole: number } // <Index>: item is an accessor () => T
   | { kind: 'show'; whenHole: number } // <Show>: value is the narrowed truthy `when`
-  | { kind: 'event'; event: string };
+  | { kind: 'event'; event: string }
+  | { kind: 'refEl'; tag: string }; // ref=${(el)=>…} / use=${(el)=>…}: el is the element
 
 /** Map every hole index that is a typed callback to its role. */
 function holeRoles(nodes: readonly TemplateNode[], out: Map<number, HoleRole>): void {
@@ -52,6 +76,9 @@ function holeRoles(nodes: readonly TemplateNode[], out: Map<number, HoleRole>): 
       // event handlers: @click / on:click / onClick
       for (const a of node.attributes) {
         if (a.kind === 'EventBinding') out.set(a.hole, { kind: 'event', event: a.name.toLowerCase() });
+        // ref / use callbacks receive the element they're attached to.
+        if (node.kind === 'Element' && a.kind === 'RefBinding') out.set(a.hole, { kind: 'refEl', tag: node.tag });
+        if (node.kind === 'Element' && a.kind === 'UseDirective' && a.hole != null) out.set(a.hole, { kind: 'refEl', tag: node.tag });
       }
 
       // `each` directive on an element → For-style item.
@@ -83,9 +110,26 @@ export interface ParamTypeInfo {
   paramName: string;
   /** The rendered type string, e.g. `{ id: number; label: string }` or `MouseEvent`. */
   typeText: string;
+  /** The resolved type, when available — used for member completion (`param.` → members). */
+  type?: TS.Type;
   /** The param identifier's span (for the hover range). */
   start: number;
   length: number;
+}
+
+/** Resolve a global type (e.g. `MouseEvent`, `HTMLInputElement`) by name. */
+function resolveGlobalType(ts: typeof TS, checker: TS.TypeChecker, location: TS.Node, name: string): TS.Type | undefined {
+  const sym = checker.getSymbolsInScope(location, ts.SymbolFlags.Type).find((s) => s.getName() === name);
+  return sym ? checker.getDeclaredTypeOfSymbol(sym) : undefined;
+}
+
+/** Element type for a tag via `HTMLElementTagNameMap` (covers every standard tag). */
+function resolveElementType(ts: typeof TS, checker: TS.TypeChecker, location: TS.Node, tag: string): TS.Type | undefined {
+  const map = resolveGlobalType(ts, checker, location, 'HTMLElementTagNameMap');
+  const prop = map?.getProperty(tag.toLowerCase());
+  const t = prop ? checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration ?? location) : undefined;
+  // Unknown/custom tags aren't in the map — use the generic element type.
+  return t ?? resolveGlobalType(ts, checker, location, 'HTMLElement');
 }
 
 /**
@@ -125,20 +169,32 @@ export function inferParamAt(
 
   const checker = program.getTypeChecker();
   let typeText: string | undefined;
+  let type: TS.Type | undefined;
   if (role.kind === 'event') {
-    typeText = EVENT_TYPES[role.event] ?? 'Event';
+    const name = EVENT_TYPES[role.event] ?? 'Event';
+    typeText = name;
+    type = resolveGlobalType(ts, checker, fn, name);
+  } else if (role.kind === 'refEl') {
+    // Resolve via HTMLElementTagNameMap[tag] so EVERY tag is covered; fall back
+    // to the static name map / HTMLElement when the lib isn't present.
+    type = resolveElementType(ts, checker, fn, role.tag);
+    typeText = type ? checker.typeToString(type) : (TAG_ELEMENTS[role.tag.toLowerCase()] ?? 'HTMLElement');
+    if (!type) type = resolveGlobalType(ts, checker, fn, typeText);
   } else if (role.kind === 'show') {
     // <Show when=${cond}>${(value) => …}: value is the narrowed truthy `when`.
-    const when = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]));
-    typeText = checker.typeToString(when);
+    type = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]));
+    typeText = checker.typeToString(type);
+  } else if (role.kind === 'indexEach') {
+    // <Index>: item is an accessor () => T.
+    const elem = checker.getTypeAtLocation(holeExprs[role.eachHole]).getNumberIndexType();
+    if (elem) typeText = `() => ${checker.typeToString(elem)}`;
   } else {
-    // each / For (plain item) or Index (accessor () => item).
-    const arrType = checker.getTypeAtLocation(holeExprs[role.eachHole]);
-    const elem = arrType.getNumberIndexType();
-    if (elem) typeText = role.kind === 'indexEach' ? `() => ${checker.typeToString(elem)}` : checker.typeToString(elem);
+    // each / For: item is the element type.
+    type = checker.getTypeAtLocation(holeExprs[role.eachHole]).getNumberIndexType();
+    if (type) typeText = checker.typeToString(type);
   }
   if (!typeText) return undefined;
-  return { paramName, typeText, start: id.getStart(sf), length: id.getWidth(sf) };
+  return { paramName, typeText, type, start: id.getStart(sf), length: id.getWidth(sf) };
 }
 
 /** Build a QuickInfo for an inferred callback parameter, or undefined. */

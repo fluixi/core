@@ -19,9 +19,10 @@ import type * as ts from 'typescript';
 import { shouldSuppress, usedComponentTags } from './collect.js';
 import { componentQuickInfo } from './hover.js';
 import { paramQuickInfo, inferParamAt } from './infer.js';
-import { componentPropCompletions } from './props.js';
+import { componentPropCompletions, componentPropHover } from './props.js';
+import { paramMemberCompletions } from './completion.js';
 import { VirtualService } from './virtual-service.js';
-import { mapCompletions, mapDiagnostic, mapQuickInfo } from './bridge.js';
+import { mapDiagnostic } from './bridge.js';
 
 interface PluginCreateInfo {
   languageService: ts.LanguageService;
@@ -52,6 +53,16 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         const member = ls[key];
         proxy[key] = typeof member === 'function' ? (member as Function).bind(ls) : member;
       }
+
+      // Wrap our entries as a completion list. isNewIdentifierLocation:true makes
+      // the editor SHOW them even with an empty prefix (otherwise a fresh trigger
+      // sometimes hides them until a character is typed).
+      const completionList = (entries: ts.CompletionEntry[]): ts.CompletionInfo => ({
+        isGlobalCompletion: false,
+        isMemberCompletion: false,
+        isNewIdentifierLocation: true,
+        entries,
+      });
 
       const IMPLICIT_ANY = new Set([7006, 7044]);
 
@@ -96,63 +107,33 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       proxy.getSuggestionDiagnostics = (fileName: string) =>
         reliableFilter(fileName, ls.getSuggestionDiagnostics(fileName));
 
-      // Hover: virtual (fully typed) if in a hole and it works; else the inferred
-      // param hover; else the real hover / component-tag hover.
+      // Hover (all computed on the main checker, so it always works): a component
+      // prop name; else an inferred callback param (each/event/ref/use/Show/…);
+      // else the real hover / component-tag hover.
       proxy.getQuickInfoAtPosition = (fileName: string, position: number) => {
-        if (vs && (vs.inHole(fileName, position) || vs.inKey(fileName, position))) {
-          try {
-            const gen = vs.toGen(fileName, position);
-            if (gen !== -1) {
-              const info = mapQuickInfo(vs, fileName, vs.service().getQuickInfoAtPosition(fileName, gen));
-              if (info && info.displayParts && info.displayParts.length) return info;
-            }
-          } catch { /* fall through */ }
-        }
-        const inferred = paramQuickInfo(ts, ls, fileName, position);
-        if (inferred) return inferred;
+        try {
+          const prop = componentPropHover(ts, ls, fileName, position);
+          if (prop) return prop;
+        } catch { /* fall through */ }
+        try {
+          const inferred = paramQuickInfo(ts, ls, fileName, position);
+          if (inferred) return inferred;
+        } catch { /* fall through */ }
         return ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
       };
 
-      // Completion: virtual (typed) inside a hole; component prop names in a
-      // component tag's attribute area; else the real one.
+      // Completion (main checker): component prop names in a tag's attribute area;
+      // else members of an inferred callback param (`it.` / `el.` / `e.`); else real.
       proxy.getCompletionsAtPosition = (fileName: string, position: number, options: unknown, formatting?: unknown) => {
-        if (vs && vs.inHole(fileName, position)) {
-          try {
-            const gen = vs.toGen(fileName, position);
-            if (gen !== -1) {
-              const list = mapCompletions(vs, fileName, vs.service().getCompletionsAtPosition(fileName, gen, options as any, formatting as any));
-              if (list && list.entries.length) return list;
-            }
-          } catch { /* fall through */ }
-        }
         try {
           const props = componentPropCompletions(ts, ls, fileName, position);
-          if (props) {
-            return {
-              isGlobalCompletion: false,
-              isMemberCompletion: false,
-              isNewIdentifierLocation: false,
-              entries: props,
-            } as ts.CompletionInfo;
-          }
+          if (props) return completionList(props);
+        } catch { /* fall through */ }
+        try {
+          const members = paramMemberCompletions(ts, ls, fileName, position);
+          if (members) return completionList(members);
         } catch { /* fall through */ }
         return ls.getCompletionsAtPosition(fileName, position, options as any, formatting as any);
-      };
-
-      proxy.getCompletionEntryDetails = (
-        fileName: string, position: number, entryName: string,
-        formatOptions: unknown, source: unknown, preferences: unknown, data: unknown,
-      ) => {
-        if (vs && vs.inHole(fileName, position)) {
-          try {
-            const gen = vs.toGen(fileName, position);
-            if (gen !== -1) {
-              const d = vs.service().getCompletionEntryDetails(fileName, gen, entryName, formatOptions as any, source as any, preferences as any, data as any);
-              if (d) return d;
-            }
-          } catch { /* fall through */ }
-        }
-        return ls.getCompletionEntryDetails(fileName, position, entryName, formatOptions as any, source as any, preferences as any, data as any);
       };
 
       return proxy as unknown as ts.LanguageService;
