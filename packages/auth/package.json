@@ -22,7 +22,7 @@
       }
     }
   },
-  "description": "Server-first auth for Fluixi — native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
+  "description": "Server-first auth for Fluixi \u2014 native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
   "type": "module",
   "files": [
     "dist",
@@ -54,7 +54,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@bambiste/mix-builder": "*",
+    "@bambiste/mix-builder": "^0.1.0",
     "@fluixi/core": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",

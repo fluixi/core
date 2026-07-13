@@ -275,6 +275,6 @@
   "dependencies": {},
   "devDependencies": {
     "inquirer": "^13.1.0",
-    "@bambiste/mix-builder": "*"
+    "@bambiste/mix-builder": "^0.1.0"
   }
 }

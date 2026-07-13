@@ -16,7 +16,7 @@
       }
     }
   },
-  "description": "Minimal test helpers for Fluixi components — render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
+  "description": "Minimal test helpers for Fluixi components \u2014 render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
   "type": "module",
   "files": [
     "dist",
@@ -44,7 +44,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@bambiste/mix-builder": "*",
+    "@bambiste/mix-builder": "^0.1.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3",

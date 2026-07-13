@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/babel-plugin-jsx",
   "version": "1.0.0-alpha.56",
-  "description": "Compiles JSX into fine-grained reactive DOM calls for Fluixi — no virtual DOM.",
+  "description": "Compiles JSX into fine-grained reactive DOM calls for Fluixi \u2014 no virtual DOM.",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -45,7 +45,7 @@
     "@fluixi/compiler": "workspace:*"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "*",
+    "@bambiste/mix-builder": "^0.1.0",
     "inquirer": "^14.0.2"
   },
   "repository": {
