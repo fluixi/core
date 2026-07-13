@@ -1,3 +1,4 @@
+import { createSignal } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL } from './nav.js';
@@ -31,6 +32,9 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   const link = (s: string) => `/${version}/${lang}/${s}`;
   const titleOf = (s: string) => getDoc(version, lang, s)?.title ?? s;
   const other: Lang = lang === 'en' ? 'fr' : 'en';
+
+  // Mobile sidebar drawer (no effect on desktop, where the sidebar is a grid column).
+  const [navOpen, setNavOpen] = createSignal(false);
 
   const i = ORDER.indexOf(slug);
   const prev = i > 0 ? ORDER[i - 1] : null;
@@ -66,9 +70,19 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   return (
     <div class="docs">
       <header class="d-head">
-        <a class="d-brand" href={link('introduction')}>
-          <span class="logo">✦</span> {ui.product}
-        </a>
+        <div class="d-head-left">
+          <button
+            class="d-menu"
+            aria-label="Toggle navigation"
+            aria-expanded={() => (navOpen() ? 'true' : 'false')}
+            onClick={() => setNavOpen(!navOpen())}
+          >
+            {() => (navOpen() ? '✕' : '☰')}
+          </button>
+          <a class="d-brand" href={link('introduction')}>
+            <span class="logo">✦</span> {ui.product}
+          </a>
+        </div>
         <div class="d-actions">
           <label class="ver">
             <span>{ui.version}</span>
@@ -90,12 +104,21 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
       </header>
 
       <div class="d-body">
-        <aside class="d-sidebar">
+        <div
+          class="d-backdrop"
+          classList={{ show: navOpen() }}
+          onClick={() => setNavOpen(false)}
+        />
+        <aside class="d-sidebar" classList={{ open: navOpen() }}>
           {NAV.map((section) => (
             <div class="nav-group">
               <div class="nav-group-title">{section.group[lang]}</div>
               {section.slugs.map((s) => (
-                <a class={s === slug ? 'nav-item on' : 'nav-item'} href={link(s)}>
+                <a
+                  class={s === slug ? 'nav-item on' : 'nav-item'}
+                  href={link(s)}
+                  onClick={() => setNavOpen(false)}
+                >
                   {titleOf(s)}
                 </a>
               ))}
