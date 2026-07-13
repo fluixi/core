@@ -86,3 +86,6 @@ Desktop.ini
 /connect.lock
 /typings
 
+
+# ─── Local agent state ────────────────────────────────────────────────────────
+.claude/
