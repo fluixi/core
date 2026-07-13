@@ -24,6 +24,14 @@ export interface Owner {
   parent: Owner | null;
   /** Context values provided at this scope — useContext walks up the parent chain. */
   contexts: Map<symbol, unknown> | null;
+  /** Set once disposeOwner has torn this scope down; guards deferred work (e.g. a
+   * queued onMount) from running against — and resurrecting — a dead owner. */
+  disposed?: boolean;
+}
+
+/** True once `owner` has been disposed. Deferred work should bail rather than run. */
+export function isOwnerDisposed(owner: Owner | null): boolean {
+  return !!owner && owner.disposed === true;
 }
 
 // Owner / scheduler / boundary-hook state all live on the shared globalThis-backed G
@@ -150,10 +158,19 @@ export function runWithOwner<T>(owner: Owner | null, fn: () => T): T {
 /** Register a teardown for the current owner scope. */
 export function onCleanup(fn: () => void): void {
   if (!G.owner) return; // no owner → not retained, runs never (matches Solid)
+  // A disposed owner is dead: pushing here would recreate its (nulled) cleanups
+  // array and never run — a leak. Run the teardown immediately instead, so a
+  // teardown registered from deferred work (a queued onMount) still fires.
+  if (G.owner.disposed) { fn(); return; }
   (G.owner.cleanups ??= []).push(fn);
 }
 
-function disposeOwner(owner: Owner): void {
+// `final` distinguishes a permanent teardown (the scope is gone — mark it disposed so
+// deferred work bails) from an effect's between-runs cleanup (the owner is REUSED for
+// the next run, so it must NOT be marked disposed). Children are always torn down
+// permanently — only the effect's own owner survives a re-run.
+function disposeOwner(owner: Owner, final = true): void {
+  if (owner.disposed) return;
   if (owner.owned) {
     for (let i = owner.owned.length - 1; i >= 0; i--) disposeOwner(owner.owned[i]);
     owner.owned = null;
@@ -162,6 +179,7 @@ function disposeOwner(owner: Owner): void {
     for (let i = owner.cleanups.length - 1; i >= 0; i--) owner.cleanups[i]();
     owner.cleanups = null;
   }
+  if (final) owner.disposed = true;
 }
 
 /** Create a root reactive scope with explicit disposal (TC39 has no ownership). */
@@ -254,8 +272,9 @@ class EffectNode {
     // The Computed runs the user fn inside a tracking scope + this effect's owner,
     // so reads subscribe and onCleanup/nested roots attach here.
     this.computed = new Computed<void>(() => {
-      // teardown previous run's cleanups before re-running
-      disposeOwner(this.owner);
+      // teardown previous run's cleanups before re-running — NOT final: the owner is
+      // reused for this run, so it must stay alive (only its children are disposed).
+      disposeOwner(this.owner, false);
       runWithOwner(this.owner, () => {
         const r = fn();
         if (typeof r === 'function') (this.owner.cleanups ??= []).push(r);
