@@ -72,6 +72,19 @@ const HERO_CODE = `function Counter() {
   );
 }`;
 
+const HTML_CODE = `import { html } from "@fluixi/core";
+
+// No JSX, no tsconfig changes — plain .ts, same compiled output.
+function Counter() {
+  const [count, setCount] = createSignal(0);
+
+  return html\`
+    <button @click=\${() => setCount(c => c + 1)}>
+      count: \${count()}
+    </button>
+  \`;
+}`;
+
 const SERVER_CODE = `// runs only on the server — the body is stripped from the client bundle
 async function getUser(id: string) {
   "use server";
@@ -170,6 +183,45 @@ function ServerSection() {
   );
 }
 
+function GetStarted() {
+  return (
+    <section class="split" id="get-started">
+      <div class="split-copy">
+        <h2>
+          Start in seconds — <span class="grad">JSX or html``.</span>
+        </h2>
+        <p>
+          One command scaffolds an SPA or an SSR app, in JSX or JSX-free <code>{'html``'}</code> templates.
+          Both compile to the same fine-grained DOM calls, so you can even mix them in one file.
+        </p>
+        <ul class="checks">
+          <li><code>--jsx</code> or <code>--html</code> · <code>--spa</code> or <code>--ssr</code></li>
+          <li>html`` needs no <code>jsx</code> in tsconfig — plain <code>.ts</code> files</li>
+          <li>Editor support via <code>@fluixi/ts-plugin</code>, wired in for you</li>
+        </ul>
+        <InstallCommand />
+        <div class="cta">
+          <a class="btn ghost" href={`${DOCS_URL}/v1/en/quickstart`}>
+            Quick start →
+          </a>
+          <a class="btn ghost" href={`${DOCS_URL}/v1/en/html-templates`}>
+            html`` templates →
+          </a>
+        </div>
+      </div>
+      <div class="code-window">
+        <div class="code-bar">
+          <span class="dot" />
+          <span class="dot" />
+          <span class="dot" />
+          <span class="code-name">Counter.ts</span>
+        </div>
+        <pre class="code">{HTML_CODE}</pre>
+      </div>
+    </section>
+  );
+}
+
 function PlaygroundCallout() {
   return (
     <section class="callout">
@@ -233,6 +285,7 @@ export default function Home() {
       <Nav />
       <Hero />
       <Features />
+      <GetStarted />
       <ServerSection />
       <PlaygroundCallout />
       <Footer />
