@@ -28,6 +28,14 @@ export function componentPropCompletions(
   const comp = componentTagAtAttrArea(ts, sf, template.template, position);
   if (!comp || !comp.tag) return undefined; // dynamic `<${C}>` handled by the virtual doc
 
+  // Control-flow components (auto-imported by the compiler) aren't in the file's
+  // scope — offer their known prop names directly.
+  const cf = CONTROL_FLOW_PROPS[comp.tag];
+  if (cf) {
+    const already = new Set(comp.attributeNames);
+    return cf.filter((n) => !already.has(n)).map((name) => propEntry(ts, name));
+  }
+
   const checker = program.getTypeChecker();
   const rootName = comp.tag.split('.')[0];
   const decl = findDeclaration(ts, sf, rootName);
@@ -41,15 +49,28 @@ export function componentPropCompletions(
   for (const p of propsType.getProperties()) {
     const name = p.getName();
     if (name === 'children' || already.has(name)) continue;
-    entries.push({
-      name,
-      kind: ts.ScriptElementKind.memberVariableElement,
-      kindModifiers: '',
-      sortText: '0_' + name,
-      insertText: name,
-    });
+    entries.push(propEntry(ts, name));
   }
   return entries.length ? entries : undefined;
+}
+
+/** Known prop names for the auto-imported control-flow components. */
+const CONTROL_FLOW_PROPS: Record<string, string[]> = {
+  Show: ['when', 'fallback', 'keyed'],
+  For: ['each', 'fallback', 'by'],
+  Index: ['each', 'fallback'],
+  Switch: ['fallback'],
+  Match: ['when'],
+  Suspense: ['fallback'],
+  SuspenseList: ['revealOrder', 'tail'],
+  Portal: ['mount', 'useShadow', 'isSVG'],
+  ErrorBoundary: ['fallback'],
+  Dynamic: ['component'],
+  Await: ['value', 'fallback'],
+};
+
+function propEntry(ts: typeof TS, name: string): TS.CompletionEntry {
+  return { name, kind: ts.ScriptElementKind.memberVariableElement, kindModifiers: '', sortText: '0_' + name, insertText: name };
 }
 
 /** Find a top-level declaration of `name` (function/class/const/import) in the file. */
