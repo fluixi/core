@@ -10,12 +10,12 @@ installation npm. Ils sont publiés à chaque release et servis depuis
 Chaque global est entièrement autonome (ses dépendances sont incluses), vous ne chargez donc
 qu'un seul fichier. Les tailles sont minifiées ; le `gzip` est ce qui transite sur le réseau.
 
-| Script | Global | Contenu | Min | Gzip |
-| --- | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 3.4 Ko | **1.3 Ko** |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 29.6 Ko | **8.7 Ko** |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 52.5 Ko | **17.0 Ko** |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 75.3 Ko | **24.8 Ko** |
+| Script | Global | Contenu | Taille |
+| --- | --- | --- | --- |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 3.4 Ko <small>(1.3 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 29.6 Ko <small>(8.7 Ko gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 52.5 Ko <small>(17.0 Ko gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 75.3 Ko <small>(24.8 Ko gz)</small> |
 
 Choisissez le plus petit qui couvre votre besoin : juste la réactivité → `signal` ou `reactive` ;
 une UI réactive → `dom` ; le framework applicatif complet → `core`.
