@@ -19,6 +19,7 @@ import {
   batch,
   createRoot,
   runWithOwner,
+  isOwnerDisposed,
   createComputed,
   __DEV__,
   createRenderEffect,
@@ -145,6 +146,15 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   const owner = getOwner();
 
   queueMicrotask(() => {
+    // The scope may have been torn down before this microtask ran (e.g. a <Portal>
+    // inside a <Show> that closed synchronously). Running mount/effect callbacks on a
+    // dead owner would re-attach listeners/effects whose cleanup never fires — a leak.
+    // Match Solid: an unmounted component's onMount simply does not run.
+    if (isOwnerDisposed(owner)) {
+      lc.mounts = [];
+      lc.effects = [];
+      return;
+    }
     runWithOwner(owner, () => {
       // 1. Run ALL onMount callbacks first
       for (const cb of lc.mounts) {
