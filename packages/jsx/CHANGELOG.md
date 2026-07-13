@@ -1,5 +1,50 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.56
+
+### Minor Changes
+
+- 8b7f398: Forced binding directives `prop:`, `attr:` and `bool:` (Solid parity), on both JSX and
+  html`` surfaces.
+
+  - `prop:name` always assigns the DOM property (`element[name] = value`), bypassing the
+    property-vs-attribute heuristic.
+  - `attr:name` always sets the attribute via `setAttribute`.
+  - `bool:name` toggles a boolean attribute by truthiness — a truthy value renders the empty
+    string, a falsy value removes it.
+
+  All three accept static or reactive values and are handled in the runtime `spread` /
+  `applyProps` dispatch, so JSX (namespaced attribute) and html``(plain-attribute fallback)
+both route through the same branches. Added`prop:${string}` / `attr:${string}`/`bool:${string}` to the JSX attribute types.
+
+- 4b911bc: JSX now supports the Solid-style directives `use:` and `oncapture:`, closing the gap
+  with the html`` template surface.
+
+  - `use:name` / `use:name={opts}` → normalized to a single `use` prop (`[dir, () => opts]`
+    pairs) the runtime applies; the directive identifier is kept referenced so its import
+    isn't dropped.
+  - `oncapture:event={h}` → a native capture-phase listener.
+  - `on:event` handlers pass through to the native-listener dispatch and are no longer wired
+    reactively (a `props.onX` handler could previously be reactive-wrapped).
+  - `use:${string}` / `oncapture:${string}` added to the JSX attribute types.
+
+  Also fixes a latent bug in both lowerers: `use:x={{…}}` object options were parsed as an
+  arrow block body (returning `undefined`) instead of an object — the accessor body is now
+  parenthesized.
+
+### Patch Changes
+
+- 59ddb69: Remove the lit-html runtime bridge from the framework — no `lit` dependency remains anywhere. `@fluixi/core` no longer lazily `import('lit')` to register a lit renderer on the client (this was also the "Lit is in dev mode" console warning); `@fluixi/dom` drops `registerLitRender`/`renderLitToNodes` and the `_$litType$`/`_$litDirective$` insert-path branches; `@fluixi/dom` and `@fluixi/jsx` drop their remaining lit type imports (`TemplateResult`/`SVGTemplateResult`/`DirectiveResult`, which were redundant in the render-type unions). Authoring with ` html` `` templates now goes through the compiled path (`@fluixi/lit`+ the compiler's`format: 'lit'`), not a runtime renderer.
+- 59ddb69: Drop the unused `tslib` dependency. `importHelpers` is on in tsconfig, but these packages ship esbuild-bundled output that inlines the TS helpers — nothing in the published code imports `tslib`, so it was dead weight in `dependencies`.
+- 59ddb69: Add `JSX.CSSProperties` — a typed style-object: known camelCase CSS properties (autocompleted from the DOM `CSSStyleDeclaration`), custom `--*` properties, plus a string fallback, with string-or-number values. `style` is retyped `string | CSSProperties | Accessor<string | CSSProperties>`.
+- Updated dependencies [59ddb69]
+- Updated dependencies [59ddb69]
+- Updated dependencies [8b7f398]
+- Updated dependencies [e183e9a]
+- Updated dependencies [59ddb69]
+  - @fluixi/dom@1.0.0-alpha.56
+  - @fluixi/reactive@1.0.0-alpha.56
+
 ## 1.0.0-alpha.55
 
 ### Patch Changes

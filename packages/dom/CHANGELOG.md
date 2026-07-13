@@ -1,5 +1,45 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.56
+
+### Minor Changes
+
+- 8b7f398: Forced binding directives `prop:`, `attr:` and `bool:` (Solid parity), on both JSX and
+  html`` surfaces.
+
+  - `prop:name` always assigns the DOM property (`element[name] = value`), bypassing the
+    property-vs-attribute heuristic.
+  - `attr:name` always sets the attribute via `setAttribute`.
+  - `bool:name` toggles a boolean attribute by truthiness — a truthy value renders the empty
+    string, a falsy value removes it.
+
+  All three accept static or reactive values and are handled in the runtime `spread` /
+  `applyProps` dispatch, so JSX (namespaced attribute) and html``(plain-attribute fallback)
+both route through the same branches. Added`prop:${string}` / `attr:${string}`/`bool:${string}` to the JSX attribute types.
+
+- e183e9a: html`` templates: full feature support, and @fluixi/lit folded into @fluixi/dom.
+
+  - `fluixi()` now compiles both JSX and html``by default (no`format` option).
+  - Directives: if/else, each/key, bind:, class:, style: (+ class/style object
+    syntax), ref, use/use:, html= raw, boolean/property bindings.
+  - Events: native `on:click` plus modifiers (.capture/.once/.passive/.prevent/
+    .stop/.self); `@click`/`onClick` stay delegated.
+  - Components: dynamic `<${Comp}/>`, named slots (`slot="name"` → `props.name`),
+    `<component is=${C}>` (→ Dynamic), and a new `Await` component.
+  - `html`/`svg` markers and their types now live in @fluixi/dom and are
+    re-exported from @fluixi/core; the separate `@fluixi/lit` package is removed.
+
+### Patch Changes
+
+- 59ddb69: Remove the lit-html runtime bridge from the framework — no `lit` dependency remains anywhere. `@fluixi/core` no longer lazily `import('lit')` to register a lit renderer on the client (this was also the "Lit is in dev mode" console warning); `@fluixi/dom` drops `registerLitRender`/`renderLitToNodes` and the `_$litType$`/`_$litDirective$` insert-path branches; `@fluixi/dom` and `@fluixi/jsx` drop their remaining lit type imports (`TemplateResult`/`SVGTemplateResult`/`DirectiveResult`, which were redundant in the render-type unions). Authoring with ` html` `` templates now goes through the compiled path (`@fluixi/lit`+ the compiler's`format: 'lit'`), not a runtime renderer.
+- 59ddb69: Drop the unused `tslib` dependency. `importHelpers` is on in tsconfig, but these packages ship esbuild-bundled output that inlines the TS helpers — nothing in the published code imports `tslib`, so it was dead weight in `dependencies`.
+- 59ddb69: Fix empty reactive text duplicating on hydration. When a reactive text was empty on the client during hydration (e.g. a resource's brief loading state) while the server had rendered non-empty content there, `hydrateText('')` returned null and never adopted the server text node — so the content duplicated once the value resolved (e.g. `User #9User #9`).
+
+  An empty reactive text now adopts and clears a non-empty server text node at the cursor. Client-only insertion anchors/placeholders (which must never consume a server node) are marked with a new `anchor` flag on `createTextNode` so they still bypass the hydration walker — keeping adjacent static text (e.g. a list item's text beside a nested element) intact.
+
+- Updated dependencies [59ddb69]
+  - @fluixi/reactive@1.0.0-alpha.56
+
 ## 1.0.0-alpha.55
 
 ### Patch Changes
