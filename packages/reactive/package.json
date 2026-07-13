@@ -179,7 +179,7 @@
     "inquirer": "^13.1.0",
     "sdom": "^0.0.4",
     "vite-plugin-solid": "^2.11.10",
-    "@bambiste/mix-builder": "next"
+    "@bambiste/mix-builder": "^0.1.0"
   },
   "repository": {
     "type": "git",

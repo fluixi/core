@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/dom",
   "version": "1.0.0-alpha.56",
-  "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
+  "description": "Reactive DOM runtime for Fluixi \u2014 surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -142,7 +142,7 @@
     "stream": "^0.0.3"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "next",
+    "@bambiste/mix-builder": "^0.1.0",
     "inquirer": "^13.1.0",
     "vitest": "^1.6.1",
     "jsdom": "^25.0.0",
