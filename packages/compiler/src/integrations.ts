@@ -114,6 +114,12 @@ export interface CompilerOptions {
   controlFlowModule?: string;
 
   /**
+   * Module the router components (Router/Outlet/…) are auto-imported from.
+   * @default '@fluixi/core/router-next'
+   */
+  routerModule?: string;
+
+  /**
    * Where reactive primitives (createMemo) are imported from in 'imperative' mode.
    * @default '@fluixi/reactive/signal'
    */
@@ -658,6 +664,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         ...(options.controlFlowModule
           ? { controlFlowModule: options.controlFlowModule }
           : {}),
+        ...(options.routerModule ? { routerModule: options.routerModule } : {}),
         ...(options.reactiveModule ? { reactiveModule: options.reactiveModule } : {}),
       };
     },

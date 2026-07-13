@@ -121,6 +121,12 @@ export interface PluginOptions {
   controlFlowModule?: string;
 
   /**
+   * Module the router components (Router/Outlet/…) are auto-imported from.
+   * @default '@fluixi/core/router-next'
+   */
+  routerModule?: string;
+
+  /**
    * Where reactive primitives (createMemo) are imported from — the signal core,
    * not the dom runtime.
    * @default '@fluixi/reactive/signal'
@@ -216,6 +222,12 @@ const CONTROL_FLOW_COMPONENTS = new Set([
 // be auto-imported from core (dom doesn't export them).
 const CORE_ONLY_CONTROL_FLOW = new Set(['Suspense', 'SuspenseList', 'Await']);
 
+// Router components auto-imported (from routerModule) the same way control flow is:
+// use `<Router>`/`<Outlet>`/… in a template and the import is injected if absent.
+// (`Routes` isn't a component — routing is `<Router routes={…}>`; `lazy` is a function
+// call, not a tag, so neither can be auto-imported this way.)
+const ROUTER_COMPONENTS = new Set(['Router', 'Outlet', 'Redirect', 'Link']);
+
 // Control-flow components read a single reactive *value* prop inside their own tracking
 // scope. Emit that prop as a getter (like `children`) so reading it re-runs the caller's
 // expression — otherwise `each={items()}` / `when={cond()}` snapshot once and never update.
@@ -282,6 +294,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     sourceMaps = true,
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
+    routerModule = '@fluixi/core/router-next',
     reactiveModule = '@fluixi/reactive/signal',
     autoShowTransform = false,
     backend = 'imperative',
@@ -507,8 +520,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               // controlFlowModule would resolve to nothing). Everything else comes
               // from controlFlowModule.
               const coreModule = state.libModule ?? '@fluixi/core';
+              const fromRouter = unbound.filter((n) => ROUTER_COMPONENTS.has(n));
               const fromCore = unbound.filter((n) => CORE_ONLY_CONTROL_FLOW.has(n));
-              const fromDom = unbound.filter((n) => !CORE_ONLY_CONTROL_FLOW.has(n));
+              const fromDom = unbound.filter(
+                (n) => !CORE_ONLY_CONTROL_FLOW.has(n) && !ROUTER_COMPONENTS.has(n),
+              );
               const declFor = (names: string[], mod: string) =>
                 t.importDeclaration(
                   names.map((name) => t.importSpecifier(t.identifier(name), t.identifier(name))),
@@ -516,6 +532,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                 );
               if (fromDom.length > 0) imports.push(declFor(fromDom, controlFlowModule));
               if (fromCore.length > 0) imports.push(declFor(fromCore, coreModule));
+              if (fromRouter.length > 0) imports.push(declFor(fromRouter, routerModule));
             }
 
             // Add event delegation setup if needed
@@ -584,6 +601,16 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
         const element = path.node;
         const openingElement = element.openingElement;
+
+        // Router components auto-import like control flow, but aren't optimized —
+        // just register the name so the import gets injected if it isn't bound.
+        if (
+          t.isJSXIdentifier(openingElement.name) &&
+          ROUTER_COMPONENTS.has(openingElement.name.name)
+        ) {
+          state.controlFlowComponents.add(openingElement.name.name);
+          state.needsControlFlowImport = true;
+        }
 
         // Check if it's a control flow component
         if (
@@ -855,6 +882,13 @@ function emitComponentCall(
   propsObj: t.Expression,
   state: any,
 ): t.Expression {
+  // Router components (Router/Outlet/…) auto-import like control flow — register the
+  // name here (the nested lowering chokepoint) so `<Outlet/>` inside markup is caught,
+  // not only a top-level router tag. Unbound names are injected at Program.exit.
+  if (t.isIdentifier(comp) && ROUTER_COMPONENTS.has(comp.name)) {
+    state.controlFlowComponents.add(comp.name);
+    state.needsControlFlowImport = true;
+  }
   if (state.backend === 'imperative') {
     state.needsCreateComponent = true;
     state.needsCreateMemo = true;
@@ -942,7 +976,10 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
  * (-> auto-import from the control-flow module, like the inline JSX path).
  */
 function collectRuntimeNeeds(node: IRNode, state: any): void {
-  if (node.kind === 'component' && CONTROL_FLOW_COMPONENTS.has(node.name)) {
+  if (
+    node.kind === 'component' &&
+    (CONTROL_FLOW_COMPONENTS.has(node.name) || ROUTER_COMPONENTS.has(node.name))
+  ) {
     state.controlFlowComponents.add(node.name);
     state.needsControlFlowImport = true;
   }

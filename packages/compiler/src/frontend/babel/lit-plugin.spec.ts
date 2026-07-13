@@ -98,6 +98,30 @@ describe('lit front-end (format: lit)', () => {
     expect(code).toContain('createComponent');
   });
 
+  it('auto-imports Router/Outlet from the router module (nested too)', () => {
+    const code = compileEsm(
+      'export const App = (r) => html`<${Router} routes=${r}><main><${Outlet}/></main></${Router}>`;',
+    );
+    expect(code).toMatch(/import \{[^}]*\bRouter\b[^}]*\bOutlet\b[^}]*\} from "@fluixi\/core\/router-next"/);
+  });
+
+  it('does not re-import a router component the file already imports', () => {
+    const code = compileEsm(
+      "import { Router } from '@fluixi/start/router';\nexport const App = (r) => html`<Router routes=${r}></Router>`;",
+    );
+    // keep the user's import; don't inject a second Router from router-next
+    expect(code).toContain("from '@fluixi/start/router'");
+    expect(code).not.toMatch(/import \{[^}]*\bRouter\b[^}]*\} from "@fluixi\/core\/router-next"/);
+  });
+
+  it('router auto-import respects a custom routerModule', () => {
+    const code = compileEsm('export const App = () => html`<${Outlet}/>`;', {
+      ...LIT,
+      routerModule: '@fluixi/start/router',
+    });
+    expect(code).toMatch(/import \{[^}]*\bOutlet\b[^}]*\} from "@fluixi\/start\/router"/);
+  });
+
   it('compiles html`` by DEFAULT (format defaults to `both` — no option needed)', () => {
     const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
       backend: 'imperative',
