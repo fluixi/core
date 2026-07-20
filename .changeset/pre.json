@@ -103,6 +103,7 @@
     "lazy-route-hydration",
     "lazy-suspense-async-ssr",
     "license-metadata",
+    "link-forward-attrs",
     "lit-compiler-frontend",
     "lit-out-of-core-ssr-crash",
     "map-array",
