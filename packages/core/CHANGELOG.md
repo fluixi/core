@@ -1,5 +1,28 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.58
+
+### Patch Changes
+
+- 3fd0660: Router `Link` now forwards arbitrary author attributes onto its `<a>`.
+
+  Previously `Link` only applied `href`, `slot`, `class`/`className` and the
+  `active`/`activeClass` pair — every other prop (`id`, `style`, `title`, `role`,
+  `data-*`, `aria-*`, …) was silently dropped. That broke any component composed via
+  `as={Link}` (polymorphic): e.g. `@fluixi-ui`'s `<SidenavLink as={Link}>` lost its
+  `data-sidenav-link` styling hook and inline styles, so it rendered unstyled with no
+  hover. `Link` now forwards the rest onto the `<a>` (matching how `Form` already
+  does), skipping only the props it owns.
+
+  - @fluixi/utils@1.0.0-alpha.58
+  - @fluixi/reactive@1.0.0-alpha.58
+  - @fluixi/dom@1.0.0-alpha.58
+  - @fluixi/jsx@1.0.0-alpha.58
+  - @fluixi/compiler@1.0.0-alpha.58
+  - @fluixi/vite-plugin@1.0.0-alpha.58
+  - @fluixi/head@1.0.0-alpha.25
+  - @fluixi/server@1.0.0-alpha.58
+
 ## 1.0.0-alpha.57
 
 ### Patch Changes
