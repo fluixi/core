@@ -489,6 +489,18 @@ export interface LinkProps {
   children?: any;
 }
 
+// Props Link handles itself, so they aren't blindly forwarded as <a> attributes.
+const LINK_OWN_PROPS = new Set([
+  'href',
+  'slot',
+  'class',
+  'className',
+  'active',
+  'activeClass',
+  'replace',
+  'children',
+]);
+
 export function Link(props: LinkProps) {
   const ctx = useContext(RouterContext);
   const isServer = typeof document === 'undefined';
@@ -501,6 +513,18 @@ export function Link(props: LinkProps) {
   const a = createNativeElement('a') as any;
   setAttribute(a, 'href', read(props.href) ?? '');
   if (props.slot) setAttribute(a, 'slot', read(props.slot) as string);
+
+  // Forward any other author attributes (data-*, aria-*, style, id, title, role, …)
+  // onto the <a>, the way <Form> does. Without this a component composed via
+  // `as={Link}` (polymorphic) silently loses its styling hooks — e.g. @fluixi-ui
+  // parts carry `data-*` slots + inline styles that would otherwise be dropped, so
+  // the element renders unstyled. Own-props handled elsewhere are skipped:
+  // href/slot above, class/className/active/activeClass in the effect, and
+  // children/replace by navigation.
+  for (const [k, v] of Object.entries(props)) {
+    if (LINK_OWN_PROPS.has(k)) continue;
+    if (v != null && typeof v !== 'function') setAttribute(a, k, String(v));
+  }
 
   // Client only (ServerNode has no addEventListener). Direct listener (not delegated) so
   // preventDefault reliably blocks navigation.
