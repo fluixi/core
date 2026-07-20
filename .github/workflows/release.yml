@@ -150,23 +150,44 @@ jobs:
           # private repo). Uncomment once visibility is flipped:
           # NPM_CONFIG_PROVENANCE: true
 
-      # `changeset publish` puts prerelease versions on the npm `latest` tag but
-      # never advances the prerelease dist-tag (`alpha`/`next`). Point that tag at
-      # each freshly published version so `@fluixi/x@alpha` — and the create-fluixi
-      # templates that pin it — resolve to the release we just cut. No-op on stable
-      # (main), where there's no pre.json and `latest` is authoritative.
+      # `changeset publish` puts prerelease versions on the npm `latest` tag but a
+      # brand-new package (no stable release) lands on `latest` only, leaving its
+      # prerelease dist-tag (`alpha`/`next`) stale — so `@fluixi/x@alpha` resolves the
+      # OLD version. Reconcile every publishable package's `<tag>` to the version on
+      # npm.
+      #
+      # Runs on `!cancelled()` — NOT gated on the changesets step succeeding — because
+      # the npm publish happens BEFORE the action's git-tag push, so a failed tag push
+      # (which reds the step) must not skip this. Independent of the action's
+      # `publishedPackages` output (unset on a failed step): reads each workspace
+      # package's local version and repoints `<tag>` when that exact version is on npm.
+      # No-op outside pre mode and on version-PR-only pushes; self-heals a stale tag on
+      # the next push.
       - name: Advance prerelease dist-tag
-        if: steps.changesets.outputs.published == 'true'
+        if: ${{ !cancelled() }}
         run: |
-          TAG=$(node -p "require('./.changeset/pre.json').tag" 2>/dev/null || true)
-          if [ -z "$TAG" ]; then
-            echo "Not in pre mode — latest is authoritative; nothing to do."
-            exit 0
+          if [ ! -f .changeset/pre.json ]; then
+            echo "Not in pre mode — latest is authoritative; nothing to do."; exit 0
           fi
-          echo "Pointing the '$TAG' dist-tag at the published versions…"
-          echo '${{ steps.changesets.outputs.publishedPackages }}' \
-            | node -e 'for (const p of JSON.parse(require("fs").readFileSync(0,"utf8"))) console.log(p.name + "@" + p.version)' \
-            | while read -r spec; do
-                echo "  npm dist-tag add $spec $TAG"
-                npm dist-tag add "$spec" "$TAG"
-              done
+          tag="$(jq -r '.tag // empty' .changeset/pre.json)"
+          if [ -z "$tag" ]; then
+            echo "No pre-mode tag found — skipping."; exit 0
+          fi
+          for pkgjson in packages/*/package.json; do
+            name="$(jq -r '.name // empty' "$pkgjson")"
+            version="$(jq -r '.version // empty' "$pkgjson")"
+            private="$(jq -r '.private // false' "$pkgjson")"
+            [ -z "$name" ] || [ -z "$version" ] && continue
+            [ "$private" = "true" ] && continue
+            # Only prerelease versions of THIS pre-mode tag (e.g. 1.2.3-alpha.4).
+            case "$version" in *-"$tag".*) ;; *) continue ;; esac
+            # Only if that exact version is actually published.
+            npm view "${name}@${version}" version >/dev/null 2>&1 || continue
+            current="$(npm dist-tag ls "$name" 2>/dev/null | awk -F': ' -v t="$tag" '$1==t {print $2}')"
+            if [ "$current" != "$version" ]; then
+              echo "Repointing ${name}@${tag}: ${current:-<none>} -> ${version}"
+              npm dist-tag add "${name}@${version}" "$tag" || echo "  (dist-tag add failed — continuing)"
+            else
+              echo "${name}@${tag} already at ${version}"
+            fi
+          done
