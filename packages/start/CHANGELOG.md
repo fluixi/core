@@ -1,5 +1,26 @@
 # @fluixi/start
 
+## 0.1.0-alpha.49
+
+### Minor Changes
+
+- 725322e: Add on-demand image optimization. `createImageHandler(options)` returns a
+  Web `Request` → `Response` handler you mount as an API route: it resizes and
+  re-encodes images (AVIF/WebP by `Accept` negotiation), with a target-width
+  allow-list, remote-domain allow-listing + local path-traversal guards, immutable
+  cache headers, and a small in-memory cache. The codec is pluggable — it uses
+  `sharp` when installed, otherwise streams the source through unchanged, so
+  `@fluixi/start` never hard-depends on a native module. `imageLoader({ path })`
+  produces a matching loader for `@fluixi-ui/image`'s `loader` prop.
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.59
+- @fluixi/dom@1.0.0-alpha.59
+- @fluixi/compiler@1.0.0-alpha.59
+- @fluixi/head@1.0.0-alpha.26
+- @fluixi/server@1.0.0-alpha.59
+
 ## 0.1.0-alpha.48
 
 ### Patch Changes
