@@ -35,6 +35,9 @@ export type { Middleware, MiddlewareNext } from './middleware.js';
 // HTTP interceptors — request/response/error pipeline around fetch (server-fn RPC + app fetch).
 export { addInterceptor, clearInterceptors, fetchWithInterceptors } from './interceptors.js';
 export type { Interceptor } from './interceptors.js';
+
+export { createImageHandler, imageLoader } from './image.js';
+export type { ImageHandlerOptions, ImageLoaderOptions, ImageTransform, ImageTransformArgs } from './image.js';
 // Middleware→render locals bridge: write `getRequestLocals(request).x = …` in middleware;
 // read it back in loaders/server-fns/render via getLocals() (the app entry forwards
 // `request` on the render event — `renderRequestAsync(App, { url, request })`).
