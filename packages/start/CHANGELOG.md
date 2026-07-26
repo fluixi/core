@@ -1,5 +1,15 @@
 # @fluixi/start
 
+## 0.1.0-alpha.50
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.60
+- @fluixi/dom@1.0.0-alpha.60
+- @fluixi/compiler@1.0.0-alpha.60
+- @fluixi/head@1.0.0-alpha.27
+- @fluixi/server@1.0.0-alpha.60
+
 ## 0.1.0-alpha.49
 
 ### Minor Changes
