@@ -94,6 +94,7 @@
     "isomorphic-state",
     "isomorphic-store-env-utils",
     "jsx-css-properties",
+    "jsx-intrinsic-ref-svg-reactive",
     "jsx-omittable-and-form-attrs",
     "jsx-reactive-aria",
     "jsx-reactive-attr-types",
