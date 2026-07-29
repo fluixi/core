@@ -1,5 +1,16 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.61
+
+### Patch Changes
+
+- Updated dependencies [ee9da1c]
+  - @fluixi/dom@1.0.0-alpha.61
+  - @fluixi/core@1.0.0-alpha.61
+  - @fluixi/server@1.0.0-alpha.61
+  - @fluixi/start@0.1.0-alpha.51
+  - @fluixi/reactive@1.0.0-alpha.61
+
 ## 1.0.0-alpha.60
 
 ### Patch Changes

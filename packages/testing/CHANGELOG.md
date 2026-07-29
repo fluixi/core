@@ -1,5 +1,13 @@
 # @fluixi/testing
 
+## 1.0.0-alpha.9
+
+### Patch Changes
+
+- Updated dependencies [ee9da1c]
+  - @fluixi/dom@1.0.0-alpha.61
+  - @fluixi/reactive@1.0.0-alpha.61
+
 ## 1.0.0-alpha.8
 
 ### Patch Changes
