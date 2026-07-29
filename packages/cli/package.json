@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/cli",
-  "version": "0.1.0-alpha.51",
+  "version": "0.1.0-alpha.52",
   "license": "MIT",
   "description": "The `fluixi` command-line tool — dev/build/start (via @fluixi/start) and, later, scaffolding + generators.",
   "repository": {
