@@ -1224,10 +1224,28 @@ export function spread(options: SpreadOptions): () => void {
       continue;
     }
 
-    if (JSX_PROPERTIES.has(key) || (!elementIsSVG && key in element)) {
-      disposers.push(setDynamicProperty(element, key, value));
+    const asProperty = JSX_PROPERTIES.has(key) || (!elementIsSVG && key in element);
+    if (typeof value === 'function') {
+      // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
+      disposers.push(
+        asProperty
+          ? setDynamicProperty(element, key, value)
+          : setDynamicAttribute(element, key, value, elementIsSVG),
+      );
     } else {
-      disposers.push(setDynamicAttribute(element, key, value, elementIsSVG));
+      // A plain, non-function value may still be backed by a reactive GETTER —
+      // component props compile to `get x() {...}`, and splitProps/mergeProps
+      // forward those getters. Reading `props[key]` once (above) snapshots the
+      // current value and drops the dependency, so the DOM never updates. Re-read
+      // it inside a render effect so the getter's reads are tracked. (A truly
+      // static value just runs the effect once with no deps — negligible.)
+      disposers.push(
+        createRenderEffect(() =>
+          asProperty
+            ? setProperty(element, key, props[key])
+            : setAttribute(element, key, props[key], elementIsSVG),
+        ),
+      );
     }
   }
 
@@ -1324,7 +1342,15 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
         });
         onCleanup(() => { dispose(); });
       } else {
-        (element as HTMLInputElement).value = val ?? '';
+        // A plain value may still be backed by a reactive getter (component props
+        // compile to `get value(){...}`, forwarded live through splitProps/mergeProps).
+        // Re-read props[key] in a render effect so the getter's reads are tracked;
+        // a static value just runs once. Same focus guard as the accessor branch.
+        createRenderEffect(() => {
+          if (document.activeElement !== element) {
+            (element as HTMLInputElement).value = props[key] ?? '';
+          }
+        });
       }
       continue;
     }
@@ -1340,7 +1366,13 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
         });
         onCleanup(() => { dispose(); });
       } else {
-        (element as any).checked = val ?? '';
+        // Plain value possibly behind a reactive getter — re-read live. See the
+        // value branch above.
+        createRenderEffect(() => {
+          if (document.activeElement !== element) {
+            (element as any).checked = props[key] ?? '';
+          }
+        });
       }
       continue;
     }
@@ -1363,7 +1395,18 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
         });
         onCleanup(() => { dispose(); });
       } else {
-        queueMicrotask(() => { (element as HTMLSelectElement).value = val ?? ''; });
+        // Plain value possibly behind a reactive getter — re-read live, keeping the
+        // first assignment deferred until the options are in the DOM.
+        let firstRun = true;
+        createRenderEffect(() => {
+          const v = props[key];
+          if (firstRun) {
+            firstRun = false;
+            queueMicrotask(() => { (element as HTMLSelectElement).value = v ?? ''; });
+          } else {
+            (element as HTMLSelectElement).value = v ?? '';
+          }
+        });
       }
       continue;
     }
@@ -1381,7 +1424,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
                 dispose()
               })
     } else {
-      applyElementProp(element, key, val, isSVG);
+      // Plain value possibly behind a reactive getter (component props compile to
+      // `get x(){...}`, forwarded live by splitProps/mergeProps). Re-read props[key]
+      // in a render effect so getter reads are tracked; a static value runs once.
+      // Mirrors spread().
+      createRenderEffect(() => applyElementProp(element, key, props[key], isSVG));
     }
   }
 }
