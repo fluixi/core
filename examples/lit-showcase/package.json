@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-lit-showcase",
-  "version": "0.0.1-alpha.4",
+  "version": "0.0.1-alpha.5",
   "private": true,
   "type": "module",
   "description": "A showcase of every html`` template feature: directives, bindings, events + modifiers, control flow, components, class/style objects, use, raw HTML, SVG.",
