@@ -54,4 +54,28 @@ describe('dom runtime contract', () => {
       });
     });
   });
+  it('insert binds a reactive array containing accessor and updates the DOM', async () => {
+    // For example when call <CardTile>{()=>a}} {()=>b}</CardTitle> does not keep reactivity when the children is an array containing reactive values
+    // on the first render because the last guard bare check type of accessor as function inside insert method
+    // Resolved by introducing another guard isReactiveArray to lookup if the accessor is an array that contain reactive values
+    // so they will reach the effect
+    await new Promise<void>((resolve, reject) => {
+      S.createRoot(async () => {
+        const [count, setCount] = S.createSignal(0);
+        const [count1, setCount1] = S.createSignal(1);
+        const host = createNativeElement('div') as HTMLElement;
+        document.body.appendChild(host);
+        insert(host, [count, count1] as any);
+        expect(host.textContent).toContain('0');
+        expect(host.textContent).toContain('1');
+        setCount(2);
+        await S.flush();
+        expect(host.textContent).toContain('2');
+        setCount1(3);
+        await S.flush();
+        expect(host.textContent).toContain('3');
+        resolve();
+      });
+    });
+  });
 });
