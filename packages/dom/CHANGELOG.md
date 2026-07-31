@@ -1,5 +1,13 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.62
+
+### Patch Changes
+
+- 2f99854: Fix accessor typeof checking to also identify reactive arrays using `isReactiveArray` on `insert()` so `accessor` could reach effect if it's potentially an array containg
+  reactive values
+  - @fluixi/reactive@1.0.0-alpha.62
+
 ## 1.0.0-alpha.61
 
 ### Patch Changes
