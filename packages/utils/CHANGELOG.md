@@ -1,5 +1,7 @@
 # @fluixi/utils
 
+## 1.0.0-alpha.62
+
 ## 1.0.0-alpha.61
 
 ## 1.0.0-alpha.60

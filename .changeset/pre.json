@@ -117,6 +117,7 @@
     "portal-ref-support",
     "props-children-async",
     "provider-lazy-children",
+    "reactive-dom-array-children",
     "readme-public-npm",
     "readme-refresh",
     "remove-vinxi",
