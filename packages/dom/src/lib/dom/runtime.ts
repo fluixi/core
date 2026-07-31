@@ -354,7 +354,6 @@ function _createInsertEffect(
 ): () => void {
   let current = initialCurrent;
   const componentCache = new Map<Function, any>();
-
   return createRenderEffect(() => {
     let value: any;
 
@@ -440,8 +439,15 @@ export function insert(
   }
 
   let current: Node | Node[] | null = init ?? null;
+  const isReactiveArray = (element: any) => {
+    return Array.isArray(element) && element.some((v: any) => typeof v === 'function');
+  };
+  const normalizeAccessor = (accessor: any): Accessor<any> => {
+     if(typeof accessor === 'function') return accessor;
+    return ()=>accessor;
+  };
 
-  if (typeof accessor !== 'function') {
+  if (typeof accessor !== 'function' && !isReactiveArray(accessor)) {
     _insertDepth++;
     try {
       current = insertExpression(parent, accessor, marker, null);
@@ -452,7 +458,7 @@ export function insert(
   }
 
   const dispose = _createInsertEffect(
-    accessor as () => any,
+    normalizeAccessor(accessor),
     parent,
     marker,
     current,
