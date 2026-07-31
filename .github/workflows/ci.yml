@@ -83,7 +83,7 @@ jobs:
       # `fluixi build` can't find the CLI bin in CI ("fluixi: not found"). The publishable
       # packages are what the build must validate; examples are exercised via their tests.
       - name: Build affected
-        run: pnpm nx affected -t build --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start
+        run: pnpm nx affected -t build --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start,@fluixi/example-lit-counter,@fluixi/example-lit-showcase
         env:
           NODE_ENV: production
 
@@ -99,4 +99,4 @@ jobs:
       # the inferred `tsc --build --emitDeclarationOnly` typecheck doesn't apply to
       # them (TS5069). They're type-exercised by their vitest runs instead.
       - name: Typecheck affected
-        run: pnpm nx affected -t typecheck --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start
+        run: pnpm nx affected -t typecheck --parallel=3 --exclude=@fluixi/example-counter,@fluixi/example-router,@fluixi/example-todo,@fluixi/example-ssr,@fluixi/example-start,@fluixi/example-lit-counter,@fluixi/example-lit-showcase,@fluixi/ts-plugin

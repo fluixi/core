@@ -70,7 +70,7 @@ const defaultTransform: ImageTransform = async (input, { width, quality, format 
 };
 
 function imageResponse(body: Uint8Array, contentType: string, maxAge: number): Response {
-  return new Response(body, {
+  return new Response(body as BodyInit, {
     headers: {
       'content-type': contentType,
       'cache-control': `public, max-age=${maxAge}, immutable`,

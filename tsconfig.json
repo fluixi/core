@@ -53,6 +53,12 @@
     },
     {
       "path": "./packages/auth"
+    },
+    {
+      "path": "./packages/ts-plugin"
+    },
+    {
+      "path": "./packages/testing"
     }
   ]
 }

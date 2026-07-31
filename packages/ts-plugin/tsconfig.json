@@ -3,6 +3,11 @@
   "files": [],
   "include": [],
   "references": [
-    { "path": "./tsconfig.lib.json" }
+    {
+      "path": "../template-parser"
+    },
+    {
+      "path": "./tsconfig.lib.json"
+    }
   ]
 }
