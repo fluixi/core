@@ -1,5 +1,38 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.63
+
+### Minor Changes
+
+- 310b9d1: Move element attribute types to `@fluixi/dom`, exported as `@fluixi/dom/attributes`.
+
+  `HTMLAttributes`, `AriaAttributes`, `DOMAttributes`, `CSSProperties`, the 45
+  per-element interfaces and `SVGAttributes` describe the DOM, not JSX syntax, but
+  they only existed inside `@fluixi/jsx`'s `JSX` namespace. The framework supports
+  both JSX and html` authoring, so an html`-only app — and the html`` tooling
+  itself — had to reach through a JSX package for types that have nothing to do
+  with JSX.
+
+  `@fluixi/jsx` re-exports every one of them into the `JSX` namespace, so
+  `JSX.HTMLAttributes<T>` and friends keep working unchanged. `JSX.Element` and
+  `JSX.IntrinsicElements` stay in `@fluixi/jsx` — those are the JSX contract.
+
+### Patch Changes
+
+- 9ac3eaa: Accept a reactive `style` in `applyProps`.
+
+  `spread` wrapped a function-valued `style` in a render effect, but `applyProps`
+  called `setStyle` with it directly, so the accessor was stringified once and
+  never updated. `class` and `classList` on the same path already unwrapped an
+  accessor, which is why this went unnoticed.
+
+  `applyProps` is the path taken whenever a component forwards a computed value
+  through a props object rather than as a compiled JSX attribute — every
+  polymorphic/`as` wrapper does this — so a wrapper with a reactive style silently
+  rendered its first value and froze.
+
+  - @fluixi/reactive@1.0.0-alpha.63
+
 ## 1.0.0-alpha.62
 
 ### Patch Changes

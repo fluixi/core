@@ -1,5 +1,42 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.63
+
+### Patch Changes
+
+- 310b9d1: Move element attribute types to `@fluixi/dom`, exported as `@fluixi/dom/attributes`.
+
+  `HTMLAttributes`, `AriaAttributes`, `DOMAttributes`, `CSSProperties`, the 45
+  per-element interfaces and `SVGAttributes` describe the DOM, not JSX syntax, but
+  they only existed inside `@fluixi/jsx`'s `JSX` namespace. The framework supports
+  both JSX and html` authoring, so an html`-only app — and the html`` tooling
+  itself — had to reach through a JSX package for types that have nothing to do
+  with JSX.
+
+  `@fluixi/jsx` re-exports every one of them into the `JSX` namespace, so
+  `JSX.HTMLAttributes<T>` and friends keep working unchanged. `JSX.Element` and
+  `JSX.IntrinsicElements` stay in `@fluixi/jsx` — those are the JSX contract.
+
+- c883ae3: Make `JSX.CSSProperties` catch misspelled properties.
+
+  It ended with `& { [key: string]: string | number | undefined }`, so every key
+  type-checked — `style={{ colr: 'red' }}` was accepted silently, and the property
+  autocomplete the first member provides was unreachable. Custom properties are
+  already covered by the `--*` member, so the open fallback only removed safety.
+
+  Also selects the string-valued members of `CSSStyleDeclaration` rather than
+  excluding `length` and `parentRule` by name, which additionally drops its methods
+  and numeric index (`getPropertyValue` was a valid style property before).
+
+  Potentially breaking for a style object that sets a property newer than the
+  TypeScript lib in use; set it as a custom property or widen at the call site.
+  Checked against the workspace and every example — no new errors.
+
+- Updated dependencies [9ac3eaa]
+- Updated dependencies [310b9d1]
+  - @fluixi/dom@1.0.0-alpha.63
+  - @fluixi/reactive@1.0.0-alpha.63
+
 ## 1.0.0-alpha.62
 
 ### Patch Changes
