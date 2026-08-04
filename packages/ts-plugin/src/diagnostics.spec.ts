@@ -119,3 +119,52 @@ describe('restraint', () => {
     expect(ls.getSemanticDiagnostics(fileName)).toHaveLength(0);
   });
 });
+
+describe('a signal read without calling it', () => {
+  it('reports a bare accessor in child position', () => {
+    const code =
+      'declare const count: () => number;\n' +
+      'const t = html`<div>${count}</div>`;';
+    const { ls, fileName } = plugin(code);
+    const bad = find(ls, fileName, 'accessor');
+    expect(bad).toBeDefined();
+    expect(code.slice(bad!.start!, bad!.start! + bad!.length!)).toBe('count');
+  });
+
+  it('accepts the call', () => {
+    const code =
+      'declare const count: () => number;\n' +
+      'const t = html`<div>${count()}</div>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+
+  it('leaves a non-callable value alone', () => {
+    const code = 'declare const name: string;\nconst t = html`<div>${name}</div>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+
+  it('leaves a component prop alone — accessors belong there', () => {
+    // `<For each=${items}>` takes the accessor deliberately; only children of a
+    // native element render their value.
+    const code =
+      'declare const items: () => number[];\n' +
+      'const t = html`<For each=${items}>${(i) => i}</For>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+
+  it('leaves a render-prop child alone', () => {
+    const code = 'const t = html`<For each=${[1]}>${(i) => i}</For>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+
+  it('leaves a function that needs arguments alone', () => {
+    // Not an accessor; calling it here would be wrong too.
+    const code = 'declare const fmt: (n: number) => string;\nconst t = html`<div>${fmt}</div>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+});
