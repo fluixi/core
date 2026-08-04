@@ -18,16 +18,7 @@ export namespace JSX {
   // Element
   // ============================================================================
 
-  export type Element =
-    | Node
-    | string
-    | number
-    | boolean
-    | null
-    | undefined
-    | Element[]
-    | HTMLElement | Accessor<any>
-    | globalThis.Element;
+  export type Element = A.FxElement;
 
 
   export type Reactive<T> = A.Reactive<T>;
@@ -95,191 +86,7 @@ export namespace JSX {
   // Intrinsic Elements
   // ============================================================================
 
-  export interface IntrinsicElements {
-    // HTML
-    a: AnchorHTMLAttributes;
-    abbr: HTMLAttributes;
-    address: HTMLAttributes;
-    area: AreaHTMLAttributes;
-    article: HTMLAttributes;
-    aside: HTMLAttributes;
-    audio: AudioHTMLAttributes;
-    b: HTMLAttributes;
-    base: BaseHTMLAttributes;
-    bdi: HTMLAttributes;
-    bdo: HTMLAttributes;
-    big: HTMLAttributes;
-    blockquote: BlockquoteHTMLAttributes;
-    body: HTMLAttributes;
-    br: HTMLAttributes;
-    button: ButtonHTMLAttributes;
-    canvas: CanvasHTMLAttributes;
-    caption: HTMLAttributes;
-    cite: HTMLAttributes;
-    code: HTMLAttributes;
-    col: ColHTMLAttributes;
-    colgroup: ColgroupHTMLAttributes;
-    data: DataHTMLAttributes;
-    datalist: HTMLAttributes;
-    dd: HTMLAttributes;
-    del: ModHTMLAttributes;
-    details: DetailsHTMLAttributes;
-    dfn: HTMLAttributes;
-    dialog: DialogHTMLAttributes;
-    div: HTMLAttributes<HTMLDivElement>;
-    dl: HTMLAttributes<HTMLDListElement>;
-    dt: HTMLAttributes;
-    em: HTMLAttributes;
-    embed: EmbedHTMLAttributes;
-    fieldset: FieldsetHTMLAttributes;
-    figcaption: HTMLAttributes;
-    figure: HTMLAttributes;
-    footer: HTMLAttributes;
-    form: FormHTMLAttributes;
-    h1: HTMLAttributes<HTMLHeadingElement>;
-    h2: HTMLAttributes<HTMLHeadingElement>;
-    h3: HTMLAttributes<HTMLHeadingElement>;
-    h4: HTMLAttributes<HTMLHeadingElement>;
-    h5: HTMLAttributes<HTMLHeadingElement>;
-    h6: HTMLAttributes<HTMLHeadingElement>;
-    head: HTMLAttributes;
-    header: HTMLAttributes;
-    hgroup: HTMLAttributes;
-    hr: HTMLAttributes;
-    html: HTMLAttributes;
-    i: HTMLAttributes;
-    iframe: IframeHTMLAttributes;
-    img: ImgHTMLAttributes;
-    input: InputHTMLAttributes;
-    ins: ModHTMLAttributes;
-    kbd: HTMLAttributes;
-    keygen: KeygenHTMLAttributes;
-    label: LabelHTMLAttributes;
-    legend: HTMLAttributes;
-    li: LiHTMLAttributes;
-    link: LinkHTMLAttributes;
-    main: HTMLAttributes;
-    map: MapHTMLAttributes;
-    mark: HTMLAttributes;
-    menu: HTMLAttributes;
-    menuitem: HTMLAttributes;
-    meta: MetaHTMLAttributes;
-    meter: MeterHTMLAttributes;
-    nav: HTMLAttributes;
-    noindex: HTMLAttributes;
-    noscript: HTMLAttributes;
-    object: ObjectHTMLAttributes;
-    ol: OlHTMLAttributes;
-    optgroup: OptgroupHTMLAttributes;
-    option: OptionHTMLAttributes;
-    output: OutputHTMLAttributes;
-    p: HTMLAttributes<HTMLParagraphElement>;
-    param: ParamHTMLAttributes;
-    picture: HTMLAttributes;
-    pre: HTMLAttributes<HTMLPreElement>;
-    progress: ProgressHTMLAttributes;
-    q: BlockquoteHTMLAttributes;
-    rp: HTMLAttributes;
-    rt: HTMLAttributes;
-    ruby: HTMLAttributes;
-    s: HTMLAttributes;
-    samp: HTMLAttributes;
-    script: ScriptHTMLAttributes;
-    search: HTMLAttributes;
-    section: HTMLAttributes;
-    select: SelectHTMLAttributes;
-    slot: SlotHTMLAttributes;
-    small: HTMLAttributes;
-    source: SourceHTMLAttributes;
-    span: HTMLAttributes;
-    strong: HTMLAttributes;
-    style: StyleHTMLAttributes;
-    sub: HTMLAttributes;
-    summary: HTMLAttributes;
-    sup: HTMLAttributes;
-    table: TableHTMLAttributes;
-    template: HTMLAttributes;
-    tbody: HTMLAttributes;
-    td: TdHTMLAttributes;
-    textarea: TextareaHTMLAttributes;
-    tfoot: HTMLAttributes;
-    th: ThHTMLAttributes;
-    thead: HTMLAttributes;
-    time: TimeHTMLAttributes;
-    title: HTMLAttributes;
-    tr: HTMLAttributes;
-    track: TrackHTMLAttributes;
-    u: HTMLAttributes;
-    ul: HTMLAttributes<HTMLUListElement>;
-    var: HTMLAttributes;
-    video: VideoHTMLAttributes;
-    wbr: HTMLAttributes;
-    webview: HTMLAttributes;
-
-    // SVG
-    svg: SVGAttributes<SVGSVGElement>;
-    animate: SVGAttributes;
-    animateMotion: SVGAttributes;
-    animateTransform: SVGAttributes;
-    circle: SVGAttributes<SVGCircleElement>;
-    clipPath: SVGAttributes<SVGClipPathElement>;
-    defs: SVGAttributes<SVGDefsElement>;
-    desc: SVGAttributes<SVGDescElement>;
-    ellipse: SVGAttributes<SVGEllipseElement>;
-    feBlend: SVGAttributes<SVGFEBlendElement>;
-    feColorMatrix: SVGAttributes<SVGFEColorMatrixElement>;
-    feComponentTransfer: SVGAttributes<SVGFEComponentTransferElement>;
-    feComposite: SVGAttributes<SVGFECompositeElement>;
-    feConvolveMatrix: SVGAttributes<SVGFEConvolveMatrixElement>;
-    feDiffuseLighting: SVGAttributes<SVGFEDiffuseLightingElement>;
-    feDisplacementMap: SVGAttributes<SVGFEDisplacementMapElement>;
-    feDistantLight: SVGAttributes<SVGFEDistantLightElement>;
-    feDropShadow: SVGAttributes;
-    feFlood: SVGAttributes<SVGFEFloodElement>;
-    feFuncA: SVGAttributes<SVGFEFuncAElement>;
-    feFuncB: SVGAttributes<SVGFEFuncBElement>;
-    feFuncG: SVGAttributes<SVGFEFuncGElement>;
-    feFuncR: SVGAttributes<SVGFEFuncRElement>;
-    feGaussianBlur: SVGAttributes<SVGFEGaussianBlurElement>;
-    feImage: SVGAttributes<SVGFEImageElement>;
-    feMerge: SVGAttributes<SVGFEMergeElement>;
-    feMergeNode: SVGAttributes<SVGFEMergeNodeElement>;
-    feMorphology: SVGAttributes<SVGFEMorphologyElement>;
-    feOffset: SVGAttributes<SVGFEOffsetElement>;
-    fePointLight: SVGAttributes<SVGFEPointLightElement>;
-    feSpecularLighting: SVGAttributes<SVGFESpecularLightingElement>;
-    feSpotLight: SVGAttributes<SVGFESpotLightElement>;
-    feTile: SVGAttributes<SVGFETileElement>;
-    feTurbulence: SVGAttributes<SVGFETurbulenceElement>;
-    filter: SVGAttributes<SVGFilterElement>;
-    foreignObject: SVGAttributes<SVGForeignObjectElement>;
-    g: SVGAttributes<SVGGElement>;
-    image: SVGAttributes<SVGImageElement>;
-    line: SVGAttributes<SVGLineElement>;
-    linearGradient: SVGAttributes<SVGLinearGradientElement>;
-    marker: SVGAttributes<SVGMarkerElement>;
-    mask: SVGAttributes<SVGMaskElement>;
-    metadata: SVGAttributes<SVGMetadataElement>;
-    mpath: SVGAttributes;
-    path: SVGAttributes<SVGPathElement>;
-    pattern: SVGAttributes<SVGPatternElement>;
-    polygon: SVGAttributes<SVGPolygonElement>;
-    polyline: SVGAttributes<SVGPolylineElement>;
-    radialGradient: SVGAttributes<SVGRadialGradientElement>;
-    rect: SVGAttributes<SVGRectElement>;
-    stop: SVGAttributes<SVGStopElement>;
-    switch: SVGAttributes<SVGSwitchElement>;
-    symbol: SVGAttributes<SVGSymbolElement>;
-    text: SVGAttributes<SVGTextElement>;
-    textPath: SVGAttributes<SVGTextPathElement>;
-    tspan: SVGAttributes<SVGTSpanElement>;
-    use: SVGAttributes<SVGUseElement>;
-    view: SVGAttributes<SVGViewElement>;
-    [s: string]: any;
-
-    // Custom elements: picks up FluixiElements augmentations automatically
-    [elemName: string]: any;
-  }
+  export interface IntrinsicElements extends A.IntrinsicElements {}
     interface ElementChildrenAttribute {
       children: {};
     }
@@ -325,4 +132,5 @@ declare global {
     }
   }
 }
+
 
