@@ -20,6 +20,40 @@ const LIT = {
   hoistStatics: false,
 };
 
+
+const VLQ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/** Original columns of every mapping on one generated line of a source map. */
+function originalColumns(mappings: string, line: number): number[] {
+  const columns: number[] = [];
+  let column = 0;
+
+  mappings.split(';').forEach((group, index) => {
+    for (const segment of group.split(',').filter(Boolean)) {
+      const fields: number[] = [];
+      let value = 0;
+      let shift = 0;
+      for (const char of segment) {
+        const digit = VLQ.indexOf(char);
+        value += (digit & 31) << shift;
+        if (digit & 32) {
+          shift += 5;
+          continue;
+        }
+        fields.push(value & 1 ? -(value >> 1) : value >> 1);
+        value = 0;
+        shift = 0;
+      }
+      // [generatedColumn, sourceIndex, originalLine, originalColumn]
+      if (fields.length >= 4) {
+        column += fields[3]!;
+        if (index === line) columns.push(column);
+      }
+    }
+  });
+  return columns;
+}
+
 function compileEsm(src: string, options: Record<string, unknown> = LIT): string {
   return babel.transformSync(src, {
     filename: 'test.tsx',
@@ -131,6 +165,31 @@ describe('lit front-end (format: lit)', () => {
       routerModule: '@fluixi/start/router',
     });
     expect(code).toMatch(/import \{[^}]*\bOutlet\b[^}]*\} from "@fluixi\/start\/router"/);
+  });
+
+  it('maps generated code back to the template, not to the enclosing statement', () => {
+    // The IR is emitted as a string and reparsed, so the generated nodes carry no
+    // position of their own. Without help they inherit the enclosing statement's,
+    // collapsing the whole template onto one point; a breakpoint inside compiled
+    // template code then lands at the top of the arrow function.
+    const src = 'export const r = (c) => html`<div class=${c}>hi</div>`;';
+    const templateStart = src.indexOf('html`');
+
+    const out = babel.transformSync(src, {
+      filename: 'test.tsx',
+      configFile: false,
+      babelrc: false,
+      sourceMaps: true,
+      plugins: [[plugin, LIT]],
+    })!;
+
+    const line = out.code!.split('\n').findIndex((l) => /createNativeElement\(/.test(l) && !l.startsWith('import'));
+    const columns = originalColumns(out.map!.mappings, line);
+
+    expect(columns.length).toBeGreaterThan(0);
+    // At least one generated node maps into the template's span rather than to
+    // the statement start.
+    expect(columns.some((column) => column >= templateStart)).toBe(true);
   });
 
   it('compiles html`` by DEFAULT (format defaults to `both` — no option needed)', () => {
