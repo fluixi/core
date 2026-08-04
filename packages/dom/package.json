@@ -1,7 +1,7 @@
 {
   "name": "@fluixi/dom",
   "version": "1.0.0-alpha.62",
-  "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
+  "description": "Reactive DOM runtime for Fluixi \u2014 surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
   "private": false,
   "publishConfig": {
@@ -56,6 +56,12 @@
         "import": "./dist/lib/dom/utils.mjs",
         "require": "./dist/lib/dom/utils.cjs",
         "default": "./dist/lib/dom/utils.js"
+      },
+      "./attributes": {
+        "types": "./dist/lib/element/attributes.d.ts",
+        "import": "./dist/lib/element/attributes.mjs",
+        "require": "./dist/lib/element/attributes.cjs",
+        "default": "./dist/lib/element/attributes.js"
       }
     }
   },
@@ -128,6 +134,13 @@
       "import": "./dist/lib/dom/utils.mjs",
       "require": "./dist/lib/dom/utils.cjs",
       "default": "./dist/lib/dom/utils.js"
+    },
+    "./attributes": {
+      "development": "./src/lib/element/attributes.ts",
+      "types": "./dist/lib/element/attributes.d.ts",
+      "import": "./dist/lib/element/attributes.mjs",
+      "require": "./dist/lib/element/attributes.cjs",
+      "default": "./dist/lib/element/attributes.js"
     }
   },
   "scripts": {
