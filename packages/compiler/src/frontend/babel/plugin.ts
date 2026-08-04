@@ -968,7 +968,48 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
   state.hasLitIR = true;
-  return template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
+
+  // The IR is emitted as a string and reparsed, so the resulting nodes carry no
+  // position — which is why compiled html`` had no source map at all. Give every
+  // generated node the template's own location so a breakpoint or stack frame
+  // lands on the template instead of nowhere.
+  const expression = template.expression(code, {
+    placeholderPattern: false,
+    plugins: ['typescript'],
+  })() as t.Expression;
+  inheritLocation(expression, node);
+  return expression;
+}
+
+/**
+ * Copy a source position onto generated nodes that lack one.
+ *
+ * Coarse by construction: everything lowered from one template maps back to that
+ * template. Per-hole precision would mean carrying spans through the emit, which
+ * the string round-trip discards.
+ */
+function inheritLocation(target: t.Node, source: t.Node): void {
+  if (!source.loc) return;
+  const seen = new Set<t.Node>();
+
+  const walk = (node: t.Node): void => {
+    if (seen.has(node)) return;
+    seen.add(node);
+    if (!node.loc) {
+      node.loc = source.loc;
+      node.start = source.start;
+      node.end = source.end;
+    }
+    for (const key of t.VISITOR_KEYS[node.type] ?? []) {
+      const child = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(child)) {
+        for (const c of child) if (c && typeof c === 'object' && 'type' in c) walk(c as t.Node);
+      } else if (child && typeof child === 'object' && 'type' in child) {
+        walk(child as t.Node);
+      }
+    }
+  };
+  walk(target);
 }
 
 /**
