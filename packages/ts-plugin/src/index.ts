@@ -28,6 +28,7 @@ import { componentPropCompletions, componentPropHover } from './props.js';
 import { paramMemberCompletions } from './completion.js';
 import { elementAttributeCompletions, elementAttributeHover } from './elements.js';
 import { templateDiagnostics } from './diagnostics.js';
+import { tagAt, templateDefinition, templateReferences, templateRenameLocations } from './navigation.js';
 
 interface PluginCreateInfo {
   languageService: ts.LanguageService;
@@ -64,6 +65,17 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       });
 
       const IMPLICIT_ANY = new Set([7006, 7044]);
+
+      /** Same file + same span twice would show as a duplicate hit in the editor. */
+      const dedupe = <T extends { fileName: string; textSpan: ts.TextSpan }>(items: T[]): T[] => {
+        const seen = new Set<string>();
+        return items.filter((i) => {
+          const key = `${i.fileName}:${i.textSpan.start}:${i.textSpan.length}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      };
 
       // Layer 1 (reliable): drop unused-component reports and implicit-any noise
       // on params we can infer from the template.
@@ -128,6 +140,57 @@ function init(modules: { typescript: typeof ts }): PluginModule {
           if (members) return completionList(members);
         } catch { /* fall through */ }
         return ls.getCompletionsAtPosition(fileName, position, options as any, formatting as any);
+      };
+
+      // Navigation. A `${…}` hole is a real expression, so the real service already
+      // answers for it; only component TAGS need mapping. Rename merges rather than
+      // replaces, so renaming from a declaration still rewrites its template tags.
+      proxy.getDefinitionAtPosition = (fileName: string, position: number) => {
+        try {
+          const tag = templateDefinition(ts, ls, fileName, position);
+          if (tag) return tag;
+        } catch { /* fall through */ }
+        return ls.getDefinitionAtPosition(fileName, position);
+      };
+
+      proxy.getDefinitionAndBoundSpan = (fileName: string, position: number) => {
+        try {
+          const definitions = templateDefinition(ts, ls, fileName, position);
+          if (definitions) {
+            const sf = ls.getProgram()?.getSourceFile(fileName);
+            const tag = sf && tagAt(ts, sf, position);
+            if (tag) {
+              return { definitions, textSpan: { start: tag.start, length: tag.length } };
+            }
+          }
+        } catch { /* fall through */ }
+        return ls.getDefinitionAndBoundSpan(fileName, position);
+      };
+
+      proxy.getReferencesAtPosition = (fileName: string, position: number) => {
+        const base = ls.getReferencesAtPosition(fileName, position) ?? [];
+        try {
+          const extra = templateReferences(ts, ls, fileName, position);
+          return extra.length ? dedupe([...base, ...extra]) : base;
+        } catch {
+          return base;
+        }
+      };
+
+      proxy.findRenameLocations = (
+        fileName: string, position: number, findInStrings: boolean,
+        findInComments: boolean, prefs?: unknown,
+      ) => {
+        const base = ls.findRenameLocations(fileName, position, findInStrings, findInComments, prefs as never) ?? [];
+        try {
+          const extra = templateRenameLocations(ts, ls, fileName, position);
+          // A rename that rewrote `<Tag>` but not `</Tag>` would break the template,
+          // so tags are only added when the real rename already succeeded.
+          if (!base.length || !extra.length) return base.length ? base : undefined;
+          return dedupe([...base, ...extra]);
+        } catch {
+          return base;
+        }
       };
 
       return proxy as unknown as ts.LanguageService;
