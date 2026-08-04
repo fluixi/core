@@ -3,7 +3,7 @@
 //  * @module @fluixi/core/context/context
 //  */
 
-import { asProvider, type Component } from '@fluixi/dom';
+import { asProvider, type Component, type ComponentChild } from '@fluixi/dom';
 import { createContext as createReactiveContext, useContext as useReactiveContext } from '@fluixi/reactive/signal';
 import {
   Accessor,
@@ -248,18 +248,20 @@ export function createProvider<T>(
   context: Context<T>,
   value: T | Accessor<T>,
   props: { children?: any },
-): Component<T>;
+): ComponentChild;
 /**
  * @deprecated Eager form — `{ context, value, children }` reads `children` before
  * the context is stamped (see warnEagerProvider). Use `createProvider(context,
  * value, props)` or `<Context.Provider>` instead.
  */
-export function createProvider<T, S = Children>(props: ContextProvider<T, S>): Component<T>;
+export function createProvider<T, S = Children>(props: ContextProvider<T, S>): ComponentChild;
+// Returns the Provider's rendered output, not a component — it was annotated
+// `Component<T>`, which made `<MyProvider>` fail as a JSX element.
 export function createProvider<T, S = Children>(
   a: Context<T> | ContextProvider<T, S>,
   value?: T | Accessor<T>,
   childProps?: { children?: any },
-): Component<T> {
+): ComponentChild {
   // Distinguish the two overloads: a Context (from createContext) exposes `.Provider`,
   // whereas the deprecated form's first arg is the props object (which has `.context`).
   const isLazyForm = !!(a as any)?.Provider;
