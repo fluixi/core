@@ -1042,18 +1042,13 @@ export function setDynamicBoolAttribute(element: Element, name: string, accessor
  */
 export function setClassName(element: Element, value: any): void {
   if (value == null) { element.removeAttribute('class'); return; }
-  if(typeof value === 'function'){
-    createEffect(()=>{
-      // console.log('set class fn', value)
-      setClassName(element, value())
-      // element.setAttribute('class', value());
-    })
+
+  if (typeof value === 'function') {
+    // A render effect, like every other attribute binding — `spread` already wraps
+    // class this way, so going through `applyProps` shouldn't schedule it later.
+    createRenderEffect(() => setClassName(element, value()));
     return;
   }
-  // if (typeof value === 'function') {
-  //   setClassName(element, value());
-  //   return;
-  // }
 
   if (typeof value === 'string') { element.setAttribute('class', value); return; }
 

@@ -65,7 +65,6 @@ function intrinsics(
     // anything imported dom, so fall back to finding them there.
     if (!type) {
       for (const file of program.getSourceFiles()) {
-        if (!file.isDeclarationFile && file.fileName.indexOf('@fluixi/dom') === -1) continue;
         if (file.fileName.indexOf('@fluixi/dom') === -1) continue;
         type = declared(file);
         if (type) break;
