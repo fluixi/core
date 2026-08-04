@@ -279,7 +279,14 @@ export type DiagnosticCode =
   | 'else-without-if'
   | 'invalid-directive'
   | 'invalid-binding'
-  | 'unsupported-combination';
+  | 'unsupported-combination'
+  // Accessibility. Warnings, never errors — they describe a barrier, not invalid
+  // markup, and failing a build on them would be the wrong trade.
+  | 'a11y-img-alt'
+  | 'a11y-anchor-href'
+  | 'a11y-iframe-title'
+  | 'a11y-positive-tabindex'
+  | 'a11y-click-without-keyboard';
 
 /** The full result of a parse: the tree plus any recovered-from problems. */
 export interface ParseResult {
