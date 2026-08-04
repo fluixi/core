@@ -333,7 +333,10 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
   slot?: string;
   spellCheck?: boolean;
   spellcheck?: boolean;
-  style?: string | CSSProperties | Accessor<string | CSSProperties>;
+  // `Reactive<>` like every other attribute: the accessor may return undefined to
+  // drop the attribute, which `setStyle` already handles (it removes it on null).
+  // Without this, a computed style can't be omitted — the one attribute that couldn't.
+  style?: Reactive<string | CSSProperties>;
   tabIndex?: Reactive<number>;
   tabindex?: Reactive<number>;
   title?: string | Accessor<string>;
