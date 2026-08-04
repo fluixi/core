@@ -106,7 +106,9 @@ describe('template parser — attributes & directives', () => {
     const { root } = p(['<button @click=', ' onMouseDown=', '></button>']);
     const btn = root.children[0] as ElementNode;
     expect(btn.attributes[0]).toMatchObject({ kind: 'EventBinding', name: 'click', syntax: 'at', hole: 0 });
-    expect(btn.attributes[1]).toMatchObject({ kind: 'EventBinding', name: 'MouseDown', syntax: 'on', hole: 1 });
+    // `name` is the DOM event name whatever the spelling, so `onMouseDown` and
+    // `@mousedown` agree; `syntax` is what records which form was written.
+    expect(btn.attributes[1]).toMatchObject({ kind: 'EventBinding', name: 'mousedown', syntax: 'on', hole: 1 });
   });
 
   it('event bindings: on:click (native) + dotted modifiers', () => {

@@ -90,7 +90,12 @@ export const CORE_DIRECTIVES: DirectiveDescriptor[] = [
       else if (raw.name.startsWith('on:')) { syntax = 'colon'; rest = raw.name.slice(3); }
       else { syntax = 'on'; rest = raw.name.slice(2); }
       // Dotted modifiers apply to the @/on: forms; the camelCase name has no dots.
-      const [name, ...modifiers] = rest.split('.');
+      // Lowercase the name so `onClick`, `@click` and `on:click` all yield `click`
+      // — the AST documents this field as the DOM event name, and a consumer that
+      // trusts that shouldn't have to know which spelling was written. (`syntax`
+      // still records the spelling; the ts-plugin reads the written form from source.)
+      const [raw_name, ...modifiers] = rest.split('.');
+      const name = raw_name!.toLowerCase();
       for (const m of modifiers) {
         if (!EVENT_MODIFIERS.has(m)) {
           raw.report('invalid-directive', `Unknown event modifier ".${m}" — expected one of ${[...EVENT_MODIFIERS].join(', ')}`);
