@@ -28,6 +28,8 @@ import { componentPropCompletions, componentPropHover } from './props.js';
 import { paramMemberCompletions } from './completion.js';
 import { elementAttributeCompletions, elementAttributeHover } from './elements.js';
 import { templateDiagnostics } from './diagnostics.js';
+import { ACCESSOR_NOT_CALLED } from './diagnostics.js';
+import { templateCodeFixes, templateFixAll } from './fixes.js';
 import { tagAt, templateDefinition, templateReferences, templateRenameLocations } from './navigation.js';
 
 interface PluginCreateInfo {
@@ -197,6 +199,32 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         } catch {
           return base;
         }
+      };
+
+      // Quick fixes for the plugin's own diagnostics, merged with TypeScript's so
+      // its fixes are never displaced.
+      proxy.getCodeFixesAtPosition = (
+        fileName: string, start: number, end: number, errorCodes: number[],
+        formatOptions: unknown, preferences: unknown,
+      ) => {
+        const base = ls.getCodeFixesAtPosition(
+          fileName, start, end, errorCodes, formatOptions as never, preferences as never,
+        );
+        try {
+          const own = templateCodeFixes(ts, ls, fileName, start, end, errorCodes);
+          return own.length ? [...base, ...own] : base;
+        } catch {
+          return base;
+        }
+      };
+
+      proxy.getCombinedCodeFix = (scope: unknown, fixId: unknown, formatOptions: unknown, preferences: unknown) => {
+        if (fixId === 'fluixiCallAccessor') {
+          const fileName = (scope as { fileName: string }).fileName;
+          const combined = templateFixAll(ts, ls, fileName, [ACCESSOR_NOT_CALLED]);
+          if (combined) return combined;
+        }
+        return ls.getCombinedCodeFix(scope as never, fixId as never, formatOptions as never, preferences as never);
       };
 
       return proxy as unknown as ts.LanguageService;

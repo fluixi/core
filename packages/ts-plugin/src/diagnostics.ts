@@ -21,6 +21,9 @@ import type { ElementNode, ExpressionNode, TemplateNode } from '@fluixi/template
 import { parseCached, templatesIn } from './cache.js';
 import { inferParamsIn } from './infer.js';
 
+/** The plugin's own diagnostic code for a bare accessor, shared with its fix. */
+export const ACCESSOR_NOT_CALLED = 9001;
+
 /** A type that accepts any property, so an unknown one proves nothing. */
 function acceptsAnyProperty(ts: typeof TS, checker: TS.TypeChecker, type: TS.Type): boolean {
   const open =
@@ -68,7 +71,7 @@ function accessorDiagnostics(
               start: expression.getStart(sf),
               length: expression.getWidth(sf),
               category: ts.DiagnosticCategory.Warning,
-              code: 9001,
+              code: ACCESSOR_NOT_CALLED,
               messageText:
                 `'${expression.text}' is an accessor — call it (\`${expression.text}()\`). ` +
                 'Left bare it renders the function and never updates.',
