@@ -1,5 +1,15 @@
 # @fluixi/testing
 
+## 1.0.0-alpha.12
+
+### Patch Changes
+
+- Updated dependencies [d075630]
+- Updated dependencies [fb298c7]
+- Updated dependencies [13d488e]
+  - @fluixi/reactive@1.0.0-alpha.64
+  - @fluixi/dom@1.0.0-alpha.64
+
 ## 1.0.0-alpha.11
 
 ### Patch Changes

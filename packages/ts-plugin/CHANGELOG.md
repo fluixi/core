@@ -1,5 +1,104 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.3
+
+### Minor Changes
+
+- e53b239: Go To Definition, Find References and Rename for component tags in templates.
+
+  A `${…}` hole is a real expression, so TypeScript already answered all three for
+  it — the plugin simply wasn't forwarding those requests. The synthetic part is the
+  tag name: `<UserCard>` is text inside a string literal, invisible to the checker.
+
+  Rename is the one that mattered most. Renaming a component previously left every
+  template referencing it silently broken, because nothing rewrote the tags. Both
+  the opening and the closing tag are collected — rewriting `<Tag>` but not `</Tag>`
+  would leave a mismatched template, which is worse than not renaming at all — and
+  tag locations are only added when the ordinary rename already succeeded.
+
+  References resolve each candidate tag through its own file's scope before being
+  included, so an unrelated local component that happens to share a name is not
+  swept in. Files are pre-filtered on the literal `html\`` before anything is
+  parsed, so a project without templates costs one string search per file.
+
+  Auto-imported components are covered too. `<Show>`, `<Portal>`, `<Suspense>`,
+  `<Outlet>` and the rest have no import — the compiler injects one — so there is no
+  binding in the file and every symbol-driven feature went quiet on precisely the
+  components used most. They now resolve the way the compiler would, against the
+  module it would import from. That also gives them hover, which they never had.
+
+  Fixing hover across files exposed a bug in it: the declaration's offset was used
+  to query the file being edited rather than the file the declaration is in. Harmless
+  while every component was local, wrong as soon as one isn't.
+
+  The map mirroring the compiler's sets is pinned by a test that reads the compiler
+  source, so adding a component there without updating the plugin fails.
+
+  Auto-imported components resolve even when their module isn't in the program —
+  which is the normal case, since nothing importing the module is exactly what
+  "auto-imported" means. Only `Suspense` appeared to work, because something else
+  pulls `@fluixi/core` into the program while `@fluixi/dom` has no reason to be
+  there. Definition needs a file and a span rather than the checker, so it now reads
+  the declaration from disk, following `export *` through the barrels these packages
+  are built from.
+
+- 4f8056c: Offer a quick fix for the uncalled-accessor warning.
+
+  A diagnostic you can't act on is half a feature: the rule already knows the
+  remedy, so leaving it to be typed by hand is a gap, not a design. `${count}` now
+  comes with "Call 'count'", and a fix-all that corrects every occurrence in the
+  file in one pass.
+
+  The plugin's fixes are appended to TypeScript's rather than replacing them, so
+  nothing it would have offered is displaced. Fix-all edits are applied
+  latest-first, so applying one doesn't shift the offsets of the next.
+
+  The accessor rule now also covers `${signals[0]}` and `${state.count}`, not just a
+  bare identifier — reaching an accessor by index or property is the same mistake,
+  and only the identifier form was reported.
+
+  Template diagnostics are cached on the `SourceFile`. They were recomputed for
+  every quick-fix request, and the editor asks for code actions on every cursor
+  move — so the analysis ran constantly rather than once per edit.
+
+### Patch Changes
+
+- aba07cb: Fix a crash that took down the whole TypeScript language service.
+
+  `0.1.0-alpha.2` added shadow files to the program by patching `getScriptFileNames`,
+  and built a shadow for every file inside that call. tsserver calls it on every
+  project sync, so this re-entered host machinery and parsed the project on each
+  call — the service died on startup and VS Code disabled it after five attempts,
+  taking every JS/TS feature with it.
+
+  The host is no longer touched at all, and the plugin still creates no language
+  service. It only wraps the service it is handed.
+
+  Hole type-checking is kept, by a different route: the expressions inside `${…}`
+  are real expressions in a real file that TypeScript has already bound. The only
+  thing missing is a contextual type for the callback parameter, so the plugin
+  supplies the type it already infers for hover and asks the main checker whether
+  each property access on that parameter holds. Errors land on real source
+  positions, so nothing needs mapping.
+
+  This reports a wrong property on an inferred parameter — `each` items, `ref`
+  elements, event objects — which is the mistake templates actually produce. It is
+  not a general type-check of hole contents; that needed the machinery which proved
+  unsafe to run inside tsserver.
+
+  Also reports a signal read without calling it. `${count}` in child position
+  renders the function object and never updates; `${count()}` is what was meant.
+  The editor already had this rule for JSX, so html`` templates lacked an
+  equivalent for the same mistake.
+
+  Scoped hard: only a bare identifier, only among the children of a native element,
+  and only when its type is callable with no required arguments. A component
+  legitimately receives accessors (`<For each=${items}>`) and a render-prop child is
+  a function on purpose, so neither is touched.
+
+- Updated dependencies [4b5e5fb]
+  - @fluixi/template-parser@0.1.0-alpha.2
+
 ## 0.1.0-alpha.2
 
 ### Minor Changes

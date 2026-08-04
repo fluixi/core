@@ -1,5 +1,43 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.64
+
+### Patch Changes
+
+- ed14cd1: Map compiled html`` back to the template.
+
+  The IR is emitted as a string and reparsed, so the resulting nodes carry no
+  position. Babel then falls back to the enclosing node's, collapsing everything
+  lowered from a template onto a single point — a breakpoint or stack frame inside
+  compiled template code landed at the top of the enclosing function rather than at
+  the template.
+
+  Generated nodes now inherit the template's own location, so template-derived code
+  maps into the template's span.
+
+  This is coarse by construction: everything from one template maps to that
+  template, not to the individual hole it came from. Per-hole precision would mean
+  carrying spans through the emit, which the string round-trip discards — a larger
+  change to the backend.
+
+- 13d488e: Auto-import `<SuspenseList>`, and make a reactive `class` a render effect.
+
+  `SuspenseList` was listed in the compiler's core-only control-flow set but never
+  in the set that drives auto-import, so the core-only entry was dead and
+  `<SuspenseList>` in a template failed to compile unless imported by hand — while
+  `Suspense` and `Await`, which sit beside it in core, worked. Surfaced by building
+  the language-service map against these sets.
+
+  `setClassName` wrapped a function-valued class in `createEffect`, whereas `spread`
+  already wraps class in `createRenderEffect` and every other attribute binding uses
+  a render effect. A class forwarded through `applyProps` — which is what every
+  polymorphic wrapper does — was therefore scheduled a phase later than the same
+  binding written as a compiled attribute. Also removes a commented-out
+  `console.log` and a dead alternative implementation left in that function.
+
+- Updated dependencies [4b5e5fb]
+  - @fluixi/template-parser@0.1.0-alpha.2
+
 ## 1.0.0-alpha.63
 
 ## 1.0.0-alpha.62
