@@ -161,6 +161,33 @@ describe('a signal read without calling it', () => {
     expect(find(ls, fileName, 'accessor')).toBeUndefined();
   });
 
+  it('reports an accessor reached by index', () => {
+    const code =
+      'declare const signals: Array<() => number>;\n' +
+      'const t = html`<strong>${signals[0]}</strong>`;';
+    const { ls, fileName } = plugin(code);
+    const bad = find(ls, fileName, 'accessor');
+    expect(bad).toBeDefined();
+    expect(code.slice(bad!.start!, bad!.start! + bad!.length!)).toBe('signals[0]');
+  });
+
+  it('reports an accessor reached by property', () => {
+    const code =
+      'declare const state: { count: () => number };\n' +
+      'const t = html`<strong>${state.count}</strong>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeDefined();
+  });
+
+  it('accepts those forms once called', () => {
+    const code =
+      'declare const signals: Array<() => number>;\n' +
+      'declare const state: { count: () => number };\n' +
+      'const t = html`<b>${signals[0]()}</b><i>${state.count()}</i>`;';
+    const { ls, fileName } = plugin(code);
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+
   it('leaves a function that needs arguments alone', () => {
     // Not an accessor; calling it here would be wrong too.
     const code = 'declare const fmt: (n: number) => string;\nconst t = html`<div>${fmt}</div>`;';

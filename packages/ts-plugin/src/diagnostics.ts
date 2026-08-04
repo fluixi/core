@@ -65,7 +65,8 @@ function accessorDiagnostics(
       for (const node of nodes) {
         if (node.kind === 'Expression' && parent?.kind === 'Element') {
           const expression = holes[(node as ExpressionNode).hole];
-          if (expression && ts.isIdentifier(expression) && isAccessor(ts, checker, expression)) {
+          if (expression && isAccessorRead(ts, expression) && isAccessor(ts, checker, expression)) {
+            const text = expression.getText(sf);
             out.push({
               file: sf,
               start: expression.getStart(sf),
@@ -73,7 +74,7 @@ function accessorDiagnostics(
               category: ts.DiagnosticCategory.Warning,
               code: ACCESSOR_NOT_CALLED,
               messageText:
-                `'${expression.text}' is an accessor — call it (\`${expression.text}()\`). ` +
+                `'${text}' is an accessor — call it (\`${text}()\`). ` +
                 'Left bare it renders the function and never updates.',
               source: 'fluixi',
             });
@@ -88,6 +89,21 @@ function accessorDiagnostics(
   }
 
   return out;
+}
+
+/**
+ * Expression shapes that read a value and could be an accessor.
+ *
+ * A bare identifier isn't the only way to reach one: `signals[0]` and `props.count`
+ * are the same mistake. A call is already correct, and anything else (an inline
+ * function, a conditional, a template) is deliberate.
+ */
+function isAccessorRead(ts: typeof TS, node: TS.Expression): boolean {
+  return (
+    ts.isIdentifier(node) ||
+    ts.isPropertyAccessExpression(node) ||
+    ts.isElementAccessExpression(node)
+  );
 }
 
 /** Callable with no required arguments, and returns something — i.e. a signal read. */
@@ -109,6 +125,8 @@ function isOptional(ts: typeof TS, symbol: TS.Symbol): boolean {
  * Report property accesses on an inferred callback parameter that the parameter's
  * type doesn't have.
  */
+const cache = new WeakMap<TS.SourceFile, TS.Diagnostic[]>();
+
 export function templateDiagnostics(
   ts: typeof TS,
   ls: TS.LanguageService,
@@ -117,6 +135,12 @@ export function templateDiagnostics(
   const program = ls.getProgram();
   const sf = program?.getSourceFile(fileName);
   if (!program || !sf) return [];
+
+  // Keyed on the SourceFile, which TypeScript replaces on edit. Without this the
+  // whole analysis re-ran for every quick-fix request — and the editor asks for
+  // code actions on every cursor move, not just when something is wrong.
+  const hit = cache.get(sf);
+  if (hit) return hit;
 
   const checker = program.getTypeChecker();
   const out: TS.Diagnostic[] = [];
@@ -154,5 +178,6 @@ export function templateDiagnostics(
     if (fn.body) visit(fn.body);
   }
 
+  cache.set(sf, out);
   return out;
 }
