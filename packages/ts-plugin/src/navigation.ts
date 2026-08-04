@@ -16,6 +16,7 @@
 import type * as TS from 'typescript';
 import type { ComponentNode, TemplateNode } from '@fluixi/template-parser';
 import { parseCached, templateAtCached, templatesIn } from './cache.js';
+import { autoImportedSymbol } from './auto-import.js';
 
 /** A tag-name occurrence in a template: where it is, and what it names. */
 export interface TagSpan {
@@ -83,14 +84,20 @@ export function tagAt(ts: typeof TS, sf: TS.SourceFile, position: number): TagSp
 /** Resolve a name visible at `location` to its declaration symbol, following aliases. */
 function symbolFor(
   ts: typeof TS,
-  checker: TS.TypeChecker,
+  program: TS.Program,
+  host: TS.ModuleResolutionHost,
   location: TS.Node,
   name: string,
 ): TS.Symbol | undefined {
+  const checker = program.getTypeChecker();
   const flags =
     ts.SymbolFlags.Value | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias;
   const symbol = checker.getSymbolsInScope(location, flags).find((s) => s.name === name);
-  if (!symbol) return undefined;
+
+  // No binding in scope is the normal case for `<Show>`/`<Portal>`/`<Outlet>` —
+  // the compiler injects their import, so resolve them the way it would.
+  if (!symbol) return autoImportedSymbol(ts, program, host, location.getSourceFile(), name);
+
   // An import is an alias; compare the thing it points at so usages in different
   // files, each with their own import, resolve to one symbol.
   return symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
@@ -100,12 +107,13 @@ function symbolFor(
 function declarationFor(
   ts: typeof TS,
   program: TS.Program,
+  host: TS.ModuleResolutionHost,
   sf: TS.SourceFile,
   tag: TagSpan,
 ): TS.Declaration | undefined {
   const template = templateAtCached(ts, sf, tag.start);
   if (!template) return undefined;
-  const symbol = symbolFor(ts, program.getTypeChecker(), template, tag.name);
+  const symbol = symbolFor(ts, program, host, template, tag.name);
   return symbol?.valueDeclaration ?? symbol?.declarations?.[0];
 }
 
@@ -113,6 +121,7 @@ function declarationFor(
 export function templateDefinition(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.DefinitionInfo[] | undefined {
@@ -123,7 +132,7 @@ export function templateDefinition(
   const tag = tagAt(ts, sf, position);
   if (!tag) return undefined;
 
-  const decl = declarationFor(ts, program, sf, tag);
+  const decl = declarationFor(ts, program, host, sf, tag);
   if (!decl) return undefined;
 
   const target = (decl as { name?: TS.Node }).name ?? decl;
@@ -149,10 +158,10 @@ export function templateDefinition(
 export function tagOccurrences(
   ts: typeof TS,
   program: TS.Program,
+  host: TS.ModuleResolutionHost,
   symbol: TS.Symbol,
   name: string,
 ): Array<{ fileName: string; span: TS.TextSpan }> {
-  const checker = program.getTypeChecker();
   const out: Array<{ fileName: string; span: TS.TextSpan }> = [];
 
   for (const sf of program.getSourceFiles()) {
@@ -166,7 +175,7 @@ export function tagOccurrences(
       const template = templateAtCached(ts, sf, span.start);
       // Same name is not the same thing — check it resolves to the same symbol,
       // so an unrelated local `Button` in another file isn't swept in.
-      if (!template || symbolFor(ts, checker, template, name) !== symbol) continue;
+      if (!template || symbolFor(ts, program, host, template, name) !== symbol) continue;
       out.push({ fileName: sf.fileName, span: { start: span.start, length: span.length } });
     }
   }
@@ -177,6 +186,7 @@ export function tagOccurrences(
 function symbolAt(
   ts: typeof TS,
   program: TS.Program,
+  host: TS.ModuleResolutionHost,
   sf: TS.SourceFile,
   position: number,
 ): { symbol: TS.Symbol; name: string } | undefined {
@@ -185,7 +195,7 @@ function symbolAt(
   const tag = tagAt(ts, sf, position);
   if (tag) {
     const template = templateAtCached(ts, sf, tag.start);
-    const symbol = template && symbolFor(ts, checker, template, tag.name);
+    const symbol = template && symbolFor(ts, program, host, template, tag.name);
     return symbol ? { symbol, name: tag.name } : undefined;
   }
 
@@ -213,6 +223,7 @@ function tokenAt(ts: typeof TS, sf: TS.SourceFile, position: number): TS.Node | 
 export function templateReferences(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.ReferenceEntry[] {
@@ -220,10 +231,10 @@ export function templateReferences(
   const sf = program?.getSourceFile(fileName);
   if (!program || !sf) return [];
 
-  const hit = symbolAt(ts, program, sf, position);
+  const hit = symbolAt(ts, program, host, sf, position);
   if (!hit) return [];
 
-  return tagOccurrences(ts, program, hit.symbol, hit.name).map(({ fileName: f, span }) => ({
+  return tagOccurrences(ts, program, host, hit.symbol, hit.name).map(({ fileName: f, span }) => ({
     fileName: f,
     textSpan: span,
     isWriteAccess: false,
@@ -235,6 +246,7 @@ export function templateReferences(
 export function templateRenameLocations(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.RenameLocation[] {
@@ -242,10 +254,10 @@ export function templateRenameLocations(
   const sf = program?.getSourceFile(fileName);
   if (!program || !sf) return [];
 
-  const hit = symbolAt(ts, program, sf, position);
+  const hit = symbolAt(ts, program, host, sf, position);
   if (!hit) return [];
 
-  return tagOccurrences(ts, program, hit.symbol, hit.name).map(({ fileName: f, span }) => ({
+  return tagOccurrences(ts, program, host, hit.symbol, hit.name).map(({ fileName: f, span }) => ({
     fileName: f,
     textSpan: span,
   }));

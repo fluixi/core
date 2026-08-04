@@ -121,7 +121,13 @@ function init(modules: { typescript: typeof ts }): PluginModule {
           const inferred = paramQuickInfo(ts, ls, fileName, position);
           if (inferred) return inferred;
         } catch { /* fall through */ }
-        return ls.getQuickInfoAtPosition(fileName, position) ?? componentQuickInfo(ts, ls, fileName, position);
+        try {
+          // Before the real hover: inside a template the real service answers about
+          // the template literal itself, which would shadow the tag.
+          const tag = componentQuickInfo(ts, ls, host, fileName, position);
+          if (tag) return tag;
+        } catch { /* fall through */ }
+        return ls.getQuickInfoAtPosition(fileName, position);
       };
 
       // Completion (main checker): component prop names in a tag's attribute area;
@@ -147,7 +153,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       // replaces, so renaming from a declaration still rewrites its template tags.
       proxy.getDefinitionAtPosition = (fileName: string, position: number) => {
         try {
-          const tag = templateDefinition(ts, ls, fileName, position);
+          const tag = templateDefinition(ts, ls, host, fileName, position);
           if (tag) return tag;
         } catch { /* fall through */ }
         return ls.getDefinitionAtPosition(fileName, position);
@@ -155,7 +161,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
 
       proxy.getDefinitionAndBoundSpan = (fileName: string, position: number) => {
         try {
-          const definitions = templateDefinition(ts, ls, fileName, position);
+          const definitions = templateDefinition(ts, ls, host, fileName, position);
           if (definitions) {
             const sf = ls.getProgram()?.getSourceFile(fileName);
             const tag = sf && tagAt(ts, sf, position);
@@ -170,7 +176,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       proxy.getReferencesAtPosition = (fileName: string, position: number) => {
         const base = ls.getReferencesAtPosition(fileName, position) ?? [];
         try {
-          const extra = templateReferences(ts, ls, fileName, position);
+          const extra = templateReferences(ts, ls, host, fileName, position);
           return extra.length ? dedupe([...base, ...extra]) : base;
         } catch {
           return base;
@@ -183,7 +189,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       ) => {
         const base = ls.findRenameLocations(fileName, position, findInStrings, findInComments, prefs as never) ?? [];
         try {
-          const extra = templateRenameLocations(ts, ls, fileName, position);
+          const extra = templateRenameLocations(ts, ls, host, fileName, position);
           // A rename that rewrote `<Tag>` but not `</Tag>` would break the template,
           // so tags are only added when the real rename already succeeded.
           if (!base.length || !extra.length) return base.length ? base : undefined;
