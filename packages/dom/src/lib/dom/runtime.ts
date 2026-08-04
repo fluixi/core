@@ -1309,13 +1309,22 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       continue;
     }
     if (key === 'class' || key === 'className') {
+      // setClassName unwraps an accessor itself.
       setClassName(element, val); continue; }
     if (key === 'classList') {
       if (typeof val === 'function') createRenderEffect(() => setClassList(element, val()));
       else setClassList(element, val);
       continue;
     }
-    if (key === 'style') { setStyle(element as HTMLElement, val); continue; }
+    if (key === 'style') {
+      // An accessor reaches applyProps whenever a component forwards a computed
+      // style through a props object rather than as a compiled JSX attribute —
+      // which is what every polymorphic/`as` wrapper does. class and classList
+      // already handled that; style applied once and never updated.
+      if (typeof val === 'function') createRenderEffect(() => setStyle(element as HTMLElement, (val as () => unknown)()));
+      else setStyle(element as HTMLElement, val);
+      continue;
+    }
     if (key === 'innerHTML') {
       // Accept a static string OR a reactive accessor. A function is wrapped in an effect so
       // updates apply; a plain value is set once. (The previous code always called val(), which
