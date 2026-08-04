@@ -15,7 +15,7 @@
  */
 import type * as TS from 'typescript';
 import { parseTemplate, type TemplateNode } from '@fluixi/template-parser';
-import { templateAt, templatePieces } from './pieces.js';
+import { parseCached, templateAtCached as templateAt } from './cache.js';
 
 /** DOM event name → the global interface a handler's event argument has. */
 const EVENT_TYPES: Record<string, string> = {
@@ -152,7 +152,7 @@ export function inferParamAt(
   if (holeIndex === -1) return undefined;
 
   const roles = new Map<number, HoleRole>();
-  holeRoles(parseTemplate(templatePieces(ts, template.template, sf)).root.children, roles);
+  holeRoles(parseCached(ts, sf, template.template).root.children, roles);
   const role = roles.get(holeIndex);
   if (!role) return undefined;
 

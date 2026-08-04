@@ -21,6 +21,7 @@ import { componentQuickInfo } from './hover.js';
 import { paramQuickInfo, inferParamAt } from './infer.js';
 import { componentPropCompletions, componentPropHover } from './props.js';
 import { paramMemberCompletions } from './completion.js';
+import { elementAttributeCompletions, elementAttributeHover } from './elements.js';
 import { VirtualService } from './virtual-service.js';
 import { mapDiagnostic } from './bridge.js';
 
@@ -38,6 +39,9 @@ function init(modules: { typescript: typeof ts }): PluginModule {
   return {
     create(info: PluginCreateInfo): ts.LanguageService {
       const ls = info.languageService;
+      // The host doubles as a module-resolution host, which element support needs
+      // to locate @fluixi/dom/attributes from the file being edited.
+      const host = info.languageServiceHost as unknown as ts.ModuleResolutionHost;
 
       // The virtual document is best-effort: if it can't be built in this
       // environment, the plugin still works via the reliable layer below.
@@ -116,6 +120,10 @@ function init(modules: { typescript: typeof ts }): PluginModule {
           if (prop) return prop;
         } catch { /* fall through */ }
         try {
+          const attr = elementAttributeHover(ts, ls, host, fileName, position);
+          if (attr) return attr;
+        } catch { /* fall through */ }
+        try {
           const inferred = paramQuickInfo(ts, ls, fileName, position);
           if (inferred) return inferred;
         } catch { /* fall through */ }
@@ -128,6 +136,10 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         try {
           const props = componentPropCompletions(ts, ls, fileName, position);
           if (props) return completionList(props);
+        } catch { /* fall through */ }
+        try {
+          const attrs = elementAttributeCompletions(ts, ls, host, fileName, position);
+          if (attrs) return completionList(attrs);
         } catch { /* fall through */ }
         try {
           const members = paramMemberCompletions(ts, ls, fileName, position);
