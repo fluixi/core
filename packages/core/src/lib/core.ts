@@ -43,7 +43,12 @@ import {
 } from '@fluixi/reactive/signal';
 // } from '@fluixi/core/rx';
 
-import { createDebounce, createSelector } from '@fluixi/reactive/signal';
+import {
+  createDebounce,
+  createDebouncedResource,
+  createDebouncedSignal,
+  createSelector,
+} from '@fluixi/reactive/signal';
 import {
   readSignal as read,
   reduceSignal as reduce,
@@ -310,6 +315,8 @@ export {
   createRoot,
   createDeferred,
   createDebounce,
+  createDebouncedSignal,
+  createDebouncedResource,
   createComputed,
   createRenderEffect,
   createSelector,
