@@ -15,7 +15,7 @@
  */
 import type * as TS from 'typescript';
 import { parseTemplate, type TemplateNode } from '@fluixi/template-parser';
-import { parseCached, templateAtCached as templateAt } from './cache.js';
+import { parseCached, templateAtCached as templateAt, templatesIn } from './cache.js';
 
 /** DOM event name → the global interface a handler's event argument has. */
 const EVENT_TYPES: Record<string, string> = {
@@ -168,8 +168,24 @@ export function inferParamAt(
   if (!id || id.text !== paramName || !contains(fn, id)) return undefined;
 
   const checker = program.getTypeChecker();
+  const resolved = typeForRole(ts, checker, fn, role, holeExprs);
+  const { typeText, type } = resolved;
+  if (!typeText) return undefined;
+  return { paramName, typeText, type, start: id.getStart(sf), length: id.getWidth(sf) };
+}
+
+
+/** Resolve the inferred type of a callback's first parameter from its hole role. */
+function typeForRole(
+  ts: typeof TS,
+  checker: TS.TypeChecker,
+  fn: TS.Node,
+  role: HoleRole,
+  holeExprs: readonly TS.Expression[],
+): { typeText?: string; type?: TS.Type } {
   let typeText: string | undefined;
   let type: TS.Type | undefined;
+
   if (role.kind === 'event') {
     const name = EVENT_TYPES[role.event] ?? 'Event';
     typeText = name;
@@ -182,19 +198,55 @@ export function inferParamAt(
     if (!type) type = resolveGlobalType(ts, checker, fn, typeText);
   } else if (role.kind === 'show') {
     // <Show when=${cond}>${(value) => …}: value is the narrowed truthy `when`.
-    type = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]));
+    type = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]!));
     typeText = checker.typeToString(type);
   } else if (role.kind === 'indexEach') {
     // <Index>: item is an accessor () => T.
-    const elem = checker.getTypeAtLocation(holeExprs[role.eachHole]).getNumberIndexType();
+    const elem = checker.getTypeAtLocation(holeExprs[role.eachHole]!).getNumberIndexType();
     if (elem) typeText = `() => ${checker.typeToString(elem)}`;
   } else {
     // each / For: item is the element type.
-    type = checker.getTypeAtLocation(holeExprs[role.eachHole]).getNumberIndexType();
+    type = checker.getTypeAtLocation(holeExprs[role.eachHole]!).getNumberIndexType();
     if (type) typeText = checker.typeToString(type);
   }
-  if (!typeText) return undefined;
-  return { paramName, typeText, type, start: id.getStart(sf), length: id.getWidth(sf) };
+  return { typeText, type };
+}
+
+/** A callback parameter inside a template whose type we could infer. */
+export interface InferredParam {
+  fn: TS.ArrowFunction | TS.FunctionExpression;
+  paramName: string;
+  type: TS.Type;
+}
+
+/**
+ * Every inferable callback parameter in the file's templates. Position-independent,
+ * so a whole-file pass (diagnostics) can use the same inference hover uses.
+ */
+export function inferParamsIn(ts: typeof TS, program: TS.Program, sf: TS.SourceFile): InferredParam[] {
+  const checker = program.getTypeChecker();
+  const out: InferredParam[] = [];
+
+  for (const template of templatesIn(ts, sf)) {
+    const tpl = template.template;
+    if (ts.isNoSubstitutionTemplateLiteral(tpl)) continue;
+    const holeExprs = tpl.templateSpans.map((s) => s.expression);
+
+    const roles = new Map<number, HoleRole>();
+    holeRoles(parseCached(ts, sf, tpl).root.children, roles);
+
+    for (const [holeIndex, role] of roles) {
+      const fn = holeExprs[holeIndex];
+      if (!fn || (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn))) continue;
+      const param = fn.parameters[0];
+      // An explicitly typed param is the author's business, not ours.
+      if (!param || !ts.isIdentifier(param.name) || param.type) continue;
+
+      const { type } = typeForRole(ts, checker, fn, role, holeExprs);
+      if (type) out.push({ fn, paramName: param.name.text, type });
+    }
+  }
+  return out;
 }
 
 /** Build a QuickInfo for an inferred callback parameter, or undefined. */

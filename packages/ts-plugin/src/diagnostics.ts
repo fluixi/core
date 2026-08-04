@@ -1,0 +1,81 @@
+/**
+ * Type errors inside `${…}` holes, checked against the MAIN program.
+ *
+ * A `${(it) => it.nope}` is a real expression in a real file — TypeScript has
+ * already parsed and bound it. The only thing it lacks is a contextual type for
+ * `it`, which is why the mistake goes unreported: `it` is implicitly `any`, and
+ * every property access on `any` is allowed.
+ *
+ * So rather than building a parallel document to make the checker see the
+ * template, we supply the missing type ourselves (the same inference hover uses)
+ * and ask the checker whether each property access holds. Spans are real source
+ * positions, so nothing needs mapping — and nothing is added to the program, no
+ * second service exists, and the host is never touched.
+ *
+ * The trade-off is honest: this catches property access on an inferred parameter,
+ * which is the mistake templates actually produce. It is not a general type-check
+ * of hole contents.
+ */
+import type * as TS from 'typescript';
+import { inferParamsIn } from './infer.js';
+
+/** A type that accepts any property, so an unknown one proves nothing. */
+function acceptsAnyProperty(ts: typeof TS, checker: TS.TypeChecker, type: TS.Type): boolean {
+  const open =
+    ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter | ts.TypeFlags.Never;
+  if (type.flags & open) return true;
+  if (checker.getIndexInfoOfType?.(type, ts.IndexKind.String)) return true;
+  // A union is only checkable when every member is.
+  if (type.isUnion()) return type.types.some((t) => acceptsAnyProperty(ts, checker, t));
+  return false;
+}
+
+/**
+ * Report property accesses on an inferred callback parameter that the parameter's
+ * type doesn't have.
+ */
+export function templateDiagnostics(
+  ts: typeof TS,
+  ls: TS.LanguageService,
+  fileName: string,
+): TS.Diagnostic[] {
+  const program = ls.getProgram();
+  const sf = program?.getSourceFile(fileName);
+  if (!program || !sf) return [];
+
+  const checker = program.getTypeChecker();
+  const out: TS.Diagnostic[] = [];
+
+  for (const { fn, paramName, type } of inferParamsIn(ts, program, sf)) {
+    if (acceptsAnyProperty(ts, checker, type)) continue;
+
+    const visit = (node: TS.Node): void => {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === paramName &&
+        ts.isIdentifier(node.name)
+      ) {
+        // Only when the identifier really is the parameter, not a shadowing local.
+        const symbol = checker.getSymbolAtLocation(node.expression);
+        const declaredHere = symbol?.declarations?.some((d) => d.parent === fn);
+        if (declaredHere && !checker.getPropertyOfType(type, node.name.text)) {
+          out.push({
+            file: sf,
+            start: node.name.getStart(sf),
+            length: node.name.getWidth(sf),
+            category: ts.DiagnosticCategory.Error,
+            code: 2339,
+            messageText: `Property '${node.name.text}' does not exist on type '${checker.typeToString(type)}'.`,
+            source: 'fluixi',
+          });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+
+    if (fn.body) visit(fn.body);
+  }
+
+  return out;
+}

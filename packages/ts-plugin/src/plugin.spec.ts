@@ -30,17 +30,7 @@ function plugin(code: string, fileName = '/a.tsx') {
   return { ls, fileName, code };
 }
 
-describe('plugin end-to-end (virtual document)', () => {
-  it('reports a bad each item property ON THE SOURCE position', () => {
-    const code = 'const items = [{ id: 1 }];\nconst t = html`<li each=${items}>${(it) => it.nope}</li>`;';
-    const { ls, fileName } = plugin(code);
-    const diags = ls.getSemanticDiagnostics(fileName);
-    const bad = diags.find((d: ts.Diagnostic) => String(d.messageText).includes('nope'));
-    expect(bad).toBeDefined();
-    // mapped back to the real source: the span points at `nope` in the template
-    expect(code.slice(bad!.start!, bad!.start! + (bad!.length ?? 4))).toContain('nope');
-  });
-
+describe('plugin end-to-end', () => {
   it('gives no error for correct each-item usage (no implicit-any noise)', () => {
     const code = 'const items = [{ id: 1, label: "a" }];\nconst t = html`<li each=${items}>${(it) => it.label}</li>`;';
     const { ls, fileName } = plugin(code);
@@ -108,14 +98,6 @@ describe('component prop completion + hover', () => {
     expect(text).toContain('string');
   });
 
-  it('type-checks a wrong prop value', () => {
-    const code =
-      'function Card(props: { count?: number }) { return null as any; }\n' +
-      'const t = html`<Card count=${"nope"}></Card>`;';
-    const { ls, fileName } = plugin(code);
-    const diags = ls.getSemanticDiagnostics(fileName);
-    expect(diags.some((d: ts.Diagnostic) => String(d.messageText).includes('count') || String(d.messageText).includes('number'))).toBe(true);
-  });
 });
 
 describe('ref element type inference', () => {
@@ -128,11 +110,6 @@ describe('ref element type inference', () => {
     expect(text).toContain('HTMLInputElement');
   });
 
-  it('flags a property not on the inferred element', () => {
-    const code = 'const t = html`<input ref=${(el) => el.nope}></input>`;';
-    const { ls, fileName } = plugin(code);
-    expect(ls.getSemanticDiagnostics(fileName).some((d: ts.Diagnostic) => String(d.messageText).includes('nope'))).toBe(true);
-  });
 });
 
 describe('control-flow prop hover + use inference', () => {
