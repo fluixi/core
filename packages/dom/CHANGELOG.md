@@ -1,5 +1,37 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.64
+
+### Patch Changes
+
+- fb298c7: Type `style` as `Reactive<>`, like every other attribute.
+
+  It was `string | CSSProperties | Accessor<string | CSSProperties>`, so an accessor
+  could not return `undefined` — making `style` the one attribute that couldn't be
+  omitted reactively. `setStyle` already removes it on `null`/`undefined`, so only
+  the type disagreed.
+
+  This blocks any component that forwards a computed style, since "no style" has to
+  be expressible.
+
+- 13d488e: Auto-import `<SuspenseList>`, and make a reactive `class` a render effect.
+
+  `SuspenseList` was listed in the compiler's core-only control-flow set but never
+  in the set that drives auto-import, so the core-only entry was dead and
+  `<SuspenseList>` in a template failed to compile unless imported by hand — while
+  `Suspense` and `Await`, which sit beside it in core, worked. Surfaced by building
+  the language-service map against these sets.
+
+  `setClassName` wrapped a function-valued class in `createEffect`, whereas `spread`
+  already wraps class in `createRenderEffect` and every other attribute binding uses
+  a render effect. A class forwarded through `applyProps` — which is what every
+  polymorphic wrapper does — was therefore scheduled a phase later than the same
+  binding written as a compiled attribute. Also removes a commented-out
+  `console.log` and a dead alternative implementation left in that function.
+
+- Updated dependencies [d075630]
+  - @fluixi/reactive@1.0.0-alpha.64
+
 ## 1.0.0-alpha.63
 
 ### Minor Changes
