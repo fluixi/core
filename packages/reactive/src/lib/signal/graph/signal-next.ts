@@ -65,6 +65,13 @@ export {
 
 // Derived utilities on the TC39 graph.
 export { createSelector, createDeferred, createDebounce } from './derived.js';
+export {
+  createDebouncedSignal,
+  createDebouncedResource,
+  type DebounceControls,
+  type DebouncedResourceOptions,
+  type DebouncedResourceControls,
+} from './debounced.js';
 
 // Reactive children resolver.
 export { readChildren } from './children.js';

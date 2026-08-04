@@ -57,7 +57,8 @@ const UNSET = Symbol();
  * `unknown` implementation signature gives every call site `ResourceReturn<{}>`,
  * so the accessor loses its type (the regression seen after the TC39-core switch).
  */
-type ResourceFetcherInfo<T> = { value: T | undefined; refetching: boolean };
+/** Second argument a fetcher receives: the previous value, and whether this is a refetch. */
+export type ResourceFetcherInfo<T> = { value: T | undefined; refetching: boolean };
 export function createResource<T>(
   fetcher: (k: true, info: ResourceFetcherInfo<T>) => T | Promise<T>,
   options?: { initialValue?: T; name?: string },

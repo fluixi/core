@@ -56,35 +56,18 @@ export function createDeferred<T>(
  */
 export function createDebounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
   let timer: ReturnType<typeof setTimeout> | undefined;
+
   const debounced = (...args: Parameters<T>): void => {
     if (timer !== undefined) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = undefined;
-      if (args.length > 0) {
-        let element = args[args.length - 1];
-        if (
-          typeof element === 'object' &&
-          element &&
-          !element.tagName &&
-          element.target &&
-          element.target.tagName
-        ) {
-          element = element.target;
-        }
-        if (
-          element &&
-          typeof element === 'object' &&
-          element.tagName &&
-          (element.tagName.toLowerCase() === 'input' ||
-            element.tagName.toLowerCase() === 'textarea')
-        )
-          element.focus();
-      }
       fn(...args);
     }, delay);
   };
+
   onCleanup(() => {
     if (timer !== undefined) clearTimeout(timer);
   });
+
   return debounced as unknown as T;
 }
