@@ -8,7 +8,7 @@
  */
 import type * as TS from 'typescript';
 import { parseTemplate, type ComponentNode, type TemplateNode } from '@fluixi/template-parser';
-import { templateAt, templatePieces } from './pieces.js';
+import { parseCached, templateAtCached as templateAt } from './cache.js';
 
 export function componentQuickInfo(
   ts: typeof TS,
@@ -48,7 +48,7 @@ function componentTagAt(
   position: number,
   ts: typeof TS,
 ): { name: string; start: number } | undefined {
-  const { root } = parseTemplate(templatePieces(ts, template.template, sf));
+  const { root } = parseCached(ts, sf, template.template);
   let hit: { name: string; start: number } | undefined;
 
   const walk = (nodes: readonly TemplateNode[]): void => {

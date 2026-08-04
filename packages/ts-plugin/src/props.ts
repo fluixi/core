@@ -10,7 +10,7 @@
  */
 import type * as TS from 'typescript';
 import { parseTemplate, type ComponentNode, type TemplateNode } from '@fluixi/template-parser';
-import { templateAt, templatePieces } from './pieces.js';
+import { parseCached, templateAtCached as templateAt } from './cache.js';
 
 export function componentPropCompletions(
   ts: typeof TS,
@@ -111,7 +111,7 @@ interface PropHit { tag: string; prop: string; start: number; }
 
 /** If `position` sits on a component prop NAME, return the tag + prop name + span. */
 function propNameAt(ts: typeof TS, sf: TS.SourceFile, tpl: TS.TemplateLiteral, position: number): PropHit | undefined {
-  const { root } = parseTemplate(templatePieces(ts, tpl, sf));
+  const { root } = parseCached(ts, sf, tpl);
   let hit: PropHit | undefined;
   const walk = (nodes: readonly TemplateNode[]): void => {
     for (const node of nodes) {
@@ -207,7 +207,7 @@ function componentTagAtAttrArea(
   tpl: TS.TemplateLiteral,
   position: number,
 ): TagHit | undefined {
-  const { root } = parseTemplate(templatePieces(ts, tpl, sf));
+  const { root } = parseCached(ts, sf, tpl);
   let hit: TagHit | undefined;
   const walk = (nodes: readonly TemplateNode[]): void => {
     for (const node of nodes) {
