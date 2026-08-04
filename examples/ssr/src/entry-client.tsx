@@ -13,8 +13,8 @@ const wasServerRendered = root.querySelector('#app') !== null;
 
 if (wasServerRendered) {
   console.log('[fluixi] server-rendered HTML present → hydrating');
-  hydrate(<App url={location.pathname} />, root);
+  hydrate(() => <App url={location.pathname} />, root);
 } else {
   console.log('[fluixi] no SSR content → client render');
-  render(<App url={location.pathname} />, root);
+  render(() => <App url={location.pathname} />, root);
 }

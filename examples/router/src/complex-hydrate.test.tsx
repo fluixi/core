@@ -30,8 +30,8 @@ describe('complex-children hydration', () => {
   it('LAZY hydrate: text + <small> keep order', async () => {
     const Lazy = lazy(async () => ({ default: Item }));
     const c = document.createElement('div'); document.body.appendChild(c);
-    c.innerHTML = await renderToStringAsync(() => Lazy({}));
-    hydrate(() => Lazy({}), c);
+    c.innerHTML = await renderToStringAsync(() => Lazy());
+    hydrate(() => Lazy(), c);
     await tick();
     console.log('LAZY HYDRATED:', c.innerHTML);
     expect(c.querySelector('li')!.textContent).toBe('Welcome— system');

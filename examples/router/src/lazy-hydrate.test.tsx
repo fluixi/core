@@ -19,7 +19,7 @@ describe('lazy-route hydration', () => {
   it('hydrates the lazy component in place (no duplicate) and it stays interactive', async () => {
     const Leaf = makeLeaf();
     const Lazy = lazy(async () => ({ default: Leaf }));
-    const App = () => Suspense({ fallback: 'loading', children: Lazy({}) });
+    const App = () => Suspense({ fallback: 'loading', children: Lazy() });
 
     // Server: renderToStringAsync awaits the lazy load + resource.
     const container = document.createElement('div');
