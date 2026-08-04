@@ -215,6 +215,7 @@ const CONTROL_FLOW_COMPONENTS = new Set([
   'Dynamic',
   'ErrorBoundary',
   'Suspense',
+  'SuspenseList',
   'Await',
 ]);
 

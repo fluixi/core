@@ -98,6 +98,17 @@ describe('lit front-end (format: lit)', () => {
     expect(code).toContain('createComponent');
   });
 
+  it('auto-imports the core-only control flow from core, not dom', () => {
+    // dom exports neither, so sending these to the control-flow module would
+    // inject an import that resolves to nothing.
+    const code = compileEsm(
+      'export const r = (b) => html`<Suspense><SuspenseList revealOrder="forwards">${b}</SuspenseList></Suspense>`;',
+    );
+    expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "@fluixi\/core"/);
+    expect(code).toMatch(/import \{[^}]*\bSuspenseList\b[^}]*\} from "@fluixi\/core"/);
+    expect(code).not.toMatch(/import \{[^}]*\bSuspenseList\b[^}]*\} from "@fluixi\/dom"/);
+  });
+
   it('auto-imports Router/Outlet from the router module (nested too)', () => {
     const code = compileEsm(
       'export const App = (r) => html`<${Router} routes=${r}><main><${Outlet}/></main></${Router}>`;',

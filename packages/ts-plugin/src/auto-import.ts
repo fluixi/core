@@ -34,6 +34,7 @@ export const AUTO_IMPORTED: Readonly<Record<string, string>> = {
   Dynamic: DOM,
   ErrorBoundary: DOM,
   Suspense: CORE,
+  SuspenseList: CORE,
   Await: CORE,
   // Router. `Routes` isn't a component and `lazy` is a call, so neither appears.
   Router: ROUTER,
