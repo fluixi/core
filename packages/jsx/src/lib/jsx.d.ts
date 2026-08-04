@@ -66,13 +66,25 @@ export namespace JSX {
 
   /**
    * A `style` object: known camelCase CSS properties (autocompleted from the DOM
-   * `CSSStyleDeclaration`), custom `--*` properties, plus a string fallback for
-   * anything not in the lib. Values may be strings or numbers.
+   * `CSSStyleDeclaration`) plus custom `--*` properties. Values may be strings or
+   * numbers.
+   *
+   * Selecting the string-valued members keeps the properties and drops
+   * `CSSStyleDeclaration`'s methods, `length` and numeric index. There is
+   * deliberately no open `[key: string]` fallback — it would make every misspelled
+   * property type-check, and `--*` already covers custom properties. For a property
+   * newer than the TypeScript lib, set it as a custom property or widen at the call
+   * site.
    */
   export type CSSProperties =
-    & { [K in Exclude<keyof CSSStyleDeclaration, 'length' | 'parentRule'>]?: string | number }
-    & { [key: `--${string}`]: string | number }
-    & { [key: string]: string | number | undefined };
+    & {
+        [K in keyof CSSStyleDeclaration as CSSStyleDeclaration[K] extends string
+          ? K extends string
+            ? K
+            : never
+          : never]?: string | number;
+      }
+    & { [key: `--${string}`]: string | number };
 
   // ============================================================================
   // ARIA Attributes
