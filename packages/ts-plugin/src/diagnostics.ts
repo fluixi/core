@@ -17,6 +17,8 @@
  * of hole contents.
  */
 import type * as TS from 'typescript';
+import type { ElementNode, ExpressionNode, TemplateNode } from '@fluixi/template-parser';
+import { parseCached, templatesIn } from './cache.js';
 import { inferParamsIn } from './infer.js';
 
 /** A type that accepts any property, so an unknown one proves nothing. */
@@ -28,6 +30,76 @@ function acceptsAnyProperty(ts: typeof TS, checker: TS.TypeChecker, type: TS.Typ
   // A union is only checkable when every member is.
   if (type.isUnion()) return type.types.some((t) => acceptsAnyProperty(ts, checker, t));
   return false;
+}
+
+/**
+ * A signal read without calling it.
+ *
+ * `${count}` in child position renders the function object and never updates;
+ * `${count()}` is what was meant — the compiler wraps a call in a reactive insert.
+ * The editor's existing rule for this covers JSX only, so html`` templates had no
+ * equivalent despite it being the same mistake.
+ *
+ * Scoped hard to keep it honest: only a bare identifier, only in the children of a
+ * NATIVE element, and only when its type is callable with no required arguments.
+ * A component legitimately receives accessors (`<For each=${items}>`), and a
+ * render-prop child is a function on purpose — neither is touched.
+ */
+function accessorDiagnostics(
+  ts: typeof TS,
+  program: TS.Program,
+  sf: TS.SourceFile,
+): TS.Diagnostic[] {
+  const checker = program.getTypeChecker();
+  const out: TS.Diagnostic[] = [];
+
+  for (const template of templatesIn(ts, sf)) {
+    const tpl = template.template;
+    if (ts.isNoSubstitutionTemplateLiteral(tpl)) continue;
+    const holes = tpl.templateSpans.map((s) => s.expression);
+
+    const visit = (nodes: readonly TemplateNode[], parent: TemplateNode | null): void => {
+      for (const node of nodes) {
+        if (node.kind === 'Expression' && parent?.kind === 'Element') {
+          const expression = holes[(node as ExpressionNode).hole];
+          if (expression && ts.isIdentifier(expression) && isAccessor(ts, checker, expression)) {
+            out.push({
+              file: sf,
+              start: expression.getStart(sf),
+              length: expression.getWidth(sf),
+              category: ts.DiagnosticCategory.Warning,
+              code: 9001,
+              messageText:
+                `'${expression.text}' is an accessor — call it (\`${expression.text}()\`). ` +
+                'Left bare it renders the function and never updates.',
+              source: 'fluixi',
+            });
+          }
+        }
+        const children = 'children' in node ? (node.children as TemplateNode[] | undefined) : undefined;
+        if (children) visit(children, node);
+      }
+    };
+
+    visit(parseCached(ts, sf, tpl).root.children, null);
+  }
+
+  return out;
+}
+
+/** Callable with no required arguments, and returns something — i.e. a signal read. */
+function isAccessor(ts: typeof TS, checker: TS.TypeChecker, node: TS.Expression): boolean {
+  const signatures = checker.getTypeAtLocation(node).getCallSignatures();
+  if (signatures.length !== 1) return false;
+  const signature = signatures[0]!;
+  if (signature.getParameters().some((p) => !isOptional(ts, p))) return false;
+  const returned = signature.getReturnType();
+  return !(returned.flags & (ts.TypeFlags.Void | ts.TypeFlags.Never));
+}
+
+function isOptional(ts: typeof TS, symbol: TS.Symbol): boolean {
+  const declaration = symbol.valueDeclaration;
+  return !!declaration && ts.isParameter(declaration) && (!!declaration.questionToken || !!declaration.initializer || !!declaration.dotDotDotToken);
 }
 
 /**
@@ -45,6 +117,8 @@ export function templateDiagnostics(
 
   const checker = program.getTypeChecker();
   const out: TS.Diagnostic[] = [];
+
+  out.push(...accessorDiagnostics(ts, program, sf));
 
   for (const { fn, paramName, type } of inferParamsIn(ts, program, sf)) {
     if (acceptsAnyProperty(ts, checker, type)) continue;
