@@ -9,10 +9,12 @@
 import type * as TS from 'typescript';
 import { parseTemplate, type ComponentNode, type TemplateNode } from '@fluixi/template-parser';
 import { parseCached, templateAtCached as templateAt } from './cache.js';
+import { autoImportedSymbol } from './auto-import.js';
 
 export function componentQuickInfo(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.QuickInfo | undefined {
@@ -29,12 +31,20 @@ export function componentQuickInfo(
   // Resolve the tag's root name to a binding visible at the template.
   const checker = program.getTypeChecker();
   const flags = ts.SymbolFlags.Value | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias;
-  const symbol = checker.getSymbolsInScope(template, flags).find((s) => s.name === hit.name);
+  // `<Show>`/`<Portal>`/`<Outlet>` have no binding — the compiler injects their
+  // import — so fall back to resolving them the way it would. Without this, hover
+  // is silent on precisely the components used most.
+  const symbol =
+    checker.getSymbolsInScope(template, flags).find((s) => s.name === hit.name) ??
+    autoImportedSymbol(ts, program, host, sf, hit.name);
   const decl = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
   if (!decl) return undefined;
 
-  const namePos = (decl as { name?: TS.Node }).name?.getStart(sf) ?? decl.getStart(sf);
-  const info = ls.getQuickInfoAtPosition(fileName, namePos);
+  // The declaration may live in another file — an auto-imported `<Show>` resolves
+  // into @fluixi/dom. Query the file it's actually in, not the one being edited.
+  const declFile = decl.getSourceFile();
+  const namePos = (decl as { name?: TS.Node }).name?.getStart(declFile) ?? decl.getStart(declFile);
+  const info = ls.getQuickInfoAtPosition(declFile.fileName, namePos);
   if (!info) return undefined;
 
   // Point the hover at the tag in the template, not the declaration.
