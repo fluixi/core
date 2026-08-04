@@ -31,3 +31,11 @@ while every component was local, wrong as soon as one isn't.
 
 The map mirroring the compiler's sets is pinned by a test that reads the compiler
 source, so adding a component there without updating the plugin fails.
+
+Auto-imported components resolve even when their module isn't in the program —
+which is the normal case, since nothing importing the module is exactly what
+"auto-imported" means. Only `Suspense` appeared to work, because something else
+pulls `@fluixi/core` into the program while `@fluixi/dom` has no reason to be
+there. Definition needs a file and a span rather than the checker, so it now reads
+the declaration from disk, following `export *` through the barrels these packages
+are built from.

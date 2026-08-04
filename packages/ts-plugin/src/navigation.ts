@@ -16,7 +16,7 @@
 import type * as TS from 'typescript';
 import type { ComponentNode, TemplateNode } from '@fluixi/template-parser';
 import { parseCached, templateAtCached, templatesIn } from './cache.js';
-import { autoImportedSymbol } from './auto-import.js';
+import { autoImportedSymbol, declarationSite } from './auto-import.js';
 
 /** A tag-name occurrence in a template: where it is, and what it names. */
 export interface TagSpan {
@@ -133,7 +133,23 @@ export function templateDefinition(
   if (!tag) return undefined;
 
   const decl = declarationFor(ts, program, host, sf, tag);
-  if (!decl) return undefined;
+  if (!decl) {
+    // An auto-imported component usually isn't in the program at all — nothing
+    // imports its module, which is the whole point. Definition needs only a file
+    // and a span, so read it from disk.
+    const site = declarationSite(ts, program, host, sf, tag.name);
+    if (!site) return undefined;
+    return [
+      {
+        fileName: site.fileName,
+        textSpan: { start: site.start, length: site.length },
+        kind: ts.ScriptElementKind.unknown,
+        name: tag.name,
+        containerKind: ts.ScriptElementKind.unknown,
+        containerName: '',
+      },
+    ];
+  }
 
   const target = (decl as { name?: TS.Node }).name ?? decl;
   const declFile = decl.getSourceFile();

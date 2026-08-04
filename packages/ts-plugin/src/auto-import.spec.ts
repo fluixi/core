@@ -125,3 +125,84 @@ describe('navigation for an auto-imported component', () => {
     expect(text).toContain('Show');
   });
 });
+
+/**
+ * The real packages are barrels that re-export, and an auto-imported component
+ * means nothing imports the module — so its declarations are NOT in the program.
+ * That combination is what actually ships, and it broke every dom-hosted component
+ * while `Suspense` kept working, because something else pulled core into the program.
+ */
+const BARREL: Record<string, string> = {
+  '/node_modules/@fluixi/dom/package.json': JSON.stringify({
+    name: '@fluixi/dom',
+    version: '1.0.0',
+    exports: { '.': { types: './dist/index.d.ts', default: './dist/index.js' } },
+  }),
+  '/node_modules/@fluixi/dom/dist/index.d.ts': "export * from './lib/index.js';\n",
+  '/node_modules/@fluixi/dom/dist/lib/index.d.ts': "export * from './flow/index.js';\n",
+  '/node_modules/@fluixi/dom/dist/lib/flow/index.d.ts':
+    'export declare function Show(props: { when: unknown }): any;\n' +
+    'export declare function For(props: { each: unknown }): any;\n',
+};
+
+function barrelSetup(code: string, fileName = '/app.ts') {
+  const files: Record<string, string> = { ...BARREL, [fileName]: code, [GLOBALS]: GLOBALS_SRC };
+  const host: ts.LanguageServiceHost = {
+    // Deliberately NOT listing the package: nothing imports it, so it is not in
+    // the program — exactly the situation an auto-imported tag creates.
+    getScriptFileNames: () => [fileName, GLOBALS],
+    getScriptVersion: () => '1',
+    getScriptSnapshot: (f) => {
+      if (files[f]) return ts.ScriptSnapshot.fromString(files[f]);
+      const d = ts.sys.readFile(f);
+      return d !== undefined ? ts.ScriptSnapshot.fromString(d) : undefined;
+    },
+    getCurrentDirectory: () => '/',
+    getCompilationSettings: () => ({
+      target: ts.ScriptTarget.Latest,
+      noEmit: true,
+      strict: true,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+    }),
+    getDefaultLibFileName: (o) => ts.getDefaultLibFilePath(o),
+    fileExists: (f) => f in files || ts.sys.fileExists(f),
+    readFile: (f) => (f in files ? files[f] : ts.sys.readFile(f)),
+    readDirectory: ts.sys.readDirectory,
+  };
+  const languageService = ts.createLanguageService(host, ts.createDocumentRegistry());
+  const ls = (init as any)({ typescript: ts }).create({
+    languageService,
+    languageServiceHost: host,
+    project: {},
+    serverHost: {},
+    config: {},
+  });
+  return { ls, fileName };
+}
+
+describe('a module that is not in the program', () => {
+  it('still goes to the definition, through the barrel', () => {
+    const code = 'const t = html`<Show when=${1}>x</Show>`;';
+    const { ls, fileName } = barrelSetup(code);
+
+    const defs = ls.getDefinitionAtPosition(fileName, code.indexOf('<Show') + 1);
+    expect(defs).toHaveLength(1);
+    expect(defs![0].fileName).toBe('/node_modules/@fluixi/dom/dist/lib/flow/index.d.ts');
+    const target = BARREL['/node_modules/@fluixi/dom/dist/lib/flow/index.d.ts']!;
+    expect(target.slice(defs![0].textSpan.start, defs![0].textSpan.start + defs![0].textSpan.length))
+      .toBe('Show');
+  });
+
+  it('works for every auto-imported component, not just one', () => {
+    const code = 'const t = html`<For each=${[]}>x</For>`;';
+    const { ls, fileName } = barrelSetup(code);
+    const defs = ls.getDefinitionAtPosition(fileName, code.indexOf('<For') + 1);
+    expect(defs).toHaveLength(1);
+  });
+
+  it('says nothing for a tag that is not auto-imported', () => {
+    const code = 'const t = html`<Mystery />`;';
+    const { ls, fileName } = barrelSetup(code);
+    expect(ls.getDefinitionAtPosition(fileName, code.indexOf('<Mystery') + 1) ?? []).toHaveLength(0);
+  });
+});
