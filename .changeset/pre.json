@@ -33,6 +33,8 @@
     "@fluixi/ts-plugin": "0.1.0-alpha.0"
   },
   "changesets": [
+    "apply-props-reactive-style",
+    "attributes-to-dom",
     "auth-bindings",
     "auth-session-cookies-cli",
     "cli-generate-html",
@@ -46,7 +48,9 @@
     "create-exit-hang",
     "create-fluixi",
     "create-html-variant",
+    "create-provider-return-type",
     "create-ssr-tsconfig-fix",
+    "css-properties-strict",
     "dev-head-marker-hydration",
     "devtools",
     "dispose-no-rerun",
@@ -161,7 +165,9 @@
     "tc39-type-regressions",
     "template-parser-package",
     "theme-session-primitives",
+    "ts-plugin-elements",
     "ts-plugin-package",
+    "ts-plugin-single-program",
     "use-navigate-ssr-safe"
   ]
 }
