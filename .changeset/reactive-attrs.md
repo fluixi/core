@@ -14,3 +14,8 @@ drops an attribute on `undefined`/`null`/`false`.
 So the most commonly bound attributes were the ones that couldn't be omitted
 without a cast — the same gap `style` had. Widening only accepts more, so nothing
 that compiled before stops compiling.
+
+`SVGAttributes` had the same split inside one interface: its presentation
+attributes were already `Reactive<>`, but the core `id`, `className`, `style`,
+`lang` beside them were not — so an SVG could animate its `fill` while being
+unable to compute its `id`. `style` there also had no accessor form at all.

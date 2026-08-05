@@ -950,18 +950,20 @@ export interface AudioHTMLAttributes<T = HTMLAudioElement> extends MediaHTMLAttr
 // ============================================================================
 
 export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
-  // Core SVG attributes
-  id?: string;
+  // Core SVG attributes. Reactive like the HTML ones — the presentation
+  // attributes below already were, so an SVG that could animate its `fill` still
+  // couldn't compute its `id` or `style`.
+  id?: Reactive<string>;
   class?: Reactive<string>;
-  className?: string;
-  style?: string | Record<string, string | number>;
+  className?: Reactive<string>;
+  style?: Reactive<string | CSSProperties>;
   ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
   key?: string | number;
   children?: ComponentChild;
   tabIndex?: Reactive<number>;
   tabindex?: Reactive<number>;
-  lang?: string;
-  xml_lang?: string;
+  lang?: Reactive<string>;
+  xml_lang?: Reactive<string>;
 
   // Presentation attributes
   color?: Reactive<string>;
