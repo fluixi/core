@@ -29,7 +29,7 @@ import {
   applyProps as domProps
 } from '@fluixi/dom';
 
-import { createComponent } from '@fluixi/dom';
+import { createComponent, createDynamicElement } from '@fluixi/dom';
 import { createSignal, createMemo, createRenderEffect, readChildren } from '@fluixi/reactive/signal';
 
 // ============================================================================
@@ -149,31 +149,10 @@ export function jsxDEV(type: any, props: any, key?: string, _isStaticChildren?: 
 
 function createNativeElement(tag: string, props: any): any {
   if (isSSR) return { type: tag, props: props || {} };
-
-  const isSVG = isSVGElement(tag);
-  const element = isSVG
-    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
-    : document.createElement(tag);
-
-  applyProps(element, props, isSVG);
-
-  return element;
-}
-
-// Apply JSX props to a DOM element (via domProps), then insert its children.
-function applyProps(element: Element, props: any, isSVG: boolean): void {
-  domProps(element, props, isSVG);
-
-  if (props && props.children !== undefined) {
-    const children = readChildren(() => props.children);
-    if (Array.isArray(children)) {
-      children.forEach((c: any) => {
-        insert(element, c, (typeof c === 'function' ? null : undefined) as any);
-      });
-    } else {
-      insert(element, children, (typeof children === 'function' ? null : undefined) as any);
-    }
-  }
+  // Element construction lives in @fluixi/dom: html`` and JSX compile to the same
+  // dom calls, and a polymorphic `as` needs the same factory without depending on
+  // this package. One implementation, so the two paths can't drift.
+  return createDynamicElement(tag, props);
 }
 
 // ============================================================================
