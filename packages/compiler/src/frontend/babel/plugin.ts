@@ -13,6 +13,12 @@
 
 import { declare } from '@babel/helper-plugin-utils';
 import {
+  createComponentResolver,
+  type ComponentResolverRule,
+  type ResolvedComponent,
+  type ComponentResolver,
+} from '../../resolve/component-resolver.js';
+import {
   types as t,
   template,
   type PluginObj,
@@ -127,6 +133,16 @@ export interface PluginOptions {
   routerModule?: string;
 
   /**
+   * Rules that resolve an unbound capitalised tag to a module, so a component can be
+   * used without an import — the configurable form of the built-in
+   * Suspense/Portal/Router auto-import.
+   *
+   * A lexical binding always wins, so an explicit import or a local variable is never
+   * overridden. With no rules, behaviour is exactly as before.
+   */
+  resolve?: readonly ComponentResolverRule[];
+
+  /**
    * Where reactive primitives (createMemo) are imported from — the signal core,
    * not the dom runtime.
    * @default '@fluixi/reactive/signal'
@@ -183,6 +199,10 @@ interface PluginStateData {
   needsControlFlowImport: boolean;
   needsCreateMemo: boolean;
   controlFlowComponents: Set<string>;
+  /** name -> module for tags resolved by the `resolve` rules (not control flow). */
+  resolvedComponents: Map<string, ResolvedComponent>;
+  /** Shared by the JSX visitor and the html`` IR walk so both resolve identically. */
+  componentResolver: ComponentResolver;
   delegatedEvents: Set<string>;
   staticElements: Map<string, t.Expression>;
   staticCounter: number;
@@ -305,7 +325,12 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     // file mixing the two styles won't redeclare a binding.
     format = 'both',
     litTag = 'html',
+    resolve: resolveRules = [],
   } = options;
+
+  // Built once per plugin instance, not per file: the rules are static and the
+  // resolver memoises lookups, so every file in the build shares one cache.
+  const componentResolver = createComponentResolver(resolveRules);
 
   const compileLit = format === 'lit' || format === 'both';
 
@@ -321,6 +346,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     needsControlFlowImport: false,
     needsCreateMemo: false,
     controlFlowComponents: new Set(),
+    resolvedComponents: new Map(),
+    componentResolver,
     delegatedEvents: new Set(),
     staticElements: new Map(),
     staticCounter: 0,
@@ -365,6 +392,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             needsControlFlowImport: false,
             needsCreateMemo: false,
             controlFlowComponents: new Set(),
+    resolvedComponents: new Map(),
+    componentResolver,
             delegatedEvents: new Set(),
             staticElements: new Map(),
             autoShow: autoShowTransform,
@@ -534,6 +563,38 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               if (fromDom.length > 0) imports.push(declFor(fromDom, controlFlowModule));
               if (fromCore.length > 0) imports.push(declFor(fromCore, coreModule));
               if (fromRouter.length > 0) imports.push(declFor(fromRouter, routerModule));
+            }
+
+            // Imports for tags matched by the `resolve` rules. Same binding guard as
+            // control flow: a hand-written import or a local of the same name wins, so
+            // enabling resolution can never change what an existing file means.
+            //
+            // Grouped by module so several components from one package share a single
+            // declaration, and emitted with the local name equal to the tag — the
+            // generated code refers to the tag, not to the export.
+            if (state.resolvedComponents.size > 0) {
+              const byModule = new Map<string, Array<{ local: string; exported: string }>>();
+              for (const [local, resolved] of state.resolvedComponents as Map<
+                string,
+                ResolvedComponent
+              >) {
+                if (path.scope.hasBinding(local)) continue;
+                const list = byModule.get(resolved.module) ?? [];
+                list.push({ local, exported: resolved.export });
+                byModule.set(resolved.module, list);
+              }
+              for (const [mod, entries] of byModule) {
+                imports.push(
+                  t.importDeclaration(
+                    entries.map(({ local, exported }) =>
+                      exported === 'default'
+                        ? t.importDefaultSpecifier(t.identifier(local))
+                        : t.importSpecifier(t.identifier(local), t.identifier(exported)),
+                    ),
+                    t.stringLiteral(mod),
+                  ),
+                );
+              }
             }
 
             // Add event delegation setup if needed
@@ -890,6 +951,18 @@ function emitComponentCall(
     state.controlFlowComponents.add(comp.name);
     state.needsControlFlowImport = true;
   }
+  // Configured tags register here for the same reason: this is the chokepoint every
+  // component passes through, nested or not. Hooking the JSX element visitor instead
+  // missed children, because a lowered parent is replaced before its subtree is walked.
+  if (
+    t.isIdentifier(comp) &&
+    !ROUTER_COMPONENTS.has(comp.name) &&
+    !CONTROL_FLOW_COMPONENTS.has(comp.name) &&
+    state.componentResolver
+  ) {
+    const resolved = state.componentResolver.resolve(comp.name);
+    if (resolved) state.resolvedComponents.set(comp.name, resolved);
+  }
   if (state.backend === 'imperative') {
     state.needsCreateComponent = true;
     state.needsCreateMemo = true;
@@ -1024,6 +1097,12 @@ function collectRuntimeNeeds(node: IRNode, state: any): void {
   ) {
     state.controlFlowComponents.add(node.name);
     state.needsControlFlowImport = true;
+  } else if (node.kind === 'component' && state.componentResolver) {
+    // A configured tag inside html``. Recorded here rather than at the tag site so
+    // nested usage is caught too; the binding check happens at Program.exit, where
+    // the whole file's scope is known.
+    const resolved = state.componentResolver.resolve(node.name);
+    if (resolved) state.resolvedComponents.set(node.name, resolved);
   }
   if (node.kind === 'element' || node.kind === 'component' || node.kind === 'control') {
     if ('props' in node) {
