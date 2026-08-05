@@ -1,5 +1,46 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.65
+
+### Minor Changes
+
+- cdc5af9: Export `createDynamicElement` from `@fluixi/dom`.
+
+  Building an element or component from a type known only at runtime is what a
+  polymorphic `as` prop needs, and what JSX syntax cannot express — you can write
+  `<div>` or `<Comp>`, but not `<{value}>`. That logic lived in the automatic JSX
+  runtime only because JSX happened to be its first caller.
+
+  It belongs in dom: both authoring modes compile to the same dom calls, so an
+  `as`-polymorphic component shouldn't have to depend on `@fluixi/jsx`. It did —
+  which made `@fluixi/jsx` a runtime dependency of every component library built on
+  `as`, including for apps that only ever write html`` templates.
+
+  `jsx()` now calls it rather than keeping its own copy, so the two paths can't
+  drift the way `spread` and `applyProps` did.
+
+### Patch Changes
+
+- 0db63d9: Type the remaining attributes as `Reactive<>`.
+
+  Thirteen attributes — including `id`, `title`, `href`, `src`, `disabled`,
+  `checked` and `placeholder` — were written by hand as `T | Accessor<T>` while
+  every other attribute uses `Reactive<T>`. The difference is that `Reactive<T>`
+  permits `undefined`, which is how an attribute is omitted reactively:
+  `() => (cond ? value : undefined)` removes it, because `setAttribute` already
+  drops an attribute on `undefined`/`null`/`false`.
+
+  So the most commonly bound attributes were the ones that couldn't be omitted
+  without a cast — the same gap `style` had. Widening only accepts more, so nothing
+  that compiled before stops compiling.
+
+  `SVGAttributes` had the same split inside one interface: its presentation
+  attributes were already `Reactive<>`, but the core `id`, `className`, `style`,
+  `lang` beside them were not — so an SVG could animate its `fill` while being
+  unable to compute its `id`. `style` there also had no accessor form at all.
+
+  - @fluixi/reactive@1.0.0-alpha.65
+
 ## 1.0.0-alpha.64
 
 ### Patch Changes
