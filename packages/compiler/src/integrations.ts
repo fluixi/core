@@ -20,6 +20,11 @@
 
 export interface CompilerOptions {
   /**
+   * Rules that resolve an unbound capitalised tag to a module, so a component can be
+   * used in a template without an import. See `createComponentResolver`.
+   */
+  resolve?: readonly ComponentResolverRule[];
+  /**
    * Whether to use lit-html templates when possible
    * @default true
    */
@@ -659,6 +664,9 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         backend: options.backend || 'imperative',
         ...(options.codegen ? { codegen: options.codegen } : {}),
         ...(options.format ? { format: options.format } : {}),
+        // Forwarded explicitly: getOptions() is an allowlist, so an option missing
+        // here is silently dropped rather than rejected.
+        ...(options.resolve ? { resolve: options.resolve } : {}),
         ...(options.litTag ? { litTag: options.litTag } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule
@@ -981,6 +989,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 
 export { transformServerFunctions } from './frontend/babel/server-functions.js';
 import { transformServerFunctions as _txServerFns } from './frontend/babel/server-functions.js';
+import type { ComponentResolverRule } from './resolve/component-resolver.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join as _join } from 'node:path';
 
