@@ -1,5 +1,12 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.69
+
+### Patch Changes
+
+- Updated dependencies [d7bf256]
+  - @fluixi/compiler@1.0.0-alpha.69
+
 ## 1.0.0-alpha.68
 
 ### Patch Changes

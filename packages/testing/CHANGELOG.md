@@ -1,5 +1,12 @@
 # @fluixi/testing
 
+## 1.0.0-alpha.17
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.69
+- @fluixi/dom@1.0.0-alpha.69
+
 ## 1.0.0-alpha.16
 
 ### Patch Changes

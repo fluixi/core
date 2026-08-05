@@ -45,6 +45,7 @@
     "compiler-backend-lazy-props",
     "component-child-not-any",
     "component-reactive-prop-getters",
+    "component-resolution",
     "context-provider-child-owner",
     "control-flow-reactive-props",
     "core-i18n",
