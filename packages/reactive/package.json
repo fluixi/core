@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/reactive",
-  "version": "1.0.0-alpha.67",
+  "version": "1.0.0-alpha.68",
   "description": "Fine-grained reactive signals, memos, effects, stores and an RxJS-style observable layer.",
   "license": "MIT",
   "private": false,
