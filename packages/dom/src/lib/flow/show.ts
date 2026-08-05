@@ -1,4 +1,13 @@
-import { createMemo, isSignal, untrack } from '@fluixi/reactive/signal';
+import {
+  createChildOwner,
+  createMemo,
+  disposeScope,
+  getOwner,
+  isSignal,
+  runWithOwner,
+  untrack,
+  type Owner,
+} from '@fluixi/reactive/signal';
 import { normalizeAccessor, resolveReactiveProp, isTruthy, isLitResult } from './utils.js';
 import { makeArrayFlat } from '../dom/runtime.js';
 import { Accessor, isResource } from '@fluixi/reactive/signal';
@@ -59,6 +68,26 @@ export function Show<T>(props: ShowProps<T>): any {
   // const {when} = props
   const value = createMemo(when, undefined)
     const cond = createMemo(value, undefined)
+
+    // Each branch renders in its own scope so that leaving it tears down whatever
+    // it registered — an event listener, an observer, a timer. Without this the
+    // branch's `onCleanup`s land on the enclosing owner and only run when the
+    // whole tree dies, so a closed <Show> kept listening and reacting.
+    //
+    // Keyed on which branch is showing, NOT on every re-run: the memo also re-runs
+    // when the value changes within the same branch, and disposing then would
+    // throw away DOM the runtime deliberately reuses.
+    const parentOwner = getOwner();
+    let branchScope: Owner | null = null;
+    let shown: 'when' | 'fallback' | null = null;
+
+    const enterBranch = (next: 'when' | 'fallback'): void => {
+      if (next === shown) return;
+      if (branchScope) disposeScope(branchScope);
+      branchScope = createChildOwner(parentOwner);
+      shown = next;
+    };
+
     return createMemo(
       () => {
         // if (isResource(when)) {
@@ -68,6 +97,8 @@ export function Show<T>(props: ShowProps<T>): any {
             // }
             // const value = when();
           const evaluate = cond()
+          enterBranch(evaluate ? 'when' : 'fallback');
+          return runWithOwner(branchScope, () => {
           if(evaluate){
             let children = props.children;
 
@@ -84,6 +115,7 @@ export function Show<T>(props: ShowProps<T>): any {
             return children;
           }
         return props.fallback
+          });
       // if (isTruthy(value)) {
       //   let children = props.children;
       //   // handle children on jsx

@@ -101,7 +101,7 @@ export {
 } from './compat.js';
 
 // Context (owner-tree)
-export { createContext, useContext, provide, isOwnerDisposed, type Context, type Owner } from './runtime.js';
+export { createContext, useContext, provide, isOwnerDisposed, createChildOwner, disposeScope, type Context, type Owner } from './runtime.js';
 
 // Resources (+ __FX_DATA__ SSR seeding, reused from legacy hooks)
 export { createResource, type ResourceReturn, type ResourceActions } from './resource.js';

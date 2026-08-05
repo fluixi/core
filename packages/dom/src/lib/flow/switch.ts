@@ -1,4 +1,4 @@
-import { Accessor, createMemo } from '@fluixi/reactive/signal';
+import { Accessor, createMemo, createChildOwner, disposeScope, getOwner, runWithOwner, type Owner } from '@fluixi/reactive/signal';
 import { resolveReactiveProp, isTruthy } from './utils.js';
 
 // Internal marker used by Switch to identify Match nodes.
@@ -37,7 +37,13 @@ export function Match<T>(props: MatchProps<T>): MatchNode<T> {
     // Lazy read through the prop getter — Switch calls `branch.when()` inside its memo,
     // so `when={cond()}` reacts; `when={cond}` unwraps via resolveReactiveProp.
     when: resolveReactiveProp(() => props.when),
-    children: props.children,
+    // Lazy, like `when`. Read eagerly, every branch's children were built the
+    // moment the Match node was — before Switch had chosen one — so they were
+    // created outside the branch's scope (and non-matching branches were built
+    // for nothing). Switch reads this inside the selected branch's scope.
+    get children() {
+      return props.children;
+    },
   } as MatchNode<T>;
 }
 
@@ -77,8 +83,25 @@ export interface SwitchProps {
 export function Switch(props: SwitchProps): Accessor<any> {
   const branches = Array.isArray(props.children) ? props.children : [props.children];
 
+  // Each branch renders in its own scope, disposed when a different branch takes
+  // over, so whatever it registered with `onCleanup` — a listener, an observer, a
+  // timer — goes with it. Keyed on which branch is showing, not on every re-run:
+  // the memo also re-runs when a `when` value changes within the same branch, and
+  // disposing then would throw away DOM the runtime deliberately reuses.
+  const parentOwner = getOwner();
+  let branchScope: Owner | null = null;
+  let shown = -1;
+
+  const enterBranch = (index: number): void => {
+    if (index === shown) return;
+    if (branchScope) disposeScope(branchScope);
+    branchScope = createChildOwner(parentOwner);
+    shown = index;
+  };
+
   return createMemo(() => {
-    for (const raw of branches) {
+    for (let i = 0; i < branches.length; i += 1) {
+      const raw = branches[i];
       // The JSX compiler wraps <Match> in createMemo(createComponent(...)); unwrap
       // those (and skip whitespace/other children) to reach the MatchNode. Direct
       // Match({...}) results (lit syntax) pass through unchanged.
@@ -92,11 +115,14 @@ export function Switch(props: SwitchProps): Accessor<any> {
       }
       const value = branch.when();
       if (isTruthy(value)) {
-        return typeof branch.children === 'function'
-          ? branch.children(value)
-          : branch.children;
+        enterBranch(i);
+        return runWithOwner(branchScope, () =>
+          typeof branch.children === 'function' ? branch.children(value) : branch.children,
+        );
       }
     }
-    return props.fallback ?? null;
+    // The fallback is a branch too, so it gets a scope of its own.
+    enterBranch(-2);
+    return runWithOwner(branchScope, () => props.fallback ?? null);
   });
 }
