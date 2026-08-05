@@ -20,6 +20,7 @@ export * from './dom/index.js';
 export { html, svg } from './html.js';
 export type { TemplateResult, Reactive } from './html.js';
 export * from './dom/integration.js';
+export * from './dom/dynamic-element.js';
 export * from './shared/types.js';
 export * from './component/index.js';
 export * from './flow/index.js';
