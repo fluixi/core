@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-lit-counter",
-  "version": "0.0.1-alpha.12",
+  "version": "0.0.1-alpha.13",
   "private": true,
   "type": "module",
   "description": "Counter authored with lit html`` templates, compiled through the shared JSX IR (fluixi vite-plugin, format: 'lit') into direct @fluixi/dom runtime calls — no lit-html runtime.",

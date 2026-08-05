@@ -1,5 +1,14 @@
 # @fluixi/example-router
 
+## 0.0.5-alpha.69
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.69
+- @fluixi/reactive@1.0.0-alpha.69
+- @fluixi/dom@1.0.0-alpha.69
+- @fluixi/jsx@1.0.0-alpha.69
+
 ## 0.0.5-alpha.68
 
 ### Patch Changes
