@@ -29,6 +29,30 @@ export interface Owner {
   disposed?: boolean;
 }
 
+/**
+ * A child scope of `parent`, attached so the parent's teardown disposes it too.
+ *
+ * For a derivation that re-runs: context still resolves up the chain from the
+ * creation-time owner, while anything registered during a run belongs to this
+ * scope and can be torn down before the next one — instead of accumulating on
+ * the enclosing scope and only running when that finally dies.
+ */
+export function createChildOwner(parent: Owner | null): Owner {
+  const owner = makeOwner(parent);
+  if (parent) (parent.owned ??= []).push(owner);
+  return owner;
+}
+
+/**
+ * Tear down a scope's children and cleanups.
+ *
+ * `final: false` keeps the scope itself alive and reusable — what a re-running
+ * derivation needs between runs.
+ */
+export function disposeScope(owner: Owner, final = true): void {
+  disposeOwner(owner, final);
+}
+
 /** True once `owner` has been disposed. Deferred work should bail rather than run. */
 export function isOwnerDisposed(owner: Owner | null): boolean {
   return !!owner && owner.disposed === true;
