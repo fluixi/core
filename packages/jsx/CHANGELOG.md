@@ -1,5 +1,13 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.66
+
+### Patch Changes
+
+- Updated dependencies [8a53f68]
+  - @fluixi/dom@1.0.0-alpha.66
+  - @fluixi/reactive@1.0.0-alpha.66
+
 ## 1.0.0-alpha.65
 
 ### Patch Changes

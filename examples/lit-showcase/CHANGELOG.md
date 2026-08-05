@@ -1,5 +1,14 @@
 # @fluixi/example-lit-showcase
 
+## 0.0.1-alpha.10
+
+### Patch Changes
+
+- Updated dependencies [8a53f68]
+  - @fluixi/dom@1.0.0-alpha.66
+  - @fluixi/core@1.0.0-alpha.66
+  - @fluixi/reactive@1.0.0-alpha.66
+
 ## 0.0.1-alpha.9
 
 ### Patch Changes
