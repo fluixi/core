@@ -24,17 +24,72 @@ import { SVG_NAMESPACE } from './utils.js';
 export type DynamicType = string | ((props: any) => any);
 
 /**
+ * The element a tag name builds: the exact interface for a known HTML or SVG tag,
+ * and `Element` for a custom-element name we can't know statically.
+ *
+ * HTML is checked first because a few names (`a`, `script`, `style`, `title`) are
+ * in both maps, and the HTML one is what an unqualified tag means.
+ */
+type ElementFor<T extends string> = T extends keyof HTMLElementTagNameMap
+  ? HTMLElementTagNameMap[T]
+  : T extends keyof SVGElementTagNameMap
+    ? SVGElementTagNameMap[T]
+    : Element;
+
+/**
+ * What `createDynamicElement` returns for a given type: a component's own return
+ * type, or the element its tag name builds.
+ *
+ * Distributes over a union, so a polymorphic `as?: string | Component` yields the
+ * union of both rather than collapsing — which is what keeps `as` from being a
+ * hole in the type system.
+ */
+export type DynamicResult<T extends DynamicType> = T extends (props: any) => infer R
+  ? R
+  : T extends string
+    ? ElementFor<T>
+    : never;
+
+/**
+ * Build-time guards. `as` is the one place a component library hands the type
+ * system a runtime value, so if inference regresses to `any` here it takes every
+ * polymorphic component's props with it — silently.
+ */
+type Assert<T extends true> = T;
+type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+  ? true
+  : false;
+/** What an actual call returns — asserting the alias alone would miss a signature
+ *  regressed back to `any`, which is the regression that matters. */
+type Returns<T extends DynamicType> = ReturnType<typeof createDynamicElement<T>>;
+
+export type DynamicResultIsInferred = [
+  Assert<Equals<Returns<'div'>, HTMLDivElement>>,
+  Assert<Equals<Returns<'a'>, HTMLAnchorElement>>, // in both maps; HTML wins
+  Assert<Equals<Returns<'circle'>, SVGCircleElement>>,
+  Assert<Equals<Returns<'my-widget'>, Element>>,
+  Assert<Equals<Returns<() => HTMLButtonElement>, HTMLButtonElement>>,
+];
+
+/**
  * Create a node for `type` with `props`.
  *
  * A string builds a native element (SVG-aware) and inserts its children; a
  * function is instantiated as a component.
  */
-export function createDynamicElement(type: DynamicType, props: Record<string, any> = {}): any {
-  if (typeof type === 'function') return createComponent(type, props);
-  if (typeof type !== 'string' || type.length === 0) return null;
+export function createDynamicElement<T extends DynamicType>(
+  type: T,
+  props: Record<string, any> = {},
+): DynamicResult<T> {
+  // The body works in erased terms; only the signature is precise, so each return
+  // is cast back to the conditional type TS can't verify structurally.
+  type Result = DynamicResult<T>;
+
+  if (typeof type === 'function') return createComponent(type, props) as Result;
+  if (typeof type !== 'string' || type.length === 0) return null as Result;
 
   const svgTag = isSVGElement(type);
-  if (isServer) return getServerNodes().createElement(type, svgTag);
+  if (isServer) return getServerNodes().createElement(type, svgTag) as Result;
 
   const element = svgTag
     ? document.createElementNS(SVG_NAMESPACE, type)
@@ -42,7 +97,7 @@ export function createDynamicElement(type: DynamicType, props: Record<string, an
 
   applyProps(element, props, svgTag);
   insertChildren(element, props);
-  return element;
+  return element as Result;
 }
 
 /**

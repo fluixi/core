@@ -2,6 +2,12 @@
   "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
   "js/ts.tsserver.automaticTypeAcquisition.enabled": false,
   "js/ts.tsserver.maxMemory": 8192,
+  "js/ts.tsserver.enableForWorkspaceTypeScriptVersions": true,
+  "editor.quickSuggestions": {
+    "comments": "on",
+    "strings": "on",
+    "other": "on"
+  },
   "eslint.enable": false,
   "eslint.run": "onSave",
   "eslint.probe": ["typescript", "typescriptreact"],

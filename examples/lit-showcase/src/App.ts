@@ -73,7 +73,7 @@ export const App: Component<{ name?: string}> = (props) => {
         <div class="row">
           <button ?disabled=${count() < 0}>?disabled when negative</button>
           <progress .value=${Math.abs(count()) % 100} max="100"></progress>
-          <input ref=${(el: HTMLInputElement) => (inputEl = el)} use=${autofocus} placeholder="ref + use:autofocus" />
+          <input ref=${(el) => (inputEl = el)} use=${autofocus} placeholder="ref + use:autofocus" />
           <span class="tag" ...${spreadAttrs}>spread</span>
         </div>
       </section>
@@ -116,11 +116,11 @@ export const App: Component<{ name?: string}> = (props) => {
       <section>
         <h2>each — reactive list (${shown()} of ${ALL.length})</h2>
         <div class="row">
-          <button @click=${() => setShown(Math.max(0, shown() - 1))}>fewer</button>
+          <button @click=${(e) => setShown(Math.max(0, shown() - 1))}>fewer</button>
           <button @click=${() => setShown(Math.min(ALL.length, shown() + 1))}>more</button>
         </div>
         <ul>
-          <li each=${items()}>${(it: { label: string }) => it.label}</li>
+          <li each=${items()}>${(it) => it.label}</li>
         </ul>
         <!-- keyed variant: <li each=${items()} key="id"> — then the render fn
              receives an ACCESSOR: ${(it) => it().label} -->
@@ -132,7 +132,7 @@ export const App: Component<{ name?: string}> = (props) => {
         <Show when=${on()} fallback=${html`<span class="tag">Show: off</span>`}>
           <span class="tag active">Show: on</span>
         </Show>
-        <For each=${items()}>${(it: { label: string }) => html`<span class="tag">${it.label}</span>`}</For>
+        <For each=${items()}>${(it) => html`<span class="tag">${it.label}</span>`}</For>
         <div class="row">
           <button @click=${() => setMode(mode() === 'a' ? 'b' : mode() === 'b' ? 'c' : 'a')}>mode: ${mode()}</button>
           <Switch fallback=${html`<span class="tag">?</span>`}>
@@ -151,7 +151,7 @@ export const App: Component<{ name?: string}> = (props) => {
       <!-- components + named slots -->
       <section>
         <h2>components + named slots</h2>
-        <Card><span slot="header">Header slot</span><em>default child</em></Card>
+        <Card header><span slot="header">Header slot</span><em>default child</em></Card>
       </section>
   
       <!-- svg (namespaced) -->
