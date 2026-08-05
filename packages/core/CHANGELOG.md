@@ -1,5 +1,32 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.67
+
+### Minor Changes
+
+- 09a321e: Add `ClientOnly` / `NoSsr`
+
+  Renders children only in the browser, for subtrees that read `window`, a canvas,
+  or produce time/locale-dependent output that would differ between the server and
+  client passes and corrupt hydration.
+
+  The swap to `children` is deferred to a microtask: `hydrate()` runs synchronously,
+  so rendering them during the pass would desync the hydration cursor from the server
+  markup — the exact bug the component exists to prevent. Outside hydration there is
+  nothing to match, so children render immediately and `fallback` never appears.
+
+### Patch Changes
+
+- Updated dependencies [09a321e]
+  - @fluixi/dom@1.0.0-alpha.67
+  - @fluixi/compiler@1.0.0-alpha.67
+  - @fluixi/jsx@1.0.0-alpha.67
+  - @fluixi/server@1.0.0-alpha.67
+  - @fluixi/utils@1.0.0-alpha.67
+  - @fluixi/reactive@1.0.0-alpha.67
+  - @fluixi/vite-plugin@1.0.0-alpha.67
+  - @fluixi/head@1.0.0-alpha.34
+
 ## 1.0.0-alpha.66
 
 ### Patch Changes
