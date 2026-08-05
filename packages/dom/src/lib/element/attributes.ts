@@ -483,12 +483,12 @@ export interface DataHTMLAttributes<T = HTMLDataElement> extends HTMLAttributes<
 
 export interface DetailsHTMLAttributes<T = HTMLDetailsElement> extends HTMLAttributes<T> {
   name?: string;
-  open?: boolean;
+  open?: Reactive<boolean>;
   onToggle?: (event: Event) => void;
 }
 
 export interface DialogHTMLAttributes<T = HTMLDialogElement> extends HTMLAttributes<T> {
-  open?: boolean;
+  open?: Reactive<boolean>;
   onClose?: (event: Event) => void;
   onCancel?: (event: Event) => void;
 }
@@ -501,7 +501,7 @@ export interface EmbedHTMLAttributes<T = HTMLEmbedElement> extends HTMLAttribute
 }
 
 export interface FieldsetHTMLAttributes<T = HTMLFieldSetElement> extends HTMLAttributes<T> {
-  disabled?: boolean;
+  disabled?: Reactive<boolean>;
   form?: string;
   name?: string;
 }
@@ -766,14 +766,14 @@ export interface OlHTMLAttributes<T = HTMLOListElement> extends HTMLAttributes<T
 }
 
 export interface OptgroupHTMLAttributes<T = HTMLOptGroupElement> extends HTMLAttributes<T> {
-  disabled?: boolean;
+  disabled?: Reactive<boolean>;
   label?: string;
 }
 
 export interface OptionHTMLAttributes<T = HTMLOptionElement> extends HTMLAttributes<T> {
-  disabled?: boolean;
+  disabled?: Reactive<boolean>;
   label?: string;
-  selected?: boolean;
+  selected?: Reactive<boolean>;
   value?: string | ReadonlyArray<string> | number;
 }
 
