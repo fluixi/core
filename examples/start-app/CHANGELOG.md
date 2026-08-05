@@ -1,5 +1,17 @@
 # @fluixi/example-start
 
+## 0.0.1-alpha.60
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.69
+- @fluixi/start@0.1.0-alpha.59
+- @fluixi/cli@0.1.0-alpha.60
+- @fluixi/reactive@1.0.0-alpha.69
+- @fluixi/dom@1.0.0-alpha.69
+- @fluixi/jsx@1.0.0-alpha.69
+- @fluixi/server@1.0.0-alpha.69
+
 ## 0.0.1-alpha.59
 
 ### Patch Changes

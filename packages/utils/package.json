@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/utils",
-  "version": "1.0.0-alpha.68",
+  "version": "1.0.0-alpha.69",
   "description": "Zero-dependency, strongly-typed utilities for everyday TypeScript.",
   "license": "MIT",
   "repository": {
