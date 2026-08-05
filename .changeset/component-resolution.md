@@ -9,6 +9,7 @@ hardcoded name set inside the Babel plugin — not extensible by a UI library or
 app. `resolve` makes that configurable:
 
 ```ts
+// vite.config.ts — forwarded through the vite/rollup integration
 fluixi({ resolve: [
   { components: { Button: '@fluixi-ui/button' } },
   { match: /^Icon(.+)$/, module: '@/icons/$1', export: 'default' },
@@ -32,3 +33,6 @@ parity between the two syntaxes is structural rather than maintained by hand.
 for hover/go-to-definition/rename, and a codemod can materialise imports back into
 source. Keeping resolution a pure `name -> { module, export }` function is what lets
 those consumers agree.
+
+Also forwarded through the vite and rollup integrations: `getOptions()` is an
+allowlist, so an option missing from it is silently dropped rather than rejected.
