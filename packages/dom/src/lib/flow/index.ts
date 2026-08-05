@@ -19,6 +19,9 @@ export type { DynamicProps } from './dynamic.js';
 export { Portal } from './portal.js';
 export type { PortalProps } from './portal.js';
 
+export { ClientOnly, NoSsr } from './client-only.js';
+export type { ClientOnlyProps, NoSsrProps } from './client-only.js';
+
 export { ErrorBoundary } from './error-boundary.js';
 export type { ErrorBoundaryProps } from './error-boundary.js';
 
