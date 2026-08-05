@@ -321,7 +321,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
   exportparts?: string;
   exportParts?: string;
   hidden?: Reactive<boolean>;
-  id?: string | Accessor<string>;
+  id?: Reactive<string>;
   inert?: boolean;
   inputmode?: HTMLInputMode;
   inputMode?: HTMLInputMode;
@@ -339,7 +339,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
   style?: Reactive<string | CSSProperties>;
   tabIndex?: Reactive<number>;
   tabindex?: Reactive<number>;
-  title?: string | Accessor<string>;
+  title?: Reactive<string>;
   translate?: 'yes' | 'no';
 
   // Microdata (schema.org)
@@ -400,7 +400,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
 
 export interface AnchorHTMLAttributes<T = HTMLAnchorElement> extends HTMLAttributes<T> {
   download?: any;
-  href?: string | Accessor<string>;
+  href?: Reactive<string>;
   hrefLang?: string;
   hreflang?: string;
   media?: string;
@@ -442,7 +442,7 @@ export interface ButtonHTMLAttributes<T = HTMLButtonElement> extends HTMLAttribu
   command?: string;
   commandfor?: string;
   commandFor?: string;
-  disabled?: boolean | Accessor<boolean>;
+  disabled?: Reactive<boolean>;
   form?: string;
   formAction?: string;
   formaction?: string;
@@ -564,7 +564,7 @@ export interface ImgHTMLAttributes<T = HTMLImageElement> extends HTMLAttributes<
   referrerPolicy?: HTMLReferrerPolicy;
   referrerpolicy?: HTMLReferrerPolicy;
   sizes?: string;
-  src?: string | Accessor<string>;
+  src?: Reactive<string>;
   srcSet?: string;
   srcset?: string;
   useMap?: string;
@@ -581,12 +581,12 @@ export interface InputHTMLAttributes<T = HTMLInputElement>
   autoFocus?: boolean;
   autofocus?: boolean;
   capture?: boolean | 'user' | 'environment';
-  checked?: boolean | Accessor<boolean>;
+  checked?: Reactive<boolean>;
   crossOrigin?: HTMLCrossOrigin;
   crossorigin?: HTMLCrossOrigin;
   dirName?: string;
   dirname?: string;
-  disabled?: boolean | Accessor<boolean>;
+  disabled?: Reactive<boolean>;
   form?: string;
   formAction?: string;
   formaction?: string;
@@ -610,7 +610,7 @@ export interface InputHTMLAttributes<T = HTMLInputElement>
   multiple?: Reactive<boolean>;
   name?: string;
   pattern?: Reactive<string>;
-  placeholder?: string | Accessor<string>;
+  placeholder?: Reactive<string>;
   popoverTarget?: string;
   popovertarget?: string;
   popoverTargetAction?: 'hide' | 'show' | 'toggle';
@@ -622,7 +622,7 @@ export interface InputHTMLAttributes<T = HTMLInputElement>
   size?: Reactive<number>;
   src?: string;
   step?: Reactive<number | string>;
-  indeterminate?: boolean | Accessor<boolean>;
+  indeterminate?: Reactive<boolean>;
   type?:
     | 'button'
     | 'checkbox'
@@ -819,7 +819,7 @@ export interface SelectHTMLAttributes<T = HTMLSelectElement> extends HTMLAttribu
   autocomplete?: string;
   autoFocus?: boolean;
   autofocus?: boolean;
-  disabled?: boolean | Accessor<boolean>;
+  disabled?: Reactive<boolean>;
   form?: string;
   multiple?: Reactive<boolean>;
   name?: string;
@@ -887,14 +887,14 @@ export interface TextareaHTMLAttributes<T = HTMLTextAreaElement> extends HTMLAtt
   cols?: number;
   dirName?: string;
   dirname?: string;
-  disabled?: boolean | Accessor<boolean>;
+  disabled?: Reactive<boolean>;
   form?: string;
   maxLength?: Reactive<number>;
   maxlength?: Reactive<number>;
   minLength?: Reactive<number>;
   minlength?: Reactive<number>;
   name?: string;
-  placeholder?: string | Accessor<string>;
+  placeholder?: Reactive<string>;
   readOnly?: Reactive<boolean>;
   readonly?: Reactive<boolean>;
   required?: Reactive<boolean>;
@@ -952,7 +952,7 @@ export interface AudioHTMLAttributes<T = HTMLAudioElement> extends MediaHTMLAttr
 export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
   // Core SVG attributes
   id?: string;
-  class?: string | Accessor<string>;
+  class?: Reactive<string>;
   className?: string;
   style?: string | Record<string, string | number>;
   ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
