@@ -12,9 +12,20 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/reactive" },
-    { "path": "../../packages/core" },
-    { "path": "../../packages/dom" },
-    { "path": "../../packages/vite-plugin" }
+    {
+      "path": "../../packages/reactive"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/dom"
+    },
+    {
+      "path": "../../packages/vite-plugin"
+    },
+    {
+      "path": "../../packages/ts-plugin"
+    }
   ]
 }

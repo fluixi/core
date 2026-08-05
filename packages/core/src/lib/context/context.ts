@@ -338,7 +338,7 @@ export function createProvider<T, S = Children>(
  */
 export function createContextWithProvider<T, U>(
   defaultValue: T
-): [Context<T>, (props: Omit<ContextProvider<T, U>, 'context'>) => Component<T>] {
+): [Context<T>, (props: Omit<ContextProvider<T, U>, 'context'>) => ComponentChild] {
   const context = createContext(defaultValue);
 
   const provider = (props: Omit<ContextProvider<T, U>, 'context'>) => {
@@ -390,9 +390,9 @@ export function createContextWithProvider<T, U>(
 export function composeProviders(
   contexts: Array<[Context<any>, any]>,
   children: Children
-): Component {
+): ComponentChild {
   if (contexts.length === 0) {
-    return readChildren(() => children) as unknown as Component;
+    return readChildren(() => children) as ComponentChild;
   }
 
   const [context, value] = contexts[0];

@@ -11,12 +11,19 @@
  * import them; @fluixi/core re-exports them for convenience.
  */
 
+import type { ComponentChild } from './shared/types.js';
+
 /**
  * What a compiled `` html`...` `` evaluates to at runtime: a DOM node, or — when
  * the template's root is a control-flow component — the reactive memo the runtime
- * inserts. Loose on purpose; `render()`/`insert()` accept both shapes.
+ * inserts. `render()`/`insert()` accept both shapes.
+ *
+ * The memo returns a `ComponentChild`, not `unknown`: an html`` template has to be
+ * usable everywhere a renderable value is expected, and `() => unknown` was not
+ * assignable to one — so a component authored with html`` failed to typecheck as
+ * a `Component`.
  */
-export type TemplateResult = Node | (() => unknown);
+export type TemplateResult = Node | (() => ComponentChild);
 
 /** A reactive value: a plain value or an accessor the compiler wires up. */
 export type Reactive<T> = T | (() => T);

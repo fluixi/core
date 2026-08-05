@@ -1264,17 +1264,14 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
 /**
  * Anything the renderer accepts as output. `JSX.Element` aliases this; html``
  * templates produce the same values, so the type is shared rather than duplicated.
+ *
+ * It is now literally the same type, not a parallel copy. The two had drifted —
+ * this one lacked `ComponentChild`'s recursive array and lazy child — so a
+ * component annotated with the shared `ComponentChild` was rejected as a JSX
+ * component. Both authoring modes compile to the same runtime calls, so
+ * "renderable" has to mean one thing.
  */
-export type FxElement =
-  | Node
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Element[]
-  | HTMLElement | Accessor<any>
-  | globalThis.Element;
+export type FxElement = ComponentChild;
 
 /**
  * Every intrinsic tag mapped to the attributes it accepts. `JSX.IntrinsicElements`

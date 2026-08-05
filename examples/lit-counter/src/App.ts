@@ -21,7 +21,7 @@ export function Counter(props: { start?: number }) {
         <p class="warn">below zero</p>
       </Show>
       <ul class="ticks" if=${history().length > 0}>
-        <For each=${history()}>${(n: number) => html`<li>tick ${n}</li>`}</For>
+        <For each=${history()}>${(n) => html`<li>tick ${n}</li>`}</For>
       </ul>
     </div>
   `;

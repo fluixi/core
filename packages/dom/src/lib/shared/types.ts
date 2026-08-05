@@ -7,7 +7,12 @@ export interface ComponentProps {
 }
 
 /**
- * Component child types
+ * Anything renderable: a node, a primitive, a list, or a function returning one
+ * (a reactive child).
+ *
+ * This union must NOT contain `any` — a union with `any` in it *is* `any`, which
+ * silently erased the type of every component return, every `children`, and every
+ * render prop's parameter in the framework.
  */
 export type ComponentChild =
   | Node
@@ -17,9 +22,17 @@ export type ComponentChild =
   | null
   | undefined
   | ComponentChild[]
-  | (() => ComponentChild)
-  | (() => any)
-  | any;
+  | (() => ComponentChild);
+
+/**
+ * Build-time guard: fails to compile if `ComponentChild` ever becomes `any` again.
+ *
+ * `any` in this union is invisible — nothing errors, types just stop being checked
+ * everywhere at once — so it needs an assertion rather than a test.
+ */
+type IsAny<T> = 0 extends 1 & T ? true : false;
+type Assert<T extends false> = T;
+export type ComponentChildIsNotAny = Assert<IsAny<ComponentChild>>;
 
 /**
  * A component is a function of its props — annotate it to type `props`:
