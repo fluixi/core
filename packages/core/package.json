@@ -149,7 +149,14 @@
       "require": "./dist/src/lib/plugins/index.cjs",
       "default": "./dist/src/lib/plugins/index.js"
     },
-    "./lib/*": "./src/lib/*"
+    "./lib/*": "./src/lib/*",
+    "./utils": {
+      "development": "./src/utils.ts",
+      "types": "./dist/src/utils.d.ts",
+      "import": "./dist/src/utils.mjs",
+      "require": "./dist/src/utils.cjs",
+      "default": "./dist/src/utils.js"
+    }
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
