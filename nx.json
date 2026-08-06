@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
@@ -18,7 +21,11 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
-      "exclude": ["docs/*", "packages/create/template-*/**"],
+      "exclude": [
+        "docs/*",
+        "examples/*",
+        "packages/create/template-*/**"
+      ],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
@@ -33,7 +40,9 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": ["packages/create/template-*/**"],
+      "exclude": [
+        "packages/create/template-*/**"
+      ],
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",
@@ -49,22 +58,39 @@
   ],
   "targetDefaults": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"],
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ],
       "cache": true
     },
     "typecheck": {
-      "dependsOn": ["^build"],
-      "inputs": ["default", "^production"],
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^production"
+      ],
       "cache": true
     },
     "test": {
-      "dependsOn": ["^build"],
-      "inputs": ["default", "^production"],
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^production"
+      ],
       "cache": true
     },
     "lint": {
-      "inputs": ["default"],
+      "inputs": [
+        "default"
+      ],
       "cache": true
     }
   }
