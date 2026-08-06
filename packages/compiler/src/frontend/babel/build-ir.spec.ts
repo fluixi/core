@@ -211,9 +211,11 @@ describe('template cloning produces the same DOM as building element by element'
     ],
     ['void element', '(<div><br/><img src="a.png"/></div>)', '<div><br><img src="a.png"></div>'],
     [
+      // The trailing `<!---->` is the hole's marker: it is what makes the clone, the
+      // server's markup and the hydrated DOM the same shape.
       'entities in text and attributes',
       '(<div title={"a<b"}>{"1 < 2"}</div>)',
-      '<div title="a<b">1 &lt; 2</div>',
+      '<div title="a<b">1 &lt; 2<!----></div>',
     ],
     ['valueless attribute', '(<input disabled/>)', '<input disabled="">'],
   ];

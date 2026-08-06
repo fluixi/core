@@ -12,18 +12,19 @@ const attr = (name: string, literal: string): IRProp => ({ name, kind: 'attr', l
 const plan = (n: IRElement) => (analyzeStatic(n), planPartialTemplate(n));
 
 describe('planPartialTemplate', () => {
-  it('templates the structure and appends a trailing hole', () => {
+  it('leaves a marker where the hole goes', () => {
     const p = plan(el('li', [attr('className', 'row')], [text('tick '), hole()]))!;
-    expect(p.html).toBe('<li class="row">tick </li>');
+    expect(p.html).toBe('<li class="row">tick <!----></li>');
     expect(p.holes).toHaveLength(1);
     expect(p.holes[0]!.parentPath).toBe('_el$');
-    expect(p.holes[0]!.beforePath).toBeNull();
+    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.nextSibling');
   });
 
   it('addresses a hole inside a nested element', () => {
     const p = plan(el('div', [], [el('h3', [], [hole()]), el('p', [], [text('s')])]))!;
-    expect(p.html).toBe('<div><h3></h3><p>s</p></div>');
+    expect(p.html).toBe('<div><h3><!----></h3><p>s</p></div>');
     expect(p.holes[0]!.parentPath).toBe('_el$.firstChild');
+    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.firstChild');
   });
 
   it('walks siblings with nextSibling, not indices', () => {
@@ -31,9 +32,19 @@ describe('planPartialTemplate', () => {
     expect(p.holes[0]!.parentPath).toBe('_el$.firstChild.nextSibling');
   });
 
-  it('inserts before the next static sibling when the hole is not last', () => {
-    const p = plan(el('div', [], [hole(), el('p', [], [text('after')])]))!;
-    expect(p.holes[0]!.beforePath).toBe('_el$.firstChild');
+  it('counts the marker when addressing later siblings', () => {
+    // The marker occupies a position, so a following element is the *second* child.
+    const p = plan(el('div', [], [hole(), el('p', [], [hole()])]))!;
+    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild');
+    expect(p.holes[1]!.parentPath).toBe('_el$.firstChild.nextSibling');
+  });
+
+  it('handles a hole between two texts, which the marker keeps apart', () => {
+    // Omitting holes made this unrepresentable — the texts merged and there was
+    // nothing to insert between.
+    const p = plan(el('p', [], [text('a '), hole(), text(' b')]))!;
+    expect(p.html).toBe('<p>a <!----> b</p>');
+    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.nextSibling');
   });
 
   it('returns null for a fully static subtree — that has a cheaper path', () => {
@@ -53,16 +64,12 @@ describe('rejects positions it cannot address', () => {
     expect(plan(el('div', [], [text('a'), text('b'), el('p', [], [hole()])]))).toBeNull();
   });
 
-  it('a hole between two texts, which merge once it is removed', () => {
-    expect(plan(el('p', [], [text('a'), hole(), text('b')]))).toBeNull();
-  });
-
   it('an empty text child, which serializes to nothing', () => {
     expect(plan(el('div', [], [text(''), el('p', [], [hole()])]))).toBeNull();
   });
 
   it('the same shapes nested deeper', () => {
-    const inner = el('p', [], [text('a'), hole(), text('b')]);
+    const inner = el('p', [], [text('a'), text('b'), hole()]);
     expect(plan(el('div', [], [el('section', [], [inner])]))).toBeNull();
   });
 

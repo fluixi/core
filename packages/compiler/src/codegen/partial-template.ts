@@ -9,13 +9,15 @@
  *
  * Two things make it work:
  *
- *  - **Holes are omitted from the template**, not left as empty placeholders. Content is
- *    then inserted before the hole's next static sibling (or appended when it has none),
- *    so no marker nodes are needed and the server's markup is the same shape.
- *  - **Every reference is captured before any insertion.** Paths are computed against the
- *    template's structure; inserting into it would shift later positions, so the emitted
- *    code reads all the refs it needs up front. This is also why paths use
- *    `firstChild`/`nextSibling` rather than indices.
+ *  - **Each hole leaves a marker comment in the template.** That is what makes the three
+ *    environments agree: the clone, the server's markup and the DOM being hydrated all
+ *    have the same shape, so one set of `firstChild`/`nextSibling` paths addresses all of
+ *    them. Omitting holes instead was cheaper in bytes and wrong — the paths then
+ *    described the template but not the server DOM, which also contains the rendered hole
+ *    content.
+ *  - **Every reference is captured before any insertion.** Paths are computed against that
+ *    shared shape; inserting would shift later positions, so the emitted code reads all
+ *    the refs it needs up front.
  */
 import type { IRElement, IRNode, IRProp } from '../ir/nodes.js';
 import { isPlainLiteralAttr, isRawTextElement, serializeStatic } from './serialize-static.js';
@@ -24,8 +26,8 @@ import { isPlainLiteralAttr, isRawTextElement, serializeStatic } from './seriali
 export interface TemplateHole {
   /** Expression reaching the hole's parent element, relative to the template root. */
   parentPath: string;
-  /** Expression reaching the node to insert before, or null to append. */
-  beforePath: string | null;
+  /** Expression reaching this hole's marker comment, which content is inserted before. */
+  markerPath: string;
   node: IRNode;
 }
 
@@ -34,6 +36,14 @@ export interface PartialTemplate {
   tag: string;
   holes: TemplateHole[];
 }
+
+/**
+ * The comment left where a hole goes.
+ *
+ * Empty rather than labelled: it appears once per interpolation in the shipped HTML, and
+ * the runtime never reads its content — position is the whole signal.
+ */
+export const HOLE_MARKER = '<!---->';
 
 /** A child the template contains rather than fills in at runtime. */
 function isTemplateChild(node: IRNode): boolean {
@@ -71,30 +81,55 @@ export function planPartialTemplate(root: IRElement): PartialTemplate | null {
   collect(root, '_el$');
   if (holes.length === 0) return null;
 
-  return { html: serializeStatic(stripHoles(root)), tag: root.tag, holes };
+  return { html: serializeWithMarkers(root), tag: root.tag, holes };
 
   function collect(el: IRElement, path: string): void {
-    // Position within the *template*, which is where the runtime paths will point.
-    let templateIndex = 0;
-    const paths: string[] = [];
-    for (const child of el.children) {
-      if (!isTemplateChild(child)) continue;
-      paths.push(childPath(path, templateIndex));
-      templateIndex++;
-    }
-
-    let seen = 0;
-    el.children.forEach((child) => {
-      if (isTemplateChild(child)) {
-        if (child.kind === 'element') collect(child, paths[seen]!);
-        seen++;
-        return;
+    // Every child occupies one node in the template — a hole's node is its marker — so
+    // index arithmetic here matches the DOM exactly.
+    el.children.forEach((child, index) => {
+      const childRef = childPath(path, index);
+      if (isHole(child)) {
+        holes.push({ parentPath: path, markerPath: childRef, node: child });
+      } else if (child.kind === 'element') {
+        collect(child, childRef);
       }
-      // A hole goes before the next template sibling; with none left it appends.
-      holes.push({ parentPath: path, beforePath: paths[seen] ?? null, node: child });
     });
   }
 }
+
+/** The subtree as HTML, with a marker comment standing in for each hole. */
+function serializeWithMarkers(el: IRElement): string {
+  const withMarkers: IRElement = {
+    ...el,
+    children: el.children.map((child) =>
+      isHole(child)
+        ? ({ kind: 'text', value: MARKER_SENTINEL } as IRNode)
+        : child.kind === 'element'
+          ? serializeMarkersDeep(child)
+          : child,
+    ),
+  };
+  // Serialize as text, then swap the sentinel for the comment. Going through the normal
+  // serializer keeps escaping and void-element handling in one place.
+  return serializeStatic(withMarkers).split(escapedSentinel).join(HOLE_MARKER);
+}
+
+function serializeMarkersDeep(el: IRElement): IRElement {
+  return {
+    ...el,
+    children: el.children.map((child) =>
+      isHole(child)
+        ? ({ kind: 'text', value: MARKER_SENTINEL } as IRNode)
+        : child.kind === 'element'
+          ? serializeMarkersDeep(child)
+          : child,
+    ),
+  };
+}
+
+/** Escaped by the serializer, so the swap has to look for the escaped form. */
+const MARKER_SENTINEL = '\u0000fx-hole\u0000';
+const escapedSentinel = MARKER_SENTINEL;
 
 function childPath(parent: string, index: number): string {
   return index === 0
@@ -102,15 +137,6 @@ function childPath(parent: string, index: number): string {
     : `${parent}.firstChild${'.nextSibling'.repeat(index)}`;
 }
 
-/** The subtree with holes removed, which is what the template contains. */
-function stripHoles(el: IRElement): IRElement {
-  return {
-    ...el,
-    children: el.children
-      .filter(isTemplateChild)
-      .map((c) => (c.kind === 'element' ? stripHoles(c) : c)),
-  };
-}
 
 /**
  * Whether every hole in the subtree can be addressed by a node reference.
@@ -129,18 +155,11 @@ function stripHoles(el: IRElement): IRElement {
  * occupies an index in the IR that does not exist in the DOM.
  */
 function addressable(el: IRElement): boolean {
-  const kept = el.children.filter((c) => !isHole(c));
-  for (let i = 0; i < kept.length; i++) {
-    const child = kept[i]!;
-    if (child.kind === 'text') {
-      if (child.value === '') return false;
-      if (kept[i + 1]?.kind === 'text') return false;
-    }
-  }
-  // A hole with text on both sides would merge them once removed.
   for (let i = 0; i < el.children.length; i++) {
-    if (!isHole(el.children[i]!)) continue;
-    if (el.children[i - 1]?.kind === 'text' && el.children[i + 1]?.kind === 'text') return false;
+    const child = el.children[i]!;
+    if (child.kind !== 'text') continue;
+    if (child.value === '') return false;
+    if (el.children[i + 1]?.kind === 'text') return false;
   }
   return el.children.every((c) => c.kind !== 'element' || addressable(c));
 }

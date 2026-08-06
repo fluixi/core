@@ -202,11 +202,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
             return name;
           };
           // Resolve every path first so the declarations come out in dependency order.
-          const inserts = plan.holes.map((hole) => {
-            const parent = refFor(hole.parentPath);
-            const before = hole.beforePath ? refFor(hole.beforePath) : 'null';
-            return { parent, before, node: hole.node };
-          });
+          const inserts = plan.holes.map((hole) => ({
+            parent: refFor(hole.parentPath),
+            // Content goes before the hole's own marker, which every environment has.
+            before: refFor(hole.markerPath),
+            node: hole.node,
+          }));
 
           const lines = [`const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true);`];
           for (const [path, name] of refs) lines.push(`const ${name} = ${path};`);

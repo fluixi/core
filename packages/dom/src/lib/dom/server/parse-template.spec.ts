@@ -11,6 +11,7 @@ import { serializeNode } from './serialize.js';
 /** Tag, attributes and children, so two canonical spellings compare equal. */
 function shape(node: any): unknown {
   if (node.nodeType === 3) return { text: node.data };
+  if (node.nodeType === 8) return { comment: node.data };
   return {
     tag: node.localName,
     attrs: Object.fromEntries([...node.attributes].sort(([a]: [string], [b]: [string]) => a.localeCompare(b))),
@@ -45,6 +46,8 @@ describe('round trip', () => {
     ['<p>1 &lt; 2 &amp; 3 &gt; 0</p>'],
     ['<div><span>a</span>text<span>b</span></div>'],
     ['<section class="a"><div class="b"><div class="c"><em>deep</em></div></div></section>'],
+    ['<div><h3><!----></h3><p>a <!----> b</p></div>'],
+    ['<p>a <!----> b</p>'],
   ])('%s', (html) => {
     roundTrips(html);
   });
@@ -85,6 +88,23 @@ describe('tree shape', () => {
 
   it('treats a valueless attribute as the empty string, as the DOM does', () => {
     expect(parseTemplate('<input disabled>').getAttribute('disabled')).toBe('');
+  });
+});
+
+describe('hole markers', () => {
+  // The marker is what makes the clone, the server's markup and the hydrated DOM the
+  // same shape, so the generated paths address all three.
+  it('keeps the marker as a comment node', () => {
+    const root = parseTemplate('<div><!----></div>');
+    expect(root.childNodes).toHaveLength(1);
+    expect((root.firstChild as { nodeType: number }).nodeType).toBe(8);
+  });
+
+  it('keeps text on both sides of a marker separate', () => {
+    const root = parseTemplate('<p>a <!----> b</p>');
+    expect(root.childNodes).toHaveLength(3);
+    expect((root.firstChild as { data: string }).data).toBe('a ');
+    expect((root.lastChild as { data: string }).data).toBe(' b');
   });
 });
 

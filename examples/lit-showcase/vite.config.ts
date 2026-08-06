@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { fluixi } from '@fluixi/vite-plugin';
 
 export default defineConfig({
-  plugins: [fluixi({codegen: 'inline'})],
+  plugins: [fluixi({codegen: 'ir', partialTemplates: true})],
   resolve: {
     conditions: ['development', 'browser', 'import', 'default'],
   },
