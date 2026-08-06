@@ -508,7 +508,10 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                   t.importDeclaration(specifiers, t.stringLiteral(signalModule)),
                 );
               }
-            } else if (state.hasJSX && runtime === 'automatic') {
+            } else if (state.hasJSX && runtime === 'automatic' && backend !== 'imperative') {
+              // Not under the imperative backend: `codegen: 'ir'` lands here because the
+              // branch above excludes it, and emitted an unused jsx/jsxs/Fragment import.
+              // The IR path produces runtime calls, never JSX factory calls.
               // Add JSX runtime imports
               const specifiers = [
                 t.importSpecifier(t.identifier('jsx'), t.identifier('jsx')),
