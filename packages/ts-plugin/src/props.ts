@@ -237,7 +237,9 @@ function componentTagAtAttrArea(
         // attribute area: after `<Tag` up to the first `>` (loc covers the element).
         const openStart = c.loc.start + 1 + (c.tag ? c.tag.length : 0);
         const openEnd = firstChildOrCloseStart(c);
-        if (position > openStart && position <= openEnd) {
+        // `<` end-exclusive: `openEnd` is where the tag's content begins, so including
+        // it offered props with the cursor already past `>`.
+        if (position > openStart && position < openEnd) {
           hit = { tag: c.tag, attributeNames: attributeNames(c) };
         }
       }

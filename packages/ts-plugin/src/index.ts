@@ -63,6 +63,12 @@ function init(modules: { typescript: typeof ts }): PluginModule {
         isGlobalCompletion: false,
         isMemberCompletion: false,
         isNewIdentifierLocation: true,
+        // Re-ask on every keystroke instead of letting the editor filter what it already
+        // has. Inside a template the valid set changes with the cursor — a tag name, then
+        // that tag's props — and a list cached from one position is wrong at the next.
+        // Without this the props appear only after enough typing to force a fresh
+        // request, which reads as completion working intermittently.
+        isIncomplete: true,
         entries,
       });
 
