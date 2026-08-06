@@ -277,6 +277,31 @@ export function createTemplate(html: string, isSVG = false): HTMLTemplateElement
   return template;
 }
 
+/**
+ * A node for a compiler-emitted static template, built the way the current environment
+ * needs it.
+ *
+ * The three cases mirror {@link createNativeElement}, which is the point: a template has
+ * to behave like the elements it replaces, or it works only in client-rendered apps —
+ * which is exactly how it failed before this existed.
+ *
+ *  - **server** — carried as text and written out verbatim. Parsing it into elements
+ *    only to serialize them straight back would be pure cost.
+ *  - **hydrating** — adopt the server's existing subtree and skip past it. The subtree
+ *    is inert, so there is nothing inside to wire up.
+ *  - **client** — parse once (cached by HTML) and clone per instance.
+ */
+export function templateNode(html: string, tag: string, isSVG = false): Node {
+  if (isServer) {
+    return getServerNodes().createRaw(html) as unknown as Node;
+  }
+  if (hydration.active) {
+    const node = getHydrationWalker()?.hydrateStatic(tag);
+    if (node) return node;
+  }
+  return cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node;
+}
+
 export function cloneTemplate(
   template: HTMLTemplateElement,
   isSVG = false

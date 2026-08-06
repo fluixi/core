@@ -337,7 +337,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     autoShowTransform = false,
     backend = 'imperative',
     codegen = 'inline',
-    templateClone = false,
+    templateClone = true,
     // `both` by default: JSX and html`` are compiled out of the box, so
     // `fluixi()` needs no `format` option. Injected imports are deduped, so a
     // file mixing the two styles won't redeclare a binding.
@@ -731,10 +731,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                   t.variableDeclaration('const', [
                     t.variableDeclarator(
                       t.identifier(name),
-                      t.callExpression(t.identifier('createTemplate'), [
-                        t.stringLiteral(html),
-                        ...(svg ? [t.booleanLiteral(true)] : []),
-                      ]),
+                      // Just the HTML. Parsing is deferred to `templateNode`, which
+                      // knows whether this is a server render, a hydration or a fresh
+                      // client render — a module-scope `createTemplate` would touch
+                      // `document` at import time and break SSR outright.
+                      t.stringLiteral(html),
                     ),
                   ]),
                 );

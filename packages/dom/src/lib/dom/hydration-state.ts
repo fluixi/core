@@ -19,6 +19,8 @@ export interface HydrationWalker {
   hydrateElement(tag: string): Element | null;
   hydrateText(value: string): Text | null;
   hydrateMarker(value: string): Comment | null;
+  /** Adopt a static subtree whole, without descending into it. */
+  hydrateStatic(tag: string): Element | null;
 }
 
 let _walker: HydrationWalker | null = null;

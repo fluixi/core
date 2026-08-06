@@ -68,6 +68,9 @@ export function serializeNode(node: any): string {
   if (typeof node === 'function') return serializeNode(node());
   if (Array.isArray(node)) return node.map(serializeNode).join('');
 
+  // A template subtree carried as text — written out untouched.
+  if (typeof node.rawOuterHTML === 'string') return node.rawOuterHTML;
+
   // Duck-type on nodeType rather than `instanceof`: a node can come from a
   // different bundled copy of @fluixi/dom (separate package entry points), so
   // class identity is unreliable across the renderToString boundary.

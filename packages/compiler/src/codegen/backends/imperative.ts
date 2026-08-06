@@ -137,10 +137,10 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // cloning would hand back the wrong node. Correctness first — SVG keeps the
       // imperative path until the runtime grows an unwrapping clone.
       if (templates && node.static && !node.svg && isSerializable(node)) {
-        used.add('cloneTemplate');
+        used.add('templateNode');
         const id = `_tmpl$${templates.length}`;
-        templates.push({ id, html: serializeStatic(node), svg: false });
-        return `cloneTemplate(${id}).firstChild`;
+        templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });
+        return `templateNode(${id}, ${JSON.stringify(node.tag)})`;
       }
       used.add('createNativeElement');
       const tag = JSON.stringify(node.tag);
@@ -185,7 +185,7 @@ export function inlineTemplates(code: string, templates: StaticTemplate[] | unde
   if (!templates || templates.length === 0) return code;
   let out = code;
   for (const tpl of templates) {
-    out = out.split(tpl.id).join(`createTemplate(${JSON.stringify(tpl.html)})`);
+    out = out.split(tpl.id).join(JSON.stringify(tpl.html));
   }
   return out;
 }
@@ -199,11 +199,10 @@ export const imperativeBackend: CodegenBackend = {
     // land in a ServerElement tree and clash, and during hydration a clone creates a
     // fresh node where the existing one must be adopted. Both need runtime support
     // that does not exist yet, so the client-only win stays opt-in until it does.
-    const templates: StaticTemplate[] | undefined = options?.templateClone
+    const templates: StaticTemplate[] | undefined = options?.templateClone !== false
       ? []
       : undefined;
     const code = emitNode(node, used, templates);
-    if (templates && templates.length > 0) used.add('createTemplate');
     return { code, imports: Array.from(used), templates };
   },
 };

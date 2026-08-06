@@ -2,7 +2,7 @@
 "@fluixi/compiler": minor
 ---
 
-Make template cloning opt-in via `templateClone` — it is client-only
+Add `templateClone` — template cloning needed SSR and hydration support first
 
 Cloning shipped on by default for the IR path and broke both SSR and hydration:
 
@@ -12,13 +12,9 @@ Cloning shipped on by default for the IR path and broke both SSR and hydration:
 - **Hydration** must adopt the server's existing nodes; a clone creates a fresh one, so
   the client builds a duplicate tree alongside the server's.
 
-Both need runtime support that does not exist yet — a template that produces server
-nodes on the server and walks the hydration cursor when hydrating, the way
-`createNativeElement` already does. Until then the optimisation is off unless asked for:
-
-```ts
-fluixi({ templateClone: true })   // client-rendered apps only
-```
+Both needed runtime support that did not exist. `templateClone` was introduced to gate
+the optimisation while that was built; it now defaults to **on**, since `templateNode`
+handles the server and hydration paths. Set it to `false` to opt out.
 
 It remains worth roughly 2x on instantiation (2.08x for a three-element row, 2.45x for a
 nine-element card, measured in Chrome), so it is kept rather than reverted.
