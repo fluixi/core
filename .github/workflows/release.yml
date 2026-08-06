@@ -10,6 +10,11 @@ name: Release
 on:
   push:
     branches: [main, next, alpha]
+  # Manual fallback. A push is normally the trigger, but that depends on GitHub
+  # delivering the event — during the 2026-08-06 Actions incident a push landed with no
+  # run created, and with no dispatch there was no way to start one short of
+  # manufacturing an empty commit.
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
