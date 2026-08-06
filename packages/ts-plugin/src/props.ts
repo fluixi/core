@@ -32,10 +32,12 @@ export function componentPropCompletions(
 
   // Control-flow components (auto-imported by the compiler) aren't in the file's
   // scope — offer their known prop names directly.
+  const span = attrNameSpan(sf.text, position);
+
   const cf = CONTROL_FLOW_PROPS[comp.tag];
   if (cf) {
     const already = new Set(comp.attributeNames);
-    return cf.filter((n) => !already.has(n)).map((name) => propEntry(ts, name));
+    return cf.filter((n) => !already.has(n)).map((name) => propEntry(ts, name, span));
   }
 
   const checker = program.getTypeChecker();
@@ -53,7 +55,7 @@ export function componentPropCompletions(
   for (const p of propsType.getProperties()) {
     const name = p.getName();
     if (name === 'children' || already.has(name)) continue;
-    entries.push(propEntry(ts, name));
+    entries.push(propEntry(ts, name, span));
   }
   return entries.length ? entries : undefined;
 }
@@ -171,8 +173,34 @@ const CONTROL_FLOW_PROPS: Record<string, string[]> = {
   Await: ['value', 'fallback'],
 };
 
-function propEntry(ts: typeof TS, name: string): TS.CompletionEntry {
-  return { name, kind: ts.ScriptElementKind.memberVariableElement, kindModifiers: '', sortText: '0_' + name, insertText: name };
+function propEntry(ts: typeof TS, name: string, replacementSpan?: TS.TextSpan): TS.CompletionEntry {
+  return {
+    name,
+    kind: ts.ScriptElementKind.memberVariableElement,
+    kindModifiers: '',
+    sortText: '0_' + name,
+    insertText: name,
+    // Without a span the editor filters these against whatever word *it* computes at the
+    // cursor, and inside a template literal that is not the attribute name — so the list
+    // showed in full until the first keystroke and then emptied. Saying exactly which
+    // characters are being replaced makes filtering match what is typed.
+    replacementSpan,
+  };
+}
+
+/**
+ * The span of the attribute name being typed at `position`, possibly empty.
+ *
+ * Empty when the cursor sits after whitespace, which is a valid insertion point — the
+ * editor needs a zero-length span there rather than none at all.
+ */
+function attrNameSpan(text: string, position: number): TS.TextSpan {
+  const isNameChar = (c: string | undefined): boolean => !!c && /[A-Za-z0-9_$:@?.\-]/.test(c);
+  let start = position;
+  while (start > 0 && isNameChar(text[start - 1])) start--;
+  let end = position;
+  while (end < text.length && isNameChar(text[end])) end++;
+  return { start, length: end - start };
 }
 
 /** Find a top-level declaration of `name` (function/class/const/import) in the file. */

@@ -94,6 +94,33 @@ describe('component prop completion + hover', () => {
     expect(names).toContain('beta');
   });
 
+  // The editor filters entries against the word it finds at the cursor, and inside a
+  // template literal that word is not the attribute name — so without a span the props
+  // appeared until the first keystroke and then disappeared.
+  it('spans the partially typed name, so the editor filters against it', () => {
+    const code =
+      'function Card(props: { alpha?: string; beta?: number }) { return null as any; }\n' +
+      'const t = html`<Card al></Card>`;';
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('<Card al') + '<Card al'.length;
+    const entry = ls
+      .getCompletionsAtPosition(fileName, pos, {})
+      ?.entries.find((e: ts.CompletionEntry) => e.name === 'alpha');
+    expect(entry?.replacementSpan).toEqual({ start: pos - 2, length: 2 });
+  });
+
+  it('spans nothing when the cursor sits after whitespace', () => {
+    const code =
+      'function Card(props: { alpha?: string }) { return null as any; }\n' +
+      'const t = html`<Card ></Card>`;';
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('<Card ') + '<Card '.length;
+    const entry = ls
+      .getCompletionsAtPosition(fileName, pos, {})
+      ?.entries.find((e: ts.CompletionEntry) => e.name === 'alpha');
+    expect(entry?.replacementSpan).toEqual({ start: pos, length: 0 });
+  });
+
   it('hovers a component prop name showing its type', () => {
     const code =
       'function Card(props: { header?: string }) { return null as any; }\n' +
