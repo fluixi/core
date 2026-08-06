@@ -1099,6 +1099,16 @@ function emitComponentCall(
   // to them silently was the same failure `Switch` has: the tag renders the router's
   // component and nothing reports it. Control flow still wins, because there the name
   // selects codegen and a rule cannot supply that.
+  // Control flow needs its import injected too, and registering it here rather than in
+  // the JSX visitor is what makes nested usage work: a lowered parent is replaced before
+  // its subtree is walked, so `<div><Show/></div>` never reached the visitor and `Show`
+  // compiled to a reference to nothing. Every fixture imported Show by hand, so nothing
+  // caught it.
+  if (t.isIdentifier(comp) && CONTROL_FLOW_COMPONENTS.has(comp.name)) {
+    state.controlFlowComponents.add(comp.name);
+    state.needsControlFlowImport = true;
+  }
+
   let resolvedByRule = false;
   if (t.isIdentifier(comp) && !CONTROL_FLOW_COMPONENTS.has(comp.name) && state.componentResolver) {
     const resolved = state.componentResolver.resolve(comp.name);
