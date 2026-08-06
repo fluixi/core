@@ -112,7 +112,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       // else the real hover / component-tag hover.
       proxy.getQuickInfoAtPosition = (fileName: string, position: number) => {
         try {
-          const prop = componentPropHover(ts, ls, fileName, position);
+          const prop = componentPropHover(ts, ls, host, fileName, position);
           if (prop) return prop;
         } catch { /* fall through */ }
         try {

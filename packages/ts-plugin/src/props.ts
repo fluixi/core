@@ -66,6 +66,7 @@ export function componentPropCompletions(
 export function componentPropHover(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.QuickInfo | undefined {
@@ -84,12 +85,16 @@ export function componentPropHover(
     typeText = cf[hit.prop];
     if (!typeText) return undefined;
   } else if (hit.tag) {
+    // Same scope-based resolution as completion: a component supplied by a `resolve`
+    // rule has no import in the file to find.
     const checker = program.getTypeChecker();
-    const decl = findDeclaration(ts, sf, hit.tag.split('.')[0]);
-    const propsType = decl && firstParamType(ts, checker, checker.getTypeAtLocation(decl));
+    const root = hit.tag.split('.')[0]!;
+    const compType = componentTypeOf(ts, program, checker, host, sf, template.template, root);
+    const propsType = compType && firstParamType(ts, checker, compType);
     const sym = propsType && propsType.getProperty(hit.prop);
     if (!sym) return undefined;
-    typeText = checker.typeToString(checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? decl!));
+    const at = sym.valueDeclaration ?? sym.declarations?.[0] ?? template.template;
+    typeText = checker.typeToString(checker.getTypeOfSymbolAtLocation(sym, at));
   }
   if (!typeText) return undefined;
 
@@ -201,24 +206,6 @@ function componentTypeOf(
   return decl ? checker.getTypeOfSymbolAtLocation(resolved, decl) : undefined;
 }
 
-function findDeclaration(ts: typeof TS, sf: TS.SourceFile, name: string): TS.Node | undefined {
-  for (const stmt of sf.statements) {
-    if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name?.text === name) return stmt.name;
-    if (ts.isVariableStatement(stmt)) {
-      for (const d of stmt.declarationList.declarations) {
-        if (ts.isIdentifier(d.name) && d.name.text === name) return d.name;
-      }
-    }
-    if (ts.isImportDeclaration(stmt)) {
-      const b = stmt.importClause?.namedBindings;
-      if (b && ts.isNamedImports(b)) {
-        for (const el of b.elements) if (el.name.text === name) return el.name;
-      }
-      if (stmt.importClause?.name?.text === name) return stmt.importClause.name;
-    }
-  }
-  return undefined;
-}
 
 /** The props type = the type of a component's first parameter. */
 function firstParamType(ts: typeof TS, checker: TS.TypeChecker, type: TS.Type): TS.Type | undefined {
