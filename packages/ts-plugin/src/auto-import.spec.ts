@@ -1,56 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import ts from 'typescript';
 import init from './index.js';
 import { AUTO_IMPORTED } from './auto-import.js';
+import { builtinComponentMap } from '@fluixi/compiler/builtins';
 
 /**
- * The map duplicates the compiler's sets (the plugin is a bundle; importing the
- * compiler would dwarf it). These tests read the compiler source and pin the two
- * to each other, so adding a component there without updating here fails.
+ * The map is no longer a copy — it comes from `@fluixi/compiler/builtins`, so the
+ * tests that pinned the duplication to the compiler source are gone with it. What is
+ * still worth asserting is the shape the rest of the plugin depends on.
  */
-const PLUGIN_SOURCE = resolve(
-  import.meta.dirname ?? __dirname,
-  '../../compiler/src/frontend/babel/plugin.ts',
-);
-
-function setLiteral(name: string): string[] {
-  const source = readFileSync(PLUGIN_SOURCE, 'utf8');
-  const start = source.indexOf(`const ${name} = new Set([`);
-  if (start === -1) throw new Error(`${name} not found — the compiler moved it`);
-  const body = source.slice(start, source.indexOf(']', start));
-  return [...body.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]!);
-}
-
-describe('the auto-import map matches the compiler', () => {
-  it('covers every control-flow component the compiler injects', () => {
-    for (const name of setLiteral('CONTROL_FLOW_COMPONENTS')) {
-      expect(AUTO_IMPORTED[name], `${name} is auto-imported but unmapped`).toBeDefined();
-    }
-  });
-
-  it('covers every router component the compiler injects', () => {
-    for (const name of setLiteral('ROUTER_COMPONENTS')) {
-      expect(AUTO_IMPORTED[name], `${name} is auto-imported but unmapped`).toBeDefined();
-    }
+describe('the auto-import map', () => {
+  it('is populated from the compiler\'s published builtins', () => {
+    expect(Object.keys(AUTO_IMPORTED).length).toBeGreaterThan(0);
+    expect(AUTO_IMPORTED).toEqual(builtinComponentMap());
   });
 
   it('sends the core-only components to core, not dom', () => {
     // dom does not export these, so resolving them against dom would find nothing.
-    for (const name of setLiteral('CORE_ONLY_CONTROL_FLOW')) {
-      if (!AUTO_IMPORTED[name]) continue; // not auto-imported at all — see below
+    for (const name of ['Suspense', 'SuspenseList', 'Await']) {
       expect(AUTO_IMPORTED[name]).toBe('@fluixi/core');
     }
   });
 
-  it('maps nothing the compiler does not inject', () => {
-    const injected = new Set([
-      ...setLiteral('CONTROL_FLOW_COMPONENTS'),
-      ...setLiteral('ROUTER_COMPONENTS'),
-    ]);
-    for (const name of Object.keys(AUTO_IMPORTED)) {
-      expect(injected.has(name), `${name} is mapped but the compiler never injects it`).toBe(true);
+  it('covers control flow and the router group', () => {
+    for (const name of ['Show', 'For', 'Portal', 'Router', 'Outlet', 'Link']) {
+      expect(AUTO_IMPORTED[name], `${name} is auto-imported but unmapped`).toBeDefined();
     }
   });
 });

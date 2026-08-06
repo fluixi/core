@@ -10,38 +10,17 @@
  * So resolve them the way the compiler would: find the module it would import
  * from, and look the name up there.
  *
- * The map mirrors `CONTROL_FLOW_COMPONENTS`, `CORE_ONLY_CONTROL_FLOW` and
- * `ROUTER_COMPONENTS` in `compiler/src/frontend/babel/plugin.ts`. It is duplicated
- * rather than imported because the plugin is an esbuild bundle and pulling in the
- * compiler would dwarf it; `auto-import.spec.ts` pins the expectation so drift
- * shows up as a failing test.
+ * The names come from `@fluixi/compiler/builtins`, which exists so this list is not
+ * copied. It used to be duplicated here — the plugin is an esbuild bundle and pulling
+ * in the compiler would dwarf it — with a spec reading the compiler source to pin the
+ * two together. That subpath is pure data with no compiler code behind it, so the
+ * bundle stays small and the copy is gone.
  */
 import type * as TS from 'typescript';
-
-const DOM = '@fluixi/dom';
-const CORE = '@fluixi/core';
-const ROUTER = '@fluixi/core/router-next';
+import { builtinComponentMap } from '@fluixi/compiler/builtins';
 
 /** Tag name → the module the compiler injects an import from. */
-export const AUTO_IMPORTED: Readonly<Record<string, string>> = {
-  // Control flow. Suspense and Await live in core; dom doesn't export them.
-  Show: DOM,
-  For: DOM,
-  Index: DOM,
-  Switch: DOM,
-  Match: DOM,
-  Portal: DOM,
-  Dynamic: DOM,
-  ErrorBoundary: DOM,
-  Suspense: CORE,
-  SuspenseList: CORE,
-  Await: CORE,
-  // Router. `Routes` isn't a component and `lazy` is a call, so neither appears.
-  Router: ROUTER,
-  Outlet: ROUTER,
-  Redirect: ROUTER,
-  Link: ROUTER,
-};
+export const AUTO_IMPORTED: Readonly<Record<string, string>> = builtinComponentMap();
 
 /** Exported symbols of a module, cached per program so resolution happens once. */
 const exportsByProgram = new WeakMap<TS.Program, Map<string, TS.Symbol[] | undefined>>();

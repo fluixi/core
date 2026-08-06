@@ -694,6 +694,9 @@ importers:
 
   packages/ts-plugin:
     dependencies:
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@fluixi/template-parser':
         specifier: workspace:*
         version: link:../template-parser

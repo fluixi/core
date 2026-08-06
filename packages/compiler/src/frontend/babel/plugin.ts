@@ -19,6 +19,11 @@ import {
   type ComponentResolver,
 } from '../../resolve/component-resolver.js';
 import {
+  DOM_CONTROL_FLOW,
+  CORE_CONTROL_FLOW,
+  ROUTER_COMPONENTS as ROUTER_COMPONENT_NAMES,
+} from '../../resolve/builtins.js';
+import {
   types as t,
   template,
   type PluginObj,
@@ -225,29 +230,19 @@ type PluginState = PluginPass & PluginStateData;
 // Constants
 // ============================================================================
 
-const CONTROL_FLOW_COMPONENTS = new Set([
-  'Show',
-  'For',
-  'Index',
-  'Switch',
-  'Match',
-  'Portal',
-  'Dynamic',
-  'ErrorBoundary',
-  'Suspense',
-  'SuspenseList',
-  'Await',
-]);
+// The names come from `resolve/builtins.ts`, which publishes them for the TS plugin,
+// the language server and codemods — tools that need to know where `<Show>` comes from
+// but must not re-derive it. What stays here is the part that is genuinely codegen:
+// which names get special lowering, reactive-getter props, and memo exemption.
+const CONTROL_FLOW_COMPONENTS = new Set<string>([...DOM_CONTROL_FLOW, ...CORE_CONTROL_FLOW]);
 
 // Control-flow components that live in @fluixi/core, NOT @fluixi/dom — they must
 // be auto-imported from core (dom doesn't export them).
-const CORE_ONLY_CONTROL_FLOW = new Set(['Suspense', 'SuspenseList', 'Await']);
+const CORE_ONLY_CONTROL_FLOW = new Set<string>(CORE_CONTROL_FLOW);
 
 // Router components auto-imported (from routerModule) the same way control flow is:
 // use `<Router>`/`<Outlet>`/… in a template and the import is injected if absent.
-// (`Routes` isn't a component — routing is `<Router routes={…}>`; `lazy` is a function
-// call, not a tag, so neither can be auto-imported this way.)
-const ROUTER_COMPONENTS = new Set(['Router', 'Outlet', 'Redirect', 'Link']);
+const ROUTER_COMPONENTS = new Set<string>(ROUTER_COMPONENT_NAMES);
 
 // Control-flow components read a single reactive *value* prop inside their own tracking
 // scope. Emit that prop as a getter (like `children`) so reading it re-runs the caller's
@@ -665,10 +660,13 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         const openingElement = element.openingElement;
 
         // Router components auto-import like control flow, but aren't optimized —
-        // just register the name so the import gets injected if it isn't bound.
+        // just register the name so the import gets injected if it isn't bound. A
+        // configured rule takes precedence; registering anyway would inject the
+        // router's import alongside the resolved one and bind the name twice.
         if (
           t.isJSXIdentifier(openingElement.name) &&
-          ROUTER_COMPONENTS.has(openingElement.name.name)
+          ROUTER_COMPONENTS.has(openingElement.name.name) &&
+          !state.componentResolver?.resolve(openingElement.name.name)
         ) {
           state.controlFlowComponents.add(openingElement.name.name);
           state.needsControlFlowImport = true;
@@ -944,24 +942,29 @@ function emitComponentCall(
   propsObj: t.Expression,
   state: any,
 ): t.Expression {
-  // Router components (Router/Outlet/…) auto-import like control flow — register the
-  // name here (the nested lowering chokepoint) so `<Outlet/>` inside markup is caught,
-  // not only a top-level router tag. Unbound names are injected at Program.exit.
-  if (t.isIdentifier(comp) && ROUTER_COMPONENTS.has(comp.name)) {
+  // Configured tags register here rather than in the JSX element visitor: this is the
+  // chokepoint every component passes through, and the visitor missed children because
+  // a lowered parent is replaced before its subtree is walked.
+  //
+  // A configured rule wins over the router built-ins. Those are only an import — no
+  // special lowering, no reactive-getter props — so letting a project's own `Link` lose
+  // to them silently was the same failure `Switch` has: the tag renders the router's
+  // component and nothing reports it. Control flow still wins, because there the name
+  // selects codegen and a rule cannot supply that.
+  let resolvedByRule = false;
+  if (t.isIdentifier(comp) && !CONTROL_FLOW_COMPONENTS.has(comp.name) && state.componentResolver) {
+    const resolved = state.componentResolver.resolve(comp.name);
+    if (resolved) {
+      state.resolvedComponents.set(comp.name, resolved);
+      resolvedByRule = true;
+    }
+  }
+  // Router components auto-import like control flow — register the name here so
+  // `<Outlet/>` nested in markup is caught, not only a top-level router tag. Unbound
+  // names are injected at Program.exit.
+  if (!resolvedByRule && t.isIdentifier(comp) && ROUTER_COMPONENTS.has(comp.name)) {
     state.controlFlowComponents.add(comp.name);
     state.needsControlFlowImport = true;
-  }
-  // Configured tags register here for the same reason: this is the chokepoint every
-  // component passes through, nested or not. Hooking the JSX element visitor instead
-  // missed children, because a lowered parent is replaced before its subtree is walked.
-  if (
-    t.isIdentifier(comp) &&
-    !ROUTER_COMPONENTS.has(comp.name) &&
-    !CONTROL_FLOW_COMPONENTS.has(comp.name) &&
-    state.componentResolver
-  ) {
-    const resolved = state.componentResolver.resolve(comp.name);
-    if (resolved) state.resolvedComponents.set(comp.name, resolved);
   }
   if (state.backend === 'imperative') {
     state.needsCreateComponent = true;
@@ -1091,18 +1094,23 @@ function inheritLocation(target: t.Node, source: t.Node): void {
  * (-> auto-import from the control-flow module, like the inline JSX path).
  */
 function collectRuntimeNeeds(node: IRNode, state: any): void {
-  if (
-    node.kind === 'component' &&
-    (CONTROL_FLOW_COMPONENTS.has(node.name) || ROUTER_COMPONENTS.has(node.name))
-  ) {
-    state.controlFlowComponents.add(node.name);
-    state.needsControlFlowImport = true;
-  } else if (node.kind === 'component' && state.componentResolver) {
-    // A configured tag inside html``. Recorded here rather than at the tag site so
-    // nested usage is caught too; the binding check happens at Program.exit, where
-    // the whole file's scope is known.
-    const resolved = state.componentResolver.resolve(node.name);
-    if (resolved) state.resolvedComponents.set(node.name, resolved);
+  if (node.kind === 'component') {
+    // Same precedence as the JSX path: control flow first (the name selects codegen),
+    // then a configured rule, then the router built-ins. Recorded here rather than at
+    // the tag site so nested usage is caught too; the binding check happens at
+    // Program.exit, where the whole file's scope is known.
+    if (CONTROL_FLOW_COMPONENTS.has(node.name)) {
+      state.controlFlowComponents.add(node.name);
+      state.needsControlFlowImport = true;
+    } else {
+      const resolved = state.componentResolver?.resolve(node.name);
+      if (resolved) {
+        state.resolvedComponents.set(node.name, resolved);
+      } else if (ROUTER_COMPONENTS.has(node.name)) {
+        state.controlFlowComponents.add(node.name);
+        state.needsControlFlowImport = true;
+      }
+    }
   }
   if (node.kind === 'element' || node.kind === 'component' || node.kind === 'control') {
     if ('props' in node) {
