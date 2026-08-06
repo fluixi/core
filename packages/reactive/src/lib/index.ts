@@ -1,3 +1,4 @@
+export { VERSION } from '../version.generated.js';
 export * from './observable/index.js';
 export * from './subject.js';
 export * from './signal/index.js';
