@@ -352,7 +352,7 @@ export function holeScope<T>(start: Node, produce: () => T): T {
  */
 export function holeEnd(start: Node): Node {
   for (let n = start.nextSibling; n; n = n.nextSibling) {
-    if (n.nodeType === 8 && (n as Comment).data === '/fx') return n;
+    if (n.nodeType === 8 && (n as Comment).data === 'fx/') return n;
   }
   /* c8 ignore next 2 */
   throw new Error('[fluixi] template hole is missing its closing marker');

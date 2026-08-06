@@ -13,7 +13,7 @@ describe('SSR example — compiled JSX → HTML', () => {
     // Interpolations are bracketed by `<!--fx-->` markers so the server's markup has the
     // same shape as the client's template — that is what lets hydration adopt the nodes
     // rather than rebuild them. Stripped so the assertions read as the markup does.
-    const html = renderToString(() => App({ url: '/home' })).replace(/<!--\/?fx-->/g, '');
+    const html = renderToString(() => App({ url: '/home' })).replace(/<!--fx\/?-->/g, '');
     expect(html).toContain('<h1>Fluixi SSR</h1>');
     expect(html).toContain('/home'); // props.url rendered
     expect(html).toContain('class="counter"');
