@@ -1,5 +1,98 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.4
+
+### Patch Changes
+
+- d27056f: Publish the built-in component names as data
+
+  `@fluixi/compiler/builtins` exports the names the compiler supplies without an import,
+  and the module each comes from:
+
+  ```ts
+  import {
+    builtinComponentMap,
+    RESERVED_COMPONENTS,
+  } from '@fluixi/compiler/builtins';
+  ```
+
+  These were hardcoded inside the Babel plugin, which mixed up two things: which module a
+  name comes from — data every tool needs — and which names get special codegen, which is
+  the compiler's business. With nothing published, `@fluixi/ts-plugin` kept its own copy.
+  That copy is gone, and the subpath carries no compiler code, so the plugin's bundle grows
+  2 KB rather than pulling the compiler in.
+
+  **A configured `resolve` rule now wins over `Router`, `Outlet`, `Redirect` and `Link`.**
+  Those are only an auto-import, so a project defining its own `Link` previously lost to the
+  router's silently, rendering the wrong component with nothing reported.
+
+  Control flow is unchanged and still outranks rules, because there the name selects codegen
+  a rule cannot supply: `Show`, `For`, `Index` and `Match` emit their value prop as a getter,
+  so `each={items()}` re-reads instead of snapshotting once. `RESERVED_COMPONENTS` lists them
+  so rule generators can report a clash instead of emitting a rule that does nothing.
+
+- c888e15: Re-query completions on every keystroke inside a template, and stop past `>`
+
+  Completion lists were returned without `isIncomplete`, so the editor treated one response
+  as valid for the whole word and filtered it locally rather than asking again. Inside a
+  template the valid set changes with the cursor — a tag name, then that tag's props — so a
+  list captured a keystroke earlier is simply the wrong one, and the props only appeared
+  after enough typing to force a fresh request. That is what made completion feel
+  intermittent.
+
+  The attribute area was also end-inclusive, so props were still offered with the cursor
+  already past `>`.
+
+- 8f2fab3: Complete and describe component props for tags supplied by a `resolve` rule
+
+  Typing `<Stack ` inside `` html`…` `` offered only the framework's generic surface —
+  `class`, `.prop`, `use:` — and none of the component's own props.
+
+  Hovering a prop name gave nothing either. Both resolved the tag by scanning the file's own top-level statements, so it
+  only ever found local declarations and hand-written imports. A component supplied by a
+  `resolve` rule has neither: the compiler injects its import, and TypeScript knows it
+  through generated ambient declarations. They now resolve through scope, the same lookup
+  hover already used — which is why hover worked on the very tag whose props did not
+  complete.
+
+  Alias declarations are followed, since generated globals are emitted as
+  `export import Stack = ns.Stack` and the alias has to be resolved before the call
+  signature is reachable.
+
+- 58a0086: Keep component props in the list once you start typing
+
+  Prop completions carried no replacement span, so the editor filtered them against the
+  word it computed at the cursor — which inside a template literal isn't the attribute
+  name. The props showed while the prefix was empty and vanished on the first keystroke.
+  They now span the name being typed, so `dir` narrows to `direction` instead of
+  emptying the list.
+
+- 37cbf4c: Fix template offsets drifting after an escape sequence
+
+  Spans were computed from `node.text`, the _cooked_ template value, where `` \` `` is one
+  character while the source spends two. Every position after an escape was therefore
+  reported short, so hover, completion and diagnostics landed on the wrong offset — and a
+  tag whose attribute area had shifted out from under the cursor simply returned nothing.
+
+  A single `` html`\`\` …` `` in a file was enough: two escapes moved the following tag two
+  characters left, which reads as "autocomplete just doesn't work in this file" while
+  everything looks perfectly ordinary.
+
+  Pieces are now built from the source text. The escape stays a backslash and a backtick in
+  the text a node reports, which changes nothing structural — spans are what matter here —
+  and offsets line up with the file again.
+
+- Updated dependencies [d27056f]
+- Updated dependencies [77ab4cb]
+- Updated dependencies [509f3f2]
+- Updated dependencies [b8ef7fc]
+- Updated dependencies [4f4895a]
+- Updated dependencies [569fe05]
+- Updated dependencies [b820700]
+- Updated dependencies [2a317dc]
+  - @fluixi/compiler@1.0.0-alpha.70
+  - @fluixi/template-parser@0.1.0-alpha.3
+
 ## 0.1.0-alpha.3
 
 ### Minor Changes

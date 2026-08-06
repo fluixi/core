@@ -1,5 +1,82 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.70
+
+### Minor Changes
+
+- 2a317dc: Build markup by cloning a template instead of an element at a time
+
+  Static markup is serialized to HTML once, declared at module scope, and cloned per
+  instance. Subtrees whose structure is static but which contain dynamic values are cloned
+  too, with each value inserted through a reference into the clone:
+
+  ```js
+  const _tmpl$0 =
+    '<div class="card"><h3><!--fx--><!--fx/--></h3><p>a <!--fx--><!--fx/--> b</p></div>';
+  const _el$ = templateNode(_tmpl$0, 'div', true);
+  const _n$1 = _el$.firstChild.firstChild;
+  const _n$2 = holeEnd(_n$1);
+  insert(
+    _el$.firstChild,
+    holeScope(_n$1, () => () => title()),
+    _n$2,
+    holeContent(_n$1, _n$2)
+  );
+  ```
+
+  Instantiation is roughly twice as fast — 2.08x for a three-element row, 2.45x for a
+  nine-element card, measured in Chrome against the real runtime. The gap widens with
+  component size. Transfer size is unchanged: the old output was repetitive enough that
+  compression absorbed it, so this is a parse-time and runtime win rather than a bytes one.
+
+  Applies to `html\`\``and`codegen: 'ir'`, and is on by default. `templateClone: false`and`partialTemplates: false` opt out.
+
+  **Each interpolation leaves an `<!--fx-->` … `<!--fx/-->` pair in the HTML.** That is what
+  makes a clone, the server's markup and the DOM being hydrated the same shape, so one set
+  of node references addresses all three and hydration adopts the server's nodes rather than
+  rebuilding them. Tests asserting exact server markup will need to account for them.
+
+  New in `@fluixi/dom`: `templateNode`, `holeEnd`, `holeContent`, `holeScope`, and a server
+  parser that turns a template into server nodes so SSR can render into it.
+
+  Some shapes stay on the element-by-element path, because a template would change what the
+  code means: SVG, namespaced names (`prop:`, `attr:`, `bool:`, `on:`), property-only names
+  (`innerHTML`, `value`, …), raw-text elements (`<style>`, `<script>`), and adjacent text
+  children, which the DOM merges while the IR does not.
+
+- 84b1821: Report the running package versions on the mount element and `window.Fluixi`
+
+  The mount element now carries which build of each package is running:
+
+  ```html
+  <div
+    id="app"
+    fluixi="1.0.0-alpha.68"
+    fx-dom="1.0.0-alpha.68"
+    fx-reactive="1.0.0-alpha.68"
+  ></div>
+  ```
+
+  and the same is available in the console:
+
+  ```js
+  window.Fluixi; // { core: '…', dom: '…', reactive: '…' }
+  ```
+
+  It replaces `fluixi-js="v1"`, which said only that Fluixi was involved.
+
+  Three attributes rather than one because the packages are resolved separately even though
+  they release together. A stale lockfile or a duplicated install can pair one version of the
+  DOM runtime with another of the signal core, which surfaces as reactivity behaving
+  inexplicably — so a mismatch also warns once at mount, naming the versions.
+
+  `@fluixi/core`, `@fluixi/dom` and `@fluixi/reactive` each export `VERSION`.
+
+### Patch Changes
+
+- Updated dependencies [84b1821]
+  - @fluixi/reactive@1.0.0-alpha.70
+
 ## 1.0.0-alpha.69
 
 ### Patch Changes
