@@ -64,6 +64,13 @@
       "import": "./dist/integrations.mjs",
       "require": "./dist/integrations.cjs",
       "default": "./dist/integrations.js"
+    },
+    "./builtins": {
+      "development": "./src/resolve/builtins.ts",
+      "types": "./dist/resolve/builtins.d.ts",
+      "import": "./dist/resolve/builtins.mjs",
+      "require": "./dist/resolve/builtins.cjs",
+      "default": "./dist/resolve/builtins.js"
     }
   },
   "scripts": {
