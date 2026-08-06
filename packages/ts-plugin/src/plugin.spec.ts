@@ -8,8 +8,8 @@ const GLOBALS = '/globals.d.ts';
 const GLOBALS_SRC = 'declare function html(s: TemplateStringsArray, ...v: any[]): any;\ndeclare function svg(s: TemplateStringsArray, ...v: any[]): any;\n';
 
 /** Create the plugin over a real language service + host for one file. */
-function plugin(code: string, fileName = '/a.tsx') {
-  const files: Record<string, string> = { [fileName]: code, [GLOBALS]: GLOBALS_SRC };
+function plugin(code: string, fileName = '/a.tsx', extra: Record<string, string> = {}) {
+  const files: Record<string, string> = { [fileName]: code, [GLOBALS]: GLOBALS_SRC, ...extra };
   const host: ts.LanguageServiceHost = {
     getScriptFileNames: () => Object.keys(files),
     getScriptVersion: () => '1',
@@ -19,7 +19,15 @@ function plugin(code: string, fileName = '/a.tsx') {
       return d !== undefined ? ts.ScriptSnapshot.fromString(d) : undefined;
     },
     getCurrentDirectory: () => '/',
-    getCompilationSettings: () => ({ target: ts.ScriptTarget.Latest, noEmit: true, strict: true }),
+    getCompilationSettings: () => ({
+      target: ts.ScriptTarget.Latest,
+      noEmit: true,
+      strict: true,
+      // Without these a `./x.js` specifier does not resolve, so an alias declaration
+      // silently degrades to `any` — which is what a real project would never do.
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+    }),
     getDefaultLibFileName: (o) => ts.getDefaultLibFilePath(o),
     fileExists: ts.sys.fileExists,
     readFile: ts.sys.readFile,
@@ -136,5 +144,42 @@ describe('control-flow prop hover + use inference', () => {
     const { ls, fileName } = plugin(code);
     const info = ls.getQuickInfoAtPosition(fileName, code.indexOf('el.value'));
     expect((info?.displayParts ?? []).map((p: ts.SymbolDisplayPart) => p.text).join('')).toContain('HTMLInputElement');
+  });
+
+  it('completes props of a component supplied by a resolve rule', () => {
+    // The compiler injects the import, so the file has neither an import nor a local
+    // declaration — only an ambient global from generated declarations. Scanning the
+    // file's own statements found nothing, so `<Stack ` offered no props at all while
+    // hover on the same tag worked.
+    const decls =
+      'declare global {\n' +
+      '  function Stack(props: { gap?: number; direction?: "row" | "column" }): any;\n' +
+      '}\nexport {};\n';
+    const code = 'const t = html`<Stack ></Stack>`;';
+    const { ls, fileName } = plugin(code, '/a.tsx', { '/resolved.d.ts': decls });
+    const pos = code.indexOf('<Stack ') + '<Stack '.length;
+    const names = (ls.getCompletionsAtPosition(fileName, pos, {})?.entries ?? []).map(
+      (e: ts.CompletionEntry) => e.name,
+    );
+    expect(names).toContain('gap');
+    expect(names).toContain('direction');
+  });
+
+  it('completes props of a component reached through an alias declaration', () => {
+    // The generated globals are `export import X = ns.X`, so the alias has to be followed
+    // before the call signature is reachable. Verified against the real playground too:
+    // `Stack` resolves through the alias to `StackProps`.
+    const decls =
+      'declare namespace _ui {\n' +
+      '  function Stack(props: { gap?: number }): any;\n' +
+      '}\n' +
+      'declare global {\n  export import Stack = _ui.Stack;\n}\nexport {};\n';
+    const code = 'const t = html`<Stack ></Stack>`;';
+    const { ls, fileName } = plugin(code, '/a.tsx', { '/resolved.d.ts': decls });
+    const pos = code.indexOf('<Stack ') + '<Stack '.length;
+    const names = (ls.getCompletionsAtPosition(fileName, pos, {})?.entries ?? []).map(
+      (e: ts.CompletionEntry) => e.name,
+    );
+    expect(names).toContain('gap');
   });
 });

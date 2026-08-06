@@ -11,10 +11,12 @@
 import type * as TS from 'typescript';
 import { parseTemplate, type ComponentNode, type TemplateNode } from '@fluixi/template-parser';
 import { parseCached, templateAtCached as templateAt } from './cache.js';
+import { autoImportedSymbol } from './auto-import.js';
 
 export function componentPropCompletions(
   ts: typeof TS,
   ls: TS.LanguageService,
+  host: TS.ModuleResolutionHost,
   fileName: string,
   position: number,
 ): TS.CompletionEntry[] | undefined {
@@ -37,11 +39,13 @@ export function componentPropCompletions(
   }
 
   const checker = program.getTypeChecker();
-  const rootName = comp.tag.split('.')[0];
-  const decl = findDeclaration(ts, sf, rootName);
-  if (!decl) return undefined;
-  const compType = checker.getTypeAtLocation(decl);
-  const propsType = firstParamType(ts, checker, compType);
+  const rootName = comp.tag.split('.')[0]!;
+  // Resolve through scope, not the file's own statements. A component supplied by a
+  // `resolve` rule has no import to find — it is a global from generated ambient
+  // declarations — which is why scanning the file offered nothing for `<Stack `. This is
+  // the same lookup `hover.ts` uses, so hover and completion now agree on what a tag is.
+  const compType = componentTypeOf(ts, program, checker, host, sf, template.template, rootName);
+  const propsType = compType && firstParamType(ts, checker, compType);
   if (!propsType) return undefined;
 
   const already = new Set(comp.attributeNames);
@@ -167,6 +171,36 @@ function propEntry(ts: typeof TS, name: string): TS.CompletionEntry {
 }
 
 /** Find a top-level declaration of `name` (function/class/const/import) in the file. */
+/**
+ * The type of the component `name` refers to at `template`.
+ *
+ * Scope first, so imports, locals and ambient globals all resolve, then the compiler's
+ * own auto-imported names (`Show`, `Outlet`, …) which have no binding anywhere.
+ * `getTypeOfSymbolAtLocation` is used rather than `getTypeAtLocation` on a declaration
+ * because the generated globals are alias declarations, and an alias has to be followed
+ * to reach the function type.
+ */
+function componentTypeOf(
+  ts: typeof TS,
+  program: TS.Program,
+  checker: TS.TypeChecker,
+  host: TS.ModuleResolutionHost,
+  sf: TS.SourceFile,
+  template: TS.Node,
+  name: string,
+): TS.Type | undefined {
+  const flags =
+    ts.SymbolFlags.Value | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias;
+  const symbol =
+    checker.getSymbolsInScope(template, flags).find((s) => s.name === name) ??
+    autoImportedSymbol(ts, program, host, sf, name);
+  if (!symbol) return undefined;
+  const resolved =
+    symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  const decl = resolved.valueDeclaration ?? resolved.declarations?.[0];
+  return decl ? checker.getTypeOfSymbolAtLocation(resolved, decl) : undefined;
+}
+
 function findDeclaration(ts: typeof TS, sf: TS.SourceFile, name: string): TS.Node | undefined {
   for (const stmt of sf.statements) {
     if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name?.text === name) return stmt.name;
