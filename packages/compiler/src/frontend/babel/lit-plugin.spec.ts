@@ -196,6 +196,7 @@ describe('lit front-end (format: lit)', () => {
     const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
       backend: 'imperative',
       hoistStatics: false,
+      templateClone: true,
     });
     // Fully static, so it is cloned from a template rather than built element by element.
     expect(code).toContain('cloneTemplate');
