@@ -13,6 +13,17 @@ export interface CompilerOptions {
    * a client-rendered app; leave off wherever SSR or hydration is involved.
    */
   templateClone?: boolean;
+  /**
+   * Also clone subtrees whose *structure* is static but which contain dynamic holes —
+   * the common shape. Roughly halves the emitted code for such a subtree and replaces
+   * per-element construction with one clone.
+   *
+   * **Client rendering only.** Hole content adopts server DOM through the hydration
+   * cursor, while the template walk addresses nodes by `firstChild`/`nextSibling`; the
+   * two do not line up, so a hydrated app renders hole content twice. Off until the
+   * hydration model covers it.
+   */
+  partialTemplates?: boolean;
 
   /** which codegen backend to use */
   backend?: 'imperative' | 'template-clone';

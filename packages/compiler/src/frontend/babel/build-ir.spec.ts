@@ -31,7 +31,8 @@ function parseJSX(src: string): any {
 }
 
 function compile(src: string) {
-  return imperativeBackend.emit(buildIR(parseJSX(src)), {} as never);
+  // Partial templates are opt-in; this suite exercises them deliberately.
+  return imperativeBackend.emit(buildIR(parseJSX(src)), { partialTemplates: true } as never);
 }
 
 /** Execute an emitted expression, wiring runtime imports + user vars into scope. */
@@ -70,10 +71,11 @@ describe('AST -> IR -> emit() pipeline', () => {
   });
 
   it('emit() targets the runtime contract', () => {
+    // Structure static, one hole — a partial template rather than element-by-element.
     const { code, imports } = compile('(<ul><li>{x()}</li></ul>)');
-    expect(code).toContain('createNativeElement');
+    expect(code).toContain('templateNode');
     expect(code).toContain('insert');
-    expect(imports).toContain('createNativeElement');
+    expect(imports).toContain('templateNode');
     expect(imports).not.toContain('jsx');
   });
 
@@ -237,7 +239,14 @@ describe('template cloning produces the same DOM as building element by element'
     expect(compile('(<div class="a"><span>x</span></div>)').code).toContain('templateNode');
   });
 
-  it('stays imperative when a child is dynamic', () => {
-    expect(compile('(<div class="a">{v()}</div>)').code).toContain('createNativeElement');
+  it('templates the structure and inserts the hole when a child is dynamic', () => {
+    const { code } = compile('(<div class="a">{v()}</div>)');
+    expect(code).toContain('templateNode');
+    expect(code).toContain('insert(_el$');
+  });
+
+  it('falls back to building when the element itself is dynamic', () => {
+    // A reactive attribute cannot be baked into a template.
+    expect(compile('(<div class={cls()}>x</div>)').code).toContain('createNativeElement');
   });
 });

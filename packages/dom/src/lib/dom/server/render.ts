@@ -18,6 +18,7 @@ import { isServer, setServerMode, registerServerNodes } from './host.js';
 import { ServerElement, ServerText,
   ServerRaw, ServerComment } from './nodes.js';
 import { serializeNode } from './serialize.js';
+import { parseTemplate } from './parse-template.js';
 
 // Register the node classes with the runtime seam on first render. Done from here
 // (not the client barrel) so the classes only load on the server.
@@ -29,6 +30,7 @@ function ensureServerNodes(): void {
     createElement: (tag, isSVG) => new ServerElement(tag, isSVG),
     createText: (value) => new ServerText(value),
     createRaw: (html) => new ServerRaw(html),
+    parseTemplate: (html, isSVG) => parseTemplate(html, isSVG),
     createComment: (value) => new ServerComment(value),
   });
 }

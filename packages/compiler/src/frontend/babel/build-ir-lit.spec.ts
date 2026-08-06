@@ -36,10 +36,16 @@ const emitLit = (src: string, svg = false) =>
   imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', ['typescript']), new Set(), { svg }), {} as any);
 
 /** Run emitted code against the real @fluixi/dom runtime in jsdom. */
-function run(res: { code: string; imports: string[] }, vars: Record<string, any> = {}): any {
+function run(
+  res: { code: string; imports: string[]; templates?: { id: string; html: string }[] },
+  vars: Record<string, any> = {},
+): any {
   const runtimeVals = res.imports.map((n) => (DOM as any)[n] ?? (S as any)[n]);
   const userNames = Object.keys(vars);
-  const fn = new Function(...res.imports, ...userNames, `return (${res.code});`);
+  const decls = (res.templates ?? [])
+    .map((t) => `const ${t.id} = ${JSON.stringify(t.html)};`)
+    .join('\n');
+  const fn = new Function(...res.imports, ...userNames, `${decls}\nreturn (${res.code});`);
   return fn(...runtimeVals, ...userNames.map((k) => vars[k]));
 }
 
@@ -117,7 +123,7 @@ describe('lit → shared compiler (spike)', () => {
     // (n: number) => … in a hole must not break the emitted-code reparse.
     const lit = emitLit('html`<For each=${xs()}>${(n: number) => html`<li>${n}</li>`}</For>`');
     expect(lit.code).toContain('createComponent(For');
-    expect(lit.code).toContain('createNativeElement("li")');
+    expect(lit.code).toMatch(/createNativeElement\("li"\)|<li>/);
   });
 
   it('matches: nested html`` in a ternary hole', () => {

@@ -291,11 +291,16 @@ export function createTemplate(html: string, isSVG = false): HTMLTemplateElement
  *    is inert, so there is nothing inside to wire up.
  *  - **client** — parse once (cached by HTML) and clone per instance.
  */
-export function templateNode(html: string, tag: string, isSVG = false): Node {
+export function templateNode(html: string, tag: string, holes = false, isSVG = false): Node {
   if (isServer) {
-    return getServerNodes().createRaw(html) as unknown as Node;
+    // With holes the server needs real nodes for the hole content to be inserted into;
+    // without them the string can be written out untouched, which is strictly cheaper.
+    const nodes = getServerNodes();
+    return (holes ? nodes.parseTemplate(html, isSVG) : nodes.createRaw(html)) as unknown as Node;
   }
   if (hydration.active) {
+    // Adopt the server's root either way. With holes the generated walk reaches them
+    // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag);
     if (node) return node;
   }

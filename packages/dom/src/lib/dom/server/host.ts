@@ -18,6 +18,8 @@ export interface ServerNodeFactory {
   createComment(value: string): any;
   /** A pre-rendered static subtree, serialized verbatim. */
   createRaw(html: string): any;
+  /** A template with holes, parsed into real nodes so the holes can be filled. */
+  parseTemplate(html: string, isSVG: boolean): any;
 }
 
 let _nodes: ServerNodeFactory | null = null;

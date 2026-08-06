@@ -58,6 +58,20 @@ const PROPERTY_ONLY = new Set([
   'ref',
 ]);
 
+/**
+ * Elements whose content the HTML parser does not decode entities inside.
+ *
+ * Escaping `>` in a `<style>` body would leave a literal `&gt;` in the CSS rather than
+ * the character. There is nothing to gain from templating these — their content is the
+ * interesting part, not their structure — so they stay on the imperative path.
+ */
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
+
+/** True when this element's content must not be entity-escaped. */
+export function isRawTextElement(tag: string): boolean {
+  return RAW_TEXT_ELEMENTS.has(tag);
+}
+
 /** The HTML spelling of an IR prop name. */
 export function htmlAttrName(name: string): string {
   return HTML_NAME[name] ?? name;
@@ -77,6 +91,7 @@ export function isPlainLiteralAttr(prop: IRProp): boolean {
 /** True when the subtree can be represented as HTML text with no loss. */
 export function isSerializable(node: IRElement): boolean {
   if (!node.static) return false;
+  if (isRawTextElement(node.tag)) return false;
   // Nothing may end up needing an expression once inside the template.
   for (const prop of node.props) {
     // Namespaced names (`prop:value`, `attr:x`, `bool:disabled`, `on:click`) are

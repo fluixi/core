@@ -288,6 +288,7 @@ describe('jsx backend (opt-in) is unchanged', () => {
 describe('imperative backend via the IR codegen path (codegen: ir)', () => {
   it('emits the same runtime calls through the plugin', () => {
     const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`, IMPERATIVE_IR);
+    // Structure-static-with-holes stays imperative by default; partial templates opt in.
     expect(code).toContain('createNativeElement');
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);

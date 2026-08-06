@@ -116,7 +116,10 @@ describe('renderToString — components + children', () => {
 describe('renderToString — escaping', () => {
   it('escapes text and attribute values', () => {
     const html = renderToString(() => el('div', { title: '<a> & "b"' }, 'x < y & z'));
-    expect(html).toBe('<div title="<a> &amp; &quot;b&quot;">x &lt; y &amp; z</div>');
+    expect(html).toBe(// `<`/`>` are escaped in attribute values too. Not required inside quotes, but it
+      // matches the compiler's template serializer so markup round-trips through either
+      // side unchanged. Browsers decode it back to the same attribute value.
+      '<div title="&lt;a&gt; &amp; &quot;b&quot;">x &lt; y &amp; z</div>');
   });
 });
 

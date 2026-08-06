@@ -19,7 +19,14 @@ function escapeText(s: string): string {
   return s.replace(AMP, '&amp;').replace(LT, '&lt;').replace(GT, '&gt;');
 }
 function escapeAttr(s: string): string {
-  return s.replace(AMP, '&amp;').replace(QUOT, '&quot;');
+  // `<` and `>` are escaped too. Not strictly required inside a quoted value, but it
+  // keeps this identical to the compiler's template serializer, so markup produced by
+  // either side round-trips through the other unchanged.
+  return s
+    .replace(AMP, '&amp;')
+    .replace(QUOT, '&quot;')
+    .replace(LT, '&lt;')
+    .replace(GT, '&gt;');
 }
 
 function camelToKebab(k: string): string {

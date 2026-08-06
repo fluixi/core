@@ -1,5 +1,6 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
 import type { IRNode, IRProp } from '../../ir/nodes.js';
+import { planPartialTemplate } from '../partial-template.js';
 import {
   isSerializable,
   serializeStatic,
@@ -143,6 +144,8 @@ function staticAttrAssignment(el: string, prop: IRProp): string {
   return `${el}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(value))});`;
 }
 
+let partial = false;
+
 function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[]): string {
   switch (node.kind) {
     case 'text':
@@ -177,6 +180,44 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });
         return `templateNode(${id}, ${JSON.stringify(node.tag)})`;
       }
+      // Structure static, contents dynamic — the common shape. One template for the
+      // structure, then each hole filled through a reference into the clone. Every
+      // reference is read before any insertion, since inserting shifts later positions.
+      if (templates && partial) {
+        const plan = planPartialTemplate(node);
+        if (plan) {
+          used.add('templateNode');
+          used.add('insert');
+          const id = `_tmpl$${templates.length}`;
+          templates.push({ id, html: plan.html, tag: plan.tag, svg: false });
+
+          const refs = new Map<string, string>();
+          const refFor = (path: string): string => {
+            if (path === '_el$') return '_el$';
+            let name = refs.get(path);
+            if (!name) {
+              name = `_n$${refs.size}`;
+              refs.set(path, name);
+            }
+            return name;
+          };
+          // Resolve every path first so the declarations come out in dependency order.
+          const inserts = plan.holes.map((hole) => {
+            const parent = refFor(hole.parentPath);
+            const before = hole.beforePath ? refFor(hole.beforePath) : 'null';
+            return { parent, before, node: hole.node };
+          });
+
+          const lines = [`const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true);`];
+          for (const [path, name] of refs) lines.push(`const ${name} = ${path};`);
+          for (const ins of inserts) {
+            lines.push(`insert(${ins.parent}, ${emitNode(ins.node, used, templates)}, ${ins.before});`);
+          }
+          lines.push('return _el$;');
+          return `(() => { ${lines.join(' ')} })()`;
+        }
+      }
+
       used.add('createNativeElement');
       const tag = JSON.stringify(node.tag);
       const el = '_el$';
@@ -226,11 +267,9 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
  */
 export function inlineTemplates(code: string, templates: StaticTemplate[] | undefined): string {
   if (!templates || templates.length === 0) return code;
-  let out = code;
-  for (const tpl of templates) {
-    out = out.split(tpl.id).join(JSON.stringify(tpl.html));
-  }
-  return out;
+  const byId = new Map(templates.map((t) => [t.id, JSON.stringify(t.html)]));
+  // Single pass, for the same reason `adoptTemplates` needs one.
+  return code.replace(/_tmpl\$\d+/g, (id) => byId.get(id) ?? id);
 }
 
 export const imperativeBackend: CodegenBackend = {
@@ -245,6 +284,7 @@ export const imperativeBackend: CodegenBackend = {
     const templates: StaticTemplate[] | undefined = options?.templateClone !== false
       ? []
       : undefined;
+    partial = options?.partialTemplates === true;
     const code = emitNode(node, used, templates);
     return { code, imports: Array.from(used), templates };
   },
