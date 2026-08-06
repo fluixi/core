@@ -87,16 +87,34 @@ describe('builtin data matches what the compiler emits', () => {
   }
 });
 
-describe('control flow is codegen, not an import', () => {
-  // Why these cannot become resolver rules: on the JSX path the name selects a
-  // lowering and no component import is emitted, so a rule pointing the name
-  // elsewhere would change nothing here while silently changing the template path.
+describe('control flow is auto-imported, nested or not', () => {
+  // This asserted the opposite until the bug behind it was found: the JSX visitor
+  // registered control-flow names, but a lowered parent is replaced before its subtree
+  // is walked, so a nested `<Show>` never reached it and compiled to a reference to
+  // nothing. Registration moved to emitComponentCall, the chokepoint every component
+  // passes through. Every fixture imported Show by hand, which is why it survived.
+  const map = builtinComponentMap();
   for (const name of ['Show', 'For', 'Switch', 'Suspense']) {
-    it(`<${name}/> emits no import for the name in JSX`, () => {
-      const out = compile(`const v = <${name}>x</${name}>;`, { optimizeControlFlow: false });
-      expect(moduleFor(out, name)).toBeUndefined();
+    it(`imports a top-level <${name}/>`, () => {
+      expect(moduleFor(compile(`const v = <${name}>x</${name}>;`), name)).toBe(map[name]);
+    });
+
+    it(`imports a nested <${name}/>`, () => {
+      expect(moduleFor(compile(`const v = <div><${name}>x</${name}></div>;`), name)).toBe(
+        map[name],
+      );
     });
   }
+
+  it('leaves a hand-written import alone', () => {
+    const out = compile("import { Show } from './mine.js';\nconst v = <div><Show/></div>;");
+    expect(moduleFor(out, 'Show')).toBe('./mine.js');
+  });
+
+  it('emits one binding, not two', () => {
+    const out = compile('const v = <div><Show/><Show/></div>;');
+    expect(importsOf(out).filter((l) => /\bShow\b/.test(l))).toHaveLength(1);
+  });
 });
 
 describe('rule precedence against builtins', () => {
