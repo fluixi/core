@@ -442,3 +442,32 @@ describe('lit dynamic component tag', () => {
     expect(host.querySelector('b')?.textContent).toBe('dyn');
   });
 });
+
+describe('named slots', () => {
+  const compile = (src: string) =>
+    babel.transformSync(src, {
+      filename: 't.ts',
+      configFile: false,
+      babelrc: false,
+      parserOpts: { plugins: ['typescript'] },
+      plugins: [[plugin, { format: 'lit' }]],
+    })!.code!;
+
+  it('does not emit a key twice when a slot shadows an attribute', () => {
+    // `<Card header>` sets the prop, `<span slot="header">` supplies content. Emitting
+    // both is valid JS where the last wins, but the first is dead and esbuild warns.
+    const out = compile('const v = html`<Card header><span slot="header">H</span>d</Card>`;');
+    expect((out.match(/get header\(\)/g) ?? []).length).toBe(1);
+  });
+
+  it('keeps the slot content, not the attribute value', () => {
+    const out = compile('const v = html`<Card header><span slot="header">H</span>d</Card>`;');
+    expect(out).toMatch(/get header\(\)[\s\S]*createNativeElement\("span"\)/);
+  });
+
+  it('leaves a slotless attribute alone', () => {
+    const out = compile('const v = html`<Card header>d</Card>`;');
+    expect(out).toContain('get header()');
+    expect((out.match(/get header\(\)/g) ?? []).length).toBe(1);
+  });
+});

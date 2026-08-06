@@ -25,9 +25,9 @@ export function TodoApp() {
 
       {/* Control-flow props aren't auto-wrapped (unlike native attrs), so pass
           reactive accessors: a thunk for `when`, the signal itself for `each`. */}
-      <Show when={() => todos().length > 0} fallback={<p class="empty">No todos yet</p>}>
+      <Show when={todos().length > 0} fallback={<p class="empty">No todos yet</p>}>
         <ul class="list">
-          <For each={todos}>
+          <For each={todos()}>
             {(t: Todo) => (
               <li class="item">
                 <span class="text">{t.text}</span>
