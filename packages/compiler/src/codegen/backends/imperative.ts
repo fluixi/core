@@ -115,6 +115,16 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   //
   // Static props are not a sufficient condition for dropping it either: safety depends on
   // what the callee *returns*, which lives in another module and is not visible here.
+  //
+  // Nor can it be a plain `() => createComponent(...)` thunk. The memo also provides
+  // *identity*: it runs once and caches. A thunk is re-invoked by insert's render effect
+  // on every run, rebuilding the component with a fresh owner — which loses context,
+  // duplicates the tree on hydration and piles up Portals. Measured: dropping the wrapper
+  // fails 3 tests, replacing it with a thunk fails 14.
+  //
+  // Control flow does use a bare arrow, and that is not a counter-example: control flow
+  // is the reactive boundary and is *meant* to re-run. A user component is meant to run
+  // once.
   return `createMemo(() => createComponent(${name}, ${obj}))`;
 }
 
