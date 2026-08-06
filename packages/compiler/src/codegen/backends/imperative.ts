@@ -1,6 +1,11 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
 import type { IRNode, IRProp } from '../../ir/nodes.js';
-import { isSerializable, serializeStatic } from '../serialize-static.js';
+import {
+  isSerializable,
+  serializeStatic,
+  isPlainLiteralAttr,
+  htmlAttrName,
+} from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
 
@@ -128,6 +133,16 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   return `createMemo(() => createComponent(${name}, ${obj}))`;
 }
 
+/** `el.setAttribute("class", "card")` for a compile-time constant. */
+function staticAttrAssignment(el: string, prop: IRProp): string {
+  const name = htmlAttrName(prop.name);
+  const value = prop.literal;
+  // A valueless attribute is `true` in the IR and the empty string in the DOM.
+  if (value === true || value === undefined) return `${el}.setAttribute(${JSON.stringify(name)}, "");`;
+  if (value === false || value === null) return '';
+  return `${el}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(String(value))});`;
+}
+
 function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[]): string {
   switch (node.kind) {
     case 'text':
@@ -170,9 +185,17 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       parts.push(`const ${el} = createNativeElement(${createArgs});`);
 
       if (node.props.length > 0) {
-        used.add('spread');
-        const svgFlag = node.svg ? ', isSVG: true' : '';
-        parts.push(`spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag} });`);
+        // Literal attributes are written straight on. `spread` is a generic helper that
+        // walks every prop checking for reactivity, events, refs, class/style objects and
+        // namespaces — none of which a compile-time constant needs. Same predicate the
+        // template serializer uses, so the two agree on what a plain attribute is.
+        if (!node.svg && node.props.every(isPlainLiteralAttr)) {
+          for (const p of node.props) parts.push(staticAttrAssignment(el, p));
+        } else {
+          used.add('spread');
+          const svgFlag = node.svg ? ', isSVG: true' : '';
+          parts.push(`spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag} });`);
+        }
       }
       // Insert each child individually (like the jsx runtime's applyProps), so a
       // reactive/component child that isn't the only child still gets its own
