@@ -182,4 +182,20 @@ describe('control-flow prop hover + use inference', () => {
     );
     expect(names).toContain('gap');
   });
+
+  it('keeps offsets correct after an escape sequence in the template', () => {
+    // `node.text` is the *cooked* value, where `\`` is one character while the source
+    // spends two. Using it shifted every span after an escape, so a tag's attribute area
+    // moved left and completion silently returned nothing — in a file that looked
+    // completely ordinary.
+    const code =
+      'function Card(props: { alpha?: string }) { return null as any; }\n' +
+      'const t = html`<p>``x`` y</p><Card ><b>c</b></Card>`;'.replace(/``/g, '\\`');
+    const { ls, fileName } = plugin(code);
+    const pos = code.indexOf('<Card ') + '<Card '.length;
+    const names = (ls.getCompletionsAtPosition(fileName, pos, {})?.entries ?? []).map(
+      (e: ts.CompletionEntry) => e.name,
+    );
+    expect(names).toContain('alpha');
+  });
 });
