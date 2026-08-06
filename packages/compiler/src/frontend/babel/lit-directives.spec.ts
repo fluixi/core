@@ -173,7 +173,10 @@ describe('lit directives — each', () => {
   it('each with a render arrow lowers to <For> and auto-imports it', () => {
     const code = compileEsm('export const r = (items) => html`<li each=${items()}>${(x) => x.name}</li>`;');
     expect(code).toContain('createComponent');
-    expect(code).toContain('createNativeElement("li")');
+    // The <li> is built however codegen chooses — a template when its structure is
+    // static (hoisted, or inlined when nested inside an expression), otherwise
+    // element-by-element. The point of this test is the <For> lowering.
+    expect(code).toMatch(/createNativeElement\("li"\)|<li>/);
     expect(code).toMatch(/import \{[^}]*\bFor\b[^}]*\} from "@fluixi\/dom"/);
   });
 

@@ -148,6 +148,8 @@ export interface PluginOptions {
   routerModule?: string;
   /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
   templateClone?: boolean;
+  /** Also clone structure-static subtrees with holes. Client-render only. */
+  partialTemplates?: boolean;
 
   /**
    * Rules that resolve an unbound capitalised tag to a module, so a component can be
@@ -234,6 +236,7 @@ interface PluginStateData {
   controlFlowModule: string;
   routerModule: string;
   templateClone: boolean;
+  partialTemplates: boolean;
   backend: 'jsx' | 'imperative';
   codegen: 'inline' | 'ir';
   /** runtime symbols emitted by the IR pipeline (codegen 'ir'), for import injection */
@@ -338,6 +341,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     backend = 'imperative',
     codegen = 'inline',
     templateClone = true,
+    partialTemplates = false,
     // `both` by default: JSX and html`` are compiled out of the box, so
     // `fluixi()` needs no `format` option. Injected imports are deduped, so a
     // file mixing the two styles won't redeclare a binding.
@@ -360,6 +364,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     controlFlowModule,
     routerModule,
     templateClone,
+    partialTemplates,
     hasJSX: false,
     hasReactivity: false,
     hasLitHTML: false,
@@ -427,6 +432,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             controlFlowModule,
             routerModule,
             templateClone,
+            partialTemplates,
             backend,
             codegen,
             irImports: new Set<string>(),
@@ -1186,7 +1192,8 @@ function adoptTemplates(
   state: any,
 ): string {
   if (!templates || templates.length === 0) return code;
-  let out = code;
+
+  const rename = new Map<string, string>();
   for (const tpl of templates) {
     const key = `${tpl.svg ? 'svg:' : ''}${tpl.html}`;
     let name = state.staticTemplates.get(key);
@@ -1194,9 +1201,14 @@ function adoptTemplates(
       name = `_tmpl$${state.staticTemplates.size}`;
       state.staticTemplates.set(key, name);
     }
-    out = out.split(tpl.id).join(name);
+    rename.set(tpl.id, name);
   }
-  return out;
+
+  // One pass, not one replacement per id. The backend's local ids and the hoisted names
+  // share the `_tmpl$N` namespace, so replacing them in sequence can rewrite a name that
+  // an earlier replacement just produced — which silently points a template at another
+  // template's HTML.
+  return code.replace(/_tmpl\$\d+/g, (id) => rename.get(id) ?? id);
 }
 
 function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
@@ -1216,7 +1228,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
     strategyFor: (n) => n.load,
   });
   collapseStrategies(ir);
-  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone } as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone, partialTemplates: state.partialTemplates } as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
@@ -1282,7 +1294,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   // around something already present adds a wrapper, a promise and a re-render to
   // fetch nothing.
   collapseStrategies(ir);
-  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone } as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone, partialTemplates: state.partialTemplates } as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
