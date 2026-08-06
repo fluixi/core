@@ -10,6 +10,7 @@
  */
 
 import { createRoot } from '@fluixi/reactive/signal';
+import { stampVersions, warnOnVersionSkew } from './versions.js';
 import {
   isDOMNode,
   delegateEvents,
@@ -108,7 +109,10 @@ export function render(
     // render effects share the Owner chain with Provider context nodes.
     // Using domRender() would create a second createRoot, severing the chain.
     container.textContent = '';
-    container.setAttribute('fluixi-js', 'v1')
+    // Which build is running, on the element and as `window.Fluixi`. `fluixi-js="v1"`
+    // said only that Fluixi was involved; a bug report needs the actual versions.
+    stampVersions(container);
+    warnOnVersionSkew();
     // Wrap the (already-computed) result in a STABLE thunk so insert() creates a
     // top-level render effect. Without this, a static array result — e.g. the
     // imperative backend's `[createMemo(() => createComponent(App)), " "]` — is
