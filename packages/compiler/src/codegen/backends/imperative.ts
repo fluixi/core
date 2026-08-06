@@ -105,6 +105,16 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
     used.add('mergeProps');
     obj = `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
   }
+  // The memo never recomputes — every prop is a getter, so this callback reads nothing
+  // reactive. It is here for what it makes `insert` do, and it cannot be elided.
+  //
+  // A component whose return value is *itself* bare control flow (`return <Show …/>`)
+  // produces a memo, which `createComponent` deliberately does not stamp as a component.
+  // Without this wrapper `insert` stops re-reading it, and the subtree goes stale when a
+  // sibling updates the context it depends on — see `show-context-insert.spec.ts`.
+  //
+  // Static props are not a sufficient condition for dropping it either: safety depends on
+  // what the callee *returns*, which lives in another module and is not visible here.
   return `createMemo(() => createComponent(${name}, ${obj}))`;
 }
 
