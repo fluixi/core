@@ -17,6 +17,12 @@ import _generate from '@babel/generator';
 import { imperativeBackend, inlineTemplates } from '../../codegen/backends/imperative.js';
 import { buildIRFromLit } from './build-ir-lit.js';
 import { analyzeStatic } from '../../optimize/analyze-static.js';
+import {
+  isLoadDirective,
+  parseLoadDirective,
+  LoadDirectiveError,
+  type IRLoadStrategy,
+} from '../../resolve/load-directive.js';
 import type {
   IRNode,
   IRProp,
@@ -200,6 +206,8 @@ function buildProps(
       continue;
     }
     if (!t.isJSXAttribute(a)) continue;
+    // `load:` is a directive, not a prop — the resolve pass reads it off the node.
+    if (isLoadDirective(attrName(a.name))) continue;
 
     const ns = t.isJSXNamespacedName(a.name) ? a.name.namespace.name : null;
     // use:name / use:name={opts} -> [dir, () => opts] pair; dir is an in-scope fn
@@ -292,7 +300,26 @@ function buildIRNode(node: t.JSXElement | t.JSXFragment, used: Set<string>): IRN
   const children = buildChildren(node.children, used);
 
   if (component) {
-    return { kind: 'component', name: tag, props, children };
+    const load = readLoad(node.openingElement.attributes);
+    return { kind: 'component', name: tag, props, children, ...(load ? { load } : {}) };
   }
   return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false };
+}
+
+/** The `load:` strategy written on a component tag, if any. */
+function readLoad(
+  attrs: Array<t.JSXAttribute | t.JSXSpreadAttribute>,
+): IRLoadStrategy | undefined {
+  for (const a of attrs) {
+    if (!t.isJSXAttribute(a)) continue;
+    const name = attrName(a.name);
+    if (!isLoadDirective(name)) continue;
+    if (a.value && !t.isStringLiteral(a.value)) {
+      throw new LoadDirectiveError(
+        `'${name}' needs a literal value, not an expression — the strategy is compile-time.`,
+      );
+    }
+    return parseLoadDirective(name, a.value ? a.value.value : null);
+  }
+  return undefined;
 }

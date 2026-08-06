@@ -1184,9 +1184,22 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
   const used = new Set<string>();
   const ir = buildIR(node, used);
+  // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped
+  // resolution entirely — a resolved tag compiled to a reference with no import.
+  resolveComponentSources(ir, {
+    resolver: state.componentResolver,
+    modules: {
+      controlFlowModule: state.controlFlowModule,
+      coreModule: state.libModule,
+      routerModule: state.routerModule,
+    },
+    strategyFor: (n) => n.load,
+  });
+  collapseStrategies(ir);
   const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
+  collectRuntimeNeeds(ir, state);
   const adopted = adoptTemplates(code, templates, state);
   return template.expression(adopted, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
 }
