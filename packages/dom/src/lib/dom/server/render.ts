@@ -15,7 +15,8 @@ import {
   flush,
 } from '@fluixi/reactive/signal';
 import { isServer, setServerMode, registerServerNodes } from './host.js';
-import { ServerElement, ServerText, ServerComment } from './nodes.js';
+import { ServerElement, ServerText,
+  ServerRaw, ServerComment } from './nodes.js';
 import { serializeNode } from './serialize.js';
 
 // Register the node classes with the runtime seam on first render. Done from here
@@ -27,6 +28,7 @@ function ensureServerNodes(): void {
   registerServerNodes({
     createElement: (tag, isSVG) => new ServerElement(tag, isSVG),
     createText: (value) => new ServerText(value),
+    createRaw: (html) => new ServerRaw(html),
     createComment: (value) => new ServerComment(value),
   });
 }

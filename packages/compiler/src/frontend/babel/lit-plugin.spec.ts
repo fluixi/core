@@ -199,7 +199,7 @@ describe('lit front-end (format: lit)', () => {
       templateClone: true,
     });
     // Fully static, so it is cloned from a template rather than built element by element.
-    expect(code).toContain('cloneTemplate');
+    expect(code).toContain('templateNode');
     expect(code).not.toContain('html`'); // template consumed
   });
 
@@ -224,7 +224,7 @@ describe('lit front-end (format: lit)', () => {
     expect(code).not.toContain('html`');
     // Either codegen shape counts as compiled; the point is that neither export was
     // left as JSX.
-    expect(code).toMatch(/createNativeElement|cloneTemplate/);
+    expect(code).toMatch(/createNativeElement|templateNode/);
     expect(code).not.toMatch(/=>\s*<\w/);
 
     // The point of the test: no module imported twice, no name bound twice.

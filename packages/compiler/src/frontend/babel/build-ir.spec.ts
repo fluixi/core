@@ -31,7 +31,7 @@ function parseJSX(src: string): any {
 }
 
 function compile(src: string) {
-  return imperativeBackend.emit(buildIR(parseJSX(src)), { templateClone: true } as never);
+  return imperativeBackend.emit(buildIR(parseJSX(src)), {} as never);
 }
 
 /** Execute an emitted expression, wiring runtime imports + user vars into scope. */
@@ -43,8 +43,9 @@ function evalExpr(src: string, vars: Record<string, any> = {}): any {
   const userNames = Object.keys(vars);
   const userVals = userNames.map((k) => vars[k]);
   // Static templates are declarations the host must emit, exactly like `imports`.
+  // Templates are plain HTML strings; `templateNode` decides how to realise them.
   const decls = (templates ?? [])
-    .map((t) => `const ${t.id} = createTemplate(${JSON.stringify(t.html)}${t.svg ? ', true' : ''});`)
+    .map((t) => `const ${t.id} = ${JSON.stringify(t.html)};`)
     .join('\n');
   // eslint-disable-next-line no-new-func
   const fn = new Function(...runtimeNames, ...userNames, `${decls}\nreturn (${code});`);
@@ -233,7 +234,7 @@ describe('template cloning produces the same DOM as building element by element'
   });
 
   it('actually took the clone path for a static tree', () => {
-    expect(compile('(<div class="a"><span>x</span></div>)').code).toContain('cloneTemplate');
+    expect(compile('(<div class="a"><span>x</span></div>)').code).toContain('templateNode');
   });
 
   it('stays imperative when a child is dynamic', () => {

@@ -80,6 +80,25 @@ function hydrateElement(tag: string): Element | null {
   return null;
 }
 
+/**
+ * Adopt a whole static subtree at the cursor without descending into it.
+ *
+ * A compiler-emitted template is inert by construction — the analysis only marks a
+ * subtree static when nothing inside it can change — so the server's markup for it is
+ * exactly the template. There is nothing in there to hydrate, and stepping through it
+ * element by element would only give the cursor more chances to desynchronise.
+ */
+function hydrateStatic(tag: string): Element | null {
+  recoverCursor();
+  const c = hydration.cursor;
+  if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
+    hydration.cursor = c.nextSibling;
+    return c as Element;
+  }
+  if (DEV && c) warnMismatch(`<${tag}> (static)`, c);
+  return null;
+}
+
 /** Reuse the text node at the cursor (syncing its value) and advance. */
 function hydrateText(value: string): Text | null {
   if (value === '') {
@@ -126,7 +145,7 @@ let _walkerRegistered = false;
 function ensureWalker(): void {
   if (_walkerRegistered) return;
   _walkerRegistered = true;
-  registerHydrationWalker({ hydrateElement, hydrateText, hydrateMarker });
+  registerHydrationWalker({ hydrateElement, hydrateText, hydrateMarker, hydrateStatic });
 }
 
 /**

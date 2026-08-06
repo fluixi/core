@@ -19,6 +19,8 @@ export interface StaticTemplate {
   id: string;
   /** The HTML the template is built from. */
   html: string;
+  /** Root tag name, so hydration can match the server's node before adopting it. */
+  tag: string;
   svg: boolean;
 }
 

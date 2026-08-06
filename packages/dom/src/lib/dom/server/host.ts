@@ -16,6 +16,8 @@ export interface ServerNodeFactory {
   createElement(tag: string, isSVG: boolean): any;
   createText(value: string): any;
   createComment(value: string): any;
+  /** A pre-rendered static subtree, serialized verbatim. */
+  createRaw(html: string): any;
 }
 
 let _nodes: ServerNodeFactory | null = null;

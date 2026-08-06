@@ -119,6 +119,30 @@ export class ServerText extends ServerNode {
   }
 }
 
+/**
+ * A pre-rendered subtree, serialized verbatim.
+ *
+ * Static markup the compiler turned into a template arrives as an HTML string. On the
+ * client it is parsed once and cloned; on the server there is nothing to gain from
+ * parsing it into elements only to serialize them straight back, so it is carried as-is
+ * and written out. `serializeNode` checks `rawOuterHTML` before anything else.
+ */
+export class ServerRaw extends ServerNode {
+  nodeType = NODE_ELEMENT;
+  rawOuterHTML: string;
+  constructor(html: string) {
+    super();
+    this.rawOuterHTML = html;
+  }
+  get textContent(): string {
+    // Approximate: strip tags. Only used by diagnostics, never for output.
+    return this.rawOuterHTML.replace(/<[^>]*>/g, '');
+  }
+  cloneNode(): ServerRaw {
+    return new ServerRaw(this.rawOuterHTML);
+  }
+}
+
 export class ServerComment extends ServerNode {
   nodeType = NODE_COMMENT;
   data: string;
