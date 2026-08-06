@@ -216,7 +216,7 @@ describe('template cloning produces the same DOM as building element by element'
       // identify a hole's existing content exactly.
       'entities in text and attributes',
       '(<div title={"a<b"}>{"1 < 2"}</div>)',
-      '<div title="a<b"><!--fx-->1 &lt; 2<!--/fx--></div>',
+      '<div title="a<b"><!--fx-->1 &lt; 2<!--fx/--></div>',
     ],
     ['valueless attribute', '(<input disabled/>)', '<input disabled="">'],
   ];

@@ -14,7 +14,7 @@ const plan = (n: IRElement) => (analyzeStatic(n), planPartialTemplate(n));
 describe('planPartialTemplate', () => {
   it('brackets each hole with a marker pair', () => {
     const p = plan(el('li', [attr('className', 'row')], [text('tick '), hole()]))!;
-    expect(p.html).toBe('<li class="row">tick <!--fx--><!--/fx--></li>');
+    expect(p.html).toBe('<li class="row">tick <!--fx--><!--fx/--></li>');
     expect(p.holes).toHaveLength(1);
     expect(p.holes[0]!.parentRef).toBe('_el$');
   });
@@ -41,7 +41,7 @@ describe('planPartialTemplate', () => {
 
   it('addresses a hole inside a nested element', () => {
     const p = plan(el('div', [], [el('h3', [], [hole()]), el('p', [], [text('s')])]))!;
-    expect(p.html).toBe('<div><h3><!--fx--><!--/fx--></h3><p>s</p></div>');
+    expect(p.html).toBe('<div><h3><!--fx--><!--fx/--></h3><p>s</p></div>');
     expect(p.holes[0]!.parentRef).toBe('_n$0');
   });
 
@@ -49,7 +49,7 @@ describe('planPartialTemplate', () => {
     // Omitting holes made this unrepresentable — the texts merged and there was nothing
     // to insert between.
     const p = plan(el('p', [], [text('a '), hole(), text(' b')]))!;
-    expect(p.html).toBe('<p>a <!--fx--><!--/fx--> b</p>');
+    expect(p.html).toBe('<p>a <!--fx--><!--fx/--> b</p>');
     expect(p.holes).toHaveLength(1);
   });
 
