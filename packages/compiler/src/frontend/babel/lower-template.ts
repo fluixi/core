@@ -170,7 +170,19 @@ class Lowerer {
     const { slots, rest } = this.partitionSlots(el.children);
     for (const [slotName, nodes] of slots) {
       const ir = nodes.length === 1 ? nodes[0] : { kind: 'fragment' as const, children: nodes };
-      props.push({ name: slotName, kind: 'attr', expr: this.emit(ir), jsxElement: true });
+      const slotProp: IRProp = {
+        name: slotName,
+        kind: 'attr',
+        expr: this.emit(ir),
+        jsxElement: true,
+      };
+      // A slot replaces a same-named attribute rather than joining it. `<Card header>`
+      // alongside `<span slot="header">` otherwise emits the key twice — valid JS where
+      // the last wins, but the first is dead code and esbuild warns on it. Content is
+      // the more specific intent, so the slot is what survives.
+      const clash = props.findIndex((p) => p.name === slotName);
+      if (clash >= 0) props[clash] = slotProp;
+      else props.push(slotProp);
     }
 
     // `load:` is a directive, not a prop: it says when this component's module is
