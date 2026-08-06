@@ -10,7 +10,9 @@ import { PartialApp } from './PartialApp';
  * are the shapes where that would break first.
  */
 describe('hydrating a partial template', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   const setup = () => {
     const html = renderToString(() => PartialApp());

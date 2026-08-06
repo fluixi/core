@@ -211,6 +211,9 @@ importers:
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../../packages/jsx
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive

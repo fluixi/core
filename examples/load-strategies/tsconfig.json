@@ -11,5 +11,25 @@
     "lib": ["dom", "DOM.Iterable", "es2022"],
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../../packages/reactive"
+    },
+    {
+      "path": "../../packages/jsx"
+    },
+    {
+      "path": "../../packages/dom"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/vite-plugin"
+    },
+    {
+      "path": "../../packages/compiler"
+    }
+  ]
 }

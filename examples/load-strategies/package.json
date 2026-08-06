@@ -8,11 +8,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fluixi/core": "workspace:*",
     "@fluixi/dom": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {

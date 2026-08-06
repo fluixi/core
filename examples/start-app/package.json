@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "fluixi dev",
     "build": "fluixi build",
-    "start": "fluixi start"
+    "start": "fluixi start",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fluixi/cli": "workspace:*",
