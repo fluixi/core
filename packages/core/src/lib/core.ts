@@ -93,7 +93,10 @@ export {
 // Theme store — detect → persist → apply → toggle + no-flash head script.
 export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
 
-export * from '@fluixi/utils';
+// NOT re-exported from the main entry. `export * from '@fluixi/utils'` here put the
+// whole utility library in every app's graph — 56% of a counter's bundle, 74% of its
+// bytes — because a barrel re-export of a barrel cannot be shaken in practice. Import
+// from `@fluixi/utils` directly, or from `@fluixi/core/utils` for the same surface.
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
 // import { createResource } from './resources/index.js';
