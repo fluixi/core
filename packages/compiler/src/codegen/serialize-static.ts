@@ -58,19 +58,31 @@ const PROPERTY_ONLY = new Set([
   'ref',
 ]);
 
+/** The HTML spelling of an IR prop name. */
+export function htmlAttrName(name: string): string {
+  return HTML_NAME[name] ?? name;
+}
+
+/**
+ * True for a prop that is a plain HTML attribute with a compile-time constant value —
+ * safe to write straight onto the element, with no runtime interpretation.
+ */
+export function isPlainLiteralAttr(prop: IRProp): boolean {
+  if (prop.kind !== 'attr') return false;
+  if (prop.expr !== undefined) return false;
+  if (prop.name.includes(':')) return false;
+  return !PROPERTY_ONLY.has(prop.name);
+}
+
 /** True when the subtree can be represented as HTML text with no loss. */
 export function isSerializable(node: IRElement): boolean {
   if (!node.static) return false;
   // Nothing may end up needing an expression once inside the template.
   for (const prop of node.props) {
-    if (prop.expr !== undefined) return false;
-    if (prop.kind !== 'attr') return false;
     // Namespaced names (`prop:value`, `attr:x`, `bool:disabled`, `on:click`) are
-    // instructions to the runtime, not HTML. `prop:value="42"` in a template would set
-    // an attribute where a DOM property was asked for, and `bool:` has truthiness
-    // semantics no attribute has. They stay on the imperative path.
-    if (prop.name.includes(':')) return false;
-    if (PROPERTY_ONLY.has(prop.name)) return false;
+    // instructions to the runtime, not HTML, and property-only names are assigned
+    // rather than set — both stay on the imperative path.
+    if (!isPlainLiteralAttr(prop)) return false;
   }
   for (const child of node.children) {
     if (child.kind === 'text') continue;
