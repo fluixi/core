@@ -1,5 +1,122 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.70
+
+### Major Changes
+
+- c87db9a: Stop re-exporting `@fluixi/utils` from the main entry
+
+  `export * from '@fluixi/utils'` in `core.ts` put the whole utility library into every
+  app's module graph. On the counter example:
+
+  |        | raw       | gzip        |
+  | ------ | --------- | ----------- |
+  | before | 100.27 kB | 31.86 kB    |
+  | after  | 23.50 kB  | **8.19 kB** |
+
+  `@fluixi/utils` was 56% of a minimal app's source bytes, and a counter was also shipping
+  the router. A barrel re-exporting another barrel is not shakeable in practice, and
+  `sideEffects: false` on core does not help — it would also be wrong, since `index.ts` calls
+  `ensureIntegration()` at module scope.
+
+  **Migration.** Import helpers directly:
+
+  ```ts
+  import { get } from '@fluixi/utils/object'; // preferred — finest grained
+  import { get } from '@fluixi/core/utils'; // same surface, one import away
+  ```
+
+  `@fluixi/core/utils` is a new entry point carrying the full surface, so this is one import
+  rewrite rather than one per helper. Core's own internals already used the
+  `@fluixi/utils/*` subpaths and are unaffected.
+
+### Minor Changes
+
+- 4f4895a: Add the `load:` directive — decide when a component's code is fetched
+
+  Resolution says _where_ a component comes from; `load:` says _when_ it loads. They are
+  separate because they vary independently: a component's location is the same everywhere
+  and belongs in config, while whether a particular usage should wait for the viewport is
+  a property of that usage.
+
+  ```tsx
+  <Summary />                                    // eager — entry chunk
+  <ExportDialog load:interaction />              // own chunk, on first interaction
+  <AuditLog load:media="(min-width: 1024px)" />  // own chunk, desktop only
+  <RevenueChart load:visible="200px" />          // own chunk, on approach
+  ```
+
+  Six strategies: `eager`, `idle`, `visible`, `interaction`, `media`, `never`. A deferred
+  component compiles to `deferred(() => import('…'), { strategy })` instead of a static
+  import, so chunking, hashing and tree-shaking stay ordinary bundler behaviour rather
+  than an integration. `deferred()` is new in `@fluixi/core`, built on `lazy()` — it adds
+  only the scheduling, reusing Suspense integration and the synchronous-when-preloaded
+  hydration path unchanged.
+
+  `load:` joins the existing `use:`/`prop:`/`attr:`/`bool:` namespace, so it cannot
+  collide with a real prop. Both syntaxes share one parser: `load:visible` is already a
+  valid `JSXNamespacedName`, and the html``parser gains a`LoadDirective` node, but each
+  funnels through the same helper — a test pins the two to identical output.
+
+  **Strategy collapsing is included, and it is not optional.** If a module is referenced
+  eagerly anywhere in the file, deferred references to it are demoted to eager: it is in
+  the chunk already, so a lazy boundary would add a wrapper, a promise and a re-render in
+  order to fetch nothing — and emitting both forms would redeclare the binding.
+
+  The strategy must be a literal. It decides how the module is emitted, so a runtime value
+  cannot supply it, and `load:visible={margin}` is an error rather than a silent fallback.
+
+  See `examples/load-strategies`, whose test runs the real build and asserts which chunk
+  each component landed in.
+
+- 84b1821: Report the running package versions on the mount element and `window.Fluixi`
+
+  The mount element now carries which build of each package is running:
+
+  ```html
+  <div
+    id="app"
+    fluixi="1.0.0-alpha.68"
+    fx-dom="1.0.0-alpha.68"
+    fx-reactive="1.0.0-alpha.68"
+  ></div>
+  ```
+
+  and the same is available in the console:
+
+  ```js
+  window.Fluixi; // { core: '…', dom: '…', reactive: '…' }
+  ```
+
+  It replaces `fluixi-js="v1"`, which said only that Fluixi was involved.
+
+  Three attributes rather than one because the packages are resolved separately even though
+  they release together. A stale lockfile or a duplicated install can pair one version of the
+  DOM runtime with another of the signal core, which surfaces as reactivity behaving
+  inexplicably — so a mismatch also warns once at mount, naming the versions.
+
+  `@fluixi/core`, `@fluixi/dom` and `@fluixi/reactive` each export `VERSION`.
+
+### Patch Changes
+
+- Updated dependencies [d27056f]
+- Updated dependencies [77ab4cb]
+- Updated dependencies [509f3f2]
+- Updated dependencies [b8ef7fc]
+- Updated dependencies [4f4895a]
+- Updated dependencies [569fe05]
+- Updated dependencies [b820700]
+- Updated dependencies [2a317dc]
+- Updated dependencies [84b1821]
+  - @fluixi/compiler@1.0.0-alpha.70
+  - @fluixi/dom@1.0.0-alpha.70
+  - @fluixi/reactive@1.0.0-alpha.70
+  - @fluixi/vite-plugin@1.0.0-alpha.70
+  - @fluixi/jsx@1.0.0-alpha.70
+  - @fluixi/server@1.0.0-alpha.70
+  - @fluixi/head@1.0.0-alpha.37
+  - @fluixi/utils@1.0.0-alpha.70
+
 ## 1.0.0-alpha.69
 
 ### Patch Changes

@@ -1,5 +1,180 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.70
+
+### Minor Changes
+
+- d27056f: Publish the built-in component names as data
+
+  `@fluixi/compiler/builtins` exports the names the compiler supplies without an import,
+  and the module each comes from:
+
+  ```ts
+  import {
+    builtinComponentMap,
+    RESERVED_COMPONENTS,
+  } from '@fluixi/compiler/builtins';
+  ```
+
+  These were hardcoded inside the Babel plugin, which mixed up two things: which module a
+  name comes from — data every tool needs — and which names get special codegen, which is
+  the compiler's business. With nothing published, `@fluixi/ts-plugin` kept its own copy.
+  That copy is gone, and the subpath carries no compiler code, so the plugin's bundle grows
+  2 KB rather than pulling the compiler in.
+
+  **A configured `resolve` rule now wins over `Router`, `Outlet`, `Redirect` and `Link`.**
+  Those are only an auto-import, so a project defining its own `Link` previously lost to the
+  router's silently, rendering the wrong component with nothing reported.
+
+  Control flow is unchanged and still outranks rules, because there the name selects codegen
+  a rule cannot supply: `Show`, `For`, `Index` and `Match` emit their value prop as a getter,
+  so `each={items()}` re-reads instead of snapshotting once. `RESERVED_COMPONENTS` lists them
+  so rule generators can report a clash instead of emitting a rule that does nothing.
+
+- 509f3f2: Record where each component reference comes from in the IR
+
+  `IRComponent` gains `source` — `{ module, export, origin }` — set by a resolve pass that
+  runs between the frontends and codegen:
+
+  ```ts
+  import { resolveComponentSources } from '@fluixi/compiler';
+
+  const { resolved, unresolved } = resolveComponentSources(ir, {
+    resolver,
+    isBound,
+  });
+  ```
+
+  `origin` separates `rule` from `builtin` because they are not interchangeable: a rule is
+  configuration and can be re-targeted, while a control-flow name also selects a lowering
+  and cannot. Precedence is encoded once, so import injection and later passes read one
+  answer instead of agreeing by coincidence.
+
+  `unresolved` lists capitalised tags nothing supplies and nothing binds. Those compile to a
+  reference to an identifier that does not exist — the build succeeds and the page throws —
+  so reporting them is the point of the pass having a return value.
+
+  Emitted output is unchanged.
+
+- 4f4895a: Add the `load:` directive — decide when a component's code is fetched
+
+  Resolution says _where_ a component comes from; `load:` says _when_ it loads. They are
+  separate because they vary independently: a component's location is the same everywhere
+  and belongs in config, while whether a particular usage should wait for the viewport is
+  a property of that usage.
+
+  ```tsx
+  <Summary />                                    // eager — entry chunk
+  <ExportDialog load:interaction />              // own chunk, on first interaction
+  <AuditLog load:media="(min-width: 1024px)" />  // own chunk, desktop only
+  <RevenueChart load:visible="200px" />          // own chunk, on approach
+  ```
+
+  Six strategies: `eager`, `idle`, `visible`, `interaction`, `media`, `never`. A deferred
+  component compiles to `deferred(() => import('…'), { strategy })` instead of a static
+  import, so chunking, hashing and tree-shaking stay ordinary bundler behaviour rather
+  than an integration. `deferred()` is new in `@fluixi/core`, built on `lazy()` — it adds
+  only the scheduling, reusing Suspense integration and the synchronous-when-preloaded
+  hydration path unchanged.
+
+  `load:` joins the existing `use:`/`prop:`/`attr:`/`bool:` namespace, so it cannot
+  collide with a real prop. Both syntaxes share one parser: `load:visible` is already a
+  valid `JSXNamespacedName`, and the html``parser gains a`LoadDirective` node, but each
+  funnels through the same helper — a test pins the two to identical output.
+
+  **Strategy collapsing is included, and it is not optional.** If a module is referenced
+  eagerly anywhere in the file, deferred references to it are demoted to eager: it is in
+  the chunk already, so a lazy boundary would add a wrapper, a promise and a re-render in
+  order to fetch nothing — and emitting both forms would redeclare the binding.
+
+  The strategy must be a literal. It decides how the module is emitted, so a runtime value
+  cannot supply it, and `load:visible={margin}` is an error rather than a silent fallback.
+
+  See `examples/load-strategies`, whose test runs the real build and asserts which chunk
+  each component landed in.
+
+- 2a317dc: Build markup by cloning a template instead of an element at a time
+
+  Static markup is serialized to HTML once, declared at module scope, and cloned per
+  instance. Subtrees whose structure is static but which contain dynamic values are cloned
+  too, with each value inserted through a reference into the clone:
+
+  ```js
+  const _tmpl$0 =
+    '<div class="card"><h3><!--fx--><!--fx/--></h3><p>a <!--fx--><!--fx/--> b</p></div>';
+  const _el$ = templateNode(_tmpl$0, 'div', true);
+  const _n$1 = _el$.firstChild.firstChild;
+  const _n$2 = holeEnd(_n$1);
+  insert(
+    _el$.firstChild,
+    holeScope(_n$1, () => () => title()),
+    _n$2,
+    holeContent(_n$1, _n$2)
+  );
+  ```
+
+  Instantiation is roughly twice as fast — 2.08x for a three-element row, 2.45x for a
+  nine-element card, measured in Chrome against the real runtime. The gap widens with
+  component size. Transfer size is unchanged: the old output was repetitive enough that
+  compression absorbed it, so this is a parse-time and runtime win rather than a bytes one.
+
+  Applies to `html\`\``and`codegen: 'ir'`, and is on by default. `templateClone: false`and`partialTemplates: false` opt out.
+
+  **Each interpolation leaves an `<!--fx-->` … `<!--fx/-->` pair in the HTML.** That is what
+  makes a clone, the server's markup and the DOM being hydrated the same shape, so one set
+  of node references addresses all three and hydration adopts the server's nodes rather than
+  rebuilding them. Tests asserting exact server markup will need to account for them.
+
+  New in `@fluixi/dom`: `templateNode`, `holeEnd`, `holeContent`, `holeScope`, and a server
+  parser that turns a template into server nodes so SSR can render into it.
+
+  Some shapes stay on the element-by-element path, because a template would change what the
+  code means: SVG, namespaced names (`prop:`, `attr:`, `bool:`, `on:`), property-only names
+  (`innerHTML`, `value`, …), raw-text elements (`<style>`, `<script>`), and adjacent text
+  children, which the DOM merges while the IR does not.
+
+### Patch Changes
+
+- 77ab4cb: Fix control flow not being imported when nested
+
+  `<div><Show/></div>` compiled to a reference to an undefined `Show`. The JSX visitor
+  registers control-flow names, but a lowered parent is replaced before its subtree is
+  walked, so a nested tag never reached it. Registration moved to `emitComponentCall`, the
+  chokepoint every component passes through.
+
+  Only unbound names are injected, so a hand-written import still wins, and repeated usage
+  emits one binding.
+
+- b8ef7fc: Fix `codegen: 'ir'` skipping resolution, and drop a dead import
+
+  Under `codegen: 'ir'` a resolved tag compiled to a bare reference with no import and threw
+  at runtime — the IR path never ran the resolve pass. It now runs the same passes as the
+  `html\`\``path.`load:`was also read as an ordinary attribute there, so the directive
+reached the props object as`get "load:visible"()`.
+
+  The IR path also emitted `import { jsx, jsxs, Fragment } from '@fluixi/jsx'` into every
+  file, which it never uses. `backend: 'jsx'` is unaffected.
+
+- 569fe05: Fix a named slot duplicating a same-named attribute
+
+  `<Card header><span slot="header">…</span></Card>` emitted the `header` key twice — valid
+  JS where the last wins, but the first is dead and esbuild warns on every build. A slot now
+  replaces a same-named attribute: content is the more specific intent.
+
+- b820700: Write literal attributes directly instead of through `spread`
+
+  An element with only compile-time-constant attributes emitted
+  `spread({ element, props: { className: "card" } })`. `spread` walks every prop checking for
+  reactivity, events, refs, class/style objects and namespaces — none of which a constant
+  needs. It now emits `el.setAttribute("class", "card")`.
+
+  This covers elements that cannot be cloned whole because a child is dynamic, which is the
+  common shape. Fully static subtrees already bake their attributes into the template. SVG
+  stays on `spread`, where the namespace handling lives.
+
+- Updated dependencies [4f4895a]
+  - @fluixi/template-parser@0.1.0-alpha.3
+
 ## 1.0.0-alpha.69
 
 ### Minor Changes
