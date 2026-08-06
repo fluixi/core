@@ -166,3 +166,43 @@ describe('the resolve pass is the single decision', () => {
     expect(moduleFor(out, 'Outlet')).toBe('@app/router');
   });
 });
+
+describe('codegen: ir goes through the same passes as the inline path', () => {
+  // Regression: `emitViaIR` skipped resolution entirely, so a resolved tag compiled to
+  // a bare reference with no import and threw at runtime.
+  const rule = [{ components: { Summary: '@app/summary', Chart: '@app/chart' } }];
+
+  it('imports a resolved component', () => {
+    const out = compile('const v = <Summary/>;', { resolve: rule, codegen: 'ir' });
+    expect(moduleFor(out, 'Summary')).toBe('@app/summary');
+  });
+
+  it('defers one carrying a load: directive', () => {
+    const out = compile('const v = <Chart load:visible="200px"/>;', {
+      resolve: rule,
+      codegen: 'ir',
+    });
+    expect(out).toContain('deferred(() => import("@app/chart")');
+    expect(out).toContain('rootMargin: "200px"');
+  });
+
+  it('does not leak load: into the props object', () => {
+    const out = compile('const v = <Chart load:idle/>;', { resolve: rule, codegen: 'ir' });
+    expect(out).not.toMatch(/["']load:/);
+  });
+
+  it('injects the same imports as the inline path', () => {
+    const strip = (o: string) => importsOf(o).filter((l) => /\bSummary\b/.test(l));
+    expect(strip(compile('const v = <Summary/>;', { resolve: rule, codegen: 'ir' }))).toEqual(
+      strip(compile('const v = <Summary/>;', { resolve: rule })),
+    );
+  });
+
+  it('collapses a deferred usage whose module is already eager', () => {
+    const out = compile('const v = <><Chart/><Chart load:visible/></>;', {
+      resolve: rule,
+      codegen: 'ir',
+    });
+    expect(out).not.toContain('deferred(');
+  });
+});
