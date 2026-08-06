@@ -24,6 +24,10 @@ export interface CompilerOptions {
    * used in a template without an import. See `createComponentResolver`.
    */
   resolve?: readonly ComponentResolverRule[];
+  /** Clone static subtrees from a `<template>` instead of building them element by element. */
+  templateClone?: boolean;
+  /** Also clone subtrees whose structure is static but which contain dynamic holes. */
+  partialTemplates?: boolean;
   /**
    * Whether to use lit-html templates when possible
    * @default true
@@ -667,6 +671,12 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         // Forwarded explicitly: getOptions() is an allowlist, so an option missing
         // here is silently dropped rather than rejected.
         ...(options.resolve ? { resolve: options.resolve } : {}),
+        ...(options.templateClone !== undefined
+          ? { templateClone: options.templateClone }
+          : {}),
+        ...(options.partialTemplates !== undefined
+          ? { partialTemplates: options.partialTemplates }
+          : {}),
         ...(options.litTag ? { litTag: options.litTag } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule

@@ -148,7 +148,7 @@ export interface PluginOptions {
   routerModule?: string;
   /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
   templateClone?: boolean;
-  /** Also clone structure-static subtrees with holes. Client-render only. */
+  /** Also clone structure-static subtrees with holes. See CompilerOptions. */
   partialTemplates?: boolean;
 
   /**
@@ -341,7 +341,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     backend = 'imperative',
     codegen = 'inline',
     templateClone = true,
-    partialTemplates = false,
+    partialTemplates = true,
     // `both` by default: JSX and html`` are compiled out of the box, so
     // `fluixi()` needs no `format` option. Injected imports are deduped, so a
     // file mixing the two styles won't redeclare a binding.
