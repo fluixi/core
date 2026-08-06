@@ -136,7 +136,7 @@ function init(modules: { typescript: typeof ts }): PluginModule {
       // else members of an inferred callback param (`it.` / `el.` / `e.`); else real.
       proxy.getCompletionsAtPosition = (fileName: string, position: number, options: unknown, formatting?: unknown) => {
         try {
-          const props = componentPropCompletions(ts, ls, fileName, position);
+          const props = componentPropCompletions(ts, ls, host, fileName, position);
           if (props) return completionList(props);
         } catch { /* fall through */ }
         try {
