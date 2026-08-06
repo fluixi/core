@@ -14,7 +14,7 @@
  */
 import { types as t, traverse, template } from '@babel/core';
 import _generate from '@babel/generator';
-import { imperativeBackend } from '../../codegen/backends/imperative.js';
+import { imperativeBackend, inlineTemplates } from '../../codegen/backends/imperative.js';
 import { buildIRFromLit } from './build-ir-lit.js';
 import { analyzeStatic } from '../../optimize/analyze-static.js';
 import type {
@@ -51,8 +51,8 @@ function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression
   traverse(file, {
     'JSXElement|JSXFragment'(path: any) {
       const jsx = path.node as t.JSXElement | t.JSXFragment;
-      const { code, imports } = imperativeBackend.emit(buildIR(jsx, used), {} as any);
-      emitInto(path, code, imports);
+      const { code, imports, templates } = imperativeBackend.emit(buildIR(jsx, used), {} as any);
+      emitInto(path, inlineTemplates(code, templates), imports);
     },
     // Nested lit templates compose: ${cond ? html`…` : html`…`},
     // ${list.map(x => html`<li>${x}</li>`)}. Compile them the same way.
@@ -60,8 +60,8 @@ function transformNestedJSX(node: t.Expression, used: Set<string>): t.Expression
       const tag = path.node.tag;
       if (!t.isIdentifier(tag) || (tag.name !== 'html' && tag.name !== 'svg')) return;
       const ir = buildIRFromLit(path.node, used, { svg: tag.name === 'svg' });
-      const { code, imports } = imperativeBackend.emit(ir, {} as any);
-      emitInto(path, code, imports);
+      const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
+      emitInto(path, inlineTemplates(code, templates), imports);
     },
   });
   return changed

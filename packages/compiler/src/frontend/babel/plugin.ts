@@ -224,6 +224,8 @@ interface PluginStateData {
   componentResolver: ComponentResolver;
   delegatedEvents: Set<string>;
   staticElements: Map<string, t.Expression>;
+  /** html -> module-scope template identifier, deduped per file. */
+  staticTemplates: Map<string, string>;
   staticCounter: number;
   libModule: string;
   /** Module overrides, so the resolve pass reports the same targets codegen uses. */
@@ -365,6 +367,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     componentResolver,
     delegatedEvents: new Set(),
     staticElements: new Map(),
+    staticTemplates: new Map(),
     staticCounter: 0,
   };
 
@@ -412,6 +415,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     componentResolver,
             delegatedEvents: new Set(),
             staticElements: new Map(),
+            staticTemplates: new Map(),
             autoShow: autoShowTransform,
             staticCounter: 0,
             libModule: '@fluixi/core',
@@ -706,6 +710,27 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             // final order is: imports, deferred bindings, everything else.
             if (deferredDecls.length > 0) {
               path.node.body.unshift(...deferredDecls);
+            }
+
+            // Static templates, parsed once per module rather than per instance.
+            if (state.staticTemplates.size > 0) {
+              const decls: t.Statement[] = [];
+              for (const [key, name] of state.staticTemplates as Map<string, string>) {
+                const svg = key.startsWith('svg:');
+                const html = svg ? key.slice(4) : key;
+                decls.push(
+                  t.variableDeclaration('const', [
+                    t.variableDeclarator(
+                      t.identifier(name),
+                      t.callExpression(t.identifier('createTemplate'), [
+                        t.stringLiteral(html),
+                        ...(svg ? [t.booleanLiteral(true)] : []),
+                      ]),
+                    ),
+                  ]),
+                );
+              }
+              path.node.body.unshift(...decls);
             }
           }
 
@@ -1130,15 +1155,40 @@ function emitComponentCall(
  * Produces the same runtime calls as the inline path — this is the route a future
  * swc front-end reuses.
  */
+
+/**
+ * Hoist the backend's static templates to module scope and rewrite the emitted code to
+ * reference them. Deduped by HTML, so a subtree repeated in a file is parsed once.
+ */
+function adoptTemplates(
+  code: string,
+  templates: { id: string; html: string; svg: boolean }[] | undefined,
+  state: any,
+): string {
+  if (!templates || templates.length === 0) return code;
+  let out = code;
+  for (const tpl of templates) {
+    const key = `${tpl.svg ? 'svg:' : ''}${tpl.html}`;
+    let name = state.staticTemplates.get(key);
+    if (!name) {
+      name = `_tmpl$${state.staticTemplates.size}`;
+      state.staticTemplates.set(key, name);
+    }
+    out = out.split(tpl.id).join(name);
+  }
+  return out;
+}
+
 function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
   // `used` collects runtime symbols emitted for JSX nested inside expressions
   // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
   const used = new Set<string>();
   const ir = buildIR(node, used);
-  const { code, imports } = imperativeBackend.emit(ir, {} as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
-  return template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
+  const adopted = adoptTemplates(code, templates, state);
+  return template.expression(adopted, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression;
 }
 
 /**
@@ -1199,7 +1249,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   // around something already present adds a wrapper, a promise and a re-render to
   // fetch nothing.
   collapseStrategies(ir);
-  const { code, imports } = imperativeBackend.emit(ir, {} as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
@@ -1209,7 +1259,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   // position — which is why compiled html`` had no source map at all. Give every
   // generated node the template's own location so a breakpoint or stack frame
   // lands on the template instead of nowhere.
-  const expression = template.expression(code, {
+  const expression = template.expression(adoptTemplates(code, templates, state), {
     placeholderPattern: false,
     plugins: ['typescript'],
   })() as t.Expression;

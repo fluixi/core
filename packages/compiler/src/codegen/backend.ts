@@ -7,6 +7,19 @@ export interface CodegenResult {
   map?: unknown;
   /** runtime symbols this output imports (subset of the backend's contract) */
   imports: string[];
+  /**
+   * Templates to declare once at module scope, so a static subtree is parsed once and
+   * cloned per instance rather than rebuilt element by element.
+   */
+  templates?: StaticTemplate[];
+}
+
+export interface StaticTemplate {
+  /** Identifier to declare, unique within the emitted unit. */
+  id: string;
+  /** The HTML the template is built from. */
+  html: string;
+  svg: boolean;
 }
 
 /**

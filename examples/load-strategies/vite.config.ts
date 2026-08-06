@@ -7,6 +7,7 @@ export default defineConfig({
       // Resolution: which module a capitalised tag comes from. Nothing in `src/App.tsx`
       // imports these components — the compiler injects the import, or a `deferred()`
       // binding when a `load:` directive says the module should wait.
+      codegen: 'ir',
       resolve: [
         {
           components: {

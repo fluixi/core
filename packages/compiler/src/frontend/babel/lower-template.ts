@@ -22,7 +22,7 @@ import {
 } from '@fluixi/template-parser';
 import type { IRNode, IRProp, IRPropKind } from '../../ir/nodes.js';
 import { parseLoadDirective } from '../../resolve/load-directive.js';
-import { imperativeBackend } from '../../codegen/backends/imperative.js';
+import { imperativeBackend, inlineTemplates } from '../../codegen/backends/imperative.js';
 import { cleanJSXText, genExpr, isReactiveExpr } from './build-ir.js';
 
 const generate: any = (_generate as any).default ?? (_generate as any);
@@ -61,9 +61,11 @@ class Lowerer {
 
   /** Emit a nested IR subtree to code (for `Show` fallback / `For` children). */
   private emit(node: IRNode): string {
-    const { code, imports } = imperativeBackend.emit(node, {} as any);
+    const { code, imports, templates } = imperativeBackend.emit(node, {} as any);
     for (const s of imports) this.used.add(s);
-    return code;
+    // No module scope reachable from a nested subtree, so templates are inlined;
+    // `createTemplate` caches by HTML, so this is a lookup rather than a re-parse.
+    return inlineTemplates(code, templates);
   }
 
   // --- content ------------------------------------------------------------

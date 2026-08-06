@@ -197,7 +197,8 @@ describe('lit front-end (format: lit)', () => {
       backend: 'imperative',
       hoistStatics: false,
     });
-    expect(code).toContain('createNativeElement');
+    // Fully static, so it is cloned from a template rather than built element by element.
+    expect(code).toContain('cloneTemplate');
     expect(code).not.toContain('html`'); // template consumed
   });
 
