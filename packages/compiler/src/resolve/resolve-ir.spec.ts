@@ -31,6 +31,7 @@ describe('resolveComponentSources', () => {
       module: '@fluixi-ui/button',
       export: 'Button',
       origin: 'rule',
+      loading: { kind: 'eager' },
     });
   });
 
@@ -38,18 +39,29 @@ describe('resolveComponentSources', () => {
     const show = component('Show');
     const suspense = component('Suspense');
     resolveComponentSources([show, suspense]);
-    expect(show.source).toEqual({ module: '@fluixi/dom', export: 'Show', origin: 'builtin' });
+    expect(show.source).toEqual({
+      module: '@fluixi/dom',
+      export: 'Show',
+      origin: 'builtin',
+      loading: { kind: 'eager' },
+    });
     expect(suspense.source).toEqual({
       module: '@fluixi/core',
       export: 'Suspense',
       origin: 'builtin',
+      loading: { kind: 'eager' },
     });
   });
 
   it('lets a rule win over a router builtin', () => {
     const node = component('Link');
     resolveComponentSources(node, { resolver: rules });
-    expect(node.source).toEqual({ module: '@fluixi-ui/link', export: 'Link', origin: 'rule' });
+    expect(node.source).toEqual({
+      module: '@fluixi-ui/link',
+      export: 'Link',
+      origin: 'rule',
+      loading: { kind: 'eager' },
+    });
   });
 
   it('keeps control flow even when a rule claims the name', () => {
@@ -67,6 +79,7 @@ describe('resolveComponentSources', () => {
       module: '@fluixi/core/router-next',
       export: 'Outlet',
       origin: 'builtin',
+      loading: { kind: 'eager' },
     });
   });
 

@@ -19,6 +19,15 @@ import {
   type ComponentResolver,
 } from '../../resolve/component-resolver.js';
 import { resolveComponentSources } from '../../resolve/resolve-ir.js';
+import { collapseStrategies } from '../../optimize/collapse-strategies.js';
+import {
+  EAGER,
+  isDeferred,
+  isLoadDirective,
+  parseLoadDirective,
+  LoadDirectiveError,
+  type IRLoadStrategy,
+} from '../../resolve/load-directive.js';
 import {
   DOM_CONTROL_FLOW,
   CORE_CONTROL_FLOW,
@@ -207,6 +216,10 @@ interface PluginStateData {
   controlFlowComponents: Set<string>;
   /** name -> module for tags resolved by the `resolve` rules (not control flow). */
   resolvedComponents: Map<string, ResolvedComponent>;
+  /** Components emitted as `deferred(() => import(...))` rather than a static import. */
+  deferredComponents: Map<string, { module: string; export: string; strategy: IRLoadStrategy }>;
+  /** `load:` found on the tag currently being lowered, consumed by emitComponentCall. */
+  pendingLoad?: IRLoadStrategy;
   /** Shared by the JSX visitor and the html`` IR walk so both resolve identically. */
   componentResolver: ComponentResolver;
   delegatedEvents: Set<string>;
@@ -348,6 +361,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     needsCreateMemo: false,
     controlFlowComponents: new Set(),
     resolvedComponents: new Map(),
+    deferredComponents: new Map(),
     componentResolver,
     delegatedEvents: new Set(),
     staticElements: new Map(),
@@ -394,6 +408,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             needsCreateMemo: false,
             controlFlowComponents: new Set(),
     resolvedComponents: new Map(),
+    deferredComponents: new Map(),
     componentResolver,
             delegatedEvents: new Set(),
             staticElements: new Map(),
@@ -575,6 +590,50 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             // Grouped by module so several components from one package share a single
             // declaration, and emitted with the local name equal to the tag — the
             // generated code refers to the tag, not to the export.
+            // Deferred components become value bindings, not imports: a literal
+            // `import()` is what lets the bundler split, hash and tree-shake the chunk
+            // as ordinary behaviour rather than as an integration.
+            const deferredDecls: t.Statement[] = [];
+            if (state.deferredComponents.size > 0) {
+              for (const [local, entry] of state.deferredComponents as Map<
+                string,
+                { module: string; export: string; strategy: IRLoadStrategy }
+              >) {
+                if (path.scope.hasBinding(local)) continue;
+                deferredDecls.push(
+                  t.variableDeclaration('const', [
+                    t.variableDeclarator(
+                      t.identifier(local),
+                      t.callExpression(t.identifier('deferred'), [
+                        t.arrowFunctionExpression(
+                          [],
+                          t.callExpression(t.import(), [t.stringLiteral(entry.module)]),
+                        ),
+                        t.objectExpression([
+                          t.objectProperty(
+                            t.identifier('strategy'),
+                            strategyLiteral(entry.strategy),
+                          ),
+                          t.objectProperty(
+                            t.identifier('export'),
+                            t.stringLiteral(entry.export),
+                          ),
+                        ]),
+                      ]),
+                    ),
+                  ]),
+                );
+              }
+              if (deferredDecls.length > 0 && !path.scope.hasBinding('deferred')) {
+                imports.push(
+                  t.importDeclaration(
+                    [t.importSpecifier(t.identifier('deferred'), t.identifier('deferred'))],
+                    t.stringLiteral(state.libModule ?? '@fluixi/core'),
+                  ),
+                );
+              }
+            }
+
             if (state.resolvedComponents.size > 0) {
               const byModule = new Map<string, Array<{ local: string; exported: string }>>();
               for (const [local, resolved] of state.resolvedComponents as Map<
@@ -641,6 +700,12 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                 }
               );
               path.node.body.unshift(...hoisted);
+            }
+
+            // After the hoisted statics but before imports are unshifted, so the
+            // final order is: imports, deferred bindings, everything else.
+            if (deferredDecls.length > 0) {
+              path.node.body.unshift(...deferredDecls);
             }
           }
 
@@ -945,6 +1010,56 @@ function emitImperativeElement(
  * `createMemo(() => createComponent(Comp, props))` — same shape jsx-runtime
  * produces for components, so it stays reactive when used as a child.
  */
+/**
+ * Read a `load:` attribute's literal value. A `${…}` hole is rejected: the strategy
+ * decides how the module is emitted, so it has to be known at compile time.
+ */
+function readLoadDirective(name: string, attr: t.JSXAttribute): IRLoadStrategy {
+  let value: string | null = null;
+  if (attr.value) {
+    if (t.isStringLiteral(attr.value)) value = attr.value.value;
+    else {
+      throw new LoadDirectiveError(
+        `'${name}' needs a literal value, not an expression — the strategy is compile-time.`,
+      );
+    }
+  }
+  return parseLoadDirective(name, value);
+}
+
+/**
+ * Two usages of one component in the same file share a binding, so their strategies
+ * have to agree. The earlier-loading one wins: the module is in whichever chunk loads
+ * first regardless, so deferring the other buys nothing — the same reasoning as the
+ * collapse pass, applied within a file.
+ */
+/** The strategy as an object literal the runtime can read. */
+function strategyLiteral(strategy: IRLoadStrategy): t.ObjectExpression {
+  const props: t.ObjectProperty[] = [
+    t.objectProperty(t.identifier('kind'), t.stringLiteral(strategy.kind)),
+  ];
+  if (strategy.kind === 'visible' && strategy.rootMargin) {
+    props.push(t.objectProperty(t.identifier('rootMargin'), t.stringLiteral(strategy.rootMargin)));
+  }
+  if (strategy.kind === 'interaction') {
+    props.push(
+      t.objectProperty(
+        t.identifier('events'),
+        t.arrayExpression(strategy.events.map((e) => t.stringLiteral(e))),
+      ),
+    );
+  }
+  if (strategy.kind === 'media') {
+    props.push(t.objectProperty(t.identifier('query'), t.stringLiteral(strategy.query)));
+  }
+  return t.objectExpression(props);
+}
+
+function mergeStrategy(existing: IRLoadStrategy, incoming: IRLoadStrategy): IRLoadStrategy {
+  if (!isDeferred(existing) || !isDeferred(incoming)) return EAGER;
+  return existing;
+}
+
 function emitComponentCall(
   comp: t.Expression,
   propsObj: t.Expression,
@@ -963,10 +1078,31 @@ function emitComponentCall(
   if (t.isIdentifier(comp) && !CONTROL_FLOW_COMPONENTS.has(comp.name) && state.componentResolver) {
     const resolved = state.componentResolver.resolve(comp.name);
     if (resolved) {
-      state.resolvedComponents.set(comp.name, resolved);
+      const strategy: IRLoadStrategy = state.pendingLoad ?? EAGER;
+      // An eager usage seen earlier in the file already put the module in the chunk,
+      // so a later deferred usage of the same name collapses to eager. Without this the
+      // file gets both a static import and a `const` for one name — a redeclaration.
+      const alreadyEager = state.resolvedComponents.has(comp.name);
+      if (isDeferred(strategy) && !alreadyEager) {
+        // A deferred component becomes a `deferred(() => import(...))` binding rather
+        // than a static import, so the bundler puts it in its own chunk.
+        const existing = state.deferredComponents.get(comp.name);
+        const merged = existing ? mergeStrategy(existing.strategy, strategy) : strategy;
+        if (isDeferred(merged)) {
+          state.deferredComponents.set(comp.name, { ...resolved, strategy: merged });
+        } else {
+          state.deferredComponents.delete(comp.name);
+          state.resolvedComponents.set(comp.name, resolved);
+        }
+      } else {
+        // An eager usage anywhere wins: the module is in the chunk already.
+        state.deferredComponents.delete(comp.name);
+        state.resolvedComponents.set(comp.name, resolved);
+      }
       resolvedByRule = true;
     }
   }
+  state.pendingLoad = undefined;
   // Router components auto-import like control flow — register the name here so
   // `<Outlet/>` nested in markup is caught, not only a top-level router tag. Unbound
   // names are injected at Program.exit.
@@ -1057,7 +1193,12 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
       coreModule: state.libModule,
       routerModule: state.routerModule,
     },
+    strategyFor: (node) => node.load,
   });
+  // Demote deferred references whose module is already in this chunk: a lazy boundary
+  // around something already present adds a wrapper, a promise and a re-render to
+  // fetch nothing.
+  collapseStrategies(ir);
   const { code, imports } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
@@ -1121,7 +1262,14 @@ function collectRuntimeNeeds(node: IRNode, state: any): void {
     if (node.source.origin === 'builtin') {
       state.controlFlowComponents.add(node.name);
       state.needsControlFlowImport = true;
+    } else if (isDeferred(node.source.loading) && !state.resolvedComponents.has(node.name)) {
+      state.deferredComponents.set(node.name, {
+        module: node.source.module,
+        export: node.source.export,
+        strategy: node.source.loading,
+      });
     } else {
+      state.deferredComponents.delete(node.name);
       state.resolvedComponents.set(node.name, {
         module: node.source.module,
         export: node.source.export,
@@ -1427,12 +1575,22 @@ function transformAttributes(
   const spreads: t.Expression[] = [];
   const cfValueProp = CONTROL_FLOW_VALUE_PROPS[tagName];
 
+  // `load:` is a directive, not a prop — it says when this component's module is
+  // fetched. Cleared per element so a strategy cannot leak onto the next tag.
+  state.pendingLoad = undefined;
+
   for (const attr of attributes) {
     if (t.isJSXSpreadAttribute(attr)) {
       // Collect spread expressions separately
       spreads.push(attr.argument as t.Expression);
     } else if (t.isJSXAttribute(attr)) {
       const name = getAttributeName(attr.name);
+
+      if (isLoadDirective(name)) {
+        // Same parser the html`` lowering uses, so the two syntaxes cannot drift.
+        state.pendingLoad = readLoadDirective(name, attr);
+        continue;
+      }
       const value = transformAttributeValue(attr.value, state, name, isNativeElement);
 
       // Detect event handlers for delegation

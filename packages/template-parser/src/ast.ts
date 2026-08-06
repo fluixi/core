@@ -51,6 +51,7 @@ export type AttrKind =
   | 'ClassDirective'
   | 'StyleDirective'
   | 'UseDirective'
+  | 'LoadDirective'
   | 'Slot';
 
 /** Fields shared by every node. `parent` is wired by {@link setParents}. */
@@ -84,6 +85,7 @@ export type AttributeLikeNode =
   | ClassDirectiveNode
   | StyleDirectiveNode
   | UseDirectiveNode
+  | LoadDirectiveNode
   | SlotNode;
 
 // ---------------------------------------------------------------------------
@@ -241,6 +243,22 @@ export interface StyleDirectiveNode extends NodeBase {
   kind: 'StyleDirective';
   name: string;
   hole: number;
+}
+
+/**
+ * `load:visible`, `load:interaction="click"`, … — when the component's module is
+ * fetched.
+ *
+ * The node carries the strategy and its literal modifier as written; turning that into
+ * a load plan is the compiler's job, so the parser stays free of module semantics —
+ * the same reason resolution has no syntax here either.
+ */
+export interface LoadDirectiveNode extends NodeBase {
+  kind: 'LoadDirective';
+  /** The part after `load:`, unvalidated — the compiler reports unknown strategies. */
+  strategy: string;
+  /** `load:visible="200px"` → `'200px'`. Null for a bare directive. */
+  modifier: string | null;
 }
 
 /** `use=${directive}` or `use:tooltip` (optionally `use:tooltip=${opts}`). */

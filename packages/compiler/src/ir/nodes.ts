@@ -4,6 +4,10 @@
  * between parsing and code generation — the layer your own improvements
  * (hoisting, islands, resumability hints) transform.
  */
+import type { IRLoadStrategy } from '../resolve/load-directive.js';
+
+export type { IRLoadStrategy };
+
 export interface SourceSpan { start: number; end: number; }
 
 export type IRNode =
@@ -72,6 +76,14 @@ export interface IRComponentSource {
   /** The export to import, or `default`. */
   export: string;
   origin: 'rule' | 'builtin';
+  /**
+   * When the module is fetched. Set from a `load:` directive at the usage site, and
+   * `eager` otherwise — resolution decides where a component comes from, this decides
+   * when, and the two vary independently.
+   */
+  loading: IRLoadStrategy;
+  /** Assigned by the optimizer once references are grouped. */
+  chunk?: string;
 }
 
 export interface IRComponent {
@@ -85,6 +97,12 @@ export interface IRComponent {
    * claims it, which is a diagnostic rather than a resolution.
    */
   source?: IRComponentSource;
+  /**
+   * A `load:` strategy read off the tag by the frontend. The resolve pass folds it into
+   * `source.loading`; it lives here first because the frontend knows the directive and
+   * the resolve pass knows whether the name is deferrable at all.
+   */
+  load?: IRLoadStrategy;
   loc?: SourceSpan;
 }
 
