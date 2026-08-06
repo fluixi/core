@@ -12,7 +12,7 @@
  * which is strictly cheaper. This exists for templates with holes, where the server has
  * to produce real nodes for the hole content to be inserted into.
  */
-import { ServerElement, ServerText } from './nodes.js';
+import { ServerComment, ServerElement, ServerText } from './nodes.js';
 import type { ServerNode } from './nodes.js';
 
 /** Elements the HTML parser closes itself — they never have children. */
@@ -73,6 +73,16 @@ export function parseTemplate(html: string, isSVG = false): ServerElement {
       break;
     }
     if (lt > i) addText(html.slice(i, lt));
+
+    // `<!---->` marks a hole. It has to survive into the server's markup, or hydration
+    // would see a different shape from the one the generated paths describe.
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt);
+      if (end === -1) throw new TemplateParseError(`unterminated comment at ${lt}`);
+      append(new ServerComment(html.slice(lt + 4, end)));
+      i = end + 3;
+      continue;
+    }
 
     if (html[lt + 1] === '/') {
       const end = html.indexOf('>', lt);
