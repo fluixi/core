@@ -31,7 +31,7 @@ function parseJSX(src: string): any {
 }
 
 function compile(src: string) {
-  return imperativeBackend.emit(buildIR(parseJSX(src)), {});
+  return imperativeBackend.emit(buildIR(parseJSX(src)), { templateClone: true } as never);
 }
 
 /** Execute an emitted expression, wiring runtime imports + user vars into scope. */

@@ -5,6 +5,15 @@ import type { ComponentResolverRule } from './resolve/component-resolver.js';
  * as backends change. Switching DOM strategy is `backend`, not a rewrite.
  */
 export interface CompilerOptions {
+  /**
+   * Clone static subtrees from a `<template>` instead of building them element by
+   * element. Roughly 2x faster to instantiate, but **client-only**: `createTemplate`
+   * produces real DOM nodes, which the SSR renderer's ServerElement tree rejects, and a
+   * clone creates a fresh node where hydration must adopt the existing one. Opt in for
+   * a client-rendered app; leave off wherever SSR or hydration is involved.
+   */
+  templateClone?: boolean;
+
   /** which codegen backend to use */
   backend?: 'imperative' | 'template-clone';
   /** output target */

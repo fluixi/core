@@ -193,11 +193,17 @@ export function inlineTemplates(code: string, templates: StaticTemplate[] | unde
 export const imperativeBackend: CodegenBackend = {
   name: 'imperative',
   contract: RUNTIME_CONTRACT_V1,
-  emit(node: IRNode, _options: CompilerOptions): CodegenResult {
+  emit(node: IRNode, options: CompilerOptions): CodegenResult {
     const used = new Set<string>();
-    const templates: StaticTemplate[] = [];
+    // Off by default: `createTemplate` builds real DOM nodes, so on the server they
+    // land in a ServerElement tree and clash, and during hydration a clone creates a
+    // fresh node where the existing one must be adopted. Both need runtime support
+    // that does not exist yet, so the client-only win stays opt-in until it does.
+    const templates: StaticTemplate[] | undefined = options?.templateClone
+      ? []
+      : undefined;
     const code = emitNode(node, used, templates);
-    if (templates.length > 0) used.add('createTemplate');
+    if (templates && templates.length > 0) used.add('createTemplate');
     return { code, imports: Array.from(used), templates };
   },
 };

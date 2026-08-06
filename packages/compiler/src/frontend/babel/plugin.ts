@@ -146,6 +146,8 @@ export interface PluginOptions {
    * @default '@fluixi/core/router-next'
    */
   routerModule?: string;
+  /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
+  templateClone?: boolean;
 
   /**
    * Rules that resolve an unbound capitalised tag to a module, so a component can be
@@ -231,6 +233,7 @@ interface PluginStateData {
   /** Module overrides, so the resolve pass reports the same targets codegen uses. */
   controlFlowModule: string;
   routerModule: string;
+  templateClone: boolean;
   backend: 'jsx' | 'imperative';
   codegen: 'inline' | 'ir';
   /** runtime symbols emitted by the IR pipeline (codegen 'ir'), for import injection */
@@ -334,6 +337,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     autoShowTransform = false,
     backend = 'imperative',
     codegen = 'inline',
+    templateClone = false,
     // `both` by default: JSX and html`` are compiled out of the box, so
     // `fluixi()` needs no `format` option. Injected imports are deduped, so a
     // file mixing the two styles won't redeclare a binding.
@@ -355,6 +359,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     libModule: '@fluixi/core',
     controlFlowModule,
     routerModule,
+    templateClone,
     hasJSX: false,
     hasReactivity: false,
     hasLitHTML: false,
@@ -421,6 +426,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             libModule: '@fluixi/core',
             controlFlowModule,
             routerModule,
+            templateClone,
             backend,
             codegen,
             irImports: new Set<string>(),
@@ -1209,7 +1215,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
     strategyFor: (n) => n.load,
   });
   collapseStrategies(ir);
-  const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone } as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
@@ -1275,7 +1281,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   // around something already present adds a wrapper, a promise and a re-render to
   // fetch nothing.
   collapseStrategies(ir);
-  const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
+  const { code, imports, templates } = imperativeBackend.emit(ir, { templateClone: state.templateClone } as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
