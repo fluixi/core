@@ -18,10 +18,9 @@ export interface CompilerOptions {
    * the common shape. Roughly halves the emitted code for such a subtree and replaces
    * per-element construction with one clone.
    *
-   * **Client rendering only.** Hole content adopts server DOM through the hydration
-   * cursor, while the template walk addresses nodes by `firstChild`/`nextSibling`; the
-   * two do not line up, so a hydrated app renders hole content twice. Off until the
-   * hydration model covers it.
+   * Works under SSR and hydration: each hole is bracketed by `<!--fx-->` markers, so its
+   * content is exactly the nodes between them and the server's markup has the same shape
+   * as the client's template. Hydration adopts those nodes rather than rebuilding them.
    */
   partialTemplates?: boolean;
 

@@ -10,7 +10,10 @@ import { App } from './App';
 // the real SSR entry (startServer/renderRequest) does.
 describe('SSR example — compiled JSX → HTML', () => {
   it('sync renderToString emits the shell (resource still loading)', () => {
-    const html = renderToString(() => App({ url: '/home' }));
+    // Interpolations are bracketed by `<!--fx-->` markers so the server's markup has the
+    // same shape as the client's template — that is what lets hydration adopt the nodes
+    // rather than rebuild them. Stripped so the assertions read as the markup does.
+    const html = renderToString(() => App({ url: '/home' })).replace(/<!--\/?fx-->/g, '');
     expect(html).toContain('<h1>Fluixi SSR</h1>');
     expect(html).toContain('/home'); // props.url rendered
     expect(html).toContain('class="counter"');

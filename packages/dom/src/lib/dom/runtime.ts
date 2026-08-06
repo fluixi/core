@@ -33,6 +33,7 @@ import {
   hydration,
   getHydrationWalker,
   isAdopted,
+  runHydrationAt,
   ascendPast,
 } from './hydration-state.js';
 
@@ -305,6 +306,73 @@ export function templateNode(html: string, tag: string, holes = false, isSVG = f
     if (node) return node;
   }
   return cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node;
+}
+
+/**
+ * Evaluate a hole's content with the hydration cursor placed at what the server rendered
+ * for *that hole*.
+ *
+ * Without this, only the hole's top level adopts. `templateNode` moves the cursor past the
+ * whole template — the subtree is inert, so there is nothing in it to walk — which leaves
+ * the cursor in the wrong place for anything the hole builds internally. A component in a
+ * hole would then recreate its own elements: no duplication, but every server node thrown
+ * away, which is most of what hydration is for.
+ *
+ * The markers make the position exact: the content starts immediately after `start`.
+ */
+export function holeScope<T>(start: Node, produce: () => T): T {
+  if (!hydration.active) return produce();
+
+  // `produce` is called with the cursor already placed, because the value may be built
+  // eagerly — `props.children` is a getter, and reading it constructs its nodes there and
+  // then. Wrapping the result instead would be too late: the DOM would already exist,
+  // built against whatever cursor happened to be current, and the server's nodes would be
+  // left behind as duplicates.
+  const value = runHydrationAt(start.nextSibling, produce);
+
+  // A memo or accessor builds nothing until it is read, which happens inside `insert`'s
+  // effect — so it needs the cursor placed again at that moment. The guard matters: once
+  // hydration is over, later updates must render normally rather than re-enter it.
+  if (typeof value === 'function') {
+    const accessor = value as unknown as (...args: unknown[]) => unknown;
+    return ((...args: unknown[]) =>
+      hydration.active
+        ? runHydrationAt(start.nextSibling, () => accessor(...args))
+        : accessor(...args)) as unknown as T;
+  }
+  return value;
+}
+
+/**
+ * The closing marker for a hole opened at `start`.
+ *
+ * Found by scanning rather than by position: on a fresh clone it is the very next node,
+ * but the server's DOM has the rendered content in between, and hydration walks that DOM.
+ * Scanning is what makes one set of generated references work in both.
+ */
+export function holeEnd(start: Node): Node {
+  for (let n = start.nextSibling; n; n = n.nextSibling) {
+    if (n.nodeType === 8 && (n as Comment).data === '/fx') return n;
+  }
+  /* c8 ignore next 2 */
+  throw new Error('[fluixi] template hole is missing its closing marker');
+}
+
+/**
+ * The nodes a hole already contains, for `insert` to reconcile against.
+ *
+ * On a fresh clone the markers are adjacent and this is empty, so `insert` builds the
+ * content. When hydrating, the server's rendered content sits between them and is handed
+ * back — `insertExpression` then reuses those nodes (setting `.data` on a text node
+ * rather than creating one), which is what adoption means here.
+ *
+ * Paired markers are what make this exact: a hole's content is *by definition* the nodes
+ * between its own two markers, with no dependence on the hydration cursor's position.
+ */
+export function holeContent(start: Node, end: Node): Node[] {
+  const nodes: Node[] = [];
+  for (let n = start.nextSibling; n && n !== end; n = n.nextSibling) nodes.push(n);
+  return nodes;
 }
 
 export function cloneTemplate(

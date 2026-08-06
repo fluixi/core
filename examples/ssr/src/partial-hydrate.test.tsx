@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderToString } from '@fluixi/server';
 import { hydrate } from '@fluixi/dom';
 import { PartialApp } from './PartialApp';
@@ -10,6 +10,8 @@ import { PartialApp } from './PartialApp';
  * are the shapes where that would break first.
  */
 describe('hydrating a partial template', () => {
+  afterEach(() => vi.restoreAllMocks());
+
   const setup = () => {
     const html = renderToString(() => PartialApp());
     const container = document.createElement('div');
@@ -50,5 +52,19 @@ describe('hydrating a partial template', () => {
     hydrate(() => PartialApp(), container);
     expect(container.querySelector('.tail')!.textContent).toBe('static tail');
     expect(container.querySelectorAll('.tail')).toHaveLength(1);
+  });
+
+  it('adopts the server nodes instead of recreating them', () => {
+    // The strongest signal available: the runtime warns whenever it gives up on a server
+    // node and builds a fresh one. Correct output is not enough — content can look right
+    // while every text node was thrown away and rebuilt, which is what happened before
+    // holes were bracketed by markers.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const container = setup();
+    hydrate(() => PartialApp(), container);
+    const mismatches = warn.mock.calls.filter((args) =>
+      String(args[0]).includes('hydration mismatch'),
+    );
+    expect(mismatches).toHaveLength(0);
   });
 });

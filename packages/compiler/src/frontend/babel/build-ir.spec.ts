@@ -211,11 +211,12 @@ describe('template cloning produces the same DOM as building element by element'
     ],
     ['void element', '(<div><br/><img src="a.png"/></div>)', '<div><br><img src="a.png"></div>'],
     [
-      // The trailing `<!---->` is the hole's marker: it is what makes the clone, the
-      // server's markup and the hydrated DOM the same shape.
+      // The `<!--fx-->` pair brackets the hole: it is what makes the clone, the
+      // server's markup and the hydrated DOM the same shape, and what lets the runtime
+      // identify a hole's existing content exactly.
       'entities in text and attributes',
       '(<div title={"a<b"}>{"1 < 2"}</div>)',
-      '<div title="a<b">1 &lt; 2<!----></div>',
+      '<div title="a<b"><!--fx-->1 &lt; 2<!--/fx--></div>',
     ],
     ['valueless attribute', '(<input disabled/>)', '<input disabled="">'],
   ];

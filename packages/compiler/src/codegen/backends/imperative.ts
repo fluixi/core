@@ -188,31 +188,27 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         if (plan) {
           used.add('templateNode');
           used.add('insert');
+          used.add('holeEnd');
+          used.add('holeContent');
+          used.add('holeScope');
           const id = `_tmpl$${templates.length}`;
           templates.push({ id, html: plan.html, tag: plan.tag, svg: false });
 
-          const refs = new Map<string, string>();
-          const refFor = (path: string): string => {
-            if (path === '_el$') return '_el$';
-            let name = refs.get(path);
-            if (!name) {
-              name = `_n$${refs.size}`;
-              refs.set(path, name);
-            }
-            return name;
-          };
-          // Resolve every path first so the declarations come out in dependency order.
-          const inserts = plan.holes.map((hole) => ({
-            parent: refFor(hole.parentPath),
-            // Content goes before the hole's own marker, which every environment has.
-            before: refFor(hole.markerPath),
-            node: hole.node,
-          }));
-
           const lines = [`const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true);`];
-          for (const [path, name] of refs) lines.push(`const ${name} = ${path};`);
-          for (const ins of inserts) {
-            lines.push(`insert(${ins.parent}, ${emitNode(ins.node, used, templates)}, ${ins.before});`);
+          // Every reference first: inserting shifts what follows, so the walk has to be
+          // complete before any content goes in.
+          for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);
+          for (const hole of plan.holes) {
+            // The fourth argument is what the hole already holds — nothing on a fresh
+            // clone, the server's content when hydrating. `insert` reconciles against it,
+            // so hydration reuses those nodes rather than building new ones.
+            // `holeScope` places the hydration cursor at what the server rendered for
+            // this hole, so anything the content builds internally adopts too.
+            lines.push(
+              `insert(${hole.parentRef}, holeScope(${hole.startRef}, () => ` +
+                `(${emitNode(hole.node, used, templates)})), ` +
+                `${hole.endRef}, holeContent(${hole.startRef}, ${hole.endRef}));`,
+            );
           }
           lines.push('return _el$;');
           return `(() => { ${lines.join(' ')} })()`;

@@ -12,39 +12,51 @@ const attr = (name: string, literal: string): IRProp => ({ name, kind: 'attr', l
 const plan = (n: IRElement) => (analyzeStatic(n), planPartialTemplate(n));
 
 describe('planPartialTemplate', () => {
-  it('leaves a marker where the hole goes', () => {
+  it('brackets each hole with a marker pair', () => {
     const p = plan(el('li', [attr('className', 'row')], [text('tick '), hole()]))!;
-    expect(p.html).toBe('<li class="row">tick <!----></li>');
+    expect(p.html).toBe('<li class="row">tick <!--fx--><!--/fx--></li>');
     expect(p.holes).toHaveLength(1);
-    expect(p.holes[0]!.parentPath).toBe('_el$');
-    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.nextSibling');
+    expect(p.holes[0]!.parentRef).toBe('_el$');
+  });
+
+  it('walks from the previous sibling, never by index', () => {
+    // Index arithmetic describes a fresh clone only: the server's DOM has rendered
+    // content between the markers, so everything after a hole is shifted.
+    const p = plan(el('div', [], [text('a '), hole(), el('p', [], [hole()])]))!;
+    expect(p.steps.map((s) => s.expr)).toEqual([
+      '_el$.firstChild',
+      '_n$0.nextSibling',
+      'holeEnd(_n$1)',
+      '_n$2.nextSibling',
+      '_n$3.firstChild',
+      'holeEnd(_n$4)',
+    ]);
+  });
+
+  it('resolves each hole end at runtime rather than by position', () => {
+    const p = plan(el('div', [], [hole()]))!;
+    const end = p.steps.find((s) => s.ref === p.holes[0]!.endRef)!;
+    expect(end.expr).toBe(`holeEnd(${p.holes[0]!.startRef})`);
   });
 
   it('addresses a hole inside a nested element', () => {
     const p = plan(el('div', [], [el('h3', [], [hole()]), el('p', [], [text('s')])]))!;
-    expect(p.html).toBe('<div><h3><!----></h3><p>s</p></div>');
-    expect(p.holes[0]!.parentPath).toBe('_el$.firstChild');
-    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.firstChild');
+    expect(p.html).toBe('<div><h3><!--fx--><!--/fx--></h3><p>s</p></div>');
+    expect(p.holes[0]!.parentRef).toBe('_n$0');
   });
 
-  it('walks siblings with nextSibling, not indices', () => {
-    const p = plan(el('div', [], [el('a', [], [text('x')]), el('b', [], [hole()])]))!;
-    expect(p.holes[0]!.parentPath).toBe('_el$.firstChild.nextSibling');
-  });
-
-  it('counts the marker when addressing later siblings', () => {
-    // The marker occupies a position, so a following element is the *second* child.
-    const p = plan(el('div', [], [hole(), el('p', [], [hole()])]))!;
-    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild');
-    expect(p.holes[1]!.parentPath).toBe('_el$.firstChild.nextSibling');
-  });
-
-  it('handles a hole between two texts, which the marker keeps apart', () => {
-    // Omitting holes made this unrepresentable — the texts merged and there was
-    // nothing to insert between.
+  it('handles a hole between two texts, which the markers keep apart', () => {
+    // Omitting holes made this unrepresentable — the texts merged and there was nothing
+    // to insert between.
     const p = plan(el('p', [], [text('a '), hole(), text(' b')]))!;
-    expect(p.html).toBe('<p>a <!----> b</p>');
-    expect(p.holes[0]!.markerPath).toBe('_el$.firstChild.nextSibling');
+    expect(p.html).toBe('<p>a <!--fx--><!--/fx--> b</p>');
+    expect(p.holes).toHaveLength(1);
+  });
+
+  it('stops walking after the last dynamic child', () => {
+    // No reference is needed for trailing static nodes.
+    const p = plan(el('div', [], [hole(), el('p', [], [text('x')]), el('em', [], [text('y')])]))!;
+    expect(p.steps).toHaveLength(2);
   });
 
   it('returns null for a fully static subtree — that has a cheaper path', () => {
