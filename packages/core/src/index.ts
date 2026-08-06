@@ -1,3 +1,4 @@
+export { VERSION } from './version.generated.js';
 /**
  * @fileoverview Main entry point for Fluixi framework
  * @module @fluixi/core

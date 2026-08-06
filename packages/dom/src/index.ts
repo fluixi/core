@@ -79,5 +79,7 @@ const DOM = {
   isIntegrationInitialized,
 };
 
+export { VERSION } from './version.generated.js';
+
 export type DOM = typeof DOM;
 export default DOM;

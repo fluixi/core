@@ -160,7 +160,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && cp types/fluixi.d.ts dist/fluixi.d.ts && pnpm run build:cdn",
+    "build": "node ../../scripts/gen-version.mjs && pnpm run build:typings && cross-env NODE_ENV=production mix-builder && cp types/fluixi.d.ts dist/fluixi.d.ts && pnpm run build:cdn",
     "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
     "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
     "pack": "pnpm pack",
