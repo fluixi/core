@@ -16,6 +16,7 @@ import { types as t, traverse, template } from '@babel/core';
 import _generate from '@babel/generator';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import { buildIRFromLit } from './build-ir-lit.js';
+import { analyzeStatic } from '../../optimize/analyze-static.js';
 import type {
   IRNode,
   IRProp,
@@ -259,9 +260,9 @@ function buildChildren(children: t.JSXElement['children'], used: Set<string>): I
         out.push({ kind: 'expr', code: genExpr(expr, used), reactive: isReactiveExpr(expr) });
       }
     } else if (t.isJSXElement(child)) {
-      out.push(buildIR(child, used));
+      out.push(buildIRNode(child, used));
     } else if (t.isJSXFragment(child)) {
-      out.push(buildIR(child, used));
+      out.push(buildIRNode(child, used));
     } else if (t.isJSXSpreadChild(child)) {
       out.push({ kind: 'expr', code: genExpr(child.expression as t.Expression, used), reactive: false });
     }
@@ -275,6 +276,14 @@ function buildChildren(children: t.JSXElement['children'], used: Set<string>): I
  * inject the right imports).
  */
 export function buildIR(node: t.JSXElement | t.JSXFragment, used: Set<string> = new Set()): IRNode {
+  const ir = buildIRNode(node, used);
+  // `static` is decided by one shared pass rather than at construction, because it is a
+  // property of a whole subtree: an element is only inert once its children are known.
+  analyzeStatic(ir);
+  return ir;
+}
+
+function buildIRNode(node: t.JSXElement | t.JSXFragment, used: Set<string>): IRNode {
   if (t.isJSXFragment(node)) {
     return { kind: 'fragment', children: buildChildren(node.children, used) };
   }

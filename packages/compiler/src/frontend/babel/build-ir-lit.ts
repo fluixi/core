@@ -16,6 +16,7 @@
 import type { types as t } from '@babel/core';
 import type { IRNode } from '../../ir/nodes.js';
 import { lowerLitTemplate } from './lower-template.js';
+import { analyzeStatic } from '../../optimize/analyze-static.js';
 
 /**
  * Build IR from a lit `` html`...` `` (or `` svg`...` ``) TaggedTemplateExpression.
@@ -27,5 +28,8 @@ export function buildIRFromLit(
   used: Set<string> = new Set(),
   opts: { svg?: boolean } = {},
 ): IRNode {
-  return lowerLitTemplate(node, used, opts);
+  const ir = lowerLitTemplate(node, used, opts);
+  // Same pass as the JSX frontend, so both agree on what is inert.
+  analyzeStatic(ir);
+  return ir;
 }
