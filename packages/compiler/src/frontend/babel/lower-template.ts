@@ -21,6 +21,7 @@ import {
   parseTemplate,
 } from '@fluixi/template-parser';
 import type { IRNode, IRProp, IRPropKind } from '../../ir/nodes.js';
+import { parseLoadDirective } from '../../resolve/load-directive.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import { cleanJSXText, genExpr, isReactiveExpr } from './build-ir.js';
 
@@ -170,7 +171,20 @@ class Lowerer {
       props.push({ name: slotName, kind: 'attr', expr: this.emit(ir), jsxElement: true });
     }
 
-    return { kind: 'component', name, props, children: this.lowerChildren(rest) };
+    // `load:` is a directive, not a prop: it says when this component's module is
+    // fetched. Parsed with the same helper the JSX path uses so the two cannot drift.
+    const loadAttr = el.attributes.find((a) => a.kind === 'LoadDirective');
+    const load = loadAttr
+      ? parseLoadDirective(`load:${loadAttr.strategy}`, loadAttr.modifier)
+      : undefined;
+
+    return {
+      kind: 'component',
+      name,
+      props,
+      children: this.lowerChildren(rest),
+      ...(load ? { load } : {}),
+    };
   }
 
   /** Split a component's children into named slots (`slot="x"`) and the rest. */

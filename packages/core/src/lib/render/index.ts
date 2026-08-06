@@ -278,6 +278,8 @@ export {
 
 export {lazy} from "./lazy.js"
 export type {LazyOptions, LazyComponent} from "./lazy.js"
+export {deferred} from "./deferred.js"
+export type {DeferredOptions, LoadStrategy} from "./deferred.js"
 
 export { Await } from './await.js';
 export type { AwaitProps } from './await.js';

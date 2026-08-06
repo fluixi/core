@@ -203,6 +203,34 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  examples/load-strategies:
+    dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   examples/playground:
     dependencies:
       '@fluixi/core':

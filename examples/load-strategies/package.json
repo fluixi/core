@@ -1,0 +1,25 @@
+{
+  "name": "@fluixi/example-load-strategies",
+  "version": "0.0.1-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "Component resolution with no imports, plus the load: directive deciding when each component's chunk is fetched.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
+  },
+  "devDependencies": {
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/vite-plugin": "workspace:*",
+    "jsdom": "^25.0.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.6.1"
+  }
+}

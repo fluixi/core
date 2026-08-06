@@ -26,6 +26,7 @@ import type {
   SourceSpan,
   StyleDirectiveNode,
   UseDirectiveNode,
+  LoadDirectiveNode,
 } from './ast.js';
 
 /** Recognized event modifiers (`@click.capture.once`, `on:input.passive`, …). */
@@ -144,6 +145,18 @@ export const CORE_DIRECTIVES: DirectiveDescriptor[] = [
       kind: 'StyleDirective',
       name: raw.name.slice('style:'.length),
       hole: requireHole(raw, 'style directive'),
+      loc: raw.loc,
+    }),
+  },
+  // Load strategy: `load:visible[="200px"]`. Components only — an intrinsic element
+  // has no module to defer.
+  {
+    id: 'load',
+    match: (n) => n.startsWith('load:'),
+    build: (raw): LoadDirectiveNode => ({
+      kind: 'LoadDirective',
+      strategy: raw.name.slice('load:'.length),
+      modifier: raw.value && raw.value.kind === 'static' ? raw.value.value : null,
       loc: raw.loc,
     }),
   },

@@ -20,6 +20,7 @@
 import type { IRNode, IRComponent, IRComponentSource } from '../ir/nodes.js';
 import type { ComponentResolver } from './component-resolver.js';
 import { RESERVED_COMPONENTS, ROUTER_COMPONENTS, builtinComponentMap } from './builtins.js';
+import { EAGER, type IRLoadStrategy } from './load-directive.js';
 
 export interface ResolveOptions {
   /** Rules configured for the project. Omit when the project configures none. */
@@ -28,6 +29,12 @@ export interface ResolveOptions {
   isBound?: (name: string) => boolean;
   /** Module overrides, so `routerModule` and friends are honoured. */
   modules?: Parameters<typeof builtinComponentMap>[0];
+  /**
+   * The `load:` strategy for a reference, when the frontend found one on the tag.
+   * Keyed by node so two usages of the same component can load differently — the
+   * whole reason timing lives at the usage site and location does not.
+   */
+  strategyFor?: (node: IRComponent) => IRLoadStrategy | undefined;
 }
 
 export interface ResolveReport {
@@ -48,7 +55,7 @@ export function resolveComponentSources(
   root: IRNode | IRNode[],
   options: ResolveOptions = {},
 ): ResolveReport {
-  const { resolver, isBound, modules } = options;
+  const { resolver, isBound, modules, strategyFor } = options;
   const builtins = builtinComponentMap(modules);
   const resolved = new Map<string, IRComponentSource>();
   const unresolved = new Set<string>();
@@ -65,11 +72,17 @@ export function resolveComponentSources(
       unresolved.add(name);
       return;
     }
-    node.source = source;
-    resolved.set(name, source);
+    // Control flow is lowered by name, so a load strategy on it has nothing to defer;
+    // ignoring it here keeps codegen from having to special-case the combination.
+    const loading =
+      source.origin === 'builtin' && RESERVED_COMPONENTS.has(name)
+        ? EAGER
+        : (strategyFor?.(node) ?? EAGER);
+    node.source = { ...source, loading };
+    resolved.set(name, node.source);
   };
 
-  const sourceFor = (name: string): IRComponentSource | undefined => {
+  const sourceFor = (name: string): Omit<IRComponentSource, 'loading'> | undefined => {
     // Control flow first: the name is fixed by the compiler.
     if (RESERVED_COMPONENTS.has(name)) {
       return { module: builtins[name]!, export: name, origin: 'builtin' };
