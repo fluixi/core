@@ -18,6 +18,7 @@ import {
   type ResolvedComponent,
   type ComponentResolver,
 } from '../../resolve/component-resolver.js';
+import { resolveComponentSources } from '../../resolve/resolve-ir.js';
 import {
   DOM_CONTROL_FLOW,
   CORE_CONTROL_FLOW,
@@ -212,6 +213,9 @@ interface PluginStateData {
   staticElements: Map<string, t.Expression>;
   staticCounter: number;
   libModule: string;
+  /** Module overrides, so the resolve pass reports the same targets codegen uses. */
+  controlFlowModule: string;
+  routerModule: string;
   backend: 'jsx' | 'imperative';
   codegen: 'inline' | 'ir';
   /** runtime symbols emitted by the IR pipeline (codegen 'ir'), for import injection */
@@ -334,6 +338,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     codegen,
     irImports: new Set<string>(),
     libModule: '@fluixi/core',
+    controlFlowModule,
+    routerModule,
     hasJSX: false,
     hasReactivity: false,
     hasLitHTML: false,
@@ -394,6 +400,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             autoShow: autoShowTransform,
             staticCounter: 0,
             libModule: '@fluixi/core',
+            controlFlowModule,
+            routerModule,
             backend,
             codegen,
             irImports: new Set<string>(),
@@ -1039,6 +1047,17 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   const used = new Set<string>();
   const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
   const ir = buildIRFromLit(node, used, { svg });
+  // Resolve pass: annotate each component reference with where it comes from, before
+  // codegen. Bindings are not checked here — Program.exit knows the whole file's scope
+  // and drops any injected import whose name turns out to be bound.
+  resolveComponentSources(ir, {
+    resolver: state.componentResolver,
+    modules: {
+      controlFlowModule: state.controlFlowModule,
+      coreModule: state.libModule,
+      routerModule: state.routerModule,
+    },
+  });
   const { code, imports } = imperativeBackend.emit(ir, {} as any);
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
@@ -1094,22 +1113,19 @@ function inheritLocation(target: t.Node, source: t.Node): void {
  * (-> auto-import from the control-flow module, like the inline JSX path).
  */
 function collectRuntimeNeeds(node: IRNode, state: any): void {
-  if (node.kind === 'component') {
-    // Same precedence as the JSX path: control flow first (the name selects codegen),
-    // then a configured rule, then the router built-ins. Recorded here rather than at
-    // the tag site so nested usage is caught too; the binding check happens at
-    // Program.exit, where the whole file's scope is known.
-    if (CONTROL_FLOW_COMPONENTS.has(node.name)) {
+  if (node.kind === 'component' && node.source) {
+    // Provenance was decided by the resolve pass and recorded on the node; this only
+    // translates it into the two things Program.exit wires. Reading it here rather
+    // than re-resolving is the point — one decision, so import injection and every
+    // later pass cannot disagree.
+    if (node.source.origin === 'builtin') {
       state.controlFlowComponents.add(node.name);
       state.needsControlFlowImport = true;
     } else {
-      const resolved = state.componentResolver?.resolve(node.name);
-      if (resolved) {
-        state.resolvedComponents.set(node.name, resolved);
-      } else if (ROUTER_COMPONENTS.has(node.name)) {
-        state.controlFlowComponents.add(node.name);
-        state.needsControlFlowImport = true;
-      }
+      state.resolvedComponents.set(node.name, {
+        module: node.source.module,
+        export: node.source.export,
+      });
     }
   }
   if (node.kind === 'element' || node.kind === 'component' || node.kind === 'control') {

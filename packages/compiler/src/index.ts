@@ -12,6 +12,7 @@ export * from './ir/nodes.js';
 // import the author did not write) and codemods, so all three agree on one answer.
 export * from './resolve/component-resolver.js';
 export * from './resolve/builtins.js';
+export * from './resolve/resolve-ir.js';
 export * from './options.js';
 export * from './frontend/types.js';
 export * from './codegen/contract.js';
