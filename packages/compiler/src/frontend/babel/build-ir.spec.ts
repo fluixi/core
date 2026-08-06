@@ -30,20 +30,24 @@ function parseJSX(src: string): any {
   return found;
 }
 
-function compile(src: string): { code: string; imports: string[] } {
+function compile(src: string) {
   return imperativeBackend.emit(buildIR(parseJSX(src)), {});
 }
 
 /** Execute an emitted expression, wiring runtime imports + user vars into scope. */
 function evalExpr(src: string, vars: Record<string, any> = {}): any {
-  const { code, imports } = compile(src);
+  const { code, imports, templates } = compile(src);
   const runtimeNames = imports;
   // Runtime fns come from @fluixi/dom; reactive primitives (createMemo) from the signal core.
   const runtimeVals = runtimeNames.map((n) => (DOM as any)[n] ?? (S as any)[n]);
   const userNames = Object.keys(vars);
   const userVals = userNames.map((k) => vars[k]);
+  // Static templates are declarations the host must emit, exactly like `imports`.
+  const decls = (templates ?? [])
+    .map((t) => `const ${t.id} = createTemplate(${JSON.stringify(t.html)}${t.svg ? ', true' : ''});`)
+    .join('\n');
   // eslint-disable-next-line no-new-func
-  const fn = new Function(...runtimeNames, ...userNames, `return (${code});`);
+  const fn = new Function(...runtimeNames, ...userNames, `${decls}\nreturn (${code});`);
   return fn(...runtimeVals, ...userVals);
 }
 
@@ -189,5 +193,50 @@ describe('Solid-style JSX directives (parity)', () => {
         }).catch(reject);
       });
     });
+  });
+});
+
+describe('template cloning produces the same DOM as building element by element', () => {
+  // The optimisation is only sound if the two paths are indistinguishable. Each case
+  // pairs a static tree (cloned) with a near-identical dynamic one (imperative) and
+  // compares the markup they produce.
+  const cases: [string, string, string][] = [
+    [
+      'nested static tree',
+      '(<div class="card"><header class="h"><h3>Title</h3></header><p>Body</p></div>)',
+      '<div class="card"><header class="h"><h3>Title</h3></header><p>Body</p></div>',
+    ],
+    ['void element', '(<div><br/><img src="a.png"/></div>)', '<div><br><img src="a.png"></div>'],
+    [
+      'entities in text and attributes',
+      '(<div title={"a<b"}>{"1 < 2"}</div>)',
+      '<div title="a<b">1 &lt; 2</div>',
+    ],
+    ['valueless attribute', '(<input disabled/>)', '<input disabled="">'],
+  ];
+
+  it.each(cases)('%s', (_label, src, expected) => {
+    const node = evalExpr(src) as HTMLElement;
+    const host = document.createElement('div');
+    host.appendChild(node);
+    expect(host.innerHTML).toBe(expected);
+  });
+
+  it('clones a fresh node per call rather than sharing one', () => {
+    // The failure this guards against is the reason hoisting was disabled for the
+    // imperative backend: a shared live node appearing in two places.
+    const a = evalExpr('(<p class="x">hi</p>)') as HTMLElement;
+    const b = evalExpr('(<p class="x">hi</p>)') as HTMLElement;
+    expect(a).not.toBe(b);
+    a.textContent = 'changed';
+    expect(b.textContent).toBe('hi');
+  });
+
+  it('actually took the clone path for a static tree', () => {
+    expect(compile('(<div class="a"><span>x</span></div>)').code).toContain('cloneTemplate');
+  });
+
+  it('stays imperative when a child is dynamic', () => {
+    expect(compile('(<div class="a">{v()}</div>)').code).toContain('createNativeElement');
   });
 });

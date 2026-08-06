@@ -1,5 +1,6 @@
-import type { CodegenBackend, CodegenResult } from '../backend.js';
+import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
 import type { IRNode, IRProp } from '../../ir/nodes.js';
+import { isSerializable, serializeStatic } from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
 
@@ -74,12 +75,12 @@ function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<strin
   return obj;
 }
 
-function emitChildren(children: IRNode[], used: Set<string>): string {
-  if (children.length === 1) return emitNode(children[0], used);
-  return `[${children.map((c) => emitNode(c, used)).join(', ')}]`;
+function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
+  if (children.length === 1) return emitNode(children[0], used, templates);
+  return `[${children.map((c) => emitNode(c, used, templates)).join(', ')}]`;
 }
 
-function emitComponent(name: string, props: IRProp[], children: IRNode[], used: Set<string>): string {
+function emitComponent(name: string, props: IRProp[], children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
   used.add('createMemo');
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
@@ -97,7 +98,7 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
     // child components are created in the component's owner scope (preserves owner
     // nesting for context/Suspense), after the component runs (correct provider
     // ordering), and lazily (ErrorBoundary can still catch a throwing child).
-    entries.push(`get children() { return ${emitChildren(children, used)}; }`);
+    entries.push(`get children() { return ${emitChildren(children, used, templates)}; }`);
   }
   let obj = `{ ${entries.join(', ')} }`;
   if (spreads.length > 0) {
@@ -107,7 +108,7 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   return `createMemo(() => createComponent(${name}, ${obj}))`;
 }
 
-function emitNode(node: IRNode, used: Set<string>): string {
+function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[]): string {
   switch (node.kind) {
     case 'text':
       return JSON.stringify(node.value);
@@ -117,18 +118,30 @@ function emitNode(node: IRNode, used: Set<string>): string {
 
     case 'fragment':
       if (node.children.length === 0) return 'null';
-      return emitChildren(node.children, used);
+      return emitChildren(node.children, used, templates);
 
     case 'component':
-      return emitComponent(node.name, node.props, node.children, used);
+      return emitComponent(node.name, node.props, node.children, used, templates);
 
     case 'control': {
       const name = CONTROL_COMPONENT[node.control] ?? node.control;
       used.add(name);
-      return emitComponent(name, node.props, node.children, used);
+      return emitComponent(name, node.props, node.children, used, templates);
     }
 
     case 'element': {
+      // A static subtree is parsed once into a <template> and cloned per instance:
+      // one cloneNode instead of an createNativeElement + spread per element.
+      // SVG is excluded: the runtime wraps SVG template HTML in an <svg> host and
+      // `cloneTemplate(t, true)` returns that wrapper, not the serialized element, so
+      // cloning would hand back the wrong node. Correctness first — SVG keeps the
+      // imperative path until the runtime grows an unwrapping clone.
+      if (templates && node.static && !node.svg && isSerializable(node)) {
+        used.add('cloneTemplate');
+        const id = `_tmpl$${templates.length}`;
+        templates.push({ id, html: serializeStatic(node), svg: false });
+        return `cloneTemplate(${id}).firstChild`;
+      }
       used.add('createNativeElement');
       const tag = JSON.stringify(node.tag);
       const el = '_el$';
@@ -147,7 +160,7 @@ function emitNode(node: IRNode, used: Set<string>): string {
       // elements sitting inside the array.
       for (const child of node.children) {
         used.add('insert');
-        const childCode = emitNode(child, used);
+        const childCode = emitNode(child, used, templates);
         const isFn =
           (child.kind === 'expr' && child.reactive) ||
           child.kind === 'component' ||
@@ -160,12 +173,31 @@ function emitNode(node: IRNode, used: Set<string>): string {
   }
 }
 
+/**
+ * Substitute template declarations into the code as inline `createTemplate` calls.
+ *
+ * For hosts that cannot hoist — nested JSX lowered inside an expression, where there is
+ * no module scope to reach. `createTemplate` caches by HTML string, so this costs a Map
+ * lookup per instantiation rather than a re-parse, and is still far cheaper than
+ * building the subtree element by element.
+ */
+export function inlineTemplates(code: string, templates: StaticTemplate[] | undefined): string {
+  if (!templates || templates.length === 0) return code;
+  let out = code;
+  for (const tpl of templates) {
+    out = out.split(tpl.id).join(`createTemplate(${JSON.stringify(tpl.html)})`);
+  }
+  return out;
+}
+
 export const imperativeBackend: CodegenBackend = {
   name: 'imperative',
   contract: RUNTIME_CONTRACT_V1,
   emit(node: IRNode, _options: CompilerOptions): CodegenResult {
     const used = new Set<string>();
-    const code = emitNode(node, used);
-    return { code, imports: Array.from(used) };
+    const templates: StaticTemplate[] = [];
+    const code = emitNode(node, used, templates);
+    if (templates.length > 0) used.add('createTemplate');
+    return { code, imports: Array.from(used), templates };
   },
 };
