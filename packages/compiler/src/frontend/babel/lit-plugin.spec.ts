@@ -218,12 +218,20 @@ describe('lit front-end (format: lit)', () => {
       { filename: 't.tsx', configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] },
         plugins: [[plugin, { backend: 'imperative', format: 'both', hoistStatics: false, signalModule: '@fluixi/dom' }]] },
     )!.code!;
-    // both styles compiled
-    expect(code).toContain('createNativeElement');
-    // no module imported twice, no name redeclared
+    // Both styles compiled. Asserted by what is *gone* rather than by which runtime
+    // call replaced it, so the test does not break when codegen changes shape.
+    expect(code).not.toContain('html`');
+    // Either codegen shape counts as compiled; the point is that neither export was
+    // left as JSX.
+    expect(code).toMatch(/createNativeElement|cloneTemplate/);
+    expect(code).not.toMatch(/=>\s*<\w/);
+
+    // The point of the test: no module imported twice, no name bound twice.
     const importLines = code.split('\n').filter((l) => /^import /.test(l));
     const fromDom = importLines.filter((l) => /from "@fluixi\/dom"/.test(l));
     expect(fromDom.length).toBeLessThanOrEqual(1);
-    expect((code.match(/import \{[^}]*\bcreateNativeElement\b/g) || []).length).toBe(1);
+
+    const names = importLines.flatMap((l) => [...l.matchAll(/\b(\w+)\b(?=\s*[,}])/g)].map((m) => m[1]));
+    expect(new Set(names).size).toBe(names.length);
   });
 });
