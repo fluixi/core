@@ -3,7 +3,26 @@
 // prerendered pages ship as static, highlighted HTML (no client-side markdown/highlight cost).
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
-import hljs from 'highlight.js';
+// Core + only the languages the content actually fences. The default entry registers ~190
+// grammars and was the single largest thing in the client bundle; the docs use six.
+import hljs from 'highlight.js/lib/core';
+import typescript from 'highlight.js/lib/languages/typescript';
+import javascript from 'highlight.js/lib/languages/javascript';
+import xml from 'highlight.js/lib/languages/xml';
+import bash from 'highlight.js/lib/languages/bash';
+import json from 'highlight.js/lib/languages/json';
+import css from 'highlight.js/lib/languages/css';
+
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('xml', xml);          // ```html
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('css', css);
+hljs.registerAliases(['ts'], { languageName: 'typescript' });
+hljs.registerAliases(['tsx'], { languageName: 'typescript' });
+hljs.registerAliases(['js', 'jsx'], { languageName: 'javascript' });
+hljs.registerAliases(['html'], { languageName: 'xml' });
 
 marked.use(
   markedHighlight({
