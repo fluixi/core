@@ -92,5 +92,24 @@ import { App } from './app';
 render(() => html`<${App} />`, document.getElementById('app')!);
 ```
 
+## Quelle version est en cours d'exécution ?
+
+Quelle que soit la façon de monter — `render` depuis `@fluixi/core`, ou l'hydratation via
+`startClient` — l'élément de montage porte les versions réellement exécutées, également
+exposées dans `window.Fluixi` :
+
+```html
+<div id="app" fluixi="1.0.0" fx-dom="1.0.0" fx-reactive="1.0.0">
+```
+
+```js
+> window.Fluixi
+{ core: '1.0.0', dom: '1.0.0', reactive: '1.0.0' }
+```
+
+Ces trois paquets sortent comme une seule release. S'ils divergent, la console le signale :
+un décalage signifie un lockfile obsolète ou deux copies résolues côte à côte, ce qui
+autrement se manifeste bien plus tard sous forme de réactivité incompréhensible.
+
 Continuez avec **[Signaux](/v1/fr/signals)** pour le cœur réactif, ou passez aux
 **[templates html``](/v1/fr/html-templates)**.
