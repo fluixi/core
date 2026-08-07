@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.71
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.71
+
 ## 1.0.0-alpha.70
 
 ### Minor Changes
