@@ -80,6 +80,15 @@ const DOM = {
 };
 
 export { VERSION } from './version.generated.js';
+// Version stamping lives here, not in core, so the hydrate path stamps too — core sits
+// above this package and registers its own version rather than being imported.
+export {
+  registerCoreVersion,
+  stampVersions,
+  warnOnVersionSkew,
+  versions,
+  type FluixiVersions,
+} from './lib/dom/versions.js';
 
 export type DOM = typeof DOM;
 export default DOM;
