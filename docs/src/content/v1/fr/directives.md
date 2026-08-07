@@ -96,11 +96,6 @@ enregistre doit être libéré avec `onCleanup` en son sein.
 En JSX, le nom doit être une valeur visible par TypeScript : importez la directive même si
 seule la forme directive l'utilise.
 
-> **En JSX, `use:` nécessite pour l'instant le codegen IR** (`fluixi({ codegen: 'ir' })`).
-> Avec le codegen `'inline'` par défaut, l'attribut est transmis comme une prop ordinaire
-> sur laquelle le runtime n'agit pas : la directive ne s'exécute jamais et rien ne le
-> signale. Dans `` html`` ``, les deux chemins fonctionnent.
-
 ### prop: / attr: / bool:
 
 Forcent la façon dont une valeur est appliquée, en contournant l'heuristique
@@ -259,7 +254,7 @@ liaison lit `event.target` : elle fonctionne donc sur tout élément portant `va
 | --- | --- | --- |
 | `@click` / `onClick`, `on:event`, modificateurs | ✓ | ✓ |
 | `ref` | ✓ | ✓ |
-| `use:` | ✓ (nécessite `codegen: 'ir'`) | ✓ |
+| `use:` | ✓ | ✓ |
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
 | `classList`, objet `style`, `...spread` | ✓ | ✓ |
 | HTML brut | `innerHTML` | `html=` ou `innerHTML` |

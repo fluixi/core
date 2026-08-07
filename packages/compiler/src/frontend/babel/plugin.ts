@@ -339,7 +339,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     reactiveModule = '@fluixi/reactive/signal',
     autoShowTransform = false,
     backend = 'imperative',
-    codegen = 'inline',
+    codegen = 'ir',
     templateClone = true,
     partialTemplates = true,
     // `both` by default: JSX and html`` are compiled out of the box, so
@@ -1669,6 +1669,8 @@ function transformAttributes(
   const props: Array<t.ObjectProperty | t.ObjectMethod> = [];
   const spreads: t.Expression[] = [];
   const cfValueProp = CONTROL_FLOW_VALUE_PROPS[tagName];
+  // `use:name` directives, collected into the single `use` prop the runtime dispatches on.
+  const usePairs: t.ArrayExpression[] = [];
 
   // `load:` is a directive, not a prop — it says when this component's module is
   // fetched. Cleared per element so a strategy cannot leak onto the next tag.
@@ -1684,6 +1686,23 @@ function transformAttributes(
       if (isLoadDirective(name)) {
         // Same parser the html`` lowering uses, so the two syntaxes cannot drift.
         state.pendingLoad = readLoadDirective(name, attr);
+        continue;
+      }
+
+      // use:name / use:name={opts} -> one `use` prop holding [directive, () => opts] pairs.
+      // Without this the attribute reached the runtime as a prop literally named "use:name",
+      // which nothing dispatches on — so the directive silently never ran. The IR path has
+      // always normalised it; this is the same normalisation for the inline path.
+      if (t.isJSXNamespacedName(attr.name) && attr.name.namespace.name === 'use') {
+        const directive = t.identifier(attr.name.name.name);
+        const opts = attr.value === null ? null : transformAttributeValue(attr.value, state, name, isNativeElement);
+        usePairs.push(
+          t.arrayExpression(
+            // The options are wrapped in an arrow so the directive can track them, matching
+            // what the runtime's applyUse expects of the second slot.
+            opts ? [directive, t.arrowFunctionExpression([], opts)] : [directive],
+          ),
+        );
         continue;
       }
       const value = transformAttributeValue(attr.value, state, name, isNativeElement);
@@ -1733,6 +1752,10 @@ function transformAttributes(
         props.push(t.objectProperty(key, value));
       }
     }
+  }
+
+  if (usePairs.length > 0) {
+    props.push(t.objectProperty(t.identifier('use'), t.arrayExpression(usePairs)));
   }
 
   return { props, spreads };
