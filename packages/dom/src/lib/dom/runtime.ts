@@ -907,8 +907,16 @@ function reconcileArrays(
   // The Babel plugin hoists static elements to module-level — the same node
   // can appear in `b` for multiple parents simultaneously. Clone to avoid
   // stealing it from its current owner; future reconciles track the clone.
+  //
+  // A DocumentFragment is NOT such an owner. `cloneTemplate` hands back the clone still
+  // sitting in its fragment, so a template-cloned element arrives here with a non-null
+  // parent that nothing else refers to. Cloning it again threw away the node whose props
+  // had just been applied — `cloneNode` copies attributes but not the event-handler
+  // properties — so an element built from a template lost its handlers the moment it was
+  // inserted as part of an array. Moving it out of the fragment is exactly right.
   for (let i = 0; i < b.length; i++) {
-    if (b[i].parentNode !== null && b[i].parentNode !== parent) {
+    const owner = b[i].parentNode;
+    if (owner !== null && owner !== parent && owner.nodeType !== 11) {
       b = b.slice();
       b[i] = b[i].cloneNode(true) as Node;
     }
