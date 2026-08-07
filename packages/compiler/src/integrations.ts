@@ -24,6 +24,17 @@ export interface CompilerOptions {
    * used in a template without an import. See `createComponentResolver`.
    */
   resolve?: readonly ComponentResolverRule[];
+  /**
+   * Where to write the ambient declarations for the components `resolve` supplies.
+   *
+   * Relative to the project root; `false` turns generation off. Without this file every
+   * resolved tag is a `Cannot find name` error in the editor and in `tsc`, because the
+   * import only exists after compilation. Committing it is intended — it is what makes a
+   * fresh clone type-check before anyone runs the dev server.
+   *
+   * @default 'src/fluixi.d.ts'
+   */
+  globals?: string | false;
   /** Clone static subtrees from a `<template>` instead of building them element by element. */
   templateClone?: boolean;
   /** Also clone subtrees whose structure is static but which contain dynamic holes. */
@@ -762,6 +773,12 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       };
     },
 
+    // Written once per build, and on dev-server start, rather than per transform: the
+    // set of resolvable names comes from config, so nothing a file does can change it.
+    configResolved(config: { root?: string }) {
+      writeComponentGlobals(options, config?.root ?? process.cwd());
+    },
+
     async transform(code: string, id: string) {
       // Load babel plugin dynamically on first transform
       const babelPlugin = await createBabelPlugin(options);
@@ -1000,6 +1017,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 export { transformServerFunctions } from './frontend/babel/server-functions.js';
 import { transformServerFunctions as _txServerFns } from './frontend/babel/server-functions.js';
 import type { ComponentResolverRule } from './resolve/component-resolver.js';
+import { writeComponentGlobals } from './resolve/write-globals.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join as _join } from 'node:path';
 
