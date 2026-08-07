@@ -10,7 +10,7 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "server.mjs"],
+  "include": ["src", "fluixi.d.ts", "server.mjs"],
   "references": [
     { "path": "../../packages/reactive" },
     { "path": "../../packages/core" },
