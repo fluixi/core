@@ -7,9 +7,9 @@ const DOCS_URL = 'https://docs.fluixi.com';
 const PLAYGROUND_URL = 'https://playground.fluixi.com';
 const GITHUB_URL = 'https://github.com/fluixi/core';
 
-const TITLE = 'Fluixi — the reactive framework, compiled';
+const TITLE = 'Fluixi — your JSX becomes DOM calls';
 const DESC =
-  'Fluixi is a fine-grained reactive, compiled, full-stack web framework: SSR, streaming, SSG, file routing, server functions, DI, i18n, islands and edge — on a TC39-signals core.';
+  'Fluixi compiles components into imperative DOM calls — no virtual DOM, no diffing, no re-renders. Fine-grained reactivity on a TC39-Signals core, with SSR, streaming, SSG, file routing, server functions, DI and i18n.';
 
 const FEATURES: { glyph: string; title: string; body: string; tone: string }[] = [
   { glyph: '◆', tone: 'state', title: 'Fine-grained reactivity', body: 'A TC39-Signals graph updates exactly the DOM that changed — no virtual DOM, no diffing, no re-renders.' },
@@ -61,16 +61,52 @@ function InstallCommand() {
   );
 }
 
-const HERO_CODE = `function Counter() {
+// The three panels of the hero. COMPILED is the compiler's real output for JSX_SRC —
+// generated with @fluixi/compiler and pasted verbatim, not paraphrased. If the codegen
+// changes, regenerate it; a stale "compiled output" would be worse than none.
+const JSX_SRC = `function Counter() {
   const [count, setCount] = createSignal(0);
-  const doubled = createMemo(() => count() * 2);
 
   return (
     <button onClick={() => setCount(c => c + 1)}>
-      {count()} · {doubled()}
+      {count()}
     </button>
   );
 }`;
+
+const HTML_SRC = `function Counter() {
+  const [count, setCount] = createSignal(0);
+
+  return html\`
+    <button @click=\${() => setCount(c => c + 1)}>
+      \${count()}
+    </button>
+  \`;
+}`;
+
+const COMPILED = `import { createNativeElement, spread, insert,
+         delegateEvents } from "@fluixi/dom";
+
+delegateEvents(["click"]);          // one listener, at the root
+
+function Counter() {
+  const [count, setCount] = createSignal(0);
+
+  return (() => {
+    const _el$ = createNativeElement("button");
+    spread({ element: _el$, props: {
+      onClick: () => setCount(c => c + 1),
+    } });
+    insert(_el$, () => count(), null);   // this text node. only.
+    return _el$;
+  })();
+}`;
+
+const PANELS = [
+  { id: 'jsx', label: 'JSX', file: 'Counter.tsx', code: JSX_SRC },
+  { id: 'html', label: 'html``', file: 'Counter.ts', code: HTML_SRC },
+  { id: 'out', label: 'Compiled', file: 'what the browser runs', code: COMPILED },
+] as const;
 
 const HTML_CODE = `import { html } from "@fluixi/core";
 
@@ -94,40 +130,68 @@ async function getUser(id: string) {
 // call it from anywhere like a normal async function:
 const user = await getUser("42");`;
 
+/**
+ * The hero is the argument, not a screenshot.
+ *
+ * A counter written with signals looks like every other signals framework, so leading with
+ * one concedes the comparison. What is ours is the third tab: the same component after the
+ * compiler, with no virtual DOM and no diff — one element built once and a single text node
+ * kept up to date. Showing it is a claim nobody can answer by writing better marketing.
+ */
 function Hero() {
+  const [panel, setPanel] = createSignal<string>('jsx');
+  const current = () => PANELS.find((p) => p.id === panel()) ?? PANELS[0];
+
   return (
     <header class="hero">
       <div class="hero-copy">
         <div class="eyebrow">reactive · compiled · full-stack</div>
         <h1>
-          The reactive framework
+          Your JSX becomes
           <br />
-          <span class="grad">you can see.</span>
+          <span class="grad">DOM calls.</span>
         </h1>
         <p class="lede">
-          Fluixi compiles your JSX to fine-grained DOM updates on a TC39-Signals core — then gives you SSR,
-          streaming, SSG, server functions, routing, DI and i18n in one coherent stack.
+          No virtual DOM. No diffing. No re-renders. Fluixi compiles components into the
+          imperative calls a browser actually runs — then gives you SSR, streaming, SSG,
+          server functions, routing, DI and i18n on top.
         </p>
         <div class="cta">
           <a class="btn primary" href={DOCS_URL}>
             Get started →
           </a>
-          <a class="btn ghost" href={PLAYGROUND_URL}>
-            Open the Playground
+          <a class="btn ghost" href="#compiled" onClick={() => setPanel('out')}>
+            See the compiled output
           </a>
         </div>
         <InstallCommand />
       </div>
-      <div class="hero-code">
+
+      <div class="hero-code" id="compiled">
         <div class="code-window">
-          <div class="code-bar">
-            <span class="dot" />
-            <span class="dot" />
-            <span class="dot" />
-            <span class="code-name">Counter.tsx</span>
+          <div class="code-bar" role="tablist" aria-label="Source and compiled output">
+            {PANELS.map((p) => (
+              <button
+                type="button"
+                role="tab"
+                class={() => (panel() === p.id ? 'code-tab on' : 'code-tab')}
+                aria-selected={() => (panel() === p.id ? 'true' : 'false')}
+                onClick={() => setPanel(p.id)}
+              >
+                {p.label}
+              </button>
+            ))}
+            <span class="code-name">{() => current().file}</span>
           </div>
-          <pre class="code">{HERO_CODE}</pre>
+          <pre class="code">{() => current().code}</pre>
         </div>
+        <p class="hero-note">
+          {() =>
+            panel() === 'out'
+              ? 'Generated by @fluixi/compiler — this is the real output, not a sketch.'
+              : 'Both syntaxes compile to the same calls. Switch to Compiled to see them.'
+          }
+        </p>
       </div>
     </header>
   );
@@ -278,6 +342,20 @@ export default function Home() {
       image: { url: `${SITE}/og.png`, width: 1200, height: 630, alt: 'Fluixi' },
     },
     twitter: { card: 'summary_large_image', title: TITLE, description: DESC, image: `${SITE}/og.png` },
+    // Structured data — neither site had any. SoftwareApplication is the type search engines
+    // actually use for a developer tool, and it is the one that can earn a rich result.
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Fluixi',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Any',
+      description: DESC,
+      url: `${SITE}/`,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      license: 'https://opensource.org/licenses/MIT',
+      codeRepository: GITHUB_URL,
+    },
   });
 
   return (
