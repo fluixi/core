@@ -47,6 +47,7 @@
     "compiler-backend-lazy-props",
     "completion-incomplete",
     "component-child-not-any",
+    "component-globals",
     "component-prop-completion",
     "component-reactive-prop-getters",
     "component-resolution",
@@ -118,6 +119,7 @@
     "jsx-reactive-attr-types",
     "jsx-solid-directives",
     "jsx-specific-list-text-refs",
+    "jsx-use-and-ir-default",
     "lazy-props-scope-and-uniform",
     "lazy-route-hydration-preload",
     "lazy-route-hydration",
@@ -198,6 +200,7 @@
     "ts-plugin-quick-fix",
     "ts-plugin-single-program",
     "use-navigate-ssr-safe",
-    "version-stamps"
+    "version-stamps",
+    "versions-on-both-render-paths"
   ]
 }
