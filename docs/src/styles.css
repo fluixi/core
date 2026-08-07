@@ -110,7 +110,7 @@ a { color: inherit; text-decoration: none; }
 .d-menu { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; font-size: 18px; line-height: 1; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
 .d-menu:hover { border-color: var(--line-strong); }
 .d-brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; }
-.logo { color: var(--accent); filter: drop-shadow(0 0 9px var(--accent-glow)); }
+.logo { width: 22px; height: 22px; flex: none; filter: drop-shadow(0 0 9px var(--accent-glow)); }
 .d-actions { display: flex; align-items: center; gap: 14px; }
 .ver { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .ver select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 13px; font-family: var(--mono); cursor: pointer; }
