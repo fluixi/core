@@ -339,7 +339,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     reactiveModule = '@fluixi/reactive/signal',
     autoShowTransform = false,
     backend = 'imperative',
-    codegen = 'inline',
+    codegen = 'ir',
     templateClone = true,
     partialTemplates = true,
     // `both` by default: JSX and html`` are compiled out of the box, so
