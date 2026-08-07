@@ -19,7 +19,7 @@ describe('writeComponentGlobals', () => {
   it('writes the declarations, creating the directory', () => {
     const result = writeComponentGlobals({ resolve: rules }, root);
     expect(result.status).toBe('written');
-    expect(readFileSync(join(root, 'src/fluixi.d.ts'), 'utf8')).toContain(
+    expect(readFileSync(join(root, 'fluixi.d.ts'), 'utf8')).toContain(
       'export import Button = __ui_button.Button;',
     );
   });
@@ -32,12 +32,12 @@ describe('writeComponentGlobals', () => {
 
   it('refuses to overwrite a file it did not generate', () => {
     mkdirSync(join(root, 'src'), { recursive: true });
-    writeFileSync(join(root, 'src/fluixi.d.ts'), 'declare const mine: string;\n');
+    writeFileSync(join(root, 'fluixi.d.ts'), 'declare const mine: string;\n');
 
     const result = writeComponentGlobals({ resolve: rules }, root);
 
     expect(result).toMatchObject({ status: 'skipped', reason: 'foreign-file' });
-    expect(readFileSync(join(root, 'src/fluixi.d.ts'), 'utf8')).toBe('declare const mine: string;\n');
+    expect(readFileSync(join(root, 'fluixi.d.ts'), 'utf8')).toBe('declare const mine: string;\n');
   });
 
   it('honours a custom path', () => {
@@ -55,9 +55,50 @@ describe('writeComponentGlobals', () => {
     const extra = [{ components: { Button: '@ui/button', Ghost: '@ui/not-installed' } }];
     writeComponentGlobals({ resolve: extra }, root);
 
-    const source = readFileSync(join(root, 'src/fluixi.d.ts'), 'utf8');
+    const source = readFileSync(join(root, 'fluixi.d.ts'), 'utf8');
     expect(source).toContain('Button');
     // Declaring it would resolve to nothing and silently degrade Ghost to `any`.
     expect(source).not.toContain('Ghost');
+  });
+
+  // A file TypeScript never reads looks exactly like one that was never generated:
+  // every resolved tag stays `Cannot find name`, with the file sitting right there.
+  it('warns when the target is outside the tsconfig include', () => {
+    writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ include: ['src'] }));
+
+    const result = writeComponentGlobals({ resolve: rules }, root);
+
+    expect(result.status).toBe('written');
+    expect(result.warning).toContain('not covered by "include"');
+  });
+
+  it('stays quiet when the include covers it', () => {
+    writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ include: ['src', 'fluixi.d.ts'] }));
+    expect(writeComponentGlobals({ resolve: rules }, root).warning).toBeUndefined();
+  });
+
+  it('stays quiet for a directory entry that contains the target', () => {
+    writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ include: ['types'] }));
+    const result = writeComponentGlobals({ resolve: rules, globals: 'types/gen.d.ts' }, root);
+    expect(result.warning).toBeUndefined();
+  });
+
+  it('stays quiet for a glob that matches', () => {
+    writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ include: ['src', '*.d.ts'] }));
+    expect(writeComponentGlobals({ resolve: rules }, root).warning).toBeUndefined();
+  });
+
+  it('does not guess when tsconfig extends another config', () => {
+    writeFileSync(
+      join(root, 'tsconfig.json'),
+      JSON.stringify({ extends: './base.json', include: ['src'] }),
+    );
+    // The base could widen `include`; guessing wrong would warn about a file that works.
+    expect(writeComponentGlobals({ resolve: rules }, root).warning).toBeUndefined();
+  });
+
+  it('treats a missing include as covering everything', () => {
+    writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }));
+    expect(writeComponentGlobals({ resolve: rules }, root).warning).toBeUndefined();
   });
 });

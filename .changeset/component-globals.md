@@ -17,3 +17,8 @@ lets a fresh clone type-check before anyone starts the dev server.
 The generator belongs here rather than in a component library because only the resolve
 config knows the whole picture: library components, the project's own, and the builtins
 all arrive through it.
+
+The file goes to `fluixi.d.ts` at the project root, which needs `"fluixi.d.ts"` in the
+tsconfig `include` alongside `"src"`. If it is written somewhere TypeScript will not
+read it, the plugin says so — an ignored file and a missing one produce identical
+errors, so that is not a difference worth leaving anyone to work out.
