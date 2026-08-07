@@ -1,4 +1,4 @@
-import { createSignal } from '@fluixi/core';
+import { createSignal, onMount, onCleanup } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
@@ -45,6 +45,165 @@ function onProseClick(event: MouseEvent): void {
   const write = navigator.clipboard?.writeText(code);
   if (!write) return say('Press ⌘C', 2400);
   void write.then(() => say('Copied', 1600), () => say('Press ⌘C', 2400));
+}
+
+interface Hit { v: string; l: string; s: string; t: string; h: string[]; b: string }
+
+/**
+ * Docs search.
+ *
+ * The index is a build-time asset (`search-index.json`), fetched the first time search is
+ * opened and kept for the session — it is 95 KB, which is worth downloading once on demand
+ * and not at all for the majority who never search.
+ *
+ * Ranking is deliberately simple and explainable: a title match beats a heading match beats
+ * a body match. With 52 pages the honest answer is that fuzzy scoring would add weight and
+ * unpredictability without finding anything a substring match misses.
+ */
+function score(hit: Hit, q: string): number {
+  const title = hit.t.toLowerCase();
+  if (title === q) return 100;
+  if (title.startsWith(q)) return 80;
+  if (title.includes(q)) return 60;
+  if (hit.h.some((h) => h.toLowerCase().includes(q))) return 40;
+  if (hit.b.toLowerCase().includes(q)) return 20;
+  return 0;
+}
+
+/** The sentence around the first match, so a result shows why it matched. */
+function excerpt(hit: Hit, q: string): string {
+  const at = hit.b.toLowerCase().indexOf(q);
+  if (at < 0) return hit.b.slice(0, 110);
+  const from = Math.max(0, at - 45);
+  return (from > 0 ? '…' : '') + hit.b.slice(from, from + 130).trim() + '…';
+}
+
+let cachedIndex: Hit[] | null = null;
+
+function Search(props: { lang: Lang; version: string; label: string }) {
+  const [open, setOpen] = createSignal(false);
+  const [query, setQuery] = createSignal('');
+  const [hits, setHits] = createSignal<Hit[]>([]);
+  const [active, setActive] = createSignal(0);
+  let input: HTMLInputElement | undefined;
+
+  async function load(): Promise<Hit[]> {
+    if (!cachedIndex) {
+      const res = await fetch('/search-index.json');
+      cachedIndex = (await res.json()) as Hit[];
+    }
+    return cachedIndex;
+  }
+
+  async function show() {
+    setOpen(true);
+    await load();
+    run(query());
+    // Focus after the dialog exists, or there is nothing to focus.
+    setTimeout(() => input?.focus(), 0);
+  }
+
+  function run(q: string) {
+    const needle = q.trim().toLowerCase();
+    if (!needle || !cachedIndex) return setHits([]);
+    const scoped = cachedIndex.filter((h) => h.l === props.lang && h.v === props.version);
+    setHits(
+      scoped
+        .map((h) => ({ h, n: score(h, needle) }))
+        .filter((r) => r.n > 0)
+        .sort((a, b) => b.n - a.n)
+        .slice(0, 8)
+        .map((r) => r.h),
+    );
+    setActive(0);
+  }
+
+  function go(hit: Hit) {
+    location.href = `/${hit.v}/${hit.l}/${hit.s}`;
+  }
+
+  onMount(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = /^(INPUT|TEXTAREA)$/.test((e.target as HTMLElement)?.tagName ?? '');
+      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) {
+        e.preventDefault();
+        void show();
+      } else if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    onCleanup(() => document.removeEventListener('keydown', onKey));
+  });
+
+  const onInput = (e: Event) => {
+    const q = (e.target as HTMLInputElement).value;
+    setQuery(q);
+    run(q);
+  };
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const list = hits();
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((active() + 1) % Math.max(list.length, 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((active() - 1 + list.length) % Math.max(list.length, 1)); }
+    else if (e.key === 'Enter' && list[active()]) { e.preventDefault(); go(list[active()]); }
+  };
+
+  return (
+    <>
+      <button type="button" class="search-open" onClick={() => void show()} aria-label={props.label}>
+        <span>{props.label}</span>
+        <kbd>⌘K</kbd>
+      </button>
+
+      {() =>
+        open() ? (
+          <div class="search-scrim" onClick={() => setOpen(false)}>
+            <div
+              class="search-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label={props.label}
+              onClick={(e: MouseEvent) => e.stopPropagation()}
+            >
+              <input
+                ref={(el: HTMLInputElement) => (input = el)}
+                class="search-input"
+                type="search"
+                placeholder={props.label}
+                value={query()}
+                onInput={onInput}
+                onKeyDown={onKeyDown}
+                autocomplete="off"
+                spellcheck={false}
+              />
+              <ul class="search-hits">
+                {() =>
+                  hits().map((hit, i) => (
+                    <li>
+                      <a
+                        class={i === active() ? 'hit on' : 'hit'}
+                        href={`/${hit.v}/${hit.l}/${hit.s}`}
+                        onMouseEnter={() => setActive(i)}
+                      >
+                        <strong>{hit.t}</strong>
+                        <span>{excerpt(hit, query().trim().toLowerCase())}</span>
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+              {() =>
+                query().trim() && hits().length === 0 ? (
+                  <p class="search-empty">No matches for “{query().trim()}”.</p>
+                ) : null
+              }
+            </div>
+          </div>
+        ) : null
+      }
+    </>
+  );
 }
 
 const THEME_KEY = 'fluixi-docs-theme';
@@ -137,6 +296,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           </a>
         </div>
         <div class="d-actions">
+          <Search lang={lang} version={version} label={ui.search} />
           <label class="ver">
             <span>{ui.version}</span>
             <select onChange={(e: any) => (location.href = `/${e.target.value}/${lang}/${slug}`)}>

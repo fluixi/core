@@ -300,3 +300,57 @@ main:focus { outline: none; }
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
   text-transform: uppercase; color: var(--muted); opacity: .55; pointer-events: none;
 }
+
+/* Search -----------------------------------------------------------------
+   The trigger reads as a field rather than a button, because that is what it
+   opens; the shortcut is shown so it is discoverable without a tooltip. */
+.search-open {
+  display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 6px 10px 6px 12px; border-radius: 8px;
+  font-family: var(--font); font-size: 13px; color: var(--muted);
+  background: var(--panel-2); border: 1px solid var(--line);
+  transition: border-color .15s, color .15s;
+}
+.search-open:hover { color: var(--text); border-color: var(--line-strong); }
+.search-open kbd {
+  font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 4px;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--line);
+}
+
+.search-scrim {
+  position: fixed; inset: 0; z-index: 200; background: var(--scrim);
+  display: flex; align-items: flex-start; justify-content: center; padding: 12vh 20px 20px;
+}
+.search-panel {
+  width: min(640px, 100%); max-height: 70vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: 14px; box-shadow: 0 24px 60px var(--drawer-shadow);
+}
+.search-input {
+  width: 100%; padding: 18px 20px; border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--text); font-family: var(--font); font-size: 16px;
+}
+.search-input:focus { outline: none; }
+.search-input::placeholder { color: var(--muted); }
+
+.search-hits { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+.hit {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 14px; border-radius: 9px; border-left: 2px solid transparent;
+}
+.hit strong { font-size: 14.5px; font-weight: 600; color: var(--text); }
+.hit span {
+  font-size: 12.5px; color: var(--muted); overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+/* Active row is marked by border AND background, so it does not rely on colour alone. */
+.hit.on { background: var(--accent-soft); border-left-color: var(--accent); }
+.hit.on strong { color: var(--accent); }
+.search-empty { margin: 0; padding: 18px 20px; font-size: 13.5px; color: var(--muted); }
+
+@media (max-width: 560px) {
+  .search-open span { display: none; }
+  .search-open kbd { display: none; }
+  .search-open::after { content: '⌕'; font-size: 16px; }
+}
