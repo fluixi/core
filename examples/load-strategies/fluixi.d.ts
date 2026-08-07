@@ -3,10 +3,10 @@
 // The components `resolve` supplies without an import. This describes what the
 // compiler already does; it does not enable it.
 
-import * as __src_components_AuditLog_tsx from './components/AuditLog.js';
-import * as __src_components_ExportDialog_tsx from './components/ExportDialog.js';
-import * as __src_components_RevenueChart_tsx from './components/RevenueChart.js';
-import * as __src_components_Summary_tsx from './components/Summary.js';
+import * as __src_components_AuditLog_tsx from './src/components/AuditLog.js';
+import * as __src_components_ExportDialog_tsx from './src/components/ExportDialog.js';
+import * as __src_components_RevenueChart_tsx from './src/components/RevenueChart.js';
+import * as __src_components_Summary_tsx from './src/components/Summary.js';
 import * as __fluixi_core from '@fluixi/core';
 import * as __fluixi_core_router_next from '@fluixi/core/router-next';
 import * as __fluixi_dom from '@fluixi/dom';

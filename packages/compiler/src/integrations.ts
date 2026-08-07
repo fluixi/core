@@ -32,7 +32,12 @@ export interface CompilerOptions {
    * import only exists after compilation. Committing it is intended — it is what makes a
    * fresh clone type-check before anyone runs the dev server.
    *
-   * @default 'src/fluixi.d.ts'
+   * It must be covered by `include` in tsconfig.json, which for the default means adding
+   * `"fluixi.d.ts"` alongside `"src"`. A file TypeScript does not read looks exactly like
+   * one that was never generated, so a mismatch is reported rather than left to puzzle
+   * over.
+   *
+   * @default 'fluixi.d.ts'
    */
   globals?: string | false;
   /** Clone static subtrees from a `<template>` instead of building them element by element. */
@@ -776,7 +781,8 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     // Written once per build, and on dev-server start, rather than per transform: the
     // set of resolvable names comes from config, so nothing a file does can change it.
     configResolved(config: { root?: string }) {
-      writeComponentGlobals(options, config?.root ?? process.cwd());
+      const outcome = writeComponentGlobals(options, config?.root ?? process.cwd());
+      if (outcome.warning) console.warn(outcome.warning);
     },
 
     async transform(code: string, id: string) {
