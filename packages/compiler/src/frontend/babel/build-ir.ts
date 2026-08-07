@@ -151,8 +151,11 @@ export function isReactiveExpr(node: t.Expression): boolean {
 function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
   const name = attrName(attr.name);
   const isEvent = EVENT_RE.test(name);
-  // on: passes through to the runtime as a native listener; a handler, never reactive
-  const isHandler = isEvent || name.startsWith('on:');
+  // on: passes through to the runtime as a native listener; a handler, never reactive.
+  // `ref` joins them: the runtime CALLS it with the element, so wrapping it in a thunk
+  // means the thunk gets called and the real ref never sees the element — the callback
+  // silently does nothing, along with everything that depended on it.
+  const isHandler = isEvent || name.startsWith('on:') || name === 'ref';
   const kind: IRPropKind = isEvent ? 'event' : 'attr';
   const base: IRProp = { name, kind };
   if (isEvent) {
