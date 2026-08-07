@@ -107,6 +107,7 @@
     "ir-component-props",
     "ir-component-source",
     "ir-path-cleanup",
+    "ir-ref-not-thunked",
     "island-resource-seeding",
     "islands",
     "iso-export-barrel",
