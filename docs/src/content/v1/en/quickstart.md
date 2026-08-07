@@ -90,5 +90,24 @@ import { App } from './app';
 render(() => html`<${App} />`, document.getElementById('app')!);
 ```
 
+## Which build am I running?
+
+Whichever way you mount — `render` from `@fluixi/core`, or hydration through
+`startClient` — the mount element is stamped with the versions actually running, and they
+are exposed as `window.Fluixi`:
+
+```html
+<div id="app" fluixi="1.0.0" fx-dom="1.0.0" fx-reactive="1.0.0">
+```
+
+```js
+> window.Fluixi
+{ core: '1.0.0', dom: '1.0.0', reactive: '1.0.0' }
+```
+
+These three ship as one release. If they disagree, the console says so — a mismatch means
+a stale lockfile or two copies resolved side by side, which otherwise surfaces much later
+as reactivity that makes no sense.
+
 Continue to **[Signals](/v1/en/signals)** for the reactive core, or jump to
 **[html`` templates](/v1/en/html-templates)**.

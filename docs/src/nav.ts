@@ -10,7 +10,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Components', fr: 'Composants' },
-    slugs: ['components', 'control-flow', 'lifecycle'],
+    slugs: ['components', 'control-flow', 'lifecycle', 'component-resolution', 'load-strategies'],
   },
   {
     group: { en: 'Templates', fr: 'Templates' },
