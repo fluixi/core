@@ -1,7 +1,7 @@
 import { createSignal } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
-import { NAV, ORDER, UI, LANG_LABEL } from './nav.js';
+import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
 
 const SITE = 'https://docs.fluixi.com';
 
@@ -20,6 +20,31 @@ function describe(html: string | undefined): string {
     .replace(/\s+/g, ' ')
     .trim();
   return (text || 'Fluixi documentation — reactivity, compiled.').slice(0, 155);
+}
+
+const THEME_KEY = 'fluixi-docs-theme';
+
+/**
+ * Flip between light and dark, and remember it.
+ *
+ * The stored value pins `color-scheme`; with nothing stored the page follows the OS, so
+ * the first visit matches whatever the reader already set system-wide. The inline script
+ * in index.html re-applies the choice before first paint — doing it here would mean a
+ * flash of the wrong theme on every prerendered page.
+ */
+function toggleTheme(): void {
+  const root = document.documentElement;
+  const current =
+    root.dataset.theme ??
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  root.dataset.theme = next;
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch {
+    // Private mode or blocked storage — the theme still applies for this page.
+  }
 }
 
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/…)
@@ -89,11 +114,20 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             <select onChange={(e: any) => (location.href = `/${e.target.value}/${lang}/${slug}`)}>
               {VERSIONS.map((v) => (
                 <option value={v} selected={v === version}>
-                  {v}
+                  {versionLabel(v)}
                 </option>
               ))}
             </select>
           </label>
+          <button
+            type="button"
+            class="theme-toggle"
+            aria-label={ui.theme}
+            title={ui.theme}
+            onClick={toggleTheme}
+          >
+            ◐
+          </button>
           <a class="lang-toggle" href={`/${version}/${other}/${slug}`}>
             {LANG_LABEL[other]}
           </a>
