@@ -22,6 +22,31 @@ function describe(html: string | undefined): string {
   return (text || 'Fluixi documentation — reactivity, compiled.').slice(0, 155);
 }
 
+/**
+ * One delegated listener for every copy button on the page.
+ *
+ * Delegated rather than per-button: the buttons arrive as prerendered HTML inside the
+ * prose, so there is nothing to bind to per block without walking the DOM after every
+ * navigation. The label reports what happened and reverts, so the control is never a
+ * button that appears to do nothing.
+ */
+function onProseClick(event: MouseEvent): void {
+  const button = (event.target as HTMLElement | null)?.closest('[data-copy]') as HTMLButtonElement | null;
+  if (!button) return;
+
+  const code = button.parentElement?.querySelector('code')?.textContent ?? '';
+  const say = (text: string, ms: number) => {
+    button.textContent = text;
+    setTimeout(() => (button.textContent = 'Copy'), ms);
+  };
+
+  // No clipboard in an insecure context, and the user can refuse — say so rather than
+  // leaving the label unchanged.
+  const write = navigator.clipboard?.writeText(code);
+  if (!write) return say('Press ⌘C', 2400);
+  void write.then(() => say('Copied', 1600), () => say('Press ⌘C', 2400));
+}
+
 const THEME_KEY = 'fluixi-docs-theme';
 
 /**
@@ -163,7 +188,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           ))}
         </aside>
 
-        <main class="d-main" id="content" tabindex="-1">
+        <main class="d-main" id="content" tabindex="-1" onClick={onProseClick}>
           <article class="prose" innerHTML={doc?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
             {prev ? (

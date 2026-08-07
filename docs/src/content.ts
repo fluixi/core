@@ -50,7 +50,29 @@ for (const [path, md] of Object.entries(raw)) {
   if (!m) continue;
   const [, version, lang, slug] = m;
   const title = (md.match(/^#\s+(.+)$/m)?.[1] ?? slug).trim();
-  registry.set(`${version}/${lang}/${slug}`, { version, lang, slug, title, html: marked.parse(md) as string });
+  registry.set(`${version}/${lang}/${slug}`, {
+    version, lang, slug, title,
+    html: withCopyButtons(marked.parse(md) as string),
+  });
+}
+
+/**
+ * Wrap each code block so it can carry a copy button.
+ *
+ * Done here, at build time, so the button is in the prerendered HTML rather than being
+ * grafted on after hydration — no layout shift, and it works on a page whose JS has not
+ * arrived yet (the handler is delegated, so it starts working the moment it does).
+ *
+ * The language label comes from the class marked already emits, so it costs nothing.
+ */
+function withCopyButtons(html: string): string {
+  return html.replace(
+    /<pre><code class="hljs language-([^"]+)">/g,
+    (_m, lang) =>
+      `<div class="code-block" data-lang="${lang}">` +
+      `<button type="button" class="code-copy" data-copy aria-label="Copy code">Copy</button>` +
+      `<pre><code class="hljs language-${lang}">`,
+  ).replace(/<\/code><\/pre>/g, '</code></pre></div>');
 }
 
 export const key = (version: string, lang: string, slug: string) => `${version}/${lang}/${slug}`;
