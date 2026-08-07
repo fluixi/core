@@ -105,7 +105,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             {() => (navOpen() ? '✕' : '☰')}
           </button>
           <a class="d-brand" href={link('introduction')}>
-            <span class="logo">✦</span> {ui.product}
+            <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> {ui.product}
           </a>
         </div>
         <div class="d-actions">
