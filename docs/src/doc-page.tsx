@@ -94,6 +94,9 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
 
   return (
     <div class="docs">
+      {/* First tab stop: the sidebar is ~25 links, so a keyboard or screen-reader user
+          would otherwise traverse the whole nav on every page to reach the content. */}
+      <a class="skip" href="#content">{ui.skip}</a>
       <header class="d-head">
         <div class="d-head-left">
           <button
@@ -160,7 +163,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           ))}
         </aside>
 
-        <main class="d-main">
+        <main class="d-main" id="content" tabindex="-1">
           <article class="prose" innerHTML={doc?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
             {prev ? (

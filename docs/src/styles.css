@@ -242,3 +242,35 @@ a { color: inherit; text-decoration: none; }
   .prose h1 { font-size: 27px; letter-spacing: -.5px; }
   .prose pre { padding: 14px 15px; border-radius: 11px; }
 }
+
+/* Keyboard access ---------------------------------------------------------
+   The skip link stays in the tab order but out of the layout until focused;
+   `clip-path` rather than `display:none`, which would remove it from the
+   order entirely and defeat the point. */
+.skip {
+  position: absolute; left: 8px; top: 8px; z-index: 100;
+  padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--line-strong);
+  transform: translateY(-200%); transition: transform .12s ease;
+}
+.skip:focus { transform: translateY(0); }
+
+/* A single visible focus ring for everything interactive. :focus-visible so a
+   mouse click does not leave a ring behind, keyboard focus always does. */
+:where(a, button, select, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+/* The main region is focused programmatically by the skip link; it should not
+   draw a ring of its own. */
+main:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -26,9 +26,9 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
 /** Flat reading order across all groups (for prev/next). */
 export const ORDER: string[] = NAV.flatMap((s) => s.slugs);
 
-export const UI: Record<Lang, { product: string; tagline: string; onThisPage: string; prev: string; next: string; version: string; language: string; home: string; playground: string; theme: string }> = {
-  en: { product: 'Fluixi Docs', tagline: 'Reactivity, compiled.', onThisPage: 'On this page', prev: 'Previous', next: 'Next', version: 'Version', language: 'Language', home: 'Home', playground: 'Playground', theme: 'Switch theme' },
-  fr: { product: 'Docs Fluixi', tagline: 'La réactivité, compilée.', onThisPage: 'Sur cette page', prev: 'Précédent', next: 'Suivant', version: 'Version', language: 'Langue', home: 'Accueil', playground: 'Bac à sable', theme: 'Changer de thème' },
+export const UI: Record<Lang, { product: string; tagline: string; onThisPage: string; prev: string; next: string; version: string; language: string; home: string; playground: string; theme: string; skip: string }> = {
+  en: { product: 'Fluixi Docs', tagline: 'Reactivity, compiled.', onThisPage: 'On this page', prev: 'Previous', next: 'Next', version: 'Version', language: 'Language', home: 'Home', playground: 'Playground', theme: 'Switch theme', skip: 'Skip to content' },
+  fr: { product: 'Docs Fluixi', tagline: 'La réactivité, compilée.', onThisPage: 'Sur cette page', prev: 'Précédent', next: 'Suivant', version: 'Version', language: 'Langue', home: 'Accueil', playground: 'Bac à sable', theme: 'Changer de thème', skip: 'Aller au contenu' },
 };
 
 /**
