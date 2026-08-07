@@ -11,6 +11,8 @@ export * from './ir/nodes.js';
 // Component resolution — shared by the compiler, the TS plugin (to synthesise the
 // import the author did not write) and codemods, so all three agree on one answer.
 export * from './resolve/component-resolver.js';
+export * from './resolve/component-globals.js';
+export * from './resolve/write-globals.js';
 export * from './resolve/builtins.js';
 export * from './resolve/resolve-ir.js';
 export * from './options.js';
