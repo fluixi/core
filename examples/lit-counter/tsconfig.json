@@ -10,7 +10,7 @@
     "types": ["node", "vite/client"],
     "plugins": [{ "name": "@fluixi/ts-plugin" }]
   },
-  "include": ["src"],
+  "include": ["src", "fluixi.d.ts"],
   "references": [
     {
       "path": "../../packages/reactive"
