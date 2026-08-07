@@ -17,6 +17,7 @@ import  {
   isSignal,
 } from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
+import { stampVersions, warnOnVersionSkew } from './versions.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
@@ -1774,6 +1775,11 @@ export function render<T>(
       if (!hydration.active) {
         container.textContent = '';
       }
+
+      // Which build is running, on the element and as `window.Fluixi`. Stamped here
+      // rather than in core's render so the hydrate path gets it too.
+      stampVersions(container);
+      warnOnVersionSkew();
 
       // console.log('inserting', element);
       insert(container, element as any);

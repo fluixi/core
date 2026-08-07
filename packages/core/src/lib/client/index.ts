@@ -14,6 +14,10 @@ import {
   render as domRender,
   hydrate as domHydrate,
 } from '@fluixi/dom';
+// Registers core's version with the DOM runtime, which does the stamping. This entry is a
+// separate subpath, so it does not otherwise load core's render — and without this the
+// hydrate path stamped `fx-dom`/`fx-reactive` but never `fluixi`.
+import '../render/versions.js';
 import {
   deserializeHydrationData,
   setHydrating,
