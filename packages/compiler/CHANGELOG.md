@@ -1,5 +1,36 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.73
+
+### Patch Changes
+
+- 93e06ef: Default `codegen` back to `inline`
+
+  `1.0.0-alpha.71` made `ir` the default. Running a real component library against it found
+  two separate defects: `ref` was thunked (fixed in alpha.72), and something further that
+  breaks delegated interaction in two more packages, still undiagnosed. The IR path is not
+  at parity with `inline`, so it should not be what an app gets by default.
+
+  `codegen: 'ir'` remains available and is still where the newer work lives — template
+  cloning, partial templates, resolution and load strategies all run through it. It becomes
+  the default again once a real library passes on it.
+
+- 7e98158: Keep template-cloned elements when a hole receives an array
+
+  `reconcileArrays` clones any node that already has a parent other than the target, so a
+  module-hoisted static element is never stolen from its current owner. A DocumentFragment
+  is not that kind of owner: `cloneTemplate` hands back the clone still inside its fragment,
+  so every template-cloned element arrived with a non-null parent and was cloned again.
+  `cloneNode` copies attributes but not event-handler properties, so the live DOM ended up
+  holding handler-less copies while the wired-up nodes were discarded, unconnected.
+
+  It took `templateClone` (for the fragment parent), `partialTemplates` (for the hole) and
+  two siblings (so the hole received an array) — the default combination on the IR codegen.
+  A single child takes a different insert path and always worked, which is why a component
+  library hit this and the framework's own tests did not.
+
+  With that fixed, `codegen` defaults to `'ir'` again.
+
 ## 1.0.0-alpha.72
 
 ### Patch Changes
