@@ -73,8 +73,13 @@ describe('<For> with a bare <Show> child', () => {
 
     mod.shrink(); await tick(); await tick();
     expect([...document.querySelectorAll('.row')].map((l) => l.textContent)).toEqual(['A']);
-    // No orphaned nodes or leftover markers — the whole point of the check.
-    expect(document.getElementById('app')!.innerHTML).toBe('<ul><li class="row">A</li></ul>');
+    // No orphaned nodes — the whole point of the check. A template-cloned parent keeps one
+    // `<!--fx-->`/`<!--fx/-->` pair per hole as the insertion boundary, so those are
+    // structural rather than leftovers; what must not survive is a dropped row's DOM.
+    const html = document.getElementById('app')!.innerHTML;
+    expect(html.replace(/<!--fx\/?-->/g, '')).toBe('<ul><li class="row">A</li></ul>');
+    // And the boundary must stay a single pair — accumulation would be the real leak.
+    expect((html.match(/<!--fx/g) ?? []).length).toBeLessThanOrEqual(2);
   });
 
   it('keeps a sliding window correct', async () => {

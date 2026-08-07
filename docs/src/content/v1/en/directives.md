@@ -93,11 +93,6 @@ cleaned up with `onCleanup` inside it.
 In JSX the name has to be a value TypeScript can see, so import the directive even if only
 the directive form uses it.
 
-> **In JSX, `use:` currently needs the IR codegen** (`fluixi({ codegen: 'ir' })`). Under
-> the default `'inline'` codegen the attribute is passed through as an ordinary prop that
-> the runtime does not act on, so the directive never runs and nothing reports it. In
-> `` html`` `` it works on either path.
-
 ### prop: / attr: / bool:
 
 Force how a value is applied, bypassing the property-vs-attribute heuristic. These work in
@@ -253,7 +248,7 @@ write the two halves yourself; `bind:` is deliberately only the common case.
 | --- | --- | --- |
 | `@click` / `onClick`, `on:event`, modifiers | ✓ | ✓ |
 | `ref` | ✓ | ✓ |
-| `use:` | ✓ (needs `codegen: 'ir'`) | ✓ |
+| `use:` | ✓ | ✓ |
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
 | `classList`, `style` object, `...spread` | ✓ | ✓ |
 | raw HTML | `innerHTML` | `html=` or `innerHTML` |

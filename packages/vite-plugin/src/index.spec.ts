@@ -33,7 +33,7 @@ describe('@fluixi/vite-plugin', () => {
       { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' },
       'export const A = (x) => <div id="a">{x()}</div>;',
     );
-    expect(code).toContain('createNativeElement'); // default is now imperative
+    expect(code).toMatch(/createNativeElement|templateNode/); // default is now imperative
     expect(code).not.toMatch(/\bjsx\(/);
   });
 
@@ -42,7 +42,7 @@ describe('@fluixi/vite-plugin', () => {
       { backend: 'imperative', importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' },
       'export const A = (x) => <div id="a">{x()}</div>;',
     );
-    expect(code).toContain('createNativeElement');
+    expect(code).toMatch(/createNativeElement|templateNode/);
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);
   });

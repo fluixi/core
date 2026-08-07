@@ -72,7 +72,10 @@ beforeAll(() => {
 describe('imperative backend codegen', () => {
   it('emits runtime calls, not jsx()', () => {
     const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`);
-    expect(code).toContain('createNativeElement');
+    // How the element is built is codegen's choice — element-by-element, or cloned from a
+    // template when its structure is static. Asserting one of those pinned an optimisation
+    // rather than the behaviour this test is about.
+    expect(code).toMatch(/createNativeElement|templateNode/);
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);
     expect(code).not.toMatch(/\bjsxs\(/);
