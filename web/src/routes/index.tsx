@@ -282,12 +282,15 @@ export default function Home() {
 
   return (
     <div class="page">
+      <a class="skip" href="#main">Skip to content</a>
       <Nav />
+      <main id="main" tabindex="-1">
       <Hero />
       <Features />
       <GetStarted />
       <ServerSection />
       <PlaygroundCallout />
+      </main>
       <Footer />
     </div>
   );
