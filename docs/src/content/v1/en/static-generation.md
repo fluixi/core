@@ -61,4 +61,4 @@ the page has hydrated and calls one. A per-request check — auth, geolocation, 
 Mixed deployments are fine: prerender the marketing pages and let the app routes be served
 by `fluixi start`.
 
-Next: **[Dependency injection](/v1/en/dependency-injection)**.
+Next: **[Deployment](/v1/en/deployment)**.
