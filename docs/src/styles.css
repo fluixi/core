@@ -39,20 +39,22 @@
   --drawer-shadow: #000a;
   --drawer-shadow: light-dark(#0f121926, #000a);
 
-  /* Teal reads as mid-grey on white at the dark theme's lightness, so the light side is
-     a darker teal — same hue, enough contrast against the page. */
-  --accent: #5eead4;
-  --accent: light-dark(#0d9488, #5eead4);
-  --accent-glow: #5eead488;
-  --accent-glow: light-dark(#0d948855, #5eead488);
-  --accent-line: #5eead440;
-  --accent-line: light-dark(#0d948855, #5eead440);
-  --accent-soft: #5eead40f;
-  --accent-soft: light-dark(#0d948814, #5eead40f);
-  --accent-chip: #5eead412;
-  --accent-chip: light-dark(#0d948812, #5eead412);
-  --accent-chip-line: #5eead420;
-  --accent-chip-line: light-dark(#0d948826, #5eead420);
+  /* Brand palette, from the logo: Turquoise #36E2DB, Ocean Mist #2DC4B3, Lime #00FF00.
+     Those are the dark-theme values. None is legible on white — Turquoise measures 1.61:1
+     there — so the light side keeps the hue and saturation and walks lightness down until
+     it passes AA (#13837F is 4.58:1). Same colour, readable ground. */
+  --accent: #36e2db;
+  --accent: light-dark(#13837f, #36e2db);
+  --accent-glow: #36e2db88;
+  --accent-glow: light-dark(#13837f55, #36e2db88);
+  --accent-line: #36e2db40;
+  --accent-line: light-dark(#13837f55, #36e2db40);
+  --accent-soft: #36e2db0f;
+  --accent-soft: light-dark(#13837f14, #36e2db0f);
+  --accent-chip: #36e2db12;
+  --accent-chip: light-dark(#13837f12, #36e2db12);
+  --accent-chip-line: #36e2db20;
+  --accent-chip-line: light-dark(#13837f26, #36e2db20);
   --violet: #a78bfa;
   --violet: light-dark(#7c3aed, #a78bfa);
   --violet-soft: #a78bfa12;
@@ -68,8 +70,8 @@
   --hl-comment: light-dark(#6b7280, #5b6273);
   --hl-keyword: #a78bfa;
   --hl-keyword: light-dark(#7c3aed, #a78bfa);
-  --hl-string: #5eead4;
-  --hl-string: light-dark(#0f766e, #5eead4);
+  --hl-string: #36e2db;
+  --hl-string: light-dark(#0f766e, #36e2db);
   --hl-number: #fbbf24;
   --hl-number: light-dark(#b45309, #fbbf24);
   --hl-title: #38bdf8;
