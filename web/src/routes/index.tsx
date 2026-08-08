@@ -27,7 +27,7 @@ function Nav() {
   return (
     <nav class="nav">
       <a class="brand" href="/">
-        <span class="logo">✦</span> Fluixi
+        <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> Fluixi
       </a>
       <div class="nav-links">
         <a href={DOCS_URL}>Docs</a>
@@ -101,6 +101,35 @@ function Counter() {
     return _el$;
   })();
 }`;
+
+/**
+ * Minimal highlighter for the three hero samples.
+ *
+ * Deliberately not highlight.js: that is one dependency and, if imported by a component,
+ * a large one in the client bundle — the exact mistake the docs site had to undo. The
+ * input here is three strings we control, so a small tokenizer is both sufficient and
+ * predictable.
+ *
+ * Single pass with one alternation, because the classic failure is replacing inside markup
+ * that a previous pass already emitted. Whichever group matched decides the class, so no
+ * token can be re-tokenized.
+ */
+const TOKENS =
+  /(\/\/[^\n]*)|(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\b(import|from|function|const|let|return|new|await|async)\b|\b(createSignal|createMemo|createNativeElement|spread|insert|delegateEvents|html)\b/g;
+
+const ESCAPE: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+
+function highlight(code: string): string {
+  return code
+    .replace(/[&<>]/g, (c) => ESCAPE[c])
+    .replace(TOKENS, (match, comment, str, keyword, api) => {
+      if (comment) return `<i class="t-com">${comment}</i>`;
+      if (str) return `<i class="t-str">${str}</i>`;
+      if (keyword) return `<i class="t-kw">${keyword}</i>`;
+      if (api) return `<i class="t-api">${api}</i>`;
+      return match;
+    });
+}
 
 const PANELS = [
   { id: 'jsx', label: 'JSX', file: 'Counter.tsx', code: JSX_SRC },
@@ -183,7 +212,7 @@ function Hero() {
             ))}
             <span class="code-name">{() => current().file}</span>
           </div>
-          <pre class="code">{() => current().code}</pre>
+          <pre class="code" innerHTML={() => highlight(current().code)} />
         </div>
         <p class="hero-note">
           {() =>
@@ -241,7 +270,7 @@ function ServerSection() {
           <span class="dot" />
           <span class="code-name">user.ts</span>
         </div>
-        <pre class="code">{SERVER_CODE}</pre>
+        <pre class="code" innerHTML={highlight(SERVER_CODE)} />
       </div>
     </section>
   );
@@ -280,7 +309,7 @@ function GetStarted() {
           <span class="dot" />
           <span class="code-name">Counter.ts</span>
         </div>
-        <pre class="code">{HTML_CODE}</pre>
+        <pre class="code" innerHTML={highlight(HTML_CODE)} />
       </div>
     </section>
   );
@@ -307,7 +336,7 @@ function Footer() {
   return (
     <footer class="footer">
       <div class="foot-brand">
-        <span class="logo">✦</span> Fluixi
+        <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> Fluixi
       </div>
       <div class="foot-cols">
         <div>
