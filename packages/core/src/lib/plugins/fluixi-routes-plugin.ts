@@ -53,6 +53,16 @@ export function fluixiRoutesPlugin(
   const extensions = options.extensions ?? ['.tsx', '.ts', '.jsx', '.js'];
 
   let projectRoot = '';
+  /** The module body most recently served, so the watcher can tell a real change from a save. */
+  let lastGenerated: string | null = null;
+
+  function generateModule(root: string): string {
+    const absRoutesDir = path.resolve(root, routesDir);
+    const scanOpts: ScanOptions = { extensions };
+    const routes = scanRoutes(absRoutesDir, scanOpts);
+    // Import paths are relative to project root, prefixed with ./
+    return generateRouteModule(routes, './' + routesDir);
+  }
 
   // nodePolyfills injects `vite-plugin-node-polyfills/shims/*` (browser polyfills for
   // Buffer/process/global/fs/path) into transformed modules. It's needed by some apps
@@ -83,17 +93,8 @@ export function fluixiRoutesPlugin(
 
     load(id: string) {
       if (id !== RESOLVED_VIRTUAL_ID) return null;
-
-      const root = projectRoot || process.cwd();
-      const absRoutesDir = path.resolve(root, routesDir);
-      const scanOpts: ScanOptions = { extensions };
-
-      const routes = scanRoutes(absRoutesDir, scanOpts);
-
-      // Import paths are relative to project root, prefixed with ./
-      const importBase = './' + routesDir;
-      const code = generateRouteModule(routes, importBase);
-      return code;
+      lastGenerated = generateModule(projectRoot || process.cwd());
+      return lastGenerated;
     },
 
     // Vite dev server: watch routes directory for changes
@@ -105,13 +106,14 @@ export function fluixiRoutesPlugin(
       server.watcher.add(absRoutesDir);
 
       server.watcher.on('all', (event: string, filePath: string) => {
-        // Only react to file add/remove/rename in routes dir
-        if (
-          !filePath.startsWith(absRoutesDir) ||
-          !['add', 'unlink', 'addDir', 'unlinkDir'].includes(event)
-        ) {
-          return;
-        }
+        if (!filePath.startsWith(absRoutesDir)) return;
+
+        // `change` matters as much as add/unlink. The route tree is not only a list of
+        // files: `routeData` is detected by reading each file at scan time, so EDITING a
+        // route — adding a `routeData` export, or changing one — changes the generated
+        // module even though no file appeared or vanished. Leaving `change` out meant
+        // those edits needed a dev-server restart to take effect.
+        if (!['add', 'unlink', 'addDir', 'unlinkDir', 'change'].includes(event)) return;
 
         // Check if the file has a valid extension
         if (
@@ -122,11 +124,17 @@ export function fluixiRoutesPlugin(
           return;
         }
 
-        // Invalidate the virtual module so it regenerates
+        // Regenerate and compare before invalidating. Every save of a route component now
+        // reaches this handler, and most change nothing about the tree — reloading the
+        // page on each of them would undo the point of HMR. A full reload is only correct
+        // when the generated module actually differs.
+        const next = generateModule(root);
+        if (next === lastGenerated) return;
+        lastGenerated = next;
+
         const mod = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID);
         if (mod) {
           server.moduleGraph.invalidateModule(mod);
-          // Trigger HMR
           server.ws.send({ type: 'full-reload' });
         }
       });
