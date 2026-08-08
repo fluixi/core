@@ -549,7 +549,12 @@ export function insert(
   if (typeof accessor !== 'function' && !isReactiveArray(accessor)) {
     _insertDepth++;
     try {
-      current = insertExpression(parent, accessor, marker, null);
+      // `current` — not null. The caller passes what is already in this slot, and for a
+      // hydrating template hole that is the server's own nodes (`holeContent`). Dropping it
+      // meant a static value never adopted: insertExpression saw an empty slot and appended
+      // a second copy beside the server's, so `{cmd}` rendered the string twice.
+      // Without an `init` this is null anyway, so nothing else changes.
+      current = insertExpression(parent, accessor, marker, current);
     } finally {
       _insertDepth--;
     }
