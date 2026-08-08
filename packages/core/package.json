@@ -41,7 +41,13 @@
         "require": "./dist/src/lib/i18n/index.cjs",
         "default": "./dist/src/lib/i18n/index.js"
       },
-      "./router-next": {
+      "./routes": {
+        "types": "./dist/src/routes.d.ts",
+        "import": "./dist/src/routes.mjs",
+        "require": "./dist/src/routes.cjs",
+        "default": "./dist/src/routes.js"
+      },
+    "./router-next": {
         "types": "./dist/src/lib/router-next/index.d.ts",
         "import": "./dist/src/lib/router-next/index.mjs",
         "require": "./dist/src/lib/router-next/index.cjs",
@@ -121,6 +127,13 @@
       "import": "./dist/src/lib/i18n/index.mjs",
       "require": "./dist/src/lib/i18n/index.cjs",
       "default": "./dist/src/lib/i18n/index.js"
+    },
+    "./routes": {
+      "development": "./src/routes.ts",
+      "types": "./dist/src/routes.d.ts",
+      "import": "./dist/src/routes.mjs",
+      "require": "./dist/src/routes.cjs",
+      "default": "./dist/src/routes.js"
     },
     "./router-next": {
       "development": "./src/lib/router-next/index.ts",
