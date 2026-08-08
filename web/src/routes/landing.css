@@ -74,7 +74,7 @@ a { color: inherit; text-decoration: none; }
 }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; letter-spacing: .2px; }
 .logo { width: 22px; height: 22px; flex: none; }
-.nav-links { display: flex; gap: 26px; font-size: 14px; color: var(--muted); }
+.nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--muted); }
 .nav-links a:hover { color: var(--text); }
 
 /* hero */
@@ -96,22 +96,22 @@ a { color: inherit; text-decoration: none; }
 
 .install {
   display: inline-flex; align-items: center; gap: 10px;
-  background: #0c0e16; border: 1px solid #232a3a; border-radius: 10px;
+  background: var(--code-bg); border: 1px solid var(--code-line); border-radius: 10px;
   padding: 11px 12px 11px 16px; font-family: var(--mono); font-size: 13.5px;
 }
 /* The install strip and the code window are terminal surfaces: they stay dark in both
    themes, which is conventional and keeps one highlighting palette. That means their text
    must NOT use --text, which flips to near-black in light mode and would have been dark on
    dark. Pin the dark-theme values here. */
-.install .prompt { color: #36e2db; }
-.install code { color: #e9ebf1; }
-.install .copy { margin-left: 6px; background: #181d2b; border: 1px solid #232a3a; color: #8b91a4; border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
-.install .copy:hover { color: #e9ebf1; border-color: #36405a; }
+.install .prompt { color: var(--accent); }
+.install code { color: var(--text); }
+.install .copy { margin-left: 6px; background: light-dark(#e7ecf4, #181d2b); border: 1px solid light-dark(#dbe1eb, #232a3a); color: var(--muted); border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
+.install .copy:hover { color: var(--text); border-color: light-dark(#b9c2d2, #36405a); }
 
 /* code window */
-.code-window { background: #0b0d15; border: 1px solid #232a3a; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -30px #000; }
-.code-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid #232a3a; background: #0d1019; }
-.dot { width: 11px; height: 11px; border-radius: 50%; background: #2a3043; }
+.code-window { background: var(--code-bg); border: 1px solid var(--code-line); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -30px light-dark(#0f121926, #000); }
+.code-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--code-line); background: var(--code-bar); }
+.dot { width: 11px; height: 11px; border-radius: 50%; background: light-dark(#cfd6e2, #2a3043); }
 .dot:nth-child(1) { background: #f87171; } .dot:nth-child(2) { background: #fbbf24; } .dot:nth-child(3) { background: #34d399; }
 .code-name { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .code { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.65; color: var(--code-fg); white-space: pre; overflow-x: auto; }
@@ -138,7 +138,7 @@ a { color: inherit; text-decoration: none; }
 .split { max-width: var(--maxw); margin: 0 auto; padding: 70px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
 .split-copy h2 { margin: 0 0 16px; font-size: 32px; letter-spacing: -.6px; font-weight: 800; }
 .split-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; }
-.split-copy code { font-family: var(--mono); font-size: .9em; color: var(--accent); background: light-dark(#eef2f7, #0d1019); padding: 1px 6px; border-radius: 5px; }
+.split-copy code { font-family: var(--mono); font-size: .9em; color: var(--accent); background: light-dark(#eef2f7, #0d1019); border: 1px solid light-dark(#e0e5ee, #232a3a); padding: 1px 6px; border-radius: 5px; }
 .checks { list-style: none; padding: 0; margin: 22px 0 0; }
 .checks li { position: relative; padding-left: 26px; margin: 10px 0; color: var(--text); font-size: 15px; }
 .checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
@@ -202,7 +202,7 @@ main:focus { outline: none; }
 /* Hero code tabs ----------------------------------------------------------
    The tab strip replaces the three decorative window dots — the space was
    already there, and a real control earns it better than a macOS pastiche. */
-.code-bar { gap: 4px; flex-wrap: wrap; }
+.code-bar { gap: 4px; flex-wrap: wrap; align-items: flex-end; }
 .code-tab {
   font-family: var(--mono); font-size: 12px; line-height: 1.6;
   padding: 4px 11px; border-radius: 7px; cursor: pointer;
@@ -214,7 +214,12 @@ main:focus { outline: none; }
    colour alone that distinguishes it. */
 .code-tab.on {
   color: var(--accent); font-weight: 600;
-  background: light-dark(#13837f1a, #36e2db12); border-color: light-dark(#13837f40, #36e2db33);
+  background: var(--code-bg);
+  border-color: var(--code-line);
+  border-bottom-color: var(--code-bg);
+  border-radius: 8px 8px 0 0;
+  margin-bottom: -12px;
+  padding-bottom: 16px;
 }
 .hero-note {
   margin: 10px 2px 0; font-size: 12.5px; color: var(--muted);
@@ -224,14 +229,21 @@ main:focus { outline: none; }
 /* Hero + section code tokens. `i` carries no emphasis semantics here, it is just the
    shortest inline element; the colours match the docs' highlight theme so the two sites
    agree. */
-.code .t-com { color: #5b6273; font-style: italic; }
-.code .t-str { color: #36e2db; font-style: normal; }
-.code .t-kw  { color: #a78bfa; font-style: normal; }
-.code .t-api { color: #38bdf8; font-style: normal; }
+.code .t-com { color: light-dark(#6b7280, #5b6273); font-style: italic; }
+.code .t-str { color: light-dark(#0f766e, #36e2db); font-style: normal; }
+.code .t-kw  { color: light-dark(#7c3aed, #a78bfa); font-style: normal; }
+.code .t-api { color: light-dark(#0369a1, #38bdf8); font-style: normal; }
 
 /* Code surface + tokens, themed. */
 :root {
   --code-fg: #c6d0e0;
+  --code-fg: light-dark(#24292f, #c6d0e0);
+  --code-bg: #0b0d15;
+  --code-bg: light-dark(#f7f9fc, #0b0d15);
+  --code-bar: #0d1019;
+  --code-bar: light-dark(#eef2f7, #0d1019);
+  --code-line: #232a3a;
+  --code-line: light-dark(#e0e5ee, #232a3a);
 }
 
 /* Theme toggle ------------------------------------------------------------ */
