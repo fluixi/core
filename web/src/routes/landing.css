@@ -22,8 +22,20 @@
   --muted: #8b91a4;
   --muted: light-dark(#5b6478, #8b91a4);
 
-  --accent: #5eead4;
-  --accent: light-dark(#0d9488, #5eead4);
+  /* Brand palette, taken from the logo: Turquoise #36E2DB, Pearl Aqua #72E1DB,
+     Ocean Mist #2DC4B3, Lime #00FF00. Those are the DARK-theme values — measured at
+     9–14:1 on this ground. None of them is legible as text on white (Lime is 1.37:1,
+     Turquoise 1.61:1), so the light side uses the same hue and saturation walked down
+     in lightness until it passes AA. Hue is preserved to within a degree, so it is the
+     same colour, not a different one. */
+  --accent: #36e2db;
+  --accent: light-dark(#13837f, #36e2db);
+  --brand-aqua: #72e1db;
+  --brand-aqua: light-dark(#1c847f, #72e1db);
+  --brand-mist: #2dc4b3;
+  --brand-mist: light-dark(#1e8377, #2dc4b3);
+  --brand-lime: #00ff00;
+  --brand-lime: light-dark(#008a00, #00ff00);
   --state: #34d399;
   --state: light-dark(#047857, #34d399);
   --memo: #a78bfa;
@@ -45,7 +57,7 @@ a { color: inherit; text-decoration: none; }
 
 .page {
   background:
-    radial-gradient(900px 480px at 78% -8%, light-dark(#0d94880f, #16384733), transparent),
+    radial-gradient(900px 480px at 78% -8%, light-dark(#13837f0f, #16384733), transparent),
     radial-gradient(800px 460px at -6% 18%, light-dark(#7c3aed0d, #2a154833), transparent);
 }
 
@@ -68,12 +80,12 @@ a { color: inherit; text-decoration: none; }
 }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
 .hero h1 { margin: 0; font-size: 58px; line-height: 1.04; letter-spacing: -1.5px; font-weight: 800; }
-.grad { background: linear-gradient(96deg, light-dark(#0d9488, #5eead4), light-dark(#7c3aed, #a78bfa) 55%, light-dark(#0369a1, #38bdf8)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.grad { background: linear-gradient(96deg, var(--accent), var(--brand-aqua) 45%, var(--brand-lime)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lede { margin: 22px 0 28px; font-size: 18px; line-height: 1.6; color: var(--muted); max-width: 30em; }
 .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
 .btn { display: inline-flex; align-items: center; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: transform .06s, filter .15s, border-color .15s, background .15s; }
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: linear-gradient(180deg, #5eead4, #2dd4bf); color: #042b27; border: 0; }
+.btn.primary { background: linear-gradient(180deg, #36e2db, #2dc4b3); color: #04221f; border: 0; }
 .btn.primary:hover { filter: brightness(1.07); }
 .btn.ghost { background: transparent; color: var(--text); border: 1px solid light-dark(#d3d9e4, #2b3142); }
 .btn.ghost:hover { border-color: light-dark(#b9c2d2, #3c465f); background: light-dark(#0f121908, #ffffff08); }
@@ -87,7 +99,7 @@ a { color: inherit; text-decoration: none; }
    themes, which is conventional and keeps one highlighting palette. That means their text
    must NOT use --text, which flips to near-black in light mode and would have been dark on
    dark. Pin the dark-theme values here. */
-.install .prompt { color: #5eead4; }
+.install .prompt { color: #36e2db; }
 .install code { color: #e9ebf1; }
 .install .copy { margin-left: 6px; background: #181d2b; border: 1px solid #232a3a; color: #8b91a4; border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
 .install .copy:hover { color: #e9ebf1; border-color: #36405a; }
@@ -129,7 +141,7 @@ a { color: inherit; text-decoration: none; }
 
 /* callout */
 .callout { max-width: var(--maxw); margin: 0 auto; padding: 20px 24px 80px; }
-.callout-inner { text-align: center; border: 1px solid var(--line-1); border-radius: 22px; padding: 56px 32px; background: radial-gradient(700px 300px at 50% -40%, light-dark(#0d948814, #5eead41a), transparent), linear-gradient(180deg, var(--panel), light-dark(#e9eef6, #0b0d15)); }
+.callout-inner { text-align: center; border: 1px solid var(--line-1); border-radius: 22px; padding: 56px 32px; background: radial-gradient(700px 300px at 50% -40%, light-dark(#13837f14, #36e2db1a), transparent), linear-gradient(180deg, var(--panel), light-dark(#e9eef6, #0b0d15)); }
 .callout-inner h2 { margin: 0 0 12px; font-size: 34px; letter-spacing: -.6px; font-weight: 800; }
 .callout-inner p { margin: 0 auto 26px; color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 40em; }
 
@@ -198,7 +210,7 @@ main:focus { outline: none; }
    colour alone that distinguishes it. */
 .code-tab.on {
   color: var(--accent); font-weight: 600;
-  background: light-dark(#0d94881a, #5eead412); border-color: light-dark(#0d948840, #5eead433);
+  background: light-dark(#13837f1a, #36e2db12); border-color: light-dark(#13837f40, #36e2db33);
 }
 .hero-note {
   margin: 10px 2px 0; font-size: 12.5px; color: var(--muted);
@@ -209,7 +221,7 @@ main:focus { outline: none; }
    shortest inline element; the colours match the docs' highlight theme so the two sites
    agree. */
 .code .t-com { color: #5b6273; font-style: italic; }
-.code .t-str { color: #5eead4; font-style: normal; }
+.code .t-str { color: #36e2db; font-style: normal; }
 .code .t-kw  { color: #a78bfa; font-style: normal; }
 .code .t-api { color: #38bdf8; font-style: normal; }
 
