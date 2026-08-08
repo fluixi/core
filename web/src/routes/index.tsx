@@ -38,9 +38,9 @@ function Nav() {
   );
 }
 
-function InstallCommand() {
+function InstallCommand(props: { cmd?: string }) {
   const [copied, setCopied] = createSignal(false);
-  const cmd = 'npm create fluixi@latest';
+  const cmd = props.cmd ?? 'npm create fluixi@latest';
   const copy = () => {
     try {
       navigator.clipboard?.writeText(cmd);
@@ -292,7 +292,7 @@ function GetStarted() {
           <li>html`` needs no <code>jsx</code> in tsconfig — plain <code>.ts</code> files</li>
           <li>Editor support via <code>@fluixi/ts-plugin</code>, wired in for you</li>
         </ul>
-        <InstallCommand />
+        <InstallCommand cmd="npm create fluixi@latest my-app -- --html --ssr" />
         <div class="cta">
           <a class="btn ghost" href={`${DOCS_URL}/v1/en/quickstart`}>
             Quick start →

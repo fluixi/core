@@ -45,8 +45,8 @@ a { color: inherit; text-decoration: none; }
 
 .page {
   background:
-    radial-gradient(900px 480px at 78% -8%, #16384733, transparent),
-    radial-gradient(800px 460px at -6% 18%, #2a154833, transparent);
+    radial-gradient(900px 480px at 78% -8%, light-dark(#0d94880f, #16384733), transparent),
+    radial-gradient(800px 460px at -6% 18%, light-dark(#7c3aed0d, #2a154833), transparent);
 }
 
 /* nav */
@@ -68,29 +68,33 @@ a { color: inherit; text-decoration: none; }
 }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
 .hero h1 { margin: 0; font-size: 58px; line-height: 1.04; letter-spacing: -1.5px; font-weight: 800; }
-.grad { background: linear-gradient(96deg, #5eead4, #a78bfa 55%, #38bdf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.grad { background: linear-gradient(96deg, light-dark(#0d9488, #5eead4), light-dark(#7c3aed, #a78bfa) 55%, light-dark(#0369a1, #38bdf8)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lede { margin: 22px 0 28px; font-size: 18px; line-height: 1.6; color: var(--muted); max-width: 30em; }
 .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
 .btn { display: inline-flex; align-items: center; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: transform .06s, filter .15s, border-color .15s, background .15s; }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: linear-gradient(180deg, #5eead4, #2dd4bf); color: #042b27; border: 0; }
 .btn.primary:hover { filter: brightness(1.07); }
-.btn.ghost { background: transparent; color: var(--text); border: 1px solid #2b3142; }
-.btn.ghost:hover { border-color: #3c465f; background: #ffffff08; }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid light-dark(#d3d9e4, #2b3142); }
+.btn.ghost:hover { border-color: light-dark(#b9c2d2, #3c465f); background: light-dark(#0f121908, #ffffff08); }
 
 .install {
   display: inline-flex; align-items: center; gap: 10px;
-  background: #0c0e16; border: 1px solid var(--line-1); border-radius: 10px;
+  background: #0c0e16; border: 1px solid #232a3a; border-radius: 10px;
   padding: 11px 12px 11px 16px; font-family: var(--mono); font-size: 13.5px;
 }
-.install .prompt { color: var(--accent); }
-.install code { color: var(--text); }
-.install .copy { margin-left: 6px; background: #181d2b; border: 1px solid var(--line-1); color: var(--muted); border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
-.install .copy:hover { color: var(--text); border-color: #36405a; }
+/* The install strip and the code window are terminal surfaces: they stay dark in both
+   themes, which is conventional and keeps one highlighting palette. That means their text
+   must NOT use --text, which flips to near-black in light mode and would have been dark on
+   dark. Pin the dark-theme values here. */
+.install .prompt { color: #5eead4; }
+.install code { color: #e9ebf1; }
+.install .copy { margin-left: 6px; background: #181d2b; border: 1px solid #232a3a; color: #8b91a4; border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
+.install .copy:hover { color: #e9ebf1; border-color: #36405a; }
 
 /* code window */
-.code-window { background: #0b0d15; border: 1px solid var(--line-1); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -30px #000; }
-.code-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--line-1); background: #0d1019; }
+.code-window { background: #0b0d15; border: 1px solid #232a3a; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -30px #000; }
+.code-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid #232a3a; background: #0d1019; }
 .dot { width: 11px; height: 11px; border-radius: 50%; background: #2a3043; }
 .dot:nth-child(1) { background: #f87171; } .dot:nth-child(2) { background: #fbbf24; } .dot:nth-child(3) { background: #34d399; }
 .code-name { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
@@ -108,8 +112,8 @@ a { color: inherit; text-decoration: none; }
 .section-head p { margin: 12px 0 0; color: var(--muted); font-size: 16px; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--line-1); border-radius: 16px; padding: 24px; transition: border-color .15s, transform .15s; }
-.card:hover { border-color: #2e3650; transform: translateY(-2px); }
-.card-glyph { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font-size: 18px; margin-bottom: 14px; background: #0d1019; border: 1px solid var(--line-1); }
+.card:hover { border-color: light-dark(#c9d1de, #2e3650); transform: translateY(-2px); }
+.card-glyph { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font-size: 18px; margin-bottom: 14px; background: light-dark(#eef2f7, #0d1019); border: 1px solid var(--line-1); }
 .card-glyph.t-state { color: var(--state); } .card-glyph.t-memo { color: var(--memo); } .card-glyph.t-effect { color: var(--effect); } .card-glyph.t-store { color: var(--store); }
 .card h3 { margin: 0 0 8px; font-size: 17px; }
 .card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
@@ -118,14 +122,14 @@ a { color: inherit; text-decoration: none; }
 .split { max-width: var(--maxw); margin: 0 auto; padding: 70px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
 .split-copy h2 { margin: 0 0 16px; font-size: 32px; letter-spacing: -.6px; font-weight: 800; }
 .split-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; }
-.split-copy code { font-family: var(--mono); font-size: .9em; color: var(--accent); background: #0d1019; padding: 1px 6px; border-radius: 5px; }
+.split-copy code { font-family: var(--mono); font-size: .9em; color: var(--accent); background: light-dark(#eef2f7, #0d1019); padding: 1px 6px; border-radius: 5px; }
 .checks { list-style: none; padding: 0; margin: 22px 0 0; }
 .checks li { position: relative; padding-left: 26px; margin: 10px 0; color: var(--text); font-size: 15px; }
 .checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
 
 /* callout */
 .callout { max-width: var(--maxw); margin: 0 auto; padding: 20px 24px 80px; }
-.callout-inner { text-align: center; border: 1px solid var(--line-1); border-radius: 22px; padding: 56px 32px; background: radial-gradient(700px 300px at 50% -40%, #5eead41a, transparent), linear-gradient(180deg, var(--panel), #0b0d15); }
+.callout-inner { text-align: center; border: 1px solid var(--line-1); border-radius: 22px; padding: 56px 32px; background: radial-gradient(700px 300px at 50% -40%, light-dark(#0d948814, #5eead41a), transparent), linear-gradient(180deg, var(--panel), light-dark(#e9eef6, #0b0d15)); }
 .callout-inner h2 { margin: 0 0 12px; font-size: 34px; letter-spacing: -.6px; font-weight: 800; }
 .callout-inner p { margin: 0 auto 26px; color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 40em; }
 
@@ -136,7 +140,7 @@ a { color: inherit; text-decoration: none; }
 .foot-cols h4 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
 .foot-cols a { display: block; color: var(--muted); font-size: 14px; margin: 7px 0; }
 .foot-cols a:hover { color: var(--text); }
-.foot-note { grid-column: 1 / -1; color: #5b6173; font-size: 13px; font-family: var(--mono); }
+.foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 13px; font-family: var(--mono); }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 44px; }
@@ -194,7 +198,7 @@ main:focus { outline: none; }
    colour alone that distinguishes it. */
 .code-tab.on {
   color: var(--accent); font-weight: 600;
-  background: #5eead412; border-color: #5eead433;
+  background: light-dark(#0d94881a, #5eead412); border-color: light-dark(#0d948840, #5eead433);
 }
 .hero-note {
   margin: 10px 2px 0; font-size: 12.5px; color: var(--muted);
@@ -212,9 +216,4 @@ main:focus { outline: none; }
 /* Code surface + tokens, themed. */
 :root {
   --code-fg: #c6d0e0;
-  --code-fg: light-dark(#24292f, #c6d0e0);
 }
-.code .t-com { color: light-dark(#6b7280, #5b6273); }
-.code .t-str { color: light-dark(#0f766e, #5eead4); }
-.code .t-kw  { color: light-dark(#7c3aed, #a78bfa); }
-.code .t-api { color: light-dark(#0369a1, #38bdf8); }
