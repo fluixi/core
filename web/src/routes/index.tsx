@@ -23,6 +23,28 @@ const FEATURES: { glyph: string; title: string; body: string; tone: string }[] =
   { glyph: '◐', tone: 'state', title: 'Islands & edge', body: 'Partial hydration for mostly-static pages, and an edge-safe server that runs on Workers, Deno and Bun.' },
 ];
 
+/**
+ * Flip between light and dark, and remember it.
+ *
+ * With nothing stored the page follows the OS, so a first visit matches whatever the reader
+ * already set system-wide. The inline script in index.html re-applies a stored choice before
+ * first paint — doing it here would flash the wrong theme on a prerendered page.
+ */
+function toggleTheme(): void {
+  const root = document.documentElement;
+  const current =
+    root.dataset.theme ??
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  root.dataset.theme = next;
+  try {
+    localStorage.setItem('fluixi-theme', next);
+  } catch {
+    // Private mode or blocked storage — the choice still applies to this page.
+  }
+}
+
 function Nav() {
   return (
     <nav class="nav">
@@ -33,6 +55,15 @@ function Nav() {
         <a href={DOCS_URL}>Docs</a>
         <a href={PLAYGROUND_URL}>Playground</a>
         <a href={GITHUB_URL}>GitHub</a>
+        <button
+          type="button"
+          class="theme-toggle"
+          aria-label="Switch theme"
+          title="Switch theme"
+          onClick={toggleTheme}
+        >
+          ◐
+        </button>
       </div>
     </nav>
   );
