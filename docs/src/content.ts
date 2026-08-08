@@ -66,13 +66,28 @@ for (const [path, md] of Object.entries(raw)) {
  * The language label comes from the class marked already emits, so it costs nothing.
  */
 function withCopyButtons(html: string): string {
+  // ONE paired match over the whole block, so the wrapper can never be unbalanced.
+  //
+  // This previously opened on `<pre><code class="hljs language-X">` but closed on every
+  // `</code></pre>`. A fence with no language — a file tree, a bare shell line — got a
+  // closing `</div>` with no opening one, which closed `<article class="prose">` early and
+  // spilled the rest of the page out of the layout.
+  //
+  // The language group is optional so unlanguaged blocks are wrapped too, and therefore get
+  // a copy button as well; they just carry no language label.
   return html.replace(
-    /<pre><code class="hljs language-([^"]+)">/g,
-    (_m, lang) =>
-      `<div class="code-block" data-lang="${lang}">` +
-      `<button type="button" class="code-copy" data-copy aria-label="Copy code">Copy</button>` +
-      `<pre><code class="hljs language-${lang}">`,
-  ).replace(/<\/code><\/pre>/g, '</code></pre></div>');
+    /<pre><code(?: class="hljs language-([^"]+)")?>([\s\S]*?)<\/code><\/pre>/g,
+    (_match, lang: string | undefined, code: string) => {
+      const cls = lang ? ` class="hljs language-${lang}"` : '';
+      const attr = lang ? ` data-lang="${lang}"` : '';
+      return (
+        `<div class="code-block"${attr}>` +
+        `<button type="button" class="code-copy" data-copy aria-label="Copy code">Copy</button>` +
+        `<pre><code${cls}>${code}</code></pre>` +
+        `</div>`
+      );
+    },
+  );
 }
 
 export const key = (version: string, lang: string, slug: string) => `${version}/${lang}/${slug}`;
