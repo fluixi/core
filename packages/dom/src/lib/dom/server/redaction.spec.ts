@@ -38,3 +38,37 @@ describe('__FX_DATA__ redaction', () => {
     expect(serializeResourceData(ctxWith({ a: 'x' }))).toBe('');
   });
 });
+
+/**
+ * A resource can resolve to something JSON cannot carry — most often a lazy
+ * route's module, where the resource value IS the component function. That entry
+ * used to reach `JSON.stringify`, which drops the key without a word, so the
+ * document shipped `<script id="__FX_DATA__">{}</script>`: a transport with
+ * nothing in it, on every page whose only resource was a lazy import.
+ */
+describe('__FX_DATA__ is omitted when it would carry nothing', () => {
+  afterEach(() => setDataRedactor(null));
+
+  it('drops a function value instead of emitting an empty payload', () => {
+    expect(serializeResourceData(ctxWith({ r0: () => 'a lazy module' }))).toBe('');
+  });
+
+  it('drops a symbol value', () => {
+    expect(serializeResourceData(ctxWith({ r0: Symbol('x') }))).toBe('');
+  });
+
+  it('still emits the entries that do serialize, alongside one that does not', () => {
+    const out = serializeResourceData(ctxWith({ r0: () => {}, r1: { name: 'Ada' } }));
+    expect(out).toContain('Ada');
+    expect(out).not.toContain('r0');
+  });
+
+  it('omits the script when every value is redacted away', () => {
+    setDataRedactor(() => undefined);
+    expect(serializeResourceData(ctxWith({ r0: { name: 'Ada' } }))).toBe('');
+  });
+
+  it('keeps emitting a payload that has real data', () => {
+    expect(serializeResourceData(ctxWith({ r0: { name: 'Ada' } }))).toContain('Ada');
+  });
+});
