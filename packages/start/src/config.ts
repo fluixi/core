@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 import { existsSync } from 'node:fs';
 import { writeFile, unlink } from 'node:fs/promises';
 import { resolve, isAbsolute } from 'node:path';
+import type { Adapter } from './adapter.js';
 
 /**
  * Fluixi app config. Place in `fluixi.config.{ts,js,mjs}` at the app root and wrap
@@ -37,6 +38,12 @@ export interface FluixiConfig {
   /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
   ssrNoExternal?: string[];
   /**
+   * Deploy target. Decides how `fluixi build` bundles the server (see the adapter's
+   * `bundle` mode) and how `fluixi start` serves it. Unset keeps Vite's own bundling
+   * heuristic and serves with `nodeAdapter`.
+   */
+  adapter?: Adapter;
+  /**
    * Built-in i18n auto-discovery. Scans `<dir>/<locale>.json` and exposes them as
    * `virtual:fluixi-i18n` (`{ messages, locales, defaultLocale }`) to feed `createI18n`.
    * `false` disables it; an object configures the folder / locales / default. Default: enabled
@@ -65,10 +72,14 @@ export interface ResolvedPrerender {
   crawl: boolean;
 }
 
-export type ResolvedConfig = Required<Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender'>> & {
+export type ResolvedConfig = Required<
+  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter'>
+> & {
   ssrNoExternal: string[];
   i18n: ResolvedI18n | false;
   prerender: ResolvedPrerender | false;
+  /** Stays optional: no adapter means "Vite's defaults + serve with node". */
+  adapter?: Adapter;
 };
 
 /** Identity helper for editor types in `fluixi.config.ts`. */
@@ -91,6 +102,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
+    adapter: config.adapter,
     i18n: resolveI18n(config.i18n),
     prerender: resolvePrerender(config.prerender),
   };
