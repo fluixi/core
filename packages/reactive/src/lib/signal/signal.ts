@@ -903,6 +903,14 @@ export interface ResourceOptions<T, S = unknown> {
   deferStream?: boolean;
   storage?: string;
   cacheTime?: number;
+  /**
+   * Whether this resource's value is carried from server to client in
+   * `__FX_DATA__`. `false` opts out and, importantly, does not consume an id:
+   * ids are positions in a per-render sequence that both sides count
+   * independently, so a resource present on one side only shifts every id after
+   * it. See the note in graph/resource.ts.
+   */
+  transport?: boolean;
 }
 const cache = new Map();
 function fetchCached(key: any) {
@@ -936,7 +944,7 @@ export function createResource<T, S = true>(
   const { initialValue, name } = options;
   // SSR data transport: a stable per-render id; on the client, seed from the
   // server-serialized value so hydration doesn't refetch (and doesn't flash).
-  const __ssrId = nextResourceId();
+  const __ssrId = options.transport === false ? undefined : nextResourceId();
   const __seed = __ssrId !== undefined ? getServerData(__ssrId) : undefined;
   let skipFirstFetch = __seed !== undefined;
   const [value, setValue] = createSignal<T | undefined>(

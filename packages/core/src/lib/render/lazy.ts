@@ -73,7 +73,11 @@ export function lazy<T extends (...args: any[]) => any>(
     // fetched). Register the import with the nearest Suspense via createResource so the
     // fallback shows while it downloads, then swap in the component once it resolves.
     if (!component) {
-      const [resource] = createResource(() => load());
+      // transport:false — the value here is the component function, which never
+      // travelled to the client, and the id it used to consume made the page's own
+      // resource ids depend on whether this module was already loaded in the
+      // process. The client re-imports the chunk itself either way.
+      const [resource] = createResource(() => load(), { transport: false });
       component = resource;
       if (resource.error) throw resource.error;
     }
