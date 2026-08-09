@@ -23,13 +23,10 @@ import * as S from '@fluixi/reactive/signal';
  * tests did not.
  */
 const OPTS = {
-  backend: 'imperative' as const,
-  codegen: 'ir' as const,
   templateClone: true,
   partialTemplates: true,
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
 
 function load(src: string) {

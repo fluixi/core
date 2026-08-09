@@ -34,11 +34,9 @@ import { fluixi } from '@fluixi/vite-plugin';
 
 export default defineConfig({
   plugins: [
-    fluixi({
-      // 'imperative' (default) compiles straight into @fluixi/dom runtime calls
-      // (createNativeElement/spread/insert/…); 'jsx' emits jsx()/jsxs().
-      backend: 'imperative',
-    }),
+    // JSX and html`` templates both compile straight into @fluixi/dom runtime
+    // calls (createNativeElement/spread/insert/…). No options required.
+    fluixi(),
   ],
 });
 ```
@@ -49,9 +47,11 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 
 | Option | Default | What |
 | --- | --- | --- |
-| `importSource` | `@fluixi/jsx` | JSX runtime import source |
-| `backend` | `imperative` | `imperative` or `jsx` codegen |
-| `signalModule` / `controlFlowModule` | `@fluixi/dom` | where imperative runtime symbols come from |
+| `importSource` | `@fluixi/jsx` | where the JSX *types* come from; also the `jsxImportSource` given to esbuild |
+| `format` | `both` | which syntaxes to compile — `jsx`, `lit`, or `both` |
+| `signalModule` / `controlFlowModule` | `@fluixi/dom` | where emitted runtime symbols come from |
+| `resolve` | – | rules that supply a component import from a bare tag |
+| `templateClone` / `partialTemplates` | `true` | clone static subtrees instead of building them |
 | `delegateEvents` | `true` | event delegation |
 | `sourceMaps` | `true` | emit source maps |
 

@@ -13,11 +13,9 @@ import * as Store from '@fluixi/reactive/store';
 // output runs against the live @fluixi/dom runtime.
 
 const LIT = {
-  backend: 'imperative' as const,
   format: 'lit' as const,
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
 
 
@@ -194,9 +192,7 @@ describe('lit front-end (format: lit)', () => {
 
   it('compiles html`` by DEFAULT (format defaults to `both` — no option needed)', () => {
     const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
-      backend: 'imperative',
-      hoistStatics: false,
-      templateClone: true,
+            templateClone: true,
     });
     // Fully static, so it is cloned from a template rather than built element by element.
     expect(code).toContain('templateNode');
@@ -205,9 +201,7 @@ describe('lit front-end (format: lit)', () => {
 
   it('leaves html`` untouched when format is explicitly `jsx`', () => {
     const code = compileEsm('export const r = () => html`<div>hi</div>`;', {
-      backend: 'imperative',
-      hoistStatics: false,
-      format: 'jsx',
+            format: 'jsx',
     });
     expect(code).not.toContain('createNativeElement');
     expect(code).toContain('html`');
@@ -217,7 +211,7 @@ describe('lit front-end (format: lit)', () => {
     const code = babel.transformSync(
       'export const a = () => <div>jsx</div>;\nexport const b = () => html`<span>lit</span>`;',
       { filename: 't.tsx', configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] },
-        plugins: [[plugin, { backend: 'imperative', format: 'both', hoistStatics: false, signalModule: '@fluixi/dom' }]] },
+        plugins: [[plugin, { format: 'both', signalModule: '@fluixi/dom' }]] },
     )!.code!;
     // Both styles compiled. Asserted by what is *gone* rather than by which runtime
     // call replaced it, so the test does not break when codegen changes shape.

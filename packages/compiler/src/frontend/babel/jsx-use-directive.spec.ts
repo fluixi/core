@@ -16,10 +16,8 @@ import * as S from '@fluixi/reactive/signal';
  * runs, rather than asserting on emitted code — that is what the earlier tests missed.
  */
 const OPTIONS = {
-  backend: 'imperative' as const,
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
 
 const compile = (src: string, extra: Record<string, unknown> = {}) =>
@@ -110,6 +108,6 @@ describe('use: on the inline codegen path', () => {
     const src = 'import { tip } from "./directives";\nexport const v = (o) => <div use:tip={o} />;';
 
     expect(flat(compile(src))).toContain('use: [[tip, () => o]]');
-    expect(flat(compile(src, { codegen: 'ir' }))).toContain('use: [[tip, () => o]]');
+    expect(flat(compile(src))).toContain('use: [[tip, () => o]]');
   });
 });

@@ -7,20 +7,20 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
 
-// Differential hardening: run a broad set of JSX patterns through BOTH imperative
-// codegens (inline + ir), execute the output against the real @fluixi/dom runtime
-// in jsdom, and assert the produced DOM. Catches backend edge cases (spreads,
-// ref, style, fragments, control flow, SVG, …) before real apps do.
+// Behavioural hardening: run a broad set of JSX patterns through the compiler,
+// execute the output against the real @fluixi/dom runtime in jsdom, and assert
+// the produced DOM. Catches backend edge cases (spreads, ref, style, fragments,
+// control flow, SVG, …) before real apps do.
+//
+// This ran each fixture through two codegens while a second, inline lowering
+// existed alongside the IR pipeline. That lowering is gone — one path, one set of
+// semantics — so the fixtures now assert the only behaviour there is.
 
-const BASE = {
-  backend: 'imperative' as const,
+const OPTS = {
   importSource: '@fluixi/dom',
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
-const INLINE = { ...BASE };
-const IR = { ...BASE, codegen: 'ir' as const };
 
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
@@ -414,10 +414,8 @@ const FIXTURES: Fixture[] = [
   },
 ];
 
-for (const [label, opts] of [['inline', INLINE], ['ir', IR]] as const) {
-  describe(`imperative fixtures (${label})`, () => {
-    for (const fx of FIXTURES) {
-      it(fx.name, () => fx.run(load(fx.src, opts)));
-    }
-  });
-}
+describe('imperative fixtures', () => {
+  for (const fx of FIXTURES) {
+    it(fx.name, () => fx.run(load(fx.src, OPTS)));
+  }
+});

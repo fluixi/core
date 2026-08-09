@@ -26,8 +26,6 @@ export interface CompilerOptions {
 
   /** which codegen backend to use */
   backend?: 'imperative' | 'template-clone';
-  /** output target */
-  generate?: 'dom' | 'ssr' | 'hydrate';
   /** runtime module emitted symbols are imported from */
   moduleName?: string;
   delegateEvents?: boolean;
@@ -43,7 +41,6 @@ export interface CompilerOptions {
 
 export const defaultOptions: CompilerOptions = {
   backend: 'imperative',
-  generate: 'dom',
   moduleName: '@fluixi/dom',
   delegateEvents: true,
   hydratable: false,

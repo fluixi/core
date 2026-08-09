@@ -2,16 +2,15 @@
  * @fileoverview Bundler integrations for the Fluixi compiler.
  * @module @fluixi/compiler/integrations
  *
- * Build-tool adapters (vite/webpack/rollup/esbuild) plus the prop/template
- * analysis helpers that drive them. These wrap the babel front-end so a single
- * package owns all compile-time code. @fluixi/core re-exports
- * createVitePlugin from here.
+ * Build-tool adapters (vite/webpack/rollup/esbuild). Each one wires the same
+ * thing: parse with babel, run the Fluixi front-end (JSX and html`` both lower
+ * to the shared IR and the imperative backend), hand the result back to the
+ * bundler. @fluixi/core re-exports createVitePlugin from here.
  *
- * Helpers:
- * - Detecting reactive expressions
- * - Wrapping signals for optimal updates
- * - Template optimization
- * - Static vs dynamic prop detection
+ * Every adapter treats a missing @babel/core as a hard error. There is no
+ * degraded mode: source that was not compiled is source whose templates never
+ * became DOM calls, and a build that ships it looks successful right up until
+ * the page is opened.
  */
 
 // ============================================================================
@@ -45,22 +44,10 @@ export interface CompilerOptions {
   /** Also clone subtrees whose structure is static but which contain dynamic holes. */
   partialTemplates?: boolean;
   /**
-   * Whether to use lit-html templates when possible
-   * @default true
-   */
-  useLitHTML?: boolean;
-
-  /**
    * Whether to generate source maps
    * @default false
    */
   sourceMaps?: boolean;
-
-  /**
-   * Whether to enable aggressive optimizations
-   * @default true
-   */
-  optimize?: boolean;
 
   /**
    * Whether to delegate events
@@ -69,54 +56,23 @@ export interface CompilerOptions {
   delegateEvents?: boolean;
 
   /**
-   * Events to delegate (if delegateEvents is true)
-   * @default ['click', 'input', 'change', 'submit']
-   */
-  delegatedEvents?: string[];
-
-  /**
    * Whether to generate dev-mode code with additional checks
    * @default false
    */
   development?: boolean;
 
   /**
-   * Custom pragma for JSX
-   * @default 'jsx'
-   */
-  pragma?: string;
-
-  /**
-   * Custom pragma fragment
-   * @default 'Fragment'
-   */
-  pragmaFrag?: string;
-
-  /**
-   * Module to import JSX runtime from
+   * Where the JSX *types* come from, and the `jsxImportSource` handed to esbuild
+   * and TypeScript. The compiler never emits `jsx()` calls itself — this is for
+   * type resolution and for any JSX the Fluixi transform does not consume.
    * @default '@fluixi/jsx'
    */
   importSource?: string;
 
   /**
-   * Code-generation backend.
-   * - 'imperative': compile straight into @fluixi/dom runtime calls (default).
-   * - 'jsx': emit the automatic runtime jsx()/jsxs().
-   * @default 'imperative'
-   */
-  backend?: 'jsx' | 'imperative';
-
-  /**
-   * Imperative codegen path: 'inline' (plugin builds calls directly) or 'ir'
-   * (shared build-IR + backend emit() pipeline). Same output.
-   * @default 'inline'
-   */
-  codegen?: 'inline' | 'ir';
-
-  /**
-   * Authoring syntaxes to compile: 'jsx' (default), 'lit' (also compile
-   * `` html`...` `` templates through the shared IR pipeline), or 'both'.
-   * @default 'jsx'
+   * Authoring syntaxes to compile: 'jsx', 'lit' (only `` html`...` `` templates),
+   * or 'both' (default). Both lower to the same IR and the same backend.
+   * @default 'both'
    */
   format?: 'jsx' | 'lit' | 'both';
 
@@ -151,494 +107,6 @@ export interface CompilerOptions {
   reactiveModule?: string;
 }
 
-export interface TransformResult {
-  code: string;
-  map?: any;
-  metadata?: TransformMetadata;
-}
-
-export interface TransformMetadata {
-  hasSignals: boolean;
-  hasStores: boolean;
-  hasLitHTML: boolean;
-  staticProps: Set<string>;
-  dynamicProps: Set<string>;
-  components: Set<string>;
-}
-
-export interface PropAnalysis {
-  name: string;
-  isStatic: boolean;
-  isReactive: boolean;
-  isEvent: boolean;
-  isRef: boolean;
-  isSpread: boolean;
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const STATIC_PROPS = new Set(['key', 'ref', 'children']);
-
-const REACTIVE_PATTERNS = [
-  // Signal accessor patterns
-  /\(\)\s*=>/, // Arrow function
-  /function\s*\(\)/, // Function expression
-  /\w+\(\)/, // Function call that might be accessor
-
-  // Store patterns
-  /\w+\.\w+/, // Property access (might be store proxy)
-  /\w+\[.+\]/, // Bracket notation
-
-  // Reactive operators
-  /createSignal/,
-  /createStore/,
-  /createMemo/,
-  /createEffect/,
-];
-
-const EVENT_PATTERN = /^on[A-Z]/;
-
-// ============================================================================
-// Prop Analysis
-// ============================================================================
-
-/**
- * Analyze a prop to determine if it's static or dynamic
- */
-export function analyzeProp(name: string, value: any): PropAnalysis {
-  const analysis: PropAnalysis = {
-    name,
-    isStatic: true,
-    isReactive: false,
-    isEvent: EVENT_PATTERN.test(name),
-    isRef: name === 'ref',
-    isSpread: name.startsWith('...'),
-  };
-
-  // Static props are always static
-  if (STATIC_PROPS.has(name)) {
-    return analysis;
-  }
-
-  // Events and refs are handled specially
-  if (analysis.isEvent || analysis.isRef) {
-    analysis.isStatic = false;
-    return analysis;
-  }
-
-  // Check if value appears reactive
-  if (typeof value === 'string') {
-    const code = value;
-
-    // Check for reactive patterns
-    for (const pattern of REACTIVE_PATTERNS) {
-      if (pattern.test(code)) {
-        analysis.isStatic = false;
-        analysis.isReactive = true;
-        break;
-      }
-    }
-
-    // Check for template literals with expressions
-    if (code.includes('${')) {
-      analysis.isStatic = false;
-      analysis.isReactive = true;
-    }
-  } else if (typeof value === 'function') {
-    // Functions are potentially reactive
-    analysis.isStatic = false;
-    analysis.isReactive = true;
-  } else if (typeof value === 'object' && value !== null) {
-    // Objects might contain reactive values
-    analysis.isStatic = false;
-  }
-
-  return analysis;
-}
-
-/**
- * Analyze all props on an element
- */
-export function analyzeProps(
-  props: Record<string, any>
-): Map<string, PropAnalysis> {
-  const analyses = new Map<string, PropAnalysis>();
-
-  for (const [name, value] of Object.entries(props)) {
-    analyses.set(name, analyzeProp(name, value));
-  }
-
-  return analyses;
-}
-
-// ============================================================================
-// Template Detection
-// ============================================================================
-
-/**
- * Check if JSX should be compiled to lit-html template
- */
-export function shouldUseLitTemplate(
-  tag: string,
-  props: Record<string, any>,
-  children: any[]
-): boolean {
-  // Native elements can use lit-html
-  if (typeof tag !== 'string') {
-    return false;
-  }
-
-  // Check if all props are compatible with lit-html
-  const propAnalyses = analyzeProps(props);
-
-  for (const analysis of propAnalyses.values()) {
-    // Spread props require native JSX
-    if (analysis.isSpread) {
-      return false;
-    }
-
-    // Complex reactive props might be better in native JSX
-    if (analysis.isReactive && !analysis.isEvent) {
-      // Allow simple reactive bindings in lit-html
-      // but complex ones are better in native JSX
-    }
-  }
-
-  return true;
-}
-
-/**
- * Check if a value is a lit-html template
- */
-export function isLitTemplate(value: any): boolean {
-  return value && typeof value === 'object' && '_$litType$' in value;
-}
-
-// ============================================================================
-// Code Generation Helpers
-// ============================================================================
-
-/**
- * Generate code for creating an element
- */
-export function generateCreateElement(
-  tag: string,
-  props: Record<string, any>,
-  children: any[],
-  options: CompilerOptions = {}
-): string {
-  const isSVG = ['svg', 'path', 'circle', 'rect', 'g'].includes(tag);
-
-  // Generate props code
-  const propsCode = generatePropsCode(props, options);
-
-  // Generate children code
-  const childrenCode =
-    children.length > 0 ? `, ${generateChildrenCode(children)}` : '';
-
-  if (
-    options.useLitHTML !== false &&
-    shouldUseLitTemplate(tag, props, children)
-  ) {
-    return generateLitHTMLTemplate(tag, props, children, isSVG);
-  }
-
-  return `jsx('${tag}', ${propsCode}${childrenCode})`;
-}
-
-/**
- * Generate code for props object
- */
-export function generatePropsCode(
-  props: Record<string, any>,
-  options: CompilerOptions = {}
-): string {
-  if (Object.keys(props).length === 0) {
-    return '{}';
-  }
-
-  const propAnalyses = analyzeProps(props);
-  const entries: string[] = [];
-
-  for (const [name, value] of Object.entries(props)) {
-    const analysis = propAnalyses.get(name)!;
-
-    if (analysis.isReactive && !analysis.isStatic) {
-      // Wrap reactive values
-      entries.push(`${name}: () => ${value}`);
-    } else if (typeof value === 'string') {
-      entries.push(`${name}: "${value}"`);
-    } else if (typeof value === 'number' || typeof value === 'boolean') {
-      entries.push(`${name}: ${value}`);
-    } else {
-      entries.push(`${name}: ${value}`);
-    }
-  }
-
-  return `{ ${entries.join(', ')} }`;
-}
-
-/**
- * Generate code for children
- */
-export function generateChildrenCode(children: any[]): string {
-  if (children.length === 0) {
-    return 'undefined';
-  }
-
-  if (children.length === 1) {
-    return String(children[0]);
-  }
-
-  return `[${children.join(', ')}]`;
-}
-
-/**
- * Generate lit-html template code
- */
-export function generateLitHTMLTemplate(
-  tag: string,
-  props: Record<string, any>,
-  children: any[],
-  isSVG = false
-): string {
-  const templateFunc = isSVG ? 'svg' : 'html';
-
-  // Build template string
-  let template = `<${tag}`;
-  const values: string[] = [];
-
-  // Add props
-  for (const [name, value] of Object.entries(props)) {
-    if (name === 'children' || name === 'key' || name === 'ref') {
-      continue;
-    }
-
-    const analysis = analyzeProp(name, value);
-
-    if (analysis.isEvent) {
-      const eventName = name.slice(2).toLowerCase();
-      template += ` @${eventName}=\${${values.length}}`;
-      values.push(String(value));
-    } else if (analysis.isReactive) {
-      template += ` ${name}=\${${values.length}}`;
-      values.push(`signal(() => ${value})`);
-    } else if (typeof value === 'string') {
-      template += ` ${name}="${value}"`;
-    } else {
-      template += ` ${name}=\${${values.length}}`;
-      values.push(String(value));
-    }
-  }
-
-  template += '>';
-
-  // Add children
-  if (children.length > 0) {
-    for (const child of children) {
-      if (typeof child === 'string') {
-        template += child;
-      } else {
-        template += `\${${values.length}}`;
-        values.push(String(child));
-      }
-    }
-  }
-
-  template += `</${tag}>`;
-
-  // Generate template literal
-  return `${templateFunc}\`${template}\`${
-    values.length > 0 ? `, ${values.join(', ')}` : ''
-  }`;
-}
-
-// ============================================================================
-// Optimization Passes
-// ============================================================================
-
-/**
- * Optimize static content
- */
-export function optimizeStatic(code: string): string {
-  // Combine consecutive static strings
-  code = code.replace(
-    /jsx\('([^']+)',\s*{},\s*"([^"]+)"\s*\)/g,
-    (_, tag, text) => `_$staticNode('${tag}', '${text}')`
-  );
-
-  return code;
-}
-
-/**
- * Optimize prop spreads
- */
-export function optimizeSpreads(code: string): string {
-  // DISABLED: This string-based transformation was incorrectly transforming JSX spreads
-  // The babel plugin handles spread attributes properly using Object.assign
-  // This was causing spread(storeProxy) to be called instead of proper prop merging
-  return code;
-}
-
-/**
- * Hoist static elements
- */
-export function hoistStatic(code: string): string {
-  const hoisted: string[] = [];
-  let counter = 0;
-
-  // Find static JSX elements
-  code = code.replace(
-    /jsx\('([^']+)',\s*{([^}]*)},\s*([^)]*)\)/g,
-    (match, tag, props, children) => {
-      // Simple heuristic: if no reactive props, hoist
-      if (!props.includes('()') && !props.includes('=>')) {
-        const varName = `_$static${counter++}`;
-        hoisted.push(`const ${varName} = ${match};`);
-        return varName;
-      }
-      return match;
-    }
-  );
-
-  if (hoisted.length > 0) {
-    return hoisted.join('\n') + '\n' + code;
-  }
-
-  return code;
-}
-
-// ============================================================================
-// Event Delegation
-// ============================================================================
-
-/**
- * Generate event delegation setup
- */
-export function generateEventDelegation(
-  events: string[],
-  options: CompilerOptions = {}
-): string {
-  const delegatedEvents = options.delegatedEvents || [
-    'click',
-    'input',
-    'change',
-    'submit',
-  ];
-  const filtered = events.filter((e) =>
-    delegatedEvents.includes(e.toLowerCase())
-  );
-
-  if (filtered.length === 0) {
-    return '';
-  }
-
-  return `delegateEvents([${filtered.map((e) => `'${e}'`).join(', ')}]);`;
-}
-
-// ============================================================================
-// Transform Pipeline
-// ============================================================================
-
-/**
- * Transform JSX code with optimizations
- */
-export function transform(
-  code: string,
-  options: CompilerOptions = {}
-): TransformResult {
-  const metadata: TransformMetadata = {
-    hasSignals: /createSignal|signal\(/.test(code),
-    hasStores: /createStore|store\(/.test(code),
-    hasLitHTML: /html`|svg`/.test(code),
-    staticProps: new Set(),
-    dynamicProps: new Set(),
-    components: new Set(),
-  };
-
-  let transformed = code;
-
-  // Apply optimizations
-  if (options.optimize !== false) {
-    transformed = optimizeStatic(transformed);
-    // optimizeSpreads is disabled - babel plugin handles spreads correctly
-    // transformed = optimizeSpreads(transformed);
-    transformed = hoistStatic(transformed);
-  }
-
-  // Add event delegation if needed
-  if (options.delegateEvents !== false) {
-    const events = extractEvents(code);
-    const delegation = generateEventDelegation(events, options);
-    if (delegation) {
-      transformed = delegation + '\n' + transformed;
-    }
-  }
-
-  // Add imports if needed
-  transformed = addImports(transformed, metadata, options);
-
-  return {
-    code: transformed,
-    metadata,
-  };
-}
-
-/**
- * Extract event names from code
- */
-function extractEvents(code: string): string[] {
-  const events = new Set<string>();
-  const regex = /on([A-Z][a-z]+)/g;
-  let match;
-
-  while ((match = regex.exec(code)) !== null) {
-    events.add(match[1].toLowerCase());
-  }
-
-  return Array.from(events);
-}
-
-/**
- * Add necessary imports
- */
-function addImports(
-  code: string,
-  metadata: TransformMetadata,
-  options: CompilerOptions
-): string {
-  const imports: string[] = [];
-  const source = options.importSource || '@fluixi/jsx';
-
-  // Always import jsx basics
-  imports.push(`import { jsx, jsxs, Fragment, spread } from '${source}';`);
-
-  // Import signal directive if needed
-  if (metadata.hasSignals) {
-    imports.push(`import { signal } from '@fluixi/dom/reactive';`);
-  }
-
-  // Import control flow if used
-  if (
-    code.includes('<Show') ||
-    code.includes('<For') ||
-    code.includes('<Switch')
-  ) {
-    imports.push(
-      `import { Show, For, Index, Switch, Match } from '@fluixi/dom/control-flow';`
-    );
-  }
-
-  // Import event delegation if used
-  if (options.delegateEvents !== false) {
-    imports.push(`import { delegateEvents } from '@fluixi/dom/runtime';`);
-  }
-
-  return imports.join('\n') + '\n\n' + code;
-}
-
 // ============================================================================
 // Babel Plugin Helpers
 // ============================================================================
@@ -663,26 +131,9 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
     // Provide options mapping
     getOptions() {
       return {
-        runtime: 'automatic',
         importSource: options.importSource || '@fluixi/jsx',
-        pragma: options.pragma || 'jsx',
-        pragmaFrag: options.pragmaFrag || 'Fragment',
         development: options.development || false,
-        detectReactivity: true,
-        useLitHTML: options.useLitHTML !== false,
-        hoistStatics: options.optimize !== false,
         delegateEvents: options.delegateEvents !== false,
-        delegatedEvents: options.delegatedEvents || [
-          'click',
-          'input',
-          'change',
-          'submit',
-        ],
-        optimizeControlFlow: options.optimize !== false,
-        sourceMaps: options.sourceMaps !== false,
-        // Codegen backend selection (default 'imperative').
-        backend: options.backend || 'imperative',
-        ...(options.codegen ? { codegen: options.codegen } : {}),
         ...(options.format ? { format: options.format } : {}),
         // Forwarded explicitly: getOptions() is an allowlist, so an option missing
         // here is silently dropped rather than rejected.
@@ -789,26 +240,23 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       // Load babel plugin dynamically on first transform
       const babelPlugin = await createBabelPlugin(options);
       // Only process JSX/TSX files
-      // if (!/\.[jt]sx$/.test(id)) {
       if (!/\.(jsx|tsx|ts)$/i.test(id)) {
         return null;
       }
-
-      // console.log('[createVitePlugin] Transforming file:', id);
 
       try {
         // Use dynamic import instead of require for ESM compatibility
         const babel = await import('@babel/core').catch(() => null);
         if (!babel) {
-          // console.log('[createVitePlugin] Babel not found, using fallback');
-          // Fallback to simple transform
-          return {
-            code: transform(code, options).code,
-            map: null,
-          };
+          // No silent fallback. This front-end compiles through babel; without it
+          // there is no transform, and emitting the source unchanged would ship a
+          // build whose JSX and html`` templates were never compiled — a failure
+          // that looks exactly like success until the page is opened.
+          throw new Error(
+            `[fluixi] @babel/core is required to compile ${id} but could not be loaded. ` +
+              `Install it alongside @fluixi/compiler.`,
+          );
         }
-
-        // console.log('[createVitePlugin] Using babel transformation');
 
         const isTSX = /\.tsx$/.test(id);
         const isTS = /\.ts$/.test(id);
@@ -828,8 +276,8 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
                 isTSX: isTSX,
                 allExtensions: true,
                 // Important: preserve JSX so our plugin can transform it
-                jsxPragma: options.pragma || 'jsx',
-                jsxPragmaFrag: options.pragmaFrag || 'Fragment',
+                jsxPragma: 'jsx',
+                jsxPragmaFrag: 'Fragment',
                 onlyRemoveTypeImports: true,
               },
             ]);
@@ -864,17 +312,10 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
           map: result?.map,
         };
       } catch (e) {
-        console.error('Transform error:', e);
-        // Return fallback transform on error
-        try {
-          return {
-            code: transform(code, options).code,
-            map: null,
-          };
-        } catch (fallbackError) {
-          console.error('Fallback transform also failed:', fallbackError);
-          return null;
-        }
+        // Let it through to Vite. Swallowing a compile error here and returning
+        // half-transformed source turns a diagnosable failure into a mystery at
+        // runtime; the build should stop where the problem is.
+        throw e;
       }
     },
   } as T;
@@ -894,9 +335,7 @@ export function createWebpackLoader(options: CompilerOptions = {}) {
     const babelPlugin = await createBabelPlugin(options);
 
     if (!babel || !babelPlugin.plugin) {
-      // Fallback to simple transform
-      const result = transform(source, options);
-      callback(null, result.code);
+      callback(new Error('[fluixi] @babel/core is required to compile Fluixi sources.'));
       return;
     }
 
@@ -935,11 +374,7 @@ export function createRollupPlugin(options: CompilerOptions = {}) {
       try {
         const babel = tryRequire('@babel/core');
         if (!babel || !babelPlugin.plugin) {
-          const result = transform(code, options);
-          return {
-            code: result.code,
-            map: null,
-          };
+          throw new Error('[fluixi] @babel/core is required to compile Fluixi sources.');
         }
 
         const result = await babel.transformAsync(code, {
@@ -980,11 +415,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 
         try {
           if (!babel || !babelPlugin.plugin) {
-            const result = transform(source, options);
-            return {
-              contents: result.code,
-              loader: 'js',
-            };
+            throw new Error('[fluixi] @babel/core is required to compile Fluixi sources.');
           }
 
           const result = await babel.transformAsync(source, {
@@ -1094,28 +525,6 @@ export function serverFunctionsVitePlugin<T = any>(): T {
 }
 
 export default {
-  // Analysis
-  analyzeProp,
-  analyzeProps,
-  shouldUseLitTemplate,
-  isLitTemplate,
-
-  // Code generation
-  generateCreateElement,
-  generatePropsCode,
-  generateChildrenCode,
-  generateLitHTMLTemplate,
-
-  // Optimization
-  optimizeStatic,
-  optimizeSpreads,
-  hoistStatic,
-  generateEventDelegation,
-
-  // Transform
-  transform,
-
-  // Plugin creators
   createBabelPlugin,
   createTypeScriptTransformer,
   createVitePlugin,

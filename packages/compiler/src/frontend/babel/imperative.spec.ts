@@ -11,16 +11,14 @@ import * as Store from '@fluixi/reactive/store';
 // against the real @fluixi/dom runtime — not just that it type-checks.
 
 const IMPERATIVE = {
-  backend: 'imperative' as const,
   importSource: '@fluixi/dom',
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
 
-// The plugin can route the imperative backend through the shared IR pipeline
-// (build-ir + emit) instead of its inline codegen, selected via `codegen: 'ir'`.
-const IMPERATIVE_IR = { ...IMPERATIVE, codegen: 'ir' as const };
+// There is one path now: build IR, run the imperative backend. The alias is kept
+// so the tests written against the IR pipeline read as they did.
+const IMPERATIVE_IR = IMPERATIVE;
 
 /** Run only our plugin (ESM output) — for asserting codegen shape. */
 function compileEsm(src: string, options: Record<string, unknown> = IMPERATIVE): string {
@@ -90,7 +88,7 @@ describe('imperative backend codegen', () => {
     expect(code).not.toMatch(/children:\s*\(\(\) => \{/); // not an eager IIFE value
   });
 
-  it('emits an inline JSX component prop as a lazy getter (both codegens)', () => {
+  it('emits an inline JSX component prop as a lazy getter', () => {
     // <Suspense fallback={<div/>}> — the fallback must be a getter, not an eager IIFE built
     // when the props object is constructed. Eager construction walks the hydration cursor and
     // adopts the real server node, duplicating the tree on hydration. Inline AND IR must agree.
@@ -171,8 +169,7 @@ describe('imperative backend codegen', () => {
 // jsx runtime's applyProps).
 
 describe('multi-child reactive child (regression)', () => {
-  // A reactive expression child beside a sibling — exercised by BOTH codegen paths.
-  for (const [label, opts] of [['inline', IMPERATIVE], ['ir', IMPERATIVE_IR]] as const) {
+  for (const [label, opts] of [['imperative', IMPERATIVE]] as const) {
     it(`${label}: a reactive child beside a sibling stays reactive`, async () => {
       const mod = load(`export const render = (count) => <div><span class="sib">x</span>{count()}</div>;`, opts);
       await new Promise<void>((resolve, reject) => {
@@ -277,14 +274,16 @@ describe('ir: JSX nested in expressions (regression)', () => {
   });
 });
 
-describe('jsx backend (opt-in) is unchanged', () => {
-  it('still emits jsx()/jsxs() calls when backend: jsx', () => {
-    const code = compileEsm(
-      `export const r = (x) => <div id="a">{x()}</div>;`,
-      { backend: 'jsx', importSource: '@fluixi/jsx' },
-    );
-    expect(code).toMatch(/\bjsx\(/);
-    expect(code).not.toContain('createNativeElement');
+// The `backend: 'jsx'` option — emit jsx()/jsxs() and let the runtime interpret
+// them — was removed. Nothing selected it, and it was the last consumer of a
+// second lowering that duplicated every semantic the IR pipeline owns. What the
+// automatic runtime still serves is esbuild and TypeScript's jsxImportSource;
+// this compiler never emits a jsx() call.
+describe('there is no jsx-factory backend', () => {
+  it('compiles to runtime calls, never jsx()', () => {
+    const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`, IMPERATIVE);
+    expect(code).not.toMatch(/\bjsx\(/);
+    expect(code).toContain('insert');
   });
 });
 
