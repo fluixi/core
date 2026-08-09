@@ -10,7 +10,7 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "fluixi.config.mjs", "vite.config.ts"],
+  "include": ["src", "fluixi.config.mjs", "fluixi.d.ts", "vite.config.ts"],
   "references": [
     {
       "path": "../../packages/jsx"
