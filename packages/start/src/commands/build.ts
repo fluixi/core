@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { FluixiConfig } from '../config.js';
+import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
+import { ssrBuildOptions } from '../adapter.js';
 import { prerender } from './prerender.js';
 import { wordmark, step, done, c } from '../ui.js';
 
@@ -17,6 +18,8 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
   await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
   const { build: viteBuild } = await import('vite');
   const plugins = await fluixiPlugins(cfg);
+  // The deploy target decides whether the framework is bundled in or imported at runtime.
+  const ssr = ssrBuildOptions(cfg);
 
   process.stdout.write(`\n  ${wordmark()}  ${c.gray('building for production')}\n\n`);
 
@@ -32,11 +35,11 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
   // functions / middleware — so build it when the entry exists; a pure static SPA skips it.
   const serverEntrySrc = resolve(cfg.root, cfg.serverEntry);
   if (cfg.ssr || existsSync(serverEntrySrc)) {
-    step('server bundle');
+    step(`server bundle${bundleNote(cfg)}`);
     await viteBuild({
       root: cfg.root,
       plugins,
-      ssr: { noExternal: cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined },
+      ssr,
       build: {
         outDir: 'dist/server',
         ssr: serverEntrySrc,
@@ -54,7 +57,7 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
       root: cfg.root,
       plugins,
       logLevel: 'warn',
-      ssr: { noExternal: cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined },
+      ssr,
       build: {
         outDir: 'dist/server',
         ssr: middlewareSrc,
@@ -72,4 +75,11 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
   const ms = Date.now() - startedAt;
   process.stdout.write('\n');
   done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/client + dist/server')}\n`);
+}
+
+/** `server bundle (node · external)` — the output shape is not obvious from the file. */
+function bundleNote(cfg: ResolvedConfig): string {
+  const adapter = cfg.adapter;
+  if (!adapter?.bundle) return '';
+  return c.gray(` (${adapter.name} · ${adapter.bundle})`);
 }

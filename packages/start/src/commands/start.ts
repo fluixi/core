@@ -17,5 +17,17 @@ export async function start(config: FluixiConfig = {}): Promise<void> {
 
   const clientDir = resolve(cfg.root, 'dist/client');
   const handler = await createProdHandler(cfg);
-  await nodeAdapter.serve({ handler, cfg, clientDir });
+
+  // The configured adapter, or node when there is none. An adapter that returns
+  // `{ fetch }` has no process to run — its output is a module the platform imports —
+  // so say that instead of exiting as if the server had started.
+  const adapter = cfg.adapter ?? nodeAdapter;
+  const served = await adapter.serve({ handler, cfg, clientDir });
+  if (served && typeof served === 'object' && 'fetch' in served) {
+    console.log(
+      `  fluixi: the "${adapter.name}" adapter exports a fetch handler — there is no server ` +
+        `to start. Deploy dist/ and let the platform invoke it, or run \`fluixi start\` with ` +
+        `a filesystem adapter (nodeAdapter).`,
+    );
+  }
 }

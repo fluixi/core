@@ -27,7 +27,7 @@ export {
 } from './handler.js';
 export type { FetchHandler, RenderFn, StreamRenderFn, ServeNodeOptions } from './handler.js';
 // Deploy adapters: the portable prod handler + the node/web reference adapters.
-export { createProdHandler, nodeAdapter, webAdapter } from './adapter.js';
+export { createProdHandler, nodeAdapter, webAdapter, ssrBuildOptions } from './adapter.js';
 export type { Adapter, AdapterContext } from './adapter.js';
 // Request middleware — a `(request, next) => Response` chain run before render.
 export { defineMiddleware, composeMiddleware, normalizeMiddleware } from './middleware.js';

@@ -29,6 +29,11 @@
         "import": "./dist/config.js",
         "default": "./dist/config.js"
       },
+      "./adapter": {
+        "types": "./dist/adapter.d.ts",
+        "import": "./dist/adapter.js",
+        "default": "./dist/adapter.js"
+      },
       "./router": {
         "types": "./dist/router.d.ts",
         "import": "./dist/router.js",
@@ -104,6 +109,12 @@
       "import": "./dist/config.js",
       "default": "./dist/config.js"
     },
+    "./adapter": {
+      "development": "./src/adapter.ts",
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.js",
+      "default": "./dist/adapter.js"
+    },
     "./router": {
       "development": "./src/router.ts",
       "types": "./dist/router.d.ts",
@@ -159,7 +170,13 @@
     "@fluixi/dom": "workspace:*",
     "@fluixi/head": "workspace:*",
     "esbuild": "^0.27.1",
-    "@fluixi/compiler": "workspace:*"
+    "@fluixi/compiler": "workspace:*",
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5",
+    "@fluixi/vite-plugin": "workspace:*",
+    "vite-plugin-node-polyfills": "^0.25.0"
   },
   "peerDependencies": {
     "vite": "^5.0.0"
