@@ -61,17 +61,17 @@ const UNSET = Symbol();
 export type ResourceFetcherInfo<T> = { value: T | undefined; refetching: boolean };
 export function createResource<T>(
   fetcher: (k: true, info: ResourceFetcherInfo<T>) => T | Promise<T>,
-  options?: { initialValue?: T; name?: string },
+  options?: { initialValue?: T; name?: string; transport?: boolean },
 ): ResourceReturn<T>;
 export function createResource<T, S>(
   source: S | false | null | undefined | (() => S | false | null | undefined),
   fetcher: (k: S, info: ResourceFetcherInfo<T>) => T | Promise<T>,
-  options?: { initialValue?: T; name?: string },
+  options?: { initialValue?: T; name?: string; transport?: boolean },
 ): ResourceReturn<T>;
 export function createResource<T, S = true>(
   source: unknown,
   fetcherFn?: unknown,
-  options: { initialValue?: T; name?: string } = {},
+  options: { initialValue?: T; name?: string; transport?: boolean } = {},
 ): ResourceReturn<T> {
   let s: () => S;
   let fetcher: (v: S, info: { value: T | undefined; refetching: boolean }) => T | Promise<T>;
@@ -85,7 +85,17 @@ export function createResource<T, S = true>(
   }
 
   // SSR data transport: stable id; on the client seed from server-serialized value.
-  const ssrId = nextResourceId();
+  //
+  // `transport: false` opts out, and takes the id with it. The id is a position in
+  // a per-render sequence that the client re-derives by counting resources in the
+  // same order, so a resource that exists on one side and not the other shifts
+  // every id after it. `lazy()` is exactly that: on the server the first request
+  // for a route creates a resource for the module import and later requests find
+  // it cached and create none, so the page's own resource was r1 for the first
+  // visitor after a restart and r0 for everyone else — while the client, which
+  // preloads routes before hydrating, always said r0. Its value is a component
+  // function and was never transportable anyway.
+  const ssrId = options.transport === false ? undefined : nextResourceId();
   const seed = ssrId !== undefined ? getServerData(ssrId) : undefined;
   let skipFirstFetch = seed !== undefined;
 
