@@ -1069,7 +1069,9 @@ export function serverFunctionsVitePlugin<T = any>(): T {
       root = config.root || root;
     },
     resolveId(id: string) {
-      return id === SERVER_FNS_VMOD ? '\0' + SERVER_FNS_VMOD : null;
+      return id === SERVER_FNS_VMOD || id === '@fluixi/start/server-fns'
+        ? '\0' + SERVER_FNS_VMOD
+        : null;
     },
     load(id: string) {
       if (id !== '\0' + SERVER_FNS_VMOD) return null;

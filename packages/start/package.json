@@ -54,6 +54,16 @@
         "import": "./dist/di.js",
         "default": "./dist/di.js"
       },
+      "./server-fns": {
+        "types": "./dist/generated-server-fns.d.ts",
+        "import": "./dist/generated-server-fns.js",
+        "default": "./dist/generated-server-fns.js"
+      },
+      "./api-routes": {
+        "types": "./dist/generated-api.d.ts",
+        "import": "./dist/generated-api.js",
+        "default": "./dist/generated-api.js"
+      },
       "./api": {
         "types": "./dist/api.d.ts",
         "import": "./dist/api.js",
@@ -123,6 +133,18 @@
       "types": "./dist/di.d.ts",
       "import": "./dist/di.js",
       "default": "./dist/di.js"
+    },
+    "./server-fns": {
+      "development": "./src/generated-server-fns.ts",
+      "types": "./dist/generated-server-fns.d.ts",
+      "import": "./dist/generated-server-fns.js",
+      "default": "./dist/generated-server-fns.js"
+    },
+    "./api-routes": {
+      "development": "./src/generated-api.ts",
+      "types": "./dist/generated-api.d.ts",
+      "import": "./dist/generated-api.js",
+      "default": "./dist/generated-api.js"
     },
     "./api": {
       "development": "./src/api.ts",

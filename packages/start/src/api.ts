@@ -101,11 +101,17 @@ export function apiRoutesVitePlugin(opts: { dir: string; prefix?: string }): any
   const id = '\0' + API_VMOD;
   return {
     name: 'fluixi-api',
+    // Must beat node resolution: '@fluixi/start/api-routes' is a real file in this package,
+    // so without `pre` Vite resolves the typed stub and the generated table never loads —
+    // the app builds and every API route 404s.
+    enforce: 'pre' as const,
     configResolved(config: { root?: string }) {
       root = config.root || root;
     },
     resolveId(source: string) {
-      return source === API_VMOD ? id : null;
+      // The public specifier is a real module so its types ship with the package; both
+      // resolve to the generated table.
+      return source === API_VMOD || source === '@fluixi/start/api-routes' ? id : null;
     },
     load(source: string) {
       if (source !== id) return null;
