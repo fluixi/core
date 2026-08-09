@@ -135,6 +135,11 @@ export function serializeResourceData(ctx: RequestContext): string {
       }
     }
     if (out === undefined) continue; // redacted → omit (client refetches)
+    // A value JSON cannot represent is not data the client can be seeded with —
+    // JSON.stringify drops the key silently, so keeping it here only produces an
+    // entry that disappears later. A lazy route's resolved module is the common
+    // case: the resource holds the component function itself.
+    if (typeof out === 'function' || typeof out === 'symbol') continue;
     obj[k] = out;
   }
   if (Object.keys(obj).length === 0) return '';
@@ -142,6 +147,11 @@ export function serializeResourceData(ctx: RequestContext): string {
   // SSR-JSON set so no value can break out of the <script>. The client reads it via
   // getServerData() → JSON.parse(textContent).
   const json = escapeFxJson(JSON.stringify(obj));
+  // Decided on the serialized form, not on the map: the checks above catch the
+  // values we know about, and this catches the rest (a nested undefined, a class
+  // instance with a toJSON returning nothing). An empty payload still costs a
+  // script tag in every document that has no data to send.
+  if (json === '{}') return '';
   return `<script type="application/json" id="${FX_DATA_ID}">${json}</script>`;
 }
 
