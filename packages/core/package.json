@@ -47,7 +47,7 @@
         "require": "./dist/src/routes.cjs",
         "default": "./dist/src/routes.js"
       },
-    "./router-next": {
+      "./router-next": {
         "types": "./dist/src/lib/router-next/index.d.ts",
         "import": "./dist/src/lib/router-next/index.mjs",
         "require": "./dist/src/lib/router-next/index.cjs",
@@ -183,15 +183,12 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx": "workspace:*",
-    "@fluixi/vite-plugin": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/router": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/utils": "workspace:*",
-    "vite-plugin-node-polyfills": "^0.25.0",
     "@fluixi/head": "workspace:*"
   },
   "devDependencies": {
@@ -206,11 +203,30 @@
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vitest": "^1.0.0",
-    "execa": "^9.6.1"
+    "execa": "^9.6.1",
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/vite-plugin": "workspace:*",
+    "vite-plugin-node-polyfills": "^0.25.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/core"
+  },
+  "peerDependencies": {
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/vite-plugin": "workspace:*",
+    "vite-plugin-node-polyfills": "^0.25.0"
+  },
+  "peerDependenciesMeta": {
+    "@fluixi/compiler": {
+      "optional": true
+    },
+    "@fluixi/vite-plugin": {
+      "optional": true
+    },
+    "vite-plugin-node-polyfills": {
+      "optional": true
+    }
   }
 }

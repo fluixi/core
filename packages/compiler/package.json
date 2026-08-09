@@ -80,12 +80,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/generator": "^7.29.1",
-    "@babel/helper-plugin-utils": "^7.27.1",
-    "@fluixi/template-parser": "workspace:*",
-    "@babel/preset-typescript": "^7.28.5",
-    "@babel/types": "^7.28.5"
+    "@fluixi/template-parser": "workspace:*"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.28.5",
@@ -98,6 +93,30 @@
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2",
     "jsdom": "^25.0.0",
-    "vitest": "^1.6.1"
+    "vitest": "^1.6.1",
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5"
+  },
+  "peerDependenciesMeta": {
+    "@babel/core": {
+      "optional": true
+    },
+    "@babel/generator": {
+      "optional": true
+    },
+    "@babel/helper-plugin-utils": {
+      "optional": true
+    },
+    "@babel/preset-typescript": {
+      "optional": true
+    }
   }
 }

@@ -43,7 +43,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*"
+    "@fluixi/compiler": "workspace:*",
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5"
   },
   "peerDependencies": {
     "vite": ">=4"
