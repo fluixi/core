@@ -28,6 +28,8 @@ import type {
   IRProp,
   IRPropKind,
 } from '../../ir/nodes.js';
+import { isReactiveShape, type ExprShape } from '../../analyze/reactive-expr.js';
+import { cleanTemplateText } from '../../lower/text.js';
 
 // @babel/generator's ESM/CJS interop default (its types aren't callable under nodenext).
 const generate: any = (_generate as any).default ?? (_generate as any);
@@ -111,41 +113,60 @@ function attrName(name: t.JSXAttribute['name']): string {
 }
 
 /**
- * Reactivity heuristic, aligned with the babel transform: calls and member
- * accesses (e.g. `count()`, `store.value`) are wired reactively; bare
- * identifiers and literals are passed through as-is.
+ * Babel AST -> ExprShape. This is the whole of what the Babel front-end knows
+ * about reactivity: which syntax maps to which shape. The rule itself —
+ * what makes a shape reactive — is in ../../analyze/reactive-expr.ts, so it
+ * holds for any front-end and can be read without knowing Babel.
  */
-export function isReactiveExpr(node: t.Expression): boolean {
-  if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) return true;
+export function exprShape(node: t.Expression): ExprShape {
+  if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) return { kind: 'call' };
+
   if (t.isMemberExpression(node) || t.isOptionalMemberExpression(node)) {
-    // `props.children` (any `.children` access) is a stable subtree reference,
-    // not a reactive value. Compiling it to a `() => props.children` thunk adds
-    // an insert layer that fully unwraps the children's Suspense/memo to a static
-    // node, severing the reactive binding — so a nested lazy/Suspense that
-    // resolves later never propagates up through the component-children hop.
-    // Passing it through non-reactive (insert(el, props.children)) keeps the
-    // child's memo intact so insert binds to it (mirrors a direct <Outlet/>).
-    if (!node.computed && t.isIdentifier(node.property, { name: 'children' })) return false;
-    return true;
+    // A computed access (`obj[key]`) has no static name to match against.
+    const property =
+      !node.computed && t.isIdentifier(node.property) ? node.property.name : null;
+    return { kind: 'member', property };
   }
+
   if (t.isConditionalExpression(node)) {
-    return isReactiveExpr(node.test) || isReactiveExpr(node.consequent) || isReactiveExpr(node.alternate);
+    return { kind: 'compound', parts: [node.test, node.consequent, node.alternate].map(exprShape) };
   }
   if (t.isLogicalExpression(node) || t.isBinaryExpression(node)) {
-    return isReactiveExpr(node.left as t.Expression) || isReactiveExpr(node.right as t.Expression);
+    return { kind: 'compound', parts: [node.left as t.Expression, node.right].map(exprShape) };
   }
-  if (t.isTemplateLiteral(node)) return node.expressions.some((e) => isReactiveExpr(e as t.Expression));
+  if (t.isTemplateLiteral(node)) {
+    return { kind: 'compound', parts: node.expressions.map((e) => exprShape(e as t.Expression)) };
+  }
   // Object/array literals are reactive when any value inside is — so
   // `class=${{ active: active() }}` / `style=${{ width: w() }}` react per update.
+  // A computed key or a spread contributes nothing: the compiler cannot see
+  // which values it would introduce, so it must not claim they are inert.
   if (t.isObjectExpression(node)) {
-    return node.properties.some(
-      (p) => t.isObjectProperty(p) && !p.computed && isReactiveExpr(p.value as t.Expression),
-    );
+    return {
+      kind: 'compound',
+      parts: node.properties
+        .filter((p): p is t.ObjectProperty => t.isObjectProperty(p) && !p.computed)
+        .map((p) => exprShape(p.value as t.Expression)),
+    };
   }
   if (t.isArrayExpression(node)) {
-    return node.elements.some((e) => e != null && !t.isSpreadElement(e) && isReactiveExpr(e as t.Expression));
+    return {
+      kind: 'compound',
+      parts: node.elements
+        .filter((e): e is t.Expression => e != null && !t.isSpreadElement(e))
+        .map(exprShape),
+    };
   }
-  return false;
+  return { kind: 'opaque' };
+}
+
+/**
+ * Whether this expression must be wired reactively — calls and member accesses
+ * (`count()`, `store.value`) are; bare identifiers and literals are passed
+ * through as-is.
+ */
+export function isReactiveExpr(node: t.Expression): boolean {
+  return isReactiveShape(exprShape(node));
 }
 
 function buildAttr(attr: t.JSXAttribute, used: Set<string>): IRProp {
@@ -237,25 +258,6 @@ function buildProps(
   return props;
 }
 
-/** Canonical JSX text cleaning — kept identical to plugin.ts cleanJSXText. */
-export function cleanJSXText(value: string): string {
-  const lines = value.split(/\r\n|\n|\r/);
-  let lastNonEmpty = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (/[^ \t]/.test(lines[i])) lastNonEmpty = i;
-  }
-  let out = '';
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].replace(/\t/g, ' ');
-    if (i !== 0) line = line.replace(/^ +/, '');
-    if (i !== lines.length - 1) line = line.replace(/ +$/, '');
-    if (!line) continue;
-    if (i !== lastNonEmpty) line += ' ';
-    out += line;
-  }
-  return out;
-}
-
 function buildChildren(children: t.JSXElement['children'], used: Set<string>): IRNode[] {
   const out: IRNode[] = [];
   for (const child of children) {
@@ -263,7 +265,7 @@ function buildChildren(children: t.JSXElement['children'], used: Set<string>): I
       // Canonical JSX whitespace (kept in sync with plugin.ts cleanJSXText):
       // drop whitespace-only text spanning a newline so a lone child stays lone
       // (an array insert won't reactively bind a memo/component inside it).
-      const text = cleanJSXText(child.value);
+      const text = cleanTemplateText(child.value);
       if (text) out.push({ kind: 'text', value: text });
     } else if (t.isJSXExpressionContainer(child)) {
       if (!t.isJSXEmptyExpression(child.expression)) {
