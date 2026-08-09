@@ -104,11 +104,9 @@ const REQUIRE_MAP: Record<string, unknown> = {
 
 function load(src: string): any {
   const opts = {
-    backend: 'imperative' as const,
     importSource: '@fluixi/dom',
     signalModule: '@fluixi/dom',
     controlFlowModule: '@fluixi/dom',
-    hoistStatics: false,
   };
   const step1 = babel.transformSync(src, {
     filename: 't.tsx',

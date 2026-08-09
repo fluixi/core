@@ -58,7 +58,7 @@ const REQUIRE_MAP: Record<string, unknown> = {
 };
 
 function load(src: string): any {
-  const opts = { backend: 'imperative' as const, importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom', hoistStatics: false };
+  const opts = { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
   const step1 = babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[imperativePlugin as any, opts]] })!.code!;
   const code = babel.transformSync(step1, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsTransform] })!.code!;
   const m = { exports: {} as any };

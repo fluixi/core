@@ -77,7 +77,7 @@ const SRC = `
   }
 `;
 
-const VITE_OPTS = { backend: 'imperative' as const, importSource: '@fluixi/jsx', hoistStatics: true, optimizeControlFlow: true, signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
+const VITE_OPTS = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
 
 async function run(opts: any): Promise<string[]> {
   const { App } = load(SRC, opts);
@@ -87,11 +87,11 @@ async function run(opts: any): Promise<string[]> {
   return [...document.querySelectorAll('.v')].map((e) => e.getAttribute('data-v')!).sort();
 }
 
+// This compared two option sets (hoistStatics/optimizeControlFlow on and off)
+// back when they selected between two lowerings. Both options are gone with the
+// inline path, so there is one compilation to assert.
 describe('direct Provider element + Portal/Show + props.children', () => {
-  it('vite opts (hoist + optimizeControlFlow)', async () => {
+  it('each Provider owns its own consumer', async () => {
     expect(await run(VITE_OPTS)).toEqual(['A', 'B']);
-  });
-  it('no optimize', async () => {
-    expect(await run({ ...VITE_OPTS, hoistStatics: false, optimizeControlFlow: false })).toEqual(['A', 'B']);
   });
 });

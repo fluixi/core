@@ -7,9 +7,9 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
 /**
- * `ref` must reach the runtime as the function itself, on BOTH codegen paths.
+ * `ref` must reach the runtime as the function itself.
  *
- * The IR path used to treat `ref={mergeRefs(a, b)}` as a reactive expression — a call
+ * The compiler used to treat `ref={mergeRefs(a, b)}` as a reactive expression — a call
  * expression, so wrap it — and emitted `ref: () => mergeRefs(a, b)`. The runtime calls
  * `ref(element)`, so it invoked the thunk instead: the real callback never saw the
  * element, and everything hanging off that reference (press state, forwarded refs,
@@ -18,16 +18,16 @@ import * as S from '@fluixi/reactive/signal';
  * Asserted by running the callback rather than by matching emitted code, because the
  * emitted shape was plausible — it was the behaviour that was wrong.
  */
-const compile = (src: string, codegen: 'inline' | 'ir') =>
+const compile = (src: string) =>
   babel.transformSync(src, {
     filename: 't.tsx',
     configFile: false,
     babelrc: false,
-    plugins: [[plugin, { backend: 'imperative', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom', hoistStatics: false, codegen }]],
+    plugins: [[plugin, { signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' }]],
   })!.code!;
 
-function load(src: string, codegen: 'inline' | 'ir', scope: Record<string, unknown>) {
-  const cjs = babel.transformSync(compile(src, codegen), {
+function load(src: string, scope: Record<string, unknown>) {
+  const cjs = babel.transformSync(compile(src), {
     filename: 't.js', configFile: false, babelrc: false, plugins: [cjsPlugin],
   })!.code!;
   const m = { exports: {} as any };
@@ -45,7 +45,7 @@ beforeAll(() => {
   DOM.registerCreateComponent(((C: any, p: any) => C(p)) as any);
 });
 
-describe.each(['inline', 'ir'] as const)('ref on the %s codegen', (codegen) => {
+describe('ref', () => {
   it('passes the element to a call-expression ref', () => {
     let seen: unknown;
     const mergeRefs = (fn: (el: Element) => void) => fn;
@@ -54,7 +54,6 @@ describe.each(['inline', 'ir'] as const)('ref on the %s codegen', (codegen) => {
       load(
         'import { mergeRefs } from "./helpers";\n' +
           'export const V = (set) => <button ref={mergeRefs(set)}>hi</button>;',
-        codegen,
         { mergeRefs },
       ).V((el: Element) => (seen = el));
     });
@@ -66,7 +65,7 @@ describe.each(['inline', 'ir'] as const)('ref on the %s codegen', (codegen) => {
     let seen: unknown;
 
     S.createRoot(() => {
-      load('export const V = (set) => <button ref={set}>hi</button>;', codegen, {}).V(
+      load('export const V = (set) => <button ref={set}>hi</button>;', {}).V(
         (el: Element) => (seen = el),
       );
     });

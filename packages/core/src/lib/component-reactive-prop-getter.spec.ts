@@ -39,7 +39,7 @@ function cjsTransform({ types: t }: any): any {
 
 const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi };
 function load(src: string): any {
-  const opts = { backend: 'imperative' as const, importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom', hoistStatics: true, optimizeControlFlow: true };
+  const opts = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
   const step1 = babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[imperativePlugin as any, opts]] })!.code!;
   const code = babel.transformSync(step1, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsTransform] })!.code!;
   const m = { exports: {} as any };

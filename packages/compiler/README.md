@@ -4,7 +4,7 @@
 
 # @fluixi/compiler
 
-**The Fluixi JSX compiler — host-agnostic IR + pluggable codegen backends.**
+**The Fluixi compiler — host-agnostic IR + pluggable codegen backends.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -14,13 +14,16 @@
 
 ## ✨ Overview
 
-`@fluixi/compiler` turns Fluixi JSX into fine-grained reactive output. A **Babel
-front-end** parses source into a host-agnostic IR; a **codegen backend** emits the result:
+`@fluixi/compiler` turns Fluixi source into fine-grained reactive output. Both authoring
+syntaxes — JSX and `` html`...` `` templates — lower to the **same host-agnostic IR**, and
+the **imperative backend** compiles that straight into [`@fluixi/dom`](../dom) runtime
+calls (`createNativeElement`/`spread`/`insert`/`createComponent`/…). No VDOM, and no
+`jsx()` dispatch at runtime.
 
-- **`imperative`** (default) — compiles straight into [`@fluixi/dom`](../dom) runtime
-  calls (`createNativeElement`/`spread`/`insert`/`createComponent`/…). No VDOM.
-- **`jsx`** — emits the automatic runtime `jsx()`/`jsxs()` (the [`@fluixi/jsx`](../jsx)
-  runtime).
+Only the front-end knows about Babel. The IR, the resolve and optimize passes, and codegen
+import none of it — importing `@fluixi/compiler` loads no Babel code. The `@fluixi/jsx`
+automatic runtime is still what esbuild and TypeScript's `jsxImportSource` point at; this
+compiler simply never emits a call into it.
 
 It also provides the **`"use server"`** transform (server functions): the client build
 gets an RPC stub, the server build keeps and registers the body.
@@ -45,25 +48,24 @@ import { createVitePlugin, serverFunctionsVitePlugin } from '@fluixi/compiler/in
 export default defineConfig({
   plugins: [
     serverFunctionsVitePlugin(),          // "use server" transform
-    createVitePlugin({ backend: 'imperative' }),
+    createVitePlugin(),
   ],
 });
 ```
 
-Or transform a string directly:
-
-```ts
-import { transform } from '@fluixi/compiler';
-const { code } = transform(source, { backend: 'imperative' });
-```
+There is no string-in/string-out entry point yet: compilation runs as a Babel plugin, via
+one of the integrations above or `@fluixi/compiler/babel` directly. A native `compile()`
+that skips the host round-trip is the next step — the IR and codegen it would call are
+already in place and Babel-free.
 
 ## 🔌 Subpaths
 
-| Import | What |
-| --- | --- |
-| `@fluixi/compiler` | `transform()` + the compile pipeline |
-| `@fluixi/compiler/integrations` | `createVitePlugin`, `serverFunctionsVitePlugin`, webpack/rollup/esbuild adapters |
-| `@fluixi/compiler/babel` | the Babel plugin front-end |
+| Import | What | Loads Babel |
+| --- | --- | --- |
+| `@fluixi/compiler` | IR, codegen backends, resolve/optimize passes, options | no |
+| `@fluixi/compiler/builtins` | the control-flow / router component names | no |
+| `@fluixi/compiler/integrations` | `createVitePlugin`, `serverFunctionsVitePlugin`, webpack/rollup/esbuild adapters | yes |
+| `@fluixi/compiler/babel` | the Babel plugin front-end | yes |
 
 ## 📄 License
 

@@ -14,11 +14,9 @@ import * as Store from '@fluixi/reactive/store';
  * in a real build, then run against the live @fluixi/dom runtime.
  */
 const LIT = {
-  backend: 'imperative' as const,
   format: 'lit' as const,
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
-  hoistStatics: false,
 };
 
 const compileEsm = (src: string) =>
