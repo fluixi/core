@@ -24,8 +24,8 @@ export function renderStream(url: string): ReadableStream<Uint8Array> {
 
 // Server-function RPC dispatch — re-exported so the dispatcher shares the registry that
 // this app's `"use server"` modules populate. @fluixi/start routes RPC calls here.
-import 'virtual:fluixi-server-fns'; // registers every "use server" module (incl. lazy routes)
+import '@fluixi/start/server-fns'; // registers every "use server" module (incl. lazy routes)
 export { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn';
 
 // File-based API routes (src/api/**) — re-exported so prod (fluixi start) dispatches them.
-export { isApiRequest, handleApiRequest } from 'virtual:fluixi-api';
+export { isApiRequest, handleApiRequest } from '@fluixi/start/api-routes';
