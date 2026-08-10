@@ -518,7 +518,7 @@ function findServerFnModules(dir: string, out: string[] = []): string[] {
  * register only when their chunk loads → an RPC registry miss). The client never imports
  * it. `enforce:'pre'` so it runs on the raw source before other transforms.
  */
-export function serverFunctionsVitePlugin<T = any>(): T {
+export function serverFunctionsVitePlugin<T = any>(options: { native?: boolean } = {}): T {
   let root = process.cwd();
   return {
     name: 'fluixi-server-functions',
@@ -543,10 +543,15 @@ export function serverFunctionsVitePlugin<T = any>(): T {
       const dispatcher = `\nexport { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn';\n`;
       return setup + imports + dispatcher;
     },
-    transform(code: string, id: string, opts?: { ssr?: boolean }) {
+    async transform(code: string, id: string, opts?: { ssr?: boolean }) {
       if (!/\.[jt]sx?$/.test(id)) return null;
       if (!code.includes('use server')) return null;
-      return _txServerFns(code, { ssr: !!opts?.ssr, filename: id, root });
+      const args = { ssr: !!opts?.ssr, filename: id, root };
+      if (options.native) {
+        const { transformServerFns } = await import('./transform/server-fns.js');
+        return transformServerFns(code, args);
+      }
+      return _txServerFns(code, args);
     },
   } as T;
 }
