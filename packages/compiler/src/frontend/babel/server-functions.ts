@@ -13,15 +13,9 @@
  * builds (same source, same order) so client stub and server registration agree.
  */
 import { transformSync } from '@babel/core';
+import { serverFnId } from '../../transform/server-fn-id.js';
 
 const RUNTIME = '@fluixi/start/server-fn';
-
-// djb2 — tiny, stable, dependency-free. Hex, so the id is a valid identifier suffix.
-function hash(s: string): string {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
-  return (h >>> 0).toString(16);
-}
 
 function serverFunctionsBabelPlugin({ types: t }: any) {
   return {
@@ -54,11 +48,11 @@ function serverFunctionsBabelPlugin({ types: t }: any) {
         if (di < 0) return;
         body.directives.splice(di, 1); // strip the directive
 
-        const rel = (state.opts.filename || state.filename || 'unknown').replace(
-          state.opts.root ? state.opts.root + '/' : '',
-          '',
+        const id = serverFnId(
+          state.opts.filename || state.filename || 'unknown',
+          state.opts.root,
+          state.fxIndex++,
         );
-        const id = `${hash(rel)}:${state.fxIndex++}`;
         const ssr = !!state.opts.ssr;
         const helper = ssr ? '$$registerServerFn' : '$$createServerReference';
         state.fxUsed = helper;
