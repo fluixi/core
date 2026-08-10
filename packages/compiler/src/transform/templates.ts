@@ -105,10 +105,22 @@ function isTemplateTag(node: Node, litTag: string): boolean {
   );
 }
 
-/** Apply edits that fall inside [start, end) to that slice of the source. */
+/** The edits in `list` that no other edit in `list` contains. */
+function outermost(list: Edit[]): Edit[] {
+  return list.filter(
+    (e) => !list.some((o) => o !== e && o.start <= e.start && o.end >= e.end && o.end - o.start > e.end - e.start),
+  );
+}
+
+/**
+ * Apply edits to a slice of the source.
+ *
+ * Only the outermost ones: a contained edit was already folded into its
+ * container's emitted code, and applying both would splice it twice — the second
+ * write landing at an offset the first has already moved.
+ */
 function slice(code: string, start: number, end: number, edits: Edit[]): string {
-  const inside = edits
-    .filter((e) => e.start >= start && e.end <= end)
+  const inside = outermost(edits.filter((e) => e.start >= start && e.end <= end))
     .sort((a, b) => b.start - a.start);
   let out = code.slice(start, end);
   for (const e of inside) out = out.slice(0, e.start - start) + e.code + out.slice(e.end - start);
@@ -248,12 +260,8 @@ export function transformTemplates(
   }
 
   const out = new MagicString(code);
-  // Only the outermost edits are applied to the file: a nested one was already
-  // folded into its parent's emitted code.
-  const outermost = edits.filter(
-    (e) => !edits.some((o) => o !== e && o.start <= e.start && o.end >= e.end && o.end - o.start > e.end - e.start),
-  );
-  for (const e of outermost) out.overwrite(e.start, e.end, e.code);
+  // Same reason as in `slice`: a nested edit is already inside its parent's code.
+  for (const e of outermost(edits)) out.overwrite(e.start, e.end, e.code);
 
   const bound = moduleBindings(ast.program);
   const prologue = buildPrologue(used, needs, bound, options);
