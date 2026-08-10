@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
@@ -72,9 +73,68 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     await prerender(config);
   }
 
+  // The deploy target's own output layout — a worker entry, a function manifest, a
+  // routing config. Last, so everything it wraps or copies already exists.
+  if (cfg.adapter?.build) {
+    step(`${cfg.adapter.name} output`);
+    await cfg.adapter.build({
+      cfg,
+      root: cfg.root,
+      clientDir: resolve(cfg.root, 'dist/client'),
+      serverDir: resolve(cfg.root, 'dist/server'),
+      hasServer: existsSync(resolve(cfg.root, 'dist/server', 'entry-server.js')),
+      bundleEntry: (source, outFile) => bundleEntry(cfg, plugins, source, outFile),
+    });
+  }
+
   const ms = Date.now() - startedAt;
   process.stdout.write('\n');
   done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/client + dist/server')}\n`);
+}
+
+/**
+ * Bundle a generated platform entry into one self-contained file.
+ *
+ * The entry is written next to its output so a relative import of the server bundle
+ * resolves, then removed — a stray `.fluixi-entry.js` in dist would be served as a
+ * static asset on every one of these platforms.
+ */
+async function bundleEntry(
+  cfg: ResolvedConfig,
+  plugins: unknown[],
+  source: string,
+  outFile: string,
+): Promise<void> {
+  const { build: viteBuild } = await import('vite');
+  const dir = dirname(outFile);
+  const temp = join(dir, `.fluixi-entry-${Date.now()}.js`);
+  await mkdir(dir, { recursive: true });
+  await writeFile(temp, source);
+  try {
+    await viteBuild({
+      root: cfg.root,
+      plugins: plugins as never,
+      logLevel: 'warn',
+      // Nothing may be left to resolve: these run as an uploaded file, not an install.
+      ssr: { noExternal: true },
+      build: {
+        outDir: dir,
+        emptyOutDir: false,
+        ssr: temp,
+        rollupOptions: {
+          output: {
+            entryFileNames: basename(outFile),
+            // One file, no chunks. A lazy route would otherwise be split out beside
+            // the entry — and for Cloudflare that directory is the published one, so
+            // every server chunk would be a public download.
+            inlineDynamicImports: true,
+          },
+        },
+      },
+    });
+  } finally {
+    await rm(temp, { force: true });
+  }
 }
 
 /** `server bundle (node · external)` — the output shape is not obvious from the file. */

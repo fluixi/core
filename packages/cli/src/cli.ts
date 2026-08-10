@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { loadConfig, dev, build, start } from '@fluixi/start';
+import { loadConfig } from '@fluixi/start';
+import { dev, build, start } from '@fluixi/start/commands';
 import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
 

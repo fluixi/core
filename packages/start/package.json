@@ -73,6 +73,16 @@
         "types": "./dist/api.d.ts",
         "import": "./dist/api.js",
         "default": "./dist/api.js"
+      },
+      "./handler-core": {
+        "types": "./dist/handler-core.d.ts",
+        "import": "./dist/handler-core.js",
+        "default": "./dist/handler-core.js"
+      },
+      "./commands": {
+        "types": "./dist/commands/index.d.ts",
+        "import": "./dist/commands/index.js",
+        "default": "./dist/commands/index.js"
       }
     }
   },
@@ -162,6 +172,18 @@
       "types": "./dist/api.d.ts",
       "import": "./dist/api.js",
       "default": "./dist/api.js"
+    },
+    "./handler-core": {
+      "development": "./src/handler-core.ts",
+      "types": "./dist/handler-core.d.ts",
+      "import": "./dist/handler-core.js",
+      "default": "./dist/handler-core.js"
+    },
+    "./commands": {
+      "development": "./src/commands/index.ts",
+      "types": "./dist/commands/index.d.ts",
+      "import": "./dist/commands/index.js",
+      "default": "./dist/commands/index.js"
     }
   },
   "dependencies": {
