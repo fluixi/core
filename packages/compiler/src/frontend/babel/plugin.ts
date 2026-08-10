@@ -589,7 +589,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   // `used` collects runtime symbols emitted for JSX nested inside expressions
   // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
   const used = new Set<string>();
-  const ir = buildIR(node, used);
+  const ir = buildIR(node, used, state.delegatedEvents);
   // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped
   // resolution entirely — a resolved tag compiled to a reference with no import.
   resolveComponentSources(ir, {
@@ -651,7 +651,7 @@ function dedupeImports(imports: t.ImportDeclaration[]): t.ImportDeclaration[] {
 function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
   const used = new Set<string>();
   const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
-  const ir = buildIRFromLit(node, used, { svg });
+  const ir = buildIRFromLit(node, used, { svg, events: state.delegatedEvents });
   // Resolve pass: annotate each component reference with where it comes from, before
   // codegen. Bindings are not checked here — Program.exit knows the whole file's scope
   // and drops any injected import whose name turns out to be bound.
