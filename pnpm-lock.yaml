@@ -435,9 +435,15 @@ importers:
 
   packages/compiler:
     dependencies:
+      '@babel/parser':
+        specifier: ^7.28.5
+        version: 7.29.7
       '@fluixi/template-parser':
         specifier: workspace:*
         version: link:../template-parser
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
     devDependencies:
       '@babel/core':
         specifier: ^7.28.5

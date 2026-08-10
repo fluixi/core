@@ -71,6 +71,13 @@
       "import": "./dist/resolve/builtins.mjs",
       "require": "./dist/resolve/builtins.cjs",
       "default": "./dist/resolve/builtins.js"
+    },
+    "./transform": {
+      "development": "./src/transform/index.ts",
+      "types": "./dist/transform/index.d.ts",
+      "import": "./dist/transform/index.mjs",
+      "require": "./dist/transform/index.cjs",
+      "default": "./dist/transform/index.js"
     }
   },
   "scripts": {
@@ -80,7 +87,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/template-parser": "workspace:*"
+    "@fluixi/template-parser": "workspace:*",
+    "@babel/parser": "^7.28.5",
+    "magic-string": "^0.30.21"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.28.5",
