@@ -11,7 +11,8 @@ import MagicString from 'magic-string';
 import type { Piece } from '@fluixi/template-parser';
 import { compilePieces, type CompileTemplateOptions } from '../lower/compile-template.js';
 import type { TemplateHole } from '../lower/template.js';
-import type { IRNode } from '../ir/nodes.js';
+import type { IRComponentSource, IRLoadStrategy, IRNode } from '../ir/nodes.js';
+import { isDeferred } from '../resolve/load-directive.js';
 import { isReactiveShape } from '../analyze/reactive-expr.js';
 import { shapeOf } from '../analyze/expr-shape.js';
 import { buildJsxIR } from '../lower/jsx.js';
@@ -54,27 +55,46 @@ export interface TransformResult {
 const CONTROL_FLOW = new Set([
   'Show', 'For', 'Index', 'Switch', 'Match', 'Dynamic', 'ErrorBoundary', 'Portal', 'Suspense',
 ]);
+const CORE_ONLY = new Set(['Suspense', 'SuspenseList', 'Portal', 'ErrorBoundary']);
+const ROUTER = new Set(['Router', 'Outlet', 'Link', 'Form', 'Navigate']);
 const REACTIVE = new Set([
   'createMemo', 'createEffect', 'createRenderEffect', 'createRoot',
   'createSignal', 'onCleanup', 'batch', 'untrack',
 ]);
 
-/** Depth-first walk over a parsed module. */
-function walk(node: any, visit: (n: Node) => void): void {
+/** Depth-first walk, carrying the parent and the field the node came from. */
+function walk(
+  node: any,
+  visit: (n: Node, parent: Node | null, key: string) => void,
+  parent: Node | null = null,
+  key = '',
+): void {
   if (!node || typeof node !== 'object') return;
   if (Array.isArray(node)) {
-    for (const child of node) walk(child, visit);
+    for (const child of node) walk(child, visit, parent, key);
     return;
   }
-  if (typeof node.type === 'string') visit(node as Node);
-  for (const key of Object.keys(node)) {
-    if (key === 'loc' || key === 'leadingComments' || key === 'trailingComments') continue;
-    walk(node[key], visit);
+  if (typeof node.type === 'string') visit(node as Node, parent, key);
+  for (const k of Object.keys(node)) {
+    if (k === 'loc' || k === 'leadingComments' || k === 'trailingComments') continue;
+    walk(node[k], visit, typeof node.type === 'string' ? (node as Node) : parent, k);
   }
 }
 
-function isJsxRoot(node: Node): boolean {
-  return node.type === 'JSXElement' || node.type === 'JSXFragment';
+const isJsx = (node: Node): boolean => node.type === 'JSXElement' || node.type === 'JSXFragment';
+
+/**
+ * A JSX node the transform compiles on its own.
+ *
+ * A direct child — `<li>` in `<ul><li/></ul>` — is not one: the builder recurses
+ * into it, and compiling it separately would splice its output into the middle of
+ * its parent's. JSX reached through an expression or an attribute value *is* one,
+ * because the builder asks for that expression as source text and needs it
+ * already compiled.
+ */
+function isJsxRoot(node: Node, parent: Node | null, key: string): boolean {
+  if (!isJsx(node)) return false;
+  return !(parent && isJsx(parent) && key === 'children');
 }
 
 function isTemplateTag(node: Node, litTag: string): boolean {
@@ -115,13 +135,45 @@ function bindHole(code: string, expr: Node, edits: Edit[]): TemplateHole {
 }
 
 /**
- * Control-flow components the template used. They are annotated on the IR by the
- * resolve pass rather than reported as emitted symbols, so the import has to be
- * read off the tree.
+ * What the emitted code needs beyond the runtime symbols the backend reports:
+ * component references the resolve pass annotated, and the events it wants
+ * delegated. Both live on the IR rather than in the emit result.
  */
-function collectComponents(node: IRNode, out: Set<string>): void {
-  if (node.kind === 'component' && node.source?.origin === 'builtin') out.add(node.name);
-  if ('children' in node && node.children) for (const c of node.children) collectComponents(c, out);
+interface Needs {
+  /** Built-in control-flow / router names, imported from their own modules. */
+  builtins: Set<string>;
+  /** Names supplied by a resolve rule, as a static import. */
+  resolved: Map<string, IRComponentSource>;
+  /** Names supplied lazily, as a `deferred(() => import(…))` binding. */
+  deferred: Map<string, IRComponentSource>;
+  delegatedEvents: Set<string>;
+}
+
+function collectNeeds(node: IRNode, out: Needs): void {
+  if (node.kind === 'component' && node.source) {
+    const src = node.source;
+    if (src.origin === 'builtin') out.builtins.add(node.name);
+    else if (isDeferred(src.loading) && !out.resolved.has(node.name)) out.deferred.set(node.name, src);
+    else {
+      out.deferred.delete(node.name);
+      out.resolved.set(node.name, src);
+    }
+  }
+  if ('props' in node && node.props) {
+    for (const p of node.props) {
+      if (p.kind === 'event' && p.event?.delegated) out.delegatedEvents.add(p.event.name);
+    }
+  }
+  if ('children' in node && node.children) for (const c of node.children) collectNeeds(c, out);
+}
+
+/** The strategy object a `deferred()` binding is given. */
+function strategyLiteral(s: IRLoadStrategy): string {
+  const parts = [`kind: ${JSON.stringify(s.kind)}`];
+  if (s.kind === 'visible' && s.rootMargin) parts.push(`rootMargin: ${JSON.stringify(s.rootMargin)}`);
+  if (s.kind === 'interaction') parts.push(`events: ${JSON.stringify(s.events)}`);
+  if (s.kind === 'media') parts.push(`query: ${JSON.stringify(s.query)}`);
+  return `{ ${parts.join(', ')} }`;
 }
 
 /** Quasis and holes as position-carrying parser pieces. */
@@ -157,8 +209,8 @@ export function transformTemplates(
   });
 
   const found: Node[] = [];
-  walk(ast.program, (n) => {
-    if (isTemplateTag(n, litTag) || isJsxRoot(n)) found.push(n);
+  walk(ast.program, (n, parent, key) => {
+    if (isTemplateTag(n, litTag) || isJsxRoot(n, parent, key)) found.push(n);
   });
   if (found.length === 0) return null;
 
@@ -167,6 +219,9 @@ export function transformTemplates(
   found.sort((a, b) => b.start - a.start || a.end - b.end);
 
   const used = new Set<string>();
+  const needs: Needs = {
+    builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
+  };
   const edits: Edit[] = [];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
@@ -175,8 +230,8 @@ export function transformTemplates(
     const nested = found.some(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
-    if (isJsxRoot(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, options) });
+    if (isJsx(node)) {
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, options) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
@@ -188,7 +243,7 @@ export function transformTemplates(
       svg: node.tag.name === 'svg',
     });
     for (const symbol of result.imports) used.add(symbol);
-    collectComponents(result.ir, used);
+    collectNeeds(result.ir, needs);
     edits.push({ start: node.start, end: node.end, code: result.code });
   }
 
@@ -200,8 +255,15 @@ export function transformTemplates(
   );
   for (const e of outermost) out.overwrite(e.start, e.end, e.code);
 
-  const imports = importsFor(used, moduleBindings(ast.program), options);
-  if (imports) out.prepend(imports);
+  const bound = moduleBindings(ast.program);
+  const prologue = buildPrologue(used, needs, bound, options);
+  if (prologue) out.prepend(prologue);
+  // `@fluixi/core/rx` is the client alias for the reactive primitives.
+  for (const node of ast.program.body as Node[]) {
+    if (node.type === 'ImportDeclaration' && node.source?.value === '@fluixi/core/rx') {
+      out.overwrite(node.source.start, node.source.end, JSON.stringify('@fluixi/reactive'));
+    }
+  }
 
   return {
     code: out.toString(),
@@ -220,6 +282,7 @@ function compileJsx(
   edits: Edit[],
   nested: boolean,
   used: Set<string>,
+  needs: Needs,
   options: TransformOptions,
 ): string {
   const ir = buildJsxIR(node as never, {
@@ -242,31 +305,61 @@ function compileJsx(
     partialTemplates: nested ? false : options.partialTemplates ?? true,
   } as never);
   for (const symbol of emitted.imports) used.add(symbol);
-  collectComponents(ir, used);
+  collectNeeds(ir, needs);
   return inlineTemplates(emitted.code, emitted.templates);
 }
 
-/** The import statements the emitted code needs, minus anything already bound. */
-function importsFor(
+/**
+ * Everything the emitted code needs at the top of the module: runtime imports,
+ * imports for components a resolve rule supplied, `deferred()` bindings for the
+ * lazy ones, and the delegateEvents call. A name already bound in the file wins,
+ * so enabling resolution can never change what an existing module means.
+ */
+function buildPrologue(
   used: Set<string>,
+  needs: Needs,
   bound: Set<string>,
   options: TransformOptions,
 ): string | null {
   const runtime = options.runtimeModule ?? '@fluixi/dom';
+  const core = options.coreModule ?? '@fluixi/core';
   const groups = new Map<string, string[]>();
   const add = (mod: string, name: string) => groups.set(mod, [...(groups.get(mod) ?? []), name]);
 
-  for (const name of [...used].sort()) {
+  const wanted = new Set(used);
+  for (const name of needs.builtins) wanted.add(name);
+  if (needs.delegatedEvents.size > 0) wanted.add('delegateEvents');
+
+  for (const name of [...wanted].sort()) {
     if (bound.has(name)) continue;
     if (REACTIVE.has(name)) add(options.reactiveModule ?? '@fluixi/reactive/signal', name);
+    else if (ROUTER.has(name)) add(options.routerModule ?? '@fluixi/core/router-next', name);
+    else if (CORE_ONLY.has(name)) add(core, name);
     else if (CONTROL_FLOW.has(name)) add(options.controlFlowModule ?? runtime, name);
     else add(runtime, name);
   }
-  if (groups.size === 0) return null;
+  for (const [name, src] of needs.resolved) {
+    if (!bound.has(name)) add(src.module, src.export === 'default' ? `default as ${name}` : name === src.export ? name : `${src.export} as ${name}`);
+  }
 
-  return (
-    [...groups]
-      .map(([mod, names]) => `import { ${names.join(', ')} } from ${JSON.stringify(mod)};`)
-      .join('\n') + '\n'
-  );
+  const lines: string[] = [];
+  for (const [mod, names] of groups) {
+    lines.push(`import { ${names.join(', ')} } from ${JSON.stringify(mod)};`);
+  }
+  // A literal import() is what lets the bundler split and hash the chunk, so the
+  // deferred component is an ordinary binding rather than an integration.
+  const lazy = [...needs.deferred].filter(([name]) => !bound.has(name));
+  if (lazy.length > 0) {
+    if (!bound.has('deferred')) lines.push(`import { deferred } from ${JSON.stringify(core)};`);
+    for (const [name, src] of lazy) {
+      lines.push(
+        `const ${name} = deferred(() => import(${JSON.stringify(src.module)}), ` +
+          `{ strategy: ${strategyLiteral(src.loading)}, export: ${JSON.stringify(src.export)} });`,
+      );
+    }
+  }
+  if (needs.delegatedEvents.size > 0) {
+    lines.push(`delegateEvents(${JSON.stringify([...needs.delegatedEvents])});`);
+  }
+  return lines.length > 0 ? lines.join('\n') + '\n' : null;
 }
