@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
+import { compile } from '../../../test/fixtures.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
@@ -29,7 +29,7 @@ const REQUIRE_MAP: Record<string, unknown> = {
 };
 
 function load(src: string, options: Record<string, unknown>): any {
-  const step1 = babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[plugin, options]] })!.code!;
+  const step1 = compile(src, options);
   const code = babel.transformSync(step1, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsPlugin] })!.code!;
   const m = { exports: {} as any };
   const req = (id: string) => {

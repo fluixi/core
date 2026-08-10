@@ -1,24 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { transformSync } from '@babel/core';
-import fluixiPlugin from './plugin.js';
+import { compile as compileFixture } from '../../../test/fixtures.js';
 
 const RULES = [
   { components: { Button: '@fluixi-ui/button', Card: '@fluixi-ui/card' } },
   { match: /^Icon(.+)$/, module: '@/icons/$1', export: 'default' },
 ];
 
-function compile(code: string, format: 'lit' | 'jsx' | 'both' = 'both'): string {
-  return (
-    transformSync(code, {
-      filename: 'test.tsx',
-      presets: [],
-      plugins: [[fluixiPlugin, { format, resolve: RULES }]],
-      parserOpts: { plugins: ['jsx', 'typescript'] },
-      configFile: false,
-      babelrc: false,
-    })?.code ?? ''
-  );
-}
+const compile = (code: string, format: 'lit' | 'jsx' | 'both' = 'both'): string =>
+  compileFixture(code, { filename: 'test.tsx', format, resolve: RULES });
 
 /** The import statements the compiler injected, normalised for comparison. */
 const importsOf = (out: string): string[] =>
@@ -115,14 +104,10 @@ describe('a lexical binding always wins', () => {
 
 describe('with no rules configured', () => {
   it('changes nothing', () => {
-    const out =
-      transformSync('const v = html`<Button>Save</Button>`;', {
-        filename: 'test.tsx',
-        plugins: [[fluixiPlugin, { format: 'lit' }]],
-        parserOpts: { plugins: ['jsx', 'typescript'] },
-        configFile: false,
-        babelrc: false,
-      })?.code ?? '';
+    const out = compileFixture('const v = html`<Button>Save</Button>`;', {
+      filename: 'test.tsx',
+      format: 'lit',
+    });
     expect(out).not.toContain('@fluixi-ui/button');
   });
 });

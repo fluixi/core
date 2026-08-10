@@ -19,15 +19,19 @@ export interface FixtureOptions extends TransformOptions {
   signalModule?: string;
 }
 
-/** Compile a source string. Returns it unchanged when there is nothing to compile. */
-export function compile(src: string, options: FixtureOptions = {}): string {
+/** Compile a source string, keeping the result so a test can read the map. */
+export function compileResult(src: string, options: FixtureOptions = {}) {
   const { filename = 't.tsx', signalModule, ...rest } = options;
-  const out = transformTemplates(src, filename, {
+  return transformTemplates(src, filename, {
     runtimeModule: signalModule ?? rest.runtimeModule ?? '@fluixi/dom',
     controlFlowModule: rest.controlFlowModule ?? signalModule ?? '@fluixi/dom',
     ...rest,
   });
-  return out?.code ?? src;
+}
+
+/** Compile a source string. Returns it unchanged when there is nothing to compile. */
+export function compile(src: string, options: FixtureOptions = {}): string {
+  return compileResult(src, options)?.code ?? src;
 }
 
 /** Whitespace-insensitive view of emitted code, so assertions ignore line breaks. */

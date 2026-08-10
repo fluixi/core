@@ -1,7 +1,7 @@
+import { compile as compileFixture } from '../../../test/fixtures.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
@@ -20,15 +20,9 @@ const IMPERATIVE = {
 // so the tests written against the IR pipeline read as they did.
 const IMPERATIVE_IR = IMPERATIVE;
 
-/** Run only our plugin (ESM output) — for asserting codegen shape. */
-function compileEsm(src: string, options: Record<string, unknown> = IMPERATIVE): string {
-  return babel.transformSync(src, {
-    filename: 'test.tsx',
-    configFile: false,
-    babelrc: false,
-    plugins: [[plugin, options]],
-  })!.code!;
-}
+/** Compile to ESM — for asserting codegen shape. */
+const compileEsm = (src: string, options: Record<string, unknown> = IMPERATIVE): string =>
+  compileFixture(src, { filename: 'test.tsx', ...options });
 
 /** Run our plugin, then lower ESM -> CJS so we can eval with a controlled require. */
 function compile(src: string, options: Record<string, unknown> = IMPERATIVE): string {

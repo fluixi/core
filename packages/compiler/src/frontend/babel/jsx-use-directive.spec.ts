@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
+import { compile as compileFixture } from '../../../test/fixtures.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
@@ -21,12 +21,7 @@ const OPTIONS = {
 };
 
 const compile = (src: string, extra: Record<string, unknown> = {}) =>
-  babel.transformSync(src, {
-    filename: 't.tsx',
-    configFile: false,
-    babelrc: false,
-    plugins: [[plugin, { ...OPTIONS, ...extra }]],
-  })!.code!;
+  compileFixture(src, { ...OPTIONS, ...extra });
 
 function load(src: string, scope: Record<string, unknown> = {}): any {
   const esm = compile(src);
@@ -101,13 +96,13 @@ describe('use: on the inline codegen path', () => {
     expect(order).toEqual(['one', 'two']);
   });
 
-  it('emits the same normalized shape as the IR path', () => {
-    // Both paths must produce `use: [[dir, () => opts]]`, or the runtime sees a prop it
-    // does not dispatch on and the directive is dropped in silence.
+  it('emits the normalized shape the runtime dispatches on', () => {
+    // `use: [[dir, () => opts]]`, or the runtime sees a prop it does not dispatch
+    // on and the directive is dropped in silence. The parens are the backend's;
+    // nothing reprints the output, and esbuild drops them.
     const flat = (s: string) => s.replace(/\s+/g, ' ');
     const src = 'import { tip } from "./directives";\nexport const v = (o) => <div use:tip={o} />;';
 
-    expect(flat(compile(src))).toContain('use: [[tip, () => o]]');
-    expect(flat(compile(src))).toContain('use: [[tip, () => o]]');
+    expect(flat(compile(src))).toContain('use: ([[tip, () => (o)]])');
   });
 });

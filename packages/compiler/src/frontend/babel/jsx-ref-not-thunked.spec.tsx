@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
+import { compile as compileFixture } from '../../../test/fixtures.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
@@ -19,12 +19,7 @@ import * as S from '@fluixi/reactive/signal';
  * emitted shape was plausible — it was the behaviour that was wrong.
  */
 const compile = (src: string) =>
-  babel.transformSync(src, {
-    filename: 't.tsx',
-    configFile: false,
-    babelrc: false,
-    plugins: [[plugin, { signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' }]],
-  })!.code!;
+  compileFixture(src, { signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' });
 
 function load(src: string, scope: Record<string, unknown>) {
   const cjs = babel.transformSync(compile(src), {

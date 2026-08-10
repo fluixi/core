@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { compile as compileFixture } from '../../../test/fixtures.js';
 import { readFileSync } from 'node:fs';
-import { transformSync } from '@babel/core';
-import fluixiPlugin from './plugin.js';
 
 /**
  * End-to-end against the real `@fluixi-ui` map, not a fixture.
@@ -27,17 +26,8 @@ function loadUiMap(): Record<string, string> | undefined {
 
 const uiMap = loadUiMap();
 
-function compile(code: string, components: Record<string, string>): string {
-  return (
-    transformSync(code, {
-      filename: 'app.tsx',
-      plugins: [[fluixiPlugin, { format: 'both', resolve: [{ components }] }]],
-      parserOpts: { plugins: ['jsx', 'typescript'] },
-      configFile: false,
-      babelrc: false,
-    })?.code ?? ''
-  );
-}
+const compile = (code: string, components: Record<string, string>): string =>
+  compileFixture(code, { filename: 'app.tsx', format: 'both', resolve: [{ components }] });
 
 describe.skipIf(!uiMap)('fluixi-ui components resolve in html``', () => {
   it('imports a component that was never imported', () => {

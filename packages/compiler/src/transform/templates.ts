@@ -23,6 +23,7 @@ import { resolveComponentSources } from '../resolve/resolve-ir.js';
 import { createComponentResolver } from '../resolve/component-resolver.js';
 import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
+import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
 
 interface Node {
   type: string;
@@ -39,6 +40,12 @@ interface Edit {
 }
 
 export interface TransformOptions extends CompileTemplateOptions {
+  /**
+   * Which authoring syntaxes to compile. Both lower to the same IR, so this is
+   * about which source forms are touched, not about output.
+   * @default 'both'
+   */
+  format?: 'jsx' | 'lit' | 'both';
   /** Tag marking a template for compilation. @default 'html' */
   litTag?: string;
   /** Module the emitted runtime symbols are imported from. @default '@fluixi/dom' */
@@ -52,12 +59,13 @@ export interface TransformResult {
   map: ReturnType<MagicString['generateMap']>;
 }
 
-/** Control-flow names come from the control-flow module, not the dom runtime. */
-const CONTROL_FLOW = new Set([
-  'Show', 'For', 'Index', 'Switch', 'Match', 'Dynamic', 'ErrorBoundary', 'Portal', 'Suspense',
-]);
-const CORE_ONLY = new Set(['Suspense', 'SuspenseList', 'Portal', 'ErrorBoundary']);
-const ROUTER = new Set(['Router', 'Outlet', 'Link', 'Form', 'Navigate']);
+// Which builtin comes from which module is published by resolve/builtins.ts —
+// the same lists the resolve pass and the TS plugin read. Restating them here is
+// how `Await` ended up imported from the dom runtime, which does not export it.
+const CONTROL_FLOW = new Set<string>(DOM_CONTROL_FLOW);
+const CORE_ONLY = new Set<string>(CORE_CONTROL_FLOW);
+const ROUTER = new Set<string>(ROUTER_COMPONENTS);
+
 const REACTIVE = new Set([
   'createMemo', 'createEffect', 'createRenderEffect', 'createRoot',
   'createSignal', 'onCleanup', 'batch', 'untrack',
@@ -154,10 +162,13 @@ function bindHole(code: string, expr: Node, edits: Edit[]): TemplateHole {
  */
 /**
  * Static templates hoisted to module scope, keyed by their HTML so two components
- * with the same markup share one string. The backend numbers them per emit, and
- * those local ids share the `_tmpl$N` namespace with the hoisted names — so the
- * rewrite is one pass, or a replacement can rewrite a name an earlier one just
- * produced and point a template at another's HTML.
+ * with the same markup share one string.
+ *
+ * Hoisted names deliberately do not use the backend's `_tmpl$N` namespace. Roots
+ * are emitted innermost first and spliced into their parent, so by the time the
+ * outer one is renamed its code already contains hoisted names — and with a
+ * shared prefix the rename rewrites those too, pointing two templates at one
+ * string. A separate prefix makes the two impossible to confuse.
  */
 function adoptTemplates(code: string, templates: StaticTemplate[] | undefined, hoisted: Map<string, string>): string {
   if (!templates || templates.length === 0) return code;
@@ -166,7 +177,7 @@ function adoptTemplates(code: string, templates: StaticTemplate[] | undefined, h
     const key = `${tpl.svg ? 'svg:' : ''}${tpl.html}`;
     let name = hoisted.get(key);
     if (!name) {
-      name = `_tmpl$${hoisted.size}`;
+      name = `_fxTmpl$${hoisted.size}`;
       hoisted.set(key, name);
     }
     rename.set(tpl.id, name);
@@ -234,8 +245,11 @@ export function transformTemplates(
   options: TransformOptions = {},
 ): TransformResult | null {
   const litTag = options.litTag ?? 'html';
-  const mayHaveTemplate = code.includes(`${litTag}\``) || code.includes('svg`');
-  if (!mayHaveTemplate && !code.includes('<')) return null;
+  const format = options.format ?? 'both';
+  const wantsLit = format !== 'jsx';
+  const wantsJsx = format !== 'lit';
+  const mayHaveTemplate = wantsLit && (code.includes(`${litTag}\``) || code.includes('svg`'));
+  if (!mayHaveTemplate && !(wantsJsx && code.includes('<'))) return null;
 
   const ast = parse(code, {
     sourceType: 'module',
@@ -245,7 +259,8 @@ export function transformTemplates(
 
   const found: Node[] = [];
   walk(ast.program, (n, parent, key) => {
-    if (isTemplateTag(n, litTag) || isJsxRoot(n, parent, key)) found.push(n);
+    if (wantsLit && isTemplateTag(n, litTag)) found.push(n);
+    else if (wantsJsx && isJsxRoot(n, parent, key)) found.push(n);
   });
   if (found.length === 0) return null;
 
