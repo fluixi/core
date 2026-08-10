@@ -83,8 +83,21 @@ export function compileTemplate(
     );
   }
 
+  return compilePieces(toPieces(source), source.holes, options);
+}
+
+/**
+ * Same pipeline entered with pieces that already carry real source offsets, so a
+ * caller reading a file keeps its positions instead of the synthetic ones derived
+ * from the static runs.
+ */
+export function compilePieces(
+  pieces: Piece[],
+  holes: readonly TemplateHole[],
+  options: CompileTemplateOptions = {},
+): CompileTemplateResult {
   const used = new Set<string>();
-  const ir = lowerTemplate(toPieces(source), [...source.holes], used, { svg: options.svg });
+  const ir = lowerTemplate(pieces, [...holes], used, { svg: options.svg });
   analyzeStatic(ir);
 
   // Same order as the Babel front-end: decide where each component reference

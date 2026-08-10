@@ -1,10 +1,14 @@
 /**
- * The compiler core must not import Babel.
+ * Two rules about babel, both worth failing a build over.
  *
- * `@babel/*` is an optional peer, so a consumer that only wants the IR or the
- * builtin map (`@fluixi/ts-plugin`) never installs it — a stray import here is a
- * module that fails to resolve for them, not a style slip. Walks the real import
- * graph, since the failure is transitive.
+ * The IR entries (`.`, `./builtins`) reach no babel at all — `@fluixi/ts-plugin`
+ * imports the builtin map and nothing else, and a stray import here is a module
+ * that fails to resolve for it.
+ *
+ * The transform may use `@babel/parser`, and only that. A parser is a library;
+ * `@babel/core`, `traverse` and `generator` are a pipeline we would be living
+ * inside. That line is the difference between owning the compile and being a
+ * plugin in someone else's.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
@@ -73,26 +77,26 @@ describe('@fluixi/compiler core is Babel-free', () => {
     });
   }
 
-  it('declares Babel as an optional peer, never a dependency', () => {
+  it('the transform reaches the parser and nothing else', () => {
+    const { bare } = walk('transform/index.ts');
+    expect([...bare.keys()].filter((s) => s.startsWith('@babel/'))).toEqual(['@babel/parser']);
+  });
+
+  it('depends on the parser, never on the pipeline', () => {
     const pkg = JSON.parse(readFileSync(resolve(SRC, '../package.json'), 'utf-8'));
     const deps = Object.keys(pkg.dependencies ?? {});
-    expect(deps.filter((d) => d.startsWith('@babel/'))).toEqual([]);
+    expect(deps.filter((d) => d.startsWith('@babel/'))).toEqual(['@babel/parser']);
 
-    // Optional, so `pnpm add @fluixi/compiler` does not drag in a toolchain the
-    // importer may never call. The packages that always run a Babel compile
-    // (@fluixi/vite-plugin, @fluixi/start, @fluixi/babel-plugin-jsx) depend on it
-    // for real, so nothing an app does has to change.
-    for (const name of Object.keys(pkg.peerDependencies ?? {})) {
-      if (name.startsWith('@babel/')) {
-        expect(pkg.peerDependenciesMeta?.[name]?.optional).toBe(true);
-      }
+    // The plugin machinery stays an optional peer: it belongs to the front-end,
+    // which @fluixi/vite-plugin and @fluixi/start depend on for real.
+    for (const name of ['@babel/core', '@babel/generator', '@babel/helper-plugin-utils']) {
+      expect(deps).not.toContain(name);
+      expect(pkg.peerDependenciesMeta?.[name]?.optional).toBe(true);
     }
   });
 
-  it('the front-end and integrations are where Babel is allowed', () => {
-    // Not a rule for its own sake — a guard on the sentence above. If these stop
-    // importing Babel, the peer declaration is dead weight and should go.
+  it('the front-end is where the pipeline is allowed', () => {
     const { bare } = walk('frontend/babel/index.ts');
-    expect([...bare.keys()].some((s) => s.startsWith('@babel/'))).toBe(true);
+    expect([...bare.keys()]).toContain('@babel/core');
   });
 });
