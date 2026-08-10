@@ -487,6 +487,13 @@ export interface LinkProps {
   activeClass?: MaybeAccessor<string>;
   slot?: string;
   children?: any;
+  /**
+   * Everything else is forwarded onto the `<a>` — id, style, title, aria-*,
+   * data-*, event handlers. Typed openly because the forwarding is
+   * allow-by-default: a prop this interface forgot still reaches the DOM, and
+   * refusing it here would only mean the type disagreeing with the runtime.
+   */
+  [key: string]: unknown;
 }
 
 // Props Link handles itself, so they aren't blindly forwarded as <a> attributes.
