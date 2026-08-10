@@ -534,6 +534,29 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
  * first regardless, so deferring the other buys nothing — the same reasoning as the
  * collapse pass, applied within a file.
  */
+/**
+ * What to do with JSX or a template found inside an expression: resolve its
+ * component references and record what the module needs, exactly as the
+ * top-level node gets. The IR itself is emitted and dropped by the walk, so
+ * anything not taken off it here is lost — which is how `{(b) => <Input/>}`
+ * came out referring to a component nothing imported.
+ */
+function nestedHook(state: any) {
+  return (ir: IRNode): void => {
+    resolveComponentSources(ir, {
+      resolver: state.componentResolver,
+      modules: {
+        controlFlowModule: state.controlFlowModule,
+        coreModule: state.libModule,
+        routerModule: state.routerModule,
+      },
+      strategyFor: (node) => node.load,
+    });
+    collapseStrategies(ir);
+    collectRuntimeNeeds(ir, state);
+  };
+}
+
 /** The strategy as an object literal the runtime can read. */
 function strategyLiteral(strategy: IRLoadStrategy): t.ObjectExpression {
   const props: t.ObjectProperty[] = [
@@ -589,7 +612,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   // `used` collects runtime symbols emitted for JSX nested inside expressions
   // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
   const used = new Set<string>();
-  const ir = buildIR(node, used, state.delegatedEvents);
+  const ir = buildIR(node, used, nestedHook(state));
   // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped
   // resolution entirely — a resolved tag compiled to a reference with no import.
   resolveComponentSources(ir, {
@@ -651,7 +674,7 @@ function dedupeImports(imports: t.ImportDeclaration[]): t.ImportDeclaration[] {
 function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
   const used = new Set<string>();
   const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
-  const ir = buildIRFromLit(node, used, { svg, events: state.delegatedEvents });
+  const ir = buildIRFromLit(node, used, { svg, onNested: nestedHook(state) });
   // Resolve pass: annotate each component reference with where it comes from, before
   // codegen. Bindings are not checked here — Program.exit knows the whole file's scope
   // and drops any injected import whose name turns out to be bound.

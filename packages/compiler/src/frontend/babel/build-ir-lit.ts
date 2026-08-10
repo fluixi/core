@@ -26,7 +26,7 @@ import { analyzeStatic } from '../../optimize/analyze-static.js';
 export function buildIRFromLit(
   node: t.TaggedTemplateExpression,
   used: Set<string> = new Set(),
-  opts: { svg?: boolean; events?: Set<string> } = {},
+  opts: { svg?: boolean; onNested?: (ir: IRNode) => void } = {},
 ): IRNode {
   const ir = lowerLitTemplate(node, used, opts);
   // Same pass as the JSX frontend, so both agree on what is inert.
