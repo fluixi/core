@@ -13,7 +13,13 @@ import { compilePieces, type CompileTemplateOptions } from '../lower/compile-tem
 import type { TemplateHole } from '../lower/template.js';
 import type { IRNode } from '../ir/nodes.js';
 import { isReactiveShape } from '../analyze/reactive-expr.js';
-import { shapeOf } from './estree-shape.js';
+import { shapeOf } from '../analyze/expr-shape.js';
+import { buildJsxIR } from '../lower/jsx.js';
+import { analyzeStatic } from '../optimize/analyze-static.js';
+import { collapseStrategies } from '../optimize/collapse-strategies.js';
+import { resolveComponentSources } from '../resolve/resolve-ir.js';
+import { createComponentResolver } from '../resolve/component-resolver.js';
+import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 
 interface Node {
@@ -65,6 +71,10 @@ function walk(node: any, visit: (n: Node) => void): void {
     if (key === 'loc' || key === 'leadingComments' || key === 'trailingComments') continue;
     walk(node[key], visit);
   }
+}
+
+function isJsxRoot(node: Node): boolean {
+  return node.type === 'JSXElement' || node.type === 'JSXFragment';
 }
 
 function isTemplateTag(node: Node, litTag: string): boolean {
@@ -137,7 +147,8 @@ export function transformTemplates(
   options: TransformOptions = {},
 ): TransformResult | null {
   const litTag = options.litTag ?? 'html';
-  if (!code.includes(`${litTag}\``) && !code.includes('svg`')) return null;
+  const mayHaveTemplate = code.includes(`${litTag}\``) || code.includes('svg`');
+  if (!mayHaveTemplate && !code.includes('<')) return null;
 
   const ast = parse(code, {
     sourceType: 'module',
@@ -147,7 +158,7 @@ export function transformTemplates(
 
   const found: Node[] = [];
   walk(ast.program, (n) => {
-    if (isTemplateTag(n, litTag)) found.push(n);
+    if (isTemplateTag(n, litTag) || isJsxRoot(n)) found.push(n);
   });
   if (found.length === 0) return null;
 
@@ -158,11 +169,17 @@ export function transformTemplates(
   const used = new Set<string>();
   const edits: Edit[] = [];
   for (const node of found) {
+    // A root inside another root's hole is emitted without partial templates,
+    // matching what the plugin does for nested emits. Marker layout has to agree
+    // between server and client, so this is not the place to change it.
+    const nested = found.some(
+      (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
+    );
+    if (isJsxRoot(node)) {
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, options) });
+      continue;
+    }
     const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
-    // A template inside another template's hole is compiled without partial
-    // templates, matching what the plugin does for nested emits. Marker layout
-    // has to agree between server and client, so this is not the place to change it.
-    const nested = found.some((o) => o !== node && o.start < node.start && o.end > node.end);
     const result = compilePieces(toPieces(node), holes, {
       ...options,
       // Same defaults as the plugin, so moving a build over is not a rendering change.
@@ -190,6 +207,43 @@ export function transformTemplates(
     code: out.toString(),
     map: out.generateMap({ source: id, includeContent: true, hires: true }),
   };
+}
+
+/**
+ * A JSX root, emitted the same way a template is. Expressions are source slices
+ * with anything already compiled inside them folded in, so nested JSX and nested
+ * `` html`` `` both come along for free.
+ */
+function compileJsx(
+  code: string,
+  node: Node,
+  edits: Edit[],
+  nested: boolean,
+  used: Set<string>,
+  options: TransformOptions,
+): string {
+  const ir = buildJsxIR(node as never, {
+    code: (n) => slice(code, (n as Node).start, (n as Node).end, edits),
+    used,
+  });
+  analyzeStatic(ir);
+  resolveComponentSources(ir, {
+    resolver: createComponentResolver(options.resolve ?? []),
+    modules: {
+      controlFlowModule: options.controlFlowModule ?? options.runtimeModule ?? '@fluixi/dom',
+      coreModule: options.coreModule ?? '@fluixi/core',
+      routerModule: options.routerModule ?? '@fluixi/core/router-next',
+    },
+    strategyFor: (n) => n.load,
+  });
+  collapseStrategies(ir);
+  const emitted = imperativeBackend.emit(ir, {
+    templateClone: options.templateClone ?? true,
+    partialTemplates: nested ? false : options.partialTemplates ?? true,
+  } as never);
+  for (const symbol of emitted.imports) used.add(symbol);
+  collectComponents(ir, used);
+  return inlineTemplates(emitted.code, emitted.templates);
 }
 
 /** The import statements the emitted code needs, minus anything already bound. */
