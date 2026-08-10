@@ -5,7 +5,7 @@
  * acorn, or whatever replaces them — and accepts the few names Babel spells
  * differently (`ObjectProperty`, `Optional*Expression`).
  */
-import type { ExprShape } from '../analyze/reactive-expr.js';
+import type { ExprShape } from './reactive-expr.js';
 
 interface Node {
   type: string;

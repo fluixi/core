@@ -8,4 +8,4 @@
 export { transformTemplates } from './templates.js';
 export type { TransformOptions, TransformResult } from './templates.js';
 export { moduleBindings } from './bindings.js';
-export { shapeOf } from './estree-shape.js';
+export { shapeOf } from '../analyze/expr-shape.js';

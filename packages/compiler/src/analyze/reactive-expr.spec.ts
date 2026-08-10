@@ -9,7 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import * as babel from '@babel/core';
 import { isReactiveShape, type ExprShape } from './reactive-expr.js';
-import { isReactiveExpr, exprShape } from '../frontend/babel/build-ir.js';
+import { isReactiveExpr } from '../frontend/babel/build-ir.js';
+import { shapeOf } from './expr-shape.js';
 
 describe('isReactiveShape (no parser involved)', () => {
   it('a call is reactive', () => {
@@ -95,7 +96,7 @@ const INERT: Array<[string, string]> = [
   ['[]', 'an empty array'],
 ];
 
-describe('the Babel front-end maps syntax onto those shapes', () => {
+describe('the front-end maps syntax onto those shapes', () => {
   for (const [src, why] of REACTIVE) {
     it(`${src} is reactive — ${why}`, () => {
       expect(isReactiveExpr(parse(src))).toBe(true);
@@ -109,11 +110,11 @@ describe('the Babel front-end maps syntax onto those shapes', () => {
   }
 
   it('reports the shape, not just the verdict', () => {
-    expect(exprShape(parse('count()'))).toEqual({ kind: 'call' });
-    expect(exprShape(parse('props.children'))).toEqual({ kind: 'member', property: 'children' });
-    expect(exprShape(parse('obj[k]'))).toEqual({ kind: 'member', property: null });
-    expect(exprShape(parse('name'))).toEqual({ kind: 'opaque' });
-    expect(exprShape(parse('[a, b()]'))).toEqual({
+    expect(shapeOf(parse('count()'))).toEqual({ kind: 'call' });
+    expect(shapeOf(parse('props.children'))).toEqual({ kind: 'member', property: 'children' });
+    expect(shapeOf(parse('obj[k]'))).toEqual({ kind: 'member', property: null });
+    expect(shapeOf(parse('name'))).toEqual({ kind: 'opaque' });
+    expect(shapeOf(parse('[a, b()]'))).toEqual({
       kind: 'compound',
       parts: [{ kind: 'opaque' }, { kind: 'call' }],
     });

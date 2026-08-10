@@ -144,3 +144,74 @@ describe('transformTemplates', () => {
     expect(transformTemplates(src, 't.ts', OPTS)!.code).toContain('user . name');
   });
 });
+
+const JSX = {
+  element: 'export const render = () => <div class="box"><span>hi</span></div>;',
+  hole: 'import { name } from "./scope";\nexport const render = () => <p>{name()}</p>;',
+  attr: 'import { id } from "./scope";\nexport const render = () => <div id={id}>x</div>;',
+  fragment: 'import { name } from "./scope";\nexport const render = () => <><b>a</b>{name()}</>;',
+  spread: 'import { rest } from "./scope";\nexport const render = () => <div {...rest()}>x</div>;',
+  nested: 'import { items } from "./scope";\nexport const render = () => <ul>{items().map((x) => <li>{x}</li>)}</ul>;',
+  mixed: 'import { name } from "./scope";\nexport const render = () => <div>{html`<b>${name()}</b>`}</div>;',
+};
+
+const viaPluginJsx = (src: string) =>
+  babel.transformSync(src, {
+    filename: 't.tsx', configFile: false, babelrc: false,
+    plugins: [[plugin, { ...LIT, format: 'both' }]],
+  })!.code!;
+
+function bothRenderJsx(src: string, scope: Record<string, unknown> = {}): [string, string] {
+  return [mount(viaPluginJsx(src), scope), mount(viaTransform(src), scope)];
+}
+
+describe('transformTemplates compiles JSX too', () => {
+  it('an element', () => {
+    const [a, b] = bothRenderJsx(JSX.element);
+    expect(b).toEqual(a);
+    expect(b).toContain('<span>hi</span>');
+  });
+
+  it('a reactive hole', () => {
+    const [a, b] = bothRenderJsx(JSX.hole, { name: () => 'Ada' });
+    expect(b).toEqual(a);
+    expect(b).toContain('Ada');
+  });
+
+  it('an inert attribute', () => {
+    const [a, b] = bothRenderJsx(JSX.attr, { id: 'x1' });
+    expect(b).toEqual(a);
+    expect(b).toContain('id="x1"');
+  });
+
+  it('a fragment', () => {
+    const [a, b] = bothRenderJsx(JSX.fragment, { name: () => 'Ada' });
+    expect(b).toEqual(a);
+  });
+
+  it('a spread', () => {
+    const [a, b] = bothRenderJsx(JSX.spread, { rest: () => ({ id: 'r' }) });
+    expect(b).toEqual(a);
+  });
+
+  it('JSX nested in an expression', () => {
+    const [a, b] = bothRenderJsx(JSX.nested, { items: () => ['a', 'b'] });
+    expect(b).toEqual(a);
+  });
+
+  it('a template nested in JSX', () => {
+    const [a, b] = bothRenderJsx(JSX.mixed, { name: () => 'Ada' });
+    expect(b).toEqual(a);
+    expect(b).toContain('Ada');
+  });
+
+  it('stays reactive', () => {
+    const [get, set] = S.createSignal('one');
+    const mod = run(viaTransform(JSX.hole), { name: get });
+    const host = document.createElement('div');
+    S.createRoot(() => DOM.insert(host, () => mod.render(), null));
+    expect(host.textContent).toContain('one');
+    set('two');
+    expect(host.textContent).toContain('two');
+  });
+});
