@@ -2,15 +2,16 @@
  * @fileoverview Bundler integrations for the Fluixi compiler.
  * @module @fluixi/compiler/integrations
  *
- * Build-tool adapters (vite/webpack/rollup/esbuild). Each one wires the same
- * thing: parse with babel, run the Fluixi front-end (JSX and html`` both lower
- * to the shared IR and the imperative backend), hand the result back to the
- * bundler. @fluixi/core re-exports createVitePlugin from here.
+ * vite, webpack, rollup and esbuild adapters. Each is a few lines around
+ * `compileModule`, which rewrites the source in place — JSX and `` html`` `` both
+ * lower to the shared IR and the imperative backend. @fluixi/core re-exports
+ * createVitePlugin from here.
  *
- * Every adapter treats a missing @babel/core as a hard error. There is no
- * degraded mode: source that was not compiled is source whose templates never
- * became DOM calls, and a build that ships it looks successful right up until
- * the page is opened.
+ * `babel: true` routes through the babel front-end instead, for a project whose
+ * own babel plugins have to see the output. It is the only thing that needs
+ * @babel/core, and it says so rather than degrading: source that was not compiled
+ * is source whose templates never became DOM calls, and a build that ships it
+ * looks successful until the page is opened.
  */
 
 // ============================================================================
@@ -254,20 +255,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         return null;
       }
 
-      if (!options.babel) {
-        const { transformTemplates } = await import('./transform/index.js');
-        const out = transformTemplates(code, id, {
-          resolve: options.resolve,
-          litTag: options.litTag,
-          templateClone: options.templateClone,
-          partialTemplates: options.partialTemplates,
-          runtimeModule: options.signalModule,
-          controlFlowModule: options.controlFlowModule,
-          routerModule: options.routerModule,
-          reactiveModule: options.reactiveModule,
-        });
-        return out ? { code: out.code, map: out.map } : null;
-      }
+      if (!options.babel) return compileModule(code, id, options);
 
       const babelPlugin = await createBabelPlugin(options);
 
@@ -348,6 +336,44 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
   } as T;
 }
 
+/** CompilerOptions as the transform wants them. Shared by every adapter. */
+function transformOptions(options: CompilerOptions) {
+  return {
+    resolve: options.resolve,
+    litTag: options.litTag,
+    templateClone: options.templateClone,
+    partialTemplates: options.partialTemplates,
+    runtimeModule: options.signalModule,
+    controlFlowModule: options.controlFlowModule,
+    routerModule: options.routerModule,
+    reactiveModule: options.reactiveModule,
+  };
+}
+
+/** Compile one module, through babel only when asked for it. */
+async function compileModule(code: string, id: string, options: CompilerOptions) {
+  if (!options.babel) {
+    const { transformTemplates } = await import('./transform/index.js');
+    return transformTemplates(code, id, transformOptions(options));
+  }
+  const babel = await import('@babel/core').catch(() => null);
+  const plugin = await createBabelPlugin(options);
+  if (!babel || !plugin.plugin) {
+    throw new Error(
+      `[fluixi] babel: true needs @babel/core, which could not be loaded for ${id}. ` +
+        `Install it, or drop the option to use the built-in compiler.`,
+    );
+  }
+  const result = await babel.transformAsync(code, {
+    filename: id,
+    configFile: false,
+    babelrc: false,
+    plugins: [[plugin.plugin, plugin.getOptions()]],
+    sourceMaps: options.sourceMaps !== false,
+  });
+  return result?.code ? { code: result.code, map: result.map } : null;
+}
+
 // ============================================================================
 // Webpack Loader
 // ============================================================================
@@ -358,20 +384,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 export function createWebpackLoader(options: CompilerOptions = {}) {
   return async function (this: any, source: string) {
     const callback = this.async();
-    const babel = tryRequire('@babel/core');
-    const babelPlugin = await createBabelPlugin(options);
-
-    if (!babel || !babelPlugin.plugin) {
-      callback(new Error('[fluixi] @babel/core is required to compile Fluixi sources.'));
-      return;
-    }
-
-    babel
-      .transformAsync(source, {
-        filename: this.resourcePath,
-        plugins: [[babelPlugin.plugin, babelPlugin.getOptions()]],
-        sourceMaps: options.sourceMaps !== false,
-      })
+    compileModule(source, this.resourcePath, options)
       .then((result: any) => {
         callback(null, result?.code, result?.map);
       })
@@ -393,31 +406,8 @@ export function createRollupPlugin(options: CompilerOptions = {}) {
     name: 'rollup-fluixi-jsx',
 
     async transform(code: string, id: string) {
-      const babelPlugin = await createBabelPlugin(options);
-      if (!/\.[jt]sx$/.test(id)) {
-        return null;
-      }
-
-      try {
-        const babel = tryRequire('@babel/core');
-        if (!babel || !babelPlugin.plugin) {
-          throw new Error('[fluixi] @babel/core is required to compile Fluixi sources.');
-        }
-
-        const result = await babel.transformAsync(code, {
-          filename: id,
-          plugins: [[babelPlugin.plugin, babelPlugin.getOptions()]],
-          sourceMaps: options.sourceMaps !== false,
-        });
-
-        return {
-          code: result?.code || code,
-          map: result?.map,
-        };
-      } catch (e) {
-        console.error('Transform error:', e);
-        return null;
-      }
+      if (!/\.[jt]sx?$/.test(id)) return null;
+      return compileModule(code, id, options);
     },
   };
 }
@@ -434,26 +424,16 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
     name: 'esbuild-fluixi-jsx',
 
     setup(build: any) {
-      build.onLoad({ filter: /\.[jt]sx$/ }, async (args: any) => {
-        const babel = tryRequire('@babel/core');
-        const babelPlugin = await createBabelPlugin(options);
-        const fs = require('fs');
-        const source = fs.readFileSync(args.path, 'utf8');
+      build.onLoad({ filter: /\.[jt]sx?$/ }, async (args: any) => {
+        const { readFileSync } = await import('node:fs');
+        const source = readFileSync(args.path, 'utf8');
 
         try {
-          if (!babel || !babelPlugin.plugin) {
-            throw new Error('[fluixi] @babel/core is required to compile Fluixi sources.');
-          }
-
-          const result = await babel.transformAsync(source, {
-            filename: args.path,
-            plugins: [[babelPlugin.plugin, babelPlugin.getOptions()]],
-            sourceMaps: false,
-          });
-
+          const result = await compileModule(source, args.path, options);
+          // esbuild still has to strip the types the transform leaves in place.
           return {
-            contents: result?.code || source,
-            loader: 'js',
+            contents: result?.code ?? source,
+            loader: args.path.endsWith('x') ? 'tsx' : 'ts',
           };
         } catch (e) {
           return {
