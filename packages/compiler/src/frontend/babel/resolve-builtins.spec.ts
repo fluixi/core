@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { transformSync } from '@babel/core';
-import fluixiPlugin from './plugin.js';
+import { compile as compileFixture } from '../../../test/fixtures.js';
 import {
   BUILTIN_COMPONENTS,
   RESERVED_COMPONENTS,
@@ -8,18 +7,8 @@ import {
   routerComponents,
 } from '../../resolve/builtins.js';
 
-function compile(code: string, options: Record<string, unknown> = {}): string {
-  return (
-    transformSync(code, {
-      filename: 'test.tsx',
-      presets: [],
-      plugins: [[fluixiPlugin, { format: 'both', ...options }]],
-      parserOpts: { plugins: ['jsx', 'typescript'] },
-      configFile: false,
-      babelrc: false,
-    })?.code ?? ''
-  );
-}
+const compile = (code: string, options: Record<string, unknown> = {}): string =>
+  compileFixture(code, { filename: 'test.tsx', ...options });
 
 const importsOf = (out: string): string[] =>
   out

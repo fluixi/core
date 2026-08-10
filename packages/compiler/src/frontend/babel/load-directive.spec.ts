@@ -1,23 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { transformSync } from '@babel/core';
-import fluixiPlugin from './plugin.js';
+import { compile as compileFixture } from '../../../test/fixtures.js';
 
 const RULES = [
   { components: { Chart: '@app/chart', Dialog: '@app/dialog', Button: '@app/button' } },
 ];
 
-function compile(code: string, options: Record<string, unknown> = {}): string {
-  return (
-    transformSync(code, {
-      filename: 'test.tsx',
-      presets: [],
-      plugins: [[fluixiPlugin, { format: 'both', resolve: RULES, ...options }]],
-      parserOpts: { plugins: ['jsx', 'typescript'] },
-      configFile: false,
-      babelrc: false,
-    })?.code ?? ''
-  );
-}
+const compile = (code: string, options: Record<string, unknown> = {}): string =>
+  compileFixture(code, { filename: 'test.tsx', format: 'both', resolve: RULES, ...options });
 
 describe('load: directive', () => {
   it('emits a dynamic import instead of a static one', () => {
@@ -47,7 +36,7 @@ describe('load: directive', () => {
 
   it('takes named interaction events', () => {
     const out = compile('const v = <Dialog load:interaction="click focus"/>;');
-    expect(out).toContain('events: ["click", "focus"]');
+    expect(out).toContain('events: ["click","focus"]');
   });
 
   it('carries a media query', () => {

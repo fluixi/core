@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
+import { compile } from '../../../test/fixtures.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
@@ -30,7 +30,7 @@ const OPTS = {
 };
 
 function load(src: string) {
-  const esm = babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[plugin, OPTS]] })!.code!;
+  const esm = compile(src, OPTS);
   const cjs = babel.transformSync(esm, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsPlugin] })!.code!;
   const m = { exports: {} as any };
   const req = (id: string) => {

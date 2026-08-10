@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeAll } from 'vitest';
-import * as babel from '@babel/core';
-import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
+import { compile as compileFixture, compileResult, load as loadModule } from '../../../test/fixtures.js';
 
 // The lit front-end wired into the plugin behind `format`. Drives the whole-file
 // transform: `html`...`` templates compile through the shared IR + imperative
@@ -52,24 +50,8 @@ function originalColumns(mappings: string, line: number): number[] {
   return columns;
 }
 
-function compileEsm(src: string, options: Record<string, unknown> = LIT): string {
-  return babel.transformSync(src, {
-    filename: 'test.tsx',
-    configFile: false,
-    babelrc: false,
-    plugins: [[plugin, options]],
-  })!.code!;
-}
-
-function compile(src: string, options: Record<string, unknown> = LIT): string {
-  const esm = compileEsm(src, options);
-  return babel.transformSync(esm, {
-    filename: 'test.js',
-    configFile: false,
-    babelrc: false,
-    plugins: [cjsPlugin],
-  })!.code!;
-}
+const compileEsm = (src: string, options: Record<string, unknown> = LIT): string =>
+  compileFixture(src, { filename: 'test.tsx', ...options });
 
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
@@ -77,16 +59,8 @@ const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/reactive/store': Store,
 };
 
-function load(src: string, options: Record<string, unknown> = LIT): any {
-  const code = compile(src, options);
-  const moduleObj = { exports: {} as any };
-  const req = (id: string) => {
-    if (id in REQUIRE_MAP) return REQUIRE_MAP[id];
-    throw new Error('unexpected require in compiled output: ' + id);
-  };
-  new Function('exports', 'require', 'module', code)(moduleObj.exports, req, moduleObj);
-  return moduleObj.exports;
-}
+const load = (src: string, options: Record<string, unknown> = LIT): any =>
+  loadModule(compileEsm(src, options), REQUIRE_MAP);
 
 beforeAll(() => {
   DOM.registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
@@ -145,7 +119,10 @@ describe('lit front-end (format: lit)', () => {
     const code = compileEsm(
       'export const App = (r) => html`<${Router} routes=${r}><main><${Outlet}/></main></${Router}>`;',
     );
-    expect(code).toMatch(/import \{[^}]*\bRouter\b[^}]*\bOutlet\b[^}]*\} from "@fluixi\/core\/router-next"/);
+    // Order-insensitive: the names are emitted sorted, which is not the contract.
+    const routerImport = code.match(/import \{([^}]*)\} from "@fluixi\/core\/router-next"/)?.[1] ?? '';
+    expect(routerImport).toContain('Router');
+    expect(routerImport).toContain('Outlet');
   });
 
   it('does not re-import a router component the file already imports', () => {
@@ -166,23 +143,16 @@ describe('lit front-end (format: lit)', () => {
   });
 
   it('maps generated code back to the template, not to the enclosing statement', () => {
-    // The IR is emitted as a string and reparsed, so the generated nodes carry no
-    // position of their own. Without help they inherit the enclosing statement's,
-    // collapsing the whole template onto one point; a breakpoint inside compiled
-    // template code then lands at the top of the arrow function.
+    // Emitted code is spliced over the template's span, so its mappings point
+    // into the template rather than at the statement that encloses it — a
+    // breakpoint inside compiled template code lands where the author wrote it.
     const src = 'export const r = (c) => html`<div class=${c}>hi</div>`;';
     const templateStart = src.indexOf('html`');
 
-    const out = babel.transformSync(src, {
-      filename: 'test.tsx',
-      configFile: false,
-      babelrc: false,
-      sourceMaps: true,
-      plugins: [[plugin, LIT]],
-    })!;
+    const out = compileResult(src, { filename: 'test.tsx', ...LIT })!;
 
-    const line = out.code!.split('\n').findIndex((l) => /createNativeElement\(/.test(l) && !l.startsWith('import'));
-    const columns = originalColumns(out.map!.mappings, line);
+    const line = out.code.split('\n').findIndex((l) => /createNativeElement\(/.test(l) && !l.startsWith('import'));
+    const columns = originalColumns(out.map.mappings, line);
 
     expect(columns.length).toBeGreaterThan(0);
     // At least one generated node maps into the template's span rather than to
@@ -208,11 +178,10 @@ describe('lit front-end (format: lit)', () => {
   });
 
   it('a file mixing JSX + html`` (format both) does not duplicate imports', () => {
-    const code = babel.transformSync(
+    const code = compileEsm(
       'export const a = () => <div>jsx</div>;\nexport const b = () => html`<span>lit</span>`;',
-      { filename: 't.tsx', configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] },
-        plugins: [[plugin, { format: 'both', signalModule: '@fluixi/dom' }]] },
-    )!.code!;
+      { format: 'both', signalModule: '@fluixi/dom' },
+    );
     // Both styles compiled. Asserted by what is *gone* rather than by which runtime
     // call replaced it, so the test does not break when codegen changes shape.
     expect(code).not.toContain('html`');

@@ -264,3 +264,27 @@ describe('the module prologue', () => {
     expect(out).not.toContain('@fluixi/core/rx');
   });
 });
+
+describe('hoisted templates', () => {
+  const compileSrc = (src: string) => transformTemplates(src, 't.tsx', OPTS)!.code;
+
+  it('two roots in one module get distinct templates', () => {
+    // Roots are emitted innermost first and spliced into their parent, so a
+    // hoisted name is already present in the outer root's code by the time it is
+    // renamed. Sharing the backend's `_tmpl$N` prefix pointed both at one string.
+    const out = compileSrc(
+      'export const r = (m) => <Switch fallback={<p class="none">none</p>}><Match when={m}><p class="a">A</p></Match></Switch>;',
+    );
+    const names = [...out.matchAll(/const (_fxTmpl\$\d+) = ("(?:[^"\\]|\\.)*")/g)];
+    expect(names.length).toBe(2);
+    expect(new Set(names.map((m) => m[1])).size).toBe(2);
+    expect(new Set(names.map((m) => m[2])).size).toBe(2);
+  });
+
+  it('identical markup in one module shares a single template', () => {
+    const out = compileSrc(
+      'export const a = () => <p class="x">hi</p>;\nexport const b = () => <p class="x">hi</p>;',
+    );
+    expect([...out.matchAll(/const _fxTmpl\$\d+ =/g)].length).toBe(1);
+  });
+});

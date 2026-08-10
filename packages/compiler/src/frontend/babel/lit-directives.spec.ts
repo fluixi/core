@@ -1,47 +1,23 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeAll } from 'vitest';
-import * as babel from '@babel/core';
-import cjsPlugin from '@babel/plugin-transform-modules-commonjs';
-import plugin from './plugin.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
+import { compile, flat, load as loadModule } from '../../../test/fixtures.js';
 
 /**
- * Phase-2 directives added on top of the parser refactor: ref, the onClick
- * event alias, if/else, each/key, bind:, class:, style:. Driven through the
- * whole-file plugin so control-flow imports (Show/For) are injected exactly as
- * in a real build, then run against the live @fluixi/dom runtime.
+ * ref, the onClick event alias, if/else, each/key, bind:, class:, style:. Driven
+ * through the whole-file compile so control-flow imports (Show/For) are injected
+ * exactly as in a real build, then run against the live @fluixi/dom runtime.
  */
-const LIT = {
-  format: 'lit' as const,
-  signalModule: '@fluixi/dom',
-  controlFlowModule: '@fluixi/dom',
-};
-
-const compileEsm = (src: string) =>
-  babel.transformSync(src, { filename: 't.tsx', configFile: false, babelrc: false, plugins: [[plugin, LIT]] })!.code!;
-
-/** Collapse whitespace so assertions don't depend on the printer's line breaks. */
-const flat = (s: string) => s.replace(/\s+/g, ' ');
-
-const REQUIRE_MAP: Record<string, unknown> = {
+const MODULES: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
   '@fluixi/reactive/store': Store,
 };
 
-function load(src: string): any {
-  const esm = compileEsm(src);
-  const code = babel.transformSync(esm, { filename: 't.js', configFile: false, babelrc: false, plugins: [cjsPlugin] })!.code!;
-  const moduleObj = { exports: {} as any };
-  const req = (id: string) => {
-    if (id in REQUIRE_MAP) return REQUIRE_MAP[id];
-    throw new Error('unexpected require: ' + id);
-  };
-  new Function('exports', 'require', 'module', code)(moduleObj.exports, req, moduleObj);
-  return moduleObj.exports;
-}
+const compileEsm = (src: string) => compile(src);
+const load = (src: string): any => loadModule(compileEsm(src), MODULES);
 
 beforeAll(() => {
   DOM.registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
@@ -55,7 +31,7 @@ describe('lit directives — events & bindings', () => {
   });
 
   it('ref binding emits a ref prop', () => {
-    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('ref: ref');
+    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('ref: (ref)');
   });
 
   it('property binding stays a property', () => {
@@ -120,14 +96,14 @@ describe('lit forced bindings — prop: / attr: / bool:', () => {
 describe('lit directives — bind:', () => {
   it('bind:value expands to value + onInput on a signal tuple', () => {
     const code = compileEsm('export const r = (name) => html`<input bind:value=${name} />`;');
-    expect(code).toContain('name[0]()');
-    expect(code).toContain('name[1](e.target.value)');
+    expect(code).toContain('(name)[0]()');
+    expect(code).toContain('(name)[1](e.target.value)');
   });
 
   it('bind:checked uses checked + onChange', () => {
     const code = compileEsm('export const r = (flag) => html`<input type="checkbox" bind:checked=${flag} />`;');
-    expect(code).toContain('flag[0]()');
-    expect(code).toContain('flag[1](e.target.checked)');
+    expect(code).toContain('(flag)[0]()');
+    expect(code).toContain('(flag)[1](e.target.checked)');
   });
 
   it('two-way updates the signal on input at runtime', () => {
@@ -146,7 +122,7 @@ describe('lit directives — if / else', () => {
   it('if lowers to <Show> and auto-imports it', () => {
     const code = compileEsm('export const r = (cond) => html`<div if=${cond()}>hi</div>`;');
     expect(code).toContain('createComponent');
-    expect(flat(code)).toContain('get when() { return cond(); }');
+    expect(flat(code)).toContain('get when() { return (cond()); }');
     expect(code).toMatch(/import \{[^}]*\bShow\b[^}]*\} from "@fluixi\/dom"/);
   });
 
@@ -188,7 +164,7 @@ describe('lit directives — each', () => {
 
   it('each folds a static key into a `by` prop', () => {
     const code = compileEsm('export const r = (rows) => html`<li each=${rows()} key="id">${(r) => r.id}</li>`;');
-    expect(flat(code)).toContain('get by() { return item => item["id"];');
+    expect(flat(code)).toContain('get by() { return ((item) => item["id"]); }');
   });
 });
 
@@ -445,15 +421,6 @@ describe('lit dynamic component tag', () => {
 });
 
 describe('named slots', () => {
-  const compile = (src: string) =>
-    babel.transformSync(src, {
-      filename: 't.ts',
-      configFile: false,
-      babelrc: false,
-      parserOpts: { plugins: ['typescript'] },
-      plugins: [[plugin, { format: 'lit' }]],
-    })!.code!;
-
   it('does not emit a key twice when a slot shadows an attribute', () => {
     // `<Card header>` sets the prop, `<span slot="header">` supplies content. Emitting
     // both is valid JS where the last wins, but the first is dead and esbuild warns.
