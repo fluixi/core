@@ -15,7 +15,7 @@ import _generate from '@babel/generator';
 import type { Piece } from '@fluixi/template-parser';
 import type { IRNode } from '../../ir/nodes.js';
 import { lowerTemplate, type TemplateHole } from '../../lower/template.js';
-import { genExpr, isReactiveExpr } from './build-ir.js';
+import { genExpr, isReactiveExpr, type NestedHook } from './build-ir.js';
 
 const generate: any = (_generate as any).default ?? (_generate as any);
 function gen(node: t.Node): string {
@@ -23,9 +23,9 @@ function gen(node: t.Node): string {
 }
 
 /** Describe one `${…}` for the lowering. */
-function bindHole(expr: t.Expression, used: Set<string>, events?: Set<string>): TemplateHole {
+function bindHole(expr: t.Expression, used: Set<string>, onNested?: NestedHook): TemplateHole {
   const hole: TemplateHole = {
-    code: genExpr(expr, used, events),
+    code: genExpr(expr, used, onNested),
     reactive: isReactiveExpr(expr),
   };
 
@@ -36,7 +36,7 @@ function bindHole(expr: t.Expression, used: Set<string>, events?: Set<string>): 
     const body = expr.body as t.Expression;
     hole.arrow = {
       params: expr.params.map((p) => gen(p)),
-      body: genExpr(body, used, events),
+      body: genExpr(body, used, onNested),
       bodyReactive: isReactiveExpr(body),
     };
   }
@@ -54,10 +54,10 @@ function bindHole(expr: t.Expression, used: Set<string>, events?: Set<string>): 
 export function lowerLitTemplate(
   node: t.TaggedTemplateExpression,
   used: Set<string>,
-  opts: { svg?: boolean; events?: Set<string> } = {},
+  opts: { svg?: boolean; onNested?: NestedHook } = {},
 ): IRNode {
   const quasi = node.quasi;
-  const holes = quasi.expressions.map((e) => bindHole(e as t.Expression, used, opts.events));
+  const holes = quasi.expressions.map((e) => bindHole(e as t.Expression, used, opts.onNested));
   return lowerTemplate(buildPieces(quasi), holes, used, opts);
 }
 

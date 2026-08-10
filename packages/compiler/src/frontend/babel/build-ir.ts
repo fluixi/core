@@ -34,7 +34,7 @@ function gen(node: t.Node): string {
  * for it (build-ir -> emit), so the resulting expression is plain JS. Runtime
  * symbols used by the nested code are added to `used`.
  */
-function transformNestedJSX(node: t.Expression, used: Set<string>, events?: Set<string>): t.Expression {
+function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: NestedHook): t.Expression {
   const clone = t.cloneNode(node, true) as t.Expression;
   const file = t.file(t.program([t.expressionStatement(clone)]));
   let changed = false;
@@ -49,7 +49,11 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, events?: Set<
   traverse(file, {
     'JSXElement|JSXFragment'(path: any) {
       const jsx = path.node as t.JSXElement | t.JSXFragment;
-      const { code, imports, templates } = imperativeBackend.emit(buildIR(jsx, used, events), {} as any);
+      // Resolve before emitting: the emitted call refers to the component by name,
+      // and whoever injects the import has to have seen it.
+      const nestedIR = buildIR(jsx, used, onNested);
+      onNested?.(nestedIR);
+      const { code, imports, templates } = imperativeBackend.emit(nestedIR, {} as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
     // Nested lit templates compose: ${cond ? html`…` : html`…`},
@@ -57,8 +61,8 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, events?: Set<
     TaggedTemplateExpression(path: any) {
       const tag = path.node.tag;
       if (!t.isIdentifier(tag) || (tag.name !== 'html' && tag.name !== 'svg')) return;
-      const ir = buildIRFromLit(path.node, used, { svg: tag.name === 'svg' });
-      if (events) collectDelegated(ir, events);
+      const ir = buildIRFromLit(path.node, used, { svg: tag.name === 'svg', onNested });
+      onNested?.(ir);
       const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
@@ -69,21 +73,19 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, events?: Set<
 }
 
 /** Stringify an expression, compiling any JSX nested inside it first. */
-export function genExpr(node: t.Expression, used: Set<string>, events?: Set<string>): string {
-  return gen(transformNestedJSX(node, used, events));
+export function genExpr(node: t.Expression, used: Set<string>, onNested?: NestedHook): string {
+  return gen(transformNestedJSX(node, used, onNested));
 }
 
 /**
- * Delegated event names in a subtree. JSX nested inside an expression is compiled
- * and discarded during the walk, so without this its handlers never reach the
- * delegateEvents call and the listener is registered nowhere.
+ * Called with the IR of JSX (or a template) found inside an expression.
+ *
+ * That IR is compiled and thrown away during the walk, so anything the module
+ * needs because of it — a component import, a delegated event — has to be taken
+ * off it here or it is lost. Without this, `{(b) => <Input/>}` emitted a
+ * reference to `Input` that nothing imported.
  */
-function collectDelegated(node: IRNode, out: Set<string>): void {
-  if ('props' in node && node.props) {
-    for (const p of node.props) if (p.kind === 'event' && p.event?.delegated) out.add(p.event.name);
-  }
-  if ('children' in node && node.children) for (const c of node.children) collectDelegated(c, out);
-}
+export type NestedHook = (ir: IRNode) => void;
 
 export const SVG_TAGS = new Set([
   'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
@@ -127,7 +129,7 @@ export function isReactiveExpr(node: t.Expression): boolean {
 export function buildIR(
   node: t.JSXElement | t.JSXFragment,
   used: Set<string> = new Set(),
-  events?: Set<string>,
+  onNested?: NestedHook,
 ): IRNode {
   const ir = buildJsxIR(node as never, {
     code: (n) =>
@@ -135,9 +137,8 @@ export function buildIR(
       // through the nested-JSX compile — it only ever needs printing.
       (n as t.Node).type === 'JSXMemberExpression'
         ? gen(n as t.Node)
-        : genExpr(n as never, used, events),
+        : genExpr(n as never, used, onNested),
     used,
   });
-  if (events) collectDelegated(ir, events);
   return ir;
 }
