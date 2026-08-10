@@ -5,20 +5,14 @@ import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
-import { injectAppAndHead, splitTemplate, guardHandler } from './internal.js';
-import {
-  createRequestHandler,
-  serveNode,
-  streamDocument,
-  withStaticFiles,
-  type FetchHandler,
-} from './handler.js';
-import { composeMiddleware, normalizeMiddleware } from './middleware.js';
+import { serveNode, withStaticFiles, type FetchHandler } from './handler.js';
+import { createHandlerFrom } from './handler-core.js';
 
 /**
  * Build the production SSR fetch handler from a `fluixi build` output (dist/server +
- * dist/client/index.html). It's runtime-neutral — the SAME handler runs on Node, Bun,
- * Deno, and edge/worker runtimes. Adapters decide how to serve it + assets.
+ * dist/client/index.html), reading both off disk. Runtime-neutral once assembled, but
+ * the assembly is not: a worker has no filesystem, so a deploy adapter generates an
+ * entry that imports the same pieces statically and calls `createHandlerFrom`.
  */
 export async function createProdHandler(config: FluixiConfig = {}): Promise<FetchHandler> {
   const cfg = resolveConfig(config);
@@ -30,46 +24,13 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     ? await import(/* @vite-ignore */ pathToFileURL(serverEntry).href)
     : {};
 
-  // Streaming when the entry exports `renderStream` (a body stream): flush the split
-  // template head first, pipe the body, then the tail. Else inject the string render.
-  let core: FetchHandler;
-  if (!cfg.ssr) {
-    // SPA: the page is the static shell; the client entry renders it. Server functions +
-    // middleware still run through this handler — there's just no SSR render pass.
-    core = createRequestHandler(async () => template);
-  } else if (typeof mod.renderStream === 'function') {
-    const { head, tail } = splitTemplate(template, cfg.mountId);
-    core = async (request) => {
-      const url = new URL(request.url);
-      const body = await mod.renderStream(url.pathname + url.search, request);
-      return streamDocument(head, body, tail);
-    };
-  } else {
-    const render = mod.render ?? mod.default;
-    core = createRequestHandler(async (url, request) =>
-      injectAppAndHead(template, await render(url, request), cfg.mountId),
-    );
-  }
-
-  // Server-function RPC dispatch. The entry-server module re-exports the dispatcher, so
-  // it shares the registry that the app's "use server" modules populated (a separate
-  // node-imported copy would have an empty registry).
-  if (typeof mod.handleServerFn === 'function' && typeof mod.isServerFnRequest === 'function') {
-    const render = core;
-    core = (request) => (mod.isServerFnRequest(request) ? mod.handleServerFn(request) : render(request));
-  }
-
-  // File-based API routes — the entry-server re-exports them from virtual:fluixi-api.
-  if (typeof mod.handleApiRequest === 'function' && typeof mod.isApiRequest === 'function') {
-    const next = core;
-    core = (request) => (mod.isApiRequest(request) ? mod.handleApiRequest(request) : next(request));
-  }
-
   // Optional request middleware (src/middleware.ts → dist/server/middleware.js).
   const mwFile = resolve(cfg.root, 'dist/server', 'middleware.js');
-  if (!existsSync(mwFile)) return guardHandler(core);
-  const mwMod = await import(/* @vite-ignore */ pathToFileURL(mwFile).href);
-  return guardHandler(composeMiddleware(normalizeMiddleware(mwMod), core));
+  const middleware = existsSync(mwFile)
+    ? await import(/* @vite-ignore */ pathToFileURL(mwFile).href)
+    : undefined;
+
+  return createHandlerFrom({ template, mod, cfg, middleware });
 }
 
 export interface AdapterContext {
@@ -79,12 +40,33 @@ export interface AdapterContext {
   clientDir: string;
 }
 
+/** What an adapter is given after `fluixi build` has produced its output. */
+export interface AdapterBuildContext {
+  cfg: ResolvedConfig;
+  /** App root. */
+  root: string;
+  /** Client assets and prerendered HTML (dist/client). */
+  clientDir: string;
+  /** The built server entry and middleware (dist/server). */
+  serverDir: string;
+  /** False for a fully static SPA, which ships no server entry to wrap. */
+  hasServer: boolean;
+  /**
+   * Bundle a generated entry into one self-contained file. Adapters emit a small
+   * platform entry — the worker's `fetch` export, the function's handler — and this
+   * pulls the server bundle and the template into it, because none of these
+   * platforms can resolve a module or read a file at runtime.
+   */
+  bundleEntry(source: string, outFile: string): Promise<void>;
+}
+
 /**
- * A deploy target. The runtime-neutral fetch handler is the portable core; an adapter
- * packages it for a platform: filesystem runtimes (node) listen on a port and serve
- * static files from disk; edge/serverless runtimes return a `{ fetch }` export the
- * platform invokes (assets served by the platform/CDN). Build-time artifact emission
- * (worker bundle, function manifest) is a later increment.
+ * A deploy target.
+ *
+ * The runtime-neutral fetch handler is the portable core; an adapter packages it for a
+ * platform — how the server is bundled (`bundle`), how it is served in development or
+ * on a long-running host (`serve`), and what a deploy actually needs on disk
+ * (`build`): a worker entry, a function manifest, a routing config.
  */
 export interface Adapter {
   name: string;
@@ -102,6 +84,11 @@ export interface Adapter {
    */
   bundle?: 'external' | 'inline';
   serve(ctx: AdapterContext): Promise<void> | { fetch: FetchHandler };
+  /**
+   * Emit the platform's output layout. Runs after the client and server builds and
+   * after prerendering, so everything it copies or wraps already exists.
+   */
+  build?(ctx: AdapterBuildContext): Promise<void> | void;
 }
 
 /** Reference filesystem adapter — Node `http` + static files from dist/client. */
@@ -117,6 +104,8 @@ export const nodeAdapter: Adapter = {
     });
   },
 };
+
+export { cloudflareAdapter, netlifyAdapter, vercelAdapter } from './adapters/platforms.js';
 
 /** Reference edge/web adapter — export `{ fetch }`; the platform serves assets. */
 export const webAdapter: Adapter = {

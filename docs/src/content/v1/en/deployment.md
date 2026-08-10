@@ -81,6 +81,36 @@ bundle — would put two routers with two sets of module state in the same serve
 > Only the build reads `bundle`. Dev never externalizes: `fluixi dev` loads server modules
 > through Vite so that editing them still triggers HMR.
 
+## The hosted platforms
+
+Three adapters emit the layout their platform reads. Each inlines the framework and
+returns a `fetch` handler; what differs is where the entry goes and what declares the
+routing.
+
+```ts
+import { cloudflareAdapter } from '@fluixi/start/adapter';
+// or netlifyAdapter, vercelAdapter
+
+export default defineConfig({ adapter: cloudflareAdapter });
+```
+
+| | what `fluixi build` writes | what you deploy |
+| --- | --- | --- |
+| `cloudflareAdapter` | `dist/client/_worker.js` + `_routes.json` | publish `dist/client` |
+| `netlifyAdapter` | `.netlify/functions-internal/fluixi-server.mjs` | publish `dist/client` |
+| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | nothing — Vercel reads it directly |
+
+Each one serves static files first and only reaches the server for a miss: Cloudflare
+through the `ASSETS` binding, Netlify through `preferStatic`, Vercel through a
+`filesystem` route ahead of the function. A prerendered page is a file, so it stays one.
+
+The entry is generated and bundled into a single file — no chunks. On Cloudflare that
+is not a size choice: the worker is written into the directory you publish, so a split
+chunk would be a publicly downloadable piece of your server.
+
+An app with no server entry (a fully prerendered SPA) gets the static output alone,
+which is not a failure — there is nothing to wrap.
+
 ## Writing an adapter
 
 An adapter is a name, a serve function, and optionally the bundle mode its platform needs:
@@ -103,10 +133,25 @@ export const myAdapter: Adapter = {
 filesystem runtime uses `clientDir` to serve assets; an edge runtime ignores it because the
 platform already does.
 
-> Adapters cover **serving** and how the server is bundled. Emitting platform artifacts — a
-> worker entry, a function manifest, a platform config file — is not implemented yet, so
-> targeting a platform that requires a specific output layout still means arranging that
-> yourself.
+An adapter can also emit the platform's output layout, through an optional `build`
+hook that runs after the client build, the server build and prerendering:
+
+```ts
+export const myAdapter: Adapter = {
+  name: 'my-platform',
+  bundle: 'inline',
+  serve: ({ handler }) => ({ fetch: handler }),
+  async build({ clientDir, bundleEntry }) {
+    await bundleEntry(myEntrySource, `${clientDir}/_worker.js`);
+  },
+};
+```
+
+`bundleEntry` inlines the server bundle and the HTML template into one file. Both have
+to be inlined rather than read: `createProdHandler` reads `index.html` off disk and
+imports the server entry by path, which is exactly what a worker cannot do — so the
+generated entry imports them statically and calls `createHandlerFrom` instead. Same
+handler, same dispatch order, no filesystem.
 
 ## What to deploy
 

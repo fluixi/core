@@ -85,6 +85,36 @@ bundle-le quand même ».
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
 > serveur via Vite pour que leur édition déclenche toujours le HMR.
 
+## Les plateformes hébergées
+
+Trois adaptateurs produisent la disposition que leur plateforme lit. Chacun inline le
+framework et renvoie un gestionnaire `fetch` ; ce qui change, c'est l'endroit où va le
+point d'entrée et ce qui déclare le routage.
+
+```ts
+import { cloudflareAdapter } from '@fluixi/start/adapter';
+// ou netlifyAdapter, vercelAdapter
+
+export default defineConfig({ adapter: cloudflareAdapter });
+```
+
+| | ce que `fluixi build` écrit | ce que vous déployez |
+| --- | --- | --- |
+| `cloudflareAdapter` | `dist/client/_worker.js` + `_routes.json` | publiez `dist/client` |
+| `netlifyAdapter` | `.netlify/functions-internal/fluixi-server.mjs` | publiez `dist/client` |
+| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | rien — Vercel le lit directement |
+
+Chacun sert d'abord les fichiers statiques et n'atteint le serveur qu'en cas d'absence :
+Cloudflare via le binding `ASSETS`, Netlify via `preferStatic`, Vercel via une route
+`filesystem` placée avant la fonction. Une page prérendue est un fichier, et le reste.
+
+Le point d'entrée est généré puis bundlé en un seul fichier, sans chunks. Sur Cloudflare
+ce n'est pas un choix de taille : le worker est écrit dans le dossier que vous publiez,
+donc un chunk séparé serait un morceau de votre serveur téléchargeable publiquement.
+
+Une application sans point d'entrée serveur (une SPA entièrement prérendue) reçoit la
+sortie statique seule — ce n'est pas un échec, il n'y a rien à envelopper.
+
 ## Écrire un adaptateur
 
 Un adaptateur, c'est un nom, une fonction `serve`, et éventuellement le mode de bundling
@@ -108,10 +138,14 @@ export const myAdapter: Adapter = {
 runtime avec système de fichiers utilise `clientDir` pour servir les assets ; un runtime
 edge l'ignore, la plateforme s'en chargeant déjà.
 
-> Les adaptateurs couvrent le **service** et la façon dont le serveur est bundlé. L'émission
-> d'artefacts de plateforme — point d'entrée worker, manifeste de fonctions, fichier de
-> configuration — n'est pas encore implémentée : viser une plateforme exigeant une
-> disposition de sortie précise demande donc encore de l'organiser vous-même.
+Un adaptateur peut aussi produire la disposition de sortie de la plateforme, via un
+hook `build` optionnel exécuté après le build client, le build serveur et le prérendu.
+`bundleEntry` inline le bundle serveur et le gabarit HTML dans un seul fichier : les
+deux doivent être inlinés plutôt que lus, puisque `createProdHandler` lit `index.html`
+sur le disque et importe l'entrée serveur par chemin — exactement ce qu'un worker ne
+peut pas faire. L'entrée générée les importe statiquement et appelle
+`createHandlerFrom` : même gestionnaire, même ordre de dispatch, aucun système de
+fichiers.
 
 ## Ce qu'il faut déployer
 
