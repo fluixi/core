@@ -77,15 +77,16 @@ export interface CompilerOptions {
   format?: 'jsx' | 'lit' | 'both';
 
   /**
-   * Compile by rewriting the source directly instead of running inside babel.
-   * Same IR, same backend, same output; it parses once and splices, so nothing
-   * is reprinted and edits carry a source map. Types are left in place for
-   * esbuild to strip, which it does after this plugin either way.
+   * Compile through babel instead of rewriting the source directly.
    *
-   * Opt-in while the two paths are compared on real apps.
+   * The default path parses once and splices the emitted code over the spans it
+   * replaces: nothing is reprinted, edits carry a source map, and types are left
+   * for esbuild to strip. Babel is kept for the cases that need to sit inside its
+   * pipeline — a `babel.config.js` with other plugins that have to see the
+   * output. It needs `@babel/core` and friends installed; they are optional peers.
    * @default false
    */
-  native?: boolean;
+  babel?: boolean;
 
   /**
    * Tag name marking a lit template for compilation (when `format` includes lit).
@@ -253,7 +254,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         return null;
       }
 
-      if (options.native) {
+      if (!options.babel) {
         const { transformTemplates } = await import('./transform/index.js');
         const out = transformTemplates(code, id, {
           resolve: options.resolve,
@@ -268,7 +269,6 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         return out ? { code: out.code, map: out.map } : null;
       }
 
-      // Load babel plugin dynamically on first transform
       const babelPlugin = await createBabelPlugin(options);
 
       try {
@@ -478,8 +478,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 // "use server" — server functions vite plugin
 // ============================================================================
 
-export { transformServerFunctions } from './frontend/babel/server-functions.js';
-import { transformServerFunctions as _txServerFns } from './frontend/babel/server-functions.js';
+export type { ServerFnTransformOptions } from './frontend/babel/server-functions.js';
 import type { ComponentResolverRule } from './resolve/component-resolver.js';
 import { writeComponentGlobals } from './resolve/write-globals.js';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -518,7 +517,7 @@ function findServerFnModules(dir: string, out: string[] = []): string[] {
  * register only when their chunk loads → an RPC registry miss). The client never imports
  * it. `enforce:'pre'` so it runs on the raw source before other transforms.
  */
-export function serverFunctionsVitePlugin<T = any>(options: { native?: boolean } = {}): T {
+export function serverFunctionsVitePlugin<T = any>(options: { babel?: boolean } = {}): T {
   let root = process.cwd();
   return {
     name: 'fluixi-server-functions',
@@ -547,11 +546,12 @@ export function serverFunctionsVitePlugin<T = any>(options: { native?: boolean }
       if (!/\.[jt]sx?$/.test(id)) return null;
       if (!code.includes('use server')) return null;
       const args = { ssr: !!opts?.ssr, filename: id, root };
-      if (options.native) {
-        const { transformServerFns } = await import('./transform/server-fns.js');
-        return transformServerFns(code, args);
+      if (options.babel) {
+        const { transformServerFunctions } = await import('./frontend/babel/server-functions.js');
+        return transformServerFunctions(code, args);
       }
-      return _txServerFns(code, args);
+      const { transformServerFns } = await import('./transform/server-fns.js');
+      return transformServerFns(code, args);
     },
   } as T;
 }

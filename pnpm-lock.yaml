@@ -683,18 +683,6 @@ importers:
 
   packages/start:
     dependencies:
-      '@babel/core':
-        specifier: ^7.28.5
-        version: 7.29.7
-      '@babel/generator':
-        specifier: ^7.29.1
-        version: 7.29.7
-      '@babel/helper-plugin-utils':
-        specifier: ^7.27.1
-        version: 7.29.7
-      '@babel/preset-typescript':
-        specifier: ^7.28.5
-        version: 7.29.7(@babel/core@7.29.7)
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -722,6 +710,19 @@ importers:
       vite-plugin-node-polyfills:
         specifier: ^0.25.0
         version: 0.25.0(rollup@4.61.0)(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0))
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.28.5
+        version: 7.29.7
+      '@babel/generator':
+        specifier: ^7.29.1
+        version: 7.29.7
+      '@babel/helper-plugin-utils':
+        specifier: ^7.27.1
+        version: 7.29.7
+      '@babel/preset-typescript':
+        specifier: ^7.28.5
+        version: 7.29.7(@babel/core@7.29.7)
 
   packages/template-parser:
     devDependencies:
@@ -786,6 +787,10 @@ importers:
 
   packages/vite-plugin:
     dependencies:
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+    devDependencies:
       '@babel/core':
         specifier: ^7.28.5
         version: 7.29.7
@@ -798,10 +803,6 @@ importers:
       '@babel/preset-typescript':
         specifier: ^7.28.5
         version: 7.29.7(@babel/core@7.29.7)
-      '@fluixi/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-    devDependencies:
       '@bambiste/mix-builder':
         specifier: ^0.1.0
         version: 0.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
