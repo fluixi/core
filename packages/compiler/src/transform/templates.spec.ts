@@ -215,3 +215,52 @@ describe('transformTemplates compiles JSX too', () => {
     expect(host.textContent).toContain('two');
   });
 });
+
+describe('the module prologue', () => {
+  const compile = (src: string, opts = {}) =>
+    transformTemplates(src, 't.tsx', { ...OPTS, ...opts })!.code;
+
+  it('registers delegated events', () => {
+    const out = compile('export const r = (f) => <button onClick={f}>x</button>;');
+    expect(out).toContain('delegateEvents(["click"])');
+    expect(out).toMatch(/import \{[^}]*delegateEvents/);
+  });
+
+  it('does not register an undelegated event', () => {
+    const out = compile('export const r = (f) => <video onTimeUpdate={f} />;');
+    expect(out).not.toContain('delegateEvents');
+  });
+
+  it('imports a component a resolve rule supplies', () => {
+    const out = compile('export const r = () => <Card />;', {
+      resolve: [{ components: { Card: '@ui/card' } }],
+    });
+    expect(out).toContain('from "@ui/card"');
+  });
+
+  it('emits a deferred binding for a lazy component', () => {
+    const out = compile('export const r = () => <Chart load:idle />;', {
+      resolve: [{ components: { Chart: '@ui/chart' } }],
+    });
+    expect(out).toContain('deferred(() => import("@ui/chart")');
+    expect(out).toContain('kind: "idle"');
+  });
+
+  it('keeps a media query on the strategy', () => {
+    const out = compile('export const r = () => <Chart load:media="(min-width: 1024px)" />;', {
+      resolve: [{ components: { Chart: '@ui/chart' } }],
+    });
+    expect(out).toContain('query: "(min-width: 1024px)"');
+  });
+
+  it('leaves a name the file already binds alone', () => {
+    const out = compile('const Show = () => null;\nexport const r = (c) => <Show when={c()} />;');
+    expect(out).not.toMatch(/import \{[^}]*\bShow\b/);
+  });
+
+  it('rewrites the rx alias to the reactive package', () => {
+    const out = compile('import { createSignal } from "@fluixi/core/rx";\nexport const r = () => <p>{createSignal()}</p>;');
+    expect(out).toContain('"@fluixi/reactive"');
+    expect(out).not.toContain('@fluixi/core/rx');
+  });
+});

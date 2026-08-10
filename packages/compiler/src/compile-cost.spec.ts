@@ -12,6 +12,7 @@ import * as babel from '@babel/core';
 import plugin from './frontend/babel/plugin.js';
 import { buildIR } from './frontend/babel/build-ir.js';
 import { imperativeBackend } from './codegen/backends/imperative.js';
+import { transformTemplates } from './transform/templates.js';
 
 const unit = (i: number) => `
 export function C${i}({ items, on }: any) {
@@ -58,6 +59,10 @@ describe.runIf(process.env.FLUIXI_BENCH)('compile cost', () => {
     const full = time('full transform (plugin)', 10, () => {
       babel.transformSync(SRC, { ...BASE, plugins: [[plugin, OPTS]] });
     });
+    const native = time('full transform (native)', 10, () => {
+      transformTemplates(SRC, 't.tsx', { runtimeModule: '@fluixi/dom' });
+    });
+
     const ast = babel.parseSync(SRC, { ...BASE, parserOpts: { plugins: ['jsx', 'typescript'] } });
     const roots = jsxRoots(ast);
     const emit = time(`build-ir + emit (${roots.length} roots)`, 10, () => {
@@ -67,5 +72,6 @@ describe.runIf(process.env.FLUIXI_BENCH)('compile cost', () => {
     console.log(`  parse is ${((parse / full) * 100).toFixed(0)}% of a full transform`);
     console.log(`  framework IR work is ${((emit / full) * 100).toFixed(0)}%`);
     console.log(`  host overhead (traverse + reparse + print) is ${(((full - parse - emit) / full) * 100).toFixed(0)}%`);
+    console.log(`  native is ${(full / native).toFixed(1)}x the plugin on the same source`);
   }, 120_000);
 });

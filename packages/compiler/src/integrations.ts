@@ -77,6 +77,17 @@ export interface CompilerOptions {
   format?: 'jsx' | 'lit' | 'both';
 
   /**
+   * Compile by rewriting the source directly instead of running inside babel.
+   * Same IR, same backend, same output; it parses once and splices, so nothing
+   * is reprinted and edits carry a source map. Types are left in place for
+   * esbuild to strip, which it does after this plugin either way.
+   *
+   * Opt-in while the two paths are compared on real apps.
+   * @default false
+   */
+  native?: boolean;
+
+  /**
    * Tag name marking a lit template for compilation (when `format` includes lit).
    * @default 'html'
    */
@@ -237,12 +248,28 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     },
 
     async transform(code: string, id: string) {
-      // Load babel plugin dynamically on first transform
-      const babelPlugin = await createBabelPlugin(options);
       // Only process JSX/TSX files
       if (!/\.(jsx|tsx|ts)$/i.test(id)) {
         return null;
       }
+
+      if (options.native) {
+        const { transformTemplates } = await import('./transform/index.js');
+        const out = transformTemplates(code, id, {
+          resolve: options.resolve,
+          litTag: options.litTag,
+          templateClone: options.templateClone,
+          partialTemplates: options.partialTemplates,
+          runtimeModule: options.signalModule,
+          controlFlowModule: options.controlFlowModule,
+          routerModule: options.routerModule,
+          reactiveModule: options.reactiveModule,
+        });
+        return out ? { code: out.code, map: out.map } : null;
+      }
+
+      // Load babel plugin dynamically on first transform
+      const babelPlugin = await createBabelPlugin(options);
 
       try {
         // Use dynamic import instead of require for ESM compatibility
