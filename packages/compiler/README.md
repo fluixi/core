@@ -4,7 +4,7 @@
 
 # @fluixi/compiler
 
-**The Fluixi compiler — host-agnostic IR + pluggable codegen backends.**
+**The Fluixi compiler — parses, lowers and emits. Not a Babel plugin.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -20,10 +20,17 @@ the **imperative backend** compiles that straight into [`@fluixi/dom`](../dom) r
 calls (`createNativeElement`/`spread`/`insert`/`createComponent`/…). No VDOM, and no
 `jsx()` dispatch at runtime.
 
-Only the front-end knows about Babel. The IR, the resolve and optimize passes, and codegen
-import none of it — importing `@fluixi/compiler` loads no Babel code. The `@fluixi/jsx`
-automatic runtime is still what esbuild and TypeScript's `jsxImportSource` point at; this
-compiler simply never emits a call into it.
+It owns the transform rather than running inside someone else's: parse once, splice the
+emitted code over the spans it replaces. Nothing is reprinted, so a hole keeps the text the
+author wrote and every edit carries a source map; types are left in place for the bundler
+to strip.
+
+`@babel/parser` is the only package it takes from that namespace, used as a parser — the
+same position Vue's compiler is in. `@babel/core` and the plugin machinery are optional
+peers, needed only by `babel: true`.
+
+The `@fluixi/jsx` automatic runtime is still what esbuild and TypeScript's
+`jsxImportSource` point at; this compiler simply never emits a call into it.
 
 It also provides the **`"use server"`** transform (server functions): the client build
 gets an RPC stub, the server build keeps and registers the body.
@@ -53,19 +60,35 @@ export default defineConfig({
 });
 ```
 
-There is no string-in/string-out entry point yet: compilation runs as a Babel plugin, via
-one of the integrations above or `@fluixi/compiler/babel` directly. A native `compile()`
-that skips the host round-trip is the next step — the IR and codegen it would call are
-already in place and Babel-free.
+Or compile a module directly:
+
+```ts
+import { transformTemplates } from '@fluixi/compiler/transform';
+
+const { code, map } = transformTemplates(source, 'App.tsx', {})!;
+```
+
+`transformTemplates` returns `null` when a module has no JSX and no templates, so a
+bundler can leave the file untouched.
+
+### Compiling through Babel
+
+`fluixi({ babel: true })` routes through the Babel front-end instead. It exists for a
+project whose own Babel plugins have to see the compiled output; it needs `@babel/core`
+and friends installed, and says so rather than degrading. Everything else — the IR, the
+passes, the backend — is the same code either way.
 
 ## 🔌 Subpaths
 
-| Import | What | Loads Babel |
+| Import | What | Babel |
 | --- | --- | --- |
-| `@fluixi/compiler` | IR, codegen backends, resolve/optimize passes, options | no |
-| `@fluixi/compiler/builtins` | the control-flow / router component names | no |
-| `@fluixi/compiler/integrations` | `createVitePlugin`, `serverFunctionsVitePlugin`, webpack/rollup/esbuild adapters | yes |
-| `@fluixi/compiler/babel` | the Babel plugin front-end | yes |
+| `@fluixi/compiler` | IR, codegen backends, resolve/optimize passes, options | none |
+| `@fluixi/compiler/builtins` | the control-flow / router component names | none |
+| `@fluixi/compiler/transform` | `transformTemplates`, `transformServerFns` | parser only |
+| `@fluixi/compiler/integrations` | vite, webpack, rollup and esbuild adapters | parser only |
+| `@fluixi/compiler/babel` | the Babel plugin front-end | `@babel/core` |
+
+`no-babel-in-core.spec.ts` fails the build if that column stops being true.
 
 ## 📄 License
 

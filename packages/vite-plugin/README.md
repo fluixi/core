@@ -4,7 +4,7 @@
 
 # @fluixi/vite-plugin
 
-**The Vite plugin for Fluixi — JSX transform + codegen backend selection.**
+**The Vite plugin for Fluixi — compiles JSX and `` html`` `` templates.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -15,8 +15,11 @@
 
 ## ✨ Overview
 
-`@fluixi/vite-plugin` sets the esbuild `jsxImportSource` and runs the Fluixi JSX transform
-(via [`@fluixi/compiler`](../compiler)), with a choice of codegen backend. `@fluixi/core`
+`@fluixi/vite-plugin` sets the esbuild `jsxImportSource` and runs the Fluixi compile
+(via [`@fluixi/compiler`](../compiler)) — JSX and `` html`...` `` both, straight into
+`@fluixi/dom` runtime calls. It rewrites the source in place, so output carries a source
+map and holes keep the text the author wrote. Nothing from babel is installed for it.
+`@fluixi/core`
 re-exports `fluixi`/`createVitePlugin` from here, and [`@fluixi/start`](../start) wires it
 in automatically — use this plugin directly for a plain (non-meta-framework) Vite app.
 
@@ -54,6 +57,7 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | `templateClone` / `partialTemplates` | `true` | clone static subtrees instead of building them |
 | `delegateEvents` | `true` | event delegation |
 | `sourceMaps` | `true` | emit source maps |
+| `babel` | `false` | compile through the babel front-end instead, for a project whose own babel plugins have to see the output. Needs `@babel/core`, which is an optional peer |
 
 ## 📄 License
 
