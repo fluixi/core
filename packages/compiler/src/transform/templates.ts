@@ -10,6 +10,7 @@ import { parse } from '@babel/parser';
 import MagicString from 'magic-string';
 import type { Piece } from '@fluixi/template-parser';
 import { compilePieces, type CompileTemplateOptions } from '../lower/compile-template.js';
+import type { StaticTemplate } from '../codegen/backend.js';
 import type { TemplateHole } from '../lower/template.js';
 import type { IRComponentSource, IRLoadStrategy, IRNode } from '../ir/nodes.js';
 import { isDeferred } from '../resolve/load-directive.js';
@@ -20,7 +21,7 @@ import { analyzeStatic } from '../optimize/analyze-static.js';
 import { collapseStrategies } from '../optimize/collapse-strategies.js';
 import { resolveComponentSources } from '../resolve/resolve-ir.js';
 import { createComponentResolver } from '../resolve/component-resolver.js';
-import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
+import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 
 interface Node {
@@ -151,6 +152,28 @@ function bindHole(code: string, expr: Node, edits: Edit[]): TemplateHole {
  * component references the resolve pass annotated, and the events it wants
  * delegated. Both live on the IR rather than in the emit result.
  */
+/**
+ * Static templates hoisted to module scope, keyed by their HTML so two components
+ * with the same markup share one string. The backend numbers them per emit, and
+ * those local ids share the `_tmpl$N` namespace with the hoisted names — so the
+ * rewrite is one pass, or a replacement can rewrite a name an earlier one just
+ * produced and point a template at another's HTML.
+ */
+function adoptTemplates(code: string, templates: StaticTemplate[] | undefined, hoisted: Map<string, string>): string {
+  if (!templates || templates.length === 0) return code;
+  const rename = new Map<string, string>();
+  for (const tpl of templates) {
+    const key = `${tpl.svg ? 'svg:' : ''}${tpl.html}`;
+    let name = hoisted.get(key);
+    if (!name) {
+      name = `_tmpl$${hoisted.size}`;
+      hoisted.set(key, name);
+    }
+    rename.set(tpl.id, name);
+  }
+  return code.replace(/_tmpl\$\d+/g, (id) => rename.get(id) ?? id);
+}
+
 interface Needs {
   /** Built-in control-flow / router names, imported from their own modules. */
   builtins: Set<string>;
@@ -234,6 +257,7 @@ export function transformTemplates(
   const needs: Needs = {
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
   };
+  const hoisted = new Map<string, string>();
   const edits: Edit[] = [];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
@@ -243,12 +267,13 @@ export function transformTemplates(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, options) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
     const result = compilePieces(toPieces(node), holes, {
       ...options,
+      hoistTemplates: true,
       // Same defaults as the plugin, so moving a build over is not a rendering change.
       templateClone: options.templateClone ?? true,
       partialTemplates: nested ? false : options.partialTemplates ?? true,
@@ -256,7 +281,7 @@ export function transformTemplates(
     });
     for (const symbol of result.imports) used.add(symbol);
     collectNeeds(result.ir, needs);
-    edits.push({ start: node.start, end: node.end, code: result.code });
+    edits.push({ start: node.start, end: node.end, code: adoptTemplates(result.code, result.templates, hoisted) });
   }
 
   const out = new MagicString(code);
@@ -264,7 +289,7 @@ export function transformTemplates(
   for (const e of outermost(edits)) out.overwrite(e.start, e.end, e.code);
 
   const bound = moduleBindings(ast.program);
-  const prologue = buildPrologue(used, needs, bound, options);
+  const prologue = buildPrologue(used, needs, hoisted, bound, options);
   if (prologue) out.prepend(prologue);
   // `@fluixi/core/rx` is the client alias for the reactive primitives.
   for (const node of ast.program.body as Node[]) {
@@ -291,6 +316,7 @@ function compileJsx(
   nested: boolean,
   used: Set<string>,
   needs: Needs,
+  hoisted: Map<string, string>,
   options: TransformOptions,
 ): string {
   const ir = buildJsxIR(node as never, {
@@ -314,7 +340,7 @@ function compileJsx(
   } as never);
   for (const symbol of emitted.imports) used.add(symbol);
   collectNeeds(ir, needs);
-  return inlineTemplates(emitted.code, emitted.templates);
+  return adoptTemplates(emitted.code, emitted.templates, hoisted);
 }
 
 /**
@@ -326,6 +352,7 @@ function compileJsx(
 function buildPrologue(
   used: Set<string>,
   needs: Needs,
+  hoisted: Map<string, string>,
   bound: Set<string>,
   options: TransformOptions,
 ): string | null {
@@ -365,6 +392,12 @@ function buildPrologue(
           `{ strategy: ${strategyLiteral(src.loading)}, export: ${JSON.stringify(src.export)} });`,
       );
     }
+  }
+  // Just the HTML: parsing is deferred to `templateNode`, which knows whether this
+  // is a server render, a hydration or a fresh client render. A module-scope
+  // `createTemplate` would touch `document` at import time and break SSR.
+  for (const [key, name] of hoisted) {
+    lines.push(`const ${name} = ${JSON.stringify(key.startsWith('svg:') ? key.slice(4) : key)};`);
   }
   if (needs.delegatedEvents.size > 0) {
     lines.push(`delegateEvents(${JSON.stringify([...needs.delegatedEvents])});`);

@@ -23,9 +23,9 @@ function gen(node: t.Node): string {
 }
 
 /** Describe one `${…}` for the lowering. */
-function bindHole(expr: t.Expression, used: Set<string>): TemplateHole {
+function bindHole(expr: t.Expression, used: Set<string>, events?: Set<string>): TemplateHole {
   const hole: TemplateHole = {
-    code: genExpr(expr, used),
+    code: genExpr(expr, used, events),
     reactive: isReactiveExpr(expr),
   };
 
@@ -36,7 +36,7 @@ function bindHole(expr: t.Expression, used: Set<string>): TemplateHole {
     const body = expr.body as t.Expression;
     hole.arrow = {
       params: expr.params.map((p) => gen(p)),
-      body: genExpr(body, used),
+      body: genExpr(body, used, events),
       bodyReactive: isReactiveExpr(body),
     };
   }
@@ -54,10 +54,10 @@ function bindHole(expr: t.Expression, used: Set<string>): TemplateHole {
 export function lowerLitTemplate(
   node: t.TaggedTemplateExpression,
   used: Set<string>,
-  opts: { svg?: boolean } = {},
+  opts: { svg?: boolean; events?: Set<string> } = {},
 ): IRNode {
   const quasi = node.quasi;
-  const holes = quasi.expressions.map((e) => bindHole(e as t.Expression, used));
+  const holes = quasi.expressions.map((e) => bindHole(e as t.Expression, used, opts.events));
   return lowerTemplate(buildPieces(quasi), holes, used, opts);
 }
 

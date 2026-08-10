@@ -16,6 +16,7 @@ import { createComponentResolver, type ComponentResolverRule } from '../resolve/
 import type { IRNode } from '../ir/nodes.js';
 import { lowerTemplate, type TemplateHole } from './template.js';
 import type { Piece } from '@fluixi/template-parser';
+import type { StaticTemplate } from '../codegen/backend.js';
 
 export interface TemplateSource {
   /**
@@ -42,6 +43,11 @@ export interface CompileTemplateOptions {
   coreModule?: string;
   /** Where router components come from. @default '@fluixi/core/router-next' */
   routerModule?: string;
+  /**
+   * Leave static templates as `_tmpl$N` references and hand them back, for a
+   * caller that has a module scope to declare them in. Off inlines them.
+   */
+  hoistTemplates?: boolean;
 }
 
 export interface CompileTemplateResult {
@@ -51,6 +57,12 @@ export interface CompileTemplateResult {
   imports: string[];
   /** The IR it was emitted from, for a caller that wants to inspect or transform it. */
   ir: IRNode;
+  /**
+   * Static templates the code refers to by local `_tmpl$N` id, when the caller
+   * asked to hoist them. `compileTemplate` inlines them instead — it has no module
+   * scope to hoist into.
+   */
+  templates?: StaticTemplate[];
 }
 
 /**
@@ -119,7 +131,6 @@ export function compilePieces(
   } as never);
   for (const symbol of imports) used.add(symbol);
 
-  // Inlined rather than hoisted: there is no module scope to hoist into here.
-  // A front-end that has one reads `templates` off the backend and hoists.
+  if (options.hoistTemplates) return { code, imports: [...used], ir, templates };
   return { code: inlineTemplates(code, templates), imports: [...used], ir };
 }
