@@ -17,23 +17,33 @@ import { fileURLToPath } from 'node:url';
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)));
 
-/** Entry points documented as Babel-free (the `.` and `./builtins` subpaths). */
+/** Entries that must not reach babel at all. */
 const BABEL_FREE_ENTRIES = ['index.ts', 'resolve/builtins.ts'];
 
-const PATTERNS = [
-  // import … from 'x'  /  export … from 'x'
-  /(?:^|\n)\s*(?:import|export)\b[\s\S]*?\sfrom\s*['"]([^'"]+)['"]/g,
+/** Entries allowed the parser, and nothing else from that namespace. */
+const PARSER_ONLY_ENTRIES = ['transform/index.ts', 'integrations.ts'];
+
+const STATIC_PATTERNS = [
+  // import … from 'x'  /  export … from 'x'. `import type` and `export type` are
+  // erased before anything runs, so they cannot pull a package in.
+  // `[^;]` keeps a match inside one statement — without it an `export interface`
+  // runs on to the `from` of some later line.
+  /(?:^|\n)\s*(?:import|export)(?!\s+type\b)\b[^;]*?\sfrom\s*['"]([^'"]+)['"]/g,
   // import 'x'  — a side-effect import has no `from`, and is exactly how a
   // Babel polyfill or plugin registration would sneak in.
   /(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g,
-  // import('x')  /  require('x')
+];
+
+// A dynamic import is the opt-in boundary: `integrations` reaches the babel
+// front-end that way, and nothing loads it unless a caller asks for it.
+const DYNAMIC_PATTERNS = [
   /\bimport\(\s*['"]([^'"]+)['"]/g,
   /\brequire\(\s*['"]([^'"]+)['"]/g,
 ];
 
-function specifiers(code: string): string[] {
+function specifiers(code: string, dynamic: boolean): string[] {
   const out: string[] = [];
-  for (const re of PATTERNS) {
+  for (const re of dynamic ? [...STATIC_PATTERNS, ...DYNAMIC_PATTERNS] : STATIC_PATTERNS) {
     re.lastIndex = 0;
     for (let m = re.exec(code); m; m = re.exec(code)) out.push(m[1]);
   }
@@ -41,7 +51,7 @@ function specifiers(code: string): string[] {
 }
 
 /** Every source file reachable from `entry`, plus the bare specifiers seen on the way. */
-function walk(entry: string): { files: Set<string>; bare: Map<string, string[]> } {
+function walk(entry: string, dynamic = true): { files: Set<string>; bare: Map<string, string[]> } {
   const files = new Set<string>();
   const bare = new Map<string, string[]>();
   const queue = [resolve(SRC, entry)];
@@ -51,7 +61,7 @@ function walk(entry: string): { files: Set<string>; bare: Map<string, string[]> 
     if (files.has(file)) continue;
     files.add(file);
 
-    for (const spec of specifiers(readFileSync(file, 'utf-8'))) {
+    for (const spec of specifiers(readFileSync(file, 'utf-8'), dynamic)) {
       if (!spec.startsWith('.')) {
         // Record where it was imported from — a bare specifier that turns out to
         // be Babel is far easier to fix with the importer named.
@@ -77,10 +87,16 @@ describe('@fluixi/compiler core is Babel-free', () => {
     });
   }
 
-  it('the transform reaches the parser and nothing else', () => {
-    const { bare } = walk('transform/index.ts');
-    expect([...bare.keys()].filter((s) => s.startsWith('@babel/'))).toEqual(['@babel/parser']);
-  });
+  for (const entry of PARSER_ONLY_ENTRIES) {
+    it(`${entry} reaches the parser and nothing else`, () => {
+      // Static imports only: importing this module must not pull a toolchain the
+      // default path never calls. integrations reaches the babel front-end behind
+      // a dynamic import, which is the opt-in.
+      const { bare } = walk(entry, false);
+      const babel = [...bare.keys()].filter((s) => s.startsWith('@babel/'));
+      expect(babel.filter((s) => s !== '@babel/parser')).toEqual([]);
+    });
+  }
 
   it('depends on the parser, never on the pipeline', () => {
     const pkg = JSON.parse(readFileSync(resolve(SRC, '../package.json'), 'utf-8'));
