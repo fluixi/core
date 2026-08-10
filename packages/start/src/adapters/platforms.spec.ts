@@ -68,6 +68,36 @@ describe('cloudflare', () => {
     expect(routes.exclude).toContain('/_worker.js');
   });
 
+  it('excludes prerendered pages, so serving a file does not cost an invocation', async () => {
+    const { clientDir, ctx } = buildOutput();
+    mkdirSync(join(clientDir, 'v1/en/async'), { recursive: true });
+    mkdirSync(join(clientDir, 'about'), { recursive: true });
+    writeFileSync(join(clientDir, 'v1/en/async/index.html'), '<html>');
+    writeFileSync(join(clientDir, 'about/index.html'), '<html>');
+    await cloudflareAdapter.build!(ctx);
+
+    const { exclude } = readJson(join(clientDir, '_routes.json'));
+    expect(exclude).toContain('/v1/en/async');
+    expect(exclude).toContain('/about');
+    // `/` is the shell every SSR miss falls back to; excluding it would serve the
+    // unrendered template instead of the app.
+    expect(exclude).not.toContain('/');
+  });
+
+  it('stops at Cloudflare\'s rule limit rather than emitting an invalid file', async () => {
+    const { clientDir, ctx } = buildOutput();
+    for (let i = 0; i < 120; i++) {
+      mkdirSync(join(clientDir, `p${i}`), { recursive: true });
+      writeFileSync(join(clientDir, `p${i}/index.html`), '<html>');
+    }
+    await cloudflareAdapter.build!(ctx);
+
+    const { exclude } = readJson(join(clientDir, '_routes.json'));
+    expect(exclude.length).toBeLessThanOrEqual(100);
+    // Past the cap the extra routes still work — they just wake the worker.
+    expect(exclude).toContain('/assets/*');
+  });
+
   it('inlines the template — a worker cannot read index.html', async () => {
     const { ctx, entries } = buildOutput();
     await cloudflareAdapter.build!(ctx);

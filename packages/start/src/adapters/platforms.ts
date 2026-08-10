@@ -8,9 +8,9 @@
  * All three inline the framework: a worker or a serverless function is a file that
  * gets uploaded, not an install, so nothing may be left to resolve at runtime.
  */
-import { mkdir, writeFile, readFile, cp } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, cp, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import type { Adapter, AdapterBuildContext } from '../adapter.js';
 import { cloudflareEntry, netlifyEntry, vercelEntry, type EntrySource } from './entry.js';
 
@@ -40,10 +40,36 @@ function skipWhenStatic(ctx: AdapterBuildContext, name: string): boolean {
   return true;
 }
 
+/** Cloudflare caps `_routes.json` at 100 rules. */
+const CF_MAX_RULES = 100;
+
+/** The routes a prerendered page is served at, from the HTML on disk. */
+async function prerenderedRoutes(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  const walk = async (current: string): Promise<void> => {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'assets' || entry.name.startsWith('.')) continue;
+        await walk(path);
+      } else if (entry.name.endsWith('.html')) {
+        const rel = relative(dir, path).replace(/\\/g, '/').replace(/index\.html$/, '').replace(/\.html$/, '');
+        out.push('/' + rel.replace(/\/$/, ''));
+      }
+    }
+  };
+  await walk(dir);
+  return out.filter((r) => r !== '/').sort();
+}
+
 /**
  * Cloudflare Pages. `_worker.js` at the root of the published directory takes every
- * request; `_routes.json` tells Pages not to invoke it for hashed assets, which is
- * the difference between a CDN hit and a worker invocation per image.
+ * request; `_routes.json` is what decides whether a request costs an invocation.
+ *
+ * In advanced mode the worker sees everything not excluded — so a prerendered page
+ * would wake it just to proxy the file back through the ASSETS binding. On a plan
+ * metered by request that is the whole page view budget spent on static files, so
+ * every prerendered path is excluded by name.
  *
  * Publish `dist/client`.
  */
@@ -58,12 +84,23 @@ export const cloudflareAdapter: Adapter = {
     const out = join(ctx.clientDir, '_worker.js');
     await ctx.bundleEntry(cloudflareEntry(await entrySource(ctx, out)), out);
 
-    // Everything Vite emitted under /assets is content-hashed and immutable, so it
-    // never needs the worker. `_worker.js` itself must be excluded or Pages would
-    // route the worker to itself.
+    // Everything under /assets is content-hashed and immutable, so it never needs the
+    // worker. `_worker.js` itself must be excluded or Pages would route it to itself.
+    const base = ['/assets/*', '/_worker.js'];
+    const prerendered = await prerenderedRoutes(ctx.clientDir);
+    const room = CF_MAX_RULES - base.length;
+    const exclude = [...base, ...prerendered.slice(0, room)];
+    if (prerendered.length > room) {
+      // Past the cap the remainder still works — it just wakes the worker to hand
+      // back a file. Worth saying, because the symptom is a bill, not an error.
+      console.warn(
+        `  fluixi: ${prerendered.length} prerendered routes exceed Cloudflare's ${CF_MAX_RULES}-rule ` +
+          `limit for _routes.json; ${prerendered.length - room} will invoke the worker to serve a static file.`,
+      );
+    }
     await writeFile(
       join(ctx.clientDir, '_routes.json'),
-      JSON.stringify({ version: 1, include: ['/*'], exclude: ['/assets/*', '/_worker.js'] }, null, 2) + '\n',
+      JSON.stringify({ version: 1, include: ['/*'], exclude }, null, 2) + '\n',
     );
   },
 };
