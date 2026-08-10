@@ -1,4 +1,5 @@
 import { createSignal, onMount, onCleanup } from '@fluixi/core';
+import { Link } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
@@ -291,9 +292,9 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           >
             {() => (navOpen() ? '✕' : '☰')}
           </button>
-          <a class="d-brand" href={link('introduction')}>
+          <Link class="d-brand" href={link('introduction')}>
             <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> {ui.product}
-          </a>
+          </Link>
         </div>
         <div class="d-actions">
           <Search lang={lang} version={version} label={ui.search} />
@@ -336,13 +337,13 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             <div class="nav-group">
               <div class="nav-group-title">{section.group[lang]}</div>
               {section.slugs.map((s) => (
-                <a
+                <Link
                   class={s === slug ? 'nav-item on' : 'nav-item'}
                   href={link(s)}
                   onClick={() => setNavOpen(false)}
                 >
                   {titleOf(s)}
-                </a>
+                </Link>
               ))}
             </div>
           ))}
@@ -352,18 +353,18 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           <article class="prose" innerHTML={doc?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
             {prev ? (
-              <a class="pager" href={link(prev)}>
+              <Link class="pager" href={link(prev)}>
                 <span>← {ui.prev}</span>
                 <b>{titleOf(prev)}</b>
-              </a>
+              </Link>
             ) : (
               <span />
             )}
             {next ? (
-              <a class="pager next" href={link(next)}>
+              <Link class="pager next" href={link(next)}>
                 <span>{ui.next} →</span>
                 <b>{titleOf(next)}</b>
-              </a>
+              </Link>
             ) : (
               <span />
             )}
