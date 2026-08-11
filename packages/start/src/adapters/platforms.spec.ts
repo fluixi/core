@@ -79,9 +79,34 @@ describe('cloudflare', () => {
     const { exclude } = readJson(join(clientDir, '_routes.json'));
     expect(exclude).toContain('/v1/en/async');
     expect(exclude).toContain('/about');
-    // `/` is the shell every SSR miss falls back to; excluding it would serve the
-    // unrendered template instead of the app.
+    // `index.html` here is the shell, not a page: excluding `/` would publish an
+    // empty mount element as the home page.
     expect(exclude).not.toContain('/');
+  });
+
+  it('serves a prerendered home page as a file', async () => {
+    const { clientDir, ctx, entries } = buildOutput();
+    writeFileSync(join(clientDir, 'index.html'), '<!doctype html><div id="root"><h1>home</h1></div>');
+    await cloudflareAdapter.build!(ctx);
+
+    // The same file means two different things depending on what is inside the mount
+    // element, and only one of them is the platform's to serve.
+    expect(readJson(join(clientDir, '_routes.json')).exclude).toContain('/');
+    expect(entries[0].source).toContain('"/"');
+  });
+
+  it('asks the ASSETS binding only about what is static', async () => {
+    const { clientDir, ctx, entries } = buildOutput();
+    mkdirSync(join(clientDir, 'about'), { recursive: true });
+    writeFileSync(join(clientDir, 'about/index.html'), '<html>');
+    await cloudflareAdapter.build!(ctx);
+
+    // ASSETS answers `/` with index.html whether or not it is a page, so an
+    // unconditional lookup is what costs an SSR app its home page. The worker asks
+    // only about a prerendered path or a path with a file extension.
+    const { source } = entries[0];
+    expect(source).toContain('const prerendered = new Set(["/about"])');
+    expect(source).toContain('prerendered.has(pathname) || /\\.[^/]+$/.test(pathname)');
   });
 
   it('stops at Cloudflare\'s rule limit rather than emitting an invalid file', async () => {
@@ -124,6 +149,33 @@ describe('netlify', () => {
     expect(manifest.config.path).toBe('/*');
     expect(manifest.config.preferStatic).toBe(true);
   });
+
+  it('forces `/` to the function, which a static file would otherwise win', async () => {
+    const { clientDir, ctx } = buildOutput();
+    await netlifyAdapter.build!(ctx);
+
+    // `preferStatic` is right for every path except this one, where the file is the
+    // shell. A forced redirect is what the CDN honours over a file.
+    expect(read(join(clientDir, '_redirects'))).toContain('/  /.netlify/functions/fluixi-server  200!');
+  });
+
+  it('leaves a prerendered home page alone', async () => {
+    const { clientDir, ctx } = buildOutput();
+    writeFileSync(join(clientDir, 'index.html'), '<!doctype html><div id="root"><h1>home</h1></div>');
+    await netlifyAdapter.build!(ctx);
+
+    expect(existsSync(join(clientDir, '_redirects'))).toBe(false);
+  });
+
+  it('keeps an app\'s own redirects ahead of ours', async () => {
+    const { clientDir, ctx } = buildOutput();
+    writeFileSync(join(clientDir, '_redirects'), '/old  /new  301');
+    await netlifyAdapter.build!(ctx);
+
+    const rules = read(join(clientDir, '_redirects')).trim().split('\n');
+    expect(rules[0]).toBe('/old  /new  301');
+    expect(rules[1]).toContain('fluixi-server');
+  });
 });
 
 describe('vercel', () => {
@@ -146,10 +198,21 @@ describe('vercel', () => {
 
     const config = readJson(join(root, '.vercel/output/config.json'));
     expect(config.version).toBe(3);
-    // Order is the contract: filesystem first, or every prerendered page would
-    // be re-rendered by the function on every request.
+    // Order is the contract: filesystem before the catch-all, or every prerendered
+    // page would be re-rendered by the function on every request. `/` is claimed
+    // ahead of it because the file sitting there is the shell.
+    expect(config.routes[0]).toEqual({ src: '/', dest: '/index' });
+    expect(config.routes[1]).toEqual({ handle: 'filesystem' });
+    expect(config.routes[2]).toEqual({ src: '/(.*)', dest: '/index' });
+  });
+
+  it('leaves a prerendered home page to the filesystem', async () => {
+    const { root, clientDir, ctx } = buildOutput();
+    writeFileSync(join(clientDir, 'index.html'), '<!doctype html><div id="root"><h1>home</h1></div>');
+    await vercelAdapter.build!(ctx);
+
+    const config = readJson(join(root, '.vercel/output/config.json'));
     expect(config.routes[0]).toEqual({ handle: 'filesystem' });
-    expect(config.routes[1]).toEqual({ src: '/(.*)', dest: '/index' });
   });
 
   it('emits static-only output for an app with no server entry', async () => {
