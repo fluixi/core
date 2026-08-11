@@ -38,7 +38,30 @@ const ADAPTERS = {
   },
   vercel: {
     artifact: '.vercel/output/functions/index.func/index.mjs',
-    invoke: (mod, request) => mod.default(request),
+    // Vercel's Nodejs launcher calls the export as `(req, res)`, so driving it with a
+    // Request would test a shape the platform never uses — which is exactly how a
+    // hanging function passed every local check.
+    invoke: async (mod, request) => {
+      const url = new URL(request.url);
+      const req = {
+        method: request.method,
+        url: url.pathname + url.search,
+        headers: { host: url.host },
+        async *[Symbol.asyncIterator]() {},
+      };
+      const chunks = [];
+      const headers = new Headers();
+      const res = {
+        statusCode: 200,
+        setHeader: (name, value) => {
+          for (const one of Array.isArray(value) ? value : [value]) headers.append(name, one);
+        },
+        write: (chunk) => chunks.push(chunk),
+        end: () => {},
+      };
+      await mod.default(req, res);
+      return new Response(chunks.length ? new Blob(chunks) : null, { status: res.statusCode, headers });
+    },
     publishedDir: '.vercel/output/static',
   },
 };

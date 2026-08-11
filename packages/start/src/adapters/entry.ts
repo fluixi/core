@@ -88,13 +88,52 @@ export const config = { path: '/*', preferStatic: true };
 }
 
 /**
- * Vercel Build Output API v3: a Node function whose module default-exports a fetch
- * handler. Routing lives in `config.json` — filesystem first, then everything else to
- * this function.
+ * Vercel Build Output API v3, Node runtime.
+ *
+ * The `Nodejs` launcher invokes the default export as `(req, res)` — Node's own
+ * signature, not a fetch handler — so the entry has to bridge the two itself.
+ * Exporting `(request) => Response` looks right and hangs: the launcher passes an
+ * `IncomingMessage`, nothing ever writes to `res`, and the request sits there until
+ * the platform times it out. Node stays the runtime rather than edge because a server
+ * function is allowed to use Node APIs here.
  */
 export function vercelEntry(source: EntrySource): string {
   return `${preamble(source)}
 
-export default async (request) => handler(request);
+export default async (req, res) => {
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(req.headers)) {
+    if (Array.isArray(value)) for (const one of value) headers.append(name, one);
+    else if (value !== undefined) headers.set(name, value);
+  }
+
+  // A body has to be read off the stream before it can be handed to Request; only
+  // GET and HEAD are guaranteed not to have one.
+  let body;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    if (chunks.length) body = new Blob(chunks);
+  }
+
+  const response = await handler(
+    new Request(new URL(req.url, \`\${proto}://\${host}\`), { method: req.method, headers, body }),
+  );
+
+  res.statusCode = response.status;
+  // Every other header is single-valued by the time it gets here; set-cookie is the
+  // one that legitimately repeats, and folding it into one line breaks the cookies.
+  for (const [name, value] of response.headers) {
+    if (name.toLowerCase() !== 'set-cookie') res.setHeader(name, value);
+  }
+  const cookies = response.headers.getSetCookie?.() ?? [];
+  if (cookies.length) res.setHeader('set-cookie', cookies);
+
+  if (response.body) for await (const chunk of response.body) res.write(chunk);
+  res.end();
+};
 `;
 }
