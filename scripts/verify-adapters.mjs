@@ -92,6 +92,8 @@ async function run(name, { url }) {
 
   const artifact = join(APP, spec.artifact);
   if (!url) {
+    // The commonest way to get a directory of 404s is to serve a build made for a
+    // different target, so say which one this is before running anything against it.
     if (!existsSync(artifact)) return [{ name: 'emits its artifact', ok: false, detail: spec.artifact }];
     results.push({ name: 'emits its artifact', ok: true });
 
@@ -134,6 +136,15 @@ const args = process.argv.slice(2);
 const urlIndex = args.indexOf('--url');
 const url = urlIndex === -1 ? null : args[urlIndex + 1];
 const names = args.filter((a) => a in ADAPTERS);
+// With --url there is one server behind the URL, so running every adapter against it
+// just repeats the same requests three times and reports three identical failures.
+if (url && names.length !== 1) {
+  console.error(
+    'Pass the adapter the URL is serving, e.g.\n' +
+      '  node scripts/verify-adapters.mjs cloudflare --url http://localhost:8788',
+  );
+  process.exit(2);
+}
 const targets = names.length ? names : Object.keys(ADAPTERS);
 
 let failed = 0;
