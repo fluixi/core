@@ -1,5 +1,227 @@
 # @fluixi/start
 
+## 0.1.0-alpha.64
+
+### Minor Changes
+
+- 8838294: Adapters now decide how the server is bundled, not just how it is served.
+
+  `dist/server` was always one self-contained file: every `@fluixi/*` package was
+  copied into it. That is right for edge and serverless, where there is nothing to
+  resolve against at runtime, and wasteful for a Node server, which runs from the
+  app directory with the dependencies already installed next to it.
+
+  `Adapter` gains a `bundle` mode — `'external'` on `nodeAdapter`, `'inline'` on
+  `webAdapter` — and `fluixi build` follows the adapter named in
+  `fluixi.config.ts`:
+
+  ```ts
+  import { defineConfig } from '@fluixi/start/config';
+  import { nodeAdapter } from '@fluixi/start/adapter';
+
+  export default defineConfig({ adapter: nodeAdapter });
+  ```
+
+  On `examples/start-app` that is `entry-server.js` at 4.6 KB instead of 76 KB — the
+  app's own code and nothing else — and a build of 0.8 s instead of 1.9 s, for
+  byte-identical HTML. `fluixi start` serves with the configured adapter too; one
+  that returns `{ fetch }` has no process to run and now says so rather than
+  exiting as if it had started.
+
+  Nothing changes for an app that names no adapter — Vite's own heuristic still
+  applies. `'external'` externalizes only the `@fluixi/*` packages the app itself
+  declares as dependencies: under a strict `node_modules` layout an undeclared
+  package is not resolvable from the app root, so externalizing a merely transitive
+  one would emit an import Node cannot follow. Each package is listed with every
+  subpath its `exports` map publishes, because Vite only honours an exact id in
+  `ssr.external` — a bare package name leaves deep imports bundled, and
+  `@fluixi/core` external next to `@fluixi/core/router-next` inlined is two routers
+  with two sets of module state in one server. `ssrNoExternal` still wins.
+
+  Adapters are also importable from `@fluixi/start/adapter`, so a config file can
+  name one without pulling in the CLI commands.
+
+- 08635bd: The compiler no longer runs inside babel.
+
+  `fluixi()` and `serverFunctionsVitePlugin()` compile by rewriting the source
+  directly: parse once, splice the emitted code over the spans it replaces. Nothing
+  is reprinted, edits carry a source map, and types are left for esbuild to strip.
+  The `native` option is gone — that is simply what the plugin does.
+
+  Babel is kept for the case that needs it, the way Next keeps one: a
+  `babel.config.js` whose other plugins have to see the output. `fluixi({ babel:
+true })` selects it, and `@babel/core` and friends are optional peers, installed
+  only by `@fluixi/babel-plugin-jsx`.
+
+  What an app installs from that namespace is now `@babel/parser`, used as a
+  parser. `@fluixi/vite-plugin` and `@fluixi/start` declare no babel packages at
+  all, and importing `@fluixi/compiler/integrations` loads none — pinned by
+  `no-babel-in-core.spec.ts`, which distinguishes a static import from the dynamic
+  one behind the opt-in.
+
+  Verified on `examples/start-app` (HTML identical to the babel build), the docs
+  site (53 prerendered pages identical), the `@fluixi-ui` playground, and 681 files
+  from `store-admin`, `storefront` and the component library.
+
+- 10b4b6f: Deploy adapters for Cloudflare, Netlify and Vercel.
+
+  An adapter can now emit the layout its platform reads, through a `build` hook that
+  runs after the client build, the server build and prerendering:
+
+  |                     | writes                                          | deploy                   |
+  | ------------------- | ----------------------------------------------- | ------------------------ |
+  | `cloudflareAdapter` | `dist/client/_worker.js` + `_routes.json`       | publish `dist/client`    |
+  | `netlifyAdapter`    | `.netlify/functions-internal/fluixi-server.mjs` | publish `dist/client`    |
+  | `vercelAdapter`     | `.vercel/output/` (Build Output API v3)         | Vercel reads it directly |
+
+  Each serves static files first and only reaches the server on a miss — Cloudflare
+  through the `ASSETS` binding, Netlify through `preferStatic`, Vercel through a
+  `filesystem` route ahead of the function — so a prerendered page stays a file.
+
+  **`createHandlerFrom` splits the handler from the filesystem.** `createProdHandler`
+  reads `index.html` off disk and imports the server entry by path; a worker can do
+  neither. The assembly now takes the template and the module as arguments, and each
+  adapter generates an entry that imports both statically. One assembly, so an edge
+  deploy cannot dispatch differently from `fluixi start`.
+
+  **The entry is bundled as a single file.** On Cloudflare that is not a size choice:
+  `_worker.js` is written into the directory you publish, so a split chunk would be a
+  publicly downloadable piece of your server. Verified — the published assets are now
+  identical to a plain build.
+
+  **The CLI commands move to `@fluixi/start/commands`.** They were re-exported from the
+  package root, so `import { defineMiddleware } from '@fluixi/start'` could reach the dev
+  server — and an adapter, which inlines everything its entry can reach, carried vite into
+  the worker bundle. `@fluixi/cli` imports them from the new subpath.
+
+- f2cf2bb: Import the generated server-fn and API tables from real modules
+
+  `virtual:fluixi-server-fns` and `virtual:fluixi-api` could only be typed by an ambient
+  `declare module`, which `@fluixi/start` wrote into your `src/` as `fluixi-start-env.d.ts`.
+
+  ```diff
+  - import 'virtual:fluixi-server-fns';
+  + import '@fluixi/start/server-fns';
+
+  - export { isApiRequest, handleApiRequest } from 'virtual:fluixi-api';
+  + export { isApiRequest, handleApiRequest } from '@fluixi/start/api-routes';
+  ```
+
+  Named `api-routes` because `@fluixi/start/api` is already the API plumbing you call
+  directly. Both virtual specifiers still resolve.
+
+  **i18n deliberately keeps its generated declaration.** `virtual:fluixi-i18n` types
+  `messages` off your own JSON (`typeof import('./i18n/en.json')`) and `locales` as a literal
+  tuple — that is what makes `t()` keys autocomplete, and no static package entry can express
+  it. Moving it would have quietly downgraded those types to `Record<string, unknown>`.
+
+  So `fluixi-start-env.d.ts` now contains only the i18n block, and is not written at all when
+  i18n is unconfigured.
+
+### Patch Changes
+
+- 93421e8: Babel is no longer a dependency of `@fluixi/compiler`.
+
+  The IR, the resolve and optimize passes, and codegen import no Babel — that has
+  been true for a while, and `dist/index.mjs` proves it — but the package still
+  listed five `@babel/*` packages under `dependencies`, so importing
+  `@fluixi/compiler` for the component-resolver map or the IR types installed a
+  whole compiler toolchain (52 MB in this workspace). `@fluixi/ts-plugin`, which
+  imports `@fluixi/compiler/builtins` and nothing else, was paying that.
+
+  `@babel/core`, `@babel/generator`, `@babel/helper-plugin-utils` and
+  `@babel/preset-typescript` are now **optional peer dependencies**. The packages
+  that always run a Babel compile — `@fluixi/vite-plugin`, `@fluixi/start` and
+  `@fluixi/babel-plugin-jsx` — depend on them for real, so no app config changes
+  and nothing new has to be installed. `@babel/types` was listed and never
+  imported; it is gone.
+
+  `no-babel-in-core.spec.ts` locks the invariant in by walking the import graph from
+  each Babel-free entry point (`.` and `./builtins`), following relative imports
+  transitively and catching `import 'x'`, `import … from 'x'`, `import('x')` and
+  `require('x')`. A stray Babel import in the core is not a style question: for a
+  consumer that never installed the optional peer, it is a module that fails to
+  resolve.
+
+- 6a41eb8: Keep prerendered pages off the Cloudflare worker.
+
+  In advanced mode the worker sees every request that `_routes.json` does not exclude,
+  so a prerendered page woke it just to hand the file back through the `ASSETS`
+  binding. On a plan metered by request that spends the page-view budget on static
+  files. Every prerendered path is now excluded by name, capped at Cloudflare's
+  100-rule limit — past which the remainder still works, it just costs an invocation,
+  and the build says so.
+
+  `/` stays included: it is the shell an SSR miss falls back to.
+
+- 93421e8: `@fluixi/core` no longer installs the build toolchain.
+
+  It listed `@fluixi/compiler`, `@fluixi/vite-plugin` and
+  `vite-plugin-node-polyfills` under `dependencies` while importing none of them
+  from `src/` — they exist for the `@fluixi/core/plugins` subpath, which is
+  build-time tooling. Declaring them as runtime dependencies of the _runtime_
+  package meant every consumer of `@fluixi/core` installed Vite plugins and a Babel
+  toolchain (52 MB in this workspace) to render a component. Component libraries
+  built on `@fluixi/core` were passing that on to their own users.
+
+  They are now **optional peer dependencies**: use `@fluixi/core/plugins` and you
+  need them, otherwise you do not. `@fluixi/start` reaches that subpath through
+  `await import('@fluixi/core/plugins')`, so it declares them itself — apps using
+  the meta-framework are unaffected, and the standalone Vite templates already
+  declared `@fluixi/vite-plugin` as a devDependency.
+
+  `@fluixi/core`'s runtime closure is now `@fluixi/{dom,jsx,reactive,router,server,utils,head}`,
+  none of which reach the compiler.
+
+- 8b37811: Render `/` on Cloudflare, Netlify and Vercel instead of serving the shell.
+
+  `dist/client/index.html` sits at the path a prerendered `/` would occupy, so each
+  platform's static layer answered the home page with an empty mount element and never
+  reached the app: the ASSETS binding on Pages, `preferStatic` on Netlify, the filesystem
+  phase on Vercel. Every other route was already correct — nothing exists at `/about`
+  unless it was prerendered. The adapters now decide who owns `/` by whether that file
+  holds a rendered page, and the worker asks the ASSETS binding only about a prerendered
+  path or a path with a file extension, which is the rule the Node adapter already used.
+
+- 059b38b: Render into the shell, not into the prerendered home page.
+
+  `dist/client/index.html` is both the SSR template and the path a prerendered `/` is
+  written to, so an app that prerenders its home page rendered every SSR response into
+  that page: two mount elements in one document, the home page's head on every route,
+  and hydration adopting the wrong one. The build now stashes the shell as
+  `dist/server/template.html` before prerendering overwrites it, and both the Node
+  handler and the deploy adapters read that when it exists.
+
+- Updated dependencies [f995106]
+- Updated dependencies [93421e8]
+- Updated dependencies [8da12e6]
+- Updated dependencies [93421e8]
+- Updated dependencies [a2cf48c]
+- Updated dependencies [b747b26]
+- Updated dependencies [6fba3ed]
+- Updated dependencies [9817f51]
+- Updated dependencies [bb5aea1]
+- Updated dependencies [21df035]
+- Updated dependencies [08635bd]
+- Updated dependencies [f0dd4e3]
+- Updated dependencies [f2d3779]
+- Updated dependencies [6e586c0]
+- Updated dependencies [458f2e4]
+- Updated dependencies [9817f51]
+- Updated dependencies [e035c4e]
+- Updated dependencies [3a9607b]
+- Updated dependencies [8e1e0f4]
+- Updated dependencies [3903be0]
+- Updated dependencies [0fdebdd]
+- Updated dependencies [4022c74]
+- Updated dependencies [33c3574]
+  - @fluixi/compiler@1.0.0-alpha.74
+  - @fluixi/vite-plugin@1.0.0-alpha.74
+  - @fluixi/core@1.0.0-alpha.74
+  - @fluixi/dom@1.0.0-alpha.74
+  - @fluixi/server@1.0.0-alpha.74
+  - @fluixi/head@1.0.0-alpha.41
+
 ## 0.1.0-alpha.63
 
 ### Patch Changes

@@ -1,5 +1,120 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.74
+
+### Minor Changes
+
+- 93421e8: `@fluixi/core` no longer installs the build toolchain.
+
+  It listed `@fluixi/compiler`, `@fluixi/vite-plugin` and
+  `vite-plugin-node-polyfills` under `dependencies` while importing none of them
+  from `src/` — they exist for the `@fluixi/core/plugins` subpath, which is
+  build-time tooling. Declaring them as runtime dependencies of the _runtime_
+  package meant every consumer of `@fluixi/core` installed Vite plugins and a Babel
+  toolchain (52 MB in this workspace) to render a component. Component libraries
+  built on `@fluixi/core` were passing that on to their own users.
+
+  They are now **optional peer dependencies**: use `@fluixi/core/plugins` and you
+  need them, otherwise you do not. `@fluixi/start` reaches that subpath through
+  `await import('@fluixi/core/plugins')`, so it declares them itself — apps using
+  the meta-framework are unaffected, and the standalone Vite templates already
+  declared `@fluixi/vite-plugin` as a devDependency.
+
+  `@fluixi/core`'s runtime closure is now `@fluixi/{dom,jsx,reactive,router,server,utils,head}`,
+  none of which reach the compiler.
+
+- 3903be0: Import the route tree from `@fluixi/core/routes`
+
+  `virtual:fluixi-routes` needed an ambient `declare module` to be typed, which the plugin
+  wrote into your `src/` as `fluixi-env.d.ts` — a file you did not create, must not edit, and
+  had to keep. It also left the specifier invisible to anything not running the Vite plugin:
+  plain `tsc`, an editor, a test runner.
+
+  `@fluixi/core/routes` is a real module, so its types come from this package and no generated
+  file is needed. The plugin swaps in the scanned tree exactly as before.
+
+  ```diff
+  - import { routes } from 'virtual:fluixi-routes';
+  + import { routes } from '@fluixi/core/routes';
+  ```
+
+  `virtual:fluixi-routes` still resolves, so this is not a breaking change, and the plugin no
+  longer writes `fluixi-env.d.ts` — delete it once you have switched.
+
+  Importing it without the plugin now throws with an actionable message rather than handing
+  back an empty array, which would have built fine and 404'd every route.
+
+### Patch Changes
+
+- a2cf48c: The runtime specs compile through the default path.
+
+  Sixteen specs — hydration, portals, control flow, SSR context, event replay —
+  build their fixtures by compiling JSX and running the result. They compiled it
+  with the babel plugin, so the code they exercised was not the code an app ships.
+  They use `@fluixi/compiler/transform` now.
+
+  `@babel/core` still appears in them, to turn ESM into CJS so `new Function` can
+  evaluate the module. That is a property of the test, not of the compiler.
+
+- bb5aea1: Fix resource ids shifting between the first request for a route and the next.
+
+  A resource id is a position in a per-render sequence, and the client re-derives
+  it by counting resources in the same order. `lazy()` broke that. Its module-load
+  resource is created on the cold path only, and on the server the module stays
+  loaded after the first request — so the first visitor after a restart got the
+  page's own data under `r1` and everyone after them got `r0`, while the client,
+  which preloads routes before hydrating, always counted from `r0`.
+
+  One of the two had to be wrong. In practice the first visitor after every deploy
+  was served data keyed to an id their client never looked up: the resource fell
+  back to fetching on the client, so that visitor paid a request the page had
+  already answered, and saw whatever the loading state renders.
+
+  `ResourceOptions` gains `transport?: boolean`. `false` opts a resource out of the
+  `__FX_DATA__` transport _and_ out of the id sequence — the two have to move
+  together, since an id consumed on one side only shifts every id after it.
+  `lazy()` uses it: the value there is the component function, which never
+  travelled to the client anyway, and the client re-imports the chunk itself.
+
+  Both `createResource` implementations take the option — the live one in
+  `graph/resource.ts` and the legacy `@fluixi/reactive/signal-legacy` — so the two
+  cannot disagree about what an id means.
+
+- 21df035: `LinkProps` accepts what `Link` forwards.
+
+  `Link` forwards every prop it does not handle itself onto the `<a>` — id, style,
+  title, `aria-*`, `data-*`, event handlers — deliberately allow-by-default so a
+  polymorphic `as={Link}` keeps its styling hooks. The type did not say so, and
+  `<Link onClick={…}>` was a type error on a prop that works at runtime.
+
+- Updated dependencies [f995106]
+- Updated dependencies [93421e8]
+- Updated dependencies [8da12e6]
+- Updated dependencies [b747b26]
+- Updated dependencies [6fba3ed]
+- Updated dependencies [9817f51]
+- Updated dependencies [bb5aea1]
+- Updated dependencies [08635bd]
+- Updated dependencies [f0dd4e3]
+- Updated dependencies [f2d3779]
+- Updated dependencies [6e586c0]
+- Updated dependencies [458f2e4]
+- Updated dependencies [9817f51]
+- Updated dependencies [e035c4e]
+- Updated dependencies [3a9607b]
+- Updated dependencies [8e1e0f4]
+- Updated dependencies [0fdebdd]
+- Updated dependencies [4022c74]
+- Updated dependencies [33c3574]
+  - @fluixi/compiler@1.0.0-alpha.74
+  - @fluixi/vite-plugin@1.0.0-alpha.74
+  - @fluixi/dom@1.0.0-alpha.74
+  - @fluixi/reactive@1.0.0-alpha.74
+  - @fluixi/jsx@1.0.0-alpha.74
+  - @fluixi/server@1.0.0-alpha.74
+  - @fluixi/head@1.0.0-alpha.41
+  - @fluixi/utils@1.0.0-alpha.74
+
 ## 1.0.0-alpha.73
 
 ### Patch Changes

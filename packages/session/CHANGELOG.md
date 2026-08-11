@@ -1,5 +1,17 @@
 # @fluixi/session
 
+## 1.0.0-alpha.74
+
+### Patch Changes
+
+- Updated dependencies [93421e8]
+- Updated dependencies [a2cf48c]
+- Updated dependencies [bb5aea1]
+- Updated dependencies [21df035]
+- Updated dependencies [3903be0]
+  - @fluixi/core@1.0.0-alpha.74
+  - @fluixi/reactive@1.0.0-alpha.74
+
 ## 1.0.0-alpha.73
 
 ### Patch Changes
