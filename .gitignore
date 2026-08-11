@@ -89,3 +89,8 @@ Desktop.ini
 
 # ─── Claude Code (local) ────────────────────────────────────────────────────────
 .claude/
+
+# Deploy adapter output
+.vercel
+.netlify
+.wrangler
