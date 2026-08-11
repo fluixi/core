@@ -89,3 +89,8 @@ Desktop.ini
 
 # ─── Local agent state ────────────────────────────────────────────────────────
 .claude/
+
+# Deploy adapter output
+.vercel
+.netlify
+.wrangler
