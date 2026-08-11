@@ -1,5 +1,349 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.74
+
+### Major Changes
+
+- 08635bd: The compiler no longer runs inside babel.
+
+  `fluixi()` and `serverFunctionsVitePlugin()` compile by rewriting the source
+  directly: parse once, splice the emitted code over the spans it replaces. Nothing
+  is reprinted, edits carry a source map, and types are left for esbuild to strip.
+  The `native` option is gone — that is simply what the plugin does.
+
+  Babel is kept for the case that needs it, the way Next keeps one: a
+  `babel.config.js` whose other plugins have to see the output. `fluixi({ babel:
+true })` selects it, and `@babel/core` and friends are optional peers, installed
+  only by `@fluixi/babel-plugin-jsx`.
+
+  What an app installs from that namespace is now `@babel/parser`, used as a
+  parser. `@fluixi/vite-plugin` and `@fluixi/start` declare no babel packages at
+  all, and importing `@fluixi/compiler/integrations` loads none — pinned by
+  `no-babel-in-core.spec.ts`, which distinguishes a static import from the dynamic
+  one behind the opt-in.
+
+  Verified on `examples/start-app` (HTML identical to the babel build), the docs
+  site (53 prerendered pages identical), the `@fluixi-ui` playground, and 681 files
+  from `store-admin`, `storefront` and the component library.
+
+### Minor Changes
+
+- f995106: The webpack, rollup and esbuild adapters compile without babel.
+
+  Only the vite one had been ported; the other three still called
+  `babel.transformAsync` unconditionally, which made babel required for anyone not
+  using vite. All four now go through one `compileModule`, so an adapter cannot
+  drift from the others — a bundler integration growing its own compile logic is
+  how the two paths diverged the first time.
+
+  The esbuild adapter returns a `ts`/`tsx` loader rather than `js`: the transform
+  leaves types in place for the bundler to strip, which esbuild has to be told.
+  Rollup and esbuild also now accept `.ts`/`.jsx`, not only `.tsx`.
+
+  This is what makes babel an integration rather than a requirement — the position
+  Svelte and Vue are in, where the compiler is standalone and each bundler gets a
+  thin wrapper.
+
+- 93421e8: Babel is no longer a dependency of `@fluixi/compiler`.
+
+  The IR, the resolve and optimize passes, and codegen import no Babel — that has
+  been true for a while, and `dist/index.mjs` proves it — but the package still
+  listed five `@babel/*` packages under `dependencies`, so importing
+  `@fluixi/compiler` for the component-resolver map or the IR types installed a
+  whole compiler toolchain (52 MB in this workspace). `@fluixi/ts-plugin`, which
+  imports `@fluixi/compiler/builtins` and nothing else, was paying that.
+
+  `@babel/core`, `@babel/generator`, `@babel/helper-plugin-utils` and
+  `@babel/preset-typescript` are now **optional peer dependencies**. The packages
+  that always run a Babel compile — `@fluixi/vite-plugin`, `@fluixi/start` and
+  `@fluixi/babel-plugin-jsx` — depend on them for real, so no app config changes
+  and nothing new has to be installed. `@babel/types` was listed and never
+  imported; it is gone.
+
+  `no-babel-in-core.spec.ts` locks the invariant in by walking the import graph from
+  each Babel-free entry point (`.` and `./builtins`), following relative imports
+  transitively and catching `import 'x'`, `import … from 'x'`, `import('x')` and
+  `require('x')`. A stray Babel import in the core is not a style question: for a
+  consumer that never installed the optional peer, it is a module that fails to
+  resolve.
+
+- b747b26: One lowering. The compiler had two implementations of every JSX semantic and
+  compiled with only one of them.
+
+  `plugin.ts` carried a full second lowering — the `codegen: 'inline'` path, plus
+  the `backend: 'jsx'` factory emitter — alongside the IR pipeline that has been
+  the default for some time. Nothing selected either one; the only references left
+  in the repository were two tests written for them, and the option's own docstring
+  still advertised `inline` as the default it had stopped being. Meanwhile the two
+  implementations had to agree about `ref`, `use:`, spreads, control flow and
+  template cloning, and when they disagreed it shipped: `codegen: 'ir'` went out as
+  alpha.71 and broke three `@fluixi/ui` packages.
+
+  Removed: 39 of the 46 functions in `plugin.ts:898-2555` (~1,400 lines) and the
+  `backend`, `codegen`, `runtime`, `pragma`, `pragmaFrag`, `hoistStatics`,
+  `useLitHTML`, `optimizeControlFlow`, `autoShowTransform`, `detectReactivity`,
+  `delegatedEvents` and `optimize` options that only fed them. JSX and ` html` ``templates now take the same path they already took: build IR, run the imperative
+backend, splice the emitted code back in. Compiled output for`examples/start-app`
+  is byte-identical before and after.
+
+  `backend: 'jsx'` is gone, but the `@fluixi/jsx` **runtime** is not: it is still
+  what TypeScript's `jsxImportSource` resolves types through and what esbuild's
+  automatic runtime targets. This compiler simply never emits a `jsx()` call.
+
+  Also removed from `@fluixi/compiler/integrations`: a regex-based `transform()`
+  that every adapter silently fell back to when `@babel/core` failed to load. It
+  could not compile JSX, so it returned source whose templates had never become DOM
+  calls — a build that reported success and failed when the page opened. Missing
+  babel is now a hard error, and a compile error propagates instead of being
+  swallowed and replaced with half-transformed source. The dead `generate:
+'ssr' | 'hydrate'` option, which nothing has ever read, is gone too.
+
+  Nothing that compiles today compiles differently. Configs passing a removed
+  option get a type error naming it, rather than an option that silently does
+  nothing.
+
+- f2d3779: `"use server"` compiles on the native path.
+
+  `transformServerFns` finds the directive, and either replaces the whole function
+  with an RPC stub (client build) or wraps it in its registration and drops the
+  directive (server build) — by rewriting spans, so the body that stays is the
+  author's own text.
+
+  The id a server function is registered and called by moves to
+  `transform/server-fn-id.ts` and is shared with the babel path. Client stub and
+  server registration come from separate builds of the same file, so the two have
+  to agree exactly; a test compiles the same sources both ways and compares the ids
+  they produce.
+
+  `serverFunctionsVitePlugin({ native: true })` selects it. On
+  `examples/start-app` — which uses a server function behind a `<Form>` action —
+  both paths serve identical HTML and answer the POST the same way.
+
+- 6e586c0: `compileTemplate()` — compile a template to runtime calls with no Babel in the path.
+
+  The template lowering moves out of the Babel front-end into `lower/template.ts`,
+  which imports nothing from a JavaScript toolchain. What a front-end still owns is
+  the holes, because reading `${…}` means reading JavaScript; it hands them over as
+  `TemplateHole` — source text, whether the expression is reactive, and the two
+  structural facts the lowering branches on (a single-expression arrow for `each`,
+  an object literal for `class`). Deliberately conclusions, never a syntax tree: if
+  the lowering could ask a parser a new question, the dependency grows back one
+  field at a time.
+
+  `compileTemplate(source, options)` then runs parse → lower → resolve → optimize →
+  emit and returns code, the runtime symbols to import, and the IR. It runs the same
+  passes in the same order as the Babel front-end, and a differential test compiles
+  ten templates both ways and compares the emitted code.
+
+  One difference worth knowing: this path passes hole source through verbatim where
+  the Babel path reprints it through `@babel/generator`, so output matches the
+  author's formatting rather than the printer's.
+
+  Not yet a module compiler. Finding templates inside a JavaScript file, and
+  describing each hole without a parser, is the remaining piece.
+
+- 458f2e4: `native: true` on the Vite plugin compiles without babel.
+
+  The plugin gains parity with the front-end it replaces: delegated events are
+  registered, components a `resolve` rule supplies are imported, lazy ones become
+  `deferred(() => import(…))` bindings with their strategy, and `@fluixi/core/rx`
+  is rewritten to `@fluixi/reactive`. Names already bound in the file win, as
+  before.
+
+  On `examples/start-app` the two paths serve **byte-identical HTML** — the only
+  difference in the built output is the client bundle's content hash, since the
+  emitted text is not the same bytes. On the compile step alone the native path is
+  **15-18x faster** (27 KB fixture, 100 components: ~156 ms → ~10 ms). Whole-build
+  time moves much less on a small app, where Vite and rollup dominate.
+
+  Types are left in place for esbuild to strip, which it does after this plugin
+  runs either way — so `@babel/preset-typescript` is not needed on this path.
+
+  Opt-in while the two are compared on real apps. TypeScript stripping, JSX,
+  ` html` ``, nesting in either direction, and source maps are covered; the
+`"use server"` transform still runs through babel.
+
+- 3a9607b: `@fluixi/compiler/transform` — compile a module's templates without running as a
+  Babel plugin.
+
+  `transformTemplates(code, id, options)` parses once, finds every `` html`...` ``
+  and `` svg`...` ``, and splices the emitted runtime calls over their spans with
+  magic-string. Two things follow from owning the transform rather than living
+  inside someone else's pipeline:
+
+  - **Source maps.** The plugin path emits none — every generated node inherits one
+    location from the template. A splice carries real mappings.
+  - **No reparse.** Holes are source slices, so nothing is printed and re-parsed.
+    That round-trip is 70% of compile time on the plugin path.
+
+  Holes keep the author's formatting, since they are never reprinted. Import
+  injection skips names already bound at module scope, which is the same answer
+  `path.scope.hasBinding` gives on the Program path.
+
+  `@babel/parser` becomes a dependency and is the only babel package the transform
+  touches — a parser used as a library, the way Vue uses one. `@babel/core`,
+  `@babel/generator` and `@babel/helper-plugin-utils` stay optional peers belonging
+  to the plugin front-end, and `no-babel-in-core.spec.ts` fails the build if that
+  line moves.
+
+  JSX still goes through the plugin. Nothing changes for existing builds.
+
+- 8e1e0f4: Move the reactivity rule out of the Babel front-end.
+
+  Whether `count()` is wired reactively while `count` is not, and whether
+  `props.children` counts as a value to track, is a Fluixi decision. It was written
+  against `@babel/types` inside `build-ir.ts`, which meant the rule could only be
+  read — and only be tested — through a parser.
+
+  It now lives in `@fluixi/compiler`'s `analyze/reactive-expr.ts` as
+  `isReactiveShape(shape)` over a four-case `ExprShape` (`call`, `member`,
+  `compound`, `opaque`). The Babel front-end keeps only the mapping from its AST to
+  those shapes, which is the part that genuinely belongs to a front-end; a second
+  front-end supplies its own mapping and inherits the semantics unchanged.
+
+  `ExprShape` is deliberately narrow and must not grow into a JavaScript AST: every
+  syntax the rule does not branch on collapses to `compound` (reactive when a part
+  is) or `opaque`. Which sub-expressions count stays with the front-end — a spread
+  element or a computed key contributes nothing, because the compiler cannot see
+  what it would introduce.
+
+  Behaviour is unchanged: `examples/start-app` compiles to a byte-identical bundle,
+  and the rule now has a 39-case table covering both the shapes and the syntax that
+  maps onto them.
+
+- 33c3574: JSX compiles through the transform, on the same builder as the plugin.
+
+  `buildJsxIR` moves to `lower/jsx.ts` and reads `node.type` instead of a parser's
+  helpers, asking the caller for an expression's source through `code()` — a
+  front-end that can slice the original text returns that, one that reprints
+  returns the printed form. Both paths get the same IR from one builder rather than
+  two that have to agree.
+
+  The two shape mappers collapse into one: `shapeOf` in `analyze/expr-shape.ts`
+  reads node types, so it serves the Babel AST and any ESTree-shaped one. The
+  32-case syntax table now covers it.
+
+  `moduleBindings` — which decides whether an injected import would collide — is
+  checked against `path.scope.hasBinding` over 22 cases, including array holes,
+  rest elements, nested destructuring and exported declarations. A missed binding
+  emits a duplicate declaration; a phantom one drops an import the code needs.
+
+  `transformTemplates` handles JSX, ` html` ``, and either nested in the other.
+  Still not wired into the Vite plugin.
+
+### Patch Changes
+
+- 8da12e6: Compiler specs run against the default path.
+
+  Every semantic spec — directives, `use:`, `load:`, component resolution, slots,
+  control flow, template cloning, the imperative fixtures — compiled through the
+  babel plugin, which is now the optional integration. So the path that ships was
+  the one without the coverage. They compile through `transformTemplates` now; the
+  two that stay on babel do so deliberately, and say why: `compile-cost` measures
+  both, `templates.spec` is the differential between them.
+
+  `format` comes back as a transform option. It selected which syntaxes the plugin
+  touched, and the transform had quietly always compiled both — a dropped option is
+  worse than a kept one, since a config that sets it would silently mean something
+  else.
+
+- 9817f51: Hoist static templates to module scope on the native path.
+
+  `compilePieces` gains `hoistTemplates`, which leaves the `_tmpl$N` references in
+  place and hands the templates back for a caller with a module scope to declare
+  them in — matching what the plugin emits. `compileTemplate` still inlines, having
+  nowhere to hoist to.
+
+  Bundle size is unchanged either way (`templateCache` is keyed by the string, not
+  its identity, so an inlined template still parses once), but the output shape now
+  matches the path it is replacing.
+
+- f0dd4e3: The native path is checked against the babel one over 681 real files.
+
+  `store-admin` and `storefront`, the whole `@fluixi-ui` component library, its
+  playground, and this repo's docs, web, examples and playground: 281 files
+  containing JSX or templates compiled both ways and compared on what the output
+  does — element and template calls, inserts, spreads, component calls, and the
+  attribute names that reach the DOM. No failures, no differences.
+
+  The docs site builds natively and its 53 prerendered pages are byte-identical to
+  the babel build once the bundle hash is normalised.
+
+  One open difference: the native output tree-shakes slightly less. On the
+  `@fluixi-ui` playground the bundle is 487.8 kB against 477.1 kB, with the same
+  225 modules in both — nothing is missing, some unused components are retained
+  that the babel output lets rollup drop. Not diagnosed yet.
+
+- 9817f51: Register delegated events for JSX nested inside an expression.
+
+  `<button onClick={…}>` reached through a ternary, a `.map()` callback or any
+  other expression never got its event added to the module's `delegateEvents`
+  call. JSX nested in an expression is compiled and discarded during the walk, and
+  the handlers went with it — so nothing registered the listener and the button did
+  nothing unless some other module in the app happened to register the same event.
+
+  `@fluixi-ui`'s table has exactly that shape: the sort button lives in a nested
+  ternary, and `table.tsx` emitted no `delegateEvents` at all.
+
+  Found by diffing the two compile paths over 226 real files — the native one walks
+  every root, so it had been reporting the events all along. The sets now agree on
+  every file.
+
+- e035c4e: Resolve components used only inside a nested expression.
+
+  `{(b) => <Input />}` — a render prop, a `.map()` callback, a ternary — emitted a
+  reference to `Input` that nothing imported. JSX inside an expression is compiled
+  and discarded during the walk, and the resolve pass only ever ran on the
+  top-level node, so a component the `resolve` rules should have supplied was
+  simply left unbound. At runtime that is a ReferenceError the moment the branch
+  renders.
+
+  `@fluixi-ui`'s playground has it in `FormDemo`: `Input`, `Select` and `Checkbox`
+  are used only inside render props, and none of the three was imported.
+
+  The fix replaces the ad-hoc event set threaded through `genExpr` with a hook
+  called on any nested IR, which runs the same resolve, collapse and
+  collect-needs passes the top-level node gets. Delegated events came along with
+  it, having been the first symptom of the same hole.
+
+  Found by diffing the native path against this one over the whole component
+  library: it walks every root, so it had been resolving them correctly. The two
+  now emit identical import sets on all 93 files, and the `@fluixi-ui` playground
+  bundle goes from 477.2 kB to 486.7 kB — the missing components, now present.
+
+- 0fdebdd: Fix nested edits being applied twice when slicing a hole's source.
+
+  A hole's text is taken from the original source with any compiled root inside it
+  substituted in. That substitution applied every edit within the range, including
+  ones already folded into a containing edit's output — so the second write landed
+  at an offset the first had moved, and the emitted expression came out truncated.
+
+  It needed three levels to show: a hole containing a root that itself contains
+  another. `examples/start-app` did not have that shape; the docs site did, and
+  failed to build.
+
+  Both the file-level splice and the slice now apply only the outermost edits.
+
+- 4022c74: Two bugs the spec suite caught once it compiled through the transform.
+
+  **Builtin component modules were restated in the transform.** `Await` was imported
+  from `@fluixi/dom`, which does not export it, and `Portal` from core rather than
+  dom. The lists live in `resolve/builtins.ts` — the same ones the resolve pass and
+  the TS plugin read — and the transform now reads them instead of keeping its own
+  copy.
+
+  **Two templates could share one hoisted name.** Roots are emitted innermost first
+  and spliced into their parent, so by the time the outer one is renamed its code
+  already contains hoisted names. Sharing the backend's `_tmpl$N` prefix meant the
+  rename rewrote those too and pointed both templates at one string — a `<Switch>`
+  rendered its fallback's markup in place of the matched branch. Hoisted names use
+  their own prefix now, so the two namespaces cannot be confused.
+
+  The compiler specs compile through `transformTemplates` via `test/fixtures.ts`,
+  which lives outside `src` so it is not published. Assertions on emitted text
+  gained the parentheses the backend puts round a spliced expression — nothing
+  reprints the output any more, and esbuild drops them.
+
 ## 1.0.0-alpha.73
 
 ### Patch Changes

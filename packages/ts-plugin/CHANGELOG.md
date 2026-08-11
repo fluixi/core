@@ -1,5 +1,28 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.8
+
+### Patch Changes
+
+- Updated dependencies [f995106]
+- Updated dependencies [93421e8]
+- Updated dependencies [8da12e6]
+- Updated dependencies [b747b26]
+- Updated dependencies [9817f51]
+- Updated dependencies [08635bd]
+- Updated dependencies [f0dd4e3]
+- Updated dependencies [f2d3779]
+- Updated dependencies [6e586c0]
+- Updated dependencies [458f2e4]
+- Updated dependencies [9817f51]
+- Updated dependencies [e035c4e]
+- Updated dependencies [3a9607b]
+- Updated dependencies [8e1e0f4]
+- Updated dependencies [0fdebdd]
+- Updated dependencies [4022c74]
+- Updated dependencies [33c3574]
+  - @fluixi/compiler@1.0.0-alpha.74
+
 ## 0.1.0-alpha.7
 
 ### Patch Changes
