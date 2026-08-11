@@ -1,5 +1,110 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.74
+
+### Minor Changes
+
+- 08635bd: The compiler no longer runs inside babel.
+
+  `fluixi()` and `serverFunctionsVitePlugin()` compile by rewriting the source
+  directly: parse once, splice the emitted code over the spans it replaces. Nothing
+  is reprinted, edits carry a source map, and types are left for esbuild to strip.
+  The `native` option is gone — that is simply what the plugin does.
+
+  Babel is kept for the case that needs it, the way Next keeps one: a
+  `babel.config.js` whose other plugins have to see the output. `fluixi({ babel:
+true })` selects it, and `@babel/core` and friends are optional peers, installed
+  only by `@fluixi/babel-plugin-jsx`.
+
+  What an app installs from that namespace is now `@babel/parser`, used as a
+  parser. `@fluixi/vite-plugin` and `@fluixi/start` declare no babel packages at
+  all, and importing `@fluixi/compiler/integrations` loads none — pinned by
+  `no-babel-in-core.spec.ts`, which distinguishes a static import from the dynamic
+  one behind the opt-in.
+
+  Verified on `examples/start-app` (HTML identical to the babel build), the docs
+  site (53 prerendered pages identical), the `@fluixi-ui` playground, and 681 files
+  from `store-admin`, `storefront` and the component library.
+
+### Patch Changes
+
+- 93421e8: Babel is no longer a dependency of `@fluixi/compiler`.
+
+  The IR, the resolve and optimize passes, and codegen import no Babel — that has
+  been true for a while, and `dist/index.mjs` proves it — but the package still
+  listed five `@babel/*` packages under `dependencies`, so importing
+  `@fluixi/compiler` for the component-resolver map or the IR types installed a
+  whole compiler toolchain (52 MB in this workspace). `@fluixi/ts-plugin`, which
+  imports `@fluixi/compiler/builtins` and nothing else, was paying that.
+
+  `@babel/core`, `@babel/generator`, `@babel/helper-plugin-utils` and
+  `@babel/preset-typescript` are now **optional peer dependencies**. The packages
+  that always run a Babel compile — `@fluixi/vite-plugin`, `@fluixi/start` and
+  `@fluixi/babel-plugin-jsx` — depend on them for real, so no app config changes
+  and nothing new has to be installed. `@babel/types` was listed and never
+  imported; it is gone.
+
+  `no-babel-in-core.spec.ts` locks the invariant in by walking the import graph from
+  each Babel-free entry point (`.` and `./builtins`), following relative imports
+  transitively and catching `import 'x'`, `import … from 'x'`, `import('x')` and
+  `require('x')`. A stray Babel import in the core is not a style question: for a
+  consumer that never installed the optional peer, it is a module that fails to
+  resolve.
+
+- b747b26: One lowering. The compiler had two implementations of every JSX semantic and
+  compiled with only one of them.
+
+  `plugin.ts` carried a full second lowering — the `codegen: 'inline'` path, plus
+  the `backend: 'jsx'` factory emitter — alongside the IR pipeline that has been
+  the default for some time. Nothing selected either one; the only references left
+  in the repository were two tests written for them, and the option's own docstring
+  still advertised `inline` as the default it had stopped being. Meanwhile the two
+  implementations had to agree about `ref`, `use:`, spreads, control flow and
+  template cloning, and when they disagreed it shipped: `codegen: 'ir'` went out as
+  alpha.71 and broke three `@fluixi/ui` packages.
+
+  Removed: 39 of the 46 functions in `plugin.ts:898-2555` (~1,400 lines) and the
+  `backend`, `codegen`, `runtime`, `pragma`, `pragmaFrag`, `hoistStatics`,
+  `useLitHTML`, `optimizeControlFlow`, `autoShowTransform`, `detectReactivity`,
+  `delegatedEvents` and `optimize` options that only fed them. JSX and ` html` ``templates now take the same path they already took: build IR, run the imperative
+backend, splice the emitted code back in. Compiled output for`examples/start-app`
+  is byte-identical before and after.
+
+  `backend: 'jsx'` is gone, but the `@fluixi/jsx` **runtime** is not: it is still
+  what TypeScript's `jsxImportSource` resolves types through and what esbuild's
+  automatic runtime targets. This compiler simply never emits a `jsx()` call.
+
+  Also removed from `@fluixi/compiler/integrations`: a regex-based `transform()`
+  that every adapter silently fell back to when `@babel/core` failed to load. It
+  could not compile JSX, so it returned source whose templates had never become DOM
+  calls — a build that reported success and failed when the page opened. Missing
+  babel is now a hard error, and a compile error propagates instead of being
+  swallowed and replaced with half-transformed source. The dead `generate:
+'ssr' | 'hydrate'` option, which nothing has ever read, is gone too.
+
+  Nothing that compiles today compiles differently. Configs passing a removed
+  option get a type error naming it, rather than an option that silently does
+  nothing.
+
+- Updated dependencies [f995106]
+- Updated dependencies [93421e8]
+- Updated dependencies [8da12e6]
+- Updated dependencies [b747b26]
+- Updated dependencies [9817f51]
+- Updated dependencies [08635bd]
+- Updated dependencies [f0dd4e3]
+- Updated dependencies [f2d3779]
+- Updated dependencies [6e586c0]
+- Updated dependencies [458f2e4]
+- Updated dependencies [9817f51]
+- Updated dependencies [e035c4e]
+- Updated dependencies [3a9607b]
+- Updated dependencies [8e1e0f4]
+- Updated dependencies [0fdebdd]
+- Updated dependencies [4022c74]
+- Updated dependencies [33c3574]
+  - @fluixi/compiler@1.0.0-alpha.74
+
 ## 1.0.0-alpha.73
 
 ### Patch Changes
