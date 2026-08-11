@@ -1,5 +1,6 @@
 // Bin-independent SSG build (the fluixi bin isn't linked in fresh CI/Cloudflare installs).
-import { loadConfig, build } from '@fluixi/start';
+import { loadConfig } from '@fluixi/start';
+import { build } from '@fluixi/start/commands';
 import { generateSitemap } from '@fluixi/start/head';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
