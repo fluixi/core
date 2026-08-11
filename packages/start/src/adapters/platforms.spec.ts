@@ -206,6 +206,16 @@ describe('vercel', () => {
     expect(config.routes[2]).toEqual({ src: '/(.*)', dest: '/index' });
   });
 
+  it('speaks the launcher\'s signature, not the handler\'s', async () => {
+    const { ctx, entries } = buildOutput();
+    await vercelAdapter.build!(ctx);
+
+    // The Nodejs launcher calls the export as `(req, res)`. Exporting a fetch handler
+    // reads correctly and hangs: nothing ever writes a response.
+    expect(entries[0].source).toContain('export default async (req, res) =>');
+    expect(entries[0].source).toContain('res.end()');
+  });
+
   it('leaves a prerendered home page to the filesystem', async () => {
     const { root, clientDir, ctx } = buildOutput();
     writeFileSync(join(clientDir, 'index.html'), '<!doctype html><div id="root"><h1>home</h1></div>');
