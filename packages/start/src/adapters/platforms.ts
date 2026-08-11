@@ -15,7 +15,11 @@ import type { Adapter, AdapterBuildContext } from '../adapter.js';
 import { cloudflareEntry, netlifyEntry, vercelEntry, type EntrySource } from './entry.js';
 
 /** What the generated entry needs to know about this build. */
-async function entrySource(ctx: AdapterBuildContext, from: string): Promise<EntrySource> {
+async function entrySource(
+  ctx: AdapterBuildContext,
+  from: string,
+  prerendered: string[],
+): Promise<EntrySource> {
   const template = await readFile(join(ctx.clientDir, 'index.html'), 'utf-8');
   const middleware = join(ctx.serverDir, 'middleware.js');
   const rel = (file: string) => {
@@ -30,7 +34,24 @@ async function entrySource(ctx: AdapterBuildContext, from: string): Promise<Entr
     template,
     ssr: ctx.cfg.ssr,
     mountId: ctx.cfg.mountId,
+    prerendered,
   };
+}
+
+/**
+ * Is `dist/client/index.html` a page, or the shell the server renders into?
+ *
+ * Vite writes the shell at exactly the path a prerendered `/` would occupy, and every
+ * one of these platforms serves a matching file before it invokes anything. Left
+ * alone, `/` is the one route an SSR app can never render — the CDN answers it with
+ * an empty mount element. Every other route is safe: no file exists at `/about`
+ * unless we actually prerendered it. So the adapters ask this before deciding who
+ * owns `/`.
+ */
+function indexIsPage(template: string, mountId: string): boolean {
+  const mount = new RegExp(`<([a-z-]+)[^>]*\\sid=["']${mountId}["'][^>]*>`, 'i').exec(template);
+  if (!mount) return false;
+  return !template.slice(mount.index + mount[0].length).trimStart().startsWith('</');
 }
 
 /** Nothing to wrap: a fully static SPA has no server entry, and that is not a failure. */
@@ -43,8 +64,14 @@ function skipWhenStatic(ctx: AdapterBuildContext, name: string): boolean {
 /** Cloudflare caps `_routes.json` at 100 rules. */
 const CF_MAX_RULES = 100;
 
-/** The routes a prerendered page is served at, from the HTML on disk. */
-async function prerenderedRoutes(dir: string): Promise<string[]> {
+/**
+ * The routes a prerendered page is served at, from the HTML on disk.
+ *
+ * `/` is in the list only when `index.html` holds a rendered page rather than the
+ * shell, because that is the difference between a file the platform should serve and
+ * a route the app has to render.
+ */
+async function prerenderedRoutes(dir: string, mountId: string): Promise<string[]> {
   const out: string[] = [];
   const walk = async (current: string): Promise<void> => {
     for (const entry of await readdir(current, { withFileTypes: true })) {
@@ -59,7 +86,9 @@ async function prerenderedRoutes(dir: string): Promise<string[]> {
     }
   };
   await walk(dir);
-  return out.filter((r) => r !== '/').sort();
+  const index = await readFile(join(dir, 'index.html'), 'utf-8').catch(() => '');
+  const root = indexIsPage(index, mountId);
+  return out.filter((r) => r !== '/' || root).sort();
 }
 
 /**
@@ -82,12 +111,14 @@ export const cloudflareAdapter: Adapter = {
   async build(ctx) {
     if (skipWhenStatic(ctx, 'cloudflare')) return;
     const out = join(ctx.clientDir, '_worker.js');
-    await ctx.bundleEntry(cloudflareEntry(await entrySource(ctx, out)), out);
+    const prerendered = await prerenderedRoutes(ctx.clientDir, ctx.cfg.mountId);
+    await ctx.bundleEntry(cloudflareEntry(await entrySource(ctx, out, prerendered)), out);
 
     // Everything under /assets is content-hashed and immutable, so it never needs the
     // worker. `_worker.js` itself must be excluded or Pages would route it to itself.
+    // `/` is excluded only when it was prerendered — otherwise the worker is the only
+    // thing that can answer it, and excluding it would serve the shell instead.
     const base = ['/assets/*', '/_worker.js'];
-    const prerendered = await prerenderedRoutes(ctx.clientDir);
     const room = CF_MAX_RULES - base.length;
     const exclude = [...base, ...prerendered.slice(0, room)];
     if (prerendered.length > room) {
@@ -123,7 +154,8 @@ export const netlifyAdapter: Adapter = {
     const dir = join(ctx.root, '.netlify', 'functions-internal');
     await mkdir(dir, { recursive: true });
     const out = join(dir, 'fluixi-server.mjs');
-    await ctx.bundleEntry(netlifyEntry(await entrySource(ctx, out)), out);
+    const prerendered = await prerenderedRoutes(ctx.clientDir, ctx.cfg.mountId);
+    await ctx.bundleEntry(netlifyEntry(await entrySource(ctx, out, prerendered)), out);
 
     // v2 functions declare their own routing, but the manifest is what makes Netlify
     // load an internal function at all.
@@ -131,6 +163,20 @@ export const netlifyAdapter: Adapter = {
       join(dir, 'fluixi-server.json'),
       JSON.stringify({ config: { path: '/*', preferStatic: true }, version: 1 }, null, 2) + '\n',
     );
+
+    // `preferStatic` is what keeps assets, prerendered pages and files like
+    // `favicon.ico` off the function — and it is also what would hand back the shell
+    // for `/`. A forced redirect is the one exception the CDN honours over a file, so
+    // it claims exactly that path and nothing else. Appended, so an app's own rules in
+    // `public/_redirects` still match first.
+    if (!prerendered.includes('/')) {
+      const file = join(ctx.clientDir, '_redirects');
+      const existing = await readFile(file, 'utf-8').catch(() => '');
+      const rule = '/  /.netlify/functions/fluixi-server  200!\n';
+      if (!existing.includes(rule)) {
+        await writeFile(file, existing && !existing.endsWith('\n') ? `${existing}\n${rule}` : existing + rule);
+      }
+    }
   },
 };
 
@@ -165,7 +211,8 @@ export const vercelAdapter: Adapter = {
     const fn = join(output, 'functions', 'index.func');
     await mkdir(fn, { recursive: true });
     const out = join(fn, 'index.mjs');
-    await ctx.bundleEntry(vercelEntry(await entrySource(ctx, out)), out);
+    const prerendered = await prerenderedRoutes(ctx.clientDir, ctx.cfg.mountId);
+    await ctx.bundleEntry(vercelEntry(await entrySource(ctx, out, prerendered)), out);
 
     await writeFile(
       join(fn, '.vc-config.json'),
@@ -181,6 +228,10 @@ export const vercelAdapter: Adapter = {
         {
           version: 3,
           routes: [
+            // The filesystem holds a shell at `/index.html`, so `/` has to be claimed
+            // before that phase or it is served unrendered. Skipped when `/` really is
+            // a prerendered page, which the filesystem should answer.
+            ...(prerendered.includes('/') ? [] : [{ src: '/', dest: '/index' }]),
             // A prerendered page or an asset wins; only a miss reaches the function.
             { handle: 'filesystem' },
             { src: '/(.*)', dest: '/index' },

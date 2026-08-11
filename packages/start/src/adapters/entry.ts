@@ -20,6 +20,8 @@ export interface EntrySource {
   template: string;
   ssr: boolean;
   mountId: string;
+  /** Paths that exist as prerendered HTML, so the platform can answer them itself. */
+  prerendered: string[];
 }
 
 /** Imports and the handler, shared by every platform entry. */
@@ -50,11 +52,18 @@ function preamble({ serverEntry, middleware, template, ssr, mountId }: EntrySour
 export function cloudflareEntry(source: EntrySource): string {
   return `${preamble(source)}
 
+const prerendered = new Set(${JSON.stringify(source.prerendered)});
+
 export default {
   async fetch(request, env, ctx) {
-    // Static first: a hit means an asset or a prerendered page, and the worker has
-    // nothing to add. Only a miss is a request for the app.
-    if (env && env.ASSETS) {
+    // Static first, but only for what is actually static. The ASSETS binding answers
+    // "/" with index.html whether that file is a prerendered page or the empty shell
+    // the server renders into, so asking it about every path costs an SSR app its
+    // home page. A path with a file extension is a file; a path we prerendered is a
+    // page; everything else belongs to the handler — the rule the filesystem adapter
+    // already applies in \`withStaticFiles\`.
+    const { pathname } = new URL(request.url);
+    if (env && env.ASSETS && (prerendered.has(pathname) || /\\.[^/]+$/.test(pathname))) {
       const asset = await env.ASSETS.fetch(request.clone());
       if (asset.status !== 404) return asset;
     }

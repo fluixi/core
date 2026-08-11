@@ -1,0 +1,17 @@
+// Drive the built worker the way Cloudflare Pages does, for local testing:
+//
+//   pnpm build && npx wrangler dev -c wrangler.dev.jsonc
+//
+// `wrangler pages dev dist/client` looks like the closer emulator and is not: since
+// wrangler 4 it serves the asset directory first and falls back to index.html, so
+// `_worker.js` is compiled and then never invoked — every route answers with the
+// unrendered shell and the run tells you nothing. `run_worker_first` restores the
+// advanced-mode contract, where the worker takes the request and reaches for assets
+// itself through the binding.
+{
+  "name": "fluixi-start-app-dev",
+  "main": "dist/client/_worker.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dist/client", "binding": "ASSETS", "run_worker_first": true }
+}
