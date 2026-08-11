@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, writeFile, rm, copyFile } from 'node:fs/promises';
 import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -69,6 +69,14 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
 
   // SSG: prerender routes to static HTML in dist/client (config-driven).
   if (cfg.prerender) {
+    // Prerendering `/` writes over the built `index.html`, and that file is also the
+    // template the server renders into. Keep the shell before it goes: without this a
+    // prerendered home page becomes the template, so every SSR response carries the
+    // home page's markup and head around the app it just rendered.
+    await copyFile(
+      resolve(cfg.root, 'dist/client', 'index.html'),
+      resolve(cfg.root, 'dist/server', 'template.html'),
+    );
     process.stdout.write('\n');
     await prerender(config);
   }

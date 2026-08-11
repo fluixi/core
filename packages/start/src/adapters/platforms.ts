@@ -11,7 +11,7 @@
 import { mkdir, writeFile, readFile, cp, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import type { Adapter, AdapterBuildContext } from '../adapter.js';
+import { readTemplate, type Adapter, type AdapterBuildContext } from '../adapter.js';
 import { cloudflareEntry, netlifyEntry, vercelEntry, type EntrySource } from './entry.js';
 
 /** What the generated entry needs to know about this build. */
@@ -20,7 +20,7 @@ async function entrySource(
   from: string,
   prerendered: string[],
 ): Promise<EntrySource> {
-  const template = await readFile(join(ctx.clientDir, 'index.html'), 'utf-8');
+  const template = await readTemplate(ctx.clientDir, ctx.serverDir);
   const middleware = join(ctx.serverDir, 'middleware.js');
   const rel = (file: string) => {
     // Node resolves a relative specifier against the importer, and the entry is

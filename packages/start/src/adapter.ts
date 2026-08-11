@@ -17,7 +17,7 @@ import { createHandlerFrom } from './handler-core.js';
 export async function createProdHandler(config: FluixiConfig = {}): Promise<FetchHandler> {
   const cfg = resolveConfig(config);
   const clientDir = resolve(cfg.root, 'dist/client');
-  const template = await readFile(join(clientDir, 'index.html'), 'utf-8');
+  const template = await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
   // SPA apps may ship no server entry (or one only for server functions) — import if present.
   const mod = existsSync(serverEntry)
@@ -31,6 +31,19 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     : undefined;
 
   return createHandlerFrom({ template, mod, cfg, middleware });
+}
+
+/**
+ * The shell the server renders into.
+ *
+ * `dist/client/index.html` is it, until the app prerenders `/` — then that path holds a
+ * rendered page and the build stashes the shell in `dist/server/template.html` first.
+ * Rendering into the page instead puts the home page's markup and head around every
+ * SSR response, and leaves hydration two mount elements to choose between.
+ */
+export async function readTemplate(clientDir: string, serverDir: string): Promise<string> {
+  const stashed = join(serverDir, 'template.html');
+  return readFile(existsSync(stashed) ? stashed : join(clientDir, 'index.html'), 'utf-8');
 }
 
 export interface AdapterContext {
