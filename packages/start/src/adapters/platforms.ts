@@ -61,6 +61,32 @@ function skipWhenStatic(ctx: AdapterBuildContext, name: string): boolean {
   return true;
 }
 
+/**
+ * Add a rule to `_redirects` without taking the file over.
+ *
+ * Apps ship their own — the docs site sends `/` to its default locale that way — so
+ * ours goes at the end, where a first-match-wins CDN reaches it only after the app's.
+ */
+async function appendRedirect(clientDir: string, rule: string): Promise<void> {
+  const file = join(clientDir, '_redirects');
+  const existing = await readFile(file, 'utf-8').catch(() => '');
+  if (existing.includes(rule)) return;
+  const separator = existing && !existing.endsWith('\n') ? '\n' : '';
+  await writeFile(file, `${existing}${separator}${rule}\n`);
+}
+
+/**
+ * A SPA answers its own routes in the browser, but a cold request for one still has to
+ * reach the client bundle, and no file exists at `/settings/profile`. The host has to
+ * hand back the shell for anything it cannot match.
+ *
+ * Cloudflare Pages already does exactly this for a project with no `_worker.js` —
+ * verified against a deployed build, where every unmatched path returned `index.html`
+ * — so its adapter states nothing. Netlify and Vercel both answer 404 (verified on
+ * Vercel with the layout this adapter writes), so they have to be told.
+ */
+const SPA_FALLBACK = '/*  /index.html  200';
+
 /** Cloudflare caps `_routes.json` at 100 rules. */
 const CF_MAX_RULES = 100;
 
@@ -150,7 +176,8 @@ export const netlifyAdapter: Adapter = {
     return { fetch: handler };
   },
   async build(ctx) {
-    if (skipWhenStatic(ctx, 'netlify')) return;
+    // A SPA has no function to fall back to, so the CDN has to hand back the shell.
+    if (skipWhenStatic(ctx, 'netlify')) return appendRedirect(ctx.clientDir, SPA_FALLBACK);
     const dir = join(ctx.root, '.netlify', 'functions-internal');
     await mkdir(dir, { recursive: true });
     const out = join(dir, 'fluixi-server.mjs');
@@ -170,12 +197,7 @@ export const netlifyAdapter: Adapter = {
     // it claims exactly that path and nothing else. Appended, so an app's own rules in
     // `public/_redirects` still match first.
     if (!prerendered.includes('/')) {
-      const file = join(ctx.clientDir, '_redirects');
-      const existing = await readFile(file, 'utf-8').catch(() => '');
-      const rule = '/  /.netlify/functions/fluixi-server  200!\n';
-      if (!existing.includes(rule)) {
-        await writeFile(file, existing && !existing.endsWith('\n') ? `${existing}\n${rule}` : existing + rule);
-      }
+      await appendRedirect(ctx.clientDir, '/  /.netlify/functions/fluixi-server  200!');
     }
   },
 };
@@ -203,7 +225,16 @@ export const vercelAdapter: Adapter = {
     if (skipWhenStatic(ctx, 'vercel')) {
       await writeFile(
         join(output, 'config.json'),
-        JSON.stringify({ version: 3, routes: [{ handle: 'filesystem' }] }, null, 2) + '\n',
+        JSON.stringify(
+          {
+            version: 3,
+            // The filesystem phase alone answers 404 for a client route, since nothing
+            // is on disk at that path; the catch-all is what makes it a SPA.
+            routes: [{ handle: 'filesystem' }, { src: '/(.*)', dest: '/index.html' }],
+          },
+          null,
+          2,
+        ) + '\n',
       );
       return;
     }

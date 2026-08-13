@@ -159,6 +159,16 @@ describe('netlify', () => {
     expect(read(join(clientDir, '_redirects'))).toContain('/  /.netlify/functions/fluixi-server  200!');
   });
 
+  it('hands the shell back for a client route when there is no server', async () => {
+    const { clientDir, ctx, entries } = buildOutput({ hasServer: false });
+    await netlifyAdapter.build!(ctx);
+
+    // Netlify serves no fallback of its own, so a cold request for `/settings` finds
+    // no file and 404s before the client bundle ever loads.
+    expect(entries).toHaveLength(0);
+    expect(read(join(clientDir, '_redirects'))).toContain('/*  /index.html  200');
+  });
+
   it('leaves a prerendered home page alone', async () => {
     const { clientDir, ctx } = buildOutput();
     writeFileSync(join(clientDir, 'index.html'), '<!doctype html><div id="root"><h1>home</h1></div>');
@@ -231,8 +241,10 @@ describe('vercel', () => {
 
     expect(entries).toHaveLength(0);
     expect(existsSync(join(root, '.vercel/output/functions'))).toBe(false);
+    // The filesystem phase alone answers 404 for a client route — nothing is on disk
+    // at that path — so the catch-all is what makes the output a SPA.
     const config = readJson(join(root, '.vercel/output/config.json'));
-    expect(config.routes).toEqual([{ handle: 'filesystem' }]);
+    expect(config.routes).toEqual([{ handle: 'filesystem' }, { src: '/(.*)', dest: '/index.html' }]);
   });
 });
 
