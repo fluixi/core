@@ -165,7 +165,29 @@ export type PathValue<T, P extends string> = ResolvePath<T, P>;
 //   : Expand<T> | Partial<Expand<T>> | Callback<Expand<T>>;
 export type UpdateValue<V> = V extends Primitive
   ? V | ((prev: V) => V)
-  : V | Partial<V> | ((prev: V) => V);
+  : V | Partial<V> | DeepReadonly<V> | Partial<DeepReadonly<V>> | ((prev: V) => V);
+
+/**
+ * The shape a store hands back when read, as a type the setter also accepts.
+ *
+ * Reading a store gives a deeply readonly view — that is the whole point of it — so
+ * the obvious move of snapshotting one store into another (`set(untrackStore(other))`)
+ * was rejected by the types, for a call the setter handles fine: it copies values out
+ * of what it is given and never writes to it. Accepting the readonly form costs no
+ * safety and removes the cast that every such call otherwise needs.
+ */
+export type DeepReadonly<T> = T extends ImmutablePrimitive
+  ? T
+  : T extends Array<infer U>
+    ? ReadonlyArray<DeepReadonly<U>>
+    : T extends Map<infer K, infer V>
+      ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+      : T extends Set<infer M>
+        ? ReadonlySet<DeepReadonly<M>>
+        : { readonly [K in keyof T]: DeepReadonly<T[K]> };
+
+/** What deep-readonly leaves alone: a value with no interior to freeze. */
+type ImmutablePrimitive = Primitive | RegExp | Blob;
 
 /* ============================================================
  * Predicate
@@ -296,7 +318,11 @@ export interface SetStoreFunction<T> {
   // 2. Simple Path Update (Value): set('user.name', 'John')
   <P extends string>(
     path: P & Selector<T>,
-    value: ResolvePath<T, P> | Partial<ResolvePath<T, P>> | GetAtPath<T,P>
+    value:
+      | ResolvePath<T, P>
+      | Partial<ResolvePath<T, P>>
+      | DeepReadonly<ResolvePath<T, P>>
+      | GetAtPath<T, P>
   ): void;
 
   // 2b. Simple Path Update (Callback): set('user.age', v => v + 1)

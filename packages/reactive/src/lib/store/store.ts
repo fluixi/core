@@ -9,7 +9,7 @@ import {
   createSignal,
   untrack,
 } from '@fluixi/reactive/signal';
-import type { SetStoreFunction as StoreSetter } from './setter.types.js';
+import type { SetStoreFunction as StoreSetter, DeepReadonly } from './setter.types.js';
 import type { ReconcileOptions } from './types.js';
 
 /**
@@ -24,18 +24,10 @@ import type { ReconcileOptions } from './types.js';
  */
 
 type Primitive = string | number | boolean | bigint | symbol | undefined | null;
-type BrowserNativeObject = Date | RegExp | Blob;
-type ImmutablePrimitive = Primitive | BrowserNativeObject;
-type _Immutable<T> = T extends ImmutablePrimitive
-  ? T
-  : T extends Array<infer U>
-  ? ReadonlyArray<_Immutable<U>>
-  : T extends Map<infer K, infer V>
-  ? ReadonlyMap<_Immutable<K>, _Immutable<V>>
-  : T extends Set<infer M>
-  ? ReadonlySet<_Immutable<M>>
-  : { readonly [K in keyof T]: _Immutable<T[K]> };
-type Immutable<T> = _Immutable<T> & { __track: T; [key: symbol]: any };
+// The readonly view and what the setter accepts are the same shape by construction —
+// two copies of this would drift, and the drift shows up as a snapshot the setter
+// refuses for no reason a caller can act on.
+type Immutable<T> = DeepReadonly<T> & { __track: T; [key: symbol]: any };
 
 interface StoreOptions<T> {
   name?: string;
