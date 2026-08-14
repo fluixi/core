@@ -72,7 +72,6 @@
   "dependencies": {},
   "devDependencies": {
     "@bambiste/mix-builder": "^0.1.0",
-    "@types/babel__core": "^7.20.5",
     "inquirer": "^13.1.0",
     "jsdom": "^25.0.0",
     "vitest": "^1.6.1",
