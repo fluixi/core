@@ -24,6 +24,40 @@ export function C${i}({ items, on }: any) {
 }`;
 
 const SRC = Array.from({ length: 100 }, (_, i) => unit(i)).join('\n');
+
+/** The same shape twice, so the only variable is how much directive lowering runs. */
+const plainUnit = (i: number) => `
+export const P${i} = ({ items, on }: any) => html\`
+  <section class="card" data-i="${i}">
+    <h2 @click=\${on}>\${title()}</h2>
+    <ul>\${items().map((x: any) => html\`<li>\${x.name}</li>\`)}</ul>
+  </section>\`;`;
+
+const directiveUnit = (i: number) => `
+export const D${i} = ({ items, on, flag, text }: any) => html\`
+  <section class="card" data-i="${i}" class:open=\${flag()} style:width=\${w()}>
+    <h2 @click.stop.prevent=\${on} use:tip=\${{ side: 'top' }}>\${title()}</h2>
+    <input bind:value=\${text} ?disabled=\${flag()} .rich=\${flag()} />
+    <ul><li each=\${items()} key="id">\${(x: any) => x.name}</li></ul>
+    <p if=\${flag()}>\${body()}</p><p else>none</p>
+  </section>\`;`;
+
+const PLAIN = Array.from({ length: 100 }, (_, i) => plainUnit(i)).join('\n');
+const DIRECTIVES = Array.from({ length: 100 }, (_, i) => directiveUnit(i)).join('\n');
+
+/**
+ * The first compile this process performs, captured before any test can warm the
+ * path. Measured here rather than inside the test because by the time a test body
+ * runs the module is loaded and the JIT has seen everything — the number that came
+ * out of that was the warm one wearing a cold label.
+ */
+const COLD_MS = process.env.FLUIXI_BENCH
+  ? (() => {
+      const started = performance.now();
+      transformTemplates(SRC, 'cold.tsx', { runtimeModule: '@fluixi/dom' });
+      return performance.now() - started;
+    })()
+  : 0;
 const BASE = { filename: 't.tsx', configFile: false, babelrc: false } as const;
 const OPTS = { importSource: '@fluixi/dom' };
 
@@ -73,5 +107,40 @@ describe.runIf(process.env.FLUIXI_BENCH)('compile cost', () => {
     console.log(`  framework IR work is ${((emit / full) * 100).toFixed(0)}%`);
     console.log(`  host overhead (traverse + reparse + print) is ${(((full - parse - emit) / full) * 100).toFixed(0)}%`);
     console.log(`  native is ${(full / native).toFixed(1)}x the plugin on the same source`);
+  }, 120_000);
+
+  it('costs what a directive-heavy template costs', () => {
+    // The JSX fixture above is elements and expressions. Templates carry the other
+    // half of the language — `if`/`each`/`bind:`/`class:`/`style:`, event modifiers,
+    // `use:` — and each one is a lowering the element path never runs, so the mix is
+    // not a safe thing to extrapolate from.
+    // Both fixtures are 100 templates but not the same byte count, so the per-KB
+    // figure is the comparable one.
+    console.log(
+      `  plain ${(PLAIN.length / 1024).toFixed(1)} KB vs directive-heavy ` +
+        `${(DIRECTIVES.length / 1024).toFixed(1)} KB, 100 templates each`,
+    );
+
+    const plain = time('templates, no directives', 10, () => {
+      transformTemplates(PLAIN, 't.ts', { runtimeModule: '@fluixi/dom' });
+    });
+    const heavy = time('templates, directive-heavy', 10, () => {
+      transformTemplates(DIRECTIVES, 't.ts', { runtimeModule: '@fluixi/dom' });
+    });
+    const perKb = (ms: number, src: string) => ms / (src.length / 1024);
+    console.log(`  directives cost ${(heavy / plain).toFixed(1)}x per template,`
+      + ` ${(perKb(heavy, DIRECTIVES) / perKb(plain, PLAIN)).toFixed(1)}x per KB`);
+  }, 120_000);
+
+  it('separates the first compile from a rebuild', () => {
+    // What a dev server pays on the first request for a module, against what it pays
+    // per keystroke afterwards. Everything but the first call is warm — JIT, and any
+    // state the compiler keeps across calls — so the gap is what an edit actually
+    // costs once the process has been up for a while.
+    const warm = time('rebuild (warm)', 20, () => {
+      transformTemplates(SRC, 't.tsx', { runtimeModule: '@fluixi/dom' });
+    });
+    console.log(`  first compile (cold)               ${COLD_MS.toFixed(1)} ms`);
+    console.log(`  cold is ${(COLD_MS / warm).toFixed(1)}x a warm rebuild`);
   }, 120_000);
 });
