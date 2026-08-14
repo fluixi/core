@@ -12,7 +12,7 @@
  * all under middleware) is a property of the framework, not of the host.
  */
 import type { ResolvedConfig } from './config.js';
-import { injectAppAndHead, splitTemplate, guardHandler } from './document.js';
+import { injectAppAndHead, injectPreload, splitTemplate, guardHandler } from './document.js';
 import { createRequestHandler, streamDocument, type FetchHandler } from './handler.js';
 import { composeMiddleware, normalizeMiddleware } from './middleware.js';
 
@@ -35,27 +35,43 @@ export interface HandlerParts {
   cfg: Pick<ResolvedConfig, 'ssr' | 'mountId'>;
   /** The imported `middleware.js`, if the app has one. */
   middleware?: unknown;
+  /**
+   * The built files this path needs, for the document to reference up front. Optional:
+   * without it a page is served exactly as before, just without preload hints.
+   */
+  preload?: (pathname: string) => string[];
 }
 
-export function createHandlerFrom({ template, mod, cfg, middleware }: HandlerParts): FetchHandler {
+export function createHandlerFrom({ template, mod, cfg, middleware, preload }: HandlerParts): FetchHandler {
+  const withPreload = (html: string, pathname: string): string =>
+    preload ? injectPreload(html, preload(pathname)) : html;
+
   // Streaming when the entry exports `renderStream` (a body stream): flush the split
   // template head first, pipe the body, then the tail. Else inject the string render.
   let core: FetchHandler;
   if (!cfg.ssr) {
     // SPA: the page is the static shell; the client entry renders it. Server functions +
-    // middleware still run through this handler — there's just no SSR render pass.
-    core = createRequestHandler(async () => template);
+    // middleware still run through this handler — there's just no SSR render pass. The
+    // path is still known, though, and the route it names still loads its own chunk, so
+    // the shell can say so and save the client a round trip it would otherwise start
+    // only after the router had booted.
+    core = createRequestHandler(async (url) => withPreload(template, url.split('?')[0]));
   } else if (typeof mod.renderStream === 'function') {
-    const { head, tail } = splitTemplate(template, cfg.mountId);
     core = async (request) => {
       const url = new URL(request.url);
+      // Split per request rather than once: the preload links belong in the head, and
+      // the head is the part that flushes before the body is known — which is the whole
+      // reason streaming wants them, since the browser can start fetching the route's
+      // chunk while the server is still awaiting data for it.
+      const { head, tail } = splitTemplate(withPreload(template, url.pathname), cfg.mountId);
       const body = await mod.renderStream!(url.pathname + url.search, request);
       return streamDocument(head, body as never, tail);
     };
   } else {
     const render = mod.render ?? mod.default;
     core = createRequestHandler(async (url, request) =>
-      injectAppAndHead(template, await render!(url, request), cfg.mountId),
+      // `url` here is `pathname + search`; matching only ever wants the path.
+      injectAppAndHead(withPreload(template, url.split('?')[0]), await render!(url, request), cfg.mountId),
     );
   }
 

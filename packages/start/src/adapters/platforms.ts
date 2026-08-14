@@ -21,6 +21,9 @@ async function entrySource(
   prerendered: string[],
 ): Promise<EntrySource> {
   const template = await readTemplate(ctx.clientDir, ctx.serverDir);
+  // Written by the build from Vite's SSR manifest; absent for an app with no file routes.
+  const assetFile = join(ctx.serverDir, 'route-assets.json');
+  const routeAssets = existsSync(assetFile) ? JSON.parse(await readFile(assetFile, 'utf-8')) : {};
   const middleware = join(ctx.serverDir, 'middleware.js');
   const rel = (file: string) => {
     // Node resolves a relative specifier against the importer, and the entry is
@@ -35,6 +38,7 @@ async function entrySource(
     ssr: ctx.cfg.ssr,
     mountId: ctx.cfg.mountId,
     prerendered,
+    routeAssets,
   };
 }
 

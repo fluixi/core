@@ -7,6 +7,7 @@ import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
 import { serveNode, withStaticFiles, type FetchHandler } from './handler.js';
 import { createHandlerFrom } from './handler-core.js';
+import { createPreloader, type RouteAssets } from './preload.js';
 
 /**
  * Build the production SSR fetch handler from a `fluixi build` output (dist/server +
@@ -30,7 +31,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     ? await import(/* @vite-ignore */ pathToFileURL(mwFile).href)
     : undefined;
 
-  return createHandlerFrom({ template, mod, cfg, middleware });
+  return createHandlerFrom({ template, mod, cfg, middleware, preload: await loadPreloader(cfg) });
 }
 
 /**
@@ -44,6 +45,24 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
 export async function readTemplate(clientDir: string, serverDir: string): Promise<string> {
   const stashed = join(serverDir, 'template.html');
   return readFile(existsSync(stashed) ? stashed : join(clientDir, 'index.html'), 'utf-8');
+}
+
+/**
+ * The preloader for a filesystem host, from the route→files map `fluixi build` leaves
+ * in `dist/server`. Absent or unreadable means no hints and an unchanged page, never a
+ * failed request. A deploy adapter inlines the same map, because a worker cannot read
+ * it at runtime.
+ */
+async function loadPreloader(cfg: ResolvedConfig): Promise<((pathname: string) => string[]) | undefined> {
+  const file = resolve(cfg.root, 'dist/server', 'route-assets.json');
+  if (!existsSync(file)) return undefined;
+
+  try {
+    return createPreloader(JSON.parse(await readFile(file, 'utf-8')) as RouteAssets);
+  } catch {
+    // A map that cannot be read is a reason to skip preloading, not to refuse to serve.
+    return undefined;
+  }
 }
 
 export interface AdapterContext {

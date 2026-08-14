@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile, rm, copyFile } from 'node:fs/promises';
+import { mkdir, writeFile, rm, copyFile, readFile } from 'node:fs/promises';
 import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
 import { ssrBuildOptions } from '../adapter.js';
 import { prerender } from './prerender.js';
+import type { ScannedRoute } from '@fluixi/core/plugins';
 import { wordmark, step, done, c } from '../ui.js';
 
 /**
@@ -67,6 +68,8 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     });
   }
 
+  await collectRouteAssets(cfg);
+
   // SSG: prerender routes to static HTML in dist/client (config-driven).
   if (cfg.prerender) {
     // Prerendering `/` writes over the built `index.html`, and that file is also the
@@ -98,6 +101,53 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
   const ms = Date.now() - startedAt;
   process.stdout.write('\n');
   done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/client + dist/server')}\n`);
+}
+
+/**
+ * Turn Vite's SSR manifest into the map the server actually needs, and stop shipping
+ * the manifest itself.
+ *
+ * A lazily-imported route is its own chunk with its own CSS. Server-render that route
+ * and the HTML references neither, so the browser only discovers them when hydration
+ * runs the dynamic import — one waterfall, and the route's styles arrive after its
+ * markup has already painted.
+ *
+ * The manifest is keyed by module id and the server only ever has a path, so the join
+ * happens here: scan the routes the same way the plugin does, resolve each to its files,
+ * and write a map the runtime can look a URL up in. Only routes are kept, and it goes to
+ * `dist/server` because `dist/client` is what gets published — a full manifest on a CDN
+ * is a map of every source path to its chunk, for a reader that does not exist there.
+ */
+async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
+  const clientDir = resolve(cfg.root, 'dist/client');
+  const manifestFile = join(clientDir, '.vite', 'ssr-manifest.json');
+  if (!existsSync(manifestFile)) return;
+
+  const serverDir = resolve(cfg.root, 'dist/server');
+  const routesDir = resolve(cfg.root, cfg.routesDir);
+  if (existsSync(serverDir) && existsSync(routesDir)) {
+    const manifest: Record<string, string[]> = JSON.parse(await readFile(manifestFile, 'utf-8'));
+    const { scanRoutes } = await import('@fluixi/core/plugins');
+    const base = cfg.routesDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
+
+    // Keyed by URL pattern, not module id: the server has a path and no way to turn one
+    // into a module without the app's own route table, which lives inside the bundle it
+    // is serving. Resolving it here leaves the runtime a lookup and nothing else.
+    const assets: Record<string, string[]> = {};
+    const walk = (routes: ScannedRoute[], inherited: string[]): void => {
+      for (const route of routes) {
+        // A match renders every layer, so a route needs its layouts' chunks as much as
+        // its own — folded in now rather than unioned per request.
+        const files = [...new Set([...inherited, ...(manifest[`${base}/${route.filePath}`] ?? [])])];
+        if (files.length) assets[route.urlPath] = [...new Set([...(assets[route.urlPath] ?? []), ...files])];
+        walk(route.children, files);
+      }
+    };
+    walk(scanRoutes(routesDir), []);
+    await writeFile(join(serverDir, 'route-assets.json'), JSON.stringify(assets, null, 2) + '\n');
+  }
+
+  await rm(join(clientDir, '.vite'), { recursive: true, force: true });
 }
 
 /**

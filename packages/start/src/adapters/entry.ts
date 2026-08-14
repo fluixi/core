@@ -22,20 +22,27 @@ export interface EntrySource {
   mountId: string;
   /** Paths that exist as prerendered HTML, so the platform can answer them itself. */
   prerendered: string[];
+  /** URL pattern → built files, inlined: a worker cannot read the map off disk. */
+  routeAssets: Record<string, string[]>;
 }
 
 /** Imports and the handler, shared by every platform entry. */
-function preamble({ serverEntry, middleware, template, ssr, mountId }: EntrySource): string {
+function preamble({ serverEntry, middleware, template, ssr, mountId, routeAssets }: EntrySource): string {
   return [
     `import { createHandlerFrom } from '@fluixi/start/handler-core';`,
+    `import { createPreloader } from '@fluixi/start/preload';`,
     `import * as server from ${JSON.stringify(serverEntry)};`,
     middleware ? `import * as middleware from ${JSON.stringify(middleware)};` : '',
     ``,
     `const template = ${JSON.stringify(template)};`,
+    // Inlined for the same reason as the template: this runs as an uploaded file, with
+    // no dist/server beside it to read.
+    `const routeAssets = ${JSON.stringify(routeAssets)};`,
     `const handler = createHandlerFrom({`,
     `  template,`,
     `  mod: server,`,
     `  cfg: { ssr: ${ssr}, mountId: ${JSON.stringify(mountId)} },`,
+    `  preload: createPreloader(routeAssets),`,
     middleware ? `  middleware,` : '',
     `});`,
   ]
