@@ -79,6 +79,11 @@
         "import": "./dist/handler-core.js",
         "default": "./dist/handler-core.js"
       },
+      "./preload": {
+        "types": "./dist/preload.d.ts",
+        "import": "./dist/preload.js",
+        "default": "./dist/preload.js"
+      },
       "./commands": {
         "types": "./dist/commands/index.d.ts",
         "import": "./dist/commands/index.js",
@@ -178,6 +183,12 @@
       "types": "./dist/handler-core.d.ts",
       "import": "./dist/handler-core.js",
       "default": "./dist/handler-core.js"
+    },
+    "./preload": {
+      "development": "./src/preload.ts",
+      "types": "./dist/preload.d.ts",
+      "import": "./dist/preload.js",
+      "default": "./dist/preload.js"
     },
     "./commands": {
       "development": "./src/commands/index.ts",
