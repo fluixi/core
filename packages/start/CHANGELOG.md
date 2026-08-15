@@ -1,5 +1,46 @@
 # @fluixi/start
 
+## 0.1.0-alpha.65
+
+### Patch Changes
+
+- 7547cd4: Reference a route's own chunk and stylesheet in the document that renders it.
+
+  A lazily-imported route is its own chunk with its own CSS, and neither was mentioned
+  anywhere in the shell. The browser learned they existed only once hydration ran the
+  dynamic import, so the route's markup painted before its styles arrived and the chunk
+  was fetched a round trip later than it could have been.
+
+  `fluixi build` now resolves each route to the files it compiles into — that is what
+  Vite's SSR manifest was being generated for, and nothing had ever read it — and writes
+  a URL-pattern map to `dist/server`. The handler looks the path up and emits
+  `modulepreload` and `stylesheet` links into the head; deploy adapters inline the same
+  map, since a worker cannot read it. The manifest itself is no longer published: it maps
+  every source path to its chunk, which is not something a CDN needs to serve.
+
+  Every part of it is optional. An app with no file routes, a path that matches nothing,
+  or a build from before this existed yields no links and an unchanged page.
+
+  `@fluixi/core/plugins` exports `scanRoutes`, so the build resolves routes with the same
+  scanner the plugin uses instead of a second copy of the conventions.
+
+- 720c617: Serve the shell for a client route on a SPA deploy.
+
+  An app with no server entry got the static output alone, and a cold request for a
+  route it handles in the browser found no file: 404 on Vercel, where the config listed
+  only the filesystem phase, and on Netlify, which serves no fallback of its own. Both
+  now hand back `index.html` for an unmatched path. Cloudflare Pages already does this
+  for a project with no `_worker.js`, so its adapter still writes nothing.
+
+- Updated dependencies [087a8d3]
+- Updated dependencies [7547cd4]
+  - @fluixi/core@1.0.0-alpha.75
+  - @fluixi/compiler@1.0.0-alpha.75
+  - @fluixi/dom@1.0.0-alpha.75
+  - @fluixi/head@1.0.0-alpha.42
+  - @fluixi/server@1.0.0-alpha.75
+  - @fluixi/vite-plugin@1.0.0-alpha.75
+
 ## 0.1.0-alpha.64
 
 ### Minor Changes
