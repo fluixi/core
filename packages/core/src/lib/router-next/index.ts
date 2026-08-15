@@ -528,8 +528,13 @@ export function Link(props: LinkProps) {
   // the element renders unstyled. Own-props handled elsewhere are skipped:
   // href/slot above, class/className/active/activeClass in the effect, and
   // children/replace by navigation.
-  for (const [k, v] of Object.entries(props)) {
+  // Keys, not entries: `Object.entries` reads every prop, and `children` is a getter
+  // that builds fresh nodes per access. Under hydration that discarded first build
+  // consumes the server's nodes, so the real read below produced a second copy of
+  // them — a duplicated logo and pager on every prerendered page.
+  for (const k of Object.keys(props)) {
     if (LINK_OWN_PROPS.has(k)) continue;
+    const v = (props as Record<string, unknown>)[k];
     if (v != null && typeof v !== 'function') setAttribute(a, k, String(v));
   }
 
@@ -603,8 +608,11 @@ export function Form(props: FormProps) {
   setAttribute(form, 'method', 'post');
   if (url) setAttribute(form, 'action', url);
   if (cls) setAttribute(form, 'class', cls);
-  for (const [k, v] of Object.entries(props)) {
+  // Keys, not entries — same reason as Link: reading `children` here would build its
+  // nodes once and throw them away.
+  for (const k of Object.keys(props)) {
     if (k === 'action' || k === 'children' || k === 'class' || k === 'className') continue;
+    const v = (props as Record<string, unknown>)[k];
     if (v != null && typeof v !== 'function') setAttribute(form, k, String(v));
   }
 
