@@ -1,5 +1,49 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.75
+
+### Patch Changes
+
+- 087a8d3: Fix `Link` and `Form` duplicating element children on hydration.
+
+  Both forwarded author attributes with `Object.entries(props)`, which reads every prop
+  — including `children`, a getter the compiler emits to build fresh nodes per access.
+  Under hydration that first, discarded build consumed the server's nodes, so the real
+  read appended a second copy: a doubled logo and pager on every prerendered page, until
+  a client-side navigation re-rendered the subtree.
+
+  They iterate `Object.keys` and read only the props they forward.
+
+- 7547cd4: Reference a route's own chunk and stylesheet in the document that renders it.
+
+  A lazily-imported route is its own chunk with its own CSS, and neither was mentioned
+  anywhere in the shell. The browser learned they existed only once hydration ran the
+  dynamic import, so the route's markup painted before its styles arrived and the chunk
+  was fetched a round trip later than it could have been.
+
+  `fluixi build` now resolves each route to the files it compiles into — that is what
+  Vite's SSR manifest was being generated for, and nothing had ever read it — and writes
+  a URL-pattern map to `dist/server`. The handler looks the path up and emits
+  `modulepreload` and `stylesheet` links into the head; deploy adapters inline the same
+  map, since a worker cannot read it. The manifest itself is no longer published: it maps
+  every source path to its chunk, which is not something a CDN needs to serve.
+
+  Every part of it is optional. An app with no file routes, a path that matches nothing,
+  or a build from before this existed yields no links and an unchanged page.
+
+  `@fluixi/core/plugins` exports `scanRoutes`, so the build resolves routes with the same
+  scanner the plugin uses instead of a second copy of the conventions.
+
+- Updated dependencies [c3affda]
+  - @fluixi/reactive@1.0.0-alpha.75
+  - @fluixi/compiler@1.0.0-alpha.75
+  - @fluixi/dom@1.0.0-alpha.75
+  - @fluixi/head@1.0.0-alpha.42
+  - @fluixi/jsx@1.0.0-alpha.75
+  - @fluixi/server@1.0.0-alpha.75
+  - @fluixi/utils@1.0.0-alpha.75
+  - @fluixi/vite-plugin@1.0.0-alpha.75
+
 ## 1.0.0-alpha.74
 
 ### Minor Changes
