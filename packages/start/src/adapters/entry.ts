@@ -63,12 +63,10 @@ const prerendered = new Set(${JSON.stringify(source.prerendered)});
 
 export default {
   async fetch(request, env, ctx) {
-    // Static first, but only for what is actually static. The ASSETS binding answers
-    // "/" with index.html whether that file is a prerendered page or the empty shell
-    // the server renders into, so asking it about every path costs an SSR app its
-    // home page. A path with a file extension is a file; a path we prerendered is a
-    // page; everything else belongs to the handler — the rule the filesystem adapter
-    // already applies in \`withStaticFiles\`.
+    // Static first, but only for what is static. ASSETS answers "/" with index.html
+    // whether that is a prerendered page or the shell, so asking about every path
+    // costs an SSR app its home page. Extension means a file, prerendered means a
+    // page, the rest is the handler's — the rule \`withStaticFiles\` already uses.
     const { pathname } = new URL(request.url);
     if (env && env.ASSETS && (prerendered.has(pathname) || /\\.[^/]+$/.test(pathname))) {
       const asset = await env.ASSETS.fetch(request.clone());
@@ -97,12 +95,11 @@ export const config = { path: '/*', preferStatic: true };
 /**
  * Vercel Build Output API v3, Node runtime.
  *
- * The `Nodejs` launcher invokes the default export as `(req, res)` — Node's own
- * signature, not a fetch handler — so the entry has to bridge the two itself.
- * Exporting `(request) => Response` looks right and hangs: the launcher passes an
- * `IncomingMessage`, nothing ever writes to `res`, and the request sits there until
- * the platform times it out. Node stays the runtime rather than edge because a server
- * function is allowed to use Node APIs here.
+ * The `Nodejs` launcher invokes the default export as `(req, res)`, so the entry
+ * bridges the two itself. Exporting `(request) => Response` hangs instead of failing:
+ * the launcher passes an `IncomingMessage`, nothing writes to `res`, and the request
+ * sits until the platform times it out. Node rather than edge, so a server function
+ * can use Node APIs.
  */
 export function vercelEntry(source: EntrySource): string {
   return `${preamble(source)}
@@ -131,8 +128,8 @@ export default async (req, res) => {
   );
 
   res.statusCode = response.status;
-  // Every other header is single-valued by the time it gets here; set-cookie is the
-  // one that legitimately repeats, and folding it into one line breaks the cookies.
+  // set-cookie is the one header that legitimately repeats; folding it into one line
+  // breaks the cookies.
   for (const [name, value] of response.headers) {
     if (name.toLowerCase() !== 'set-cookie') res.setHeader(name, value);
   }

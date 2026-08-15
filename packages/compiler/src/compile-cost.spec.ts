@@ -46,10 +46,9 @@ const PLAIN = Array.from({ length: 100 }, (_, i) => plainUnit(i)).join('\n');
 const DIRECTIVES = Array.from({ length: 100 }, (_, i) => directiveUnit(i)).join('\n');
 
 /**
- * The first compile this process performs, captured before any test can warm the
- * path. Measured here rather than inside the test because by the time a test body
- * runs the module is loaded and the JIT has seen everything — the number that came
- * out of that was the warm one wearing a cold label.
+ * The first compile in this process, captured before any test warms the path.
+ * Measured inside a test body it reads 1.0x, because the module is loaded and the
+ * JIT has seen everything by then.
  */
 const COLD_MS = process.env.FLUIXI_BENCH
   ? (() => {
@@ -110,10 +109,8 @@ describe.runIf(process.env.FLUIXI_BENCH)('compile cost', () => {
   }, 120_000);
 
   it('costs what a directive-heavy template costs', () => {
-    // The JSX fixture above is elements and expressions. Templates carry the other
-    // half of the language — `if`/`each`/`bind:`/`class:`/`style:`, event modifiers,
-    // `use:` — and each one is a lowering the element path never runs, so the mix is
-    // not a safe thing to extrapolate from.
+    // Directives are lowerings the element path never runs, so the JSX fixture above
+    // says nothing about them.
     // Both fixtures are 100 templates but not the same byte count, so the per-KB
     // figure is the comparable one.
     console.log(
@@ -133,10 +130,7 @@ describe.runIf(process.env.FLUIXI_BENCH)('compile cost', () => {
   }, 120_000);
 
   it('separates the first compile from a rebuild', () => {
-    // What a dev server pays on the first request for a module, against what it pays
-    // per keystroke afterwards. Everything but the first call is warm — JIT, and any
-    // state the compiler keeps across calls — so the gap is what an edit actually
-    // costs once the process has been up for a while.
+    // First request for a module against every edit after it.
     const warm = time('rebuild (warm)', 20, () => {
       transformTemplates(SRC, 't.tsx', { runtimeModule: '@fluixi/dom' });
     });

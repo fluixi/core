@@ -1,14 +1,10 @@
 /**
- * A store's read side is deeply readonly, and its setter has to accept that back.
+ * A store reads deeply readonly, and its setter has to accept that back:
+ * `setB(untrackStore(a))` is how state gets seeded or reset, and the setter only
+ * copies values out of what it is given.
  *
- * Snapshotting one store into another — `setB(untrackStore(a))` — is the ordinary way
- * to seed or reset state, and the setter only ever copies values out of what it is
- * handed. Typing the input as mutable rejected every one of those calls, which is a
- * cast at each site or a store nobody can pass a snapshot to.
- *
- * The assertions that matter here are the ones `tsc` makes, not the ones vitest runs:
- * each case has to *compile*. The runtime expectations only prove the values actually
- * moved, so a type that compiles for the wrong reason still fails the test.
+ * These assert at compile time — each case has to typecheck. The runtime
+ * expectations are there so a type cannot pass for the wrong reason.
  */
 import { describe, it, expect } from 'vitest';
 import { createStore, untrackStore } from './store.js';

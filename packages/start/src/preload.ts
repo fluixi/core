@@ -1,16 +1,13 @@
 /**
- * Which built files a URL is going to need.
+ * Which built files a URL needs.
  *
- * Preloading depends on nothing but the path, so this is a plain function of it rather
- * than something threaded through the render — the answer is known before a component
- * runs. The map is keyed by URL pattern because the server cannot turn a path into a
- * module on its own: the route table lives inside the bundle it is serving, and
- * `@fluixi/core/routes` resolves to a stub outside the build. `fluixi build` does that
- * join instead, with each route\'s layouts already folded in.
+ * Keyed by URL pattern, not module id: the server only has a path, and the route table
+ * that would map one to the other lives inside the bundle it is serving —
+ * `@fluixi/core/routes` resolves to a stub outside a build. `fluixi build` does the
+ * join, with each route's layouts folded in.
  *
- * A miss is silent by design. An app with no file routes, a path that matches nothing,
- * a build from before any of this existed — each yields no files, and the page is served
- * exactly as it was.
+ * A miss is silent: no file routes, no match, or an older build yields no files and an
+ * unchanged page.
  */
 import { matchRoutes } from '@fluixi/core/router-next';
 
@@ -22,8 +19,8 @@ export function createPreloader(assets: RouteAssets | undefined): (pathname: str
   const patterns = Object.keys(assets ?? {});
   if (!patterns.length) return () => [];
 
-  // Matching goes through the router rather than a string compare, so `/blog/:id` and
-  // wildcards resolve the way they do when the app itself routes the request.
+  // Through the router, not a string compare, so `/blog/:id` and wildcards resolve as
+  // they do when the app routes the request.
   const routes = patterns.map((path) => ({ path, meta: { path } }));
 
   return (pathname) => {

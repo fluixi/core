@@ -1,14 +1,10 @@
 /**
- * `fluixi generate` writes files into whatever directory it is run from, so these run
- * it in a temporary one and read back what landed.
+ * `fluixi generate` writes into the directory it runs from, so these run it in a
+ * temporary one and read back what landed.
  *
- * The package had no tests at all, which meant `vitest run` exited 1 on "no test
- * files" and `nx run-many -t test` could never be green — a red that says nothing
- * trains you to ignore the ones that do.
- *
- * What is worth pinning is the naming: which directory a kind goes to, how a name
- * becomes a component name, and the extension, which follows the project's own
- * syntax and has been wrong in both directions before.
+ * What is pinned is the naming: which directory a kind goes to, how a name becomes a
+ * component name, and whether the file is `.tsx` or `.ts` — that follows the
+ * project's own syntax and has been wrong in both directions.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, readFileSync, existsSync, writeFileSync, rmSync } from 'node:fs';
@@ -30,8 +26,7 @@ beforeEach(() => {
   argv = process.argv;
   dir = mkdtempSync(join(tmpdir(), 'fx-cli-'));
   process.chdir(dir);
-  // generate() reads flags straight off argv, so a run must not inherit the test
-  // runner's own arguments — vitest is invoked with plenty.
+  // generate() reads flags off argv, which would otherwise be vitest's own.
   process.argv = ['node', 'fluixi', 'generate'];
 });
 

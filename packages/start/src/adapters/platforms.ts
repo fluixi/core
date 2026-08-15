@@ -45,12 +45,10 @@ async function entrySource(
 /**
  * Is `dist/client/index.html` a page, or the shell the server renders into?
  *
- * Vite writes the shell at exactly the path a prerendered `/` would occupy, and every
- * one of these platforms serves a matching file before it invokes anything. Left
- * alone, `/` is the one route an SSR app can never render — the CDN answers it with
- * an empty mount element. Every other route is safe: no file exists at `/about`
- * unless we actually prerendered it. So the adapters ask this before deciding who
- * owns `/`.
+ * Vite writes the shell at the path a prerendered `/` would occupy, and every one of
+ * these platforms serves a matching file before invoking anything — so `/` is the one
+ * route an SSR app cannot render, and the CDN answers it with an empty mount element.
+ * No other route is affected: nothing exists at `/about` unless it was prerendered.
  */
 function indexIsPage(template: string, mountId: string): boolean {
   const mount = new RegExp(`<([a-z-]+)[^>]*\\sid=["']${mountId}["'][^>]*>`, 'i').exec(template);
@@ -66,10 +64,9 @@ function skipWhenStatic(ctx: AdapterBuildContext, name: string): boolean {
 }
 
 /**
- * Add a rule to `_redirects` without taking the file over.
- *
- * Apps ship their own — the docs site sends `/` to its default locale that way — so
- * ours goes at the end, where a first-match-wins CDN reaches it only after the app's.
+ * Add a rule to `_redirects` without taking the file over. Apps ship their own (the
+ * docs site redirects `/` to its default locale), so ours goes last — first match
+ * wins, so the app's rules are reached first.
  */
 async function appendRedirect(clientDir: string, rule: string): Promise<void> {
   const file = join(clientDir, '_redirects');
@@ -80,14 +77,11 @@ async function appendRedirect(clientDir: string, rule: string): Promise<void> {
 }
 
 /**
- * A SPA answers its own routes in the browser, but a cold request for one still has to
- * reach the client bundle, and no file exists at `/settings/profile`. The host has to
- * hand back the shell for anything it cannot match.
+ * A SPA routes in the browser, but a cold request for `/settings/profile` finds no
+ * file, so the host has to hand back the shell for anything it cannot match.
  *
- * Cloudflare Pages already does exactly this for a project with no `_worker.js` —
- * verified against a deployed build, where every unmatched path returned `index.html`
- * — so its adapter states nothing. Netlify and Vercel both answer 404 (verified on
- * Vercel with the layout this adapter writes), so they have to be told.
+ * Cloudflare Pages already does this for a project with no `_worker.js` (checked on a
+ * deployed build), so its adapter writes nothing. Netlify and Vercel both 404.
  */
 const SPA_FALLBACK = '/*  /index.html  200';
 
