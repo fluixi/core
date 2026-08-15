@@ -1,5 +1,12 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.75
+
+### Patch Changes
+
+- Updated dependencies [c3affda]
+  - @fluixi/reactive@1.0.0-alpha.75
+
 ## 1.0.0-alpha.74
 
 ### Patch Changes
