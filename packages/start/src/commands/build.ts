@@ -104,19 +104,15 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
 }
 
 /**
- * Turn Vite's SSR manifest into the map the server actually needs, and stop shipping
- * the manifest itself.
+ * Turn Vite's SSR manifest into the map the server needs, and stop publishing the
+ * manifest itself.
  *
- * A lazily-imported route is its own chunk with its own CSS. Server-render that route
- * and the HTML references neither, so the browser only discovers them when hydration
- * runs the dynamic import — one waterfall, and the route's styles arrive after its
- * markup has already painted.
+ * The manifest is keyed by module id and the server only has a path, so the join
+ * happens here: scan the routes the way the plugin does, resolve each to its files,
+ * write a map the runtime can look a URL up in.
  *
- * The manifest is keyed by module id and the server only ever has a path, so the join
- * happens here: scan the routes the same way the plugin does, resolve each to its files,
- * and write a map the runtime can look a URL up in. Only routes are kept, and it goes to
- * `dist/server` because `dist/client` is what gets published — a full manifest on a CDN
- * is a map of every source path to its chunk, for a reader that does not exist there.
+ * Only routes are kept, and it goes to `dist/server`: `dist/client` is published, and
+ * a full manifest there maps every source path to its chunk for no reader.
  */
 async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
   const clientDir = resolve(cfg.root, 'dist/client');
@@ -130,14 +126,13 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
     const { scanRoutes } = await import('@fluixi/core/plugins');
     const base = cfg.routesDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
 
-    // Keyed by URL pattern, not module id: the server has a path and no way to turn one
-    // into a module without the app's own route table, which lives inside the bundle it
-    // is serving. Resolving it here leaves the runtime a lookup and nothing else.
+    // Keyed by URL pattern: the runtime has a path, and resolving it here leaves it a
+    // lookup and nothing else.
     const assets: Record<string, string[]> = {};
     const walk = (routes: ScannedRoute[], inherited: string[]): void => {
       for (const route of routes) {
-        // A match renders every layer, so a route needs its layouts' chunks as much as
-        // its own — folded in now rather than unioned per request.
+        // A match renders every layer, so layouts fold in here rather than being
+        // unioned per request.
         const files = [...new Set([...inherited, ...(manifest[`${base}/${route.filePath}`] ?? [])])];
         if (files.length) assets[route.urlPath] = [...new Set([...(assets[route.urlPath] ?? []), ...files])];
         walk(route.children, files);

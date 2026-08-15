@@ -168,13 +168,11 @@ export type UpdateValue<V> = V extends Primitive
   : V | Partial<V> | DeepReadonly<V> | Partial<DeepReadonly<V>> | ((prev: V) => V);
 
 /**
- * The shape a store hands back when read, as a type the setter also accepts.
+ * The shape a store hands back when read, which the setter also accepts.
  *
- * Reading a store gives a deeply readonly view — that is the whole point of it — so
- * the obvious move of snapshotting one store into another (`set(untrackStore(other))`)
- * was rejected by the types, for a call the setter handles fine: it copies values out
- * of what it is given and never writes to it. Accepting the readonly form costs no
- * safety and removes the cast that every such call otherwise needs.
+ * `set(untrackStore(other))` is a call the setter handles fine — it copies values out
+ * of what it is given and never writes to it — but a mutable-only input type rejected
+ * it, so every such site needed a cast.
  */
 export type DeepReadonly<T> = T extends ImmutablePrimitive
   ? T

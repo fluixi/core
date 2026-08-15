@@ -58,16 +58,14 @@ export function splitTemplate(template: string, mountId = 'root'): { head: strin
 }
 
 /**
- * Reference the files this request's route needs, in the document that announces it.
+ * Reference the files this route needs in the document that renders it.
  *
- * A route imported lazily is its own chunk with its own stylesheet, and neither is
- * mentioned anywhere in the shell. Without these the browser learns they exist only
- * once hydration runs the dynamic import — so the route's markup paints before its CSS
- * arrives, and the chunk is fetched a round trip later than it could have been.
+ * A lazily-imported route is its own chunk with its own stylesheet, mentioned nowhere
+ * in the shell — without these the browser discovers them when hydration runs the
+ * dynamic import, so the markup paints before the CSS arrives.
  *
- * A file already named in the template is skipped: the entry chunk is in there from the
- * client build, and preloading what the page is already downloading only competes with
- * it for connections.
+ * Files already named in the template are skipped: the entry chunk is in there from
+ * the client build, and preloading it again competes with the request in flight.
  */
 export function injectPreload(template: string, files: string[]): string {
   const tags = files
@@ -75,15 +73,13 @@ export function injectPreload(template: string, files: string[]): string {
     .map((file) =>
       file.endsWith('.css')
         ? `<link rel="stylesheet" href="${file}">`
-        : // Anything else here is a JS chunk the route imports; `modulepreload` fetches
-          // it *and* its own static imports, which a plain `preload` would not.
+        : // `modulepreload` also fetches the chunk's own static imports.
           `<link rel="modulepreload" href="${file}">`,
     );
   if (tags.length === 0) return template;
 
+  // No `</head>` means a fragment, not a document.
   const head = template.indexOf('</head>');
-  // No `</head>` means a fragment rather than a document — leave it alone rather than
-  // inventing a head for it.
   if (head === -1) return template;
   return template.slice(0, head) + tags.join('') + template.slice(head);
 }

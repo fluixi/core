@@ -1,20 +1,16 @@
 /**
- * What the emitted source map is actually worth.
+ * What the emitted source map resolves to.
  *
- * `mappings.length > 0` is the assertion a broken map also passes, and a map that
- * points somewhere plausible but wrong is worse than no map at all — a breakpoint
- * lands on the wrong line and the debugger looks broken rather than absent. So these
- * decode the map and trace generated positions back, asserting where they land.
+ * `mappings.length > 0` passes on a broken map, and a map pointing at the wrong line
+ * is worse than none — the debugger looks broken rather than absent. These decode it
+ * and trace generated positions back.
  *
- * Two properties, and they are not the same one:
+ * Two separate properties:
  *
- *  - code the transform never touched keeps its exact position. This is the one that
- *    must not regress, because it covers everything outside a template.
- *  - a hole resolves into its own template. Today it resolves to the template's
- *    opening rather than to the expression: the whole emitted root is applied as a
- *    single `overwrite`, so magic-string has one mapping for it. The tests below
- *    pin that as the current resolution rather than pretending it is precise —
- *    tightening them is the measure of any per-hole mapping work.
+ *  - untouched code keeps its exact position (everything outside a template).
+ *  - a hole resolves into its own template, but only to the template's opening: the
+ *    emitted root is applied as one `overwrite`, so magic-string has a single mapping
+ *    for it. Tightening these is the measure of any per-hole mapping work.
  */
 import { describe, it, expect } from 'vitest';
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';

@@ -24,9 +24,8 @@ import type { ReconcileOptions } from './types.js';
  */
 
 type Primitive = string | number | boolean | bigint | symbol | undefined | null;
-// The readonly view and what the setter accepts are the same shape by construction —
-// two copies of this would drift, and the drift shows up as a snapshot the setter
-// refuses for no reason a caller can act on.
+// One definition for the read view and the setter's input: two would drift, and the
+// drift shows up as a snapshot the setter refuses for no visible reason.
 type Immutable<T> = DeepReadonly<T> & { __track: T; [key: symbol]: any };
 
 interface StoreOptions<T> {
