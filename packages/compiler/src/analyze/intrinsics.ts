@@ -27,6 +27,8 @@ export type ReactiveKind =
   | 'signal-handle'
   /** `memo(fn)` — read-only, so `.get()` only. */
   | 'memo-handle'
+  /** `store(obj)` — `.get()` returns the reactive proxy, `.set()` writes. */
+  | 'store-handle'
   /** The accessor half of the tuple form, `const [count] = createSignal(0)`. */
   | 'signal-accessor'
   | 'signal-setter'
@@ -60,7 +62,7 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $signal: { export: 'signal', module: REACTIVE_MODULE, returns: 'signal-handle' },
   $memo: { export: 'memo', module: REACTIVE_MODULE, returns: 'memo-handle' },
   $effect: { export: 'effect', module: REACTIVE_MODULE, returns: 'effect' },
-  $store: { export: 'createStore', module: '@fluixi/reactive/store', returns: 'reactive-object' },
+  $store: { export: 'store', module: '@fluixi/reactive/store', returns: 'store-handle' },
 };
 
 /**
@@ -72,6 +74,7 @@ export const RUNTIME_PRIMITIVES: Readonly<Record<string, Intrinsic['returns']>> 
   signal: 'signal-handle',
   memo: 'memo-handle',
   effect: 'effect',
+  store: 'store-handle',
   createSignal: ['signal-accessor', 'signal-setter'],
   createMemo: 'memo-accessor',
   createEffect: 'effect',

@@ -28,5 +28,5 @@ declare global {
   const $signal: typeof __fluixi_reactive_signal.signal;
   const $memo: typeof __fluixi_reactive_signal.memo;
   const $effect: typeof __fluixi_reactive_signal.effect;
-  const $store: typeof __fluixi_reactive_store.createStore;
+  const $store: typeof __fluixi_reactive_store.store;
 }

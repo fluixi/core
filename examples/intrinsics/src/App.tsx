@@ -52,6 +52,21 @@ export function Mixed() {
   );
 }
 
+/** A store reads like an object, because it is one. */
+export function Profile() {
+  const user = $store({ name: 'Ada', role: 'author' });
+
+  return (
+    <div class="profile">
+      <span class="value">{user.name}</span>
+      <i class="role">{user.role}</i>
+      <button class="inc" onClick={() => user.set({ name: 'Grace' })}>
+        rename
+      </button>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <main>
@@ -59,6 +74,7 @@ export function App() {
       <RuntimeCounter />
       <IntrinsicCounter />
       <Mixed />
+      <Profile />
     </main>
   );
 }
