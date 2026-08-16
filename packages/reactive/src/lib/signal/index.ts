@@ -9,3 +9,6 @@
  * `@fluixi/reactive/signal-legacy` entry (./index-legacy.ts).
  */
 export * from './graph/signal-next.js';
+
+// The short API — `signal`/`memo`/`effect` over the same primitives.
+export * from './api.js';
