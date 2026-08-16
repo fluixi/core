@@ -1,0 +1,128 @@
+/**
+ * The props rewrite, on real source.
+ *
+ * The point of the JSX and html`` pairs is that neither authoring mode is special: both
+ * come out reading `props.x`, because the rewrite happens to the function body before
+ * either one is compiled.
+ */
+import { describe, it, expect } from 'vitest';
+import { transformProps } from './props.js';
+
+const run = (code: string) => transformProps(code, 'test.tsx');
+const out = (code: string) => run(code).code;
+
+describe('rewriting a component', () => {
+  it('replaces the pattern with a parameter and the uses with property reads', () => {
+    const code = out('function Card({ title }) { return <h1>{title}</h1>; }');
+    expect(code).toContain('function Card(props)');
+    expect(code).toContain('{props.title}');
+  });
+
+  it('does the same for an html template', () => {
+    const code = out('function Card({ title }) { return html`<h1>${title}</h1>`; }');
+    expect(code).toContain('function Card(props)');
+    expect(code).toContain('${props.title}');
+  });
+
+  it('handles an arrow assigned to a capitalised name', () => {
+    const code = out('const Card = ({ title }) => <h1>{title}</h1>;');
+    expect(code).toContain('const Card = (props) =>');
+    expect(code).toContain('{props.title}');
+  });
+
+  it('keeps an alias pointing at the original property', () => {
+    expect(out('function C({ title: heading }) { return <h1>{heading}</h1>; }')).toContain('{props.title}');
+  });
+
+  it('follows a nested pattern', () => {
+    const code = out('function C({ user: { name } }) { return <p>{name}</p>; }');
+    expect(code).toContain('{props.user.name}');
+  });
+
+  it('tests a default against undefined, not with ??', () => {
+    // `??` would also swallow null, which a JS default does not.
+    const code = out("function C({ size = 'md' }) { return <b>{size}</b>; }");
+    expect(code).toContain("(props.size === undefined ? 'md' : props.size)");
+  });
+
+  it('rewrites every use, not just the first', () => {
+    const code = out('function C({ n }) { const twice = n + n; return <b>{twice + n}</b>; }');
+    expect(code.match(/props\.n/g)).toHaveLength(3);
+  });
+
+  it('reports how much it changed', () => {
+    expect(run('function C({ a, b }) { return <i>{a}{b}</i>; }').rewritten).toBe(2);
+  });
+});
+
+describe('what it must not touch', () => {
+  it('leaves a member property with the same name alone', () => {
+    const code = out('function C({ name }) { return <b>{other.name}{name}</b>; }');
+    expect(code).toContain('{other.name}');
+    expect(code).toContain('{props.name}');
+  });
+
+  it('writes the key out when rewriting a shorthand property', () => {
+    const code = out('function C({ name }) { const o = { name }; return <b>{o.name}</b>; }');
+    expect(code).toContain('{ name: props.name }');
+  });
+
+  it('leaves a non-computed object key alone', () => {
+    const code = out('function C({ name }) { const o = { name: 1, other: name }; return <b>{o}</b>; }');
+    expect(code).toContain('name: 1');
+    expect(code).toContain('other: props.name');
+  });
+
+  it('leaves lowercase functions alone — only components take reactive props', () => {
+    const code = 'function helper({ a }) { return a + 1; }';
+    expect(out(code)).toBe(code);
+  });
+
+  it('leaves a plain identifier parameter alone', () => {
+    const code = 'function C(props) { return <b>{props.a}</b>; }';
+    expect(out(code)).toBe(code);
+  });
+
+  it('leaves the whole function alone when any binding bails', () => {
+    // Half a rewrite would be worse than none: `rest` still needs splitProps.
+    const code = 'function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }';
+    expect(out(code)).toBe(code);
+  });
+
+  it('leaves a reassigned binding alone', () => {
+    const code = 'function C({ n }) { n = 2; return <b>{n}</b>; }';
+    expect(out(code)).toBe(code);
+  });
+
+  it('keeps the props type exactly as written', () => {
+    // Babel's pattern range covers the annotation, so a naive overwrite eats the type.
+    const code = out('function C({ title }: { title: string }) { return <h1>{title}</h1>; }');
+    expect(code).toContain('function C(props: { title: string })');
+    expect(code).toContain('{props.title}');
+  });
+
+  it('avoids colliding with an existing props name', () => {
+    const code = out('function C({ a }) { const props = 1; return <b>{a}{props}</b>; }');
+    expect(code).toContain('function C(_props)');
+    expect(code).toContain('{_props.a}');
+  });
+});
+
+describe('reporting', () => {
+  it('says which binding it could not rewrite and why', () => {
+    const { diagnostics } = run('function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0].name).toBe('rest');
+    expect(diagnostics[0].reason).toBe('rest');
+    expect(diagnostics[0].message).toMatch(/getters/);
+  });
+
+  it('reports nothing for source it rewrote cleanly', () => {
+    expect(run('function C({ a }) { return <b>{a}</b>; }').diagnostics).toEqual([]);
+  });
+
+  it('carries a source map', () => {
+    const { map } = run('function C({ a }) { return <b>{a}</b>; }');
+    expect(map.mappings.length).toBeGreaterThan(0);
+  });
+});

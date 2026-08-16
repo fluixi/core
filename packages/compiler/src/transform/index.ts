@@ -9,5 +9,7 @@ export { transformTemplates } from './templates.js';
 export type { TransformOptions, TransformResult } from './templates.js';
 export { moduleBindings } from './bindings.js';
 export { shapeOf } from '../analyze/expr-shape.js';
+export { transformProps } from './props.js';
+export type { PropsTransformOptions, PropsTransformResult, PropsDiagnostic } from './props.js';
 export { planPropsDestructure, explainBail } from '../analyze/props-destructure.js';
 export type { DestructurePlan, DestructureBail, PropsRead } from '../analyze/props-destructure.js';
