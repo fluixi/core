@@ -14,11 +14,11 @@ utilisable dans le navigateur, sur le serveur, ou seul.
 Presque tout repose sur trois primitives :
 
 ```ts
-import { createSignal, createMemo, createEffect } from '@fluixi/reactive/signal';
+import { signal, memo, effect } from '@fluixi/reactive/signal';
 
-const [count, setCount] = createSignal(0);       // état
-const doubled = createMemo(() => count() * 2);   // dérivée
-createEffect(() => console.log(doubled()));      // effet de bord
+const count = signal(0);       // état
+const doubled = memo(() => count() * 2);   // dérivée
+effect(() => console.log(doubled()));      // effet de bord
 ```
 
 - Un **signal** contient une valeur et sait qui le lit.

@@ -154,3 +154,40 @@ describe('classification comes from the binding, not the name', () => {
     expect(kinds.get('doubled')).toBe('memo-handle');
   });
 });
+
+describe('the rest of the reactive surface', () => {
+  it('covers resource, selector and deferred', () => {
+    const code = compile(`
+      const users = $resource(id, fetchUser);
+      const isPicked = $selector(selected);
+      const slow = $deferred(query);
+    `);
+    expect(code).toContain('resource(');
+    expect(code).toContain('createSelector(');
+    expect(code).toContain('createDeferred(');
+    expect(code).toContain(
+      'import { createDeferred, createSelector, resource } from "@fluixi/reactive/signal"',
+    );
+  });
+
+  it('classifies them by binding, like the rest', () => {
+    const { kinds } = bindings('const slow = $deferred(query);');
+    expect(kinds.get('slow')).toBe('memo-accessor');
+  });
+});
+
+describe('the tracking operations', () => {
+  it('compiles $untrack and $untrackStore', () => {
+    const code = compile('const a = $untrack(() => count.get()); const b = $untrackStore(() => s.x);');
+    expect(code).toContain('untrack(');
+    expect(code).toContain('untrackStore(');
+    expect(code).toContain('import { untrack } from "@fluixi/reactive/signal"');
+    expect(code).toContain('import { untrackStore } from "@fluixi/reactive/store"');
+  });
+
+  it('does not classify what they return as reactive', () => {
+    // `untrack` hands back a plain value on purpose — that is the whole point of it.
+    const { kinds } = bindings('const a = $untrack(() => 1);');
+    expect(kinds.get('a')).toBe('plain');
+  });
+});

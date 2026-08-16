@@ -1,15 +1,15 @@
 # Les valeurs dérivées
 
-Un **mémo** dérive une valeur d'autres sources réactives. Créé avec `createMemo`, il met son
+Un **mémo** dérive une valeur d'autres sources réactives. Il met son
 résultat en cache et ne se recalcule que lorsqu'une de ses dépendances change :
 
 ```ts
-import { createSignal, createMemo } from '@fluixi/reactive/signal';
+import { signal, memo } from '@fluixi/reactive/signal';
 
-const [first, setFirst] = createSignal('Ada');
-const [last, setLast]   = createSignal('Lovelace');
+const first = signal('Ada');
+const last  = signal('Lovelace');
 
-const fullName = createMemo(() => `${first()} ${last()}`);
+const fullName = memo(() => `${first()} ${last()}`);
 
 fullName(); // « Ada Lovelace »
 ```
@@ -20,7 +20,7 @@ Un mémo ne calcule que lorsqu'il est **lu**, et ne recalcule que si une dépend
 Le relire renvoie la valeur en cache, gratuitement :
 
 ```ts
-const expensive = createMemo(() => heavyCompute(data()));
+const expensive = memo(() => heavyCompute(data()));
 expensive(); // calcule une fois
 expensive(); // en cache — aucun recalcul
 ```
@@ -33,12 +33,26 @@ Quand un changement se diffuse puis re-converge, un mémo recalcule **exactement
 entrées cohérentes — jamais avec une valeur à moitié mise à jour :
 
 ```ts
-const [a, setA] = createSignal(1);
-const b = createMemo(() => a() + 1);
-const c = createMemo(() => a() * 2);
-const d = createMemo(() => b() + c()); // recalcule une seule fois par changement de a
+const a = signal(1);
+const b = memo(() => a() + 1);
+const c = memo(() => a() * 2);
+const d = memo(() => b() + c()); // recalcule une seule fois par changement de a
 
-setA(2); // d recalcule une seule fois
+a.set(2); // d recalcule une seule fois
 ```
+
+## La forme accesseur
+
+`createMemo` renvoie le même mémo sous forme d'accesseur simple :
+
+```ts
+import { createMemo } from '@fluixi/reactive/signal';
+
+const fullName = createMemo(() => `${first()} ${last()}`);
+fullName(); // « Ada Lovelace »
+```
+
+`memo`, c'est cet accesseur rangé dans un objet sous `get` : une seule primitive, qui se mélange
+librement avec des signaux écrits d'une façon ou de l'autre.
 
 Suivant : **[Les effets](/v1/fr/effects)**.

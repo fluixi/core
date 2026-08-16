@@ -1,17 +1,20 @@
 # Les effets
 
 Un **effet** exécute un effet de bord — manipulation du DOM, journalisation, appels réseau — et se
-ré-exécute dès que ses lectures réactives changent. Créez-en un avec `createEffect` :
+ré-exécute dès que ses lectures réactives changent :
 
 ```ts
-import { createSignal, createEffect } from '@fluixi/reactive/signal';
+import { signal, effect } from '@fluixi/reactive/signal';
 
-const [theme, setTheme] = createSignal('dark');
+const theme = signal('dark');
 
-createEffect(() => {
+effect(() => {
   document.body.dataset.theme = theme(); // se ré-exécute quand theme change
 });
 ```
+
+`$effect` fait la même chose sans l'import, et `createEffect` est la même fonction sous son nom
+d'origine — tout ce qui suit vaut pour les deux.
 
 L'effet s'exécute une fois immédiatement pour établir ses dépendances, puis à chaque changement.
 
@@ -23,7 +26,7 @@ sa destruction — idéal pour les minuteurs, écouteurs et abonnements :
 ```ts
 import { onCleanup } from '@fluixi/reactive/signal';
 
-createEffect(() => {
+effect(() => {
   const id = setInterval(tick, delay());
   onCleanup(() => clearInterval(id)); // nettoyé avant la prochaine exécution / à la destruction
 });
@@ -34,7 +37,7 @@ createEffect(() => {
 La fonction d'effet reçoit sa valeur de retour précédente, pour comparer d'une exécution à l'autre :
 
 ```ts
-createEffect((prev) => {
+effect((prev) => {
   const value = count();
   if (prev !== value) report(prev, value);
   return value;
@@ -49,8 +52,8 @@ Plusieurs écritures dans `batch` ne notifient les dépendants qu'**une fois**, 
 import { batch } from '@fluixi/reactive/signal';
 
 batch(() => {
-  setFirst('Grace');
-  setLast('Hopper');
+  first.set('Grace');
+  last.set('Hopper');
 }); // les effets dépendant des deux s'exécutent une seule fois
 ```
 

@@ -45,7 +45,7 @@ Any `${…}` is a reactive hole. Reading a signal inside one keeps that spot —
 that spot — up to date:
 
 ```ts
-const [count, setCount] = createSignal(0);
+const count = $signal(0);
 html`<p>Count: ${count()}</p>`;
 ```
 
@@ -72,12 +72,12 @@ html`<div class="card ${theme()}"></div>`; // the string "card dark"
 
 ### Reading a signal, not passing it
 
-Call the accessor inside the hole. The hole itself is the reactive boundary, so the
+Read the signal inside the hole. The hole itself is the reactive boundary, so the
 compiler wraps it in an effect for you:
 
 ```ts
 html`<p>${count()}</p>`;   // ✓ tracked — re-runs this text node only
-html`<p>${count}</p>`;     // renders the function, not its value
+html`<p>${count}</p>`;         // renders the object, not its value
 ```
 
 ## Components

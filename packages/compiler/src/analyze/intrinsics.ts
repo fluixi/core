@@ -27,8 +27,10 @@ export type ReactiveKind =
   | 'signal-handle'
   /** `memo(fn)` — read-only, so `.get()` only. */
   | 'memo-handle'
-  /** `store(obj)` — `.get()` returns the reactive proxy, `.set()` writes. */
+  /** `store(obj)` — read properties directly, `.set()` writes. */
   | 'store-handle'
+  /** `resource(fn)` — `.get()` reads, with `.loading`/`.latest`/`.refetch()` on it. */
+  | 'resource-handle'
   /** The accessor half of the tuple form, `const [count] = createSignal(0)`. */
   | 'signal-accessor'
   | 'signal-setter'
@@ -63,6 +65,20 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $memo: { export: 'memo', module: REACTIVE_MODULE, returns: 'memo-handle' },
   $effect: { export: 'effect', module: REACTIVE_MODULE, returns: 'effect' },
   $store: { export: 'store', module: '@fluixi/reactive/store', returns: 'store-handle' },
+
+  $resource: { export: 'resource', module: REACTIVE_MODULE, returns: 'resource-handle' },
+
+  // No short runtime form for these yet, so the intrinsic stands for the `create*`
+  // name. Still worth having — no import to write — and when a shorter form is
+  // designed, the change is this line rather than a compiler pass.
+  $selector: { export: 'createSelector', module: REACTIVE_MODULE, returns: 'memo-accessor' },
+  $deferred: { export: 'createDeferred', module: REACTIVE_MODULE, returns: 'memo-accessor' },
+
+  // Not value constructors, but the compiler has to know them: they change what a read
+  // does. `untrack` suppresses dependency collection, which is exactly the kind of thing
+  // dependency analysis must not guess at.
+  $untrack: { export: 'untrack', module: REACTIVE_MODULE, returns: 'plain' },
+  $untrackStore: { export: 'untrackStore', module: '@fluixi/reactive/store', returns: 'plain' },
 };
 
 /**
@@ -80,6 +96,10 @@ export const RUNTIME_PRIMITIVES: Readonly<Record<string, Intrinsic['returns']>> 
   createEffect: 'effect',
   createRenderEffect: 'effect',
   createStore: 'reactive-object',
+  resource: 'resource-handle',
+  createResource: 'reactive-object',
+  createSelector: 'memo-accessor',
+  createDeferred: 'memo-accessor',
 };
 
 /** Modules whose exports count as reactive primitives. */

@@ -12,3 +12,5 @@ export * from './graph/signal-next.js';
 
 // The short API — `signal`/`memo`/`effect` over the same primitives.
 export * from './api.js';
+export { resource } from './resource-api.js';
+export type { ResourceHandle } from './resource-api.js';

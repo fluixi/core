@@ -26,6 +26,11 @@
  */
 
 import {
+  // The short API — same primitives, one object instead of a tuple.
+  signal,
+  memo,
+  effect,
+  resource,
   createEffect,
   createMemo,
   createSignal,
@@ -313,6 +318,10 @@ export const VERSION = '0.0.1';
 export const FRAMEWORK_NAME = 'Fluixi';
 
 export {
+  signal,
+  memo,
+  effect,
+  resource,
   createEffect,
   createMemo,
   createSignal,

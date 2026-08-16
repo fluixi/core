@@ -414,15 +414,17 @@ class Lowerer {
     return opts.length ? `{ ${opts.join(', ')} }` : null;
   }
 
-  /** `bind:value=${sig}` → `value={sig[0]()}` + `onInput={e => sig[1](e…value)}`. */
+  /** `bind:value=${sig}` → `value={read()}` + `onInput={e => write(e…value)}`. */
   private bindProps(prop: string, sigCode: string): IRProp[] {
     const checked = prop === 'checked';
     const evt = checked ? 'change' : 'input';
     const accessor = checked ? 'checked' : 'value';
-    // Parenthesize the signal expression — it may be more than an identifier
-    // (`[get, set] as const`, `props.model`, a call), and `expr[0]()` would then
-    // mis-parse (e.g. `[...] as const[0]`).
-    const sig = `(${sigCode})`;
+    // Through `bindPair`, so both spellings of a signal work here: the `[get, set]`
+    // pair from `createSignal` and the `{ get, set }` object from `signal`.
+    // Parenthesized because the expression may be more than an identifier
+    // (`[get, set] as const`, `props.model`, a call).
+    this.used.add('bindPair');
+    const sig = `bindPair(${sigCode})`;
     return [
       { name: prop, kind: 'attr', expr: `${sig}[0]()`, reactive: true },
       {

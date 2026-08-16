@@ -16,7 +16,7 @@ graph, one lifecycle, the same SSR and hydration behaviour. The compiler adds th
 for what a module actually used, once, and only for the intrinsics it found.
 
 ```tsx
-count.get();       // read — tracks wherever it runs
+count();       // read — tracks wherever it runs
 count.set(1);      // write
 ```
 
