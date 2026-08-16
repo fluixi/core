@@ -44,6 +44,18 @@ export interface PropsTransformResult {
   rewritten: number;
 }
 
+/** One span to replace. Same shape the template transform uses for its own edits. */
+export interface PropsEdit {
+  start: number;
+  end: number;
+  code: string;
+}
+
+export interface PropsEditsResult {
+  edits: PropsEdit[];
+  diagnostics: PropsDiagnostic[];
+}
+
 /** Walk everything under a node. Skips TS annotations, where a name isn't a value. */
 function walk(root: Node | null | undefined, visit: (node: Node, parent: Node | null) => boolean | void, parent: Node | null = null): void {
   if (!root || typeof root !== 'object' || typeof root.type !== 'string') return;
@@ -121,22 +133,21 @@ function isReferencePosition(node: Node, parent: Node | null): boolean {
   }
 }
 
-export function transformProps(
+/**
+ * Work out the edits without applying them, so a caller that already has the source in a
+ * MagicString can fold them into its own. That's how the template transform picks this
+ * up: one string, one map, and holes get the rewrite because it slices them with the
+ * edits applied.
+ */
+export function collectPropsEdits(
+  program: unknown,
   code: string,
-  filename = 'module.tsx',
   options: PropsTransformOptions = {},
-): PropsTransformResult {
-  const ast = parse(code, {
-    sourceType: 'module',
-    plugins: ['typescript', 'jsx'],
-    errorRecovery: true,
-  }) as unknown as { program: Node };
-
-  const source = new MagicString(code);
+): PropsEditsResult {
+  const edits: PropsEdit[] = [];
   const diagnostics: PropsDiagnostic[] = [];
-  let rewritten = 0;
 
-  for (const fn of componentFunctions(ast.program)) {
+  for (const fn of componentFunctions(program as Node)) {
     const pattern = (fn.params as Node[])?.[0];
     if (pattern?.type !== 'ObjectPattern') continue;
 
@@ -144,12 +155,9 @@ export function transformProps(
     for (const b of plan.bails) {
       diagnostics.push({ name: b.name, reason: b.reason, message: explainBail(b.reason), start: pattern.start });
     }
-    if (plan.reads.length === 0) continue;
-
-    // A rest element keeps the pattern, so splitProps is still the answer there and we
-    // leave the whole function alone rather than half-rewriting it.
-    if (plan.bails.some((b) => b.reason === 'rest')) continue;
-    if (plan.bails.length > 0) continue;
+    // Whole function or nothing: a pattern that keeps `...rest` beside rewritten
+    // siblings would read as if both were fine.
+    if (plan.reads.length === 0 || plan.bails.length > 0) continue;
 
     const taken = usedNames(fn);
     let parameter = options.parameterName ?? 'props';
@@ -170,31 +178,78 @@ export function transformProps(
     // would take `: { title: string }` with it. Stop at the annotation and the type
     // stays exactly as written.
     const annotation = pattern.typeAnnotation as Node | undefined;
-    source.overwrite(pattern.start, annotation?.start ?? pattern.end, parameter);
+    edits.push({ start: pattern.start, end: annotation?.start ?? pattern.end, code: parameter });
 
+    // Collect first, rewrite after: turning a node into a member below gives it new
+    // children, and a walk still in progress would descend into them and match again.
+    const matches: { node: Node; parent: Node | null; text: string; property: string }[] = [];
     walk(fn.body as Node, (node, parent): boolean | void => {
       if (node.type !== 'Identifier') return undefined;
       const text = replacement.get(node.name as string);
       if (!text) return undefined;
 
-      // `{ name }` needs the key spelled out, or the result isn't an object literal.
-      if (parent?.type === 'ObjectProperty' && parent.shorthand && parent.value === node) {
-        source.overwrite(parent.start, parent.end, `${node.name}: ${text}`);
-        rewritten++;
-        return false;
-      }
+      const shorthand = parent?.type === 'ObjectProperty' && parent.shorthand && parent.value === node;
+      if (!shorthand && !isReferencePosition(node, parent)) return undefined;
 
-      if (!isReferencePosition(node, parent)) return undefined;
-      source.overwrite(node.start, node.end, text);
-      rewritten++;
+      const path = plan.reads.find((r) => r.name === node.name)!.path;
+      matches.push({ node, parent: shorthand ? parent : null, text, property: path[path.length - 1] as string });
       return undefined;
     });
+
+    for (const match of matches) {
+      if (match.parent) {
+        // `{ name }` needs the key spelled out, or the result isn't an object literal.
+        edits.push({ start: match.parent.start, end: match.parent.end, code: `${(match.node as Node).name}: ${match.text}` });
+      } else {
+        edits.push({ start: match.node.start, end: match.node.end, code: match.text });
+      }
+
+      // Say it in the AST too, not only in the text. Whether a hole is wired reactively
+      // is decided from the expression's shape, and a bare identifier is not reactive —
+      // so leaving the node as an Identifier emits `props.text` read once, which is the
+      // bug this whole pass exists to remove. A member read is reactive, which is what
+      // the emitted code now is.
+      asMemberRead(match.node, parameter, match.property);
+    }
   }
+
+  return { edits, diagnostics };
+}
+
+/**
+ * Rewrite an identifier node into `<parameter>.<property>` in place, keeping its span so
+ * the text it maps to is unchanged. The synthetic children are zero-width at the node's
+ * own edges: nothing slices them, and they exist so shape analysis sees a member.
+ */
+function asMemberRead(node: Node, parameter: string, property: string): void {
+  node.type = 'MemberExpression';
+  node.computed = false;
+  node.optional = false;
+  node.object = { type: 'Identifier', name: parameter, start: node.start, end: node.start };
+  node.property = { type: 'Identifier', name: property, start: node.end, end: node.end };
+  delete (node as Record<string, unknown>)['name'];
+}
+
+/** Run the rewrite on its own. The template transform folds the edits in instead. */
+export function transformProps(
+  code: string,
+  filename = 'module.tsx',
+  options: PropsTransformOptions = {},
+): PropsTransformResult {
+  const ast = parse(code, {
+    sourceType: 'module',
+    plugins: ['typescript', 'jsx'],
+    errorRecovery: true,
+  }) as unknown as { program: unknown };
+
+  const { edits, diagnostics } = collectPropsEdits(ast.program, code, options);
+  const source = new MagicString(code);
+  for (const e of edits) source.overwrite(e.start, e.end, e.code);
 
   return {
     code: source.toString(),
     map: source.generateMap({ source: filename, includeContent: true, hires: true }),
     diagnostics,
-    rewritten,
+    rewritten: edits.filter((e) => e.code !== (options.parameterName ?? 'props')).length,
   };
 }

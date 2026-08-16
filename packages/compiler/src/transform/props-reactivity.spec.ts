@@ -11,7 +11,6 @@ import { describe, it, expect } from 'vitest';
 import * as babel from '@babel/core';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import { transformProps } from './props.js';
 import { transformTemplates } from './templates.js';
 
 const REQUIRE_MAP: Record<string, unknown> = {
@@ -19,17 +18,17 @@ const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/reactive/signal': S,
 };
 
-/** Rewrite props, compile the templates, then load the module. */
+/** Compile the way a build does — one pass, the rewrite folded in — then load it. */
 function build(src: string, format: 'jsx' | 'lit') {
-  const rewritten = transformProps(src, 'component.tsx').code;
   const compiled =
-    transformTemplates(rewritten, 'component.tsx', {
+    transformTemplates(src, 'component.tsx', {
       format,
+      propsDestructure: true,
       runtimeModule: '@fluixi/dom',
       signalModule: '@fluixi/dom',
       controlFlowModule: '@fluixi/dom',
       importSource: '@fluixi/dom',
-    })?.code ?? rewritten;
+    })?.code ?? src;
 
   const code = babel.transformSync(compiled, {
     filename: 'component.js',
@@ -46,7 +45,7 @@ function build(src: string, format: 'jsx' | 'lit') {
   };
   // eslint-disable-next-line no-new-func
   new Function('exports', 'require', 'module', code)(module.exports, req, module);
-  return { module: module.exports, source: rewritten };
+  return { module: module.exports, source: compiled };
 }
 
 /** Render `App` into a container and hand back the text of the rendered node. */
@@ -142,7 +141,7 @@ describe('a rewritten component stays reactive', () => {
 });
 
 describe('without the rewrite', () => {
-  it('shows the problem it solves — a destructured prop stops updating', () => {
+  it('shows the problem it solves, and that the shape analysis has to know about it', () => {
     const src = `
       import { createSignal } from '@fluixi/reactive/signal';
 
@@ -156,7 +155,9 @@ describe('without the rewrite', () => {
         return <Label text={value()} />;
       }
     `;
-    // Same pipeline, minus transformProps.
+    // Same pipeline with the option off. This also guards the subtler half: the hole is
+    // only wired reactively when the analysis sees a member read, so a rewrite that
+    // changed the text without changing the AST would land right back here.
     const compiled = transformTemplates(src, 'component.tsx', {
       format: 'jsx',
       runtimeModule: '@fluixi/dom',

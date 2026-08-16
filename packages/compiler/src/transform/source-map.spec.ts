@@ -77,3 +77,47 @@ describe('the source map the transform emits', () => {
     expect(trace(src, 'second').line).toBe(2);
   });
 });
+
+describe('with propsDestructure on', () => {
+  const SOURCE = [
+    'import { createSignal } from "@fluixi/reactive";',
+    '',
+    'export function Greeting({ userName }) {',
+    '  const shout = userName.toUpperCase();',
+    '  return html`<p>${ userName }</p>`;',
+    '}',
+  ].join('\n');
+
+  /** Compile with the rewrite on, then trace a position back. */
+  function traceProps(text: string) {
+    const out = transformTemplates(SOURCE, 'greeting.ts', { propsDestructure: true } as never)!;
+    const map = new TraceMap({ ...out.map, sourcesContent: [SOURCE] });
+    const lines = out.code.split('\n');
+    const line = lines.findIndex((l) => l.includes(text));
+    if (line === -1) throw new Error(`${text} is not in the output`);
+    const found = originalPositionFor(map, { line: line + 1, column: lines[line].indexOf(text) });
+    return { ...found, sourceLine: found.line == null ? '' : SOURCE.split('\n')[found.line - 1] };
+  }
+
+  it('maps a rewritten read back to the line the author wrote', () => {
+    // The rewrite and the template compile share one string, so this is the author's
+    // line, not an intermediate one. Two passes with two maps would land elsewhere.
+    const found = traceProps('props.userName.toUpperCase');
+    expect(found.line).toBe(4);
+    expect(found.sourceLine).toContain('const shout = userName.toUpperCase()');
+  });
+
+  it('keeps the untouched import exactly where it was', () => {
+    const found = traceProps('createSignal');
+    expect(found.line).toBe(1);
+  });
+
+  it('reports what it refused', () => {
+    const out = transformTemplates(
+      'export function C({ a, ...rest }) { return html`<b>${a}</b>`; }',
+      'c.ts',
+      { propsDestructure: true } as never,
+    )!;
+    expect(out.propsDiagnostics?.[0]?.reason).toBe('rest');
+  });
+});
