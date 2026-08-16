@@ -362,13 +362,14 @@ function transformOptions(options: CompilerOptions) {
     controlFlowModule: options.controlFlowModule,
     routerModule: options.routerModule,
     reactiveModule: options.reactiveModule,
+    propsDestructure: options.propsDestructure,
   };
 }
 
 /**
- * Rewrite destructured props first, when asked. It has to run before the templates are
- * compiled: both JSX and html`` read their holes out of the function body, so rewriting
- * the body once is what makes the two modes agree.
+ * The babel path compiles through a host AST, so the rewrite runs as its own pass there
+ * and pays for a second parse. The built-in path folds the same edits into the template
+ * transform instead, which is why only this branch needs it.
  */
 async function rewriteProps(code: string, id: string, options: CompilerOptions) {
   if (!options.propsDestructure) return code;
@@ -380,12 +381,12 @@ async function rewriteProps(code: string, id: string, options: CompilerOptions) 
 
 /** Compile one module, through babel only when asked for it. */
 async function compileModule(code: string, id: string, options: CompilerOptions) {
-  const source = await rewriteProps(code, id, options);
-
   if (!options.babel) {
     const { transformTemplates } = await import('./transform/index.js');
-    return transformTemplates(source, id, transformOptions(options));
+    return transformTemplates(code, id, transformOptions(options));
   }
+
+  const source = await rewriteProps(code, id, options);
   const babel = await import('@babel/core').catch(() => null);
   const plugin = await createBabelPlugin(options);
   if (!babel || !plugin.plugin) {

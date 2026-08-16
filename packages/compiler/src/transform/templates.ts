@@ -23,6 +23,7 @@ import { resolveComponentSources } from '../resolve/resolve-ir.js';
 import { createComponentResolver } from '../resolve/component-resolver.js';
 import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
+import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
 
 interface Node {
@@ -52,11 +53,21 @@ export interface TransformOptions extends CompileTemplateOptions {
   runtimeModule?: string;
   /** Where reactive primitives come from. @default '@fluixi/reactive/signal' */
   reactiveModule?: string;
+  /**
+   * Rewrite a component's destructured props into property reads, so
+   * `function Card({ title })` keeps updating instead of reading `title` once.
+   * The edits go into the same string as the template edits, so the map still points
+   * at what the author wrote.
+   * @default false
+   */
+  propsDestructure?: boolean;
 }
 
 export interface TransformResult {
   code: string;
   map: ReturnType<MagicString['generateMap']>;
+  /** Props patterns the rewrite refused, when `propsDestructure` is on. */
+  propsDiagnostics?: PropsDiagnostic[];
 }
 
 // Which builtin comes from which module is published by resolve/builtins.ts —
@@ -262,7 +273,13 @@ export function transformTemplates(
     if (wantsLit && isTemplateTag(n, litTag)) found.push(n);
     else if (wantsJsx && isJsxRoot(n, parent, key)) found.push(n);
   });
-  if (found.length === 0) return null;
+  // Props first: holes are sliced out of the function body, so the rewrite has to be
+  // in the edit list before any template is compiled.
+  const props = options.propsDestructure
+    ? collectPropsEdits(ast.program, code, {})
+    : { edits: [], diagnostics: [] };
+
+  if (found.length === 0 && props.edits.length === 0) return null;
 
   // Innermost first, so a nested template is already compiled by the time the
   // hole containing it is sliced.
@@ -273,7 +290,7 @@ export function transformTemplates(
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
   };
   const hoisted = new Map<string, string>();
-  const edits: Edit[] = [];
+  const edits: Edit[] = [...props.edits];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
     // matching what the plugin does for nested emits. Marker layout has to agree
@@ -316,6 +333,7 @@ export function transformTemplates(
   return {
     code: out.toString(),
     map: out.generateMap({ source: id, includeContent: true, hires: true }),
+    ...(props.diagnostics.length ? { propsDiagnostics: props.diagnostics } : {}),
   };
 }
 
