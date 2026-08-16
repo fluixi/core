@@ -85,3 +85,25 @@ describe('componentGlobals', () => {
     expect(source).toContain('declare global {');
   });
 });
+
+describe('the $ intrinsics', () => {
+  it('declares them, so the editor stops reporting "Cannot find name"', () => {
+    const { source } = componentGlobals([]);
+    expect(source).toContain('const $signal: typeof');
+    expect(source).toContain('const $memo: typeof');
+    expect(source).toContain('const $effect: typeof');
+    expect(source).toContain('const $store: typeof');
+  });
+
+  it('types them from what they compile to', () => {
+    // `$signal` stands for `signal`, so it borrows that signature rather than a copy.
+    const { source } = componentGlobals([]);
+    expect(source).toMatch(/const \$signal: typeof \w+\.signal;/);
+    expect(source).toContain("from '@fluixi/reactive/signal'");
+  });
+
+  it('can be left out', () => {
+    const { source } = componentGlobals([], { intrinsics: false });
+    expect(source).not.toContain('$signal');
+  });
+});
