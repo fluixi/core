@@ -7,11 +7,12 @@
  * the signal, and look at the DOM. Destructuring without the rewrite reads once, so the
  * text would stay put — that's the failure this has to rule out.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import { transformTemplates } from './templates.js';
+import { ensureIntegration } from '../../../core/src/lib/render/component.js';
 
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
@@ -47,6 +48,8 @@ function build(src: string, format: 'jsx' | 'lit') {
   new Function('exports', 'require', 'module', code)(module.exports, req, module);
   return { module: module.exports, source: compiled };
 }
+
+beforeAll(() => ensureIntegration());
 
 /** Render `App` into a container and hand back the text of the rendered node. */
 function mount(App: () => any) {
@@ -172,10 +175,9 @@ describe('a rest element', () => {
   });
 
   it('behaves exactly like the splitProps call it replaces', () => {
-    // The bar is parity, not perfection: whatever the hand-written idiom does with a
-    // spread, the generated one has to do the same. (Today a reactive prop reaching an
-    // element through ANY spread stops tracking — plain `{...props}` too — so both of
-    // these hold at 'one'. That's a spread limitation, not something this pass fixes.)
+    // Parity is the bar: whatever the hand-written idiom does, the generated one does.
+    // Both keep a forwarded prop live, since splitProps hands the rest over as getters
+    // and spread re-reads them in an effect.
     const app = (field: string) => `
       import { splitProps } from '@fluixi/dom';
       import { createSignal } from '@fluixi/reactive/signal';
