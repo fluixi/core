@@ -452,6 +452,68 @@ export function useLocation(): RouterLocation {
   });
 }
 
+export interface LinkNavigationOptions {
+  /** Replace the current history entry instead of pushing a new one. */
+  replace?: boolean;
+  /**
+   * Called with the resolved URL before navigating. Return false to leave the click
+   * alone — for a section of the app that must load as a document (a different
+   * bundle, a server-rendered admin area, a file route).
+   */
+  shouldNavigate?: (url: URL, anchor: HTMLAnchorElement) => boolean;
+}
+
+/**
+ * A delegated click handler that turns plain `<a>` elements into client-side navigations.
+ *
+ * `<Link>` covers the links an app writes as JSX. This covers the ones it doesn't own:
+ * markdown or CMS HTML dropped in through `innerHTML`, where there is no component to
+ * bind to and the anchors arrive as prerendered text. Put it on the container and every
+ * link inside it navigates without reloading the document:
+ *
+ * ```tsx
+ * const onClick = useLinkNavigation();
+ * <article onClick={onClick} innerHTML={doc.html} />
+ * ```
+ *
+ * The anchors stay real anchors — middle-click, right-click → open in new tab, "copy
+ * link address" and crawlers all keep working, because the element is untouched and only
+ * a plain left-click is intercepted.
+ *
+ * Left alone: modified clicks, anything but the primary button, an already-prevented
+ * event, `target`, `download`, `rel="external"`, a non-http scheme (`mailto:`, `tel:`),
+ * another origin, and a hash pointing inside the current page — that last one is the
+ * browser's scroll, and hijacking it breaks in-page anchors.
+ */
+export function useLinkNavigation(
+  options: LinkNavigationOptions = {},
+): (event: MouseEvent) => void {
+  const ctx = useContext(RouterContext);
+
+  return (event: MouseEvent): void => {
+    if (!ctx || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const target = event.target as Element | null;
+    const anchor = target?.closest?.('a') as HTMLAnchorElement | null;
+    if (!anchor || !anchor.getAttribute('href')) return;
+    if (anchor.target && anchor.target !== '_self') return;
+    if (anchor.hasAttribute('download')) return;
+    if (/(^|\s)external(\s|$)/.test(anchor.getAttribute('rel') ?? '')) return;
+
+    // `anchor.href` is resolved against the document, so a relative `./guide` from
+    // prerendered markdown lands on the right absolute path.
+    const url = new URL(anchor.href);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+    if (url.origin !== window.location.origin) return;
+    if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return;
+    if (options.shouldNavigate && !options.shouldNavigate(url, anchor)) return;
+
+    event.preventDefault();
+    ctx.router.navigate(url.pathname + url.search + url.hash, { replace: options.replace });
+  };
+}
+
 export function useNavigate(): (to: string, options?: NavigateOptions) => void {
   // useRouter is SSR-safe (returns a no-op stub on the server when the context is
   // detached), so navigation degrades to a no-op during SSR and only throws on

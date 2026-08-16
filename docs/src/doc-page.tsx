@@ -1,5 +1,5 @@
 import { createSignal, onMount, onCleanup } from '@fluixi/core';
-import { Link } from '@fluixi/start/router';
+import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
@@ -243,6 +243,10 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   const titleOf = (s: string) => getDoc(version, lang, s)?.title ?? s;
   const other: Lang = lang === 'en' ? 'fr' : 'en';
 
+  // The prose is prerendered HTML, so its cross-links are raw anchors with no <Link> to
+  // render. One delegated handler makes them navigate client-side like the rest.
+  const onLinkClick = useLinkNavigation();
+
   // Mobile sidebar drawer (no effect on desktop, where the sidebar is a grid column).
   const [navOpen, setNavOpen] = createSignal(false);
 
@@ -349,7 +353,15 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           ))}
         </aside>
 
-        <main class="d-main" id="content" tabindex="-1" onClick={onProseClick}>
+        <main
+          class="d-main"
+          id="content"
+          tabindex="-1"
+          onClick={(e: MouseEvent) => {
+            onProseClick(e);
+            onLinkClick(e);
+          }}
+        >
           <article class="prose" innerHTML={doc?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
             {prev ? (
