@@ -15,4 +15,16 @@ The `get` and `set` are the accessor and setter `createSignal` returns, so anyth
 that tracks one tracks the other and the two forms interleave freely. `memo` exposes
 `get` alone, since a derived value has nothing to set.
 
-`createSignal` and friends are unchanged.
+`store` comes along too, as the state itself with `set` on it:
+
+```ts
+const user = store({ name: 'Ada' });
+user.name;                    // reads, and tracks that key
+user.set({ name: 'Grace' });
+```
+
+No `.get()` there on purpose — a store is an object whose whole point is that
+property access is the read, so a call would cost the ergonomics that make it worth
+using. Reads still subscribe per key.
+
+`createSignal`, `createMemo`, `createEffect` and `createStore` are unchanged.

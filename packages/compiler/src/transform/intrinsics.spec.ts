@@ -29,16 +29,16 @@ describe('the intrinsics compile to the runtime', () => {
     `);
     expect(code).toContain('memo(');
     expect(code).toContain('effect(');
-    expect(code).toContain('createStore(');
+    expect(code).toContain('store(');
     expect(code).toContain('import { effect, memo } from "@fluixi/reactive/signal"');
-    expect(code).toContain('import { createStore } from "@fluixi/reactive/store"');
+    expect(code).toContain('import { store } from "@fluixi/reactive/store"');
   });
 
   it('imports only what the module used', () => {
     const code = compile('const a = $signal(0);');
     expect(code).toContain('import { signal }');
     expect(code).not.toContain('memo');
-    expect(code).not.toContain('createStore');
+    expect(code).not.toContain('store(');
   });
 
   it('imports once however many calls there are', () => {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { render } from '@fluixi/core';
-import { App, IntrinsicCounter, Mixed, RuntimeCounter } from './App';
+import { App, IntrinsicCounter, Mixed, Profile, RuntimeCounter } from './App';
 
 /**
  * The claim is equivalence, so the tests drive both forms through the same steps and
@@ -45,10 +45,22 @@ describe('the two forms compose', () => {
   });
 });
 
+describe('$store', () => {
+  it('reads a property directly and updates on write', () => {
+    const host = mount(() => <Profile />);
+    expect(host.querySelector('.value')?.textContent).toBe('Ada');
+
+    (host.querySelector('.inc') as HTMLButtonElement).click();
+    expect(host.querySelector('.value')?.textContent).toBe('Grace');
+    // The untouched key is still there, and its binding never had to re-run.
+    expect(host.querySelector('.role')?.textContent).toBe('author');
+  });
+});
+
 describe('a whole app', () => {
   it('renders every counter and keeps them independent', () => {
     const host = mount(() => <App />);
-    expect(host.querySelectorAll('.value').length).toBe(3);
+    expect(host.querySelectorAll('.value').length).toBe(4);
 
     (host.querySelector('.intrinsic .inc') as HTMLButtonElement).click();
     expect(host.querySelector('.intrinsic .value')?.textContent).toBe('1');
