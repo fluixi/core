@@ -115,6 +115,18 @@ const HTML_SRC = `function Counter() {
   \`;
 }`;
 
+// What the compiler does that a runtime cannot: the destructured props below stay live,
+// because it knows `title` came from a component's props.
+const WHY_CODE = `function Card({ title, ...rest }) {
+  return <h2 {...rest}>{title}</h2>;   // title still updates
+}
+
+import { signal as state } from '@fluixi/reactive/signal';
+const count = state(0);        // a signal — resolved through the import
+
+function signal() { return 42; }
+const value = signal();        // not a signal — a local function`;
+
 const COMPILED = `import { signal } from "@fluixi/reactive/signal";
 import { createNativeElement, delegateEvents,
          insert, spread } from "@fluixi/dom";
@@ -206,16 +218,17 @@ function Hero() {
   return (
     <header class="hero">
       <div class="hero-copy">
-        <div class="eyebrow">reactive · compiled · full-stack</div>
+        <div class="eyebrow">compiler-native · reactive · full-stack</div>
         <h1>
-          Your JSX becomes
+          The compiler knows
           <br />
-          <span class="grad">DOM calls.</span>
+          <span class="grad">what's reactive.</span>
         </h1>
         <p class="lede">
-          No virtual DOM. No diffing. No re-renders. Fluixi compiles components into the
-          imperative calls a browser actually runs — then gives you SSR, streaming, SSG,
-          server functions, routing, DI and i18n on top.
+          Every reactive framework asks you to remember which reads are tracked and what you
+          may not destructure. Fluixi's compiler resolves that itself — by where a value came
+          from, not by how it's named — and carries it through JSX, templates, the DOM it
+          generates, SSR, hydration and routing as one model. You write ordinary TypeScript.
         </p>
         <div class="cta">
           <a class="btn primary" href={DOCS_URL}>
@@ -255,6 +268,37 @@ function Hero() {
         </p>
       </div>
     </header>
+  );
+}
+
+function Why() {
+  return (
+    <section class="split" id="why">
+      <div class="split-copy">
+        <h2>
+          Ordinary TypeScript, <span class="grad">still reactive.</span>
+        </h2>
+        <p>
+          The compiler resolves a reactive value by the binding it came from, never by how the
+          name reads — so an alias is recognised and a local function of the same name is not.
+          Knowing that, it can rewrite what a runtime alone would lose.
+        </p>
+        <ul class="checks">
+          <li>Destructure props and the bindings stay live reads</li>
+          <li>What it can't prove safe is left as written, and reported</li>
+          <li>JSX and <code>html``</code> compile to one reactive model</li>
+        </ul>
+      </div>
+      <div class="code-window">
+        <div class="code-bar">
+          <span class="dot" />
+          <span class="dot" />
+          <span class="dot" />
+          <span class="code-name">Card.tsx</span>
+        </div>
+        <pre class="code" innerHTML={highlight(WHY_CODE)} />
+      </div>
+    </section>
   );
 }
 
@@ -425,6 +469,7 @@ export default function Home() {
       <Nav />
       <main id="main" tabindex="-1">
       <Hero />
+      <Why />
       <Features />
       <GetStarted />
       <ServerSection />
