@@ -12,6 +12,7 @@ import {
   createEffect,
   createRenderEffect,
   isSignal,
+  readChildren,
   useContext,
   createContext,
   createSuspenseBoundary,
@@ -98,22 +99,40 @@ function SuspenseImpl(props: SuspenseProps): any {
 
   // Read the children under the boundary so the memos they create capture its owner;
   // then a suspended resource read inside them throws to THIS boundary, not the parent.
-  const children = provideSuspense(boundary, () => props.children);
+  //
+  // `readChildren`, not a bare `props.children` read: a component child arrives as a THUNK
+  // that instantiates when called, so reading the prop alone hands back a function and the
+  // component never runs here. It would then be instantiated later, downstream of the output
+  // memo, where a suspend has no boundary that can re-run it — the failure that produced an
+  // empty node on a client navigation into a not-yet-loaded lazy route: no fallback, no
+  // content, no error. `readChildren` unwraps the thunks (so the lazy component runs under
+  // this boundary), stops at signals so dynamic children stay reactive, and memoises the
+  // result so the tracking effect below and the output render the same instantiation.
+  const children = provideSuspense(boundary, () => readChildren(() => props.children));
 
   // Instantiate the children now, in their own effect under the boundary. A suspended
   // resource read inside them throws here synchronously — a sibling of the output memo
   // below — so the increment reschedules the output cleanly (matching the canary). If we
   // only rendered children through the output's return, the resource read would be nested
   // inside the output's own insert effect, which then never re-runs to show the fallback.
+  //
+  // Follow NESTED accessors, not just the outer one: the compiler wraps a dynamic child in
+  // its own memo, and `readChildren` stops at signals on purpose so they stay reactive. Stop
+  // at the outer read and a lazy component behind a condition is never instantiated here —
+  // it runs later, downstream, where its suspend reaches no boundary. Reading a memo is
+  // idempotent (it caches, and the output reads the same one), so following the chain costs
+  // nothing and cannot duplicate the subtree.
+  const track = (value: any, depth: number): void => {
+    if (depth > 8) return;
+    if (Array.isArray(value)) {
+      for (const x of value) track(x, depth + 1);
+    } else if (typeof value === 'function' && isSignal(value)) {
+      track(value(), depth + 1);
+    }
+  };
+
   provideSuspense(boundary, () => {
-    createRenderEffect(() => {
-      const c = children;
-      if (Array.isArray(c)) {
-        for (const x of c) if (typeof x === 'function' && isSignal(x)) x();
-      } else if (typeof c === 'function' && isSignal(c)) {
-        c();
-      }
-    });
+    createRenderEffect(() => track(children, 0));
   });
 
   // A raw promise child: track it directly on the boundary.
@@ -132,6 +151,7 @@ function SuspenseImpl(props: SuspenseProps): any {
 
   return createMemo(() => {
     const showFallback = listState ? listState.showFallback() : boundary.inFallback();
+    if (process.env.FX_DEBUG) console.log('[s] output; showFallback:', showFallback);
     if (showFallback) return fallback;
     if (childIsPromise) return resolved();
     return children;
