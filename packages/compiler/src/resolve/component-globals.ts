@@ -22,6 +22,7 @@ import {
   type ResolvedComponent,
 } from './component-resolver.js';
 import { builtinComponentMap } from './builtins.js';
+import { INTRINSICS } from '../analyze/intrinsics.js';
 
 /**
  * Names `lib.dom` already declares as globals.
@@ -75,6 +76,14 @@ export interface ComponentGlobalsOptions {
    * declaration, so this stays safe for code that imports them explicitly.
    */
   builtins?: boolean;
+  /**
+   * Declare the `$` reactive intrinsics (`$signal`, `$memo`, …).
+   *
+   * On by default, matching the compiler: it rewrites those calls whether or not
+   * anything declares them, and without the declaration the editor reports
+   * "Cannot find name '$signal'" for code that builds correctly.
+   */
+  intrinsics?: boolean;
   /** Attribution written into the header. */
   generator?: string;
   /**
@@ -129,6 +138,7 @@ export function componentGlobals(
   const {
     available: availableList,
     builtins = true,
+    intrinsics = true,
     generator = '@fluixi/compiler',
     specifier = (module: string) => module,
   } = options;
@@ -162,7 +172,14 @@ export function componentGlobals(
     }
   }
 
-  const modules = [...new Set(declared.map((name) => resolved.get(name)!.module))].sort();
+  // The `$` intrinsics need declaring too, or the editor says "Cannot find name
+  // '$signal'" for code that compiles. tsc doesn't load language-service plugins, so an
+  // ambient declaration is the only thing that answers for both the editor and the
+  // command line.
+  const intrinsicModules = intrinsics ? [...new Set(Object.values(INTRINSICS).map((i) => i.module))] : [];
+  const modules = [
+    ...new Set([...declared.map((name) => resolved.get(name)!.module), ...intrinsicModules]),
+  ].sort();
   const imports = modules.map(
     (m) => `import * as ${namespaceAlias(m)} from '${specifier(m)}';`,
   );
@@ -195,6 +212,16 @@ export function componentGlobals(
           .join('')
       : '';
 
+  // `typeof ns.signal` rather than an alias: the intrinsic is a global that stands for
+  // the runtime call, so it takes the runtime's signature without claiming to be that
+  // symbol — go-to-definition on `$signal` should land on what it compiles to.
+  const intrinsicLines = intrinsics
+    ? Object.entries(INTRINSICS).map(
+        ([name, intrinsic]) =>
+          `  const ${name}: typeof ${namespaceAlias(intrinsic.module)}.${intrinsic.export};`,
+      )
+    : [];
+
   const patternRules = rules.filter((rule) => 'match' in rule).length;
   const patternNote =
     patternRules > 0
@@ -211,7 +238,7 @@ export function componentGlobals(
     note +
     patternNote +
     (imports.length > 0 ? `\n${imports.join('\n')}\n` : '\n') +
-    `\ndeclare global {\n${lines.join('\n')}\n}\n`;
+    `\ndeclare global {\n${[...lines, ...intrinsicLines].join('\n')}\n}\n`;
 
   return { source, declared, shadowedByDom, unavailable, patternRules };
 }
