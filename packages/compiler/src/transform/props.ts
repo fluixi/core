@@ -13,6 +13,7 @@
 import { parse } from '@babel/parser';
 import MagicString from 'magic-string';
 import { planPropsDestructure, explainBail, type DestructureBail } from '../analyze/props-destructure.js';
+import { moduleBindings } from './bindings.js';
 
 interface Node {
   type: string;
@@ -34,6 +35,8 @@ export interface PropsDiagnostic {
 export interface PropsTransformOptions {
   /** Name to give the props parameter. @default 'props' */
   parameterName?: string;
+  /** Module `splitProps` is imported from when a rest needs it. @default '@fluixi/dom' */
+  runtimeModule?: string;
 }
 
 export interface PropsTransformResult {
@@ -54,6 +57,8 @@ export interface PropsEdit {
 export interface PropsEditsResult {
   edits: PropsEdit[];
   diagnostics: PropsDiagnostic[];
+  /** Runtime symbols the emitted code needs — `splitProps`, when a pattern had a rest. */
+  used: Set<string>;
 }
 
 /** Walk everything under a node. Skips TS annotations, where a name isn't a value. */
@@ -146,6 +151,7 @@ export function collectPropsEdits(
 ): PropsEditsResult {
   const edits: PropsEdit[] = [];
   const diagnostics: PropsDiagnostic[] = [];
+  const used = new Set<string>();
 
   for (const fn of componentFunctions(program as Node)) {
     const pattern = (fn.params as Node[])?.[0];
@@ -155,9 +161,9 @@ export function collectPropsEdits(
     for (const b of plan.bails) {
       diagnostics.push({ name: b.name, reason: b.reason, message: explainBail(b.reason), start: pattern.start });
     }
-    // Whole function or nothing: a pattern that keeps `...rest` beside rewritten
-    // siblings would read as if both were fine.
-    if (plan.reads.length === 0 || plan.bails.length > 0) continue;
+    // Whole function or nothing: half a rewrite would read as if the rest were fine too.
+    if (plan.bails.length > 0) continue;
+    if (plan.reads.length === 0 && !plan.rest) continue;
 
     const taken = usedNames(fn);
     let parameter = options.parameterName ?? 'props';
@@ -179,6 +185,21 @@ export function collectPropsEdits(
     // stays exactly as written.
     const annotation = pattern.typeAnnotation as Node | undefined;
     edits.push({ start: pattern.start, end: annotation?.start ?? pattern.end, code: parameter });
+
+    // `...rest` becomes the splitProps call the author would have written. splitProps
+    // carries the getters over instead of reading them, which is the whole reason a
+    // plain rest can't be rewritten — so this hands the job to the runtime helper that
+    // does it properly rather than refusing the pattern.
+    if (plan.rest) {
+      const keys = plan.rest.keys.map((k) => JSON.stringify(k)).join(', ');
+      const body = fn.body as Node;
+      edits.push({
+        start: body.start + 1,
+        end: body.start + 1,
+        code: `\n  const [, ${plan.rest.name}] = splitProps(${parameter}, [${keys}]);`,
+      });
+      used.add('splitProps');
+    }
 
     // Collect first, rewrite after: turning a node into a member below gives it new
     // children, and a walk still in progress would descend into them and match again.
@@ -213,7 +234,7 @@ export function collectPropsEdits(
     }
   }
 
-  return { edits, diagnostics };
+  return { edits, diagnostics, used };
 }
 
 /**
@@ -242,9 +263,18 @@ export function transformProps(
     errorRecovery: true,
   }) as unknown as { program: unknown };
 
-  const { edits, diagnostics } = collectPropsEdits(ast.program, code, options);
+  const { edits, diagnostics, used } = collectPropsEdits(ast.program, code, options);
   const source = new MagicString(code);
-  for (const e of edits) source.overwrite(e.start, e.end, e.code);
+  for (const e of edits) {
+    if (e.start === e.end) source.appendLeft(e.start, e.code);
+    else source.overwrite(e.start, e.end, e.code);
+  }
+
+  // Standalone, there's no prologue to join, so the import goes in here — unless the
+  // module already has the name bound.
+  if (used.has('splitProps') && !moduleBindings(ast.program as { body: unknown[] }).has('splitProps')) {
+    source.prepend(`import { splitProps } from ${JSON.stringify(options.runtimeModule ?? '@fluixi/dom')};\n`);
+  }
 
   return {
     code: source.toString(),

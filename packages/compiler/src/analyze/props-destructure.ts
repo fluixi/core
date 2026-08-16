@@ -26,7 +26,10 @@ interface Node {
 
 /** Why a binding was left alone. All of these change more than when the read happens. */
 export type DestructureBail =
-  /** `const { a, ...rest } = props` — rest copies into a new object and the getters go. */
+  /**
+   * A rest we can't serve: destructured further (`...{ a }`), or in a function with no
+   * block to put the splitProps call in (`({ a, ...rest }) => …`).
+   */
   | 'rest'
   /** `const { [key]: a } = props` — we don't know the property until it runs. */
   | 'computed'
@@ -58,6 +61,14 @@ export interface DestructurePlan {
   reads: PropsRead[];
   /** Bindings we left alone, with the reason to report. */
   bails: { name: string; reason: DestructureBail }[];
+  /**
+   * A `...rest`, and the keys it has to exclude.
+   *
+   * This is what splitProps is for: it copies the getters across rather than reading
+   * them, which is the reason a plain `...rest` can't be rewritten. So instead of
+   * refusing the pattern, we write the splitProps call the author would have written.
+   */
+  rest?: { name: string; keys: string[] };
 }
 
 /** Every name a pattern introduces, so we can check each one for shadowing and writes. */
@@ -179,9 +190,15 @@ function shadowedNames(body: Node | null | undefined, candidates: Set<string>): 
 function collect(pattern: Node, path: string[], plan: DestructurePlan): void {
   for (const property of (pattern.properties as Node[]) ?? []) {
     if (property.type === 'RestElement') {
-      const names = new Set<string>();
-      patternNames(property.argument as Node, names);
-      for (const name of names) plan.bails.push({ name, reason: 'rest' });
+      const argument = property.argument as Node;
+      // Only a plain name. `...{ a }` would need its own splitProps and its own rules.
+      if (argument?.type !== 'Identifier' || path.length > 0) {
+        const names = new Set<string>();
+        patternNames(argument, names);
+        for (const name of names) plan.bails.push({ name, reason: 'rest' });
+        continue;
+      }
+      plan.rest = { name: argument.name as string, keys: [] };
       continue;
     }
 
@@ -242,9 +259,27 @@ export function planPropsDestructure(pattern: Node, body: Node | null | undefine
   if (pattern?.type !== 'ObjectPattern') return plan;
 
   collect(pattern, [], plan);
-  if (plan.reads.length === 0) return plan;
+
+  if (plan.rest) {
+    // The splitProps call is a statement, so there has to be somewhere to put it.
+    if (body?.type !== 'BlockStatement') {
+      plan.bails.push({ name: plan.rest.name, reason: 'rest' });
+      delete plan.rest;
+    } else {
+      // Keys the rest has to exclude: every top-level property the pattern names.
+      plan.rest.keys = ((pattern.properties as Node[]) ?? [])
+        .filter((p) => p.type !== 'RestElement' && !p.computed)
+        .map((p) => {
+          const key = p.key as Node;
+          return (key.type === 'Identifier' ? key.name : (key as { value?: unknown }).value) as string;
+        });
+    }
+  }
+
+  if (plan.reads.length === 0 && !plan.rest) return plan;
 
   const candidates = new Set(plan.reads.map((r) => r.name));
+  if (plan.rest) candidates.add(plan.rest.name);
   const written = reassignedNames(body);
   const shadowed = shadowedNames(body, candidates);
 
@@ -255,6 +290,17 @@ export function planPropsDestructure(pattern: Node, body: Node | null | undefine
     else kept.push(read);
   }
   plan.reads = kept;
+
+  // The rest binding is declared by the code we emit, so it has to survive the same
+  // checks: reassigning it or shadowing the name would break what we wrote.
+  if (plan.rest && written.has(plan.rest.name)) {
+    plan.bails.push({ name: plan.rest.name, reason: 'reassigned' });
+    delete plan.rest;
+  } else if (plan.rest && shadowed.has(plan.rest.name)) {
+    plan.bails.push({ name: plan.rest.name, reason: 'shadowed' });
+    delete plan.rest;
+  }
+
   return plan;
 }
 
@@ -262,7 +308,7 @@ export function planPropsDestructure(pattern: Node, body: Node | null | undefine
 export function explainBail(reason: DestructureBail): string {
   switch (reason) {
     case 'rest':
-      return 'a rest element copies the props into a new object, which loses the getters';
+      return 'this rest element cannot be served by splitProps, and copying the props into a plain object would lose the getters';
     case 'computed':
       return 'the property is not known until it runs';
     case 'reassigned':

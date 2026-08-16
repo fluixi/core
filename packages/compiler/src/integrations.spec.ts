@@ -97,10 +97,20 @@ describe('propsDestructure', () => {
     expect(out.code).toContain('props.title');
   });
 
+  it('writes the splitProps call for a rest element', async () => {
+    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const out = await p.transform(
+      'export function Card({ title, ...rest }) { return <h1 {...rest}>{title}</h1>; }',
+      'card.tsx',
+    );
+    expect(out.code).toContain('splitProps(props, ["title"])');
+    expect(out.code).toContain('props.title');
+  });
+
   it('leaves a file it cannot rewrite exactly as it was', async () => {
-    const rest = 'export function Card({ title, ...rest }) { return <h1 {...rest}>{title}</h1>; }';
+    const unsafe = 'export function Card({ title, id = makeId() }) { return <h1 id={id}>{title}</h1>; }';
     const on: any = createVitePlugin({ ...OPTS, propsDestructure: true });
     const off: any = createVitePlugin(OPTS);
-    expect((await on.transform(rest, 'card.tsx')).code).toBe((await off.transform(rest, 'card.tsx')).code);
+    expect((await on.transform(unsafe, 'card.tsx')).code).toBe((await off.transform(unsafe, 'card.tsx')).code);
   });
 });

@@ -48,11 +48,17 @@ describe('what it rewrites', () => {
 });
 
 describe('what it leaves alone', () => {
-  it('bails on a rest element, which would copy the getters into a plain object', () => {
-    const p = plan('{ a, ...rest }');
-    expect(bail(p, 'rest')).toBe('rest');
-    // Siblings are still fine, only the rest binding is affected.
-    expect(names(p)).toEqual(['a=a']);
+  it('bails on a rest inside a nested pattern, which splitProps cannot serve', () => {
+    expect(bail(plan('{ user: { name, ...more } }'), 'more')).toBe('rest');
+  });
+
+  it('bails on a rest with nowhere to put the splitProps call', () => {
+    // An expression-bodied arrow has no block for a statement to go in.
+    const ast = parse('const C = ({ a, ...rest }) => a;', { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    const fn = (ast.program.body[0] as any).declarations[0].init;
+    const p = planPropsDestructure(fn.params[0], fn.body);
+    expect(p.bails.find((b) => b.name === 'rest')?.reason).toBe('rest');
+    expect(p.rest).toBeUndefined();
   });
 
   it('bails on a computed key', () => {
@@ -93,6 +99,32 @@ describe('what it leaves alone', () => {
     const p = plan('props', 'return props.name;');
     expect(p.reads).toEqual([]);
     expect(p.bails).toEqual([]);
+  });
+});
+
+describe('a rest element', () => {
+  it('is served by splitProps rather than refused', () => {
+    const p = plan('{ a, ...rest }');
+    expect(p.rest).toEqual({ name: 'rest', keys: ['a'] });
+    expect(names(p)).toEqual(['a=a']);
+    expect(p.bails).toEqual([]);
+  });
+
+  it('excludes every key the pattern names, under the key not the alias', () => {
+    const p = plan('{ a, b: renamed, user: { name }, ...rest }');
+    expect(p.rest?.keys).toEqual(['a', 'b', 'user']);
+  });
+
+  it('bails when the rest binding is reassigned', () => {
+    const p = plan('{ a, ...rest }', 'rest = {};');
+    expect(bail(p, 'rest')).toBe('reassigned');
+    expect(p.rest).toBeUndefined();
+  });
+
+  it('bails when an inner scope rebinds the rest name', () => {
+    const p = plan('{ a, ...rest }', 'function inner() { const rest = 1; return rest; }');
+    expect(bail(p, 'rest')).toBe('shadowed');
+    expect(p.rest).toBeUndefined();
   });
 });
 

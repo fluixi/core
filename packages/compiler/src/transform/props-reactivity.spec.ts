@@ -140,6 +140,79 @@ describe('a rewritten component stays reactive', () => {
   });
 });
 
+describe('a rest element', () => {
+  it('spreads onto the element and keeps the named prop live', () => {
+    const { module } = build(
+      `
+      import { createSignal } from '@fluixi/reactive/signal';
+
+      export function Field({ label, ...rest }) {
+        return <input aria-label={label} {...rest} />;
+      }
+
+      export function App() {
+        const [name, setName] = createSignal('first');
+        globalThis.__setField = setName;
+        return <Field label={name()} type="text" data-role="entry" />;
+      }
+      `,
+      'jsx',
+    );
+
+    const { container } = mount(module.App);
+    const input = container.querySelector('input')!;
+    // The rest half carried the other props over.
+    expect(input.getAttribute('type')).toBe('text');
+    expect(input.getAttribute('data-role')).toBe('entry');
+    expect(input.getAttribute('aria-label')).toBe('first');
+
+    // And splitProps kept the getters, so the named half still updates.
+    (globalThis as any).__setField('second');
+    expect(input.getAttribute('aria-label')).toBe('second');
+  });
+
+  it('behaves exactly like the splitProps call it replaces', () => {
+    // The bar is parity, not perfection: whatever the hand-written idiom does with a
+    // spread, the generated one has to do the same. (Today a reactive prop reaching an
+    // element through ANY spread stops tracking — plain `{...props}` too — so both of
+    // these hold at 'one'. That's a spread limitation, not something this pass fixes.)
+    const app = (field: string) => `
+      import { splitProps } from '@fluixi/dom';
+      import { createSignal } from '@fluixi/reactive/signal';
+
+      ${field}
+
+      export function App() {
+        const [role, setRole] = createSignal('one');
+        globalThis.__setRole = setRole;
+        return <Field label="x" data-role={role()} />;
+      }
+    `;
+
+    const generated = build(
+      app('export function Field({ label, ...rest }) { return <input aria-label={label} {...rest} />; }'),
+      'jsx',
+    );
+    const handWritten = build(
+      app(
+        'export function Field(props) { const [local, others] = splitProps(props, ["label"]); ' +
+          'return <input aria-label={local.label} {...others} />; }',
+      ),
+      'jsx',
+    );
+
+    const read = (module: any) => {
+      const { container } = mount(module.App);
+      const input = container.querySelector('input')!;
+      const before = input.getAttribute('data-role');
+      (globalThis as any).__setRole('two');
+      return { before, after: input.getAttribute('data-role'), label: input.getAttribute('aria-label') };
+    };
+
+    expect(read(generated.module)).toEqual(read(handWritten.module));
+  });
+});
+
 describe('without the rewrite', () => {
   it('shows the problem it solves, and that the shape analysis has to know about it', () => {
     const src = `
