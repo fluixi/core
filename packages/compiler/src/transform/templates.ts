@@ -276,8 +276,8 @@ export function transformTemplates(
   // Props first: holes are sliced out of the function body, so the rewrite has to be
   // in the edit list before any template is compiled.
   const props = options.propsDestructure
-    ? collectPropsEdits(ast.program, code, {})
-    : { edits: [], diagnostics: [] };
+    ? collectPropsEdits(ast.program, code, { runtimeModule: options.runtimeModule })
+    : { edits: [], diagnostics: [], used: new Set<string>() };
 
   if (found.length === 0 && props.edits.length === 0) return null;
 
@@ -285,7 +285,9 @@ export function transformTemplates(
   // hole containing it is sliced.
   found.sort((a, b) => b.start - a.start || a.end - b.end);
 
-  const used = new Set<string>();
+  // Seeded with whatever the props rewrite needs, so `splitProps` joins the prologue
+  // the templates build rather than getting an import of its own.
+  const used = new Set<string>(props.used);
   const needs: Needs = {
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
   };
@@ -318,7 +320,11 @@ export function transformTemplates(
 
   const out = new MagicString(code);
   // Same reason as in `slice`: a nested edit is already inside its parent's code.
-  for (const e of outermost(edits)) out.overwrite(e.start, e.end, e.code);
+  for (const e of outermost(edits)) {
+    // A zero-width edit is an insertion (the splitProps call), not a replacement.
+    if (e.start === e.end) out.appendLeft(e.start, e.code);
+    else out.overwrite(e.start, e.end, e.code);
+  }
 
   const bound = moduleBindings(ast.program);
   const prologue = buildPrologue(used, needs, hoisted, bound, options);

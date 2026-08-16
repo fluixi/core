@@ -84,8 +84,8 @@ describe('what it must not touch', () => {
   });
 
   it('leaves the whole function alone when any binding bails', () => {
-    // Half a rewrite would be worse than none: `rest` still needs splitProps.
-    const code = 'function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }';
+    // Half a rewrite would read as if the part it skipped were fine too.
+    const code = 'function C({ a, size = makeSize() }) { return <b>{a}{size}</b>; }';
     expect(out(code)).toBe(code);
   });
 
@@ -110,11 +110,11 @@ describe('what it must not touch', () => {
 
 describe('reporting', () => {
   it('says which binding it could not rewrite and why', () => {
-    const { diagnostics } = run('function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }');
+    const { diagnostics } = run('function C({ a, onPick = () => {} }) { return <b>{a}</b>; }');
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0].name).toBe('rest');
-    expect(diagnostics[0].reason).toBe('rest');
-    expect(diagnostics[0].message).toMatch(/getters/);
+    expect(diagnostics[0].name).toBe('onPick');
+    expect(diagnostics[0].reason).toBe('unsafe-default');
+    expect(diagnostics[0].message).toMatch(/every read/);
   });
 
   it('reports nothing for source it rewrote cleanly', () => {
@@ -124,5 +124,40 @@ describe('reporting', () => {
   it('carries a source map', () => {
     const { map } = run('function C({ a }) { return <b>{a}</b>; }');
     expect(map.mappings.length).toBeGreaterThan(0);
+  });
+});
+
+describe('a rest element', () => {
+  it('writes the splitProps call instead of refusing the pattern', () => {
+    const code = out('function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }');
+    expect(code).toContain('function C(props)');
+    expect(code).toContain('const [, rest] = splitProps(props, ["a"]);');
+    expect(code).toContain('{props.a}');
+  });
+
+  it('imports splitProps when the module does not already have it', () => {
+    const code = out('function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }');
+    expect(code).toContain("import { splitProps } from \"@fluixi/dom\"");
+  });
+
+  it('does not import it twice', () => {
+    const code = out(
+      'import { splitProps } from "@fluixi/dom";\nfunction C({ a, ...rest }) { return <b {...rest}>{a}</b>; }',
+    );
+    expect(code.match(/import \{ splitProps \}/g)).toHaveLength(1);
+  });
+
+  it('excludes every named key, under the key rather than the alias', () => {
+    const code = out('function C({ a, b: renamed, ...rest }) { return <b {...rest}>{a}{renamed}</b>; }');
+    expect(code).toContain('splitProps(props, ["a", "b"])');
+  });
+
+  it('reports nothing, because nothing was refused', () => {
+    expect(run('function C({ a, ...rest }) { return <b {...rest}>{a}</b>; }').diagnostics).toEqual([]);
+  });
+
+  it('leaves an expression-bodied arrow alone, having nowhere to put the call', () => {
+    const code = 'const C = ({ a, ...rest }) => <b {...rest}>{a}</b>;';
+    expect(out(code)).toBe(code);
   });
 });

@@ -114,10 +114,10 @@ describe('with propsDestructure on', () => {
 
   it('reports what it refused', () => {
     const out = transformTemplates(
-      'export function C({ a, ...rest }) { return html`<b>${a}</b>`; }',
+      'export function C({ a, size = makeSize() }) { return html`<b>${a}</b>`; }',
       'c.ts',
       { propsDestructure: true } as never,
     )!;
-    expect(out.propsDiagnostics?.[0]?.reason).toBe('rest');
+    expect(out.propsDiagnostics?.[0]?.reason).toBe('unsafe-default');
   });
 });
