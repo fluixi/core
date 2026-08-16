@@ -1,15 +1,14 @@
 # Les données asynchrones
 
 Une **ressource** enveloppe une donnée asynchrone — un fetch, une requête, tout ce qui renvoie une
-promesse — dans un signal qui suit son état de chargement et d'erreur. Créez-en une avec
-`createResource` :
+promesse — dans une valeur qui suit son état de chargement et d'erreur :
 
 ```ts
-import { createSignal, createResource } from '@fluixi/reactive/signal';
+import { signal, resource } from '@fluixi/reactive/signal';
 
-const [userId, setUserId] = createSignal(1);
+const userId = signal(1);
 
-const [user] = createResource(userId, async (id) => {
+const user = resource(userId, async (id) => {
   const res = await fetch(`/api/users/${id}`);
   return res.json();
 });
@@ -35,7 +34,7 @@ résolue dans la page : le client s'hydrate sans recharger — aucun clignotemen
 
 ```ts
 // le même code s'affiche sur le serveur (attendu) et le client (streamé) :
-const [posts] = createResource(fetchPosts);
+const posts = $resource(fetchPosts);
 ```
 
 C'est la fin du guide de réactivité pour la **v1**. Explorez-le en direct dans le

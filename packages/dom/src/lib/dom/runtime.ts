@@ -1811,3 +1811,21 @@ export function render<T>(
   };
 }
 
+
+/**
+ * Normalize what `bind:` was given into a `[read, write]` pair.
+ *
+ * `createSignal` hands back that pair already; `signal` hands back `{ get, set }`. Both
+ * are the same primitive, so `bind:value` has to take either — steering people to the
+ * new API and then refusing it in a directive would be its own kind of broken.
+ */
+export function bindPair(source: any): [() => any, (value: any) => void] {
+  if (Array.isArray(source)) return source as [() => any, (value: any) => void];
+  // `signal(…)` is the accessor itself with `set` attached.
+  if (typeof source === 'function' && typeof source.set === 'function') {
+    return [source, source.set];
+  }
+  throw new TypeError(
+    '[fluixi] bind: needs a signal — either `signal(…)` or the `[get, set]` pair from `createSignal(…)`.',
+  );
+}

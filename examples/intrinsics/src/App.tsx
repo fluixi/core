@@ -12,8 +12,8 @@ export function RuntimeCounter() {
 
   return (
     <div class="runtime">
-      <span class="value">{count.get()}</span>
-      <button class="inc" onClick={() => count.set(count.get() + 1)}>
+      <span class="value">{count()}</span>
+      <button class="inc" onClick={() => count.set(count() + 1)}>
         +
       </button>
     </div>
@@ -26,8 +26,8 @@ export function IntrinsicCounter() {
 
   return (
     <div class="intrinsic">
-      <span class="value">{count.get()}</span>
-      <button class="inc" onClick={() => count.set(count.get() + 1)}>
+      <span class="value">{count()}</span>
+      <button class="inc" onClick={() => count.set(count() + 1)}>
         +
       </button>
     </div>
@@ -40,12 +40,12 @@ export function IntrinsicCounter() {
  */
 export function Mixed() {
   const count = signal(1);
-  const doubled = $memo(() => count.get() * 2);
+  const doubled = $memo(() => count() * 2);
 
   return (
     <div class="mixed">
-      <span class="value">{doubled.get()}</span>
-      <button class="inc" onClick={() => count.set(count.get() + 1)}>
+      <span class="value">{doubled()}</span>
+      <button class="inc" onClick={() => count.set(count() + 1)}>
         +
       </button>
     </div>

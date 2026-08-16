@@ -229,15 +229,16 @@ items are inserted, removed or reordered.
 
 ### bind: — two-way binding
 
-`bind:value` and `bind:checked` bind an input to a `[get, set]` signal tuple:
+`bind:value` and `bind:checked` bind an input to a signal:
 
 ```ts
-const name = createSignal('');
+const name = $signal('');
 html`<input bind:value=${name} />`;                 // value + input event
 html`<input type="checkbox" bind:checked=${on} />`; // checked + change event
 ```
 
-Pass the **tuple**, not the accessor — `createSignal` returns exactly what is needed. The
+Pass the signal itself — `signal(…)` or the `[get, set]` pair from `createSignal(…)`, either
+works — never a bare accessor, since the binding writes as well as reads. The
 binding reads `event.target`, so it works on any element that carries a `value` or
 `checked`. For anything else — a select's multiple values, a number that needs parsing —
 write the two halves yourself; `bind:` is deliberately only the common case.

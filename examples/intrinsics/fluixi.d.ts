@@ -29,4 +29,9 @@ declare global {
   const $memo: typeof __fluixi_reactive_signal.memo;
   const $effect: typeof __fluixi_reactive_signal.effect;
   const $store: typeof __fluixi_reactive_store.store;
+  const $resource: typeof __fluixi_reactive_signal.resource;
+  const $selector: typeof __fluixi_reactive_signal.createSelector;
+  const $deferred: typeof __fluixi_reactive_signal.createDeferred;
+  const $untrack: typeof __fluixi_reactive_signal.untrack;
+  const $untrackStore: typeof __fluixi_reactive_store.untrackStore;
 }

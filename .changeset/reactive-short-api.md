@@ -7,13 +7,14 @@ Add `signal`, `memo` and `effect` — the same primitives as `createSignal`,
 
 ```ts
 const count = signal(0);
-count.get();
-count.set(1);
+count();        // read
+count.set(1);   // write
 ```
 
-The `get` and `set` are the accessor and setter `createSignal` returns, so anything
-that tracks one tracks the other and the two forms interleave freely. `memo` exposes
-`get` alone, since a derived value has nothing to set.
+`signal` **is** the accessor `createSignal` returns, with the setter attached — so a
+read is the same call it always was, `count` still passes anywhere an accessor is
+expected, and only the write changes spelling. `memo` is `createMemo` under a shorter
+name, since a derived value has nothing to set.
 
 `store` comes along too, as the state itself with `set` on it:
 
@@ -23,8 +24,10 @@ user.name;                    // reads, and tracks that key
 user.set({ name: 'Grace' });
 ```
 
-No `.get()` there on purpose — a store is an object whose whole point is that
-property access is the read, so a call would cost the ergonomics that make it worth
-using. Reads still subscribe per key.
+`resource` comes along the same way — the accessor with `refetch`/`mutate` on it,
+beside the `loading`/`error`/`latest` it already carried.
+
+The rule across the API: read it the way its shape implies — a call for a value, a
+property for an object — and `.set()` writes. Reads still subscribe per key.
 
 `createSignal`, `createMemo`, `createEffect` and `createStore` are unchanged.

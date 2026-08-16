@@ -46,7 +46,7 @@ Tout `${…}` est un trou réactif. Lire un signal à l'intérieur maintient cet
 uniquement celui-là — à jour :
 
 ```ts
-const [count, setCount] = createSignal(0);
+const count = $signal(0);
 html`<p>Compteur : ${count()}</p>`;
 ```
 

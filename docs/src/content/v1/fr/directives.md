@@ -238,12 +238,13 @@ suit. Avec une clé, seul ce qui a réellement bougé est touché. Indexez toute
 `bind:value` et `bind:checked` lient un champ à un tuple de signal `[get, set]` :
 
 ```ts
-const name = createSignal('');
+const name = $signal('');
 html`<input bind:value=${name} />`;                 // value + événement input
 html`<input type="checkbox" bind:checked=${on} />`; // checked + événement change
 ```
 
-Passez le **tuple**, pas l'accesseur — `createSignal` renvoie exactement ce qu'il faut. La
+Passez le signal lui-même — `signal(…)` ou la paire `[get, set]` de `createSignal(…)`, les
+deux marchent — jamais un accesseur seul, puisque la liaison écrit autant qu'elle lit. La
 liaison lit `event.target` : elle fonctionne donc sur tout élément portant `value` ou
 `checked`. Pour le reste — les valeurs multiples d'un `select`, un nombre à convertir —
 écrivez les deux moitiés vous-même ; `bind:` ne couvre délibérément que le cas courant.

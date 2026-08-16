@@ -13,12 +13,15 @@ on the server, or entirely on its own.
 Almost everything is built from three primitives:
 
 ```ts
-import { createSignal, createMemo, createEffect } from '@fluixi/reactive/signal';
+import { signal, memo, effect } from '@fluixi/reactive/signal';
 
-const [count, setCount] = createSignal(0);       // state
-const doubled = createMemo(() => count() * 2);   // derived
-createEffect(() => console.log(doubled()));      // side effect
+const count = signal(0);                          // state
+const doubled = memo(() => count() * 2);      // derived
+effect(() => console.log(doubled()));         // side effect
 ```
+
+Inside a compiled app you can drop the import — `$signal`, `$memo` and `$effect` are the same
+primitives, resolved by the compiler.
 
 - A **signal** holds a value and tracks who reads it.
 - A **memo** derives a value from other reactive sources and recomputes only when they change.

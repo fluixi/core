@@ -1,17 +1,23 @@
 # Derived values
 
-A **memo** derives a value from other reactive sources. Created with `createMemo`, it caches its
-result and recomputes only when one of its dependencies changes:
+A **memo** derives a value from other reactive sources. It caches its result and recomputes only
+when one of its dependencies changes:
 
 ```ts
-import { createSignal, createMemo } from '@fluixi/reactive/signal';
+import { signal, memo } from '@fluixi/reactive/signal';
 
-const [first, setFirst] = createSignal('Ada');
-const [last, setLast]   = createSignal('Lovelace');
+const first = signal('Ada');
+const last  = signal('Lovelace');
 
-const fullName = createMemo(() => `${first()} ${last()}`);
+const fullName = memo(() => `${first()} ${last()}`);
 
 fullName(); // "Ada Lovelace"
+```
+
+`$memo` is the same without the import:
+
+```ts
+const fullName = $memo(() => `${first()} ${last()}`);
 ```
 
 ## Lazy and cached
@@ -20,7 +26,7 @@ A memo only computes when it is **read**, and only recomputes when a dependency 
 Reading it again returns the cached value for free:
 
 ```ts
-const expensive = createMemo(() => heavyCompute(data()));
+const expensive = memo(() => heavyCompute(data()));
 expensive(); // computes once
 expensive(); // cached — no recompute
 ```
@@ -33,12 +39,26 @@ When a change fans out and re-converges, a memo recomputes **exactly once** with
 never with a half-updated, "torn" value:
 
 ```ts
-const [a, setA] = createSignal(1);
-const b = createMemo(() => a() + 1);
-const c = createMemo(() => a() * 2);
-const d = createMemo(() => b() + c()); // recomputes once per change to a, never twice
+const a = signal(1);
+const b = memo(() => a() + 1);
+const c = memo(() => a() * 2);
+const d = memo(() => b() + c()); // recomputes once per change to a, never twice
 
-setA(2); // d recomputes a single time
+a.set(2); // d recomputes a single time
 ```
+
+## The accessor form
+
+`createMemo` returns the same memo as a plain accessor:
+
+```ts
+import { createMemo } from '@fluixi/reactive/signal';
+
+const fullName = createMemo(() => `${first()} ${last()}`);
+fullName(); // "Ada Lovelace"
+```
+
+`memo` is that accessor packed into an object as `get`, so the two are one primitive and mix
+freely with signals written either way.
 
 Next: **[Effects](/v1/en/effects)**.

@@ -34,8 +34,8 @@ calls — pick whichever you prefer, or mix them in one file.
 ```tsx
 // JSX — needs `jsx` configured in tsconfig
 function Counter() {
-  const [n, setN] = createSignal(0);
-  return <button onClick={() => setN(n() + 1)}>{n()}</button>;
+  const n = $signal(0);
+  return <button onClick={() => n.set(n() + 1)}>{n()}</button>;
 }
 ```
 
@@ -44,8 +44,8 @@ function Counter() {
 import { html } from '@fluixi/core';
 
 function Counter() {
-  const [n, setN] = createSignal(0);
-  return html`<button @click=${() => setN(n() + 1)}>${n()}</button>`;
+  const n = $signal(0);
+  return html`<button @click=${() => n.set(n() + 1)}>${n()}</button>`;
 }
 ```
 
