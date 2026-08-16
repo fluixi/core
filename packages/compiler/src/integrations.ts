@@ -96,6 +96,21 @@ export interface CompilerOptions {
   litTag?: string;
 
   /**
+   * Rewrite a component's destructured props into property reads, so
+   * `function Card({ title })` keeps updating instead of reading `title` once.
+   * Applies to JSX and html`` alike — it rewrites the function body before either is
+   * compiled. A pattern it can't prove is left as written, so `splitProps` keeps
+   * working wherever it's still needed.
+   *
+   * Off while we shake it out. Known gap before it can default on: when it rewrites a
+   * file the emitted map points at the rewritten source, not the author's, because the
+   * two passes each build their own map and nothing chains them yet.
+   *
+   * @default false
+   */
+  propsDestructure?: boolean;
+
+  /**
    * Module emitted runtime symbols are imported from in 'imperative' mode.
    * @default '@fluixi/dom'
    */
@@ -350,11 +365,26 @@ function transformOptions(options: CompilerOptions) {
   };
 }
 
+/**
+ * Rewrite destructured props first, when asked. It has to run before the templates are
+ * compiled: both JSX and html`` read their holes out of the function body, so rewriting
+ * the body once is what makes the two modes agree.
+ */
+async function rewriteProps(code: string, id: string, options: CompilerOptions) {
+  if (!options.propsDestructure) return code;
+  const { transformProps } = await import('./transform/index.js');
+  const result = transformProps(code, id);
+  // Untouched source comes back identical, so nothing pays for the option being on.
+  return result.rewritten > 0 ? result.code : code;
+}
+
 /** Compile one module, through babel only when asked for it. */
 async function compileModule(code: string, id: string, options: CompilerOptions) {
+  const source = await rewriteProps(code, id, options);
+
   if (!options.babel) {
     const { transformTemplates } = await import('./transform/index.js');
-    return transformTemplates(code, id, transformOptions(options));
+    return transformTemplates(source, id, transformOptions(options));
   }
   const babel = await import('@babel/core').catch(() => null);
   const plugin = await createBabelPlugin(options);
@@ -364,7 +394,7 @@ async function compileModule(code: string, id: string, options: CompilerOptions)
         `Install it, or drop the option to use the built-in compiler.`,
     );
   }
-  const result = await babel.transformAsync(code, {
+  const result = await babel.transformAsync(source, {
     filename: id,
     configFile: false,
     babelrc: false,
