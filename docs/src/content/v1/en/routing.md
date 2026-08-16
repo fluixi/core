@@ -99,6 +99,48 @@ navigate('/dashboard');
 navigate('/login', { replace: true });
 ```
 
+### Links you didn't write
+
+`<Link>` covers the links you author as JSX. It can't cover the ones that arrive as
+markup — rendered markdown, a CMS payload, anything inserted through `innerHTML`. Those
+are plain anchors with nothing to bind to, so each one reloads the document.
+`useLinkNavigation` returns a single delegated handler for the container they live in:
+
+```tsx
+import { useLinkNavigation } from '@fluixi/start/router';
+
+const onClick = useLinkNavigation();
+
+<article onClick={onClick} innerHTML={doc.html} />
+```
+
+The anchors stay anchors. Middle-click, open-in-new-tab, "copy link address" and crawlers
+all keep working, because the elements are untouched and only a plain left-click is taken
+over. Relative hrefs resolve against the current document, so a `./guide` written in
+markdown lands on the right path.
+
+These are left to the browser, deliberately:
+
+| | |
+|---|---|
+| Modified clicks, any button but the primary one | That's how a user asks for a new tab |
+| An event another handler already prevented | Something upstream decided |
+| `target`, `download`, `rel="external"` | The markup already said what it wants |
+| `mailto:`, `tel:`, any non-http scheme | Belongs to the OS |
+| A different origin | Not ours to route |
+| A hash pointing inside the current page | That's the browser's scroll — intercepting it breaks in-page anchors |
+
+`shouldNavigate` opts out a section that has to load as a document — a different bundle, a
+server-rendered admin area:
+
+```tsx
+const onClick = useLinkNavigation({
+  shouldNavigate: (url) => !url.pathname.startsWith('/admin'),
+});
+```
+
+It also takes `replace`, like `<Link>`.
+
 ### Location and query string
 
 `useLocation()` returns a live object — read properties directly, no call:

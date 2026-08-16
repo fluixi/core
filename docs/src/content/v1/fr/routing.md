@@ -101,6 +101,50 @@ navigate('/dashboard');
 navigate('/login', { replace: true });
 ```
 
+### Les liens que vous n'avez pas écrits
+
+`<Link>` couvre les liens que vous écrivez en JSX. Il ne peut rien pour ceux qui arrivent
+sous forme de balisage — du markdown rendu, une réponse de CMS, tout ce qui est inséré via
+`innerHTML`. Ce sont de simples ancres, sans rien à quoi se rattacher : chacune recharge
+la page entière. `useLinkNavigation` renvoie un seul gestionnaire délégué, posé sur le
+conteneur qui les contient :
+
+```tsx
+import { useLinkNavigation } from '@fluixi/start/router';
+
+const onClick = useLinkNavigation();
+
+<article onClick={onClick} innerHTML={doc.html} />
+```
+
+Les ancres restent des ancres. Clic du milieu, ouverture dans un nouvel onglet, « copier
+l'adresse du lien » et les robots d'indexation continuent de fonctionner : les éléments ne
+sont pas modifiés et seul un clic gauche simple est intercepté. Les `href` relatifs sont
+résolus par rapport au document courant, donc un `./guide` écrit en markdown arrive au bon
+endroit.
+
+Ce qui est laissé au navigateur, délibérément :
+
+| | |
+|---|---|
+| Clics avec modificateur, tout bouton autre que le principal | C'est ainsi qu'on demande un nouvel onglet |
+| Un événement déjà annulé par un autre gestionnaire | Quelque chose en amont a tranché |
+| `target`, `download`, `rel="external"` | Le balisage a déjà dit ce qu'il voulait |
+| `mailto:`, `tel:`, tout schéma non http | Relève du système |
+| Une autre origine | Ce n'est pas à nous de router |
+| Une ancre interne à la page courante | C'est le défilement du navigateur — l'intercepter casse les ancres internes |
+
+`shouldNavigate` exclut une section qui doit se charger comme un document — un autre
+bundle, une zone d'administration rendue côté serveur :
+
+```tsx
+const onClick = useLinkNavigation({
+  shouldNavigate: (url) => !url.pathname.startsWith('/admin'),
+});
+```
+
+Il accepte aussi `replace`, comme `<Link>`.
+
 ### Emplacement et chaîne de requête
 
 `useLocation()` renvoie un objet vivant — lisez les propriétés directement, sans appel :
