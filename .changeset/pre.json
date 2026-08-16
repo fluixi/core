@@ -31,7 +31,9 @@
     "@fluixi/example-lit-showcase": "0.0.0",
     "@fluixi/template-parser": "0.1.0-alpha.0",
     "@fluixi/ts-plugin": "0.1.0-alpha.0",
-    "@fluixi/example-load-strategies": "0.0.1-alpha.0"
+    "@fluixi/example-load-strategies": "0.0.1-alpha.0",
+    "@fluixi/example-intrinsics": "0.0.0",
+    "@fluixi/example-props": "0.0.0"
   },
   "changesets": [
     "adapter-bundle-mode",
@@ -72,6 +74,7 @@
     "css-properties-strict",
     "debounced-primitives",
     "deploy-root-route",
+    "dev-css-flash",
     "dev-head-marker-hydration",
     "devtools",
     "dispose-no-rerun",
@@ -164,10 +167,13 @@
     "portal-ref-support",
     "prop-completion-filtering",
     "props-children-async",
+    "props-destructure",
     "provider-lazy-children",
     "reactive-attrs",
     "reactive-dom-array-children",
     "reactive-expr-analysis",
+    "reactive-intrinsics",
+    "reactive-short-api",
     "reactive-style-attr",
     "reactive-toggle-attrs",
     "readme-public-npm",
@@ -220,6 +226,7 @@
     "static-attrs-direct",
     "store-proxy-write",
     "store-setter-readonly",
+    "suspense-lazy-child",
     "suspense-list-auto-import",
     "svg-hydration-spread",
     "tc39-signal-core",
@@ -236,6 +243,7 @@
     "ts-plugin-package",
     "ts-plugin-quick-fix",
     "ts-plugin-single-program",
+    "use-link-navigation",
     "use-navigate-ssr-safe",
     "version-stamps",
     "versions-on-both-render-paths"
