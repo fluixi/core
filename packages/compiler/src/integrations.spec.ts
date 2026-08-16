@@ -71,3 +71,36 @@ describe('bundler adapters', () => {
     else expect(compiled(out.code)).toBe(true); // babel is installed here, so it compiles
   });
 });
+
+describe('propsDestructure', () => {
+  const COMPONENT = 'export function Card({ title }) { return <h1>{title}</h1>; }';
+
+  it('is off unless asked for, so nothing changes under it', async () => {
+    const p: any = createVitePlugin(OPTS);
+    const out = await p.transform(COMPONENT, 'card.tsx');
+    expect(out.code).toContain('title');
+    expect(out.code).not.toContain('props.title');
+  });
+
+  it('rewrites the props read when turned on', async () => {
+    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const out = await p.transform(COMPONENT, 'card.tsx');
+    expect(out.code).toContain('props.title');
+  });
+
+  it('rewrites an html template the same way', async () => {
+    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const out = await p.transform(
+      'export function Card({ title }) { return html`<h1>${title}</h1>`; }',
+      'card.tsx',
+    );
+    expect(out.code).toContain('props.title');
+  });
+
+  it('leaves a file it cannot rewrite exactly as it was', async () => {
+    const rest = 'export function Card({ title, ...rest }) { return <h1 {...rest}>{title}</h1>; }';
+    const on: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const off: any = createVitePlugin(OPTS);
+    expect((await on.transform(rest, 'card.tsx')).code).toBe((await off.transform(rest, 'card.tsx')).code);
+  });
+});
