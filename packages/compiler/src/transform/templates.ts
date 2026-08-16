@@ -24,6 +24,8 @@ import { createComponentResolver } from '../resolve/component-resolver.js';
 import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
+import { collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
+import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
 
 interface Node {
@@ -61,6 +63,12 @@ export interface TransformOptions extends CompileTemplateOptions {
    * @default false
    */
   propsDestructure?: boolean;
+  /**
+   * Compile the `$` reactive intrinsics — `$signal`, `$memo`, `$effect`, `$store` — into
+   * the runtime calls they stand for, importing what they need.
+   * @default true
+   */
+  intrinsics?: boolean;
 }
 
 export interface TransformResult {
@@ -68,6 +76,8 @@ export interface TransformResult {
   map: ReturnType<MagicString['generateMap']>;
   /** Props patterns the rewrite refused, when `propsDestructure` is on. */
   propsDiagnostics?: PropsDiagnostic[];
+  /** `$` names the module bound itself, so the intrinsic did not fire. */
+  intrinsicDiagnostics?: IntrinsicDiagnostic[];
 }
 
 // Which builtin comes from which module is published by resolve/builtins.ts —
@@ -260,7 +270,10 @@ export function transformTemplates(
   const wantsLit = format !== 'jsx';
   const wantsJsx = format !== 'lit';
   const mayHaveTemplate = wantsLit && (code.includes(`${litTag}\``) || code.includes('svg`'));
-  if (!mayHaveTemplate && !(wantsJsx && code.includes('<'))) return null;
+  // A module can be nothing but `$signal` calls, so the skip check has to look for those
+  // too or the file is never parsed.
+  const wantsIntrinsics = options.intrinsics !== false && mayHaveIntrinsic(code);
+  if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics) return null;
 
   const ast = parse(code, {
     sourceType: 'module',
@@ -279,7 +292,22 @@ export function transformTemplates(
     ? collectPropsEdits(ast.program, code, { runtimeModule: options.runtimeModule })
     : { edits: [], diagnostics: [], used: new Set<string>() };
 
-  if (found.length === 0 && props.edits.length === 0) return null;
+  // `$signal(…)` → `createSignal(…)`. Same edit list, so the callee is already rewritten
+  // by the time a template slices a hole containing one.
+  const intrinsics =
+    options.intrinsics === false
+      ? { edits: [], diagnostics: [], imports: new Map<string, Set<string>>() }
+      : collectIntrinsicEdits(ast.program);
+
+  // Nothing to emit still returns a result when there's something to say — a shadowed
+  // intrinsic is a diagnostic even though the code comes back untouched.
+  const silent =
+    found.length === 0 &&
+    props.edits.length === 0 &&
+    intrinsics.edits.length === 0 &&
+    intrinsics.diagnostics.length === 0 &&
+    props.diagnostics.length === 0;
+  if (silent) return null;
 
   // Innermost first, so a nested template is already compiled by the time the
   // hole containing it is sliced.
@@ -292,7 +320,7 @@ export function transformTemplates(
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
   };
   const hoisted = new Map<string, string>();
-  const edits: Edit[] = [...props.edits];
+  const edits: Edit[] = [...props.edits, ...intrinsics.edits];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
     // matching what the plugin does for nested emits. Marker layout has to agree
@@ -329,6 +357,8 @@ export function transformTemplates(
   const bound = moduleBindings(ast.program);
   const prologue = buildPrologue(used, needs, hoisted, bound, options);
   if (prologue) out.prepend(prologue);
+  const runtimeImports = intrinsicImports(intrinsics, bound);
+  if (runtimeImports) out.prepend(runtimeImports);
   // `@fluixi/core/rx` is the client alias for the reactive primitives.
   for (const node of ast.program.body as Node[]) {
     if (node.type === 'ImportDeclaration' && node.source?.value === '@fluixi/core/rx') {
@@ -340,6 +370,7 @@ export function transformTemplates(
     code: out.toString(),
     map: out.generateMap({ source: id, includeContent: true, hires: true }),
     ...(props.diagnostics.length ? { propsDiagnostics: props.diagnostics } : {}),
+    ...(intrinsics.diagnostics.length ? { intrinsicDiagnostics: intrinsics.diagnostics } : {}),
   };
 }
 
