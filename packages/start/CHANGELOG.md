@@ -1,5 +1,31 @@
 # @fluixi/start
 
+## 0.1.0-alpha.66
+
+### Patch Changes
+
+- 8f77029: Link the SSR-rendered CSS in dev, so a page stops flashing unstyled.
+
+  The dev server sent a fully rendered page with no stylesheets at all — the styles
+  arrived with the client bundle, so every load painted unstyled first. The build had
+  no such gap, which is why this only ever showed up in the environment you look at
+  most.
+
+  It now walks the SSR module graph from the server entry, collects the styles the
+  render pulled in, and links them with `?direct` (dev serves a `.css` URL as a JS
+  module otherwise).
+
+- Updated dependencies [051fdeb]
+- Updated dependencies [122e8f5]
+- Updated dependencies [2fc0df5]
+- Updated dependencies [3b7c1c7]
+  - @fluixi/compiler@1.0.0-alpha.76
+  - @fluixi/core@1.0.0-alpha.76
+  - @fluixi/vite-plugin@1.0.0-alpha.76
+  - @fluixi/dom@1.0.0-alpha.76
+  - @fluixi/head@1.0.0-alpha.43
+  - @fluixi/server@1.0.0-alpha.76
+
 ## 0.1.0-alpha.65
 
 ### Patch Changes

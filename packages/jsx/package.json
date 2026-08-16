@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/jsx",
-  "version": "1.0.0-alpha.75",
+  "version": "1.0.0-alpha.76",
   "description": "JSX runtime types and factory for Fluixi — fine-grained, no virtual DOM.",
   "license": "MIT",
   "private": false,

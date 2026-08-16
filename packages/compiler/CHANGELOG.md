@@ -1,5 +1,51 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.76
+
+### Minor Changes
+
+- 051fdeb: Add `propsDestructure`. With it on, a component can take its props apart the
+  plain way and the compiler rewrites the bindings into reads, so they stay
+  reactive:
+
+  ```tsx
+  function Hello({ name, tone = 'calm' }) {
+    return <p data-tone={tone}>{name}</p>;
+  }
+  ```
+
+  Each use compiles to `props.name`, so the binding keeps its type and nothing else
+  about the function changes. `...rest` becomes the `splitProps` call you would have
+  written, which carries the remaining props across as getters. Aliases, defaults
+  and nested patterns work; a default still applies only to `undefined`.
+
+  Anything the rewrite can't prove is left exactly as written and reported — a
+  reassigned binding, a computed key, a default that would have to re-run on every
+  read.
+
+  Off by default. It's a property of how code is compiled, so a package that ships
+  its source for others to compile should keep writing props explicitly.
+
+- 122e8f5: Add the `$` reactive intrinsics. `$signal`, `$memo`, `$effect` and `$store` compile
+  to the runtime calls they stand for, with the import added for whatever a module
+  actually used:
+
+  ```tsx
+  const count = $signal(0); // → signal(0), plus the import
+  ```
+
+  They are the runtime API under another spelling, not a second one — `$signal`
+  compiles to `signal`, so there is one reactive graph and no difference in lifecycle,
+  SSR or hydration.
+
+  The compiler resolves a primitive by where its binding came from rather than by how
+  the name reads, so `import { signal as state }` is recognised and a local
+  `function signal()` is not. A module that binds a `$` name itself keeps its own
+  meaning, and that is reported rather than rewritten.
+
+  On by default: `$signal` is a reference error otherwise, so there is nothing for it
+  to break. `intrinsics: false` turns it off.
+
 ## 1.0.0-alpha.75
 
 ## 1.0.0-alpha.74
