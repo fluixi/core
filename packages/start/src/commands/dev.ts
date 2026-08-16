@@ -9,6 +9,48 @@ import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
 
+const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
+
+/**
+ * Stylesheets the SSR render pulled in, walked from the server entry.
+ *
+ * Without these, dev serves a fully rendered page with no CSS at all and the styles
+ * arrive with the client bundle — a flash of unstyled content on every load, in the one
+ * environment you look at most. The build has no such gap: Vite emits real `<link>`s.
+ *
+ * Dev serves a `.css` URL as a JS module that injects a style tag, so `?direct` is what
+ * asks for the stylesheet itself.
+ */
+async function renderedStyles(vite: any, entry: string): Promise<string[]> {
+  const seen = new Set<string>();
+  const found: string[] = [];
+
+  const visit = (mod: any): void => {
+    if (!mod || seen.has(mod.url)) return;
+    seen.add(mod.url);
+    if (STYLE_FILE.test(mod.url)) found.push(mod.url);
+    for (const dep of mod.importedModules ?? []) visit(dep);
+  };
+
+  try {
+    visit(await vite.moduleGraph.getModuleByUrl('/' + entry, true));
+  } catch {
+    // A graph we can't read is not worth failing a dev request over; the page still
+    // works, it just flashes the way it did before.
+    return [];
+  }
+  return found;
+}
+
+/** Put the stylesheets in <head>, before anything the render already put there. */
+function injectStyles(html: string, urls: readonly string[]): string {
+  if (urls.length === 0) return html;
+  const links = urls
+    .map((url) => `<link rel="stylesheet" href="${url}${url.includes('?') ? '&' : '?'}direct">`)
+    .join('\n    ');
+  return html.includes('</head>') ? html.replace('</head>', `  ${links}\n  </head>`) : html;
+}
+
 /**
  * Dev server: Vite in middleware mode compiles the app on the fly; the server
  * entry renders the shell per request, injected into the template; the client
@@ -55,7 +97,10 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     }
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
     if (typeof mod.renderStream === 'function') {
-      const shell = await vite.transformIndexHtml(path, template);
+      const shell = await vite.transformIndexHtml(
+        path,
+        injectStyles(template, await renderedStyles(vite, cfg.serverEntry)),
+      );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
       return streamDocument(head, await mod.renderStream(path, request), tail);
     }
@@ -65,7 +110,11 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     // the body into <head> + <html>, exactly like the prod adapter/prerender. Plain injectApp left
     // the `<!--fh:…-->` marker as the mount root's first child, which stranded the hydration cursor
     // (whole tree rebuilt → duplicated) AND skipped dev SEO. No marker → identical to injectApp.
-    const html = await vite.transformIndexHtml(path, injectAppAndHead(template, appHtml, cfg.mountId));
+    const styled = injectStyles(
+      injectAppAndHead(template, appHtml, cfg.mountId),
+      await renderedStyles(vite, cfg.serverEntry),
+    );
+    const html = await vite.transformIndexHtml(path, styled);
     return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }, (e) => vite.ssrFixStacktrace?.(e));
 
