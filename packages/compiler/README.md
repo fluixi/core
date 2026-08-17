@@ -38,6 +38,43 @@ gets an RPC stub, the server build keeps and registers the body.
 Most apps don't use this package directly — [`@fluixi/vite-plugin`](../vite-plugin) (and
 [`@fluixi/start`](../start)) wrap it.
 
+## What it does to your code
+
+Beyond turning markup into DOM calls:
+
+**Props you destructured stay reactive.** `function Card({ title })` compiles to
+`props.title` at each use, so the binding keeps updating, and `...rest` becomes the
+`splitProps` call you would have written. Anything it can't prove safe — a reassigned
+binding, a computed key, a default it would have to re-run per read — is left exactly as
+written and reported. On by default; turn `propsDestructure: false` on for a package that
+ships its **source** for consumers to compile, since the rewrite is a property of how code
+is compiled.
+
+**`$` intrinsics resolve without an import.** `$signal`, `$memo`, `$effect`, `$store`,
+`$resource`, `$selector`, `$deferred`, `$untrack`, `$untrackStore` compile to the runtime
+calls they stand for, and the import is added for what a module actually used. A primitive
+is recognised by the binding it came from, never by name: `import { signal as state }` is
+recognised, a local `function signal()` is not. A module that binds a `$` name keeps its
+own meaning and gets a diagnostic.
+
+**Unimported tags resolve through rules.** `resolve` says where a capitalised tag comes
+from — an entry per component, or one pattern for a family:
+
+```ts
+createVitePlugin({ resolve: [{ match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' }] })
+```
+
+**`load:` splits a component into its own chunk.** `load:visible`, `load:idle`,
+`load:interaction`, `load:media` decide when its module is fetched. It works on a component
+a rule supplies and on one you imported yourself — in the second case the static import is
+removed, which only happens when the name is used nowhere but as a tag.
+
+**It says when it couldn't do these things.** A tag nothing supplies and a `load:` that
+can't apply both build cleanly and fail at runtime, so they're reported at build time with
+the reason. The bundler adapters print them; `TransformResult` carries them as
+`propsDiagnostics`, `intrinsicDiagnostics`, `loadDiagnostics` and `unresolvedDiagnostics`
+if you're driving the transform yourself.
+
 ## 📦 Installation
 
 ```sh
@@ -68,8 +105,8 @@ import { transformTemplates } from '@fluixi/compiler/transform';
 const { code, map } = transformTemplates(source, 'App.tsx', {})!;
 ```
 
-`transformTemplates` returns `null` when a module has no JSX and no templates, so a
-bundler can leave the file untouched.
+`transformTemplates` returns `null` when there is nothing to do — no JSX, no templates, no
+`$` intrinsics and nothing to report — so a bundler can leave the file untouched.
 
 ### Compiling through Babel
 
