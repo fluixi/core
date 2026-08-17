@@ -230,11 +230,13 @@ describe('without the rewrite', () => {
         return <Label text={value()} />;
       }
     `;
-    // Same pipeline with the option off. This also guards the subtler half: the hole is
+    // Same pipeline with the option turned off explicitly. This also guards the subtler
+    // half: the hole is
     // only wired reactively when the analysis sees a member read, so a rewrite that
     // changed the text without changing the AST would land right back here.
     const compiled = transformTemplates(src, 'component.tsx', {
       format: 'jsx',
+      propsDestructure: false,
       runtimeModule: '@fluixi/dom',
       signalModule: '@fluixi/dom',
       controlFlowModule: '@fluixi/dom',

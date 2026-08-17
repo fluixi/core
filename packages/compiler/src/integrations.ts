@@ -372,7 +372,7 @@ function transformOptions(options: CompilerOptions) {
  * transform instead, which is why only this branch needs it.
  */
 async function rewriteProps(code: string, id: string, options: CompilerOptions) {
-  if (!options.propsDestructure) return code;
+  if (options.propsDestructure === false) return code;
   const { transformProps } = await import('./transform/index.js');
   const result = transformProps(code, id);
   // Untouched source comes back identical, so nothing pays for the option being on.

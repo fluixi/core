@@ -75,21 +75,21 @@ describe('bundler adapters', () => {
 describe('propsDestructure', () => {
   const COMPONENT = 'export function Card({ title }) { return <h1>{title}</h1>; }';
 
-  it('is off unless asked for, so nothing changes under it', async () => {
+  it('rewrites the props read without being asked', async () => {
     const p: any = createVitePlugin(OPTS);
-    const out = await p.transform(COMPONENT, 'card.tsx');
-    expect(out.code).toContain('title');
-    expect(out.code).not.toContain('props.title');
-  });
-
-  it('rewrites the props read when turned on', async () => {
-    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
     const out = await p.transform(COMPONENT, 'card.tsx');
     expect(out.code).toContain('props.title');
   });
 
+  it('can be turned off, for a package that ships its source', async () => {
+    const p: any = createVitePlugin({ ...OPTS, propsDestructure: false });
+    const out = await p.transform(COMPONENT, 'card.tsx');
+    expect(out.code).not.toContain('props.title');
+    expect(out.code).toContain('title');
+  });
+
   it('rewrites an html template the same way', async () => {
-    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const p: any = createVitePlugin(OPTS);
     const out = await p.transform(
       'export function Card({ title }) { return html`<h1>${title}</h1>`; }',
       'card.tsx',
@@ -98,7 +98,7 @@ describe('propsDestructure', () => {
   });
 
   it('writes the splitProps call for a rest element', async () => {
-    const p: any = createVitePlugin({ ...OPTS, propsDestructure: true });
+    const p: any = createVitePlugin(OPTS);
     const out = await p.transform(
       'export function Card({ title, ...rest }) { return <h1 {...rest}>{title}</h1>; }',
       'card.tsx',
@@ -109,8 +109,8 @@ describe('propsDestructure', () => {
 
   it('leaves a file it cannot rewrite exactly as it was', async () => {
     const unsafe = 'export function Card({ title, id = makeId() }) { return <h1 id={id}>{title}</h1>; }';
-    const on: any = createVitePlugin({ ...OPTS, propsDestructure: true });
-    const off: any = createVitePlugin(OPTS);
+    const on: any = createVitePlugin(OPTS);
+    const off: any = createVitePlugin({ ...OPTS, propsDestructure: false });
     expect((await on.transform(unsafe, 'card.tsx')).code).toBe((await off.transform(unsafe, 'card.tsx')).code);
   });
 });

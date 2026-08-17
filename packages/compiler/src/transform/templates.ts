@@ -61,7 +61,7 @@ export interface TransformOptions extends CompileTemplateOptions {
    * `function Card({ title })` keeps updating instead of reading `title` once.
    * The edits go into the same string as the template edits, so the map still points
    * at what the author wrote.
-   * @default false
+   * @default true
    */
   propsDestructure?: boolean;
   /**
@@ -332,9 +332,10 @@ export function transformTemplates(
   });
   // Props first: holes are sliced out of the function body, so the rewrite has to be
   // in the edit list before any template is compiled.
-  const props = options.propsDestructure
-    ? collectPropsEdits(ast.program, code, { runtimeModule: options.runtimeModule })
-    : { edits: [], diagnostics: [], used: new Set<string>() };
+  const props =
+    options.propsDestructure === false
+      ? { edits: [], diagnostics: [], used: new Set<string>() }
+      : collectPropsEdits(ast.program, code, { runtimeModule: options.runtimeModule });
 
   // `$signal(…)` → `createSignal(…)`. Same edit list, so the callee is already rewritten
   // by the time a template slices a hole containing one.
