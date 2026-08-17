@@ -4,7 +4,7 @@
 
 # @fluixi/core
 
-**A modern, reactive UI framework with fine-grained reactivity, routing and SSR.**
+**A compiler-native reactive framework. The compiler knows what's reactive, so you write ordinary TypeScript.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -12,18 +12,20 @@
 
 ---
 
-A modern, reactive UI framework with JSX, fine-grained reactivity, routing and SSR. Components compile to direct DOM operations — no virtual DOM, surgical updates.
+Most reactive frameworks ask you to keep a model in your head that the language doesn't share: which reads are tracked, what you may not destructure, where a value has to stay a function. The compiler can't help, because it doesn't know what your values are — so the burden is yours, and the failures are quiet ones.
+
+Fluixi's compiler knows. It resolves a reactive primitive by the binding it came from, not by how the name reads, and carries that through JSX and `` html`` `` templates, the DOM it generates, SSR, hydration and routing as one model.
 
 ## Features
 
-- 🚀 **Fine-grained Reactivity** - Signals and memos drive surgical DOM updates, no virtual DOM
-- 🧩 **JSX** - Compiled to direct DOM instructions via `@fluixi/vite-plugin`
-- 🔄 **Control Flow Components** - Show, For, Switch, Portal, and Dynamic
-- 🛣️ **Built-in Router** - Client-side routing with nested routes and lazy loading
-- 📡 **Resource Management** - Async data fetching with automatic loading states + Suspense
-- 🎭 **Context API** - Share state across component trees without prop drilling
-- 🖥️ **SSR + Hydration** - Server rendering with flash-free hydration (via `@fluixi/start`)
-- 🏗️ **TypeScript First** - Full type safety and excellent IDE support
+- 🧠 **The compiler understands reactivity** - resolves primitives by binding, not by name; an alias is recognised, a same-named local function is not
+- ✂️ **Destructure your props** - `function Card({ title })` keeps updating; `...rest` becomes the `splitProps` call you'd have written
+- ✍️ **Two syntaxes, one model** - JSX and `` html`` `` templates compile to the same reactive representation
+- 🚀 **Direct DOM** - a change runs the binding that depends on it; no component re-render, no diff, no virtual tree
+- ⏳ **Load strategies** - `load:visible`, `load:idle`, `load:interaction`, `load:media` split a component into its own chunk
+- 🛣️ **Router, SSR and hydration** - the same reactive graph end to end, not agreed at the edges
+- 📡 **Resources + Suspense** - async data with loading/error state, awaited and seeded during SSR
+- 🏗️ **TypeScript first** - full types, and a language-service plugin for `` html`` `` templates
 
 ## Installation
 
@@ -47,23 +49,25 @@ npm create fluixi my-app
 ### Basic Example
 
 ```tsx
-import { createSignal, render } from '@fluixi/core';
+import { render } from '@fluixi/core';
 
 const Counter = () => {
-  const [count, setCount] = createSignal(0);
+  const count = $signal(0);
 
   return (
     <div>
       <h1>Count: {count()}</h1>
-      <button onClick={() => setCount(count() + 1)}>Increment</button>
-      <button onClick={() => setCount(count() - 1)}>Decrement</button>
-      <button onClick={() => setCount(0)}>Reset</button>
+      <button onClick={() => count.set(count() + 1)}>Increment</button>
+      <button onClick={() => count.set(count() - 1)}>Decrement</button>
+      <button onClick={() => count.set(0)}>Reset</button>
     </div>
   );
 };
 
 render(() => <Counter />, document.getElementById('app')!);
 ```
+
+`$signal` needs no import — the compiler resolves it and adds what it needs. `signal(0)` from `@fluixi/reactive/signal` is the same primitive when you'd rather import it, and works in a package that never runs this compiler.
 
 > JSX is compiled by `@fluixi/vite-plugin`. Scaffold a ready-to-run app with `npm create fluixi`.
 
@@ -74,30 +78,48 @@ render(() => <Counter />, document.getElementById('app')!);
 Signals are reactive state. Reading one inside an effect or JSX subscribes to it; setting it updates only what depends on it.
 
 ```tsx
-import { createSignal, createEffect } from '@fluixi/core';
+const count = $signal(0);
+const name = $signal('Alice');
 
-const [count, setCount] = createSignal(0);
-const [name, setName] = createSignal('Alice');
-
-createEffect(() => {
+$effect(() => {
   console.log(`${name()} counted to ${count()}`);
 });
 
-setCount(5);      // "Alice counted to 5"
-setName('Bob');   // "Bob counted to 5"
+count.set(5);      // "Alice counted to 5"
+name.set('Bob');   // "Bob counted to 5"
 ```
+
+Call it to read, `.set()` to write. `$memo` derives, `$store` holds an object you read
+properties off, `$resource` wraps async data. Each has an importable twin — `signal`,
+`memo`, `effect`, `store`, `resource` from `@fluixi/reactive/signal` — and they are the
+same primitives, so the two spellings mix freely in one file.
+
+`createSignal` and its `[read, write]` pair are unchanged, and plenty of code is written
+against them.
 
 ### Components
 
-Components are plain functions that return JSX. Props are reactive — read them where you use them.
+Components are plain functions that return JSX. A component runs **once**; props are live
+reads rather than values handed over at call time.
 
 ```tsx
 function Greeting(props: { name: string }) {
   return <h1>Hello, {props.name}!</h1>;
 }
-
-// <Greeting name="World" />
 ```
+
+Destructuring them is fine — the compiler rewrites the bindings into reads, so they keep
+updating, and `...rest` becomes the `splitProps` call you would have written:
+
+```tsx
+function Card({ title, tone = 'calm', ...rest }) {
+  return <article data-tone={tone} {...rest}><h2>{title}</h2></article>;
+}
+```
+
+Where it can't prove a rewrite is safe — a reassigned binding, a computed key, a default
+it would have to re-run on every read — it leaves your code exactly as written and says
+why at build time.
 
 ### Control Flow
 
@@ -126,16 +148,51 @@ import { Show, For, Switch, Match } from '@fluixi/core';
 
 `Portal`, `Dynamic`, `Index`, and `ErrorBoundary` are also exported.
 
+### Load strategies
+
+A `load:` directive decides *when* a component's module is fetched, and moves it into its
+own chunk:
+
+```tsx
+import { RevenueChart } from './RevenueChart';
+
+<RevenueChart load:visible="200px" />   // when it scrolls near the viewport
+<ExportDialog load:interaction />       // on first pointer, focus or key
+<AuditLog load:media="(min-width: 1024px)" />
+<Panel load:idle />
+```
+
+Deferring replaces your static import with a dynamic one, so it applies when the name is
+used only as a tag. Reference it as a value too and the import stays — the build says so
+rather than silently shipping the chunk eagerly.
+
+### `` html`` `` templates
+
+The same reactive model without configuring JSX — useful in a library, a script, or a
+plain-TypeScript codebase:
+
+```ts
+import { html } from '@fluixi/core';
+
+function Counter() {
+  const n = $signal(0);
+  return html`<button @click=${() => n.set(n() + 1)}>${n()}</button>`;
+}
+```
+
+Both syntaxes compile to the same representation; `@fluixi/ts-plugin` gives templates
+hover, completion and type-checking in the editor.
+
 ### Resources & Suspense
 
 `createResource` fetches async data and tracks loading/error. `<Suspense>` shows a fallback while it's pending (works on the client and during SSR).
 
 ```tsx
-import { createSignal, createResource, Suspense } from '@fluixi/core';
+import { Suspense } from '@fluixi/core';
 
 function UserCard() {
-  const [id] = createSignal(1);
-  const [user] = createResource(id, (id) =>
+  const id = $signal(1);
+  const user = $resource(id, (id) =>
     fetch(`/api/users/${id}`).then((r) => r.json())
   );
 
@@ -203,10 +260,10 @@ render(() => <Router routes={routes} />, document.getElementById('app')!);
 import { onMount, onCleanup } from '@fluixi/core';
 
 function Clock() {
-  const [now, setNow] = createSignal(Date.now());
+  const now = $signal(Date.now());
 
   onMount(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => now.set(Date.now()), 1000);
     onCleanup(() => clearInterval(id));
   });
 
@@ -217,18 +274,18 @@ function Clock() {
 ## Derived State & Batching
 
 ```tsx
-import { createSignal, createMemo, batch } from '@fluixi/core';
+import { batch } from '@fluixi/core';
 
-const [first, setFirst] = createSignal('Ada');
-const [last, setLast] = createSignal('Lovelace');
+const first = $signal('Ada');
+const last = $signal('Lovelace');
 
 // Memo — cached, recomputes only when a dependency changes
-const fullName = createMemo(() => `${first()} ${last()}`);
+const fullName = $memo(() => `${first()} ${last()}`);
 
 // Batch — coalesce multiple writes into one update
 batch(() => {
-  setFirst('Grace');
-  setLast('Hopper');
+  first.set('Grace');
+  last.set('Hopper');
 });
 ```
 
@@ -254,11 +311,19 @@ Fluixi is written in TypeScript and ships full types. Configure JSX in your `tsc
 | Package | Purpose |
 | --- | --- |
 | `@fluixi/core` | Framework façade — components, control flow, router, render |
-| `@fluixi/reactive` | Signals, memos, effects, store |
+| `@fluixi/reactive` | Signals, memos, effects, store — usable on its own |
 | `@fluixi/dom` | The DOM rendering runtime |
-| `@fluixi/start` | SSR, hydration, file routing, dev/build |
-| `@fluixi/vite-plugin` | JSX compile (Vite) |
-| `create-fluixi` | App scaffolder (`npm create fluixi`) |
+| `@fluixi/compiler` | JSX and `` html`` `` → IR → direct DOM calls |
+| `@fluixi/vite-plugin` | The compiler as a Vite plugin (rollup, esbuild and webpack adapters too) |
+| `@fluixi/start` | SSR, streaming, SSG, file routing, server functions, deploy adapters |
+| `@fluixi/router` | The routing core |
+| `@fluixi/server` | Server rendering |
+| `@fluixi/head` | Document head and SEO |
+| `@fluixi/ts-plugin` | Editor support for `` html`` `` templates |
+| `@fluixi/template-parser` | The `` html`` `` parser, standalone |
+| `@fluixi/auth` · `@fluixi/session` | Auth bindings and sessions |
+| `@fluixi/testing` · `@fluixi/devtools` | Test helpers, reactive-graph devtools |
+| `@fluixi/cli` · `create-fluixi` | Generators and the app scaffolder |
 
 ## License
 
