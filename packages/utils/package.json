@@ -26,23 +26,11 @@
         "require": "./dist/lib/primitive/index.cjs",
         "default": "./dist/lib/primitive/index.js"
       },
-      "./primitive/types": {
-        "types": "./dist/lib/primitive/types/index.d.ts",
-        "import": "./dist/lib/primitive/types/index.mjs",
-        "require": "./dist/lib/primitive/types/index.cjs",
-        "default": "./dist/lib/primitive/types/index.js"
-      },
       "./object": {
         "types": "./dist/lib/object/index.d.ts",
         "import": "./dist/lib/object/index.mjs",
         "require": "./dist/lib/object/index.cjs",
         "default": "./dist/lib/object/index.js"
-      },
-      "./object/types": {
-        "types": "./dist/lib/object/types/index.d.ts",
-        "import": "./dist/lib/object/types/index.mjs",
-        "require": "./dist/lib/object/types/index.cjs",
-        "default": "./dist/lib/object/types/index.js"
       },
       "./maths": {
         "types": "./dist/lib/maths/index.d.ts",
@@ -80,12 +68,6 @@
         "require": "./dist/lib/dom/index.cjs",
         "default": "./dist/lib/dom/index.js"
       },
-      "./dom/types": {
-        "types": "./dist/lib/dom/types/index.d.ts",
-        "import": "./dist/lib/dom/types/index.mjs",
-        "require": "./dist/lib/dom/types/index.cjs",
-        "default": "./dist/lib/dom/types/index.js"
-      },
       "./functions": {
         "types": "./dist/lib/functions/index.d.ts",
         "import": "./dist/lib/functions/index.mjs",
@@ -98,23 +80,11 @@
         "require": "./dist/lib/compare/index.cjs",
         "default": "./dist/lib/compare/index.js"
       },
-      "./functions/types": {
-        "types": "./dist/lib/functions/types/index.d.ts",
-        "import": "./dist/lib/functions/types/index.mjs",
-        "require": "./dist/lib/functions/types/index.cjs",
-        "default": "./dist/lib/functions/types/index.js"
-      },
       "./array": {
         "types": "./dist/lib/array/index.d.ts",
         "import": "./dist/lib/array/index.mjs",
         "require": "./dist/lib/array/index.cjs",
         "default": "./dist/lib/array/index.js"
-      },
-      "./array/types": {
-        "types": "./dist/lib/array/types/index.d.ts",
-        "import": "./dist/lib/array/types/index.mjs",
-        "require": "./dist/lib/array/types/index.cjs",
-        "default": "./dist/lib/array/types/index.js"
       },
       "./color": {
         "types": "./dist/lib/color/index.d.ts",
@@ -150,26 +120,12 @@
       "require": "./dist/lib/primitive/index.cjs",
       "default": "./dist/lib/primitive/index.js"
     },
-    "./primitive/types": {
-      "development": "./src/lib/primitive/types/index.ts",
-      "types": "./dist/lib/primitive/types/index.d.ts",
-      "import": "./dist/lib/primitive/types/index.mjs",
-      "require": "./dist/lib/primitive/types/index.cjs",
-      "default": "./dist/lib/primitive/types/index.js"
-    },
     "./object": {
       "development": "./src/lib/object/index.ts",
       "types": "./dist/lib/object/index.d.ts",
       "import": "./dist/lib/object/index.mjs",
       "require": "./dist/lib/object/index.cjs",
       "default": "./dist/lib/object/index.js"
-    },
-    "./object/types": {
-      "development": "./src/lib/object/types/index.ts",
-      "types": "./dist/lib/object/types/index.d.ts",
-      "import": "./dist/lib/object/types/index.mjs",
-      "require": "./dist/lib/object/types/index.cjs",
-      "default": "./dist/lib/object/types/index.js"
     },
     "./maths": {
       "development": "./src/lib/maths/index.ts",
@@ -213,13 +169,6 @@
       "require": "./dist/lib/dom/index.cjs",
       "default": "./dist/lib/dom/index.js"
     },
-    "./dom/types": {
-      "development": "./src/lib/dom/types/index.ts",
-      "types": "./dist/lib/dom/types/index.d.ts",
-      "import": "./dist/lib/dom/types/index.mjs",
-      "require": "./dist/lib/dom/types/index.cjs",
-      "default": "./dist/lib/dom/types/index.js"
-    },
     "./functions": {
       "development": "./src/lib/functions/index.ts",
       "types": "./dist/lib/functions/index.d.ts",
@@ -234,26 +183,12 @@
       "require": "./dist/lib/compare/index.cjs",
       "default": "./dist/lib/compare/index.js"
     },
-    "./functions/types": {
-      "development": "./src/lib/functions/types/index.ts",
-      "types": "./dist/lib/functions/types/index.d.ts",
-      "import": "./dist/lib/functions/types/index.mjs",
-      "require": "./dist/lib/functions/types/index.cjs",
-      "default": "./dist/lib/functions/types/index.js"
-    },
     "./array": {
       "development": "./src/lib/array/index.ts",
       "types": "./dist/lib/array/index.d.ts",
       "import": "./dist/lib/array/index.mjs",
       "require": "./dist/lib/array/index.cjs",
       "default": "./dist/lib/array/index.js"
-    },
-    "./array/types": {
-      "development": "./src/lib/array/types/index.ts",
-      "types": "./dist/lib/array/types/index.d.ts",
-      "import": "./dist/lib/array/types/index.mjs",
-      "require": "./dist/lib/array/types/index.cjs",
-      "default": "./dist/lib/array/types/index.js"
     },
     "./color": {
       "development": "./src/lib/color/index.ts",

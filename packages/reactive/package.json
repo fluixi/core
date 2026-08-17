@@ -21,12 +21,6 @@
         "require": "./dist/lib/observable/index.cjs",
         "default": "./dist/lib/observable/index.js"
       },
-      "./helpers": {
-        "types": "./dist/lib/helpers/index.d.ts",
-        "import": "./dist/lib/helpers/index.mjs",
-        "require": "./dist/lib/helpers/index.cjs",
-        "default": "./dist/lib/helpers/index.js"
-      },
       "./store": {
         "types": "./dist/lib/store/index.d.ts",
         "import": "./dist/lib/store/index.mjs",
@@ -98,13 +92,6 @@
       "import": "./dist/lib/observable/index.mjs",
       "require": "./dist/lib/observable/index.cjs",
       "default": "./dist/lib/observable/index.js"
-    },
-    "./helpers": {
-      "development": "./src/lib/helpers/index.ts",
-      "types": "./dist/lib/helpers/index.d.ts",
-      "import": "./dist/lib/helpers/index.mjs",
-      "require": "./dist/lib/helpers/index.cjs",
-      "default": "./dist/lib/helpers/index.js"
     },
     "./store": {
       "development": "./src/lib/store/index.ts",
