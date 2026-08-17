@@ -379,11 +379,49 @@ async function rewriteProps(code: string, id: string, options: CompilerOptions) 
   return result.rewritten > 0 ? result.code : code;
 }
 
+/**
+ * Warnings already printed, so a watch rebuild doesn't repeat them.
+ *
+ * A module is transformed again on every edit to it or its importers, and the same
+ * warning ten times reads as ten problems. Cleared when the message changes, which is
+ * the only thing worth re-printing.
+ */
+const reported = new Set<string>();
+
+/**
+ * Say what the compiler refused to do.
+ *
+ * Both of these build cleanly and fail at runtime, which is why they are worth printing: an
+ * unresolved tag renders nothing, and a `load:` it cannot act on ships the chunk eagerly.
+ * Neither leaves a trace anywhere else.
+ *
+ * `console.warn`, deliberately, not a plugin's `this.warn`: that only exists in the
+ * rollup/vite context, and this runs for the esbuild and webpack adapters too. A
+ * diagnostic that only some bundlers get is worse than one that is plainly ours.
+ */
+function reportDiagnostics(result: unknown, id: string): void {
+  const r = result as {
+    loadDiagnostics?: { message: string }[];
+    unresolvedDiagnostics?: { message: string }[];
+  } | null;
+  const say = (message: string): void => {
+    const key = `${id}\u0000${message}`;
+    if (reported.has(key)) return;
+    reported.add(key);
+    console.warn(`[fluixi] ${id}: ${message}`);
+  };
+
+  for (const d of r?.unresolvedDiagnostics ?? []) say(d.message);
+  for (const d of r?.loadDiagnostics ?? []) say(d.message);
+}
+
 /** Compile one module, through babel only when asked for it. */
 async function compileModule(code: string, id: string, options: CompilerOptions) {
   if (!options.babel) {
     const { transformTemplates } = await import('./transform/index.js');
-    return transformTemplates(code, id, transformOptions(options));
+    const result = transformTemplates(code, id, transformOptions(options));
+    reportDiagnostics(result, id);
+    return result;
   }
 
   const source = await rewriteProps(code, id, options);

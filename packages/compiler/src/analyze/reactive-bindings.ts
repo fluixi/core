@@ -106,6 +106,46 @@ function classify(id: Node, returns: Intrinsic['returns'], kinds: Map<string, Re
 }
 
 /**
+ * Every name the module binds, in any scope.
+ *
+ * Deliberately scope-blind: it answers "does this file declare this name anywhere", which
+ * is the question a diagnostic needs. A component declared inside a function
+ * (`const Row = () => …`) is bound just as much as an import, and warning about it would
+ * be noise. Over-permissive on purpose — missing a warning beats inventing one.
+ */
+export function declaredNames(program: unknown): Set<string> {
+  const names = new Set<string>();
+
+  walk(program as Node, (node) => {
+    switch (node.type) {
+      case 'VariableDeclarator':
+        patternNames(node.id as Node, names);
+        return;
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+      case 'ArrowFunctionExpression':
+        patternNames(node.id as Node, names);
+        for (const p of (node.params as Node[]) ?? []) patternNames(p, names);
+        return;
+      case 'ClassDeclaration':
+      case 'ClassExpression':
+        patternNames(node.id as Node, names);
+        return;
+      case 'ImportSpecifier':
+      case 'ImportDefaultSpecifier':
+      case 'ImportNamespaceSpecifier':
+        patternNames(node.local as Node, names);
+        return;
+      case 'CatchClause':
+        patternNames(node.param as Node, names);
+        return;
+    }
+  });
+
+  return names;
+}
+
+/**
  * Read a module's reactive bindings.
  *
  * Two passes, because a call can only be classified once its callee is known: imports

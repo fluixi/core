@@ -26,6 +26,7 @@ import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
+import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
 
 interface Node {
@@ -71,6 +72,19 @@ export interface TransformOptions extends CompileTemplateOptions {
   intrinsics?: boolean;
 }
 
+export interface UnresolvedDiagnostic {
+  /** The tag nothing supplies. */
+  name: string;
+  message: string;
+}
+
+export interface LoadDiagnostic {
+  /** The component the directive was written on. */
+  name: string;
+  strategy: IRLoadStrategy;
+  message: string;
+}
+
 export interface TransformResult {
   code: string;
   map: ReturnType<MagicString['generateMap']>;
@@ -78,6 +92,10 @@ export interface TransformResult {
   propsDiagnostics?: PropsDiagnostic[];
   /** `$` names the module bound itself, so the intrinsic did not fire. */
   intrinsicDiagnostics?: IntrinsicDiagnostic[];
+  /** `load:` directives that could not take effect, and why. */
+  loadDiagnostics?: LoadDiagnostic[];
+  /** Capitalised tags nothing supplies — they compile to an undefined reference. */
+  unresolvedDiagnostics?: UnresolvedDiagnostic[];
 }
 
 // Which builtin comes from which module is published by resolve/builtins.ts —
@@ -214,9 +232,35 @@ interface Needs {
   /** Names supplied lazily, as a `deferred(() => import(…))` binding. */
   deferred: Map<string, IRComponentSource>;
   delegatedEvents: Set<string>;
+  /**
+   * Capitalised tags nothing supplies and nothing binds.
+   *
+   * These compile to a reference to an identifier that does not exist. The build
+   * succeeds — the emitted `createComponent(Summary, …)` is just a free variable — and
+   * the page renders nothing where the component should be. Commenting one line out of a
+   * `resolve` map is enough to cause it, which is exactly why it needs saying.
+   */
+  unresolved: Set<string>;
+  /** Every name the file binds, in any scope — so a diagnostic doesn't fire on them. */
+  declared: Set<string>;
+  /**
+   * Components carrying a deferring `load:` that could not be acted on, because the
+   * compiler does not supply the binding.
+   *
+   * Deferring means the compiler *creates* the reference as a dynamic import. A name the
+   * author imported is already in the module graph, and rewriting that import away is
+   * not something this pass does — so the directive has no effect. Silently, which is
+   * the problem: the build succeeds, the chunk ships eagerly, and the only symptom is
+   * code that was never split.
+   */
+  ignoredLoad: Map<string, IRLoadStrategy>;
 }
 
 function collectNeeds(node: IRNode, out: Needs): void {
+  if (node.kind === 'component' && node.load && !node.source && isDeferred(node.load)) {
+    // One report per name, not one per usage.
+    if (!out.ignoredLoad.has(node.name)) out.ignoredLoad.set(node.name, node.load);
+  }
   if (node.kind === 'component' && node.source) {
     const src = node.source;
     if (src.origin === 'builtin') out.builtins.add(node.name);
@@ -318,6 +362,8 @@ export function transformTemplates(
   const used = new Set<string>(props.used);
   const needs: Needs = {
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
+    ignoredLoad: new Map(), unresolved: new Set(),
+    declared: declaredNames(ast.program),
   };
   const hoisted = new Map<string, string>();
   const edits: Edit[] = [...props.edits, ...intrinsics.edits];
@@ -366,9 +412,31 @@ export function transformTemplates(
     }
   }
 
+  const loadDiagnostics = [...needs.ignoredLoad].map(([name, strategy]) => ({
+    name,
+    strategy,
+    // Two different situations with two different fixes, so say which one this is.
+    message: bound.has(name)
+      ? `load:${strategy.kind} has no effect on <${name}>: the module is already imported here, ` +
+        `so it ships with this chunk. Drop the import and let a \`resolve\` rule supply ${name} ` +
+        `for the compiler to defer it.`
+      : `load:${strategy.kind} has no effect on <${name}>: nothing supplies that name, so there is ` +
+        `no import for the compiler to defer. Add a \`resolve\` rule for ${name}.`,
+  }));
+
+  const unresolvedDiagnostics = [...needs.unresolved].map((name) => ({
+    name,
+    message:
+      `<${name}> is not defined: nothing imports it and no \`resolve\` rule supplies it. ` +
+      `This compiles to a reference to a name that does not exist, so the component renders ` +
+      `nothing. Import ${name}, or add a \`resolve\` rule for it.`,
+  }));
+
   return {
     code: out.toString(),
     map: out.generateMap({ source: id, includeContent: true, hires: true }),
+    ...(loadDiagnostics.length ? { loadDiagnostics } : {}),
+    ...(unresolvedDiagnostics.length ? { unresolvedDiagnostics } : {}),
     ...(props.diagnostics.length ? { propsDiagnostics: props.diagnostics } : {}),
     ...(intrinsics.diagnostics.length ? { intrinsicDiagnostics: intrinsics.diagnostics } : {}),
   };
@@ -394,8 +462,11 @@ function compileJsx(
     used,
   });
   analyzeStatic(ir);
-  resolveComponentSources(ir, {
+  const report = resolveComponentSources(ir, {
     resolver: createComponentResolver(options.resolve ?? []),
+    // Without this the pass calls every author-imported component unresolved, and the
+    // report is unusable for diagnostics.
+    isBound: (name) => needs.declared.has(name),
     modules: {
       controlFlowModule: options.controlFlowModule ?? options.runtimeModule ?? '@fluixi/dom',
       coreModule: options.coreModule ?? '@fluixi/core',
@@ -403,6 +474,7 @@ function compileJsx(
     },
     strategyFor: (n) => n.load,
   });
+  for (const name of report.unresolved) needs.unresolved.add(name);
   collapseStrategies(ir);
   const emitted = imperativeBackend.emit(ir, {
     templateClone: options.templateClone ?? true,
