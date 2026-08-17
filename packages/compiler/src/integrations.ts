@@ -102,11 +102,10 @@ export interface CompilerOptions {
    * compiled. A pattern it can't prove is left as written, so `splitProps` keeps
    * working wherever it's still needed.
    *
-   * Off while we shake it out. Known gap before it can default on: when it rewrites a
-   * file the emitted map points at the rewritten source, not the author's, because the
-   * two passes each build their own map and nothing chains them yet.
+   * Turn it off for a package that ships its source to be compiled by the consumer —
+   * rewriting there would bake property reads into what you publish.
    *
-   * @default false
+   * @default true
    */
   propsDestructure?: boolean;
 

@@ -55,7 +55,7 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | `signalModule` / `controlFlowModule` | `@fluixi/dom` | where emitted runtime symbols come from |
 | `resolve` | – | rules that supply a component import from a bare tag |
 | `globals` | `fluixi.d.ts` | where to write the generated ambient types (the resolved components and the `$signal`-style intrinsics). `false` skips it |
-| `propsDestructure` | `false` | rewrite a component's destructured props into property reads, so `function Card({ title })` keeps updating. Off while it's shaken out — a pattern it can't prove is left as written |
+| `propsDestructure` | `true` | rewrite a component's destructured props into property reads, so `function Card({ title })` keeps updating. A pattern it can't prove is left as written. Turn off for a package that ships its source |
 | `templateClone` / `partialTemplates` | `true` | clone static subtrees instead of building them |
 | `delegateEvents` | `true` | event delegation |
 | `sourceMaps` | `true` | emit source maps |

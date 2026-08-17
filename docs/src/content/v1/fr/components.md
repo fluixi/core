@@ -29,13 +29,7 @@ du JavaScript ordinaire, pas une règle inventée par Fluixi.
 
 ### Déstructurer quand même
 
-Activez `propsDestructure` et le compilateur retransforme les liaisons en lectures, ce qui rend
-la syntaxe simple utilisable :
-
-```tsx
-// vite.config.ts
-fluixi({ propsDestructure: true })
-```
+Le compilateur retransforme ces liaisons en lectures, ce qui rend la syntaxe simple utilisable :
 
 ```tsx
 function Hello({ name, tone = 'calm' }) {
@@ -44,8 +38,12 @@ function Hello({ name, tone = 'calm' }) {
 ```
 
 Le compilateur écrit `props.name` à chaque usage : la liaison garde son type, donc rien d'autre
-ne change dans la fonction. Alias, valeurs par défaut et motifs imbriqués fonctionnent, et une
-valeur par défaut ne s'applique toujours qu'à `undefined`, exactement comme en JavaScript.
+ne change dans la fonction. C'est actif par défaut ; `fluixi({ propsDestructure: false })` le
+désactive, ce qu'il faut pour un paquet qui publie ses sources afin que le consommateur les
+compile.
+
+Alias, valeurs par défaut et motifs imbriqués fonctionnent, et une valeur par défaut ne
+s'applique toujours qu'à `undefined`, exactement comme en JavaScript.
 
 `...rest` devient l'appel à `splitProps` que vous auriez écrit :
 

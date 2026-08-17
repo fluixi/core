@@ -28,13 +28,7 @@ ordinary JavaScript, not a rule Fluixi invented.
 
 ### Destructuring anyway
 
-Turn `propsDestructure` on and the compiler rewrites the bindings back into reads, so the plain
-syntax keeps working:
-
-```tsx
-// vite.config.ts
-fluixi({ propsDestructure: true })
-```
+The compiler rewrites those bindings back into reads, so the plain syntax keeps working:
 
 ```tsx
 function Hello({ name, tone = 'calm' }) {
@@ -43,8 +37,11 @@ function Hello({ name, tone = 'calm' }) {
 ```
 
 It compiles to `props.name` at each use — the binding keeps its type, so nothing else about the
-function changes. Aliases, defaults and nested patterns all work, and a default still applies
-only to `undefined`, exactly as it would in JavaScript.
+function changes. This is on by default; `fluixi({ propsDestructure: false })` turns it off, which
+you want for a package that ships its source for consumers to compile.
+
+Aliases, defaults and nested patterns all work, and a default still applies only to `undefined`,
+exactly as it would in JavaScript.
 
 `...rest` becomes the `splitProps` call you would have written:
 

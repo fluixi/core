@@ -46,9 +46,8 @@ Beyond turning markup into DOM calls:
 `props.title` at each use, so the binding keeps updating, and `...rest` becomes the
 `splitProps` call you would have written. Anything it can't prove safe — a reassigned
 binding, a computed key, a default it would have to re-run per read — is left exactly as
-written and reported. On by default; turn `propsDestructure: false` on for a package that
-ships its **source** for consumers to compile, since the rewrite is a property of how code
-is compiled.
+written and reported. On by default; set `propsDestructure: false` for a package that ships
+its **source** for consumers to compile, since the rewrite belongs to whoever compiles.
 
 **`$` intrinsics resolve without an import.** `$signal`, `$memo`, `$effect`, `$store`,
 `$resource`, `$selector`, `$deferred`, `$untrack`, `$untrackStore` compile to the runtime
