@@ -1,5 +1,20 @@
 # @fluixi/example-start
 
+## 0.0.1-alpha.68
+
+### Patch Changes
+
+- Updated dependencies [017317d]
+- Updated dependencies [daa47d7]
+- Updated dependencies [e837607]
+  - @fluixi/dom@1.0.0-alpha.77
+  - @fluixi/reactive@1.0.0-alpha.77
+  - @fluixi/start@0.1.0-alpha.67
+  - @fluixi/cli@0.1.0-alpha.68
+  - @fluixi/core@1.0.0-alpha.77
+  - @fluixi/jsx@1.0.0-alpha.77
+  - @fluixi/server@1.0.0-alpha.77
+
 ## 0.0.1-alpha.67
 
 ### Patch Changes

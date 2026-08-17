@@ -1,5 +1,23 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.77
+
+### Patch Changes
+
+- 017317d: Remove export subpaths that pointed at modules that were never there. `@fluixi/dom/dom`,
+  `@fluixi/reactive/helpers` and `@fluixi/utils/{array,object,primitive,dom,functions}/types`
+  all failed to resolve, so nothing could have been importing them.
+
+  Also fixes `@fluixi/dom/control-flow` in `publishConfig.exports`, which still pointed at
+  the old path — the dev export map was corrected but the published one is what npm reads.
+
+- daa47d7: Fix the `@fluixi/dom/control-flow` export, which pointed at a file that does not exist
+  (`lib/dom/control-flow`) and failed to resolve. It resolves to the control-flow module
+  now — `Show`, `For`, `Index`, `Switch`, `Match`, `Dynamic`, `Portal`, `ClientOnly`,
+  `ErrorBoundary`, `classMap`, `styleMap` and the array helpers.
+- Updated dependencies [017317d]
+  - @fluixi/reactive@1.0.0-alpha.77
+
 ## 1.0.0-alpha.76
 
 ### Patch Changes

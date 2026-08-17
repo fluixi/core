@@ -1,5 +1,14 @@
 # @fluixi/babel-plugin-jsx
 
+## 1.0.0-alpha.77
+
+### Patch Changes
+
+- Updated dependencies [d93fdf3]
+- Updated dependencies [56bb9b9]
+- Updated dependencies [5691dc5]
+  - @fluixi/compiler@1.0.0-alpha.77
+
 ## 1.0.0-alpha.76
 
 ### Patch Changes

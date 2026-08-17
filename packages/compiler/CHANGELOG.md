@@ -1,5 +1,53 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.77
+
+### Minor Changes
+
+- 56bb9b9: `load:` now works on a component you imported yourself.
+
+  It used to do nothing there: deferring means creating the reference as a dynamic
+  import, and a static one was already in the way. The static import is removed now and
+  the `deferred()` binding takes its place, so the chunk splits like any other.
+
+  Only when the name is used exclusively as a tag. JSX element names are
+  `JSXIdentifier`, so any `Identifier` reference at all — `register(Chart)`, a re-export,
+  `Chart.displayName` — means the import stands and the directive is reported instead,
+  since a lazy wrapper is not what those sites expect. Namespace imports and components
+  declared in the file are reported too: there is no single export to defer.
+
+  This reverses a prior rule that an author-written import always won. An import and a
+  `load:` on the same name are two instructions that cannot both hold, and the directive
+  is the more specific one.
+
+- 5691dc5: Turn `propsDestructure` on by default.
+
+  A component can take its props apart the plain way and the bindings stay live reads;
+  `...rest` becomes the `splitProps` call you would have written. What the rewrite can't
+  prove safe it leaves as written and reports.
+
+  **Turn it off for a package that ships its source** for consumers to compile — an
+  `exports` entry pointing at `.ts`. The rewrite is a property of how code is compiled,
+  so a consumer without the option would read those props once. Compiled output is fine
+  either way.
+
+### Patch Changes
+
+- d93fdf3: Say when a component reference or a `load:` directive can't work.
+
+  Both cases built cleanly and failed at runtime with no trace anywhere else:
+
+  - A capitalised tag nothing imports and no `resolve` rule supplies compiles to a
+    reference to a name that does not exist, so the component renders nothing.
+    Commenting one line out of a `resolve` map was enough.
+  - A deferring `load:` on a component the compiler doesn't supply is dropped, because
+    deferring means creating the binding as a dynamic import and there is nothing to
+    create. The chunk then ships eagerly, and nothing says so.
+
+  Both warn now, naming the component and which situation it is, since the fixes
+  differ. Warnings print once per message per module, so a watch rebuild doesn't
+  repeat them.
+
 ## 1.0.0-alpha.76
 
 ### Minor Changes
