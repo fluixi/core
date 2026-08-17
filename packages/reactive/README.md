@@ -4,7 +4,7 @@
 
 # @fluixi/reactive
 
-**Fine-grained reactive signals, memos, effects, stores and an RxJS-style observable layer.**
+**Fine-grained signals, memos, effects and stores on a TC39 Signals core — standalone, no framework required.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -13,7 +13,9 @@
 
 ---
 
-A powerful, fine-grained reactive system with SolidJS-inspired features for building high-performance applications.
+A fine-grained reactive system built on the **TC39 Signals** graph: glitch-free, lazy,
+push-pull. It has no DOM dependency and no framework dependency, so it works in the
+browser, on the server, or on its own.
 
 ## Features
 
@@ -51,27 +53,60 @@ npm install @fluixi/reactive
 ### Basic Usage
 
 ```typescript
-import { createSignal, createEffect, createMemo, batch } from '@fluixi/reactive';
+import { signal, memo, effect, batch } from '@fluixi/reactive';
 
-// Create reactive state
-const [count, setCount] = createSignal(0);
+// Reactive state — call it to read, .set() to write
+const count = signal(0);
 
 // Derived state (cached)
-const doubled = createMemo(() => count() * 2);
+const doubled = memo(() => count() * 2);
 
 // Side effects (auto-tracking)
-createEffect(() => {
+effect(() => {
   console.log(`Count: ${count()}, Doubled: ${doubled()}`);
 });
 
-// Update state
-setCount(1); // Effect runs: "Count: 1, Doubled: 2"
+count.set(1); // Effect runs: "Count: 1, Doubled: 2"
 
 // Batch multiple updates
 batch(() => {
-  setCount(2);
-  setCount(3);
+  count.set(2);
+  count.set(3);
 }); // Effect runs once: "Count: 3, Doubled: 6"
+```
+
+### The tuple form
+
+`createSignal` returns the same signal as a `[read, write]` pair, and `createMemo` /
+`createEffect` are `memo` / `effect` under their original names:
+
+```typescript
+import { createSignal, createMemo, createEffect } from '@fluixi/reactive';
+
+const [count, setCount] = createSignal(0);
+const doubled = createMemo(() => count() * 2);
+createEffect(() => console.log(count(), doubled()));
+setCount(1);
+```
+
+`signal` **is** the accessor `createSignal` returns with the setter attached, so a read is
+the same call either way. They track each other and mix freely in one module — pick
+whichever reads better, and keep the tuple when you want the halves apart.
+
+### Stores and resources
+
+```typescript
+import { store } from '@fluixi/reactive/store';
+import { resource } from '@fluixi/reactive/signal';
+
+const cart = store({ items: [], total: 0 });
+cart.total;                 // reading a property IS the reactive read
+cart.set('total', 42);      // only readers of `total` re-run
+
+const user = resource(() => fetch('/api/me').then((r) => r.json()));
+user();        // the value — suspends under a Suspense boundary
+user.loading;  // boolean
+user.refetch();
 ```
 
 ### Advanced Usage
@@ -252,22 +287,13 @@ Complete documentation available at:
 - [Quick Reference](../../my-docusaurus-app/docs/signal/quick-reference.md) - Quick lookup
 - [What's New](../../my-docusaurus-app/docs/signal/whats-new.md) - Latest enhancements
 
-## What's New (v3.2.0+)
+## Compiler intrinsics
 
-### Major Enhancements
-
-✨ **Priority-Based Scheduling** - Updates execute in optimal order  
-✨ **SolidJS-Style Batching** - New `runUpdates()` mechanism  
-✨ **Transitions API** - Non-blocking updates with `startTransition()`  
-✨ **Suspense Boundaries** - Declarative async with `createSuspense()`  
-✨ **Error Boundaries** - Graceful error handling with `catchError()`  
-✨ **Context API** - State sharing with `createContext()`  
-✨ **Enhanced Debugging** - Detailed warnings and performance metrics  
-✨ **Transition State Tracking** - Automatic priority in computations  
-
-### Breaking Changes
-
-**None!** All enhancements are 100% backward compatible.
+Inside an app compiled by `@fluixi/compiler`, these primitives have `$`-prefixed twins that
+need no import — `$signal`, `$memo`, `$effect`, `$store`, `$resource`. They compile to the
+calls above, so there is one reactive graph and no difference in behaviour. This package
+stays importable exactly as documented here, which is what a library that never runs the
+compiler needs.
 
 ## Performance Tips
 

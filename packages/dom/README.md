@@ -4,22 +4,24 @@
 
 # @fluixi/dom
 
-**Reactive DOM runtime with surgical fine-grained updates, SSR and lit-html integration.**
+**The DOM runtime the compiler targets — surgical fine-grained updates, hydration and SSR.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 [![npm](https://img.shields.io/npm/v/@fluixi/dom?logo=npm)](https://www.npmjs.com/package/@fluixi/dom)
-![lit-html](https://img.shields.io/badge/lit--html-compatible-324fff)
 
 ---
 
-A comprehensive reactive DOM runtime with fine-grained updates, inspired by SolidJS's dom-expressions. This package provides low-level DOM manipulation utilities that work seamlessly with signal and store systems to enable optimal, surgical DOM updates.
+The runtime `@fluixi/compiler` emits calls into. It provides the low-level DOM operations —
+element creation, reactive attributes and properties, insertion, control flow, hydration —
+that make a change update exactly the binding depending on it. Usable directly, though most
+code reaches it through compiled JSX or `` html`` `` templates.
 
 ## Features
 
 - 🎯 **Fine-Grained Reactivity**: Only updates the exact DOM nodes that need to change
 - 🔄 **Signal & Store Integration**: Works with any reactive system (signals, stores, observables)
-- 🎨 **Lit-HTML Support**: Seamlessly integrate lit-html templates with native JSX
+- 🔁 **Hydration**: adopts server-rendered nodes in place rather than rebuilding beside them
 - 🚀 **Optimized Performance**: Template caching, event delegation, and minimal re-renders
 - 🧩 **Control Flow Components**: Built-in Show, For, Switch, Portal, and more
 - 📦 **Zero Dependencies**: Core runtime has no external dependencies on reactive systems
@@ -402,63 +404,24 @@ registerStoreSystem({
 });
 ```
 
-## Lit-HTML Integration
+## Templates
 
-Seamlessly use lit-html templates with reactive updates.
+`` html`` `` templates are compiled, not interpreted: `@fluixi/compiler` turns them into the
+same calls this package exposes, so they cost nothing at runtime and need no template
+library.
 
-### Basic Usage
+```ts
+import { html } from '@fluixi/core';
 
-```typescript
-import { signal } from '@fluixi/dom/reactive';
-import { html } from 'lit';
-import { createSignal } from '@fluixi/reactive/signal';
-
-const [count, setCount] = createSignal(0);
-
-const template = html`
-  <div>
-    <p>Count: ${signal(count)}</p>
-    <button @click=${() => setCount(count() + 1)}>Increment</button>
-  </div>
-`;
+function Counter() {
+  const n = $signal(0);
+  return html`<button @click=${() => n.set(n() + 1)}>${n()}</button>`;
+}
 ```
 
-### Reactive Directives
-
-```typescript
-import { signal, $if, $each } from '@fluixi/dom/reactive';
-import { html } from 'lit';
-
-const [items, setItems] = createSignal(['a', 'b', 'c']);
-const [show, setShow] = createSignal(true);
-
-const template = html`
-  <div>
-    ${$if(show, 
-      html`<p>Visible content</p>`,
-      html`<p>Hidden</p>`
-    )}
-    
-    ${$each(items, 
-      (item) => item,
-      (item) => html`<li>${item}</li>`
-    )}
-  </div>
-`;
-```
-
-### Auto-wrapping with `rx`
-
-```typescript
-import { rx } from '@fluixi/dom/reactive';
-
-const [name, setName] = createSignal('World');
-
-// Automatically wraps signal accessors
-const template = rx`
-  <div>Hello, ${name}!</div>
-`;
-```
+The lit-html bridge this package once carried is gone — `lit` is not a dependency, and the
+`@fluixi/dom/reactive` entry with its `$if`/`$each`/`rx` helpers no longer exists. Templates
+go through the compiler now.
 
 ## Advanced Usage
 
@@ -617,9 +580,8 @@ initializeIntegration({
 
 This package is heavily inspired by SolidJS's dom-expressions but:
 - Works as a standalone library
-- Doesn't require a specific compiler
-- Can integrate with any reactive system
-- Supports both lit-html and native JSX
+- Can integrate with any reactive system through `registerEffectCreator`
+- Serves both JSX and `` html`` `` templates, which compile to the same calls
 
 ### vs React
 
@@ -628,13 +590,6 @@ This package is heavily inspired by SolidJS's dom-expressions but:
 - Direct DOM manipulation
 - Smaller runtime size
 - Better performance for many use cases
-
-### vs Lit
-
-- Works with lit-html templates
-- Adds fine-grained reactivity on top
-- Can be used standalone without Lit components
-- More flexible control flow
 
 ## Contributing
 
@@ -648,10 +603,10 @@ MIT
 
 - `@fluixi/jsx` - JSX runtime using this DOM package
 - `@fluixi/reactive` - Signal and store implementations
-- `lit` - Template literals for HTML
+- `@fluixi/compiler` - Compiles JSX and `` html`` `` into these calls
 
 ## Resources
 
-- [SolidJS Documentation](https://www.solidjs.com/)
+- [SolidJS Documentation](https://www.solidjs.com/) — dom-expressions is the closest prior art
 - [dom-expressions](https://github.com/ryansolid/dom-expressions)
-- [Lit Documentation](https://lit.dev/)
+- [Fluixi docs](https://docs.fluixi.com)
