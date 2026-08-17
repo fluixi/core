@@ -451,7 +451,36 @@ export function transformTemplates(
   }
 
   const bound = moduleBindings(ast.program);
-  const deferredFromImport: string[] = [];
+  // A `load:` on an import the author wrote: take the import away and let the prologue
+  // emit the deferred binding, so this spelling and a `resolve` rule produce the same
+  // output rather than merely equivalent output.
+  for (const [name, strategy] of [...needs.ignoredLoad]) {
+    if (!bound.has(name)) continue;
+    const found = deferrableImport(ast.program as never, name);
+    if (!found || usedAsValue(ast.program as never, name, found.specifier)) continue;
+
+    const rest = (found.declaration.specifiers as Node[]).filter((sp) => sp !== found.specifier);
+    // Take the line's newline with it when the whole statement goes, or the output keeps
+    // a blank line exactly where the import used to be.
+    const end =
+      rest.length === 0 && code[found.declaration.end] === '\n'
+        ? found.declaration.end + 1
+        : found.declaration.end;
+    out.overwrite(
+      found.declaration.start,
+      end,
+      rest.length === 0
+        ? ''
+        : `import { ${rest.map((sp) => code.slice(sp.start, sp.end)).join(', ')} } from ` +
+            `${JSON.stringify(found.declaration.source.value)};`,
+    );
+
+    needs.deferred.set(name, { module: found.module, export: found.export, origin: 'rule', loading: strategy });
+    // The prologue skips names the file binds, and this one no longer does.
+    bound.delete(name);
+    needs.ignoredLoad.delete(name);
+  }
+
   const prologue = buildPrologue(used, needs, hoisted, bound, options);
   if (prologue) out.prepend(prologue);
   const runtimeImports = intrinsicImports(intrinsics, bound);
@@ -461,37 +490,6 @@ export function transformTemplates(
     if (node.type === 'ImportDeclaration' && node.source?.value === '@fluixi/core/rx') {
       out.overwrite(node.source.start, node.source.end, JSON.stringify('@fluixi/reactive'));
     }
-  }
-
-  // A `load:` on an import the author wrote: take the import away and defer it instead,
-  // when the name is only ever a tag. What survives this is what still needs a warning.
-  for (const [name, strategy] of [...needs.ignoredLoad]) {
-    if (!bound.has(name)) continue;
-    const found = deferrableImport(ast.program as never, name);
-    if (!found || usedAsValue(ast.program as never, name, found.specifier)) continue;
-
-    const rest = (found.declaration.specifiers as Node[]).filter((sp) => sp !== found.specifier);
-    out.overwrite(
-      found.declaration.start,
-      found.declaration.end,
-      rest.length === 0
-        ? ''
-        : `import { ${rest.map((sp) => code.slice(sp.start, sp.end)).join(', ')} } from ` +
-            `${JSON.stringify(found.declaration.source.value)};`,
-    );
-    deferredFromImport.push(
-      `const ${name} = deferred(() => import(${JSON.stringify(found.module)}), ` +
-        `{ strategy: ${strategyLiteral(strategy)}, export: ${JSON.stringify(found.export)} });`,
-    );
-    needs.ignoredLoad.delete(name);
-  }
-  if (deferredFromImport.length > 0) {
-    // Prepended, not appended: `const` has no hoisting, and the component that uses it is
-    // written above. One block, so the import lands before the bindings that need it.
-    const header = bound.has('deferred')
-      ? ''
-      : `import { deferred } from ${JSON.stringify(options.coreModule ?? '@fluixi/core')};\n`;
-    out.prepend(`${header}${deferredFromImport.join('\n')}\n`);
   }
 
   const loadDiagnostics = [...needs.ignoredLoad].map(([name, strategy]) => ({
