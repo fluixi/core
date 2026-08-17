@@ -95,3 +95,24 @@ describe('a tag nothing supplies', () => {
     expect(out.unresolvedDiagnostics).toHaveLength(1);
   });
 });
+
+describe('the reason it gives', () => {
+  it('says "used as a value" when that is why', () => {
+    const out = run(
+      "import { Chart } from './Chart';\nexport function App() { register(Chart); return <Chart load:idle />; }",
+    );
+    expect(out.loadDiagnostics![0].message).toMatch(/used as a value/);
+    // Not the old advice, which would break the value reference.
+    expect(out.loadDiagnostics![0].message).not.toMatch(/Drop the import/);
+  });
+
+  it('says so for a namespace import', () => {
+    const out = run("import * as Chart from './Chart';\nexport function App() { return <Chart load:idle />; }");
+    expect(out.loadDiagnostics![0].message).toMatch(/namespace import/);
+  });
+
+  it('says so for a component declared in the file', () => {
+    const out = run('function Chart() { return <i />; }\nexport function App() { return <Chart load:idle />; }');
+    expect(out.loadDiagnostics![0].message).toMatch(/declared in this file/);
+  });
+});

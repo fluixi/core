@@ -315,6 +315,17 @@ function deferrableImport(
   return undefined;
 }
 
+/** Whether `name` came in through `import * as name`, which has no single export. */
+function hasNamespaceImport(program: Node, name: string): boolean {
+  for (const statement of (program.body as Node[]) ?? []) {
+    if (statement.type !== 'ImportDeclaration') continue;
+    for (const specifier of (statement.specifiers as Node[]) ?? []) {
+      if (specifier.type === 'ImportNamespaceSpecifier' && specifier.local?.name === name) return true;
+    }
+  }
+  return false;
+}
+
 /** Whether `name` is referenced as a value anywhere — a tag alone does not count. */
 function usedAsValue(program: Node, name: string, specifier: Node): boolean {
   let seen = false;
@@ -454,10 +465,25 @@ export function transformTemplates(
   // A `load:` on an import the author wrote: take the import away and let the prologue
   // emit the deferred binding, so this spelling and a `resolve` rule produce the same
   // output rather than merely equivalent output.
+  const why = new Map<string, 'value' | 'namespace' | 'local' | 'unsupplied'>();
+
+  for (const [name] of needs.ignoredLoad) {
+    if (!bound.has(name)) why.set(name, 'unsupplied');
+  }
+
   for (const [name, strategy] of [...needs.ignoredLoad]) {
     if (!bound.has(name)) continue;
+
     const found = deferrableImport(ast.program as never, name);
-    if (!found || usedAsValue(ast.program as never, name, found.specifier)) continue;
+    if (!found) {
+      // Bound, but not by an import we can turn into a dynamic one.
+      why.set(name, hasNamespaceImport(ast.program as never, name) ? 'namespace' : 'local');
+      continue;
+    }
+    if (usedAsValue(ast.program as never, name, found.specifier)) {
+      why.set(name, 'value');
+      continue;
+    }
 
     const rest = (found.declaration.specifiers as Node[]).filter((sp) => sp !== found.specifier);
     // Take the line's newline with it when the whole statement goes, or the output keeps
@@ -492,16 +518,29 @@ export function transformTemplates(
     }
   }
 
+  // Each of these has a different fix, so the message has to name the actual reason.
+  // Saying "drop the import" to someone whose component is used as a value sends them
+  // somewhere that does not work.
+  const reasons: Record<string, (name: string) => string> = {
+    value: (name) =>
+      `${name} is used as a value here, not only as a tag, so its import has to stay — ` +
+      `deferring would hand those references a lazy wrapper instead of the component. ` +
+      `Defer it at the point it is rendered, or keep it eager.`,
+    namespace: (name) =>
+      `${name} came in through a namespace import, which has no single export to defer. ` +
+      `Import ${name} by name.`,
+    local: (name) =>
+      `${name} is declared in this file, so there is no module to load separately. ` +
+      `Move it to its own file and import it.`,
+    unsupplied: (name) =>
+      `nothing supplies ${name}, so there is no import to defer. Import it, or add a ` +
+      `\`resolve\` rule for it.`,
+  };
+
   const loadDiagnostics = [...needs.ignoredLoad].map(([name, strategy]) => ({
     name,
     strategy,
-    // Two different situations with two different fixes, so say which one this is.
-    message: bound.has(name)
-      ? `load:${strategy.kind} has no effect on <${name}>: the module is already imported here, ` +
-        `so it ships with this chunk. Drop the import and let a \`resolve\` rule supply ${name} ` +
-        `for the compiler to defer it.`
-      : `load:${strategy.kind} has no effect on <${name}>: nothing supplies that name, so there is ` +
-        `no import for the compiler to defer. Add a \`resolve\` rule for ${name}.`,
+    message: `load:${strategy.kind} has no effect on <${name}>: ${reasons[why.get(name) ?? 'unsupplied']!(name)}`,
   }));
 
   const unresolvedDiagnostics = [...needs.unresolved].map((name) => ({

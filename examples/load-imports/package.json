@@ -1,0 +1,27 @@
+{
+  "name": "@fluixi/example-load-imports",
+  "private": true,
+  "type": "module",
+  "description": "When a `load:` on your own import can be deferred, and when it cannot.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
+  },
+  "devDependencies": {
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/vite-plugin": "workspace:*",
+    "jsdom": "^25.0.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.6.1"
+  },
+  "version": "0.0.0"
+}
