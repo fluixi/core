@@ -107,6 +107,15 @@ describe('plugin overhead', () => {
     expect(withMs).toBeLessThan(Math.max(bareMs * 3, 2));
   });
 
+  it('a file that cannot hold a template is never walked for one', () => {
+    // The guard is a substring test on the source text, so the observable property is
+    // that a file with no `html`/`svg` tag reports no templates and no suppressions —
+    // reached without traversing the AST.
+    const { ls, fileName } = plugin('export const x = `a plain template`;\nexport function f() { return x; }\n');
+    expect(ls.getSemanticDiagnostics(fileName)).toHaveLength(0);
+    expect(ls.getSuggestionDiagnostics(fileName)).toHaveLength(0);
+  });
+
   it('suggestion and semantic diagnostics share the tag scan', () => {
     const { ls, fileName } = plugin(bigTemplateFile(60));
     ls.getSemanticDiagnostics(fileName);

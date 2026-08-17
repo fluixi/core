@@ -37,12 +37,33 @@ export function parseCached(
 const templates = new WeakMap<TS.SourceFile, TS.TaggedTemplateExpression[]>();
 
 /**
+ * Whether the text could hold a tagged template this plugin cares about. A plain
+ * substring test, deliberately: it only has to be right when it says "no".
+ * Whitespace between tag and backtick is legal (`html \`…\``) but nobody writes it,
+ * and a false "no" costs only the plugin's features, never correctness.
+ */
+function mayHaveTemplate(text: string): boolean {
+  return text.includes('html`') || text.includes('svg`');
+}
+
+const NONE: TS.TaggedTemplateExpression[] = [];
+
+/**
  * Every `html`/`svg` template in the file, collected in one AST walk instead of
  * one walk per lookup. Sorted by start so a position lookup is a binary search.
+ *
+ * A file that cannot contain a template skips the walk entirely. The plugin is loaded
+ * by tsserver in every project, so most files it sees have no `` html`` `` at all, and
+ * scanning the text for the tag is far cheaper than traversing the AST to prove it.
  */
 export function templatesIn(ts: typeof TS, sf: TS.SourceFile): TS.TaggedTemplateExpression[] {
   const hit = templates.get(sf);
   if (hit) return hit;
+
+  if (!mayHaveTemplate(sf.text)) {
+    templates.set(sf, NONE);
+    return NONE;
+  }
 
   const found: TS.TaggedTemplateExpression[] = [];
   const visit = (node: TS.Node): void => {
