@@ -21,7 +21,8 @@ tick();
 
 ## How it works
 
-The instrumented `signal`/`memo`/`effect` wrap the real `@fluixi/reactive` primitives. A read is a
+The instrumented `createSignal`/`createMemo`/`createEffect` wrap the real `@fluixi/reactive`
+primitives. A read is a
 subscription, so edges are recorded from actual reads — it's the genuine dependency graph, not a
 reconstruction. Values are re-read untracked each frame and effects count their own re-runs, so the
 inspector animates exactly as the core propagates.

@@ -3,9 +3,11 @@
 The parser for Fluixi `` html`...` `` templates: a dependency-free tokenizer +
 recursive-descent parser that produces a **located, recoverable Template AST**.
 
-It is the shared foundation for everything that needs to understand a template —
-the compiler, the language server, the TypeScript plugin, and the Biome plugin —
-so they all agree on one grammar, one node model, and one set of diagnostics.
+It is the shared foundation for everything that needs to understand a template. Today that
+is [`@fluixi/compiler`](../compiler) and [`@fluixi/ts-plugin`](../ts-plugin); the point of
+splitting it out is that they agree on one grammar, one node model and one set of
+diagnostics, and that a formatter or a language server can join later without a second
+grammar appearing.
 
 ## Why a separate parser
 
@@ -17,14 +19,14 @@ parse layer split out so every tool can reuse it:
 ```
 pieces → Reader (lexing + holes) → parseTemplate → Template AST
                                                       │
-             ┌────────────────────────────────────────┼───────────────┐
-        compiler (→ IR)      language server      Biome / formatter   TS plugin
+                    ┌─────────────────────────────────┴──────┐
+               compiler (→ IR)                            TS plugin
 ```
 
 The parser never resolves the JavaScript inside `${…}`. Each hole is recorded as
 an **opaque slot** (an index + a source span). Downstream, each tool binds slots
-to its own representation — a Babel node in the compiler, a `ts.Expression` in the
-LSP, raw text in Biome. That single seam is what keeps the parser host-agnostic.
+to its own representation — a Babel node in the compiler, a `ts.Expression` in the TS
+plugin, raw text in a formatter. That single seam is what keeps the parser host-agnostic.
 
 ## Usage
 

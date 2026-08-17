@@ -20,7 +20,7 @@ seo({
 
 - **Reactive** — pass a signal (or a function reading one) and the document updates live:
   ```ts
-  const [title, setTitle] = createSignal('Dashboard');
+  const title = $signal('Dashboard');
   seo(() => ({ title: title() })); // document.title tracks the signal — no reload
   ```
 - **SSR-first** — `renderHead(registry)` serializes the resolved tags into `<head>` markup plus

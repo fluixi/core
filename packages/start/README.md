@@ -53,8 +53,17 @@ import { defineConfig } from '@fluixi/start/config';
 export default defineConfig({
   port: 3010,
   ssrNoExternal: ['@medusajs/js-sdk'], // SSR deps Vite must bundle
+  adapter: nodeAdapter,                // where this deploys
+  prerender: true,                     // SSG: build static HTML, crawling internal links
+  resolve: [                           // where an unimported tag comes from
+    { match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' },
+  ],
 });
 ```
+
+`ssr: false` gives an SPA — the server still runs (file routing, middleware, env, server
+functions), the first paint just happens on the client. `i18n` and `apiDir` default to
+`src/i18n` and `src/api`, and stay a no-op until those folders have files.
 
 ## 🚀 Features
 
@@ -68,9 +77,20 @@ export default defineConfig({
   it.
 - **Routing** — `@fluixi/start/router` re-exports [`@fluixi/core/router-next`](../core):
   `Router`, `Outlet`, `Link`, `Form`, the hooks, `createMemoryHistory`.
-- **Deploy adapters** — `createProdHandler` builds a runtime-neutral fetch handler;
-  `nodeAdapter` (Node http + static files) and `webAdapter` (`export { fetch }` for
-  edge/worker) serve it. The same handler runs on Node, Bun, Deno, and edge runtimes.
+- **Static generation** — `prerender: true` builds routes to static HTML in `dist/client`,
+  crawling internal `<a href>` links; an object sets explicit `routes` for paths nothing
+  links to. The pages still hydrate.
+- **API routes** — files under `src/api` export `GET`/`POST`/… and are served at `/api/*`.
+- **i18n** — `src/i18n/<locale>.json` is discovered and exposed as `virtual:fluixi-i18n`
+  for `createI18n`, with typed keys.
+- **Deploy adapters** — `createProdHandler` builds a runtime-neutral fetch handler, and an
+  adapter decides how the server is bundled and served: `nodeAdapter` (Node http + static
+  files), `webAdapter` (`export { fetch }` for edge/worker), plus `cloudflareAdapter`,
+  `netlifyAdapter` and `vercelAdapter`, which emit the layout each platform expects. The
+  same handler runs on Node, Bun, Deno and edge runtimes.
+- **Component resolution** — `resolve` says where a capitalised tag with no import comes
+  from; one pattern rule can cover a whole folder. See
+  [`@fluixi/compiler`](../compiler) for the rule shapes and for `load:` deferral.
 
 ## 🧰 Programmatic
 

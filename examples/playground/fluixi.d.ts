@@ -6,6 +6,8 @@
 import * as __fluixi_core from '@fluixi/core';
 import * as __fluixi_core_router_next from '@fluixi/core/router-next';
 import * as __fluixi_dom from '@fluixi/dom';
+import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
+import * as __fluixi_reactive_store from '@fluixi/reactive/store';
 
 declare global {
   export import Await = __fluixi_core.Await;
@@ -23,4 +25,13 @@ declare global {
   export import Suspense = __fluixi_core.Suspense;
   export import SuspenseList = __fluixi_core.SuspenseList;
   export import Switch = __fluixi_dom.Switch;
+  const $signal: typeof __fluixi_reactive_signal.signal;
+  const $memo: typeof __fluixi_reactive_signal.memo;
+  const $effect: typeof __fluixi_reactive_signal.effect;
+  const $store: typeof __fluixi_reactive_store.store;
+  const $resource: typeof __fluixi_reactive_signal.resource;
+  const $selector: typeof __fluixi_reactive_signal.createSelector;
+  const $deferred: typeof __fluixi_reactive_signal.createDeferred;
+  const $untrack: typeof __fluixi_reactive_signal.untrack;
+  const $untrackStore: typeof __fluixi_reactive_store.untrackStore;
 }

@@ -6,6 +6,7 @@
 import * as __src_components_AuditLog_tsx from './src/components/AuditLog.js';
 import * as __src_components_ExportDialog_tsx from './src/components/ExportDialog.js';
 import * as __src_components_RevenueChart_tsx from './src/components/RevenueChart.js';
+import * as __src_components_Summary_tsx from './src/components/Summary.js';
 import * as __fluixi_core from '@fluixi/core';
 import * as __fluixi_core_router_next from '@fluixi/core/router-next';
 import * as __fluixi_dom from '@fluixi/dom';
@@ -28,6 +29,7 @@ declare global {
   export import RevenueChart = __src_components_RevenueChart_tsx.RevenueChart;
   export import Router = __fluixi_core_router_next.Router;
   export import Show = __fluixi_dom.Show;
+  export import Summary = __src_components_Summary_tsx.Summary;
   export import Suspense = __fluixi_core.Suspense;
   export import SuspenseList = __fluixi_core.SuspenseList;
   export import Switch = __fluixi_dom.Switch;

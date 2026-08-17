@@ -74,20 +74,17 @@ document.body.appendChild(div);
 setCount(1); // DOM updates to "Count: 1"
 ```
 
-### Initialize Integration
+### Components
+
+Bindings work as soon as you import — the example above needs no setup. Rendering
+*components* needs one seam filled in, so a component call is owned and disposable:
 
 ```typescript
-import { initializeIntegration } from '@fluixi/dom';
-import { createEffect, batch } from '@fluixi/reactive/signal';
-
-// Initialize with your reactive system
-initializeIntegration({
-  signalSystem: {
-    createEffect,
-    batch,
-  },
-});
+import '@fluixi/core'; // wires it for you at import time
 ```
+
+Using `@fluixi/dom` without `@fluixi/core`? Fill the seam yourself — see
+[Integration](#integration).
 
 ## Core API
 
@@ -98,7 +95,7 @@ initializeIntegration({
 Insert dynamic content with automatic reactivity tracking.
 
 ```typescript
-import { insert, createTextNode } from '@fluixi/dom';
+import { insert } from '@fluixi/dom';
 import { createSignal } from '@fluixi/reactive/signal';
 
 const [text, setText] = createSignal('Hello');
@@ -111,7 +108,7 @@ insert(div, () => text());
 insert(div, 'Static text');
 
 // With a marker for positioning
-const marker = createTextNode('');
+const marker = document.createTextNode('');
 div.appendChild(marker);
 insert(div, () => text(), marker);
 ```
@@ -336,73 +333,30 @@ ErrorBoundary({
 });
 ```
 
-## Integration System
+## Integration
 
-The package provides a flexible integration system that works with any reactive library.
-
-### Initialize with Signal System
-
-```typescript
-import { initializeIntegration } from '@fluixi/dom';
-import * as signals from '@fluixi/reactive/signal';
-
-initializeIntegration({
-  signalSystem: {
-    createEffect: signals.createEffect,
-    batch: signals.batch,
-    createMemo: signals.createMemo,
-    untrack: signals.untrack,
-    getOwner: signals.getOwner,
-    runWithOwner: signals.runWithOwner,
-    createRoot: signals.createRoot,
-    onCleanup: signals.onCleanup,
-  },
-});
-```
-
-### Initialize with Store System
+This package renders; it doesn't own a reactive system. One seam connects the two — how a
+component call is wrapped — and it is a single function:
 
 ```typescript
-import { initializeIntegration } from '@fluixi/dom';
-import * as store from '@fluixi/reactive/store';
+import { registerCreateComponent } from '@fluixi/dom';
 
-initializeIntegration({
-  storeSystem: {
-    isStore: store.isStore,
-    unwrap: store.unwrap,
-    isStoreProxy: store.isStoreProxy,
-  },
-});
+registerCreateComponent((Comp, props) => myOwnedCall(Comp, props));
 ```
 
-### Auto-initialization
-
-The package attempts to auto-initialize by detecting available reactive systems:
+**You almost never call this.** Importing `@fluixi/core` wires `@fluixi/reactive` in for
+you at import time, so an app just imports and renders. It matters if you use `@fluixi/dom`
+on its own, or drive it with a different reactive library.
 
 ```typescript
-import { autoInitialize } from '@fluixi/dom';
+import { isIntegrationInitialized, resetIntegration } from '@fluixi/dom';
 
-// Manually trigger auto-initialization
-autoInitialize();
+isIntegrationInitialized(); // has something claimed the seam?
+resetIntegration();         // drop it again — tests
 ```
 
-### Global Registration
-
-Register your reactive systems globally for automatic detection:
-
-```typescript
-import { registerSignalSystem, registerStoreSystem } from '@fluixi/dom';
-
-registerSignalSystem({
-  createEffect: myCreateEffect,
-  batch: myBatch,
-});
-
-registerStoreSystem({
-  isStore: myIsStore,
-  unwrap: myUnwrap,
-});
-```
+`initializeIntegration({ signalSystem })` is the older entry point and still works; it picks
+`createComponent` off what you pass and ignores the rest.
 
 ## Templates
 
@@ -425,65 +379,20 @@ go through the compiler now.
 
 ## Advanced Usage
 
-### Custom Effect System
-
-```typescript
-import { registerEffectCreator } from '@fluixi/dom';
-
-registerEffectCreator((fn) => {
-  // Your custom effect implementation
-  const dispose = myCustomEffect(fn);
-  return dispose;
-});
-```
-
-### Custom Batch Function
-
-```typescript
-import { registerBatch } from '@fluixi/dom';
-
-registerBatch((fn) => {
-  // Your custom batching logic
-  myCustomBatch(fn);
-});
-```
-
-### Reactive Bindings
-
-```typescript
-import { createReactiveBinding } from '@fluixi/dom';
-
-const cleanup = createReactiveBinding(
-  () => mySignal(), // getter
-  (value) => {
-    // Update handler
-    console.log('Value changed:', value);
-  }
-);
-
-// Cleanup when done
-cleanup();
-```
-
 ### Memory Management
 
+Bindings live and die with the owner they were created under, so tearing down a scope
+removes its listeners and effects with it:
+
 ```typescript
-import { createRoot, onCleanup } from '@fluixi/dom';
+import { createRoot, onCleanup } from '@fluixi/reactive';
+import { insert } from '@fluixi/dom';
 
 createRoot((dispose) => {
-  // Set up reactive scope
-  const effect = createEffect(() => {
-    // Effect logic
-  });
-  
-  // Register cleanup
-  onCleanup(() => {
-    effect();
-    console.log('Cleaned up!');
-  });
-  
-  // Dispose when done
-  dispose();
+  insert(container, () => text());
+  onCleanup(() => console.log('bindings gone'));
+
+  dispose(); // runs the cleanups, drops the bindings
 });
 ```
 
@@ -550,28 +459,11 @@ const mySignalSystem: SignalSystem = {
 
 ## Debugging
 
-### Check Integration Status
-
 ```typescript
-import { getIntegrationStatus, logIntegrationStatus } from '@fluixi/dom';
+import { isIntegrationInitialized } from '@fluixi/dom';
 
-// Get status object
-const status = getIntegrationStatus();
-console.log(status);
-
-// Pretty print to console
-logIntegrationStatus();
-```
-
-### Development Mode
-
-Set the `development` flag when initializing:
-
-```typescript
-initializeIntegration({
-  signalSystem: mySignalSystem,
-  development: true, // Enables additional checks and warnings
-});
+// A component rendering as a bare function usually means nothing claimed the seam
+isIntegrationInitialized();
 ```
 
 ## Comparison with Other Libraries
@@ -580,7 +472,7 @@ initializeIntegration({
 
 This package is heavily inspired by SolidJS's dom-expressions but:
 - Works as a standalone library
-- Can integrate with any reactive system through `registerEffectCreator`
+- Can be driven by another reactive system through `registerCreateComponent`
 - Serves both JSX and `` html`` `` templates, which compile to the same calls
 
 ### vs React

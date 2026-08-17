@@ -24,12 +24,19 @@ pnpm create fluixi my-app
 yarn create fluixi my-app
 ```
 
-It prompts for a project name and a **mode**, or take them on the command line:
+It prompts for a project name, a **mode** and an **authoring format**, or takes them on the
+command line:
 
 ```bash
-create-fluixi my-app --ssr   # SSR app (@fluixi/start: file routing + SSR + hydration)
-create-fluixi my-app --spa   # SPA (vite + @fluixi/vite-plugin)
+create-fluixi my-app --ssr           # SSR app (@fluixi/start: file routing + SSR + hydration)
+create-fluixi my-app --spa           # SPA (vite + @fluixi/vite-plugin)
+
+create-fluixi my-app --spa --html    # same app, html`` templates instead of JSX
 ```
+
+`--jsx` (default) or `--html` picks how you write components. The html`` variant is
+JSX-free — plain `.ts` files, no `jsxImportSource`, and [`@fluixi/ts-plugin`](../ts-plugin)
+wired up so the editor still understands the templates. Both compile to the same thing.
 
 Then:
 
@@ -45,6 +52,9 @@ pnpm dev
 | --- | --- | --- |
 | **SSR** | [`@fluixi/start`](../start) + [`@fluixi/cli`](../cli) | `src/entry-{server,client}`, `src/routes/`, `fluixi.config.ts` |
 | **SPA** | `vite` + [`@fluixi/vite-plugin`](../vite-plugin) | `src/main.tsx` → `render(() => <App/>)` |
+
+Each comes in a JSX and an html`` variant (`template-ssr`, `template-ssr-html`, and the same
+two for SPA).
 
 Both pin `@fluixi/*` to the `next` dist-tag and set `jsxImportSource: "@fluixi/jsx"`.
 

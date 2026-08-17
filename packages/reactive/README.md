@@ -19,28 +19,20 @@ browser, on the server, or on its own.
 
 ## Features
 
-### 🎯 Core Reactivity
-- **Signals** - Fine-grained reactive primitives
-- **Effects** - Automatic dependency tracking
-- **Memos** - Cached computed values
-- **Batch Updates** - SolidJS-style batching with `runUpdates()`
+### Core
+- **Signals, memos, effects** — fine-grained state, derived values, automatic tracking
+- **Stores** — nested reactive objects where reading a property *is* the read
+- **Resources** — async values that integrate with suspense
+- **Batching** — `batch()` collects writes so dependents run once
 
-### ⚡ Advanced Features
-- **Priority-Based Scheduling** - Optimal update ordering (RENDER → COMPUTE → EFFECT → TRANSITION)
-- **Transitions** - Non-blocking updates for better UX
-- **Suspense Boundaries** - Declarative async data loading
-- **Error Boundaries** - Graceful error handling
-- **Context API** - State sharing without prop drilling
-- **Render Effects** - Synchronous DOM updates
-- **Reactions** - Manual dependency tracking
-- **Owner Management** - Advanced lifecycle control
-
-### 🔍 Developer Experience
-- **Enhanced Debugging** - Detailed warnings with dependency chains and performance metrics
-- **Memory Leak Detection** - Find potential issues early
-- **Node Statistics** - Monitor reactive graph performance
-- **TypeScript** - Full type safety and inference
-- **RxJS Integration** - Seamless Observable interop
+### Beyond the basics
+- **Transitions** — `startTransition` defers non-critical effects so the view stays interactive
+- **Suspense and error boundaries** — as plain values, so any view layer can wrap them
+- **Context** — provide a value for the duration of a call, without prop drilling
+- **Owners** — explicit ownership and disposal, so a graph tears down completely
+- **Debounced primitives** — signal, resource and function variants
+- **Observable interop** — `Observable`/`Subject` for RxJS-shaped code
+- **TypeScript** — full type safety and inference
 
 ## Installation
 
@@ -109,112 +101,72 @@ user.loading;  // boolean
 user.refetch();
 ```
 
-### Advanced Usage
+### Transitions, context and boundaries
 
 ```typescript
 import {
-  startTransition,
-  useTransition,
-  createSuspense,
-  trackPromise,
-  catchError,
-  createContext,
-  useContext
+  startTransition, useTransition,
+  createContext, useContext, provide,
+  createErrorBoundary, provideErrorBoundary,
 } from '@fluixi/reactive';
 
-// Non-blocking updates
+// Non-blocking updates — `isPending` is a signal you can read while it runs
 const [isPending, start] = useTransition();
-start(() => {
-  setLargeDataSet(expensiveComputation());
-});
+start(() => setLargeDataSet(expensiveComputation()));
 
-// Async data with suspense
-const UserProfile = createSuspense(
-  () => {
-    const data = trackPromise(fetchUser(userId()));
-    return <Profile data={data} />;
-  },
-  <ProfileSkeleton />
-);
-
-// Error handling
-const safeData = catchError(
-  () => parseData(input()),
-  (error) => {
-    console.error(error);
-    return fallbackValue;
-  }
-);
-
-// Context for state sharing
+// Context: create it, provide a value for the duration of a call, consume inside
 const ThemeContext = createContext({ mode: 'light' });
-ThemeContext.Provider({
-  value: { mode: 'dark' },
-  children: () => <App />
+provide(ThemeContext, { mode: 'dark' }, () => {
+  useContext(ThemeContext); // { mode: 'dark' }
 });
 
-// Consume context
-const theme = useContext(ThemeContext);
+// Boundaries are values here, not components. A view layer wraps these into
+// <ErrorBoundary> / <Suspense>; on their own they are plain functions.
+const boundary = createErrorBoundary();
+provideErrorBoundary(boundary, () => risky());
+boundary.error();  // the thrown value, or undefined
+boundary.reset();
 ```
 
-## Priority-Based Scheduling
-
-Updates are processed in optimal order:
+### Debouncing
 
 ```typescript
-enum UpdatePriority {
-  IMMEDIATE = 0,    // Immediate synchronous updates
-  RENDER = 1,       // DOM updates (highest priority)
-  COMPUTE = 2,      // Memos and computed values
-  EFFECT = 3,       // Side effects
-  TRANSITION = 4,   // Low-priority updates (lowest)
-}
+import { createDebounce, createDebouncedSignal, createDebouncedResource } from '@fluixi/reactive';
+
+const [term, setTerm, controls] = createDebouncedSignal('', 300);
+term();                // settles 300ms after the last write
+controls.immediate();  // the value as written — bind the input to this one
+controls.pending();    // a write is waiting (not the same as a request in flight)
+controls.flush();      // settle now
+
+// Search-as-you-type as one primitive: the query debounces, the fetch follows it,
+// and an empty query doesn't fetch at all.
+const [results, search] = createDebouncedResource('', (q) => fetchResults(q), { delay: 300 });
+search.setQuery('fluix');
+results.loading;
+
+// Or debounce any function
+const save = createDebounce((draft) => persist(draft), 500);
 ```
 
-## Batch & Update Queue
+## Batching
 
-SolidJS-inspired batching with `runUpdates()`:
+A write marks its dependents dirty and schedules them; memos stay lazy and recompute on
+read, so the graph is glitch-free — nothing observes a half-applied update.
 
 ```typescript
 batch(() => {
-  setA(1);
-  setB(2);
-  setC(3);
-}); // All effects run once in priority order
+  a.set(1);
+  b.set(2);
+  c.set(3);
+}); // dependents run once, after the batch closes
 
-// Internal mechanism:
-// 1. Updates queued in updateQueue
-// 2. runUpdates() processes queue
-// 3. Flushes in priority order: renders → computations → effects
+await flush(); // await the pending queue — mostly useful in tests
 ```
 
-## Enhanced Debugging
-
-Automatic warnings for performance issues:
-
-```
-⚠️ [Reactivity Warning] Coarse Dependency Detected
-
-Node Information:
-┌─────────────┬──────────────────┐
-│ Node Name   │ userData         │
-│ Observers   │ 18               │
-└─────────────┴──────────────────┘
-
-Reason:
-  Reading large object (23 keys) - consider using 
-  derived signals for specific properties
-
-Performance Metrics:
-┌───────────────────┬──────────┐
-│ Updates           │ 45       │
-│ Avg Frequency     │ 120ms    │
-└───────────────────┴──────────┘
-
-Suggestions:
-  • Use derived signals for specific properties
-  • Consider breaking into smaller signals
-```
+`startTransition` is the other half: it runs `fn` synchronously and captures the non-pure
+effects it would fire into a deferred queue, so an expensive update doesn't block the
+current view. Pure computations still settle immediately.
 
 ## API Reference
 
@@ -232,24 +184,22 @@ Suggestions:
 - `startTransition(fn)` - Mark updates as low priority
 - `useTransition()` - Track transition state
 
-### Suspense
+### Boundaries
 
-- `createSuspense(fn, fallback)` - Create async boundary
-- `trackPromise(promise)` - Register promise with suspense
-
-### Error Handling
-
-- `catchError(fn, handler)` - Handle errors gracefully
+- `createSuspenseBoundary()` / `provideSuspense(boundary, fn)` - Async boundary as a value
+- `createErrorBoundary()` / `provideErrorBoundary(boundary, fn)` - Error boundary as a value
+- `trackResourcePromise(promise)` - Register a promise with the enclosing suspense
 
 ### Context
 
 - `createContext(defaultValue)` - Create context
+- `provide(context, value, fn)` - Supply a value for the duration of a call
 - `useContext(context)` - Consume context
 
-### Enhanced Effects
+### Other effects
 
-- `createRenderEffect(fn)` - Synchronous DOM updates
-- `createReaction(onInvalidate)` - Manual dependency tracking
+- `createRenderEffect(fn)` - Runs before paint, for DOM writes
+- `createComputed(fn)` - Runs eagerly, unlike a memo
 - `on(deps, fn, options?)` - Explicit dependencies
 
 ### Owner Management
@@ -257,35 +207,31 @@ Suggestions:
 - `getOwner()` - Get current reactive owner
 - `runWithOwner(owner, fn)` - Run with specific owner
 
-### Debugging
+### Lists
 
-- `warnCoarseRead(node, reason)` - Enhanced warnings
-- `getNodeStats()` - Get reactive graph statistics
-- `findPotentialLeaks()` - Find memory leaks
-- `enableDevMode()` - Enable dev mode features
+- `mapArray(list, fn)` - Map keyed by identity; a row survives a reorder
+- `indexArray(list, fn)` - Map keyed by index
+- `keyArray(list, key, fn)` - Map keyed by an explicit key
 
 ### Utilities
 
-- `createEnhancedSignal(initialValue)` - Signal with extras
-- `createAsyncSignal(asyncFn)` - Async signal
-- `createLazySignal(fn)` - Lazy-evaluated signal
-- `createSignalWithHistory(initialValue)` - Signal with undo/redo
-- `createThrottledSignal(signal, delay)` - Throttled updates
-- `createDebouncedSignal(signal, delay)` - Debounced updates
-- `createTrigger()` - Manual trigger
-- `createSelector(source, fn)` - Keyed selector
-- `createResource(fetcher, source?)` - Async resource
-- `createStore(initialValue)` - Nested reactive object
+- `createSelector(source, fn)` - Keyed selector; only the row that changed re-runs
+- `createResource(fetcher, source?)` / `resource(...)` - Async resource
+- `createStore(initial)` / `store(initial)` - Nested reactive object
+- `createDeferred(source, options?)` - A value that trails behind under load
+- `createDebounce(fn, ms)` / `createDebouncedSignal(initial, ms)` / `createDebouncedResource(...)`
+- `flush()` - Await the pending effect queue
+- `unwrap(store)` / `untrackStore(fn)` - Escape hatches out of a store proxy
+- `onCleanup(fn)` / `disposeScope(owner)` - Teardown
 
 ## Documentation
 
-Complete documentation available at:
-- [Overview](../../my-docusaurus-app/docs/signal/overview.md) - Introduction and concepts
-- [Core API](../../my-docusaurus-app/docs/signal/signal.md) - Complete API reference
-- [SolidJS Features](../../my-docusaurus-app/docs/signal/solidjs-features.md) - Advanced features guide
-- [Advanced Patterns](../../my-docusaurus-app/docs/signal/advanced-patterns.md) - Complex patterns
-- [Quick Reference](../../my-docusaurus-app/docs/signal/quick-reference.md) - Quick lookup
-- [What's New](../../my-docusaurus-app/docs/signal/whats-new.md) - Latest enhancements
+- [Signals](https://docs.fluixi.com/v1/en/signals) — state, reading and writing
+- [Derived values](https://docs.fluixi.com/v1/en/derived-values) — memos and selectors
+- [Effects](https://docs.fluixi.com/v1/en/effects) — side effects and cleanup
+- [Stores](https://docs.fluixi.com/v1/en/stores) — nested reactive objects
+- [Async](https://docs.fluixi.com/v1/en/async) — resources, suspense, transitions
+- [TC39 Signals](https://docs.fluixi.com/v1/en/tc39-signals) — the model underneath
 
 ## Compiler intrinsics
 
@@ -295,50 +241,17 @@ calls above, so there is one reactive graph and no difference in behaviour. This
 stays importable exactly as documented here, which is what a library that never runs the
 compiler needs.
 
-## Performance Tips
+## Performance tips
 
-1. **Use transitions for expensive updates**
-   ```typescript
-   startTransition(() => setLargeList(compute()));
-   ```
-
-2. **Batch related updates**
-   ```typescript
-   batch(() => { setA(1); setB(2); });
-   ```
-
-3. **Use memos for expensive computations**
-   ```typescript
-   const result = createMemo(() => expensive(signal()));
-   ```
-
-4. **Leverage suspense for async**
-   ```typescript
-   createSuspense(() => trackPromise(fetch()), <Loading />);
-   ```
-
-5. **Monitor with debugging tools**
-   ```typescript
-   const stats = getNodeStats();
-   const leaks = findPotentialLeaks();
-   ```
-
-## Best Practices
-
-### ✅ Do
-
-- Use `batch()` for multiple related updates
-- Use `startTransition()` for non-urgent updates
-- Add error boundaries with `catchError()`
-- Use context instead of prop drilling
-- Monitor performance with debugging tools
-
-### ❌ Don't
-
-- Update signals without batching when multiple updates needed
-- Block UI with expensive synchronous computations
-- Ignore errors in reactive code
-- Prop drill when context would work better
+1. **Batch related updates** — `batch(() => { a.set(1); b.set(2); })` runs dependents once.
+2. **Transitions for expensive updates** — `startTransition(() => list.set(compute()))`
+   keeps the current view interactive while the next one is prepared.
+3. **Memo the expensive part** — a memo costs a node; it pays for itself when the
+   computation is heavier than the bookkeeping.
+4. **Read narrowly** — reading a whole object subscribes you to every write to it. Reach
+   for the property you need, or derive it.
+5. **Key your lists** — `mapArray` keeps a row's nodes across a reorder; `indexArray`
+   rebuilds them.
 
 ## Building
 
@@ -358,12 +271,6 @@ MIT
 
 ## Credits
 
-Inspired by:
-- [SolidJS](https://www.solidjs.com/) - Reactivity primitives and scheduling
-- [React](https://react.dev/) - Transitions and Suspense concepts
-- [Vue 3](https://vuejs.org/) - Reactivity system design
-
----
-
-**Version:** 3.2.0+  
-**Status:** ✅ Production Ready
+The graph implements the **TC39 Signals** model. The ergonomics owe a lot to prior art —
+SolidJS for fine-grained primitives and scheduling, React for transitions and suspense as
+concepts, Vue 3 for reactivity design. None of that was invented here.
