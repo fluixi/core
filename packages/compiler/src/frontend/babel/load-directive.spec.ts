@@ -102,9 +102,20 @@ describe('load: rejects what it cannot honour', () => {
   });
 });
 
-describe('an author-written import still wins', () => {
-  it('does not defer a name bound in the file', () => {
+describe('an author-written import and a load: on the same name', () => {
+  // These are two instructions that cannot both hold: an import is static, `load:` asks
+  // for a dynamic one. The directive wins — it is the more specific thing to have
+  // written, and honouring the import means silently ignoring it.
+  it('defers the import the author wrote, when the name is only a tag', () => {
     const out = compile("import { Chart } from './mine.js';\nconst v = <Chart load:visible/>;");
+    expect(out).toContain('deferred(() => import("./mine.js")');
+    expect(out).not.toContain("import { Chart } from './mine.js'");
+  });
+
+  it('keeps the import when the name is used as a value', () => {
+    // A lazy wrapper is not what `register(Chart)` expects, so the import stands and the
+    // directive is reported instead.
+    const out = compile("import { Chart } from './mine.js';\nregister(Chart);\nconst v = <Chart load:visible/>;");
     expect(out).not.toContain('deferred(');
     expect(out).toContain("from './mine.js'");
   });

@@ -278,6 +278,55 @@ function collectNeeds(node: IRNode, out: Needs): void {
   if ('children' in node && node.children) for (const c of node.children) collectNeeds(c, out);
 }
 
+/**
+ * An import this file wrote that we can turn into a deferred binding instead.
+ *
+ * `load:` on a component the author imported did nothing, because deferring means
+ * *creating* the reference as a dynamic import and there was already a static one. Here we
+ * take the static one away: remove the specifier, emit the `deferred()` binding, and the
+ * chunk splits like any other.
+ *
+ * Only when the name is used **exclusively as a tag**. JSX element names are
+ * `JSXIdentifier`, so a component used only in markup has zero `Identifier` references —
+ * which makes the check exact rather than a guess. Anything else (passed to a function,
+ * re-exported, `Chart.displayName`) keeps its import and its warning: replacing the real
+ * binding with a lazy wrapper would change what those sites see.
+ */
+function deferrableImport(
+  program: Node,
+  name: string,
+): { module: string; export: string; declaration: Node; specifier: Node } | undefined {
+  for (const statement of (program.body as Node[]) ?? []) {
+    if (statement.type !== 'ImportDeclaration') continue;
+
+    for (const specifier of (statement.specifiers as Node[]) ?? []) {
+      if (specifier.local?.name !== name) continue;
+      // A namespace import is the whole module; there is no single export to defer.
+      if (specifier.type === 'ImportNamespaceSpecifier') return undefined;
+
+      const exported =
+        specifier.type === 'ImportDefaultSpecifier'
+          ? 'default'
+          : ((specifier.imported?.name ?? specifier.imported?.value) as string);
+
+      return { module: statement.source.value as string, export: exported, declaration: statement, specifier };
+    }
+  }
+  return undefined;
+}
+
+/** Whether `name` is referenced as a value anywhere — a tag alone does not count. */
+function usedAsValue(program: Node, name: string, specifier: Node): boolean {
+  let seen = false;
+  walk(program, (node) => {
+    if (seen || node.type !== 'Identifier' || node.name !== name) return;
+    // The import specifier's own local binding is the declaration, not a use.
+    if (node.start === specifier.local?.start && node.end === specifier.local?.end) return;
+    seen = true;
+  });
+  return seen;
+}
+
 /** The strategy object a `deferred()` binding is given. */
 function strategyLiteral(s: IRLoadStrategy): string {
   const parts = [`kind: ${JSON.stringify(s.kind)}`];
@@ -402,6 +451,7 @@ export function transformTemplates(
   }
 
   const bound = moduleBindings(ast.program);
+  const deferredFromImport: string[] = [];
   const prologue = buildPrologue(used, needs, hoisted, bound, options);
   if (prologue) out.prepend(prologue);
   const runtimeImports = intrinsicImports(intrinsics, bound);
@@ -411,6 +461,37 @@ export function transformTemplates(
     if (node.type === 'ImportDeclaration' && node.source?.value === '@fluixi/core/rx') {
       out.overwrite(node.source.start, node.source.end, JSON.stringify('@fluixi/reactive'));
     }
+  }
+
+  // A `load:` on an import the author wrote: take the import away and defer it instead,
+  // when the name is only ever a tag. What survives this is what still needs a warning.
+  for (const [name, strategy] of [...needs.ignoredLoad]) {
+    if (!bound.has(name)) continue;
+    const found = deferrableImport(ast.program as never, name);
+    if (!found || usedAsValue(ast.program as never, name, found.specifier)) continue;
+
+    const rest = (found.declaration.specifiers as Node[]).filter((sp) => sp !== found.specifier);
+    out.overwrite(
+      found.declaration.start,
+      found.declaration.end,
+      rest.length === 0
+        ? ''
+        : `import { ${rest.map((sp) => code.slice(sp.start, sp.end)).join(', ')} } from ` +
+            `${JSON.stringify(found.declaration.source.value)};`,
+    );
+    deferredFromImport.push(
+      `const ${name} = deferred(() => import(${JSON.stringify(found.module)}), ` +
+        `{ strategy: ${strategyLiteral(strategy)}, export: ${JSON.stringify(found.export)} });`,
+    );
+    needs.ignoredLoad.delete(name);
+  }
+  if (deferredFromImport.length > 0) {
+    // Prepended, not appended: `const` has no hoisting, and the component that uses it is
+    // written above. One block, so the import lands before the bindings that need it.
+    const header = bound.has('deferred')
+      ? ''
+      : `import { deferred } from ${JSON.stringify(options.coreModule ?? '@fluixi/core')};\n`;
+    out.prepend(`${header}${deferredFromImport.join('\n')}\n`);
   }
 
   const loadDiagnostics = [...needs.ignoredLoad].map(([name, strategy]) => ({

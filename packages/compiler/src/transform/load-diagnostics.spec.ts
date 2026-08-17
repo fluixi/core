@@ -12,24 +12,18 @@ const OPTS = { format: 'jsx', runtimeModule: '@fluixi/dom' } as never;
 const run = (code: string) => transformTemplates(code, 'a.tsx', OPTS)!;
 
 describe('a load: that cannot take effect', () => {
-  it('reports a statically imported component', () => {
-    const out = run(
-      "import { Chart } from './Chart';\nexport function App() { return <Chart load:visible />; }",
-    );
-    expect(out.loadDiagnostics).toHaveLength(1);
-    expect(out.loadDiagnostics![0].name).toBe('Chart');
-    expect(out.loadDiagnostics![0].message).toMatch(/already imported/);
-    expect(out.loadDiagnostics![0].message).toMatch(/resolve/);
-  });
-
+  // A plain static import is no longer one of these: it gets rewritten into a deferred
+  // binding instead — see load-import.spec. What is left here is what cannot be.
   it('reports a name nothing supplies, with the other fix', () => {
     const out = run('export function App() { return <Chart load:idle />; }');
     expect(out.loadDiagnostics![0].message).toMatch(/nothing supplies/);
   });
 
   it('names the strategy that was ignored', () => {
+    // Used as a value too, so the import has to stay and the directive cannot apply.
     const out = run(
-      "import { Chart } from './Chart';\nexport function App() { return <Chart load:media=\"(min-width: 40rem)\" />; }",
+      "import { Chart } from './Chart';\n" +
+        'export function App() { register(Chart); return <Chart load:media="(min-width: 40rem)" />; }',
     );
     expect(out.loadDiagnostics![0].strategy.kind).toBe('media');
     expect(out.loadDiagnostics![0].message).toContain('load:media');
@@ -38,7 +32,7 @@ describe('a load: that cannot take effect', () => {
   it('reports each name once, not once per usage', () => {
     const out = run(
       "import { Chart } from './Chart';\n" +
-        'export function App() { return <div><Chart load:idle /><Chart load:idle /></div>; }',
+        'export function App() { register(Chart); return <div><Chart load:idle /><Chart load:idle /></div>; }',
     );
     expect(out.loadDiagnostics).toHaveLength(1);
   });
