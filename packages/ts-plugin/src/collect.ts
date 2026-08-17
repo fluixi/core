@@ -13,7 +13,8 @@
  * TS the editor is running — never a second copy resolved from node_modules.
  */
 import type * as TS from 'typescript';
-import { parse, type TemplateNode } from '@fluixi/template-parser';
+import type { TemplateNode } from '@fluixi/template-parser';
+import { parseCached, templatesIn } from './cache.js';
 
 /** TS "declared but never used" diagnostic codes (incl. 6192 = all imports unused). */
 const UNUSED_CODES = new Set([6133, 6196, 6198, 6199, 6205, 6138, 6192]);
@@ -22,29 +23,28 @@ export function isUnusedCode(code: number): boolean {
   return UNUSED_CODES.has(code);
 }
 
-/** Component tag roots referenced inside html``/svg`` templates in the file. */
-export function usedComponentTags(ts: typeof TS, sourceFile: TS.SourceFile): Set<string> {
-  const tags = new Set<string>();
-  const visit = (node: TS.Node): void => {
-    if (
-      ts.isTaggedTemplateExpression(node) &&
-      ts.isIdentifier(node.tag) &&
-      (node.tag.text === 'html' || node.tag.text === 'svg')
-    ) {
-      collectTags(parse(templateStatics(ts, node.template)).root.children, tags);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
-  return tags;
-}
+const tagCache = new WeakMap<TS.SourceFile, Set<string>>();
 
-/** The static string segments of a template (one more than the number of holes). */
-function templateStatics(ts: typeof TS, tpl: TS.TemplateLiteral): string[] {
-  if (ts.isNoSubstitutionTemplateLiteral(tpl)) return [tpl.text];
-  const out = [tpl.head.text];
-  for (const span of tpl.templateSpans) out.push(span.literal.text);
-  return out;
+/**
+ * Component tag roots referenced inside html``/svg`` templates in the file.
+ *
+ * Cached on the `SourceFile`, which TypeScript replaces on edit. It has to be: the
+ * editor asks for semantic AND suggestion diagnostics on every keystroke, so an
+ * uncached walk here cost two full traversals of every open file per keypress —
+ * including files with no templates at all, in any project the extension activates
+ * for. Reuses `templatesIn` and `parseCached` so a file with no `` html`` `` costs
+ * one cached lookup and nothing else.
+ */
+export function usedComponentTags(ts: typeof TS, sourceFile: TS.SourceFile): Set<string> {
+  const hit = tagCache.get(sourceFile);
+  if (hit) return hit;
+
+  const tags = new Set<string>();
+  for (const template of templatesIn(ts, sourceFile)) {
+    collectTags(parseCached(ts, sourceFile, template.template).root.children, tags);
+  }
+  tagCache.set(sourceFile, tags);
+  return tags;
 }
 
 /** Walk the Template AST for component tags; a member tag `Ctx.Provider` roots at `Ctx`. */
