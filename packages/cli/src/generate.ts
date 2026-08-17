@@ -46,6 +46,38 @@ function pascal(s: string): string {
     .join('') || 'Component';
 }
 
+/**
+ * Say how to use a generated component without importing it, when nothing would resolve it.
+ *
+ * Read-only on purpose. A vite/fluixi config is arbitrary TypeScript — it can spread a
+ * shared object, compute its rules, or call a resolver function — so editing it means
+ * parsing and reprinting, which loses the author's formatting and breaks on any shape we
+ * didn't anticipate. Printing the line to paste costs the user one paste and cannot
+ * corrupt anything.
+ *
+ * Nothing is printed when a rule already exists, or when there is no config to look at.
+ */
+function resolveHint(Name: string, ext: string): void {
+  const configs = ['vite.config.ts', 'vite.config.js', 'fluixi.config.ts', 'fluixi.config.js'];
+  const found = configs.map((f) => resolve(f)).find((f) => existsSync(f));
+  if (!found) return;
+
+  try {
+    // `resolve:` inside the fluixi() options is the only thing we're looking for. A false
+    // positive here just means we stay quiet, which is the right way to be wrong.
+    if (/\bresolve\s*:\s*\[/.test(readFileSync(found, 'utf8'))) return;
+  } catch {
+    return;
+  }
+
+  console.log(
+    `  ${c.gray('to use')} ${c.cyan(`<${Name} />`)} ${c.gray('without importing it, add to')} ` +
+      `${c.cyan(relative(process.cwd(), found))}:`,
+  );
+  console.log(`    ${c.gray(`resolve: [{ match: /^([A-Z]\\w+)$/, module: '/src/components/$1.${ext}' }]`)}`);
+  console.log(`  ${c.gray('one pattern covers the whole folder. Importing it works too — including with')} ${c.cyan('load:')}`);
+}
+
 function write(file: string, content: string): void {
   const rel = relative(process.cwd(), file);
   if (existsSync(file)) {
@@ -174,7 +206,9 @@ export function generate(kind: string | undefined, name: string | undefined): vo
       if (!name) return fail('component name required, e.g. `fluixi g component Button`');
       const Name = pascal(name);
       const html = detectFormat() === 'html';
-      write(resolve('src/components', `${Name}.${html ? 'ts' : 'tsx'}`), (html ? componentHtml : component)(Name));
+      const ext = html ? 'ts' : 'tsx';
+      write(resolve('src/components', `${Name}.${ext}`), (html ? componentHtml : component)(Name));
+      resolveHint(Name, ext);
       break;
     }
     case 'route':

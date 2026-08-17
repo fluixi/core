@@ -86,3 +86,55 @@ describe('generate middleware', () => {
     expect(existsSync(join(dir, 'src/middleware.ts'))).toBe(true);
   });
 });
+
+describe('the resolve hint', () => {
+  it('is printed when nothing would resolve the new component', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fluixi-gen-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(dir);
+      writeFileSync(join(dir, 'tsconfig.json'), '{"compilerOptions":{"jsx":"preserve"}}');
+      writeFileSync(join(dir, 'vite.config.ts'), 'export default { plugins: [fluixi()] };');
+
+      const said: string[] = [];
+      const log = console.log;
+      console.log = (...a: unknown[]) => said.push(a.join(' '));
+      try {
+        generate('component', 'Card');
+      } finally {
+        console.log = log;
+      }
+
+      const text = said.join('\n');
+      expect(text).toMatch(/without importing it/);
+      expect(text).toMatch(/match: \/\^\(\[A-Z\]/);
+    } finally {
+      process.chdir(cwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('says nothing when a rule is already there', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fluixi-gen-'));
+    const cwd = process.cwd();
+    try {
+      process.chdir(dir);
+      writeFileSync(join(dir, 'tsconfig.json'), '{"compilerOptions":{"jsx":"preserve"}}');
+      writeFileSync(join(dir, 'vite.config.ts'), 'export default { plugins: [fluixi({ resolve: [] })] };');
+
+      const said: string[] = [];
+      const log = console.log;
+      console.log = (...a: unknown[]) => said.push(a.join(' '));
+      try {
+        generate('component', 'Card');
+      } finally {
+        console.log = log;
+      }
+
+      expect(said.join('\n')).not.toMatch(/without importing it/);
+    } finally {
+      process.chdir(cwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

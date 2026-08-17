@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { writeFile, unlink } from 'node:fs/promises';
 import { resolve, isAbsolute } from 'node:path';
 import type { Adapter } from './adapter.js';
+import type { ComponentResolverRule } from '@fluixi/compiler';
 
 /**
  * Fluixi app config. Place in `fluixi.config.{ts,js,mjs}` at the app root and wrap
@@ -37,6 +38,17 @@ export interface FluixiConfig {
   middleware?: string;
   /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
   ssrNoExternal?: string[];
+  /**
+   * Where a capitalised tag with no import in scope comes from.
+   *
+   * An entry per component (`{ components: { Button: '/src/components/Button.tsx' } }`) or
+   * a pattern covering a family (`{ match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' }`),
+   * so a whole directory is one rule rather than a list to maintain.
+   *
+   * Only needed for tags you don't import. A `load:` directive works on your own import
+   * too — see the docs on load strategies.
+   */
+  resolve?: readonly ComponentResolverRule[];
   /**
    * Deploy target. Decides how `fluixi build` bundles the server (see the adapter's
    * `bundle` mode) and how `fluixi start` serves it. Unset keeps Vite's own bundling
@@ -102,6 +114,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
+    resolve: config.resolve ?? [],
     adapter: config.adapter,
     i18n: resolveI18n(config.i18n),
     prerender: resolvePrerender(config.prerender),

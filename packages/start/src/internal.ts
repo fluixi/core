@@ -190,7 +190,9 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   const plugins: any[] = [
     serverFunctionsVitePlugin(),
     fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }),
-    createVitePlugin(),
+    // The app's component-resolution rules reach the compiler here; without this an SSR
+    // app has no way to say where an unimported tag comes from.
+    createVitePlugin({ resolve: cfg.resolve }),
   ];
   // Auto-discover translations (src/i18n/<locale>.json → virtual:fluixi-i18n) unless disabled.
   if (cfg.i18n) plugins.push(i18nVitePlugin(cfg.i18n));
