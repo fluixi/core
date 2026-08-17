@@ -21,12 +21,6 @@
         "require": "./dist/lib/element/index.cjs",
         "default": "./dist/lib/element/index.js"
       },
-      "./dom": {
-        "types": "./dist/lib/dom/dom.d.ts",
-        "import": "./dist/lib/dom/dom.mjs",
-        "require": "./dist/lib/dom/dom.cjs",
-        "default": "./dist/lib/dom/dom.js"
-      },
       "./server": {
         "types": "./dist/lib/dom/server-renderer.d.ts",
         "import": "./dist/lib/dom/server-renderer.mjs",
@@ -46,10 +40,10 @@
         "default": "./dist/lib/dom/integration.js"
       },
       "./control-flow": {
-        "types": "./dist/lib/dom/control-flow.d.ts",
-        "import": "./dist/lib/dom/control-flow.mjs",
-        "require": "./dist/lib/dom/control-flow.cjs",
-        "default": "./dist/lib/dom/control-flow.js"
+        "types": "./dist/lib/flow/index.d.ts",
+        "import": "./dist/lib/flow/index.mjs",
+        "require": "./dist/lib/flow/index.cjs",
+        "default": "./dist/lib/flow/index.js"
       },
       "./utils": {
         "types": "./dist/lib/dom/utils.d.ts",
@@ -93,13 +87,6 @@
       "require": "./dist/lib/element/index.cjs",
       "default": "./dist/lib/element/index.js"
     },
-    "./dom": {
-      "development": "./src/lib/dom/dom.ts",
-      "types": "./dist/lib/dom/dom.d.ts",
-      "import": "./dist/lib/dom/dom.mjs",
-      "require": "./dist/lib/dom/dom.cjs",
-      "default": "./dist/lib/dom/dom.js"
-    },
     "./server": {
       "development": "./src/lib/dom/server-renderer.ts",
       "types": "./dist/lib/dom/server-renderer.d.ts",
@@ -122,11 +109,11 @@
       "default": "./dist/lib/dom/integration.js"
     },
     "./control-flow": {
-      "development": "./src/lib/dom/control-flow.ts",
-      "types": "./dist/lib/dom/control-flow.d.ts",
-      "import": "./dist/lib/dom/control-flow.mjs",
-      "require": "./dist/lib/dom/control-flow.cjs",
-      "default": "./dist/lib/dom/control-flow.js"
+      "development": "./src/lib/flow/index.ts",
+      "types": "./dist/lib/flow/index.d.ts",
+      "import": "./dist/lib/flow/index.mjs",
+      "require": "./dist/lib/flow/index.cjs",
+      "default": "./dist/lib/flow/index.js"
     },
     "./utils": {
       "development": "./src/lib/dom/utils.ts",
