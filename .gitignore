@@ -87,8 +87,6 @@ Desktop.ini
 /typings
 
 
-# ─── Local agent state ────────────────────────────────────────────────────────
-.claude/
 
 # Deploy adapter output
 .vercel
