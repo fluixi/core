@@ -63,7 +63,7 @@ export interface SwitchProps {
  * Multi-branch conditional rendering — mirrors SolidJS `<Switch>/<Match>`.
  *
  * Evaluates `Match` branches in order and renders the first truthy one.
- * Returns a memo — works in both JSX and lit-html.
+ * Returns a memo — works in both JSX and `html` templates.
  *
  * @example JSX
  * <Switch fallback={<p>Nothing</p>}>
@@ -71,7 +71,7 @@ export interface SwitchProps {
  *   <Match when={b()}><B /></Match>
  * </Switch>
  *
- * @example lit-html
+ * @example html template
  * Switch({
  *   fallback: html`<p>Nothing</p>`,
  *   children: [

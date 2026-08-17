@@ -24,14 +24,14 @@ export interface IndexProps<T, U = any> {
  * Keyed by position. When the list grows, new slots are created.
  * When it shrinks, trailing slots are disposed. When an item at a
  * given index changes value, only the `item` signal updates (no re-render).
- * Returns a memo of the rendered array — works in both JSX and lit-html.
+ * Returns a memo of the rendered array — works in both JSX and `html` templates.
  *
  * @example JSX
  * <Index each={items()} fallback={<p>Empty</p>}>
  *   {(item, index) => <li>{index} — {item().name}</li>}
  * </Index>
  *
- * @example lit-html
+ * @example html template
  * Index({ each: items, children: (item, i) => html`<li>${i} — ${item().name}</li>` })
  */
 export function Index<T, U = any>(props: IndexProps<T, U>): Accessor<U[] | any> {

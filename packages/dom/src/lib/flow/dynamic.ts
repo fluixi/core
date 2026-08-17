@@ -18,12 +18,12 @@ export interface DynamicProps<T extends Record<string, any> = Record<string, any
  *
  * The `component` prop can be a reactive accessor.  When it changes,
  * the old output is discarded and the new component is called.
- * Returns a memo — works in both JSX and lit-html.
+ * Returns a memo — works in both JSX and `html` templates.
  *
  * @example JSX
  * <Dynamic component={tab() === 'a' ? CompA : CompB} value={x()} />
  *
- * @example lit-html
+ * @example html template
  * Dynamic({ component: () => tab() === 'a' ? CompA : CompB, value: x })
  */
 export function Dynamic<T extends Record<string, any> = Record<string, any>>(

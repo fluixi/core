@@ -14,7 +14,7 @@ export interface ErrorBoundaryProps {
  * static value or a function `(err, reset) => UI` — calling `reset()` clears
  * the error state and retries rendering the children.
  *
- * Returns a memo — works in both JSX and lit-html.
+ * Returns a memo — works in both JSX and `html` templates.
  *
  * Note: Only catches errors thrown synchronously during the render phase
  * (memo evaluation).  Async errors inside effects are not caught here.
@@ -26,7 +26,7 @@ export interface ErrorBoundaryProps {
  *   <RiskyComponent />
  * </ErrorBoundary>
  *
- * @example lit-html
+ * @example html template
  * ErrorBoundary({
  *   fallback: (err, reset) => html`<button @click=${reset}>Retry</button>`,
  *   children: html`${riskyContent}`,

@@ -443,7 +443,7 @@ C'est la methode la plus importante. Chaque lecture de `state.x` passe par ici.
     return accessor;
   }
 ```
-Quand on accede a `state.$name`, le `$` est retire et un accesseur reactif marque `$SIGNAL` est retourne. Cela permet le patron `{state.$name}` dans les templates lit-html.
+Quand on accede a `state.$name`, le `$` est retire et un accesseur reactif marque `$SIGNAL` est retourne. Cela permet le patron `{state.$name}` dans les templates `html`.
 
 #### Symboles internes
 

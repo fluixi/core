@@ -18,14 +18,14 @@ export interface PortalProps<Children = any> {
  * Useful for modals, tooltips, and overlays.  The portal is disposed when
  * the parent component unmounts.  Returns null (no in-place DOM output).
  *
- * Works in both JSX and lit-html contexts.
+ * Works in both JSX and `html` templates.
  *
  * @example JSX
  * <Portal mount={document.getElementById('modal-root')!}>
  *   <Modal />
  * </Portal>
  *
- * @example lit-html
+ * @example html template
  * Portal({ mount: () => document.getElementById('modal-root')!, children: html`<p>Hello</p>` })
  */
 export function Portal(props: PortalProps): null {

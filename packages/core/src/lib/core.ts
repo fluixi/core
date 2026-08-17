@@ -1,10 +1,11 @@
 /**
- * @fileoverview Fluixi - A reactive framework for lit-html inspired by SolidJS
+ * @fileoverview Fluixi — a compiler-native reactive framework
  * @module @fluixi/core
  * @version 0.0.1
  *
- * Fluixi is a modern reactive framework that combines the power of lit-html
- * with fine-grained reactivity from @fluixi/reactive, inspired by SolidJS's design.
+ * Fluixi compiles JSX and `html` templates into direct DOM calls over the fine-grained
+ * reactivity in @fluixi/reactive. The template layer is our own and compiled; the
+ * lit-html runtime bridge this once wrapped is gone.
  *
  * @example
  * ```typescript

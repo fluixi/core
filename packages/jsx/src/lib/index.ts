@@ -4,7 +4,7 @@
  *
  * This package provides a comprehensive JSX runtime with:
  * - Fine-grained reactive updates similar to SolidJS
- * - Support for both lit-html templates and native JSX
+ * - Support for both `html` templates and native JSX
  * - Seamless integration with signal and store systems
  * - Optimized DOM updates with compilation support
  */

@@ -8,9 +8,12 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
 /**
- * The spike thesis: a lit `` html`...` `` template and its JSX twin flow through the
- * SAME compiler (one IR, one backend) and emit byte-identical code — proving lit-html
- * can share the JSX compiler instead of needing the runtime `litrx` directive bridge.
+ * An `` html`...` `` template and its JSX twin flow through the SAME compiler — one IR,
+ * one backend — and emit byte-identical code. That is what let the template layer become
+ * a compile target instead of the runtime directive bridge it started as.
+ *
+ * (`lit` in these filenames is the compiler's internal name for the template format, not
+ * the lit-html library, which is no longer involved.)
  */
 
 function findNode(src: string, type: string, plugins: string[]): any {

@@ -37,14 +37,14 @@ export interface ShowProps<T, W = any> {
 /**
  * Conditionally renders content based on a reactive condition.
  *
- * Returns a memo — works in both JSX and lit-html templates.
+ * Returns a memo — works in both JSX and `html` templates.
  *
  * @example JSX
  * <Show when={isLoggedIn()} fallback={<Login />}>
  *   <Dashboard />
  * </Show>
  *
- * @example lit-html
+ * @example html template
  * Show({ when: isLoggedIn, fallback: html`<p>Login</p>`, children: html`<p>Dashboard</p>` })
  */
 // export function Show<T>(props: ShowProps<T>): Accessor<any> {
