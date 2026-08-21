@@ -374,6 +374,7 @@ async function rewriteProps(code: string, id: string, options: CompilerOptions) 
   if (options.propsDestructure === false) return code;
   const { transformProps } = await import('./transform/index.js');
   const result = transformProps(code, id);
+  reportDiagnostics({ propsDiagnostics: result.diagnostics }, id);
   // Untouched source comes back identical, so nothing pays for the option being on.
   return result.rewritten > 0 ? result.code : code;
 }
@@ -390,9 +391,10 @@ const reported = new Set<string>();
 /**
  * Say what the compiler refused to do.
  *
- * Both of these build cleanly and fail at runtime, which is why they are worth printing: an
- * unresolved tag renders nothing, and a `load:` it cannot act on ships the chunk eagerly.
- * Neither leaves a trace anywhere else.
+ * All of these build cleanly and fail at runtime, which is why they are worth printing: an
+ * unresolved tag renders nothing, a `load:` it cannot act on ships the chunk eagerly, and a
+ * props pattern the rewrite refused reads its value once instead of tracking it. None leaves
+ * a trace anywhere else — the last one is a stale value on screen and nothing in the build.
  *
  * `console.warn`, deliberately, not a plugin's `this.warn`: that only exists in the
  * rollup/vite context, and this runs for the esbuild and webpack adapters too. A
@@ -402,6 +404,7 @@ function reportDiagnostics(result: unknown, id: string): void {
   const r = result as {
     loadDiagnostics?: { message: string }[];
     unresolvedDiagnostics?: { message: string }[];
+    propsDiagnostics?: { name: string; message: string }[];
   } | null;
   const say = (message: string): void => {
     const key = `${id}\u0000${message}`;
@@ -412,6 +415,9 @@ function reportDiagnostics(result: unknown, id: string): void {
 
   for (const d of r?.unresolvedDiagnostics ?? []) say(d.message);
   for (const d of r?.loadDiagnostics ?? []) say(d.message);
+  for (const d of r?.propsDiagnostics ?? []) {
+    say(`\`${d.name}\` was left destructured: ${d.message}. It reads once instead of tracking.`);
+  }
 }
 
 /** Compile one module, through babel only when asked for it. */
