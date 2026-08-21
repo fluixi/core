@@ -286,15 +286,17 @@ export function Outlet() {
 /** Navigate to `to` on mount (replace by default). Renders nothing. */
 export function Redirect(props: { to: string; replace?: boolean }) {
   const ctx = useContext(RouterContext);
-  if (!ctx || typeof window === 'undefined') return null;
-  // Navigate AFTER the current render commits. Navigating during render (an effect
-  // running mid-render) updated the location but the route never re-matched, so the
-  // target never showed. Guard against firing if this Redirect is torn down first.
-  let cancelled = false;
-  onCleanup(() => (cancelled = true));
-  queueMicrotask(() => {
-    if (!cancelled) ctx.router.navigate(props.to, { replace: props.replace !== false });
-  });
+  // Nothing to do without a router, and nothing to navigate on the server.
+  if (ctx && typeof window !== 'undefined') {
+    // Navigate AFTER the current render commits. Navigating during render (an effect
+    // running mid-render) updated the location but the route never re-matched, so the
+    // target never showed. Guard against firing if this Redirect is torn down first.
+    let cancelled = false;
+    onCleanup(() => (cancelled = true));
+    queueMicrotask(() => {
+      if (!cancelled) ctx.router.navigate(props.to, { replace: props.replace !== false });
+    });
+  }
   return null;
 }
 

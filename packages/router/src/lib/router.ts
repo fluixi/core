@@ -20,11 +20,14 @@ import type {
 /** Parse a `?a=1&b=2` search string into an object. */
 function parseQuery(search: string): Record<string, string> {
   const q: Record<string, string> = {};
-  if (!search) return q;
-  const usp = new URLSearchParams(
-    search.startsWith('?') ? search.slice(1) : search
-  );
-  usp.forEach((v, k) => (q[k] = v));
+  // Guarded rather than an early return: `search` is typed as a string but reaches
+  // here from a location object, so a missing one must give `{}` and not throw.
+  if (search) {
+    const usp = new URLSearchParams(
+      search.startsWith('?') ? search.slice(1) : search
+    );
+    usp.forEach((v, k) => (q[k] = v));
+  }
   return q;
 }
 
