@@ -16,7 +16,7 @@
       }
     }
   },
-  "description": "The Fluixi html`` template parser: a dependency-free tokenizer + recursive-descent parser producing a located, recoverable Template AST. The shared foundation for the compiler, language server, TypeScript plugin, and Biome plugin.",
+  "description": "dependency-free tokenizer and recursive-descent parser for html`` templates, producing a located, recoverable AST; shared by the compiler and the TypeScript plugin",
   "type": "module",
   "files": [
     "dist",

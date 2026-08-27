@@ -7,7 +7,7 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "description": "TypeScript language-service plugin for Fluixi: teaches tsserver that component tags used inside html`` templates (e.g. <UserCard/>) count as references, so they aren't flagged as unused.",
+  "description": "gives html`` templates the editor support JSX already gets; a component used only as a tag is no longer reported as unused",
   "type": "commonjs",
   "files": [
     "dist",

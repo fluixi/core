@@ -2,7 +2,7 @@
   "name": "@fluixi/core",
   "version": "1.0.0-alpha.77",
   "license": "MIT",
-  "description": "Solid-Compatible Fine-Grained UI Framework",
+  "description": "framework to build apps with DOM runtime, reactive core, router, and JSX runtime; components run once, reactivity updates DOM",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

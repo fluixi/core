@@ -32,7 +32,7 @@
       }
     }
   },
-  "description": "Fluixi JSX compiler — host-agnostic IR + pluggable codegen backends. Babel/SWC are front-end adapters.",
+  "description": "compiles JSX and html`` templates to direct DOM calls via shared IR; Babel is used as parser only",
   "type": "module",
   "files": [
     "dist",
