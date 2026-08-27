@@ -106,7 +106,6 @@ export const RUNTIME_PRIMITIVES: Readonly<Record<string, Intrinsic['returns']>> 
 export const PRIMITIVE_MODULES: readonly string[] = [
   '@fluixi/reactive',
   '@fluixi/reactive/signal',
-  '@fluixi/reactive/signal-next',
   '@fluixi/reactive/store',
   '@fluixi/core',
   '@fluixi/core/rx',

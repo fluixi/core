@@ -1,11 +1,11 @@
 /**
- * `@fluixi/reactive/signal-next` — the complete reactive API running on the TC39
- * Signals core (L0 graph + L1 runtime), as a drop-in for `@fluixi/reactive/signal`.
+ * The complete reactive API running on the TC39 Signals core (L0 graph + L1 runtime).
  *
- * This is the OPT-IN entry for the migration. It is purely additive: the legacy
- * `@fluixi/reactive/signal` (signal.ts) remains the default and the fallback, fully
- * intact. Adopt this entry to run on the new core; when the native `globalThis.Signal`
- * ships, L0 becomes a thin polyfill swap underneath this same surface.
+ * This is what `@fluixi/reactive/signal` re-exports, so it is the default and not an
+ * opt-in. It had its own `signal-next` subpath during the migration, when the legacy
+ * implementation was still the default; that subpath is gone, having ended up with no
+ * export `./signal` did not already have. When the native `globalThis.Signal` ships,
+ * L0 becomes a thin polyfill swap underneath this same surface.
  *
  * Coverage: signals, memos, effects, computed, render effects, roots, ownership,
  * batch, untrack, on, transitions (minimal), context, resources (+ SSR seeding),

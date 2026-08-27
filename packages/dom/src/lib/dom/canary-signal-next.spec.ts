@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 /**
- * Canary: prove the TC39 core (@fluixi/reactive/signal-next) drives real DOM with
- * fine-grained updates — the core claim of the migration. Uses signal-next directly
- * (no integration bridge), exercising the globalThis-singleton graph end-to-end.
+ * Canary: prove the TC39 core drives real DOM with fine-grained updates — the core
+ * claim of the migration. Imports the public `@fluixi/reactive/signal` entry, which
+ * IS that core, with no integration bridge, exercising the globalThis-singleton
+ * graph end to end.
+ *
+ * This read `@fluixi/reactive/signal-next` until that subpath was removed for having
+ * no export `./signal` did not already have.
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -13,7 +17,7 @@ import {
   createResource,
   createSuspenseBoundary,
   provideSuspense,
-} from '@fluixi/reactive/signal-next';
+} from '@fluixi/reactive/signal';
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 
