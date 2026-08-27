@@ -2,7 +2,9 @@
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".ts"],
+    "extensions": [
+      ".ts"
+    ],
     "target": "es2021",
     "platform": "browser",
     "minify": true,
@@ -10,7 +12,18 @@
     "outdir": "dist/cdn",
     "rootDir": "src/cdn",
     "entries": {
-      "src/cdn/dom.ts": { "globalName": "FluixiDOM", "formats": ["iife"] }
+      "src/cdn/dom.ts": {
+        "globalName": "FluixiDOM",
+        "formats": [
+          "iife"
+        ]
+      },
+      "src/cdn/dom-client.ts": {
+        "globalName": "FluixiDOM",
+        "formats": [
+          "iife"
+        ]
+      }
     }
   }
 }
