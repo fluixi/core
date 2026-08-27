@@ -33,12 +33,6 @@
         "require": "./dist/lib/signal/index.cjs",
         "default": "./dist/lib/signal/index.js"
       },
-      "./signal-next": {
-        "types": "./dist/lib/signal/graph/signal-next.d.ts",
-        "import": "./dist/lib/signal/graph/signal-next.mjs",
-        "require": "./dist/lib/signal/graph/signal-next.cjs",
-        "default": "./dist/lib/signal/graph/signal-next.js"
-      },
       "./core": {
         "types": "./dist/lib/signal/graph/index.d.ts",
         "import": "./dist/lib/signal/graph/index.mjs",
@@ -62,6 +56,12 @@
         "import": "./dist/lib/signal/cached-resource.mjs",
         "require": "./dist/lib/signal/cached-resource.cjs",
         "default": "./dist/lib/signal/cached-resource.js"
+      },
+      "./tc39": {
+        "types": "./dist/lib/signal/graph/index.d.ts",
+        "import": "./dist/lib/signal/graph/index.mjs",
+        "require": "./dist/lib/signal/graph/index.cjs",
+        "default": "./dist/lib/signal/graph/index.js"
       }
     }
   },
@@ -86,12 +86,12 @@
       "require": "./dist/lib/index.cjs",
       "default": "./dist/lib/index.js"
     },
-    "./observable": {
-      "development": "./src/lib/observable/index.ts",
-      "types": "./dist/lib/observable/index.d.ts",
-      "import": "./dist/lib/observable/index.mjs",
-      "require": "./dist/lib/observable/index.cjs",
-      "default": "./dist/lib/observable/index.js"
+    "./signal": {
+      "development": "./src/lib/signal/index.ts",
+      "types": "./dist/lib/signal/index.d.ts",
+      "import": "./dist/lib/signal/index.mjs",
+      "require": "./dist/lib/signal/index.cjs",
+      "default": "./dist/lib/signal/index.js"
     },
     "./store": {
       "development": "./src/lib/store/index.ts",
@@ -100,19 +100,12 @@
       "require": "./dist/lib/store/index.cjs",
       "default": "./dist/lib/store/index.js"
     },
-    "./signal": {
-      "development": "./src/lib/signal/index.ts",
-      "types": "./dist/lib/signal/index.d.ts",
-      "import": "./dist/lib/signal/index.mjs",
-      "require": "./dist/lib/signal/index.cjs",
-      "default": "./dist/lib/signal/index.js"
-    },
-    "./signal-next": {
-      "development": "./src/lib/signal/graph/signal-next.ts",
-      "types": "./dist/lib/signal/graph/signal-next.d.ts",
-      "import": "./dist/lib/signal/graph/signal-next.mjs",
-      "require": "./dist/lib/signal/graph/signal-next.cjs",
-      "default": "./dist/lib/signal/graph/signal-next.js"
+    "./tc39": {
+      "development": "./src/lib/signal/graph/index.ts",
+      "types": "./dist/lib/signal/graph/index.d.ts",
+      "import": "./dist/lib/signal/graph/index.mjs",
+      "require": "./dist/lib/signal/graph/index.cjs",
+      "default": "./dist/lib/signal/graph/index.js"
     },
     "./core": {
       "development": "./src/lib/signal/graph/index.ts",
@@ -120,13 +113,6 @@
       "import": "./dist/lib/signal/graph/index.mjs",
       "require": "./dist/lib/signal/graph/index.cjs",
       "default": "./dist/lib/signal/graph/index.js"
-    },
-    "./signal-legacy": {
-      "development": "./src/lib/signal/index-legacy.ts",
-      "types": "./dist/lib/signal/index-legacy.d.ts",
-      "import": "./dist/lib/signal/index-legacy.mjs",
-      "require": "./dist/lib/signal/index-legacy.cjs",
-      "default": "./dist/lib/signal/index-legacy.js"
     },
     "./operators": {
       "development": "./src/lib/signal/utilities.ts",
@@ -141,6 +127,20 @@
       "import": "./dist/lib/signal/cached-resource.mjs",
       "require": "./dist/lib/signal/cached-resource.cjs",
       "default": "./dist/lib/signal/cached-resource.js"
+    },
+    "./observable": {
+      "development": "./src/lib/observable/index.ts",
+      "types": "./dist/lib/observable/index.d.ts",
+      "import": "./dist/lib/observable/index.mjs",
+      "require": "./dist/lib/observable/index.cjs",
+      "default": "./dist/lib/observable/index.js"
+    },
+    "./signal-legacy": {
+      "development": "./src/lib/signal/index-legacy.ts",
+      "types": "./dist/lib/signal/index-legacy.d.ts",
+      "import": "./dist/lib/signal/index-legacy.mjs",
+      "require": "./dist/lib/signal/index-legacy.cjs",
+      "default": "./dist/lib/signal/index-legacy.js"
     }
   },
   "scripts": {
@@ -157,16 +157,14 @@
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
-  "dependencies": {
-    "@fluixi/utils": "workspace:*"
-  },
   "devDependencies": {
+    "@bambiste/mix-builder": "^0.1.0",
+    "@fluixi/utils": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",
     "inquirer": "^13.1.0",
     "sdom": "^0.0.4",
-    "vite-plugin-solid": "^2.11.10",
-    "@bambiste/mix-builder": "^0.1.0"
+    "vite-plugin-solid": "^2.11.10"
   },
   "repository": {
     "type": "git",

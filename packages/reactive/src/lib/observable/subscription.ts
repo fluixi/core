@@ -1,5 +1,4 @@
-import { isObject } from '@fluixi/utils/object';
-import { isFunction } from '@fluixi/utils/functions';
+import { isObject, isFunction } from '../predicates.js';
 import { SubscriptionLike, TeardownLogic, Unsubscribable } from './types.js';
 
 /**

@@ -13,10 +13,8 @@
  * Copyright (c) 2026 Ibrahima Touré
  * Licensed under MIT.
  */
-import { isFunction } from '@fluixi/utils/functions';
+import { isFunction, isPromise } from '../predicates.js';
 import { Observable } from '../observable/observable.js';
-import { deepClone } from '@fluixi/utils/object';
-import { isPromise } from '@fluixi/utils';
 // Detection guards + helpers now live in the TC39-owned ./graph/detect.js
 // (graph-agnostic). Imported for internal use, re-exported below for the surface.
 import {
