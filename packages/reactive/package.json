@@ -62,6 +62,12 @@
         "import": "./dist/lib/signal/graph/index.mjs",
         "require": "./dist/lib/signal/graph/index.cjs",
         "default": "./dist/lib/signal/graph/index.js"
+      },
+      "./version": {
+        "types": "./dist/version.generated.d.ts",
+        "import": "./dist/version.generated.mjs",
+        "require": "./dist/version.generated.cjs",
+        "default": "./dist/version.generated.js"
       }
     }
   },
@@ -113,6 +119,13 @@
       "import": "./dist/lib/signal/graph/index.mjs",
       "require": "./dist/lib/signal/graph/index.cjs",
       "default": "./dist/lib/signal/graph/index.js"
+    },
+    "./version": {
+      "development": "./src/version.generated.ts",
+      "types": "./dist/version.generated.d.ts",
+      "import": "./dist/version.generated.mjs",
+      "require": "./dist/version.generated.cjs",
+      "default": "./dist/version.generated.js"
     },
     "./operators": {
       "development": "./src/lib/signal/utilities.ts",

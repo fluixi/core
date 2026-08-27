@@ -15,7 +15,7 @@
  * keeps the dependency direction intact and still gets all three onto the element.
  */
 import { VERSION as DOM } from '../../version.generated.js';
-import { VERSION as REACTIVE } from '@fluixi/reactive';
+import { VERSION as REACTIVE } from '@fluixi/reactive/version';
 
 /** The versions of the packages this app is running. */
 export interface FluixiVersions {
