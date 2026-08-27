@@ -1,5 +1,20 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.78
+
+### Patch Changes
+
+- f121072: The npm descriptions no longer claim things that do not exist: Solid compatibility, an SWC compiler front-end, a language server, and a Biome plugin.
+- Updated dependencies [f121072]
+  - @fluixi/reactive@1.0.0-alpha.78
+  - @fluixi/compiler@1.0.0-alpha.78
+  - @fluixi/dom@1.0.0-alpha.78
+  - @fluixi/head@1.0.0-alpha.45
+  - @fluixi/jsx@1.0.0-alpha.78
+  - @fluixi/server@1.0.0-alpha.78
+  - @fluixi/vite-plugin@1.0.0-alpha.78
+  - @fluixi/utils@1.0.0-alpha.78
+
 ## 1.0.0-alpha.77
 
 ### Patch Changes
