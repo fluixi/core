@@ -7,20 +7,27 @@
  * the signal, and look at the DOM. Destructuring without the rewrite reads once, so the
  * text would stay put — that's the failure this has to rule out.
  */
-import { describe, it, expect, beforeAll } from 'vitest';
-import * as babel from '@babel/core';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as DOM from '@fluixi/dom';
-import * as S from '@fluixi/reactive/signal';
-import { transformTemplates } from './templates.js';
-import { ensureIntegration } from '../../../core/src/lib/render/component.js';
+import { transformTemplates } from '@fluixi/compiler/transform';
+import { ensureIntegration } from './component.js';
 
-const REQUIRE_MAP: Record<string, unknown> = {
-  '@fluixi/dom': DOM,
-  '@fluixi/reactive/signal': S,
-};
+/**
+ * Compiled output is written here and imported, rather than converted to CJS and run
+ * with a stubbed module map. The directory has to sit inside the package: node resolves
+ * a bare specifier by walking up from the file, so `@fluixi/dom` and
+ * `@fluixi/reactive/signal` only resolve — and resolve to the same instances this file
+ * imported — from within core. That is also what makes a transformer unnecessary, and
+ * this package has no business depending on one to run a test.
+ */
+let dir: string;
+let seq = 0;
 
 /** Compile the way a build does — one pass, the rewrite folded in — then load it. */
-function build(src: string, format: 'jsx' | 'lit') {
+async function build(src: string, format: 'jsx' | 'lit') {
   const compiled =
     transformTemplates(src, 'component.tsx', {
       format,
@@ -31,25 +38,17 @@ function build(src: string, format: 'jsx' | 'lit') {
       importSource: '@fluixi/dom',
     })?.code ?? src;
 
-  const code = babel.transformSync(compiled, {
-    filename: 'component.js',
-    configFile: false,
-    babelrc: false,
-    presets: [],
-    plugins: [[require.resolve('@babel/plugin-transform-modules-commonjs'), {}]],
-  })!.code!;
-
-  const module = { exports: {} as any };
-  const req = (id: string) => {
-    if (id in REQUIRE_MAP) return REQUIRE_MAP[id];
-    throw new Error('unexpected require: ' + id);
-  };
-  // eslint-disable-next-line no-new-func
-  new Function('exports', 'require', 'module', code)(module.exports, req, module);
-  return { module: module.exports, source: compiled };
+  const file = join(dir, `component${seq++}.js`);
+  writeFileSync(file, compiled);
+  const module = (await import(pathToFileURL(file).href)) as any;
+  return { module, source: compiled };
 }
 
-beforeAll(() => ensureIntegration());
+beforeAll(() => {
+  ensureIntegration();
+  dir = mkdtempSync(join(dirname(fileURLToPath(import.meta.url)), '.props-reactivity-'));
+});
+afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 /** Render `App` into a container and hand back the text of the rendered node. */
 function mount(App: () => any) {
@@ -60,8 +59,8 @@ function mount(App: () => any) {
 }
 
 describe('a rewritten component stays reactive', () => {
-  it('updates through JSX', () => {
-    const { module } = build(
+  it('updates through JSX', async () => {
+    const { module } = await build(
       `
       import { createSignal } from '@fluixi/reactive/signal';
 
@@ -85,8 +84,8 @@ describe('a rewritten component stays reactive', () => {
     expect(text()).toBe('second');
   });
 
-  it('updates through an html template', () => {
-    const { module } = build(
+  it('updates through an html template', async () => {
+    const { module } = await build(
       `
       import { html } from '@fluixi/dom';
       import { createSignal } from '@fluixi/reactive/signal';
@@ -111,8 +110,8 @@ describe('a rewritten component stays reactive', () => {
     expect(text()).toBe('second');
   });
 
-  it('applies a default only when the prop is missing', () => {
-    const { module } = build(
+  it('applies a default only when the prop is missing', async () => {
+    const { module } = await build(
       `
       export function Label({ text = 'fallback' }) {
         return <span>{text}</span>;
@@ -127,9 +126,9 @@ describe('a rewritten component stays reactive', () => {
     expect(mount(module.Given).text()).toBe('given');
   });
 
-  it('leaves a null prop as null, the way a JS default does', () => {
+  it('leaves a null prop as null, the way a JS default does', async () => {
     // `??` would substitute the default here; a destructuring default does not.
-    const { module } = build(
+    const { module } = await build(
       `
       export function Label({ text = 'fallback' }) {
         return <span>{String(text)}</span>;
@@ -144,8 +143,8 @@ describe('a rewritten component stays reactive', () => {
 });
 
 describe('a rest element', () => {
-  it('spreads onto the element and keeps the named prop live', () => {
-    const { module } = build(
+  it('spreads onto the element and keeps the named prop live', async () => {
+    const { module } = await build(
       `
       import { createSignal } from '@fluixi/reactive/signal';
 
@@ -174,7 +173,7 @@ describe('a rest element', () => {
     expect(input.getAttribute('aria-label')).toBe('second');
   });
 
-  it('behaves exactly like the splitProps call it replaces', () => {
+  it('behaves exactly like the splitProps call it replaces', async () => {
     // Parity is the bar: whatever the hand-written idiom does, the generated one does.
     // Both keep a forwarded prop live, since splitProps hands the rest over as getters
     // and spread re-reads them in an effect.
@@ -191,11 +190,11 @@ describe('a rest element', () => {
       }
     `;
 
-    const generated = build(
+    const generated = await build(
       app('export function Field({ label, ...rest }) { return <input aria-label={label} {...rest} />; }'),
       'jsx',
     );
-    const handWritten = build(
+    const handWritten = await build(
       app(
         'export function Field(props) { const [local, others] = splitProps(props, ["label"]); ' +
           'return <input aria-label={local.label} {...others} />; }',
@@ -216,7 +215,7 @@ describe('a rest element', () => {
 });
 
 describe('without the rewrite', () => {
-  it('shows the problem it solves, and that the shape analysis has to know about it', () => {
+  it('shows the problem it solves, and that the shape analysis has to know about it', async () => {
     const src = `
       import { createSignal } from '@fluixi/reactive/signal';
 
@@ -242,21 +241,11 @@ describe('without the rewrite', () => {
       controlFlowModule: '@fluixi/dom',
       importSource: '@fluixi/dom',
     })!.code;
-    const code = babel.transformSync(compiled, {
-      filename: 'component.js',
-      configFile: false,
-      babelrc: false,
-      plugins: [[require.resolve('@babel/plugin-transform-modules-commonjs'), {}]],
-    })!.code!;
-    const module = { exports: {} as any };
-    // eslint-disable-next-line no-new-func
-    new Function('exports', 'require', 'module', code)(
-      module.exports,
-      (id: string) => REQUIRE_MAP[id],
-      module,
-    );
+    const file = join(dir, `component${seq++}.js`);
+    writeFileSync(file, compiled);
+    const module = (await import(pathToFileURL(file).href)) as any;
 
-    const { text } = mount(module.exports.App);
+    const { text } = mount(module.App);
     expect(text()).toBe('first');
     (globalThis as any).__setValue3('second');
     expect(text()).toBe('first');
