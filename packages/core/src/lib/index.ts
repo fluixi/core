@@ -1,6 +1,6 @@
 /**
  * @fileoverview Fluixi - Solid-Compatible Fine-Grained UI Framework
- * @module @fluixi/core
+ * @module fluixi
  * @version 0.0.1
  *
  * A fine-grained reactive framework following SolidJS principles:
@@ -30,7 +30,6 @@ export {
   createDeferred,
   setOwner,
 } from '@fluixi/reactive/signal';
-// } from '@fluixi/core/rx';
 
 export { createDebounce, createSelector } from '@fluixi/reactive/signal';
 export {

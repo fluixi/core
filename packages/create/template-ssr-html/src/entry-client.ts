@@ -1,6 +1,6 @@
 // Client entry — hydrates the server-rendered markup. The app HTML is injected into
 // `#root` (the @fluixi/start mountId), so hydrate that container.
-import { startClient } from '@fluixi/core/client';
+import { startClient } from 'fluixi/client';
 import App, { appRoutes } from './app.js';
 
 // Passing the route tree lets startClient preload the matched route's lazy chunk before

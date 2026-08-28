@@ -1,5 +1,5 @@
-import { createSignal, createResource } from '@fluixi/core';
-import { html } from '@fluixi/core';
+import { createSignal, createResource } from 'fluixi';
+import { html } from 'fluixi';
 
 // An html``-authored app that exercises SSR + async resources + hydration through
 // the compiled template. It renders on the server (renderToString) and hydrates on

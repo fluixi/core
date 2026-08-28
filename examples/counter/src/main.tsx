@@ -1,4 +1,4 @@
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 import { Counter } from './App';
 
 const root = document.getElementById('app');

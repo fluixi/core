@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": minor
+"fluixi": minor
 ---
 
 Retire the old `@fluixi/core/router`. `router-next` (the framework-agnostic

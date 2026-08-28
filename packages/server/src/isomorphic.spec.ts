@@ -3,9 +3,9 @@ import { createSignal } from '@fluixi/reactive/signal';
 import { createNativeElement, insert } from '@fluixi/dom';
 import { renderRequestAsync, preloadServerState } from './index.js';
 
-// createIsomorphicState (in @fluixi/core) registers on this globalThis map; we register
+// createIsomorphicState (in fluixi) registers on this globalThis map; we register
 // directly here to test the server half (preload → resolve → render reads → serialize)
-// without an import edge from @fluixi/server to @fluixi/core.
+// without an import edge from @fluixi/server to fluixi.
 function register(key: string, server: (e: any) => any) {
   const [value, set] = createSignal<any>(undefined);
   const reg = ((globalThis as any).__fluixi_iso_states__ ??= new Map());

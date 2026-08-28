@@ -322,7 +322,7 @@ export function useRouter(): RouterCtxValue {
   // On the server, degrade to a no-op stub (see above). On the client, a missing
   // router is genuine misuse — throw.
   if (typeof window === 'undefined') return _ssrRouterStub;
-  throw new Error('[router-next] useRouter must be used within <Router>');
+  throw new Error('[router] useRouter must be used within <Router>');
 }
 
 /**
@@ -746,7 +746,7 @@ export type {
 } from '@fluixi/router';
 
 // Action/cache/lazy layer is orthogonal to routing — re-export so a route file can
-// swap its import path wholesale. (Routing hooks above are the router-next ones.)
+// swap its import path wholesale. (Routing hooks above are the router ones.)
 export {
   cache,
   action,
@@ -763,5 +763,5 @@ export type {
   CacheFn,
 } from './data.js';
 export { lazy } from '../render/lazy.js';
-// Parity with the retired '@fluixi/core/router' barrel (route codegen used it).
+// Carried over from the barrel this replaced; route codegen imports it from here.
 export { runWithOwner } from '@fluixi/reactive/signal';

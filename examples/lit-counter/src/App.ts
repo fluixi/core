@@ -1,5 +1,5 @@
-import { createSignal } from '@fluixi/core';
-import { html } from '@fluixi/core';
+import { createSignal } from 'fluixi';
+import { html } from 'fluixi';
 
 // A fine-grained reactive counter written with lit html`` instead of JSX.
 // `html`, `Show`, etc. come from @fluixi/lit; the template is compiled to

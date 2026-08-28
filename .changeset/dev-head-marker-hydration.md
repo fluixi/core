@@ -1,7 +1,7 @@
 ---
 "@fluixi/start": patch
 "@fluixi/head": patch
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Fix page content duplicated on hydration when `seo()`/`useHead()` is used in dev.

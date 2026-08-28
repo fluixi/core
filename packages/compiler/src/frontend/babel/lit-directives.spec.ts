@@ -345,10 +345,10 @@ describe('lit <component is> and <Await>', () => {
     expect(host.querySelector('b')?.textContent).toBe('dyn');
   });
 
-  it('<Await value=${p}> auto-imports Await from @fluixi/core', () => {
+  it('<Await value=${p}> auto-imports Await from fluixi', () => {
     const code = compileEsm('export const r = (p) => html`<Await value=${p}>${(v) => v}</Await>`;');
     expect(code).toContain('createComponent(Await');
-    expect(code).toMatch(/import \{[^}]*\bAwait\b[^}]*\} from "@fluixi\/core"/);
+    expect(code).toMatch(/import \{[^}]*\bAwait\b[^}]*\} from "fluixi"/);
     expect(flat(code)).toContain('get value()');
   });
 });
@@ -391,8 +391,8 @@ describe('lit framework components (static tags auto-import)', () => {
       'export const r = (el, fb) => html`<Portal mount=${el}><Suspense fallback=${fb}>x</Suspense></Portal>`;',
     );
     expect(code).toMatch(/import \{[^}]*\bPortal\b[^}]*\} from "@fluixi\/dom"/);
-    // Suspense lives in @fluixi/core (dom doesn't export it) — auto-import from core.
-    expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "@fluixi\/core"/);
+    // Suspense lives in fluixi (dom doesn't export it) — auto-import from core.
+    expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "fluixi"/);
     expect(code).toContain('createComponent(Portal');
     expect(code).toContain('createComponent(Suspense');
   });

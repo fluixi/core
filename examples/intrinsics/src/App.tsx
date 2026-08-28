@@ -1,4 +1,4 @@
-import { signal } from '@fluixi/reactive/signal';
+import { signal } from 'fluixi';
 
 /**
  * The same counter twice. One imports the runtime API; the other writes the `$`

@@ -1,6 +1,6 @@
 ---
 '@fluixi/dom': patch
-'@fluixi/core': patch
+'fluixi': patch
 ---
 
 Fix `ComponentChild` being `any`, which disabled type checking at every component boundary

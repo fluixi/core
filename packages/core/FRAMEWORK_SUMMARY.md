@@ -9,7 +9,7 @@ Fluixi is a **full-featured reactive framework** for building web applications w
 ## 📦 Package Structure
 
 ```
-@fluixi/core/
+fluixi/
 ├── src/
 │   ├── lib/
 │   │   ├── core/                  # Core framework functionality
@@ -277,7 +277,7 @@ fluixi help             # Show help
 
 ### Core Exports
 
-**From `@fluixi/core`:**
+**From `fluixi`:**
 ```typescript
 // Rendering
 render, createRoot, createComponent
@@ -311,14 +311,14 @@ html, svg, nothing, render as litRender
 
 ### Modular Exports
 
-**From `@fluixi/core/core`:**
+**From `fluixi/core`:**
 ```typescript
 createComponent, render, createRoot
 onMount, onUnmount, registerCleanup
 mergeProps, splitProps, batch, untrack
 ```
 
-**From `@fluixi/core/control-flow`:**
+**From `fluixi/control-flow`:**
 ```typescript
 Show, Match, Switch
 For, Index, createKeyedFor
@@ -326,20 +326,20 @@ Portal, GlobalPortal, createFixedPortal
 Dynamic, DynamicSwitch, createPolymorphic
 ```
 
-**From `@fluixi/core/context`:**
+**From `fluixi/context`:**
 ```typescript
 createContext, useContext, Provider
 createContextWithProvider, composeProviders
 createConsumer, useProvide
 ```
 
-**From `@fluixi/core/resources`:**
+**From `fluixi/resources`:**
 ```typescript
 createResource, createResources
 createResourceWithRetry, createLazyResource
 ```
 
-**From `@fluixi/core/router`:**
+**From `fluixi/router`:**
 ```typescript
 createRouter, Router, Link
 useRouter, useLocation, useNavigate
@@ -561,7 +561,7 @@ Perfect for:
 
 ### 1. Create New Project
 ```bash
-npx @fluixi/core new my-app
+npx fluixi new my-app
 cd my-app
 npm install
 npm run dev
@@ -569,12 +569,12 @@ npm run dev
 
 ### 2. Generate Component
 ```bash
-npx @fluixi/core generate component MyComponent --type full
+npx fluixi generate component MyComponent --type full
 ```
 
 ### 3. Start Building
 ```typescript
-import { createSignal, render, html } from '@fluixi/core';
+import { createSignal, render, html } from 'fluixi';
 
 const App = () => {
   const [count, setCount] = createSignal(0);

@@ -19,7 +19,7 @@ Fluixi provides a powerful context API for sharing state across component trees,
 ### Creating a Context
 
 ```typescript
-import { createContext, useContext } from '@fluixi/core';
+import { createContext, useContext } from 'fluixi';
 
 // Simple value context
 const ThemeContext = createContext('light');
@@ -36,7 +36,7 @@ const AppContext = createContext({
 
 ```typescript
 import { html } from 'lit';
-import { useContext } from '@fluixi/core';
+import { useContext } from 'fluixi';
 
 const Child = () => {
   const theme = useContext(ThemeContext);
@@ -52,7 +52,7 @@ const Child = () => {
 ### JSX Syntax
 
 ```typescript
-import { createContext, useContext, createSignal } from '@fluixi/core';
+import { createContext, useContext, createSignal } from 'fluixi';
 
 // Define contexts
 const ThemeContext = createContext('light');
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
 ```typescript
 import { html } from 'lit';
-import { createContext, useContext, createSignal } from '@fluixi/core';
+import { createContext, useContext, createSignal } from 'fluixi';
 
 const ThemeContext = createContext('light');
 const UserContext = createContext({ name: 'Guest', role: 'visitor' });
@@ -126,7 +126,7 @@ const Dashboard = () => {
 ### Context with Functions
 
 ```typescript
-import { createContext, useContext, createSignal } from '@fluixi/core';
+import { createContext, useContext, createSignal } from 'fluixi';
 import { html } from 'lit';
 
 interface ThemeContextValue {
@@ -184,7 +184,7 @@ const App = () => {
 ### Context with Reactive Values
 
 ```typescript
-import { createContext, useContext, createSignal, createMemo } from '@fluixi/core';
+import { createContext, useContext, createSignal, createMemo } from 'fluixi';
 import { html } from 'lit';
 
 interface CounterContextValue {
@@ -240,7 +240,7 @@ const Counter = () => {
 ### Auth + Theme + Language
 
 ```typescript
-import { createContext, useContext, createSignal } from '@fluixi/core';
+import { createContext, useContext, createSignal } from 'fluixi';
 import { html } from 'lit';
 
 // Define contexts
@@ -435,8 +435,8 @@ const NotificationContext = createContext({ notifications: [] });
 ### Context on Server
 
 ```typescript
-import { createContext, useContext } from '@fluixi/core/server';
-import { renderToString } from '@fluixi/core/server';
+import { createContext, useContext } from 'fluixi/server';
+import { renderToString } from 'fluixi/server';
 import { html } from 'lit';
 
 // Server: Context works but with snapshot values
@@ -463,7 +463,7 @@ const htmlString = await renderToString(() => App());
 ### Hydration with Context
 
 ```typescript
-import { setHydrationData } from '@fluixi/core/server';
+import { setHydrationData } from 'fluixi/server';
 
 // Server: Store context values for hydration
 const App = () => {
@@ -484,8 +484,8 @@ const App = () => {
 };
 
 // Client: Restore from hydration data
-import { getHydrationData } from '@fluixi/core/server';
-import { render } from '@fluixi/core';
+import { getHydrationData } from 'fluixi/server';
+import { render } from 'fluixi';
 
 const hydratedTheme = getHydrationData('theme');
 const hydratedUser = getHydrationData('user');
@@ -519,7 +519,7 @@ const AppProvider = (props: { children: any }) => {
 ### Context with Reducers
 
 ```typescript
-import { createContext, useContext, useReducer } from '@fluixi/core';
+import { createContext, useContext, useReducer } from 'fluixi';
 
 type State = { count: number; step: number };
 type Action = 

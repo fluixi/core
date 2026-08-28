@@ -10,8 +10,8 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
-import * as RouterNext from './router-next/index.js';
+import * as Fluixi from 'fluixi';
+import * as RouterNext from './router/index.js';
 import * as Head from '@fluixi/head';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
@@ -64,8 +64,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
-  '@fluixi/core/router-next': RouterNext,
+  'fluixi': Fluixi,
+  'fluixi/router': RouterNext,
   '@fluixi/head': Head,
 };
 
@@ -94,8 +94,8 @@ beforeAll(() => ensureIntegration());
 describe('hydration: seo() inside a route component', () => {
   it('does not duplicate the page when seo() is called in render', async () => {
     const src = `
-      import { Suspense, lazy } from '@fluixi/core';
-      import { Router, Outlet, createMemoryHistory } from '@fluixi/core/router-next';
+      import { Suspense, lazy } from 'fluixi';
+      import { Router, Outlet, createMemoryHistory } from 'fluixi/router';
       import { seo } from '@fluixi/head';
 
       function Card(props) { return <article class="card">{props.title}</article>; }

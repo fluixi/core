@@ -1,6 +1,6 @@
 /**
  * @fileoverview Server-Side Rendering Entry Point for Fluixi
- * @module @fluixi/core/server
+ * @module fluixi/server
  *
  * Implements Unified SSR Engine compatible with Lit and JSX.
  */
@@ -197,7 +197,7 @@ export async function renderToStream(code: () => any): Promise<string> {
  * @example
  * ```ts
  * // entry-server.ts
- * import { startServer } from '@fluixi/core/server';
+ * import { startServer } from 'fluixi/server';
  * import App from './app';
  *
  * export default startServer(App);

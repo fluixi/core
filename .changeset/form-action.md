@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": minor
+"fluixi": minor
 ---
 
 Add a `<Form action={...}>` component (`@fluixi/core/router-next`) for form-driven

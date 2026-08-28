@@ -198,7 +198,7 @@
     }
   },
   "dependencies": {
-    "@fluixi/core": "workspace:*",
+    "fluixi": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/head": "workspace:*",

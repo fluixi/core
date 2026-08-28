@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Root-cause repro for the storefront deep-route SSR crash:
- *   Error: [router-next] useRouter must be used within <Router>
+ *   Error: [router] useRouter must be used within <Router>
  *
  * A layout component (like the storefront Navbar) reads useRouter() at render top,
  * and the app is rendered through a DEEP nested route with lazy layers under async
@@ -18,8 +18,8 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
-import * as RouterNext from '@fluixi/core/router-next';
+import * as Fluixi from 'fluixi';
+import * as RouterNext from 'fluixi/router';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
 
@@ -68,8 +68,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
-  '@fluixi/core/router-next': RouterNext,
+  'fluixi': Fluixi,
+  'fluixi/router': RouterNext,
 };
 
 function load(src: string): any {
@@ -94,9 +94,9 @@ beforeAll(() => {
 describe('SSR: deep nested route keeps RouterContext (storefront crash repro)', () => {
   it('a layout reading useRouter does not throw, and the deep route content renders', async () => {
     const src = `
-      import { Suspense, lazy, createContext, createProvider } from '@fluixi/core';
+      import { Suspense, lazy, createContext, createProvider } from 'fluixi';
       import { createResource } from '@fluixi/reactive/signal';
-      import { Router, Outlet, useRouter, createMemoryHistory } from '@fluixi/core/router-next';
+      import { Router, Outlet, useRouter, createMemoryHistory } from 'fluixi/router';
 
       const tick = (v, ms) => new Promise((r) => setTimeout(() => r(v), ms || 5));
 

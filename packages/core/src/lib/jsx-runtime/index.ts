@@ -9,7 +9,7 @@ export type { JSX } from '@fluixi/jsx';
  *
  * TypeScript with "jsx": "preserve" uses the global JSX namespace for element type
  * checking (not jsxImportSource). This augmentation is applied automatically whenever
- * any file imports from @fluixi/core, because TypeScript processes declare global
+ * any file imports from fluixi, because TypeScript processes declare global
  * from all transitively-loaded modules.
  *
  * Pattern: same as SolidJS — the framework's main entry carries the global augmentation.

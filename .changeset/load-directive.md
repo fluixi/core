@@ -1,7 +1,7 @@
 ---
 "@fluixi/compiler": minor
 "@fluixi/template-parser": minor
-"@fluixi/core": minor
+"fluixi": minor
 ---
 
 Add the `load:` directive — decide when a component's code is fetched

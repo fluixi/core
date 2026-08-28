@@ -8,7 +8,7 @@ gardent les mises à jour fines et ne touchent que le DOM qui change.
 Afficher conditionnellement une branche :
 
 ```tsx
-import { Show } from '@fluixi/core';
+import { Show } from 'fluixi';
 
 <Show when={user()} fallback={<a href="/login">Se connecter</a>}>
   <p>Bon retour, {user()!.name}</p>
@@ -20,7 +20,7 @@ import { Show } from '@fluixi/core';
 Afficher une liste, indexée par référence, pour déplacer les lignes plutôt que les recréer :
 
 ```tsx
-import { For } from '@fluixi/core';
+import { For } from 'fluixi';
 
 <For each={items()}>
   {(item) => <li>{item.label}</li>}
@@ -34,7 +34,7 @@ Utilisez plutôt `Index` lorsque vous indexez par position et non par identité.
 Pour plusieurs branches exclusives :
 
 ```tsx
-import { Switch, Match } from '@fluixi/core';
+import { Switch, Match } from 'fluixi';
 
 <Switch fallback={<NotFound />}>
   <Match when={route() === 'home'}><Home /></Match>

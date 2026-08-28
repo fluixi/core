@@ -80,7 +80,7 @@ export interface PluginOptions {
 
   /**
    * Module the router components (Router/Outlet/…) are auto-imported from.
-   * @default '@fluixi/core/router-next'
+   * @default 'fluixi/router'
    */
   routerModule?: string;
   /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
@@ -160,7 +160,7 @@ interface PluginStateData {
 // Constants
 // ============================================================================
 
-// Control-flow components that live in @fluixi/core, NOT @fluixi/dom — they must
+// Control-flow components that live in fluixi, NOT @fluixi/dom — they must
 // be auto-imported from core (dom doesn't export them).
 const CORE_ONLY_CONTROL_FLOW = new Set<string>(CORE_CONTROL_FLOW);
 
@@ -180,7 +180,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     delegateEvents = true,
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
-    routerModule = '@fluixi/core/router-next',
+    routerModule = 'fluixi/router',
     reactiveModule = '@fluixi/reactive/signal',
     templateClone = true,
     partialTemplates = true,
@@ -200,7 +200,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
   const pluginState: PluginStateData = {
     irImports: new Set<string>(),
-    libModule: '@fluixi/core',
+    libModule: 'fluixi',
     controlFlowModule,
     routerModule,
     templateClone,
@@ -232,19 +232,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     },
 
     visitor: {
-      // Map @fluixi/core/rx imports to @fluixi/reactive for client-side code
-      ImportDeclaration(path, state: any) {
-        const source = path.node.source.value;
-
-        // Map @fluixi/core/rx to @fluixi/reactive (client-side reactive primitives)
-        if (source === '@fluixi/core/rx') {
-          path.node.source = t.stringLiteral('@fluixi/reactive');
-        }
-
-        // Also handle fluixi server imports - keep as is for SSR
-        // @fluixi/core/server stays as is (includes server reactive mappings)
-      },
-
       Program: {
         enter(path, state: any) {
           // Reset state for new file
@@ -261,7 +248,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             delegatedEvents: new Set(),
             staticTemplates: new Map(),
             staticCounter: 0,
-            libModule: '@fluixi/core',
+            libModule: 'fluixi',
             controlFlowModule,
             routerModule,
             templateClone,
@@ -335,11 +322,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               const unbound = (Array.from(state.controlFlowComponents) as string[]).filter(
                 (name) => !path.scope.hasBinding(name),
               );
-              // Suspense/SuspenseList live in @fluixi/core, not @fluixi/dom, so
+              // Suspense/SuspenseList live in fluixi, not @fluixi/dom, so
               // they must be auto-imported from core (importing them from the dom
               // controlFlowModule would resolve to nothing). Everything else comes
               // from controlFlowModule.
-              const coreModule = state.libModule ?? '@fluixi/core';
+              const coreModule = state.libModule ?? 'fluixi';
               const fromRouter = unbound.filter((n) => ROUTER_COMPONENTS.has(n));
               const fromCore = unbound.filter((n) => CORE_ONLY_CONTROL_FLOW.has(n));
               const fromDom = unbound.filter(
@@ -400,7 +387,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                 imports.push(
                   t.importDeclaration(
                     [t.importSpecifier(t.identifier('deferred'), t.identifier('deferred'))],
-                    t.stringLiteral(state.libModule ?? '@fluixi/core'),
+                    t.stringLiteral(state.libModule ?? 'fluixi'),
                   ),
                 );
               }

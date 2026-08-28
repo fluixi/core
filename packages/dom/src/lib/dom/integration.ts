@@ -1,4 +1,4 @@
-// createComponent lives in @fluixi/core, not the reactive core, so the runtime
+// createComponent lives in fluixi, not the reactive core, so the runtime
 // can't import it — core registers it here at startup. Everything else the runtime
 // needs comes straight from @fluixi/reactive (shared globalThis graph, no bridge).
 

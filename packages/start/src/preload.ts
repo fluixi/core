@@ -3,13 +3,13 @@
  *
  * Keyed by URL pattern, not module id: the server only has a path, and the route table
  * that would map one to the other lives inside the bundle it is serving —
- * `@fluixi/core/routes` resolves to a stub outside a build. `fluixi build` does the
+ * `fluixi/routes` resolves to a stub outside a build. `fluixi build` does the
  * join, with each route's layouts folded in.
  *
  * A miss is silent: no file routes, no match, or an older build yields no files and an
  * unchanged page.
  */
-import { matchRoutes } from '@fluixi/core/router-next';
+import { matchRoutes } from 'fluixi/router';
 
 /** URL pattern → the built files a request for it needs. */
 export type RouteAssets = Record<string, string[]>;

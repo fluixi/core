@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { createResource, Suspense } from '@fluixi/core';
+import { createResource, Suspense } from 'fluixi';
 import { renderToString, renderToStringAsync } from '@fluixi/server';
 
 // The idiomatic async pattern: read the resource directly (user() throws while

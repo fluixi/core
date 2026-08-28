@@ -148,7 +148,7 @@ describe('ref element type inference', () => {
 });
 
 describe('control-flow prop hover + use inference', () => {
-  it('hovers Show when/fallback and Portal mount (inline types, no @fluixi/core)', () => {
+  it('hovers Show when/fallback and Portal mount (inline types, no fluixi)', () => {
     const showCode = 'const cond = true;\nconst t = html`<Show when=${cond} fallback=${"x"}>hi</Show>`;';
     const { ls: ls1, fileName: f1 } = plugin(showCode);
     const w = ls1.getQuickInfoAtPosition(f1, showCode.indexOf('when='));

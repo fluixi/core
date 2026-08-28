@@ -75,7 +75,7 @@ functions), the first paint just happens on the client. `i18n` and `apiDir` defa
 - **Server functions** — a `"use server"` function runs only on the server and is callable
   from the client over RPC (`/_server`, same-origin CSRF); `getRequestEvent()` works inside
   it.
-- **Routing** — `@fluixi/start/router` re-exports [`@fluixi/core/router-next`](../core):
+- **Routing** — `@fluixi/start/router` re-exports [`fluixi/router`](../core):
   `Router`, `Outlet`, `Link`, `Form`, the hooks, `createMemoryHistory`.
 - **Static generation** — `prerender: true` builds routes to static HTML in `dist/client`,
   crawling internal `<a href>` links; an object sets explicit `routes` for paths nothing
@@ -107,7 +107,7 @@ const handler = await createProdHandler();  // a (Request) => Promise<Response>
 | --- | --- |
 | `@fluixi/start` | `dev`/`build`/`start`, the fetch-handler layer, adapters, middleware helpers |
 | `@fluixi/start/config` | `defineConfig`, `loadConfig`, `resolveConfig` |
-| `@fluixi/start/router` | the routing surface (re-export of `@fluixi/core/router-next`) |
+| `@fluixi/start/router` | the routing surface (re-export of `fluixi/router`) |
 | `@fluixi/start/server-fn` | server-function runtime (`isServerFnRequest`, `handleServerFn`) |
 
 ## 📄 License

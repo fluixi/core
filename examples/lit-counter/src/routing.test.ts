@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render } from '@fluixi/core';
-import { Router, Outlet, useParam, createMemoryHistory } from '@fluixi/core/router-next';
+import { render } from 'fluixi';
+import { Router, Outlet, useParam, createMemoryHistory } from 'fluixi/router';
 import { flush } from '@fluixi/reactive/signal';
-import { html } from '@fluixi/core';
+import { html } from 'fluixi';
 
 // Proof that routing works with html``-authored components: the route tree's
 // components return html`` templates and use <Outlet/> — Router/Outlet compile

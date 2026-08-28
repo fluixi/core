@@ -8,10 +8,10 @@ Get up and running with Fluixi in 5 minutes!
 
 ```bash
 # Using npx
-npx @fluixi/core new my-app
+npx fluixi new my-app
 
 # Or install CLI globally
-npm install -g @fluixi/core
+npm install -g fluixi
 fluixi new my-app
 
 # Navigate to project
@@ -27,7 +27,7 @@ npm run dev
 ### Option 2: Add to Existing Project
 
 ```bash
-npm install @fluixi/core @fluixi/reactive lit
+npm install fluixi @fluixi/reactive lit
 ```
 
 ## 🎯 Your First Component
@@ -35,7 +35,7 @@ npm install @fluixi/core @fluixi/reactive lit
 ### 1. Create `src/App.ts`
 
 ```typescript
-import { createSignal, html, Component } from '@fluixi/core';
+import { createSignal, html, Component } from 'fluixi';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -56,7 +56,7 @@ export const App: Component = () => {
 ### 2. Create `src/main.ts`
 
 ```typescript
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 import { App } from './App';
 
 const root = document.getElementById('app');
@@ -87,7 +87,7 @@ if (root) {
 ### Signals (Reactive State)
 
 ```typescript
-import { createSignal } from '@fluixi/core';
+import { createSignal } from 'fluixi';
 
 // Create a signal
 const [count, setCount] = createSignal(0);
@@ -103,7 +103,7 @@ setCount(prev => prev + 1);
 ### Effects (Side Effects)
 
 ```typescript
-import { createSignal, createEffect } from '@fluixi/core';
+import { createSignal, createEffect } from 'fluixi';
 
 const [name, setName] = createSignal('Alice');
 
@@ -117,7 +117,7 @@ setName('Bob'); // Logs: "Hello, Bob!"
 ### Conditional Rendering
 
 ```typescript
-import { Show, createSignal, html } from '@fluixi/core';
+import { Show, createSignal, html } from 'fluixi';
 
 const MyComponent = () => {
   const [isVisible, setIsVisible] = createSignal(true);
@@ -137,7 +137,7 @@ const MyComponent = () => {
 ### Lists
 
 ```typescript
-import { For, createSignal, html } from '@fluixi/core';
+import { For, createSignal, html } from 'fluixi';
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal([
@@ -159,7 +159,7 @@ const TodoList = () => {
 ## 🌐 Data Fetching
 
 ```typescript
-import { createResource, Show, html } from '@fluixi/core';
+import { createResource, Show, html } from 'fluixi';
 
 const UserProfile = () => {
   const [user, { refetch }] = createResource(
@@ -190,7 +190,7 @@ const UserProfile = () => {
 ## 🛣️ Routing
 
 ```typescript
-import { createRouter, Router, Link, useParams, html } from '@fluixi/core';
+import { createRouter, Router, Link, useParams, html } from 'fluixi';
 
 const Home = () => html`<h1>Home</h1>`;
 const About = () => html`<h1>About</h1>`;
@@ -365,7 +365,7 @@ const ContactForm = () => {
 ### Context (State Sharing)
 
 ```typescript
-import { createContext, useContext, Provider } from '@fluixi/core';
+import { createContext, useContext, Provider } from 'fluixi';
 
 const ThemeContext = createContext({ dark: false });
 
@@ -386,7 +386,7 @@ const App = () => {
 ### Computed Values
 
 ```typescript
-import { createSignal, createMemo } from '@fluixi/core';
+import { createSignal, createMemo } from 'fluixi';
 
 const ShoppingCart = () => {
   const [items, setItems] = createSignal([

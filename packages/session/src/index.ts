@@ -3,7 +3,7 @@
  *
  * You provide a small backend ADAPTER (login / fetchUser / logout / optional refresh);
  * the framework owns token + user signals, a status state-machine, persistence (SSR-safe
- * via @fluixi/core's universal `storage`), the hydrate-on-load flow, automatic refresh
+ * via fluixi's universal `storage`), the hydrate-on-load flow, automatic refresh
  * before expiry, role/permission derivation, and an unauthorized (session-expiry) guard.
  * Apps stop rewriting the same ~150 lines of session glue. (The server-first auth engine —
  * OAuth / MFA / orgs / cookies — is @fluixi/auth.)
@@ -16,7 +16,7 @@
  * exists precisely because the server — not the client — is the authority.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
-import { storage, isClient } from '@fluixi/core';
+import { storage, isClient } from 'fluixi';
 
 /** A token plus, optionally, its expiry as an epoch-ms timestamp. */
 export interface TokenResult {

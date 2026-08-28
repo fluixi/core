@@ -2,7 +2,7 @@
  * The file-system route tree.
  *
  * ```ts
- * import { routes } from '@fluixi/core/routes';
+ * import { routes } from 'fluixi/routes';
  * ```
  *
  * This module is a **typed stand-in**. `fluixiRoutesPlugin` intercepts the specifier and
@@ -16,7 +16,7 @@
  *
  * `virtual:fluixi-routes` still resolves, so existing apps keep working.
  */
-import type { RouteDefinition } from './lib/router-next/index.js';
+import type { RouteDefinition } from './lib/router/index.js';
 
 /**
  * Reaching this code means the plugin did not replace the module.
@@ -29,7 +29,7 @@ import type { RouteDefinition } from './lib/router-next/index.js';
  */
 function missingPlugin(): never {
   throw new Error(
-    "[fluixi] '@fluixi/core/routes' was imported but fluixiRoutesPlugin did not replace it, " +
+    "[fluixi] 'fluixi/routes' was imported but fluixiRoutesPlugin did not replace it, " +
       'so there is no route tree. Add the plugin to your Vite config — or, in a @fluixi/start ' +
       'app, build with `fluixi build`/`fluixi dev` rather than calling vite directly.',
   );

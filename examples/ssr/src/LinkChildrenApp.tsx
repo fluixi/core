@@ -1,4 +1,4 @@
-import { Link } from '@fluixi/core/router-next';
+import { Link } from 'fluixi/router';
 
 /** The docs' two duplicating shapes: element children inside a Link. */
 export function LinkChildrenApp() {

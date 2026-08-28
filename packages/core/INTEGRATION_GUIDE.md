@@ -94,7 +94,7 @@ The simplest way to create reactive components:
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -119,7 +119,7 @@ For existing LitElement classes:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/core/core/reactive';
+import { WithSignals } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
@@ -143,7 +143,7 @@ For manual control:
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@fluixi/core/core/reactive';
+import { SignalController } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')
@@ -276,7 +276,7 @@ class ReactiveElement extends FluixiElement {
 Fluixi now includes SSR and hydration support:
 
 ```typescript
-import { hydrate, isServer } from '@fluixi/core/ssr/hydration';
+import { hydrate, isServer } from 'fluixi/ssr/hydration';
 
 // Server-side
 if (isServer()) {
@@ -370,7 +370,7 @@ If you were using the old Fluixi implementation:
 
 ### Old Way:
 ```typescript
-import { createSignal, render } from '@fluixi/core'; // Don't do this
+import { createSignal, render } from 'fluixi'; // Don't do this
 ```
 
 ### New Way:
@@ -382,13 +382,13 @@ import { createSignal, createEffect } from '@fluixi/reactive';
 import { html, render } from 'lit';
 
 // Use FluixiElement for components
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 ```
 
 ## File Structure
 
 ```
-@fluixi/core/
+fluixi/
 ├── core/
 │   ├── src/
 │   │   ├── component.ts       # FluixiElement base class
@@ -414,7 +414,7 @@ import { FluixiElement } from '@fluixi/core/core/component';
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 import { createSignal, createEffect, createMemo, batch } from '@fluixi/reactive';
 
 @customElement('todo-app')

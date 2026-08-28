@@ -50,7 +50,7 @@ It writes a file under `.changeset/`, e.g. `.changeset/funny-otters-sing.md`:
 
 ```markdown
 ---
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Fix debounced signal subscriptions
@@ -112,7 +112,7 @@ gh pr merge 2 --squash --delete-branch
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')"
 
 # confirm the new versions are live
-npm view @fluixi/core version --registry=https://npm.pkg.github.com/
+npm view fluixi version --registry=https://npm.pkg.github.com/
 ```
 
 Done — packages are published.

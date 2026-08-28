@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { createSignal, render } from '@fluixi/core';
+import { createSignal, render } from 'fluixi';
 import { App, Badge, Field, Label, UserCard } from './App';
 
 /**

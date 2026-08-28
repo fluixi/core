@@ -16,7 +16,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
+import * as Fluixi from 'fluixi';
 import { renderToString, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
 import { startClient } from './client/index.js';
@@ -74,7 +74,7 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
+  'fluixi': Fluixi,
 };
 
 function load(src: string): any {
@@ -102,7 +102,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 describe('event-replay (hydration)', () => {
   it('replays a click fired before hydration', async () => {
     const src = `
-      import { createSignal } from '@fluixi/core';
+      import { createSignal } from 'fluixi';
       export function App() {
         const [n, setN] = createSignal(0);
         return (

@@ -10,7 +10,7 @@ import type {
   FxFlow,
 } from './core.js';
 
-describe('@fluixi/core re-exports prop helpers from @fluixi/dom', () => {
+describe('fluixi re-exports prop helpers from @fluixi/dom', () => {
   it('mergeProps is exported and Solid-compatible (later undefined falls through)', () => {
     expect(typeof mergeProps).toBe('function');
     expect(mergeProps({ a: 1 }, { a: undefined }).a).toBe(1);

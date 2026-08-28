@@ -1,6 +1,6 @@
 ---
 "@fluixi/reactive": minor
-"@fluixi/core": minor
+"fluixi": minor
 ---
 
 Add `createDebouncedSignal` and `createDebouncedResource`; stop `createDebounce`

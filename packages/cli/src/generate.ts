@@ -90,14 +90,14 @@ function write(file: string, content: string): void {
 }
 
 const component = (Name: string) =>
-  `import type { Component, ComponentChild } from '@fluixi/core';
+  `import type { Component, ComponentChild } from 'fluixi';
 
 export type ${Name}Props = {
   children?: ComponentChild;
 };
 
 // Typed component: \`props\` is inferred from ${Name}Props. Use FxParent/FxVoid/FxFlow
-// from '@fluixi/core' for children-required/forbidden variants.
+// from 'fluixi' for children-required/forbidden variants.
 export const ${Name}: Component<${Name}Props> = (props) => {
   return <div class="${Name.toLowerCase()}">{props.children ?? '${Name}'}</div>;
 };
@@ -116,15 +116,15 @@ const route = (Name: string) =>
 // html`` variants — plain .ts, no JSX. Emitted when the project is html``-authored
 // (no `jsx` in tsconfig) or with --html.
 const componentHtml = (Name: string) =>
-  `import type { Component, ComponentChild } from '@fluixi/core';
-import { html } from '@fluixi/core';
+  `import type { Component, ComponentChild } from 'fluixi';
+import { html } from 'fluixi';
 
 export type ${Name}Props = {
   children?: ComponentChild;
 };
 
 // Typed component: \`props\` is inferred from ${Name}Props. Use FxParent/FxVoid/FxFlow
-// from '@fluixi/core' for children-required/forbidden variants.
+// from 'fluixi' for children-required/forbidden variants.
 export const ${Name}: Component<${Name}Props> = (props) => {
   return html\`<div class="${Name.toLowerCase()}">\${props.children ?? '${Name}'}</div>\`;
 };

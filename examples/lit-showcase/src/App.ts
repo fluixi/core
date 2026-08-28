@@ -1,9 +1,9 @@
-import { createSignal, createResource, type Component } from '@fluixi/core';
-import { html } from '@fluixi/core';
+import { createSignal, createResource, type Component } from 'fluixi';
+import { html } from 'fluixi';
 
 // A single-file tour of every html`` template feature. Control-flow tags
 // (Show/For/Index/Switch/Match/Portal/ErrorBoundary from @fluixi/dom, Suspense
-// from @fluixi/core) are ALL auto-imported by the compiler. Read props as
+// from fluixi) are ALL auto-imported by the compiler. Read props as
 // `props.x` — never destructure (props are getters; destructuring freezes them).
 
 // ── A component with a named slot ────────────────────────────────────────────

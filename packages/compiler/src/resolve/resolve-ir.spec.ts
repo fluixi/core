@@ -46,7 +46,7 @@ describe('resolveComponentSources', () => {
       loading: { kind: 'eager' },
     });
     expect(suspense.source).toEqual({
-      module: '@fluixi/core',
+      module: 'fluixi',
       export: 'Suspense',
       origin: 'builtin',
       loading: { kind: 'eager' },
@@ -76,7 +76,7 @@ describe('resolveComponentSources', () => {
     const node = component('Outlet');
     resolveComponentSources(node, { resolver: rules });
     expect(node.source).toEqual({
-      module: '@fluixi/core/router-next',
+      module: 'fluixi/router',
       export: 'Outlet',
       origin: 'builtin',
       loading: { kind: 'eager' },

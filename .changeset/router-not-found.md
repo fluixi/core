@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": minor
+"fluixi": minor
 ---
 
 `<Router>` no longer renders a blank page for an unmatched URL.

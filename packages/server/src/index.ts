@@ -149,7 +149,7 @@ export function renderRequest(app: (props: { url: string }) => any, event: Reque
   return renderToString(() => app({ url: event.url ?? '/' }), { event });
 }
 
-// Isomorphic request state (paired with @fluixi/core's createIsomorphicState). The
+// Isomorphic request state (paired with fluixi's createIsomorphicState). The
 // two halves communicate only through this globalThis registry — no import edge, so
 // the client half stays free of this server module.
 const ISO_REGISTRY_KEY = '__fluixi_iso_states__';

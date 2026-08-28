@@ -2,7 +2,7 @@
 /**
  * Scenario 2 — the storefront's REAL route shape under async SSR.
  *
- * A lazy route rendered through router-next's <Outlet/>, whose component fetches a
+ * A lazy route rendered through router's <Outlet/>, whose component fetches a
  * resource, on a SINGLE cold renderToStringAsync (no pre-warm). The storefront does
  * exactly this and serialises the <Suspense> fallback (spinner) instead of the route
  * content — JS-disabled shows only the shell + spinner, no products.
@@ -46,8 +46,8 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
-import * as RouterNext from '@fluixi/core/router-next';
+import * as Fluixi from 'fluixi';
+import * as RouterNext from 'fluixi/router';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
 
@@ -117,8 +117,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
-  '@fluixi/core/router-next': RouterNext,
+  'fluixi': Fluixi,
+  'fluixi/router': RouterNext,
 };
 
 function load(src: string): any {
@@ -152,9 +152,9 @@ beforeAll(() => {
 describe('SSR: lazy route + resource through <Outlet/> (storefront shape)', () => {
   it('resolves the route content on a single cold async render', async () => {
     const src = `
-      import { Suspense, lazy } from '@fluixi/core';
+      import { Suspense, lazy } from 'fluixi';
       import { createResource } from '@fluixi/reactive/signal';
-      import { Router, Outlet, createMemoryHistory } from '@fluixi/core/router-next';
+      import { Router, Outlet, createMemoryHistory } from 'fluixi/router';
 
       const tick = (v, ms) => new Promise((r) => setTimeout(() => r(v), ms || 5));
 

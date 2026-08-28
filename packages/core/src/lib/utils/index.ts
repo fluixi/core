@@ -1,6 +1,6 @@
 /**
  * @fileoverview General utilities for Fluixi
- * @module @fluixi/core/utils
+ * @module fluixi/utils
  *
  * This module provides general utility functions for common operations.
  */
@@ -15,7 +15,7 @@
  *
  * @example
  * ```typescript
- * import { debounce } from '@fluixi/core/utils';
+ * import { debounce } from 'fluixi/utils';
  *
  * const handleInput = debounce((value: string) => {
  *   console.log('Input:', value);
@@ -44,7 +44,7 @@ export function debounce<T extends (...args: any[]) => any>(
  *
  * @example
  * ```typescript
- * import { throttle } from '@fluixi/core/utils';
+ * import { throttle } from 'fluixi/utils';
  *
  * const handleScroll = throttle(() => {
  *   console.log('Scrolled');
@@ -75,7 +75,7 @@ export function throttle<T extends (...args: any[]) => any>(
  *
  * @example
  * ```typescript
- * import { memoize } from '@fluixi/core/utils';
+ * import { memoize } from 'fluixi/utils';
  *
  * const expensiveCalc = memoize((n: number) => {
  *   return n * n;
@@ -105,7 +105,7 @@ export function memoize<T extends (...args: any[]) => any>(fn: T): T {
  *
  * @example
  * ```typescript
- * import { deepClone } from '@fluixi/core/utils';
+ * import { deepClone } from 'fluixi/utils';
  *
  * const original = { a: 1, b: { c: 2 } };
  * const copy = deepClone(original);
@@ -155,7 +155,7 @@ export function deepClone<T>(obj: T): T {
  *
  * @example
  * ```typescript
- * import { deepMerge } from '@fluixi/core/utils';
+ * import { deepMerge } from 'fluixi/utils';
  *
  * const result = deepMerge(
  *   { a: 1, b: { c: 2 } },
@@ -200,7 +200,7 @@ export function deepMerge<T extends Record<string, any>>(
  *
  * @example
  * ```typescript
- * import { uniqueId } from '@fluixi/core/utils';
+ * import { uniqueId } from 'fluixi/utils';
  *
  * const id = uniqueId('component-');
  * // 'component-abc123def456'
@@ -218,7 +218,7 @@ export function uniqueId(prefix: string = ''): string {
  *
  * @example
  * ```typescript
- * import { formatNumber } from '@fluixi/core/utils';
+ * import { formatNumber } from 'fluixi/utils';
  *
  * formatNumber(1234567); // '1,234,567'
  * ```
@@ -236,7 +236,7 @@ export function formatNumber(num: number): string {
  *
  * @example
  * ```typescript
- * import { formatBytes } from '@fluixi/core/utils';
+ * import { formatBytes } from 'fluixi/utils';
  *
  * formatBytes(1024); // '1 KB'
  * formatBytes(1048576); // '1 MB'
@@ -261,7 +261,7 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
  *
  * @example
  * ```typescript
- * import { capitalize } from '@fluixi/core/utils';
+ * import { capitalize } from 'fluixi/utils';
  *
  * capitalize('hello'); // 'Hello'
  * ```
@@ -278,7 +278,7 @@ export function capitalize(str: string): string {
  *
  * @example
  * ```typescript
- * import { kebabCase } from '@fluixi/core/utils';
+ * import { kebabCase } from 'fluixi/utils';
  *
  * kebabCase('HelloWorld'); // 'hello-world'
  * ```
@@ -298,7 +298,7 @@ export function kebabCase(str: string): string {
  *
  * @example
  * ```typescript
- * import { camelCase } from '@fluixi/core/utils';
+ * import { camelCase } from 'fluixi/utils';
  *
  * camelCase('hello-world'); // 'helloWorld'
  * ```
@@ -317,7 +317,7 @@ export function camelCase(str: string): string {
  *
  * @example
  * ```typescript
- * import { clamp } from '@fluixi/core/utils';
+ * import { clamp } from 'fluixi/utils';
  *
  * clamp(5, 0, 10); // 5
  * clamp(-5, 0, 10); // 0
@@ -337,7 +337,7 @@ export function clamp(value: number, min: number, max: number): number {
  *
  * @example
  * ```typescript
- * import { random } from '@fluixi/core/utils';
+ * import { random } from 'fluixi/utils';
  *
  * const num = random(1, 100);
  * ```
@@ -354,7 +354,7 @@ export function random(min: number, max: number): number {
  *
  * @example
  * ```typescript
- * import { isEmpty } from '@fluixi/core/utils';
+ * import { isEmpty } from 'fluixi/utils';
  *
  * isEmpty(''); // true
  * isEmpty([]); // true
@@ -382,7 +382,7 @@ export function isEmpty(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { pick } from '@fluixi/core/utils';
+ * import { pick } from 'fluixi/utils';
  *
  * const obj = { a: 1, b: 2, c: 3 };
  * pick(obj, 'a', 'c'); // { a: 1, c: 3 }
@@ -412,7 +412,7 @@ export function pick<T extends object, K extends keyof T>(
  *
  * @example
  * ```typescript
- * import { omit } from '@fluixi/core/utils';
+ * import { omit } from 'fluixi/utils';
  *
  * const obj = { a: 1, b: 2, c: 3 };
  * omit(obj, 'b'); // { a: 1, c: 3 }
@@ -440,7 +440,7 @@ export function omit<T extends object, K extends keyof T>(
  *
  * @example
  * ```typescript
- * import { groupBy } from '@fluixi/core/utils';
+ * import { groupBy } from 'fluixi/utils';
  *
  * const users = [
  *   { name: 'Alice', role: 'admin' },
@@ -474,7 +474,7 @@ export function groupBy<T, K>(
  *
  * @example
  * ```typescript
- * import { range } from '@fluixi/core/utils';
+ * import { range } from 'fluixi/utils';
  *
  * range(0, 5); // [0, 1, 2, 3, 4, 5]
  * range(0, 10, 2); // [0, 2, 4, 6, 8, 10]
@@ -499,7 +499,7 @@ export function range(start: number, end: number, step: number = 1): number[] {
  *
  * @example
  * ```typescript
- * import { retry } from '@fluixi/core/utils';
+ * import { retry } from 'fluixi/utils';
  *
  * const data = await retry(
  *   () => fetch('/api/data').then(r => r.json()),
@@ -530,7 +530,7 @@ export async function retry<T>(
  *
  * @example
  * ```typescript
- * import { sleep } from '@fluixi/core/utils';
+ * import { sleep } from 'fluixi/utils';
  *
  * await sleep(1000); // Wait 1 second
  * ```
@@ -548,7 +548,7 @@ export function sleep(ms: number): Promise<void> {
  *
  * @example
  * ```typescript
- * import { isDefined } from '@fluixi/core/utils';
+ * import { isDefined } from 'fluixi/utils';
  *
  * const values = [1, null, 2, undefined, 3];
  * const defined = values.filter(isDefined); // [1, 2, 3]
@@ -566,7 +566,7 @@ export function isDefined<T>(value: T | null | undefined): value is T {
  *
  * @example
  * ```typescript
- * import { pipe } from '@fluixi/core/utils';
+ * import { pipe } from 'fluixi/utils';
  *
  * const transform = pipe(
  *   (x: number) => x * 2,

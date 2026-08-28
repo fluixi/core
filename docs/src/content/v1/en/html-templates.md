@@ -6,14 +6,14 @@ compile to the *same* fine-grained DOM calls, so there is no runtime difference 
 your tsconfig.
 
 ```ts
-import { html } from '@fluixi/core';
+import { html } from 'fluixi';
 
 function Hello(props: { name: string }) {
   return html`<h1>Hello ${props.name}</h1>`;
 }
 ```
 
-Import `html` (and `svg`) from `@fluixi/core`, or from `@fluixi/start` in a
+Import `html` (and `svg`) from `fluixi`, or from `@fluixi/start` in a
 meta-framework app.
 
 ## How it compiles
@@ -158,7 +158,7 @@ Use the `svg` tag to put a subtree in the SVG namespace. Elements created there 
 SVG namespace, which the `html` tag does not apply:
 
 ```ts
-import { svg } from '@fluixi/core';
+import { svg } from 'fluixi';
 
 svg`<circle cx="50" cy="50" r=${r()} />`;
 ```

@@ -2,7 +2,7 @@
 
 The **client-side** session lifecycle as a reusable primitive. Bring a small backend
 **adapter**; `createSession` owns the rest: token/user signals, `isAuthenticated`,
-loading/error state, SSR-safe persistence (via `@fluixi/core`'s universal `storage`),
+loading/error state, SSR-safe persistence (via `fluixi`'s universal `storage`),
 the hydrate-on-load flow, and **automatic token refresh** before expiry.
 
 > Looking for the full server-first auth engine (OAuth, MFA, organizations, RBAC,

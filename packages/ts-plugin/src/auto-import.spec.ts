@@ -18,7 +18,7 @@ describe('the auto-import map', () => {
   it('sends the core-only components to core, not dom', () => {
     // dom does not export these, so resolving them against dom would find nothing.
     for (const name of ['Suspense', 'SuspenseList', 'Await']) {
-      expect(AUTO_IMPORTED[name]).toBe('@fluixi/core');
+      expect(AUTO_IMPORTED[name]).toBe('fluixi');
     }
   });
 

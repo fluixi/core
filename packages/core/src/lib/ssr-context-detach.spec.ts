@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Repro for the storefront SSR bug: a lazy route rendered through router-next's
+ * Repro for the storefront SSR bug: a lazy route rendered through router's
  * <Outlet/> must inherit the layout's context. The route got `undefined` from
  * useContext while a non-lazy sibling of the same provider worked.
  *
@@ -26,8 +26,8 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
-import * as RouterNext from '@fluixi/core/router-next';
+import * as Fluixi from 'fluixi';
+import * as RouterNext from 'fluixi/router';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
 
@@ -98,8 +98,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
-  '@fluixi/core/router-next': RouterNext,
+  'fluixi': Fluixi,
+  'fluixi/router': RouterNext,
 };
 
 function load(src: string): any {
@@ -133,8 +133,8 @@ beforeAll(() => {
 describe('SSR: lazy route inherits layout context (compiled JSX)', () => {
   it('useContext resolves the layout provider value in a lazy route', async () => {
     const src = `
-      import { createContext, useContext, createProvider, Suspense, lazy } from '@fluixi/core';
-      import { Router, Outlet, createMemoryHistory } from '@fluixi/core/router-next';
+      import { createContext, useContext, createProvider, Suspense, lazy } from 'fluixi';
+      import { Router, Outlet, createMemoryHistory } from 'fluixi/router';
 
       const ThemeCtx = createContext();
       const AuthCtx = createContext();

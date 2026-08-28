@@ -5,7 +5,7 @@
 // map, dropping the reactive names (the instrumented ones win).
 import * as dom from '@fluixi/dom';
 import * as jsx from '@fluixi/jsx';
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 import type { Reactor } from '@fluixi/devtools';
 
 const MODS: Record<string, unknown> = {

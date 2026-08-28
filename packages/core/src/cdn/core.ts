@@ -1,7 +1,7 @@
 /**
  * CDN entry: the Fluixi framework runtime as a browser global.
  *
- *   <script src="https://.../@fluixi/core/core.global.js"></script>
+ *   <script src="https://.../fluixi/core.global.js"></script>
  *   const [count, setCount] = Fluixi.createSignal(0);
  *   Fluixi.startClient(App);   // or Fluixi.mount(App, root)
  *
@@ -27,4 +27,4 @@ export {
   useSearchParams,
   createMemoryHistory,
   createBrowserHistory,
-} from '../lib/router-next/index.js';
+} from '../lib/router/index.js';

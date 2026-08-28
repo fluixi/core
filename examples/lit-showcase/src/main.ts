@@ -1,5 +1,5 @@
-import { render } from '@fluixi/core';
-import { html } from '@fluixi/core';
+import { render } from 'fluixi';
+import { html } from 'fluixi';
 import { App } from './App';
 
 // `<${App}/>` (dynamic tag) so TypeScript sees `App` referenced.

@@ -1,7 +1,7 @@
 export { VERSION } from './version.generated.js';
 /**
  * @fileoverview Main entry point for Fluixi framework
- * @module @fluixi/core
+ * @module fluixi
  */
 
 import { ensureIntegration } from './lib/render/component.js';
@@ -14,7 +14,7 @@ ensureIntegration('fluixi index');
 
 // /**
 //  * Global JSX namespace for "jsx": "preserve" mode.
-//  * Applied automatically when any file imports from @fluixi/core.
+//  * Applied automatically when any file imports from fluixi.
 //  * Pattern: same as SolidJS — the framework main entry carries the global augmentation.
 //  */
 // declare global {

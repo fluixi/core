@@ -1,5 +1,5 @@
-import { Suspense, createContext, createProvider } from '@fluixi/core';
-import { Router, lazy } from '@fluixi/core/router-next';
+import { Suspense, createContext, createProvider } from 'fluixi';
+import { Router, lazy } from 'fluixi/router';
 
 // Two transparent providers wrapping the router — mirrors a real app shell where
 // the Router (and its lazy routes) live *inside* context providers.

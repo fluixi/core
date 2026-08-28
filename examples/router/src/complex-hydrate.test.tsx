@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { renderToStringAsync, hydrate, createNativeElement, insert } from '@fluixi/dom';
-import { lazy } from '@fluixi/core';
+import { lazy } from 'fluixi';
 import { flush } from '@fluixi/reactive/signal';
 
 const tick = async (ms = 60) => { await new Promise((r) => setTimeout(r, ms)); await flush(); };

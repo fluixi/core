@@ -1,6 +1,6 @@
 /**
  * @fileoverview Vite/Rollup plugin for file-system routing
- * @module @fluixi/core/plugins/fluixi-routes-plugin
+ * @module fluixi/plugins/fluixi-routes-plugin
  *
  * Scans a routes directory at build time and generates a virtual module
  * (virtual:fluixi-routes) containing the route tree. Replaces import.meta.glob.
@@ -35,7 +35,7 @@ const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_MODULE_ID;
  *
  * `virtual:fluixi-routes` stays resolvable so existing apps keep working.
  */
-const PUBLIC_MODULE_ID = '@fluixi/core/routes';
+const PUBLIC_MODULE_ID = 'fluixi/routes';
 
 export function fluixiRoutesPlugin(
   options: FluixiRoutesPluginOptions = {}

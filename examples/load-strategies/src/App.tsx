@@ -9,7 +9,7 @@
  *
  * Check the build output: `Summary` is in the entry chunk, the other three are not.
  */
-import { createSignal } from '@fluixi/core';
+import { createSignal } from 'fluixi';
 
 export function App() {
   const [total] = createSignal(48_250);

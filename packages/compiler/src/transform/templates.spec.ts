@@ -257,12 +257,6 @@ describe('the module prologue', () => {
     const out = compile('const Show = () => null;\nexport const r = (c) => <Show when={c()} />;');
     expect(out).not.toMatch(/import \{[^}]*\bShow\b/);
   });
-
-  it('rewrites the rx alias to the reactive package', () => {
-    const out = compile('import { createSignal } from "@fluixi/core/rx";\nexport const r = () => <p>{createSignal()}</p>;');
-    expect(out).toContain('"@fluixi/reactive"');
-    expect(out).not.toContain('@fluixi/core/rx');
-  });
 });
 
 describe('hoisted templates', () => {
