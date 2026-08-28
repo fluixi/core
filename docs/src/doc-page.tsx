@@ -356,7 +356,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         <main
           class="d-main"
           id="content"
-          tabindex="-1"
+          tabindex={-1}
           onClick={(e: MouseEvent) => {
             onProseClick(e);
             onLinkClick(e);

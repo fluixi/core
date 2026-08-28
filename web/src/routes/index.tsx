@@ -467,7 +467,7 @@ export default function Home() {
     <div class="page">
       <a class="skip" href="#main">Skip to content</a>
       <Nav />
-      <main id="main" tabindex="-1">
+      <main id="main" tabindex={-1}>
       <Hero />
       <Why />
       <Features />
