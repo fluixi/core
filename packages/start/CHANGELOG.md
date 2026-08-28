@@ -1,5 +1,24 @@
 # @fluixi/start
 
+## 0.1.0-alpha.69
+
+### Minor Changes
+
+- 21a13fd: The package is now named `fluixi` instead of `@fluixi/core`, with the same contents and subpaths; all other `@fluixi/*` packages retain their names.
+  Replace `@fluixi/core` with `fluixi` in `package.json` and all import statements, and update subpaths like `@fluixi/core/server` to `fluixi/server`.
+
+### Patch Changes
+
+- Updated dependencies [21a13fd]
+- Updated dependencies [21a13fd]
+- Updated dependencies [21a13fd]
+  - fluixi@1.0.0-alpha.79
+  - @fluixi/compiler@1.0.0-alpha.79
+  - @fluixi/vite-plugin@1.0.0-alpha.79
+  - @fluixi/dom@1.0.0-alpha.79
+  - @fluixi/head@1.0.0-alpha.46
+  - @fluixi/server@1.0.0-alpha.79
+
 ## 0.1.0-alpha.68
 
 ### Patch Changes

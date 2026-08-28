@@ -1,5 +1,14 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.79
+
+### Minor Changes
+
+- 21a13fd: The package is now named `fluixi` instead of `@fluixi/core`, with the same contents and subpaths; all other `@fluixi/*` packages retain their names.
+  Replace `@fluixi/core` with `fluixi` in `package.json` and all import statements, and update subpaths like `@fluixi/core/server` to `fluixi/server`.
+- 21a13fd: The router subpath is now `fluixi/router`; it was previously `@fluixi/core/router-next`.
+- 21a13fd: The `rx` subpath is removed and replaced with `@fluixi/reactive` for signals and effects, and `fluixi/server` for server-side primitives.
+
 ## 1.0.0-alpha.78
 
 ### Patch Changes
