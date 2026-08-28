@@ -13,7 +13,7 @@
   "dependencies": {
     "@fluixi/cli": "workspace:*",
     "@fluixi/start": "workspace:*",
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/server": "workspace:*",

@@ -1,5 +1,5 @@
 {
-  "name": "fluixi",
+  "name": "@fluixi/core",
   "version": "1.0.0-alpha.79",
   "license": "MIT",
   "description": "framework to build apps with DOM runtime, reactive core, router, and JSX runtime; components run once, reactivity updates DOM",

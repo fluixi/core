@@ -9,7 +9,7 @@ export { defineConfig, resolveConfig, loadConfig } from './config.js';
 export type { FluixiConfig, ResolvedConfig } from './config.js';
 // The html``/svg`` template tags — so a meta-framework app can author without JSX:
 // `import { html } from '@fluixi/start'`. Inert markers; the compiler lowers them.
-export { html, svg } from 'fluixi';
+export { html, svg } from '@fluixi/core';
 // The commands live at `@fluixi/start/commands`. Re-exporting them here would put
 // the dev server and the bundler behind every runtime import of this package —
 // and a deploy adapter, which inlines everything its entry can reach, would carry

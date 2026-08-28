@@ -3,7 +3,7 @@
 "@fluixi/babel-plugin-jsx": patch
 "@fluixi/cli": patch
 "@fluixi/compiler": patch
-"fluixi": patch
+"@fluixi/core": patch
 "create-fluixi": patch
 "@fluixi/devtools": patch
 "@fluixi/dom": patch

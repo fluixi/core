@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { flush } from '@fluixi/reactive/signal';
 import { render } from '@fluixi/dom';
-import { createResource, Suspense } from 'fluixi';
+import { createResource, Suspense } from '@fluixi/core';
 
 function UserCard() {
   const [user] = createResource(

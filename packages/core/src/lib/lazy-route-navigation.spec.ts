@@ -15,7 +15,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import * as RouterNext from './router/index.js';
 import { ensureIntegration } from './render/component.js';
 
@@ -66,8 +66,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  'fluixi': Fluixi,
-  'fluixi/router': RouterNext,
+  '@fluixi/core': Fluixi,
+  '@fluixi/core/router': RouterNext,
 };
 
 function load(src: string): any {
@@ -93,8 +93,8 @@ function load(src: string): any {
  * `__land` is exposed on globalThis because the app source is compiled in isolation.
  */
 const APP_SRC = `
-  import { Suspense, lazy } from 'fluixi';
-  import { Router, Outlet, createBrowserHistory } from 'fluixi/router';
+  import { Suspense, lazy } from '@fluixi/core';
+  import { Router, Outlet, createBrowserHistory } from '@fluixi/core/router';
 
   function Home() { return <div class="home">HOME</div>; }
   function makeDeferred(name, cls, text) {
@@ -125,7 +125,7 @@ const APP_SRC = `
 `;
 
 const BARE_SRC = `
-  import { Suspense, lazy } from 'fluixi';
+  import { Suspense, lazy } from '@fluixi/core';
   import { createSignal } from '@fluixi/reactive/signal';
 
   let resolve;

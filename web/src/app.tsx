@@ -1,6 +1,6 @@
 import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
-import { Suspense } from 'fluixi';
-import { routes } from 'fluixi/routes';
+import { Suspense } from '@fluixi/core';
+import { routes } from '@fluixi/core/routes';
 
 function RootLayout() {
   return (

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Server Reactive Primitives for Fluixi
- * @module fluixi/server/reactive
+ * @module @fluixi/core/server/reactive
  *
  * Maps reactive primitives for server-side execution
  * Following SolidJS pattern of server-specific reactive behavior

@@ -29,7 +29,7 @@ Renders a component into a DOM container with reactive updates.
 
 **Example:**
 ```typescript
-import { render, html } from 'fluixi';
+import { render, html } from '@fluixi/core';
 
 const App = () => html`<div>Hello World</div>`;
 const dispose = render(App, document.getElementById('app')!);
@@ -51,7 +51,7 @@ Creates a component with lifecycle management.
 
 **Example:**
 ```typescript
-import { createComponent, html, createSignal } from 'fluixi';
+import { createComponent, html, createSignal } from '@fluixi/core';
 
 const Counter = createComponent<{ initialCount: number }>((props) => {
   const [count, setCount] = createSignal(props.initialCount);
@@ -79,7 +79,7 @@ Creates a root rendering context for the application.
 
 **Example:**
 ```typescript
-import { createRoot, html } from 'fluixi';
+import { createRoot, html } from '@fluixi/core';
 
 const dispose = createRoot((dispose) => {
   return html`<div>${App()}</div>`;
@@ -104,7 +104,7 @@ Creates a reactive signal (reactive state).
 
 **Example:**
 ```typescript
-import { createSignal } from 'fluixi';
+import { createSignal } from '@fluixi/core';
 
 const [count, setCount] = createSignal(0);
 const [user, setUser] = createSignal<User | null>(null);
@@ -130,7 +130,7 @@ Creates a side effect that runs when dependencies change.
 
 **Example:**
 ```typescript
-import { createSignal, createEffect } from 'fluixi';
+import { createSignal, createEffect } from '@fluixi/core';
 
 const [count, setCount] = createSignal(0);
 
@@ -154,7 +154,7 @@ Creates derived reactive state (computed value).
 
 **Example:**
 ```typescript
-import { createSignal, createMemo } from 'fluixi';
+import { createSignal, createMemo } from '@fluixi/core';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -179,7 +179,7 @@ Batches multiple signal updates together.
 
 **Example:**
 ```typescript
-import { createSignal, batch } from 'fluixi';
+import { createSignal, batch } from '@fluixi/core';
 
 const [firstName, setFirstName] = createSignal('John');
 const [lastName, setLastName] = createSignal('Doe');
@@ -203,7 +203,7 @@ Runs a function without tracking dependencies.
 
 **Example:**
 ```typescript
-import { createSignal, createEffect, untrack } from 'fluixi';
+import { createSignal, createEffect, untrack } from '@fluixi/core';
 
 const [count, setCount] = createSignal(0);
 
@@ -233,7 +233,7 @@ Conditional rendering component.
 
 **Example:**
 ```typescript
-import { Show, createSignal, html } from 'fluixi';
+import { Show, createSignal, html } from '@fluixi/core';
 
 const MyComponent = () => {
   const [user, setUser] = createSignal<User | null>(null);
@@ -263,7 +263,7 @@ List rendering component with keyed reconciliation.
 
 **Example:**
 ```typescript
-import { For, createSignal, html } from 'fluixi';
+import { For, createSignal, html } from '@fluixi/core';
 
 const TodoList = () => {
   const [todos, setTodos] = createSignal([
@@ -297,7 +297,7 @@ Non-keyed list rendering with reactive items.
 
 **Example:**
 ```typescript
-import { Index, createSignal, html } from 'fluixi';
+import { Index, createSignal, html } from '@fluixi/core';
 
 const CounterList = () => {
   const [counts, setCounts] = createSignal([0, 0, 0]);
@@ -327,7 +327,7 @@ Multiple condition branches (like switch statement).
 
 **Example:**
 ```typescript
-import { Switch, Match, createSignal, html } from 'fluixi';
+import { Switch, Match, createSignal, html } from '@fluixi/core';
 
 const StatusView = () => {
   const [status, setStatus] = createSignal<'loading' | 'success' | 'error'>('loading');
@@ -360,7 +360,7 @@ Renders content outside the component hierarchy.
 
 **Example:**
 ```typescript
-import { Portal, Show, createSignal, html } from 'fluixi';
+import { Portal, Show, createSignal, html } from '@fluixi/core';
 
 const Modal = () => {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -398,7 +398,7 @@ Renders components dynamically.
 
 **Example:**
 ```typescript
-import { Dynamic, createSignal, html } from 'fluixi';
+import { Dynamic, createSignal, html } from '@fluixi/core';
 
 const MyComponent = () => {
   const [viewMode, setViewMode] = createSignal<'list' | 'grid'>('list');
@@ -430,7 +430,7 @@ Creates a context for sharing state.
 
 **Example:**
 ```typescript
-import { createContext } from 'fluixi';
+import { createContext } from '@fluixi/core';
 
 interface Theme {
   primaryColor: string;
@@ -455,7 +455,7 @@ Retrieves the value of a context.
 
 **Example:**
 ```typescript
-import { createContext, useContext, html } from 'fluixi';
+import { createContext, useContext, html } from '@fluixi/core';
 
 const ThemeContext = createContext({ primaryColor: '#007bff' });
 
@@ -480,7 +480,7 @@ Provides a context value to descendants.
 
 **Example:**
 ```typescript
-import { createContext, Provider, html } from 'fluixi';
+import { createContext, Provider, html } from '@fluixi/core';
 
 const ThemeContext = createContext({ primaryColor: '#007bff' });
 
@@ -523,7 +523,7 @@ Creates a resource for async data fetching.
 
 **Example:**
 ```typescript
-import { createResource, html } from 'fluixi';
+import { createResource, html } from '@fluixi/core';
 
 interface User {
   id: number;
@@ -569,7 +569,7 @@ Creates a lazy resource that doesn't fetch until explicitly called.
 
 **Example:**
 ```typescript
-import { createLazyResource, html } from 'fluixi';
+import { createLazyResource, html } from '@fluixi/core';
 
 const UserDetail = () => {
   const [userData, { fetch: fetchUser }] = createLazyResource(
@@ -606,7 +606,7 @@ Creates a router instance.
 
 **Example:**
 ```typescript
-import { createRouter } from 'fluixi';
+import { createRouter } from '@fluixi/core';
 
 const routes = [
   { path: '/', component: Home },
@@ -631,7 +631,7 @@ Router provider component.
 
 **Example:**
 ```typescript
-import { createRouter, Router, html } from 'fluixi';
+import { createRouter, Router, html } from '@fluixi/core';
 
 const App = () => {
   const router = createRouter([...routes]);
@@ -662,7 +662,7 @@ Navigation link component.
 
 **Example:**
 ```typescript
-import { Link, html } from 'fluixi';
+import { Link, html } from '@fluixi/core';
 
 const Nav = () => html`
   <nav>
@@ -682,7 +682,7 @@ Accesses the router from context.
 
 **Example:**
 ```typescript
-import { useRouter } from 'fluixi';
+import { useRouter } from '@fluixi/core';
 
 const MyComponent = () => {
   const router = useRouter();
@@ -703,7 +703,7 @@ Accesses the current location.
 
 **Example:**
 ```typescript
-import { useLocation, html } from 'fluixi';
+import { useLocation, html } from '@fluixi/core';
 
 const MyComponent = () => {
   const location = useLocation();
@@ -722,7 +722,7 @@ Gets the navigation function.
 
 **Example:**
 ```typescript
-import { useNavigate } from 'fluixi';
+import { useNavigate } from '@fluixi/core';
 
 const MyComponent = () => {
   const navigate = useNavigate();
@@ -743,7 +743,7 @@ Gets route parameters.
 
 **Example:**
 ```typescript
-import { useParams, html } from 'fluixi';
+import { useParams, html } from '@fluixi/core';
 
 // For route '/users/:id'
 const UserDetail = () => {
@@ -762,7 +762,7 @@ Gets query parameters.
 
 **Example:**
 ```typescript
-import { useQuery, html } from 'fluixi';
+import { useQuery, html } from '@fluixi/core';
 
 // For URL '/search?q=test&page=2'
 const SearchResults = () => {
@@ -789,7 +789,7 @@ Runs after the component mounts.
 
 **Example:**
 ```typescript
-import { onMount, createSignal, html } from 'fluixi';
+import { onMount, createSignal, html } from '@fluixi/core';
 
 const MyComponent = () => {
   onMount(() => {
@@ -816,7 +816,7 @@ Runs before the component unmounts.
 
 **Example:**
 ```typescript
-import { onUnmount, createSignal, html } from 'fluixi';
+import { onUnmount, createSignal, html } from '@fluixi/core';
 
 const MyComponent = () => {
   const timer = setInterval(() => console.log('tick'), 1000);
@@ -842,7 +842,7 @@ Registers a cleanup function (from @fluixi/reactive).
 
 **Example:**
 ```typescript
-import { createEffect, onCleanup } from 'fluixi';
+import { createEffect, onCleanup } from '@fluixi/core';
 
 createEffect(() => {
   const subscription = observable.subscribe(...);
@@ -868,7 +868,7 @@ Merges multiple prop objects.
 
 **Example:**
 ```typescript
-import { mergeProps, html } from 'fluixi';
+import { mergeProps, html } from '@fluixi/core';
 
 const Button = (props: { label?: string; onClick?: () => void }) => {
   const merged = mergeProps({ label: 'Click me' }, props);
@@ -890,7 +890,7 @@ Splits props into multiple groups.
 
 **Example:**
 ```typescript
-import { splitProps } from 'fluixi';
+import { splitProps } from '@fluixi/core';
 
 const MyComponent = (props: { a: number; b: string; c: boolean }) => {
   const [group1, group2, rest] = splitProps(props, ['a', 'b'], ['c']);

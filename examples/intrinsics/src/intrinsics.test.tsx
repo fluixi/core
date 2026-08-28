@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 import { App, IntrinsicCounter, Mixed, Profile, RuntimeCounter } from './App';
 
 /**

@@ -1,6 +1,6 @@
 // /**
 //  * @fileoverview Context API exports for Fluixi framework
-//  * @module fluixi/context
+//  * @module @fluixi/core/context
 //  */
 
 export {

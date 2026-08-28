@@ -6,14 +6,14 @@ il n'y a aucune différence à l'exécution. `` html`` `` est une surface d'écr
 pour quand vous ne voulez pas configurer JSX dans votre tsconfig.
 
 ```ts
-import { html } from 'fluixi';
+import { html } from '@fluixi/core';
 
 function Hello(props: { name: string }) {
   return html`<h1>Bonjour ${props.name}</h1>`;
 }
 ```
 
-Importez `html` (et `svg`) depuis `fluixi`, ou depuis `@fluixi/start` dans une
+Importez `html` (et `svg`) depuis `@fluixi/core`, ou depuis `@fluixi/start` dans une
 application méta-framework.
 
 ## Comment ça compile
@@ -163,7 +163,7 @@ Utilisez la balise `svg` pour placer un sous-arbre dans l'espace de noms SVG. Le
 créés là en ont besoin, et la balise `html` ne l'applique pas :
 
 ```ts
-import { svg } from 'fluixi';
+import { svg } from '@fluixi/core';
 
 svg`<circle cx="50" cy="50" r=${r()} />`;
 ```

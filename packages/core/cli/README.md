@@ -145,7 +145,7 @@ The CLI automatically configures TypeScript based on your selected mode:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "fluixi/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```
@@ -184,7 +184,7 @@ Ensure your `tsconfig.json` is configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "fluixi/jsx-runtime"
+    "jsxImportSource": "@fluixi/core/jsx-runtime"
   }
 }
 ```

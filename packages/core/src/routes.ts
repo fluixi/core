@@ -2,7 +2,7 @@
  * The file-system route tree.
  *
  * ```ts
- * import { routes } from 'fluixi/routes';
+ * import { routes } from '@fluixi/core/routes';
  * ```
  *
  * This module is a **typed stand-in**. `fluixiRoutesPlugin` intercepts the specifier and
@@ -29,7 +29,7 @@ import type { RouteDefinition } from './lib/router/index.js';
  */
 function missingPlugin(): never {
   throw new Error(
-    "[fluixi] 'fluixi/routes' was imported but fluixiRoutesPlugin did not replace it, " +
+    "[fluixi] '@fluixi/core/routes' was imported but fluixiRoutesPlugin did not replace it, " +
       'so there is no route tree. Add the plugin to your Vite config — or, in a @fluixi/start ' +
       'app, build with `fluixi build`/`fluixi dev` rather than calling vite directly.',
   );

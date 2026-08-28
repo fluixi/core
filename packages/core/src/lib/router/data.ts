@@ -1,6 +1,6 @@
 /**
  * @fileoverview Data fetching and caching primitives for Fluixi Router
- * @module fluixi/router/data
+ * @module @fluixi/core/router/data
  */
 
 import {

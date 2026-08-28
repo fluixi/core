@@ -1,4 +1,4 @@
-import { onMount } from 'fluixi';
+import { onMount } from '@fluixi/core';
 import { DEFAULT_VERSION, DEFAULT_LANG, DEFAULT_SLUG } from '../nav.js';
 
 // The docs home redirects to the default version/language. The <a> keeps the prerender crawler

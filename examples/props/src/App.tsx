@@ -1,4 +1,4 @@
-import { createSignal } from 'fluixi';
+import { createSignal } from '@fluixi/core';
 
 /**
  * Components here destructure their props the way you would in plain JavaScript. With

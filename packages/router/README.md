@@ -17,7 +17,7 @@
 
 `@fluixi/router` is the routing **core** — pure state and a `subscribe` API, with **no
 reactivity, no DOM, no view framework**. View adapters (the Fluixi adapter lives in
-[`fluixi/router`](../core)) render the match tree **top-down**, which makes
+[`@fluixi/core/router`](../core)) render the match tree **top-down**, which makes
 deeply nested layout/outlet rendering work by construction. See [DESIGN.md](./DESIGN.md).
 
 ## 📦 Installation

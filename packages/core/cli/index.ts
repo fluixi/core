@@ -2,7 +2,7 @@
 
 /**
  * @fileoverview Fluixi CLI - Command-line interface for project and component generation
- * @module fluixi/cli
+ * @module @fluixi/core/cli
  */
 
 import { program } from 'commander';
@@ -63,7 +63,7 @@ function generateBasicComponent(
 
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from 'fluixi';
+import { FluixiElement } from '@fluixi/core';
 
 /**
  * ${name} component using FluixiElement pattern
@@ -96,7 +96,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from 'fluixi';
+import { WithSignals } from '@fluixi/core';
 
 /**
  * ${name} component using WithSignals mixin
@@ -129,7 +129,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from 'fluixi';
+import { SignalController } from '@fluixi/core';
 
 /**
  * ${name} component using manual controller pattern
@@ -205,7 +205,7 @@ export default ${name};
  * @fileoverview ${name} component
  */
 
-import { html, Component, ComponentProps } from 'fluixi';
+import { html, Component, ComponentProps } from '@fluixi/core';
 
 /**
  * Props for ${name} component
@@ -359,7 +359,7 @@ export default ${name};
 
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from 'fluixi';
+import { FluixiElement } from '@fluixi/core';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
@@ -420,7 +420,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from 'fluixi';
+import { WithSignals } from '@fluixi/core';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
@@ -481,7 +481,7 @@ export default ${name};
 
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from 'fluixi';
+import { SignalController } from '@fluixi/core';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
@@ -541,7 +541,7 @@ export default ${name};
  * @fileoverview ${name} component with reactive state
  */
 
-import { html, Component, ComponentProps } from 'fluixi';
+import { html, Component, ComponentProps } from '@fluixi/core';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 /**
@@ -726,7 +726,7 @@ export default ${name};
  * @fileoverview ${name} component with async resource fetching
  */
 
-import { html, Component, ComponentProps, createResource, Show } from 'fluixi';
+import { html, Component, ComponentProps, createResource, Show } from '@fluixi/core';
 
 /**
  * Props for ${name} component
@@ -972,7 +972,7 @@ import {
   useNavigate,
   useLocation,
   createSignal,
-} from 'fluixi';
+} from '@fluixi/core';
 
 /**
  * Props for ${name} component
@@ -1079,7 +1079,7 @@ import {
   For,
   onMount,
   onUnmount,
-} from 'fluixi';
+} from '@fluixi/core';
 
 /**
  * Props for ${name} component
@@ -1339,7 +1339,7 @@ function generateJSXComponent(
 
   if (type === 'basic') {
     return `/** @jsx h */
-import { h, Fragment } from 'fluixi/jsx-runtime';
+import { h, Fragment } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './${kebabName}.css';
 
@@ -1360,7 +1360,7 @@ export default ${name};
 `;
   } else if (type === 'with-state') {
     return `/** @jsx h */
-import { h, Fragment } from 'fluixi/jsx-runtime';
+import { h, Fragment } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './${kebabName}.css';
 
@@ -1406,7 +1406,7 @@ function generateReactBridgeComponent(
 
   if (type === 'basic') {
     return `import React from 'react';
-import { useSignal } from 'fluixi/react-bridge';
+import { useSignal } from '@fluixi/core/react-bridge';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1426,7 +1426,7 @@ export default ${name};
 `;
   } else if (type === 'with-state') {
     return `import React from 'react';
-import { useSignal, useFluixiEffect } from 'fluixi/react-bridge';
+import { useSignal, useFluixiEffect } from '@fluixi/core/react-bridge';
 import './${kebabName}.css';
 
 export interface ${name}Props {
@@ -1542,7 +1542,7 @@ function generateTestFile(name: string): string {
  */
 
 import { describe, it, expect } from 'vitest';
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 import { ${name} } from './${name}';
 
 describe('${name}', () => {
@@ -1762,7 +1762,7 @@ async function generateProject(
       test: 'vitest',
     },
     dependencies: {
-      'fluixi': 'workspace:*',
+      '@fluixi/core': 'workspace:*',
       '@fluixi/reactive': 'workspace:*',
       lit: '^3.3.1',
     },
@@ -1842,7 +1842,7 @@ async function generateProject(
   // Configure JSX based on mode
   if (mode === 'jsx') {
     tsConfig.compilerOptions.jsx = 'react-jsx';
-    tsConfig.compilerOptions.jsxImportSource = 'fluixi/jsx-runtime';
+    tsConfig.compilerOptions.jsxImportSource = '@fluixi/core/jsx-runtime';
   } else if (mode === 'react-bridge') {
     tsConfig.compilerOptions.jsx = 'react-jsx';
   } else {
@@ -1890,7 +1890,7 @@ export default defineConfig({
   const appExt = mode === 'lit-html' ? 'ts' : 'tsx';
 
   if (mode === 'jsx') {
-    mainTs = `import { render } from 'fluixi';
+    mainTs = `import { render } from '@fluixi/core';
 import { App } from './App';
 import './styles/main.css';
 
@@ -1914,7 +1914,7 @@ if (root) {
 }
 `;
   } else {
-    mainTs = `import { render, html } from 'fluixi';
+    mainTs = `import { render, html } from '@fluixi/core';
 import { App } from './App';
 import './styles/main.css';
 
@@ -2077,7 +2077,7 @@ function generateAppComponent(
 
   // Default lit-html mode
   if (template === 'full') {
-    return `import { html, createRouter, Router, Link, Component } from 'fluixi';
+    return `import { html, createRouter, Router, Link, Component } from '@fluixi/core';
 
 const Home = () => html\`
   <div>
@@ -2117,7 +2117,7 @@ export const App: Component = () => {
 `;
   }
 
-  return `import { html, createSignal, Component } from 'fluixi';
+  return `import { html, createSignal, Component } from '@fluixi/core';
 
 export const App: Component = () => {
   const [count, setCount] = createSignal(0);
@@ -2142,7 +2142,7 @@ export default App;
  */
 function generateJSXAppComponent(template: ProjectTemplate): string {
   return `/** @jsx h */
-import { h, Fragment } from 'fluixi/jsx-runtime';
+import { h, Fragment } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './styles/main.css';
 
@@ -2183,7 +2183,7 @@ export default App;
  */
 function generateReactBridgeAppComponent(template: ProjectTemplate): string {
   return `import React from 'react';
-import { useSignal, useFluixiEffect } from 'fluixi/react-bridge';
+import { useSignal, useFluixiEffect } from '@fluixi/core/react-bridge';
 import './styles/main.css';
 
 export function App() {
@@ -2280,7 +2280,7 @@ async function generateExamplePage(
 
   if (mode === 'jsx') {
     pageCode = `/** @jsx h */
-import { h } from 'fluixi/jsx-runtime';
+import { h } from '@fluixi/core/jsx-runtime';
 import './${pageName}.css';
 
 export function ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}Page() {
@@ -2341,7 +2341,7 @@ export default ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}Page;
 function generateTodoListComponent(mode: ComponentMode): string {
   if (mode === 'jsx') {
     return `/** @jsx h */
-import { h } from 'fluixi/jsx-runtime';
+import { h } from '@fluixi/core/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './todolist.css';
 
@@ -2425,7 +2425,7 @@ export default TodoList;
 function generateUserCardComponent(mode: ComponentMode): string {
   if (mode === 'jsx') {
     return `/** @jsx h */
-import { h } from 'fluixi/jsx-runtime';
+import { h } from '@fluixi/core/jsx-runtime';
 import './usercard.css';
 
 export interface UserCardProps {
@@ -2474,8 +2474,8 @@ export default UserCard;
  */
 function generateDataFetcherComponent(mode: ComponentMode): string {
   return `import { html } from 'lit';
-import { createResource } from 'fluixi/resources';
-import { Show } from 'fluixi/control-flow';
+import { createResource } from '@fluixi/core/resources';
+import { Show } from '@fluixi/core/control-flow';
 import './datafetcher.css';
 
 async function fetchData() {

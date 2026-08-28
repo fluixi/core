@@ -7,7 +7,7 @@ Components don't re-render, so "lifecycle" is just a few primitives tied to the 
 Run code once, after the component's DOM is in place (client-only — it never runs during SSR):
 
 ```tsx
-import { onMount } from 'fluixi';
+import { onMount } from '@fluixi/core';
 
 onMount(() => {
   inputRef.focus();
@@ -19,7 +19,7 @@ onMount(() => {
 Run code when the owning scope is disposed (and before an effect re-runs):
 
 ```tsx
-import { onCleanup } from 'fluixi';
+import { onCleanup } from '@fluixi/core';
 
 const id = setInterval(tick, 1000);
 onCleanup(() => clearInterval(id));

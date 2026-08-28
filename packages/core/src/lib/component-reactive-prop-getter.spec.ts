@@ -8,7 +8,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -37,7 +37,7 @@ function cjsTransform({ types: t }: any): any {
   } };
 }
 
-const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, 'fluixi': Fluixi };
+const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi };
 function load(src: string): any {
   const opts = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
   const step1 = transformTemplates(src, 't.tsx', { ...opts, runtimeModule: opts.signalModule })?.code ?? src;
@@ -53,7 +53,7 @@ beforeAll(() => ensureIntegration());
 describe('reactive prop on a component does not re-create it', () => {
   it('component runs once; reactivity flows through the prop', async () => {
     const mod = load(`
-      import { createSignal } from 'fluixi';
+      import { createSignal } from '@fluixi/core';
       let runCount = 0;
       function Label(props) { runCount++; return <span class="v">{props.n}</span>; }
       const [n, setN] = createSignal(1);
@@ -73,7 +73,7 @@ describe('reactive prop on a component does not re-create it', () => {
 
   it('a component rendering a <Portal> does not pile up in <body>', async () => {
     const mod = load(`
-      import { createSignal, Portal } from 'fluixi';
+      import { createSignal, Portal } from '@fluixi/core';
       function Modal(props) { return <Portal><div class="modal" data-n={props.n} /></Portal>; }
       const [n, setN] = createSignal(1);
       export function App() { return <div><Modal n={n()} /></div>; }

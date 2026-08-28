@@ -107,7 +107,7 @@ export const PRIMITIVE_MODULES: readonly string[] = [
   '@fluixi/reactive',
   '@fluixi/reactive/signal',
   '@fluixi/reactive/store',
-  'fluixi',
+  '@fluixi/core',
 ];
 
 /**

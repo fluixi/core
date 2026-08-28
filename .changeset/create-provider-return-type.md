@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Fix `createProvider`'s return type.

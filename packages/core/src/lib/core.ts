@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { createSignal, render, html } from 'fluixi';
+ * import { createSignal, render, html } from '@fluixi/core';
  *
  * const Counter = () => {
  *   const [count, setCount] = createSignal(0);
@@ -101,7 +101,7 @@ export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
 // NOT re-exported from the main entry. `export * from '@fluixi/utils'` here put the
 // whole utility library in every app's graph — 56% of a counter's bundle, 74% of its
 // bytes — because a barrel re-export of a barrel cannot be shaken in practice. Import
-// from `@fluixi/utils` directly, or from `fluixi/utils` for the same surface.
+// from `@fluixi/utils` directly, or from `@fluixi/core/utils` for the same surface.
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
 // import { createResource } from './resources/index.js';
@@ -115,7 +115,7 @@ import { ensureIntegration } from './render/component.js';
 
 // html`` / svg`` template markers — the no-JSX authoring surface. They live in
 // @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
-// `import { html } from 'fluixi'` works. Inert typed functions — no lit runtime.
+// `import { html } from '@fluixi/core'` works. Inert typed functions — no lit runtime.
 export { html, svg } from '@fluixi/dom';
 export type { TemplateResult, Reactive } from '@fluixi/dom';
 

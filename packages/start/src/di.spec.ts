@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { createRoot } from 'fluixi';
+import { createRoot } from '@fluixi/core';
 import {
   createRequestContext,
   runWithRequestContext,

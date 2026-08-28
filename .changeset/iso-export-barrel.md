@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Fix: export `createIsomorphicState` from the public barrel. It was added to `lib/index.ts`,

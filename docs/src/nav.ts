@@ -1,6 +1,6 @@
 // Sidebar structure (ordered) + UI strings per language. Page titles come from each markdown's
 // H1 (see content.ts); group labels and chrome are translated here.
-import { VERSION } from 'fluixi';
+import { VERSION } from '@fluixi/core';
 import type { Lang } from './content.js';
 
 export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [

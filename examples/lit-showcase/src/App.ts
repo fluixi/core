@@ -1,5 +1,5 @@
-import { createSignal, createResource, type Component } from 'fluixi';
-import { html } from 'fluixi';
+import { createSignal, createResource, type Component } from '@fluixi/core';
+import { html } from '@fluixi/core';
 
 // A single-file tour of every html`` template feature. Control-flow tags
 // (Show/For/Index/Switch/Match/Portal/ErrorBoundary from @fluixi/dom, Suspense

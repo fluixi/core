@@ -50,7 +50,7 @@ It writes a file under `.changeset/`, e.g. `.changeset/funny-otters-sing.md`:
 
 ```markdown
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Fix debounced signal subscriptions

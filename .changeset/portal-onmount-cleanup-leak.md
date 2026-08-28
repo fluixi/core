@@ -1,6 +1,6 @@
 ---
 "@fluixi/reactive": patch
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Fix a listener/effect leak when a component is torn down before its `onMount` runs

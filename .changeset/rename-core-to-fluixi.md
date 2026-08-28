@@ -1,5 +1,5 @@
 ---
-"fluixi": minor
+"@fluixi/core": minor
 "@fluixi/compiler": minor
 "@fluixi/start": minor
 "@fluixi/auth": minor

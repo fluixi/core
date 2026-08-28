@@ -62,7 +62,7 @@ describe('@fluixi/auth/client', () => {
 
 describe('@fluixi/auth/client — { session } overload', () => {
   it('drives useUser from a reactive session and syncs reactively', async () => {
-    const { createSignal } = await import('fluixi');
+    const { createSignal } = await import('@fluixi/core');
     const [user, setUser] = createSignal<{ id: string } | null>(null);
     const login = vi.fn(async () => {});
     const { useUser, useSignIn, protectedRoute } = createAuthHooks({

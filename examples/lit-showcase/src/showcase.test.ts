@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render } from 'fluixi';
-import { html } from 'fluixi';
+import { render } from '@fluixi/core';
+import { html } from '@fluixi/core';
 import { App } from './App';
 
 /** Render the whole showcase and assert a spread of features produced DOM. */

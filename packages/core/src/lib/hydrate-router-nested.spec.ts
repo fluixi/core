@@ -12,7 +12,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import * as RouterNext from './router/index.js';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
@@ -65,8 +65,8 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  'fluixi': Fluixi,
-  'fluixi/router': RouterNext,
+  '@fluixi/core': Fluixi,
+  '@fluixi/core/router': RouterNext,
 };
 
 function load(src: string): any {
@@ -88,8 +88,8 @@ function load(src: string): any {
 }
 
 const APP_SRC = `
-  import { Suspense } from 'fluixi';
-  import { Router, Outlet, createMemoryHistory } from 'fluixi/router';
+  import { Suspense } from '@fluixi/core';
+  import { Router, Outlet, createMemoryHistory } from '@fluixi/core/router';
 
   function Card(props) {
     return <article class="card">{props.title}</article>;
@@ -154,8 +154,8 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
 
   it('reuses the server DOM for a LAZY route (the file-route shape)', async () => {
     const src = `
-      import { Suspense, lazy } from 'fluixi';
-      import { Router, Outlet, createMemoryHistory } from 'fluixi/router';
+      import { Suspense, lazy } from '@fluixi/core';
+      import { Router, Outlet, createMemoryHistory } from '@fluixi/core/router';
 
       function Card(props) { return <article class="card">{props.title}</article>; }
       function Home() {

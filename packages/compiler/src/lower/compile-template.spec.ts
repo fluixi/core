@@ -40,8 +40,8 @@ function viaBabel(source: string): string {
     resolver: createComponentResolver([]),
     modules: {
       controlFlowModule: '@fluixi/dom',
-      coreModule: 'fluixi',
-      routerModule: 'fluixi/router',
+      coreModule: '@fluixi/core',
+      routerModule: '@fluixi/core/router',
     },
     strategyFor: (n) => n.load,
   });

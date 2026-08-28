@@ -29,9 +29,9 @@ import type { ComponentMapRule } from './component-resolver.js';
 export interface BuiltinModules {
   /** Control flow that lives in the DOM package. Default `@fluixi/dom`. */
   controlFlowModule?: string;
-  /** Control flow that only exists in core. Default `fluixi`. */
+  /** Control flow that only exists in core. Default `@fluixi/core`. */
   coreModule?: string;
-  /** Router components. Default `fluixi/router`. */
+  /** Router components. Default `@fluixi/core/router`. */
   routerModule?: string;
 }
 
@@ -47,7 +47,7 @@ export const DOM_CONTROL_FLOW = [
   'ErrorBoundary',
 ] as const;
 
-/** Control flow that only `fluixi` exports — importing it from dom resolves to nothing. */
+/** Control flow that only `@fluixi/core` exports — importing it from dom resolves to nothing. */
 export const CORE_CONTROL_FLOW = ['Suspense', 'SuspenseList', 'Await'] as const;
 
 /**
@@ -81,8 +81,8 @@ export const RESERVED_COMPONENTS: ReadonlySet<string> = new Set([
 export function builtinComponentMap(modules: BuiltinModules = {}): Record<string, string> {
   const {
     controlFlowModule = '@fluixi/dom',
-    coreModule = 'fluixi',
-    routerModule = 'fluixi/router',
+    coreModule = '@fluixi/core',
+    routerModule = '@fluixi/core/router',
   } = modules;
 
   const map: Record<string, string> = {};
@@ -105,6 +105,6 @@ export function builtinComponents(modules: BuiltinModules = {}): ComponentMapRul
 
 /** Just the router group as a rule — the one group that is purely an import. */
 export function routerComponents(routerModule?: string): ComponentMapRule {
-  const module = routerModule ?? 'fluixi/router';
+  const module = routerModule ?? '@fluixi/core/router';
   return { components: Object.fromEntries(ROUTER_COMPONENTS.map((n) => [n, module])) };
 }

@@ -11,7 +11,7 @@ Fluixi now supports JSX/TSX syntax, allowing you to use React-like component syn
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "fluixi",
+    "jsxImportSource": "@fluixi/core",
     "target": "ES2020",
     "module": "ESNext"
   }
@@ -49,7 +49,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   esbuild: {
-    jsxImportSource: 'fluixi'
+    jsxImportSource: '@fluixi/core'
   }
 });
 ```
@@ -67,7 +67,7 @@ module.exports = {
         options: {
           compilerOptions: {
             jsx: 'react-jsx',
-            jsxImportSource: 'fluixi'
+            jsxImportSource: '@fluixi/core'
           }
         }
       }
@@ -116,7 +116,7 @@ const Button = (props: ButtonProps) => {
 
 ### 🔄 Control Flow
 ```tsx
-import { Show, For } from 'fluixi';
+import { Show, For } from '@fluixi/core';
 
 // Conditional rendering
 <Show when={user()} fallback={<div>Loading...</div>}>
@@ -185,7 +185,7 @@ const MyComponent = () => {
 Full type safety with IntelliSense:
 
 ```tsx
-import type { JSX } from 'fluixi/jsx-runtime';
+import type { JSX } from '@fluixi/core/jsx-runtime';
 
 interface UserCardProps {
   user: {

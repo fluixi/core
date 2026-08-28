@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx": "workspace:*",
     "@fluixi/reactive": "workspace:*"

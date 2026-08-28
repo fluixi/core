@@ -244,7 +244,7 @@ export async function renderToString(element: JSXElement): Promise<string> {
 export { globalDelegatedSet as delegatedSet };
 
 // Re-export JSX namespace so TypeScript can find JSX.IntrinsicElements
-// when this module is resolved via jsxImportSource: "fluixi"
+// when this module is resolved via jsxImportSource: "@fluixi/core"
 // Note: './jsx.d.js' resolves to jsx.d.ts (declaration file with JSX types),
 // not jsx.ts (the React bridge file).
 export type { JSX } from './jsx.d.js';

@@ -1,6 +1,6 @@
 ---
 '@fluixi/dom': minor
-'fluixi': minor
+'@fluixi/core': minor
 ---
 
 Add `ClientOnly` / `NoSsr`

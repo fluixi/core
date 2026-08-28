@@ -16,7 +16,7 @@
  * exists precisely because the server — not the client — is the authority.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
-import { storage, isClient } from 'fluixi';
+import { storage, isClient } from '@fluixi/core';
 
 /** A token plus, optionally, its expiry as an epoch-ms timestamp. */
 export interface TokenResult {

@@ -1,4 +1,4 @@
-import { startClient } from 'fluixi/client';
+import { startClient } from '@fluixi/core/client';
 import App, { appRoutes } from './app.js';
 
 // Pass the route tree so startClient preloads the current route's lazy chunk before hydrating

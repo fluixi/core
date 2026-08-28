@@ -8,7 +8,7 @@ and only touch the DOM that changed.
 Conditionally render a branch:
 
 ```tsx
-import { Show } from 'fluixi';
+import { Show } from '@fluixi/core';
 
 <Show when={user()} fallback={<a href="/login">Sign in</a>}>
   <p>Welcome back, {user()!.name}</p>
@@ -20,7 +20,7 @@ import { Show } from 'fluixi';
 Render a list, keyed by reference, so rows are moved rather than re-created:
 
 ```tsx
-import { For } from 'fluixi';
+import { For } from '@fluixi/core';
 
 <For each={items()}>
   {(item) => <li>{item.label}</li>}
@@ -34,7 +34,7 @@ Use `Index` instead when you key by position rather than identity.
 For multiple exclusive branches:
 
 ```tsx
-import { Switch, Match } from 'fluixi';
+import { Switch, Match } from '@fluixi/core';
 
 <Switch fallback={<NotFound />}>
   <Match when={route() === 'home'}><Home /></Match>

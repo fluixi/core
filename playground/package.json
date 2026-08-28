@@ -10,7 +10,7 @@
   "dependencies": {
     "@babel/standalone": "^7.25.0",
     "@fluixi/compiler": "workspace:*",
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/devtools": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx": "workspace:*",

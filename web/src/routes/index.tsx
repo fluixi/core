@@ -1,4 +1,4 @@
-import { signal } from 'fluixi';
+import { signal } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import './landing.css';
 
@@ -181,7 +181,7 @@ const PANELS = [
   { id: 'out', label: 'Compiled', file: 'what the browser runs', code: COMPILED },
 ] as const;
 
-const HTML_CODE = `import { html } from "fluixi";
+const HTML_CODE = `import { html } from "@fluixi/core";
 
 // No JSX, no tsconfig changes — plain .ts, same compiled output.
 function Counter() {

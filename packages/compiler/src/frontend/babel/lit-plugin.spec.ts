@@ -110,8 +110,8 @@ describe('lit front-end (format: lit)', () => {
     const code = compileEsm(
       'export const r = (b) => html`<Suspense><SuspenseList revealOrder="forwards">${b}</SuspenseList></Suspense>`;',
     );
-    expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "fluixi"/);
-    expect(code).toMatch(/import \{[^}]*\bSuspenseList\b[^}]*\} from "fluixi"/);
+    expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "@fluixi\/core"/);
+    expect(code).toMatch(/import \{[^}]*\bSuspenseList\b[^}]*\} from "@fluixi\/core"/);
     expect(code).not.toMatch(/import \{[^}]*\bSuspenseList\b[^}]*\} from "@fluixi\/dom"/);
   });
 
@@ -120,7 +120,7 @@ describe('lit front-end (format: lit)', () => {
       'export const App = (r) => html`<${Router} routes=${r}><main><${Outlet}/></main></${Router}>`;',
     );
     // Order-insensitive: the names are emitted sorted, which is not the contract.
-    const routerImport = code.match(/import \{([^}]*)\} from "fluixi\/router"/)?.[1] ?? '';
+    const routerImport = code.match(/import \{([^}]*)\} from "@fluixi\/core\/router"/)?.[1] ?? '';
     expect(routerImport).toContain('Router');
     expect(routerImport).toContain('Outlet');
   });
@@ -131,7 +131,7 @@ describe('lit front-end (format: lit)', () => {
     );
     // keep the user's import; don't inject a second Router from router
     expect(code).toContain("from '@fluixi/start/router'");
-    expect(code).not.toMatch(/import \{[^}]*\bRouter\b[^}]*\} from "fluixi\/router"/);
+    expect(code).not.toMatch(/import \{[^}]*\bRouter\b[^}]*\} from "@fluixi\/core\/router"/);
   });
 
   it('router auto-import respects a custom routerModule', () => {

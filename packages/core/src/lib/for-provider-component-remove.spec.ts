@@ -7,7 +7,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -36,7 +36,7 @@ function cjsTransform({ types: t }: any): any {
   } };
 }
 
-const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, 'fluixi': Fluixi };
+const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi };
 function load(src: string): any {
   const opts = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
   const step1 = transformTemplates(src, 't.tsx', { ...opts, runtimeModule: opts.signalModule })?.code ?? src;
@@ -58,7 +58,7 @@ async function mount(mod: any) {
 describe('<For> + Provider -> component child removal', () => {
   it('removes dropped items (Provider wrapping a component)', async () => {
     const mod = load(`
-      import { createSignal, createContext, For } from 'fluixi';
+      import { createSignal, createContext, For } from '@fluixi/core';
       const Ctx = createContext('P');
       const P = Ctx.Provider;
       function Row(props) { return <li class="row">{props.x}</li>; }
@@ -77,7 +77,7 @@ describe('<For> + Provider -> component child removal', () => {
 
   it('control: Provider wrapping an inline element works', async () => {
     const mod = load(`
-      import { createSignal, createContext, For } from 'fluixi';
+      import { createSignal, createContext, For } from '@fluixi/core';
       const Ctx = createContext('P');
       const P = Ctx.Provider;
       const [items, setItems] = createSignal(['A', 'B', 'C']);

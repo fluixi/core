@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Remove the unused experimental vinxi integration: the `internal/vinxi/*` app/runtime,

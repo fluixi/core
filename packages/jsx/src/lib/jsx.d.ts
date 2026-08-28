@@ -1,6 +1,6 @@
 /**
  * @fileoverview JSX Type Definitions for Fluixi
- * @module fluixi/jsx-runtime
+ * @module @fluixi/core/jsx-runtime
  */
 
 

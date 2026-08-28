@@ -1,6 +1,6 @@
 // Import both from the same barrel so the resource's signals live in the same
 // reactive instance as the runtime's render effects.
-import { createSignal, createResource } from 'fluixi';
+import { createSignal, createResource } from '@fluixi/core';
 
 /** Fake async data source — stands in for a real loader/fetch. */
 function fetchUser(id: number): Promise<{ name: string }> {

@@ -60,7 +60,7 @@ Inside a compiled app, `$signal` is the same primitive without the import.
 
 | Package | Description |
 | --- | --- |
-| [`fluixi`](packages/core) | The framework — components, lifecycle, control flow, context, router (`router`), client/server entries. |
+| [`@fluixi/core`](packages/core) | The framework — components, lifecycle, control flow, context, router (`router`), client/server entries. |
 | [`@fluixi/router`](packages/router) | Framework-agnostic router core — URL → match tree + navigation (no DOM/reactivity). |
 | [`@fluixi/server`](packages/server) | Server-side rendering — request-scoped, streaming, hydration transport. |
 
@@ -97,7 +97,7 @@ Inside a compiled app, `$signal` is the same primitive without the import.
 All `@fluixi/*` packages are on **public npm** — no registry configuration, no token.
 
 ```sh
-pnpm add fluixi    # the full framework
+pnpm add @fluixi/core    # the full framework
 # …or just the reactivity core
 pnpm add @fluixi/reactive
 ```

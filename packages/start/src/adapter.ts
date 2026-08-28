@@ -162,7 +162,7 @@ const GENERATED_SUBPATHS = new Set(['./routes', './server-fns', './api-routes'])
  * The Vite `ssr` options for a build, given the configured adapter's `bundle` mode.
  * Shared by the server and middleware builds so the two cannot disagree.
  *
- * `'external'` lists the app's own `fluixi` and `@fluixi/*` dependencies rather than externalizing
+ * `'external'` lists the app's own `@fluixi/core` and `@fluixi/*` dependencies rather than externalizing
  * everything: under a strict `node_modules` layout (pnpm) only what the app itself
  * declares is resolvable from its root, so externalizing a merely transitive package
  * would produce a bundle that imports something Node cannot find.
@@ -170,7 +170,7 @@ const GENERATED_SUBPATHS = new Set(['./routes', './server-fns', './api-routes'])
  * Each package is listed with every subpath its `exports` map publishes, because Vite
  * only honours an *exact* id in `ssr.external`. A bare package name falls through to a
  * resolvability probe that does not externalize deep imports here, and the result is the
- * worst of both worlds: `fluixi` an import, `fluixi/router` copied into
+ * worst of both worlds: `@fluixi/core` an import, `@fluixi/core/router` copied into
  * the bundle — two routers, two sets of module state, in one server.
  *
  * `ssrNoExternal` always wins — it is the app saying "this one must be bundled".
@@ -200,18 +200,18 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   return { noExternal, external: external.length ? external : undefined };
 }
 
-/** The app's own `fluixi` and `@fluixi/*` dependencies, read from its package.json. */
+/** The app's own `@fluixi/core` and `@fluixi/*` dependencies, read from its package.json. */
 function frameworkDeps(root: string): string[] {
   const pkg = readPackage(join(root, 'package.json'));
   if (!pkg) return [];
   const declared = { ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies };
-  // `fluixi` is the front door and carries the router and the runtime, so missing it here
+  // `@fluixi/core` is the front door and carries the router and the runtime, so missing it here
   // inlines the largest package of the set.
-  return Object.keys(declared).filter((id) => id === 'fluixi' || id.startsWith('@fluixi/'));
+  return Object.keys(declared).filter((id) => id === '@fluixi/core' || id.startsWith('@fluixi/'));
 }
 
 /**
- * `['fluixi', 'fluixi/router', …]` — the package plus every static subpath it
+ * `['@fluixi/core', '@fluixi/core/router', …]` — the package plus every static subpath it
  * exports. Wildcard entries (`./lib/*`) cannot be enumerated and are left to Vite; an
  * app importing through one gets it bundled, which is the safe direction.
  */

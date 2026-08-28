@@ -3,8 +3,8 @@
 // The components `resolve` supplies without an import. This describes what the
 // compiler already does; it does not enable it.
 
-import * as __fluixi_core from 'fluixi';
-import * as __fluixi_core_router_next from 'fluixi/router';
+import * as __fluixi_core from '@fluixi/core';
+import * as __fluixi_core_router_next from '@fluixi/core/router';
 import * as __fluixi_dom from '@fluixi/dom';
 import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
 import * as __fluixi_reactive_store from '@fluixi/reactive/store';

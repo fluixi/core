@@ -6,7 +6,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -47,7 +47,7 @@ function cjsTransform({ types: t }: any): any {
 }
 
 const REQUIRE_MAP: Record<string, unknown> = {
-  '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, 'fluixi': Fluixi,
+  '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi,
 };
 
 function load(src: string, opts: any): any {
@@ -63,7 +63,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 beforeAll(() => ensureIntegration());
 
 const SRC = `
-  import { createContext, useContext, Portal, Show } from 'fluixi';
+  import { createContext, useContext, Portal, Show } from '@fluixi/core';
   const ctx = createContext('V');
   const Provider = ctx.Provider;
   const useValue = () => useContext(ctx);

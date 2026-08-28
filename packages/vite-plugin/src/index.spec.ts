@@ -33,7 +33,7 @@ describe('@fluixi/vite-plugin', () => {
   it('compiles html`` templates through the same pipeline', async () => {
     const code = await runTransform(
       { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' },
-      'import { html } from "fluixi";\nexport const A = (x) => html`<div id="a">${x()}</div>`;',
+      'import { html } from "@fluixi/core";\nexport const A = (x) => html`<div id="a">${x()}</div>`;',
     );
     expect(code).toMatch(/createNativeElement|templateNode/);
     expect(code).not.toMatch(/\bhtml`/);

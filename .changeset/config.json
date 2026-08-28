@@ -9,7 +9,7 @@
       "@fluixi/dom",
       "@fluixi/babel-plugin-jsx",
       "@fluixi/jsx",
-      "fluixi",
+      "@fluixi/core",
       "@fluixi/compiler",
       "@fluixi/vite-plugin",
       "@fluixi/session",

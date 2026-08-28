@@ -41,7 +41,7 @@ The client entry logs which path it took (`server-rendered HTML present …` vs
 ## Patterns worth noting
 
 - **Import reactivity from one barrel.** `createSignal` and `createResource`
-  both come from `fluixi` so the resource's signals share the runtime's
+  both come from `@fluixi/core` so the resource's signals share the runtime's
   reactive instance.
 - **Async data resolves through components.** `UserCard` is a nested
   `<Component/>` that reads a resource; `renderToStringAsync` awaits the fetch

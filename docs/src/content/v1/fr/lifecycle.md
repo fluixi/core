@@ -9,7 +9,7 @@ Exécuter du code une fois, après que le DOM du composant est en place (côté 
 s'exécute jamais pendant le SSR) :
 
 ```tsx
-import { onMount } from 'fluixi';
+import { onMount } from '@fluixi/core';
 
 onMount(() => {
   inputRef.focus();
@@ -21,7 +21,7 @@ onMount(() => {
 Exécuter du code lorsque la portée propriétaire est détruite (et avant qu'un effet ne se ré-exécute) :
 
 ```tsx
-import { onCleanup } from 'fluixi';
+import { onCleanup } from '@fluixi/core';
 
 const id = setInterval(tick, 1000);
 onCleanup(() => clearInterval(id));

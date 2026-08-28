@@ -39,9 +39,9 @@ export interface CompileTemplateOptions {
   resolve?: readonly ComponentResolverRule[];
   /** Where control-flow components are imported from. @default '@fluixi/dom' */
   controlFlowModule?: string;
-  /** Where core-only components (Suspense, Portal) come from. @default 'fluixi' */
+  /** Where core-only components (Suspense, Portal) come from. @default '@fluixi/core' */
   coreModule?: string;
-  /** Where router components come from. @default 'fluixi/router' */
+  /** Where router components come from. @default '@fluixi/core/router' */
   routerModule?: string;
   /**
    * Leave static templates as `_tmpl$N` references and hand them back, for a
@@ -118,8 +118,8 @@ export function compilePieces(
     resolver: createComponentResolver(options.resolve ?? []),
     modules: {
       controlFlowModule: options.controlFlowModule ?? '@fluixi/dom',
-      coreModule: options.coreModule ?? 'fluixi',
-      routerModule: options.routerModule ?? 'fluixi/router',
+      coreModule: options.coreModule ?? '@fluixi/core',
+      routerModule: options.routerModule ?? '@fluixi/core/router',
     },
     strategyFor: (node) => node.load,
   });

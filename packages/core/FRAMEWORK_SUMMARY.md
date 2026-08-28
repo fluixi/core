@@ -277,7 +277,7 @@ fluixi help             # Show help
 
 ### Core Exports
 
-**From `fluixi`:**
+**From `@fluixi/core`:**
 ```typescript
 // Rendering
 render, createRoot, createComponent
@@ -311,14 +311,14 @@ html, svg, nothing, render as litRender
 
 ### Modular Exports
 
-**From `fluixi/core`:**
+**From `@fluixi/core/core`:**
 ```typescript
 createComponent, render, createRoot
 onMount, onUnmount, registerCleanup
 mergeProps, splitProps, batch, untrack
 ```
 
-**From `fluixi/control-flow`:**
+**From `@fluixi/core/control-flow`:**
 ```typescript
 Show, Match, Switch
 For, Index, createKeyedFor
@@ -326,20 +326,20 @@ Portal, GlobalPortal, createFixedPortal
 Dynamic, DynamicSwitch, createPolymorphic
 ```
 
-**From `fluixi/context`:**
+**From `@fluixi/core/context`:**
 ```typescript
 createContext, useContext, Provider
 createContextWithProvider, composeProviders
 createConsumer, useProvide
 ```
 
-**From `fluixi/resources`:**
+**From `@fluixi/core/resources`:**
 ```typescript
 createResource, createResources
 createResourceWithRetry, createLazyResource
 ```
 
-**From `fluixi/router`:**
+**From `@fluixi/core/router`:**
 ```typescript
 createRouter, Router, Link
 useRouter, useLocation, useNavigate
@@ -574,7 +574,7 @@ npx fluixi generate component MyComponent --type full
 
 ### 3. Start Building
 ```typescript
-import { createSignal, render, html } from 'fluixi';
+import { createSignal, render, html } from '@fluixi/core';
 
 const App = () => {
   const [count, setCount] = createSignal(0);

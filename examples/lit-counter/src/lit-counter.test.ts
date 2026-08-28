@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 import { flush } from '@fluixi/reactive/signal';
 import { Counter } from './App';
 
