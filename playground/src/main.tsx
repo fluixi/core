@@ -1,4 +1,4 @@
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 import { Playground } from './Playground';
 import './styles.css';
 

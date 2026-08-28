@@ -33,7 +33,7 @@ return html`
 
 The same features work as in JSX because the compiled output is identical.
 Control flow (`Show`/`For`/…) is auto-imported by the compiler; higher-level
-pieces (`Suspense`, `Router`, `createResource`) you import from `@fluixi/core`.
+pieces (`Suspense`, `Router`, `createResource`) you import from `fluixi`.
 
 ## Run
 

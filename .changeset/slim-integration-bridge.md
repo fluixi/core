@@ -1,6 +1,6 @@
 ---
 "@fluixi/dom": patch
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Slim the `@fluixi/dom` integration bridge to framework glue only.

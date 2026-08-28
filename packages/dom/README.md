@@ -80,10 +80,10 @@ Bindings work as soon as you import — the example above needs no setup. Render
 *components* needs one seam filled in, so a component call is owned and disposable:
 
 ```typescript
-import '@fluixi/core'; // wires it for you at import time
+import 'fluixi'; // wires it for you at import time
 ```
 
-Using `@fluixi/dom` without `@fluixi/core`? Fill the seam yourself — see
+Using `@fluixi/dom` without `fluixi`? Fill the seam yourself — see
 [Integration](#integration).
 
 ## Core API
@@ -344,7 +344,7 @@ import { registerCreateComponent } from '@fluixi/dom';
 registerCreateComponent((Comp, props) => myOwnedCall(Comp, props));
 ```
 
-**You almost never call this.** Importing `@fluixi/core` wires `@fluixi/reactive` in for
+**You almost never call this.** Importing `fluixi` wires `@fluixi/reactive` in for
 you at import time, so an app just imports and renders. It matters if you use `@fluixi/dom`
 on its own, or drive it with a different reactive library.
 
@@ -365,7 +365,7 @@ same calls this package exposes, so they cost nothing at runtime and need no tem
 library.
 
 ```ts
-import { html } from '@fluixi/core';
+import { html } from 'fluixi';
 
 function Counter() {
   const n = $signal(0);

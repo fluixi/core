@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fluixi/core": "alpha",
+    "fluixi": "alpha",
     "@fluixi/dom": "alpha",
     "@fluixi/reactive": "alpha"
   },

@@ -59,7 +59,7 @@ donc un mode `bundle`, que `fluixi build` applique.
 
 | `bundle` | `dist/server` | a besoin de `node_modules` à l'exécution |
 | --- | --- | --- |
-| `'external'` (node) | votre application plus `import '@fluixi/core'` | oui |
+| `'external'` (node) | votre application plus `import 'fluixi'` | oui |
 | `'inline'` (web) | un seul fichier autonome | non |
 | non défini (aucun adaptateur) | l'heuristique de Vite | en général |
 
@@ -77,7 +77,7 @@ dépendances**, et rien d'autre. Avec une disposition stricte de `node_modules` 
 paquet que vous n'avez jamais déclaré n'est pas résolvable depuis la racine de
 l'application : l'externaliser produirait un bundle important quelque chose que Node ne
 trouve pas. Chaque paquet est listé avec tous les sous-chemins qu'il exporte, car
-l'externaliser à moitié — `@fluixi/core` en import, `@fluixi/core/router-next` copié dans le
+l'externaliser à moitié — `fluixi` en import, `fluixi/router` copié dans le
 bundle — mettrait deux routeurs, et deux états de module, dans le même serveur.
 `ssrNoExternal` reste prioritaire sur tout cela — c'est l'application qui dit « celui-ci,
 bundle-le quand même ».

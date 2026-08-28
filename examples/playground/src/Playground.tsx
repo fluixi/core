@@ -1,4 +1,4 @@
-import { createSignal, onMount } from '@fluixi/core';
+import { createSignal, onMount } from 'fluixi';
 import { runSnippet, type ReactorHandle } from './reactor.js';
 import { createGraphView } from './graph-view.js';
 import { examples, type Example } from './examples.js';

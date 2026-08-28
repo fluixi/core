@@ -1,15 +1,15 @@
 /**
  * Which build of each package is actually running.
  *
- * This used to live in `@fluixi/core`, stamped only by *its* `render`. But an app can
- * reach the DOM through either entry point — `@fluixi/core`'s `render`, or this package's
+ * This used to live in `fluixi`, stamped only by *its* `render`. But an app can
+ * reach the DOM through either entry point — `fluixi`'s `render`, or this package's
  * `render`/`hydrate` by way of `startClient` — and only the first stamped anything. An app
  * that hydrated (the docs site, every SSR app) therefore had no version attributes at all,
  * which is exactly the case where a bug report needs them most.
  *
  * So the stamping sits at the bottom instead, where both paths pass through.
  *
- * The core version cannot be imported here: `@fluixi/core` depends on this package, not
+ * The core version cannot be imported here: `fluixi` depends on this package, not
  * the other way round, and reversing that would be a cycle. Core registers its own version
  * on import instead, and whichever render runs stamps whatever has been registered. That
  * keeps the dependency direction intact and still gets all three onto the element.
@@ -19,7 +19,7 @@ import { VERSION as REACTIVE } from '@fluixi/reactive/version';
 
 /** The versions of the packages this app is running. */
 export interface FluixiVersions {
-  /** Absent when the app does not use `@fluixi/core` — dom and reactive can run alone. */
+  /** Absent when the app does not use `fluixi` — dom and reactive can run alone. */
   core?: string;
   dom: string;
   reactive: string;
@@ -33,7 +33,7 @@ declare global {
 }
 
 /**
- * Record the `@fluixi/core` version, called by core when it is loaded.
+ * Record the `fluixi` version, called by core when it is loaded.
  *
  * Inverted rather than imported, because core sits above this package.
  */

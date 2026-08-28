@@ -73,8 +73,8 @@ you want one of these instead:
 
 | You want | Import from |
 | --- | --- |
-| `Show`, `For`, `Index`, `Switch`, `Match`, `Portal`, `Dynamic`, `ErrorBoundary` | `@fluixi/core` or `@fluixi/dom` |
-| `render`, `hydrate` (app entry) | `@fluixi/core` |
+| `Show`, `For`, `Index`, `Switch`, `Match`, `Portal`, `Dynamic`, `ErrorBoundary` | `fluixi` or `@fluixi/dom` |
+| `render`, `hydrate` (app entry) | `fluixi` |
 | `signal`, `memo`, `effect`, `store` | `@fluixi/reactive` |
 | Server rendering | `@fluixi/server`, or `@fluixi/start` for the whole thing |
 | The JSX → DOM compile | `@fluixi/compiler`, `@fluixi/vite-plugin` |

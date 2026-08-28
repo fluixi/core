@@ -1,7 +1,7 @@
 ---
 '@fluixi/head': minor
 '@fluixi/server': minor
-'@fluixi/core': minor
+'fluixi': minor
 '@fluixi/start': minor
 ---
 

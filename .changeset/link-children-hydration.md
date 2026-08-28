@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Fix `Link` and `Form` duplicating element children on hydration.

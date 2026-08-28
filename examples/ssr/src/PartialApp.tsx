@@ -4,7 +4,7 @@
  * static sibling — each of which depends on the marker keeping the server's markup the
  * same shape as the clone.
  */
-import { createSignal } from '@fluixi/core';
+import { createSignal } from 'fluixi';
 
 export function PartialApp() {
   const [name] = createSignal('Ada');

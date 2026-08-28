@@ -11,7 +11,7 @@
   "dependencies": {
     "@fluixi/cli": "alpha",
     "@fluixi/start": "alpha",
-    "@fluixi/core": "alpha",
+    "fluixi": "alpha",
     "@fluixi/server": "alpha",
     "@fluixi/reactive": "alpha",
     "@fluixi/dom": "alpha"

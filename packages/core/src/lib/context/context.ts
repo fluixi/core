@@ -1,6 +1,6 @@
 // /**
 //  * @fileoverview Context API for Fluixi that wraps @fluixi/reactive context for Lit templates
-//  * @module @fluixi/core/context/context
+//  * @module fluixi/context/context
 //  */
 
 import { asProvider, type Component, type ComponentChild } from '@fluixi/dom';
@@ -37,7 +37,7 @@ ensureIntegration('index')
 //  *
 //  * @example
 //  * ```typescript
-//  * import { createContext } from '@fluixi/core/context';
+//  * import { createContext } from 'fluixi/context';
 //  *
 //  * // Create a theme context
 //  * interface Theme {
@@ -79,8 +79,8 @@ ensureIntegration('index')
 //  *
 //  * @example
 //  * ```typescript
-//  * import { createContext, useContext } from '@fluixi/core/context';
-//  * import { FluixiElement } from '@fluixi/core/core/component';
+//  * import { createContext, useContext } from 'fluixi/context';
+//  * import { FluixiElement } from 'fluixi/core/component';
 //  * import { html } from 'lit';
 //  *
 //  * const ThemeContext = createContext({ primaryColor: '#007bff' });
@@ -168,7 +168,7 @@ export interface ProviderProps<Child> {
  *
  * @example
  * ```typescript
- * import { createContext, Provider } from '@fluixi/core/context';
+ * import { createContext, Provider } from 'fluixi/context';
  * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
@@ -307,7 +307,7 @@ export function createProvider<T, S = Children>(
  *
  * @example
  * ```typescript
- * import { createContextWithProvider } from '@fluixi/core/context';
+ * import { createContextWithProvider } from 'fluixi/context';
  * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
@@ -361,7 +361,7 @@ export function createContextWithProvider<T, U>(
  *
  * @example
  * ```typescript
- * import { composeProviders, createContext } from '@fluixi/core/context';
+ * import { composeProviders, createContext } from 'fluixi/context';
  * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
@@ -416,7 +416,7 @@ export function composeProviders(
  *
  * @example
  * ```typescript
- * import { createContext, createConsumer } from '@fluixi/core/context';
+ * import { createContext, createConsumer } from 'fluixi/context';
  * import { html } from 'lit';
  *
  * const ThemeContext = createContext({ primaryColor: '#007bff' });
@@ -458,7 +458,7 @@ export function createConsumer<T>(
  *
  * @example
  * ```typescript
- * import { createContext, useProvide, Provider } from '@fluixi/core/context';
+ * import { createContext, useProvide, Provider } from 'fluixi/context';
  * import { createSignal } from '@fluixi/reactive';
  * import { html } from 'lit';
  *
@@ -514,7 +514,7 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
  *
  * @example
  * ```typescript
- * import { createContext } from '@fluixi/core/context';
+ * import { createContext } from 'fluixi/context';
  *
  * // This context won't leak to parent or sibling components
  * const LocalContext = createContext({ data: 'local' });
@@ -574,7 +574,7 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
  *
  * @example
  * ```typescript
- * import { createContext } from '@fluixi/core';
+ * import { createContext } from 'fluixi';
  *
  * // This context won't leak to parent or sibling components
  * const LocalContext = createContext({ data: 'local' });

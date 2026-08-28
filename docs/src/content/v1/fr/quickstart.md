@@ -41,7 +41,7 @@ function Counter() {
 
 ```ts
 // html`` — .ts simple, pas de jsx dans le tsconfig
-import { html } from '@fluixi/core';
+import { html } from 'fluixi';
 
 function Counter() {
   const n = $signal(0);
@@ -72,7 +72,7 @@ npx fluixi generate route about         # → src/routes/about.tsx
 Si vous préférez tout câbler vous-même, installez le runtime et le plugin Vite :
 
 ```bash
-npm install @fluixi/core
+npm install fluixi
 npm install -D @fluixi/vite-plugin vite
 ```
 
@@ -86,7 +86,7 @@ export default defineConfig({ plugins: [fluixi()] });
 
 ```ts
 // src/main.ts
-import { render, html } from '@fluixi/core';
+import { render, html } from 'fluixi';
 import { App } from './app';
 
 render(() => html`<${App} />`, document.getElementById('app')!);
@@ -94,7 +94,7 @@ render(() => html`<${App} />`, document.getElementById('app')!);
 
 ## Quelle version est en cours d'exécution ?
 
-Quelle que soit la façon de monter — `render` depuis `@fluixi/core`, ou l'hydratation via
+Quelle que soit la façon de monter — `render` depuis `fluixi`, ou l'hydratation via
 `startClient` — l'élément de montage porte les versions réellement exécutées, également
 exposées dans `window.Fluixi` :
 

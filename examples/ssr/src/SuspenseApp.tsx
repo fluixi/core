@@ -1,4 +1,4 @@
-import { createResource, Suspense } from '@fluixi/core';
+import { createResource, Suspense } from 'fluixi';
 
 function fetchUser(id: number): Promise<{ name: string }> {
   return new Promise((resolve) =>

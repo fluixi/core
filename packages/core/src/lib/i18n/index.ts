@@ -1,5 +1,5 @@
 /**
- * @fluixi/core/i18n — built-in, reactive, SSR-correct internationalization.
+ * fluixi/i18n — built-in, reactive, SSR-correct internationalization.
  *
  * Three things make this distinct:
  *

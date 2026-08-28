@@ -41,7 +41,7 @@ function Counter() {
 
 ```ts
 // html`` — plain .ts, no jsx in tsconfig
-import { html } from '@fluixi/core';
+import { html } from 'fluixi';
 
 function Counter() {
   const n = $signal(0);
@@ -70,7 +70,7 @@ npx fluixi generate route about         # → src/routes/about.tsx
 If you'd rather wire it up yourself, install the runtime and the Vite plugin:
 
 ```bash
-npm install @fluixi/core
+npm install fluixi
 npm install -D @fluixi/vite-plugin vite
 ```
 
@@ -84,7 +84,7 @@ export default defineConfig({ plugins: [fluixi()] });
 
 ```ts
 // src/main.ts
-import { render, html } from '@fluixi/core';
+import { render, html } from 'fluixi';
 import { App } from './app';
 
 render(() => html`<${App} />`, document.getElementById('app')!);
@@ -92,7 +92,7 @@ render(() => html`<${App} />`, document.getElementById('app')!);
 
 ## Which build am I running?
 
-Whichever way you mount — `render` from `@fluixi/core`, or hydration through
+Whichever way you mount — `render` from `fluixi`, or hydration through
 `startClient` — the mount element is stamped with the versions actually running, and they
 are exposed as `window.Fluixi`:
 

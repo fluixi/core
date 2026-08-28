@@ -1,6 +1,6 @@
 ---
 "@fluixi/start": patch
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Reference a route's own chunk and stylesheet in the document that renders it.

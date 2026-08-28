@@ -1,4 +1,4 @@
-import { createMemo } from '@fluixi/core';
+import { createMemo } from 'fluixi';
 import { useParams } from '@fluixi/start/router';
 import DocPage from '../../../doc-page.js';
 import type { Lang } from '../../../content.js';

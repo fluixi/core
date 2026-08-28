@@ -1,6 +1,6 @@
 /**
  * @fileoverview Client-Side Rendering Entry Point for Fluixi
- * @module @fluixi/core/client
+ * @module fluixi/client
  *
  * Implements client-side mounting and hydration logic using @fluixi/dom runtime.
  * Supports both JSX and Lit HTML.
@@ -41,7 +41,7 @@ ensureIntegration('client index');
  *
  * @example
  * ```typescript
- * import { mount } from '@fluixi/core/client';
+ * import { mount } from 'fluixi/client';
  * import App from './App';
  *
  * mount(() => App(), document.getElementById('root'));
@@ -82,7 +82,7 @@ export interface StartClientOptions {
  * @example
  * ```ts
  * // entry-client.ts
- * import { startClient } from '@fluixi/core/client';
+ * import { startClient } from 'fluixi/client';
  * import App from './app';
  *
  * startClient(App);
@@ -132,7 +132,7 @@ export async function startClient(
     // resolving a tick later and rebuilding a duplicate. Dynamic import keeps the router out of
     // client-only bundles that never pass `routes`.
     if (options.routes && options.routes.length) {
-      const { preloadRoutes } = await import('../router-next/index.js');
+      const { preloadRoutes } = await import('../router/index.js');
       await preloadRoutes(options.routes, window.location.pathname);
     }
     deserializeHydrationData();

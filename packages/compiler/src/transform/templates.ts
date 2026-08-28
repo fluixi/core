@@ -511,12 +511,6 @@ export function transformTemplates(
   if (prologue) out.prepend(prologue);
   const runtimeImports = intrinsicImports(intrinsics, bound);
   if (runtimeImports) out.prepend(runtimeImports);
-  // `@fluixi/core/rx` is the client alias for the reactive primitives.
-  for (const node of ast.program.body as Node[]) {
-    if (node.type === 'ImportDeclaration' && node.source?.value === '@fluixi/core/rx') {
-      out.overwrite(node.source.start, node.source.end, JSON.stringify('@fluixi/reactive'));
-    }
-  }
 
   // Each of these has a different fix, so the message has to name the actual reason.
   // Saying "drop the import" to someone whose component is used as a value sends them
@@ -588,8 +582,8 @@ function compileJsx(
     isBound: (name) => needs.declared.has(name),
     modules: {
       controlFlowModule: options.controlFlowModule ?? options.runtimeModule ?? '@fluixi/dom',
-      coreModule: options.coreModule ?? '@fluixi/core',
-      routerModule: options.routerModule ?? '@fluixi/core/router-next',
+      coreModule: options.coreModule ?? 'fluixi',
+      routerModule: options.routerModule ?? 'fluixi/router',
     },
     strategyFor: (n) => n.load,
   });
@@ -618,7 +612,7 @@ function buildPrologue(
   options: TransformOptions,
 ): string | null {
   const runtime = options.runtimeModule ?? '@fluixi/dom';
-  const core = options.coreModule ?? '@fluixi/core';
+  const core = options.coreModule ?? 'fluixi';
   const groups = new Map<string, string[]>();
   const add = (mod: string, name: string) => groups.set(mod, [...(groups.get(mod) ?? []), name]);
 
@@ -629,7 +623,7 @@ function buildPrologue(
   for (const name of [...wanted].sort()) {
     if (bound.has(name)) continue;
     if (REACTIVE.has(name)) add(options.reactiveModule ?? '@fluixi/reactive/signal', name);
-    else if (ROUTER.has(name)) add(options.routerModule ?? '@fluixi/core/router-next', name);
+    else if (ROUTER.has(name)) add(options.routerModule ?? 'fluixi/router', name);
     else if (CORE_ONLY.has(name)) add(core, name);
     else if (CONTROL_FLOW.has(name)) add(options.controlFlowModule ?? runtime, name);
     else add(runtime, name);

@@ -9,9 +9,9 @@
  *     any `{ user(), login?, logout? }`). The framework OWNS the reactive sync, so apps stop
  *     hand-writing a `createEffect` to mirror their store into the auth hooks.
  *
- * Client-only deps: @fluixi/core + @fluixi/dom's pure `getLocals` — never @fluixi/server.
+ * Client-only deps: fluixi + @fluixi/dom's pure `getLocals` — never @fluixi/server.
  */
-import { createIsomorphicStore, createEffect, createRoot, env } from '@fluixi/core';
+import { createIsomorphicStore, createEffect, createRoot, env } from 'fluixi';
 import { getLocals } from '@fluixi/dom';
 import {
   AUTH_LOCALS_KEY,

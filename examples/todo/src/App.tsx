@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from '@fluixi/core';
+import { createSignal, For, Show } from 'fluixi';
 
 interface Todo { id: number; text: string; }
 

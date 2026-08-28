@@ -16,7 +16,7 @@ const messages = {
 
 const make = () => createI18n({ locale: 'en', locales: ['en', 'fr'] as const, messages });
 
-describe('@fluixi/core/i18n', () => {
+describe('fluixi/i18n', () => {
   it('translates with interpolation', () => {
     expect(make().t('welcome', { name: 'Ada' })).toBe('Welcome, Ada');
   });

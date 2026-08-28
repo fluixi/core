@@ -58,7 +58,7 @@ interface DevServerConfig {
 
 **Basic Usage:**
 ```typescript
-import { createDevServer } from '@fluixi/core/dev-server';
+import { createDevServer } from 'fluixi/dev-server';
 
 const server = await createDevServer({
   port: 3000,
@@ -70,7 +70,7 @@ console.log(`Server running at ${server.resolvedUrls?.local[0]}`);
 
 **Advanced Configuration:**
 ```typescript
-import { createDevServer } from '@fluixi/core/dev-server';
+import { createDevServer } from 'fluixi/dev-server';
 
 const server = await createDevServer({
   root: './src',
@@ -119,7 +119,7 @@ function startDevServer(port?: number, open?: boolean): Promise<ViteDevServer>
 #### Example
 
 ```typescript
-import { startDevServer } from '@fluixi/core/dev-server';
+import { startDevServer } from 'fluixi/dev-server';
 
 // Start on port 3000 and open browser
 await startDevServer(3000, true);
@@ -145,7 +145,7 @@ function stopDevServer(server: ViteDevServer): Promise<void>
 #### Example
 
 ```typescript
-import { createDevServer, stopDevServer } from '@fluixi/core/dev-server';
+import { createDevServer, stopDevServer } from 'fluixi/dev-server';
 
 const server = await createDevServer();
 
@@ -175,7 +175,7 @@ function createSSRMiddleware(config?: DevServerConfig): Promise<any>
 
 ```typescript
 import express from 'express';
-import { createSSRMiddleware } from '@fluixi/core/dev-server';
+import { createSSRMiddleware } from 'fluixi/dev-server';
 
 const app = express();
 
@@ -218,7 +218,7 @@ interface PreviewServerConfig {
 #### Example
 
 ```typescript
-import { createPreviewServer } from '@fluixi/core/dev-server';
+import { createPreviewServer } from 'fluixi/dev-server';
 
 const server = await createPreviewServer({
   port: 4173,
@@ -243,7 +243,7 @@ function fluixiJSPlugin(): Plugin
 
 #### Features
 
-- Optimizes dependencies (lit, @fluixi/reactive, @fluixi/core)
+- Optimizes dependencies (lit, @fluixi/reactive, fluixi)
 - Configures build target to ES2020
 - Sets up code splitting for production
 - Adds custom HMR handling
@@ -253,7 +253,7 @@ function fluixiJSPlugin(): Plugin
 
 ```typescript
 import { defineConfig } from 'vite';
-import { fluixiJSPlugin } from '@fluixi/core/dev-server';
+import { fluixiJSPlugin } from 'fluixi/dev-server';
 
 export default defineConfig({
   plugins: [
@@ -315,7 +315,7 @@ interface BuildResult {
 
 **Basic Build:**
 ```typescript
-import { build } from '@fluixi/core/builder';
+import { build } from 'fluixi/builder';
 
 const result = await build({
   outDir: 'dist',
@@ -373,7 +373,7 @@ Same as `build()` but `ssr` is automatically set to `false`.
 #### Example
 
 ```typescript
-import { buildClient } from '@fluixi/core/builder';
+import { buildClient } from 'fluixi/builder';
 
 await buildClient({
   outDir: 'dist/client',
@@ -399,7 +399,7 @@ Same as `build()` but `ssr` is automatically set to `true`.
 #### Example
 
 ```typescript
-import { buildFullStack } from '@fluixi/core/builder';
+import { buildFullStack } from 'fluixi/builder';
 
 await buildFullStack({
   outDir: 'dist',
@@ -430,7 +430,7 @@ function watch(config?: BuildConfig): Promise<void>
 #### Example
 
 ```typescript
-import { watch } from '@fluixi/core/builder';
+import { watch } from 'fluixi/builder';
 
 // Watch and rebuild
 await watch({
@@ -470,7 +470,7 @@ Promise<{
 #### Example
 
 ```typescript
-import { analyzeBundle } from '@fluixi/core/builder';
+import { analyzeBundle } from 'fluixi/builder';
 
 const stats = await analyzeBundle({
   outDir: 'dist'
@@ -500,7 +500,7 @@ function optimizeAssets(outDir: string): Promise<void>
 #### Example
 
 ```typescript
-import { build, optimizeAssets } from '@fluixi/core/builder';
+import { build, optimizeAssets } from 'fluixi/builder';
 
 // Build first
 await build({ outDir: 'dist' });
@@ -531,7 +531,7 @@ function fluixiJSBuildPlugin(config?: BuildConfig): Plugin
 
 ```typescript
 import { defineConfig } from 'vite';
-import { fluixiJSBuildPlugin } from '@fluixi/core/builder';
+import { fluixiJSBuildPlugin } from 'fluixi/builder';
 
 export default defineConfig({
   plugins: [
@@ -551,7 +551,7 @@ export default defineConfig({
 
 ```typescript
 // dev.js
-import { startDevServer } from '@fluixi/core/dev-server';
+import { startDevServer } from 'fluixi/dev-server';
 
 await startDevServer(3000, true);
 ```
@@ -560,7 +560,7 @@ await startDevServer(3000, true);
 
 ```typescript
 // build.js
-import { build, analyzeBundle, optimizeAssets } from '@fluixi/core/builder';
+import { build, analyzeBundle, optimizeAssets } from 'fluixi/builder';
 
 console.log('Building application...');
 
@@ -588,7 +588,7 @@ console.log('✓ Assets optimized');
 
 ```typescript
 // build-ssr.js
-import { buildFullStack } from '@fluixi/core/builder';
+import { buildFullStack } from 'fluixi/builder';
 
 await buildFullStack({
   outDir: 'dist',
@@ -606,8 +606,8 @@ console.log('✓ Client and SSR bundles built');
 
 ```typescript
 // preview.js
-import { build } from '@fluixi/core/builder';
-import { createPreviewServer } from '@fluixi/core/dev-server';
+import { build } from 'fluixi/builder';
+import { createPreviewServer } from 'fluixi/dev-server';
 
 // Build first
 await build({ outDir: 'dist' });
@@ -629,7 +629,7 @@ await createPreviewServer({
     "build": "node build.js",
     "build:ssr": "node build-ssr.js",
     "preview": "node preview.js",
-    "analyze": "node -e \"require('@fluixi/core/builder').analyzeBundle({ outDir: 'dist' })\""
+    "analyze": "node -e \"require('fluixi/builder').analyzeBundle({ outDir: 'dist' })\""
   }
 }
 ```
@@ -662,7 +662,7 @@ import type {
   PreviewServerConfig,
   BuildConfig,
   BuildResult,
-} from '@fluixi/core';
+} from 'fluixi';
 ```
 
 ---
@@ -672,7 +672,7 @@ import type {
 All async functions can throw errors. Always wrap in try-catch:
 
 ```typescript
-import { build } from '@fluixi/core/builder';
+import { build } from 'fluixi/builder';
 
 try {
   const result = await build({ outDir: 'dist' });

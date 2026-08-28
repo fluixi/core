@@ -1,4 +1,4 @@
-import { createI18n } from '@fluixi/core/i18n';
+import { createI18n } from 'fluixi/i18n';
 import en from './en.json';
 import fr from './fr.json';
 

@@ -1,5 +1,5 @@
 
 declare module 'virtual:fluixi-routes' {
-  import type { RouteDefinition } from '@fluixi/core/router-next';
+  import type { RouteDefinition } from 'fluixi/router';
   export const routes: RouteDefinition[];
 }

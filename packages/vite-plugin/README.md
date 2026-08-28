@@ -19,7 +19,7 @@
 (via [`@fluixi/compiler`](../compiler)) — JSX and `` html`...` `` both, straight into
 `@fluixi/dom` runtime calls. It rewrites the source in place, so output carries a source
 map and holes keep the text the author wrote. Nothing from babel is installed for it.
-`@fluixi/core`
+`fluixi`
 re-exports `fluixi`/`createVitePlugin` from here, and [`@fluixi/start`](../start) wires it
 in automatically — use this plugin directly for a plain (non-meta-framework) Vite app.
 

@@ -51,7 +51,7 @@ fluixi/
 ### Installation
 
 ```bash
-npm install @fluixi/core @fluixi/reactive lit
+npm install fluixi @fluixi/reactive lit
 ```
 
 ### Basic Component
@@ -59,7 +59,7 @@ npm install @fluixi/core @fluixi/reactive lit
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from '@fluixi/core';
+import { FluixiElement } from 'fluixi';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -91,7 +91,7 @@ import {
   onUnmount,
   mergeProps,
   splitProps,
-} from '@fluixi/core/core';
+} from 'fluixi/core';
 
 // Create component with lifecycle
 const MyComponent = createComponent((props) => {
@@ -110,7 +110,7 @@ const dispose = render(MyComponent, document.getElementById('app'));
 ### FluixiElement (`core/element.ts`)
 
 ```typescript
-import { FluixiElement, getCurrentElement } from '@fluixi/core/core';
+import { FluixiElement, getCurrentElement } from 'fluixi/core';
 
 // Base class approach
 class MyElement extends FluixiElement {
@@ -133,7 +133,7 @@ import {
   ReactiveController,
   WithSignals,
   useEffect,
-} from '@fluixi/core/core';
+} from 'fluixi/core';
 
 // Pattern 1: SignalController (auto-update)
 class MyElement extends LitElement {
@@ -172,7 +172,7 @@ class MyElement extends LitElement {
 ### Show - Conditional Rendering
 
 ```typescript
-import { Show } from '@fluixi/core';
+import { Show } from 'fluixi';
 
 const MyComponent = () => {
   const [user, setUser] = createSignal(null);
@@ -190,7 +190,7 @@ const MyComponent = () => {
 ### For - List Rendering
 
 ```typescript
-import { For } from '@fluixi/core';
+import { For } from 'fluixi';
 
 const MyList = () => {
   const [items, setItems] = createSignal([1, 2, 3]);
@@ -209,7 +209,7 @@ const MyList = () => {
 ### Dynamic - Dynamic Components
 
 ```typescript
-import { Dynamic } from '@fluixi/core';
+import { Dynamic } from 'fluixi';
 
 const MyComponent = () => {
   const [component, setComponent] = createSignal(ComponentA);
@@ -226,7 +226,7 @@ const MyComponent = () => {
 ### Portal - Portal Rendering
 
 ```typescript
-import { Portal } from '@fluixi/core';
+import { Portal } from 'fluixi';
 
 const Modal = () => {
   return html`
@@ -245,7 +245,7 @@ const Modal = () => {
 ## 🗺️ Router
 
 ```typescript
-import { createRouter, Router, Link } from '@fluixi/core';
+import { createRouter, Router, Link } from 'fluixi';
 
 // Create router
 const router = createRouter({
@@ -286,7 +286,7 @@ const MyComponent = () => {
 ## 🔄 Resources
 
 ```typescript
-import { createFluixiResource, createLazyResource } from '@fluixi/core';
+import { createFluixiResource, createLazyResource } from 'fluixi';
 
 // Basic resource
 const [user, { refetch, mutate }] = createFluixiResource(async () => {
@@ -316,7 +316,7 @@ load();
 ### Client-side Hydration
 
 ```typescript
-import { hydrateApp } from '@fluixi/core/core';
+import { hydrateApp } from 'fluixi/core';
 
 // Hydrate server-rendered app
 const app = html`<my-app></my-app>`;
@@ -330,7 +330,7 @@ import {
   renderToString,
   renderToPage,
   createHtmlDocument,
-} from '@fluixi/core/core';
+} from 'fluixi/core';
 
 // Render to string
 const html = await renderToString(app);
@@ -355,7 +355,7 @@ const doc = createHtmlDocument(content, {
 import {
   useHydrationData,
   createHydratableResource,
-} from '@fluixi/core/core';
+} from 'fluixi/core';
 
 // Use hydration data
 const data = useHydrationData('my-data', { initial: true });
@@ -371,7 +371,7 @@ const loadUser = createHydratableResource('user', async () => {
 ### Dev Server
 
 ```typescript
-import { createDevServer, startDevServer } from '@fluixi/core/dev-server';
+import { createDevServer, startDevServer } from 'fluixi/dev-server';
 
 // Simple start
 await startDevServer(3000, true);
@@ -401,7 +401,7 @@ import {
   buildClient,
   buildFullStack,
   analyzeBundle,
-} from '@fluixi/core/builder';
+} from 'fluixi/builder';
 
 // Build client
 await buildClient({
@@ -425,7 +425,7 @@ console.log('Bundle size:', stats.totalSize);
 ### Watch Mode
 
 ```typescript
-import { watch } from '@fluixi/core/builder';
+import { watch } from 'fluixi/builder';
 
 // Watch and rebuild
 await watch({
@@ -479,26 +479,26 @@ class MyComponent extends LitElement {
 
 ```typescript
 // Main entry
-import * as Fluixi from '@fluixi/core';
+import * as Fluixi from 'fluixi';
 
 // Core modules
-import * as Core from '@fluixi/core/core';
+import * as Core from 'fluixi/core';
 
 // Control flow
-import * as ControlFlow from '@fluixi/core/control-flow';
+import * as ControlFlow from 'fluixi/control-flow';
 
 // Router
-import * as Router from '@fluixi/core/router';
+import * as Router from 'fluixi/router';
 
 // Resources
-import * as Resources from '@fluixi/core/resources';
+import * as Resources from 'fluixi/resources';
 
 // Context
-import * as Context from '@fluixi/core/context';
+import * as Context from 'fluixi/context';
 
 // Dev tools
-import * as DevServer from '@fluixi/core/dev-server';
-import * as Builder from '@fluixi/core/builder';
+import * as DevServer from 'fluixi/dev-server';
+import * as Builder from 'fluixi/builder';
 ```
 
 ## 🔧 Configuration
@@ -524,9 +524,9 @@ import * as Builder from '@fluixi/core/builder';
 ```json
 {
   "scripts": {
-    "dev": "node -e \"import('@fluixi/core/dev-server').then(m => m.startDevServer(3000))\"",
-    "build": "node -e \"import('@fluixi/core/builder').then(m => m.build({ outDir: 'dist' }))\"",
-    "preview": "node -e \"import('@fluixi/core/dev-server').then(m => m.createPreviewServer())\""
+    "dev": "node -e \"import('fluixi/dev-server').then(m => m.startDevServer(3000))\"",
+    "build": "node -e \"import('fluixi/builder').then(m => m.build({ outDir: 'dist' }))\"",
+    "preview": "node -e \"import('fluixi/dev-server').then(m => m.createPreviewServer())\""
   }
 }
 ```

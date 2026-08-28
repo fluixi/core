@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": patch
+"fluixi": patch
 "@fluixi/start": patch
 ---
 

@@ -31,8 +31,8 @@ describe('published builtin data', () => {
   it('splits control flow between dom and core', () => {
     const map = builtinComponentMap();
     expect(map.Show).toBe('@fluixi/dom');
-    expect(map.Suspense).toBe('@fluixi/core');
-    expect(map.Router).toBe('@fluixi/core/router-next');
+    expect(map.Suspense).toBe('fluixi');
+    expect(map.Router).toBe('fluixi/router');
   });
 
   it('honours module overrides', () => {
@@ -112,7 +112,7 @@ describe('rule precedence against builtins', () => {
   it('lets a rule take a router name — it is only an import', () => {
     const out = compile('const v = <Link href="/a">a</Link>;', { resolve: rule });
     expect(moduleFor(out, 'Link')).toBe('@fluixi-ui/link');
-    expect(out).not.toContain('router-next');
+    expect(out).not.toContain('router');
   });
 
   it('does not double-import a router name a rule claimed', () => {
@@ -123,7 +123,7 @@ describe('rule precedence against builtins', () => {
   it('applies the same precedence inside html``', () => {
     const out = compile('const v = html`<Link href="/a">a</Link>`;', { resolve: rule });
     expect(moduleFor(out, 'Link')).toBe('@fluixi-ui/link');
-    expect(out).not.toContain('router-next');
+    expect(out).not.toContain('router');
   });
 
   it('keeps control flow, whose name selects codegen a rule cannot supply', () => {
@@ -137,7 +137,7 @@ describe('rule precedence against builtins', () => {
 
   it('still auto-imports router names when no rule claims them', () => {
     const out = compile('const v = <Outlet/>;', { resolve: rule });
-    expect(moduleFor(out, 'Outlet')).toBe('@fluixi/core/router-next');
+    expect(moduleFor(out, 'Outlet')).toBe('fluixi/router');
   });
 
   it('leaves an explicit import alone', () => {

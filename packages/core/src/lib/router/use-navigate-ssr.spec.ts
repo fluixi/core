@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// router-next needs a DOM at import time (HTMLElement), so load under jsdom — then
+// router needs a DOM at import time (HTMLElement), so load under jsdom — then
 // stub `window` away to exercise the server (no-window) branch of the router hooks.
 import { describe, it, expect } from 'vitest';
 import { createRoot } from '@fluixi/reactive/signal';

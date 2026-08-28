@@ -15,7 +15,7 @@ The `FluixiElement` base class provides the cleanest API with automatic signal t
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -100,7 +100,7 @@ export class UserProfile extends FluixiElement {
 ### With Context
 
 ```typescript
-import { createContext, useContext } from '@fluixi/core/context';
+import { createContext, useContext } from 'fluixi/context';
 import { createSignal } from '@fluixi/reactive';
 
 interface Theme {
@@ -170,7 +170,7 @@ The `WithSignals` mixin adds automatic signal tracking to any Lit element.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/core/core/reactive';
+import { WithSignals } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -193,7 +193,7 @@ export class MyCounter extends WithSignals(LitElement) {
 ```typescript
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/core/core/reactive';
+import { WithSignals } from 'fluixi/core/reactive';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 @customElement('my-element')
@@ -247,7 +247,7 @@ export class MyElement extends WithSignals(LitElement) {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from '@fluixi/core/core/reactive';
+import { WithSignals } from 'fluixi/core/reactive';
 import { SomeOtherMixin } from './other-mixin';
 import { createSignal } from '@fluixi/reactive';
 
@@ -286,7 +286,7 @@ Explicit control with `SignalController` for maximum flexibility.
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from '@fluixi/core/core/reactive';
+import { SignalController } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -310,7 +310,7 @@ export class MyCounter extends LitElement {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@fluixi/core/core/reactive';
+import { ReactiveController } from 'fluixi/core/reactive';
 import { createSignal, createEffect } from '@fluixi/reactive';
 
 @customElement('my-element')
@@ -344,7 +344,7 @@ export class MyElement extends LitElement {
 ```typescript
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { ReactiveController } from '@fluixi/core/core/reactive';
+import { ReactiveController } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-form')
@@ -440,7 +440,7 @@ import { createSignal } from '@fluixi/reactive';
 export const [globalCount, setGlobalCount] = createSignal(0);
 
 // component-a.ts
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 import { globalCount, setGlobalCount } from './shared-state';
 
 @customElement('component-a')
@@ -512,7 +512,7 @@ export class UserDisplay extends FluixiElement {
 
 ```typescript
 import { LitElement, html } from 'lit';
-import { WithSignals } from '@fluixi/core/core/reactive';
+import { WithSignals } from 'fluixi/core/reactive';
 import { createSignal } from '@fluixi/reactive';
 
 function withLoading<T extends new (...args: any[]) => LitElement>(Base: T) {
@@ -652,7 +652,7 @@ export class MyElement extends LitElement {
 // After
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from '@fluixi/core/core/component';
+import { FluixiElement } from 'fluixi/core/component';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-element')

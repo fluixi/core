@@ -8,7 +8,7 @@
  * wasn't enabled in the build.
  *
  * They live in @fluixi/dom (the runtime the compiler targets) so any tier can
- * import them; @fluixi/core re-exports them for convenience.
+ * import them; fluixi re-exports them for convenience.
  */
 
 import type { ComponentChild } from './shared/types.js';

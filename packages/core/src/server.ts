@@ -1,9 +1,9 @@
 /**
  * @fileoverview Server exports for Fluixi
- * @module @fluixi/core/server
+ * @module fluixi/server
  *
  * This module provides server-side rendering and hydration utilities.
- * Import from '@fluixi/core/server' for SSR functionality.
+ * Import from 'fluixi/server' for SSR functionality.
  *
  * Server Reactive Behavior
  * ====================================
@@ -26,7 +26,7 @@
  *   createSignal,
  *   createEffect,
  *   setHydrationData
- * } from '@fluixi/core/server';
+ * } from 'fluixi/server';
  *
  * // Server: Signals are snapshots, effects run once
  * const App = () => {
@@ -46,7 +46,7 @@
  *
  * @example Context on Server
  * ```typescript
- * import { createContext, useContext } from '@fluixi/core/server';
+ * import { createContext, useContext } from 'fluixi/server';
  *
  * const ThemeContext = createContext('light');
  *

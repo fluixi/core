@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": patch
+"fluixi": patch
 "@fluixi/reactive": patch
 "@fluixi/compiler": patch
 "@fluixi/template-parser": patch

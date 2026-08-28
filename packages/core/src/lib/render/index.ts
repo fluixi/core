@@ -1,6 +1,6 @@
 /**
  * @fileoverview Client-Side Rendering for Fluixi
- * @module @fluixi/core/render
+ * @module fluixi/render
  *
  * Client-side rendering:
  * - Real DOM
@@ -67,7 +67,7 @@ export interface RenderOptions {
  *
  * @example
  * ```typescript
- * import { render } from '@fluixi/core';
+ * import { render } from 'fluixi';
  * import { createSignal } from '@fluixi/reactive';
  *
  * const App = () => {
@@ -158,7 +158,7 @@ function isLitTemplateResult(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { portal } from '@fluixi/core';
+ * import { portal } from 'fluixi';
  *
  * const Modal = () => {
  *   return portal(
@@ -219,7 +219,7 @@ export function isRenderable(value: any): boolean {
  *
  * @example
  * ```typescript
- * import { initDelegation } from '@fluixi/core';
+ * import { initDelegation } from 'fluixi';
  *
  * initDelegation();
  * render(App, document.getElementById('app'));

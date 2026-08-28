@@ -14,7 +14,7 @@ export const I18N_VMOD = 'virtual:fluixi-i18n';
  * and provides `virtual:fluixi-i18n` exporting `{ messages, locales, defaultLocale }` — wire it
  * into the built-in i18n in one line:
  *
- *   import { createI18n } from '@fluixi/core/i18n';
+ *   import { createI18n } from 'fluixi/i18n';
  *   import { messages, locales, defaultLocale } from 'virtual:fluixi-i18n';
  *   export const { t, locale, setLocale } = createI18n({ locale: defaultLocale, locales, messages });
  *
@@ -181,7 +181,7 @@ export function startTypesPlugin(cfg: ResolvedConfig): any {
  * bits only (optimizeDeps, ssr.noExternal via config, etc.).
  */
 export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
-  const { createVitePlugin, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
+  const { createVitePlugin, fluixiRoutesPlugin } = await import('fluixi/plugins');
   const { serverFunctionsVitePlugin } = await import('@fluixi/compiler/integrations');
   // polyfills:false — the meta-framework is SSR-first; the browser node-polyfill shims
   // break server rendering. Apps that need Buffer/process in the browser opt in later.

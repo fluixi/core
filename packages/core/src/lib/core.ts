@@ -1,6 +1,6 @@
 /**
  * @fileoverview Fluixi — a compiler-native reactive framework
- * @module @fluixi/core
+ * @module fluixi
  * @version 0.0.1
  *
  * Fluixi compiles JSX and `html` templates into direct DOM calls over the fine-grained
@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { createSignal, render, html } from '@fluixi/core';
+ * import { createSignal, render, html } from 'fluixi';
  *
  * const Counter = () => {
  *   const [count, setCount] = createSignal(0);
@@ -47,7 +47,6 @@ import {
   createDeferred,
   setOwner,
 } from '@fluixi/reactive/signal';
-// } from '@fluixi/core/rx';
 
 import {
   createDebounce,
@@ -102,7 +101,7 @@ export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
 // NOT re-exported from the main entry. `export * from '@fluixi/utils'` here put the
 // whole utility library in every app's graph — 56% of a counter's bundle, 74% of its
 // bytes — because a barrel re-export of a barrel cannot be shaken in practice. Import
-// from `@fluixi/utils` directly, or from `@fluixi/core/utils` for the same surface.
+// from `@fluixi/utils` directly, or from `fluixi/utils` for the same surface.
 // import { createContext, Provider, useContext } from './context/index.js';
 // import { createContext, useContext } from './render/component.js';
 // import { createResource } from './resources/index.js';
@@ -111,12 +110,12 @@ import {
   Router,
   useNavigate,
   useRouter,
-} from './router-next/index.js';
+} from './router/index.js';
 import { ensureIntegration } from './render/component.js';
 
 // html`` / svg`` template markers — the no-JSX authoring surface. They live in
 // @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
-// `import { html } from '@fluixi/core'` works. Inert typed functions — no lit runtime.
+// `import { html } from 'fluixi'` works. Inert typed functions — no lit runtime.
 export { html, svg } from '@fluixi/dom';
 export type { TemplateResult, Reactive } from '@fluixi/dom';
 
@@ -286,9 +285,9 @@ export {
 //   ResourceSource,
 // } from './resources/index.js';
 
-// Router — from router-next (the framework-agnostic router). The old lit-based router
+// Router — from router (the framework-agnostic router). The old lit-based router
 // (./router) has been removed: it imported `html` from @fluixi/lit, which dragged lit
-// (extends HTMLElement at module init) into the core/SSR graph. router-next is the
+// (extends HTMLElement at module init) into the core/SSR graph. router is the
 // only router now; `<Router routes={...}/>` replaces the old `<Routes>`/`<Route>` JSX.
 export {
   Router,
@@ -297,13 +296,13 @@ export {
   useLocation,
   useNavigate,
   useParams,
-} from './router-next/index.js';
+} from './router/index.js';
 
 export type {
   RouterLocation as Location,
   RouteDefinition,
   NavigateOptions,
-} from './router-next/index.js';
+} from './router/index.js';
 
 // Web Component support moved to @fluixi/element (now in the wc-element repo).
 // Import { defineElement, FluixiElement, createComponent, ... } from '@fluixi/element'.

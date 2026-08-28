@@ -1,5 +1,5 @@
 ---
-"@fluixi/core": minor
+"fluixi": minor
 "@fluixi/dom": minor
 "@fluixi/server": minor
 ---

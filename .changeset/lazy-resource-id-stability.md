@@ -1,6 +1,6 @@
 ---
 "@fluixi/reactive": minor
-"@fluixi/core": patch
+"fluixi": patch
 "@fluixi/dom": patch
 ---
 

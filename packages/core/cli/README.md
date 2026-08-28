@@ -5,13 +5,13 @@ Command-line interface for scaffolding Fluixi projects and components with suppo
 ## Installation
 
 ```bash
-npm install -g @fluixi/core
+npm install -g fluixi
 ```
 
 Or use with npx:
 
 ```bash
-npx @fluixi/core <command>
+npx fluixi <command>
 ```
 
 ## Quick Start
@@ -145,7 +145,7 @@ The CLI automatically configures TypeScript based on your selected mode:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```
@@ -184,7 +184,7 @@ Ensure your `tsconfig.json` is configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```

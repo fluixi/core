@@ -4,7 +4,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
+import * as Fluixi from 'fluixi';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -47,7 +47,7 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
+  'fluixi': Fluixi,
 };
 
 function load(src: string): any {
@@ -70,7 +70,7 @@ beforeAll(() => ensureIntegration());
 describe('context for consumer passed as props.children through Portal/Show', () => {
   it('resolves each authoring provider, not the last sibling', async () => {
     const src = `
-      import { createContext, useContext, Portal, Show } from '@fluixi/core';
+      import { createContext, useContext, Portal, Show } from 'fluixi';
       const Ctx = createContext('V');
       function Consumer() { return <span class="v" data-v={useContext(Ctx)} />; }
       function Wrapper(props) { return <Portal><Show when={() => true}>{() => props.children}</Show></Portal>; }
@@ -93,7 +93,7 @@ describe('context for consumer passed as props.children through Portal/Show', ()
   it('raw reactive createContext: wrapper reads ctx in its own scope too', async () => {
     const src = `
       import { createContext, useContext } from '@fluixi/reactive/signal';
-      import { Portal, Show } from '@fluixi/core';
+      import { Portal, Show } from 'fluixi';
       const Ctx = createContext('V');
       function Consumer() { return <span class="v" data-v={useContext(Ctx)} />; }
       function Wrapper(props) {

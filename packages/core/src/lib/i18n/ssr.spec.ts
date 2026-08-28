@@ -7,7 +7,7 @@ import { createI18n } from './index.js';
 
 const messages = { en: { hi: 'Hello' }, fr: { hi: 'Bonjour' } };
 
-describe('@fluixi/core/i18n — SSR request isolation', () => {
+describe('fluixi/i18n — SSR request isolation', () => {
   it('the active locale is per-request on the server (no cross-request leak)', () => {
     const i = createI18n({ locale: 'en', locales: ['en', 'fr'] as const, messages });
     const out: string[] = [];

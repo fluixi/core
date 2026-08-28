@@ -1,4 +1,4 @@
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 import { hydrate } from '@fluixi/dom';
 import { App } from './App';
 

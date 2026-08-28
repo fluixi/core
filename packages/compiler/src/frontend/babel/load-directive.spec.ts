@@ -17,7 +17,7 @@ describe('load: directive', () => {
 
   it('imports the runtime from core', () => {
     const out = compile('const v = <Chart load:idle/>;');
-    expect(out).toContain('import { deferred } from "@fluixi/core"');
+    expect(out).toContain('import { deferred } from "fluixi"');
   });
 
   it('passes the strategy and the export name through', () => {

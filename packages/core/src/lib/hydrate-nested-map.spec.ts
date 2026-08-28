@@ -12,7 +12,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from '@fluixi/core';
+import * as Fluixi from 'fluixi';
 import { renderToStringAsync, setServerMode } from '@fluixi/server';
 import { ensureIntegration } from './render/component.js';
 
@@ -56,7 +56,7 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  '@fluixi/core': Fluixi,
+  'fluixi': Fluixi,
 };
 
 function load(src: string): any {

@@ -1,6 +1,6 @@
 ---
 "@fluixi/dom": minor
-"@fluixi/core": patch
+"fluixi": patch
 ---
 
 Lazy-route hydration + hydration correctness fixes.

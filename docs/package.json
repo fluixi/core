@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@fluixi/cli": "workspace:*",
-    "@fluixi/core": "workspace:*",
+    "fluixi": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx": "workspace:*",
     "@fluixi/reactive": "workspace:*",

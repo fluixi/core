@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-npm install -g @fluixi/core
+npm install -g fluixi
 ```
 
 ## Commands
@@ -62,7 +62,7 @@ fluixi g c Counter --mode jsx
 **Output:** `Counter.tsx`
 ```tsx
 /** @jsx h */
-import { h } from '@fluixi/core/jsx-runtime';
+import { h } from 'fluixi/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 
 export function Counter() {
@@ -80,7 +80,7 @@ fluixi g c Counter --mode react-bridge
 **Output:** `Counter.tsx`
 ```tsx
 import React from 'react';
-import { useSignal } from '@fluixi/core/react-bridge';
+import { useSignal } from 'fluixi/react-bridge';
 
 export function Counter() {
   const [count, setCount] = useSignal(0);
@@ -189,7 +189,7 @@ For each component, generates:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```
@@ -242,7 +242,7 @@ fluixi g c UserProfile -t full -p features/user/UserProfile.tsx
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```
@@ -260,13 +260,13 @@ Check that you're using the correct render function:
 
 **Lit-HTML:**
 ```typescript
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 render(MyComponent, document.getElementById('app'));
 ```
 
 **JSX:**
 ```typescript
-import { render } from '@fluixi/core';
+import { render } from 'fluixi';
 render(MyComponent, document.getElementById('app'));
 ```
 

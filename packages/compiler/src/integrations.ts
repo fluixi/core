@@ -4,7 +4,7 @@
  *
  * vite, webpack, rollup and esbuild adapters. Each is a few lines around
  * `compileModule`, which rewrites the source in place — JSX and `` html`` `` both
- * lower to the shared IR and the imperative backend. @fluixi/core re-exports
+ * lower to the shared IR and the imperative backend. fluixi re-exports
  * createVitePlugin from here.
  *
  * `babel: true` routes through the babel front-end instead, for a project whose
@@ -123,7 +123,7 @@ export interface CompilerOptions {
 
   /**
    * Module the router components (Router/Outlet/…) are auto-imported from.
-   * @default '@fluixi/core/router-next'
+   * @default 'fluixi/router'
    */
   routerModule?: string;
 

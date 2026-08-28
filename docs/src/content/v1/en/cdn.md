@@ -14,7 +14,7 @@ file. Sizes are minified; `gzip` is what ships over the wire.
 | `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | The raw TC39-Signals core (`State`, `Computed`, `subtle`) | 3.4 KB <small>(1.3 KB gz)</small> |
 | `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | Full reactive API (signals, memos, effects, stores, resources) | 29.6 KB <small>(8.7 KB gz)</small> |
 | `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | DOM runtime (render, control flow) **+** the reactive API | 52.5 KB <small>(17.0 KB gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 75.3 KB <small>(24.8 KB gz)</small> |
+| `fluixi/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 75.3 KB <small>(24.8 KB gz)</small> |
 
 Pick the smallest one that covers what you need: just reactivity → `signal` or `reactive`; a
 reactive UI → `dom`; the full app framework → `core`.
@@ -85,7 +85,7 @@ Because there's no compiler in a plain-`<script>` page, author markup with the `
 
 ```html
 <div id="app"></div>
-<script src="https://unpkg.com/@fluixi/core/dist/cdn/core.global.js"></script>
+<script src="https://unpkg.com/fluixi/dist/cdn/core.global.js"></script>
 <script>
   const { render, html, createSignal, Show } = Fluixi;
 
@@ -106,9 +106,9 @@ Because there's no compiler in a plain-`<script>` page, author markup with the `
 
 ## Version pinning
 
-`unpkg.com/@fluixi/core@1/…` follows the major; pin an exact version for reproducibility, e.g.
-`unpkg.com/@fluixi/core@1.0.0-alpha.56/dist/cdn/core.global.js`. jsDelivr works the same:
-`cdn.jsdelivr.net/npm/@fluixi/core/dist/cdn/core.global.js`.
+`unpkg.com/fluixi@1/…` follows the major; pin an exact version for reproducibility, e.g.
+`unpkg.com/fluixi@1.0.0-alpha.56/dist/cdn/core.global.js`. jsDelivr works the same:
+`cdn.jsdelivr.net/npm/fluixi/dist/cdn/core.global.js`.
 
 For real apps, prefer the compiled path (`npm create fluixi`) — the compiler produces smaller,
 tree-shaken output than any single global bundle. The CDN builds are for demos, prototypes,

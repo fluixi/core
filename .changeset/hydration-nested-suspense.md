@@ -1,7 +1,7 @@
 ---
 '@fluixi/compiler': patch
 '@fluixi/dom': patch
-'@fluixi/core': patch
+'fluixi': patch
 ---
 
 Fix whole-app hydration duplicating the tree (rendering it 2–3×) for nested Router/Suspense/Outlet apps — the shape every `@fluixi/start` app has.

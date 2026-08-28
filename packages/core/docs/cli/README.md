@@ -5,13 +5,13 @@ The Fluixi CLI provides powerful scaffolding tools to create projects and compon
 ## Installation
 
 ```bash
-npm install -g @fluixi/core
+npm install -g fluixi
 ```
 
 Or use with npx:
 
 ```bash
-npx @fluixi/core <command>
+npx fluixi <command>
 ```
 
 ## Commands
@@ -132,7 +132,7 @@ fluixi g c Counter --mode jsx --type with-state
 **Output:**
 ```tsx
 /** @jsx h */
-import { h, Fragment } from '@fluixi/core/jsx-runtime';
+import { h, Fragment } from 'fluixi/jsx-runtime';
 import { createSignal } from '@fluixi/reactive/signal';
 import './counter.css';
 
@@ -167,7 +167,7 @@ Your `tsconfig.json` will be configured automatically:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```
@@ -184,7 +184,7 @@ fluixi g c Counter --mode react-bridge --type with-state
 **Output:**
 ```tsx
 import React from 'react';
-import { useSignal, useFluixiEffect } from '@fluixi/core/react-bridge';
+import { useSignal, useFluixiEffect } from 'fluixi/react-bridge';
 import './counter.css';
 
 export interface CounterProps {
@@ -681,7 +681,7 @@ Ensure your `tsconfig.json` is correctly configured:
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@fluixi/core/jsx-runtime"
+    "jsxImportSource": "fluixi/jsx-runtime"
   }
 }
 ```
@@ -706,7 +706,7 @@ export default defineConfig({
   esbuild: {
     jsxFactory: 'h',
     jsxFragment: 'Fragment',
-    jsxInject: `import { h, Fragment } from '@fluixi/core/jsx-runtime'`,
+    jsxInject: `import { h, Fragment } from 'fluixi/jsx-runtime'`,
   },
 });
 ```

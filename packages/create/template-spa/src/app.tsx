@@ -1,4 +1,4 @@
-import { createSignal } from '@fluixi/core';
+import { createSignal } from 'fluixi';
 
 export function App() {
   const [count, setCount] = createSignal(0);
