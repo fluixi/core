@@ -1,5 +1,17 @@
 # @fluixi/example-todo
 
+## 0.0.5-alpha.79
+
+### Patch Changes
+
+- Updated dependencies [21a13fd]
+- Updated dependencies [21a13fd]
+- Updated dependencies [21a13fd]
+  - fluixi@1.0.0-alpha.79
+  - @fluixi/reactive@1.0.0-alpha.79
+  - @fluixi/dom@1.0.0-alpha.79
+  - @fluixi/jsx@1.0.0-alpha.79
+
 ## 0.0.5-alpha.78
 
 ### Patch Changes

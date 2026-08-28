@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/head",
-  "version": "1.0.0-alpha.45",
+  "version": "1.0.0-alpha.46",
   "license": "MIT",
   "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi — title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
   "type": "module",

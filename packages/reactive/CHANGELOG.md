@@ -1,5 +1,7 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.79
+
 ## 1.0.0-alpha.78
 
 ### Patch Changes
