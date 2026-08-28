@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.78
+
+### Patch Changes
+
+- f121072: The npm descriptions no longer claim things that do not exist: Solid compatibility, an SWC compiler front-end, a language server, and a Biome plugin.
+
 ## 1.0.0-alpha.77
 
 ### Patch Changes

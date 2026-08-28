@@ -1,5 +1,14 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.12
+
+### Patch Changes
+
+- f121072: The npm descriptions no longer claim things that do not exist: Solid compatibility, an SWC compiler front-end, a language server, and a Biome plugin.
+- Updated dependencies [f121072]
+  - @fluixi/compiler@1.0.0-alpha.78
+  - @fluixi/template-parser@0.1.0-alpha.4
+
 ## 0.1.0-alpha.11
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fluixi/template-parser
 
+## 0.1.0-alpha.4
+
+### Patch Changes
+
+- f121072: The npm descriptions no longer claim things that do not exist: Solid compatibility, an SWC compiler front-end, a language server, and a Biome plugin.
+
 ## 0.1.0-alpha.3
 
 ### Minor Changes
