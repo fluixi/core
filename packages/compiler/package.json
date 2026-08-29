@@ -18,6 +18,12 @@
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
       },
+      "./compile": {
+        "types": "./dist/lower/compile-template.d.ts",
+        "import": "./dist/lower/compile-template.mjs",
+        "require": "./dist/lower/compile-template.cjs",
+        "default": "./dist/lower/compile-template.js"
+      },
       "./babel": {
         "types": "./dist/frontend/babel/index.d.ts",
         "import": "./dist/frontend/babel/index.mjs",
@@ -78,6 +84,13 @@
       "import": "./dist/transform/index.mjs",
       "require": "./dist/transform/index.cjs",
       "default": "./dist/transform/index.js"
+    },
+    "./compile": {
+      "development": "./src/lower/compile-template.ts",
+      "types": "./dist/lower/compile-template.d.ts",
+      "import": "./dist/lower/compile-template.mjs",
+      "require": "./dist/lower/compile-template.cjs",
+      "default": "./dist/lower/compile-template.js"
     }
   },
   "scripts": {

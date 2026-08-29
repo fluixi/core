@@ -825,6 +825,34 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@27.4.0(@noble/hashes@2.2.0))(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
 
+  packages/template-runtime:
+    dependencies:
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@fluixi/template-parser':
+        specifier: workspace:*
+        version: link:../template-parser
+    devDependencies:
+      '@bambiste/mix-builder':
+        specifier: ^0.1.0
+        version: 0.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.19)(@vitest/ui@3.2.6)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
+
   packages/testing:
     devDependencies:
       '@bambiste/mix-builder':
