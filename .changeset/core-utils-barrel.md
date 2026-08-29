@@ -1,5 +1,5 @@
 ---
-"fluixi": major
+"@fluixi/core": major
 ---
 
 Stop re-exporting `@fluixi/utils` from the main entry

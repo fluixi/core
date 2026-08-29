@@ -1,5 +1,5 @@
 ---
-"fluixi": minor
+"@fluixi/core": minor
 ---
 
 i18n: typed translation keys. `t('…')` now autocompletes the valid keys from your `messages`

@@ -1,4 +1,4 @@
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 import { App } from './app';
 
 const root = document.getElementById('app');

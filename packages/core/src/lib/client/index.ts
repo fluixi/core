@@ -1,6 +1,6 @@
 /**
  * @fileoverview Client-Side Rendering Entry Point for Fluixi
- * @module fluixi/client
+ * @module @fluixi/core/client
  *
  * Implements client-side mounting and hydration logic using @fluixi/dom runtime.
  * Supports both JSX and Lit HTML.
@@ -41,7 +41,7 @@ ensureIntegration('client index');
  *
  * @example
  * ```typescript
- * import { mount } from 'fluixi/client';
+ * import { mount } from '@fluixi/core/client';
  * import App from './App';
  *
  * mount(() => App(), document.getElementById('root'));
@@ -82,7 +82,7 @@ export interface StartClientOptions {
  * @example
  * ```ts
  * // entry-client.ts
- * import { startClient } from 'fluixi/client';
+ * import { startClient } from '@fluixi/core/client';
  * import App from './app';
  *
  * startClient(App);

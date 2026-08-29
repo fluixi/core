@@ -30,7 +30,7 @@ Fluixi CLI supports 5 different component patterns, each suited for different us
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from 'fluixi';
+import { FluixiElement } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
@@ -129,7 +129,7 @@ export class MyCounter extends LitElement {
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from 'fluixi';
+import { WithSignals } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
@@ -173,7 +173,7 @@ export class MyCounter extends WithSignals(LitElement) {
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from 'fluixi';
+import { SignalController } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive/signal';
 
 @customElement('my-counter')
@@ -217,7 +217,7 @@ export class MyCounter extends LitElement {
 
 **Syntax:**
 ```typescript
-import { html, Component } from 'fluixi';
+import { html, Component } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive/signal';
 
 export const MyCounter: Component = () => {

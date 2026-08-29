@@ -19,7 +19,7 @@ A comprehensive collection of examples demonstrating Fluixi features and pattern
 ### Hello World
 
 ```typescript
-import { render, html } from 'fluixi';
+import { render, html } from '@fluixi/core';
 
 const App = () => html`<h1>Hello, Fluixi!</h1>`;
 
@@ -29,7 +29,7 @@ render(App, document.getElementById('app')!);
 ### Counter
 
 ```typescript
-import { createSignal, html, render } from 'fluixi';
+import { createSignal, html, render } from '@fluixi/core';
 
 const Counter = () => {
   const [count, setCount] = createSignal(0);
@@ -50,7 +50,7 @@ render(Counter, document.getElementById('app')!);
 ### Input Binding
 
 ```typescript
-import { createSignal, html } from 'fluixi';
+import { createSignal, html } from '@fluixi/core';
 
 const TextInput = () => {
   const [text, setText] = createSignal('');
@@ -76,7 +76,7 @@ const TextInput = () => {
 ### Multiple State Values
 
 ```typescript
-import { createSignal, html } from 'fluixi';
+import { createSignal, html } from '@fluixi/core';
 
 const UserForm = () => {
   const [firstName, setFirstName] = createSignal('');
@@ -121,7 +121,7 @@ const UserForm = () => {
 ### Computed Values
 
 ```typescript
-import { createSignal, createMemo, html } from 'fluixi';
+import { createSignal, createMemo, html } from '@fluixi/core';
 
 const ShoppingCart = () => {
   const [items, setItems] = createSignal([
@@ -150,7 +150,7 @@ const ShoppingCart = () => {
 ### Effects for Side Effects
 
 ```typescript
-import { createSignal, createEffect, html } from 'fluixi';
+import { createSignal, createEffect, html } from '@fluixi/core';
 
 const AutoSave = () => {
   const [content, setContent] = createSignal('');
@@ -186,7 +186,7 @@ const AutoSave = () => {
 ### Conditional Rendering with Show
 
 ```typescript
-import { Show, createSignal, html } from 'fluixi';
+import { Show, createSignal, html } from '@fluixi/core';
 
 const LoginStatus = () => {
   const [user, setUser] = createSignal<{ name: string } | null>(null);
@@ -216,7 +216,7 @@ const LoginStatus = () => {
 ### Lists with For
 
 ```typescript
-import { For, createSignal, html } from 'fluixi';
+import { For, createSignal, html } from '@fluixi/core';
 
 interface Todo {
   id: number;
@@ -288,7 +288,7 @@ const TodoList = () => {
 ### Switch/Match Pattern
 
 ```typescript
-import { Switch, Match, createSignal, html } from 'fluixi';
+import { Switch, Match, createSignal, html } from '@fluixi/core';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -332,7 +332,7 @@ const StatusDisplay = () => {
 ### Modal with Portal
 
 ```typescript
-import { Portal, Show, createSignal, html } from 'fluixi';
+import { Portal, Show, createSignal, html } from '@fluixi/core';
 
 const ModalExample = () => {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -373,7 +373,7 @@ const ModalExample = () => {
 ### Basic Resource
 
 ```typescript
-import { createResource, Show, html } from 'fluixi';
+import { createResource, Show, html } from '@fluixi/core';
 
 interface Post {
   id: number;
@@ -425,7 +425,7 @@ const PostViewer = () => {
 ### Lazy Resource
 
 ```typescript
-import { createLazyResource, Show, createSignal, html } from 'fluixi';
+import { createLazyResource, Show, createSignal, html } from '@fluixi/core';
 
 const LazyDataLoader = () => {
   const [data, { fetch: loadData }] = createLazyResource(
@@ -458,7 +458,7 @@ const LazyDataLoader = () => {
 ### Multiple Resources
 
 ```typescript
-import { createResources, Show, For, html } from 'fluixi';
+import { createResources, Show, For, html } from '@fluixi/core';
 
 const DashboardData = () => {
   const [resources, { refetchAll }] = createResources([
@@ -514,7 +514,7 @@ const DashboardData = () => {
 ### Basic Router Setup
 
 ```typescript
-import { createRouter, Router, Link, html } from 'fluixi';
+import { createRouter, Router, Link, html } from '@fluixi/core';
 
 const Home = () => html`
   <div>
@@ -565,7 +565,7 @@ const App = () => {
 ### Route Parameters
 
 ```typescript
-import { useParams, useNavigate, html } from 'fluixi';
+import { useParams, useNavigate, html } from '@fluixi/core';
 
 const UserProfile = () => {
   const params = useParams();
@@ -587,7 +587,7 @@ const UserProfile = () => {
 ### Query Parameters
 
 ```typescript
-import { useQuery, useNavigate, html } from 'fluixi';
+import { useQuery, useNavigate, html } from '@fluixi/core';
 
 const SearchResults = () => {
   const query = useQuery();
@@ -618,7 +618,7 @@ const SearchResults = () => {
 ### Theme Context
 
 ```typescript
-import { createContext, useContext, Provider, createSignal, html } from 'fluixi';
+import { createContext, useContext, Provider, createSignal, html } from '@fluixi/core';
 
 interface Theme {
   primaryColor: string;
@@ -686,7 +686,7 @@ const App = () => {
 ### Auth Context
 
 ```typescript
-import { createContextWithProvider, useContext, createSignal, html } from 'fluixi';
+import { createContextWithProvider, useContext, createSignal, html } from '@fluixi/core';
 
 interface User {
   id: number;
@@ -765,7 +765,7 @@ const LoginButton = () => {
 ### Form with Validation
 
 ```typescript
-import { createSignal, createMemo, html } from 'fluixi';
+import { createSignal, createMemo, html } from '@fluixi/core';
 
 const RegistrationForm = () => {
   const [email, setEmail] = createSignal('');
@@ -852,7 +852,7 @@ const RegistrationForm = () => {
 ### Infinite Scroll List
 
 ```typescript
-import { createSignal, createEffect, For, onMount, html } from 'fluixi';
+import { createSignal, createEffect, For, onMount, html } from '@fluixi/core';
 
 interface Item {
   id: number;
@@ -929,7 +929,7 @@ const InfiniteScrollList = () => {
 ### Debounced Search
 
 ```typescript
-import { createSignal, createEffect, createResource, Show, For, html } from 'fluixi';
+import { createSignal, createEffect, createResource, Show, For, html } from '@fluixi/core';
 
 interface SearchResult {
   id: number;

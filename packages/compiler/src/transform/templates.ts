@@ -582,8 +582,8 @@ function compileJsx(
     isBound: (name) => needs.declared.has(name),
     modules: {
       controlFlowModule: options.controlFlowModule ?? options.runtimeModule ?? '@fluixi/dom',
-      coreModule: options.coreModule ?? 'fluixi',
-      routerModule: options.routerModule ?? 'fluixi/router',
+      coreModule: options.coreModule ?? '@fluixi/core',
+      routerModule: options.routerModule ?? '@fluixi/core/router',
     },
     strategyFor: (n) => n.load,
   });
@@ -612,7 +612,7 @@ function buildPrologue(
   options: TransformOptions,
 ): string | null {
   const runtime = options.runtimeModule ?? '@fluixi/dom';
-  const core = options.coreModule ?? 'fluixi';
+  const core = options.coreModule ?? '@fluixi/core';
   const groups = new Map<string, string[]>();
   const add = (mod: string, name: string) => groups.set(mod, [...(groups.get(mod) ?? []), name]);
 
@@ -623,7 +623,7 @@ function buildPrologue(
   for (const name of [...wanted].sort()) {
     if (bound.has(name)) continue;
     if (REACTIVE.has(name)) add(options.reactiveModule ?? '@fluixi/reactive/signal', name);
-    else if (ROUTER.has(name)) add(options.routerModule ?? 'fluixi/router', name);
+    else if (ROUTER.has(name)) add(options.routerModule ?? '@fluixi/core/router', name);
     else if (CORE_ONLY.has(name)) add(core, name);
     else if (CONTROL_FLOW.has(name)) add(options.controlFlowModule ?? runtime, name);
     else add(runtime, name);

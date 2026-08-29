@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@fluixi/dom": "workspace:*",
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },

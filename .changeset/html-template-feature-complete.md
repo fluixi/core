@@ -1,7 +1,7 @@
 ---
 "@fluixi/compiler": minor
 "@fluixi/dom": minor
-"fluixi": minor
+"@fluixi/core": minor
 ---
 
 html`` templates: full feature support, and @fluixi/lit folded into @fluixi/dom.

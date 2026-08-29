@@ -24,9 +24,9 @@
  *     // in a component / route / server function:
  *     const users = inject(Users);
  *
- * Client-safe: imports only `fluixi` (owner) + `@fluixi/dom`'s pure `getRequestContext`.
+ * Client-safe: imports only `@fluixi/core` (owner) + `@fluixi/dom`'s pure `getRequestContext`.
  */
-import { getOwner, onCleanup } from 'fluixi';
+import { getOwner, onCleanup } from '@fluixi/core';
 import { getRequestContext } from '@fluixi/dom';
 
 // ── Tokens ───────────────────────────────────────────────────────────────────

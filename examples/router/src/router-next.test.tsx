@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 //
 // Regression for the framework-agnostic router (@fluixi/router) + its fluixi
-// adapter (fluixi/router). This example uses the IMPERATIVE backend
+// adapter (@fluixi/core/router). This example uses the IMPERATIVE backend
 // (see vite.config.ts) — store-admin's backend — so these prove the adapter works
 // with deferred <Outlet/> AND renders deeply nested layouts (the case the old
 // fluixi router could not render).
 import { describe, it, expect } from 'vitest';
-import { render, Suspense } from 'fluixi';
+import { render, Suspense } from '@fluixi/core';
 import {
   Router,
   Outlet,
@@ -19,9 +19,9 @@ import {
   useSearchParams,
   useRouteData,
   createMemoryHistory,
-} from 'fluixi/router';
-import { lazy } from 'fluixi/router';
-import { createContext, useContext } from 'fluixi';
+} from '@fluixi/core/router';
+import { lazy } from '@fluixi/core/router';
+import { createContext, useContext } from '@fluixi/core';
 import { flush } from '@fluixi/reactive/signal';
 
 const tick = async (ms = 30) => {
@@ -209,7 +209,7 @@ describe('router adapter (imperative backend)', () => {
   });
 });
 
-import { Link, A } from 'fluixi/router';
+import { Link, A } from '@fluixi/core/router';
 describe('router Link', () => {
   const tick2 = async (ms = 30) => { await new Promise((r) => setTimeout(r, ms)); await flush(); };
   it('navigates on click and applies active class', async () => {

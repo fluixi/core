@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 "@fluixi/dom": patch
 "@fluixi/jsx": patch
 ---

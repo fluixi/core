@@ -1,6 +1,6 @@
 // Playground app — compiles JSX in-browser, renders it, and graphs its reactivity via
 // @fluixi/devtools. Left half = editor/compiled (tabbed); right half = preview + graph.
-import { createSignal, onMount } from 'fluixi';
+import { createSignal, onMount } from '@fluixi/core';
 import { createReactor, createGraphView, DEVTOOLS_CSS, nodeVersion, nodeState, type GraphView } from '@fluixi/devtools';
 import { compile } from './compile';
 import { runCompiled, type RunResult } from './run';

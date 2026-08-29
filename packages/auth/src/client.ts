@@ -11,7 +11,7 @@
  *
  * Client-only deps: fluixi + @fluixi/dom's pure `getLocals` — never @fluixi/server.
  */
-import { createIsomorphicStore, createEffect, createRoot, env } from 'fluixi';
+import { createIsomorphicStore, createEffect, createRoot, env } from '@fluixi/core';
 import { getLocals } from '@fluixi/dom';
 import {
   AUTH_LOCALS_KEY,

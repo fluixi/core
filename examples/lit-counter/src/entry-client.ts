@@ -1,6 +1,6 @@
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 import { hydrate } from '@fluixi/dom';
-import { html } from 'fluixi';
+import { html } from '@fluixi/core';
 import { SsrApp } from './Ssr';
 
 // Client takeover for the html``-authored app.

@@ -6,8 +6,8 @@
 import * as __fluixi_dom from '@fluixi/dom';
 import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
 import * as __fluixi_reactive_store from '@fluixi/reactive/store';
-import * as _fluixi from 'fluixi';
-import * as _fluixi_router from 'fluixi/router';
+import * as _fluixi from '@fluixi/core';
+import * as _fluixi_router from '@fluixi/core/router';
 
 declare global {
   export import Await = _fluixi.Await;

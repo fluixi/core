@@ -1,4 +1,4 @@
-import { createSignal, type ComponentChild } from 'fluixi';
+import { createSignal, type ComponentChild } from '@fluixi/core';
 
 /** A component whose only job is to render native-element children passed to it. */
 function Wrapper(props: { children?: ComponentChild }) {

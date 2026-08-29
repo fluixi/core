@@ -1,4 +1,4 @@
-import { signal } from 'fluixi';
+import { signal } from '@fluixi/core';
 import { t, locale, setLocale } from './i18n';
 
 /** A tiny reactive counter — fine-grained updates, no virtual DOM. Now i18n'd. */

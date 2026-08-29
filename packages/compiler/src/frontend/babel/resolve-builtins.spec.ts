@@ -31,8 +31,8 @@ describe('published builtin data', () => {
   it('splits control flow between dom and core', () => {
     const map = builtinComponentMap();
     expect(map.Show).toBe('@fluixi/dom');
-    expect(map.Suspense).toBe('fluixi');
-    expect(map.Router).toBe('fluixi/router');
+    expect(map.Suspense).toBe('@fluixi/core');
+    expect(map.Router).toBe('@fluixi/core/router');
   });
 
   it('honours module overrides', () => {
@@ -137,7 +137,7 @@ describe('rule precedence against builtins', () => {
 
   it('still auto-imports router names when no rule claims them', () => {
     const out = compile('const v = <Outlet/>;', { resolve: rule });
-    expect(moduleFor(out, 'Outlet')).toBe('fluixi/router');
+    expect(moduleFor(out, 'Outlet')).toBe('@fluixi/core/router');
   });
 
   it('leaves an explicit import alone', () => {

@@ -4,7 +4,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -47,7 +47,7 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  'fluixi': Fluixi,
+  '@fluixi/core': Fluixi,
 };
 
 function load(src: string): any {
@@ -70,7 +70,7 @@ beforeAll(() => ensureIntegration());
 describe('#3 spread wires delegated event handlers', () => {
   it('onInput passed via spread fires', async () => {
     const src = `
-      import { createSignal } from 'fluixi';
+      import { createSignal } from '@fluixi/core';
       let calls = 0;
       export function App() {
         const handlers = { onInput: () => { calls++; } };
@@ -92,7 +92,7 @@ describe('#3 spread wires delegated event handlers', () => {
 describe('#4 call-expression child is reactive', () => {
   it('{rendered()} updates when the signal changes', async () => {
     const src = `
-      import { createSignal } from 'fluixi';
+      import { createSignal } from '@fluixi/core';
       const [n, setN] = createSignal(1);
       const rendered = () => 'v' + n();
       export function App() { return <span class="t">{rendered()}</span>; }

@@ -2,10 +2,10 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { renderToString, renderToStringAsync } from '@fluixi/server';
-import { render, createResource } from 'fluixi';
+import { render, createResource } from '@fluixi/core';
 import { hydrate, setRequestStore } from '@fluixi/dom';
 import { flush } from '@fluixi/reactive/signal';
-import { html } from 'fluixi';
+import { html } from '@fluixi/core';
 import { SsrApp } from './Ssr';
 
 afterEach(() => {

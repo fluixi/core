@@ -1,5 +1,5 @@
 ---
-"fluixi": minor
+"@fluixi/core": minor
 ---
 
 Import the route tree from `@fluixi/core/routes`

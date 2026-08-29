@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Show a Suspense boundary's fallback when a lazy child appears after the first

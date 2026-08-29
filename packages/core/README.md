@@ -30,11 +30,11 @@ Fluixi's compiler knows. It resolves a reactive primitive by the binding it came
 ## Installation
 
 ```bash
-npm install fluixi @fluixi/reactive
+npm install @fluixi/core @fluixi/reactive
 # or
-pnpm add fluixi @fluixi/reactive
+pnpm add @fluixi/core @fluixi/reactive
 # or
-yarn add fluixi @fluixi/reactive
+yarn add @fluixi/core @fluixi/reactive
 ```
 
 ## Quick Start
@@ -49,7 +49,7 @@ npm create fluixi my-app
 ### Basic Example
 
 ```tsx
-import { render } from 'fluixi';
+import { render } from '@fluixi/core';
 
 const Counter = () => {
   const count = $signal(0);
@@ -126,7 +126,7 @@ why at build time.
 Use control-flow components instead of ternaries and `.map()` so updates stay fine-grained.
 
 ```tsx
-import { Show, For, Switch, Match } from 'fluixi';
+import { Show, For, Switch, Match } from '@fluixi/core';
 
 // Show — conditional rendering (child callback receives the narrowed value)
 <Show when={() => user()} fallback={<p>Please log in</p>}>
@@ -172,7 +172,7 @@ The same reactive model without configuring JSX — useful in a library, a scrip
 plain-TypeScript codebase:
 
 ```ts
-import { html } from 'fluixi';
+import { html } from '@fluixi/core';
 
 function Counter() {
   const n = $signal(0);
@@ -188,7 +188,7 @@ hover, completion and type-checking in the editor.
 `createResource` fetches async data and tracks loading/error. `<Suspense>` shows a fallback while it's pending (works on the client and during SSR).
 
 ```tsx
-import { Suspense } from 'fluixi';
+import { Suspense } from '@fluixi/core';
 
 function UserCard() {
   const id = $signal(1);
@@ -209,7 +209,7 @@ function UserCard() {
 Share state down the tree without prop drilling.
 
 ```tsx
-import { createContext, useContext } from 'fluixi';
+import { createContext, useContext } from '@fluixi/core';
 
 const ThemeContext = createContext<'light' | 'dark'>('light');
 
@@ -232,8 +232,8 @@ function Toolbar() {
 The router takes a `routes` config; nested routes render through `<Outlet />`, and `lazy()` code-splits.
 
 ```tsx
-import { render } from 'fluixi';
-import { Router, Outlet, lazy } from 'fluixi/router';
+import { render } from '@fluixi/core';
+import { Router, Outlet, lazy } from '@fluixi/core/router';
 
 const routes = [
   {
@@ -257,7 +257,7 @@ render(() => <Router routes={routes} />, document.getElementById('app')!);
 ## Lifecycle Hooks
 
 ```tsx
-import { onMount, onCleanup } from 'fluixi';
+import { onMount, onCleanup } from '@fluixi/core';
 
 function Clock() {
   const now = $signal(Date.now());
@@ -274,7 +274,7 @@ function Clock() {
 ## Derived State & Batching
 
 ```tsx
-import { batch } from 'fluixi';
+import { batch } from '@fluixi/core';
 
 const first = $signal('Ada');
 const last = $signal('Lovelace');
@@ -310,7 +310,7 @@ Fluixi is written in TypeScript and ships full types. Configure JSX in your `tsc
 
 | Package | Purpose |
 | --- | --- |
-| `fluixi` | Framework façade — components, control flow, router, render |
+| `@fluixi/core` | Framework façade — components, control flow, router, render |
 | `@fluixi/reactive` | Signals, memos, effects, store — usable on its own |
 | `@fluixi/dom` | The DOM rendering runtime |
 | `@fluixi/compiler` | JSX and `` html`` `` → IR → direct DOM calls |

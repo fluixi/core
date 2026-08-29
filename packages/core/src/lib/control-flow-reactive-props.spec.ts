@@ -6,7 +6,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 
 function cjsTransform({ types: t }: any): any {
@@ -35,7 +35,7 @@ function cjsTransform({ types: t }: any): any {
   } };
 }
 
-const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, 'fluixi': Fluixi };
+const REQUIRE_MAP: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi };
 function load(src: string): any {
   const opts = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
   const step1 = transformTemplates(src, 't.tsx', { ...opts, runtimeModule: opts.signalModule })?.code ?? src;
@@ -57,7 +57,7 @@ async function mount(mod: any) {
 describe('For each={items()} (called shape)', () => {
   it('updates the list when the signal changes', async () => {
     const mod = load(`
-      import { createSignal, For } from 'fluixi';
+      import { createSignal, For } from '@fluixi/core';
       const [items, setItems] = createSignal(['a']);
       export function App() { return <ul><For each={items()}>{(i) => <li>{i}</li>}</For></ul>; }
       export function add() { setItems([...items(), 'b']); }
@@ -72,7 +72,7 @@ describe('For each={items()} (called shape)', () => {
 describe('Show when={cond()} (called shape)', () => {
   it('toggles when the signal changes', async () => {
     const mod = load(`
-      import { createSignal, Show } from 'fluixi';
+      import { createSignal, Show } from '@fluixi/core';
       const [cond, setCond] = createSignal(false);
       export function App() { return <div><Show when={cond()}>{() => <span role="dialog" />}</Show></div>; }
       export function open() { setCond(true); }
@@ -87,7 +87,7 @@ describe('Show when={cond()} (called shape)', () => {
 describe('For each={items()} is fine-grained (not a full re-create)', () => {
   it('keeps existing DOM nodes when appending', async () => {
     const mod = load(`
-      import { createSignal, For } from 'fluixi';
+      import { createSignal, For } from '@fluixi/core';
       const [items, setItems] = createSignal(['a']);
       export function App() { return <ul><For each={items()}>{(i) => <li>{i}</li>}</For></ul>; }
       export function add() { setItems([...items(), 'b']); }
@@ -104,7 +104,7 @@ describe('For each={items()} is fine-grained (not a full re-create)', () => {
 describe('Index each={xs()} and Match when={m()} (called shape)', () => {
   it('Index reflows on signal change', async () => {
     const mod = load(`
-      import { createSignal, Index } from 'fluixi';
+      import { createSignal, Index } from '@fluixi/core';
       const [xs, setXs] = createSignal(['a']);
       export function App() { return <ul><Index each={xs()}>{(it) => <li>{it()}</li>}</Index></ul>; }
       export function add() { setXs(['a', 'b']); }
@@ -116,7 +116,7 @@ describe('Index each={xs()} and Match when={m()} (called shape)', () => {
   });
   it('Switch/Match reacts to when={m()}', async () => {
     const mod = load(`
-      import { createSignal, Switch, Match } from 'fluixi';
+      import { createSignal, Switch, Match } from '@fluixi/core';
       const [n, setN] = createSignal(0);
       export function App() {
         return <Switch fallback={<span class="f" />}>
@@ -135,7 +135,7 @@ describe('Index each={xs()} and Match when={m()} (called shape)', () => {
 describe('regression: accessor shapes still work (no double-call)', () => {
   it('For each={items} (bare accessor)', async () => {
     const mod = load(`
-      import { createSignal, For } from 'fluixi';
+      import { createSignal, For } from '@fluixi/core';
       const [items, setItems] = createSignal(['a']);
       export function App() { return <ul><For each={items}>{(i) => <li>{i}</li>}</For></ul>; }
       export function add() { setItems([...items(), 'b']); }
@@ -146,7 +146,7 @@ describe('regression: accessor shapes still work (no double-call)', () => {
   });
   it('Show when={() => cond()} (arrow accessor, no double-call)', async () => {
     const mod = load(`
-      import { createSignal, Show } from 'fluixi';
+      import { createSignal, Show } from '@fluixi/core';
       const [cond, setCond] = createSignal(false);
       export function App() { return <div><Show when={() => cond()}>{() => <span role="dialog" />}</Show></div>; }
       export function open() { setCond(true); }

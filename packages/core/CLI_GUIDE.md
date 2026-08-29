@@ -18,10 +18,10 @@ Complete guide for using the Fluixi Command Line Interface to scaffold projects 
 
 ## Installation
 
-The Fluixi CLI is included with the `fluixi` package:
+The Fluixi CLI is included with the `@fluixi/core` package:
 
 ```bash
-npm install fluixi
+npm install @fluixi/core
 ```
 
 The CLI is available as the `fluixi` command:
@@ -71,7 +71,7 @@ Extends the `FluixiElement` base class with a `view()` method pattern. Provides 
 ```typescript
 import { html } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { FluixiElement } from 'fluixi';
+import { FluixiElement } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -107,7 +107,7 @@ Uses a mixin to add signal support to any LitElement. Great for migrating existi
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { WithSignals } from 'fluixi';
+import { WithSignals } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -143,7 +143,7 @@ Uses `SignalController` for manual reactive management. Provides the most contro
 ```typescript
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { SignalController } from 'fluixi';
+import { SignalController } from '@fluixi/core';
 import { createSignal } from '@fluixi/reactive';
 
 @customElement('my-counter')
@@ -178,7 +178,7 @@ export class MyCounter extends LitElement {
 Traditional function-based components. Good for simple presentational components but doesn't support signals natively.
 
 ```typescript
-import { html, Component, ComponentProps } from 'fluixi';
+import { html, Component, ComponentProps } from '@fluixi/core';
 
 export interface MyCounterProps extends ComponentProps {
   count: number;
@@ -633,7 +633,7 @@ view() {
 **Issue:** Type errors in generated component
 
 **Solution:**
-1. Ensure `fluixi` is installed
+1. Ensure `@fluixi/core` is installed
 2. Check tsconfig.json includes experimental decorators
 3. Install missing dependencies
 

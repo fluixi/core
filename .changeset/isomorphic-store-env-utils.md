@@ -1,5 +1,5 @@
 ---
-"fluixi": minor
+"@fluixi/core": minor
 ---
 
 Add `createIsomorphicStore` + universal env utilities.

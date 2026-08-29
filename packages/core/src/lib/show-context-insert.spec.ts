@@ -10,7 +10,7 @@ import * as babel from '@babel/core';
 import { transformTemplates } from '@fluixi/compiler/transform';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
-import * as Fluixi from 'fluixi';
+import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
 import { startClient } from './client/index.js';
 
@@ -54,7 +54,7 @@ function cjsTransform({ types: t }: any): any {
 const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/dom': DOM,
   '@fluixi/reactive/signal': S,
-  'fluixi': Fluixi,
+  '@fluixi/core': Fluixi,
 };
 
 function load(src: string): any {
@@ -77,7 +77,7 @@ beforeAll(() => ensureIntegration());
 
 describe('bare control-flow return with sibling-updated context', () => {
   const SRC = (flow: string) => `
-    import { createSignal, createContext, useContext, ${flow} } from 'fluixi';
+    import { createSignal, createContext, useContext, ${flow} } from '@fluixi/core';
     const Ctx = createContext();
     function Root(props) {
       const [open, setOpen] = createSignal(false);
@@ -94,7 +94,7 @@ describe('bare control-flow return with sibling-updated context', () => {
   `;
 
   const FRAGMENT_SRC = `
-    import { createSignal, createContext, useContext, Show } from 'fluixi';
+    import { createSignal, createContext, useContext, Show } from '@fluixi/core';
     const Ctx = createContext();
     function Root(props) {
       const [open, setOpen] = createSignal(false);
@@ -148,7 +148,7 @@ describe('bare control-flow return with sibling-updated context', () => {
 describe('owner wiring in control-flow thunks', () => {
   it('#2 fires onMount for a component created inside a <Show> child thunk', async () => {
     const src = `
-      import { createSignal, onMount, Show } from 'fluixi';
+      import { createSignal, onMount, Show } from '@fluixi/core';
       let mounted = 0;
       function Inner() { onMount(() => { mounted++; }); return <div role="dialog" />; }
       const [open, setOpen] = createSignal(false);
@@ -167,7 +167,7 @@ describe('owner wiring in control-flow thunks', () => {
 
   it('#3 resolves each sibling provider for a consumer inside Portal+Show', async () => {
     const src = `
-      import { createContext, useContext, Portal, Show } from 'fluixi';
+      import { createContext, useContext, Portal, Show } from '@fluixi/core';
       const Ctx = createContext();
       function Menu(props) { return <Ctx.Provider value={{ id: props.id }}>{props.children}</Ctx.Provider>; }
       function Content() { const c = useContext(Ctx); return <Portal><Show when={() => true}>{() => <div class="item" data-id={c.id} />}</Show></Portal>; }

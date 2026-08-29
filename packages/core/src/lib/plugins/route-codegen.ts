@@ -1,6 +1,6 @@
 /**
  * @fileoverview Route code generator
- * @module fluixi/plugins/route-codegen
+ * @module @fluixi/core/plugins/route-codegen
  *
  * Generates an ES module from a ScannedRoute tree.
  * Uses lazy() for code-split component loading with Suspense integration.
@@ -36,7 +36,7 @@ export function generateRouteModule(
   // router is lit-free; the old './router' barrel imported @fluixi/lit (extends
   // HTMLElement at module init) which crashed SSR/prod server bundles. (runWithOwner was
   // imported here but never used in the generated output — dropped.)
-  lines.push(`import { lazy } from 'fluixi/router';`);
+  lines.push(`import { lazy } from '@fluixi/core/router';`);
   lines.push(``);
   lines.push(`export const routes = ${generateRouteArray(routes, routesDir, 0)};`);
   lines.push(``);

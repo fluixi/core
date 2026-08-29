@@ -123,7 +123,7 @@ export interface CompilerOptions {
 
   /**
    * Module the router components (Router/Outlet/…) are auto-imported from.
-   * @default 'fluixi/router'
+   * @default '@fluixi/core/router'
    */
   routerModule?: string;
 

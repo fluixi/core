@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render } from 'fluixi';
-import { Form, action, useSubmission } from 'fluixi/router';
+import { render } from '@fluixi/core';
+import { Form, action, useSubmission } from '@fluixi/core/router';
 import { flush } from '@fluixi/reactive/signal';
 
 const tick = async (ms = 20) => { await new Promise((r) => setTimeout(r, ms)); await flush(); };

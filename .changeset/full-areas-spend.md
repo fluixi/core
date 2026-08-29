@@ -2,7 +2,7 @@
 '@fluixi/jsx': patch
 '@fluixi/vite-plugin': patch
 '@fluixi/compiler': patch
-'fluixi': patch
+'@fluixi/core': patch
 '@fluixi/reactive': patch
 '@fluixi/example-counter': patch
 '@fluixi/example-router': patch

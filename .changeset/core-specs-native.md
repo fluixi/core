@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 The runtime specs compile through the default path.

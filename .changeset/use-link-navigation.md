@@ -1,5 +1,5 @@
 ---
-"fluixi": minor
+"@fluixi/core": minor
 ---
 
 Add `useLinkNavigation()` — client-side navigation for anchors the app didn't

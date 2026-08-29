@@ -45,13 +45,13 @@
   "dependencies": {},
   "devDependencies": {
     "@bambiste/mix-builder": "^0.1.0",
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2"
   },
   "peerDependencies": {
-    "fluixi": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "repository": {

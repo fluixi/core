@@ -1,6 +1,6 @@
 ---
 "@fluixi/dom": patch
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Stamp the version attributes on every render path, not just core's

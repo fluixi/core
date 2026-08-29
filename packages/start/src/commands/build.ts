@@ -6,7 +6,7 @@ import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
 import { ssrBuildOptions } from '../adapter.js';
 import { prerender } from './prerender.js';
-import type { ScannedRoute } from 'fluixi/plugins';
+import type { ScannedRoute } from '@fluixi/core/plugins';
 import { wordmark, step, done, c } from '../ui.js';
 
 /**
@@ -123,7 +123,7 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
   const routesDir = resolve(cfg.root, cfg.routesDir);
   if (existsSync(serverDir) && existsSync(routesDir)) {
     const manifest: Record<string, string[]> = JSON.parse(await readFile(manifestFile, 'utf-8'));
-    const { scanRoutes } = await import('fluixi/plugins');
+    const { scanRoutes } = await import('@fluixi/core/plugins');
     const base = cfg.routesDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
 
     // Keyed by URL pattern: the runtime has a path, and resolving it here leaves it a

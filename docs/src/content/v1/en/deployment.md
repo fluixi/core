@@ -57,7 +57,7 @@ mode and `fluixi build` follows it:
 
 | `bundle` | `dist/server` | needs `node_modules` at runtime |
 | --- | --- | --- |
-| `'external'` (node) | your app plus `import 'fluixi'` | yes |
+| `'external'` (node) | your app plus `import '@fluixi/core'` | yes |
 | `'inline'` (web) | one self-contained file | no |
 | unset (no adapter) | Vite's own heuristic | usually |
 
@@ -74,7 +74,7 @@ nothing may be left to resolve — `'inline'` puts everything in the bundle.
 and nothing else. Under a strict `node_modules` layout (pnpm) a package you never declared
 is not resolvable from your app root, so externalizing one would produce a bundle importing
 something Node cannot find. Each package is listed with every subpath it exports, because
-half-externalizing one — `fluixi` an import, `fluixi/router` copied into the
+half-externalizing one — `@fluixi/core` an import, `@fluixi/core/router` copied into the
 bundle — would put two routers with two sets of module state in the same server.
 `ssrNoExternal` still wins over all of this — it is the app saying "bundle this one anyway".
 

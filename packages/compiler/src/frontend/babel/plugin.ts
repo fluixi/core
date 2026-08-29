@@ -80,7 +80,7 @@ export interface PluginOptions {
 
   /**
    * Module the router components (Router/Outlet/…) are auto-imported from.
-   * @default 'fluixi/router'
+   * @default '@fluixi/core/router'
    */
   routerModule?: string;
   /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
@@ -180,7 +180,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     delegateEvents = true,
     signalModule = '@fluixi/dom',
     controlFlowModule = '@fluixi/dom',
-    routerModule = 'fluixi/router',
+    routerModule = '@fluixi/core/router',
     reactiveModule = '@fluixi/reactive/signal',
     templateClone = true,
     partialTemplates = true,
@@ -200,7 +200,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
   const pluginState: PluginStateData = {
     irImports: new Set<string>(),
-    libModule: 'fluixi',
+    libModule: '@fluixi/core',
     controlFlowModule,
     routerModule,
     templateClone,
@@ -248,7 +248,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             delegatedEvents: new Set(),
             staticTemplates: new Map(),
             staticCounter: 0,
-            libModule: 'fluixi',
+            libModule: '@fluixi/core',
             controlFlowModule,
             routerModule,
             templateClone,
@@ -326,7 +326,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
               // they must be auto-imported from core (importing them from the dom
               // controlFlowModule would resolve to nothing). Everything else comes
               // from controlFlowModule.
-              const coreModule = state.libModule ?? 'fluixi';
+              const coreModule = state.libModule ?? '@fluixi/core';
               const fromRouter = unbound.filter((n) => ROUTER_COMPONENTS.has(n));
               const fromCore = unbound.filter((n) => CORE_ONLY_CONTROL_FLOW.has(n));
               const fromDom = unbound.filter(
@@ -387,7 +387,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                 imports.push(
                   t.importDeclaration(
                     [t.importSpecifier(t.identifier('deferred'), t.identifier('deferred'))],
-                    t.stringLiteral(state.libModule ?? 'fluixi'),
+                    t.stringLiteral(state.libModule ?? '@fluixi/core'),
                   ),
                 );
               }

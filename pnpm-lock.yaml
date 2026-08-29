@@ -84,6 +84,9 @@ importers:
       '@fluixi/cli':
         specifier: workspace:*
         version: link:../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../packages/dom
@@ -99,9 +102,6 @@ importers:
       '@fluixi/start':
         specifier: workspace:*
         version: link:../packages/start
-      fluixi:
-        specifier: workspace:*
-        version: link:../packages/core
       highlight.js:
         specifier: ^11.10.0
         version: 11.11.1
@@ -118,6 +118,9 @@ importers:
 
   examples/counter:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -127,9 +130,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -146,6 +146,9 @@ importers:
 
   examples/intrinsics:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -155,9 +158,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -174,6 +174,9 @@ importers:
 
   examples/lit-counter:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -183,9 +186,6 @@ importers:
       '@fluixi/server':
         specifier: workspace:*
         version: link:../../packages/server
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/ts-plugin':
         specifier: workspace:*
@@ -205,15 +205,15 @@ importers:
 
   examples/lit-showcase:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/ts-plugin':
         specifier: workspace:*
@@ -233,6 +233,9 @@ importers:
 
   examples/load-imports:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -242,9 +245,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/compiler':
         specifier: workspace:*
@@ -264,6 +264,9 @@ importers:
 
   examples/load-strategies:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -273,9 +276,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/compiler':
         specifier: workspace:*
@@ -295,6 +295,9 @@ importers:
 
   examples/playground:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -304,9 +307,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -317,6 +317,9 @@ importers:
 
   examples/props:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -326,9 +329,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -345,6 +345,9 @@ importers:
 
   examples/router:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -354,9 +357,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -373,6 +373,9 @@ importers:
 
   examples/ssr:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -385,9 +388,6 @@ importers:
       '@fluixi/server':
         specifier: workspace:*
         version: link:../../packages/server
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -407,6 +407,9 @@ importers:
       '@fluixi/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -422,9 +425,6 @@ importers:
       '@fluixi/start':
         specifier: workspace:*
         version: link:../../packages/start
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       vite:
         specifier: ^5.0.0
@@ -432,6 +432,9 @@ importers:
 
   examples/todo:
     dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -441,9 +444,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../../packages/core
     devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
@@ -467,6 +467,9 @@ importers:
       '@bambiste/mix-builder':
         specifier: ^0.1.0
         version: 0.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -482,9 +485,6 @@ importers:
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
-      fluixi:
-        specifier: workspace:*
-        version: link:../core
       inquirer:
         specifier: ^14.0.2
         version: 14.0.2(@types/node@22.19.19)
@@ -754,15 +754,15 @@ importers:
       '@bambiste/mix-builder':
         specifier: ^0.1.0
         version: 0.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../core
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
-      fluixi:
-        specifier: workspace:*
-        version: link:../core
       inquirer:
         specifier: ^14.0.2
         version: 14.0.2(@types/node@22.19.19)
@@ -772,6 +772,9 @@ importers:
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -787,9 +790,6 @@ importers:
       esbuild:
         specifier: ^0.27.1
         version: 0.27.7
-      fluixi:
-        specifier: workspace:*
-        version: link:../core
       vite:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)
@@ -913,6 +913,9 @@ importers:
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../packages/compiler
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
       '@fluixi/devtools':
         specifier: workspace:*
         version: link:../packages/devtools
@@ -925,9 +928,6 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../packages/reactive
-      fluixi:
-        specifier: workspace:*
-        version: link:../packages/core
       monaco-editor:
         specifier: ^0.52.0
         version: 0.52.2
@@ -947,6 +947,9 @@ importers:
       '@fluixi/cli':
         specifier: workspace:*
         version: link:../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../packages/dom
@@ -962,9 +965,6 @@ importers:
       '@fluixi/start':
         specifier: workspace:*
         version: link:../packages/start
-      fluixi:
-        specifier: workspace:*
-        version: link:../packages/core
     devDependencies:
       vite:
         specifier: ^5.0.0

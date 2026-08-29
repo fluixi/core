@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup } from 'fluixi';
+import { createSignal, onMount, onCleanup } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';

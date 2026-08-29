@@ -52,9 +52,9 @@ describe('@fluixi/start adapters', () => {
 describe('ssrBuildOptions — the adapter decides how the server is bundled', () => {
   const root = () =>
     appRoot(
-      { '@fluixi/start': '*', 'fluixi': '*', vite: '*' },
+      { '@fluixi/start': '*', '@fluixi/core': '*', vite: '*' },
       {
-        'fluixi': {
+        '@fluixi/core': {
           '.': './index.js',
           './router': './router.js',
           './routes': './routes.js', // plugin-generated — a stub in the package
@@ -78,32 +78,32 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     // `vite` is a dependency too — externalizing it is Vite's call, not ours.
     expect(ssrBuildOptions(cfg)).toEqual({
       noExternal: undefined,
-      external: ['@fluixi/start', 'fluixi', 'fluixi/router'],
+      external: ['@fluixi/start', '@fluixi/core', '@fluixi/core/router'],
     });
   });
 
   it('lists subpaths, because Vite only honours exact ids', () => {
     const { external } = ssrBuildOptions(resolveConfig({ root: root(), adapter: nodeAdapter }));
     // Half-externalizing a package puts two copies of its module state in one server.
-    expect(external).toContain('fluixi/router');
+    expect(external).toContain('@fluixi/core/router');
     // Wildcards cannot be enumerated; bundling is the safe direction.
-    expect(external).not.toContain('fluixi/lib/*');
-    expect(external).not.toContain('fluixi/package.json');
+    expect(external).not.toContain('@fluixi/core/lib/*');
+    expect(external).not.toContain('@fluixi/core/package.json');
   });
 
   it('never externalizes a plugin-generated entry — that would ship the throwing stub', () => {
     const { external } = ssrBuildOptions(resolveConfig({ root: root(), adapter: nodeAdapter }));
-    expect(external).not.toContain('fluixi/routes');
+    expect(external).not.toContain('@fluixi/core/routes');
   });
 
   it('never externalizes what the app asked to bundle', () => {
     const cfg = resolveConfig({
       root: root(),
       adapter: nodeAdapter,
-      ssrNoExternal: ['fluixi'],
+      ssrNoExternal: ['@fluixi/core'],
     });
     expect(ssrBuildOptions(cfg)).toEqual({
-      noExternal: ['fluixi'],
+      noExternal: ['@fluixi/core'],
       external: ['@fluixi/start'],
     });
   });

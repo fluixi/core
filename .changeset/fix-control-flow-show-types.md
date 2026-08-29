@@ -15,7 +15,7 @@
 '@fluixi/utils': patch
 '@fluixi/example-todo': patch
 '@fluixi/auth': patch
-'fluixi': patch
+'@fluixi/core': patch
 '@fluixi/head': patch
 '@fluixi/example-ssr': patch
 '@fluixi/cli': patch

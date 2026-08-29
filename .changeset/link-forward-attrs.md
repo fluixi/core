@@ -1,5 +1,5 @@
 ---
-"fluixi": patch
+"@fluixi/core": patch
 ---
 
 Router `Link` now forwards arbitrary author attributes onto its `<a>`.

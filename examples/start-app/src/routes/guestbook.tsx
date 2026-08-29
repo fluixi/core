@@ -3,8 +3,8 @@
 // the client from __FX_DATA__; the secret field is redacted (see entry-server.ts); signing
 // posts via the RPC endpoint then updates the list in place.
 import { createResource } from '@fluixi/reactive/signal';
-import { For } from 'fluixi';
-import { Form, action } from 'fluixi/router';
+import { For } from '@fluixi/core';
+import { Form, action } from '@fluixi/core/router';
 import { addMessage, getMessages, type Message } from '../actions.js';
 
 export default function Guestbook() {
