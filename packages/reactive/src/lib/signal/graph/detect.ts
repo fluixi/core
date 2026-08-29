@@ -6,7 +6,11 @@
  */
 import type { Accessor, Resource } from '../signal.js';
 
-export const __DEV__ = process.env.NODE_ENV !== 'production';
+export const __BROWSER_PROD__ = typeof window === 'undefined' ? false : (window as any).__FLUIXI_PROD__ === true;
+export const __DEV__ =
+  typeof process === 'undefined'
+    ? __BROWSER_PROD__
+    : process.env.NODE_ENV !== 'production';
 
 const $SIGNAL = Symbol.for('signal');
 const $MEMO = Symbol.for('memo');
