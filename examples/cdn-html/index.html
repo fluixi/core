@@ -16,7 +16,7 @@
     <p>Everything below is compiled in the browser, from <code>html``</code> written in this page.</p>
     <div id="app"></div>
 
-    <script src="../../packages/template-runtime/dist/cdn/fluixi.global.js"></script>
+    <script src="./fluixi.global.js"></script>
     <script>
       const { html, render, signal, define } = Fluixi;
 
@@ -47,7 +47,7 @@
             <ul class="items">
               <li each=${items}>${(item) => html`<span class="item">${item}</span>`}</li>
             </ul>
-            <button class="add" @click=${() => items.set([...items(), 'more'])}>add item</button>
+            <button class="add" @click=${() => items.set((prev)=>[...prev, 'more'])}>add item</button>
           </div>
         `;
       }

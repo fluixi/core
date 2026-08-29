@@ -46,10 +46,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/template-parser": "workspace:*",
     "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/template-parser": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.1.0",

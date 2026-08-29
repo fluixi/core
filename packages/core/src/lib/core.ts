@@ -399,4 +399,3 @@ export default {
   FRAMEWORK_NAME,
 };
 
-ensureIntegration('fluixi element main')

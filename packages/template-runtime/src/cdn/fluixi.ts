@@ -27,11 +27,9 @@ export {
   signal,
   memo,
   effect,
-  createSignal,
-  createMemo,
-  createEffect,
   batch,
+  resource,
   untrack,
   onCleanup,
+  store
 } from '@fluixi/reactive';
-export { store, createStore } from '@fluixi/reactive/store';
