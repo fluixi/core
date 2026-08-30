@@ -5,6 +5,7 @@
 
 import {
   registerCreateComponent,
+  createComponent as domCreateComponent,
   asComponent,
   CreateComponentReturnType,
 } from '@fluixi/dom';
@@ -187,11 +188,16 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   });
 }
 
-// Give the dom runtime our createComponent. It gets everything else (effects,
-// memos, …) from @fluixi/reactive directly.
-export function ensureIntegration(from?: string): void {
-  registerCreateComponent(createComponent as any);
-}
+/**
+ * The runtime creates components itself now, so nothing has to be registered for
+ * it to work and this does nothing. It stays because callers exist, and because
+ * `registerCreateComponent` is still the way to install a different component
+ * model — pass your own implementation there and the runtime uses it instead.
+ *
+ * Do not register a function that calls the runtime's own `createComponent`: it
+ * consults the slot first, so that recurses.
+ */
+export function ensureIntegration(_from?: string): void {}
 
 /**
  * Create and execute a component once. Opens an Owner, runs the component untracked,
@@ -227,10 +233,7 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   Comp: T,
   props?: U
 ): CreateComponentReturnType<T, U> {
-  return $component(Comp, props)
-  // const c = $component(Comp, props)
-  // // return c() as any
-  // return  c as any
+  return domCreateComponent(Comp, props) as CreateComponentReturnType<T, U>;
 }
 
 const cached = new WeakMap<any, any>()

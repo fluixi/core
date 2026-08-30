@@ -98,3 +98,39 @@ describe('bind:', () => {
     expect(name()).toBe('typed');
   });
 });
+
+describe('a call site called with different hole shapes', () => {
+  it('handles a signal first, then a plain value', () => {
+    const build = (v: unknown) => html`<p>${v}</p>`;
+    const s = signal('sig');
+    expect(mount(() => build(s)).textContent).toBe('sig');
+    expect(mount(() => build('plain')).textContent).toBe('plain');
+  });
+
+  it('handles a plain value first, then a signal', () => {
+    const build = (v: unknown) => html`<em>${v}</em>`;
+    expect(mount(() => build('plain')).textContent).toBe('plain');
+    const s = signal('sig');
+    const el = mount(() => build(s));
+    expect(el.textContent).toBe('sig');
+    s.set('changed');
+    expect(el.textContent).toBe('changed');
+  });
+});
+
+describe('a list that grows', () => {
+  it('keeps the nodes it already rendered', () => {
+    const items = signal(['a', 'b']);
+    const el = mount(
+      () => html`<ul><li each=${items}>${(i: string) => html`<span>${i}</span>`}</li></ul>`,
+    );
+    const before = [...el.querySelectorAll('li')];
+    expect(before).toHaveLength(2);
+
+    items.set([...items(), 'c']);
+    const after = [...el.querySelectorAll('li')];
+    expect(after).toHaveLength(3);
+    expect(after[0]).toBe(before[0]);
+    expect(after[1]).toBe(before[1]);
+  });
+});

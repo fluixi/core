@@ -1,7 +1,10 @@
-// createComponent lives in fluixi, not the reactive core, so the runtime
-// can't import it — core registers it here at startup. Everything else the runtime
-// needs comes straight from @fluixi/reactive (shared globalThis graph, no bridge).
+// createComponent lives here. It used to live in core and be registered through the
+// slot below, which left the runtime with a fallback that re-invoked a component on
+// every read — a list rebuilt every node whenever it changed, and only for consumers
+// who had not loaded core. The slot stays so a host can still override it.
 
+import { untrack, isSignal } from '@fluixi/reactive';
+import { asComponent } from '../component/modifiers.js';
 import type { CreateComponentReturnType } from './types.js';
 
 type CreateComponentFn = (fn: () => any, props?: any) => any;
@@ -32,7 +35,26 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   props?: U | undefined,
 ): CreateComponentReturnType<T, U> {
   if (_slot.fn) return _slot.fn(Comp, props);
-  return (() => Comp(props)) as any;
+
+  // Untracked: a component reading a signal while it is created must not make its
+  // caller depend on that signal, or the caller re-runs and rebuilds the subtree.
+  const component = typeof Comp === 'function' ? untrack(() => Comp(props)) : Comp;
+
+  // Primitives cannot carry properties, and a signal must not be stamped as a
+  // component or the runtime caches it as a static thunk.
+  if (
+    component != null &&
+    (typeof component === 'function' || typeof component === 'object') &&
+    !isSignal(component)
+  ) {
+    try {
+      (component as any)['$name'] = (Comp as any)?.name;
+    } catch {
+      /* frozen or exotic object */
+    }
+    return asComponent(component) as CreateComponentReturnType<T, U>;
+  }
+  return component as CreateComponentReturnType<T, U>;
 }
 
 export const intergartionInitialized = (): boolean => _slot.fn !== null;

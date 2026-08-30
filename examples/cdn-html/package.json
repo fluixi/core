@@ -1,0 +1,10 @@
+{
+  "name": "@fluixi/example-cdn-html",
+  "version": "0.0.0",
+  "private": true,
+  "description": "a page that loads Fluixi from a script tag and compiles html`` in the browser",
+  "scripts": {
+    "prestart": "pnpm --filter @fluixi/template-runtime build:cdn && cp ../../packages/template-runtime/dist/cdn/fluixi.global.js ./fluixi.global.js",
+    "start": "npx --yes http-server . -p 8080 -b ./fluixi.global.js -g ./fluixi.global.js -c-1"
+  }
+}

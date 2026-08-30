@@ -10,7 +10,6 @@ import { ensureIntegration } from './lib/render/component.js';
 export * from './lib/core.js';
 export { default } from './lib/core.js';
 
-ensureIntegration('fluixi index');
 
 // /**
 //  * Global JSX namespace for "jsx": "preserve" mode.

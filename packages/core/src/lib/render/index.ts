@@ -83,7 +83,6 @@ export function render(
   container: HTMLElement,
   options: RenderOptions = {}
 ): () => void {
-  ensureIntegration('render');
   delegateEvents(['click', 'input', 'change', 'submit']);
 
   if (isServer) {

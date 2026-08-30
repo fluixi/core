@@ -11,7 +11,6 @@ import {
   readChildren,
 } from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
-ensureIntegration('index')
 // import {
 //   createContext as reactiveCreateContext,
 //   useContext as reactiveUseContext,
