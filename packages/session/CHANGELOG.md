@@ -1,5 +1,16 @@
 # @fluixi/session
 
+## 1.0.0-alpha.80
+
+### Patch Changes
+
+- 4a30116: The package name remains `@fluixi/core`, and the router subpath is now `@fluixi/core/router` — if you previously tried using `fluixi` or `@fluixi/core/router-next`, update your imports accordingly.
+- Updated dependencies [fa19974]
+- Updated dependencies [4a30116]
+- Updated dependencies [fa19974]
+  - @fluixi/core@1.0.0-alpha.80
+  - @fluixi/reactive@1.0.0-alpha.80
+
 ## 1.0.0-alpha.79
 
 ### Minor Changes

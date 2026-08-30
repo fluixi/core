@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.80
+
+### Patch Changes
+
+- fa19974: The package now falls back to checking `window.__FLUIXI_PROD__` when `process` is not available, allowing it to load in a browser without a bundler.
+
 ## 1.0.0-alpha.79
 
 ## 1.0.0-alpha.78

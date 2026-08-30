@@ -34,7 +34,9 @@
     "@fluixi/example-load-strategies": "0.0.1-alpha.0",
     "@fluixi/example-intrinsics": "0.0.0",
     "@fluixi/example-props": "0.0.0",
-    "@fluixi/example-load-imports": "0.0.0"
+    "@fluixi/example-load-imports": "0.0.0",
+    "@fluixi/example-cdn-html": "0.0.0",
+    "@fluixi/template-runtime": "0.0.0"
   },
   "changesets": [
     "adapter-bundle-mode",
@@ -86,6 +88,7 @@
     "dom-control-flow-export",
     "dom-innerhtml-static",
     "dom-non-delegated-events",
+    "dom-owns-create-component",
     "dom-setattribute-null-removes",
     "dom-slim-client-runtime",
     "drop-inline-lowering",
@@ -141,6 +144,7 @@
     "jsx-solid-directives",
     "jsx-specific-list-text-refs",
     "jsx-use-and-ir-default",
+    "keep-scoped-core-name",
     "lazy-props-scope-and-uniform",
     "lazy-resource-id-stability",
     "lazy-route-hydration-preload",
@@ -177,6 +181,7 @@
     "props-destructure",
     "provider-lazy-children",
     "reactive-attrs",
+    "reactive-browser-dev-flag",
     "reactive-dom-array-children",
     "reactive-expr-analysis",
     "reactive-intrinsics",
@@ -246,6 +251,7 @@
     "template-cloning",
     "template-offsets-escapes",
     "template-parser-package",
+    "template-runtime",
     "theme-session-primitives",
     "transform-jsx",
     "ts-plugin-elements",

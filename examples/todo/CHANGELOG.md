@@ -1,5 +1,17 @@
 # @fluixi/example-todo
 
+## 0.0.5-alpha.80
+
+### Patch Changes
+
+- Updated dependencies [fa19974]
+- Updated dependencies [4a30116]
+- Updated dependencies [fa19974]
+  - @fluixi/dom@1.0.0-alpha.80
+  - @fluixi/core@1.0.0-alpha.80
+  - @fluixi/reactive@1.0.0-alpha.80
+  - @fluixi/jsx@1.0.0-alpha.80
+
 ## 0.0.5-alpha.79
 
 ### Patch Changes

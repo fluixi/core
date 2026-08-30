@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 0.1.0-alpha.70
+
+### Patch Changes
+
+- 4a30116: The package name remains `@fluixi/core`, and the router subpath is now `@fluixi/core/router` — if you previously tried using `fluixi` or `@fluixi/core/router-next`, update your imports accordingly.
+- Updated dependencies [fa19974]
+- Updated dependencies [4a30116]
+- Updated dependencies [c698a5c]
+  - @fluixi/dom@1.0.0-alpha.80
+  - @fluixi/core@1.0.0-alpha.80
+  - @fluixi/compiler@1.0.0-alpha.80
+  - @fluixi/server@1.0.0-alpha.80
+  - @fluixi/vite-plugin@1.0.0-alpha.80
+  - @fluixi/head@1.0.0-alpha.47
+
 ## 0.1.0-alpha.69
 
 ### Minor Changes
