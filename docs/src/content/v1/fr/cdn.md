@@ -12,10 +12,11 @@ qu'un seul fichier. Les tailles sont minifiées ; le `gzip` est ce qui transite 
 
 | Script | Global | Contenu | Taille |
 | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 3.4 Ko <small>(1.3 Ko gz)</small> |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 29.6 Ko <small>(8.7 Ko gz)</small> |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 52.5 Ko <small>(17.0 Ko gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 75.3 Ko <small>(24.8 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 3.3 Ko <small>(1.3 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 40.8 Ko <small>(12.2 Ko gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 58.1 Ko <small>(18.9 Ko gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 78.5 Ko <small>(25.9 Ko gz)</small> |
+| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | Le framework **+** le compilateur de templates, pour que `` html`` `` fonctionne dans la page | 103.3 Ko <small>(32.9 Ko gz)</small> |
 
 Choisissez le plus petit qui couvre votre besoin : juste la réactivité → `signal` ou `reactive` ;
 une UI réactive → `dom` ; le framework applicatif complet → `core`.
@@ -66,14 +67,17 @@ second fichier.
 <div id="app"></div>
 <script src="https://unpkg.com/@fluixi/dom/dist/cdn/dom.global.js"></script>
 <script>
-  const { render, html, createSignal } = FluixiDOM;
+  const { render, createNativeElement, insert, signal } = FluixiDOM;
 
   function Counter() {
-    const [n, setN] = createSignal(0);
-    return html`<button @click=${() => setN(n() + 1)}>compteur : ${n()}</button>`;
+    const n = signal(0);
+    const button = createNativeElement('button');
+    button.addEventListener('click', () => n.set(n() + 1));
+    insert(button, () => `compteur : ${n()}`);
+    return button;
   }
 
-  render(() => html`<${Counter} />`, document.getElementById('app'));
+  render(() => Counter(), document.getElementById('app'));
 </script>
 ```
 
@@ -87,19 +91,19 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 
 ```html
 <div id="app"></div>
-<script src="https://unpkg.com/fluixi/dist/cdn/core.global.js"></script>
+<script src="https://unpkg.com/@fluixi/core/dist/cdn/core.global.js"></script>
 <script>
-  const { render, html, createSignal, Show } = Fluixi;
+  const { render, insert, createSignal } = Fluixi;
 
-  function App() {
-    const [on, setOn] = createSignal(false);
-    return html`
-      <button @click=${() => setOn(!on())}>basculer</button>
-      <${Show} when=${on}><p>visible</p></${Show}>
-    `;
+  function Counter() {
+    const [n, setN] = createSignal(0);
+    const button = document.createElement('button');
+    button.addEventListener('click', () => setN(n() + 1));
+    insert(button, () => `compteur : ${n()}`);
+    return button;
   }
 
-  render(() => html`<${App} />`, document.getElementById('app'));
+  render(() => Counter(), document.getElementById('app'));
 </script>
 ```
 
@@ -109,9 +113,9 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 
 ## Épinglage de version
 
-`unpkg.com/fluixi@1/…` suit la version majeure ; épinglez une version exacte pour la
-reproductibilité, par ex. `unpkg.com/fluixi@1.0.0-alpha.56/dist/cdn/core.global.js`.
-jsDelivr fonctionne pareil : `cdn.jsdelivr.net/npm/fluixi/dist/cdn/core.global.js`.
+`unpkg.com/@fluixi/core@1/…` suit la version majeure ; épinglez une version exacte pour la
+reproductibilité, par ex. `unpkg.com/@fluixi/core@1.0.0-alpha.79/dist/cdn/core.global.js`.
+jsDelivr fonctionne pareil : `cdn.jsdelivr.net/npm/@fluixi/core/dist/cdn/core.global.js`.
 
 Pour de vraies applications, préférez le chemin compilé (`npm create fluixi`) — le compilateur
 produit une sortie plus petite et tree-shakée que n'importe quel bundle global. Les builds CDN

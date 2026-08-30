@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fluixi from a script tag</title>
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; margin: 3rem auto; max-width: 34rem; }
+      button { font: inherit; padding: 0.2rem 0.7rem; }
+      .row { display: flex; gap: 0.5rem; align-items: center; margin: 0.6rem 0; }
+      .value { font-variant-numeric: tabular-nums; min-width: 2ch; }
+      li { margin: 0.15rem 0; }
+    </style>
+  </head>
+  <body>
+    <h1>No build step</h1>
+    <p>Everything below is compiled in the browser, from <code>html``</code> written in this page.</p>
+    <div id="app"></div>
+
+    <script src="../../packages/template-runtime/dist/cdn/fluixi.global.js"></script>
+    <script>
+      const { html, render, signal, define } = Fluixi;
+
+      function Counter(props) {
+        const count = signal(props.start);
+        return html`
+          <div class="row">
+            <button class="dec" @click=${() => count.set(count() - 1)}>-</button>
+            <span class="value">${count}</span>
+            <button class="inc" @click=${() => count.set(count() + 1)}>+</button>
+          </div>
+        `;
+      }
+
+      define({ Counter });
+
+      function App() {
+        const items = signal(['first', 'second']);
+        const name = signal('world');
+
+        return html`
+          <div>
+            <Counter start=${0} />
+            <div class="row">
+              <label>name <input class="name" bind:value=${name} /></label>
+              <span class="greeting">hello ${name}</span>
+            </div>
+            <ul class="items">
+              <li each=${items}>${(item) => html`<span class="item">${item}</span>`}</li>
+            </ul>
+            <button class="add" @click=${() => items.set([...items(), 'more'])}>add item</button>
+          </div>
+        `;
+      }
+
+      render(() => App(), document.getElementById('app'));
+    </script>
+  </body>
+</html>

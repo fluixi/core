@@ -11,13 +11,14 @@ file. Sizes are minified; `gzip` is what ships over the wire.
 
 | Script | Global | What's in it | Size |
 | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | The raw TC39-Signals core (`State`, `Computed`, `subtle`) | 3.4 KB <small>(1.3 KB gz)</small> |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | Full reactive API (signals, memos, effects, stores, resources) | 29.6 KB <small>(8.7 KB gz)</small> |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | DOM runtime (render, control flow) **+** the reactive API | 52.5 KB <small>(17.0 KB gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 75.3 KB <small>(24.8 KB gz)</small> |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | The raw TC39-Signals core (`State`, `Computed`, `subtle`) | 3.3 KB <small>(1.3 KB gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | Full reactive API (signals, memos, effects, stores, resources) | 40.8 KB <small>(12.2 KB gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | DOM runtime (render, control flow) **+** the reactive API | 58.1 KB <small>(18.9 KB gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 78.5 KB <small>(25.9 KB gz)</small> |
+| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | The framework **+** the template compiler, so `` html`` `` works in the page | 103.3 KB <small>(32.9 KB gz)</small> |
 
 Pick the smallest one that covers what you need: just reactivity → `signal` or `reactive`; a
-reactive UI → `dom`; the full app framework → `core`.
+reactive UI → `dom`; the full app framework → `core`; `` html`` `` in the page → `fluixi`.
 
 ## Reactivity only — `window.Signal`
 
@@ -64,19 +65,19 @@ reactive primitives (dom no longer bundles them itself), so you don't need a sec
 <div id="app"></div>
 <script src="https://unpkg.com/@fluixi/dom/dist/cdn/dom.global.js"></script>
 <script>
-  const { render, html, createSignal } = FluixiDOM;
+  const { render, createNativeElement, insert, signal } = FluixiDOM;
 
   function Counter() {
-    const [n, setN] = createSignal(0);
-    return html`<button @click=${() => setN(n() + 1)}>count: ${n()}</button>`;
+    const n = signal(0);
+    const button = createNativeElement('button');
+    button.addEventListener('click', () => n.set(n() + 1));
+    insert(button, () => `count: ${n()}`);
+    return button;
   }
 
-  render(() => html`<${Counter} />`, document.getElementById('app'));
+  render(() => Counter(), document.getElementById('app'));
 </script>
 ```
-
-Because there's no compiler in a plain-`<script>` page, author markup with the `` html`` `` tag
-(runtime templates) rather than JSX.
 
 ## The whole framework — `window.Fluixi`
 
@@ -85,30 +86,72 @@ Because there's no compiler in a plain-`<script>` page, author markup with the `
 
 ```html
 <div id="app"></div>
-<script src="https://unpkg.com/fluixi/dist/cdn/core.global.js"></script>
+<script src="https://unpkg.com/@fluixi/core/dist/cdn/core.global.js"></script>
 <script>
-  const { render, html, createSignal, Show } = Fluixi;
+  const { render, insert, createSignal } = Fluixi;
 
-  function App() {
-    const [on, setOn] = createSignal(false);
-    return html`
-      <button @click=${() => setOn(!on())}>toggle</button>
-      <${Show} when=${on}><p>visible</p></${Show}>
-    `;
+  function Counter() {
+    const [n, setN] = createSignal(0);
+    const button = document.createElement('button');
+    button.addEventListener('click', () => setN(n() + 1));
+    insert(button, () => `count: ${n()}`);
+    return button;
   }
 
-  render(() => html`<${App} />`, document.getElementById('app'));
+  render(() => Counter(), document.getElementById('app'));
 </script>
 ```
 
-> `reactive.global.js` and `core.global.js` both expose `window.Fluixi` — load **one** of them,
-> not both. `signal.global.js` uses `window.Signal` and can sit alongside either.
+> `reactive.global.js`, `core.global.js` and `fluixi.global.js` all expose `window.Fluixi` — load
+> **one** of them, not several. `signal.global.js` uses `window.Signal` and can sit alongside either.
+
+## Templates in the page — `window.Fluixi`
+
+`` html`` `` needs the full build because the compiler normally replaces the tag at build time;
+`fluixi.global.js` carries the compiler itself, so a page with no build step compiles its
+templates as it renders. The other globals ship the runtime only.
+
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/template-runtime/dist/cdn/fluixi.global.js"></script>
+<script>
+  const { render, html, signal, define, Show } = Fluixi;
+
+  function Counter() {
+    const n = signal(0);
+    return html`<button @click=${() => n.set(n() + 1)}>count: ${n}</button>`;
+  }
+  define({ Counter });
+
+  function App() {
+    const on = signal(false);
+    return html`
+      <div>
+        <Counter />
+        <button @click=${() => on.set(!on())}>toggle</button>
+        <${Show} when=${on}><p>visible</p></${Show}>
+      </div>
+    `;
+  }
+
+  render(() => App(), document.getElementById('app'));
+</script>
+```
+
+A component is reachable as a bare `<Counter />` once it is passed to `define()`, and as
+`` <${Counter} /> `` without registering anything.
+
+Pages that compile elsewhere, or that build nodes through the runtime API directly, use the
+other globals. `dom.global.js` and `core.global.js` are smaller for that reason.
+
+Compiling in the page evaluates the code it emits, so a Content-Security-Policy without
+`unsafe-eval` blocks the full build. The other globals are unaffected.
 
 ## Version pinning
 
-`unpkg.com/fluixi@1/…` follows the major; pin an exact version for reproducibility, e.g.
-`unpkg.com/fluixi@1.0.0-alpha.56/dist/cdn/core.global.js`. jsDelivr works the same:
-`cdn.jsdelivr.net/npm/fluixi/dist/cdn/core.global.js`.
+`unpkg.com/@fluixi/core@1/…` follows the major; pin an exact version for reproducibility, e.g.
+`unpkg.com/@fluixi/core@1.0.0-alpha.79/dist/cdn/core.global.js`. jsDelivr works the same:
+`cdn.jsdelivr.net/npm/@fluixi/core/dist/cdn/core.global.js`.
 
 For real apps, prefer the compiled path (`npm create fluixi`) — the compiler produces smaller,
 tree-shaken output than any single global bundle. The CDN builds are for demos, prototypes,

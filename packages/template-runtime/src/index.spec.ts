@@ -1,0 +1,100 @@
+// @vitest-environment jsdom
+import { describe, it, expect } from 'vitest';
+import { render } from '@fluixi/dom';
+import { signal } from '@fluixi/reactive';
+import { html, define } from './index.js';
+
+function mount(build: () => unknown) {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  render(build as () => never, container);
+  return container;
+}
+
+describe('html`` without a build step', () => {
+  it('builds static markup', () => {
+    const el = mount(() => html`<p class="out">hi</p>`);
+    expect(el.querySelector('.out')?.textContent).toBe('hi');
+  });
+
+  it('inserts a plain value', () => {
+    const el = mount(() => html`<p>${'hello'}</p>`);
+    expect(el.textContent).toBe('hello');
+  });
+
+  it('tracks a signal in text position', () => {
+    const count = signal(0);
+    const el = mount(() => html`<span>${count}</span>`);
+    expect(el.textContent).toBe('0');
+    count.set(1);
+    expect(el.textContent).toBe('1');
+  });
+
+  it('tracks a signal in an attribute', () => {
+    const cls = signal('one');
+    const el = mount(() => html`<p class=${cls}>x</p>`);
+    expect(el.querySelector('p')?.getAttribute('class')).toBe('one');
+    cls.set('two');
+    expect(el.querySelector('p')?.getAttribute('class')).toBe('two');
+  });
+
+  it('passes an event handler without calling it', () => {
+    let fired = 0;
+    const el = mount(() => html`<button @click=${() => (fired += 1)}>go</button>`);
+    expect(fired).toBe(0);
+    el.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(fired).toBe(1);
+  });
+
+  it('renders a component passed as a hole', () => {
+    const Label = (props: { text: string }) => html`<i>${props.text}</i>`;
+    const el = mount(() => html`<${Label} text="hi" />`);
+    expect(el.querySelector('i')?.textContent).toBe('hi');
+  });
+
+  it('compiles a call site once', () => {
+    const one = signal('a');
+    const build = () => html`<p>${one}</p>`;
+    const first = mount(build);
+    const second = mount(build);
+    expect(first.textContent).toBe('a');
+    expect(second.textContent).toBe('a');
+    one.set('b');
+    expect(first.textContent).toBe('b');
+    expect(second.textContent).toBe('b');
+  });
+
+  it('reports a template it cannot parse', () => {
+    expect(() => mount(() => html`<p>`)).toThrow(/Unclosed/);
+  });
+});
+
+describe('bare component tags', () => {
+  const Label = (props: { text: string }) => html`<i class="lbl">${props.text}</i>`;
+
+  it('resolves a registered component', () => {
+    define({ Label });
+    const el = mount(() => html`<div><Label text="hi" /></div>`);
+    expect(el.querySelector('.lbl')?.textContent).toBe('hi');
+  });
+
+  it('names the component it cannot find', () => {
+    expect(() => mount(() => html`<div><Missing /></div>`)).toThrow(/<Missing> is not defined/);
+  });
+});
+
+describe('bind:', () => {
+  it('reads and writes through the signal', () => {
+    const name = signal('one');
+    const el = mount(() => html`<input class="bound" bind:value=${name} />`);
+    const input = el.querySelector('.bound') as HTMLInputElement;
+    expect(input.value).toBe('one');
+
+    name.set('two');
+    expect(input.value).toBe('two');
+
+    input.value = 'typed';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(name()).toBe('typed');
+  });
+});

@@ -15,6 +15,7 @@ import { resolveComponentSources } from '../resolve/resolve-ir.js';
 import { createComponentResolver, type ComponentResolverRule } from '../resolve/component-resolver.js';
 import type { IRNode } from '../ir/nodes.js';
 import { lowerTemplate, type TemplateHole } from './template.js';
+export type { TemplateHole };
 import type { Piece } from '@fluixi/template-parser';
 import type { StaticTemplate } from '../codegen/backend.js';
 
