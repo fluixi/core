@@ -1,5 +1,24 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.80
+
+### Patch Changes
+
+- fa19974: A list no longer rebuilds every node when it changes, as the runtime now creates components itself instead of waiting for `@fluixi/core` to provide a way to create them.
+- 4a30116: The package name remains `@fluixi/core`, and the router subpath is now `@fluixi/core/router` — if you previously tried using `fluixi` or `@fluixi/core/router-next`, update your imports accordingly.
+- Updated dependencies [fa19974]
+- Updated dependencies [4a30116]
+- Updated dependencies [fa19974]
+- Updated dependencies [c698a5c]
+  - @fluixi/dom@1.0.0-alpha.80
+  - @fluixi/compiler@1.0.0-alpha.80
+  - @fluixi/reactive@1.0.0-alpha.80
+  - @fluixi/jsx@1.0.0-alpha.80
+  - @fluixi/server@1.0.0-alpha.80
+  - @fluixi/vite-plugin@1.0.0-alpha.80
+  - @fluixi/head@1.0.0-alpha.47
+  - @fluixi/utils@1.0.0-alpha.80
+
 ## 1.0.0-alpha.79
 
 ### Minor Changes

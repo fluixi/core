@@ -1,5 +1,13 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.80
+
+### Patch Changes
+
+- fa19974: A list no longer rebuilds every node when it changes, as the runtime now creates components itself instead of waiting for `@fluixi/core` to provide a way to create them.
+- Updated dependencies [fa19974]
+  - @fluixi/reactive@1.0.0-alpha.80
+
 ## 1.0.0-alpha.79
 
 ### Patch Changes

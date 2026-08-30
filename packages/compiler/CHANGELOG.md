@@ -1,5 +1,15 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.80
+
+### Minor Changes
+
+- c698a5c: The new `@fluixi/template-runtime` package compiles `html` and `svg` templates in the browser, with no build step, and `@fluixi/compiler` now includes a `./compile` subpath that excludes node-specific dependencies.
+
+### Patch Changes
+
+- 4a30116: The package name remains `@fluixi/core`, and the router subpath is now `@fluixi/core/router` — if you previously tried using `fluixi` or `@fluixi/core/router-next`, update your imports accordingly.
+
 ## 1.0.0-alpha.79
 
 ### Minor Changes
