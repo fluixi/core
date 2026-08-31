@@ -239,6 +239,17 @@ function tryRequire(moduleName: string): any {
 // ============================================================================
 
 /**
+ * Subpaths that used to exist, and what to write instead. A rename is cheap to
+ * follow once you know it happened; the cost is finding out.
+ */
+const RETIRED_SUBPATHS: Record<string, string> = {
+  '@fluixi/core/router-next': 'is now @fluixi/core/router',
+  '@fluixi/core/rx':
+    'is gone — import signals and effects from @fluixi/reactive, or the server ' +
+    'primitives it resolved to under node from @fluixi/core/server',
+};
+
+/**
  * Create a Vite plugin for JSX transformation
  */
 export function createVitePlugin<T>(options: CompilerOptions = {}): T {
@@ -261,6 +272,17 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     configResolved(config: { root?: string }) {
       const outcome = writeComponentGlobals(options, config?.root ?? process.cwd());
       if (outcome.warning) console.warn(outcome.warning);
+    },
+
+    // A subpath we retired resolves to nothing, and the bundler reports that as
+    // `Missing "./x" specifier`, which names neither the replacement nor the file
+    // that asked. Answer it here, where the rename is known.
+    resolveId(id: string, importer?: string) {
+      const moved = RETIRED_SUBPATHS[id];
+      if (!moved) return null;
+      throw new Error(
+        `[fluixi] ${id} ${moved}` + (importer ? `\n  imported by ${importer}` : ''),
+      );
     },
 
     async transform(code: string, id: string) {
