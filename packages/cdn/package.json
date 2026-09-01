@@ -1,0 +1,34 @@
+{
+  "name": "@fluixi/cdn",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": false,
+  "description": "pre-generated import maps for loading the framework from a CDN: the minimum for writing components by hand, the addition that compiles html`` in the page, and everything",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./min.json": "./dist/min.json",
+    "./templates.json": "./dist/templates.json",
+    "./full.json": "./dist/full.json"
+  },
+  "scripts": {
+    "build": "node scripts/build-maps.mjs"
+  },
+  "devDependencies": {
+    "@fluixi/template-runtime": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/cdn"
+  }
+}
