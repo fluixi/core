@@ -38,11 +38,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      # A "Version Packages" push is manifests and changelogs — the code in it was
+      # tested on the PR that produced it, and again when that PR merged. Read the
+      # diff rather than the commit message, so a hand-edited version PR still runs.
+      - name: Is there code in this push
+        id: scope
+        run: |
+          if git diff --name-only HEAD^ HEAD \
+             | grep -qvE '(^|/)package\.json$|(^|/)CHANGELOG\.md$|^\.changeset/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Gate skipped::versions and changelogs only"
+          fi
+
       - uses: pnpm/action-setup@v4
+        if: steps.scope.outputs.code == 'true'
         with:
           version: 10
 
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.code == 'true'
         with:
           node-version: 22
           cache: pnpm
@@ -53,6 +69,7 @@ jobs:
       # committed project .npmrc, so credentials must come from a trusted source.
       # GitHub Packages (@bambiste) install + npm (@fluixi) publish.
       - name: Configure registry auth
+        if: steps.scope.outputs.code == 'true'
         run: |
           {
             echo "//npm.pkg.github.com/:_authToken=${GH_PKG_TOKEN}"
@@ -63,11 +80,13 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install dependencies
+        if: steps.scope.outputs.code == 'true'
         run: pnpm install --frozen-lockfile
 
       # Build the publishable packages topologically. Each lib's build runs
       # `tsc` for its typings, so a successful build is also the typecheck gate.
       - name: Build packages
+        if: steps.scope.outputs.code == 'true'
         run: pnpm run build
         env:
           NODE_ENV: production
@@ -80,6 +99,7 @@ jobs:
       # Exclusion: @fluixi/cli has a `test` script but no test files, so
       # `vitest run` exits 1 ("no test files"). Re-include once it has tests.
       - name: Test
+        if: steps.scope.outputs.code == 'true'
         run: pnpm -r --filter "./packages/*" --filter "!@fluixi/cli" test
 
   release:
@@ -88,12 +108,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # `secrets.X || secrets.Y` falls back only when X is EMPTY, so an expired PAT
+      # is still chosen and checkout dies on `could not read Username`, three retries
+      # deep, before anything about the release has run. Ask the API instead.
+      - name: Check the release token
+        id: token
+        run: |
+          if [ -n "${{ secrets.PACKAGES_TOKEN }}" ] && curl -sf -o /dev/null \
+              -H "Authorization: Bearer ${{ secrets.PACKAGES_TOKEN }}" \
+              https://api.github.com/user; then
+            echo "pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pat=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=PACKAGES_TOKEN unusable::Falling back to GITHUB_TOKEN. Rotate the PAT."
+          fi
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           # PAT so the changeset-release branch is pushed as a real user,
           # which lets the PR be created even when the org blocks Actions from it.
-          token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.token.outputs.pat == 'true' && secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -146,7 +181,7 @@ jobs:
           # GITHUB_TOKEN: git ops + opening the "Version Packages" PR. PACKAGES_TOKEN
           # (real-user PAT) lets the PR be created even when the org disables
           # "Allow GitHub Actions to create and approve PRs"; falls back to GITHUB_TOKEN.
-          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.token.outputs.pat == 'true' && secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
           # NODE_AUTH_TOKEN: reads @bambiste (GitHub Packages) during the build.
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
           # NPM_TOKEN: publishes @fluixi/* + create-fluixi to public npm (repo .npmrc).
