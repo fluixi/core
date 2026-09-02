@@ -1,5 +1,17 @@
 # @fluixi/start
 
+## 0.1.0-alpha.71
+
+### Patch Changes
+
+- Updated dependencies [231a169]
+  - @fluixi/compiler@1.0.0-alpha.81
+  - @fluixi/core@1.0.0-alpha.81
+  - @fluixi/vite-plugin@1.0.0-alpha.81
+  - @fluixi/dom@1.0.0-alpha.81
+  - @fluixi/head@1.0.0-alpha.48
+  - @fluixi/server@1.0.0-alpha.81
+
 ## 0.1.0-alpha.70
 
 ### Patch Changes

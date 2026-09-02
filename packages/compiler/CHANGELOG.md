@@ -1,5 +1,11 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.81
+
+### Patch Changes
+
+- 231a169: Importing a retired subpath now fails the build with the name of the replacement and the file that imported it, rather than the bundler reporting a missing specifier.
+
 ## 1.0.0-alpha.80
 
 ### Minor Changes
