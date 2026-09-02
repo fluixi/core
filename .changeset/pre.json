@@ -36,7 +36,8 @@
     "@fluixi/example-props": "0.0.0",
     "@fluixi/example-load-imports": "0.0.0",
     "@fluixi/example-cdn-html": "0.0.0",
-    "@fluixi/template-runtime": "0.0.0"
+    "@fluixi/template-runtime": "0.0.0",
+    "@fluixi/cdn": "0.0.0"
   },
   "changesets": [
     "adapter-bundle-mode",
@@ -48,6 +49,7 @@
     "babel-optional-peer",
     "branch-ownership",
     "builtin-components-as-data",
+    "cdn-package",
     "cf-routes-prerendered",
     "cli-generate-html",
     "cli-generate",
@@ -200,6 +202,7 @@
     "resource-data-transport",
     "resource-detection-markers",
     "retire-old-router",
+    "retired-subpath-diagnostic",
     "route-preload",
     "router-auto-import",
     "router-not-found",

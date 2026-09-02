@@ -1,5 +1,13 @@
 # @fluixi/server
 
+## 1.0.0-alpha.81
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.81
+- @fluixi/dom@1.0.0-alpha.81
+- @fluixi/head@1.0.0-alpha.48
+
 ## 1.0.0-alpha.80
 
 ### Patch Changes
