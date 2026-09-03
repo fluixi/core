@@ -1,0 +1,99 @@
+/*
+ * One palette for both sites; they are separate apps and each carried its own copy.
+ *
+ * Dark value first, then a `light-dark()` pair — a browser without `light-dark()`
+ * ignores the second declaration and keeps the dark theme. Which side applies
+ * follows `color-scheme`, which tracks the OS until `data-theme` pins it.
+ *
+ * Near-monochrome by intent: the brand green marks the current nav item, the focus
+ * ring and strings in code, and nothing else. Links are underlined, not coloured.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Grounds */
+  --bg: #0a0a0a;
+  --bg: light-dark(#ffffff, #0a0a0a);
+  --bg-head: #0a0a0acc;
+  --bg-head: light-dark(#ffffffcc, #0a0a0acc);
+  --panel: #111111;
+  --panel: light-dark(#fafafa, #111111);
+  --panel-2: #161616;
+  --panel-2: light-dark(#f4f4f5, #161616);
+  --line: #1f1f1f;
+  --line: light-dark(#e6e6e6, #1f1f1f);
+  --line-strong: #2e2e2e;
+  --line-strong: light-dark(#d4d4d4, #2e2e2e);
+
+  /* Headings take --text, running copy the slightly softer --prose. */
+  --text: #ededed;
+  --text: light-dark(#171717, #ededed);
+  --prose: #c9c9c9;
+  --prose: light-dark(#3f3f46, #c9c9c9);
+  --muted: #8f8f8f;
+  --muted: light-dark(#666666, #8f8f8f);
+  --marker: #5c5c5c;
+  --marker: light-dark(#a1a1aa, #5c5c5c);
+
+  /* Washes */
+  --hover: #ffffff08;
+  --hover: light-dark(#17171708, #ffffff08);
+  --row-alt: #ffffff05;
+  --row-alt: light-dark(#1717170a, #ffffff05);
+  --scrim: #000000b3;
+  --scrim: light-dark(#17171799, #000000b3);
+  --shadow: #000000a6;
+  --shadow: light-dark(#17171726, #000000a6);
+
+  /* The logo green. #3ddbc8 is 1.7:1 on white, so the light side keeps the hue
+     and walks lightness down until it passes AA. */
+  --accent: #3ddbc8;
+  --accent: light-dark(#0f7c6d, #3ddbc8);
+  --accent-soft: #3ddbc814;
+  --accent-soft: light-dark(#0f7c6d12, #3ddbc814);
+  --accent-line: #3ddbc840;
+  --accent-line: light-dark(#0f7c6d55, #3ddbc840);
+
+  /* Code surface, kept near the page ground. */
+  --code-bg: #0f0f0f;
+  --code-bg: light-dark(#fafafa, #0f0f0f);
+  --code-bar: #141414;
+  --code-bar: light-dark(#f4f4f5, #141414);
+  --code-line: #232323;
+  --code-line: light-dark(#e6e6e6, #232323);
+  --code-text: #d4d4d4;
+  --code-text: light-dark(#24292f, #d4d4d4);
+
+  /* Syntax: low saturation, few hues. Strings take the brand green. */
+  --hl-comment: #7d8590;
+  --hl-comment: light-dark(#6e7781, #7d8590);
+  --hl-keyword: #a371f7;
+  --hl-keyword: light-dark(#8250df, #a371f7);
+  --hl-string: #3ddbc8;
+  --hl-string: light-dark(#0a7d70, #3ddbc8);
+  --hl-number: #ffa657;
+  --hl-number: light-dark(#953800, #ffa657);
+  --hl-title: #79c0ff;
+  --hl-title: light-dark(#0550ae, #79c0ff);
+  --hl-class: #ffa657;
+  --hl-class: light-dark(#953800, #ffa657);
+  --hl-tag: #7ee787;
+  --hl-tag: light-dark(#116329, #7ee787);
+  --hl-deletion: #ff7b72;
+  --hl-deletion: light-dark(#cf222e, #ff7b72);
+  --hl-addition: #7ee787;
+  --hl-addition: light-dark(#116329, #7ee787);
+
+  /* Type */
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  /* Three corner values, so nothing invents a fourth. */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+}
+
+/* An explicit choice pins `color-scheme`, which `light-dark()` resolves against. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }

@@ -11,16 +11,24 @@ const TITLE = 'Fluixi — your JSX becomes DOM calls';
 const DESC =
   'Fluixi compiles components into imperative DOM calls — no virtual DOM, no diffing, no re-renders. Fine-grained reactivity on a TC39-Signals core, with SSR, streaming, SSG, file routing, server functions, DI and i18n.';
 
-const FEATURES: { glyph: string; title: string; body: string; tone: string }[] = [
-  { glyph: '◆', tone: 'state', title: 'Fine-grained reactivity', body: 'A TC39-Signals graph updates exactly the DOM that changed — no virtual DOM, no diffing, no re-renders.' },
-  { glyph: 'ƒ', tone: 'memo', title: 'Compiled, not interpreted', body: 'JSX compiles straight to imperative DOM calls. You ship the work, not a runtime that re-discovers it.' },
-  { glyph: '⚡', tone: 'effect', title: 'SSR + streaming', body: 'Request-scoped server rendering with web-stream output and seamless hydration — isolated per request.' },
-  { glyph: '▤', tone: 'store', title: 'Static generation', body: 'Set `prerender` and `fluixi build` crawls your routes to static HTML — this very page is SSG.' },
-  { glyph: '⟂', tone: 'state', title: 'File-based routing', body: 'Routes from the filesystem, nested layouts, lazy loading, data loaders — with a framework-agnostic core.' },
-  { glyph: '⇄', tone: 'memo', title: 'Server functions & actions', body: '`"use server"` turns a function into a typed RPC; forms get progressive-enhancement actions.' },
-  { glyph: '◇', tone: 'effect', title: 'API routes & middleware', body: 'Drop a handler in `src/api/**` for `/api/*`; a middleware chain runs before every render.' },
-  { glyph: '✦', tone: 'store', title: 'DI, i18n, interceptors', body: 'Angular-style dependency injection, built-in typed i18n, and an HTTP interceptor pipeline.' },
-  { glyph: '◐', tone: 'state', title: 'Islands & edge', body: 'Partial hydration for mostly-static pages, and an edge-safe server that runs on Workers, Deno and Bun.' },
+const FEATURES: { title: string; body: string }[] = [
+  { title: 'Fine-grained reactivity', body: 'A TC39-Signals graph updates exactly the DOM that changed — no virtual DOM, no diffing, no re-renders.' },
+  { title: 'Compiled, not interpreted', body: 'JSX compiles straight to imperative DOM calls. You ship the work, not a runtime that re-discovers it.' },
+  { title: 'SSR + streaming', body: 'Request-scoped server rendering with web-stream output and seamless hydration — isolated per request.' },
+  { title: 'Static generation', body: 'Set `prerender` and `fluixi build` crawls your routes to static HTML — this very page is SSG.' },
+  { title: 'File-based routing', body: 'Routes from the filesystem, nested layouts, lazy loading, data loaders — with a framework-agnostic core.' },
+  { title: 'Server functions & actions', body: '`"use server"` turns a function into a typed RPC; forms get progressive-enhancement actions.' },
+  { title: 'API routes & middleware', body: 'Drop a handler in `src/api/**` for `/api/*`; a middleware chain runs before every render.' },
+  { title: 'DI, i18n, interceptors', body: 'Angular-style dependency injection, built-in typed i18n, and an HTTP interceptor pipeline.' },
+  { title: 'Islands & edge', body: 'Partial hydration for mostly-static pages, and an edge-safe server that runs on Workers, Deno and Bun.' },
+];
+
+// Sizes are the minified+gzipped globals @fluixi/cdn publishes; regenerate them here if
+// the bundles move, since a stale number on the front page is worse than none.
+const STATS: { value: string; label: string }[] = [
+  { value: '25.9 KB', label: 'The whole framework, gzipped — reactivity, components, router and all.' },
+  { value: 'Zero', label: 'Virtual DOM nodes. The compiler emits the DOM calls directly.' },
+  { value: 'TC39', label: 'Signals, the standards-track proposal, as the reactive core.' },
 ];
 
 /**
@@ -48,22 +56,24 @@ function toggleTheme(): void {
 function Nav() {
   return (
     <nav class="nav">
-      <a class="brand" href="/">
-        <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> Fluixi
-      </a>
-      <div class="nav-links">
-        <a href={DOCS_URL}>Docs</a>
-        <a href={PLAYGROUND_URL}>Playground</a>
-        <a href={GITHUB_URL}>GitHub</a>
-        <button
-          type="button"
-          class="theme-toggle"
-          aria-label="Switch theme"
-          title="Switch theme"
-          onClick={toggleTheme}
-        >
-          ◐
-        </button>
+      <div class="nav-inner">
+        <a class="brand" href="/">
+          <img class="logo" src="/logos/mark.png" alt="" width="21" height="21" /> Fluixi
+        </a>
+        <div class="nav-links">
+          <a href={DOCS_URL}>Docs</a>
+          <a href={PLAYGROUND_URL}>Playground</a>
+          <a href={GITHUB_URL}>GitHub</a>
+          <button
+            type="button"
+            class="theme-toggle"
+            aria-label="Switch theme"
+            title="Switch theme"
+            onClick={toggleTheme}
+          >
+            ◐
+          </button>
+        </div>
       </div>
     </nav>
   );
@@ -222,7 +232,7 @@ function Hero() {
         <h1>
           The compiler knows
           <br />
-          <span class="grad">what's reactive.</span>
+          <span class="quiet">what's reactive.</span>
         </h1>
         <p class="lede">
           Every reactive framework asks you to remember which reads are tracked and what you
@@ -273,10 +283,10 @@ function Hero() {
 
 function Why() {
   return (
-    <section class="split" id="why">
+    <section class="section split" id="why">
       <div class="split-copy">
         <h2>
-          Ordinary TypeScript, <span class="grad">still reactive.</span>
+          Ordinary TypeScript, still reactive.
         </h2>
         <p>
           The compiler resolves a reactive value by the binding it came from, never by how the
@@ -291,9 +301,6 @@ function Why() {
       </div>
       <div class="code-window">
         <div class="code-bar">
-          <span class="dot" />
-          <span class="dot" />
-          <span class="dot" />
           <span class="code-name">Card.tsx</span>
         </div>
         <pre class="code" innerHTML={highlight(WHY_CODE)} />
@@ -302,17 +309,32 @@ function Why() {
   );
 }
 
+function Stats() {
+  return (
+    <section class="stats" aria-label="At a glance">
+      <div class="stats-inner">
+        {STATS.map((s) => (
+          <div class="stat">
+            <b>{s.value}</b>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Features() {
   return (
-    <section class="features" id="features">
+    <section class="section" id="features">
       <div class="section-head">
+        <p class="kicker">The rest of it</p>
         <h2>Everything a modern app needs</h2>
         <p>One framework, from the signal graph to the edge.</p>
       </div>
-      <div class="grid">
+      <div class="spec-list">
         {FEATURES.map((f) => (
-          <div class="card">
-            <span class={`card-glyph t-${f.tone}`}>{f.glyph}</span>
+          <div class="spec">
             <h3>{f.title}</h3>
             <p>{f.body}</p>
           </div>
@@ -324,10 +346,10 @@ function Features() {
 
 function ServerSection() {
   return (
-    <section class="split">
+    <section class="section split">
       <div class="split-copy">
         <h2>
-          The server is just <span class="grad">a function away.</span>
+          The server is just a function away.
         </h2>
         <p>
           Mark a function <code>"use server"</code> and the compiler strips its body from the browser, leaving a
@@ -341,9 +363,6 @@ function ServerSection() {
       </div>
       <div class="code-window">
         <div class="code-bar">
-          <span class="dot" />
-          <span class="dot" />
-          <span class="dot" />
           <span class="code-name">user.ts</span>
         </div>
         <pre class="code" innerHTML={highlight(SERVER_CODE)} />
@@ -354,10 +373,10 @@ function ServerSection() {
 
 function GetStarted() {
   return (
-    <section class="split" id="get-started">
+    <section class="section split flip" id="get-started">
       <div class="split-copy">
         <h2>
-          Start in seconds — <span class="grad">JSX or html``.</span>
+          Start in seconds — JSX or html``.
         </h2>
         <p>
           One command scaffolds an SPA or an SSR app, in JSX or JSX-free <code>{'html``'}</code> templates.
@@ -380,9 +399,6 @@ function GetStarted() {
       </div>
       <div class="code-window">
         <div class="code-bar">
-          <span class="dot" />
-          <span class="dot" />
-          <span class="dot" />
           <span class="code-name">Counter.ts</span>
         </div>
         <pre class="code" innerHTML={highlight(HTML_CODE)} />
@@ -395,11 +411,13 @@ function PlaygroundCallout() {
   return (
     <section class="callout">
       <div class="callout-inner">
-        <h2>See your reactivity.</h2>
-        <p>
-          The Fluixi Playground compiles JSX in your browser and renders the live dependency graph — watch state,
-          memos, stores and effects light up as they propagate.
-        </p>
+        <div>
+          <h2>See your reactivity.</h2>
+          <p>
+            The Fluixi Playground compiles JSX in your browser and renders the live dependency graph — watch state,
+            memos, stores and effects light up as they propagate.
+          </p>
+        </div>
         <a class="btn primary" href={PLAYGROUND_URL}>
           Try the Playground →
         </a>
@@ -411,6 +429,7 @@ function PlaygroundCallout() {
 function Footer() {
   return (
     <footer class="footer">
+      <div class="footer-inner">
       <div class="foot-brand">
         <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> Fluixi
       </div>
@@ -426,6 +445,7 @@ function Footer() {
         </div>
       </div>
       <div class="foot-note">Built with Fluixi · prerendered to static HTML</div>
+      </div>
     </footer>
   );
 }
@@ -469,6 +489,7 @@ export default function Home() {
       <Nav />
       <main id="main" tabindex={-1}>
       <Hero />
+      <Stats />
       <Why />
       <Features />
       <GetStarted />

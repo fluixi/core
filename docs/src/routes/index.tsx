@@ -10,9 +10,9 @@ export default function Index() {
     if (typeof location !== 'undefined') location.replace(TARGET);
   });
   return (
-    <div style="min-height:100vh;display:grid;place-items:center;background:#07080d;color:#8b91a4;font-family:system-ui">
+    <div class="redirect">
       <p>
-        Redirecting to <a href={TARGET} style="color:#5eead4">the documentation</a>…
+        Redirecting to <a href={TARGET}>the documentation</a>…
       </p>
     </div>
   );

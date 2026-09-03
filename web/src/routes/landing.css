@@ -1,174 +1,217 @@
-/*
- * Palette. Dark value first, then a `light-dark()` pair — a browser without light-dark()
- * ignores the pair and keeps the dark theme this site always had, so nothing regresses.
- * Same approach as the docs, so the two sites stay in step.
- *
- * The primitive hues (state/memo/store/effect) keep their identity on both grounds; only
- * their lightness moves, since teal and amber on white read as mid-grey otherwise.
- */
-:root {
-  color-scheme: light dark;
+@import '../../../assets/theme.css';
 
-  --bg: #07080d;
-  --bg: light-dark(#ffffff, #07080d);
-  --panel: #0f111a;
-  --panel: light-dark(#f6f8fb, #0f111a);
-  --panel-2: #141826;
-  --panel-2: light-dark(#eef2f7, #141826);
-  --line-1: #1d2230;
-  --line-1: light-dark(#e0e5ee, #1d2230);
-  --text: #e9ebf1;
-  --text: light-dark(#0f1219, #e9ebf1);
-  --muted: #8b91a4;
-  --muted: light-dark(#5b6478, #8b91a4);
-
-  /* Brand palette, taken from the logo: Turquoise #36E2DB, Pearl Aqua #72E1DB,
-     Ocean Mist #2DC4B3, Lime #00FF00. Those are the DARK-theme values — measured at
-     9–14:1 on this ground. None of them is legible as text on white (Lime is 1.37:1,
-     Turquoise 1.61:1), so the light side uses the same hue and saturation walked down
-     in lightness until it passes AA. Hue is preserved to within a degree, so it is the
-     same colour, not a different one. */
-  --accent: #36e2db;
-  --accent: light-dark(#13837f, #36e2db);
-  --brand-aqua: #72e1db;
-  --brand-aqua: light-dark(#1c847f, #72e1db);
-  --brand-mist: #2dc4b3;
-  --brand-mist: light-dark(#1e8377, #2dc4b3);
-  --brand-lime: #00ff00;
-  --brand-lime: light-dark(#008a00, #00ff00);
-  --state: #34d399;
-  --state: light-dark(#047857, #34d399);
-  --memo: #a78bfa;
-  --memo: light-dark(#7c3aed, #a78bfa);
-  --store: #38bdf8;
-  --store: light-dark(#0369a1, #38bdf8);
-  --effect: #fbbf24;
-  --effect: light-dark(#b45309, #fbbf24);
-
-  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
-  --maxw: 1120px;
-}
-
-/* An explicit choice pins `color-scheme`; every token above resolves against it. */
-:root[data-theme="light"] { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
+:root { --maxw: 1080px; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
 a { color: inherit; text-decoration: none; }
 
-.page {
-  background:
-    radial-gradient(900px 480px at 78% -8%, light-dark(#13837f0f, #16384733), transparent),
-    radial-gradient(800px 460px at -6% 18%, light-dark(#7c3aed0d, #2a154833), transparent);
-}
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
 
 /* nav */
 .nav {
   position: sticky; top: 0; z-index: 50;
-  display: flex; align-items: center; justify-content: space-between;
-  max-width: var(--maxw); margin: 0 auto; padding: 18px 24px;
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-head); backdrop-filter: blur(12px);
 }
-.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; letter-spacing: .2px; }
-.logo { width: 22px; height: 22px; flex: none; }
-.nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--muted); }
-.nav-links a:hover { color: var(--text); }
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: var(--maxw); margin: 0 auto; padding: 0 24px; height: 58px;
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; letter-spacing: -.015em; }
+.logo { width: 21px; height: 21px; flex: none; }
+.nav-links { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); }
+.nav-links a { padding: 6px 10px; border-radius: var(--r-sm); }
+.nav-links a:hover { color: var(--text); background: var(--hover); }
+.theme-toggle {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  margin-left: 4px; font-size: 14px; line-height: 1; cursor: pointer; color: var(--muted);
+  background: transparent; border: 1px solid var(--line); border-radius: var(--r-md);
+  transition: color .15s, border-color .15s;
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--line-strong); }
 
 /* hero */
 .hero {
-  max-width: var(--maxw); margin: 0 auto; padding: 70px 24px 80px;
-  display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center;
+  max-width: var(--maxw); margin: 0 auto; padding: 76px 24px 64px;
+  display: grid; grid-template-columns: 1.02fr .98fr; gap: 52px; align-items: center;
 }
-.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
-.hero h1 { margin: 0; font-size: 58px; line-height: 1.04; letter-spacing: -1.5px; font-weight: 800; }
-.grad { background: linear-gradient(96deg, var(--accent), var(--brand-aqua) 45%, var(--brand-lime)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.lede { margin: 22px 0 28px; font-size: 18px; line-height: 1.6; color: var(--muted); max-width: 30em; }
-.cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
-.btn { display: inline-flex; align-items: center; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: transform .06s, filter .15s, border-color .15s, background .15s; }
+/* A grid item's default min-width is auto, so the `pre` inside (white-space: pre,
+   sized to its longest line) refuses to shrink below its own content and forces
+   the track — and the page — wider than the viewport. */
+.hero-code { min-width: 0; }
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 20px;
+}
+/* Scales with the column, so "The compiler knows" stays on one line instead of
+   breaking after two words. */
+.hero h1 { margin: 0; font-size: clamp(33px, 3.6vw, 47px); line-height: 1.08; letter-spacing: -.03em; font-weight: 700; }
+.hero h1 .quiet { color: var(--muted); font-weight: 700; }
+.lede { margin: 22px 0 28px; font-size: 17px; line-height: 1.65; color: var(--prose); max-width: 32em; }
+.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.btn {
+  display: inline-flex; align-items: center; border-radius: var(--r-md);
+  padding: 10px 17px; font-size: 14px; font-weight: 500; cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .06s, border-color .15s, background .15s, color .15s;
+}
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: linear-gradient(180deg, #36e2db, #2dc4b3); color: #04221f; border: 0; }
-.btn.primary:hover { filter: brightness(1.07); }
-.btn.ghost { background: transparent; color: var(--text); border: 1px solid light-dark(#d3d9e4, #2b3142); }
-.btn.ghost:hover { border-color: light-dark(#b9c2d2, #3c465f); background: light-dark(#0f121908, #ffffff08); }
+/* Solid ink, which reads as the one primary action without a gradient doing it. */
+.btn.primary { background: var(--text); color: var(--bg); }
+.btn.primary:hover { opacity: .88; }
+.btn.ghost { color: var(--text); border-color: var(--line-strong); }
+.btn.ghost:hover { background: var(--hover); }
 
 .install {
   display: inline-flex; align-items: center; gap: 10px;
-  background: var(--code-bg); border: 1px solid var(--code-line); border-radius: 10px;
-  padding: 11px 12px 11px 16px; font-family: var(--mono); font-size: 13.5px;
+  background: var(--code-bg); border: 1px solid var(--code-line); border-radius: var(--r-md);
+  padding: 9px 10px 9px 14px; font-family: var(--mono); font-size: 13px;
 }
-/* The install strip and the code window are terminal surfaces: they stay dark in both
-   themes, which is conventional and keeps one highlighting palette. That means their text
-   must NOT use --text, which flips to near-black in light mode and would have been dark on
-   dark. Pin the dark-theme values here. */
-.install .prompt { color: var(--accent); }
-.install code { color: var(--text); }
-.install .copy { margin-left: 6px; background: light-dark(#e7ecf4, #181d2b); border: 1px solid light-dark(#dbe1eb, #232a3a); color: var(--muted); border-radius: 7px; padding: 4px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; }
-.install .copy:hover { color: var(--text); border-color: light-dark(#b9c2d2, #36405a); }
+.install .prompt { color: var(--muted); }
+.install code { color: var(--code-text); }
+.install .copy {
+  margin-left: 4px; background: transparent; border: 1px solid var(--code-line);
+  color: var(--muted); border-radius: var(--r-sm); padding: 3px 9px;
+  font-size: 11.5px; font-family: var(--mono); cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.install .copy:hover { color: var(--text); border-color: var(--line-strong); }
 
 /* code window */
-.code-window { background: var(--code-bg); border: 1px solid var(--code-line); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -30px light-dark(#0f121926, #000); }
-.code-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--code-line); background: var(--code-bar); }
-.dot { width: 11px; height: 11px; border-radius: 50%; background: light-dark(#cfd6e2, #2a3043); }
-.dot:nth-child(1) { background: #f87171; } .dot:nth-child(2) { background: #fbbf24; } .dot:nth-child(3) { background: #34d399; }
-.code-name { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
-.code { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13px; line-height: 1.65; color: var(--code-fg); white-space: pre; overflow-x: auto; }
+.code-window {
+  background: var(--code-bg); border: 1px solid var(--code-line);
+  border-radius: var(--r-lg); overflow: hidden;
+}
+.code-bar {
+  display: flex; align-items: flex-end; gap: 3px; flex-wrap: wrap;
+  padding: 9px 12px 0; border-bottom: 1px solid var(--code-line); background: var(--code-bar);
+}
+.code-name { margin-left: auto; padding-bottom: 9px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.code { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--code-text); white-space: pre; overflow-x: auto; }
 /* The hero panels differ in length — 8, 9 and 17 lines — so switching tabs would resize
-   the window and shove the page around. Reserve the tallest panel's height once, in `em`
-   so it tracks the font size and line-height rather than a magic pixel number.
-   17 lines x 1.65 line-height, plus the 18px padding top and bottom. */
-.hero-code .code { min-height: calc(17 * 1.65em + 36px); }
+   the window and shove the page around. Reserve the tallest once, in `em` so it tracks
+   the font size rather than a magic pixel number. */
+.hero-code .code { min-height: calc(17 * 1.7em + 36px); }
+.code-tab {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.6;
+  padding: 6px 11px; border-radius: var(--r-sm) var(--r-sm) 0 0; cursor: pointer;
+  color: var(--muted); background: transparent; border: 1px solid transparent;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.code-tab:hover { color: var(--text); }
+/* Weight and a border carry the selected state as well as colour. */
+.code-tab.on {
+  color: var(--text); font-weight: 500;
+  background: var(--code-bg);
+  border-color: var(--code-line);
+  border-bottom-color: var(--code-bg);
+  margin-bottom: -1px;
+}
+.hero-note { margin: 12px 2px 0; font-size: 12px; color: var(--muted); font-family: var(--mono); line-height: 1.5; }
 
-/* features */
-.features { max-width: var(--maxw); margin: 0 auto; padding: 30px 24px 40px; }
-.section-head { text-align: center; margin-bottom: 42px; }
-.section-head h2 { margin: 0; font-size: 36px; letter-spacing: -.8px; font-weight: 800; }
-.section-head p { margin: 12px 0 0; color: var(--muted); font-size: 16px; }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--line-1); border-radius: 16px; padding: 24px; transition: border-color .15s, transform .15s; }
-.card:hover { border-color: light-dark(#c9d1de, #2e3650); transform: translateY(-2px); }
-.card-glyph { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font-size: 18px; margin-bottom: 14px; background: light-dark(#eef2f7, #0d1019); border: 1px solid var(--line-1); }
-.card-glyph.t-state { color: var(--state); } .card-glyph.t-memo { color: var(--memo); } .card-glyph.t-effect { color: var(--effect); } .card-glyph.t-store { color: var(--store); }
-.card h3 { margin: 0 0 8px; font-size: 17px; }
-.card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+/* stat strip */
+.stats {
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.stats-inner {
+  max-width: var(--maxw); margin: 0 auto; padding: 0 24px;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+}
+.stat { padding: 26px 4px; border-left: 1px solid var(--line); padding-left: 26px; }
+.stat:first-child { border-left: 0; padding-left: 4px; }
+.stat b { display: block; font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-family: var(--mono); }
+.stat span { display: block; margin-top: 5px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
 
-/* split (server) */
-.split { max-width: var(--maxw); margin: 0 auto; padding: 70px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
-.split-copy h2 { margin: 0 0 16px; font-size: 32px; letter-spacing: -.6px; font-weight: 800; }
-.split-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; }
-.split-copy code { font-family: var(--mono); font-size: .9em; color: var(--accent); background: light-dark(#eef2f7, #0d1019); border: 1px solid light-dark(#e0e5ee, #232a3a); padding: 1px 6px; border-radius: 5px; }
-.checks { list-style: none; padding: 0; margin: 22px 0 0; }
-.checks li { position: relative; padding-left: 26px; margin: 10px 0; color: var(--text); font-size: 15px; }
-.checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+/* section furniture */
+.section { max-width: var(--maxw); margin: 0 auto; padding: 84px 24px; }
+.section-head { max-width: 34em; margin-bottom: 40px; }
+.section-head h2 { margin: 0; font-size: 30px; letter-spacing: -.026em; font-weight: 700; line-height: 1.2; }
+.section-head p { margin: 12px 0 0; color: var(--muted); font-size: 16px; line-height: 1.6; }
+.kicker {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 14px;
+}
+
+/* split (copy beside a code window) */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.split.flip .split-copy { order: 2; }
+.split .code-window { min-width: 0; }
+.split-copy h2 { margin: 0 0 14px; font-size: 28px; letter-spacing: -.024em; font-weight: 700; line-height: 1.22; }
+.split-copy p { color: var(--prose); font-size: 15.5px; line-height: 1.7; margin: 0; }
+.split-copy code, .spec code {
+  font-family: var(--mono); font-size: .88em; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--line); padding: .1em .38em; border-radius: var(--r-sm);
+}
+.checks { list-style: none; padding: 0; margin: 20px 0 0; }
+.checks li {
+  position: relative; padding-left: 22px; margin: 9px 0;
+  color: var(--prose); font-size: 14.5px; line-height: 1.6;
+}
+.checks li::before { content: ""; position: absolute; left: 0; top: .62em; width: 10px; height: 1px; background: var(--line-strong); }
+
+/* the capability list, hairline rows rather than a grid of tiles */
+.spec-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 48px; border-top: 1px solid var(--line); }
+.spec { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.spec h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
+.spec p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.62; }
 
 /* callout */
-.callout { max-width: var(--maxw); margin: 0 auto; padding: 20px 24px 80px; }
-.callout-inner { text-align: center; border: 1px solid var(--line-1); border-radius: 22px; padding: 56px 32px; background: radial-gradient(700px 300px at 50% -40%, light-dark(#13837f14, #36e2db1a), transparent), linear-gradient(180deg, var(--panel), light-dark(#e9eef6, #0b0d15)); }
-.callout-inner h2 { margin: 0 0 12px; font-size: 34px; letter-spacing: -.6px; font-weight: 800; }
-.callout-inner p { margin: 0 auto 26px; color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 40em; }
+.callout { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 92px; }
+.callout-inner {
+  border: 1px solid var(--line); border-radius: var(--r-lg); padding: 48px 40px;
+  display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  background: var(--panel);
+}
+.callout-inner h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.022em; font-weight: 700; }
+.callout-inner p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 44em; }
 
 /* footer */
-.footer { border-top: 1px solid var(--line-1); max-width: var(--maxw); margin: 0 auto; padding: 44px 24px; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: start; }
-.foot-brand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+.footer { border-top: 1px solid var(--line); }
+.footer-inner {
+  max-width: var(--maxw); margin: 0 auto; padding: 44px 24px;
+  display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: start;
+}
+.foot-brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; }
 .foot-cols { display: flex; gap: 56px; }
-.foot-cols h4 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-.foot-cols a { display: block; color: var(--muted); font-size: 14px; margin: 7px 0; }
+.foot-cols h4 { margin: 0 0 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.foot-cols a { display: block; color: var(--muted); font-size: 13.5px; margin: 7px 0; }
 .foot-cols a:hover { color: var(--text); }
-.foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+.foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-family: var(--mono); }
+
+/* Syntax for the hand-marked hero snippets. `i` carries no emphasis here, it is just
+   the shortest inline element; the colours are the docs' so the two sites agree. */
+.code .t-com { color: var(--hl-comment); font-style: italic; }
+.code .t-str { color: var(--hl-string); font-style: normal; }
+.code .t-kw  { color: var(--hl-keyword); font-style: normal; }
+.code .t-api { color: var(--hl-title); font-style: normal; }
 
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 44px; }
-  .hero h1 { font-size: 44px; }
-  .grid { grid-template-columns: 1fr 1fr; }
-  .split { grid-template-columns: 1fr; gap: 30px; }
-  .nav-links { gap: 18px; }
+  .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 48px; }
+  .hero h1 { font-size: 40px; }
+  .split, .split.flip .split-copy { grid-template-columns: 1fr; order: 0; }
+  .split { gap: 30px; }
+  .spec-list { grid-template-columns: 1fr; }
+  .section { padding: 60px 24px; }
+  .callout-inner { padding: 36px 26px; }
 }
-@media (max-width: 560px) {
-  .grid { grid-template-columns: 1fr; }
-  .hero h1 { font-size: 36px; }
-  .footer { grid-template-columns: 1fr; }
+@media (max-width: 620px) {
+  .hero h1 { font-size: 33px; }
+  .stats-inner { grid-template-columns: 1fr; }
+  .stat { border-left: 0; border-top: 1px solid var(--line); padding-left: 4px; }
+  .stat:first-child { border-top: 0; }
+  .footer-inner { grid-template-columns: 1fr; }
+  .foot-cols { gap: 36px; }
+  .nav-links a { padding: 6px 7px; }
 }
 
 /* Keyboard access ---------------------------------------------------------
@@ -176,8 +219,8 @@ a { color: inherit; text-decoration: none; }
    button produced no visible change, which is a WCAG 2.2 SC 2.4.7 failure. */
 .skip {
   position: absolute; left: 12px; top: 12px; z-index: 100;
-  padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600;
-  color: var(--text); background: var(--panel); border: 1px solid var(--line-1);
+  padding: 10px 18px; border-radius: var(--r-md); font-size: 14px; font-weight: 500;
+  color: var(--text); background: var(--panel); border: 1px solid var(--line-strong);
   transform: translateY(-200%); transition: transform .12s ease;
 }
 .skip:focus { transform: translateY(0); }
@@ -185,11 +228,10 @@ a { color: inherit; text-decoration: none; }
 :where(a, button, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 main:focus { outline: none; }
 
-/* SC 2.3.3 — the cards and buttons animate on hover/enter. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
@@ -198,59 +240,3 @@ main:focus { outline: none; }
     scroll-behavior: auto !important;
   }
 }
-
-/* Hero code tabs ----------------------------------------------------------
-   The tab strip replaces the three decorative window dots — the space was
-   already there, and a real control earns it better than a macOS pastiche. */
-.code-bar { gap: 4px; flex-wrap: wrap; align-items: flex-end; }
-.code-tab {
-  font-family: var(--mono); font-size: 12px; line-height: 1.6;
-  padding: 4px 11px; border-radius: 7px; cursor: pointer;
-  color: var(--muted); background: transparent; border: 1px solid transparent;
-  transition: color .15s, background .15s, border-color .15s;
-}
-.code-tab:hover { color: var(--text); }
-/* Selected state carries weight and a border as well as colour, so it is not
-   colour alone that distinguishes it. */
-.code-tab.on {
-  color: var(--accent); font-weight: 600;
-  background: var(--code-bg);
-  border-color: var(--code-line);
-  border-bottom-color: var(--code-bg);
-  border-radius: 8px 8px 0 0;
-  margin-bottom: -12px;
-  padding-bottom: 16px;
-}
-.hero-note {
-  margin: 10px 2px 0; font-size: 12.5px; color: var(--muted);
-  font-family: var(--mono); line-height: 1.5;
-}
-
-/* Hero + section code tokens. `i` carries no emphasis semantics here, it is just the
-   shortest inline element; the colours match the docs' highlight theme so the two sites
-   agree. */
-.code .t-com { color: light-dark(#6b7280, #5b6273); font-style: italic; }
-.code .t-str { color: light-dark(#0f766e, #36e2db); font-style: normal; }
-.code .t-kw  { color: light-dark(#7c3aed, #a78bfa); font-style: normal; }
-.code .t-api { color: light-dark(#0369a1, #38bdf8); font-style: normal; }
-
-/* Code surface + tokens, themed. */
-:root {
-  --code-fg: #c6d0e0;
-  --code-fg: light-dark(#24292f, #c6d0e0);
-  --code-bg: #0b0d15;
-  --code-bg: light-dark(#f7f9fc, #0b0d15);
-  --code-bar: #0d1019;
-  --code-bar: light-dark(#eef2f7, #0d1019);
-  --code-line: #232a3a;
-  --code-line: light-dark(#e0e5ee, #232a3a);
-}
-
-/* Theme toggle ------------------------------------------------------------ */
-.theme-toggle {
-  display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0;
-  font-size: 15px; line-height: 1; cursor: pointer; color: var(--muted);
-  background: var(--panel-2); border: 1px solid var(--line-1); border-radius: 9px;
-  transition: color .15s, border-color .15s;
-}
-.theme-toggle:hover { color: var(--text); border-color: light-dark(#b9c2d2, #3c465f); }
