@@ -111,6 +111,54 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 > des deux, pas les deux. `signal.global.js` utilise `window.Signal` et peut coexister avec l'un
 > ou l'autre.
 
+## Imports nus — `@fluixi/cdn`
+
+L’utilisation d’un objet global pose un seul objet sur `window`, et `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut être chargé. Avec une carte, la page écrit les mêmes `import` qu’une application compilée, et ne charge que les sous-chemins qu’elle touche. Un navigateur ne résout un spécificateur nu que par une carte et ne lit jamais `package.json`, donc chaque sous-chemin transitif doit y figurer ; `@fluixi/cdn` est cette liste, générée à chaque version et épinglée sur elle.
+
+- `min` (15 entrées — `core`, `dom`, `utils` et le graphe derrière)
+- `templates` (3 entrées, pour compiler `html`` dans la page)
+- `full` (19, tout ce qu’un navigateur peut utiliser)
+
+Chacune existe en `.json` à lire ou coller et en `.js` à charger. Le `.js` installe la carte et doit venir avant le premier script de module, parce qu’une carte ajoutée après qu’un module a commencé à charger est ignorée.
+
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.js"></script>
+<script type="module">
+  import { render, signal, effect } from '@fluixi/core';
+
+  function Counter() {
+    const n = signal(0);
+    const button = document.createElement('button');
+    button.addEventListener('click', () => n.set(n() + 1));
+    effect(() => { button.textContent = `count: ${n()}`; });
+    return button;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+
+`html`` exige le runtime de templates ; le `html` réexporté par `@fluixi/core` est la balise que le compilateur remplace à la construction — l’appeler dans la page lève une erreur.
+
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/full.js"></script>
+<script type="module">
+  import { render, signal } from '@fluixi/core';
+  import { html } from '@fluixi/template-runtime';
+
+  function Counter() {
+    const n = signal(0);
+    return html`<button @click=${() => n.set(n() + 1)}>count: ${n}</button>`;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+
+Le `.json` reste pour une page qui préfère porter la carte dans son propre balisage ; plusieurs cartes dans une page demandent Chromium 133 ou plus récent, d’où `full` en un seul fichier. `@fluixi-ui/cdn` fait la même chose pour la bibliothèque de composants et se compose avec celles-ci.
+
 ## Épinglage de version
 
 `unpkg.com/@fluixi/core@1/…` suit la version majeure ; épinglez une version exacte pour la

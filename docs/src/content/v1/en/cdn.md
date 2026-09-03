@@ -147,6 +147,54 @@ other globals. `dom.global.js` and `core.global.js` are smaller for that reason.
 Compiling in the page evaluates the code it emits, so a Content-Security-Policy without
 `unsafe-eval` blocks the full build. The other globals are unaffected.
 
+## Bare imports — `@fluixi/cdn`
+
+A global puts one object on `window`, and `reactive`, `core` and `fluixi` all claim the same name, so only one may be loaded. With a map the page writes the same `import` statements a built app writes, and loads only the subpaths it touches. A browser resolves a bare specifier only through a map and never reads package.json, so every transitive subpath has to be listed; `@fluixi/cdn` is that list, generated per release and pinned to it.
+
+- `min.js` (15 entries): core, dom, utils and the graph behind them
+- `templates.js` (3 entries): adds compiling `html`` in the page
+- `full.js` (19 entries): everything a browser can use
+
+The `.js` installs the map, and has to come before the first module script, because a map added after one has begun loading is ignored.
+
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.js"></script>
+<script type="module">
+  import { render, signal, effect } from '@fluixi/core';
+
+  function Counter() {
+    const n = signal(0);
+    const button = document.createElement('button');
+    button.addEventListener('click', () => n.set(n() + 1));
+    effect(() => { button.textContent = `count: ${n()}`; });
+    return button;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+
+`html`` needs the template runtime, and the `html` re-exported from `@fluixi/core` is the tag the compiler replaces at build time — calling it in the page throws.
+
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/full.js"></script>
+<script type="module">
+  import { render, signal } from '@fluixi/core';
+  import { html } from '@fluixi/template-runtime';
+
+  function Counter() {
+    const n = signal(0);
+    return html`<button @click=${() => n.set(n() + 1)}>count: ${n}</button>`;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+
+The `.json` is there for a page that would rather hold the map in its own markup. Several maps in one page need Chromium 133 or newer, which is why `full` exists as one file. `@fluixi-ui/cdn` carries the same thing for the component library and composes with these, since neither repeats the other's entries.
+
 ## Version pinning
 
 `unpkg.com/@fluixi/core@1/…` follows the major; pin an exact version for reproducibility, e.g.
