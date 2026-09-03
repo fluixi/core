@@ -1,5 +1,19 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.82
+
+### Patch Changes
+
+- 2d8ea95: `onMount` and `useEffect` now only run on the client, avoiding errors from accessing `document` during server-side rendering. Suspense no longer attempts to read `process.env.FX_DEBUG` during hydration, preventing freezes in development builds.
+  - @fluixi/utils@1.0.0-alpha.82
+  - @fluixi/reactive@1.0.0-alpha.82
+  - @fluixi/dom@1.0.0-alpha.82
+  - @fluixi/jsx@1.0.0-alpha.82
+  - @fluixi/compiler@1.0.0-alpha.82
+  - @fluixi/vite-plugin@1.0.0-alpha.82
+  - @fluixi/head@1.0.0-alpha.49
+  - @fluixi/server@1.0.0-alpha.82
+
 ## 1.0.0-alpha.81
 
 ### Patch Changes
