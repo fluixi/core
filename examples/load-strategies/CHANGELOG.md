@@ -1,5 +1,15 @@
 # @fluixi/example-load-strategies
 
+## 0.0.1-alpha.13
+
+### Patch Changes
+
+- Updated dependencies [2d8ea95]
+  - @fluixi/core@1.0.0-alpha.82
+  - @fluixi/reactive@1.0.0-alpha.82
+  - @fluixi/dom@1.0.0-alpha.82
+  - @fluixi/jsx@1.0.0-alpha.82
+
 ## 0.0.1-alpha.12
 
 ### Patch Changes

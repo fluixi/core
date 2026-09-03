@@ -1,5 +1,15 @@
 # @fluixi/example-lit-counter
 
+## 0.0.1-alpha.26
+
+### Patch Changes
+
+- Updated dependencies [2d8ea95]
+  - @fluixi/core@1.0.0-alpha.82
+  - @fluixi/reactive@1.0.0-alpha.82
+  - @fluixi/dom@1.0.0-alpha.82
+  - @fluixi/server@1.0.0-alpha.82
+
 ## 0.0.1-alpha.25
 
 ### Patch Changes
