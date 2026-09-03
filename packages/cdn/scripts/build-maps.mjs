@@ -4,23 +4,17 @@
 // needs, and because a page that already pins the framework should not be handed
 // a second copy of those entries.
 
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildLayer } from 'mappel';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const repo = join(here, '..', '..', '..');
+const root = join(here, '..', '..', '..');
 const out = join(here, '..', 'dist');
-const generator = join(repo, 'scripts', 'import-map.mjs');
 
-const run = (layer) =>
-  JSON.parse(
-    execFileSync('node', [generator, '--layer', layer], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }),
-  );
+const config = (await import(pathToFileURL(join(root, 'importmap.config.mjs')).href)).default;
+const run = (layer) => ({ imports: buildLayer(layer, config, { root, workspaces: config.workspaces }).imports });
 
 mkdirSync(out, { recursive: true });
 for (const layer of ['min', 'templates', 'full']) {
