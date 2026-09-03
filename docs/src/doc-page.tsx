@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup } from '@fluixi/core';
+import { createSignal, onMount, onCleanup, Portal } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
@@ -90,8 +90,11 @@ function Search(props: { lang: Lang; version: string; label: string }) {
 
   async function load(): Promise<Hit[]> {
     if (!cachedIndex) {
+      // The index is written by the build, so in dev this path falls through to the
+      // HTML shell. Reading that as JSON throws; an empty index is the honest answer.
       const res = await fetch('/search-index.json');
-      cachedIndex = (await res.json()) as Hit[];
+      const ok = res.ok && (res.headers.get('content-type') ?? '').includes('json');
+      cachedIndex = ok ? ((await res.json()) as Hit[]) : [];
     }
     return cachedIndex;
   }
@@ -157,8 +160,12 @@ function Search(props: { lang: Lang; version: string; label: string }) {
         <kbd>⌘K</kbd>
       </button>
 
+      {/* Through a portal to the body: the header sets `backdrop-filter`, which makes
+          it a containing block for fixed-position descendants — the overlay would
+          otherwise resolve against the header and be clipped to its 56px box. */}
       {() =>
         open() ? (
+          <Portal>
           <div class="search-scrim" onClick={() => setOpen(false)}>
             <div
               class="search-panel"
@@ -201,6 +208,7 @@ function Search(props: { lang: Lang; version: string; label: string }) {
               }
             </div>
           </div>
+          </Portal>
         ) : null
       }
     </>
