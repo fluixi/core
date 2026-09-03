@@ -1,34 +1,24 @@
 # @fluixi/cdn
 
-This package provides import maps for the @fluixi framework, pre-generated and ready to use in the browser. It lists all the bare specifiers a browser needs to resolve, ensuring that every transitive subpath is included. These maps are pinned to the version of this package, ensuring consistency and reliability.
+This package provides the import maps a page needs, already generated, and a script that installs one. It is designed for developers who want to load the framework from a script tag, with no bundler. It lists all the bare specifiers a browser needs to resolve, ensuring that every transitive subpath is included. These maps are pinned to the version of this package.
 
-- `min.json` — includes `@fluixi/core`, `@fluixi/dom`, `@fluixi/utils`, and the graph behind them. Enough to write components by hand; `@fluixi/core` re-exports most of the DOM and reactive surface, so one import covers most of it.
-- `templates.json` — adds compiling `html`` in the page. Load it with `min.json`.
-- `full.json` — everything a browser can use, in one file.
+The maps are available in three versions: `min`, `templates`, and `full`. Each comes as a `.json` file to read or paste and a `.js` file to load. The `min` version includes `@fluixi/core`, `@fluixi/dom`, `@fluixi/utils`, and the graph behind them. It is enough to write components by hand, as `@fluixi/core` re-exports most of the DOM and reactive surface, so one import covers most of it. The `templates` version adds compiling `html`` in the page and must be loaded with `min`. The `full` version includes everything a browser can use, in one file.
 
-The contents of the maps should be placed inline in a `<script type="importmap">` tag. Here is an example:
+To use one of the maps, include the corresponding `.js` file before the first module script. For example:
 
 ```html
-<script type="importmap">
-  { "imports": { "…": "paste the contents of min.json here" } }
-</script>
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.js"></script>
 <script type="module">
   import { render, signal } from '@fluixi/core';
 </script>
 ```
 
-A page that would rather not paste can fetch the file and add the map itself, which works because a map may be added before the first module loads:
+If a page prefers to hold the map itself or build its markup from something other than a script tag, the `.json` file can be used with this block:
 
 ```html
-<script type="module">
-  const map = await fetch('https://unpkg.com/@fluixi/cdn/dist/min.json').then((r) => r.json());
-  const tag = document.createElement('script');
-  tag.type = 'importmap';
-  tag.textContent = JSON.stringify(map);
-  document.head.appendChild(tag);
-
-  const { render, signal } = await import('@fluixi/core');
+<script type="importmap">
+  { "imports": { "…": "paste the contents of min.json here" } }
 </script>
 ```
 
-Several maps in one page need Chromium 133 or newer, and `full.json` is the single-file way around that.
+An inline map is registered when its element is inserted, so the second file cannot merge into the first one's map and installs its own. Several maps in one page need Chromium 133 or newer, and `full` is the single-file way around that. The script says so if the browser turns its map down.

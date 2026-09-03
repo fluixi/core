@@ -18,13 +18,17 @@
     "./package.json": "./package.json",
     "./min.json": "./dist/min.json",
     "./templates.json": "./dist/templates.json",
-    "./full.json": "./dist/full.json"
+    "./full.json": "./dist/full.json",
+    "./min.js": "./dist/min.js",
+    "./templates.js": "./dist/templates.js",
+    "./full.js": "./dist/full.js"
   },
   "scripts": {
-    "build": "node scripts/build-maps.mjs"
+    "build": "mappel"
   },
   "devDependencies": {
-    "@fluixi/template-runtime": "workspace:*"
+    "@fluixi/template-runtime": "workspace:*",
+    "mappel": "^0.3.0"
   },
   "repository": {
     "type": "git",
