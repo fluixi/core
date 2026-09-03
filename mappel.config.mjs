@@ -9,6 +9,10 @@ const MIN = ['@fluixi/core', '@fluixi/dom', '@fluixi/utils'];
 
 export default {
   workspaces: ['packages'],
+  // where `mappel` writes, relative to this file
+  out: 'packages/cdn/dist',
+  // the 'full' layer below already is the combined map
+  full: false,
   layers: {
     min: { packages: MIN },
     // Compiling html`` in the page, on top of the minimum.

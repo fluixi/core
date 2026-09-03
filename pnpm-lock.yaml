@@ -524,6 +524,9 @@ importers:
       '@fluixi/template-runtime':
         specifier: workspace:*
         version: link:../template-runtime
+      mappel:
+        specifier: ^0.3.0
+        version: 0.3.0
 
   packages/cli:
     dependencies:
@@ -4952,6 +4955,10 @@ packages:
 
   mappel@0.1.0:
     resolution: {integrity: sha512-fti9oMikSGpk7H/ilPSoZOmF+mrgTG8GRLpti591RyqigkQj+68hLLqEOLG9D1bzJKvZKwqLDTgLibRGzySuBQ==}
+    hasBin: true
+
+  mappel@0.3.0:
+    resolution: {integrity: sha512-LpUZsCdJ6DDvM5pyhFOukIASUL30LhMhM8UXM74gh83Fs3L2548s7C63eMtZEP+DoIJKsSz8bKNF07CI6grm+g==}
     hasBin: true
 
   marked-highlight@2.2.4:
@@ -10395,6 +10402,8 @@ snapshots:
       semver: 7.8.1
 
   mappel@0.1.0: {}
+
+  mappel@0.3.0: {}
 
   marked-highlight@2.2.4(marked@14.1.4):
     dependencies:
