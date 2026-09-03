@@ -2,7 +2,7 @@
 import { loadConfig } from '@fluixi/start';
 import { build } from '@fluixi/start/commands';
 import { generateSitemap } from '@fluixi/start/head';
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 await build(await loadConfig());
@@ -38,39 +38,5 @@ const entries = pages(clientDir).map((path) => {
 writeFileSync(join(clientDir, 'sitemap.xml'), generateSitemap(entries));
 console.log(`  ✓ sitemap.xml (${entries.length} urls)`);
 
-// Search index — built from the markdown sources, written as its own asset.
-//
-// Deliberately NOT imported by the app: the page chunk already carries more than it should,
-// and the index is only needed once someone opens search. It is fetched on first open and
-// cached for the session.
-//
-// One record per page, with the headings kept separate so a heading match can outrank a body
-// match, and the body flattened to plain text — code fences included, since "how do I write
-// bind:value" is a real query and the answer is in a code block.
-const contentDir = 'src/content';
-
-function markdownFiles(dir, acc = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) markdownFiles(p, acc);
-    else if (name.endsWith('.md')) acc.push(p);
-  }
-  return acc;
-}
-
-const index = markdownFiles(contentDir).map((file) => {
-  const md = readFileSync(file, 'utf8');
-  const [, version, lang, slug] = file.split(/[/\\]/).slice(-3).join('/').match(/^([^/]+)\/([^/]+)\/(.+)\.md$/) ?? [];
-  const headings = [...md.matchAll(/^#{1,3}\s+(.+)$/gm)].map((m) => m[1].trim());
-  const body = md
-    .replace(/^#{1,6}\s+.+$/gm, ' ')      // headings are indexed separately
-    .replace(/```/g, ' ')                 // keep code text, drop the fences
-    .replace(/[*_>`|#\[\]()]/g, ' ')       // markdown punctuation carries no meaning here
-    .replace(/\s+/g, ' ')
-    .trim();
-  return { v: version, l: lang, s: slug, t: headings[0] ?? slug, h: headings.slice(1), b: body };
-}).filter((r) => r.s);
-
-writeFileSync(join(clientDir, 'search-index.json'), JSON.stringify(index));
-const kb = (JSON.stringify(index).length / 1024).toFixed(0);
-console.log(`  ✓ search-index.json (${index.length} pages, ${kb} KB)`);
+// search-index.json is generated into `public/` by the prestep in package.json, so
+// the dev server and the build serve the same asset; the build copies it from there.

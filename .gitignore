@@ -92,3 +92,6 @@ Desktop.ini
 .vercel
 .netlify
 .wrangler
+
+# generated before dev and build, from the markdown sources
+docs/public/search-index.json

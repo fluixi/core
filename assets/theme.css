@@ -84,6 +84,13 @@
   --hl-addition: #7ee787;
   --hl-addition: light-dark(#116329, #7ee787);
 
+  /* Decorative patterns. Ink, not accent — they sit behind content and must never
+     compete with it. Alpha lives in the colour so the layer itself stays opaque
+     and nothing underneath is dimmed. */
+  --pattern-ink: #ffffff12;
+  --pattern-ink: light-dark(#1717170f, #ffffff12);
+  --pattern-gap: 22px;
+
   /* Type */
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
