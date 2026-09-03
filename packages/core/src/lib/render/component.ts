@@ -135,12 +135,23 @@ function getOwnerLifecycle(): OwnerLifecycle | null {
   return owner[_LIFECYCLE];
 }
 
+const isServer = typeof window === 'undefined';
+
 /**
  * Schedule a microtask to flush the lifecycle for the current Owner.
  * Only schedules once per Owner — subsequent calls are no-ops.
  */
 function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   if (lc.scheduled) return;
+
+  // The flush is a microtask, so on the server it lands after renderToString has
+  // returned and reaches for a DOM that is not there.
+  if (isServer) {
+    lc.mounts = [];
+    lc.effects = [];
+    return;
+  }
+
   lc.scheduled = true;
 
   // Capture the owner now; by microtask time it will have been restored.
@@ -291,6 +302,8 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
  * ```
  */
 export function onMount(fn: LifecycleCallback, reactive: boolean = true): void {
+  if (isServer) return;
+
   const lc = getOwnerLifecycle();
   if (lc) {
     if(!reactive) {
