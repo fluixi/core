@@ -151,7 +151,6 @@ function SuspenseImpl(props: SuspenseProps): any {
 
   return createMemo(() => {
     const showFallback = listState ? listState.showFallback() : boundary.inFallback();
-    if (process.env.FX_DEBUG) console.log('[s] output; showFallback:', showFallback);
     if (showFallback) return fallback;
     if (childIsPromise) return resolved();
     return children;
