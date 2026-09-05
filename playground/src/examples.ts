@@ -15,15 +15,17 @@ import * as __signal from '@fluixi/reactive/signal';
 import * as __store from '@fluixi/reactive/store';
 
 declare global {
-  export import Show = __dom.Show;
-  export import For = __dom.For;
-  export import Index = __dom.Index;
-  export import Switch = __dom.Switch;
-  export import Match = __dom.Match;
-  export import Portal = __dom.Portal;
-  export import Dynamic = __dom.Dynamic;
-  export import ErrorBoundary = __dom.ErrorBoundary;
-  export import Suspense = __core.Suspense;
+  // \`const\` rather than \`export import\`: an import-equals inside a global augmentation is
+  // TS 2667, and a component only needs to be a value here.
+  const Show: typeof __dom.Show;
+  const For: typeof __dom.For;
+  const Index: typeof __dom.Index;
+  const Switch: typeof __dom.Switch;
+  const Match: typeof __dom.Match;
+  const Portal: typeof __dom.Portal;
+  const Dynamic: typeof __dom.Dynamic;
+  const ErrorBoundary: typeof __dom.ErrorBoundary;
+  const Suspense: typeof __core.Suspense;
 
   const $signal: typeof __signal.signal;
   const $memo: typeof __signal.memo;

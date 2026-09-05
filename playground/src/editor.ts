@@ -78,7 +78,11 @@ function configure() {
   ts.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,
     module: monaco.languages.typescript.ModuleKind.ESNext,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    // Bundler (100), matching the tsconfig a project ships. NodeJs will not resolve an
+    // extensionless './Counter' to Counter.tsx, which is how every file here imports its
+    // neighbours. Monaco's enum stops at NodeJs but forwards the number to a TypeScript
+    // that knows the rest.
+    moduleResolution: 100 as monaco.languages.typescript.ModuleResolutionKind,
     jsx: monaco.languages.typescript.JsxEmit.Preserve,
     allowNonTsExtensions: true,
     allowJs: true,
