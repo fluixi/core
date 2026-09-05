@@ -1,0 +1,4 @@
+what:   the diagnostics spec now covers the unresolved-tag kind as well
+why:    it claimed to cover all four and covered three; the one it missed is the
+        oldest of them, and the only one nothing was pinning
+verify: spec run, green

@@ -1,0 +1,9 @@
+packages: @fluixi/cdn
+bump:     minor
+what:     a new package: the import maps a page needs to load the framework from a
+          CDN, already generated. `min.json` for writing components by hand,
+          `templates.json` to compile html`` in the page, `full.json` for everything.
+why:      a browser resolves bare specifiers only through an import map and never
+          reads package.json, so every transitive subpath has to be listed by hand.
+          The maps are generated at build time, so they pin the versions of the
+          release that ships them.

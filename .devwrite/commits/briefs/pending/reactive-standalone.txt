@@ -1,0 +1,14 @@
+files:  packages/reactive — package.json, lib/predicates.ts, lib/index.ts,
+        signal/signal.ts, observable/subscription.ts, store/setter.types.ts
+what:   @fluixi/reactive now has no runtime dependencies. Three predicates that came
+        from @fluixi/utils are inlined; deepClone and IValueOfKey were imported and
+        never used. Dropped the ./signal-next export, which had no export of its own
+        that ./signal did not already have. Added ./tc39 for the proposal surface,
+        keeping ./core as an alias. The signal operators and the cached resource are
+        re-exported from the root, where they had stopped being reachable.
+why:    A signals library that drags a framework's utility package behind it reads as
+        a framework component. The inlined predicates keep the exclusions that look
+        incidental and are not: a class must not count as a function, or a setter
+        given a class calls its constructor; a Date must not count as a plain object,
+        or a store proxies its internals and every method on it fails.
+verify: spec run, green

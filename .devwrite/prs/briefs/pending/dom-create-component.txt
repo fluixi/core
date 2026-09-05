@@ -1,0 +1,16 @@
+title:   Let the dom runtime create components
+what:    the runtime creates components itself, and nothing has to register that
+         for it any more
+why:     it held a slot core filled on import, and until that happened the fallback
+           called the component again on every read. A list rebuilt every node
+           instead of appending one, and anything using the runtime without core
+           got that quietly
+         the implementation needed untrack and isSignal from reactive and
+           asComponent from dom, so it had no reason to live in core
+verify:  specs across the workspace, and a page in a browser
+review:  registerCreateComponent still installs your own component model, and it
+           is consulted first
+         ensureIntegration is kept and does nothing now; the six calls to it are
+           removed
+         do not register a function that calls the runtime's own createComponent,
+           because the slot is checked first and that recurses

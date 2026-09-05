@@ -1,0 +1,7 @@
+packages: @fluixi/core, @fluixi/reactive, @fluixi/compiler, @fluixi/template-parser, @fluixi/ts-plugin
+bump:     patch
+what:     Corrected npm descriptions. Four made claims that were not true: a
+          Solid-compatible framework, an SWC compiler front-end, a language server and
+          a Biome plugin consuming the template parser. None of those exist.
+also:     @fluixi/reactive now says what it is — the TC39 Signals proposal, with no
+          runtime dependencies.

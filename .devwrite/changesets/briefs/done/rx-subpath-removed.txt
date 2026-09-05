@@ -1,0 +1,9 @@
+packages: fluixi, @fluixi/compiler
+bump:     minor
+what:     the `rx` subpath is removed; it was `@fluixi/core/rx`
+why:      it meant two different things depending on whether the compiler ran
+          the compiler rewrote it to `@fluixi/reactive` every time, with no SSR branch
+          resolved through Node it gave the server primitives instead:
+            read-only signal snapshots, effects run once, no scheduling
+breaking: `@fluixi/core/rx` -> `@fluixi/reactive` for signals and effects
+          `fluixi/server` for the server primitives it resolved to under Node

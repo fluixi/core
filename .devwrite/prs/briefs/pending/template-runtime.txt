@@ -1,0 +1,17 @@
+title:   Compile html`` in the browser
+what:    a new package, @fluixi/template-runtime, and the CDN build that carries it
+         @fluixi/compiler gains a ./compile subpath
+why:     the tag the runtime carries throws unless a build replaced it, so a page
+           with a script tag and no bundler could not use a template at all, and
+           the CDN docs taught exactly that call
+         the compile path is already free of babel, so the browser runs the same
+           parse, lower and codegen a build runs and evaluates what comes out
+         importing the compile entry from the package root pulled node:fs in and
+           would not bundle for a browser
+verify:  specs, and a page driven in a browser
+review:  the hole rules: position comes from the parse, shape from typeof, so a
+           function in text or attribute position is called and one in an event or
+           component position is not
+         compiling in the page evaluates the code it emits, so a strict
+           Content-Security-Policy blocks it
+         the cdn docs page was wrong in three other ways and is corrected here

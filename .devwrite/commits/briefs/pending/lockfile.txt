@@ -1,0 +1,5 @@
+files:  pnpm-lock.yaml
+what:   The lockfile records @fluixi/utils as a dev dependency of @fluixi/reactive.
+why:    It moved there when reactive stopped needing it at runtime, and the lockfile
+        was not regenerated. CI installs with --frozen-lockfile, so the build failed
+        on the next push rather than at the point of the change.

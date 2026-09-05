@@ -1,0 +1,64 @@
+package:  docs — nouvelle section pour content/v1/fr/cdn.md
+audience: quelqu'un qui charge Fluixi dans une page sans bundler
+one-line: ÉCRIS EN FRANÇAIS. La page traduite est en français, la sortie doit
+          l'être aussi. Aucune phrase en anglais hors identifiants et code.
+measured: la carte minimale fait 15 entrées ; templates en ajoute 3 ; full en a 19
+verified: les deux blocs ci-dessous ont été exécutés dans un navigateur
+do-not-claim: qu'une import map peut être référencée par url. `<script
+          type="importmap" src="...">` a été spécifié puis jamais livré. Ne pas
+          le montrer. Ne pas dire que les builds globaux sont dépréciés.
+structure: section de niveau 2, titrée "Imports nus — `@fluixi/cdn`", insérée
+  avant "Épinglage de version". Dans cet ordre :
+  1. pourquoi plutôt qu'un global : un global pose un seul objet sur `window`, et
+     `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut
+     être chargé. Avec une carte, la page écrit les mêmes `import` qu'une
+     application compilée, et ne charge que les sous-chemins qu'elle touche. Un
+     navigateur ne résout un spécificateur nu que par une carte et ne lit jamais
+     package.json, donc chaque sous-chemin transitif doit y figurer ; @fluixi/cdn
+     est cette liste, générée à chaque version et épinglée sur elle.
+  2. les trois cartes, une ligne chacune : min (15 entrées — core, dom, utils et
+     le graphe derrière), templates (3 entrées, pour compiler html`` dans la
+     page), full (19, tout ce qu'un navigateur peut utiliser). Chacune existe en
+     .json à lire ou coller et en .js à charger.
+  3. dire que le .js installe la carte et doit venir avant le premier script de
+     module, parce qu'une carte ajoutée après qu'un module a commencé à charger
+     est ignorée. Puis ce bloc VERBATIM :
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.js"></script>
+<script type="module">
+  import { render, signal, effect } from '@fluixi/core';
+
+  function Counter() {
+    const n = signal(0);
+    const button = document.createElement('button');
+    button.addEventListener('click', () => n.set(n() + 1));
+    effect(() => { button.textContent = `count: ${n()}`; });
+    return button;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+  4. dire que html`` exige le runtime de templates, et que le `html` réexporté
+     par @fluixi/core est la balise que le compilateur remplace à la
+     construction — l'appeler dans la page lève une erreur. Puis ce bloc VERBATIM :
+```html
+<div id="app"></div>
+<script src="https://unpkg.com/@fluixi/cdn/dist/full.js"></script>
+<script type="module">
+  import { render, signal } from '@fluixi/core';
+  import { html } from '@fluixi/template-runtime';
+
+  function Counter() {
+    const n = signal(0);
+    return html`<button @click=${() => n.set(n() + 1)}>count: ${n}</button>`;
+  }
+
+  render(() => Counter(), document.getElementById('app'));
+</script>
+```
+  5. conclure : le .json reste pour une page qui préfère porter la carte dans son
+     propre balisage ; plusieurs cartes dans une page demandent Chromium 133 ou
+     plus récent, d'où full en un seul fichier. @fluixi-ui/cdn fait la même chose
+     pour la bibliothèque de composants et se compose avec celles-ci.

@@ -1,0 +1,9 @@
+packages: fluixi, @fluixi/compiler, @fluixi/start, @fluixi/auth, @fluixi/session
+bump:     minor
+what:     the package is now `fluixi`; it was `@fluixi/core`
+          same contents, same subpaths, new name
+          every other `@fluixi/*` package keeps its name
+why:      the install target is the front door, so it takes the bare name
+          `@fluixi/*` stays the namespace for everything else
+breaking: `@fluixi/core` -> `fluixi` in package.json and in every import
+          subpaths follow the same way: `@fluixi/core/server` -> `fluixi/server`

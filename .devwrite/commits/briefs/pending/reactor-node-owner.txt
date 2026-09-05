@@ -1,0 +1,13 @@
+files:  packages/devtools/src/instrument.ts
+what:   a graph node's cleanup attaches to the reactor's own root when nothing else owns it,
+        and the short-API primitives derive from the tracked long ones instead of repeating
+        their bookkeeping.
+why:    the reactor hands its primitives to code that runs whenever it likes — a playground
+        loads its modules asynchronously, so most nodes are created long after the setup
+        callback returned, with no owner in scope to hang a cleanup on. Holding the root's
+        owner gives them one, so a node is removed when the reactor goes away rather than
+        never.
+        signal is createSignal with a handle around it, memo and effect are the same function
+        under another name, and store wraps the pair in a proxy. Writing that again for each
+        one meant two copies of the node bookkeeping, free to drift.
+verify: every kind registers with the right label, and the read and write edges survive

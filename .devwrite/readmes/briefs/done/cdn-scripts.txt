@@ -1,0 +1,44 @@
+package:  @fluixi/cdn
+audience: someone loading the framework from a script tag, with no bundler
+one-line: the import maps a page needs, already generated, and a script that
+          installs one
+measured: min is 15 entries, templates adds 3, full is 19
+verified: every block below was run in a browser against the published packages
+do-not-claim: that an import map can be referenced by url. `<script type="importmap"
+          src="...">` was specified and never shipped — Chrome 151 fails on it with
+          "Failed to resolve module specifier". Do not show it.
+          do not claim this replaces a build: the compiled path is smaller.
+          do not claim the maps merge. Each script installs its own.
+structure: four short sections, no headings beyond the ones named.
+  1. what it is: a browser resolves bare specifiers only through an import map and
+     never reads package.json, so every transitive subpath has to be listed. These
+     files list them, pinned to the version of this package.
+  2. "The maps" — a list, one line each. Each comes as .json to read or paste and
+     .js to load:
+     min — @fluixi/core, @fluixi/dom, @fluixi/utils and the graph behind them.
+       Enough to write components by hand; `@fluixi/core` re-exports most of the dom
+       and reactive surface, so one import covers most of it.
+     templates — adds compiling html`` in the page. Load it with min.
+     full — everything a browser can use, in one file.
+  3. "Using one" — say the .js installs the map for the page, and must come before
+     the first module script because a map added after one has begun loading is
+     ignored. Then this block VERBATIM:
+```html
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.js"></script>
+<script type="module">
+  import { render, signal } from '@fluixi/core';
+</script>
+```
+     then: the .json is there for a page that would rather hold the map itself, or
+     that builds its markup from something other than a script tag — with this
+     block VERBATIM:
+```html
+<script type="importmap">
+  { "imports": { "…": "paste the contents of min.json here" } }
+</script>
+```
+  4. "More than one" — an inline map is registered when its element is inserted, so
+     the second file cannot merge into the first one's map and installs its own.
+     Several maps in one page need Chromium 133 or newer, and full is the
+     single-file way round that. The script says so if the browser turns its map
+     down.

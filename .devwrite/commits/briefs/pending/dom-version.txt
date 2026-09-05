@@ -1,0 +1,7 @@
+files:  packages/dom/src/version.generated.ts
+what:   The generated version now reads alpha.77, matching package.json. It said
+        alpha.75.
+why:    The build regenerates this file, but it had not been rebuilt since two
+        releases ago. versions.ts stamps the value onto elements so a bug report
+        says which build is running, so a stale number points an investigation at
+        the wrong code.

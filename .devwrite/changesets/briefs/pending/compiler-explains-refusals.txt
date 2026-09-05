@@ -1,0 +1,5 @@
+packages: @fluixi/compiler
+bump:     patch
+what:     the compiler warns when a $ intrinsic cannot apply because the module binds
+          that name itself, and when it cannot rewrite a destructured props pattern
+why:      both cases build cleanly and fail at runtime, as a value that stops updating

@@ -1,0 +1,8 @@
+files:  packages/dom/src/version.generated.ts, packages/reactive/src/version.generated.ts,
+        packages/core/src/version.generated.ts
+what:   the generated version constants catch up with the manifests.
+why:    dom and reactive still claimed alpha.79 while their package.json said alpha.81, so
+        every app that loaded them logged that the packages disagree and suggested a stale
+        lockfile — the lockfile was fine, the constant was stale. It is written at build
+        time and the version bump had not been followed by a build.
+verify: rebuilt both packages; the warning is gone

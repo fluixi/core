@@ -1,0 +1,13 @@
+title:  Take the import maps from mappel, and ship a script that installs one
+what:   the generator that lived in this repo is gone; mappel is a devDependency
+        and `build` is one word. Its config is mappel.config.mjs. @fluixi/cdn also
+        ships min.js, templates.js and full.js now, one beside each map, and
+        exports them.
+why:    the same generator existed twice, here and in fluixi-ui, and the two had
+        already drifted. The maps it writes are unchanged, layer for layer.
+        a browser never loads an import map from a src attribute, so a page had to
+        paste the whole map into its own markup or fetch and inject it by hand.
+        Neither is available to a page whose markup is generated, and both pin the
+        page to whatever versions were current when it was written.
+verify: maps compared against what the old generator wrote; the scripts run in a
+        browser against the published packages

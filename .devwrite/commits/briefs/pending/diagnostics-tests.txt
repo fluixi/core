@@ -1,0 +1,6 @@
+files:  packages/compiler/src/transform/diagnostics-surface.spec.ts
+what:   A spec covering the four diagnostic kinds. All four are checked where they
+        are printed; three of them also where the transform emits them.
+why:    Two of the four had been collected and then dropped, which leaves a build
+        green and a value stale. Nothing was pinning any of them.
+verify: spec run, green

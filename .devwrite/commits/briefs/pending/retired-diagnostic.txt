@@ -1,0 +1,8 @@
+files:  packages/compiler/src/integrations.ts
+what:   a retired subpath fails with the name of the one that replaced it, and the
+        file that imported it
+why:    the bundler answered `Missing "./router-next" specifier in "@fluixi/core"`.
+        That names neither the new spelling nor the importer, so finding four call
+        sites meant grepping three repositories. The plugin runs first and knows
+        the rename, so it can say both.
+verify: specs, and a build that hits it

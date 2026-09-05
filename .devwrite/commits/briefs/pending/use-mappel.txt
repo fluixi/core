@@ -1,0 +1,9 @@
+files:  packages/cdn/scripts/build-maps.mjs, importmap.config.mjs (new),
+        scripts/import-map.mjs (deleted)
+what:   the maps come from mappel now, and the layers are declared in a config
+why:    the same generator lived here and in the ui repository, and the copies had
+          already drifted 152 lines apart. Three resolver bugs were fixed twice.
+        the tool is the machinery — resolving a specifier through a package's
+          exports and walking what it finds. The layers are policy and stay here.
+        the maps it writes are byte for byte what this repository generated before.
+verify: build, and the three maps compared against the previous output

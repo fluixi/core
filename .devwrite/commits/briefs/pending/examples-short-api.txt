@@ -1,0 +1,8 @@
+files:  examples/counter/src/App.tsx, examples/intrinsics/src/App.tsx
+what:   the counter example uses the short signal API, and the intrinsics example
+        imports signal from fluixi rather than from @fluixi/reactive/signal
+why:    the examples are what people copy, and every doc page opens with the short
+        API. signal wraps createSignal with a set method, so a module using it
+        ships both.
+output: intrinsics: byte-identical. counter: +75 bytes raw, +14 gzipped.
+verify: typecheck, tests, build

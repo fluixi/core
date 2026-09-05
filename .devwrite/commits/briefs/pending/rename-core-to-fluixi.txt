@@ -1,0 +1,8 @@
+files:  workspace-wide
+what:   @fluixi/core is now fluixi. The bare name is the install target and @fluixi/*
+        keeps every other package.
+why:    the same shape as vue with @vue/*, svelte with @sveltejs/*, solid-js with
+        @solidjs/*. The package you install takes the bare name.
+        Rejected the react layout, where every package is unscoped and each name is
+        a separate land-grab with no namespace protection.
+verify: build, typecheck, spec run, frozen lockfile install, examples, pack

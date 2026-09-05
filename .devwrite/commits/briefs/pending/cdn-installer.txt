@@ -1,0 +1,10 @@
+files:  packages/cdn/package.json, packages/cdn/README.md, pnpm-lock.yaml
+what:   @fluixi/cdn now ships a script beside each map — min.js, templates.js,
+        full.js — and exports them. mappel writes them, so the dependency moves to
+        the release that has them.
+why:    a browser never loads an import map from a src attribute, so a page had to
+        paste the whole map into its own markup or fetch and inject it by hand.
+        Neither is available to a page whose markup is generated, and both pin the
+        page to whatever versions were current when it was written. One script tag
+        now, resolving against the release that produced the map.
+verify: run in a browser against the published packages

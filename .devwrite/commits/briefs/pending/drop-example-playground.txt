@@ -1,0 +1,8 @@
+files:  examples/playground (removed), pnpm-lock.yaml
+what:   the playground under examples is gone.
+why:    it carried its own reactor and its own graph renderer — three hundred lines doing
+        what @fluixi/devtools does, against a snippet API of its own that ran plain
+        javascript with no compiler. Nothing linked to it, and the playground at the root
+        covers what it showed and rather more: several files, real imports, the same graph.
+        Two implementations of the same idea is one more than anyone will keep correct.
+verify: no reference to it anywhere outside its own project file; lockfile refreshed

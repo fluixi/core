@@ -1,0 +1,10 @@
+files:  workspace-wide
+what:   the package is `@fluixi/core` again. The subpath layout from the rename
+        stays: `@fluixi/core/router`, and no `rx`.
+why:    npm refused the bare name — too similar to a package already on the
+        registry — so the publish failed after fifteen sibling packages had already
+        gone out. @fluixi/start shipped depending on a version of `fluixi` that
+        cannot exist.
+        the layout is left alone so that taking the name later is one mechanical
+        substitution rather than a second rename.
+verify: build, specs, examples

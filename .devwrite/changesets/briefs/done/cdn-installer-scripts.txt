@@ -1,0 +1,9 @@
+packages: @fluixi/cdn
+bump:     minor
+what:     three new files, min.js, templates.js and full.js, one beside each map
+          of the same name. Loading one with an ordinary script tag installs that
+          map into the page. The json files are unchanged and still there.
+why:      a browser never loads an import map from a src attribute, so a page had
+          to paste the whole map into its own markup or fetch and inject it by
+          hand. Neither is available to a page whose markup is generated, and both
+          pin it to whatever versions were current when it was written.

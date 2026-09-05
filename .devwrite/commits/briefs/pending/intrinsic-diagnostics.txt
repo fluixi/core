@@ -1,0 +1,6 @@
+files:   packages/compiler/src/integrations.ts
+what:    reportDiagnostics now reads intrinsicDiagnostics, which the transform has
+         always produced and nothing ever consumed
+why:     A module that binds a $ name itself keeps its own binding, so the intrinsic
+         silently does not apply; the build stays green and the value never tracks
+verify:  spec run, green

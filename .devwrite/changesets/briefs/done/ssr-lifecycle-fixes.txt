@@ -1,0 +1,10 @@
+packages: @fluixi/core
+bump:     patch
+what:     onMount and useEffect no longer run on the server, where a component
+          reaching for `document` in either threw during prerender. Suspense also
+          no longer reads an unguarded `process.env.FX_DEBUG`, which threw on the
+          very first hydration in a dev build and froze the page's reactivity —
+          navigation kept changing the URL with nothing on screen updating.
+why:      a component rendered to a string is never mounted and has no teardown
+          to run a cleanup, so neither belongs there. The debug read had no
+          matching flag anywhere else and was dead weight guarded nowhere.

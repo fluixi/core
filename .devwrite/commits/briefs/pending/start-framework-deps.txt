@@ -1,0 +1,7 @@
+files:  packages/start/src/adapter.ts
+what:   frameworkDeps() matches bare fluixi as well as the @fluixi/ prefix
+why:    The test was id.startsWith('@fluixi/'), which bare fluixi fails. The front
+        door was inlined into the SSR bundle while its own subpaths stayed external,
+        so one server ran two copies of router module state. The function's doc
+        comment already described that failure mode.
+verify: spec run, green

@@ -1,0 +1,12 @@
+files:  docs/scripts/search-index.mjs, docs/build.mjs, docs/package.json,
+        .gitignore, assets/theme.css
+what:   the search index is generated into public/ by a prestep that runs before
+        both dev and build, instead of being written into the build output only.
+        The theme also gained two pattern tokens, matching the copy of the file in
+        the component library's repo.
+why:    the index was a build artefact, so on the dev server the request for it
+        fell through to the HTML shell and search silently returned nothing —
+        exactly where someone editing the docs would try it. Generating it into
+        public/ means the dev server and the build serve the same asset, and the
+        build copies it across with everything else there.
+verify: built and served both, and searched from the dev server

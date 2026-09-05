@@ -1,0 +1,7 @@
+packages: fluixi, @fluixi/compiler
+bump:     minor
+what:     the router subpath is `fluixi/router`; it was `@fluixi/core/router-next`
+          the compiler's auto-imported router components follow it
+why:      `-next` was a development label sitting in a public path
+          the old `./router` subpath had already been retired, so the name was free
+breaking: import from `fluixi/router` wherever you imported `@fluixi/core/router-next`

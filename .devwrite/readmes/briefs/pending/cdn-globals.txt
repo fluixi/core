@@ -1,0 +1,24 @@
+package:  the CDN page of the docs — the section that explains which global build
+          to load and what each one can do
+audience: someone dropping a <script> tag into a page, no bundler, no npm
+one-line: which global to load, and which one can compile html`` in the page
+measured: signal.global.js 3.3 KB / 1.3 KB gz
+          reactive.global.js 40.8 KB / 12.2 KB gz
+          dom.global.js 58.1 KB / 18.9 KB gz
+          core.global.js 78.5 KB / 25.9 KB gz
+          fluixi.global.js 103.3 KB / 32.9 KB gz
+verified: every example on the page was run in a browser
+do-not-claim: that html`` works in dom.global.js or core.global.js. It does not:
+          the compiler replaces html`` at build time, those builds contain no
+          compiler, and the tag they carry throws when it runs.
+structure: three short paragraphs, no headings, no code, no lists.
+          1. why html`` needs the full build: the compiler normally replaces the
+             tag at build time; fluixi.global.js carries the compiler itself, so a
+             page with no build step compiles its templates as it renders. The
+             other globals ship the runtime only.
+          2. what the other globals are for: pages that compile elsewhere, or that
+             build nodes through the runtime API directly. dom.global.js and
+             core.global.js are smaller for that reason.
+          3. the constraint: compiling in the page evaluates the code it emits, so
+             a Content-Security-Policy without 'unsafe-eval' blocks the full build.
+             The other globals are unaffected.

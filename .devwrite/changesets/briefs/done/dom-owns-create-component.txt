@@ -1,0 +1,9 @@
+packages: @fluixi/dom, @fluixi/core, @fluixi/template-runtime
+bump:     patch
+what:     a list no longer rebuilds every node when it changes
+why:      the runtime waited for `@fluixi/core` to hand it a way to create
+          components, and until that happened it called the component again on
+          every read. Using the runtime without loading core got that quietly.
+          it creates components itself now. `registerCreateComponent` still
+          installs your own implementation, and `ensureIntegration()` is no longer
+          needed for anything.

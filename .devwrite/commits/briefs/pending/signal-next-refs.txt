@@ -1,0 +1,9 @@
+files:  packages/dom/src/lib/dom/canary-signal-next.spec.ts,
+        packages/compiler/src/analyze/intrinsics.ts,
+        packages/reactive/src/lib/signal/graph/signal-next.ts
+what:   Three references to the removed @fluixi/reactive/signal-next subpath now point
+        at @fluixi/reactive/signal, or say what happened.
+why:    The subpath was dropped for having no export ./signal did not already have,
+        but the dom canary spec still imported it. It failed to resolve, so its four
+        tests never ran, and the local suite still printed a passing Tests line while
+        the Test Files line said one had failed.

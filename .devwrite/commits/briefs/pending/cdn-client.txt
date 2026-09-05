@@ -1,0 +1,9 @@
+files:  packages/dom/src/cdn/dom-client.ts, packages/dom/build-config.cdn.json
+what:   A second CDN entry, dom-client.global.js, at 12.2 kB gzipped. dom.global.js
+        stays as it was, at 19.4 kB.
+why:    A script tag cannot tree-shake, so everything reachable from an entry ships.
+        The SSR string renderer, node serialisation and template parsing are pure
+        weight for a page that renders in a browser, and this entry leaves them out.
+note:   hydrate is kept, not dropped. Adopting server-rendered HTML happens in the
+        browser, so it belongs in a client build.
+verify: 40 exports, reactivity checked inside the bundle, no server names present
