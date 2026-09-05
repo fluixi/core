@@ -18,6 +18,16 @@
     "monaco-editor": "^0.52.0"
   },
   "devDependencies": {
+    "@codingame/monaco-vscode-api": "36.2.7",
+    "@codingame/monaco-vscode-configuration-service-override": "36.2.7",
+    "@codingame/monaco-vscode-editor-api": "36.2.7",
+    "@codingame/monaco-vscode-extensions-service-override": "36.2.7",
+    "@codingame/monaco-vscode-files-service-override": "36.2.7",
+    "@codingame/monaco-vscode-languages-service-override": "36.2.7",
+    "@codingame/monaco-vscode-textmate-service-override": "36.2.7",
+    "@codingame/monaco-vscode-theme-defaults-default-extension": "36.2.7",
+    "@codingame/monaco-vscode-theme-service-override": "36.2.7",
+    "@codingame/monaco-vscode-typescript-language-features-default-extension": "36.2.7",
     "@fluixi/vite-plugin": "workspace:*",
     "@types/babel__standalone": "^7.1.7",
     "vite": "^5.0.0"
