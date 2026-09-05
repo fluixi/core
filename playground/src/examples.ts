@@ -1,115 +1,213 @@
-// Real Fluixi JSX, compiled in-browser. The { name } on createSignal/createMemo/createStore is
-// just the graph label (the core ignores it) — drop it and nodes get positional names instead.
-export interface Example {
-  name: string;
-  code: string;
-}
+// Starting projects. Each is a set of files that import each other and the framework the same
+// way an application does — the point being that nothing here is playground-specific syntax.
+import type { Project } from './project';
 
-export const examples: Example[] = [
+export const examples: Project[] = [
   {
     name: 'Counter',
-    code: `function App() {
-  const [count, setCount] = createSignal(0, { name: 'count' });
-  const double = createMemo(() => count() * 2, { name: 'double' });
+    entry: 'main.tsx',
+    files: [
+      {
+        path: 'main.tsx',
+        code: `import Counter from './Counter';
 
+export default function App() {
   return (
     <div class="card">
       <h3>Counter</h3>
-      <div class="row">
-        <button onClick={() => setCount(count() - 1)}>−</button>
-        <span class="num">{count()}</span>
-        <button onClick={() => setCount(count() + 1)}>+</button>
-      </div>
-      <p class="muted">double = {double()}</p>
+      <Counter start={0} step={1} />
+      <Counter start={100} step={-5} />
     </div>
   );
-}`,
+}
+`,
+      },
+      {
+        path: 'Counter.tsx',
+        code: `import { createSignal, createMemo } from '@fluixi/core';
+
+export default function Counter(props: { start: number; step: number }) {
+  const [count, setCount] = createSignal(props.start, { name: 'count' });
+  const double = createMemo(() => count() * 2, { name: 'double' });
+
+  return (
+    <div class="row">
+      <button onClick={() => setCount(count() - props.step)}>−</button>
+      <span class="num">{count()}</span>
+      <button onClick={() => setCount(count() + props.step)}>+</button>
+      <small>double: {double()}</small>
+    </div>
+  );
+}
+`,
+      },
+    ],
   },
   {
-    name: 'Temperature',
-    code: `function App() {
-  const [celsius, setC] = createSignal(21, { name: 'celsius' });
-  const fahrenheit = createMemo(() => celsius() * 9 / 5 + 32, { name: 'fahrenheit' });
-  const note = createMemo(() => celsius() > 30 ? 'hot' : celsius() < 10 ? 'cold' : 'mild', { name: 'note' });
+    name: 'Todo list',
+    entry: 'main.tsx',
+    files: [
+      {
+        path: 'main.tsx',
+        code: `import { createSignal, createMemo } from '@fluixi/core';
+import { TodoItem } from './TodoItem';
+import { remaining } from './stats';
+
+export default function App() {
+  const [todos, setTodos] = createSignal(
+    [
+      { id: 1, text: 'Read the compiler docs', done: true },
+      { id: 2, text: 'Write a component', done: false },
+    ],
+    { name: 'todos' },
+  );
+  const [draft, setDraft] = createSignal('', { name: 'draft' });
+  const left = createMemo(() => remaining(todos()), { name: 'left' });
+
+  const add = () => {
+    const text = draft().trim();
+    if (!text) return;
+    setTodos([...todos(), { id: Date.now(), text, done: false }]);
+    setDraft('');
+  };
+
+  const toggle = (id: number) =>
+    setTodos(todos().map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
 
   return (
     <div class="card">
-      <h3>Temperature</h3>
+      <h3>Todo · {left()} left</h3>
       <div class="row">
-        <button onClick={() => setC(c => c - 1)}>−</button>
-        <span class="num">{celsius()}°C</span>
-        <button onClick={() => setC(c => c + 1)}>+</button>
+        <input
+          value={draft()}
+          onInput={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="What needs doing?"
+        />
+        <button onClick={add}>Add</button>
       </div>
-      <p>{fahrenheit()}°F · <span class="muted">{note()}</span></p>
+      <ul class="list">
+        {todos().map((todo) => (
+          <TodoItem todo={todo} onToggle={toggle} />
+        ))}
+      </ul>
     </div>
   );
-}`,
+}
+`,
+      },
+      {
+        path: 'TodoItem.tsx',
+        code: `export function TodoItem(props: {
+  todo: { id: number; text: string; done: boolean };
+  onToggle: (id: number) => void;
+}) {
+  return (
+    <li class={props.todo.done ? 'done' : ''}>
+      <label>
+        <input type="checkbox" checked={props.todo.done} onChange={() => props.onToggle(props.todo.id)} />
+        {props.todo.text}
+      </label>
+    </li>
+  );
+}
+`,
+      },
+      {
+        path: 'stats.ts',
+        code: `export function remaining(todos: { done: boolean }[]): number {
+  return todos.filter((t) => !t.done).length;
+}
+`,
+      },
+    ],
   },
   {
-    name: 'Store (cart)',
-    code: `function App() {
-  const [cart, setCart] = createStore({ items: 0, total: 0 }, { name: 'cart' });
-  const summary = createMemo(() => cart.items + ' item(s) · $' + cart.total, { name: 'summary' });
+    name: 'Store',
+    entry: 'main.tsx',
+    files: [
+      {
+        path: 'main.tsx',
+        code: `import { createEffect } from '@fluixi/core';
+import { cart, addItem, total } from './cart';
 
-  const add = () => setCart(c => ({ items: c.items + 1, total: c.total + 12 }));
-  const clear = () => setCart({ items: 0, total: 0 });
+export default function App() {
+  createEffect(() => console.log('total is', total()), { name: 'log' });
 
   return (
     <div class="card">
-      <h3>Cart store</h3>
-      <p class="num">{summary()}</p>
-      <div class="row">
-        <button onClick={add}>Add $12</button>
-        <button onClick={clear}>Clear</button>
-      </div>
+      <h3>Cart · {total()}</h3>
+      <ul class="list">
+        {cart.items.map((item) => (
+          <li>
+            {item.name} × {item.qty}
+          </li>
+        ))}
+      </ul>
+      <button onClick={() => addItem({ name: 'Widget', qty: 1, price: 9 })}>Add widget</button>
     </div>
   );
-}`,
+}
+`,
+      },
+      {
+        path: 'cart.ts',
+        code: `import { createStore, createMemo } from '@fluixi/core';
+
+interface Item { name: string; qty: number; price: number }
+
+export const [cart, setCart] = createStore(
+  { items: [{ name: 'Bolt', qty: 2, price: 3 }] as Item[] },
+  { name: 'cart' },
+);
+
+export function addItem(item: Item) {
+  setCart({ items: [...cart.items, item] });
+}
+
+export const total = createMemo(
+  () => cart.items.reduce((sum, i) => sum + i.qty * i.price, 0),
+  { name: 'total' },
+);
+`,
+      },
+    ],
   },
   {
-    name: 'Async resource',
-    code: `function App() {
-  const [id, setId] = createSignal(1, { name: 'userId' });
+    name: 'Mount by hand',
+    entry: 'main.ts',
+    files: [
+      {
+        path: 'main.ts',
+        code: `// An entry can mount itself instead of exporting a component. Export mount(element)
+// and the playground hands you the preview node — return a function to clean up.
+import { render, createSignal } from '@fluixi/core';
+import { Clock } from './Clock';
 
-  // a resource re-fetches whenever its source signal changes
-  const [user] = createResource(id, async (uid) => {
-    await new Promise(r => setTimeout(r, 600));
-    return { id: uid, name: 'User #' + uid };
-  }, { name: 'user' });
+export function mount(el: HTMLElement) {
+  const [now, setNow] = createSignal(new Date().toLocaleTimeString(), { name: 'now' });
+  const timer = setInterval(() => setNow(new Date().toLocaleTimeString()), 1000);
 
+  const dispose = render(() => Clock({ now }), el);
+  return () => {
+    clearInterval(timer);
+    dispose();
+  };
+}
+`,
+      },
+      {
+        path: 'Clock.tsx',
+        code: `export function Clock(props: { now: () => string }) {
   return (
     <div class="card">
-      <h3>Async resource</h3>
-      <div class="row">
-        <button onClick={() => setId(n => n + 1)}>Load next user</button>
-      </div>
-      <p class="num">{user.loading ? 'loading…' : user().name}</p>
+      <h3>Clock</h3>
+      <span class="num">{props.now()}</span>
     </div>
   );
-}`,
-  },
-  {
-    name: 'Effect log',
-    code: `function App() {
-  const [n, setN] = createSignal(1, { name: 'n' });
-  const squared = createMemo(() => n() * n(), { name: 'squared' });
-  const [log, setLog] = createSignal('', { name: 'log' });
-
-  createEffect(() => {
-    setLog(n() + '² = ' + squared());
-  }, { name: 'sync-log' });
-
-  return (
-    <div class="card">
-      <h3>Effect</h3>
-      <div class="row">
-        <button onClick={() => setN(v => v - 1)}>−</button>
-        <span class="num">{n()}</span>
-        <button onClick={() => setN(v => v + 1)}>+</button>
-      </div>
-      <p class="muted">{log()}</p>
-    </div>
-  );
-}`,
+}
+`,
+      },
+    ],
   },
 ];

@@ -12,8 +12,12 @@ import {
   untrack,
   onCleanup,
   Signal,
+  signal,
+  memo,
+  effect,
+  resource,
 } from '@fluixi/reactive/signal';
-import { createStore } from '@fluixi/reactive/store';
+import { createStore, Immutable, store, StoreSetter } from '@fluixi/reactive/store';
 
 const $NODE = Symbol.for('signal-node');
 
@@ -54,11 +58,38 @@ export function nodeState(n: RNode): NodeState | undefined {
 }
 
 export interface ReactorApi {
-  createSignal<T>(value: T, options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }): [() => T, (v: T | ((prev: T) => T)) => T];
+  createSignal<T>(
+    value: T,
+    options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
+  ): [() => T, (v: T | ((prev: T) => T)) => T];
   createMemo<T>(fn: () => T, options?: { name?: string }): () => T;
   createEffect(fn: () => void, options?: { name?: string }): void;
-  createStore<T extends object>(initial: T, options?: { name?: string; immutable?: boolean }): [T, (...args: unknown[]) => void];
-  createResource(...args: unknown[]): [((() => unknown) & Record<string, unknown>), unknown];
+  createStore<T extends object>(
+    initial: T,
+    options?: { name?: string; immutable?: boolean }
+  ): [T, (...args: unknown[]) => void];
+  createResource(
+    ...args: unknown[]
+  ): [(() => unknown) & Record<string, unknown>, unknown];
+  signal<T>(
+    value: T,
+    options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
+  ): (() => T) & ((v: T | ((prev: T) => T)) => T);
+  memo<T>(fn: () => T, options?: { name?: string }): () => T;
+  effect(fn: () => void, options?: { name?: string }): void;
+  store<T extends object>(
+    initial: T,
+    options?: { name?: string; immutable?: boolean }
+  ): Immutable<T> & { set: StoreSetter<T> };
+  resource<T extends object, S>(
+    fetcher: (source: S) => T | Promise<T>,
+    source?: ()=>S,
+    options?: { name?: string; initialValue?: T | (() => T) }
+  ): ()=>T | undefined & {
+    loading: boolean;
+    error: unknown;
+    refetch: () => void;
+  };
 }
 
 export interface Reactor {
@@ -222,12 +253,45 @@ export function createReactor(): Reactor {
     return [accessor, actions];
   };
 
+  // The short API is the long one with a handle around it — `signal` is
+  // `Object.assign(createSignal(...), { set })`, `memo` and `effect` are the same function
+  // under another name. Deriving them keeps one definition of what tracking means, instead
+  // of a second copy of the node bookkeeping that drifts from the first.
+  const trackedSignal: ReactorApi['signal'] = (value, options) => {
+    const [read, write] = trackedCreateSignal(value, options);
+    Object.defineProperty(read, 'set', { value: write });
+    return read as never;
+  };
+
+  const trackedMemo: ReactorApi['memo'] = trackedCreateMemo;
+  const trackedEffect: ReactorApi['effect'] = trackedCreateEffect;
+
+  const trackedStore: ReactorApi['store'] = (initial, options) => {
+    const [state, set] = trackedCreateStore(initial, options);
+    // A wrapper rather than assigning onto the state: the proxy is the tracking boundary,
+    // and writing a key through it would read as a state change.
+    return new Proxy(state as object, {
+      get: (target, key) => (key === 'set' ? set : (target as Record<PropertyKey, unknown>)[key]),
+      has: (target, key) => key === 'set' || Reflect.has(target, key),
+    }) as never;
+  };
+
+  const trackedResource: ReactorApi['resource'] = (...args) => {
+    const [accessor, controls] = trackedCreateResource(...(args as unknown[]));
+    return Object.assign(accessor, controls as object) as never;
+  };
+
   const api: ReactorApi = {
     createSignal: trackedCreateSignal,
     createMemo: trackedCreateMemo,
     createEffect: trackedCreateEffect,
     createStore: trackedCreateStore,
     createResource: trackedCreateResource,
+    signal: trackedSignal,
+    memo: trackedMemo,
+    store: trackedStore,
+    effect: trackedEffect,
+    resource: trackedResource
   };
 
   return {

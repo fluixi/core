@@ -1,17 +1,13 @@
+@import '../../assets/theme.css';
+
+/* The four node kinds keep their own hues: here colour is the distinction being drawn,
+   which is the one place it earns more than a hairline would. */
 :root {
-  --bg: #0a0b10;
-  --panel: #12141c;
-  --panel-2: #161922;
-  --line: #232734;
-  --text: #e7e9ee;
-  --muted: #8a90a2;
-  --accent: #5eead4;
   --state: #34d399;
   --memo: #a78bfa;
   --store: #38bdf8;
   --effect: #fbbf24;
-  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  --sb: 190px;
 }
 
 * { box-sizing: border-box; }
@@ -25,11 +21,11 @@ body {
 
 .pg {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: var(--split, 50%) 5px minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "head head"
-    "left right";
+    "head head head"
+    "left split right";
   height: 100vh;
   gap: 1px;
   background: var(--line);
@@ -38,42 +34,65 @@ body {
 /* header */
 .pg-head { grid-area: head; display: flex; align-items: center; gap: 20px; padding: 12px 20px; background: var(--panel); }
 .brand { display: flex; align-items: center; gap: 12px; }
-.logo { font-size: 22px; color: var(--accent); filter: drop-shadow(0 0 10px #5eead488); }
+.logo { width: 20px; height: 20px; flex: none; }
 .pg-head h1 { margin: 0; font-size: 15px; white-space: nowrap; }
 .examples { display: flex; gap: 6px; flex: 1; overflow-x: auto; }
 .ex { background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 6px 12px; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
 .ex:hover { background: var(--panel-2); color: var(--text); }
-.ex.on { background: #1a1f2e; border-color: #2c3650; color: var(--text); }
+.ex.on { background: var(--panel-2); border-color: var(--line-strong); color: var(--text); }
 .legend { display: flex; gap: 8px; }
 .chip { font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); white-space: nowrap; }
-.chip.n-state { color: var(--state); border-color: #34d39955; }
-.chip.n-memo { color: var(--memo); border-color: #a78bfa55; }
-.chip.n-store { color: var(--store); border-color: #38bdf855; }
-.chip.n-effect { color: var(--effect); border-color: #fbbf2455; }
+.chip.n-state { color: var(--state); border-color: var(--line); }
+.chip.n-memo { color: var(--memo); border-color: var(--line); }
+.chip.n-store { color: var(--store); border-color: var(--line); }
+.chip.n-effect { color: var(--effect); border-color: var(--line); }
 
 /* left half: tabbed editor / compiled */
-.pg-left { grid-area: left; display: flex; flex-direction: column; background: var(--panel); min-width: 0; }
+.pg-left { grid-area: left; display: grid; grid-template-columns: var(--sb, 190px) minmax(0, 1fr); background: var(--panel); min-width: 0; }
+.pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* file tree */
+.files { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); }
+.files-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 10px 14px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.file-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+.file { display: flex; align-items: center; gap: 2px; border-radius: var(--r-sm); border-left: 2px solid transparent; margin-left: -2px; }
+.file:hover { background: var(--hover); }
+.file.on { background: var(--accent-soft); border-left-color: var(--accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.file-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; background: transparent; border: 0; padding: 6px 8px; text-align: left; cursor: pointer; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.file.on .file-open { color: var(--text); }
+.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-family: var(--font); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; flex: none; }
+/* The row's controls stay out of the way until the row is wanted, but remain tabbable. */
+.file-actions { display: flex; gap: 1px; opacity: 0; padding-right: 4px; transition: opacity .12s; }
+.file:hover .file-actions, .file:focus-within .file-actions { opacity: 1; }
+.icon { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; line-height: 1; padding: 4px 5px; border-radius: 4px; }
+.icon:hover { color: var(--text); background: var(--hover); }
+@media (hover: none) { .file-actions { opacity: 1; } }
+
+.head-actions { display: flex; gap: 8px; }
+.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.ghost:hover { color: var(--text); border-color: var(--line-strong); }
 .tabs-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 6px 12px; border-bottom: 1px solid var(--line); }
 .tabs { display: flex; gap: 2px; }
 .t { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .t:hover { color: var(--text); }
 .t.on { color: var(--text); border-bottom-color: var(--accent); }
-.run { background: linear-gradient(180deg, #5eead4, #2dd4bf); color: #052e2b; border: 0; border-radius: 7px; padding: 6px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
-.run:hover { filter: brightness(1.08); }
+.run { background: var(--text); color: var(--bg); border: 0; border-radius: var(--r-sm); padding: 6px 14px; font-weight: 600; font-size: 12px; cursor: pointer; }
+.run:hover { opacity: .88; }
 .kbd { font-family: var(--mono); font-size: 10px; opacity: 0.7; margin-left: 4px; }
 
 .editor { flex: 1; min-height: 0; overflow: hidden; }
 .editor .monaco-editor, .editor .monaco-editor .overflow-guard { width: 100% !important; }
-.compiled { flex: 1; margin: 0; overflow: auto; padding: 16px 18px; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: #9fb3c8; white-space: pre; }
+.compiled { flex: 1; margin: 0; overflow: auto; padding: 16px 18px; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--code-text); white-space: pre; }
 .hidden { display: none !important; }
 
-.err { display: none; padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: #fda4af; background: #2a1620; border-top: 1px solid #50212f; white-space: pre-wrap; }
+.err { display: none; padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: var(--hl-deletion); background: var(--panel-2); border-top: 1px solid var(--line); white-space: pre-wrap; }
 .err.show { display: block; }
 
 /* right half: preview (top) + graph (bottom) */
-.pg-right { grid-area: right; display: grid; grid-template-rows: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 1px; background: var(--line); min-width: 0; }
+.pg-right { grid-area: right; display: grid; grid-template-rows: var(--rows, 45%) 5px minmax(0, 1fr); gap: 0; background: var(--line); min-width: 0; }
 .r-preview, .r-graph { display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
-.panel-bar { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.panel-bar { display: flex; align-items: center; justify-content: space-between; min-height: 43px; padding: 9px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .stats { text-transform: none; letter-spacing: 0; color: var(--accent); font-family: var(--mono); }
 
 .preview { flex: 1; padding: 22px; overflow: auto; display: flex; align-items: flex-start; }
@@ -83,24 +102,98 @@ body {
 .preview .num { font-family: var(--mono); font-size: 22px; color: var(--accent); min-width: 40px; text-align: center; }
 .preview .muted { color: var(--muted); }
 .preview p { font-size: 14px; }
-.preview button { background: #1c2130; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; transition: border-color .15s, transform .05s; }
-.preview button:hover { border-color: #3a4665; }
+.preview button { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-md); padding: 8px 16px; font-size: 14px; cursor: pointer; transition: border-color .15s, transform .05s; }
+.preview button:hover { border-color: var(--line-strong); }
 .preview button:active { transform: translateY(1px); }
 
 .graph-wrap { flex: 1; overflow: auto; min-height: 0; padding: 8px; }
 .graph { width: 100%; height: 100%; min-height: 240px; }
 
-.inspector { border-top: 1px solid var(--line); padding: 10px 14px; min-height: 64px; font-size: 12.5px; background: #10131b; }
+.inspector { border-top: 1px solid var(--line); padding: 10px 14px; min-height: 64px; font-size: 12.5px; background: var(--panel-2); }
 .ins-empty { color: var(--muted); font-size: 12px; }
 .ins-head { display: flex; align-items: center; gap: 8px; }
 .ins-head b { font-size: 13px; }
 .ins-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); }
-.ins-kind.n-state { color: var(--state); border-color: #34d39955; }
-.ins-kind.n-memo { color: var(--memo); border-color: #a78bfa55; }
-.ins-kind.n-store { color: var(--store); border-color: #38bdf855; }
-.ins-kind.n-effect { color: var(--effect); border-color: #fbbf2455; }
-.ins-kind.n-resource { color: #fb7185; border-color: #fb718555; }
+.ins-kind.n-state { color: var(--state); border-color: var(--line); } .ins-kind.n-memo { color: var(--memo); border-color: var(--line); } .ins-kind.n-store { color: var(--store); border-color: var(--line); } .ins-kind.n-effect { color: var(--effect); border-color: var(--line); } .ins-kind.n-resource { color: var(--hl-deletion); border-color: var(--line); }
 .ins-meta { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .ins-val { margin: 7px 0; font-family: var(--mono); font-size: 12px; color: var(--accent); word-break: break-all; }
 .ins-rel { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 11.5px; }
 .ins-rel b { color: var(--text); font-weight: 600; }
+
+/* Narrow layouts -----------------------------------------------------------
+   The two halves stop being halves: editor above, preview and graph below, each
+   with a height of its own rather than a share of the viewport. `100vh` becomes a
+   minimum, so the page scrolls instead of crushing four panels into one screen. */
+@media (max-width: 1100px) {
+  .pg { height: auto; min-height: 100vh; }
+  .pg-left { min-height: 0; }
+  .pg-right { grid-template-rows: minmax(240px, auto) 5px minmax(320px, auto); }
+  .preview { min-height: 200px; }
+  .graph { min-height: 260px; }
+}
+
+@media (max-width: 860px) {
+  /* The file tree turns into a strip above the editor — a column of its own costs
+     more width than the names need. */
+  .pg-left { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .files { border-right: 0; border-bottom: 1px solid var(--line); }
+  .files-bar { padding: 8px 8px 8px 14px; }
+  .file-list { display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden; padding: 6px 8px; }
+  .file { flex: none; border-left: 0; margin-left: 0; border: 1px solid var(--line); }
+  .file.on { border-radius: var(--r-sm); border-color: var(--accent); }
+  .file-open { padding: 5px 8px; }
+  .file-actions { opacity: 1; }
+  .badge { display: none; }
+}
+
+@media (max-width: 680px) {
+  .pg-head { flex-wrap: wrap; gap: 10px 14px; padding: 10px 14px; }
+  .pg-head h1 { font-size: 14px; }
+  .examples { order: 3; width: 100%; flex: none; }
+  /* The legend is a key for colours that are still visible without it. */
+  .legend { display: none; }
+  .head-actions { margin-left: auto; }
+  .editor { min-height: 320px; }
+  .tabs-bar { padding: 6px 8px; }
+  .t { padding: 7px 10px; }
+}
+
+/* The divider between the halves. Wider hit area than it looks, because a 5px target is a
+   fight; the visible line stays hairline. */
+.splitter { grid-area: split; position: relative; background: var(--line); cursor: col-resize; touch-action: none; }
+.splitter::after { content: ""; position: absolute; inset: 0 -4px; }
+.splitter:hover, .splitter:active { background: var(--accent); }
+/* The divider inside the right column, so the preview can take space from the graph.
+   `grid-area` is reset: the base rule names an area on the outer grid, and carrying that
+   name into this one placed the panels side by side instead of stacked. */
+.splitter.row { grid-area: auto; cursor: row-resize; }
+.splitter.row::after { inset: -4px 0; }
+
+/* Collapsed: the tree stops taking part in layout rather than merely turning invisible, and
+   its column goes with it — a zero-width track still leaves the header text to overflow. */
+.pg.no-sidebar { --sb: 0px; }
+.pg.no-sidebar .files { display: none; }
+.pg.no-sidebar .pg-left { grid-template-columns: minmax(0, 1fr); }
+.burger { font-size: 14px; margin-right: 2px; }
+.saved { font-size: 11.5px; color: var(--muted); font-family: var(--mono); align-self: center; }
+
+@media (max-width: 1100px) {
+  /* Stacked: the divider runs across instead of down. */
+  .pg {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto var(--split, 60vh) 5px minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "left"
+      "split"
+      "right";
+  }
+  .splitter { cursor: row-resize; }
+  .splitter::after { inset: -4px 0; }
+}
+
+.monaco-editor-background, 
+.monaco-editor .margin, .r-preview .preview,
+.pane .compiled, .graph-wrap{
+  background-color: var(--panel-2);
+}

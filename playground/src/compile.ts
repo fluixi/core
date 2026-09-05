@@ -24,14 +24,18 @@ async function ensureBabel(): Promise<BabelStandalone> {
   return loading;
 }
 
-// Compile a JSX/TSX snippet to imperative code (createNativeElement/insert/…). Throws on syntax error.
-export async function compile(code: string): Promise<string> {
+/**
+ * Compile one project file. The filename is passed through because babel reports errors against
+ * it — with several files open, "Unexpected token" is useless without knowing which one.
+ */
+export async function compileFile(code: string, filename: string): Promise<string> {
   const b = await ensureBabel();
+  const isTSX = /\.(tsx|jsx)$/.test(filename);
   const out = b.transform(code, {
-    filename: 'snippet.tsx',
+    filename,
     configFile: false,
     babelrc: false,
-    presets: [['typescript', { isTSX: true, allExtensions: true, jsxPragma: 'jsx' }]],
+    presets: [['typescript', { isTSX, allExtensions: true, jsxPragma: 'jsx' }]],
     plugins: [['fluixi', { backend: 'imperative' }]],
     sourceMaps: false,
   });
