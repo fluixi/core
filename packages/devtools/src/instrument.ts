@@ -11,6 +11,8 @@ import {
   createRoot,
   untrack,
   onCleanup,
+  getOwner,
+  runWithOwner,
   Signal,
   signal,
   memo,
@@ -117,6 +119,17 @@ export function createReactor(): Reactor {
   const consumerStack: number[] = [];
   let seq = 0;
   let dispose = () => {};
+  // The root's owner, kept so a node created after `run` returned still has somewhere to
+  // hang its cleanup. A project's modules load asynchronously, so most registration lands
+  // well after the synchronous setup — with no owner, `onCleanup` runs immediately and the
+  // node disappears the moment it is made, which is why the graph came up empty.
+  let rootOwner: ReturnType<typeof getOwner> = null;
+
+  /** Remove a node when whatever created it goes away, or when the reactor is torn down. */
+  const forget = (id: number) => {
+    const owner = getOwner() ?? rootOwner;
+    if (owner) runWithOwner(owner, () => onCleanup(() => graph.delete(id)));
+  };
 
   const recordRead = (sourceId: number) => {
     const c = consumerStack[consumerStack.length - 1];
@@ -144,7 +157,7 @@ export function createReactor(): Reactor {
     node.value = short(fmt(value));
     node.core = (get as unknown as Record<symbol, { version?: number }>)[$NODE] ?? null;
     graph.set(id, node);
-    onCleanup(() => graph.delete(id));
+    forget(id);
     const read = () => {
       recordRead(id);
       return get();
@@ -160,7 +173,7 @@ export function createReactor(): Reactor {
     const id = seq++;
     const node = base(id, options?.name ?? `m${id}`, 'memo');
     graph.set(id, node);
-    onCleanup(() => graph.delete(id));
+    forget(id);
     const m = createMemo(() => {
       node.core ??= Signal.subtle.currentComputed() as never; // capture the live Computed
       node.deps.clear();
@@ -184,7 +197,7 @@ export function createReactor(): Reactor {
     const id = seq++;
     const node = base(id, options?.name ?? `e${id}`, 'effect');
     graph.set(id, node);
-    onCleanup(() => graph.delete(id));
+    forget(id);
     createEffect(() => {
       node.core ??= Signal.subtle.currentComputed() as never;
       node.deps.clear();
@@ -213,7 +226,7 @@ export function createReactor(): Reactor {
     };
     node.value = '{…}';
     graph.set(id, node);
-    onCleanup(() => graph.delete(id));
+    forget(id);
     const recording = new Proxy(proxy as object, {
       get(t, p, r) {
         recordRead(id);
@@ -242,7 +255,7 @@ export function createReactor(): Reactor {
     };
     node.value = '⏳ loading';
     graph.set(id, node);
-    onCleanup(() => graph.delete(id));
+    forget(id);
     const accessor = (() => {
       recordRead(id);
       return (data as () => unknown)();
@@ -303,6 +316,7 @@ export function createReactor(): Reactor {
       consumerStack.length = 0;
       createRoot((d) => {
         dispose = d;
+        rootOwner = getOwner();
         setup(api);
       });
     },
