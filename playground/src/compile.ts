@@ -31,7 +31,18 @@ async function ensureBabel(): Promise<BabelStandalone> {
 export async function compileFile(code: string, filename: string): Promise<string> {
   const b = await ensureBabel();
   const isTSX = /\.(tsx|jsx)$/.test(filename);
-  const out = b.transform(code, {
+
+  // Two stages, the same two a real app runs. `transformTemplates` resolves the `$`
+  // intrinsics into their runtime calls and compiles html`` — the babel plugin never sees
+  // `$signal` and would leave it as a free identifier, which is exactly what it did.
+  const { transformTemplates } = await import('@fluixi/compiler/transform');
+  const pre = transformTemplates(code, filename, {
+    runtimeModule: '@fluixi/dom',
+    controlFlowModule: '@fluixi/dom',
+  });
+  const source = pre?.code ?? code;
+
+  const out = b.transform(source, {
     filename,
     configFile: false,
     babelrc: false,

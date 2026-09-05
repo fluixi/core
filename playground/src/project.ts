@@ -12,7 +12,26 @@ export interface Project {
   files: ProjectFile[];
 }
 
-export const ENTRY_CANDIDATES = ['main.tsx', 'main.ts', 'index.tsx', 'index.ts', 'App.tsx'];
+export const ENTRY_CANDIDATES = ['src/main.tsx', 'src/main.ts', 'main.tsx', 'main.ts', 'index.tsx', 'index.ts'];
+
+export const HTML_SHELL = 'index.html';
+
+/**
+ * The entry a project actually boots from, taken where possible from its index.html — that
+ * is where a real app declares it, and the playground should not keep a second opinion.
+ */
+export function entryFromHtml(html: string): string | null {
+  const match = /<script[^>]*type=["']module["'][^>]*src=["']([^"']+)["']/i.exec(html);
+  if (!match) return null;
+  return normalizePath(match[1]);
+}
+
+/** The markup a preview starts from: the body of index.html, minus its scripts. */
+export function shellOf(html: string): string {
+  const body = /<body[^>]*>([\s\S]*?)<\/body>/i.exec(html);
+  const inner = body ? body[1] : html;
+  return inner.replace(/<script[\s\S]*?<\/script>/gi, '').trim();
+}
 
 export function normalizePath(input: string): string {
   const trimmed = input.trim().replace(/^\.\//, '').replace(/^\/+/, '');
@@ -31,6 +50,11 @@ export function validatePath(path: string, files: ProjectFile[], ignore?: string
 }
 
 export function findEntry(files: ProjectFile[], preferred?: string): string {
+  const html = files.find((f) => f.path === HTML_SHELL);
+  if (html) {
+    const declared = entryFromHtml(html.code);
+    if (declared && files.some((f) => f.path === declared)) return declared;
+  }
   if (preferred && files.some((f) => f.path === preferred)) return preferred;
   for (const candidate of ENTRY_CANDIDATES) {
     if (files.some((f) => f.path === candidate)) return candidate;

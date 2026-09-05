@@ -9,15 +9,23 @@ import 'monaco-editor/esm/vs/editor/editor.all.js';
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 import 'monaco-editor/esm/vs/language/css/monaco.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
+import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 import 'monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution';
 import 'monaco-editor/esm/vs/basic-languages/css/css.contribution';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
+import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import type { ProjectFile } from './project';
 
 (self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
   getWorker(_: unknown, label: string) {
-    return label === 'typescript' || label === 'javascript' ? new tsWorker() : new editorWorker();
+    if (label === 'typescript' || label === 'javascript') return new tsWorker();
+    if (label === 'json') return new jsonWorker();
+    if (label === 'css' || label === 'scss' || label === 'less') return new cssWorker();
+    if (label === 'html' || label === 'handlebars' || label === 'razor') return new htmlWorker();
+    return new editorWorker();
   },
 };
 
@@ -40,7 +48,25 @@ export function uriFor(path: string): monaco.Uri {
 function languageFor(path: string): string {
   if (path.endsWith('.css')) return 'css';
   if (path.endsWith('.json')) return 'json';
+  if (path.endsWith('.html')) return 'html';
   return 'typescript';
+}
+
+/**
+ * A project's own .d.ts files, handed to the TypeScript worker as libraries.
+ *
+ * fluixi.d.ts is what makes `$signal` and the resolved components known without an import —
+ * the compiler generates it in a real project, and the editor has to read it for the same
+ * reason an editor there would.
+ */
+let libs: monaco.IDisposable[] = [];
+export function setProjectLibs(files: ProjectFile[]): void {
+  for (const lib of libs) lib.dispose();
+  libs = files
+    .filter((f) => f.path.endsWith('.d.ts'))
+    .map((f) =>
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(f.code, `file:///project/${f.path}`),
+    );
 }
 
 let configured = false;

@@ -4,7 +4,7 @@ import { createSignal, onMount } from '@fluixi/core';
 import { createReactor, createGraphView, DEVTOOLS_CSS, nodeVersion, nodeState, type GraphView } from '@fluixi/devtools';
 import { runProject, type RunResult } from './run';
 import { KNOWN_SPECIFIERS } from './modules';
-import { createEditor, setEditorTheme, type CodeEditor } from './editor';
+import { createEditor, setEditorTheme, setProjectLibs, type CodeEditor } from './editor';
 import { examples } from './examples';
 import {
   decodeProject,
@@ -215,6 +215,7 @@ export function Playground() {
     setEntry(start);
     setOpenPath(start);
     editor.reset(copy.files);
+    setProjectLibs(copy.files);
     editor.open(start, copy.files.find((f) => f.path === start)?.code ?? '');
     setTab('editor');
     void run();
@@ -311,8 +312,10 @@ export function Playground() {
       getFiles: () => files(),
       specifiers: KNOWN_SPECIFIERS,
     });
+    setProjectLibs(files());
     editor.onChange(() => {
       setFiles(editor.readAll());
+      setProjectLibs(files());
       persist();
     });
     renderInspector();

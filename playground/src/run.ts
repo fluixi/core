@@ -1,11 +1,15 @@
-// Import the linked entry module and mount whatever it exports.
+// Import the linked entry module and let it mount itself.
 //
-// The entry decides how it mounts: export a component and the playground renders it, or call
-// render() yourself against the element passed to `mount`. Both are ordinary module code.
+// A project is shaped like an app: index.html holds the markup and names the entry, and the
+// entry does its own `render(() => <App/>, document.getElementById('app'))`. The preview
+// starts as that html body, so the element the entry looks for is really there.
+//
+// A project with no index.html still works: export a component as default, or a
+// mount(element) function.
 import { render } from '@fluixi/core';
 import { createRegistry } from './modules';
 import { linkProject } from './link';
-import type { Project } from './project';
+import { HTML_SHELL, shellOf, type Project } from './project';
 import type { Reactor } from '@fluixi/devtools';
 
 export interface RunResult {
@@ -15,7 +19,8 @@ export interface RunResult {
 }
 
 export async function runProject(project: Project, previewEl: HTMLElement, reactor: Reactor): Promise<RunResult> {
-  previewEl.innerHTML = '';
+  const shell = project.files.find((f) => f.path === HTML_SHELL);
+  previewEl.innerHTML = shell ? shellOf(shell.code) : '';
   let error: string | null = null;
   let compiled = new Map<string, string>();
   let disposeRender: () => void = () => {};
@@ -32,6 +37,11 @@ export async function runProject(project: Project, previewEl: HTMLElement, react
             compiled = linked.compiled;
             revoke = linked.revoke;
             const module = (await import(/* @vite-ignore */ linked.entryUrl)) as Record<string, unknown>;
+            // An entry that mounted itself has nothing left to export.
+            if (shell) {
+              resolve();
+              return;
+            }
             const entry = module.default ?? module.App ?? module.mount;
             if (typeof module.mount === 'function') {
               const returned = (module.mount as (el: HTMLElement) => unknown)(previewEl);
