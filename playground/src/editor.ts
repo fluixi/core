@@ -18,6 +18,7 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import type { ProjectFile } from './project';
+import { loadPackageTypes } from './types';
 
 (self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
   getWorker(_: unknown, label: string) {
@@ -89,10 +90,13 @@ function configure() {
   ts.setDiagnosticsOptions({
     noSemanticValidation: false,
     noSyntaxValidation: false,
-    // 2307 is "cannot find module" — @fluixi/* resolve at runtime, not in the worker.
-    diagnosticCodesToIgnore: [2307, 6133],
+    // 6133 is "declared but never read", which is noise while typing. 2307 used to be here
+    // too and hid the fact that nothing resolved; the declarations are loaded now, so a
+    // missing module is worth saying.
+    diagnosticCodesToIgnore: [6133],
   });
   ts.addExtraLib(AMBIENT, 'file:///fluixi-globals.d.ts');
+  void loadPackageTypes();
 
   monaco.editor.defineTheme('fluixi-dark', {
     base: 'vs-dark',
