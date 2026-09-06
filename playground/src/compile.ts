@@ -39,6 +39,8 @@ export async function compileFile(code: string, filename: string): Promise<strin
   const pre = transformTemplates(code, filename, {
     runtimeModule: '@fluixi/dom',
     controlFlowModule: '@fluixi/dom',
+    // The playground is a development tool, so every node can say where it came from.
+    sourceLocations: true,
   });
   const source = pre?.code ?? code;
 

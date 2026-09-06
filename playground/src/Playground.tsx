@@ -66,10 +66,15 @@ export function Playground() {
     files: files().map((f) => ({ path: f.path, code: editor?.read(f.path) || f.code })),
   });
 
+  /** What the inspector last drew, so a frame that changed nothing does not redraw it. */
+  let inspectorSignature = '';
+
   function renderInspector() {
     if (!inspectorEl) return;
     const node = selectedId != null ? reactor?.graph.get(selectedId) : undefined;
     if (!node) {
+      if (inspectorSignature === 'empty') return;
+      inspectorSignature = 'empty';
       inspectorEl.innerHTML = '<span class="ins-empty">click a node to inspect</span>';
       return;
     }
@@ -91,11 +96,22 @@ export function Playground() {
     ]
       .filter(Boolean)
       .join('');
+    const signature = `${node.id}|${val}|${node.runs}|${st ?? ''}|${rel}`;
+    if (signature === inspectorSignature) return;
+    inspectorSignature = signature;
+
     inspectorEl.innerHTML =
       `<div class="ins-head"><span class="ins-kind n-${node.kind}">${node.kind}</span><b>${esc(node.label)}</b>` +
       `<span class="ins-meta">v${nodeVersion(node)} · ${node.runs} runs${st ? ' · ' + st : ''}</span></div>` +
       `<div class="ins-val">${esc(clip(val))}</div>` +
-      `<div class="ins-rel">${rel}</div>`;
+      `<div class="ins-rel">${rel}</div>` +
+      // Only when the graph carries one. The playground reads it and renders it; where it
+      // came from is devtools' business.
+      (node.source
+        ? `<div class="ins-source">📍 ${esc(
+            [node.source.file, node.source.line, node.source.column].filter((p) => p != null).join(':'),
+          )}</div>`
+        : '');
   }
 
   function loop() {
@@ -352,6 +368,7 @@ export function Playground() {
           <span class="chip n-memo">ƒ memo</span>
           <span class="chip n-store">▤ store</span>
           <span class="chip n-effect">⚡ effect</span>
+          <span class="chip n-component">◧ component</span>
         </div>
         <div class="head-actions">
           {() => (saved() ? <span class="saved">saved</span> : null)}

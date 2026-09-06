@@ -7,6 +7,7 @@
   --memo: #a78bfa;
   --store: #38bdf8;
   --effect: #fbbf24;
+  --component: #f0abfc;
   --sb: 190px;
 }
 
@@ -46,6 +47,7 @@ body {
 .chip.n-memo { color: var(--memo); border-color: var(--line); }
 .chip.n-store { color: var(--store); border-color: var(--line); }
 .chip.n-effect { color: var(--effect); border-color: var(--line); }
+.chip.n-component { color: var(--component); border-color: var(--line); }
 
 /* left half: tabbed editor / compiled */
 .pg-left { grid-area: left; display: grid; grid-template-columns: var(--sb, 190px) minmax(0, 1fr); background: var(--panel); min-width: 0; }
@@ -114,7 +116,8 @@ body {
 .ins-head { display: flex; align-items: center; gap: 8px; }
 .ins-head b { font-size: 13px; }
 .ins-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); }
-.ins-kind.n-state { color: var(--state); border-color: var(--line); } .ins-kind.n-memo { color: var(--memo); border-color: var(--line); } .ins-kind.n-store { color: var(--store); border-color: var(--line); } .ins-kind.n-effect { color: var(--effect); border-color: var(--line); } .ins-kind.n-resource { color: var(--hl-deletion); border-color: var(--line); }
+.ins-kind.n-state { color: var(--state); border-color: var(--line); } .ins-kind.n-memo { color: var(--memo); border-color: var(--line); } .ins-kind.n-store { color: var(--store); border-color: var(--line); } .ins-kind.n-effect { color: var(--effect); border-color: var(--line); }
+.ins-kind.n-component { color: var(--component); border-color: var(--line); } .ins-kind.n-resource { color: var(--hl-deletion); border-color: var(--line); }
 .ins-meta { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .ins-val { margin: 7px 0; font-family: var(--mono); font-size: 12px; color: var(--accent); word-break: break-all; }
 .ins-rel { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 11.5px; }
@@ -212,4 +215,6 @@ body {
   --fx-edge: var(--line-strong);
   --fx-accent: var(--accent);
   --fx-write: var(--hl-deletion);
+  --component: var(--component);
 }
+.ins-source { margin-top: 7px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
