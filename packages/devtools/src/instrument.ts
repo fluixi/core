@@ -322,7 +322,11 @@ export function createReactor(): Reactor {
     },
     sample() {
       const changed: number[] = [];
-      const now = performance.now();
+      // Date.now rather than performance.now: the reactor may run in one realm and the view
+      // in another — an iframe preview does exactly that — and each realm's performance
+      // clock has its own origin, so the age the view computed was nonsense and nothing
+      // ever pulsed.
+      const now = Date.now();
       for (const node of graph.values()) {
         if (!node.read) continue;
         const next = short(fmt(node.read()));
