@@ -64,7 +64,9 @@ export interface ReactorApi {
     value: T,
     options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
   ): [() => T, (v: T | ((prev: T) => T)) => T];
-  createMemo<T>(fn: () => T, options?: { name?: string }): () => T;
+  // (fn, value?, options?) — matching the real createMemo. Declaring options second read
+  // `{ name: 'double' }` as the initial value, so a named memo showed up as m1.
+  createMemo<T>(fn: () => T, value?: T, options?: { name?: string }): () => T;
   createEffect(fn: () => void, options?: { name?: string }): void;
   createStore<T extends object>(
     initial: T,
@@ -77,7 +79,7 @@ export interface ReactorApi {
     value: T,
     options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
   ): (() => T) & ((v: T | ((prev: T) => T)) => T);
-  memo<T>(fn: () => T, options?: { name?: string }): () => T;
+  memo<T>(fn: () => T, value?: T, options?: { name?: string }): () => T;
   effect(fn: () => void, options?: { name?: string }): void;
   store<T extends object>(
     initial: T,
@@ -169,7 +171,7 @@ export function createReactor(): Reactor {
     return [read, write as never];
   };
 
-  const trackedCreateMemo: ReactorApi['createMemo'] = (fn, options) => {
+  const trackedCreateMemo: ReactorApi['createMemo'] = (fn, value, options) => {
     const id = seq++;
     const node = base(id, options?.name ?? `m${id}`, 'memo');
     graph.set(id, node);
@@ -185,7 +187,7 @@ export function createReactor(): Reactor {
       } finally {
         consumerStack.pop();
       }
-    });
+    }, value, options as never);
     node.read = () => untrack(m);
     return () => {
       recordRead(id);

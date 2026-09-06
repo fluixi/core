@@ -7,7 +7,7 @@ describe('@fluixi/devtools createReactor', () => {
     const r = createReactor();
     r.run(({ createSignal, createMemo, createEffect, createStore }) => {
       const [count] = createSignal(1, { name: 'count' });
-      createMemo(() => count() * 2, { name: 'double' });
+      createMemo(() => count() * 2, undefined, { name: 'double' });
       createEffect(() => {}, { name: 'log' });
       createStore({ a: 1 }, { name: 'st' });
     });
@@ -20,7 +20,7 @@ describe('@fluixi/devtools createReactor', () => {
     const r = createReactor();
     r.run(({ createSignal, createMemo }) => {
       const [count] = createSignal(1, { name: 'count' });
-      const double = createMemo(() => count() * 2, { name: 'double' });
+      const double = createMemo(() => count() * 2, undefined, { name: 'double' });
       double(); // force the memo to run so it records its read
     });
     const count = [...r.graph.values()].find((n) => n.label === 'count')!;
