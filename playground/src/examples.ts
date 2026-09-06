@@ -131,7 +131,6 @@ export function App() {
         code: `// $signal needs no import — the compiler resolves it, and fluixi.d.ts describes it.
 export function Counter(props: { start: number; step: number }) {
   const count = $signal(props.start, { name: 'count' });
-  // memo takes (fn, initial?, options?) — the name goes third.
   const double = $memo(() => count() * 2, undefined, { name: 'double' });
 
   return (

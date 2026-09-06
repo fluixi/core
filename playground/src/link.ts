@@ -105,7 +105,10 @@ export async function linkProject(
     return url;
   };
 
-  // One shim per bare specifier actually used, re-exporting the registry namespace by name.
+  // One shim per bare specifier actually used, re-exporting from the registry the preview
+  // publishes. The names are read here, from the same packages, but the values come from
+  // whichever realm ends up running the code — the preview is an iframe, and a function
+  // taken from this document would build its DOM in the wrong one.
   const shims = new Map<string, string>();
   const shimFor = (specifier: string): string => {
     const existing = shims.get(specifier);
@@ -116,11 +119,9 @@ export async function linkProject(
         `Cannot resolve "${specifier}". The playground bundles ${Object.keys(registry).sort().join(', ')}.`,
       );
     }
-    const key = `__fx_registry_${shims.size}`;
-    (globalThis as Record<string, unknown>)[key] = namespace;
     const names = Object.keys(namespace).filter((n) => /^[A-Za-z_$][\w$]*$/.test(n) && n !== 'default');
     const body =
-      `const ns = globalThis[${JSON.stringify(key)}];\n` +
+      `const ns = globalThis[Symbol.for('fluixi.playground.registry')][${JSON.stringify(specifier)}];\n` +
       names.map((n) => `export const ${n} = ns[${JSON.stringify(n)}];`).join('\n') +
       `\nexport default ns;\n`;
     const url = track(new Blob([body], { type: 'text/javascript' }));

@@ -197,3 +197,19 @@ body {
 .pane .compiled, .graph-wrap{
   background-color: var(--panel-2);
 }
+
+/* The preview is the project's own document, so it fills its panel and brings its own
+   background — the page's palette stops at the frame's edge. */
+.preview-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+
+/* The graph reads these; unset, it keeps its own dark defaults. Mapping them onto the
+   page's palette is what makes it follow the theme. */
+.graph {
+  --fx-node-bg: var(--panel);
+  --fx-node-bg-selected: var(--panel-2);
+  --fx-label: var(--text);
+  --fx-muted: var(--muted);
+  --fx-edge: var(--line-strong);
+  --fx-accent: var(--accent);
+  --fx-write: var(--hl-deletion);
+}

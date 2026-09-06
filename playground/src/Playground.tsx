@@ -1,7 +1,7 @@
 // Playground app — compiles a multi-file project in-browser, mounts it, and graphs its
 // reactivity via @fluixi/devtools. Left = file tree + editor; right = preview + graph.
 import { createSignal, onMount } from '@fluixi/core';
-import { createReactor, createGraphView, DEVTOOLS_CSS, nodeVersion, nodeState, type GraphView } from '@fluixi/devtools';
+import { createGraphView, DEVTOOLS_CSS, nodeVersion, nodeState, type GraphView, type Reactor } from '@fluixi/devtools';
 import { runProject, type RunResult } from './run';
 import { KNOWN_SPECIFIERS } from './modules';
 import { createEditor, setEditorTheme, setProjectLibs, type CodeEditor } from './editor';
@@ -48,7 +48,8 @@ export function Playground() {
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
 
-  const reactor = createReactor();
+  // The reactor belongs to the preview iframe now, so it arrives with each run.
+  let reactor: Reactor | null = null;
   let view: GraphView | null = null;
   let current: RunResult | null = null;
   let selectedId: number | null = null;
@@ -67,14 +68,14 @@ export function Playground() {
 
   function renderInspector() {
     if (!inspectorEl) return;
-    const node = selectedId != null ? reactor.graph.get(selectedId) : undefined;
+    const node = selectedId != null ? reactor?.graph.get(selectedId) : undefined;
     if (!node) {
       inspectorEl.innerHTML = '<span class="ins-empty">click a node to inspect</span>';
       return;
     }
-    const labelOf = (id: number) => reactor.graph.get(id)?.label ?? '?';
+    const labelOf = (id: number) => reactor?.graph.get(id)?.label ?? '?';
     const sources = [...node.deps].map(labelOf);
-    const observers = [...reactor.graph.values()].filter((n) => n.deps.has(node.id)).map((n) => n.label);
+    const observers = [...(reactor?.graph.values() ?? [])].filter((n) => n.deps.has(node.id)).map((n) => n.label);
     const writes = [...node.writes].map(labelOf);
     let val = node.value ?? '';
     try {
@@ -100,9 +101,9 @@ export function Playground() {
   function loop() {
     cancelAnimationFrame(raf);
     const tick = () => {
-      if (view) {
+      if (view && reactor) {
         reactor.sample();
-        view.update(reactor.graph, performance.now());
+        view.update(reactor.graph);
         let edges = 0;
         let runs = 0;
         for (const n of reactor.graph.values()) {
@@ -130,7 +131,8 @@ export function Playground() {
 
     const project = snapshot();
     setFiles(project.files);
-    current = await runProject(project, previewEl, reactor);
+    current = await runProject(project, previewEl);
+    reactor = current.reactor;
     setError(current.error);
     setCompiled(current.compiled.get(openPath()) ?? current.compiled.get(project.entry) ?? '');
     loop();

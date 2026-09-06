@@ -1,81 +1,108 @@
-// Import the linked entry module and let it mount itself.
+// Run a project in an iframe holding its own document.
 //
-// A project is shaped like an app: index.html holds the markup and names the entry, and the
-// entry does its own `render(() => <App/>, document.getElementById('app'))`. The preview
-// starts as that html body, so the element the entry looks for is really there.
+// The preview used to be the body of index.html injected into a div, which threw away the
+// head, any <style>, and everything on <body> — `style="background: red"` there did nothing.
+// An iframe is the honest thing: the project's html is the document and its script is the
+// entry, exactly as vite would serve it.
 //
-// A project with no index.html still works: export a component as default, or a
-// mount(element) function.
-import { render } from '@fluixi/core';
-import { createRegistry } from './modules';
+// The framework loads inside that document too, from src/preview/bootstrap.ts. Handing it in
+// from here would bind event delegation to the outer document, and the preview would render
+// and then ignore every click.
 import { linkProject } from './link';
-import { HTML_SHELL, shellOf, type Project } from './project';
+import { createRegistry } from './modules';
+import { HTML_SHELL, type Project } from './project';
 import type { Reactor } from '@fluixi/devtools';
 
 export interface RunResult {
   error: string | null;
   compiled: Map<string, string>;
+  /** The reactor that ran the project. It lives in the iframe, so the graph does too. */
+  reactor: Reactor | null;
   dispose: () => void;
 }
 
-export async function runProject(project: Project, previewEl: HTMLElement, reactor: Reactor): Promise<RunResult> {
+const FALLBACK_HTML = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8" /></head><body><div id="app"></div></body></html>`;
+
+/** The project's document, with its own module script removed — the entry is injected. */
+function documentFor(project: Project): string {
   const shell = project.files.find((f) => f.path === HTML_SHELL);
-  previewEl.innerHTML = shell ? shellOf(shell.code) : '';
-  let error: string | null = null;
+  const html = shell?.code ?? FALLBACK_HTML;
+  return html.replace(/<script[^>]*type=["']module["'][\s\S]*?<\/script>/gi, '');
+}
+
+interface PreviewWindow extends Window {
+  __fxEntry?: string;
+  __fxReactor?: Reactor;
+  __fxError?: string;
+}
+
+export async function runProject(project: Project, host: HTMLElement): Promise<RunResult> {
+  host.innerHTML = '';
+
   let compiled = new Map<string, string>();
-  let disposeRender: () => void = () => {};
   let revoke: () => void = () => {};
+  let error: string | null = null;
+
+  const frame = document.createElement('iframe');
+  frame.className = 'preview-frame';
+  frame.setAttribute('title', 'Preview');
+  host.appendChild(frame);
+
+  const win = frame.contentWindow as PreviewWindow | null;
+  const doc = frame.contentDocument;
+  if (!win || !doc) {
+    return { error: 'The preview frame did not open.', compiled, reactor: null, dispose: () => frame.remove() };
+  }
 
   try {
-    // The reactor hands out instrumented primitives; the registry puts them behind the same
-    // names the packages export, so an imported createSignal still lands in the graph.
-    await new Promise<void>((resolve, reject) => {
-      reactor.run((api) => {
-        const registry = createRegistry(api as unknown as Record<string, unknown>);
-        linkProject(project, registry)
-          .then(async (linked) => {
-            compiled = linked.compiled;
-            revoke = linked.revoke;
-            const module = (await import(/* @vite-ignore */ linked.entryUrl)) as Record<string, unknown>;
-            // An entry that mounted itself has nothing left to export.
-            if (shell) {
-              resolve();
-              return;
-            }
-            const entry = module.default ?? module.App ?? module.mount;
-            if (typeof module.mount === 'function') {
-              const returned = (module.mount as (el: HTMLElement) => unknown)(previewEl);
-              if (typeof returned === 'function') disposeRender = returned as () => void;
-            } else if (typeof entry === 'function') {
-              disposeRender = render(() => (entry as (props: object) => unknown)({}), previewEl) as () => void;
-            } else if (entry instanceof Node) {
-              previewEl.appendChild(entry);
-            } else {
-              throw new Error(
-                `${project.entry} exports nothing to mount. Export a component as default, or export ` +
-                  `a mount(element) function.`,
-              );
-            }
-            resolve();
-          })
-          .catch(reject);
-      });
+    // The registry is rebuilt inside the frame; this copy only supplies the export names the
+    // shims re-export, which are the same either side.
+    const linked = await linkProject(project, createRegistry({}));
+    compiled = linked.compiled;
+    revoke = linked.revoke;
+
+    doc.open();
+    doc.write(documentFor(project));
+    doc.close();
+
+    win.__fxEntry = linked.entryUrl;
+
+    await new Promise<void>((resolve) => {
+      const script = doc.createElement('script');
+      script.type = 'module';
+      script.src = new URL('/src/preview/bootstrap.ts', location.origin).href;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        error = 'The preview could not start.';
+        resolve();
+      };
+      doc.body.appendChild(script);
     });
+
+    // The bootstrap publishes its reactor once the entry has run, or says why it could not.
+    for (let i = 0; i < 150 && !win.__fxReactor; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    error ??= win.__fxError ?? null;
   } catch (e) {
     error = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
   }
 
+  const reactor = win.__fxReactor ?? null;
+
   return {
     error,
     compiled,
+    reactor,
     dispose() {
       try {
-        disposeRender();
+        reactor?.dispose();
       } catch {
-        /* the module may already be gone */
+        /* the frame may already be gone */
       }
+      frame.remove();
       revoke();
-      reactor.dispose();
     },
   };
 }
