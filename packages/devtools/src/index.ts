@@ -17,5 +17,7 @@
 //   tick();
 export { createReactor, nodeVersion, nodeState } from './instrument.js';
 export type { Reactor, ReactorApi, RNode, NodeKind, NodeState } from './instrument.js';
+export { markReactiveSource } from './source.js';
+export type { ReactiveSourceLocation, ReactiveSourceMetadata } from './source.js';
 export { createGraphView, DEVTOOLS_CSS } from './graph-view.js';
 export type { GraphView, GraphViewOptions } from './graph-view.js';

@@ -20,10 +20,11 @@ import {
   resource,
 } from '@fluixi/reactive/signal';
 import { createStore, Immutable, store, StoreSetter } from '@fluixi/reactive/store';
+import { componentSource, installSourceMarker, takeReactiveSource, type ReactiveSourceLocation } from './source.js';
 
 const $NODE = Symbol.for('signal-node');
 
-export type NodeKind = 'state' | 'memo' | 'effect' | 'store' | 'resource';
+export type NodeKind = 'state' | 'memo' | 'effect' | 'store' | 'resource' | 'component';
 export type NodeState = 'clean' | 'check' | 'dirty';
 
 export interface RNode {
@@ -44,6 +45,8 @@ export interface RNode {
   lastPulse: number;
   /** Live core node, when reachable — gives the real version + state. */
   core?: { version?: number; state?: number } | null;
+  /** Where the author created this node, when the compiler said so. Always optional. */
+  source?: ReactiveSourceLocation;
   /** Resource only. */
   loading?: boolean;
   depth?: number;
@@ -108,6 +111,13 @@ const fmt = (v: unknown): string => {
     if (typeof v === 'string') return JSON.stringify(v);
     if (typeof v === 'function') return 'ƒ';
     if (typeof v === 'bigint') return `${v}n`;
+    // The compiler wraps every component in a memo, so a DOM node is a common value here
+    // and `[object HTMLDivElement]` says nothing worth the width. Duck-typed rather than
+    // `instanceof Node`, which has no meaning off the main realm or outside a browser.
+    const dom = v as { nodeType?: number; nodeName?: string; tagName?: string };
+    if (typeof dom?.nodeType === 'number' && typeof dom.nodeName === 'string') {
+      return dom.tagName ? `<${dom.tagName.toLowerCase()}>` : `#${dom.nodeName.toLowerCase()}`;
+    }
     if (typeof v === 'object' && v) return JSON.stringify(v);
     return String(v);
   } catch {
@@ -117,7 +127,13 @@ const fmt = (v: unknown): string => {
 const short = (s: string, n = 18): string => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 export function createReactor(): Reactor {
+  installSourceMarker();
+
   const graph = new Map<number, RNode>();
+  /** Run counts as of the last sample, so a node with no readable value can still pulse. */
+  const runsAtLastSample = new Map<number, number>();
+  /** Nodes still carrying a positional label, so a better one can replace it later. */
+  const unnamed = new Set<number>();
   const consumerStack: number[] = [];
   let seq = 0;
   let dispose = () => {};
@@ -130,7 +146,15 @@ export function createReactor(): Reactor {
   /** Remove a node when whatever created it goes away, or when the reactor is torn down. */
   const forget = (id: number) => {
     const owner = getOwner() ?? rootOwner;
-    if (owner) runWithOwner(owner, () => onCleanup(() => graph.delete(id)));
+    if (owner) {
+      runWithOwner(owner, () =>
+        onCleanup(() => {
+          graph.delete(id);
+          runsAtLastSample.delete(id);
+          unnamed.delete(id);
+        }),
+      );
+    }
   };
 
   const recordRead = (sourceId: number) => {
@@ -141,20 +165,28 @@ export function createReactor(): Reactor {
     const c = consumerStack[consumerStack.length - 1];
     if (c != null && c !== targetId) graph.get(c)?.writes.add(targetId);
   };
-  const base = (id: number, label: string, kind: NodeKind): RNode => ({
-    id,
-    label,
-    kind,
-    deps: new Set(),
-    writes: new Set(),
-    runs: 0,
-    lastPulse: 0,
-  });
+  // Every tracked primitive comes through here, so it is the one place a mark is taken. An
+  // explicit `{ name }` wins; otherwise the node borrows the variable name the compiler
+  // read, which is why `const count = signal(0)` shows as `count` rather than `s0`.
+  const base = (id: number, named: string | undefined, kind: NodeKind, fallback: string): RNode => {
+    const mark = takeReactiveSource();
+    if (!named && !mark?.name) unnamed.add(id);
+    return {
+      id,
+      label: named ?? mark?.name ?? fallback,
+      kind,
+      deps: new Set(),
+      writes: new Set(),
+      runs: 0,
+      lastPulse: 0,
+      ...(mark?.location ? { source: mark.location } : {}),
+    };
+  };
 
   const trackedCreateSignal: ReactorApi['createSignal'] = (value, options) => {
     const id = seq++;
     const [get, set] = createSignal(value, options as never);
-    const node = base(id, options?.name ?? `s${id}`, 'state');
+    const node = base(id, options?.name, 'state', `s${id}`);
     node.read = () => untrack(get);
     node.value = short(fmt(value));
     node.core = (get as unknown as Record<symbol, { version?: number }>)[$NODE] ?? null;
@@ -173,7 +205,7 @@ export function createReactor(): Reactor {
 
   const trackedCreateMemo: ReactorApi['createMemo'] = (fn, value, options) => {
     const id = seq++;
-    const node = base(id, options?.name ?? `m${id}`, 'memo');
+    const node = base(id, options?.name, 'memo', `m${id}`);
     graph.set(id, node);
     forget(id);
     const m = createMemo(() => {
@@ -197,7 +229,7 @@ export function createReactor(): Reactor {
 
   const trackedCreateEffect: ReactorApi['createEffect'] = (fn, options) => {
     const id = seq++;
-    const node = base(id, options?.name ?? `e${id}`, 'effect');
+    const node = base(id, options?.name, 'effect', `e${id}`);
     graph.set(id, node);
     forget(id);
     createEffect(() => {
@@ -218,7 +250,7 @@ export function createReactor(): Reactor {
   const trackedCreateStore: ReactorApi['createStore'] = (initial, options) => {
     const id = seq++;
     const [proxy, setter] = createStore(initial as object, { immutable: true, ...(options as object) } as never);
-    const node = base(id, options?.name ?? `store${id}`, 'store');
+    const node = base(id, options?.name, 'store', `store${id}`);
     node.read = () => {
       try {
         return untrack(() => JSON.stringify(proxy));
@@ -246,7 +278,7 @@ export function createReactor(): Reactor {
     const id = seq++;
     const last = args[args.length - 1];
     const name = last && typeof last === 'object' && !Array.isArray(last) && typeof last !== 'function' ? (last as { name?: string }).name : undefined;
-    const node = base(id, name ?? `res${id}`, 'resource');
+    const node = base(id, name, 'resource', `res${id}`);
     const [data, actions] = (createResource as unknown as (...a: unknown[]) => [Record<string, unknown> & (() => unknown), unknown])(...args);
     node.read = () => {
       try {
@@ -314,6 +346,8 @@ export function createReactor(): Reactor {
     run(setup) {
       dispose();
       graph.clear();
+      runsAtLastSample.clear();
+      unnamed.clear();
       seq = 0;
       consumerStack.length = 0;
       createRoot((d) => {
@@ -330,14 +364,40 @@ export function createReactor(): Reactor {
       // ever pulsed.
       const now = Date.now();
       for (const node of graph.values()) {
-        if (!node.read) continue;
-        const next = short(fmt(node.read()));
+        // An effect has no value to read, so what marks it as having done something is the
+        // run count the wrapper keeps. Without this an effect never pulsed.
+        if (!node.read) {
+          const seen = runsAtLastSample.get(node.id);
+          if (seen !== undefined && node.runs > seen) {
+            node.lastPulse = now;
+            changed.push(node.id);
+          }
+          runsAtLastSample.set(node.id, node.runs);
+          continue;
+        }
+        const raw = node.read();
+        // The compiler wraps each component in a memo, and `createComponent` stamps the
+        // component's name on what it returns. A memo that has no name of its own is that
+        // wrapper, so it can say `Counter` rather than `m5`.
+        if (unnamed.has(node.id)) {
+          const stamped = (raw as { $name?: unknown })?.$name;
+          if (typeof stamped === 'string' && stamped) {
+            node.label = stamped;
+            // Still a memo underneath — this only says so, so a renderer can draw it as
+            // what the author wrote rather than as the wrapper around it.
+            node.kind = 'component';
+            node.source ??= componentSource(stamped);
+            unnamed.delete(node.id);
+          }
+        }
+        const next = short(fmt(raw));
         if (next !== node.value) {
           node.value = next;
           node.runs++;
           node.lastPulse = now;
           changed.push(node.id);
         }
+        runsAtLastSample.set(node.id, node.runs);
       }
       return changed;
     },

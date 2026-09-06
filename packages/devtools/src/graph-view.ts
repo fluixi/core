@@ -8,17 +8,23 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 const COL = 200;
 const ROW = 92;
 const NW = 132;
+/** file.ts:12 — the path's tail only; the full one is for an inspector with room for it. */
+const shortSource = (s: { file?: string; line?: number; column?: number }): string => {
+  const file = (s.file ?? '').split('/').pop() ?? '';
+  return s.line == null ? file : `${file}:${s.line}`;
+};
+
 /** What the value column holds at 12px monospace, ellipsis included. */
-const VALUE_CHARS = 9;
+const VALUE_CHARS = 7;
 const fit = (v: string | undefined): string => {
   const text = v ?? '';
   return text.length > VALUE_CHARS ? text.slice(0, VALUE_CHARS - 1) + '…' : text;
 };
-const NH = 56;
+const NH = 62;
 const PAD = 48;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component' };
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
   const n = document.createElementNS(SVGNS, tag);
@@ -64,15 +70,19 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   const uid = Math.random().toString(36).slice(2, 8);
   const labelClip = `fx-label-clip-${uid}`;
   const valueClip = `fx-value-clip-${uid}`;
-  const LABEL_W = 48;
+  const LABEL_W = 66;
 
   const defs = el('defs');
   const forLabel = el('clipPath', { id: labelClip });
   forLabel.appendChild(el('rect', { x: 8, y: 0, width: LABEL_W, height: NH }));
+  const sourceClip = `fx-source-clip-${uid}`;
+  const forSource = el('clipPath', { id: sourceClip });
+  forSource.appendChild(el('rect', { x: 8, y: 0, width: NW - 16, height: NH }));
+
   const forValue = el('clipPath', { id: valueClip });
   // A little past the box on the right, so the ellipsis itself is not the thing clipped.
   forValue.appendChild(el('rect', { x: 8 + LABEL_W + 6, y: 0, width: NW - LABEL_W - 10, height: NH }));
-  defs.append(forLabel, forValue);
+  defs.append(forLabel, forValue, forSource);
 
   let edgeLayer = el('g', { class: 'fx-edges' });
   let nodeLayer = el('g', { class: 'fx-nodes' });
@@ -142,6 +152,16 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       value.setAttribute('clip-path', `url(#${valueClip})`);
       value.textContent = fit(node.value);
       g.append(kind, label, value);
+
+      // Only when the compiler marked it: an empty line here would read as missing data.
+      if (node.source) {
+        const source = el('text', { class: 'fx-source', x: 12, y: 52 });
+        source.setAttribute('clip-path', `url(#${sourceClip})`);
+        source.textContent = shortSource(node.source);
+        source.appendChild(el('title')).textContent =
+          `${node.source.file ?? ''}:${node.source.line ?? ''}:${node.source.column ?? ''}`;
+        g.appendChild(source);
+      }
       g.addEventListener('click', () => {
         selected = node.id;
         applySelected();
@@ -207,11 +227,13 @@ export const DEVTOOLS_CSS = `
 .fx-node.n-effect { --glow: var(--effect, #fbbf24); }
 .fx-node.n-store { --glow: var(--store, #38bdf8); }
 .fx-node.n-resource { --glow: var(--fx-write, #fb7185); }
+.fx-node.n-component { --glow: var(--component, #f0abfc); }
 .fx-box { fill: var(--fx-node-bg, #131722); stroke: var(--glow, #5eead4); stroke-width: 1.4; stroke-opacity: calc(.5 + var(--pulse,0) * .5); }
 .fx-node.selected .fx-box { fill: var(--fx-node-bg-selected, #1a2230); stroke-width: 2.4; }
 .fx-kind { fill: var(--glow, #5eead4); font-family: ui-monospace, monospace; font-size: 9.5px; opacity: .85; }
 .fx-label { fill: var(--fx-label, #e7e9ee); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; }
 .fx-value { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 12px; }
+.fx-source { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 9.5px; opacity: .75; }
 .fx-node.n-effect .fx-value { fill: var(--effect, #fbbf24); }
 .fx-node.n-resource .fx-value { fill: var(--fx-write, #fb7185); }
 `;
