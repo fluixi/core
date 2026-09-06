@@ -98,6 +98,11 @@ export interface IRComponent {
    */
   source?: IRComponentSource;
   /**
+   * Where the tag was written, when the transform was asked for source locations. Distinct
+   * from `source`, which says where the component reference was resolved from.
+   */
+  at?: { file: string; line: number; column: number };
+  /**
    * A `load:` strategy read off the tag by the frontend. The resolve pass folds it into
    * `source.loading`; it lives here first because the frontend knows the directive and
    * the resolve pass knows whether the name is deferrable at all.

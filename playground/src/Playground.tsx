@@ -58,6 +58,8 @@ export function Playground() {
 
   const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
   const clip = (s: string, n = 140) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const at = (s?: { file?: string; line?: number; column?: number }) =>
+    s ? [s.file, s.line, s.column].filter((p) => p != null).join(':') : '';
 
   /** The project as it stands in the editor, which is the source of truth for the text. */
   const snapshot = (): Project => ({
@@ -96,7 +98,7 @@ export function Playground() {
     ]
       .filter(Boolean)
       .join('');
-    const signature = `${node.id}|${val}|${node.runs}|${st ?? ''}|${rel}`;
+    const signature = `${node.id}|${node.kind}|${val}|${node.runs}|${st ?? ''}|${rel}|${at(node.source)}`;
     if (signature === inspectorSignature) return;
     inspectorSignature = signature;
 
@@ -107,10 +109,11 @@ export function Playground() {
       `<div class="ins-rel">${rel}</div>` +
       // Only when the graph carries one. The playground reads it and renders it; where it
       // came from is devtools' business.
-      (node.source
-        ? `<div class="ins-source">📍 ${esc(
-            [node.source.file, node.source.line, node.source.column].filter((p) => p != null).join(':'),
-          )}</div>`
+      (node.source ? `<div class="ins-source">📍 ${esc(at(node.source))}</div>` : '') +
+      // A component is created where its tag is written; where it is declared is elsewhere,
+      // and only worth a line when it is somewhere else.
+      (node.declaredAt && at(node.declaredAt) !== at(node.source)
+        ? `<div class="ins-source">◧ declared ${esc(at(node.declaredAt))}</div>`
         : '');
   }
 

@@ -1,0 +1,12 @@
+package:  @fluixi/devtools — replaces one paragraph in the README's "Where a node came from"
+audience: someone reading the graph
+one-line: one paragraph, no heading, no code block, at most 60 words
+verified: a component reported src/main.tsx:4:23 for its tag and src/app.tsx:4:7 for its
+          declaration
+do-not-claim: that these are the same place, or that either is always present
+structure: one paragraph. Two facts:
+  1. a component node's `source` is where its tag was written, which is where the node was
+     made — the same meaning `source` has for every other kind.
+  2. `declaredAt` is where the component itself was declared, which is usually another file.
+     It stands in for `source` when nothing marked the tag, and two components sharing a
+     name are reported without a location rather than with the wrong one.

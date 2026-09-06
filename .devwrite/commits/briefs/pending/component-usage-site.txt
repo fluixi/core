@@ -1,0 +1,16 @@
+files:  packages/compiler/src/ir/nodes.ts, lower/jsx.ts, codegen/backends/imperative.ts,
+        transform/templates.ts, transform/source-locations.spec.ts,
+        packages/devtools/src/instrument.ts, instrument.spec.ts, README.md,
+        playground/src/Playground.tsx
+what:   a component node now says both where its tag was written and where the component was
+        declared. The mark for the tag is emitted inside the call that wraps it, so it is the
+        one the wrapping memo takes.
+why:    `source` means the same thing for every kind — where this node was made — and a
+        wrapper memo is made where the tag is. Where the component itself lives is a second
+        fact and gets a field of its own, which stands in for the first when nothing marked
+        the tag.
+        recognising a component no longer depends on the node being unnamed. The mark at the
+        tag carries the component's name, which left the node named and so never recognised
+        as a component at all.
+verify: run in a browser — a component reported its tag at src/main.tsx:4:23 and its
+        declaration at src/app.tsx:4:7

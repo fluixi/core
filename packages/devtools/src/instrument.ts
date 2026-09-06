@@ -47,6 +47,11 @@ export interface RNode {
   core?: { version?: number; state?: number } | null;
   /** Where the author created this node, when the compiler said so. Always optional. */
   source?: ReactiveSourceLocation;
+  /**
+   * Components only: where the component itself was declared, which is a different place
+   * from where it was used and the node made.
+   */
+  declaredAt?: ReactiveSourceLocation;
   /** Resource only. */
   loading?: boolean;
   depth?: number;
@@ -379,14 +384,22 @@ export function createReactor(): Reactor {
         // The compiler wraps each component in a memo, and `createComponent` stamps the
         // component's name on what it returns. A memo that has no name of its own is that
         // wrapper, so it can say `Counter` rather than `m5`.
-        if (unnamed.has(node.id)) {
-          const stamped = (raw as { $name?: unknown })?.$name;
-          if (typeof stamped === 'string' && stamped) {
+        // The runtime stamps a component's name on what it returned, so a memo holding
+        // that is the wrapper the compiler put round a component. Not gated on the node
+        // being unnamed: the compiler marks the tag with the component's name too, which
+        // would leave the node named and never recognised.
+        const stamped = (raw as { $name?: unknown })?.$name;
+        if (node.kind === 'memo' && typeof stamped === 'string' && stamped) {
+          // Still a memo underneath. This only says so, so a renderer can draw it as what
+          // the author wrote rather than as the wrapper around it.
+          node.kind = 'component';
+          // `source` stays what it is for every other node — where this one was created,
+          // which for a wrapper is where the tag was written. Where the component itself
+          // lives is a second fact, and it stands in for the first when nothing marked it.
+          node.declaredAt = componentSource(stamped);
+          node.source ??= node.declaredAt;
+          if (unnamed.has(node.id)) {
             node.label = stamped;
-            // Still a memo underneath — this only says so, so a renderer can draw it as
-            // what the author wrote rather than as the wrapper around it.
-            node.kind = 'component';
-            node.source ??= componentSource(stamped);
             unnamed.delete(node.id);
           }
         }

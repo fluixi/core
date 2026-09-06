@@ -171,7 +171,25 @@ describe('@fluixi/devtools component nodes', () => {
     expect(node!.kind).toBe('component');
     expect(node!.label).toBe('Counter');
     expect(node!.value).toBe('<div>');
+    // Nothing marked the creation site here, so the declaration stands in for it.
+    expect(node!.declaredAt).toEqual({ file: 'src/Counter.tsx', line: 3, column: 0 });
     expect(node!.source).toEqual({ file: 'src/Counter.tsx', line: 3, column: 0 });
+    r.dispose();
+  });
+
+  it('keeps the creation site and the declaration apart', () => {
+    const r = createReactor();
+    markComponentSource('Panel', 'src/Panel.tsx', 2, 0);
+    r.run(({ createMemo }) => {
+      // What the compiler emits at the tag: the site the wrapper memo is made at.
+      markReactiveSource('src/App.tsx', 9, 6, 'Panel');
+      const wrapper = createMemo(() => ({ nodeType: 1, nodeName: 'DIV', tagName: 'DIV', $name: 'Panel' }));
+      wrapper();
+    });
+    r.sample();
+    const [node] = [...r.graph.values()];
+    expect(node!.source).toEqual({ file: 'src/App.tsx', line: 9, column: 6 });
+    expect(node!.declaredAt).toEqual({ file: 'src/Panel.tsx', line: 2, column: 0 });
     r.dispose();
   });
 

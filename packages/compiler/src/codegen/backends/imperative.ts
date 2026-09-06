@@ -9,6 +9,7 @@ import {
 } from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
+import { SOURCE_MARKER } from '../../transform/source-locations.js';
 
 /**
  * Imperative fine-grained backend — emits createNativeElement/insert/spread/
@@ -86,7 +87,14 @@ function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticT
   return `[${children.map((c) => emitNode(c, used, templates)).join(', ')}]`;
 }
 
-function emitComponent(name: string, props: IRProp[], children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
+function emitComponent(
+  name: string,
+  props: IRProp[],
+  children: IRNode[],
+  used: Set<string>,
+  templates?: StaticTemplate[],
+  at?: { file: string; line: number; column: number },
+): string {
   used.add('createMemo');
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
@@ -131,7 +139,12 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   // Control flow does use a bare arrow, and that is not a counter-example: control flow
   // is the reactive boundary and is *meant* to re-run. A user component is meant to run
   // once.
-  return `createMemo(() => createComponent(${name}, ${obj}))`;
+  // The mark goes inside the call, where it runs before createMemo makes the node and so
+  // is the one the node takes. Devtools installs the global; without it this is a no-op.
+  const mark = at
+    ? `globalThis.${SOURCE_MARKER}?.(${JSON.stringify(at.file)},${at.line},${at.column},${JSON.stringify(name)}), `
+    : '';
+  return `createMemo((${mark}() => createComponent(${name}, ${obj})))`;
 }
 
 /** `el.setAttribute("class", "card")` for a compile-time constant. */
@@ -159,7 +172,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       return emitChildren(node.children, used, templates);
 
     case 'component':
-      return emitComponent(node.name, node.props, node.children, used, templates);
+      return emitComponent(node.name, node.props, node.children, used, templates, node.at);
 
     case 'control': {
       const name = CONTROL_COMPONENT[node.control] ?? node.control;

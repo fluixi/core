@@ -42,6 +42,15 @@ function helper() { return 1; }`);
     expect(out).toContain('"src/App.ts",2,31,"b"');
   });
 
+  it('marks where a component is used, inside the memo that wraps it', () => {
+    const out = run(`import { Row } from './Row';
+export function App() {
+  return <div><Row label="x" /></div>;
+}`);
+    // Before the arrow, so it is the mark the wrapping memo takes.
+    expect(out).toContain('createMemo((globalThis.__fx_source?.("src/App.ts",3,14,"Row"), () =>');
+  });
+
   it('leaves the source alone when off', () => {
     const out = compile(`import { signal } from '@fluixi/reactive/signal';\nconst c = signal(0);`, { ...OPTIONS, sourceLocations: false });
     expect(out).not.toContain('__fx_source');

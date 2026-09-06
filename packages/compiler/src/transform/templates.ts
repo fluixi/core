@@ -468,7 +468,7 @@ export function transformTemplates(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, id) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
@@ -601,10 +601,12 @@ function compileJsx(
   needs: Needs,
   hoisted: Map<string, string>,
   options: TransformOptions,
+  sourceFile?: string,
 ): string {
   const ir = buildJsxIR(node as never, {
     code: (n) => slice(code, (n as Node).start, (n as Node).end, edits),
     used,
+    ...(options.sourceLocations === true && sourceFile ? { sourceFile } : {}),
   });
   analyzeStatic(ir);
   const report = resolveComponentSources(ir, {

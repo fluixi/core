@@ -51,7 +51,7 @@ for (const node of reactor.graph.values()) {
 
 The compiler wraps every component in a memo, so the graph sees the wrapper rather than the component. A node whose value carries a component's name reports its kind as `component` and takes that name as its label, so the graph reads `App` rather than `m5`. Nothing about the node changes — it is the same memo, with the same dependencies.
 
-Its source is the component's declaration, which the compiler records by name. Two components sharing a name in one program are reported without a location rather than with the wrong one.
+A component node's `source` is where its tag was written, which is where the node was made — the same meaning `source` has for every other kind. `declaredAt` is where the component itself was declared, which is usually another file. It stands in for `source` when nothing marked the tag, and two components sharing a name are reported without a location rather than with the wrong one.
 
 ### Making a node the compiler cannot see
 
