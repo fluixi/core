@@ -1,0 +1,11 @@
+files:  playground/src/compile.ts, Playground.tsx, styles.css
+what:   the playground asks the compiler for source locations and shows them in the
+        inspector, and draws a component node as a component. The inspector redraws only
+        when what it shows has changed.
+why:    it is a renderer here and nothing more: it reads node.source off the graph and draws
+        it, and shows nothing when a node has none. Where the metadata comes from is
+        devtools' business.
+        the inspector rebuilt its markup on every frame, sixty times a second, to redraw
+        what was usually the same thing.
+verify: run in a browser — a signal reports the line it was declared on, a node without a
+        location shows no source line at all

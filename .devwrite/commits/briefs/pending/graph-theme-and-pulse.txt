@@ -1,0 +1,12 @@
+files:  packages/devtools/src/graph-view.ts, packages/devtools/src/instrument.ts
+what:   a node pulses again when its value changes, its text is clipped to its box, and every
+        colour reads a custom property before falling back to what it used.
+why:    the pulse was timed with performance.now on both sides, and each realm has its own
+        origin for it — with the reactor in an iframe the age was nonsense and the glow never
+        fired. Date.now is the same number everywhere.
+        a store's value is a whole object, and the text ran out past the node and across its
+        neighbours. It is clipped to the box now.
+        the colours were literals, so a host with a light theme had no way in short of
+        replacing the stylesheet. The fallbacks are the values it always had, so nothing
+        changes for a host that sets nothing.
+verify: sample reports the change and the age is zero; suite green

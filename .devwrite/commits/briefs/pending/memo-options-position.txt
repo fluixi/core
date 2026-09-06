@@ -1,0 +1,8 @@
+files:  packages/devtools/src/instrument.ts, packages/devtools/src/instrument.spec.ts
+what:   the reactor's createMemo takes (fn, value, options), which is what the real one takes.
+why:    it declared options second, so `createMemo(fn, { name: 'double' })` handed the name in
+        as the memo's initial value and the node fell back to m1. A named memo could not be
+        named. The value is forwarded now too, which it never was.
+        the spec had the same shape as the wrapper, so it agreed with the bug rather than
+        with createMemo — it asserted on the label it wanted and passed anyway.
+verify: the graph shows `double`; suite green
