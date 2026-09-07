@@ -23,7 +23,9 @@ import {
   reportSuspend,
   getOwner,
   runWithOwner,
+  onCleanup as l1onCleanup,
 } from './runtime.js';
+import { isObserved, reportReactiveDispose, reportReactiveNode } from './observe.js';
 
 function isThenable(v: unknown): v is Promise<unknown> {
   return !!v && typeof (v as { then?: unknown }).then === 'function';
@@ -82,6 +84,10 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
     },
     enumerable: false,
   });
+  reportReactiveNode({ kind: 'signal', node: state, handle: read, name: options?.name });
+  // A signal goes when its owner does, the same as a memo. A list rebuilt without a key
+  // makes one per row per update, and a watcher that is never told keeps every one of them.
+  if (isObserved()) l1onCleanup(() => reportReactiveDispose(state));
   return [read, write];
 }
 
@@ -121,6 +127,10 @@ export function createMemo<T>(
   // as reactive, caches it as a component, and freezes it → updates never apply.
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
+  reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
+  // A memo has no dispose of its own — it goes when its owner does. Without saying so, a
+  // list that re-renders leaves every row it ever had in a watcher's graph.
+  if (isObserved()) l1onCleanup(() => reportReactiveDispose(c));
   return read;
 }
 
@@ -139,7 +149,7 @@ export function createEffect<T>(
     // never returns one, in which case onCleanup is the cleanup path. We keep the
     // legacy carry-the-value behaviour; cleanups use onCleanup.
     prev = r as T;
-  });
+  }, true);
 }
 
 /**

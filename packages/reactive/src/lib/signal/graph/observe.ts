@@ -1,0 +1,163 @@
+/**
+ * A place for a tool to watch the reactive graph from outside it.
+ *
+ * The runtime says a node exists, a computation re-ran, or an effect went away, and hands
+ * over the node itself. It does nothing else. Edges are already on the node — a source keeps
+ * its `observers`, a consumer keeps its `sources` — so a watcher reads the graph rather than
+ * reconstructing it, and nothing here wraps or replaces a primitive.
+ *
+ * Nothing is registered by default: an unwatched runtime pays one null check per node
+ * creation and per recompute.
+ *
+ * @fluixi/devtools is the intended caller. Nothing in the framework reads it back.
+ *
+ * The observer lives on the shared graph state rather than in a module `let`, so a bundle
+ * carrying two copies of this module still has one observer — the same reason G exists.
+ */
+import { G } from './state.js';
+import { VERSION } from '../../../version.generated.js';
+
+export type ReactiveNodeKind = 'signal' | 'memo' | 'effect' | 'store' | 'resource';
+
+export interface ReactiveNodeReport {
+  kind: ReactiveNodeKind;
+  /** The core node. Edges hang off this, and it is the identity later reports use. */
+  node: unknown;
+  /** What the caller was handed, when that is a different object from the node. */
+  handle?: unknown;
+  /** The name the call site gave, if it gave one. */
+  name?: string;
+  /**
+   * The node this one was built for. A store creates a signal per key, lazily, wherever it
+   * is first read — the useful location is the store's, not the reader's.
+   */
+  origin?: unknown;
+  /**
+   * The node is the framework's own plumbing — a render effect, one per dom binding. A graph
+   * does not show these, but it needs to know they exist: a row added to a list is created
+   * inside one, and without it the row has no ancestor it can be attached to.
+   */
+  internal?: boolean;
+  /**
+   * The computations running when this node was made, outermost first. A component's wrapper
+   * memo reads nothing itself, so what it created is the only thing tying it to the graph —
+   * and the whole chain is given because the nearest one is often a render effect, which no
+   * graph shows.
+   *
+   * Live and reused: read it during the call, do not keep it.
+   */
+  parents?: readonly unknown[];
+}
+
+export interface ReactiveObserver {
+  created(report: ReactiveNodeReport): void;
+  /** A computation recomputed. Effects have no value to diff, so this is their only signal. */
+  ran?(node: unknown): void;
+  /** An effect was disposed. Memos and signals go with their owner and are not reported. */
+  disposed?(node: unknown): void;
+  /**
+   * A node now belongs somewhere else, and is called something else.
+   *
+   * A store write replaces the object that held a value — `set({ items: [...items, one] })`
+   * builds a new array — and the signals underneath it are the same signals in a new place.
+   * Without this they keep pointing at a node that no longer exists.
+   */
+  moved?(node: unknown, origin: unknown, name?: string): void;
+}
+
+/**
+ * Watch the graph. Returns a function that stops watching.
+ *
+ * One observer at a time — the last to register wins. Two tools watching one page at once is
+ * not a case worth carrying state for.
+ */
+export function observeReactiveNodes(next: ReactiveObserver): () => void {
+  G.observer = next;
+  return () => {
+    if (G.observer === next) G.observer = null;
+  };
+}
+
+/** What is running right now, outermost first. Empty unless something is watching. */
+const running: unknown[] = [];
+
+/** What the nodes created in here belong to. See ReactiveNodeReport.origin. */
+let origin: unknown;
+
+/** Attribute everything `fn` creates to `owner`. Free when nobody is watching. */
+export function withReactiveOrigin<T>(owner: unknown, fn: () => T): T {
+  if (!G.observer) return fn();
+  const previous = origin;
+  origin = owner;
+  try {
+    return fn();
+  } finally {
+    origin = previous;
+  }
+}
+
+/** Called by the primitives. Not part of the public surface. */
+export function reportReactiveNode(report: ReactiveNodeReport): void {
+  const observer = G.observer as ReactiveObserver | null;
+  // Filled here rather than at each call site: the stack is already on hand, and a report
+  // costs nothing to build when nobody is watching.
+  if (observer) {
+    observer.created(
+      report.parents === undefined ? { ...report, parents: running, origin: report.origin ?? origin } : report,
+    );
+  }
+}
+
+/** Called around a recompute, so a node can say what it was created inside. */
+export function enterReactiveRun(node: unknown): boolean {
+  if (!G.observer) return false;
+  running.push(node);
+  return true;
+}
+
+export function exitReactiveRun(): void {
+  running.pop();
+}
+
+/** Called from the recompute path, so it stays a property read when nobody is watching. */
+export function reportReactiveRun(node: unknown): void {
+  (G.observer as ReactiveObserver | null)?.ran?.(node);
+}
+
+export function reportReactiveMove(node: unknown, origin: unknown, name?: string): void {
+  (G.observer as ReactiveObserver | null)?.moved?.(node, origin, name);
+}
+
+export function reportReactiveDispose(node: unknown): void {
+  (G.observer as ReactiveObserver | null)?.disposed?.(node);
+}
+
+/**
+ * Where a tool that cannot be imported finds the runtime.
+ *
+ * An extension has no way into an application's module graph, and an application should not
+ * have to import a debugger to be debuggable. So a tool sets this global before any of the
+ * app loads, and the runtime hands it the door on the way past.
+ *
+ * Set it too late and nothing happens — the runtime only offers once, when this module is
+ * first evaluated. A browser agent has to run at document_start for that reason.
+ */
+const HOOK = '__FLUIXI_DEVTOOLS_HOOK__';
+
+export interface DevtoolsHook {
+  inject?(runtime: { observeReactiveNodes: typeof observeReactiveNodes; version: string }): void;
+}
+
+const hook = (globalThis as Record<string, unknown>)[HOOK] as DevtoolsHook | undefined;
+if (typeof hook?.inject === 'function') {
+  try {
+    hook.inject({ observeReactiveNodes, version: VERSION });
+  } catch {
+    // A broken tool is not the application's problem.
+  }
+}
+
+/** Whether anything is watching, for a caller that would otherwise do work to report. */
+export function isObserved(): boolean {
+  return G.observer != null;
+}
