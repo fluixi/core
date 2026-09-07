@@ -9,6 +9,13 @@ import {
   createSignal,
   untrack,
 } from '@fluixi/reactive/signal';
+import {
+  isObserved,
+  reportReactiveDispose,
+  reportReactiveMove,
+  reportReactiveNode,
+  withReactiveOrigin,
+} from '../signal/graph/observe.js';
 import type { SetStoreFunction as StoreSetter, DeepReadonly } from './setter.types.js';
 import type { ReconcileOptions } from './types.js';
 
@@ -47,13 +54,70 @@ export const $RAW = Symbol('store-raw'),
 // nodes
 
 type DataNode = { (): any; $(value?: any): void };
-type NodeStore = { keys: Map<PropertyKey, DataNode>; all?: DataNode };
+type NodeStore = { keys: Map<PropertyKey, DataNode>; all?: DataNode; owner?: StoreOrigin; array?: boolean };
+/**
+ * What a raw object is, as far as a watcher is concerned: the node that stands for it, and
+ * the path that names it. The root is the store; a nested object is the key signal holding
+ * it, so `cart.items[0].qty` belongs to `cart.items[0]`, which belongs to `cart.items`.
+ */
+type StoreOrigin = { store: object; name: string };
 
 const NODES = new WeakMap<object, NodeStore>();
 const PROXIES = new WeakMap<object, any>();
+const OWNERS = new WeakMap<object, StoreOrigin>();
+/** Every tracked object back to the state it belongs to, for deciding what is still in use. */
+const ROOTS = new WeakMap<object, object>();
 
-function createDataNode(initial?: any): DataNode {
-  const [get, set] = createSignal(initial);
+/**
+ * Say goodbye to the signals of an object a write replaced.
+ *
+ * `set('items', [...items, one])` drops the old array but keeps the objects in it, so what
+ * is still reachable from the state keeps its nodes and only the rest is let go. Without
+ * this a watcher accumulates a card per key of every array a list ever had.
+ *
+ * Only when something is watching: this walks the state, and nothing else needs it.
+ */
+function forgetReplaced(dead: unknown, state: object): void {
+  if (!isTrackable(dead) || !isObserved()) return;
+  const alive = new Set<object>();
+  const keep = (value: unknown): void => {
+    if (!isTrackable(value) || alive.has(value as object)) return;
+    alive.add(value as object);
+    for (const child of Object.values(value as object)) keep(child);
+  };
+  keep(ROOTS.get(state) ?? state);
+
+  const seen = new Set<object>();
+  const drop = (value: unknown): void => {
+    if (!isTrackable(value)) return;
+    const target = value as object;
+    if (alive.has(target) || seen.has(target)) return;
+    seen.add(target);
+    const ns = NODES.get(target);
+    if (ns) {
+      for (const node of ns.keys.values()) reportReactiveDispose(node);
+      if (ns.all) reportReactiveDispose(ns.all);
+      NODES.delete(target);
+      OWNERS.delete(target);
+      PROXIES.delete(target);
+    }
+    for (const child of Object.values(target)) drop(child);
+  };
+  drop(dead);
+}
+
+const pathOf = (base: string, key: PropertyKey, array?: boolean): string =>
+  array ? `${base}[${String(key)}]` : `${base}.${String(key)}`;
+
+function createDataNode(initial?: any, ns?: NodeStore, key?: PropertyKey): DataNode {
+  // A key signal is made the first time something reads it, which can be anywhere. Named and
+  // attributed to the object it belongs to, so a graph shows it under that object at the
+  // line the store was declared rather than wherever it was first read.
+  const owner = ns?.owner;
+  const label = owner && key !== undefined ? pathOf(owner.name, key, ns?.array) : undefined;
+  const [get, set] = withReactiveOrigin(owner?.store, () =>
+    createSignal(initial, label ? { name: label } : undefined),
+  );
   const node = get as any as DataNode;
   node.$ = set as any;
   return node;
@@ -61,19 +125,49 @@ function createDataNode(initial?: any): DataNode {
 
 function nodesOf(target: object): NodeStore {
   let ns = NODES.get(target);
-  if (!ns) NODES.set(target, (ns = { keys: new Map() }));
+  if (!ns) NODES.set(target, (ns = { keys: new Map(), owner: OWNERS.get(target), array: Array.isArray(target) }));
+  // An object can be reached before the store has claimed it — a write touches it, or it is
+  // read through something other than its parent's proxy. Caching "no owner" there would
+  // leave every key signal it ever makes unnamed and unattached.
+  else if (!ns.owner) ns.owner = OWNERS.get(target);
   return ns;
 }
 
 function keyNode(ns: NodeStore, key: PropertyKey, seed?: any): DataNode {
   let node = ns.keys.get(key);
-  if (!node) ns.keys.set(key, (node = createDataNode(seed)));
+  if (!node) ns.keys.set(key, (node = createDataNode(seed, ns, key)));
   return node;
+}
+
+/**
+ * Say where an object now sits in the state.
+ *
+ * A write that replaces a container leaves the objects inside it where they were, holding
+ * the same signals, under a new key signal. Re-claiming moves those signals across so they
+ * stay attached to the object they describe instead of to the node that used to hold it.
+ */
+function claim(target: object, holder: DataNode, name: string, parent: object): void {
+  const was = OWNERS.get(target);
+  if (was && was.store === holder && was.name === name) return;
+  const owner: StoreOrigin = { store: holder, name };
+  OWNERS.set(target, owner);
+  ROOTS.set(target, ROOTS.get(parent) ?? parent);
+
+  // It may already have a node store, from an earlier read or an earlier position.
+  const ns = NODES.get(target);
+  if (!ns) return;
+  ns.owner = owner;
+  if (!isObserved()) return;
+  for (const [key, node] of ns.keys) reportReactiveMove(node, holder, pathOf(name, key, ns.array));
+  if (ns.all) reportReactiveMove(ns.all, holder, pathOf(name, '*', ns.array));
 }
 
 function trackKeys(target: object): void {
   const ns = nodesOf(target);
-  (ns.all || (ns.all = createDataNode()))();
+  // Which keys exist, as opposed to what any one of them holds. It has no value of its own,
+  // so a graph would otherwise show an unexplained empty node the first time a list is
+  // iterated — which is exactly when one appears.
+  (ns.all || (ns.all = createDataNode(undefined, ns, '*')))();
 }
 
 // The signal setter reads a function argument as an updater, so a function value
@@ -124,8 +218,14 @@ const handler: ProxyHandler<any> = {
     const desc = Object.getOwnPropertyDescriptor(target, key);
     if (desc && desc.get) return desc.get.call(receiver);
 
-    const current = keyNode(nodesOf(target), key, value)();
-    return isTrackable(current) ? box(current) : current;
+    const ns = nodesOf(target);
+    const holder = keyNode(ns, key, value);
+    const current = holder();
+    if (!isTrackable(current)) return current;
+    // A nested object hangs off the signal that holds it, not off the store, so a cart with
+    // three items reads as three objects rather than as a dozen loose keys.
+    if (ns.owner) claim(current as object, holder, pathOf(ns.owner.name, key, ns.array), target);
+    return box(current);
   },
 
   set() {
@@ -166,7 +266,35 @@ const handler: ProxyHandler<any> = {
 
 // Writes one key on a raw node and pokes what changed: the key's own signal, the
 // array length signal when the length moved, and the iteration signal.
-function writeKey(state: any, key: PropertyKey, value: any): void {
+/**
+ * The raw form of a value on its way into the state.
+ *
+ * `set({ items: [...cart.items, one] })` spreads proxies back in, and a store that holds its
+ * own proxies tracks each of them twice: a second node store per object, a proxy wrapping a
+ * proxy, and a graph with two signals for every key.
+ */
+function rawValue(value: any, seen = new Set<any>()): any {
+  if (value == null || typeof value !== 'object') return value;
+  const raw = value[$RAW] ?? value;
+  if (seen.has(raw) || !isTrackable(raw)) return raw;
+  seen.add(raw);
+  let changed = false;
+  const swap = (v: any) => {
+    const next = rawValue(v, seen);
+    if (next !== v) changed = true;
+    return next;
+  };
+  if (Array.isArray(raw)) {
+    const out = raw.map(swap);
+    return changed ? out : raw;
+  }
+  const out: any = {};
+  for (const k of Object.keys(raw)) out[k] = swap(raw[k]);
+  return changed ? out : raw;
+}
+
+function writeKey(state: any, key: PropertyKey, rawInput: any): void {
+  const value = rawValue(rawInput);
   const prev = state[key];
   if (prev === value && (value !== undefined || key in state)) return;
 
@@ -179,6 +307,7 @@ function writeKey(state: any, key: PropertyKey, value: any): void {
   const ns = nodesOf(state);
   const node = ns.keys.get(key);
   if (node) pokeNode(node, value);
+  forgetReplaced(prev, state);
 
   if (isArray && state.length !== len) {
     const lengthNode = ns.keys.get('length');
@@ -322,6 +451,18 @@ class Store<T> {
     this.root = initialState;
     this.set = ((...args: any[]) =>
       batch(() => applySet(this.root as any, args))) as StoreSetter<T>;
+    if (initialState && typeof initialState === 'object') {
+      OWNERS.set(initialState as object, { store: this, name: (options as { name?: string }).name ?? 'store' });
+      ROOTS.set(initialState as object, initialState as object);
+    }
+    // One node for the store itself, so the line that declared it is in the graph even
+    // though its key signals are not made until something reads them.
+    reportReactiveNode({
+      kind: 'store',
+      node: this,
+      handle: () => this.root,
+      name: (options as { name?: string }).name,
+    });
   }
 
   get state(): Immutable<T> {
