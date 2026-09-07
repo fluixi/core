@@ -17,6 +17,13 @@
 //   tick();
 export { createReactor, nodeVersion, nodeState } from './instrument.js';
 export type { Reactor, ReactorApi, RNode, NodeKind, NodeState } from './instrument.js';
+export { observeGraph } from './observe.js';
+export type { ObservedGraph, ObserveOptions } from './observe.js';
+export { installDevtoolsHook } from './hook.js';
+export type { DevtoolsHook } from './hook.js';
+export { formatValue, shorten } from './format.js';
+export { serializeGraph, snapshotToRenderMap, applySnapshot } from './wire.js';
+export type { GraphSnapshot, WireNode, SerializeOptions } from './wire.js';
 export { markReactiveSource } from './source.js';
 export type { ReactiveSourceLocation, ReactiveSourceMetadata } from './source.js';
 export { createGraphView, DEVTOOLS_CSS } from './graph-view.js';

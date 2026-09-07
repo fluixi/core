@@ -21,6 +21,7 @@ import {
 } from '@fluixi/reactive/signal';
 import { createStore, Immutable, store, StoreSetter } from '@fluixi/reactive/store';
 import { componentSource, installSourceMarker, takeReactiveSource, type ReactiveSourceLocation } from './source.js';
+import { formatValue, shorten } from './format.js';
 
 const $NODE = Symbol.for('signal-node');
 
@@ -39,6 +40,8 @@ export interface RNode {
   read?: () => unknown;
   /** Last serialized value, for change detection / display. */
   value?: string;
+  /** The same value with room to read it — what a tooltip or an inspector shows. */
+  detail?: string;
   /** Times this node recomputed / re-ran. */
   runs: number;
   /** performance.now() of the last change — drives the flash. */
@@ -47,6 +50,11 @@ export interface RNode {
   core?: { version?: number; state?: number } | null;
   /** Where the author created this node, when the compiler said so. Always optional. */
   source?: ReactiveSourceLocation;
+  /**
+   * The node whose run created this one. A component's memo reads nothing of its own, so
+   * what it created is what connects it to the rest of the graph.
+   */
+  createdIn?: number;
   /**
    * Components only: where the component itself was declared, which is a different place
    * from where it was used and the node made.
@@ -111,25 +119,9 @@ export interface Reactor {
   dispose(): void;
 }
 
-const fmt = (v: unknown): string => {
-  try {
-    if (typeof v === 'string') return JSON.stringify(v);
-    if (typeof v === 'function') return 'ƒ';
-    if (typeof v === 'bigint') return `${v}n`;
-    // The compiler wraps every component in a memo, so a DOM node is a common value here
-    // and `[object HTMLDivElement]` says nothing worth the width. Duck-typed rather than
-    // `instanceof Node`, which has no meaning off the main realm or outside a browser.
-    const dom = v as { nodeType?: number; nodeName?: string; tagName?: string };
-    if (typeof dom?.nodeType === 'number' && typeof dom.nodeName === 'string') {
-      return dom.tagName ? `<${dom.tagName.toLowerCase()}>` : `#${dom.nodeName.toLowerCase()}`;
-    }
-    if (typeof v === 'object' && v) return JSON.stringify(v);
-    return String(v);
-  } catch {
-    return '?';
-  }
-};
-const short = (s: string, n = 18): string => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+// Kept as the names the rest of this package already uses.
+export const fmt = (v: unknown): string => formatValue(v);
+export const short = (s: string, n = 18): string => shorten(s, n);
 
 export function createReactor(): Reactor {
   installSourceMarker();
@@ -193,7 +185,8 @@ export function createReactor(): Reactor {
     const [get, set] = createSignal(value, options as never);
     const node = base(id, options?.name, 'state', `s${id}`);
     node.read = () => untrack(get);
-    node.value = short(fmt(value));
+    node.detail = formatValue(value);
+    node.value = shorten(node.detail);
     node.core = (get as unknown as Record<symbol, { version?: number }>)[$NODE] ?? null;
     graph.set(id, node);
     forget(id);
@@ -403,8 +396,10 @@ export function createReactor(): Reactor {
             unnamed.delete(node.id);
           }
         }
-        const next = short(fmt(raw));
-        if (next !== node.value) {
+        const detail = formatValue(raw);
+        const next = shorten(detail);
+        if (next !== node.value || detail !== node.detail) {
+          node.detail = detail;
           node.value = next;
           node.runs++;
           node.lastPulse = now;

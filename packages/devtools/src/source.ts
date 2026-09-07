@@ -14,6 +14,11 @@ export interface ReactiveSourceLocation {
   file?: string;
   line?: number;
   column?: number;
+  /**
+   * The node came from a dependency rather than from the project. Only ever set when the
+   * compiler was told to mark dependencies too; otherwise they carry no location at all.
+   */
+  external?: boolean;
 }
 
 /** A location, plus the variable name the source gave it when there was one. */
@@ -27,6 +32,7 @@ const MARKER = '__fx_source';
 const COMPONENT_MARKER = '__fx_component';
 
 let pending: ReactiveSourceMetadata | null = null;
+let expiring = false;
 
 /**
  * Where each component was declared, by name.
@@ -43,13 +49,29 @@ const components = new Map<string, ReactiveSourceLocation | null>();
  * yourself only for a node the compiler cannot see, immediately before the primitive.
  */
 export function markReactiveSource(file?: string, line?: number, column?: number, name?: string): void {
-  pending = { name, location: { file, line, column } };
+  const location = locate(file, line, column);
+  // With dependencies marked, `signal()` in the framework marks its own `createSignal` line
+  // in between the application's mark and the node it asked for. The call site is the useful
+  // location, so a dependency never takes a mark the project has already left unclaimed.
+  if (pending && location.external && !pending.location?.external) return;
+  pending = { name, location };
+  expiring = false;
+}
+
+/**
+ * A project file is named relative to the project root, so anything absolute or under
+ * node_modules came from a dependency. Derived here rather than sent, so the mark the
+ * compiler emits stays the four arguments it has always been.
+ */
+function locate(file?: string, line?: number, column?: number): ReactiveSourceLocation {
+  const external = !!file && (/^([a-zA-Z]:)?[\\/]/.test(file) || file.includes('node_modules/'));
+  return external ? { file, line, column, external } : { file, line, column };
 }
 
 /** Record where a component was declared. The compiler calls this. */
 export function markComponentSource(name: string, file?: string, line?: number, column?: number): void {
   const seen = components.get(name);
-  const next: ReactiveSourceLocation = { file, line, column };
+  const next = locate(file, line, column);
   if (seen === undefined) {
     components.set(name, next);
     return;
@@ -62,10 +84,28 @@ export function componentSource(name: string): ReactiveSourceLocation | undefine
   return components.get(name) ?? undefined;
 }
 
-/** Reading clears it: one mark, one node. */
+/**
+ * Reading keeps it for the rest of the turn.
+ *
+ * One statement can make several nodes: `createStore({ a, b })` builds a signal per key
+ * inside the framework, and all of them belong to the line that asked for the store. So the
+ * mark survives the read and is dropped on the next microtask, which is the end of the
+ * statement that left it as far as anything synchronous is concerned.
+ */
 export function takeReactiveSource(): ReactiveSourceMetadata | null {
   const mark = pending;
-  pending = null;
+  if (mark) {
+    // The variable name belongs to the node the author was declaring, not to the ones the
+    // framework built underneath it — `cart`, then two unnamed signals at the same line.
+    if (mark.name !== undefined) pending = { location: mark.location };
+    if (!expiring) {
+      expiring = true;
+      queueMicrotask(() => {
+        expiring = false;
+        pending = null;
+      });
+    }
+  }
   return mark;
 }
 

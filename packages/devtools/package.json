@@ -2,7 +2,7 @@
   "name": "@fluixi/devtools",
   "version": "0.2.0-alpha.2",
   "license": "MIT",
-  "description": "Live inspector for the Fluixi reactive graph — instrument signals/memos/effects and visualize propagation.",
+  "description": "Live inspector for the Fluixi reactive graph \u2014 instrument signals/memos/effects and visualize propagation.",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
@@ -11,6 +11,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./wire": {
+      "development": "./src/wire.ts",
+      "types": "./dist/wire.d.ts",
+      "import": "./dist/wire.js",
+      "default": "./dist/wire.js"
     }
   },
   "files": [
@@ -31,6 +37,11 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js",
         "default": "./dist/index.js"
+      },
+      "./wire": {
+        "types": "./dist/wire.d.ts",
+        "import": "./dist/wire.js",
+        "default": "./dist/wire.js"
       }
     }
   },

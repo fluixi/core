@@ -97,7 +97,7 @@ describe('@fluixi/devtools source metadata', () => {
     r.dispose();
   });
 
-  it('gives the mark to one node only, so a second is not mislabelled', () => {
+  it('gives the name to one node, and the location to what the statement built', () => {
     const r = createReactor();
     r.run(({ createSignal }) => {
       markReactiveSource('src/App.ts', 3, 6, 'first');
@@ -105,8 +105,12 @@ describe('@fluixi/devtools source metadata', () => {
       createSignal(2);
     });
     const [first, second] = [...r.graph.values()];
+    // One statement can make several nodes — createStore makes one per key — and they all
+    // came from that line. The name is the declared variable, so only the first takes it.
     expect(first!.source).toEqual({ file: 'src/App.ts', line: 3, column: 6 });
-    expect(second!.source).toBeUndefined();
+    expect(first!.label).toBe('first');
+    expect(second!.source).toEqual({ file: 'src/App.ts', line: 3, column: 6 });
+    expect(second!.label).not.toBe('first');
     r.dispose();
   });
 

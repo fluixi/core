@@ -1,0 +1,28 @@
+package:  @fluixi/devtools — a new "## Watching an app you did not write" section for the
+          README, placed after the "How it works" section and before "Where a node came from"
+audience: someone who wants the graph for a real fluixi app, not for a snippet written
+          against the reactor api
+one-line: a section with one heading, one short code block, three short paragraphs
+verified: 8 tests in packages/devtools/src/observe.spec.ts; whole workspace builds and its
+          31 projects test green
+do-not-claim: that it replaces createReactor — both stay. Do not claim it captures writes;
+          it does not. Do not claim it sees nodes made before it was called.
+structure: heading, then:
+  1. one paragraph: createReactor hands out its own primitives, so it only sees code written
+     against them. observeGraph() sees an ordinary app: the runtime reports each node as it
+     is made, and the graph fills from plain `import { signal } from '@fluixi/core'`. Call it
+     before the app's modules load — a node made earlier is not in the graph.
+  2. a code block, about 6 lines:
+       import { observeGraph, createGraphView } from '@fluixi/devtools';
+       const observed = observeGraph();
+       await import('./src/main.js');
+       const view = createGraphView(svgEl);
+       const tick = () => { observed.sample(); view.update(observed.graph); requestAnimationFrame(tick); };
+       tick();
+  3. one paragraph: the same Map<number, RNode> the reactor produces, so createGraphView and
+     anything else reading the graph does not care which made it. Dependencies are read off
+     the core node, which already keeps its own sources and observers, so nothing is wrapped
+     and no read is intercepted.
+  4. one paragraph, the limits: no write edges, because nothing records which computation was
+     running when a setter fired. Render effects are left out — the dom layer makes one per
+     binding. An unwatched runtime pays one null check per node creation and per recompute.
