@@ -74,6 +74,12 @@ export interface TransformOptions extends CompileTemplateOptions {
   sourceLocations?: boolean;
 
   /**
+   * Trim this prefix off the file name a source mark records, so a location reads
+   * `src/app.tsx:5:16` rather than an absolute path that means nothing to whoever opens it.
+   */
+  sourceRoot?: string;
+
+  /**
    * Compile the `$` reactive intrinsics — `$signal`, `$memo`, `$effect`, `$store` — into
    * the runtime calls they stand for, importing what they need.
    * @default true
@@ -385,6 +391,13 @@ function toPieces(node: Node): Piece[] {
  * Compile every template in `code`. Returns null when the module has none, so a
  * bundler can skip the file untouched.
  */
+/** No path module here: this runs in the browser as well as in a bundler. */
+function relativeToRoot(id: string, root?: string): string {
+  if (!root) return id;
+  const base = root.endsWith('/') ? root : `${root}/`;
+  return id.startsWith(base) ? id.slice(base.length) : id;
+}
+
 export function transformTemplates(
   code: string,
   id: string,
@@ -401,6 +414,9 @@ export function transformTemplates(
   // A module can be nothing but reactive calls and still need marking, so the skip check
   // has to look for those too when source locations are wanted.
   const wantsSources = options.sourceLocations === true && mayHaveReactiveCall(code);
+  // What a mark calls this file. The declaration marks and the usage marks are read back by
+  // name, so both passes have to spell it the same way.
+  const sourceName = relativeToRoot(id, options.sourceRoot);
   if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics && !wantsSources) return null;
 
   const ast = parse(code, {
@@ -433,7 +449,9 @@ export function transformTemplates(
   // `wantsSources` only decides whether a module with nothing else in it is worth parsing.
   // Past that point the ast exists, and a component declaration is worth marking too.
   const sources =
-    options.sourceLocations === true ? collectSourceEdits(ast.program, id) : { edits: [], marked: 0 };
+    options.sourceLocations === true
+      ? collectSourceEdits(ast.program, sourceName)
+      : { edits: [], marked: 0 };
 
   // Nothing to emit still returns a result when there's something to say — a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
@@ -468,7 +486,7 @@ export function transformTemplates(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, id) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));

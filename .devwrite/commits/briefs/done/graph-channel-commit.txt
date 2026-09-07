@@ -1,0 +1,23 @@
+subject: one line under 65 chars — the running app's graph, served by the dev server
+body:    five short paragraphs, one per note, blank line between. No closing summary.
+
+files:  packages/vite-plugin/src/graph-channel.ts (new), src/index.ts, package.json,
+        README.md; packages/compiler/src/integrations.ts, transform/templates.ts,
+        transform/source-locations.ts and its spec; pnpm-lock.yaml
+notes:
+  1. in development the plugin puts a small agent in the page ahead of the entry, and serves
+     what it reports at GET /__fluixi/graph. Plain json, so an editor, a panel or curl all
+     read the same thing. Off in a build, and off when @fluixi/devtools is not installed.
+  2. sourceLocations is finally reachable from a bundler. It was a compiler option nothing
+     turned on outside the playground, so a normal app produced a graph with no locations.
+     Marks stop at the project boundary; `devtools: { external: true }` marks dependencies
+     too, for working on the framework itself.
+  3. the marks wait for a real dev server rather than the serve command, which vitest also
+     reports — a test run was compiling with marks it had no use for.
+  4. three ways a mark broke the file it marked: prefixed to a braceless if-branch it moved
+     the body out of the branch; anchored to a declaration it split `export` from what it
+     exported; and a component declared inside a callback anchored to the enclosing block,
+     landing between a closing brace and a closing paren.
+  5. the declaration mark and the usage mark now spell the file the same way, so the two
+     halves of a component's location agree.
+verify: 617 tests in the compiler; checked end to end against an example app

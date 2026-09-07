@@ -59,6 +59,21 @@ export function mayHaveReactiveCall(code: string): boolean {
   return code.includes('$signal') || code.includes('$memo') || code.includes('$effect') || code.includes('$store');
 }
 
+/** Positions where the grammar allows exactly one statement, so a second one changes it. */
+const SINGLE_STATEMENT_PARENTS = new Set([
+  'IfStatement', 'ForStatement', 'ForInStatement', 'ForOfStatement',
+  'WhileStatement', 'DoWhileStatement', 'LabeledStatement', 'WithStatement',
+]);
+
+function isLoneBranch(statement: Node, parent?: Node): boolean {
+  if (!parent || statement.type === 'BlockStatement') return false;
+  return SINGLE_STATEMENT_PARENTS.has(parent.type);
+}
+
+function isExport(node: Node): boolean {
+  return node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration';
+}
+
 function isStatement(node: Node): boolean {
   return node.type.endsWith('Statement') || node.type === 'VariableDeclaration';
 }
@@ -126,16 +141,25 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
     const component = componentName(node);
     if (component) {
       const at = node.loc?.start;
-      // After the whole statement, not after the function: `const Row = () => <b/>` ends
+      // After the whole declaration, not after the function: `const Row = () => <b/>` ends
       // where its jsx ends, and an insertion on that boundary is inside the span the
       // template pass overwrites.
+      //
+      // Only through what wraps a declaration. Anything else above it is a block or an
+      // argument list, and a statement appended there lands outside the grammar —
+      // `function Page(){}` inside `it('…', () => { … })` ended up between the `}` and the
+      // `)`, which is a syntax error in a file that compiled a moment earlier.
       let end = node.end;
       for (let i = stack.length - 1; i >= 0; i--) {
         const up = stack[i]!;
-        if (isStatement(up) || up.type === 'ExportNamedDeclaration' || up.type === 'ExportDefaultDeclaration') {
-          end = up.end;
+        if (
+          up.type !== 'VariableDeclaration' &&
+          up.type !== 'ExportNamedDeclaration' &&
+          up.type !== 'ExportDefaultDeclaration'
+        ) {
           break;
         }
+        end = up.end;
       }
       if (at) {
         edits.push({
@@ -164,14 +188,31 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
 
     // The mark goes in front of the statement, clear of any span another pass rewrites.
     let statement: Node | undefined;
+    let parent: Node | undefined;
+    let index = -1;
     for (let i = stack.length - 1; i >= 0; i--) {
-      if (isStatement(stack[i]!)) {
+      if (isStatement(stack[i]!) || isExport(stack[i]!)) {
         statement = stack[i];
+        parent = stack[i - 1];
+        index = i;
         break;
       }
     }
-    if (!statement || claimed.has(statement.start)) return;
-    claimed.add(statement.start);
+    if (!statement) return;
+
+    // `export const [cart] = createStore(…)` finds the declaration, which starts after the
+    // keyword — a mark there splits `export` from what it exports.
+    let start = statement.start;
+    let end = statement.end;
+    for (let i = index - 1; i >= 0; i--) {
+      if (!isExport(stack[i]!)) break;
+      start = stack[i]!.start;
+      end = stack[i]!.end;
+      parent = stack[i - 1];
+    }
+
+    if (claimed.has(start)) return;
+    claimed.add(start);
 
     const label = nameFor(stack);
     const args = [
@@ -183,11 +224,18 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
       .filter((a) => a !== undefined)
       .join(',');
 
-    edits.push({
-      start: statement.start,
-      end: statement.start,
-      code: `globalThis.${SOURCE_MARKER}?.(${args});`,
-    });
+    const mark = `globalThis.${SOURCE_MARKER}?.(${args});`;
+
+    // `if (c) effect(…)` has one statement where the grammar allows one statement, so
+    // putting the mark in front of it moves the branch body out of the branch. Braces are
+    // added around both rather than skipping the mark.
+    if (isLoneBranch(statement, parent)) {
+      edits.push({ start, end: start, code: `{${mark}` });
+      edits.push({ start: end, end, code: '}' });
+      return;
+    }
+
+    edits.push({ start, end: start, code: mark });
   });
 
   return { edits, marked: edits.length };

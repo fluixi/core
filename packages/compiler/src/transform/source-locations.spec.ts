@@ -56,3 +56,60 @@ export function App() {
     expect(out).not.toContain('__fx_source');
   });
 });
+
+describe('statements the grammar only allows one of', () => {
+  it('braces a marked if-branch instead of pushing it out of the branch', () => {
+    const out = run(`import { effect } from '@fluixi/reactive/signal';
+function f(v) {
+  if (typeof v === 'function') effect(() => read(v));
+  else other(v);
+}`);
+    expect(out).toContain("if (typeof v === 'function') {globalThis.__fx_source?.(");
+    expect(out).toMatch(/effect\(\(\) => read\(v\)\);\}\n\s*else other\(v\);/);
+  });
+
+  it('braces a loop body that is a bare statement', () => {
+    const out = run(`import { effect } from '@fluixi/reactive/signal';
+for (const v of list) effect(() => read(v));`);
+    expect(out).toContain('for (const v of list) {globalThis.__fx_source?.(');
+    expect(out.trimEnd().endsWith('}')).toBe(true);
+  });
+
+  it('leaves a braced branch alone', () => {
+    const out = run(`import { effect } from '@fluixi/reactive/signal';
+if (ok) { effect(() => read()); }`);
+    expect(out).toContain('{ globalThis.__fx_source?.(');
+  });
+});
+
+describe('where a component mark can go', () => {
+  it('stays inside the block when the component is declared in a callback', () => {
+    const out = run(`it('renders', () => {
+  function Page() {
+    return <div />;
+  }
+  mount(Page);
+});`);
+    expect(out).toMatch(/\};globalThis\.__fx_component\?\.\("Page"/);
+    expect(out).not.toMatch(/__fx_component\?\.\([^)]*\);\)/);
+  });
+
+  it('reaches past the export of a declared component', () => {
+    const out = run(`export const Row = () => <b />;`);
+    expect(out).toMatch(/;globalThis\.__fx_component\?\.\("Row"[^)]*\);\s*$/);
+  });
+});
+
+describe('an exported declaration', () => {
+  it('marks in front of the export, not between it and the declaration', () => {
+    const out = run(`import { createStore } from '@fluixi/reactive/store';
+export const [cart, setCart] = createStore({ items: [] }, { name: 'cart' });`);
+    expect(out).toContain('__fx_source?.("src/App.ts",2,31,"cart");export const [cart');
+  });
+
+  it('marks a default export the same way', () => {
+    const out = run(`import { signal } from '@fluixi/reactive/signal';
+export default signal(0);`);
+    expect(out).toMatch(/__fx_source\?\.\("src\/App\.ts",2,15\);export default/);
+  });
+});
