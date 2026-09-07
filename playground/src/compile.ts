@@ -25,6 +25,33 @@ async function ensureBabel(): Promise<BabelStandalone> {
 }
 
 /**
+ * Re-print compiled output so it can be read.
+ *
+ * The backend emits for a bundler: a whole component arrives as one line, an IIFE holding
+ * every dom call it takes to build the tree. Babel is already loaded by the time anything is
+ * compiled, and its printer puts statements on their own lines.
+ */
+export async function formatCompiled(code: string): Promise<string> {
+  if (!code.trim()) return code;
+  try {
+    const b = await ensureBabel();
+    const out = b.transform(code, {
+      configFile: false,
+      babelrc: false,
+      compact: false,
+      retainLines: false,
+      sourceMaps: false,
+      presets: [],
+      plugins: [],
+    });
+    return out.code ?? code;
+  } catch {
+    // Output that cannot be parsed is still output; showing it beats showing nothing.
+    return code;
+  }
+}
+
+/**
  * Compile one project file. The filename is passed through because babel reports errors against
  * it — with several files open, "Unexpected token" is useless without knowing which one.
  */

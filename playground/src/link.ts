@@ -12,6 +12,8 @@ import { createRegistry } from './modules';
 import type { Project, ProjectFile } from './project';
 
 const SOURCE = /\.(tsx?|jsx?)$/;
+const STYLE = /\.css$/;
+const DATA = /\.json$/;
 const RESOLVE_ORDER = ['', '.tsx', '.ts', '.jsx', '.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
 
 /** Every specifier a module imports, with the span to rewrite. */
@@ -80,6 +82,8 @@ export function orderFiles(files: ProjectFile[], entry: string): { order: string
 export interface LinkResult {
   entryUrl: string;
   compiled: Map<string, string>;
+  /** Non-source files as urls, for the html shell's own `<link>` and `<img>` to point at. */
+  assets: Map<string, string>;
   revoke: () => void;
 }
 
@@ -131,6 +135,29 @@ export async function linkProject(
 
   const moduleUrls = new Map<string, string>();
   const compiled = new Map<string, string>();
+  /** What a non-source file resolves to, for `index.html` to point at. */
+  const assets = new Map<string, string>();
+
+  // Styles and data first: a module importing one needs its url before it is linked.
+  for (const file of files) {
+    if (STYLE.test(file.path)) {
+      // What a bundler does with `import './styles.css'`: run it for its effect. The blob is
+      // evaluated in the preview's realm, so `document` is the page being styled.
+      const body =
+        `const css = ${JSON.stringify(file.code)};\n` +
+        `const el = document.createElement('style');\n` +
+        `el.setAttribute('data-fx-style', ${JSON.stringify(file.path)});\n` +
+        `el.textContent = css;\n` +
+        `document.head.appendChild(el);\n` +
+        `export default css;\n`;
+      moduleUrls.set(file.path, track(new Blob([body], { type: 'text/javascript' })));
+      assets.set(file.path, track(new Blob([file.code], { type: 'text/css' })));
+    } else if (DATA.test(file.path)) {
+      const body = `export default ${file.code.trim() || 'null'};\n`;
+      moduleUrls.set(file.path, track(new Blob([body], { type: 'text/javascript' })));
+      assets.set(file.path, track(new Blob([file.code], { type: 'application/json' })));
+    }
+  }
 
   for (const path of order) {
     const file = files.find((f) => f.path === path);
@@ -158,6 +185,7 @@ export async function linkProject(
   return {
     entryUrl,
     compiled,
+    assets,
     revoke() {
       for (const url of urls) URL.revokeObjectURL(url);
     },

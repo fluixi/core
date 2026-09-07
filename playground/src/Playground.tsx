@@ -1,11 +1,31 @@
 // Playground app — compiles a multi-file project in-browser, mounts it, and graphs its
 // reactivity via @fluixi/devtools. Left = file tree + editor; right = preview + graph.
 import { createSignal, onMount } from '@fluixi/core';
-import { createGraphView, DEVTOOLS_CSS, nodeVersion, nodeState, type GraphView, type Reactor } from '@fluixi/devtools';
-import { runProject, type RunResult } from './run';
+import { createGraphView, DEVTOOLS_CSS, formatValue, nodeVersion, nodeState, type GraphView, type ObservedGraph } from '@fluixi/devtools';
+import { runProject, type RenderMode, type RunResult } from './run';
+
+/** What the right-hand pane is showing. */
+type OutputTab = 'preview' | 'compiled' | 'html' | 'css' | 'ssr';
+
+const TAB_HINTS: Record<OutputTab, string> = {
+  preview: 'The running page',
+  compiled: 'What the compiler made of the open file',
+  html: 'The document as it stands, shell and all',
+  css: 'The stylesheets the run pulled in',
+  ssr: 'What a server would have sent, before hydration',
+};
+import { formatCompiled } from './compile';
 import { KNOWN_SPECIFIERS } from './modules';
-import { createEditor, setEditorTheme, setProjectLibs, type CodeEditor } from './editor';
+import {
+  createEditor,
+  createViewer,
+  setEditorTheme,
+  setProjectLibs,
+  type CodeEditor,
+  type CodeViewer,
+} from './editor';
 import { examples } from './examples';
+import { tree } from './tree';
 import {
   decodeProject,
   encodeProject,
@@ -30,7 +50,10 @@ export function Playground() {
   const [openPath, setOpenPath] = createSignal(findEntry(initial.files, initial.entry));
   const [entry, setEntry] = createSignal(findEntry(initial.files, initial.entry));
   const [projectName, setProjectName] = createSignal(initial.name);
-  const [tab, setTab] = createSignal<'editor' | 'compiled'>('editor');
+  const [output, setOutput] = createSignal<OutputTab>('preview');
+  const [mode, setMode] = createSignal<RenderMode>(
+    (localStorage.getItem('fluixi-pg-mode') as RenderMode) || 'spa',
+  );
   const [error, setError] = createSignal<string | null>(null);
   const [compiled, setCompiled] = createSignal('');
   const [shared, setShared] = createSignal(false);
@@ -39,17 +62,21 @@ export function Playground() {
   const [sidebar, setSidebar] = createSignal(localStorage.getItem('fluixi-pg-sidebar') !== 'off');
   const [split, setSplit] = createSignal(Number(localStorage.getItem('fluixi-pg-split')) || 50);
   const [stats, setStats] = createSignal({ nodes: 0, edges: 0, runs: 0 });
+  // Folders start open; shutting one is the exception worth remembering.
+  const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
 
   let rootEl!: HTMLDivElement;
   let rightEl!: HTMLElement;
   let editorHost!: HTMLDivElement;
   let editor: CodeEditor;
   let previewEl!: HTMLDivElement;
+  let compiledHost!: HTMLDivElement;
+  let viewer: CodeViewer | null = null;
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
 
-  // The reactor belongs to the preview iframe now, so it arrives with each run.
-  let reactor: Reactor | null = null;
+  // The graph belongs to the preview iframe now, so it arrives with each run.
+  let reactor: ObservedGraph | null = null;
   let view: GraphView | null = null;
   let current: RunResult | null = null;
   let selectedId: number | null = null;
@@ -84,9 +111,11 @@ export function Playground() {
     const sources = [...node.deps].map(labelOf);
     const observers = [...(reactor?.graph.values() ?? [])].filter((n) => n.deps.has(node.id)).map((n) => n.label);
     const writes = [...node.writes].map(labelOf);
-    let val = node.value ?? '';
+    // The graph's own formatter, with room to read: a store holds an object, and String()
+    // renders that as [object Object].
+    let val = node.detail ?? node.value ?? '';
     try {
-      if (node.read) val = String(node.read());
+      if (node.read) val = formatValue(node.read(), 600);
     } catch {
       /* keep snapshot */
     }
@@ -105,7 +134,7 @@ export function Playground() {
     inspectorEl.innerHTML =
       `<div class="ins-head"><span class="ins-kind n-${node.kind}">${node.kind}</span><b>${esc(node.label)}</b>` +
       `<span class="ins-meta">v${nodeVersion(node)} · ${node.runs} runs${st ? ' · ' + st : ''}</span></div>` +
-      `<div class="ins-val">${esc(clip(val))}</div>` +
+      `<div class="ins-val" title="${esc(val)}">${esc(clip(val))}</div>` +
       `<div class="ins-rel">${rel}</div>` +
       // Only when the graph carries one. The playground reads it and renders it; where it
       // came from is devtools' business.
@@ -150,11 +179,80 @@ export function Playground() {
 
     const project = snapshot();
     setFiles(project.files);
-    current = await runProject(project, previewEl);
-    reactor = current.reactor;
+    current = await runProject(project, previewEl, mode());
+    reactor = current.graph;
     setError(current.error);
     setCompiled(current.compiled.get(openPath()) ?? current.compiled.get(project.entry) ?? '');
+    void showOutputText();
     loop();
+  }
+
+  /** The output side of the window: the running page, or what the compiler made of the file. */
+  function showOutput(which: OutputTab) {
+    setOutput(which);
+    if (which === 'preview') return;
+    void showOutputText();
+    // Monaco measures itself on layout, and it was hidden until this frame.
+    requestAnimationFrame(() => viewer?.layout());
+  }
+
+  /** What each tab reads out of the run, once it has one. */
+  async function showOutputText() {
+    if (!compiledHost) return;
+    viewer ??= createViewer(compiledHost);
+    const tab = output();
+    if (tab === 'preview') return;
+
+    if (tab === 'compiled') return showCompiled();
+    if (!current) {
+      viewer.show('// run to see the output', 'output.js');
+      return;
+    }
+    if (tab === 'html') viewer.show(current.html() || '<!-- nothing rendered -->', 'output.html');
+    if (tab === 'css') viewer.show(current.css() || '/* the project has no stylesheets */', 'output.css');
+    if (tab === 'ssr') {
+      viewer.show(
+        mode() === 'ssr'
+          ? current.ssr() || '<!-- the entry did not render anything -->'
+          : '<!-- switch the run to ssr to see what the server would send -->',
+        'output.html',
+      );
+    }
+    requestAnimationFrame(() => viewer?.layout());
+  }
+
+  let showing = 0;
+  async function showCompiled() {
+    if (!compiledHost) return;
+    viewer ??= createViewer(compiledHost);
+    const code = compiled();
+    if (!code) {
+      // Nothing to show is two different things: nothing has run yet, or this file is not
+      // something the compiler touches.
+      viewer.show(current ? `// ${openPath()} is not compiled` : '// run to see the compiled output', openPath());
+      requestAnimationFrame(() => viewer?.layout());
+      return;
+    }
+    // Printing is async only because babel loads on demand; a later file must win.
+    const turn = ++showing;
+    const text = await formatCompiled(code);
+    if (turn !== showing) return;
+    viewer.show(text, openPath());
+    requestAnimationFrame(() => viewer?.layout());
+  }
+
+  function setRenderMode(next: RenderMode) {
+    if (mode() === next) return;
+    setMode(next);
+    localStorage.setItem('fluixi-pg-mode', next);
+    // The mode changes what the run does, not what it compiles, so it takes a re-run.
+    void run();
+  }
+
+  function toggleFolder(path: string) {
+    const next = new Set(collapsed());
+    if (!next.delete(path)) next.add(path);
+    setCollapsed(next);
   }
 
   function persist() {
@@ -238,20 +336,26 @@ export function Playground() {
     editor.reset(copy.files);
     setProjectLibs(copy.files);
     editor.open(start, copy.files.find((f) => f.path === start)?.code ?? '');
-    setTab('editor');
+    setOutput('preview');
     void run();
   }
 
   function openFile(path: string) {
     setOpenPath(path);
     editor.open(path, files().find((f) => f.path === path)?.code ?? '');
-    setTab('editor');
     requestAnimationFrame(() => editor.layout());
-    if (current) setCompiled(current.compiled.get(path) ?? '');
+    if (current) {
+      setCompiled(current.compiled.get(path) ?? '');
+      void showOutputText();
+    }
   }
 
   function addFile() {
-    const name = prompt('New file', 'Component.tsx');
+    // Prefilled with the open file's folder: a path is how a folder comes into being here,
+    // and typing `src/` again for every file next to the one you are editing is tedious.
+    const open = openPath();
+    const folder = open.includes('/') ? open.slice(0, open.lastIndexOf('/') + 1) : '';
+    const name = prompt('New file', `${folder}Component.tsx`);
     if (name == null) return;
     const path = normalizePath(name);
     const problem = validatePath(path, files());
@@ -394,36 +498,53 @@ export function Playground() {
           </div>
           <ul class="file-list">
             {() =>
-              files().map((file) => (
-                <li class={openPath() === file.path ? 'file on' : 'file'}>
-                  <button class="file-open" onClick={() => openFile(file.path)}>
-                    <span class="file-name">{file.path}</span>
-                    {() => (entry() === file.path ? <span class="badge">entry</span> : null)}
-                  </button>
-                  <span class="file-actions">
-                    {() =>
-                      entry() === file.path ? null : (
-                        <button
-                          class="icon"
-                          title="Make this the entry"
-                          onClick={() => {
-                            setEntry(file.path);
-                            persist();
-                          }}
-                        >
-                          ▸
-                        </button>
-                      )
-                    }
-                    <button class="icon" title="Rename" onClick={() => renameFile(file.path)}>
-                      ✎
+              tree(files(), collapsed()).map((row) =>
+                row.kind === 'folder' ? (
+                  <li class="folder">
+                    <button
+                      class="file-open"
+                      style={`padding-left:${10 + row.depth * 12}px`}
+                      onClick={() => toggleFolder(row.path)}
+                    >
+                      <span class="twist">{row.open ? '▾' : '▸'}</span>
+                      <span class="file-name">{row.name}</span>
                     </button>
-                    <button class="icon" title="Delete" onClick={() => removeFile(file.path)}>
-                      ×
+                  </li>
+                ) : (
+                  <li class={openPath() === row.path ? 'file on' : 'file'}>
+                    <button
+                      class="file-open"
+                      style={`padding-left:${10 + row.depth * 12}px`}
+                      onClick={() => openFile(row.path)}
+                    >
+                      <span class="file-name">{row.name}</span>
+                      {() => (entry() === row.path ? <span class="badge">entry</span> : null)}
                     </button>
-                  </span>
-                </li>
-              ))
+                    <span class="file-actions">
+                      {() =>
+                        entry() === row.path ? null : (
+                          <button
+                            class="icon"
+                            title="Make this the entry"
+                            onClick={() => {
+                              setEntry(row.path);
+                              persist();
+                            }}
+                          >
+                            ▸
+                          </button>
+                        )
+                      }
+                      <button class="icon" title="Rename" onClick={() => renameFile(row.path)}>
+                        ✎
+                      </button>
+                      <button class="icon" title="Delete" onClick={() => removeFile(row.path)}>
+                        ×
+                      </button>
+                    </span>
+                  </li>
+                ),
+              )
             }
           </ul>
         </div>
@@ -431,28 +552,13 @@ export function Playground() {
         <div class="pane">
           <div class="tabs-bar">
             <div class="tabs">
-              <button
-                class={tab() === 'editor' ? 't on' : 't'}
-                onClick={() => {
-                  setTab('editor');
-                  requestAnimationFrame(() => editor?.layout());
-                }}
-              >
-                {() => openPath() || 'Editor'}
-              </button>
-              <button class={tab() === 'compiled' ? 't on' : 't'} onClick={() => setTab('compiled')}>
-                Compiled
-              </button>
+              <button class="t on">{() => openPath() || 'Editor'}</button>
             </div>
             <button class="run" onClick={() => void run()}>
               ▶ Run <span class="kbd">⌘↵</span>
             </button>
           </div>
-          <div
-            class={tab() === 'editor' ? 'editor' : 'editor hidden'}
-            ref={(el: HTMLDivElement) => (editorHost = el)}
-          />
-          <pre class={tab() === 'compiled' ? 'compiled' : 'compiled hidden'}>{compiled()}</pre>
+          <div class="editor" ref={(el: HTMLDivElement) => (editorHost = el)} />
           <div class={error() ? 'err show' : 'err'}>{error() ?? ''}</div>
         </div>
       </section>
@@ -474,9 +580,45 @@ export function Playground() {
       >
         <div class="r-preview">
           <div class="panel-bar">
-            <span>preview</span>
+            <span class="tabs">
+              {() =>
+                (['preview', 'compiled', 'html', 'css', 'ssr'] as OutputTab[]).map((name) => (
+                  <button
+                    class={output() === name ? 't on' : 't'}
+                    onClick={() => showOutput(name)}
+                    title={TAB_HINTS[name]}
+                  >
+                    {name}
+                  </button>
+                ))
+              }
+            </span>
+            <span class="mode">
+              {() => (output() === 'compiled' ? <span class="stats">{openPath()}</span> : '')}
+              <button
+                class={mode() === 'spa' ? 'm on' : 'm'}
+                title="Render in the browser"
+                onClick={() => setRenderMode('spa')}
+              >
+                spa
+              </button>
+              <button
+                class={mode() === 'ssr' ? 'm on' : 'm'}
+                title="Render to html first, then hydrate — the same compiled code either way"
+                onClick={() => setRenderMode('ssr')}
+              >
+                ssr
+              </button>
+            </span>
           </div>
-          <div class="preview" ref={(el: HTMLDivElement) => (previewEl = el)} />
+          {/* The preview keeps running while the compiled output is on top of it: hiding it
+              is a class, not an unmount, or every switch would restart the project. */}
+          <div class={output() === 'preview' ? 'preview' : 'preview hidden'} ref={(el: HTMLDivElement) => (previewEl = el)} />
+          {/* One viewer behind every tab that is not the preview: compiled, html, css, ssr. */}
+          <div
+            class={output() === 'preview' ? 'compiled hidden' : 'compiled'}
+            ref={(el: HTMLDivElement) => (compiledHost = el)}
+          />
         </div>
         <div
           class="splitter row"
@@ -490,6 +632,17 @@ export function Playground() {
             <span>reactive graph</span>
             <span class="stats">
               {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
+            </span>
+            <span class="zoom">
+              <button type="button" title="Zoom out" onClick={() => view?.zoomBy(1 / 1.25)}>
+                −
+              </button>
+              <button type="button" title="Reset (or double-click the graph)" onClick={() => view?.resetView()}>
+                ⤢
+              </button>
+              <button type="button" title="Zoom in" onClick={() => view?.zoomBy(1.25)}>
+                +
+              </button>
             </span>
           </div>
           <div class="graph-wrap">

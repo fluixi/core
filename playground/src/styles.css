@@ -62,6 +62,9 @@ body {
 .file.on { background: var(--accent-soft); border-left-color: var(--accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .file-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; background: transparent; border: 0; padding: 6px 8px; text-align: left; cursor: pointer; color: var(--muted); font-family: var(--mono); font-size: 12px; }
 .file.on .file-open { color: var(--text); }
+.folder > .file-open { color: var(--muted); font-weight: 600; }
+.folder > .file-open:hover { color: var(--fg); }
+.twist { display: inline-block; width: 11px; margin-right: 2px; opacity: .7; font-size: 9px; }
 .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-family: var(--font); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; flex: none; }
 /* The row's controls stay out of the way until the row is wanted, but remain tabbable. */
@@ -83,9 +86,9 @@ body {
 .run:hover { opacity: .88; }
 .kbd { font-family: var(--mono); font-size: 10px; opacity: 0.7; margin-left: 4px; }
 
-.editor { flex: 1; min-height: 0; overflow: hidden; }
+.editor { flex: 1; min-height: 0; overflow: visible; }
 .editor .monaco-editor, .editor .monaco-editor .overflow-guard { width: 100% !important; }
-.compiled { flex: 1; margin: 0; overflow: auto; padding: 16px 18px; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--code-text); white-space: pre; }
+.compiled { flex: 1; min-height: 0; }
 .hidden { display: none !important; }
 
 .err { display: none; padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: var(--hl-deletion); background: var(--panel-2); border-top: 1px solid var(--line); white-space: pre-wrap; }
@@ -94,10 +97,29 @@ body {
 /* right half: preview (top) + graph (bottom) */
 .pg-right { grid-area: right; display: grid; grid-template-rows: var(--rows, 45%) 5px minmax(0, 1fr); gap: 0; background: var(--line); min-width: 0; }
 .r-preview, .r-graph { display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
-.panel-bar { display: flex; align-items: center; justify-content: space-between; min-height: 43px; padding: 9px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+/* The bar carries the preview/compiled tabs, so it sits tighter than a plain title. */
+.panel-bar .tabs { display: inline-flex; gap: 2px; margin: -4px 0; }
+.mode { display: inline-flex; align-items: center; gap: 6px; }
+.mode .m {
+  border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px;
+  background: var(--surface-2); color: var(--muted);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+}
+.mode .m:hover { color: var(--fg); }
+.mode .m.on { color: var(--accent); border-color: var(--accent); }
+.panel-bar .tabs .t { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.zoom { margin-left: auto; display: inline-flex; gap: 2px; }
+.zoom button {
+  width: 22px; height: 20px; padding: 0; line-height: 1;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--surface-2); color: var(--muted);
+  font-family: var(--mono); font-size: 12px; cursor: pointer;
+}
+.zoom button:hover { color: var(--fg); border-color: var(--accent); }
 .stats { text-transform: none; letter-spacing: 0; color: var(--accent); font-family: var(--mono); }
 
-.preview { flex: 1; padding: 22px; overflow: auto; display: flex; align-items: flex-start; }
+.preview { flex: 1; padding: 0; overflow: auto; display: flex; align-items: flex-start; }
 .preview .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; min-width: 280px; }
 .preview h3 { margin: 0 0 14px; font-size: 15px; }
 .preview .row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }

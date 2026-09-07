@@ -11,7 +11,11 @@ import 'monaco-editor/esm/vs/language/css/monaco.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import 'monaco-editor/esm/vs/language/html/monaco.contribution';
 import 'monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution';
+import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution';
 import 'monaco-editor/esm/vs/basic-languages/css/css.contribution';
+// The html *service* completes attributes; this is what colours the file. Without it
+// index.html was rendered as plain text.
+import 'monaco-editor/esm/vs/basic-languages/html/html.contribution';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
@@ -19,6 +23,7 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import type { ProjectFile } from './project';
 import { loadPackageTypes } from './types';
+import { JSX_THEME_RULES, JSX_THEME_RULES_LIGHT, patchTypeScriptTokens } from './jsx-tokens';
 
 (self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
   getWorker(_: unknown, label: string) {
@@ -29,15 +34,6 @@ import { loadPackageTypes } from './types';
     return new editorWorker();
   },
 };
-
-// A loose JSX namespace so markup type-checks without resolving @fluixi/jsx in the worker.
-const AMBIENT = `
-declare namespace JSX {
-  interface IntrinsicElements { [el: string]: any }
-  type Element = any;
-  interface ElementChildrenAttribute { children: {} }
-}
-`;
 
 const MONO = 'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace';
 const ROOT = 'file:///project/';
@@ -78,11 +74,14 @@ function configure() {
   ts.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,
     module: monaco.languages.typescript.ModuleKind.ESNext,
-    // Bundler (100), matching the tsconfig a project ships. NodeJs will not resolve an
-    // extensionless './Counter' to Counter.tsx, which is how every file here imports its
-    // neighbours. Monaco's enum stops at NodeJs but forwards the number to a TypeScript
-    // that knows the rest.
-    moduleResolution: 100 as monaco.languages.typescript.ModuleResolutionKind,
+    // Classic node resolution, which is what the worker's own filesystem looks like: models
+    // under file:///project and the packages' declarations under file:///node_modules.
+    //
+    // Bundler (100) reads better on paper — it is what a project's tsconfig says — but in
+    // the TypeScript this worker bundles it failed every relative import: `./Counter` next
+    // to `Counter.tsx` came back as "Cannot find module" while the bare packages resolved,
+    // and the JSX namespace those packages declare never loaded with it.
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     jsx: monaco.languages.typescript.JsxEmit.Preserve,
     allowNonTsExtensions: true,
     allowJs: true,
@@ -90,6 +89,9 @@ function configure() {
     strict: false,
     baseUrl: ROOT,
     lib: ['esnext', 'dom'],
+    // The framework's declarations are ~150 files, and every extra lib is a root the worker
+    // would otherwise type-check on each keystroke. Nobody is editing them.
+    skipLibCheck: true,
   });
   ts.setDiagnosticsOptions({
     noSemanticValidation: false,
@@ -99,13 +101,23 @@ function configure() {
     // missing module is worth saying.
     diagnosticCodesToIgnore: [6133],
   });
-  ts.addExtraLib(AMBIENT, 'file:///fluixi-globals.d.ts');
-  void loadPackageTypes();
+  // The compiled output is javascript that imports modules only the runner can resolve, and
+  // it is read-only. Checking it would decorate it with errors nobody can act on.
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: false,
+  });
+  // No stand-in JSX namespace here. @fluixi/jsx declares the global one, and a local
+  // `[el: string]: any` merged into it would swallow every real element type — which is why
+  // `<div ` suggested nothing and every attribute typed as any. The `$` intrinsics come from
+  // the project's own fluixi.d.ts, the same file a real project commits.
+  loadPackageTypes();
 
+  patchTypeScriptTokens();
   monaco.editor.defineTheme('fluixi-dark', {
     base: 'vs-dark',
     inherit: true,
-    rules: [],
+    rules: JSX_THEME_RULES,
     colors: {
       'editor.background': '#0f0f0f',
       'editorGutter.background': '#0f0f0f',
@@ -118,7 +130,7 @@ function configure() {
   monaco.editor.defineTheme('fluixi-light', {
     base: 'vs',
     inherit: true,
-    rules: [],
+    rules: JSX_THEME_RULES_LIGHT,
     colors: {
       'editor.background': '#fafafa',
       'editorGutter.background': '#fafafa',
@@ -222,6 +234,59 @@ export interface EditorOptions {
   /** The project as it stands, for import completion. */
   getFiles: () => ProjectFile[];
   specifiers: string[];
+}
+
+export interface CodeViewer {
+  show(code: string, path?: string): void;
+  layout(): void;
+  dispose(): void;
+}
+
+/**
+ * A read-only editor for output — the compiled module, in this case.
+ *
+ * Its model is held apart from the project's: a `file:///project/...` uri would make the
+ * TypeScript worker treat generated code as part of the program and report the imports it
+ * cannot resolve as errors in a file nobody can edit.
+ */
+export function createViewer(host: HTMLElement): CodeViewer {
+  configure();
+  const model = monaco.editor.createModel('', 'javascript', monaco.Uri.parse('inmemory://compiled/output.js'));
+  const editor = monaco.editor.create(host, {
+    model,
+    theme: document.documentElement.dataset.theme === 'light' ? 'fluixi-light' : 'fluixi-dark',
+    automaticLayout: true,
+    readOnly: true,
+    domReadOnly: true,
+    wordWrap: 'on',
+    fontSize: 12.5,
+    fontFamily: MONO,
+    lineHeight: 20,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    padding: { top: 12, bottom: 12 },
+    renderLineHighlight: 'none',
+    smoothScrolling: true,
+    scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
+  });
+
+  return {
+    show(code, path) {
+      if (model.getValue() !== code) model.setValue(code);
+      // Named by what it is: `output.html`, `output.css`, a project path for compiled code.
+      const language = path?.endsWith('.html') ? 'html' : path?.endsWith('.css') ? 'css' : 'javascript';
+      monaco.editor.setModelLanguage(model, language);
+      editor.setPosition({ lineNumber: 1, column: 1 });
+      // It is usually created while its pane is hidden, where it measures itself as nothing
+      // and stays that way. Showing something is the moment it has a size to take.
+      editor.layout();
+    },
+    layout: () => editor.layout(),
+    dispose() {
+      editor.dispose();
+      model.dispose();
+    },
+  };
 }
 
 export function createEditor(host: HTMLElement, options: EditorOptions): CodeEditor {
