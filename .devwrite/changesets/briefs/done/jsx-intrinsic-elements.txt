@@ -1,0 +1,11 @@
+packages: @fluixi/jsx
+bump:     patch
+what:     the global JSX namespace declares each of its names once. JSX.IntrinsicElements
+          carries the element types again, and JSX.Element is an alias for what the dom can
+          insert.
+why:      the namespace declared each name twice — a type alias, and an interface extending
+          the name being declared. An interface extending itself is empty, so
+          JSX.IntrinsicElements had nothing in it: `<div>` was "Property 'div' does not
+          exist" in every application, and no editor could complete an element or an
+          attribute. Declaring Element as an interface made a nested element unassignable to
+          a `children` typed ComponentChild.
