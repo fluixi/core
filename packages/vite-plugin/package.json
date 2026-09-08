@@ -43,7 +43,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*"
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/devtools": "workspace:*"
   },
   "peerDependencies": {
     "vite": ">=4"
@@ -59,7 +60,6 @@
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/preset-typescript": "^7.28.5",
     "@bambiste/mix-builder": "^0.1.0",
-    "@fluixi/devtools": "workspace:*",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2",
     "vite": "^5.0.0",

@@ -64,7 +64,7 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 
 ## 🕸️ Reactive graph
 
-The plugin adds a small agent to the page in development mode, which reports the reactive graph at `GET /__fluixi/graph`. This graph is available as plain JSON, making it easy to read and use in tools like editor extensions or panels. The plugin requires `@fluixi/devtools` as a dev dependency. If it is not installed, the plugin will not add the agent and will not serve the graph.
+The plugin adds a small agent to the page in development mode, which reports the reactive graph at `GET /__fluixi/graph`. This graph is available as plain JSON, making it easy to read and use in tools like editor extensions or panels. The agent comes with the plugin, so a project needs nothing else installed; only the framework itself is resolved from the project, since watching a second copy of the runtime would watch a graph nothing is using.
 
 Here is how you can configure the plugin:
 

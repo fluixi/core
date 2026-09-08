@@ -896,6 +896,9 @@ importers:
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@fluixi/devtools':
+        specifier: workspace:*
+        version: link:../devtools
     devDependencies:
       '@babel/core':
         specifier: ^7.28.5
@@ -912,9 +915,6 @@ importers:
       '@bambiste/mix-builder':
         specifier: ^0.1.0
         version: 0.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
-      '@fluixi/devtools':
-        specifier: workspace:*
-        version: link:../devtools
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3

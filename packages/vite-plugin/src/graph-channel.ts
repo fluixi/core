@@ -7,8 +7,10 @@
 //
 //   GET /__fluixi/graph  →  { t, nodes: [...] }
 //
-// Off in a build, and off when @fluixi/devtools is not installed: the agent imports it, and
-// injecting a script that fails to resolve would break the page rather than the feature.
+// Off in a build. The agent's own half comes from this package's dependency rather than from
+// the application, so a project gets the graph by having the plugin and nothing else; only
+// the framework itself is resolved from the project, because watching a second copy of the
+// runtime would watch a graph nobody is using.
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import type { Plugin } from 'vite';
@@ -18,7 +20,7 @@ const RESOLVED = `\0${VIRTUAL}`;
 const ENDPOINT = '/__fluixi/graph';
 const EVENT = 'fluixi:graph';
 /** Why a project that runs the plugin might still have nothing to show. */
-const MISSING = 'this project has no @fluixi/devtools — add it as a devDependency and restart the dev server';
+const MISSING = 'the plugin could not load @fluixi/devtools from its own dependencies';
 const WAITING = 'no page has reported yet — open the application in a browser';
 
 /** How often the agent looks for movement. Fast enough to watch, slow enough to ignore. */
@@ -49,16 +51,17 @@ import.meta.hot?.dispose(() => clearInterval(timer));
 type WireModule = typeof import('@fluixi/devtools/wire');
 
 /**
- * Whether the application can import @fluixi/devtools. Resolved from the project rather than
- * from this package: the agent's import is the app's, and this plugin having a copy of its
- * own says nothing about that.
+ * The devtools bundle this plugin depends on, as a path the dev server can serve.
+ *
+ * Asking the application to install it as well made the graph depend on a devDependency
+ * nobody knew to add, and in a workspace it resolved for one project and not the one beside
+ * it — which reads as the feature being broken rather than absent.
  */
-function installedIn(root: string): boolean {
+function ownDevtools(): string | null {
   try {
-    createRequire(join(root, 'index.js')).resolve('@fluixi/devtools/package.json');
-    return true;
+    return createRequire(import.meta.url).resolve('@fluixi/devtools');
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -92,19 +95,22 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
     async load(this: ResolveContext, id: string) {
       if (id !== RESOLVED) return null;
       const from = join(root, 'fluixi-devtools-agent.js');
-      const specs = ['@fluixi/devtools', '@fluixi/reactive/signal', '@fluixi/reactive'];
+      // Only the framework comes from the application: the hook hands over that runtime's
+      // own registration, and a second copy would report a graph nothing is using.
+      const specs = ['@fluixi/reactive/signal', '@fluixi/reactive'];
       const ids = await Promise.all(specs.map((spec) => this.resolve?.(spec, from, { skipSelf: true })));
       const missing = specs.filter((_, i) => !ids[i]?.id);
-      // Nothing to watch with is not an error worth breaking the page over. Node resolving
-      // the package from a parent directory is not the same question as the application
-      // resolving it, which is the one that decides whether the agent can run at all — in a
-      // monorepo the first answer is yes and the second no.
-      if (missing.length) {
-        reason = `${missing.join(', ')} did not resolve from ${root} — add it there as a devDependency`;
+      const devtools = ownDevtools();
+      // Nothing to watch with is not an error worth breaking the page over.
+      if (missing.length || !devtools) {
+        reason = missing.length
+          ? `${missing.join(', ')} did not resolve from ${root}`
+          : MISSING;
         log?.(`[fluixi] reactive graph off — ${reason}`);
         return 'export {};';
       }
-      return agentSource(ids[0]!.id, ids[1]!.id, ids[2]!.id);
+      // Served by path: it is this package's copy, not one the application imports.
+      return agentSource(`/@fs/${devtools}`, ids[0]!.id, ids[1]!.id);
     },
 
     async configureServer(server: {
@@ -115,8 +121,8 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       if (!enabled()) return;
       root = server.config?.root ?? root;
       log = server.config?.logger?.info.bind(server.config.logger);
-      available = installedIn(root);
-      wire = available ? await import('@fluixi/devtools/wire').catch(() => null) : null;
+      wire = await import('@fluixi/devtools/wire').catch(() => null);
+      available = wire !== null;
       // Source marks cost something, so they wait until there is a server watching for them.
       if (wire) start();
       if (wire) reason = WAITING;
