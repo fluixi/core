@@ -1,0 +1,10 @@
+subject: one line under 65 chars — control flow naming what it makes
+body:    two short paragraphs. No closing summary.
+
+files:  packages/dom/src/lib/flow/{show,dynamic,error-boundary,class-map,style-map}.ts
+notes:
+  1. Show makes three memos and named none of them, so a page with one condition showed m5 and
+     m6 at the same line as the component. They are Show.when, Show.cond and Show.result, and
+     the chain reads todos → Show.when → Show.cond → Show.result.
+  2. Dynamic, ErrorBoundary, ClassMap and StyleMap had the same anonymous memo.
+verify: 166 tests in @fluixi/dom

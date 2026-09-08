@@ -57,5 +57,5 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
         ? props.fallback(e, reset)
         : props.fallback;
     }
-  });
+  }, undefined, { name: 'ErrorBoundary' });
 }

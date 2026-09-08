@@ -55,5 +55,5 @@ export function Dynamic<T extends Record<string, any> = Record<string, any>>(
       return { tag: C, props: rest };
     }
     return runWithOwner(scope, () => (C as (p: any) => any)(rest));
-  });
+  }, undefined, { name: 'Dynamic' });
 }

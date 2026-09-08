@@ -66,8 +66,10 @@ export function Show<T>(props: ShowProps<T>): any {
   // still work — resolveReactiveProp unwraps the accessor form once.
   const when = resolveReactiveProp<T>(() => props.when as any);
   // const {when} = props
-  const value = createMemo(when, undefined)
-    const cond = createMemo(value, undefined)
+  // Named for a watcher: three memos at one line, two of them anonymous, is what a graph of
+  // a page with a few conditions turns into.
+  const value = createMemo(when, undefined, { name: 'Show.when' });
+    const cond = createMemo(value, undefined, { name: 'Show.cond' });
 
     // Each branch renders in its own scope so that leaving it tears down whatever
     // it registered — an event listener, an observer, a timer. Without this the
@@ -154,7 +156,9 @@ export function Show<T>(props: ShowProps<T>): any {
       return props.fallback ?? null;
     },
     undefined,
-    { name: 'show'}
+    // Not `Show`: the compiler already marks the memo it wraps the component in with that,
+    // and two cards of the same name in one graph is worse than a longer one.
+    { name: 'Show.result' }
   );
 }
 // export function Show1<T>(props: ShowProps<T>): any {
