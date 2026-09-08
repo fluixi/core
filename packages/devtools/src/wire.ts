@@ -51,6 +51,12 @@ export interface GraphSnapshot {
   readonly partial?: boolean;
   /** Ids the producer no longer has. Only meaningful on a partial. */
   readonly removed?: number[];
+  /**
+   * Why there is nothing to show, when a producer can say. A dev server that is running but
+   * has no devtools installed answers with this rather than with a 404, which reads the same
+   * as a server that is not a fluixi project at all.
+   */
+  readonly reason?: string;
 }
 
 export interface SerializeOptions {

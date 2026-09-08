@@ -1,0 +1,16 @@
+subject: one line under 65 chars — the endpoint explaining itself
+body:    three short paragraphs. No closing summary.
+
+files:  packages/vite-plugin/src/graph-channel.ts, packages/devtools/src/wire.ts
+notes:
+  1. the endpoint answers whether or not the graph is on, and says why it is empty when it
+     is: no devtools in the project, or a page that has not been opened yet. A 404 read the
+     same as a dev server that is not a fluixi project at all, which is what an editor
+     pointed at the wrong port sees.
+  2. node resolving the package from a parent directory is not the question that matters. In
+     a monorepo it answers yes while the application's own resolution answers no, so the
+     agent was skipped and the graph stayed empty with nothing said. The failure that
+     decides it now sets the reason.
+  3. a snapshot carries an optional reason for the same purpose.
+verify: checked against an example with the package present, absent, and present but not yet
+        opened in a browser

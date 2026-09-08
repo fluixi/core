@@ -17,6 +17,9 @@ const VIRTUAL = 'virtual:fluixi/devtools-agent';
 const RESOLVED = `\0${VIRTUAL}`;
 const ENDPOINT = '/__fluixi/graph';
 const EVENT = 'fluixi:graph';
+/** Why a project that runs the plugin might still have nothing to show. */
+const MISSING = 'this project has no @fluixi/devtools — add it as a devDependency and restart the dev server';
+const WAITING = 'no page has reported yet — open the application in a browser';
 
 /** How often the agent looks for movement. Fast enough to watch, slow enough to ignore. */
 const INTERVAL = 100;
@@ -66,6 +69,8 @@ function installedIn(root: string): boolean {
 export function withGraphChannel(base: Plugin, enabled: () => boolean, start: () => void): Plugin {
   let wire: WireModule | null = null;
   let available = false;
+  /** What to say when the graph is empty. Cleared once a page has reported. */
+  let reason: string | null = MISSING;
   let root = process.cwd();
   let log: ((message: string) => void) | undefined;
   let graph = new Map<number, import('@fluixi/devtools').RNode>();
@@ -90,9 +95,13 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       const specs = ['@fluixi/devtools', '@fluixi/reactive/signal', '@fluixi/reactive'];
       const ids = await Promise.all(specs.map((spec) => this.resolve?.(spec, from, { skipSelf: true })));
       const missing = specs.filter((_, i) => !ids[i]?.id);
-      // Nothing to watch with is not an error worth breaking the page over.
+      // Nothing to watch with is not an error worth breaking the page over. Node resolving
+      // the package from a parent directory is not the same question as the application
+      // resolving it, which is the one that decides whether the agent can run at all — in a
+      // monorepo the first answer is yes and the second no.
       if (missing.length) {
-        log?.(`[fluixi] reactive graph off — ${missing.join(', ')} did not resolve from ${root}`);
+        reason = `${missing.join(', ')} did not resolve from ${root} — add it there as a devDependency`;
+        log?.(`[fluixi] reactive graph off — ${reason}`);
         return 'export {};';
       }
       return agentSource(ids[0]!.id, ids[1]!.id, ids[2]!.id);
@@ -110,12 +119,29 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       wire = available ? await import('@fluixi/devtools/wire').catch(() => null) : null;
       // Source marks cost something, so they wait until there is a server watching for them.
       if (wire) start();
-      if (!wire) {
+      if (wire) reason = WAITING;
+      else {
         // Said once, not per request: without the package there is no agent to inject and
-        // nothing to serve, and that is a missing devDependency rather than a failure.
-        log?.('[fluixi] reactive graph off — install @fluixi/devtools to turn it on');
-        return;
+        // nothing to report, and that is a missing devDependency rather than a failure.
+        log?.(`[fluixi] reactive graph off — ${MISSING}`);
       }
+
+      // The endpoint answers either way. A tool asking for the graph of a project that has
+      // not turned it on deserves to be told which of the two it is, and 404 says neither —
+      // it reads the same as a dev server that is not a fluixi project at all.
+      server.middlewares.use(ENDPOINT, (_req, res) => {
+        const snapshot = wire
+          ? wire.serializeGraph(graph, stamp || Date.now())
+          : { t: Date.now(), nodes: [] };
+        const body = JSON.stringify(reason ? { ...snapshot, reason } : snapshot);
+        res.setHeader('Content-Type', 'application/json');
+        // Read by an editor extension and by panels served from another origin.
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(body);
+      });
+
+      if (!wire) return;
 
       server.ws.on(EVENT, (payload) => {
         const message = payload as { kind?: string; snapshot?: Parameters<WireModule['applySnapshot']>[1] };
@@ -123,16 +149,9 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
         // A reload sends a full snapshot, which replaces whatever the last page left behind.
         graph = wire.applySnapshot(message.kind === 'full' ? new Map() : graph, message.snapshot);
         stamp = Date.now();
+        reason = null;
       });
 
-      server.middlewares.use(ENDPOINT, (_req, res) => {
-        const body = wire ? JSON.stringify(wire.serializeGraph(graph, stamp || Date.now())) : '{}';
-        res.setHeader('Content-Type', 'application/json');
-        // Read by an editor extension and by panels served from another origin.
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cache-Control', 'no-store');
-        res.end(body);
-      });
     },
 
     transformIndexHtml: {
