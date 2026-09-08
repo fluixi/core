@@ -35,8 +35,11 @@ const MAX_ZOOM = 4;
 /** Past this the pointer was panning, not clicking. */
 const DRAG_SLOP = 4;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', group: 'n-group' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', group: '▤ from packages' };
+
+/** The card that stands for everything a dependency made and the application never touched. */
+const GROUP_ID = -1;
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
   const n = document.createElementNS(SVGNS, tag);
@@ -61,14 +64,30 @@ function computeDepths(graph: Map<number, RNode>, deps: (node: RNode) => Iterabl
   for (const node of graph.values()) node.depth = depth(node.id, new Set());
 }
 
+/** Which way a dependency runs on screen: left to right, or top to bottom. */
+export type GraphDirection = 'horizontal' | 'vertical';
+
 export interface GraphViewOptions {
   onSelect?: (node: RNode | null) => void;
+  /**
+   * A wide panel reads left to right; a tall narrow one, which is what a side panel usually
+   * is, reads top to bottom.
+   * @default 'horizontal'
+   */
+  direction?: GraphDirection;
   /**
    * Fold a store's key signals into the store card until it is opened. A cart with four
    * items is a dozen signals nobody asked to see, and the store already shows their value.
    * @default true
    */
   collapseStores?: boolean;
+  /**
+   * Put what a dependency made, and the application never asked for, behind one card. A
+   * router's revalidation counter is real state, and it is not what anyone opened the graph
+   * to look at.
+   * @default true
+   */
+  groupExternal?: boolean;
 }
 
 export interface GraphView {
@@ -81,6 +100,12 @@ export interface GraphView {
   resetView(): void;
   /** Open or fold a node that has children — a store. Returns what it now is. */
   toggle(id: number): boolean;
+  /** Lay the graph out along the other axis. */
+  setDirection(direction: GraphDirection): void;
+  readonly direction: GraphDirection;
+  /** Show what dependencies made as one card, or as themselves. */
+  setGroupExternal(group: boolean): void;
+  readonly groupExternal: boolean;
 }
 
 export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = {}): GraphView {
@@ -107,6 +132,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   const opened = new Set<number>();
   const closed = new Set<number>();
   const foldStores = options.collapseStores !== false;
+  let direction: GraphDirection = options.direction ?? 'horizontal';
+  let groupExternal = options.groupExternal !== false;
 
   // A clip region per text, not one for the box: the label grows right from the left edge
   // and the value grows left from the right, so clipping both to the same box still let a
@@ -308,6 +335,33 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     nodeEls.get(shown)?.g.classList.add('hot');
   }
 
+  /**
+   * The graph as it is drawn: the nodes the application made, plus one card standing for
+   * everything a dependency made on its own account.
+   *
+   * A copy, not the host's map — what is drawn is a view of the graph, and the graph belongs
+   * to whoever is filling it.
+   */
+  function grouped(graph: Map<number, RNode>): Map<number, RNode> {
+    if (!groupExternal) return graph;
+    const outsiders = [...graph.values()].filter((n) => n.source?.external && n.createdIn === undefined);
+    if (!outsiders.length) return graph;
+
+    const shown = new Map(graph);
+    shown.set(GROUP_ID, {
+      id: GROUP_ID,
+      label: 'packages',
+      kind: 'group',
+      deps: new Set(),
+      writes: new Set(),
+      runs: 0,
+      lastPulse: 0,
+    });
+    // Hung off the card, which is what the existing folding already knows how to draw.
+    for (const node of outsiders) shown.set(node.id, { ...node, createdIn: GROUP_ID });
+    return shown;
+  }
+
   function rebuild(graph: Map<number, RNode>, folded: Set<number>) {
     edgeLayer.remove();
     nodeLayer.remove();
@@ -364,13 +418,32 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     }
     let maxRows = 0;
     for (const nodes of byDepth.values()) maxRows = Math.max(maxRows, nodes.length);
+    // Depth runs along one axis and the nodes at a depth along the other; which is which is
+    // the only difference between the two layouts.
+    const down = direction === 'vertical';
+    const STEP_ACROSS = down ? COL + 24 : ROW;
     const pos = new Map<number, { x: number; y: number }>();
     for (const [d, nodes] of byDepth) {
-      const top = PAD + (maxRows * ROW - nodes.length * ROW) / 2;
-      nodes.forEach((node, i) => pos.set(node.id, { x: PAD + d * COL, y: top + i * ROW }));
+      const offset = PAD + (maxRows * STEP_ACROSS - nodes.length * STEP_ACROSS) / 2;
+      nodes.forEach((node, i) =>
+        pos.set(
+          node.id,
+          down
+            ? { x: offset + i * STEP_ACROSS, y: PAD + d * (NH + 46) }
+            : { x: PAD + d * COL, y: offset + i * STEP_ACROSS },
+        ),
+      );
     }
 
     const curve = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      if (down) {
+        const x1 = from.x + NW / 2;
+        const y1 = from.y + NH;
+        const x2 = to.x + NW / 2;
+        const y2 = to.y;
+        const my = (y1 + y2) / 2;
+        return `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`;
+      }
       const x1 = from.x + NW;
       const y1 = from.y + NH / 2;
       const x2 = to.x;
@@ -468,7 +541,9 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     }
 
     viewport.append(edgeLayer, nodeLayer);
-    svg.setAttribute('viewBox', `0 0 ${Math.max(PAD * 2 + maxDepth * COL + NW, 400)} ${Math.max(PAD * 2 + maxRows * ROW, 240)}`);
+    const width = down ? PAD * 2 + maxRows * STEP_ACROSS + NW : PAD * 2 + maxDepth * COL + NW;
+    const height = down ? PAD * 2 + (maxDepth + 1) * (NH + 46) : PAD * 2 + maxRows * ROW;
+    svg.setAttribute('viewBox', `0 0 ${Math.max(width, 400)} ${Math.max(height, 240)}`);
     applySelected();
   }
 
@@ -500,14 +575,18 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     const folded = new Set<number>();
     for (const node of graph.values()) {
       if (!hasChildren.has(node.id)) continue;
-      const byDefault = foldStores && (node.kind === 'store' || inStore(node.id)) && !opened.has(node.id);
+      const byDefault =
+        (node.kind === 'group' || (foldStores && (node.kind === 'store' || inStore(node.id)))) &&
+        !opened.has(node.id);
       if (byDefault || closed.has(node.id)) folded.add(node.id);
     }
     return folded;
   }
 
   function toggleFold(id: number): boolean {
-    const folded = foldedIn(lastGraph).has(id);
+    // The grouped view, not the host's graph: the card standing for the packages only exists
+    // in the former, so asking the latter says it is not folded and the toggle does nothing.
+    const folded = foldedIn(grouped(lastGraph)).has(id);
     if (folded) {
       opened.add(id);
       closed.delete(id);
@@ -529,13 +608,14 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     // Date.now, matching what the reactor stamps on a node — see instrument.ts.
     update(graph, now = Date.now()) {
       lastGraph = graph;
-      const folded = foldedIn(graph);
-      let sig = `${[...folded].sort().join(',')}|`;
-      for (const n of graph.values())
+      const shown = grouped(graph);
+      const folded = foldedIn(shown);
+      let sig = `${[...folded].sort().join(',')}|${groupExternal}|${direction}|`;
+      for (const n of shown.values())
         sig += `${n.id}:${n.kind}:${[...n.deps].sort().join(',')}>${[...n.writes].sort().join(',')}^${n.createdIn ?? ''};`;
       if (sig !== signature) {
         signature = sig;
-        rebuild(graph, folded);
+        rebuild(shown, folded);
       }
       stageWave(graph, now);
 
@@ -583,6 +663,31 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       applyView();
     },
     toggle: toggleFold,
+    setGroupExternal(next) {
+      if (groupExternal === next) return;
+      groupExternal = next;
+      signature = '';
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      applyView();
+    },
+    get groupExternal() {
+      return groupExternal;
+    },
+    setDirection(next) {
+      if (direction === next) return;
+      direction = next;
+      signature = '';
+      // The drawing is a different shape now, so the viewport starts over.
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      applyView();
+    },
+    get direction() {
+      return direction;
+    },
   };
 }
 
@@ -619,6 +724,8 @@ export const DEVTOOLS_CSS = `
 .fx-node.n-store { --glow: var(--store, #38bdf8); }
 .fx-node.n-resource { --glow: var(--fx-write, #fb7185); }
 .fx-node.n-component { --glow: var(--component, #f0abfc); }
+.fx-node.n-group { --glow: var(--fx-muted, #8a90a2); opacity: .8; }
+.fx-node.n-group .fx-box { stroke-dasharray: 4 3; }
 .fx-node.n-external { opacity: .55; }
 .fx-node.n-external .fx-box { stroke-dasharray: 3 2; }
 .fx-box { fill: var(--fx-node-bg, #131722); stroke: var(--glow, #5eead4); stroke-width: 1.4; stroke-opacity: calc(.5 + var(--pulse,0) * .5); }

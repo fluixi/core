@@ -277,3 +277,96 @@ describe('showing a change travelling', () => {
     expect(pulseOf('count')).toBeLessThan(0.6);
   });
 });
+
+describe('laying the graph out the other way', () => {
+  const chainGraph = () =>
+    new Map<number, RNode>([
+      [0, node(0, { label: 'count' })],
+      [1, node(1, { kind: 'memo', label: 'double', deps: new Set([0]) })],
+    ]);
+
+  const positionOf = (label: string) => {
+    const g = [...svg.querySelectorAll<SVGGElement>('.fx-node')].find(
+      (el) => el.querySelector('.fx-label')?.textContent === label,
+    )!;
+    const [x, y] = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(g.getAttribute('transform')!)!.slice(1).map(Number);
+    return { x, y };
+  };
+
+  it('puts what depends on what to the right, by default', () => {
+    createGraphView(svg).update(chainGraph());
+    expect(positionOf('double').x).toBeGreaterThan(positionOf('count').x);
+    expect(positionOf('double').y).toBe(positionOf('count').y);
+  });
+
+  it('puts it below when asked for vertical', () => {
+    createGraphView(svg, { direction: 'vertical' }).update(chainGraph());
+    expect(positionOf('double').y).toBeGreaterThan(positionOf('count').y);
+    expect(positionOf('double').x).toBe(positionOf('count').x);
+  });
+
+  it('switches at runtime, and says which way it is', () => {
+    const view = createGraphView(svg);
+    const graph = chainGraph();
+    view.update(graph);
+    expect(view.direction).toBe('horizontal');
+
+    view.setDirection('vertical');
+    view.update(graph);
+    expect(view.direction).toBe('vertical');
+    expect(positionOf('double').y).toBeGreaterThan(positionOf('count').y);
+  });
+});
+
+describe('what the packages made', () => {
+  const mixed = () =>
+    new Map<number, RNode>([
+      [0, node(0, { label: 'count', source: { file: 'src/app.tsx', line: 5 } })],
+      [1, node(1, { label: 'revalidation', source: { file: 'core/router.ts', line: 47, external: true } })],
+      [2, node(2, { label: 'locale', source: { file: 'core/i18n.ts', line: 111, external: true } })],
+    ]);
+
+  it('puts them behind one card by default', () => {
+    createGraphView(svg).update(mixed());
+    expect(labels().sort()).toEqual(['count', 'packages']);
+    expect(svg.querySelector('.fx-fold')?.textContent).toMatch(/^▸ 2/);
+  });
+
+  it('opens on toggle, and closes again', () => {
+    const view = createGraphView(svg);
+    const graph = mixed();
+    view.update(graph);
+    view.toggle(-1);
+    view.update(graph);
+    expect(labels().sort()).toEqual(['count', 'locale', 'packages', 'revalidation']);
+  });
+
+  it('shows them as themselves when the host turns grouping off', () => {
+    const view = createGraphView(svg, { groupExternal: false });
+    view.update(mixed());
+    expect(labels().sort()).toEqual(['count', 'locale', 'revalidation']);
+  });
+
+  it('switches at runtime', () => {
+    const view = createGraphView(svg);
+    const graph = mixed();
+    view.update(graph);
+    expect(view.groupExternal).toBe(true);
+
+    view.setGroupExternal(false);
+    view.update(graph);
+    expect(view.groupExternal).toBe(false);
+    expect(labels()).toHaveLength(3);
+  });
+
+  it('leaves a node a dependency made inside the application alone', () => {
+    const view = createGraphView(svg);
+    view.update(
+      new Map<number, RNode>([
+        [0, node(0, { kind: 'component', label: 'App' })],
+        [1, node(1, { label: 'inside', createdIn: 0, source: { file: 'core/i18n.ts', line: 3, external: true } })],
+      ]),
+    );
+    expect(labels().sort()).toEqual(['App', 'inside']);
+  });
+});

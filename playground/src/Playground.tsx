@@ -64,6 +64,8 @@ export function Playground() {
   const [stats, setStats] = createSignal({ nodes: 0, edges: 0, runs: 0 });
   // Folders start open; shutting one is the exception worth remembering.
   const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
+  const [layout, setLayout] = createSignal<'horizontal' | 'vertical'>('horizontal');
+  const [grouped, setGrouped] = createSignal(true);
 
   let rootEl!: HTMLDivElement;
   let rightEl!: HTMLElement;
@@ -634,6 +636,27 @@ export function Playground() {
               {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
             </span>
             <span class="zoom">
+              <button
+                type="button"
+                title="Lay the graph out top to bottom, or left to right"
+                onClick={() => {
+                  view?.setDirection(view.direction === 'horizontal' ? 'vertical' : 'horizontal');
+                  setLayout(view?.direction ?? 'horizontal');
+                }}
+              >
+                {() => (layout() === 'vertical' ? '↕' : '↔')}
+              </button>
+              <button
+                type="button"
+                class={grouped() ? 'on' : ''}
+                title="Show what the packages made, or keep it behind one card"
+                onClick={() => {
+                  view?.setGroupExternal(!grouped());
+                  setGrouped(view?.groupExternal ?? true);
+                }}
+              >
+                ▤
+              </button>
               <button type="button" title="Zoom out" onClick={() => view?.zoomBy(1 / 1.25)}>
                 −
               </button>
