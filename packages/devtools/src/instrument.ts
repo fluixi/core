@@ -25,7 +25,15 @@ import { formatValue, shorten } from './format.js';
 
 const $NODE = Symbol.for('signal-node');
 
-export type NodeKind = 'state' | 'memo' | 'effect' | 'store' | 'resource' | 'component';
+export type NodeKind =
+  | 'state'
+  | 'memo'
+  | 'effect'
+  | 'store'
+  | 'resource'
+  | 'component'
+  /** Not a node: a card a view draws to stand for several of them. */
+  | 'group';
 export type NodeState = 'clean' | 'check' | 'dirty';
 
 export interface RNode {
@@ -60,6 +68,16 @@ export interface RNode {
    * from where it was used and the node made.
    */
   declaredAt?: ReactiveSourceLocation;
+  /**
+   * The line of the application that led to this node, for one the compiler did not mark —
+   * a signal a package created on the caller's behalf.
+   */
+  usedAt?: ReactiveSourceLocation;
+  /**
+   * How many dom bindings read this node. They are not drawn — one per attribute and text
+   * hole would bury the graph — but a signal read only by them is not a signal nothing uses.
+   */
+  bindings?: number;
   /** Resource only. */
   loading?: boolean;
   depth?: number;

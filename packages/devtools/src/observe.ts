@@ -15,6 +15,7 @@ import {
   type ReactiveObserver,
 } from '@fluixi/reactive/signal';
 import { componentSource, installSourceMarker, takeReactiveSource } from './source.js';
+import { currentCallSite } from './callsite.js';
 import { type NodeKind, type RNode } from './instrument.js';
 import { formatValue, shorten } from './format.js';
 
@@ -36,6 +37,11 @@ export interface ObservedGraph {
 }
 
 export interface ObserveOptions {
+  /**
+   * Trimmed off a file name that a dev server serves from its own origin. Defaults to the
+   * page's origin, which is what a preview in an iframe wants too.
+   */
+  origin?: string;
   /**
    * How to register. Defaults to this copy of the runtime — pass the application's own
    * `observeReactiveNodes` when watching from outside its module graph, since a second copy
@@ -59,6 +65,8 @@ const PREFIX: Record<NodeKind, string> = {
   store: 'st',
   resource: 'r',
   component: 'c',
+  // Never produced here: a group is a card a view draws, not a node anything creates.
+  group: 'g',
 };
 
 /**
@@ -67,6 +75,7 @@ const PREFIX: Record<NodeKind, string> = {
  */
 export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   installSourceMarker();
+  const origin = options.origin ?? (typeof location === 'object' ? location.origin : undefined);
 
   const graph = new Map<number, RNode>();
   /** Core node → id, so a report about a node already seen finds it. */
@@ -77,6 +86,14 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    * ancestor at all, and the component that caused it would sit on its own.
    */
   const through = new WeakMap<object, number>();
+  /**
+   * The same plumbing, iterable.
+   *
+   * A signal whose only readers are dom bindings looks like a node nothing uses, because the
+   * bindings are not drawn. They are still what makes it matter, so they are counted.
+   * Dropped when the effect that holds them is disposed.
+   */
+  const internals = new Set<CoreNode>();
   const cores = new Map<number, CoreNode>();
   const runsAtLastSample = new Map<number, number>();
   const unnamed = new Set<number>();
@@ -99,9 +116,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const core = report.node as CoreNode;
       if (!core || typeof core !== 'object') return;
       if (report.internal) {
-        // Not drawn, but remembered: whatever it creates belongs to what created it.
+        // Not drawn, but remembered: whatever it creates belongs to what created it, and
+        // what it reads is the reason a signal with no visible readers is not idle.
         const owner = ancestor(report.parents);
         if (owner !== undefined) through.set(core, owner);
+        internals.add(core);
         return;
       }
       const id = seq++;
@@ -111,6 +130,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const mark = takeReactiveSource();
       const named = report.name ?? mark?.name;
       if (!named) unnamed.add(id);
+      // Only for a node the compiler did not mark. This is called from inside the creating
+      // call, so the frames that led to it are still on the stack.
+      const site = mark?.location ? undefined : currentCallSite(origin);
 
       const node: RNode = {
         id,
@@ -123,7 +145,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         runs: 0,
         lastPulse: 0,
         core,
+        // The application's line is where it was asked for; a package's is where it was made,
+        // and for a node made while that package loaded it is the only thing there is.
         ...(mark?.location ? { source: mark.location } : {}),
+        ...(site && !site.external ? { usedAt: site.location } : {}),
+        ...(site && site.external && !mark?.location ? { source: site.location } : {}),
       };
       const owner = ancestor(report.parents);
       if (owner !== undefined) node.createdIn = owner;
@@ -170,6 +196,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       }
     },
     disposed(target) {
+      internals.delete(target as CoreNode);
       const id = ids.get(target as object);
       if (id === undefined) return;
       removed.push(id);
@@ -196,6 +223,20 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     sample() {
       const changed: number[] = [];
       const now = Date.now();
+
+      // What the dom reads, per node. Recounted rather than kept: a binding's sources change
+      // with every run, and a stale count is worse than none.
+      const bindings = new Map<number, number>();
+      for (const internal of internals) {
+        for (const source of internal.sources ?? []) {
+          const id = ids.get(source as object);
+          if (id !== undefined) bindings.set(id, (bindings.get(id) ?? 0) + 1);
+        }
+      }
+      for (const node of graph.values()) {
+        const count = bindings.get(node.id) ?? 0;
+        if (node.bindings !== count) node.bindings = count || undefined;
+      }
       for (const node of graph.values()) {
         if (!node.read) {
           edges(node.id, node);
@@ -246,6 +287,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     },
     detach() {
       stop();
+      internals.clear();
       graph.clear();
       cores.clear();
       runsAtLastSample.clear();

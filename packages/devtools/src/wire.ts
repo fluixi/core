@@ -39,8 +39,12 @@ export interface WireNode {
   readonly source?: ReactiveSourceLocation;
   /** Components only: where the component itself was declared. */
   readonly declaredAt?: ReactiveSourceLocation;
+  /** The line of the application that led to a node the compiler did not mark. */
+  readonly usedAt?: ReactiveSourceLocation;
   /** The node whose run created this one. */
   readonly createdIn?: number;
+  /** How many dom bindings read it. */
+  readonly bindings?: number;
 }
 
 export interface GraphSnapshot {
@@ -91,7 +95,9 @@ export function serializeGraph(
       loading: node.loading,
       source: node.source,
       declaredAt: node.declaredAt,
+      usedAt: node.usedAt,
       createdIn: node.createdIn,
+      bindings: node.bindings,
     });
   }
   const removed = options.removed ? [...options.removed] : undefined;
@@ -116,7 +122,9 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       loading: node.loading,
       source: node.source,
       declaredAt: node.declaredAt,
+      usedAt: node.usedAt,
       createdIn: node.createdIn,
+      bindings: node.bindings,
     });
   }
   return map;
