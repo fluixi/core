@@ -1,0 +1,10 @@
+subject: under 60 chars — naming what lists and Switch make
+body:    two paragraphs, one per note, no closing summary
+
+files:  packages/reactive/src/lib/signal/list.ts,
+        packages/dom/src/lib/flow/switch.ts
+notes:
+  1. mapArray / keyArray / indexArray memos + per-row index signal: unnamed → a list of
+     ten rows = ten `s12`-style cards, no way to tell a row from a row
+  2. Switch's result memo: same, unnamed
+verify: 223 reactive tests, 166 dom tests

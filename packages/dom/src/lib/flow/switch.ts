@@ -124,5 +124,5 @@ export function Switch(props: SwitchProps): Accessor<any> {
     // The fallback is a branch too, so it gets a scope of its own.
     enterBranch(-2);
     return runWithOwner(branchScope, () => props.fallback ?? null);
-  });
+  }, undefined, { name: 'Switch' });
 }
