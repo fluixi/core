@@ -23,4 +23,10 @@ export default defineConfig({
     // @babel/standalone is a large prebundle; include the babel plugin too.
     include: ['@babel/standalone'],
   },
+  // The playground has real logic worth pinning — linking, resolution, and the source-map
+  // composition the devtools cards depend on.
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.spec.ts'],
+  },
 });

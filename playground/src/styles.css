@@ -77,7 +77,7 @@ body {
 .head-actions { display: flex; gap: 8px; }
 .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .ghost:hover { color: var(--text); border-color: var(--line-strong); }
-.tabs-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 6px 12px; border-bottom: 1px solid var(--line); }
+.tabs-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 0px 12px; border-bottom: 1px solid var(--line); }
 .tabs { display: flex; gap: 2px; }
 .t { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .t:hover { color: var(--text); }
@@ -98,7 +98,7 @@ body {
 .pg-right { grid-area: right; display: grid; grid-template-rows: var(--rows, 45%) 5px minmax(0, 1fr); gap: 0; background: var(--line); min-width: 0; }
 .r-preview, .r-graph { display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
 /* The bar carries the preview/compiled tabs, so it sits tighter than a plain title. */
-.panel-bar .tabs { display: inline-flex; gap: 2px; margin: -4px 0; }
+.panel-bar .tabs { display: inline-flex; gap: 2px; margin: -4px 0; height: 100%; }
 .mode { display: inline-flex; align-items: center; gap: 6px; }
 .mode .m {
   border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px;
@@ -108,7 +108,7 @@ body {
 .mode .m:hover { color: var(--fg); }
 .mode .m.on { color: var(--accent); border-color: var(--accent); }
 .panel-bar .tabs .t { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
-.panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .zoom { margin-left: auto; display: inline-flex; gap: 2px; }
 .zoom button {
   width: 22px; height: 20px; padding: 0; line-height: 1;
@@ -133,6 +133,39 @@ body {
 
 .graph-wrap { flex: 1; overflow: auto; min-height: 0; padding: 8px; }
 .graph { width: 100%; height: 100%; min-height: 240px; }
+
+/* While a handle is being dragged nothing else may claim the pointer. Pointer capture
+   already routes the events, but an iframe still lights up under them, and a fast drag
+   selects whatever text it crosses. */
+body.dragging { user-select: none; }
+body.dragging iframe { pointer-events: none; }
+
+.graph-split { height: 6px; cursor: row-resize; border-top: 1px solid var(--line); }
+.graph-split:hover { background: var(--accent); }
+.timeline-split { width: 6px; flex: none; cursor: col-resize; border-left: 1px solid var(--line); }
+.timeline-split:hover { background: var(--accent); }
+.graph-bottom { display: flex; height: var(--graph-bottom, 170px); background: var(--panel-2); min-height: 0; }
+.graph-bottom .inspector { flex: 1; min-width: 0; border-top: 0; overflow: auto; }
+.timeline { width: var(--timeline-width, 320px); flex: none; padding: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.tl-list { overflow: auto; padding: .25rem; }
+.tl-filter {
+  width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 3px 6px;
+  font: inherit; font-size: 11.5px; border-radius: var(--r-sm, 4px);
+  border: 1px solid var(--line); background: var(--panel); color: var(--text);
+}
+.tl-empty { color: var(--muted); font-size: 12px; }
+.tl-commit { padding: 4px 6px; border-radius: var(--r-sm, 4px); cursor: pointer; font-size: 11.5px; }
+.tl-commit:hover { background: var(--panel); }
+.tl-commit.selected { background: var(--panel); outline: 1px solid var(--line-strong); }
+.tl-line { display: flex; align-items: baseline; gap: 6px; }
+.tl-caret { color: var(--muted); font-size: 9px; flex: none; }
+.tl-time { font-family: var(--mono); font-size: 10px; color: var(--muted); flex: none; }
+.tl-name { font-family: var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-did { margin-left: auto; color: var(--muted); flex: none; }
+.tl-body { margin: 3px 0 2px 15px; }
+.tl-change { font-family: var(--mono); font-size: 11px; color: var(--accent); overflow-wrap: anywhere; white-space: pre-wrap; }
+.tl-part { margin-top: 2px; color: var(--text); font-size: 11px; overflow-wrap: anywhere; }
+.tl-verb { color: var(--muted); }
 
 .inspector { border-top: 1px solid var(--line); padding: 10px 14px; min-height: 64px; font-size: 12.5px; background: var(--panel-2); }
 .ins-empty { color: var(--muted); font-size: 12px; }
@@ -180,7 +213,7 @@ body {
   .legend { display: none; }
   .head-actions { margin-left: auto; }
   .editor { min-height: 320px; }
-  .tabs-bar { padding: 6px 8px; }
+  .tabs-bar { padding: 6px 8px 0px 6px; }
   .t { padding: 7px 10px; }
 }
 
@@ -227,6 +260,19 @@ body {
 /* The preview is the project's own document, so it fills its panel and brings its own
    background — the page's palette stops at the frame's edge. */
 .preview-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+
+/* The floating panel is on the body, outside .graph, so it needs the same mapping or it
+   keeps the dark defaults on a light page. */
+.dp-panel, .timeline {
+  --fx-label: var(--text);
+  --fx-muted: var(--muted);
+  --fx-accent: var(--accent);
+  --fx-write: var(--hl-deletion);
+  --fx-line: var(--line);
+  --fx-panel: var(--panel);
+  --fx-hover: var(--panel-2);
+  --fx-selected: var(--panel-2);
+}
 
 /* The graph reads these; unset, it keeps its own dark defaults. Mapping them onto the
    page's palette is what makes it follow the theme. */

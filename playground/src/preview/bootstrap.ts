@@ -17,6 +17,8 @@ declare global {
   interface Window {
     /** Set by the page before this runs. */
     __fxEntry?: string;
+    /** The page's source-map tracer: a compiled position, put back in the author's file. */
+    __fxOrigin?: (file: string, at: { line: number; column: number }) => { line: number; column: number } | undefined;
     /** How to put the app on the page: client render, or server html then hydrate. */
     __fxMode?: 'spa' | 'ssr';
     /** What the server would have sent, when the mode asked for it. */
@@ -32,7 +34,16 @@ async function boot(): Promise<void> {
   if (!entry) return;
 
   // Before the entry loads: a node made earlier than this is not in the graph.
-  const observed = observeGraph();
+  const observed = observeGraph({
+    // `//# sourceURL` gets the file right; only the maps get the line right.
+    mapSource: (location) => {
+      const at = window.__fxOrigin?.(location.file, {
+        line: location.line ?? 1,
+        column: location.column ?? 0,
+      });
+      return at ? { file: location.file, line: at.line, column: at.column } : undefined;
+    },
+  });
 
   const registry = createRegistry();
   const ssr = window.__fxMode === 'ssr';

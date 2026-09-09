@@ -51,6 +51,19 @@ export async function formatCompiled(code: string): Promise<string> {
   }
 }
 
+/** A position in a file, one-based line and zero-based column, as a stack reports it. */
+export interface Position {
+  line: number;
+  column: number;
+}
+
+/** What a compiled file knows about where it came from. */
+export interface CompiledFile {
+  code: string;
+  /** A position in the compiled output, put back in the author's file. */
+  origin(at: Position): Position | undefined;
+}
+
 /**
  * Compile one project file. The filename is passed through because babel reports errors against
  * it — with several files open, "Unexpected token" is useless without knowing which one.
@@ -80,4 +93,51 @@ export async function compileFile(code: string, filename: string): Promise<strin
     sourceMaps: false,
   });
   return out.code ?? '';
+}
+
+/**
+ * Two passes, so two maps: the template transform rewrites the source before babel does, and
+ * a position in the output has to be traced through both. Nothing is looked up until asked.
+ */
+export async function compileFileWithOrigin(code: string, filename: string): Promise<CompiledFile> {
+  const b = await ensureBabel();
+  const isTSX = /\.(tsx|jsx)$/.test(filename);
+  const { transformTemplates } = await import('@fluixi/compiler/transform');
+  const { TraceMap, originalPositionFor } = await import('@jridgewell/trace-mapping');
+
+  const pre = transformTemplates(code, filename, {
+    runtimeModule: '@fluixi/dom',
+    controlFlowModule: '@fluixi/dom',
+    sourceLocations: true,
+  });
+  const source = pre?.code ?? code;
+
+  const out = b.transform(source, {
+    filename,
+    configFile: false,
+    babelrc: false,
+    presets: [['typescript', { isTSX, allExtensions: true, jsxPragma: 'jsx' }]],
+    plugins: [['fluixi', { backend: 'imperative' }]],
+    sourceMaps: true,
+  });
+
+  // No map means the pass did nothing and the position is already right for that stage.
+  // `@babel/standalone`'s types stop at `code`, hence the cast.
+  const babelMap = (out as { map?: unknown }).map;
+  const fromBabel = babelMap ? new TraceMap(babelMap as never) : null;
+  const fromTemplates = pre?.map ? new TraceMap(pre.map as never) : null;
+
+  const step = (map: InstanceType<typeof TraceMap> | null, at: Position): Position | undefined => {
+    if (!map) return at;
+    const found = originalPositionFor(map, { line: at.line, column: at.column });
+    return found.line == null ? undefined : { line: found.line, column: found.column ?? 0 };
+  };
+
+  return {
+    code: out.code ?? '',
+    origin(at) {
+      const inSource = step(fromBabel, at);
+      return inSource && step(fromTemplates, inSource);
+    },
+  };
 }

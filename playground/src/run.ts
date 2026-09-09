@@ -49,6 +49,7 @@ function documentFor(project: Project, assets: Map<string, string>): string {
 
 interface PreviewWindow extends Window {
   __fxEntry?: string;
+  __fxOrigin?: (file: string, at: { line: number; column: number }) => { line: number; column: number } | undefined;
   __fxMode?: RenderMode;
   __fxSsrHtml?: string;
   __fxGraph?: ObservedGraph;
@@ -101,6 +102,8 @@ export async function runProject(
 
     win.__fxEntry = linked.entryUrl;
     win.__fxMode = mode;
+    // A function, not the maps: the iframe is same-origin and the data stays in one place.
+    win.__fxOrigin = linked.origin;
 
     await new Promise<void>((resolve) => {
       const script = doc.createElement('script');

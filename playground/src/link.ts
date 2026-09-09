@@ -7,7 +7,7 @@
 //
 // A blob URL has to exist before anything can reference it, so files are linked in dependency
 // order. That leaves import cycles unrepresentable; they are reported rather than half-run.
-import { compileFile } from './compile';
+import { compileFileWithOrigin, type CompiledFile, type Position } from './compile';
 import { createRegistry } from './modules';
 import type { Project, ProjectFile } from './project';
 
@@ -84,6 +84,8 @@ export interface LinkResult {
   compiled: Map<string, string>;
   /** Non-source files as urls, for the html shell's own `<link>` and `<img>` to point at. */
   assets: Map<string, string>;
+  /** `//# sourceURL` gets the file right; the line is compiled. This knows both maps. */
+  origin(file: string, at: Position): Position | undefined;
   revoke: () => void;
 }
 
@@ -135,6 +137,8 @@ export async function linkProject(
 
   const moduleUrls = new Map<string, string>();
   const compiled = new Map<string, string>();
+  /** Per file: a position in its compiled output, put back in the author's file. */
+  const origins = new Map<string, CompiledFile['origin']>();
   /** What a non-source file resolves to, for `index.html` to point at. */
   const assets = new Map<string, string>();
 
@@ -163,8 +167,9 @@ export async function linkProject(
     const file = files.find((f) => f.path === path);
     if (!file || !SOURCE.test(path)) continue;
 
-    const code = await compileFile(file.code, path);
+    const { code, origin } = await compileFileWithOrigin(file.code, path);
     compiled.set(path, code);
+    origins.set(path, origin);
 
     const linked = code.replace(IMPORT_SPECIFIER, (whole, lead: string, quote: string, specifier: string) => {
       if (isRelative(specifier)) {
@@ -176,8 +181,13 @@ export async function linkProject(
       return `${lead}${quote}${shimFor(specifier)}${quote}`;
     });
 
-    moduleUrls.set(path, track(new Blob([linked], { type: 'text/javascript' })));
+    // Name the module after its file: a stack trace otherwise reports `blob:http://…/9f2c`,
+    // and devtools reads stacks to place dom bindings and setters.
+    const named = `${linked}\n//# sourceURL=${path}\n`;
+    moduleUrls.set(path, track(new Blob([named], { type: 'text/javascript' })));
   }
+
+  const origin = (file: string, at: Position): Position | undefined => origins.get(file)?.(at);
 
   const entryUrl = moduleUrls.get(project.entry);
   if (!entryUrl) throw new Error(`No entry module: ${project.entry}`);
@@ -186,6 +196,7 @@ export async function linkProject(
     entryUrl,
     compiled,
     assets,
+    origin,
     revoke() {
       for (const url of urls) URL.revokeObjectURL(url);
     },

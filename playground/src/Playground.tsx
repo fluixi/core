@@ -1,7 +1,19 @@
 // Playground app — compiles a multi-file project in-browser, mounts it, and graphs its
 // reactivity via @fluixi/devtools. Left = file tree + editor; right = preview + graph.
 import { createSignal, onMount } from '@fluixi/core';
-import { createGraphView, DEVTOOLS_CSS, formatValue, nodeVersion, nodeState, type GraphView, type ObservedGraph } from '@fluixi/devtools';
+import {
+  createDetailPanel,
+  createGraphView,
+  createTimeline,
+  DETAIL_PANEL_CSS,
+  DEVTOOLS_CSS,
+  createInspector,
+  type DetailPanel,
+  type Inspector,
+  type GraphView,
+  type ObservedGraph,
+  type Timeline,
+} from '@fluixi/devtools';
 import { runProject, type RenderMode, type RunResult } from './run';
 
 /** What the right-hand pane is showing. */
@@ -66,9 +78,12 @@ export function Playground() {
   const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
   const [layout, setLayout] = createSignal<'horizontal' | 'vertical'>('horizontal');
   const [grouped, setGrouped] = createSignal(true);
+  const [bindings, setBindings] = createSignal(false);
 
   let rootEl!: HTMLDivElement;
   let rightEl!: HTMLElement;
+  let graphRowEl!: HTMLElement;
+  let graphBottomEl!: HTMLElement;
   let editorHost!: HTMLDivElement;
   let editor: CodeEditor;
   let previewEl!: HTMLDivElement;
@@ -76,6 +91,9 @@ export function Playground() {
   let viewer: CodeViewer | null = null;
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
+  let timelineEl!: HTMLDivElement;
+  let timeline: Timeline | null = null;
+  let detail: DetailPanel | null = null;
 
   // The graph belongs to the preview iframe now, so it arrives with each run.
   let reactor: ObservedGraph | null = null;
@@ -85,11 +103,6 @@ export function Playground() {
   let raf = 0;
   let saveTimer = 0;
 
-  const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
-  const clip = (s: string, n = 140) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
-  const at = (s?: { file?: string; line?: number; column?: number }) =>
-    s ? [s.file, s.line, s.column].filter((p) => p != null).join(':') : '';
-
   /** The project as it stands in the editor, which is the source of truth for the text. */
   const snapshot = (): Project => ({
     name: projectName(),
@@ -97,55 +110,19 @@ export function Playground() {
     files: files().map((f) => ({ path: f.path, code: editor?.read(f.path) || f.code })),
   });
 
-  /** What the inspector last drew, so a frame that changed nothing does not redraw it. */
-  let inspectorSignature = '';
+  /** Includes the cards the view invents; the reactor's map has never heard of them. */
+  const drawn = () => (view?.shown.size ? view.shown : reactor?.graph) ?? new Map();
+
+  /**
+   * The devtools inspector, not a copy. The playground had its own, and every field added to
+   * the shared one had to be added twice or silently went missing. Same `.ins-*` classes.
+   */
+  let inspector: Inspector | null = null;
 
   function renderInspector() {
     if (!inspectorEl) return;
-    const node = selectedId != null ? reactor?.graph.get(selectedId) : undefined;
-    if (!node) {
-      if (inspectorSignature === 'empty') return;
-      inspectorSignature = 'empty';
-      inspectorEl.innerHTML = '<span class="ins-empty">click a node to inspect</span>';
-      return;
-    }
-    const labelOf = (id: number) => reactor?.graph.get(id)?.label ?? '?';
-    const sources = [...node.deps].map(labelOf);
-    const observers = [...(reactor?.graph.values() ?? [])].filter((n) => n.deps.has(node.id)).map((n) => n.label);
-    const writes = [...node.writes].map(labelOf);
-    // The graph's own formatter, with room to read: a store holds an object, and String()
-    // renders that as [object Object].
-    let val = node.detail ?? node.value ?? '';
-    try {
-      if (node.read) val = formatValue(node.read(), 600);
-    } catch {
-      /* keep snapshot */
-    }
-    const st = nodeState(node);
-    const rel = [
-      sources.length ? `<span>↤ reads <b>${esc(sources.join(', '))}</b></span>` : '',
-      observers.length ? `<span>↦ feeds <b>${esc(observers.join(', '))}</b></span>` : '',
-      writes.length ? `<span>✎ writes <b>${esc(writes.join(', '))}</b></span>` : '',
-    ]
-      .filter(Boolean)
-      .join('');
-    const signature = `${node.id}|${node.kind}|${val}|${node.runs}|${st ?? ''}|${rel}|${at(node.source)}`;
-    if (signature === inspectorSignature) return;
-    inspectorSignature = signature;
-
-    inspectorEl.innerHTML =
-      `<div class="ins-head"><span class="ins-kind n-${node.kind}">${node.kind}</span><b>${esc(node.label)}</b>` +
-      `<span class="ins-meta">v${nodeVersion(node)} · ${node.runs} runs${st ? ' · ' + st : ''}</span></div>` +
-      `<div class="ins-val" title="${esc(val)}">${esc(clip(val))}</div>` +
-      `<div class="ins-rel">${rel}</div>` +
-      // Only when the graph carries one. The playground reads it and renders it; where it
-      // came from is devtools' business.
-      (node.source ? `<div class="ins-source">📍 ${esc(at(node.source))}</div>` : '') +
-      // A component is created where its tag is written; where it is declared is elsewhere,
-      // and only worth a line when it is somewhere else.
-      (node.declaredAt && at(node.declaredAt) !== at(node.source)
-        ? `<div class="ins-source">◧ declared ${esc(at(node.declaredAt))}</div>`
-        : '');
+    inspector ??= createInspector(inspectorEl);
+    inspector.show(drawn(), selectedId);
   }
 
   function loop() {
@@ -153,7 +130,10 @@ export function Playground() {
     const tick = () => {
       if (view && reactor) {
         reactor.sample();
+        // Straight off the observer; nothing serialises here.
+        timeline?.push(reactor.takeEvents());
         view.update(reactor.graph);
+        timeline?.render(reactor.graph);
         let edges = 0;
         let runs = 0;
         for (const n of reactor.graph.values()) {
@@ -176,8 +156,24 @@ export function Playground() {
         renderInspector();
       },
     });
+    // On the body: the graph pane clips whatever is inside it.
+    detail ??= createDetailPanel(document.body, {
+      onPick: (id) => {
+        selectedId = id;
+        view?.select(id);
+        renderInspector();
+      },
+    });
+    timeline ??= createTimeline(timelineEl, {
+      empty: 'no updates yet — interact with the preview',
+      onSelect: (ids) => view?.focus(ids),
+      onExpand: (commit) => reactor && detail?.open(commit, reactor.graph),
+    });
     selectedId = null;
     view.clear();
+    // A new run is a new graph; the old ids name nodes that are gone.
+    timeline.clear();
+    detail.close();
 
     const project = snapshot();
     setFiles(project.files);
@@ -287,45 +283,69 @@ export function Playground() {
   }
 
   /**
-   * The split is a percentage of the window, applied as a grid column. Pointer capture keeps
-   * the drag alive over the editor and the preview, which both swallow pointer events of
-   * their own.
+   * One drag, for every handle.
+   *
+   * These listened on the window with no capture, and the preview is an iframe: crossing it
+   * took `pointermove` and `pointerup`, so a drag stopped tracking and, never seeing the
+   * release, stayed armed. Capture retargets everything to the handle. The body class stops
+   * the iframe reacting and stops text being selected.
+   *
+   * `lostpointercapture` ends it too: capture can be taken away without a release.
    */
-  function startRowDrag(event: PointerEvent) {
-    event.preventDefault();
-    const move = (e: PointerEvent) => {
-      const box = rightEl.getBoundingClientRect();
-      const pct = ((e.clientY - box.top) / box.height) * 100;
-      const clamped = Math.min(85, Math.max(15, pct));
-      rightEl.style.setProperty('--rows', `${clamped}%`);
-      localStorage.setItem('fluixi-pg-rows', String(Math.round(clamped)));
-    };
-    const stop = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', stop);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', stop);
+  function drag(handle: HTMLElement, onMove: (e: PointerEvent) => void, onEnd?: () => void) {
+    handle.addEventListener('pointerdown', (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      handle.setPointerCapture(event.pointerId);
+      document.body.classList.add('dragging');
+
+      const stop = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', stop);
+        handle.removeEventListener('pointercancel', stop);
+        handle.removeEventListener('lostpointercapture', stop);
+        if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+        document.body.classList.remove('dragging');
+        onEnd?.();
+      };
+
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', stop);
+      handle.addEventListener('pointercancel', stop);
+      handle.addEventListener('lostpointercapture', stop);
+    });
   }
 
-  /** Listening on the window rather than the handle: the pointer leaves a 5px target the
-      moment it moves, and capture is not reliable across the editor's own handlers. */
-  function startDrag(event: PointerEvent) {
-    event.preventDefault();
-    const vertical = matchMedia('(max-width: 1100px)').matches;
+  /** The line between the preview and the graph. */
+  function dragRows(e: PointerEvent) {
+    const box = rightEl.getBoundingClientRect();
+    const pct = Math.min(85, Math.max(15, ((e.clientY - box.top) / box.height) * 100));
+    rightEl.style.setProperty('--rows', `${pct}%`);
+    localStorage.setItem('fluixi-pg-rows', String(Math.round(pct)));
+  }
 
-    const move = (e: PointerEvent) => {
-      const pct = vertical ? (e.clientY / window.innerHeight) * 100 : (e.clientX / window.innerWidth) * 100;
-      applySplit(pct);
-    };
-    const stop = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', stop);
-      localStorage.setItem('fluixi-pg-split', String(Math.round(split())));
-      editor?.layout();
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', stop);
+  /** The line between the graph and the inspector-and-timeline pane below it. */
+  function dragGraphBottom(e: PointerEvent) {
+    const box = graphRowEl.getBoundingClientRect();
+    // Floor outermost: on a short row the ceiling is below the minimum.
+    const height = Math.max(60, Math.min(box.height - 90, box.bottom - e.clientY));
+    graphRowEl.style.setProperty('--graph-bottom', `${Math.round(height)}px`);
+    localStorage.setItem('fluixi-pg-graph-bottom', String(Math.round(height)));
+  }
+
+  /** The line between the inspector and the timeline beside it. */
+  function dragTimeline(e: PointerEvent) {
+    const box = graphBottomEl.getBoundingClientRect();
+    const width = Math.max(160, Math.min(box.width - 140, box.right - e.clientX));
+    graphBottomEl.style.setProperty('--timeline-width', `${Math.round(width)}px`);
+    localStorage.setItem('fluixi-pg-timeline-width', String(Math.round(width)));
+  }
+
+  /** The line between the editor and everything to the right of it. */
+  function dragSplit(e: PointerEvent) {
+    // Per move: a window resized mid-drag changes which axis the layout is on.
+    const vertical = matchMedia('(max-width: 1100px)').matches;
+    applySplit(vertical ? (e.clientY / window.innerHeight) * 100 : (e.clientX / window.innerWidth) * 100);
   }
 
   function loadProject(project: Project) {
@@ -424,7 +444,7 @@ export function Playground() {
   onMount(() => {
     document.documentElement.dataset.theme = theme();
     const style = document.createElement('style');
-    style.textContent = DEVTOOLS_CSS;
+    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}`;
     document.head.appendChild(style);
     editor = createEditor(editorHost, {
       files: files(),
@@ -570,7 +590,12 @@ export function Playground() {
         role="separator"
         aria-orientation="vertical"
         title="Drag to resize"
-        ref={(el: HTMLDivElement) => el.addEventListener('pointerdown', startDrag)}
+        ref={(el: HTMLDivElement) =>
+            drag(el, dragSplit, () => {
+              localStorage.setItem('fluixi-pg-split', String(Math.round(split())));
+              editor?.layout();
+            })
+          }
       />
 
       <section
@@ -627,9 +652,18 @@ export function Playground() {
           role="separator"
           aria-orientation="horizontal"
           title="Drag to resize"
-          ref={(el: HTMLDivElement) => el.addEventListener('pointerdown', startRowDrag)}
+          ref={(el: HTMLDivElement) => drag(el, dragRows)}
         />
-        <div class="r-graph">
+        <div
+          class="r-graph"
+          ref={(el: HTMLDivElement) => {
+            graphRowEl = el;
+            el.style.setProperty(
+              '--graph-bottom',
+              `${Number(localStorage.getItem('fluixi-pg-graph-bottom')) || 170}px`,
+            );
+          }}
+        >
           <div class="panel-bar">
             <span>reactive graph</span>
             <span class="stats">
@@ -657,6 +691,17 @@ export function Playground() {
               >
                 ▤
               </button>
+              <button
+                type="button"
+                class={bindings() ? 'on' : ''}
+                title="Show where each value reaches the page, and what sets it"
+                onClick={() => {
+                  view?.setShowBindings(!bindings());
+                  setBindings(view?.showBindings ?? false);
+                }}
+              >
+                ⇥
+              </button>
               <button type="button" title="Zoom out" onClick={() => view?.zoomBy(1 / 1.25)}>
                 −
               </button>
@@ -671,7 +716,33 @@ export function Playground() {
           <div class="graph-wrap">
             <svg class="graph" ref={(el: SVGSVGElement) => (svgEl = el)} preserveAspectRatio="xMidYMid meet" />
           </div>
-          <div class="inspector" ref={(el: HTMLDivElement) => (inspectorEl = el)} />
+          <div
+            class="graph-split"
+            role="separator"
+            aria-orientation="horizontal"
+            title="Drag to resize"
+            ref={(el: HTMLDivElement) => drag(el, dragGraphBottom)}
+          />
+          <div
+            class="graph-bottom"
+            ref={(el: HTMLDivElement) => {
+              graphBottomEl = el;
+              el.style.setProperty(
+                '--timeline-width',
+                `${Number(localStorage.getItem('fluixi-pg-timeline-width')) || 320}px`,
+              );
+            }}
+          >
+            <div class="inspector" ref={(el: HTMLDivElement) => (inspectorEl = el)} />
+            <div
+              class="timeline-split"
+              role="separator"
+              aria-orientation="vertical"
+              title="Drag to resize"
+              ref={(el: HTMLDivElement) => drag(el, dragTimeline)}
+            />
+            <div class="timeline" ref={(el: HTMLDivElement) => (timelineEl = el)} />
+          </div>
         </div>
       </section>
     </div>
