@@ -26,6 +26,9 @@ const WAITING = 'no page has reported yet — open the application in a browser'
 /** How often the agent looks for movement. Fast enough to watch, slow enough to ignore. */
 const INTERVAL = 100;
 
+/** A few hundred interactions' worth. */
+const HISTORY = 500;
+
 /** Written with the ids resolved: a virtual module has no directory to resolve a bare one from. */
 const agentSource = (devtools: string, signal: string, reactive: string) => `
 import { installDevtoolsHook } from ${JSON.stringify(devtools)};
@@ -42,7 +45,8 @@ const send = (kind, snapshot) => import.meta.hot?.send(${JSON.stringify(EVENT)},
 send('full', hook.snapshot());
 const timer = setInterval(() => {
   const delta = hook.snapshot({ partial: true });
-  if (delta && (delta.nodes.length || delta.removed?.length)) send('delta', delta);
+  // Events count on their own: an effect that ran without changing a value moves no node.
+  if (delta && (delta.nodes.length || delta.removed?.length || delta.events?.length)) send('delta', delta);
 }, ${INTERVAL});
 
 import.meta.hot?.dispose(() => clearInterval(timer));
@@ -78,6 +82,11 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
   let log: ((message: string) => void) | undefined;
   let graph = new Map<number, import('@fluixi/devtools').RNode>();
   let stamp = 0;
+  /**
+   * Kept, not drained: this endpoint has no single reader, and an editor panel draining it
+   * would blank a browser panel's timeline. Every event carries a seq, so consumers dedupe.
+   */
+  let events: import('@fluixi/devtools').GraphEvent[] = [];
 
   const baseResolveId = base.resolveId as
     | ((this: unknown, id: string, importer?: string) => unknown)
@@ -137,7 +146,7 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       // it reads the same as a dev server that is not a fluixi project at all.
       server.middlewares.use(ENDPOINT, (_req, res) => {
         const snapshot = wire
-          ? wire.serializeGraph(graph, stamp || Date.now())
+          ? { ...wire.serializeGraph(graph, stamp || Date.now()), events }
           : { t: Date.now(), nodes: [] };
         const body = JSON.stringify(reason ? { ...snapshot, reason } : snapshot);
         res.setHeader('Content-Type', 'application/json');
@@ -153,7 +162,12 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
         const message = payload as { kind?: string; snapshot?: Parameters<WireModule['applySnapshot']>[1] };
         if (!message?.snapshot || !wire) return;
         // A reload sends a full snapshot, which replaces whatever the last page left behind.
-        graph = wire.applySnapshot(message.kind === 'full' ? new Map() : graph, message.snapshot);
+        const full = message.kind === 'full';
+        graph = wire.applySnapshot(full ? new Map() : graph, message.snapshot);
+        // The history goes with it: its ids name nodes the previous page had.
+        if (full) events = [];
+        const arriving = (message.snapshot as { events?: typeof events }).events;
+        if (arriving?.length) events = [...events, ...arriving].slice(-HISTORY);
         stamp = Date.now();
         reason = null;
       });
