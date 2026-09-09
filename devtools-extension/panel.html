@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fluixi</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <div id="bar">
+      <div id="status" data-tone="info">Looking for a Fluixi application…</div>
+      <div id="controls">
+        <div class="group" role="group" aria-label="View">
+          <button id="direction" title="Lay the graph out left to right, or top to bottom">
+            <span class="ico">↔</span><span class="lbl">Layout</span>
+          </button>
+          <button id="grouping" class="on" title="Keep what the framework and its packages made behind one card, instead of drawing each node">
+            <span class="ico">▤</span><span class="lbl">Group</span>
+          </button>
+          <button id="bindings" title="Draw a card for each place a value reaches the page, and each place it is set from">
+            <span class="ico">⇥</span><span class="lbl">Bindings</span>
+          </button>
+          <button id="timeline-toggle" class="on" title="Show the history: what each update changed, newest first">
+            <span class="ico">⏱</span><span class="lbl">History</span>
+          </button>
+        </div>
+        <div class="group" role="group" aria-label="Zoom">
+          <button id="zoom-out" title="Zoom out"><span class="ico">−</span></button>
+          <button id="zoom-reset" title="Fit the whole graph in view (or double-click the graph)"><span class="ico">⤢</span></button>
+          <button id="zoom-in" title="Zoom in"><span class="ico">+</span></button>
+        </div>
+      </div>
+    </div>
+    <div id="graph"><svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div id="split" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
+    <div id="bottom">
+      <div id="inspector"></div>
+      <div id="timeline-split" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+      <div id="timeline"></div>
+    </div>
+    <script src="dist/panel.js"></script>
+  </body>
+</html>

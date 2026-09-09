@@ -1,0 +1,73 @@
+:root {
+  color-scheme: dark light;
+  --bottom-height: 190px;
+  --timeline-width: 320px;
+  --fx-panel: #14161c;
+  --fx-line: #ffffff1f;
+  --fx-hover: #ffffff10;
+  --fx-selected: #ffffff1a;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --fx-panel: #ffffff;
+    --fx-line: #0000001f;
+    --fx-hover: #00000008;
+    --fx-selected: #00000012;
+    --fx-label: #1f2328;
+    --fx-muted: #57606a;
+    --fx-node-bg: #ffffff;
+    --fx-edge: #00000033;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  background: var(--fx-panel);
+  color: var(--fx-label, #e7e9ee);
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+#bar { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--fx-line); }
+#status {
+  flex: 1; min-width: 0; padding: 7px 12px; font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#status[data-tone='error'] { color: #fb7185; }
+
+#controls { display: flex; align-items: center; gap: 10px; padding-right: 8px; }
+/* Grouped by what they do, so the bar reads as two things rather than seven. */
+.group { display: flex; align-items: center; gap: 2px; }
+#controls button {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 8px; cursor: pointer; line-height: 1;
+  border: 1px solid var(--fx-line); border-radius: 4px;
+  background: transparent; color: var(--fx-muted, #8a90a2);
+  font-family: inherit; font-size: 11px; white-space: nowrap;
+}
+#controls button:hover { color: var(--fx-label, #e7e9ee); background: var(--fx-hover); }
+#controls button.on { color: var(--fx-label, #e7e9ee); border-color: var(--fx-accent, #5eead4); }
+#controls button:focus-visible { outline: 1px solid var(--fx-accent, #5eead4); outline-offset: 1px; }
+.ico { font-size: 12px; }
+#controls .group[aria-label='Zoom'] button { padding: 0 7px; }
+@media (max-width: 720px) { .lbl { display: none; } #controls button { padding: 0 7px; } }
+
+#graph { width: 100%; height: calc(100vh - 35px - 6px - var(--bottom-height)); }
+#graph svg { width: 100%; height: 100%; }
+
+#split { height: 6px; cursor: row-resize; border-top: 1px solid var(--fx-line); }
+#split:hover, #split.dragging { background: var(--fx-accent, #5eead4); }
+
+#bottom { display: flex; height: var(--bottom-height); }
+#inspector { flex: 1; min-width: 0; padding: 10px 12px; overflow: auto; }
+#timeline-split { width: 6px; flex: none; cursor: col-resize; border-left: 1px solid var(--fx-line); }
+#timeline-split:hover, #timeline-split.dragging { background: var(--fx-accent, #5eead4); }
+#timeline {
+  width: var(--timeline-width); flex: none; padding: 6px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#timeline .tl-list { overflow: auto; }
+body.no-timeline #timeline, body.no-timeline #timeline-split { display: none; }
+
+/* Nothing else may claim the pointer while a handle has it. */
+body.dragging { user-select: none; }
