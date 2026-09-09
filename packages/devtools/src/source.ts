@@ -19,6 +19,15 @@ export interface ReactiveSourceLocation {
    * compiler was told to mark dependencies too; otherwise they carry no location at all.
    */
   external?: boolean;
+  /**
+   * Where this is in the compiled output, when the location above came from a source map.
+   *
+   * Both are worth having. The original says which component and which file; the compiled one
+   * says which of that component's bindings, because a template's holes all map back to the
+   * position the template opens at — one entry per emitted root is all the map has. Until
+   * that changes, the compiled line is the only thing that tells two bindings apart.
+   */
+  compiled?: { line?: number; column?: number };
 }
 
 /** A location, plus the variable name the source gave it when there was one. */
@@ -30,6 +39,7 @@ export interface ReactiveSourceMetadata {
 /** Kept in step with SOURCE_MARKER and COMPONENT_MARKER in the compiler. */
 const MARKER = '__fx_source';
 const COMPONENT_MARKER = '__fx_component';
+const HOLE_MARKER = '__fx_hole';
 
 let pending: ReactiveSourceMetadata | null = null;
 let expiring = false;
@@ -110,8 +120,30 @@ export function takeReactiveSource(): ReactiveSourceMetadata | null {
 }
 
 /** Never replaces an existing marker: two copies of devtools would each hold half the marks. */
+/**
+ * Where each hole was written, by the accessor the compiler stamped. Keyed by the function,
+ * not a slot: it is built and read at different moments.
+ */
+const HOLES = new WeakMap<object, ReactiveSourceLocation>();
+
+/** Returns the accessor, not a wrapper: it is the binding's value. */
+function markHole<T>(accessor: T, line: number, column: number): T {
+  if (accessor && (typeof accessor === 'object' || typeof accessor === 'function')) {
+    HOLES.set(accessor as object, { line, column });
+  }
+  return accessor;
+}
+
+/** The hole an accessor came from, when the compiler marked it. */
+export function holeLocation(accessor: unknown): ReactiveSourceLocation | undefined {
+  return accessor && (typeof accessor === 'object' || typeof accessor === 'function')
+    ? HOLES.get(accessor as object)
+    : undefined;
+}
+
 export function installSourceMarker(): void {
   const host = globalThis as Record<string, unknown>;
   if (typeof host[MARKER] !== 'function') host[MARKER] = markReactiveSource;
   if (typeof host[COMPONENT_MARKER] !== 'function') host[COMPONENT_MARKER] = markComponentSource;
+  if (typeof host[HOLE_MARKER] !== 'function') host[HOLE_MARKER] = markHole;
 }

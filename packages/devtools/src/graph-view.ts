@@ -30,16 +30,37 @@ const FLASH = 560;
 /** An edge lights while the value is crossing it: from its source's step to the next. */
 const EDGE_FLASH = 260;
 
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4;
+const MIN_ZOOM = 0.2;
+/**
+ * How far past natural size the zoom goes.
+ *
+ * The ceiling cannot be a constant. The viewBox is the whole graph, so a big one is already
+ * shrunk to fit before `scale` applies — a five-hundred-node graph is shrunk enormously, and
+ * any fixed limit leaves its cards unreadable. The limit is worked out from how much the
+ * viewBox is shrinking, so it grows with the graph.
+ */
+const OVER_NATURAL = 12;
+/** For a graph smaller than the panel, where the viewBox is not shrinking anything. */
+const MIN_MAX_ZOOM = 8;
+/** A transform this deep is a bug somewhere, not a reader looking closely. */
+const ABSOLUTE_MAX_ZOOM = 4000;
 /** Past this the pointer was panning, not clicking. */
 const DRAG_SLOP = 4;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', group: 'n-group' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', group: '▤ from packages' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ from packages', binding: '⇥ dom', setter: '✎ sets' };
 
 /** The card that stands for everything a dependency made and the application never touched. */
 const GROUP_ID = -1;
+
+/**
+ * Ids for the cards that stand for something outside the graph.
+ *
+ * Counted down from below the group card, and derived from the node they hang off so they
+ * stay the same across renders — an id that moved would make the view rebuild every frame.
+ */
+const bindingId = (owner: number, index: number): number => -100 - owner * 32 - index;
+const setterId = (owner: number, index: number): number => -100000 - owner * 32 - index;
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
   const n = document.createElementNS(SVGNS, tag);
@@ -88,6 +109,15 @@ export interface GraphViewOptions {
    * @default true
    */
   groupExternal?: boolean;
+  /**
+   * Draw a card for each place a signal reaches the document, and each place it is set from.
+   *
+   * Off by default: one card per attribute and text hole is more cards than nodes on most
+   * pages, and the graph is about the nodes. On, it is the whole chain — handler, signal,
+   * memo, element.
+   * @default false
+   */
+  showBindings?: boolean;
 }
 
 export interface GraphView {
@@ -106,11 +136,25 @@ export interface GraphView {
   /** Show what dependencies made as one card, or as themselves. */
   setGroupExternal(group: boolean): void;
   readonly groupExternal: boolean;
+  /** Show the document and the handlers as cards around the signals. */
+  setShowBindings(show: boolean): void;
+  readonly showBindings: boolean;
+  /**
+   * The graph as drawn, cards included.
+   *
+   * What a host should resolve a selected id against: the view invents nodes the host's own
+   * map has never heard of.
+   */
+  readonly shown: Map<number, RNode>;
+  /** Hold a set lit until called again. Hovering works over it and returns here. */
+  focus(ids: readonly number[] | null): void;
 }
 
 export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = {}): GraphView {
   let signature = '';
   let selected: number | null = null;
+  /** A set held lit until something clears it — one commit from the timeline. */
+  let focused: Set<number> | null = null;
   const nodeEls = new Map<number, { g: SVGGElement; value: SVGTextElement }>();
   /** Edges as ids, so hovering a node can pick out the ones that touch it. */
   const edgeEls: { a: number; b: number; el: SVGPathElement }[] = [];
@@ -134,6 +178,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   const foldStores = options.collapseStores !== false;
   let direction: GraphDirection = options.direction ?? 'horizontal';
   let groupExternal = options.groupExternal !== false;
+  let showBindings = options.showBindings === true;
 
   // A clip region per text, not one for the box: the label grows right from the left edge
   // and the value grows left from the right, so clipping both to the same box still let a
@@ -163,6 +208,21 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   viewport.append(edgeLayer, nodeLayer);
   svg.append(defs, viewport);
 
+  /**
+   * The furthest in this graph is worth zooming.
+   *
+   * `meet` fits by whichever axis is tighter, so the scale at which a card is its natural size
+   * is the *larger* of the two ratios. Measuring width alone left a tall graph clamped while
+   * its nodes were unreadable.
+   */
+  const maxZoom = (): number => {
+    const box = svg.viewBox?.baseVal;
+    const rect = svg.getBoundingClientRect?.();
+    if (!box?.width || !rect?.width || !rect.height) return MIN_MAX_ZOOM;
+    const natural = Math.max(box.width / rect.width, (box.height || 0) / rect.height);
+    return Math.min(ABSOLUTE_MAX_ZOOM, Math.max(MIN_MAX_ZOOM, natural * OVER_NATURAL));
+  };
+
   let scale = 1;
   let panX = 0;
   let panY = 0;
@@ -177,7 +237,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   };
 
   const zoomAt = (factor: number, at: { x: number; y: number }) => {
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale * factor));
+    const next = Math.min(maxZoom(), Math.max(MIN_ZOOM, scale * factor));
     if (next === scale) return;
     // Keep whatever is under the cursor under the cursor.
     panX = at.x - ((at.x - panX) * next) / scale;
@@ -318,21 +378,27 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     return out;
   }
 
-  function hover(graph: Map<number, RNode>, id: number | null) {
-    if (id === null) {
+  /** Light this set and dim the rest; no set puts everything back. */
+  function light(set: Set<number> | null) {
+    if (!set) {
       svg.classList.remove('fx-hovering');
       for (const { g } of nodeEls.values()) g.classList.remove('hot');
       for (const { el: path } of edgeEls) path.classList.remove('hot');
       return;
     }
-    // Through the fold: a memo reading `cart.items` is reading the card marked `cart`.
-    const set = new Set([...related(graph, id)].map(standIn));
     svg.classList.add('fx-hovering');
     for (const [nodeId, { g }] of nodeEls) g.classList.toggle('hot', set.has(nodeId));
     for (const { a, b, el: path } of edgeEls) path.classList.toggle('hot', set.has(a) && set.has(b));
+  }
+
+  function hover(graph: Map<number, RNode>, id: number | null) {
+    // Back to the focus, not to nothing: leaving a node must not undo a picked commit.
+    if (id === null) return light(focused);
+    // Through the fold: a memo reading `cart.items` is reading the card marked `cart`.
+    const set = new Set([...related(graph, id)].map(standIn));
+    light(set);
     // Hovering a node that is folded away is hovering the card it is drawn as.
-    const shown = standIn(id);
-    nodeEls.get(shown)?.g.classList.add('hot');
+    nodeEls.get(standIn(id))?.g.classList.add('hot');
   }
 
   /**
@@ -342,9 +408,65 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
    * A copy, not the host's map — what is drawn is a view of the graph, and the graph belongs
    * to whoever is filling it.
    */
+  /**
+   * The document and the handlers, as cards.
+   *
+   * A binding is not a node, which is why they are plumbing. But "where does this end up" is
+   * the one thing the graph cannot otherwise answer, so they can be turned on.
+   */
+  function withEdges(graph: Map<number, RNode>): Map<number, RNode> {
+    if (!showBindings) return graph;
+    const shown = new Map(graph);
+    let added = false;
+
+    for (const node of graph.values()) {
+      node.targets?.forEach((target, i) => {
+        const id = bindingId(node.id, i);
+        shown.set(id, {
+          id,
+          label: target.name ? `${target.name} of ${target.element}` : target.element,
+          kind: 'binding',
+          // The card reads the signal, so the arrow runs the way the value does.
+          deps: new Set([node.id]),
+          writes: new Set(),
+          runs: node.runs,
+          // The signal's pulse, so it joins the propagation; the edge orders it after.
+          lastPulse: node.lastPulse,
+          ...(target.source ? { source: target.source } : {}),
+        });
+        added = true;
+      });
+      node.setAt?.forEach((at, i) => {
+        const id = setterId(node.id, i);
+        shown.set(id, {
+          id,
+          // Two handlers in one component can share an original position; the compiled line
+          // is what separates the cards.
+          label: `set at ${(at.file ?? '').split('/').pop() ?? '?'}:${at.line ?? ''}${
+            at.compiled && at.compiled.line !== at.line ? `→${at.compiled.line}` : ''
+          }`,
+          kind: 'setter',
+          deps: new Set(),
+          // A handler writes the signal, so it gets the write edge a computation would.
+          writes: new Set([node.id]),
+          runs: node.runs,
+          // The write edge runs setter → signal, so the wave starts here.
+          lastPulse: node.lastPulse,
+          source: at,
+        });
+        added = true;
+      });
+    }
+    return added ? shown : graph;
+  }
+
   function grouped(graph: Map<number, RNode>): Map<number, RNode> {
     if (!groupExternal) return graph;
-    const outsiders = [...graph.values()].filter((n) => n.source?.external && n.createdIn === undefined);
+    const outsiders = [...graph.values()].filter(
+      // A card carries the source of whatever made it, often a package. It already hangs off
+      // its signal and must not be moved under the group.
+      (n) => n.source?.external && n.createdIn === undefined && n.kind !== 'binding' && n.kind !== 'setter',
+    );
     if (!outsiders.length) return graph;
 
     const shown = new Map(graph);
@@ -548,6 +670,13 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   }
 
   let lastGraph: Map<number, RNode> = new Map();
+  /**
+   * The graph as drawn, including the cards the view invents.
+   *
+   * A host holds the real graph and cannot resolve a binding card by id, so selecting one
+   * left the inspector empty. This is what it should look the selection up in.
+   */
+  let lastShown: Map<number, RNode> = new Map();
 
   /**
    * What is folded right now: a store and anything inside it, minus what the viewer opened.
@@ -608,7 +737,9 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     // Date.now, matching what the reactor stamps on a node — see instrument.ts.
     update(graph, now = Date.now()) {
       lastGraph = graph;
-      const shown = grouped(graph);
+      // Bindings first: a card hung off a signal is not an outsider.
+      const shown = grouped(withEdges(graph));
+      lastShown = shown;
       const folded = foldedIn(shown);
       let sig = `${[...folded].sort().join(',')}|${groupExternal}|${direction}|`;
       for (const n of shown.values())
@@ -616,10 +747,12 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       if (sig !== signature) {
         signature = sig;
         rebuild(shown, folded);
+        // The elements are new, so what was lit is not.
+        if (focused) light(focused);
       }
-      stageWave(graph, now);
+      stageWave(shown, now);
 
-      for (const node of graph.values()) {
+      for (const node of shown.values()) {
         const eles = nodeEls.get(node.id);
         if (!eles) continue;
         const next = fit(node.value);
@@ -639,6 +772,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     clear() {
       signature = '';
       selected = null;
+      focused = null;
+      svg.classList.remove('fx-hovering');
       edgeLayer.replaceChildren();
       nodeLayer.replaceChildren();
       nodeEls.clear();
@@ -674,6 +809,23 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     },
     get groupExternal() {
       return groupExternal;
+    },
+    setShowBindings(next) {
+      if (showBindings === next) return;
+      showBindings = next;
+      // The topology changed, so the layout is worked out again.
+      signature = '';
+    },
+    get showBindings() {
+      return showBindings;
+    },
+    get shown() {
+      return lastShown;
+    },
+    focus(ids) {
+      // Through the fold, like hovering.
+      focused = ids?.length ? new Set(ids.map(standIn)) : null;
+      light(focused);
     },
     setDirection(next) {
       if (direction === next) return;
@@ -726,6 +878,13 @@ export const DEVTOOLS_CSS = `
 .fx-node.n-component { --glow: var(--component, #f0abfc); }
 .fx-node.n-group { --glow: var(--fx-muted, #8a90a2); opacity: .8; }
 .fx-node.n-group .fx-box { stroke-dasharray: 4 3; }
+/* Neither is a node: dashed and dimmer, so the reactive shape reads first. */
+.fx-node.n-control { --glow: var(--control, #7dd3fc); }
+.fx-node.n-router { --glow: var(--router, #c4b5fd); }
+.fx-node.n-handler { --glow: var(--handler, #fca5a5); }
+.fx-node.n-binding { --glow: var(--fx-accent, #5eead4); opacity: .72; }
+.fx-node.n-setter { --glow: var(--fx-write, #fb7185); opacity: .72; }
+.fx-node.n-binding .fx-box, .fx-node.n-setter .fx-box { stroke-dasharray: 3 3; }
 .fx-node.n-external { opacity: .55; }
 .fx-node.n-external .fx-box { stroke-dasharray: 3 2; }
 .fx-box { fill: var(--fx-node-bg, #131722); stroke: var(--glow, #5eead4); stroke-width: 1.4; stroke-opacity: calc(.5 + var(--pulse,0) * .5); }

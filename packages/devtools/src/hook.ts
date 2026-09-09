@@ -10,7 +10,10 @@
 // build: the reporting calls are unconditional, so only the names and source locations are
 // missing there.
 import { observeGraph, type ObservedGraph } from './observe.js';
-import { serializeGraph, type GraphSnapshot } from './wire.js';
+import { serializeGraph, type GraphEvent, type GraphSnapshot } from './wire.js';
+
+/** A few hundred interactions' worth. */
+const HISTORY = 500;
 
 /** Kept in step with the name in @fluixi/reactive's observe.ts. */
 const HOOK = '__FLUIXI_DEVTOOLS_HOOK__';
@@ -37,6 +40,8 @@ export function installDevtoolsHook(): DevtoolsHook {
 
   let observed: ObservedGraph | null = null;
   let version: string | null = null;
+  /** What has happened, for whoever asks. Bounded: nothing here is ever consumed. */
+  const history: GraphEvent[] = [];
 
   const hook: DevtoolsHook = {
     inject(runtime) {
@@ -53,8 +58,15 @@ export function installDevtoolsHook(): DevtoolsHook {
       if (!observed) return null;
       const changed = observed.sample();
       const dropped = observed.takeRemoved();
-      if (!partial) return serializeGraph(observed.graph);
-      return serializeGraph(observed.graph, Date.now(), { ids: changed, removed: dropped });
+      // Kept, not handed out once. The hook can have more than one reader — a dev server
+      // agent polling and a browser panel open at the same time — and draining here gave
+      // each of them whichever events the other had not taken yet. Every event carries a
+      // seq, so a reader keeps what is new to it.
+      history.push(...observed.takeEvents());
+      if (history.length > HISTORY) history.splice(0, history.length - HISTORY);
+      const events = history.slice();
+      if (!partial) return serializeGraph(observed.graph, Date.now(), { events });
+      return serializeGraph(observed.graph, Date.now(), { ids: changed, removed: dropped, events });
     },
   };
 

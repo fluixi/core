@@ -32,9 +32,31 @@ export type NodeKind =
   | 'store'
   | 'resource'
   | 'component'
+  /** Control flow the framework supplies — `Show`, `For`, `Switch`, `Suspense`, `Await`. */
+  | 'control'
+  /** The router's own tags — `Router`, `Outlet`, `Link`, `Redirect`. */
+  | 'router'
+  /** A server route handler — `GET`, `POST` in an api file. */
+  | 'handler'
   /** Not a node: a card a view draws to stand for several of them. */
-  | 'group';
+  | 'group'
+  /** Not a node: a place in the document a signal writes to. */
+  | 'binding'
+  /** Not a node: a place in the code that sets a signal. */
+  | 'setter';
 export type NodeState = 'clean' | 'check' | 'dirty';
+
+/** One place in the document that a signal drives. */
+export interface DomTarget {
+  /** `content` for a text or element hole, `attribute` or `property` otherwise. */
+  kind: string;
+  /** The attribute or property name, when there is one. */
+  name?: string;
+  /** The element, as a selector-ish description: `li.done`, `#total`. */
+  element: string;
+  /** The line of the application that wired this binding up. */
+  source?: ReactiveSourceLocation;
+}
 
 export interface RNode {
   id: number;
@@ -78,6 +100,16 @@ export interface RNode {
    * hole would bury the graph — but a signal read only by them is not a signal nothing uses.
    */
   bindings?: number;
+  /**
+   * What those bindings write: the text of an `<li>`, the `class` of a `<div>`. Described,
+   * never referenced: holding dom nodes would keep a removed subtree alive.
+   */
+  targets?: DomTarget[];
+  /**
+   * Set from outside any computation — a handler, a timer. The graph has no node to draw an
+   * edge from for these, so this is the only record of where they came from.
+   */
+  setAt?: ReactiveSourceLocation[];
   /** Resource only. */
   loading?: boolean;
   depth?: number;

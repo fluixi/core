@@ -82,3 +82,25 @@ describe('installDevtoolsHook', () => {
     expect(hook.observed).toBe(graph);
   });
 });
+
+describe('two readers', () => {
+  it('gives both of them the same events', () => {
+    // A dev-server agent polling and a browser panel open at once. Draining meant each got
+    // whichever events the other had not taken yet.
+    const hook = installDevtoolsHook();
+    hook.inject({ observeReactiveNodes: observeReactiveNodes as never, version: '0' });
+
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    hook.snapshot();
+    set(1);
+
+    const first = hook.snapshot()?.events ?? [];
+    const second = hook.snapshot()?.events ?? [];
+    expect(first.length).toBeGreaterThan(0);
+    expect(second.map((e) => e.seq)).toEqual(first.map((e) => e.seq));
+  });
+});

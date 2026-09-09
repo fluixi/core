@@ -120,3 +120,72 @@ describe('a node whose readers are not drawn', () => {
     expect(text).toContain('todos, text');
   });
 });
+
+describe('a card the view invented', () => {
+  it('does not claim a version or a run count it does not have', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { label: 'count' })],
+      [1, node(1, { kind: 'binding', label: 'text in span', deps: new Set([0]) })],
+    ]);
+    createInspector(host).show(graph, 1);
+    expect(host.querySelector('.ins-meta')?.textContent).toBe('not a node');
+    expect(host.querySelector('.ins-kind')?.textContent).toBe('binding');
+  });
+
+  it('still says what it reads, which is the whole point of selecting it', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { label: 'count' })],
+      [1, node(1, { kind: 'binding', label: 'text in span', deps: new Set([0]) })],
+    ]);
+    createInspector(host).show(graph, 1);
+    expect(host.querySelector('.ins-rel')?.textContent).toContain('count');
+  });
+});
+
+describe('a location that came through a source map', () => {
+  it('shows the compiled position too, since originals collide', () => {
+    const graph = new Map<number, RNode>([
+      [
+        0,
+        node(0, {
+          label: 'count',
+          targets: [
+            {
+              kind: 'attribute',
+              name: 'title',
+              element: 'b',
+              // What a template hole maps to: the line the template opens at.
+              source: { file: 'src/App.tsx', line: 7, column: 4, compiled: { line: 23, column: 6 } },
+            },
+          ],
+        }),
+      ],
+    ]);
+    createInspector(host).show(graph, 0);
+    const text = host.querySelector('.ins-rel')?.textContent ?? '';
+    expect(text).toContain('src/App.tsx:7:4');
+    expect(text).toContain('out 23:6');
+  });
+
+  it('says it once when the two agree', () => {
+    const graph = new Map<number, RNode>([
+      [
+        0,
+        node(0, {
+          label: 'count',
+          source: { file: 'src/App.tsx', line: 3, column: 8, compiled: { line: 3, column: 8 } },
+        }),
+      ],
+    ]);
+    createInspector(host).show(graph, 0);
+    expect(host.querySelector('.ins-source')?.textContent).not.toContain('out');
+  });
+
+  it('names where a signal is set from outside', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { label: 'count', setAt: [{ file: 'src/App.tsx', line: 14, column: 6 }] })],
+    ]);
+    createInspector(host).show(graph, 0);
+    expect(host.querySelector('.ins-rel')?.textContent).toContain('set at src/App.tsx:14:6');
+  });
+});

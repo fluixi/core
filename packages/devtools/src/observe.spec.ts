@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   createRoot,
@@ -5,9 +6,11 @@ import {
   createMemo,
   createEffect,
   createRenderEffect,
+  reportReactiveBinding,
 } from '@fluixi/reactive/signal';
 import { markReactiveSource } from './source.js';
 import { observeGraph, type ObservedGraph } from './observe.js';
+import { toCommits } from './history.js';
 
 let observed: ObservedGraph | undefined;
 afterEach(() => {
@@ -244,5 +247,318 @@ describe('a node created inside the framework plumbing', () => {
     const list = byLabel(observed, 'List')!;
     expect(byLabel(observed, 'row')?.createdIn).toBe(list.id);
     expect([...observed.graph.values()].some((n) => n.kind === 'effect')).toBe(false);
+  });
+});
+
+describe('who wrote a signal', () => {
+  it('records the effect that set it', () => {
+    observed = observeGraph();
+    createRoot(() => {
+      const [src] = createSignal(1, { name: 'src' });
+      const [, setDst] = createSignal(0, { name: 'dst' });
+      createEffect(() => (setDst as (n: number) => number)(src() * 2));
+    });
+    observed.sample();
+
+    const effect = [...observed.graph.values()].find((n) => n.kind === 'effect')!;
+    const dst = byLabel(observed, 'dst')!;
+    expect([...effect.writes]).toContain(dst.id);
+  });
+
+  it('leaves a write from outside any computation as no edge', () => {
+    observed = observeGraph();
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    // What a click handler does.
+    set(1);
+    observed.sample();
+    expect([...observed.graph.values()].every((n) => n.writes.size === 0)).toBe(true);
+  });
+});
+
+describe('history', () => {
+  it('cuts a commit at each write from outside, and keeps what it caused', () => {
+    observed = observeGraph();
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [count, setCount] = createSignal(0, { name: 'count' });
+      createEffect(() => count() * 2);
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+    observed.takeEvents();
+
+    set(1);
+    set(2);
+    const events = observed.takeEvents();
+    const commits = toCommits(events);
+
+    // Two clicks, two commits, each caused by a write nothing was running for.
+    expect(commits).toHaveLength(2);
+    expect(commits.every((c) => c.cause !== undefined)).toBe(true);
+    const count = byLabel(observed, 'count')!;
+    expect(commits[0]?.cause?.id).toBe(count.id);
+  });
+
+  it('carries the value on both sides of a write', () => {
+    observed = observeGraph();
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+    observed.takeEvents();
+
+    set(7);
+    const write = observed.takeEvents().find((e) => e.kind === 'write');
+    expect(write?.from).toBe('0');
+    expect(write?.to).toBe('7');
+  });
+
+  it('records nothing when history is off', () => {
+    observed = observeGraph({ history: 0 });
+    createRoot(() => {
+      const [, setCount] = createSignal(0);
+      (setCount as (n: number) => number)(1);
+    });
+    observed.sample();
+    expect(observed.takeEvents()).toEqual([]);
+  });
+});
+
+describe('what a write changed', () => {
+  it('names the row an append added, not the whole list', () => {
+    observed = observeGraph();
+    let add!: (next: unknown[]) => unknown[];
+    let read!: () => unknown[];
+    createRoot(() => {
+      const [todos, setTodos] = createSignal<unknown[]>([{ text: 'a' }], { name: 'todos' });
+      read = todos as () => unknown[];
+      add = setTodos as (next: unknown[]) => unknown[];
+    });
+    observed.sample();
+    observed.takeEvents();
+
+    add([...read(), { text: 'b' }]);
+    const write = observed.takeEvents().find((e) => e.kind === 'write');
+
+    expect(write?.change?.shape).toBe('array');
+    expect(write?.change?.entries).toEqual([
+      { key: '1', op: 'added', to: '{text: "b"}', toJson: '{"text":"b"}' },
+    ]);
+    expect(write?.change?.length).toEqual({ from: 1, to: 2 });
+  });
+
+  it('keeps the name of a node that was disposed, so the entry is readable', () => {
+    observed = observeGraph();
+    let drop!: () => void;
+    createRoot(() => {
+      createRoot((dispose) => {
+        createSignal(0, { name: 'row' });
+        drop = dispose;
+      });
+    });
+    observed.sample();
+    observed.takeEvents();
+
+    drop();
+    const gone = observed.takeEvents().find((e) => e.kind === 'disposed');
+    // The graph no longer has the node, so without this the timeline says `#3`.
+    expect(gone?.label).toBe('row');
+  });
+});
+
+describe('what a signal drives in the document', () => {
+  it('names the attribute and the element a binding writes', () => {
+    observed = observeGraph();
+    const el = document.createElement('div');
+    el.className = 'card';
+
+    createRoot(() => {
+      const [title] = createSignal('hi', { name: 'title' });
+      // What setDynamicAttribute does. Spelled out here so devtools stays independent of the
+      // dom package it watches.
+      createRenderEffect(() => {
+        reportReactiveBinding(el, 'attribute', 'title');
+        void title();
+      });
+    });
+    observed.sample();
+
+    expect(byLabel(observed, 'title')?.targets?.[0]).toMatchObject({
+      kind: 'attribute',
+      name: 'title',
+      element: 'div.card',
+    });
+    // Still counted, for a host that only wants the number.
+    expect(byLabel(observed, 'title')?.bindings).toBe(1);
+  });
+
+  it('names every place one signal is used, not just the first', () => {
+    observed = observeGraph();
+    const a = document.createElement('span');
+    const b = document.createElement('button');
+
+    createRoot(() => {
+      const [count] = createSignal(0, { name: 'count' });
+      createRenderEffect(() => {
+        reportReactiveBinding(a, 'attribute', 'data-n');
+        void count();
+      });
+      createRenderEffect(() => {
+        reportReactiveBinding(b, 'attribute', 'aria-label');
+        void count();
+      });
+    });
+    observed.sample();
+
+    const targets = byLabel(observed, 'count')?.targets ?? [];
+    expect(targets).toHaveLength(2);
+    expect(targets.map((t) => `${t.name} of ${t.element}`).sort()).toEqual([
+      'aria-label of button',
+      'data-n of span',
+    ]);
+  });
+
+  it('leaves targets off a signal the document does not read', () => {
+    observed = observeGraph();
+    createRoot(() => createSignal(0, { name: 'quiet' }));
+    observed.sample();
+    expect(byLabel(observed, 'quiet')?.targets).toBeUndefined();
+  });
+});
+
+describe('where a binding and a setter live', () => {
+  it('keeps the line that wired a binding up', () => {
+    observed = observeGraph();
+    const el = document.createElement('div');
+    createRoot(() => {
+      const [title] = createSignal('hi', { name: 'title' });
+      createRenderEffect(() => {
+        reportReactiveBinding(el, 'attribute', 'title');
+        void title();
+      });
+    });
+    observed.sample();
+
+    // The effect's first run is scheduled, so the frame is captured when it is created —
+    // by the time it runs, the code that asked for it has left the stack.
+    //
+    // The file cannot be asserted: this spec lives under packages/devtools, which callSite
+    // classifies as framework, so it falls back to a package frame. That the fallback is
+    // reached at all is the thing being pinned — without capture at creation there is no
+    // location of any kind. Which frame gets picked is callsite.spec's business.
+    const target = byLabel(observed, 'title')?.targets?.[0];
+    expect(target?.source).toBeDefined();
+    expect(typeof target?.source?.line).toBe('number');
+    expect(target?.source?.file).toBeTruthy();
+  });
+
+  it('records where a signal is set from outside any computation', () => {
+    observed = observeGraph();
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+
+    set(1);
+    const node = byLabel(observed, 'count')!;
+    expect(node.setAt).toHaveLength(1);
+    expect(typeof node.setAt?.[0]?.line).toBe('number');
+  });
+
+  it('counts one place once, however often it is called', () => {
+    observed = observeGraph();
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+
+    for (let i = 1; i <= 20; i++) set(i);
+    expect(byLabel(observed, 'count')?.setAt).toHaveLength(1);
+  });
+
+  it('says nothing about a write a computation made — that is already an edge', () => {
+    observed = observeGraph();
+    createRoot(() => {
+      const [src] = createSignal(1, { name: 'src' });
+      const [, setDst] = createSignal(0, { name: 'dst' });
+      createEffect(() => (setDst as (n: number) => number)(src() * 2));
+    });
+    observed.sample();
+    expect(byLabel(observed, 'dst')?.setAt).toBeUndefined();
+  });
+
+  it('costs nothing when the host does not want it', () => {
+    observed = observeGraph({ bindingSources: false });
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+    set(1);
+    expect(byLabel(observed, 'count')?.setAt).toBeUndefined();
+  });
+});
+
+describe('putting a stack location back in the author\'s file', () => {
+  it('translates a binding site through the host\'s map', () => {
+    observed = observeGraph({
+      // What a host with the source maps does: compiled position in, original out.
+      mapSource: () => ({ file: 'src/App.tsx', line: 12, column: 6 }),
+    });
+    const el = document.createElement('div');
+    createRoot(() => {
+      const [title] = createSignal('hi', { name: 'title' });
+      createRenderEffect(() => {
+        reportReactiveBinding(el, 'attribute', 'title');
+        void title();
+      });
+    });
+    observed.sample();
+    const source = byLabel(observed, 'title')?.targets?.[0]?.source;
+    expect(source).toMatchObject({ file: 'src/App.tsx', line: 12 });
+    // And the compiled position it came from, which is the only thing that separates two
+    // bindings a template map cannot tell apart.
+    expect(typeof source?.compiled?.line).toBe('number');
+    expect(source?.compiled?.line).not.toBe(12);
+  });
+
+  it('keeps the compiled position when the map cannot place it', () => {
+    observed = observeGraph({ mapSource: () => undefined });
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+    set(1);
+    // A mapper that found nothing must not turn a usable location into none at all.
+    expect(byLabel(observed, 'count')?.setAt?.[0]?.file).toBeTruthy();
+  });
+
+  it('survives a mapper that throws', () => {
+    observed = observeGraph({
+      mapSource: () => {
+        throw new Error('bad map');
+      },
+    });
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+    observed.sample();
+    expect(() => set(1)).not.toThrow();
+    expect(byLabel(observed, 'count')?.setAt).toHaveLength(1);
   });
 });

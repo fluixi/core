@@ -14,10 +14,14 @@ import {
   type ReactiveNodeReport,
   type ReactiveObserver,
 } from '@fluixi/reactive/signal';
-import { componentSource, installSourceMarker, takeReactiveSource } from './source.js';
+import { componentSource, holeLocation, installSourceMarker, takeReactiveSource } from './source.js';
 import { currentCallSite } from './callsite.js';
-import { type NodeKind, type RNode } from './instrument.js';
+import { type DomTarget, type NodeKind, type RNode } from './instrument.js';
+import type { ReactiveSourceLocation } from './source.js';
 import { formatValue, shorten } from './format.js';
+import { createHistory, type GraphEvent } from './history.js';
+import { diffValues } from './diff.js';
+import { describeNode } from './describe.js';
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
 interface CoreNode {
@@ -33,6 +37,8 @@ export interface ObservedGraph {
   sample(): number[];
   /** Ids dropped since the last call, for a consumer folding in deltas. Reading clears it. */
   takeRemoved(): number[];
+  /** What happened since the last call, in order. Empty when history is off. */
+  takeEvents(): GraphEvent[];
   detach(): void;
 }
 
@@ -48,6 +54,16 @@ export interface ObserveOptions {
    * of the framework watches a graph nobody is using.
    */
   observe?: (observer: ReactiveObserver) => () => void;
+  /** Events kept for the timeline. 0 for a host that only draws the graph. */
+  history?: number;
+  /** One stack capture per binding, at creation. Off for a host that never asks. */
+  bindingSources?: boolean;
+  /**
+   * Put a stack location back in the author's file. A frame reports the compiled position and
+   * knows nothing of the file it was generated from; a host with the source maps closes that.
+   * Only stack-derived locations pass through — a compiler mark is already original.
+   */
+  mapSource?: (location: ReactiveSourceLocation) => ReactiveSourceLocation | undefined;
 }
 
 const KINDS: Record<ReactiveNodeReport['kind'], NodeKind> = {
@@ -58,6 +74,12 @@ const KINDS: Record<ReactiveNodeReport['kind'], NodeKind> = {
   resource: 'resource',
 };
 
+/** Long enough for an object's first fields, short enough that a few hundred stays small. */
+const HISTORY_VALUE = 80;
+
+/** How many distinct places may be remembered as writing one signal. */
+const SET_SITES = 8;
+
 const PREFIX: Record<NodeKind, string> = {
   state: 's',
   memo: 'm',
@@ -65,8 +87,15 @@ const PREFIX: Record<NodeKind, string> = {
   store: 'st',
   resource: 'r',
   component: 'c',
-  // Never produced here: a group is a card a view draws, not a node anything creates.
+  // Only the static graph makes these: at runtime control flow is a named memo, and a route
+  // handler never reaches a browser.
+  control: 'x',
+  router: 'rt',
+  handler: 'h',
+  // Never produced here: these are cards a view draws, not nodes anything creates.
   group: 'g',
+  binding: 'b',
+  setter: 'w',
 };
 
 /**
@@ -94,10 +123,55 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    * Dropped when the effect that holds them is disposed.
    */
   const internals = new Set<CoreNode>();
+  /**
+   * What each binding effect writes into, keyed by the effect: one effect can read several
+   * signals and all of them drive the same place. A description, never the element.
+   */
+  const targets = new WeakMap<CoreNode, DomTarget>();
+  /**
+   * Where each binding was wired up. Taken at creation: the first run is scheduled, so by the
+   * time it reports, the frame that asked for it has left the stack.
+   */
+  const bindingSites = new WeakMap<CoreNode, ReactiveSourceLocation>();
   const cores = new Map<number, CoreNode>();
   const runsAtLastSample = new Map<number, number>();
   const unnamed = new Set<number>();
+  const recording = (options.history ?? 200) > 0;
+  const wantSites = options.bindingSources ?? true;
+
+  /** A stack location in the author's terms, when the host can say. */
+  const mapped = (location: ReactiveSourceLocation): ReactiveSourceLocation => {
+    if (!options.mapSource) return location;
+    try {
+      // A mapper that cannot place a position must not turn a usable location into none.
+      const found = options.mapSource(location);
+      // The compiled position is kept: it distinguishes bindings the map cannot.
+      return found
+        ? { ...location, ...found, compiled: { line: location.line, column: location.column } }
+        : location;
+    } catch {
+      return location;
+    }
+  };
+  const history = createHistory(options.history ?? 200);
   let seq = 0;
+
+  /**
+   * The raw value each node last reported, so a write can be diffed against it. A formatted
+   * string cannot be. One reference per node, so this pins no more than the graph does.
+   */
+  const raws = new Map<number, unknown>();
+
+/** Untracked: this runs inside a write, and a tracked read would change what it watches. */
+  const readRaw = (node: RNode): unknown => {
+    if (!node.read) return undefined;
+    try {
+      return untrack(() => node.read!());
+    } catch {
+      // A reader that throws is not worth losing the event over.
+      return undefined;
+    }
+  };
 
   const removed: number[] = [];
   /** The nearest node the graph knows, looking outward through anything it does not. */
@@ -121,6 +195,12 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         const owner = ancestor(report.parents);
         if (owner !== undefined) through.set(core, owner);
         internals.add(core);
+        if (wantSites) {
+          // The package's frame when there is no application one: a binding inside a library
+          // component is still somewhere. `external` marks the difference.
+          const site = currentCallSite(origin);
+          if (site) bindingSites.set(core, mapped(site.location));
+        }
         return;
       }
       const id = seq++;
@@ -148,8 +228,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         // The application's line is where it was asked for; a package's is where it was made,
         // and for a node made while that package loaded it is the only thing there is.
         ...(mark?.location ? { source: mark.location } : {}),
-        ...(site && !site.external ? { usedAt: site.location } : {}),
-        ...(site && site.external && !mark?.location ? { source: site.location } : {}),
+        // Mapped, unlike `mark`: these two came off a stack, so they are positions in the
+        // compiled file until a host translates them.
+        ...(site && !site.external ? { usedAt: mapped(site.location) } : {}),
+        ...(site && site.external && !mark?.location ? { source: mapped(site.location) } : {}),
       };
       const owner = ancestor(report.parents);
       if (owner !== undefined) node.createdIn = owner;
@@ -177,13 +259,75 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       }
       cores.set(id, core);
       graph.set(id, node);
+      history.created(id, node.createdIn, node.label);
     },
     ran(target) {
       const id = ids.get(target as object);
       if (id !== undefined) {
         const node = graph.get(id);
         if (node) node.runs++;
+        history.ran(id);
       }
+    },
+    wrote(target, by) {
+      const writer = by ? ids.get(by as object) : undefined;
+      const written = ids.get(target as object);
+      if (written === undefined) return;
+
+      // Nothing running: a handler, a timer, a socket, none of which the graph has a node
+      // for. Where it was called is all there is to say, and the stack still has it.
+      if (wantSites && writer === undefined) {
+        const node = graph.get(written);
+        const site = currentCallSite(origin);
+        if (node && site) {
+          const seen = (node.setAt ??= []);
+          const at = mapped(site.location);
+          // One handler called two hundred times is one place.
+          if (!seen.some((s) => s.file === at.file && s.line === at.line && s.column === at.column)) {
+            if (seen.length >= SET_SITES) seen.shift();
+            seen.push(at);
+          }
+        }
+      }
+
+      // Before the edge check and whether or not anything was running: the write with no
+      // writer is the one the timeline is built around.
+      if (recording) {
+        const node = graph.get(written);
+        // The write has landed, so this is the new value; the old one was kept last time.
+        const after = node ? readRaw(node) : undefined;
+        const before = raws.get(written);
+        if (node) raws.set(written, after);
+        // Both sides cut to the same budget, or the arrow reads as two kinds of thing.
+        const shown = node?.detail ?? node?.value;
+        history.wrote(written, writer, {
+          from: shown === undefined ? undefined : shorten(shown, HISTORY_VALUE),
+          to: node ? shorten(formatValue(after, HISTORY_VALUE * 2), HISTORY_VALUE) : undefined,
+          // Which row was added is the fact a reader is after.
+          change: diffValues(before, after),
+          label: node?.label,
+        });
+      }
+
+      // Only a write from inside a computation is an edge: a handler is not a node.
+      if (writer === undefined || writer === written) return;
+      graph.get(writer)?.writes.add(written);
+    },
+    bound(node, target, kind, name, accessor) {
+      const core = node as CoreNode;
+      if (!core || typeof core !== 'object') return;
+      // The compiler's mark first. It names the hole itself; the stack only names the call
+      // that built the template, which every binding in that template shares.
+      const hole = holeLocation(accessor);
+      const site = hole
+        ? { ...hole, file: bindingSites.get(core)?.file }
+        : bindingSites.get(core);
+      targets.set(core, {
+        kind,
+        element: describeNode(target),
+        ...(name ? { name } : {}),
+        ...(site ? { source: site } : {}),
+      });
     },
     moved(target, origin, name) {
       const node = graph.get(ids.get(target as object) ?? -1);
@@ -200,7 +344,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const id = ids.get(target as object);
       if (id === undefined) return;
       removed.push(id);
+      // The label goes with it: nothing is left to look the name up in.
+      history.disposed(id, graph.get(id)?.label);
       graph.delete(id);
+      raws.delete(id);
       cores.delete(id);
       runsAtLastSample.delete(id);
       unnamed.delete(id);
@@ -227,15 +374,24 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       // What the dom reads, per node. Recounted rather than kept: a binding's sources change
       // with every run, and a stale count is worse than none.
       const bindings = new Map<number, number>();
+      const drives = new Map<number, DomTarget[]>();
       for (const internal of internals) {
+        const target = targets.get(internal);
         for (const source of internal.sources ?? []) {
           const id = ids.get(source as object);
-          if (id !== undefined) bindings.set(id, (bindings.get(id) ?? 0) + 1);
+          if (id === undefined) continue;
+          bindings.set(id, (bindings.get(id) ?? 0) + 1);
+          if (!target) continue;
+          const list = drives.get(id);
+          if (list) list.push(target);
+          else drives.set(id, [target]);
         }
       }
       for (const node of graph.values()) {
         const count = bindings.get(node.id) ?? 0;
         if (node.bindings !== count) node.bindings = count || undefined;
+        const list = drives.get(node.id);
+        node.targets = list?.length ? list : undefined;
       }
       for (const node of graph.values()) {
         if (!node.read) {
@@ -251,6 +407,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           continue;
         }
         const raw = node.read();
+        // For the next write to diff against; without it the first change has no entries.
+        if (recording) raws.set(node.id, raw);
         // After the read: a memo that has never been pulled has no sources yet, and reading
         // it is what makes it collect them.
         edges(node.id, node);
@@ -285,6 +443,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     takeRemoved() {
       return removed.splice(0, removed.length);
     },
+    takeEvents() {
+      return history.take();
+    },
     detach() {
       stop();
       internals.clear();
@@ -292,6 +453,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       cores.clear();
       runsAtLastSample.clear();
       unnamed.clear();
+      raws.clear();
+      history.clear();
     },
   };
 }

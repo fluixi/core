@@ -139,8 +139,9 @@ describe('the viewport', () => {
 
     view.zoomBy(2);
     expect(at()).toContain('scale(2)');
-    view.zoomBy(100);
-    expect(at()).toContain('scale(4)');
+    // With no layout to measure, the floor is what a graph smaller than its panel gets.
+    view.zoomBy(1000);
+    expect(at()).toContain('scale(8)');
     view.resetView();
     expect(at()).toContain('scale(1)');
   });
@@ -368,5 +369,228 @@ describe('what the packages made', () => {
       ]),
     );
     expect(labels().sort()).toEqual(['App', 'inside']);
+  });
+});
+
+describe('focusing a commit', () => {
+  const lit = () => [...svg.querySelectorAll('.fx-node.hot')].length;
+
+  it('holds a set lit, and lets go of it', () => {
+    const view = createGraphView(svg, { collapseStores: false });
+    view.update(storeGraph());
+
+    view.focus([1, 3]);
+    expect(svg.classList.contains('fx-hovering')).toBe(true);
+    expect(lit()).toBe(2);
+
+    view.focus(null);
+    expect(svg.classList.contains('fx-hovering')).toBe(false);
+    expect(lit()).toBe(0);
+  });
+
+  it('goes back to the focus when the pointer leaves a node, not to nothing', () => {
+    const view = createGraphView(svg, { collapseStores: false });
+    view.update(storeGraph());
+    view.focus([1, 3]);
+
+    const first = svg.querySelector('.fx-node') as SVGGElement;
+    first.dispatchEvent(new MouseEvent('mouseenter'));
+    first.dispatchEvent(new MouseEvent('mouseleave'));
+
+    expect(lit()).toBe(2);
+  });
+
+  it('keeps the focus across a rebuild', () => {
+    const view = createGraphView(svg, { collapseStores: false });
+    const graph = storeGraph();
+    view.update(graph);
+    view.focus([1, 3]);
+
+    // A new node changes the signature, so the elements are rebuilt from scratch.
+    graph.set(4, node(4, { label: 'extra' }));
+    view.update(graph);
+
+    expect(lit()).toBe(2);
+  });
+});
+
+describe('the document and the handlers as cards', () => {
+  const withDom = () =>
+    new Map<number, RNode>([
+      [
+        0,
+        node(0, {
+          label: 'count',
+          targets: [{ kind: 'content', element: 'span.total' }],
+          setAt: [{ file: 'src/App.tsx', line: 14, column: 6 }],
+        }),
+      ],
+      [1, node(1, { kind: 'memo', label: 'double', deps: new Set([0]) })],
+    ]);
+
+  it('draws nothing extra until it is turned on', () => {
+    const view = createGraphView(svg);
+    view.update(withDom());
+    expect(labels()).toEqual(['count', 'double']);
+  });
+
+  it('draws a card for what a signal reaches, and what sets it', () => {
+    const view = createGraphView(svg, { showBindings: true });
+    view.update(withDom());
+    expect(labels()).toContain('span.total');
+    expect(labels()).toContain('set at App.tsx:14');
+  });
+
+  it('links them: the binding reads the signal, the setter writes it', () => {
+    // One view per svg: two views appending to the same element would count each other's
+    // edges, which is what made the first version of this test read 4.
+    const drawnIn = (options: Parameters<typeof createGraphView>[1]) => {
+      const own = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      createGraphView(own, options).update(withDom());
+      return own.querySelectorAll('.fx-edges path').length;
+    };
+
+    // double → count, and nothing else.
+    expect(drawnIn({})).toBe(1);
+    // Plus count → span.total, and set-at → count.
+    expect(drawnIn({ showBindings: true })).toBe(3);
+  });
+
+  it('turns back off, and the graph is what it was', () => {
+    const view = createGraphView(svg, { showBindings: true });
+    view.update(withDom());
+    view.setShowBindings(false);
+    view.update(withDom());
+    expect(labels()).toEqual(['count', 'double']);
+  });
+
+  it('keeps a binding card out of the packages group', () => {
+    const graph = new Map<number, RNode>([
+      [
+        0,
+        node(0, {
+          label: 'locale',
+          source: { file: 'node_modules/@fluixi/core/i18n.js', line: 3, column: 1, external: true },
+          // The binding was wired up inside the package too, which is what used to sweep it
+          // into the group card and detach it from its signal.
+          targets: [{ kind: 'content', element: 'p', source: { file: 'node_modules/x.js', line: 1, column: 1, external: true } }],
+        }),
+      ],
+    ]);
+    const view = createGraphView(svg, { showBindings: true, groupExternal: true });
+    view.update(graph);
+    expect(labels()).toContain('p');
+  });
+});
+
+describe('cards in the propagation', () => {
+  it('lights the handler, then the signal, then the dom it reaches', () => {
+    const t = 1_000_000;
+    const graph = new Map<number, RNode>([
+      [
+        0,
+        node(0, {
+          label: 'count',
+          lastPulse: t,
+          targets: [{ kind: 'attribute', name: 'data-n', element: 'span' }],
+          setAt: [{ file: 'src/App.tsx', line: 9, column: 4 }],
+        }),
+      ],
+    ]);
+    const view = createGraphView(svg, { showBindings: true });
+    view.update(graph, t);
+
+    const lit = (at: number): string[] => {
+      view.update(graph, at);
+      return [...svg.querySelectorAll('.fx-node')]
+        .filter((g) => Number((g as SVGGElement).style.getPropertyValue('--pulse')) > 0)
+        .map((g) => g.querySelector('.fx-label')?.textContent ?? '');
+    };
+
+    // A card carries the pulse of the signal it hangs off, so it is staged along the wave
+    // like any other node. STEP is 110ms.
+    expect(lit(t)).toEqual(['set at App.tsx:9']);
+    expect(lit(t + 110)).toContain('count');
+    expect(lit(t + 220)).toContain('data-n of span');
+  });
+
+  it('resolves a card the host has never heard of', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { label: 'count', targets: [{ kind: 'content', element: 'b' }] })],
+    ]);
+    const view = createGraphView(svg, { showBindings: true });
+    view.update(graph);
+
+    const card = [...view.shown.values()].find((n) => n.kind === 'binding')!;
+    // Only in the view: a host looking this up in its own map found nothing, which is why
+    // clicking a card left the inspector empty.
+    expect(graph.has(card.id)).toBe(false);
+    expect(view.shown.get(card.id)?.label).toBe('b');
+  });
+});
+
+describe('how far the zoom goes', () => {
+  const wide = () => {
+    // Enough nodes in a chain that the viewBox is much wider than the element.
+    const graph = new Map<number, RNode>();
+    for (let i = 0; i < 40; i++) {
+      graph.set(i, node(i, { label: `n${i}`, deps: i ? new Set([i - 1]) : new Set() }));
+    }
+    return graph;
+  };
+
+  const scaleOf = (): number => {
+    const t = (svg.querySelector('.fx-viewport') as SVGGElement).getAttribute('transform') ?? '';
+    return Number(/scale\(([\d.]+)\)/.exec(t)?.[1] ?? 1);
+  };
+
+  it('goes past the old fixed ceiling when the graph is wider than the panel', () => {
+    const view = createGraphView(svg);
+    view.update(wide());
+    // jsdom reports no layout, so the element width is stubbed to a real panel's.
+    svg.getBoundingClientRect = () => ({ width: 600, height: 400 }) as DOMRect;
+
+    for (let i = 0; i < 40; i++) view.zoomBy(1.25);
+    // A 40-node chain lays out several thousand units wide; the old fixed 4x landed far
+    // short of a card at natural size.
+    expect(scaleOf()).toBeGreaterThan(20);
+  });
+
+  it('still stops somewhere', () => {
+    const view = createGraphView(svg);
+    view.update(wide());
+    svg.getBoundingClientRect = () => ({ width: 600, height: 400 }) as DOMRect;
+
+    for (let i = 0; i < 200; i++) view.zoomBy(1.25);
+    const settled = scaleOf();
+    view.zoomBy(1.25);
+    expect(scaleOf()).toBe(settled);
+  });
+
+  it('keeps a modest ceiling for a graph that already fits', () => {
+    const view = createGraphView(svg);
+    view.update(new Map([[0, node(0, { label: 'only' })]]));
+    svg.getBoundingClientRect = () => ({ width: 1200, height: 800 }) as DOMRect;
+
+    for (let i = 0; i < 40; i++) view.zoomBy(1.25);
+    expect(scaleOf()).toBe(8);
+  });
+});
+
+describe('zooming a graph that is tall rather than wide', () => {
+  it('measures the axis that is more shrunk', () => {
+    const graph = new Map<number, RNode>();
+    for (let i = 0; i < 60; i++) {
+      graph.set(i, node(i, { label: `n${i}`, deps: i ? new Set([i - 1]) : new Set() }));
+    }
+    const view = createGraphView(svg, { direction: 'vertical' });
+    view.update(graph);
+    // A tall panel: the height is what the fit is limited by, and width alone would have
+    // reported nothing worth zooming into.
+    svg.getBoundingClientRect = () => ({ width: 900, height: 300 }) as DOMRect;
+
+    for (let i = 0; i < 60; i++) view.zoomBy(1.25);
+    const t = (svg.querySelector('.fx-viewport') as SVGGElement).getAttribute('transform') ?? '';
+    expect(Number(/scale\(([\d.]+)\)/.exec(t)?.[1] ?? 1)).toBeGreaterThan(20);
   });
 });

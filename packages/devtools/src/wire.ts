@@ -7,13 +7,15 @@
 //
 // This lives beside RNode on purpose. A copy kept anywhere else drifts the first time a node
 // gains a field, which is how `component`, `source` and `declaredAt` went missing from one.
-import type { NodeKind, NodeState, RNode } from './instrument.js';
+import type { DomTarget, NodeKind, NodeState, RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
+import type { GraphEvent } from './history.js';
 
 // A consumer reading a snapshot needs the vocabulary it is written in, and this module is
 // what it imports; making it go to two places for one message is a needless seam.
-export type { NodeKind, NodeState } from './instrument.js';
+export type { NodeKind, NodeState, DomTarget } from './instrument.js';
 export type { ReactiveSourceLocation } from './source.js';
+export type { GraphEvent, GraphEventKind } from './history.js';
 
 const STATE_NAME: Record<number, NodeState> = { 0: 'clean', 1: 'check', 2: 'dirty' };
 const STATE_CODE: Record<NodeState, number> = { clean: 0, check: 1, dirty: 2 };
@@ -45,6 +47,10 @@ export interface WireNode {
   readonly createdIn?: number;
   /** How many dom bindings read it. */
   readonly bindings?: number;
+  /** What those bindings write: the text of an `li`, the `class` of a `div`. */
+  readonly targets?: DomTarget[];
+  /** Where it is set from outside any computation. */
+  readonly setAt?: ReactiveSourceLocation[];
 }
 
 export interface GraphSnapshot {
@@ -61,12 +67,16 @@ export interface GraphSnapshot {
    * as a server that is not a fluixi project at all.
    */
   readonly reason?: string;
+  /** Oldest first, and always a delta: resending it would replay what the consumer has. */
+  readonly events?: GraphEvent[];
 }
 
 export interface SerializeOptions {
   /** Send only these nodes — what `sample()` returned. Makes it a partial. */
   ids?: Iterable<number>;
   removed?: Iterable<number>;
+  /** What `takeEvents()` returned. Omitted rather than sent empty. */
+  events?: readonly GraphEvent[];
 }
 
 /** Flatten a live graph for transport. */
@@ -98,10 +108,13 @@ export function serializeGraph(
       usedAt: node.usedAt,
       createdIn: node.createdIn,
       bindings: node.bindings,
+      targets: node.targets,
+      setAt: node.setAt,
     });
   }
   const removed = options.removed ? [...options.removed] : undefined;
-  return wanted ? { t: now, nodes, partial: true, removed } : { t: now, nodes };
+  const events = options.events?.length ? [...options.events] : undefined;
+  return wanted ? { t: now, nodes, partial: true, removed, events } : { t: now, nodes, events };
 }
 
 /** Rebuild a graph the renderer can draw. Nodes have no reader: a snapshot is already read. */
@@ -125,6 +138,8 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       usedAt: node.usedAt,
       createdIn: node.createdIn,
       bindings: node.bindings,
+      targets: node.targets,
+      setAt: node.setAt,
     });
   }
   return map;
