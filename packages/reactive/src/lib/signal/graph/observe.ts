@@ -56,6 +56,11 @@ export interface ReactiveObserver {
   /** An effect was disposed. Memos and signals go with their owner and are not reported. */
   disposed?(node: unknown): void;
   /**
+   * A signal was written, and by which computation — nothing, when the write came from an
+   * event handler, which is where most of them come from.
+   */
+  wrote?(node: unknown, by: unknown): void;
+  /**
    * A node now belongs somewhere else, and is called something else.
    *
    * A store write replaces the object that held a value — `set({ items: [...items, one] })`
@@ -63,6 +68,14 @@ export interface ReactiveObserver {
    * Without this they keep pointing at a node that no longer exists.
    */
   moved?(node: unknown, origin: unknown, name?: string): void;
+  /**
+   * A computation writes to this piece of the document. Only the dom layer knows a reader is
+   * the text of an `<li>` and not a `class`, and only as it wires the binding up.
+   *
+   * `node` is the render effect doing it. `accessor` is the function it reads, which the
+   * compiler may have stamped with the hole's position.
+   */
+  bound?(node: unknown, target: unknown, kind: string, name?: string, accessor?: unknown): void;
 }
 
 /**
@@ -122,6 +135,28 @@ export function exitReactiveRun(): void {
 /** Called from the recompute path, so it stays a property read when nobody is watching. */
 export function reportReactiveRun(node: unknown): void {
   (G.observer as ReactiveObserver | null)?.ran?.(node);
+}
+
+/** Called from the write path, so it stays a property read when nobody is watching. */
+export function reportReactiveWrite(node: unknown, by: unknown): void {
+  (G.observer as ReactiveObserver | null)?.wrote?.(node, by);
+}
+
+/**
+ * The node is whatever is running: a binding is set up inside its own render effect. Nothing
+ * is pushed when no one is watching, so this stays a property read on the hot path.
+ */
+export function reportReactiveBinding(
+  target: unknown,
+  kind: string,
+  name?: string,
+  accessor?: unknown,
+): void {
+  const observer = G.observer as ReactiveObserver | null;
+  if (!observer?.bound || !running.length) return;
+  // The compiler may have stamped the accessor with the hole's line. A stack cannot say it:
+  // every binding in a template comes from the same generated expression.
+  observer.bound(running[running.length - 1], target, kind, name, accessor);
 }
 
 export function reportReactiveMove(node: unknown, origin: unknown, name?: string): void {

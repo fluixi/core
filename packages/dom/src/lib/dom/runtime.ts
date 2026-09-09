@@ -22,7 +22,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // NOT in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -454,6 +454,11 @@ function _createInsertEffect(
   let current = initialCurrent;
   const componentCache = new Map<Function, any>();
   return createRenderEffect(() => {
+    // The accessor, never its result: it carries the compiler's hole position, and calling it
+    // again here builds the dom twice — during hydration, a duplicated subtree.
+    //
+    // Every run, because what this effect writes into moves as the value does.
+    reportReactiveBinding(marker ?? parent, 'content', undefined, getAccessor);
     let value: any;
 
     // ── 0. If accessor itself is a component thunk (not a signal/memo), call it once via cache ──
@@ -1120,6 +1125,7 @@ export function setDynamicAttribute(
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setAttribute(element, name, value, isSVG);
   });
@@ -1131,6 +1137,7 @@ export function setDynamicProperty(element: any, name: string, accessor: any): (
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'property', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setProperty(element, name, value);
   });
@@ -1144,6 +1151,7 @@ export function setDynamicBoolAttribute(element: Element, name: string, accessor
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', name, accessor);
     const value = (accessor as () => unknown)();
     setAttribute(element, name, !!value);
   });
@@ -1158,7 +1166,10 @@ export function setClassName(element: Element, value: any): void {
   if (typeof value === 'function') {
     // A render effect, like every other attribute binding — `spread` already wraps
     // class this way, so going through `applyProps` shouldn't schedule it later.
-    createRenderEffect(() => setClassName(element, value()));
+    createRenderEffect(() => {
+      reportReactiveBinding(element, 'attribute', 'class', value);
+      setClassName(element, value());
+    });
     return;
   }
 
@@ -1305,7 +1316,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'class' || key === 'className') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setClassName(element, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassName(element, value());
+          }),
+        );
       } else {
         setClassName(element, value);
       }
@@ -1314,7 +1330,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'classList') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setClassList(element, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassList(element, value());
+          }),
+        );
       } else {
         setClassList(element, value, disposers);
       }
@@ -1323,7 +1344,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'style') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setStyle(element as any, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'style', value);
+            setStyle(element as any, value());
+          }),
+        );
       } else {
         setStyle(element as any, value);
       }
@@ -1419,7 +1445,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // setClassName unwraps an accessor itself.
       setClassName(element, val); continue; }
     if (key === 'classList') {
-      if (typeof val === 'function') createRenderEffect(() => setClassList(element, val()));
+      if (typeof val === 'function')
+        createRenderEffect(() => {
+          reportReactiveBinding(element, 'attribute', 'class', val);
+          setClassList(element, val());
+        });
       else setClassList(element, val);
       continue;
     }
@@ -1428,7 +1458,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // style through a props object rather than as a compiled JSX attribute —
       // which is what every polymorphic/`as` wrapper does. class and classList
       // already handled that; style applied once and never updated.
-      if (typeof val === 'function') createRenderEffect(() => setStyle(element as HTMLElement, (val as () => unknown)()));
+      if (typeof val === 'function')
+        createRenderEffect(() => {
+          reportReactiveBinding(element, 'attribute', 'style', val);
+          setStyle(element as HTMLElement, (val as () => unknown)());
+        });
       else setStyle(element as HTMLElement, val);
       continue;
     }

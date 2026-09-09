@@ -17,7 +17,7 @@
  */
 
 import { G } from './state.js';
-import { enterReactiveRun, exitReactiveRun, reportReactiveRun } from './observe.js';
+import { enterReactiveRun, exitReactiveRun, reportReactiveRun, reportReactiveWrite } from './observe.js';
 
 // Node states. CHECK = "a source may have changed — verify on read" (your STALE);
 // DIRTY = "definitely recompute"; CLEAN = "cached value is current".
@@ -71,6 +71,8 @@ export class State<T> extends Source {
     if (this._equals(this._value, next)) return;
     this._value = next;
     this.version++;
+    // Who wrote it: once a write has propagated, nothing else records what caused it.
+    reportReactiveWrite(this, G.consumer);
     // Push: direct observers are DIRTY, their transitive observers are CHECK.
     // Snapshot first — a synchronous scheduler can re-run an effect mid-propagation,
     // which re-subscribes (mutates `observers`); iterating the live Set would then
