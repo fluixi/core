@@ -11,6 +11,9 @@ export * from './ir/nodes.js';
 // The reactivity rule, expressed over shapes rather than a parser's AST — so a
 // front-end supplies the mapping and inherits the semantics.
 export * from './analyze/reactive-expr.js';
+// analyzeReactiveGraph is not here: it parses, and this entry reaches no babel — the
+// ts-plugin imports it and a stray parser is a module that fails to resolve for it. It is
+// `@fluixi/compiler/analyze`.
 // Template lowering + the Babel-free compile entry. `compileTemplate` goes from
 // a parsed template to runtime calls without a JavaScript toolchain in the path.
 export { lowerTemplate, type TemplateHole } from './lower/template.js';

@@ -85,6 +85,13 @@
       "require": "./dist/transform/index.cjs",
       "default": "./dist/transform/index.js"
     },
+    "./analyze": {
+      "development": "./src/analyze/static-graph.ts",
+      "types": "./dist/analyze/static-graph.d.ts",
+      "import": "./dist/analyze/static-graph.mjs",
+      "require": "./dist/analyze/static-graph.cjs",
+      "default": "./dist/analyze/static-graph.js"
+    },
     "./compile": {
       "development": "./src/lower/compile-template.ts",
       "types": "./dist/lower/compile-template.d.ts",
