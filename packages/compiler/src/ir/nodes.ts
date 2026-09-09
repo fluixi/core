@@ -10,6 +10,12 @@ export type { IRLoadStrategy };
 
 export interface SourceSpan { start: number; end: number; }
 
+/**
+ * Where a hole was written. Carried as data because the source map cannot say: a template is
+ * emitted as one overwrite, so every hole in it traces back to the line the root opens at.
+ */
+export interface HolePosition { line: number; column: number }
+
 export type IRNode =
   | IRElement
   | IRComponent
@@ -34,6 +40,8 @@ export interface IRProp {
   expr?: string;
   /** When true, `expr` must be wired reactively (emitted as a `() => expr` thunk). */
   reactive?: boolean;
+  /** Where the expression was written. Only kept when the host asked for source locations. */
+  at?: HolePosition;
   /**
    * `expr` is an inline JSX element/fragment passed as a component prop (e.g.
    * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter — like children — so the DOM is
@@ -118,6 +126,8 @@ export interface IRExpression {
   code: string;
   reactive: boolean;
   loc?: SourceSpan;
+  /** Where the expression was written. Only kept when the host asked for source locations. */
+  at?: HolePosition;
 }
 
 export interface IRFragment { kind: 'fragment'; children: IRNode[]; loc?: SourceSpan; }

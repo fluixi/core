@@ -40,6 +40,13 @@ const DELEGATED = new Set([
 
 const isReactive = (node: Node): boolean => isReactiveShape(shapeOf(node as never));
 
+/** Only when the host asked for source locations — the flag that records usage sites too. */
+const posOf = (node: Node, ctx: JsxContext): { line: number; column: number } | undefined => {
+  if (!ctx.sourceFile) return undefined;
+  const at = node.loc?.start;
+  return at ? { line: at.line, column: at.column } : undefined;
+};
+
 /** A literal value, or undefined when the node is not one. */
 function literalOf(node: Node): string | number | boolean | undefined {
   if (node.type === 'StringLiteral' || node.type === 'NumericLiteral' || node.type === 'BooleanLiteral') {
@@ -105,6 +112,8 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
     }
     base.expr = ctx.code(expr);
     base.reactive = isHandler ? false : isReactive(expr);
+    // Only the ones that become a binding.
+    if (base.reactive) base.at = posOf(expr, ctx);
     if (expr.type === 'JSXElement' || expr.type === 'JSXFragment') base.jsxElement = true;
     return base;
   }
@@ -170,7 +179,13 @@ function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
     } else if (child.type === 'JSXExpressionContainer') {
       if (child.expression?.type !== 'JSXEmptyExpression') {
         const expr = child.expression as Node;
-        out.push({ kind: 'expr', code: ctx.code(expr), reactive: isReactive(expr) });
+        const reactive = isReactive(expr);
+        out.push({
+          kind: 'expr',
+          code: ctx.code(expr),
+          reactive,
+          ...(reactive ? { at: posOf(expr, ctx) } : {}),
+        });
       }
     } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
       out.push(buildNode(child, ctx));

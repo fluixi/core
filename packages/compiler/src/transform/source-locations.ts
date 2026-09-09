@@ -45,6 +45,20 @@ export const SOURCE_MARKER = '__fx_source';
 /** Where a component was declared. Keyed by name, since that is all the runtime carries. */
 export const COMPONENT_MARKER = '__fx_component';
 
+/**
+ * Where one reactive hole was written. This one wraps: the position has to travel with the
+ * accessor to wherever the dom wires it up. A template is emitted as one overwrite, so the
+ * source map has a single entry for the root and every hole traces back to it.
+ *
+ * `?? (f => f)` and not `?.()`: the value is the accessor, and returning undefined would
+ * delete the binding.
+ */
+export const HOLE_MARKER = '__fx_hole';
+
+/** `_(() => x(), 9, 25)`, or the accessor untouched when nothing is watching. */
+export const markHole = (accessor: string, line: number, column: number): string =>
+  `(globalThis.${HOLE_MARKER} ?? ((f) => f))(${accessor},${line},${column})`;
+
 /** The runtime names that make a node. */
 const RUNTIME_PRIMITIVES = new Set([
   'signal', 'memo', 'effect', 'store', 'resource', 'watch',

@@ -9,7 +9,7 @@ import {
 } from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
-import { SOURCE_MARKER } from '../../transform/source-locations.js';
+import { markHole, SOURCE_MARKER } from '../../transform/source-locations.js';
 
 /**
  * Imperative fine-grained backend — emits createNativeElement/insert/spread/
@@ -50,7 +50,10 @@ function propValue(p: IRProp): string {
   if (p.expr !== undefined) {
     // Events and non-reactive expressions pass through; reactive ones become thunks
     // so the runtime (spread/insert) can wire a render effect.
-    return p.reactive ? `() => (${p.expr})` : `(${p.expr})`;
+    if (!p.reactive) return `(${p.expr})`;
+    const accessor = `() => (${p.expr})`;
+    // `at` is the gate: a production build carries no marker.
+    return p.at ? markHole(accessor, p.at.line, p.at.column) : accessor;
   }
   return JSON.stringify(p.literal ?? true);
 }
@@ -164,8 +167,11 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
     case 'text':
       return JSON.stringify(node.value);
 
-    case 'expr':
-      return node.reactive ? `() => (${node.code})` : `(${node.code})`;
+    case 'expr': {
+      if (!node.reactive) return `(${node.code})`;
+      const accessor = `() => (${node.code})`;
+      return node.at ? markHole(accessor, node.at.line, node.at.column) : accessor;
+    }
 
     case 'fragment':
       if (node.children.length === 0) return 'null';
