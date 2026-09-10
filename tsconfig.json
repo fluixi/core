@@ -59,6 +59,9 @@
     },
     {
       "path": "./packages/testing"
+    },
+    {
+      "path": "./packages/template-runtime"
     }
   ]
 }

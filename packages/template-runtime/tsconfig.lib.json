@@ -13,7 +13,20 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "references": [],
+  "references": [
+    {
+      "path": "../template-parser/tsconfig.lib.json"
+    },
+    {
+      "path": "../reactive/tsconfig.lib.json"
+    },
+    {
+      "path": "../dom/tsconfig.lib.json"
+    },
+    {
+      "path": "../compiler/tsconfig.lib.json"
+    }
+  ],
   "exclude": [
     "vite.config.ts",
     "vitest.config.ts",
