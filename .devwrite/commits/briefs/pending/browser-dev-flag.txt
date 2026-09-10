@@ -1,6 +1,0 @@
-files:  packages/reactive/src/lib/signal/graph/detect.ts
-what:   __DEV__ falls back to a window flag when there is no process
-why:    reading process.env.NODE_ENV at module scope needs a bundler to replace it.
-        Loaded straight into a browser the module threw on its first line, which is
-        what a page using an import map does.
-verify: specs, and the module loaded in a browser

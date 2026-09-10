@@ -1,6 +1,0 @@
-files:  docs/src/doc-page.tsx, web/src/routes/index.tsx
-what:   the two tabindex attributes are written as numbers
-why:    the attribute is typed Reactive<number> and both sites passed the string
-        "-1", so both apps failed to typecheck. Nothing caught it because the
-        cyclic task graph killed the run before it reached them.
-verify: typecheck, green

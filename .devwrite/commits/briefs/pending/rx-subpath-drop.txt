@@ -1,8 +1,0 @@
-files:  packages/core/src/rx.ts, packages/compiler frontend/babel/plugin.ts and
-        templates.ts
-what:   the ./rx subpath is gone
-why:    rx never got the server/client split it existed for. The compiler rewrote it
-        to @fluixi/reactive unconditionally while Node resolution gave the server
-        primitives, so one specifier meant opposite things depending on whether the
-        compiler had run. Nothing imported it.
-verify: spec run, green

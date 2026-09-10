@@ -1,9 +1,0 @@
-files:  packages/cdn (new), scripts/import-map.mjs (new)
-what:   ship the import maps a page needs, generated at build
-why:    a browser resolves bare specifiers only through a map and never reads
-        package.json, so every transitive subpath has to be listed — fifteen of
-        them for core, dom and utils alone. There was no file to copy, so a page
-        with no bundler meant assembling that by hand.
-        generating at build ties the maps to the release that ships them, instead
-        of whatever was current when someone last ran a script.
-verify: each map loaded in a browser

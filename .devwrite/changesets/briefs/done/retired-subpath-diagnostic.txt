@@ -1,6 +1,0 @@
-packages: @fluixi/compiler
-bump:     patch
-what:     importing a subpath that was retired now FAILS THE BUILD with the name of
-          the replacement and the file that imported it. It does not warn; it stops.
-why:      the bundler reported `Missing "./router-next" specifier`, which names
-          neither the replacement nor the file that asked for it.
