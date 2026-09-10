@@ -47,3 +47,26 @@ describe('callSite', () => {
     expect(callSite('no frames here')).toBeUndefined();
   });
 });
+
+describe('a frame inside a browser extension', () => {
+  const stack = (...frames: string[]) => ['Error', ...frames.map((f) => `    at ${f}`)].join('\n');
+
+  it('is never the application', () => {
+    // The devtools agent bundles this package, so its frames used to read as page source and
+    // every node reported the agent as its origin.
+    const site = callSite(
+      stack(
+        'currentCallSite (chrome-extension://abc/dist/agent.js:321:21)',
+        'createSignal (chrome-extension://abc/dist/agent.js:118:9)',
+        'App (http://localhost:5173/src/App.tsx:6:20)',
+      ),
+    );
+    expect(site?.location.file).toContain('src/App.tsx');
+    expect(site?.external).toBe(false);
+  });
+
+  it('is not used as the fallback either', () => {
+    // Nothing but the agent on the stack: better to say nothing than to name it.
+    expect(callSite(stack('x (chrome-extension://abc/dist/agent.js:321:21)'))).toBeUndefined();
+  });
+});

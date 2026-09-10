@@ -213,3 +213,44 @@ describe('the filter', () => {
     expect((input as HTMLInputElement).value).toBe('count');
   });
 });
+
+describe('pausing', () => {
+  const push = (timeline: ReturnType<typeof createTimeline>, id: number) =>
+    timeline.push([event({ kind: 'write', id, commit: id })]);
+
+  it('takes nothing while paused, and resumes', () => {
+    const timeline = createTimeline(host);
+    push(timeline, 1);
+    timeline.render(graph);
+    expect(host.querySelectorAll('.tl-commit')).toHaveLength(1);
+
+    timeline.setPaused(true);
+    push(timeline, 2);
+    timeline.render(graph);
+    // Held still: the entry being read does not scroll away.
+    expect(host.querySelectorAll('.tl-commit')).toHaveLength(1);
+
+    timeline.setPaused(false);
+    push(timeline, 3);
+    timeline.render(graph);
+    expect(host.querySelectorAll('.tl-commit')).toHaveLength(2);
+  });
+
+  it('drops what happened while paused rather than catching up', () => {
+    const timeline = createTimeline(host);
+    timeline.setPaused(true);
+    for (let i = 1; i <= 50; i++) push(timeline, i);
+    timeline.setPaused(false);
+    timeline.render(graph);
+    expect(host.querySelectorAll('.tl-commit')).toHaveLength(0);
+  });
+
+  it('is driven by the button too', () => {
+    const timeline = createTimeline(host);
+    (host.querySelector('.tl-pause') as HTMLElement).click();
+    expect(timeline.paused).toBe(true);
+    push(timeline, 1);
+    timeline.render(graph);
+    expect(host.querySelectorAll('.tl-commit')).toHaveLength(0);
+  });
+});

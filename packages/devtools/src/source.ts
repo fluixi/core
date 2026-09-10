@@ -41,8 +41,29 @@ const MARKER = '__fx_source';
 const COMPONENT_MARKER = '__fx_component';
 const HOLE_MARKER = '__fx_hole';
 
-let pending: ReactiveSourceMetadata | null = null;
-let expiring = false;
+/**
+ * The mark, and what components were declared, on shared state.
+ *
+ * Not module-local. A page can carry two copies of this file — a browser extension's agent
+ * and the dev server's both bundle it — and only one of them wins `installSourceMarker`.
+ * Every `__fx_source` call then landed in that copy's slot while the copy actually watching
+ * read its own empty one, so every name and location was lost. Same reason `G` exists in the
+ * runtime.
+ */
+interface SharedMarks {
+  pending: ReactiveSourceMetadata | null;
+  expiring: boolean;
+  components: Map<string, ReactiveSourceLocation | null>;
+}
+
+const MARKS = '__FLUIXI_DEVTOOLS_MARKS__';
+const host = globalThis as Record<string, unknown>;
+const shared: SharedMarks = (host[MARKS] as SharedMarks | undefined) ?? {
+  pending: null,
+  expiring: false,
+  components: new Map(),
+};
+host[MARKS] = shared;
 
 /**
  * Where each component was declared, by name.
@@ -52,7 +73,7 @@ let expiring = false;
  * Two components sharing a name are recorded as ambiguous and reported as unknown, since a
  * location pointing at the wrong file is worse than none.
  */
-const components = new Map<string, ReactiveSourceLocation | null>();
+
 
 /**
  * Record where the next node is about to be created. The compiler calls this; call it
@@ -63,9 +84,9 @@ export function markReactiveSource(file?: string, line?: number, column?: number
   // With dependencies marked, `signal()` in the framework marks its own `createSignal` line
   // in between the application's mark and the node it asked for. The call site is the useful
   // location, so a dependency never takes a mark the project has already left unclaimed.
-  if (pending && location.external && !pending.location?.external) return;
-  pending = { name, location };
-  expiring = false;
+  if (shared.pending && location.external && !shared.pending.location?.external) return;
+  shared.pending = { name, location };
+  shared.expiring = false;
 }
 
 /**
@@ -80,18 +101,18 @@ function locate(file?: string, line?: number, column?: number): ReactiveSourceLo
 
 /** Record where a component was declared. The compiler calls this. */
 export function markComponentSource(name: string, file?: string, line?: number, column?: number): void {
-  const seen = components.get(name);
+  const seen = shared.components.get(name);
   const next = locate(file, line, column);
   if (seen === undefined) {
-    components.set(name, next);
+    shared.components.set(name, next);
     return;
   }
-  if (!seen || seen.file !== file || seen.line !== line) components.set(name, null);
+  if (!seen || seen.file !== file || seen.line !== line) shared.components.set(name, null);
 }
 
 /** Where a component of this name was declared, when exactly one was. */
 export function componentSource(name: string): ReactiveSourceLocation | undefined {
-  return components.get(name) ?? undefined;
+  return shared.components.get(name) ?? undefined;
 }
 
 /**
@@ -103,16 +124,16 @@ export function componentSource(name: string): ReactiveSourceLocation | undefine
  * statement that left it as far as anything synchronous is concerned.
  */
 export function takeReactiveSource(): ReactiveSourceMetadata | null {
-  const mark = pending;
+  const mark = shared.pending;
   if (mark) {
     // The variable name belongs to the node the author was declaring, not to the ones the
     // framework built underneath it — `cart`, then two unnamed signals at the same line.
-    if (mark.name !== undefined) pending = { location: mark.location };
-    if (!expiring) {
-      expiring = true;
+    if (mark.name !== undefined) shared.pending = { location: mark.location };
+    if (!shared.expiring) {
+      shared.expiring = true;
       queueMicrotask(() => {
-        expiring = false;
-        pending = null;
+        shared.expiring = false;
+        shared.pending = null;
       });
     }
   }
@@ -142,7 +163,6 @@ export function holeLocation(accessor: unknown): ReactiveSourceLocation | undefi
 }
 
 export function installSourceMarker(): void {
-  const host = globalThis as Record<string, unknown>;
   if (typeof host[MARKER] !== 'function') host[MARKER] = markReactiveSource;
   if (typeof host[COMPONENT_MARKER] !== 'function') host[COMPONENT_MARKER] = markComponentSource;
   if (typeof host[HOLE_MARKER] !== 'function') host[HOLE_MARKER] = markHole;

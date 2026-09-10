@@ -12,6 +12,9 @@ import type { RNode } from './instrument.js';
 export interface Timeline {
   /** Fold in what a snapshot carried. Events already seen are ignored, so polling is safe. */
   push(events: readonly GraphEvent[]): void;
+  /** Stop taking new events, or start again. Paused, what is on screen holds still. */
+  setPaused(paused: boolean): void;
+  readonly paused: boolean;
   /** Draw. `graph` supplies the labels, which the events only carry ids for. */
   render(graph: Map<number, RNode>): void;
   /** Node ids in the selected commit, for a view to highlight. Empty when none is selected. */
@@ -95,13 +98,25 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
   let selected: number | null = null;
   let filter = '';
   let signature = '';
+  /**
+   * Held still on request.
+   *
+   * A page that writes on every frame fills this faster than anyone can read it, and the
+   * entry being looked at scrolls away. Dropped rather than buffered: catching up on a
+   * thousand events nobody watched is not what the button is for.
+   */
+  let paused = false;
 
   // Built once: re-rendering the box being typed in would take the caret with it.
   host.innerHTML =
+    '<div class="tl-head">' +
     '<input class="tl-filter" type="search" placeholder="filter by name or value" aria-label="Filter the timeline" />' +
+    '<button type="button" class="tl-pause" title="Stop taking new updates, so the list holds still while you read it">❚❚</button>' +
+    '</div>' +
     '<div class="tl-list"></div>';
   const input = host.querySelector('.tl-filter') as HTMLInputElement;
   const list = host.querySelector('.tl-list') as HTMLElement;
+  const pause = host.querySelector('.tl-pause') as HTMLButtonElement;
 
   const all = (): Commit[] => toCommits(events).slice(-limit).reverse();
 
@@ -123,6 +138,19 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
 
   input.addEventListener('input', () => {
     filter = input.value.trim().toLowerCase();
+    signature = '';
+  });
+
+  const showPaused = (): void => {
+    pause.textContent = paused ? '▶' : '❚❚';
+    pause.classList.toggle('on', paused);
+    pause.title = paused
+      ? 'Taking updates again'
+      : 'Stop taking new updates, so the list holds still while you read it';
+  };
+  pause.addEventListener('click', () => {
+    paused = !paused;
+    showPaused();
     signature = '';
   });
 
@@ -148,7 +176,16 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
   });
 
   return {
+    setPaused(next) {
+      paused = next;
+      showPaused();
+      signature = '';
+    },
+    get paused() {
+      return paused;
+    },
     push(incoming) {
+      if (paused) return;
       let added = false;
       for (const event of incoming) {
         if (event.seq <= seen) continue;
@@ -239,8 +276,16 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
 
 /** Default styling for what createTimeline writes, in the shape DEVTOOLS_CSS is used. */
 export const TIMELINE_CSS = `
+.tl-head { display: flex; gap: 4px; margin-bottom: 6px; }
+.tl-pause {
+  flex: none; width: 26px; cursor: pointer; font: inherit; font-size: 10px;
+  border: 1px solid var(--fx-line, #ffffff1f); border-radius: 4px;
+  background: transparent; color: var(--fx-muted, #8a90a2);
+}
+.tl-pause:hover { color: var(--fx-label, #e7e9ee); }
+.tl-pause.on { color: var(--fx-accent, #5eead4); border-color: var(--fx-accent, #5eead4); }
 .tl-filter {
-  width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 3px 6px;
+  flex: 1; min-width: 0; box-sizing: border-box; padding: 3px 6px;
   font: inherit; font-size: 11.5px; border-radius: 4px;
   border: 1px solid var(--fx-line, #ffffff1f);
   background: var(--fx-input, transparent); color: var(--fx-label, #e7e9ee);

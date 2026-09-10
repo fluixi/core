@@ -10,6 +10,15 @@
 // for, which is only for a node the compiler did not mark.
 import type { ReactiveSourceLocation } from './source.js';
 
+/**
+ * A browser extension's own bundle.
+ *
+ * The devtools agent carries a copy of this package, so every frame inside it looked like
+ * application code and every node reported `chrome-extension://…/agent.js` as its origin.
+ * Nothing under these schemes is ever the page's own source.
+ */
+const EXTENSION = ['chrome-extension://', 'moz-extension://', 'safari-web-extension://', 'extension://'];
+
 /** Frames that are the machinery rather than the caller. */
 const INTERNAL = [
   '/packages/reactive/',
@@ -19,10 +28,17 @@ const INTERNAL = [
   '/@fluixi/',
   'node_modules',
   'fluixi-devtools',
+  ...EXTENSION,
 ];
 
 /** The plumbing that reports a node, which is never worth naming as its origin. */
-const REPORTING = ['/packages/reactive/src/lib/signal/graph/', '/packages/devtools/', 'fluixi-devtools'];
+const REPORTING = [
+  '/packages/reactive/src/lib/signal/graph/',
+  '/packages/devtools/',
+  'fluixi-devtools',
+  // Not a fallback either: naming the agent as where a node came from is worse than nothing.
+  ...EXTENSION,
+];
 
 /** `at name (url:line:col)` and `at url:line:col`, which is the whole of what is needed. */
 const FRAME = /(?:at\s+(?:[^(]*\()?)([^()\s]+):(\d+):(\d+)\)?$/;

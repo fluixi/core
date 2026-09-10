@@ -11,6 +11,8 @@ import {
   createGraphView,
   createInspector,
   createTimeline,
+  copyText,
+  graphToJson,
   CHANGE_CSS,
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
@@ -118,6 +120,10 @@ function main(): void {
   on('bindings', () => {
     view.setShowBindings(!view.showBindings);
     document.getElementById('bindings')?.classList.toggle('on', view.showBindings);
+  });
+  on('export', () => {
+    const button = document.getElementById('export');
+    void copyText(graphToJson(view.shown.size ? view.shown : graph), button?.querySelector('.lbl') as HTMLElement);
   });
   on('timeline-toggle', () => {
     const hidden = document.body.classList.toggle('no-timeline');

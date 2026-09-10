@@ -8,6 +8,8 @@ import {
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
   createInspector,
+  copyText,
+  graphToJson,
   type DetailPanel,
   type Inspector,
   type GraphView,
@@ -140,7 +142,12 @@ export function Playground() {
           edges += n.deps.size + n.writes.size;
           runs += n.runs;
         }
-        setStats({ nodes: reactor.graph.size, edges, runs });
+        // Only when a number moved. A fresh object every frame is never equal to the last
+        // one, so this wrote sixty times a second and filled any watching timeline.
+        const was = stats();
+        if (was.nodes !== reactor.graph.size || was.edges !== edges || was.runs !== runs) {
+          setStats({ nodes: reactor.graph.size, edges, runs });
+        }
         if (selectedId != null) renderInspector();
       }
       raf = requestAnimationFrame(tick);
@@ -701,6 +708,15 @@ export function Playground() {
                 }}
               >
                 ⇥
+              </button>
+              <button
+                type="button"
+                title="Copy the whole graph as JSON — every node with its value, source, what it reaches and where it is set"
+                onClick={(e: MouseEvent) => {
+                  void copyText(graphToJson(drawn()), e.currentTarget as HTMLElement);
+                }}
+              >
+                ⇩
               </button>
               <button type="button" title="Zoom out" onClick={() => view?.zoomBy(1 / 1.25)}>
                 −

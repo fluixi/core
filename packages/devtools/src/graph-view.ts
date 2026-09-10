@@ -10,6 +10,18 @@ const COL = 200;
 const ROW = 92;
 const NW = 132;
 /** file.ts:12 — the path's tail only; the full one is for an inspector with room for it. */
+/**
+ * The location a card shows.
+ *
+ * `source` is where the compiler marked it. A node the compiler never saw — anything the
+ * framework made on the application's behalf — carries `usedAt` instead, and a component
+ * carries where it was declared. The inspector already falls back this way; the card read
+ * only the first of the three, so those nodes showed a location in one place and not the
+ * other.
+ */
+const placeOf = (node: RNode): { file?: string; line?: number; column?: number } | undefined =>
+  node.source ?? node.usedAt ?? node.declaredAt;
+
 const shortSource = (s: { file?: string; line?: number; column?: number }): string => {
   const file = (s.file ?? '').split('/').pop() ?? '';
   return s.line == null ? file : `${file}:${s.line}`;
@@ -155,7 +167,10 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   let selected: number | null = null;
   /** A set held lit until something clears it — one commit from the timeline. */
   let focused: Set<number> | null = null;
-  const nodeEls = new Map<number, { g: SVGGElement; value: SVGTextElement }>();
+  const nodeEls = new Map<
+    number,
+    { g: SVGGElement; value: SVGTextElement; source: SVGTextElement; sourceTitle: SVGTitleElement }
+  >();
   /** Edges as ids, so hovering a node can pick out the ones that touch it. */
   const edgeEls: { a: number; b: number; el: SVGPathElement }[] = [];
   /**
@@ -619,19 +634,20 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       g.append(kind, label, value);
       const summary = el('title');
       summary.textContent = `${node.kind} ${node.label}${full ? ` = ${full}` : ''}${
-        node.source ? `\n${node.source.file ?? ''}:${node.source.line ?? ''}:${node.source.column ?? ''}` : ''
+        placeOf(node)
+          ? `\n${placeOf(node)!.file ?? ''}:${placeOf(node)!.line ?? ''}:${placeOf(node)!.column ?? ''}`
+          : ''
       }`;
       g.appendChild(summary);
 
-      // Only when the compiler marked it: an empty line here would read as missing data.
-      if (node.source) {
-        const source = el('text', { class: 'fx-source', x: 12, y: 52 });
-        source.setAttribute('clip-path', `url(#${sourceClip})`);
-        source.textContent = shortSource(node.source);
-        source.appendChild(el('title')).textContent =
-          `${node.source.file ?? ''}:${node.source.line ?? ''}:${node.source.column ?? ''}`;
-        g.appendChild(source);
-      }
+      // Always made, filled per frame. A source can arrive after the card does — the layout
+      // signature does not depend on it, so waiting for a rebuild meant it never showed.
+      // Empty text draws nothing, so an unmarked node still reads as unmarked.
+      const source = el('text', { class: 'fx-source', x: 12, y: 52 });
+      source.setAttribute('clip-path', `url(#${sourceClip})`);
+      const sourceTitle = el('title');
+      source.appendChild(sourceTitle);
+      g.appendChild(source);
 
       // Anything that made other nodes can hide them. A store makes one per key it is read
       // by, which is most of what fills a graph up.
@@ -659,7 +675,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       g.addEventListener('mouseleave', () => hover(graph, null));
       g.style.cursor = 'pointer';
       nodeLayer.appendChild(g);
-      nodeEls.set(node.id, { g, value });
+      nodeEls.set(node.id, { g, value, source, sourceTitle });
     }
 
     viewport.append(edgeLayer, nodeLayer);
@@ -757,6 +773,14 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
         if (!eles) continue;
         const next = fit(node.value);
         if (eles.value.textContent !== next) eles.value.textContent = next;
+        const place = placeOf(node);
+        const where = place ? shortSource(place) : '';
+        if (eles.source.textContent !== where) {
+          eles.source.textContent = where;
+          eles.sourceTitle.textContent = place
+            ? `${place.file ?? ''}:${place.line ?? ''}:${place.column ?? ''}`
+            : '';
+        }
         // Nothing before its turn: a node three steps down the chain sits dark until the
         // change reaches it.
         const age = now - (staged.get(node.id) ?? node.lastPulse);

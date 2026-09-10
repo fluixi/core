@@ -5,6 +5,7 @@
 // already say.
 
 import type { ValueChange } from './diff.js';
+import { copyText } from './copy.js';
 
 const escape = (text: string): string =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -80,44 +81,7 @@ export function changeRows(change: ValueChange | undefined, limit = Infinity): s
 export function handleCopyClick(event: Event): boolean {
   const button = (event.target as HTMLElement | null)?.closest?.('.ch-copy') as HTMLElement | null;
   if (!button) return false;
-  const text = button.dataset.copy ?? '';
-
-  const done = (): void => {
-    // On the button itself: a toast needs somewhere to live.
-    const was = button.textContent;
-    button.textContent = 'copied';
-    setTimeout(() => {
-      button.textContent = was;
-    }, 1200);
-  };
-
-  const clipboard = (globalThis as { navigator?: { clipboard?: { writeText(t: string): Promise<void> } } })
-    .navigator?.clipboard;
-  if (clipboard?.writeText) {
-    void clipboard.writeText(text).then(done, fallback);
-  } else {
-    fallback();
-  }
-
-  function fallback(): void {
-    // A webview without clipboard permission, or an insecure origin.
-    try {
-      const doc = button!.ownerDocument;
-      const area = doc.createElement('textarea');
-      area.value = text;
-      area.setAttribute('readonly', '');
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      doc.body.appendChild(area);
-      area.select();
-      doc.execCommand('copy');
-      area.remove();
-      done();
-    } catch {
-      // Nothing left to try; the text is on screen to select by hand.
-    }
-  }
-
+  void copyText(button.dataset.copy ?? '', button);
   return true;
 }
 
