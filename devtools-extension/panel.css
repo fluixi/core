@@ -50,6 +50,15 @@ body {
 #controls button:focus-visible { outline: 1px solid var(--fx-accent, #5eead4); outline-offset: 1px; }
 .ico { font-size: 12px; }
 #controls .group[aria-label='Zoom'] button { padding: 0 7px; }
+.kinds { flex-wrap: wrap; gap: 2px 8px; max-width: 42vw; }
+.kinds label {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
+}
+.kinds label:hover { color: var(--fx-label, #e7e9ee); }
+.kinds input { width: 11px; height: 11px; margin: 0; accent-color: var(--fx-accent, #5eead4); }
+/* A box that is off is the one saying something, so it is the one that stays legible. */
+.kinds input:not(:checked) + span { text-decoration: line-through; opacity: .55; }
 @media (max-width: 720px) { .lbl { display: none; } #controls button { padding: 0 7px; } }
 
 #graph { width: 100%; height: calc(100vh - 35px - 6px - var(--bottom-height)); }

@@ -19,6 +19,7 @@ import {
   INSPECTOR_CSS,
   TIMELINE_CSS,
   type GraphDirection,
+  type NodeKind,
   type RNode,
 } from '@fluixi/devtools';
 import { readPage } from './read-page.js';
@@ -121,6 +122,16 @@ function main(): void {
     view.setShowBindings(!view.showBindings);
     document.getElementById('bindings')?.classList.toggle('on', view.showBindings);
   });
+
+  // All of them ticked is no filter rather than a filter that happens to admit everything:
+  // a kind the boxes do not name — there is no box for the cards the view invents — still
+  // has to be drawn.
+  const boxes = [...document.querySelectorAll<HTMLInputElement>('.kinds input[data-kind]')];
+  const applyKinds = (): void => {
+    const on = boxes.filter((b) => b.checked);
+    view.setKinds(on.length === boxes.length ? null : on.map((b) => b.dataset.kind as NodeKind));
+  };
+  for (const box of boxes) box.addEventListener('change', applyKinds);
   on('export', () => {
     const button = document.getElementById('export');
     void copyText(graphToJson(view.shown.size ? view.shown : graph), button?.querySelector('.lbl') as HTMLElement);

@@ -109,6 +109,16 @@ body {
 .mode .m.on { color: var(--accent); border-color: var(--accent); }
 .panel-bar .tabs .t { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
 .panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.kinds { margin-left: auto; display: inline-flex; flex-wrap: wrap; gap: 2px 8px; }
+.kinds label {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
+}
+.kinds label:hover { color: var(--fx-label, #e7e9ee); }
+.kinds input { width: 11px; height: 11px; margin: 0; accent-color: var(--fx-accent, #5eead4); }
+/* A box that is off is the one saying something, so it is the one that stays legible. */
+.kinds input:not(:checked) + span { text-decoration: line-through; opacity: .55; }
+.kinds + .zoom { margin-left: 8px; }
 .zoom { margin-left: auto; display: inline-flex; gap: 2px; }
 .zoom button {
   width: 22px; height: 20px; padding: 0; line-height: 1;

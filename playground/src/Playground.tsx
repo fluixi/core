@@ -13,6 +13,7 @@ import {
   type DetailPanel,
   type Inspector,
   type GraphView,
+  type NodeKind,
   type ObservedGraph,
   type Timeline,
 } from '@fluixi/devtools';
@@ -80,6 +81,9 @@ export function Playground() {
   const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
   const [layout, setLayout] = createSignal<'horizontal' | 'vertical'>('horizontal');
   const [grouped, setGrouped] = createSignal(true);
+  // All ticked is no filter: a kind with no box of its own still has to be drawn.
+  const ALL_KINDS: NodeKind[] = ['state', 'memo', 'effect', 'store', 'resource', 'component', 'control', 'router', 'handler'];
+  const [kinds, setKinds] = createSignal<NodeKind[]>(ALL_KINDS);
   const [bindings, setBindings] = createSignal(false);
 
   let rootEl!: HTMLDivElement;
@@ -675,6 +679,25 @@ export function Playground() {
             <span>reactive graph</span>
             <span class="stats">
               {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
+            </span>
+            <span class="kinds">
+              {() =>
+                ALL_KINDS.map((kind) => (
+                  <label title={`Draw ${kind} nodes`}>
+                    <input
+                      type="checkbox"
+                      checked={kinds().includes(kind)}
+                      onChange={(e: Event) => {
+                        const on = (e.currentTarget as HTMLInputElement).checked;
+                        const next = on ? [...kinds(), kind] : kinds().filter((k) => k !== kind);
+                        setKinds(next);
+                        view?.setKinds(next.length === ALL_KINDS.length ? null : next);
+                      }}
+                    />
+                    <span>{kind === 'handler' ? 'route' : kind}</span>
+                  </label>
+                ))
+              }
             </span>
             <span class="zoom">
               <button
