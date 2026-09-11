@@ -214,6 +214,8 @@ function registerPathCompletions(getFiles: () => ProjectFile[], specifiers: stri
 export interface CodeEditor {
   /** Show a file, creating its model if this is the first time. */
   open(path: string, code: string): void;
+  /** Put the cursor on a line of a file already open, and scroll it into view. */
+  reveal(path: string, line: number, column?: number): boolean;
   /** Current text of one file, or of everything the editor holds. */
   read(path: string): string;
   readAll(): ProjectFile[];
@@ -336,6 +338,17 @@ export function createEditor(host: HTMLElement, options: EditorOptions): CodeEdi
   return {
     open(path, code) {
       editor.setModel(modelFor(path, code));
+    },
+    reveal(path, line, column = 0) {
+      const model = models.get(path);
+      if (!model) return false;
+      editor.setModel(model);
+      // Monaco counts both from one; the graph counts columns from zero.
+      const position = { lineNumber: Math.max(1, line), column: Math.max(1, column + 1) };
+      editor.setPosition(position);
+      editor.revealPositionInCenterIfOutsideViewport(position);
+      editor.focus();
+      return true;
     },
     read(path) {
       return models.get(path)?.getValue() ?? '';

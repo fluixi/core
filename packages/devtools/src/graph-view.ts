@@ -103,6 +103,11 @@ export type GraphDirection = 'horizontal' | 'vertical';
 export interface GraphViewOptions {
   onSelect?: (node: RNode | null) => void;
   /**
+   * Double-clicking a card. Given the node so the host can pick which of its locations to
+   * open — a component has one for where it was declared and another for where it was used.
+   */
+  onReveal?: (node: RNode) => void;
+  /**
    * A wide panel reads left to right; a tall narrow one, which is what a side panel usually
    * is, reads top to bottom.
    * @default 'horizontal'
@@ -739,6 +744,13 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
         selected = node.id;
         applySelected();
         options.onSelect?.(node);
+      });
+      g.addEventListener('dblclick', (event) => {
+        if (!options.onReveal) return;
+        // The svg's own dblclick resets the zoom, which is not what a double-click on a
+        // card is asking for.
+        event.stopPropagation();
+        options.onReveal(node);
       });
       g.addEventListener('mouseenter', () => hover(graph, node.id));
       g.addEventListener('mouseleave', () => hover(graph, null));

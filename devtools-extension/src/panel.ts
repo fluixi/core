@@ -78,10 +78,33 @@ function main(): void {
   let graph: Map<number, RNode> = new Map();
   let selected: number | null = null;
 
-  const inspector = createInspector(document.getElementById('inspector') as HTMLElement);
+  /**
+   * Open a file in the Sources panel.
+   *
+   * The graph carries a path, and Sources wants a url. A path the compiler marked is
+   * relative to the page's own root, so the inspected window's origin completes it; a
+   * package path is already absolute and is tried as a file url.
+   */
+  const openSource = (where: { file?: string; line?: number; column?: number }): void => {
+    if (!where.file) return;
+    const line = Math.max(0, (where.line ?? 1) - 1);
+    const open = (url: string): void => chrome.devtools.panels.openResource(url, line, () => {});
+    if (where.file.startsWith('/') || /^(Users|home|var|opt|private)\//.test(where.file)) {
+      open(`file://${where.file.startsWith('/') ? '' : '/'}${where.file}`);
+      return;
+    }
+    chrome.devtools.inspectedWindow.eval('location.origin', (origin) => {
+      open(typeof origin === 'string' ? `${origin}/${where.file}` : where.file!);
+    });
+  };
+
+  const inspector = createInspector(document.getElementById('inspector') as HTMLElement, {
+    onReveal: openSource,
+  });
   inspector.clear();
 
   const view = createGraphView(svg, {
+    onReveal: (node) => openSource(node.source ?? node.usedAt ?? node.declaredAt ?? {}),
     onSelect: (node) => {
       selected = node ? node.id : null;
       inspector.show(view.shown.size ? view.shown : graph, selected);

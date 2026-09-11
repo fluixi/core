@@ -22,12 +22,32 @@ export interface InspectorOptions {
   empty?: string;
   /** How much of a value to show. */
   limit?: number;
+  /**
+   * Clicking a location. Omitted leaves them as plain text, which is what a host with
+   * nowhere to open a file wants.
+   */
+  onReveal?: (location: ReactiveSourceLocation) => void;
 }
 
 const escape = (text: string): string =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const clip = (text: string, n = 140): string => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
+
+/**
+ * A location the host can open, carrying enough to find it again on the click.
+ *
+ * The position travels in the markup rather than in a closure because the panel is written
+ * as a string of html and replaced wholesale on each change.
+ */
+const place = (text: string, source: ReactiveSourceLocation | undefined, live: boolean): string => {
+  if (!source || !live || !source.file) return escape(text);
+  return (
+    `<button type="button" class="ins-at" data-file="${escape(source.file)}"` +
+    ` data-line="${source.line ?? ''}" data-column="${source.column ?? ''}"` +
+    ` title="Open ${escape(source.file)}">${escape(text)}</button>`
+  );
+};
 
 const at = (source?: ReactiveSourceLocation): string =>
   source ? `${source.file ?? ''}:${source.line ?? ''}:${source.column ?? ''}` : '';
@@ -61,6 +81,21 @@ function valueOf(node: RNode, limit: number): string {
 export function createInspector(host: HTMLElement, options: InspectorOptions = {}): Inspector {
   const empty = options.empty ?? 'click a node to inspect';
   const limit = options.limit ?? 600;
+  const reveals = typeof options.onReveal === 'function';
+
+  if (reveals) {
+    host.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement | null)?.closest?.('.ins-at') as HTMLElement | null;
+      if (!button) return;
+      const line = Number(button.dataset.line);
+      const column = Number(button.dataset.column);
+      options.onReveal!({
+        file: button.dataset.file,
+        ...(Number.isFinite(line) && button.dataset.line ? { line } : {}),
+        ...(Number.isFinite(column) && button.dataset.column ? { column } : {}),
+      });
+    });
+  }
   let signature = '';
 
   return {
@@ -91,8 +126,8 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         ? node.targets
             .map((t) => {
               const where = bothAt(t.source);
-              const what = t.name ? `${t.name} of ${t.element}` : t.element;
-              return where ? `${what} (${where})` : what;
+              const what = escape(t.name ? `${t.name} of ${t.element}` : t.element);
+              return where ? `${what} (${place(where, t.source, reveals)})` : what;
             })
             .join(', ')
         : node.bindings
@@ -102,15 +137,17 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
       // an answer, and leaving the row out reads as the inspector having failed to look.
       const relations = [
         `<span>↤ reads ${reads.length ? `<b>${escape(reads.join(', '))}</b>` : '<i>nothing</i>'}</span>`,
+        // `bound` already carries markup for the places a value reaches, so only the
+        // labels are escaped here.
         `<span>↦ feeds ${
           feeds.length || bound
-            ? `<b>${escape([...feeds, bound].filter(Boolean).join(', '))}</b>`
+            ? `<b>${[...feeds.map(escape), bound].filter(Boolean).join(', ')}</b>`
             : '<i>nothing yet</i>'
         }</span>`,
         writes.length ? `<span>✎ writes <b>${escape(writes.join(', '))}</b></span>` : '',
         // Where the value is set from code the graph has no node for.
         node.setAt?.length
-          ? `<span>⌁ set at <b>${escape(node.setAt.map(bothAt).join(', '))}</b></span>`
+          ? `<span>⌁ set at <b>${node.setAt.map((w) => place(bothAt(w), w, reveals)).join(', ')}</b></span>`
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
         made.length ? `<span>▸ made <b>${escape(made.join(', '))}</b></span>` : '',
@@ -133,16 +170,18 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         // Only when the graph carries one. A snapshot from a build that was not marked has
         // no locations at all, and an empty line there reads as missing data.
         (node.source
-          ? `<div class="ins-source">${node.source.external ? '📦' : '📍'} ${escape(bothAt(node.source))}</div>`
+          ? `<div class="ins-source">${node.source.external ? '📦' : '📍'} ${place(bothAt(node.source), node.source, reveals)}</div>`
           : '') +
         // A component is created where its tag is written; where it is declared is somewhere
         // else, and only worth a line when it is.
         (node.declaredAt && at(node.declaredAt) !== at(node.source)
-          ? `<div class="ins-source">◧ declared ${escape(at(node.declaredAt))}</div>`
+          ? `<div class="ins-source">◧ declared ${place(at(node.declaredAt), node.declaredAt, reveals)}</div>`
           : '') +
         // A node a package made on the application's behalf: the package's line is where it
         // was created, and this is the line that asked for it.
-        (node.usedAt ? `<div class="ins-source">↗ used at ${escape(bothAt(node.usedAt))}</div>` : '') +
+        (node.usedAt
+          ? `<div class="ins-source">↗ used at ${place(bothAt(node.usedAt), node.usedAt, reveals)}</div>`
+          : '') +
         // Nothing said where it came from at all: the compiler did not mark this project and
         // the stack had nothing to offer either. Saying so beats a card that just sits there.
         (!node.source && !node.usedAt && !node.declaredAt
@@ -179,5 +218,12 @@ export const INSPECTOR_CSS = `
 .ins-rel { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--fx-muted, #8a90a2); font-size: 11.5px; }
 .ins-rel b { color: var(--fx-label, #e7e9ee); font-weight: 600; }
 .ins-rel i { font-style: normal; opacity: .6; }
+.ins-at {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0;
+  cursor: pointer; text-decoration: underline; text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.ins-at:hover { color: var(--fx-accent, #5eead4); }
+.ins-at:focus-visible { outline: 1px solid var(--fx-accent, #5eead4); outline-offset: 1px; }
 .ins-source { margin-top: 6px; font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--fx-muted, #8a90a2); }
 `;

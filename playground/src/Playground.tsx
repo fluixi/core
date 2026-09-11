@@ -125,8 +125,23 @@ export function Playground() {
 
   function renderInspector() {
     if (!inspectorEl) return;
-    inspector ??= createInspector(inspectorEl);
+    inspector ??= createInspector(inspectorEl, { onReveal: openInEditor });
     inspector.show(drawn(), selectedId);
+  }
+
+  /**
+   * Jump the editor to a location from the graph.
+   *
+   * Only a file the playground itself holds: a node made inside a package has a path on
+   * this machine, and there is nothing here to open it with.
+   */
+  function openInEditor(where: { file?: string; line?: number; column?: number }): void {
+    if (!where.file || !where.line) return;
+    const path = where.file.replace(/^\.?\//, '');
+    const held = files().find((f) => f.path === path || f.path === `/${path}`);
+    if (!held) return;
+    setOpenPath(held.path);
+    editor?.reveal(held.path, where.line, where.column);
   }
 
   function loop() {
@@ -164,6 +179,7 @@ export function Playground() {
         selectedId = n ? n.id : null;
         renderInspector();
       },
+      onReveal: (n) => openInEditor(n.source ?? n.usedAt ?? n.declaredAt ?? {}),
     });
     // On the body: the graph pane clips whatever is inside it.
     detail ??= createDetailPanel(document.body, {

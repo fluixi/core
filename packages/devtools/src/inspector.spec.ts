@@ -189,3 +189,87 @@ describe('a location that came through a source map', () => {
     expect(host.querySelector('.ins-rel')?.textContent).toContain('set at src/App.tsx:14:6');
   });
 });
+
+describe('opening a location', () => {
+  const where = { file: 'src/App.tsx', line: 12, column: 4 };
+  const opened: unknown[] = [];
+  const withReveal = () =>
+    createInspector(host, { onReveal: (location) => opened.push(location) });
+
+  beforeEach(() => {
+    opened.length = 0;
+  });
+
+  it('leaves locations as plain text when the host cannot open them', () => {
+    const inspector = createInspector(host);
+    inspector.show(new Map([[0, node(0, { source: where })]]), 0);
+    expect(host.querySelector('.ins-at')).toBeNull();
+    expect(host.textContent).toContain('src/App.tsx:12:4');
+  });
+
+  it('reports the position of the one that was clicked', () => {
+    withReveal().show(new Map([[0, node(0, { source: where })]]), 0);
+    (host.querySelector('.ins-at') as HTMLElement).click();
+    expect(opened).toEqual([where]);
+  });
+
+  it('offers each location a node has, separately', () => {
+    withReveal().show(
+      new Map([
+        [
+          0,
+          node(0, {
+            kind: 'component',
+            source: where,
+            declaredAt: { file: 'src/Row.tsx', line: 3, column: 0 },
+            usedAt: { file: 'src/main.tsx', line: 7, column: 2 },
+          }),
+        ],
+      ]),
+      0,
+    );
+    const files = [...host.querySelectorAll('.ins-at')].map((b) => (b as HTMLElement).dataset.file);
+    expect(files).toEqual(['src/App.tsx', 'src/Row.tsx', 'src/main.tsx']);
+  });
+
+  it('offers where a value reaches the document', () => {
+    withReveal().show(
+      new Map([
+        [
+          0,
+          node(0, {
+            targets: [{ kind: 'attribute', name: 'class', element: 'div.box', source: where }],
+          }),
+        ],
+      ]),
+      0,
+    );
+    const button = host.querySelector('.ins-at') as HTMLElement;
+    expect(button).not.toBeNull();
+    button.click();
+    expect(opened).toEqual([where]);
+    // The element it writes to is still described beside it.
+    expect(host.textContent).toContain('class of div.box');
+  });
+
+  it('offers each place a signal is set from', () => {
+    withReveal().show(
+      new Map([[0, node(0, { setAt: [where, { file: 'src/other.ts', line: 9, column: 1 }] })]]),
+      0,
+    );
+    expect(host.querySelectorAll('.ins-at')).toHaveLength(2);
+  });
+
+  it('says nothing for a location with no file to open', () => {
+    withReveal().show(new Map([[0, node(0, { source: { line: 3 } })]]), 0);
+    expect(host.querySelector('.ins-at')).toBeNull();
+  });
+
+  it('leaves a label that looks like markup alone', () => {
+    withReveal().show(
+      new Map([[0, node(0, { label: '<img src=x>', source: where })]]),
+      0,
+    );
+    expect(host.querySelector('img')).toBeNull();
+  });
+});
