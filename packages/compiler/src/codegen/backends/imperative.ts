@@ -1,5 +1,5 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
-import type { IRNode, IRProp } from '../../ir/nodes.js';
+import type { HolePosition, IRNode, IRProp } from '../../ir/nodes.js';
 import { planPartialTemplate } from '../partial-template.js';
 import {
   isSerializable,
@@ -83,6 +83,15 @@ function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<strin
     return `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
   }
   return obj;
+}
+
+/**
+ * The memo a component lowers to is an accessor, so it takes the same hole mark as any
+ * other reactive binding. Without it, the insert that places the subtree reports whatever
+ * the runtime stack says — a position in the compiled file.
+ */
+function markBind(code: string, at?: HolePosition): string {
+  return at ? markHole(code, at.line, at.column) : code;
 }
 
 function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
@@ -178,12 +187,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       return emitChildren(node.children, used, templates);
 
     case 'component':
-      return emitComponent(node.name, node.props, node.children, used, templates, node.at);
+      return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt);
 
     case 'control': {
       const name = CONTROL_COMPONENT[node.control] ?? node.control;
       used.add(name);
-      return emitComponent(name, node.props, node.children, used, templates);
+      return markBind(emitComponent(name, node.props, node.children, used, templates), node.bindAt);
     }
 
     case 'element': {

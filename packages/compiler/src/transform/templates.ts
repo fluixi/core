@@ -203,10 +203,14 @@ function slice(code: string, start: number, end: number, edits: Edit[]): string 
 }
 
 /** Describe one `${…}` for the lowering, substituting any template already compiled inside it. */
-function bindHole(code: string, expr: Node, edits: Edit[]): TemplateHole {
+function bindHole(code: string, expr: Node, edits: Edit[], keepPosition = false): TemplateHole {
+  const at = keepPosition ? expr.loc?.start : undefined;
   const hole: TemplateHole = {
     code: slice(code, expr.start, expr.end, edits),
     reactive: isReactiveShape(shapeOf(expr)),
+    // Where the `${…}` is, so a binding made from it can say so. The source map cannot:
+    // the whole template is one overwrite. Only when source locations were asked for.
+    ...(at ? { at: { line: at.line, column: at.column } } : {}),
   };
 
   if (expr.type === 'ArrowFunctionExpression' && expr.body?.type !== 'BlockStatement') {
@@ -374,6 +378,27 @@ function strategyLiteral(s: IRLoadStrategy): string {
   return `{ ${parts.join(', ')} }`;
 }
 
+/**
+ * Offset → line and column, built once per module.
+ *
+ * The parser reports offsets into this file, since the pieces it is given carry the
+ * positions Babel recorded for the quasis.
+ */
+function positionsIn(code: string): (offset: number) => { line: number; column: number } {
+  const starts = [0];
+  for (let i = 0; i < code.length; i++) if (code.charCodeAt(i) === 10) starts.push(i + 1);
+  return (offset) => {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (starts[mid] <= offset) low = mid;
+      else high = mid - 1;
+    }
+    return { line: low + 1, column: offset - starts[low] };
+  };
+}
+
 /** Quasis and holes as position-carrying parser pieces. */
 function toPieces(node: Node): Piece[] {
   const pieces: Piece[] = [];
@@ -489,10 +514,18 @@ export function transformTemplates(
       edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName) });
       continue;
     }
-    const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
+    const holes = node.quasi.expressions.map((e: Node) =>
+      bindHole(code, e, edits, options.sourceLocations === true),
+    );
     const result = compilePieces(toPieces(node), holes, {
       ...options,
       hoistTemplates: true,
+      // A tag inside a template gets the same mark a JSX tag does. Without one, the nodes it
+      // makes are the only ones in the module carrying no mark, and they take whichever was
+      // left behind by the last declaration that did.
+      ...(options.sourceLocations === true
+        ? { sourceFile: sourceName, positionAt: positionsIn(code) }
+        : {}),
       // Same defaults as the plugin, so moving a build over is not a rendering change.
       templateClone: options.templateClone ?? true,
       partialTemplates: nested ? false : options.partialTemplates ?? true,

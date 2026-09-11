@@ -16,7 +16,7 @@ import {
   type TemplateNode,
   parseTemplate,
 } from '@fluixi/template-parser';
-import type { IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
+import type { HolePosition, IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
 import { parseLoadDirective } from '../resolve/load-directive.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 import { cleanTemplateText } from './text.js';
@@ -38,6 +38,14 @@ export interface TemplateHole {
   arrow?: { params: string[]; body: string; bodyReactive: boolean };
   /** Whether the hole is an object literal — `class=${{…}}` lowers to classList. */
   object?: boolean;
+  /**
+   * Where the `${…}` was written. Only kept when the host asked for source locations.
+   *
+   * A template is emitted as one overwrite, so every hole in it traces back through the
+   * source map to the line the template opens at. Without this, every node a template makes
+   * reports that one position.
+   */
+  at?: HolePosition;
 }
 
 const DELEGATED = new Set([
@@ -55,7 +63,26 @@ function capitalize(s: string): string {
 }
 
 class Lowerer {
-  constructor(private holes: TemplateHole[], private used: Set<string>) {}
+  constructor(
+    private holes: TemplateHole[],
+    private used: Set<string>,
+    private sourceFile?: string,
+    private positionAt?: (offset: number) => { line: number; column: number },
+  ) {}
+
+  /**
+   * Where a tag is written, for the mark a component node carries.
+   *
+   * The parser reports offsets, and they are offsets into the file: the pieces it was given
+   * carry the positions the front-end recorded. Only built when the host asked for source
+   * locations, which is the only time either of these is set.
+   */
+  private tagAt(node: { loc?: { start: number } }): { file: string; line: number; column: number } | undefined {
+    const start = node.loc?.start;
+    if (!this.sourceFile || !this.positionAt || start == null) return undefined;
+    const { line, column } = this.positionAt(start);
+    return { file: this.sourceFile, line, column };
+  }
 
   private hole(i: number): TemplateHole {
     // -1 marks a recovered-from missing binding; emit a harmless undefined.
@@ -127,7 +154,7 @@ class Lowerer {
         return null; // dropped, like JSX comments
       case 'Expression': {
         const h = this.hole(node.hole);
-        return { kind: 'expr', code: h.code, reactive: h.reactive };
+        return { kind: 'expr', code: h.code, reactive: h.reactive, ...(h.at ? { at: h.at } : {}) };
       }
       case 'Fragment':
         return { kind: 'fragment', children: this.lowerChildren(node.children) };
@@ -195,11 +222,21 @@ class Lowerer {
       ? parseLoadDirective(`load:${loadAttr.strategy}`, loadAttr.modifier)
       : undefined;
 
+    // The parser's positions are relative to the template string, not the file, so the
+    // tag itself has none to give. The first hole is the closest thing that does, and for
+    // the control-flow components — `<Show when=${…}>`, `<For each=${…}>` — it is the
+    // expression driving the subtree anyway.
+    const bindAt = props.find((p) => p.at)?.at;
+
+    const at = this.tagAt(el);
+
     return {
       kind: 'component',
       name,
       props,
       children: this.lowerChildren(rest),
+      ...(at ? { at } : {}),
+      ...(bindAt ? { bindAt } : {}),
       ...(load ? { load } : {}),
     };
   }
@@ -233,14 +270,15 @@ class Lowerer {
   private lowerIf(el: ElementNode | ComponentNode, condHole: number, elseEl: ElementNode | ComponentNode | null): IRNode {
     const cond = this.hole(condHole);
     const props: IRProp[] = [
-      { name: 'when', kind: 'attr', expr: cond.code, reactive: cond.reactive },
+      { name: 'when', kind: 'attr', expr: cond.code, reactive: cond.reactive, ...(cond.at ? { at: cond.at } : {}) },
     ];
     if (elseEl) {
       const elseIR = this.stripAndLower(elseEl, (a) => a.kind === 'ElseDirective');
       props.push({ name: 'fallback', kind: 'attr', expr: this.emit(elseIR), jsxElement: true });
     }
     const child = this.stripAndLower(el, (a) => a.kind === 'IfDirective');
-    return { kind: 'component', name: 'Show', props, children: [child] };
+    const at = this.tagAt(el);
+    return { kind: 'component', name: 'Show', props, children: [child], ...(at ? { at } : {}), ...(cond.at ? { bindAt: cond.at } : {}) };
   }
 
   /** `<el each=${items} key?>${item => …}</el>` → `<For each>{item => <el>…</el>}</For>`. */
@@ -249,7 +287,7 @@ class Lowerer {
     if (!eachDir || eachDir.kind !== 'EachDirective') return this.lowerNode(el)!;
     const each = this.hole(eachDir.hole);
 
-    const props: IRProp[] = [{ name: 'each', kind: 'attr', expr: each.code, reactive: each.reactive }];
+    const props: IRProp[] = [{ name: 'each', kind: 'attr', expr: each.code, reactive: each.reactive, ...(each.at ? { at: each.at } : {}) }];
     if (eachDir.key) {
       // `<For by>` wants a KEY FUNCTION, not a string. `key="id"` selects the
       // `id` field: `(item) => item["id"]`; `key=${fn}` passes the function.
@@ -271,7 +309,8 @@ class Lowerer {
       childrenCode = `() => (${this.emit(repeated)})`;
     }
     const children: IRNode[] = [{ kind: 'expr', code: childrenCode, reactive: false }];
-    return { kind: 'component', name: 'For', props, children };
+    const at = this.tagAt(el);
+    return { kind: 'component', name: 'For', props, children, ...(at ? { at } : {}), ...(each.at ? { bindAt: each.at } : {}) };
   }
 
   /** The single `${item => expr}` child arrow, if that's the element's content. */
@@ -304,8 +343,10 @@ class Lowerer {
     const props: IRProp[] = [];
     const classEntries: string[] = [];
     let classReactive = false;
+    let classAt: HolePosition | undefined;
     const styleEntries: string[] = [];
     let styleReactive = false;
+    let styleAt: HolePosition | undefined;
     const usePairs: string[] = [];
 
     for (const a of attrs) {
@@ -318,7 +359,13 @@ class Lowerer {
           props.push(this.plainAttr(a));
           break;
         case 'PropertyBinding':
-          props.push({ name: a.name, kind: 'prop', expr: this.hole(a.hole).code, reactive: this.hole(a.hole).reactive });
+          props.push({
+            name: a.name,
+            kind: 'prop',
+            expr: this.hole(a.hole).code,
+            reactive: this.hole(a.hole).reactive,
+            ...(this.hole(a.hole).at ? { at: this.hole(a.hole).at } : {}),
+          });
           break;
         case 'EventBinding':
           props.push(this.eventProp(a));
@@ -333,16 +380,18 @@ class Lowerer {
           const h = this.hole(a.hole);
           classEntries.push(`${JSON.stringify(a.name)}: ${h.code}`);
           classReactive = classReactive || h.reactive;
+          classAt ??= h.at;
           break;
         }
         case 'StyleDirective': {
           const h = this.hole(a.hole);
           styleEntries.push(`${JSON.stringify(a.name)}: ${h.code}`);
           styleReactive = styleReactive || h.reactive;
+          styleAt ??= h.at;
           break;
         }
         case 'BindDirective':
-          props.push(...this.bindProps(a.name, this.hole(a.hole).code));
+          props.push(...this.bindProps(a.name, this.hole(a.hole)));
           break;
         case 'UseDirective': {
           // `use=${dir}` → [dir]; `use:name` → [name]; `use:name=${opts}` →
@@ -358,11 +407,26 @@ class Lowerer {
 
     // Merge all class:/style: directives into one classList/style prop so they
     // don't collide as duplicate keys in the emitted props object.
+    // One prop covers every directive of its kind, so it carries the first hole's
+    // position — a real source line beats the stack fallback, which lands in the
+    // compiled file.
     if (classEntries.length > 0) {
-      props.push({ name: 'classList', kind: 'attr', expr: `{ ${classEntries.join(', ')} }`, reactive: classReactive });
+      props.push({
+        name: 'classList',
+        kind: 'attr',
+        expr: `{ ${classEntries.join(', ')} }`,
+        reactive: classReactive,
+        ...(classAt ? { at: classAt } : {}),
+      });
     }
     if (styleEntries.length > 0) {
-      props.push({ name: 'style', kind: 'attr', expr: `{ ${styleEntries.join(', ')} }`, reactive: styleReactive });
+      props.push({
+        name: 'style',
+        kind: 'attr',
+        expr: `{ ${styleEntries.join(', ')} }`,
+        reactive: styleReactive,
+        ...(styleAt ? { at: styleAt } : {}),
+      });
     }
     // All use: directives normalize to one `use` prop = an array of [dir, accessor?] pairs.
     if (usePairs.length > 0) {
@@ -415,7 +479,8 @@ class Lowerer {
   }
 
   /** `bind:value=${sig}` → `value={read()}` + `onInput={e => write(e…value)}`. */
-  private bindProps(prop: string, sigCode: string): IRProp[] {
+  private bindProps(prop: string, h: TemplateHole): IRProp[] {
+    const sigCode = h.code;
     const checked = prop === 'checked';
     const evt = checked ? 'change' : 'input';
     const accessor = checked ? 'checked' : 'value';
@@ -426,7 +491,7 @@ class Lowerer {
     this.used.add('bindPair');
     const sig = `bindPair(${sigCode})`;
     return [
-      { name: prop, kind: 'attr', expr: `${sig}[0]()`, reactive: true },
+      { name: prop, kind: 'attr', expr: `${sig}[0]()`, reactive: true, ...(h.at ? { at: h.at } : {}) },
       {
         name: 'on' + capitalize(evt),
         kind: 'event',
@@ -464,20 +529,24 @@ class Lowerer {
       const h = this.hole(v.hole);
       base.expr = h.code;
       base.reactive = h.reactive;
+      if (h.at) base.at = h.at;
       return base;
     }
     // mixed: template literal, reactive if any hole is
     let reactive = false;
+    let at: HolePosition | undefined;
     const body = v.parts
       .map((p) => {
         if ('text' in p) return escapeTemplate(p.text);
         const h = this.hole(p.hole);
         reactive = reactive || h.reactive;
+        at ??= h.at;
         return '${' + h.code + '}';
       })
       .join('');
     base.expr = '`' + body + '`';
     base.reactive = reactive;
+    if (at) base.at = at;
     return base;
   }
 }
@@ -491,8 +560,8 @@ export function lowerTemplate(
   pieces: Piece[],
   holes: TemplateHole[],
   used: Set<string>,
-  opts: { svg?: boolean } = {},
+  opts: { svg?: boolean; sourceFile?: string; positionAt?: (offset: number) => { line: number; column: number } } = {},
 ): IRNode {
   const { root } = parseTemplate(pieces, { svg: opts.svg });
-  return new Lowerer(holes, used).lowerRoot(root.children);
+  return new Lowerer(holes, used, opts.sourceFile, opts.positionAt).lowerRoot(root.children);
 }

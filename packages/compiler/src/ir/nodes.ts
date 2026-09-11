@@ -111,6 +111,13 @@ export interface IRComponent {
    */
   at?: { file: string; line: number; column: number };
   /**
+   * Where the `${…}` that drives this subtree was written — the condition of an `if=`,
+   * the list of an `each=`. The insert that adds and removes the subtree is a reactive
+   * binding, and this is the position it reports. Distinct from `at`, which marks the
+   * node itself rather than the binding that places it.
+   */
+  bindAt?: HolePosition;
+  /**
    * A `load:` strategy read off the tag by the frontend. The resolve pass folds it into
    * `source.loading`; it lives here first because the frontend knows the directive and
    * the resolve pass knows whether the name is deferrable at all.
@@ -141,5 +148,7 @@ export interface IRControl {
   control: ControlKind;
   props: IRProp[];
   children: IRNode[];
+  /** As on IRComponent: where the hole driving this subtree was written. */
+  bindAt?: HolePosition;
   loc?: SourceSpan;
 }

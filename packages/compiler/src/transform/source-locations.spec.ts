@@ -51,6 +51,71 @@ export function App() {
     expect(out).toContain('createMemo((globalThis.__fx_source?.("src/App.ts",3,14,"Row"), () =>');
   });
 
+  /**
+   * Every binding kind a template can produce has to carry the position of its
+   * own hole. A binding that carries none falls back to the runtime stack at
+   * inspection time, which reports a line in the *compiled* file — a number that
+   * looks like a source line, resolves to the wrong code, and is past the end of
+   * short files. So the assertion is that the marked line really does hold the
+   * expression, not that it holds some particular number.
+   */
+  it('marks each hole in a template with the line its expression is on', () => {
+    const src = `import { signal } from '@fluixi/reactive/signal';
+import { html } from '@fluixi/dom';
+const count = signal(0);
+const name = signal('a');
+const on = signal(true);
+export function App() {
+  return html\`<div>
+    <p>\${count()}</p>
+    <button ?disabled=\${count() < 0}>x</button>
+    <input bind:value=\${name} />
+    <span class:hot=\${on()}>y</span>
+    <span style:color=\${on() ? 'red' : 'blue'}>z</span>
+    <b class="box tone-\${on() ? 'on' : 'off'}">w</b>
+    <input .valueAsNumber=\${count()} />
+  </div>\`;
+}`;
+    const lines = src.split('\n');
+    const marks = [...run(src).matchAll(/\(f\) => f\)\)\(([\s\S]*?),(\d+),(\d+)\)/g)].map((m) => ({
+      expr: m[1],
+      line: Number(m[2]),
+    }));
+
+    // content, ?bool, bind:, class:, style:, mixed attr, .prop
+    expect(marks).toHaveLength(7);
+    for (const { expr, line } of marks) {
+      const text = lines[line - 1];
+      expect(text, `hole ${expr} marked at line ${line}, past the end of a ${lines.length}-line file`).toBeDefined();
+      // The lowered code wraps the author's expression, so match on the signal it reads.
+      const read = /\b(count|name|on)\b/.exec(expr)?.[1];
+      expect(text).toContain(read);
+    }
+  });
+
+  /**
+   * A tag inside a template is the only kind that used to emit no mark at all, so the nodes
+   * it made took whichever mark the last declaration left behind — in a component that
+   * declares signals and renders no holes, that is every node in the template.
+   */
+  it('marks a tag written inside a template, where the tag is', () => {
+    const out = run(`import { signal } from '@fluixi/reactive/signal';
+import { html } from '@fluixi/dom';
+const count = signal(0);
+export function App() {
+  return html\`<div>
+    <Show when=\${count()}><b>x</b></Show>
+    <Card header>y</Card>
+    <p if=\${count()}>z</p>
+  </div>\`;
+}`);
+    expect(out).toContain('__fx_source?.("src/App.ts",6,4,"Show")');
+    // No hole anywhere in it: the tag's own position is the only thing that can place it.
+    expect(out).toContain('__fx_source?.("src/App.ts",7,4,"Card")');
+    // `if=` is a Show once lowered, and belongs to the element that carried the directive.
+    expect(out).toContain('__fx_source?.("src/App.ts",8,4,"Show")');
+  });
+
   it('leaves the source alone when off', () => {
     const out = compile(`import { signal } from '@fluixi/reactive/signal';\nconst c = signal(0);`, { ...OPTIONS, sourceLocations: false });
     expect(out).not.toContain('__fx_source');

@@ -49,6 +49,15 @@ export interface CompileTemplateOptions {
    * caller that has a module scope to declare them in. Off inlines them.
    */
   hoistTemplates?: boolean;
+  /**
+   * The author's file, and a way to turn the parser's offsets into positions in it.
+   *
+   * Only when the host asked for source locations. Together they let a tag written inside a
+   * template carry the same mark a JSX tag does — without it the nodes it makes are the only
+   * ones in a component with no mark of their own, and they take whichever one was left.
+   */
+  sourceFile?: string;
+  positionAt?: (offset: number) => { line: number; column: number };
 }
 
 export interface CompileTemplateResult {
@@ -110,7 +119,11 @@ export function compilePieces(
   options: CompileTemplateOptions = {},
 ): CompileTemplateResult {
   const used = new Set<string>();
-  const ir = lowerTemplate(pieces, [...holes], used, { svg: options.svg });
+  const ir = lowerTemplate(pieces, [...holes], used, {
+    svg: options.svg,
+    ...(options.sourceFile ? { sourceFile: options.sourceFile } : {}),
+    ...(options.positionAt ? { positionAt: options.positionAt } : {}),
+  });
   analyzeStatic(ir);
 
   // Same order as the Babel front-end: decide where each component reference
