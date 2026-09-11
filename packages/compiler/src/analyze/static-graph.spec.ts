@@ -264,3 +264,211 @@ export function App() {
     expect(find(nodes, 'quiet')?.targets).toBeUndefined();
   });
 });
+
+/**
+ * The tags and holes of a `` html`…` `` are inside a string, so none of the walks over the
+ * Babel tree can see them: a `<Show>` is not a JSXElement and a `${count()}` is not an
+ * expression container. Everything below is what the JSX path already gave.
+ */
+describe('a template written as html``', () => {
+  const app = (body: string) => ({
+    path: 'src/App.ts',
+    code: `import { signal } from '@fluixi/core';
+import { html } from '@fluixi/dom';
+export function App() {
+  const count = signal(0);
+  const items = signal([]);
+  return html\`${body}\`;
+}`,
+  });
+
+  it('finds the control flow written as tags', () => {
+    const { nodes } = graphOf([app('<Show when=${count()}><b>hi</b></Show>')]);
+    const show = find(nodes, 'Show');
+    expect(show?.kind).toBe('control');
+    expect(labelsOf(nodes, show?.deps ?? [])).toEqual(['count']);
+    expect(find(nodes, 'App')?.id).toBe(show?.createdIn);
+  });
+
+  it('finds the control flow written as sugar', () => {
+    const { nodes } = graphOf([app('<p if=${count()}>x</p><li each=${items()}>y</li>')]);
+    expect(find(nodes, 'Show')?.kind).toBe('control');
+    expect(find(nodes, 'For')?.kind).toBe('control');
+    expect(labelsOf(nodes, find(nodes, 'For')?.deps ?? [])).toEqual(['items']);
+  });
+
+  it('nests a Match under its Switch', () => {
+    const { nodes } = graphOf([
+      app('<Switch><Match when=${count()}><b>a</b></Match></Switch>'),
+    ]);
+    expect(find(nodes, 'Match')?.createdIn).toBe(find(nodes, 'Switch')?.id);
+  });
+
+  it('places a tag where it is written, not where the template opens', () => {
+    const { nodes } = graphOf([app('\n    <Show when=${count()}><b>hi</b></Show>\n  ')]);
+    // The template opens on line 6; the tag is on the line after it.
+    expect(find(nodes, 'Show')?.source).toMatchObject({ file: 'src/App.ts', line: 7 });
+  });
+
+  it('says where a value reaches the document', () => {
+    const { nodes } = graphOf([app('<span class="box">${count()}</span>')]);
+    const targets = find(nodes, 'count')?.targets ?? [];
+    expect(targets).toHaveLength(1);
+    expect(targets[0]).toMatchObject({ kind: 'content', element: 'span.box' });
+  });
+
+  it('names the attribute a value drives', () => {
+    const { nodes } = graphOf([
+      app('<input .value=${count()} /><b class:on=${count()}>x</b>'),
+    ]);
+    const targets = find(nodes, 'count')?.targets ?? [];
+    expect(targets.map((t) => `${t.name} of ${t.element}`)).toEqual([
+      'value of input',
+      'class of b',
+    ]);
+  });
+
+  it('gives a component used in a template to the body that used it', () => {
+    const { nodes } = graphOf([
+      {
+        path: 'src/App.ts',
+        code: `import { html } from '@fluixi/dom';
+function Card() { return html\`<div />\`; }
+export function App() { return html\`<section><Card /></section>\`; }`,
+      },
+    ]);
+    expect(find(nodes, 'Card')?.createdIn).toBe(find(nodes, 'App')?.id);
+  });
+
+  it('leaves a handler alone — an event is not a read', () => {
+    const { nodes } = graphOf([app('<button @click=${() => count()}>x</button>')]);
+    expect(find(nodes, 'count')?.targets).toBeUndefined();
+  });
+});
+
+/**
+ * File-routes are handed to the router as a table built from a directory listing, so nothing
+ * in the source ever names them. A page that declares no signals was therefore connected to
+ * nothing and drew as a component belonging to no one.
+ */
+describe('a page under the routes directory', () => {
+  const shell = {
+    path: 'src/app.tsx',
+    code: `import { Router, Outlet } from '@fluixi/core/router';
+import { routes } from '@fluixi/core/routes';
+function RootLayout() { return <main><Outlet /></main>; }
+export default function App() {
+  return <Router routes={[{ path: '/', component: RootLayout, children: routes }]} />;
+}`,
+  };
+  const about = {
+    path: 'src/routes/about.tsx',
+    code: `export default function About() { return <section><h1>About</h1></section>; }`,
+  };
+
+  it('belongs to the outlet it renders into, even declaring nothing reactive', () => {
+    const { nodes } = graphOf([shell, about]);
+    expect(find(nodes, 'About')?.createdIn).toBe(find(nodes, 'Outlet')?.id);
+  });
+
+  it('falls back to the router when no outlet is written out', () => {
+    const noOutlet = {
+      path: 'src/app.tsx',
+      code: `import { Router } from '@fluixi/core/router';
+import { routes } from '@fluixi/core/routes';
+export default function App() { return <Router routes={routes} />; }`,
+    };
+    const { nodes } = graphOf([noOutlet, about]);
+    expect(find(nodes, 'About')?.createdIn).toBe(find(nodes, 'Router')?.id);
+  });
+
+  it('takes the directory the project configured', () => {
+    const page = { ...about, path: 'src/pages/about.tsx' };
+    expect(find(graphOf([shell, page]).nodes, 'About')?.createdIn).toBeUndefined();
+    const { nodes } = analyzeReactiveGraph([shell, page], { routesDir: 'src/pages' });
+    expect(find(nodes, 'About')?.createdIn).toBe(find(nodes, 'Outlet')?.id);
+  });
+
+  it('drops back to the router when two outlets make that the runtime question', () => {
+    // Which outlet a page lands in is not answerable here; which router it is under is.
+    const two = {
+      path: 'src/app.tsx',
+      code: `import { Router, Outlet } from '@fluixi/core/router';
+function Left() { return <aside><Outlet /></aside>; }
+function Right() { return <section><Outlet /></section>; }
+export default function App() { return <Router routes={[]}><Left /><Right /></Router>; }`,
+    };
+    const { nodes } = graphOf([two, about]);
+    expect(find(nodes, 'About')?.createdIn).toBe(find(nodes, 'Router')?.id);
+  });
+
+  it('says nothing when there is no router in the project at all', () => {
+    const plain = { path: 'src/app.tsx', code: `export default function App() { return <main>hi</main>; }` };
+    expect(find(graphOf([plain, about]).nodes, 'About')?.createdIn).toBeUndefined();
+  });
+
+  it('leaves a helper beside the page to the page that uses it', () => {
+    const withHelper = {
+      path: 'src/routes/about.tsx',
+      code: `function Byline() { return <small>by us</small>; }
+export default function About() { return <section><Byline /></section>; }`,
+    };
+    const { nodes } = graphOf([shell, withHelper]);
+    expect(find(nodes, 'Byline')?.createdIn).toBe(find(nodes, 'About')?.id);
+    expect(find(nodes, 'About')?.createdIn).toBe(find(nodes, 'Outlet')?.id);
+  });
+
+  it('still gives a plain component to whoever wrote its tag', () => {
+    // Not a route, no signals: the case that already worked, kept working.
+    const { nodes } = graphOf([
+      {
+        path: 'src/App.tsx',
+        code: `function Footer() { return <footer>hi</footer>; }
+export function App() { return <div><Footer /></div>; }`,
+      },
+    ]);
+    expect(find(nodes, 'Footer')?.createdIn).toBe(find(nodes, 'App')?.id);
+  });
+});
+
+describe('file-based api routes', () => {
+  const api = {
+    path: 'src/api/hello.ts',
+    code: `export function GET() { return new Response('hi'); }
+export function POST() { return new Response('ok'); }`,
+  };
+
+  it('hangs the handlers off one card of their own', () => {
+    const { nodes } = graphOf([api]);
+    const card = find(nodes, 'api');
+    expect(card?.kind).toBe('handler');
+    expect(nodes.filter((n) => n.createdIn === card?.id).map((n) => n.label)).toEqual(['GET', 'POST']);
+  });
+
+  it('does not invent the card when there are no handlers', () => {
+    const { nodes } = graphOf([
+      { path: 'src/App.tsx', code: `export function App() { return <b>hi</b>; }` },
+    ]);
+    expect(find(nodes, 'api')).toBeUndefined();
+  });
+
+  it('leaves a handler that already belongs to something', () => {
+    // A route table naming it is a real owner, and better than the directory.
+    const { nodes } = graphOf([
+      {
+        path: 'src/api/hello.ts',
+        code: `export function GET() { return new Response('hi'); }
+const table = [{ path: '/hello', component: GET }];
+export function Server() { return table; }`,
+      },
+    ]);
+    expect(find(nodes, 'GET')?.createdIn).toBe(find(nodes, 'Server')?.id);
+  });
+
+  it('names the card after the directory the project configured', () => {
+    const { nodes } = analyzeReactiveGraph([{ ...api, path: 'server/routes/hello.ts' }], {
+      apiDir: 'server/routes',
+    });
+    expect(find(nodes, 'api')?.source.file).toBe('server/routes');
+  });
+});

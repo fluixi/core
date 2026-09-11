@@ -8,6 +8,13 @@
  * Nothing here imports that package.
  */
 import { parse } from '@babel/parser';
+import {
+  parseTemplate,
+  type AttrValue,
+  type ElementNode,
+  type Piece,
+  type TemplateNode,
+} from '@fluixi/template-parser';
 import { INTRINSICS, isIntrinsicName } from './intrinsics.js';
 import { resolveReactiveBindings } from './reactive-bindings.js';
 import { CORE_CONTROL_FLOW, DOM_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -73,6 +80,28 @@ export interface StaticGraph {
 export interface StaticGraphFile {
   path: string;
   code: string;
+}
+
+export interface AnalyzeOptions {
+  /**
+   * Where file-routes live, relative to the project root.
+   *
+   * Nothing in the source references these components: the router is handed a table built
+   * from the directory listing, so a page with no signals in it is named nowhere and reads
+   * as a component belonging to nothing. The directory is what says otherwise.
+   *
+   * `routesDir` in fluixi.config; a host that has read the config should pass what it found.
+   * @default 'src/routes'
+   */
+  routesDir?: string;
+  /**
+   * Where file-based API routes live. Same problem as the pages: the handlers are served by
+   * the directory they sit in, so nothing names them and each one draws on its own.
+   *
+   * `apiDir` in fluixi.config.
+   * @default 'src/api'
+   */
+  apiDir?: string;
 }
 
 /** What each runtime primitive produces. */
@@ -141,6 +170,11 @@ const HTTP_METHODS: ReadonlySet<string> = new Set([
   'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS',
 ]);
 
+/** Windows separators and a leading `./`, so a path compares against the configured one. */
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^\.?\/+/, '');
+}
+
 function walk(node: Node | null | undefined, visit: (n: Node, stack: Node[]) => void, stack: Node[] = []): void {
   if (!node || typeof node.type !== 'string') return;
   visit(node, stack);
@@ -197,7 +231,71 @@ function mentions(node: Node): Set<string> {
   return names;
 }
 
-/** `<Show when={ready()}>` → the `ready()` expression, or nothing when the prop is static. */
+/**
+ * A template literal as the parser wants it: static runs and hole slots, in order.
+ *
+ * The same shape the Babel front-end builds, so what the analyzer sees inside `` html`…` ``
+ * is what the compiler lowers.
+ */
+function templatePieces(quasi: Node): Piece[] {
+  const pieces: Piece[] = [];
+  const quasis = (quasi.quasis ?? []) as Node[];
+  const expressions = (quasi.expressions ?? []) as Node[];
+  quasis.forEach((q, i) => {
+    const value = q.value as { cooked?: string; raw?: string } | undefined;
+    pieces.push({ kind: 'static', text: value?.cooked ?? value?.raw ?? '', start: q.start ?? 0 });
+    if (i < expressions.length) {
+      const e = expressions[i];
+      pieces.push({ kind: 'hole', index: i, start: e.start ?? 0, end: e.end ?? 0 });
+    }
+  });
+  return pieces;
+}
+
+/**
+ * Offset → line and column.
+ *
+ * The template parser reports spans as offsets, and they are offsets into the file: the
+ * pieces it is given carry the positions Babel recorded. So a tag written inside a template
+ * can be placed as exactly as one written as JSX.
+ */
+function positionsIn(code: string): (offset: number) => { line: number; column: number } {
+  const starts = [0];
+  for (let i = 0; i < code.length; i++) if (code.charCodeAt(i) === 10) starts.push(i + 1);
+  return (offset) => {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (starts[mid] <= offset) low = mid;
+      else high = mid - 1;
+    }
+    return { line: low + 1, column: offset - starts[low] };
+  };
+}
+
+/** `span.box` — a template element as written, static attributes only, like describeJsx. */
+function describeTemplateElement(el: ElementNode): string {
+  let id = '';
+  const classes: string[] = [];
+  for (const attr of el.attributes) {
+    if (attr.kind !== 'Attribute' || attr.value?.kind !== 'static') continue;
+    if (attr.name === 'id') id = `#${attr.value.value}`;
+    else if (attr.name === 'class') {
+      classes.push(...String(attr.value.value).split(/\s+/).filter(Boolean).slice(0, 2));
+    }
+  }
+  return `${el.tag}${id}${classes.map((c) => `.${c}`).join('')}`;
+}
+
+/** Which holes an attribute value reads — one for `=${x}`, several for `"a-${x}-${y}"`. */
+function valueHoles(value: AttrValue | null): number[] {
+  if (!value) return [];
+  if (value.kind === 'hole') return [value.hole];
+  if (value.kind === 'mixed') return value.parts.flatMap((p) => ('hole' in p ? [p.hole] : []));
+  return [];
+}
+
 /**
  * `span.num`, `div#root` — the element as written.
  *
@@ -263,7 +361,14 @@ interface Pending {
  * Files are analysed independently, then joined: an imported name resolves to the node the
  * exporting file declared under it, which connects a store to the memo reading it elsewhere.
  */
-export function analyzeReactiveGraph(files: readonly StaticGraphFile[]): StaticGraph {
+export function analyzeReactiveGraph(
+  files: readonly StaticGraphFile[],
+  options: AnalyzeOptions = {},
+): StaticGraph {
+  const routesDir = (options.routesDir ?? 'src/routes').replace(/^\.?\/+|\/+$/g, '');
+  const apiDir = (options.apiDir ?? 'src/api').replace(/^\.?\/+|\/+$/g, '');
+  /** Ids declared in a file-route, to be given an owner once the whole project is read. */
+  const fileRoutes: number[] = [];
   const pending: Pending[] = [];
   /** file → exported name → id, for resolving an import. */
   const exported = new Map<string, Map<string, number>>();
@@ -306,8 +411,16 @@ export function analyzeReactiveGraph(files: readonly StaticGraphFile[]): StaticG
     exported.set(file.path, sold);
     imports.set(file.path, from);
 
+    /** A page the router is handed by the directory rather than by name. */
+    const inRoutesDir = normalizePath(file.path).startsWith(`${routesDir}/`);
+
     /** The component a node sits inside, by the id of its declaration. */
     const components = new Map<Node, number>();
+
+    /** Built once per file, and only for a file that has a template in it. */
+    let positionAt: ((offset: number) => { line: number; column: number }) | null = null;
+    const positionOf = (): ((offset: number) => { line: number; column: number }) =>
+      (positionAt ??= positionsIn(file.code));
 
     // Components first: a primitive needs the id of the body it sits in.
     walk(program, (node, stack) => {
@@ -318,6 +431,7 @@ export function analyzeReactiveGraph(files: readonly StaticGraphFile[]): StaticG
       components.set(node, id);
       here.set(name, id);
       componentMentions.set(id, mentions(node));
+      if (inRoutesDir) fileRoutes.push(id);
       pending.push({
         node: {
           id,
@@ -464,6 +578,177 @@ export function analyzeReactiveGraph(files: readonly StaticGraphFile[]): StaticG
       for (const name of mentions(expr)) holes.push({ file: file.path, name, target });
     });
 
+    /**
+     * The same again, for `` html`…` ``.
+     *
+     * The tags and holes are inside a string, so none of the walks above can see them: a
+     * `<Show>` in a template is not a JSXElement and a `${count()}` is not an expression
+     * container. The template parser reads the string into the same shape the compiler
+     * lowers, and each hole maps back by index to the expression Babel already parsed —
+     * which is where the position and the names read come from.
+     */
+    walk(program, (node, stack) => {
+      if (node.type !== 'TaggedTemplateExpression') return;
+      const tagName = (node.tag as Node)?.name as string | undefined;
+      if (tagName !== 'html' && tagName !== 'svg') return;
+      const quasi = node.quasi as Node;
+      const expressions = (quasi?.expressions ?? []) as Node[];
+      const positionAt = positionOf();
+
+      let children: TemplateNode[];
+      try {
+        children = parseTemplate(templatePieces(quasi), { svg: tagName === 'svg' }).root.children;
+      } catch {
+        // A template being typed in is not a template that means nothing.
+        return;
+      }
+
+      /** The expression a hole index stands for, as Babel parsed it. */
+      const holeExpr = (index: number | null | undefined): Node | undefined =>
+        index == null ? undefined : expressions[index];
+
+      const readsOf = (index: number | null | undefined): Set<string> => {
+        const expr = holeExpr(index);
+        return expr ? mentions(expr) : new Set<string>();
+      };
+
+      /** A directive or tag becomes a node of its own, owned by whatever encloses it. */
+      const addControl = (
+        tag: string,
+        offset: number | undefined,
+        hole: number | null | undefined,
+        owner: number | undefined,
+      ): number | undefined => {
+        // Where the tag itself is written, which is what the JSX walk records too. The hole
+        // stands in for a directive that has no tag of its own.
+        const at =
+          offset !== undefined ? positionAt(offset) : (holeExpr(hole)?.loc?.start ?? node.loc?.start);
+        if (!at) return undefined;
+        const id = seq++;
+        pending.push({
+          node: {
+            id,
+            label: tag,
+            kind: directiveKind(tag),
+            deps: [],
+            writes: [],
+            runs: 0,
+            lastPulse: 0,
+            source: { file: file.path, line: at.line, column: at.column },
+            ...(owner !== undefined ? { createdIn: owner } : {}),
+          },
+          reads: readsOf(hole),
+          file: file.path,
+        });
+        return id;
+      };
+
+      const addTarget = (
+        index: number,
+        element: string,
+        attribute: string | undefined,
+      ): void => {
+        const expr = holeExpr(index);
+        const at = expr?.loc?.start;
+        if (!expr || !at) return;
+        const target: StaticDomTarget = {
+          kind: attribute ? 'attribute' : 'content',
+          ...(attribute ? { name: attribute } : {}),
+          element,
+          source: { file: file.path, line: at.line, column: at.column },
+        };
+        for (const name of mentions(expr)) holes.push({ file: file.path, name, target });
+      };
+
+      /** Every hole an element's attributes read, and the name each reaches the dom under. */
+      const elementTargets = (el: ElementNode): void => {
+        const element = describeTemplateElement(el);
+        for (const attr of el.attributes) {
+          switch (attr.kind) {
+            case 'Attribute':
+              for (const hole of valueHoles(attr.value)) addTarget(hole, element, attr.name);
+              break;
+            case 'PropertyBinding':
+            case 'BindDirective':
+              addTarget(attr.hole, element, attr.name);
+              break;
+            case 'ClassDirective':
+              addTarget(attr.hole, element, 'class');
+              break;
+            case 'StyleDirective':
+              addTarget(attr.hole, element, 'style');
+              break;
+            // A handler is not a read, and neither is a ref, a spread or a use.
+            default:
+              break;
+          }
+        }
+      };
+
+      const visit = (nodes: readonly TemplateNode[], owner: number | undefined, holder: string): void => {
+        for (const child of nodes) {
+          switch (child.kind) {
+            case 'Element': {
+              // `if=`/`each=` are `<Show>`/`<For>` once lowered, so they are nodes here too.
+              const ifDir = child.attributes.find((a) => a.kind === 'IfDirective');
+              const eachDir = child.attributes.find((a) => a.kind === 'EachDirective');
+              let inner = owner;
+              if (ifDir?.kind === 'IfDirective') inner = addControl('Show', child.loc?.start, ifDir.hole, owner) ?? owner;
+              else if (eachDir?.kind === 'EachDirective') inner = addControl('For', child.loc?.start, eachDir.hole, owner) ?? owner;
+              elementTargets(child);
+              visit(child.children, inner, describeTemplateElement(child));
+              break;
+            }
+            case 'Component': {
+              const tag = child.tag;
+              // A name the file declares or imports is that component, not control flow.
+              const own = here.has(tag) || from.has(tag);
+              if (tag && !own && DIRECTIVES.has(tag)) {
+                const prop = TRACKED_PROP[tag];
+                const tracked = prop
+                  ? child.attributes.find(
+                      (a): a is Extract<typeof a, { name: string }> =>
+                        'name' in a && a.name === prop,
+                    )
+                  : undefined;
+                const hole =
+                  tracked && 'hole' in tracked
+                    ? (tracked.hole as number)
+                    : tracked && 'value' in tracked
+                      ? valueHoles((tracked as { value: AttrValue | null }).value)[0]
+                      : undefined;
+                const id = addControl(tag, child.loc?.start, hole, owner);
+                visit(child.children, id ?? owner, holder);
+                break;
+              }
+              if (tag && owner !== undefined) usages.push({ tag, file: file.path, owner });
+              visit(child.children, owner, holder);
+              break;
+            }
+            case 'Fragment':
+              visit(child.children, owner, holder);
+              break;
+            case 'Expression':
+              addTarget(child.hole, holder, undefined);
+              break;
+            default:
+              break;
+          }
+        }
+      };
+
+      // Whatever body the template is written in — the same lookup the tag walk uses.
+      let owner: number | undefined;
+      for (let i = stack.length - 1; i >= 0; i--) {
+        const found = components.get(stack[i]!);
+        if (found !== undefined) {
+          owner = found;
+          break;
+        }
+      }
+      visit(children, owner, 'template');
+    });
+
     // A route table names its components rather than writing them as tags.
     walk(program, (node, stack) => {
       if (node.type !== 'ObjectProperty' || node.computed) return;
@@ -545,6 +830,60 @@ export function analyzeReactiveGraph(files: readonly StaticGraphFile[]): StaticG
     const node = byId.get(id);
     // First use wins: a component used twice is one declaration either way.
     if (node && node.kind === 'component' && node.createdIn === undefined) node.createdIn = use.owner;
+  }
+
+  /**
+   * A file-route belongs to the outlet it renders into.
+   *
+   * Nothing names these components — the table comes from the directory — so a page that
+   * declares no signals is connected to nothing at all and sits on its own. `<Outlet />` is
+   * the hole a matched route fills, so it is the honest owner; a router with no outlet
+   * written out renders into itself. Only one of either is a definite answer: with two
+   * outlets, which one a given page lands in is a runtime question.
+   */
+  const only = (kind: StaticNodeKind, label: string): number | undefined => {
+    const found = pending.filter((p) => p.node.kind === kind && p.node.label === label);
+    return found.length === 1 ? found[0]!.node.id : undefined;
+  };
+  const routeOwner = only('router', 'Outlet') ?? only('router', 'Router');
+  if (routeOwner !== undefined) {
+    for (const id of fileRoutes) {
+      const node = byId.get(id);
+      // A helper declared beside the page is already owned by the page that uses it.
+      if (node && node.kind === 'component' && node.createdIn === undefined && id !== routeOwner) {
+        node.createdIn = routeOwner;
+      }
+    }
+  }
+
+  /**
+   * The api routes hang off one card of their own.
+   *
+   * A handler is served because of the directory it sits in, so like a page nothing names it
+   * — but unlike a page nothing renders it either, and hanging it off the router would say
+   * something false. A root of its own is what it is: one card, the handlers under it.
+   */
+  const loose = pending.filter(
+    (p) => p.node.kind === 'handler' && p.node.createdIn === undefined,
+  );
+  if (loose.length > 0) {
+    const id = seq++;
+    pending.push({
+      node: {
+        id,
+        label: 'api',
+        kind: 'handler',
+        deps: [],
+        writes: [],
+        runs: 0,
+        lastPulse: 0,
+        // The directory, since there is no line of anyone's source to point at.
+        source: { file: apiDir, line: 1, column: 0 },
+      },
+      reads: new Set(),
+      file: apiDir,
+    });
+    for (const p of loose) p.node.createdIn = id;
   }
 
   return { t: Date.now(), nodes: pending.map((p) => p.node), static: true };
