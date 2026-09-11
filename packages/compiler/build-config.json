@@ -26,6 +26,7 @@
       "module",
       "node:*"
     ],
-    "clean": true
+    "clean": true,
+    "cjsTypes": true
   }
 }

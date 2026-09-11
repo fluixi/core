@@ -41,7 +41,9 @@ interface PluginModule {
 }
 
 /** tsserver calls this with the TS module instance the editor is running. */
-function init(modules: { typescript: typeof ts }): PluginModule {
+// `typeof import('typescript')` rather than `typeof ts`: the namespace import is elided in
+// the declaration, and declaration emit cannot then name it (TS4078).
+function init(modules: { typescript: typeof import('typescript') }): PluginModule {
   const ts = modules.typescript;
   return {
     create(info: PluginCreateInfo): ts.LanguageService {
