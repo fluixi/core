@@ -562,3 +562,84 @@ describe('putting a stack location back in the author\'s file', () => {
     expect(byLabel(observed, 'count')?.setAt).toHaveLength(1);
   });
 });
+
+/**
+ * A panel showing where a node is on the page needs the element, and the graph deliberately
+ * describes elements rather than holding them. These are held weakly instead.
+ */
+describe('where a node reaches the page', () => {
+  /** What the runtime does to a component's return value. */
+  const asComponent = (element: Element, name: string): Element => {
+    (element as unknown as { $name: string }).$name = name;
+    return element;
+  };
+
+  it('gives a tag the element it returned, not one nearby', () => {
+    const own = document.createElement('section');
+    const other = document.createElement('b');
+    document.body.append(own, other);
+
+    observed = observeGraph();
+    createRoot(() => {
+      const [value] = createSignal(1);
+      // The memo a component is wrapped in, holding what the component returned.
+      // Unnamed, like the wrapper the compiler emits: it takes the component's name.
+      createMemo(() => asComponent(own, 'Panel'));
+      // A binding somewhere else entirely.
+      createRenderEffect(() => {
+        reportReactiveBinding(other, 'content');
+        return value();
+      });
+    });
+    observed.sample();
+    observed.sample();
+
+    const panel = byLabel(observed, 'Panel');
+    expect(panel?.kind).toBe('component');
+    expect(observed.elementsFor(panel!.id)).toEqual([own]);
+  });
+
+  it('says nothing for a node that reaches nowhere', () => {
+    observed = observeGraph();
+    createRoot(() => createSignal(0, { name: 'quiet' }));
+    observed.sample();
+    expect(observed.elementsFor(byLabel(observed, 'quiet')!.id)).toEqual([]);
+  });
+
+  it('leaves out an element that has left the document', () => {
+    const own = document.createElement('section');
+    document.body.append(own);
+    observed = observeGraph();
+    createRoot(() => createMemo(() => asComponent(own, 'Gone')));
+    observed.sample();
+    observed.sample();
+    const id = byLabel(observed, 'Gone')!.id;
+    expect(observed.elementsFor(id)).toEqual([own]);
+
+    own.remove();
+    expect(observed.elementsFor(id)).toEqual([]);
+  });
+
+  it('answers which node a pointer landed on, walking up from where it hit', () => {
+    const box = document.createElement('div');
+    const inner = document.createElement('em');
+    box.append(inner);
+    document.body.append(box);
+
+    observed = observeGraph();
+    createRoot(() => {
+      const [value] = createSignal('x', { name: 'label' });
+      createRenderEffect(() => {
+        reportReactiveBinding(box, 'content');
+        return value();
+      });
+    });
+    observed.sample();
+
+    const id = byLabel(observed, 'label')!.id;
+    expect(observed.nodeAt(box)).toBe(id);
+    // Nothing is bound to the em, so the answer is whatever contains it.
+    expect(observed.nodeAt(inner)).toBe(id);
+    expect(observed.nodeAt(document.body)).toBeUndefined();
+  });
+});

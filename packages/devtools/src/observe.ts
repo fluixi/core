@@ -39,6 +39,15 @@ export interface ObservedGraph {
   takeRemoved(): number[];
   /** What happened since the last call, in order. Empty when history is off. */
   takeEvents(): GraphEvent[];
+  /** Where this node reaches the page, for whatever is still on it. */
+  elementsFor(id: number): Element[];
+  /** The node driving `element`, or the nearest ancestor that has one. */
+  nodeAt(element: Element | null): number | undefined;
+  /**
+   * Write a signal from outside the application. False when the node is not something that
+   * can be written — a memo is computed, and setting it would be a lie the next run undoes.
+   */
+  setValue(id: number, next: unknown): boolean;
   detach(): void;
 }
 
@@ -149,7 +158,44 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    * time it reports, the frame that asked for it has left the stack.
    */
   const bindingSites = new WeakMap<CoreNode, ReactiveSourceLocation>();
+  /**
+   * The element each binding writes into, weakly.
+   *
+   * `targets` describes elements rather than holding them, because holding one keeps a
+   * removed subtree alive. A WeakRef does not, so this can answer "show me that on the
+   * page" without pinning anything.
+   */
+  const boundTo = new WeakMap<CoreNode, WeakRef<Element>>();
+  /** The reverse, for a pointer landing somewhere: element → the node driving it. */
+  const drivenBy = new WeakMap<Element, number>();
+  /** Per node, the elements it drives. Rebuilt each sample, like the descriptions are. */
+  let reaches = new Map<number, WeakRef<Element>[]>();
+  /**
+   * What each tag rendered, weakly.
+   *
+   * A component's value is the dom it returned, so this is exact where the bindings are
+   * only nearby: a binding is recorded against the element containing it, which for a small
+   * component is whatever the page happens to have put it in.
+   */
+  const rendered = new Map<number, WeakRef<Element>[]>();
+
+  /** The elements in a component's return value, however it was shaped. */
+  const elementsIn = (value: unknown): Element[] => {
+    if (value instanceof Element) return [value];
+    if (value instanceof DocumentFragment) return [...value.children];
+    // A component returning several roots hands back an array of nodes.
+    if (Array.isArray(value)) return value.flatMap(elementsIn);
+    return [];
+  };
   const cores = new Map<number, CoreNode>();
+  /**
+   * How to write each signal, when the runtime said.
+   *
+   * The core node can be set directly, and doing that marks its readers dirty without
+   * flushing them — the graph moves and the page does not. This is the application's own
+   * setter, so a write from a panel lands the same way a click would.
+   */
+  const setters = new Map<number, (value: unknown) => void>();
   const runsAtLastSample = new Map<number, number>();
   const unnamed = new Set<number>();
   const recording = (options.history ?? 200) > 0;
@@ -281,6 +327,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         ids.set(handle as object, id);
       }
       cores.set(id, core);
+      if (typeof report.set === 'function') setters.set(id, report.set);
       graph.set(id, node);
       history.created(id, node.createdIn, node.label);
     },
@@ -345,6 +392,12 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const site = hole
         ? { ...hole, file: bindingSites.get(core)?.file }
         : bindingSites.get(core);
+      // A content hole is reported against its marker comment, which has no box to draw.
+      const box =
+        target instanceof Element
+          ? target
+          : ((target as { parentElement?: Element } | null)?.parentElement ?? undefined);
+      if (box) boundTo.set(core, new WeakRef(box));
       targets.set(core, {
         kind,
         element: describeNode(target),
@@ -372,6 +425,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       graph.delete(id);
       raws.delete(id);
       cores.delete(id);
+      rendered.delete(id);
+      setters.delete(id);
       runsAtLastSample.delete(id);
       unnamed.delete(id);
     },
@@ -398,18 +453,30 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       // with every run, and a stale count is worse than none.
       const bindings = new Map<number, number>();
       const drives = new Map<number, DomTarget[]>();
+      const seen = new Map<number, WeakRef<Element>[]>();
       for (const internal of internals) {
         const target = targets.get(internal);
+        const element = boundTo.get(internal);
         for (const source of internal.sources ?? []) {
           const id = ids.get(source as object);
           if (id === undefined) continue;
           bindings.set(id, (bindings.get(id) ?? 0) + 1);
+          if (element) {
+            const found = element.deref();
+            // First writer wins: an element driven by two values answers with the one that
+            // reached it first, and the rest are still reachable from the node itself.
+            if (found && !drivenBy.has(found)) drivenBy.set(found, id);
+            const held = seen.get(id);
+            if (held) held.push(element);
+            else seen.set(id, [element]);
+          }
           if (!target) continue;
           const list = drives.get(id);
           if (list) list.push(target);
           else drives.set(id, [target]);
         }
       }
+      reaches = seen;
       for (const node of graph.values()) {
         const count = bindings.get(node.id) ?? 0;
         if (node.bindings !== count) node.bindings = count || undefined;
@@ -449,6 +516,12 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
             unnamed.delete(node.id);
           }
         }
+        // Whatever it returned, for a panel asking where this is on the page. Read every
+        // sample because a tag can re-render into different elements.
+        if (node.kind === 'component' || node.kind === 'control' || node.kind === 'router') {
+          const found = elementsIn(raw);
+          if (found.length) rendered.set(node.id, found.map((el) => new WeakRef(el)));
+        }
         // Formatted once: the card shows the head of it, the tooltip and the inspector the
         // rest. Reading the value twice would be reading a proxy twice.
         const detail = formatValue(raw);
@@ -468,6 +541,53 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     takeRemoved() {
       return removed.splice(0, removed.length);
     },
+    elementsFor(id) {
+      const live: Element[] = [];
+      const collect = (from: number, where = reaches): void => {
+        for (const ref of where.get(from) ?? []) {
+          const found = ref.deref();
+          // Still in the document: an element detached since the last sample is not
+          // somewhere anything can be shown.
+          if (found?.isConnected && !live.includes(found)) live.push(found);
+        }
+      };
+      // What the tag itself rendered, which is exact.
+      collect(id, rendered);
+      if (live.length) return live;
+      collect(id);
+      // A value drives the element its binding was recorded against. A tag that returned
+      // nothing usable falls back to where the values inside it reach.
+      if (!live.length) {
+        const inside = (node: RNode): boolean => {
+          const seen = new Set<number>();
+          let at = node.createdIn;
+          while (at !== undefined && !seen.has(at)) {
+            if (at === id) return true;
+            seen.add(at);
+            at = graph.get(at)?.createdIn;
+          }
+          return false;
+        };
+        for (const node of graph.values()) if (inside(node)) collect(node.id);
+      }
+      return live;
+    },
+    setValue(id, next) {
+      const node = graph.get(id);
+      const write = setters.get(id);
+      if (!node || node.kind !== 'state' || !write) return false;
+      write(next);
+      return true;
+    },
+    nodeAt(element) {
+      let at: Element | null = element;
+      while (at) {
+        const id = drivenBy.get(at);
+        if (id !== undefined && graph.has(id)) return id;
+        at = at.parentElement;
+      }
+      return undefined;
+    },
     takeEvents() {
       return history.take();
     },
@@ -476,6 +596,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       internals.clear();
       graph.clear();
       cores.clear();
+      rendered.clear();
+      setters.clear();
       runsAtLastSample.clear();
       unnamed.clear();
       raws.clear();
