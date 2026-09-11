@@ -7,13 +7,14 @@ import {
   createTimeline,
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
+  KIND_FILTER_CSS,
   createInspector,
+  createKindFilter,
   copyText,
   graphToJson,
   type DetailPanel,
   type Inspector,
   type GraphView,
-  type NodeKind,
   type ObservedGraph,
   type Timeline,
 } from '@fluixi/devtools';
@@ -81,9 +82,6 @@ export function Playground() {
   const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
   const [layout, setLayout] = createSignal<'horizontal' | 'vertical'>('horizontal');
   const [grouped, setGrouped] = createSignal(true);
-  // All ticked is no filter: a kind with no box of its own still has to be drawn.
-  const ALL_KINDS: NodeKind[] = ['state', 'memo', 'effect', 'store', 'resource', 'component', 'control', 'router', 'handler'];
-  const [kinds, setKinds] = createSignal<NodeKind[]>(ALL_KINDS);
   const [bindings, setBindings] = createSignal(false);
 
   let rootEl!: HTMLDivElement;
@@ -455,7 +453,7 @@ export function Playground() {
   onMount(() => {
     document.documentElement.dataset.theme = theme();
     const style = document.createElement('style');
-    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}`;
+    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}`;
     document.head.appendChild(style);
     editor = createEditor(editorHost, {
       files: files(),
@@ -680,25 +678,7 @@ export function Playground() {
             <span class="stats">
               {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
             </span>
-            <span class="kinds">
-              {() =>
-                ALL_KINDS.map((kind) => (
-                  <label title={`Draw ${kind} nodes`}>
-                    <input
-                      type="checkbox"
-                      checked={kinds().includes(kind)}
-                      onChange={(e: Event) => {
-                        const on = (e.currentTarget as HTMLInputElement).checked;
-                        const next = on ? [...kinds(), kind] : kinds().filter((k) => k !== kind);
-                        setKinds(next);
-                        view?.setKinds(next.length === ALL_KINDS.length ? null : next);
-                      }}
-                    />
-                    <span>{kind === 'handler' ? 'route' : kind}</span>
-                  </label>
-                ))
-              }
-            </span>
+            <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next) })} />
             <span class="zoom">
               <button
                 type="button"

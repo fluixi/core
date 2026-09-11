@@ -10,6 +10,7 @@ import {
   createDetailPanel,
   createGraphView,
   createInspector,
+  createKindFilter,
   createTimeline,
   copyText,
   graphToJson,
@@ -17,9 +18,9 @@ import {
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
   INSPECTOR_CSS,
+  KIND_FILTER_CSS,
   TIMELINE_CSS,
   type GraphDirection,
-  type NodeKind,
   type RNode,
 } from '@fluixi/devtools';
 import { readPage } from './read-page.js';
@@ -29,7 +30,7 @@ const INTERVAL = 250;
 
 function injectStyles(): void {
   const style = document.createElement('style');
-  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS].join('\n');
+  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS, KIND_FILTER_CSS].join('\n');
   document.head.appendChild(style);
 }
 
@@ -123,15 +124,8 @@ function main(): void {
     document.getElementById('bindings')?.classList.toggle('on', view.showBindings);
   });
 
-  // All of them ticked is no filter rather than a filter that happens to admit everything:
-  // a kind the boxes do not name — there is no box for the cards the view invents — still
-  // has to be drawn.
-  const boxes = [...document.querySelectorAll<HTMLInputElement>('.kinds input[data-kind]')];
-  const applyKinds = (): void => {
-    const on = boxes.filter((b) => b.checked);
-    view.setKinds(on.length === boxes.length ? null : on.map((b) => b.dataset.kind as NodeKind));
-  };
-  for (const box of boxes) box.addEventListener('change', applyKinds);
+  const kindsHost = document.getElementById('kinds');
+  if (kindsHost) createKindFilter(kindsHost, { onChange: (kinds) => view.setKinds(kinds) });
   on('export', () => {
     const button = document.getElementById('export');
     void copyText(graphToJson(view.shown.size ? view.shown : graph), button?.querySelector('.lbl') as HTMLElement);

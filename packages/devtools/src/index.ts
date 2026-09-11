@@ -34,6 +34,8 @@ export { createInspector, INSPECTOR_CSS } from './inspector.js';
 export type { Inspector, InspectorOptions } from './inspector.js';
 export { createTimeline, TIMELINE_CSS } from './timeline.js';
 export type { Timeline, TimelineOptions } from './timeline.js';
+export { createKindFilter, FILTERABLE_KINDS, KIND_FILTER_CSS } from './kind-filter.js';
+export type { KindFilter, KindFilterOptions } from './kind-filter.js';
 export { createDetailPanel, DETAIL_PANEL_CSS } from './detail-panel.js';
 export type { DetailPanel, DetailPanelOptions } from './detail-panel.js';
 export { changeRows, handleCopyClick, CHANGE_CSS } from './change-view.js';
