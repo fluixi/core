@@ -60,7 +60,7 @@ const ABSOLUTE_MAX_ZOOM = 4000;
 const DRAG_SLOP = 4;
 
 const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ from packages', binding: '⇥ dom', setter: '✎ sets' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets' };
 
 /** The card that stands for everything a dependency made and the application never touched. */
 const GROUP_ID = -1;
@@ -130,6 +130,11 @@ export interface GraphViewOptions {
    * @default false
    */
   showBindings?: boolean;
+  /**
+   * Draw only these kinds. Omitted — or null — draws every kind, which is what an empty
+   * filter means to a reader: no filter, rather than nothing to see.
+   */
+  kinds?: Iterable<NodeKind> | null;
 }
 
 export interface GraphView {
@@ -151,6 +156,9 @@ export interface GraphView {
   /** Show the document and the handlers as cards around the signals. */
   setShowBindings(show: boolean): void;
   readonly showBindings: boolean;
+  /** Draw only these kinds; null for all of them. */
+  setKinds(kinds: Iterable<NodeKind> | null): void;
+  readonly kinds: ReadonlySet<NodeKind> | null;
   /**
    * The graph as drawn, cards included.
    *
@@ -194,6 +202,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   let direction: GraphDirection = options.direction ?? 'horizontal';
   let groupExternal = options.groupExternal !== false;
   let showBindings = options.showBindings === true;
+  /** Which kinds to draw. Null is every kind, which is not the same as a set holding them all. */
+  let kinds: ReadonlySet<NodeKind> | null = options.kinds ? new Set(options.kinds) : null;
 
   // A clip region per text, not one for the box: the label grows right from the left edge
   // and the value grows left from the right, so clipping both to the same box still let a
@@ -475,19 +485,63 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     return added ? shown : graph;
   }
 
+  /**
+   * A node the author did not write: the memo the compiler wraps a component in, the
+   * signals a resource keeps, `Show.when`, `mapArray`, `row index`. All of it is real and
+   * none of it is anything the author can go and edit.
+   *
+   * Control flow is excluded on purpose. `Show` and `Switch` are tags in the source, so
+   * they stay drawn as themselves.
+   */
+  const machinery = (n: RNode): boolean =>
+    n.authored === false && (n.kind === 'state' || n.kind === 'memo' || n.kind === 'effect');
+
+  /**
+   * Cards a view makes rather than nodes the application has. They follow their own toggles
+   * and their owner's visibility, so a kind filter does not reach them.
+   */
+  const VIEW_CARD: ReadonlySet<NodeKind> = new Set<NodeKind>(['group', 'binding', 'setter']);
+
+  const kindKey = (): string => (kinds ? [...kinds].sort().join('+') : '*');
+
+  /**
+   * Keep only the kinds asked for. `createdIn` is re-pointed at the nearest ancestor that
+   * survived, so hiding the memos around a component does not orphan what they made.
+   */
+  function onlyKinds(graph: Map<number, RNode>): Map<number, RNode> {
+    if (!kinds) return graph;
+    const keep = (n: RNode): boolean => VIEW_CARD.has(n.kind) || kinds!.has(n.kind);
+    const out = new Map<number, RNode>();
+    for (const [id, node] of graph) {
+      if (!keep(node)) continue;
+      let owner = node.createdIn;
+      const seen = new Set<number>();
+      while (owner !== undefined && !seen.has(owner)) {
+        seen.add(owner);
+        const up = graph.get(owner);
+        if (up && keep(up)) break;
+        owner = up?.createdIn;
+      }
+      out.set(id, owner === node.createdIn ? node : { ...node, createdIn: owner });
+    }
+    return out;
+  }
+
   function grouped(graph: Map<number, RNode>): Map<number, RNode> {
     if (!groupExternal) return graph;
     const outsiders = [...graph.values()].filter(
       // A card carries the source of whatever made it, often a package. It already hangs off
       // its signal and must not be moved under the group.
-      (n) => n.source?.external && n.createdIn === undefined && n.kind !== 'binding' && n.kind !== 'setter',
+      (n) =>
+        (n.source?.external && n.createdIn === undefined && n.kind !== 'binding' && n.kind !== 'setter') ||
+        machinery(n),
     );
     if (!outsiders.length) return graph;
 
     const shown = new Map(graph);
     shown.set(GROUP_ID, {
       id: GROUP_ID,
-      label: 'packages',
+      label: 'framework',
       kind: 'group',
       deps: new Set(),
       writes: new Set(),
@@ -495,7 +549,22 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       lastPulse: 0,
     });
     // Hung off the card, which is what the existing folding already knows how to draw.
+    const moved = new Set(outsiders.map((n) => n.id));
     for (const node of outsiders) shown.set(node.id, { ...node, createdIn: GROUP_ID });
+
+    // What the machinery made is not machinery. A `Show` created inside the memo the
+    // compiler wrapped it in would otherwise fold away with it, and the tag the author
+    // wrote would be missing from the graph.
+    for (const [id, node] of graph) {
+      if (moved.has(id) || node.createdIn === undefined) continue;
+      let owner: number | undefined = node.createdIn;
+      const seen = new Set<number>();
+      while (owner !== undefined && moved.has(owner) && !seen.has(owner)) {
+        seen.add(owner);
+        owner = graph.get(owner)?.createdIn;
+      }
+      if (owner !== node.createdIn) shown.set(id, { ...node, createdIn: owner });
+    }
     return shown;
   }
 
@@ -754,10 +823,10 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     update(graph, now = Date.now()) {
       lastGraph = graph;
       // Bindings first: a card hung off a signal is not an outsider.
-      const shown = grouped(withEdges(graph));
+      const shown = grouped(withEdges(onlyKinds(graph)));
       lastShown = shown;
       const folded = foldedIn(shown);
-      let sig = `${[...folded].sort().join(',')}|${groupExternal}|${direction}|`;
+      let sig = `${[...folded].sort().join(',')}|${groupExternal}|${direction}|${kindKey()}|`;
       for (const n of shown.values())
         sig += `${n.id}:${n.kind}:${[...n.deps].sort().join(',')}>${[...n.writes].sort().join(',')}^${n.createdIn ?? ''};`;
       if (sig !== signature) {
@@ -842,6 +911,16 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     },
     get showBindings() {
       return showBindings;
+    },
+    setKinds(next) {
+      const key = next ? [...next].sort().join('+') : '*';
+      if (key === kindKey()) return;
+      kinds = next ? new Set(next) : null;
+      // Fewer nodes is a different graph: it is laid out again rather than hidden in place.
+      signature = '';
+    },
+    get kinds() {
+      return kinds;
     },
     get shown() {
       return lastShown;

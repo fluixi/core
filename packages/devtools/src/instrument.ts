@@ -46,6 +46,21 @@ export type NodeKind =
   | 'setter';
 export type NodeState = 'clean' | 'check' | 'dirty';
 
+/**
+ * The names the compiler supplies without an import, and what each one is. A control-flow
+ * tag stamps its name the same way an author's component does, so without this `Match` and
+ * `Switch` are drawn as components the author wrote.
+ *
+ * Mirrors `resolve/builtins.ts` in @fluixi/compiler. Not imported from there: this package
+ * runs beside the application, and the compiler is not on that side of the wall.
+ */
+export const KIND_OF_BUILTIN: Record<string, NodeKind> = {
+  Show: 'control', For: 'control', Index: 'control', Switch: 'control', Match: 'control',
+  Portal: 'control', Dynamic: 'control', ErrorBoundary: 'control',
+  Suspense: 'control', SuspenseList: 'control', Await: 'control',
+  Router: 'router', Outlet: 'router', Redirect: 'router', Link: 'router',
+};
+
 /** One place in the document that a signal drives. */
 export interface DomTarget {
   /** `content` for a text or element hole, `attribute` or `property` otherwise. */
@@ -62,6 +77,12 @@ export interface RNode {
   id: number;
   label: string;
   kind: NodeKind;
+  /**
+   * Whether the label is the author's own, from a compiler mark. False for a positional
+   * label and for one the runtime supplied, which between them are the framework's own
+   * machinery — what a view offers to keep behind one card.
+   */
+  authored?: boolean;
   /** Source ids read on the last run (read edges: source → this). */
   deps: Set<number>;
   /** Signal ids written while this node ran (write edges: this → signal). */
@@ -189,6 +210,22 @@ export function createReactor(): Reactor {
   // well after the synchronous setup — with no owner, `onCleanup` runs immediately and the
   // node disappears the moment it is made, which is why the graph came up empty.
   let rootOwner: ReturnType<typeof getOwner> = null;
+
+  /**
+   * Whether this node is the wrapper that made the stamped value, rather than one further
+   * down that only passes it along.
+   *
+   * `$name` is set on what a component returns, so it travels with the value: every memo
+   * holding it looks like the component. The one that made it is the one none of its
+   * dependencies already has — otherwise a component under `Suspense` draws twice.
+   */
+  const claims = (node: RNode, value: unknown): boolean => {
+    for (const dep of node.deps) {
+      const other = graph.get(dep);
+      if (other?.read && other.read() === value) return false;
+    }
+    return true;
+  };
 
   /** Remove a node when whatever created it goes away, or when the reactor is torn down. */
   const forget = (id: number) => {
@@ -432,10 +469,10 @@ export function createReactor(): Reactor {
         // being unnamed: the compiler marks the tag with the component's name too, which
         // would leave the node named and never recognised.
         const stamped = (raw as { $name?: unknown })?.$name;
-        if (node.kind === 'memo' && typeof stamped === 'string' && stamped) {
+        if (node.kind === 'memo' && typeof stamped === 'string' && stamped && claims(node, raw)) {
           // Still a memo underneath. This only says so, so a renderer can draw it as what
           // the author wrote rather than as the wrapper around it.
-          node.kind = 'component';
+          node.kind = KIND_OF_BUILTIN[stamped] ?? 'component';
           // `source` stays what it is for every other node — where this one was created,
           // which for a wrapper is where the tag was written. Where the component itself
           // lives is a second fact, and it stands in for the first when nothing marked it.

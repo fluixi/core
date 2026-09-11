@@ -27,6 +27,8 @@ interface ExportedNode {
   id: number;
   label: string;
   kind: string;
+  /** Absent when the framework named it — see RNode.authored. */
+  authored?: boolean;
   value?: string;
   runs?: number;
   version?: number;
@@ -93,6 +95,7 @@ export function exportGraph(graph: Map<number, RNode>, options: ExportOptions = 
       id: node.id,
       label: node.label,
       kind: node.kind,
+      ...(node.authored === false ? { authored: false } : {}),
       ...(value ? { value } : {}),
       ...(node.runs ? { runs: node.runs } : {}),
       // Only a node with a core has one; a static node would report a version of 0.

@@ -319,6 +319,79 @@ describe('laying the graph out the other way', () => {
   });
 });
 
+describe('what the framework made', () => {
+  /** A component the author wrote, and the memo and internals the compiler put round it. */
+  const withMachinery = () =>
+    new Map<number, RNode>([
+      [0, node(0, { label: 'count', authored: true })],
+      [1, node(1, { kind: 'component', label: 'App', authored: true })],
+      [2, node(2, { kind: 'memo', label: 'm2', authored: false, createdIn: 1 })],
+      [3, node(3, { kind: 'memo', label: 'Show.when', authored: false, createdIn: 2 })],
+      [4, node(4, { kind: 'control', label: 'Show', authored: false, createdIn: 2 })],
+    ]);
+
+  it('keeps the memos it made behind the card, and leaves control flow drawn', () => {
+    createGraphView(svg).update(withMachinery());
+    expect(labels().sort()).toEqual(['App', 'Show', 'count', 'framework']);
+  });
+
+  it('shows them as themselves when grouping is off', () => {
+    const view = createGraphView(svg, { groupExternal: false });
+    view.update(withMachinery());
+    expect(labels().sort()).toEqual(['App', 'Show', 'Show.when', 'count', 'm2']);
+  });
+});
+
+describe('filtering by kind', () => {
+  const mix = () =>
+    new Map<number, RNode>([
+      [0, node(0, { label: 'count', authored: true })],
+      [1, node(1, { kind: 'memo', label: 'total', authored: true })],
+      [2, node(2, { kind: 'component', label: 'App', authored: true })],
+      [3, node(3, { kind: 'control', label: 'Show', createdIn: 2 })],
+    ]);
+
+  it('draws every kind until a filter is set', () => {
+    const view = createGraphView(svg);
+    view.update(mix());
+    expect(view.kinds).toBeNull();
+    expect(labels()).toHaveLength(4);
+  });
+
+  it('draws only the kinds asked for', () => {
+    const view = createGraphView(svg, { groupExternal: false });
+    view.setKinds(['state', 'memo']);
+    view.update(mix());
+    expect(labels().sort()).toEqual(['count', 'total']);
+  });
+
+  it('goes back to all of them on null', () => {
+    const view = createGraphView(svg, { groupExternal: false });
+    view.setKinds(['state']);
+    view.update(mix());
+    expect(labels()).toEqual(['count']);
+
+    view.setKinds(null);
+    view.update(mix());
+    expect(labels()).toHaveLength(4);
+  });
+
+  it('re-points what a hidden node made at the nearest one still drawn', () => {
+    // `Show` was made in `App`. With components hidden it has to hang off something that
+    // is still there, or it is drawn as a root of its own.
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App', authored: true })],
+      [1, node(1, { kind: 'memo', label: 'm1', createdIn: 0 })],
+      [2, node(2, { kind: 'control', label: 'Show', createdIn: 1 })],
+    ]);
+    const view = createGraphView(svg, { groupExternal: false });
+    view.setKinds(['component', 'control']);
+    view.update(graph);
+    expect(labels().sort()).toEqual(['App', 'Show']);
+    expect(view.shown.get(2)?.createdIn).toBe(0);
+  });
+});
+
 describe('what the packages made', () => {
   const mixed = () =>
     new Map<number, RNode>([
@@ -329,7 +402,7 @@ describe('what the packages made', () => {
 
   it('puts them behind one card by default', () => {
     createGraphView(svg).update(mixed());
-    expect(labels().sort()).toEqual(['count', 'packages']);
+    expect(labels().sort()).toEqual(['count', 'framework']);
     expect(svg.querySelector('.fx-fold')?.textContent).toMatch(/^▸ 2/);
   });
 
@@ -339,7 +412,7 @@ describe('what the packages made', () => {
     view.update(graph);
     view.toggle(-1);
     view.update(graph);
-    expect(labels().sort()).toEqual(['count', 'locale', 'packages', 'revalidation']);
+    expect(labels().sort()).toEqual(['count', 'framework', 'locale', 'revalidation']);
   });
 
   it('shows them as themselves when the host turns grouping off', () => {

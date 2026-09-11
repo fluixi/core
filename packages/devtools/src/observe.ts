@@ -16,7 +16,7 @@ import {
 } from '@fluixi/reactive/signal';
 import { componentSource, holeLocation, installSourceMarker, takeReactiveSource } from './source.js';
 import { currentCallSite } from './callsite.js';
-import { type DomTarget, type NodeKind, type RNode } from './instrument.js';
+import { KIND_OF_BUILTIN, type DomTarget, type NodeKind, type RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { formatValue, shorten } from './format.js';
 import { createHistory, type GraphEvent } from './history.js';
@@ -107,6 +107,22 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const origin = options.origin ?? (typeof location === 'object' ? location.origin : undefined);
 
   const graph = new Map<number, RNode>();
+
+  /**
+   * Whether this node is the wrapper that made the stamped value rather than one further
+   * down that only passes it along.
+   *
+   * `$name` is set on what a component returns, so it travels with the value and every memo
+   * holding it looks like the component. The one that made it is the one none of its
+   * dependencies already has — otherwise a component under `Suspense` draws twice.
+   */
+  const claims = (node: RNode, value: unknown): boolean => {
+    for (const dep of node.deps) {
+      const other = graph.get(dep);
+      if (other?.read && other.read() === value) return false;
+    }
+    return true;
+  };
   /** Core node → id, so a report about a node already seen finds it. */
   const ids = new WeakMap<object, number>();
   /**
@@ -204,10 +220,13 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         return;
       }
       const id = seq++;
-      const kind = KINDS[report.kind];
       const handle = report.handle;
       // One mark, one node — read here and nowhere else, matching the reactor.
       const mark = takeReactiveSource();
+      // `Switch` names its own memo and returns a dom node, so nothing downstream carries a
+      // `$name` to recognise it by later. The name the runtime gave it is the only signal,
+      // and only the runtime's: a mark carries whatever the author called their own value.
+      const kind = (report.name ? KIND_OF_BUILTIN[report.name] : undefined) ?? KINDS[report.kind];
       const named = report.name ?? mark?.name;
       if (!named) unnamed.add(id);
       // Only for a node the compiler did not mark. This is called from inside the creating
@@ -218,6 +237,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         id,
         label: named ?? `${PREFIX[kind]}${id}`,
         kind,
+        // Only a compiler mark means the author wrote this and gave it that name. A name
+        // the runtime supplies — `Show.when`, `mapArray`, `row index` — describes framework
+        // machinery, and so does no name at all.
+        authored: mark?.name != null,
         deps: new Set(),
         // A write edge needs to know which consumer was running when a setter fired, and
         // nothing observed records that. Reads carry the graph; writes do not.
@@ -415,8 +438,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         // A memo holding something the runtime stamped a component name on is the wrapper
         // the compiler put round that component, so it can say what the author wrote.
         const stamped = (raw as { $name?: unknown })?.$name;
-        if (node.kind === 'memo' && typeof stamped === 'string' && stamped) {
-          node.kind = 'component';
+        if (node.kind === 'memo' && typeof stamped === 'string' && stamped && claims(node, raw)) {
+          // A control-flow tag stamps its name the same way, so the name decides what this
+          // is. Without it `Show` and `Match` are drawn as components the author wrote.
+          node.kind = KIND_OF_BUILTIN[stamped] ?? 'component';
           node.declaredAt = componentSource(stamped);
           node.source ??= node.declaredAt;
           if (unnamed.has(node.id)) {

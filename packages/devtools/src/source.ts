@@ -152,6 +152,11 @@ function markHole<T>(accessor: T, line: number, column: number): T {
   if (accessor && (typeof accessor === 'object' || typeof accessor === 'function')) {
     HOLES.set(accessor as object, { line, column });
   }
+  // The template is being built, so whatever declaration left a mark is finished with. A
+  // mark outlives the statement that set it on purpose — a store's key signals are made
+  // inside the call and belong to its line — but a component body is one long synchronous
+  // run, and without this every node the template makes claimed the last signal's position.
+  shared.pending = null;
   return accessor;
 }
 

@@ -24,6 +24,8 @@ export interface WireNode {
   readonly id: number;
   readonly label: string;
   readonly kind: NodeKind;
+  /** Whether the label is the author's own. Absent means the framework named it. */
+  readonly authored?: boolean;
   /** Source ids read on the last run (read edges: source → this). */
   readonly deps: number[];
   /** Signal ids written while this node ran. Empty on an observed graph. */
@@ -94,6 +96,7 @@ export function serializeGraph(
       id: node.id,
       label: node.label,
       kind: node.kind,
+      authored: node.authored,
       deps: [...node.deps],
       writes: [...node.writes],
       value: node.value,
@@ -125,6 +128,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       id: node.id,
       label: node.label,
       kind: node.kind,
+      authored: node.authored,
       deps: new Set(node.deps),
       writes: new Set(node.writes),
       value: node.value,
