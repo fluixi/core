@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createKindFilter, FILTERABLE_KINDS, type KindFilter } from './kind-filter.js';
+import { createKindFilter, FILTERABLE_KINDS, KIND_FILTER_CSS, type KindFilter } from './kind-filter.js';
 import type { NodeKind } from './instrument.js';
 
 let host: HTMLElement;
@@ -84,6 +84,12 @@ describe('the kind filter', () => {
     all().checked = false;
     all().dispatchEvent(new Event('change'));
     expect(filter.selected).toEqual([...FILTERABLE_KINDS]);
+  });
+
+  it('hides the panel in the stylesheet as well as the markup', () => {
+    // The panel sets `display`, which outranks the user agent's rule for `hidden`, so
+    // without this the panel stays on screen however the attribute is set.
+    expect(KIND_FILTER_CSS).toContain('.fx-kinds-panel[hidden]');
   });
 
   it('opens and shuts', () => {

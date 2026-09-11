@@ -260,6 +260,23 @@ describe('opening a location', () => {
     expect(host.querySelectorAll('.ins-at')).toHaveLength(2);
   });
 
+  it('names a binding once, with where it is', () => {
+    // The binding card is drawn as a node too, so it was listed by label and again by
+    // description on the same line.
+    const inspector = createInspector(host);
+    const target = { kind: 'content' as const, element: 'div#app', source: where };
+    inspector.show(
+      new Map([
+        [0, node(0, { label: 'App', kind: 'component', targets: [target] })],
+        [1, node(1, { label: 'div#app', kind: 'binding', deps: new Set([0]) })],
+      ]),
+      0,
+    );
+    const feeds = host.querySelector('.ins-rel')?.textContent ?? '';
+    expect(feeds.match(/div#app/g)).toHaveLength(1);
+    expect(feeds).toContain('div#app (src/App.tsx:12:4)');
+  });
+
   it('says nothing for a location with no file to open', () => {
     withReveal().show(new Map([[0, node(0, { source: { line: 3 } })]]), 0);
     expect(host.querySelector('.ins-at')).toBeNull();
@@ -271,5 +288,78 @@ describe('opening a location', () => {
       0,
     );
     expect(host.querySelector('img')).toBeNull();
+  });
+});
+
+describe('writing a value from the panel', () => {
+  const edited: [number, string][] = [];
+  const editable = () =>
+    createInspector(host, { onEdit: (id, raw) => (edited.push([id, raw]), true) });
+  const cell = () => host.querySelector('.ins-edit') as HTMLElement | null;
+  const input = () => host.querySelector('.ins-input') as HTMLInputElement | null;
+
+  beforeEach(() => {
+    edited.length = 0;
+  });
+
+  it('leaves values alone when the host cannot write', () => {
+    createInspector(host).show(new Map([[0, node(0, { value: '1' })]]), 0);
+    expect(cell()).toBeNull();
+  });
+
+  it('offers a signal for editing', () => {
+    editable().show(new Map([[0, node(0, { kind: 'state', value: '1' })]]), 0);
+    expect(cell()).not.toBeNull();
+  });
+
+  it('refuses a memo, which the next run would overwrite', () => {
+    editable().show(new Map([[0, node(0, { kind: 'memo', value: '2' })]]), 0);
+    expect(cell()).toBeNull();
+  });
+
+  it('takes what was typed on enter', () => {
+    editable().show(new Map([[0, node(0, { kind: 'state', value: '1' })]]), 0);
+    cell()!.click();
+    input()!.value = '42';
+    input()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(edited).toEqual([[0, '42']]);
+  });
+
+  it('drops it on escape', () => {
+    editable().show(new Map([[0, node(0, { kind: 'state', value: '1' })]]), 0);
+    cell()!.click();
+    input()!.value = '42';
+    input()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(edited).toEqual([]);
+  });
+
+  it('does not redraw over what is being typed', () => {
+    const inspector = editable();
+    const graph = new Map([[0, node(0, { kind: 'state', value: '1' })]]);
+    inspector.show(graph, 0);
+    cell()!.click();
+    input()!.value = '7';
+
+    // The application keeps running while the reader types.
+    graph.set(0, node(0, { kind: 'state', value: '999', runs: 5 }));
+    inspector.show(graph, 0);
+    expect(input()?.value).toBe('7');
+  });
+});
+
+describe('an edit that never finishes', () => {
+  it('does not hold the inspector on what it last drew', () => {
+    const inspector = createInspector(host, { onEdit: () => true });
+    const graph = new Map([[0, node(0, { kind: 'state', value: '1' })]]);
+    inspector.show(graph, 0);
+    (host.querySelector('.ins-edit') as HTMLElement).click();
+    expect(host.querySelector('.ins-input')).not.toBeNull();
+
+    // Whatever took the input away — a redraw elsewhere, a panel closing — the inspector
+    // has to come back rather than freeze on the row it was editing.
+    host.querySelector('.ins-input')!.remove();
+    graph.set(0, node(0, { kind: 'state', value: '99' }));
+    inspector.show(graph, 0);
+    expect(host.querySelector('.ins-edit')?.textContent).toBe('99');
   });
 });

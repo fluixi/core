@@ -4,6 +4,7 @@
 // wheel to zoom. Structure rebuilds on topology change; per frame just updates value text +
 // the pulse glow.
 import type { RNode, NodeKind } from './instrument.js';
+import { shortenPath } from './path.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const COL = 200;
@@ -140,6 +141,8 @@ export interface GraphViewOptions {
    * filter means to a reader: no filter, rather than nothing to see.
    */
   kinds?: Iterable<NodeKind> | null;
+  /** The project a path is shown relative to. See the inspector's option of the same name. */
+  root?: string;
 }
 
 export interface GraphView {
@@ -858,8 +861,10 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
         const where = place ? shortSource(place) : '';
         if (eles.source.textContent !== where) {
           eles.source.textContent = where;
+          // The card shows the file name; the tooltip has room for where it sits, which for
+          // a node the framework made is a path on the machine that ran it.
           eles.sourceTitle.textContent = place
-            ? `${place.file ?? ''}:${place.line ?? ''}:${place.column ?? ''}`
+            ? `${place.file ? shortenPath(place.file, options.root) : ''}:${place.line ?? ''}:${place.column ?? ''}`
             : '';
         }
         // Nothing before its turn: a node three steps down the chain sits dark until the

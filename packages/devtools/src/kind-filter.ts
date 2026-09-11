@@ -156,6 +156,8 @@ export function createKindFilter(host: HTMLElement, options: KindFilterOptions):
 export const KIND_FILTER_CSS = `
 .fx-kinds { position: relative; display: inline-flex; }
 .fx-kinds-button { white-space: nowrap; }
+/* The hidden attribute is display:none from the user agent, which a class setting display outranks. */
+.fx-kinds-panel[hidden] { display: none; }
 .fx-kinds-panel {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
   display: grid; gap: 2px; padding: 6px 8px; min-width: 132px;

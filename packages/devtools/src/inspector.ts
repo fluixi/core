@@ -10,6 +10,7 @@
 import { nodeState, nodeVersion, type RNode } from './instrument.js';
 import { formatValue } from './format.js';
 import type { ReactiveSourceLocation } from './source.js';
+import { shortenPath } from './path.js';
 
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
@@ -27,6 +28,19 @@ export interface InspectorOptions {
    * nowhere to open a file wants.
    */
   onReveal?: (location: ReactiveSourceLocation) => void;
+  /**
+   * The project a path is shown relative to. Without it, a path is shortened to the package
+   * it names, which is as much as a graph can work out on its own.
+   */
+  root?: string;
+  /**
+   * Write a value from the panel. Given the text as typed: the host parses it, since what
+   * counts as a value is the application's business, and returns whether it took.
+   *
+   * Omitted leaves values read-only, which is what a panel reading a snapshot over a wire
+   * wants — there is nothing on the other end to write to.
+   */
+  onEdit?: (id: number, raw: string) => boolean;
 }
 
 const escape = (text: string): string =>
@@ -49,8 +63,8 @@ const place = (text: string, source: ReactiveSourceLocation | undefined, live: b
   );
 };
 
-const at = (source?: ReactiveSourceLocation): string =>
-  source ? `${source.file ?? ''}:${source.line ?? ''}:${source.column ?? ''}` : '';
+const at = (source?: ReactiveSourceLocation, root?: string): string =>
+  source ? `${source.file ? shortenPath(source.file, root) : ''}:${source.line ?? ''}:${source.column ?? ''}` : '';
 
 /**
  * The location, and where it is in the compiled file when the two differ.
@@ -59,11 +73,13 @@ const at = (source?: ReactiveSourceLocation): string =>
  * names the component and nothing finer. The compiled one is what separates this binding from
  * the three beside it.
  */
-const bothAt = (source?: ReactiveSourceLocation): string => {
+const bothAt = (source?: ReactiveSourceLocation, root?: string): string => {
   if (!source) return '';
   const out = source.compiled;
   const same = out?.line === source.line && out?.column === source.column;
-  return out && !same ? `${at(source)} · out ${out.line ?? ''}:${out.column ?? ''}` : at(source);
+  return out && !same
+    ? `${at(source, root)} · out ${out.line ?? ''}:${out.column ?? ''}`
+    : at(source, root);
 };
 
 /** The live value when the node can be read, the last one it reported otherwise. */
@@ -82,6 +98,41 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
   const empty = options.empty ?? 'click a node to inspect';
   const limit = options.limit ?? 600;
   const reveals = typeof options.onReveal === 'function';
+  const root = options.root;
+  const edits = typeof options.onEdit === 'function';
+  /** While the reader is typing, nothing redraws: the input would go with it. */
+  let editing: number | null = null;
+  let field: HTMLInputElement | null = null;
+
+  if (edits) {
+    host.addEventListener('click', (event) => {
+      const cell = (event.target as HTMLElement | null)?.closest?.('.ins-edit') as HTMLElement | null;
+      if (!cell || editing !== null) return;
+      const id = Number(cell.dataset.id);
+      editing = id;
+      const input = host.ownerDocument.createElement('input');
+      field = input;
+      input.className = 'ins-input';
+      input.value = cell.dataset.raw ?? '';
+      cell.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const done = (commit: boolean): void => {
+        if (editing === null) return;
+        editing = null;
+        field = null;
+        // Whatever it was is redrawn from the graph on the next frame.
+        signature = '';
+        if (commit) options.onEdit!(id, input.value);
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') done(true);
+        else if (e.key === 'Escape') done(false);
+      });
+      input.addEventListener('blur', () => done(true));
+    });
+  }
 
   if (reveals) {
     host.addEventListener('click', (event) => {
@@ -110,7 +161,11 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
 
       const labelOf = (other: number) => graph.get(other)?.label ?? '?';
       const reads = [...node.deps].map(labelOf);
-      const feeds = [...graph.values()].filter((n) => n.deps.has(node.id)).map((n) => n.label);
+      // Binding cards are left out: `bound` below lists the same places, and says where
+      // each one is. With both, every binding was named twice on the one line.
+      const feeds = [...graph.values()]
+        .filter((n) => n.deps.has(node.id) && n.kind !== 'binding')
+        .map((n) => n.label);
       const writes = [...node.writes].map(labelOf);
       const value = valueOf(node, limit);
       const state = nodeState(node);
@@ -125,7 +180,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
       const bound = node.targets?.length
         ? node.targets
             .map((t) => {
-              const where = bothAt(t.source);
+              const where = bothAt(t.source, root);
               const what = escape(t.name ? `${t.name} of ${t.element}` : t.element);
               return where ? `${what} (${place(where, t.source, reveals)})` : what;
             })
@@ -147,7 +202,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         writes.length ? `<span>✎ writes <b>${escape(writes.join(', '))}</b></span>` : '',
         // Where the value is set from code the graph has no node for.
         node.setAt?.length
-          ? `<span>⌁ set at <b>${node.setAt.map((w) => place(bothAt(w), w, reveals)).join(', ')}</b></span>`
+          ? `<span>⌁ set at <b>${node.setAt.map((w) => place(bothAt(w, root), w, reveals)).join(', ')}</b></span>`
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
         made.length ? `<span>▸ made <b>${escape(made.join(', '))}</b></span>` : '',
@@ -155,7 +210,15 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         .filter(Boolean)
         .join('');
 
-      const next = `${node.id}|${node.kind}|${value}|${node.runs}|${state ?? ''}|${relations}|${at(node.source)}|${at(node.usedAt)}|${bound}`;
+      const next = `${node.id}|${node.kind}|${value}|${node.runs}|${state ?? ''}|${relations}|${at(node.source, root)}|${at(node.usedAt, root)}|${bound}`;
+      // An input that has left the page is not one anybody is typing into. Without this a
+      // commit that never arrived — the panel redrew, the tab changed — would hold the
+      // inspector on whatever it last wrote, for good.
+      if (editing !== null && field?.isConnected !== true) {
+        editing = null;
+        field = null;
+      }
+      if (editing !== null) return;
       if (next === signature) return;
       signature = next;
 
@@ -165,22 +228,25 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         (synthetic
           ? '<span class="ins-meta">not a node</span></div>'
           : `<span class="ins-meta">v${nodeVersion(node)} · ${node.runs} runs${state ? ` · ${state}` : ''}</span></div>`) +
-        `<div class="ins-val" title="${escape(value)}">${escape(clip(value))}</div>` +
+        (edits && node.kind === 'state'
+          ? `<div class="ins-val ins-edit" data-id="${node.id}" data-raw="${escape(value)}"` +
+            ` title="Click to set ${escape(node.label)}">${escape(clip(value))}</div>`
+          : `<div class="ins-val" title="${escape(value)}">${escape(clip(value))}</div>`) +
         `<div class="ins-rel">${relations}</div>` +
         // Only when the graph carries one. A snapshot from a build that was not marked has
         // no locations at all, and an empty line there reads as missing data.
         (node.source
-          ? `<div class="ins-source">${node.source.external ? '📦' : '📍'} ${place(bothAt(node.source), node.source, reveals)}</div>`
+          ? `<div class="ins-source">${node.source.external ? '📦' : '📍'} ${place(bothAt(node.source, root), node.source, reveals)}</div>`
           : '') +
         // A component is created where its tag is written; where it is declared is somewhere
         // else, and only worth a line when it is.
-        (node.declaredAt && at(node.declaredAt) !== at(node.source)
-          ? `<div class="ins-source">◧ declared ${place(at(node.declaredAt), node.declaredAt, reveals)}</div>`
+        (node.declaredAt && at(node.declaredAt, root) !== at(node.source, root)
+          ? `<div class="ins-source">◧ declared ${place(at(node.declaredAt, root), node.declaredAt, reveals)}</div>`
           : '') +
         // A node a package made on the application's behalf: the package's line is where it
         // was created, and this is the line that asked for it.
         (node.usedAt
-          ? `<div class="ins-source">↗ used at ${place(bothAt(node.usedAt), node.usedAt, reveals)}</div>`
+          ? `<div class="ins-source">↗ used at ${place(bothAt(node.usedAt, root), node.usedAt, reveals)}</div>`
           : '') +
         // Nothing said where it came from at all: the compiler did not mark this project and
         // the stack had nothing to offer either. Saying so beats a card that just sits there.
@@ -218,6 +284,14 @@ export const INSPECTOR_CSS = `
 .ins-rel { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--fx-muted, #8a90a2); font-size: 11.5px; }
 .ins-rel b { color: var(--fx-label, #e7e9ee); font-weight: 600; }
 .ins-rel i { font-style: normal; opacity: .6; }
+.ins-edit { cursor: text; border-bottom: 1px dashed var(--fx-line, #262a35); }
+.ins-edit:hover { border-bottom-color: var(--fx-accent, #5eead4); }
+.ins-input {
+  width: 100%; box-sizing: border-box; padding: 1px 4px;
+  font: inherit; font-family: ui-monospace, monospace;
+  color: var(--fx-label, #e7e9ee); background: var(--fx-bg, #0f1115);
+  border: 1px solid var(--fx-accent, #5eead4); border-radius: 3px;
+}
 .ins-at {
   font: inherit; color: inherit; background: none; border: 0; padding: 0;
   cursor: pointer; text-decoration: underline; text-decoration-style: dotted;
