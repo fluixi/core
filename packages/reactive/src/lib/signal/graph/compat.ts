@@ -84,7 +84,13 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
     },
     enumerable: false,
   });
-  reportReactiveNode({ kind: 'signal', node: state, handle: read, name: options?.name });
+  reportReactiveNode({
+    kind: 'signal',
+    node: state,
+    handle: read,
+    name: options?.name,
+    set: write as (value: unknown) => void,
+  });
   // A signal goes when its owner does, the same as a memo. A list rebuilt without a key
   // makes one per row per update, and a watcher that is never told keeps every one of them.
   if (isObserved()) l1onCleanup(() => reportReactiveDispose(state));

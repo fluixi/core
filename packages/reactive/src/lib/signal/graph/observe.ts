@@ -28,6 +28,12 @@ export interface ReactiveNodeReport {
   /** The name the call site gave, if it gave one. */
   name?: string;
   /**
+   * How to write it, for a signal. A watcher setting the value through this goes through
+   * the same path the application does — writing the node directly marks its readers dirty
+   * without ever flushing them, so the page keeps whatever it last rendered.
+   */
+  set?: (value: unknown) => void;
+  /**
    * The node this one was built for. A store creates a signal per key, lazily, wherever it
    * is first read — the useful location is the store's, not the reader's.
    */
