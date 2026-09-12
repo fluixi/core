@@ -269,10 +269,18 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const handle = report.handle;
       // One mark, one node — read here and nowhere else, matching the reactor.
       const mark = takeReactiveSource();
+      // What a builtin tag is, decided from its name before anything reads its value.
+      //
       // `Switch` names its own memo and returns a dom node, so nothing downstream carries a
-      // `$name` to recognise it by later. The name the runtime gave it is the only signal,
-      // and only the runtime's: a mark carries whatever the author called their own value.
-      const kind = (report.name ? KIND_OF_BUILTIN[report.name] : undefined) ?? KINDS[report.kind];
+      // `$name` to recognise it by later. `Router`, `Suspense` and `Outlet` are not named by
+      // the runtime at all — what names them is the compiler's mark on the tag, and without
+      // reading that they stay plain memos and the tree lists them as values.
+      //
+      // A mark on a memo is a tag the compiler saw. On anything else it is whatever the
+      // author called their own value, so a signal someone named `Show` is left alone.
+      const base = KINDS[report.kind];
+      const marked = base === 'memo' && mark?.name ? KIND_OF_BUILTIN[mark.name] : undefined;
+      const kind = (report.name ? KIND_OF_BUILTIN[report.name] : undefined) ?? marked ?? base;
       const named = report.name ?? mark?.name;
       if (!named) unnamed.add(id);
       // Only for a node the compiler did not mark. This is called from inside the creating

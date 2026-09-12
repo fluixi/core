@@ -643,3 +643,33 @@ describe('where a node reaches the page', () => {
     expect(observed.nodeAt(document.body)).toBeUndefined();
   });
 });
+
+/**
+ * `Router` and `Suspense` are not named by the runtime — the compiler's mark on the tag is
+ * the only thing that says what they are. Read as plain memos they were listed as values.
+ */
+describe('a builtin tag the runtime does not name', () => {
+  it('takes its kind from the mark the compiler left on the tag', () => {
+    observed = observeGraph();
+    createRoot(() => {
+      markReactiveSource('src/app.tsx', 35, 9, 'Router');
+      createMemo(() => 'routes');
+      markReactiveSource('src/app.tsx', 18, 8, 'Suspense');
+      createMemo(() => 'children');
+    });
+    observed.sample();
+    expect(byLabel(observed, 'Router')?.kind).toBe('router');
+    expect(byLabel(observed, 'Suspense')?.kind).toBe('control');
+  });
+
+  it('leaves a value the author happened to name that way alone', () => {
+    observed = observeGraph();
+    createRoot(() => {
+      markReactiveSource('src/app.tsx', 3, 8, 'Show');
+      createSignal(0);
+    });
+    observed.sample();
+    // A signal is not a tag, whatever it is called.
+    expect(byLabel(observed, 'Show')?.kind).toBe('state');
+  });
+});
