@@ -42,16 +42,20 @@ export function createComponent<T extends (props?: any) => any, U = any>(
 
   // Primitives cannot carry properties, and a signal must not be stamped as a
   // component or the runtime caches it as a static thunk.
-  if (
-    component != null &&
-    (typeof component === 'function' || typeof component === 'object') &&
-    !isSignal(component)
-  ) {
+  const nameable =
+    component != null && (typeof component === 'function' || typeof component === 'object');
+  if (nameable) {
+    // The name goes on whatever came back, reactive or not. Only `asComponent` has to skip a
+    // signal — the runtime would cache it as a static thunk. Nothing reads `$name` but a
+    // watcher, and skipping it there hid every component that returns another one: an App
+    // whose whole body is `<Router/>` was named nowhere.
     try {
       (component as any)['$name'] = (Comp as any)?.name;
     } catch {
       /* frozen or exotic object */
     }
+  }
+  if (nameable && !isSignal(component)) {
     return asComponent(component) as CreateComponentReturnType<T, U>;
   }
   return component as CreateComponentReturnType<T, U>;

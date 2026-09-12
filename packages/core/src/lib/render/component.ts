@@ -267,8 +267,13 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   // cannot have properties added in strict mode and would throw TypeError.
   // Also skip stamping reactive values (signals/memos) with $COMPONENT so the DOM
   // runtime doesn't misidentify them as static component thunks and cache them.
-  if (component != null && (typeof component === 'function' || typeof component === 'object') && !isSignal(component)) {
+  const nameable = component != null && (typeof component === 'function' || typeof component === 'object');
+  // As in the dom integration: the name goes on a reactive return value too, since only
+  // `asComponent` has to avoid one.
+  if (nameable) {
     try { (component as any)['$name'] = value.name; } catch {}
+  }
+  if (nameable && !isSignal(component)) {
     // Always mark with asComponent so isComponent() works reliably in both dev and
     // production browser environments.
     return asComponent(component) as CreateComponentReturnType<T, U>;

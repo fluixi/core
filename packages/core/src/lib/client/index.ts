@@ -24,7 +24,8 @@ import {
   cleanupHydration,
 } from '../server/hydration.js';
 import { render } from '../render/index.js';
-import { ensureIntegration } from '../render/component.js';
+import { createComponent, ensureIntegration } from '../render/component.js';
+import { createMemo } from '@fluixi/reactive/signal';
 import { createHead, setActiveHead, mountHead, stripHeadMarker } from '@fluixi/head';
 
 // Connect the reactive system (signals, effects, batch) to the DOM runtime.
@@ -87,6 +88,9 @@ export interface StartClientOptions {
  * startClient(App);
  * ```
  */
+/** The root, entered the way the compiler enters every other component. */
+const rootOf = (App: (props?: any) => any) => createMemo(() => createComponent(App));
+
 export async function startClient(
   App: (props?: any) => any,
   options: StartClientOptions = {}
@@ -136,7 +140,11 @@ export async function startClient(
     }
     deserializeHydrationData();
     setHydrating(true);
-    domHydrate(() => App(), container as HTMLElement);
+    // A memo around createComponent, which is what compiled JSX emits for every other
+    // component. Called directly, the root is the one component the runtime never hears
+    // about: nothing holds its return value, so no node is made and a graph of the
+    // application starts at whatever the root happened to render.
+    domHydrate(rootOf(App), container as HTMLElement);
     // Handlers are now wired (delegated $$listeners attach during the hydration
     // render) — replay any events the user fired before hydration.
     replayEvents();
@@ -145,7 +153,7 @@ export async function startClient(
       cleanupHydration();
     }, 100);
   } else {
-    render(() => App(), container as HTMLElement);
+    render(rootOf(App), container as HTMLElement);
   }
 
   mountHead(head);
