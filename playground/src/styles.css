@@ -3,6 +3,24 @@
 /* The four node kinds keep their own hues: here colour is the distinction being drawn,
    which is the one place it earns more than a hairline would. */
 :root {
+  /* The devtools modules read these. Mapped once here rather than per component: every
+     pane that was added later — the tree, the kind filter, a floating card on the body —
+     kept the dark defaults on a light page until it was listed somewhere. */
+  --fx-bg: var(--bg);
+  --fx-panel: var(--panel);
+  --fx-label: var(--text);
+  --fx-muted: var(--muted);
+  --fx-accent: var(--accent);
+  --fx-line: var(--line);
+  --fx-hover: var(--panel-2);
+  --fx-sel: var(--panel-2);
+  --fx-selected: var(--panel-2);
+  --fx-write: var(--hl-deletion);
+  --fx-state: var(--state);
+  --fx-memo: var(--memo);
+  --fx-control: var(--memo);
+  --fx-router: var(--store);
+
   --state: #34d399;
   --memo: #a78bfa;
   --store: #38bdf8;
@@ -41,7 +59,6 @@ body {
 .ex { background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 6px 12px; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
 .ex:hover { background: var(--panel-2); color: var(--text); }
 .ex.on { background: var(--panel-2); border-color: var(--line-strong); color: var(--text); }
-.legend { display: flex; gap: 8px; }
 .chip { font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); white-space: nowrap; }
 .chip.n-state { color: var(--state); border-color: var(--line); }
 .chip.n-memo { color: var(--memo); border-color: var(--line); }
@@ -156,17 +173,23 @@ body.dragging iframe { pointer-events: none; }
   border: 1px solid var(--line); background: var(--panel); color: var(--text);
 }
 .tl-empty { color: var(--muted); font-size: 12px; }
-.tl-commit { padding: 4px 6px; border-radius: var(--r-sm, 4px); cursor: pointer; font-size: 11.5px; }
+.tl-commit { padding: 5px 7px; border-radius: var(--r-sm, 4px); cursor: pointer; font-size: 11.5px; }
 .tl-commit:hover { background: var(--panel); }
-.tl-commit.selected { background: var(--panel); outline: 1px solid var(--line-strong); }
+/* The selected commit is the one being read, so it is marked down its edge rather than by
+   an outline that competes with the rows around it. */
+.tl-commit.selected {
+  background: var(--panel-2);
+  box-shadow: inset 2px 0 0 var(--accent);
+  outline: none;
+}
 .tl-line { display: flex; align-items: baseline; gap: 6px; }
 .tl-caret { color: var(--muted); font-size: 9px; flex: none; }
 .tl-time { font-family: var(--mono); font-size: 10px; color: var(--muted); flex: none; }
 .tl-name { font-family: var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-did { margin-left: auto; color: var(--muted); flex: none; }
-.tl-body { margin: 3px 0 2px 15px; }
-.tl-change { font-family: var(--mono); font-size: 11px; color: var(--accent); overflow-wrap: anywhere; white-space: pre-wrap; }
-.tl-part { margin-top: 2px; color: var(--text); font-size: 11px; overflow-wrap: anywhere; }
+.tl-body { margin: 5px 0 3px 15px; display: grid; gap: 3px; }
+.tl-change { font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--accent); overflow-wrap: anywhere; white-space: pre-wrap; }
+.tl-part { color: var(--text); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .tl-verb { color: var(--muted); }
 
 .inspector { border-top: 1px solid var(--line); padding: 10px 14px; min-height: 64px; font-size: 12.5px; background: var(--panel-2); }
@@ -211,8 +234,6 @@ body.dragging iframe { pointer-events: none; }
   .pg-head { flex-wrap: wrap; gap: 10px 14px; padding: 10px 14px; }
   .pg-head h1 { font-size: 14px; }
   .examples { order: 3; width: 100%; flex: none; }
-  /* The legend is a key for colours that are still visible without it. */
-  .legend { display: none; }
   .head-actions { margin-left: auto; }
   .editor { min-height: 320px; }
   .tabs-bar { padding: 6px 8px 0px 6px; }
@@ -289,3 +310,26 @@ body.dragging iframe { pointer-events: none; }
   --component: var(--component);
 }
 .ins-source { margin-top: 7px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+/* A location opens the file, so it reads as a link rather than as a button. */
+.ins-at {
+  font: inherit; color: var(--accent); background: none; border: 0; padding: 0;
+  cursor: pointer; text-decoration: underline; text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.ins-at:hover { text-decoration-style: solid; }
+.ins-at:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.ins-edit { cursor: text; border-bottom: 1px dashed var(--line-strong); }
+.ins-edit:hover { border-bottom-color: var(--accent); }
+.ins-input {
+  width: 100%; box-sizing: border-box; padding: 2px 5px;
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text); background: var(--bg);
+  border: 1px solid var(--accent); border-radius: var(--r-sm, 4px);
+}
+
+.graph-wrap { display: flex; }
+.graph-tree {
+  width: 180px; flex: none; overflow: auto;
+  padding: 4px 0; border-right: 1px solid var(--fx-line, #262a35);
+}
+.graph-wrap .graph { flex: 1; min-width: 0; }

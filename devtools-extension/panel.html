@@ -19,6 +19,9 @@
           <button id="bindings" title="Draw a card for each place a value reaches the page, and each place it is set from">
             <span class="ico">⇥</span><span class="lbl">Bindings</span>
           </button>
+          <button id="tree-toggle" class="on" title="Show what the page is made of, as a tree of tags">
+            <span class="ico">⌸</span><span class="lbl">Tree</span>
+          </button>
           <button id="timeline-toggle" class="on" title="Show the history: what each update changed, newest first">
             <span class="ico">⏱</span><span class="lbl">History</span>
           </button>
@@ -34,7 +37,11 @@
         </div>
       </div>
     </div>
-    <div id="graph"><svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div id="stage">
+      <div id="tree"></div>
+      <div id="tree-split" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+      <div id="graph"><svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
     <div id="split" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
     <div id="bottom">
       <div id="inspector"></div>

@@ -7,13 +7,21 @@ import {
   createTimeline,
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
+  FLOAT_CSS,
   KIND_FILTER_CSS,
+  TREE_CSS,
+  createComponentTree,
   createInspector,
+  hideHighlight,
+  showHighlight,
+  startPicking,
   createKindFilter,
+  makeFloatable,
   copyText,
   graphToJson,
   type DetailPanel,
   type Inspector,
+  type ComponentTree,
   type GraphView,
   type ObservedGraph,
   type Timeline,
@@ -82,6 +90,7 @@ export function Playground() {
   const [collapsed, setCollapsed] = createSignal<ReadonlySet<string>>(new Set());
   const [layout, setLayout] = createSignal<'horizontal' | 'vertical'>('horizontal');
   const [grouped, setGrouped] = createSignal(true);
+  const [picking, setPicking] = createSignal(false);
   const [bindings, setBindings] = createSignal(false);
 
   let rootEl!: HTMLDivElement;
@@ -95,6 +104,7 @@ export function Playground() {
   let viewer: CodeViewer | null = null;
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
+  let tagTree: ComponentTree | undefined;
   let timelineEl!: HTMLDivElement;
   let timeline: Timeline | null = null;
   let detail: DetailPanel | null = null;
@@ -125,8 +135,25 @@ export function Playground() {
 
   function renderInspector() {
     if (!inspectorEl) return;
-    inspector ??= createInspector(inspectorEl, { onReveal: openInEditor });
+    inspector ??= createInspector(inspectorEl, {
+      onReveal: openInEditor,
+      onEdit: (id, raw) => reactor?.setValue(id, parseValue(raw)) ?? false,
+    });
     inspector.show(drawn(), selectedId);
+  }
+
+  /**
+   * What the reader typed, as a value.
+   *
+   * JSON first, so `3`, `false`, `"x"`, `[1,2]` mean what they look like. Anything else is
+   * the text itself, which is what someone typing a bare word into a string signal meant.
+   */
+  function parseValue(raw: string): unknown {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
   }
 
   /**
@@ -152,6 +179,9 @@ export function Playground() {
         // Straight off the observer; nothing serialises here.
         timeline?.push(reactor.takeEvents());
         view.update(reactor.graph);
+        // Every frame, like the graph: the tree follows what is mounted, and only touches
+        // the dom when the shape of it changes.
+        tagTree?.render(reactor.graph, selectedId);
         timeline?.render(reactor.graph);
         let edges = 0;
         let runs = 0;
@@ -469,7 +499,7 @@ export function Playground() {
   onMount(() => {
     document.documentElement.dataset.theme = theme();
     const style = document.createElement('style');
-    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}`;
+    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}\n${TREE_CSS}\n${FLOAT_CSS}`;
     document.head.appendChild(style);
     editor = createEditor(editorHost, {
       files: files(),
@@ -517,13 +547,6 @@ export function Playground() {
             </button>
           ))}
         </nav>
-        <div class="legend">
-          <span class="chip n-state">◆ state</span>
-          <span class="chip n-memo">ƒ memo</span>
-          <span class="chip n-store">▤ store</span>
-          <span class="chip n-effect">⚡ effect</span>
-          <span class="chip n-component">◧ component</span>
-        </div>
         <div class="head-actions">
           {() => (saved() ? <span class="saved">saved</span> : null)}
           <button class="ghost" title="Switch theme" onClick={toggleTheme}>
@@ -694,6 +717,38 @@ export function Playground() {
             <span class="stats">
               {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
             </span>
+            <button
+              type="button"
+              class={picking() ? 'on' : ''}
+              title="Pick an element in the preview, and select what drives it"
+              onClick={() => {
+                if (picking()) return;
+                setPicking(true);
+                const done = () => setPicking(false);
+                // The application runs in the preview iframe, so that is the document the
+                // pointer has to be followed in — not the panel's own.
+                const frame = previewEl?.querySelector('iframe') as HTMLIFrameElement | null;
+                const doc = frame?.contentDocument;
+                if (!doc) {
+                  done();
+                  return;
+                }
+                startPicking({
+                  document: doc,
+                  nodeAt: (el) => reactor?.nodeAt(el),
+                  describe: (id) => reactor?.graph.get(id)?.label ?? '',
+                  onPick: (id) => {
+                    done();
+                    selectedId = id;
+                    view?.select(id);
+                    renderInspector();
+                  },
+                  onCancel: done,
+                });
+              }}
+            >
+              ⊹
+            </button>
             <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next) })} />
             <span class="zoom">
               <button
@@ -749,6 +804,36 @@ export function Playground() {
             </span>
           </div>
           <div class="graph-wrap">
+            <div
+              class="graph-tree"
+              ref={(el: HTMLDivElement) => {
+                makeFloatable(el, { title: 'tree' });
+                tagTree = createComponentTree(el, {
+                  domFor: (id) => reactor?.elementsFor(id) ?? [],
+                  onHover: (id, element) => {
+                    // An element row knows exactly what it is; a tag row covers everything
+                    // it rendered, and boxing only the first makes it look like its parent.
+                    const found = element ? [element] : id === null ? [] : (reactor?.elementsFor(id) ?? []);
+                    const name = element
+                      ? element.tagName.toLowerCase()
+                      : id === null
+                        ? ''
+                        : (reactor?.graph.get(id)?.label ?? '');
+                    if (found.length) showHighlight(found, name);
+                    else hideHighlight();
+                  },
+                  onSelect: (id) => {
+                    selectedId = id;
+                    view?.select(id);
+                    renderInspector();
+                  },
+                  onReveal: (id) => {
+                    const n = drawn().get(id);
+                    if (n) openInEditor(n.source ?? n.usedAt ?? n.declaredAt ?? {});
+                  },
+                });
+              }}
+            />
             <svg class="graph" ref={(el: SVGSVGElement) => (svgEl = el)} preserveAspectRatio="xMidYMid meet" />
           </div>
           <div
@@ -768,7 +853,13 @@ export function Playground() {
               );
             }}
           >
-            <div class="inspector" ref={(el: HTMLDivElement) => (inspectorEl = el)} />
+            <div
+              class="inspector"
+              ref={(el: HTMLDivElement) => {
+                inspectorEl = el;
+                makeFloatable(el, { title: 'inspector' });
+              }}
+            />
             <div
               class="timeline-split"
               role="separator"
@@ -776,7 +867,13 @@ export function Playground() {
               title="Drag to resize"
               ref={(el: HTMLDivElement) => drag(el, dragTimeline)}
             />
-            <div class="timeline" ref={(el: HTMLDivElement) => (timelineEl = el)} />
+            <div
+              class="timeline"
+              ref={(el: HTMLDivElement) => {
+                timelineEl = el;
+                makeFloatable(el, { title: 'history' });
+              }}
+            />
           </div>
         </div>
       </section>

@@ -9,8 +9,10 @@ import {
   applySnapshot,
   createDetailPanel,
   createGraphView,
+  createComponentTree,
   createInspector,
   createKindFilter,
+  makeFloatable,
   createTimeline,
   copyText,
   graphToJson,
@@ -18,7 +20,9 @@ import {
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
   INSPECTOR_CSS,
+  FLOAT_CSS,
   KIND_FILTER_CSS,
+  TREE_CSS,
   TIMELINE_CSS,
   type GraphDirection,
   type RNode,
@@ -30,7 +34,7 @@ const INTERVAL = 250;
 
 function injectStyles(): void {
   const style = document.createElement('style');
-  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS, KIND_FILTER_CSS].join('\n');
+  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS, KIND_FILTER_CSS, TREE_CSS, FLOAT_CSS].join('\n');
   document.head.appendChild(style);
 }
 
@@ -103,6 +107,22 @@ function main(): void {
   });
   inspector.clear();
 
+  // No `domFor` here: the panel reads a snapshot of the page rather than the page itself,
+  // so it has no elements to list. The tags are what crosses the wire.
+  const tree = createComponentTree(document.getElementById('tree') as HTMLElement, {
+    empty: 'nothing rendered yet',
+    onSelect: (id) => {
+      selected = id;
+      view.select(id);
+      inspector.show(view.shown.size ? view.shown : graph, id);
+    },
+    onReveal: (id) => {
+      const node = (view.shown.size ? view.shown : graph).get(id);
+      if (node) openSource(node.source ?? node.usedAt ?? node.declaredAt ?? {});
+    },
+  });
+  tree.clear();
+
   const view = createGraphView(svg, {
     onReveal: (node) => openSource(node.source ?? node.usedAt ?? node.declaredAt ?? {}),
     onSelect: (node) => {
@@ -153,6 +173,10 @@ function main(): void {
     const button = document.getElementById('export');
     void copyText(graphToJson(view.shown.size ? view.shown : graph), button?.querySelector('.lbl') as HTMLElement);
   });
+  on('tree-toggle', () => {
+    const hidden = document.body.classList.toggle('no-tree');
+    document.getElementById('tree-toggle')?.classList.toggle('on', !hidden);
+  });
   on('timeline-toggle', () => {
     const hidden = document.body.classList.toggle('no-timeline');
     document.getElementById('timeline-toggle')?.classList.toggle('on', !hidden);
@@ -166,6 +190,13 @@ function main(): void {
       document.documentElement.style.setProperty('--bottom-height', `${Math.round(height)}px`);
     });
   }
+  const treeSplit = document.getElementById('tree-split');
+  if (treeSplit) {
+    drag(treeSplit, (e) => {
+      const width = Math.max(120, Math.min(window.innerWidth - 240, e.clientX));
+      document.documentElement.style.setProperty('--tree-width', `${Math.round(width)}px`);
+    });
+  }
   const vertical = document.getElementById('timeline-split');
   if (vertical) {
     drag(vertical, (e) => {
@@ -174,9 +205,16 @@ function main(): void {
     });
   }
 
+  // Each pane can be lifted out to be read properly, and put back where it was.
+  for (const [id, title] of [['tree', 'tree'], ['inspector', 'inspector'], ['timeline', 'history']] as const) {
+    const pane = document.getElementById(id);
+    if (pane) makeFloatable(pane, { title });
+  }
+
   const tick = (): void => {
     view.update(graph, Date.now());
     inspector.show(view.shown.size ? view.shown : graph, selected);
+    tree.render(graph, selected);
     timeline.render(view.shown.size ? view.shown : graph);
     requestAnimationFrame(tick);
   };
@@ -215,6 +253,7 @@ function main(): void {
     view.clear();
     inspector.clear();
     timeline.clear();
+    tree.clear();
     detail.close();
   });
 }
