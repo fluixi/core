@@ -104,3 +104,88 @@ describe('two readers', () => {
     expect(second.map((e) => e.seq)).toEqual(first.map((e) => e.seq));
   });
 });
+
+/**
+ * The first copy to load owns the graph. A browser extension injects at document_start, so
+ * it wins over the application's own agent, and every panel then reads what that build
+ * decided — silently, which is how a stale extension came to look like a bug in the graph.
+ */
+describe('two copies on one page', () => {
+  it('keeps the one already watching, and counts the rest', () => {
+    const first = installDevtoolsHook();
+    expect(first.copies).toBe(1);
+    const second = installDevtoolsHook();
+    expect(second).toBe(first);
+    expect(first.copies).toBe(2);
+  });
+
+  it('counts from an older build that kept no count of its own', () => {
+    // What is actually on the page when an extension injected first.
+    (host as Record<string, unknown>)[HOOK] = { snapshot: () => null } as unknown as DevtoolsHook;
+    const hook = installDevtoolsHook();
+    expect(hook.copies).toBe(2);
+  });
+
+  const warnings = (run: () => void): string => {
+    const said: string[] = [];
+    const was = console.warn;
+    console.warn = (line: string) => said.push(line);
+    try {
+      run();
+    } finally {
+      console.warn = was;
+    }
+    return said.join(' ');
+  };
+
+  it('says nothing about it, since a second copy is the ordinary case', () => {
+    // An extension injects one before anything else runs and the application's agent loads
+    // another. Warning on every page for something `inject` then sorts out is noise.
+    const first = installDevtoolsHook();
+    first.inject({ observeReactiveNodes, version: '0.0.0' } as never);
+    expect(warnings(() => installDevtoolsHook())).toBe('');
+  });
+
+  it('hands over to an agent that arrives after the runtime', () => {
+    // What actually happens on a page: an extension installs the hook, the runtime injects
+    // the moment it is evaluated and brings no devtools, then the application's own agent
+    // loads and brings one.
+    const hook = installDevtoolsHook();
+    hook.inject({ observeReactiveNodes, version: '0.0.0' } as never);
+    const first = hook.observed;
+    expect(first).not.toBeNull();
+
+    let detached = 0;
+    (first as unknown as { detach: () => void }).detach = () => (detached += 1);
+    const mine = { graph: new Map(), sample: () => [], takeRemoved: () => [], takeEvents: () => [],
+      elementsFor: () => [], nodeAt: () => undefined, setValue: () => false, detach: () => {} };
+    hook.inject({ observeReactiveNodes, version: '0.0.0', watch: () => mine } as never);
+
+    expect(hook.observed).toBe(mine);
+    expect(detached).toBe(1);
+  });
+
+  it('keeps the agent that already brought its own, whatever injects later', () => {
+    const hook = installDevtoolsHook();
+    const mine = { graph: new Map(), sample: () => [], takeRemoved: () => [], takeEvents: () => [],
+      elementsFor: () => [], nodeAt: () => undefined, setValue: () => false, detach: () => {} };
+    hook.inject({ observeReactiveNodes, version: '0.0.0', watch: () => mine } as never);
+    hook.inject({ observeReactiveNodes, version: '0.0.0', watch: () => ({ ...mine }) } as never);
+    expect(hook.observed).toBe(mine);
+  });
+
+  it('watches with the observer the caller brought', () => {
+    let asked = 0;
+    const hook = installDevtoolsHook();
+    const mine = { graph: new Map(), sample: () => [], takeRemoved: () => [], takeEvents: () => [],
+      elementsFor: () => [], nodeAt: () => undefined, setValue: () => false, detach: () => {} };
+    hook.inject({
+      observeReactiveNodes,
+      version: '0.0.0',
+      watch: () => ((asked += 1), mine),
+    } as never);
+    // The application ships its own devtools; the hook may belong to an extension.
+    expect(asked).toBe(1);
+    expect(hook.observed).toBe(mine);
+  });
+});

@@ -31,14 +31,18 @@ const HISTORY = 500;
 
 /** Written with the ids resolved: a virtual module has no directory to resolve a bare one from. */
 const agentSource = (devtools: string, signal: string, reactive: string) => `
-import { installDevtoolsHook } from ${JSON.stringify(devtools)};
+import { installDevtoolsHook, observeGraph } from ${JSON.stringify(devtools)};
 import { observeReactiveNodes } from ${JSON.stringify(signal)};
 import { VERSION } from ${JSON.stringify(reactive)};
 
 // The runtime this module imports is the application's own — same module graph, same nodes.
 // Nothing waits for the runtime to offer itself; that path is for a tool loaded from outside.
+//
+// \`watch\` is this copy of devtools, handed over with the runtime. A browser extension
+// installs a hook at document_start and so owns it; without this the graph would be built
+// by that extension's build rather than the one shipped alongside this application.
 const hook = installDevtoolsHook();
-hook.inject({ observeReactiveNodes, version: VERSION });
+hook.inject({ observeReactiveNodes, version: VERSION, watch: observeGraph });
 
 const send = (kind, snapshot) => import.meta.hot?.send(${JSON.stringify(EVENT)}, { kind, snapshot });
 
