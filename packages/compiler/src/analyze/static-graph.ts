@@ -813,13 +813,24 @@ export function analyzeReactiveGraph(
   for (const ref of routeRefs) {
     const named = resolve(ref.file, ref.tag) ?? unique.get(ref.tag) ?? undefined;
     if (named === undefined) continue;
-    const holder = pending.find(
+    // The router the table was handed to, which is what renders the components it names.
+    // Without this they belong to the component that merely mentions the table, and a
+    // `<Router routes={appRoutes}>` ends up beside the layout it renders rather than above.
+    const router = pending.find(
+      (p) =>
+        p.file === ref.file &&
+        p.node.kind === 'router' &&
+        p.node.id !== named &&
+        p.reads.has(ref.via),
+    )?.node.id;
+    const mentions = pending.find(
       (p) =>
         p.file === ref.file &&
         (p.node.kind === 'component' || p.node.kind === 'handler') &&
         p.node.id !== named &&
         componentMentions.get(p.node.id)?.has(ref.via),
     )?.node.id;
+    const holder = router ?? mentions;
     const node = byId.get(named);
     if (node && node.createdIn === undefined && holder !== undefined) node.createdIn = holder;
   }
