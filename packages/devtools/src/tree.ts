@@ -69,8 +69,11 @@ function elementRow(element: Element, key: string, budget: { left: number }): Ro
 export interface TreeOptions {
   /**
    * Also list the reactive values each tag made — the signals and memos the author wrote
-   * inside it. Machinery is left out: only a node the compiler marked with a name of its
-   * own counts, so a component shows `count` and not the memo it was wrapped in.
+   * inside it. Machinery is left out: a node the framework named itself does not count, so
+   * a component shows `count` and not the memo it was wrapped in.
+   *
+   * Only an explicit `authored: false` is machinery. A graph read from the source says
+   * nothing either way, and everything in it was written by hand.
    */
   values?: boolean;
   /**
@@ -82,7 +85,7 @@ export interface TreeOptions {
 
 export function componentTree(graph: Map<number, RNode>, options: TreeOptions = {}): TreeNode[] {
   const wanted = (node: RNode): boolean =>
-    TREE_KINDS.has(node.kind) || (options.values === true && node.authored === true);
+    TREE_KINDS.has(node.kind) || (options.values === true && node.authored !== false);
 
   const tagged = [...graph.values()].filter(wanted).sort((a, b) => a.id - b.id);
 

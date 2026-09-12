@@ -20,7 +20,8 @@ const app = () =>
     [0, node(0, { kind: 'component', label: 'App' })],
     [1, node(1, { kind: 'router', label: 'Router', createdIn: 0 })],
     // The memo the compiler wraps each component in: real, and not something anyone wrote.
-    [2, node(2, { kind: 'memo', label: 'm2', createdIn: 1 })],
+    // A watcher always says which; only a graph read from files leaves it open.
+    [2, node(2, { kind: 'memo', label: 'm2', createdIn: 1, authored: false })],
     [3, node(3, { kind: 'component', label: 'Counter', createdIn: 2 })],
     [4, node(4, { kind: 'component', label: 'Another', createdIn: 1 })],
     [5, node(5, { kind: 'state', label: 'count', createdIn: 3, authored: true })],
@@ -75,6 +76,13 @@ describe('the tree the nodes make', () => {
     expect(counter.label).toBe('Counter');
     expect(counter.children.map((c) => c.label)).toEqual(['count']);
     expect(counter.children[0]?.value).toBe(true);
+  });
+
+  it('counts a node that says nothing either way, as a source graph does', () => {
+    // Nothing read from the files is the framework's own; there is no mark to go on.
+    const graph = app();
+    graph.set(7, node(7, { kind: 'resource', label: 'messages', createdIn: 3 }));
+    expect(idsIn(componentTree(graph, { values: true }))).toContain(7);
   });
 
   it('leaves machinery out even with values on', () => {
