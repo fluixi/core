@@ -123,6 +123,8 @@ run('what a frame costs as the page grows', () => {
         snapshot = serializeGraph(graph, Date.now(), { dom: domOf });
       });
       console.log(`    ${'snapshot bytes'.padEnd(26)} ${JSON.stringify(snapshot).length}`);
+      const bare = JSON.stringify(serializeGraph(graph, Date.now())).length;
+      console.log(`    ${'  without dom'.padEnd(26)} ${bare}`);
 
       const wire = snapshotToRenderMap(snapshot);
       ms('snapshotToRenderMap', () => snapshotToRenderMap(snapshot));
