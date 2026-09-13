@@ -14,9 +14,9 @@ import {
   type ReactiveNodeReport,
   type ReactiveObserver,
 } from '@fluixi/reactive/signal';
-import { componentSource, holeLocation, installSourceMarker, takeReactiveSource } from './source.js';
+import { componentSource, holeLocation, installSourceMarker, propsLocations, takeReactiveSource } from './source.js';
 import { currentCallSite } from './callsite.js';
-import { KIND_OF_BUILTIN, type DomTarget, type NodeKind, type RNode } from './instrument.js';
+import { KIND_OF_BUILTIN, type DomTarget, type NodeKind, type PropReport, type RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { formatValue, shorten } from './format.js';
 import { createHistory, type GraphEvent } from './history.js';
@@ -124,6 +124,34 @@ const PREFIX: Record<NodeKind, string> = {
  * Start watching. Nodes made before this returns are not in the graph — attach before the
  * app's modules load, which in practice means before the entry import.
  */
+/**
+ * What a component was handed, read for display.
+ *
+ * Every prop is a getter over whatever the caller wrote, so reading one runs that
+ * expression. Untracked, or the read would subscribe whatever is sampling to it and the
+ * panel would drive the graph by looking at it. `children` is skipped: reading it builds
+ * the subtree, which is a side effect nobody asked for by opening an inspector.
+ */
+function readProps(props: object): PropReport[] | undefined {
+  const at = propsLocations(props);
+  const out: PropReport[] = [];
+  for (const name of Object.keys(props)) {
+    if (name === 'children') continue;
+    const where = at?.[name];
+    const report: PropReport = {
+      name,
+      ...(where ? { at: { line: where[0], column: where[1] } } : {}),
+    };
+    try {
+      report.value = formatValue(untrack(() => (props as Record<string, unknown>)[name]), 200);
+    } catch {
+      // A getter that throws is still a prop worth naming.
+    }
+    out.push(report);
+  }
+  return out.length ? out : undefined;
+}
+
 export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   installSourceMarker();
   const origin = options.origin ?? (typeof location === 'object' ? location.origin : undefined);
@@ -166,6 +194,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    * signals and all of them drive the same place. A description, never the element.
    */
   const targets = new WeakMap<CoreNode, DomTarget>();
+  /** The props object each component was handed, so its values can be read on request. */
+  const handed = new Map<number, object>();
   /**
    * Where each binding was wired up. Taken at creation: the first run is scheduled, so by the
    * time it reports, the frame that asked for it has left the stack.
@@ -406,6 +436,14 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       if (writer === undefined || writer === written) return;
       graph.get(writer)?.writes.add(written);
     },
+    props(node, props) {
+      const core = node as CoreNode;
+      if (!core || typeof core !== 'object' || !props) return;
+      const id = ids.get(core);
+      // Held, not read. Every prop is a getter over what the caller passed, so reading one
+      // here would subscribe whatever is running to it.
+      if (id !== undefined) handed.set(id, props as object);
+    },
     bound(node, target, kind, name, accessor) {
       const core = node as CoreNode;
       if (!core || typeof core !== 'object') return;
@@ -446,6 +484,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       // The label goes with it: nothing is left to look the name up in.
       history.disposed(id, graph.get(id)?.label);
       graph.delete(id);
+      handed.delete(id);
       raws.delete(id);
       cores.delete(id);
       rendered.delete(id);
@@ -548,6 +587,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         if (node.kind === 'component' || node.kind === 'control' || node.kind === 'router') {
           const found = elementsIn(raw);
           if (found.length) rendered.set(node.id, found.map((el) => new WeakRef(el)));
+          const given = handed.get(node.id);
+          if (given) node.props = readProps(given);
         }
         // Formatted once: the card shows the head of it, the tooltip and the inspector the
         // rest. Reading the value twice would be reading a proxy twice.

@@ -262,6 +262,15 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           ? `<span>⌁ set at <b>${node.setAt.map((w) => place(bothAt(w, root), w, reveals)).join(', ')}</b></span>`
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
+        // What the tag was written with. A prop's position has no file of its own: it was
+        // written on the tag, so it belongs to whichever file that is.
+        ...(node.props ?? []).map((p) => {
+          const where = p.at && { ...p.at, file: p.at.file ?? node.source?.file };
+          const at = where?.file ? bothAt(where, root) : '';
+          return `<span>⇥ ${escape(p.name)}=<b>${escape(clip(p.value ?? '', 60))}</b>${
+            at ? ` ${place(at, where, reveals)}` : ''
+          }</span>`;
+        }),
         made.length ? `<span>▸ made <b>${escape(made.join(', '))}</b></span>` : '',
       ]
         .filter(Boolean)

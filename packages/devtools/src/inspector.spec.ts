@@ -364,6 +364,49 @@ describe('an edit that never finishes', () => {
   });
 });
 
+describe('what a component was handed', () => {
+  const withProps = () =>
+    new Map<number, RNode>([
+      [
+        3,
+        node(3, {
+          kind: 'component',
+          label: 'Field',
+          source: { file: 'src/App.tsx', line: 66, column: 6 },
+          props: [
+            { name: 'label', value: '"Ada"', at: { line: 66, column: 20 } },
+            { name: 'type', value: '"text"', at: { line: 66, column: 33 } },
+            { name: 'nowhere', value: '1' },
+          ],
+        }),
+      ],
+    ]);
+
+  it('names each prop and what it currently holds', () => {
+    const inspector = createInspector(host);
+    inspector.show(withProps(), 3);
+    const text = host.textContent ?? '';
+    expect(text).toContain('label="Ada"');
+    expect(text).toContain('type="text"');
+  });
+
+  it('takes the file from the tag, since a prop position has none', () => {
+    const inspector = createInspector(host, { onReveal: () => {} });
+    inspector.show(withProps(), 3);
+    const at = [...host.querySelectorAll('.ins-at')].map(
+      (b) => `${(b as HTMLElement).dataset.file}:${(b as HTMLElement).dataset.line}:${(b as HTMLElement).dataset.column}`,
+    );
+    expect(at).toContain('src/App.tsx:66:20');
+    expect(at).toContain('src/App.tsx:66:33');
+  });
+
+  it('still names a prop the build recorded no position for', () => {
+    const inspector = createInspector(host, { onReveal: () => {} });
+    inspector.show(withProps(), 3);
+    expect(host.textContent).toContain('nowhere=1');
+  });
+});
+
 describe('inspecting an element', () => {
   /** Counter renders a span the count writes into. */
   const rendered = () =>

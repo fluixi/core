@@ -7,14 +7,14 @@
 //
 // This lives beside RNode on purpose. A copy kept anywhere else drifts the first time a node
 // gains a field, which is how `component`, `source` and `declaredAt` went missing from one.
-import type { DomTarget, NodeKind, NodeState, RNode } from './instrument.js';
+import type { DomTarget, NodeKind, NodeState, PropReport, RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
 import type { DomNode } from './dom.js';
 import type { GraphEvent } from './history.js';
 
 // A consumer reading a snapshot needs the vocabulary it is written in, and this module is
 // what it imports; making it go to two places for one message is a needless seam.
-export type { NodeKind, NodeState, DomTarget } from './instrument.js';
+export type { NodeKind, NodeState, DomTarget, PropReport } from './instrument.js';
 export type { ReactiveSourceLocation } from './source.js';
 export type { GraphEvent, GraphEventKind } from './history.js';
 
@@ -42,6 +42,8 @@ export interface WireNode {
   readonly loading?: boolean;
   /** Arrived as its own chunk rather than in the page's first bundle. */
   readonly lazy?: boolean;
+  /** Components only: the props the tag was handed. */
+  readonly props?: PropReport[];
   /** Where the node was created, when the compiler marked it. */
   readonly source?: ReactiveSourceLocation;
   /** Components only: where the component itself was declared. */
@@ -121,6 +123,7 @@ export function serializeGraph(
       state,
       loading: node.loading,
       lazy: node.lazy,
+      props: node.props,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
@@ -156,6 +159,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       core: { version: node.version, state: node.state ? STATE_CODE[node.state] : undefined },
       loading: node.loading,
       lazy: node.lazy,
+      props: node.props,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,

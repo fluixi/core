@@ -141,7 +141,18 @@ export interface RNode {
   loading?: boolean;
   /** This tag arrived as its own chunk, so it is not in the bundle the page started with. */
   lazy?: boolean;
+  /** Components only: what the tag was handed, and where each was written. */
+  props?: PropReport[];
   depth?: number;
+}
+
+/** One prop of a component tag. The value is read untracked, and only when asked for. */
+export interface PropReport {
+  name: string;
+  /** Formatted at the moment it was read. Absent when reading threw. */
+  value?: string;
+  /** Where it was written on the tag. */
+  at?: { file?: string; line?: number; column?: number };
 }
 
 const CORE_STATE: Record<number, NodeState> = { 0: 'clean', 1: 'check', 2: 'dirty' };
