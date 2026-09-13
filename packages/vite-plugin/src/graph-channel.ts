@@ -46,11 +46,17 @@ hook.inject({ observeReactiveNodes, version: VERSION, watch: observeGraph });
 
 const send = (kind, snapshot) => import.meta.hot?.send(${JSON.stringify(EVENT)}, { kind, snapshot });
 
-send('full', hook.snapshot());
+const first = hook.snapshot();
+// Kept and handed back, so a browser panel polling the same hook cannot consume what this
+// one has not been told about yet.
+let cursor = first?.cursor;
+send('full', first);
 const timer = setInterval(() => {
-  const delta = hook.snapshot({ partial: true });
+  const delta = hook.snapshot({ partial: true, since: cursor });
+  if (!delta) return;
+  cursor = delta.cursor;
   // Events count on their own: an effect that ran without changing a value moves no node.
-  if (delta && (delta.nodes.length || delta.removed?.length || delta.events?.length)) send('delta', delta);
+  if (delta.nodes.length || delta.removed?.length || delta.events?.length) send('delta', delta);
 }, ${INTERVAL});
 
 import.meta.hot?.dispose(() => clearInterval(timer));

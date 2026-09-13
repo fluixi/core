@@ -33,12 +33,27 @@ interface CoreNode {
   observers?: Set<CoreNode> | null;
 }
 
+/** How far back a consumer may be and still be told what was dropped. */
+const REMOVED_LOG = 500;
+
 export interface ObservedGraph {
   readonly graph: Map<number, RNode>;
   /** Ids whose value or run count moved since the last call. Drives the pulse. */
   sample(): number[];
-  /** Ids dropped since the last call, for a consumer folding in deltas. Reading clears it. */
-  takeRemoved(): number[];
+  /**
+   * The cursor as it stands. A consumer folding in deltas keeps the one it was given and
+   * asks for what came after it.
+   */
+  readonly revision: number;
+  /**
+   * Ids that moved after `rev`. Unlike `sample`, asking does not consume anything, so two
+   * consumers reading at their own pace each see every change.
+   */
+  changedSince(rev: number): number[];
+  /** Ids dropped after `rev`. Bounded: a consumer further back than that is told to reload. */
+  removedSince(rev: number): number[];
+  /** Whether `rev` is old enough that the removal log no longer covers it. */
+  outrun(rev: number): boolean;
   /** What happened since the last call, in order. Empty when history is off. */
   takeEvents(): GraphEvent[];
   /** Where this node reaches the page, for whatever is still on it. */
@@ -280,7 +295,18 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     }
   };
 
-  const removed: number[] = [];
+  /**
+   * Removals, kept rather than drained, each stamped with the revision it happened at.
+   *
+   * Draining meant whichever consumer polled first took them, and a page with both a
+   * browser panel and an editor panel watching has two. Bounded, because nothing here is
+   * ever consumed — a consumer older than the oldest entry is told to start again.
+   */
+  const removed: { id: number; rev: number }[] = [];
+  /** Monotonic, bumped for every node the sample finds moved. */
+  let revision = 0;
+  /** The revision each node last moved at. */
+  const revs = new Map<number, number>();
   /** The nearest node the graph knows, looking outward through anything it does not. */
   const ancestor = (parents?: readonly unknown[]): number | undefined => {
     if (!parents) return undefined;
@@ -480,7 +506,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       internals.delete(target as CoreNode);
       const id = ids.get(target as object);
       if (id === undefined) return;
-      removed.push(id);
+      removed.push({ id, rev: ++revision });
+      revs.delete(id);
+      if (removed.length > REMOVED_LOG) removed.splice(0, removed.length - REMOVED_LOG);
       // The label goes with it: nothing is left to look the name up in.
       history.disposed(id, graph.get(id)?.label);
       graph.delete(id);
@@ -510,6 +538,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     sample() {
       described = null;
       const changed: number[] = [];
+      /** Recorded once here, so every consumer can be told about it at its own pace. */
+      const moved = (id: number): void => {
+        changed.push(id);
+        revs.set(id, ++revision);
+      };
       const now = Date.now();
 
       // What the dom reads, per node. Recounted rather than kept: a binding's sources change
@@ -554,7 +587,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           const seen = runsAtLastSample.get(node.id);
           if (seen === undefined || node.runs > seen) {
             node.lastPulse = now;
-            changed.push(node.id);
+            moved(node.id);
           }
           runsAtLastSample.set(node.id, node.runs);
           continue;
@@ -600,14 +633,25 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           // A signal never recomputes, so a write is the only thing it can count.
           if (node.kind === 'state') node.runs++;
           node.lastPulse = now;
-          changed.push(node.id);
+          moved(node.id);
         }
         runsAtLastSample.set(node.id, node.runs);
       }
       return changed;
     },
-    takeRemoved() {
-      return removed.splice(0, removed.length);
+    get revision() {
+      return revision;
+    },
+    changedSince(rev) {
+      const out: number[] = [];
+      for (const [id, at] of revs) if (at > rev) out.push(id);
+      return out;
+    },
+    removedSince(rev) {
+      return removed.filter((entry) => entry.rev > rev).map((entry) => entry.id);
+    },
+    outrun(rev) {
+      return removed.length >= REMOVED_LOG && rev < removed[0]!.rev;
     },
     elementsFor(id) {
       const live: Element[] = [];

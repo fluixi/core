@@ -125,6 +125,12 @@ run('what a frame costs as the page grows', () => {
       console.log(`    ${'snapshot bytes'.padEnd(26)} ${JSON.stringify(snapshot).length}`);
       const bare = JSON.stringify(serializeGraph(graph, Date.now())).length;
       console.log(`    ${'  without dom'.padEnd(26)} ${bare}`);
+      // What a consumer folding in deltas sends on a frame where nothing moved, which is
+      // most of them.
+      const idle = JSON.stringify(
+        serializeGraph(graph, Date.now(), { ids: [], removed: [], dom: domOf, cursor: 1 }),
+      ).length;
+      console.log(`    ${'  idle delta'.padEnd(26)} ${idle}`);
 
       const wire = snapshotToRenderMap(snapshot);
       ms('snapshotToRenderMap', () => snapshotToRenderMap(snapshot));

@@ -252,10 +252,14 @@ function main(): void {
   };
   requestAnimationFrame(tick);
 
+  /** Where this panel has read up to. Undefined asks for the whole graph. */
+  let cursor: number | undefined;
+
   async function poll(): Promise<void> {
-    const state = await readPage();
+    const state = await readPage(cursor);
     switch (state.kind) {
       case 'graph':
+        cursor = state.snapshot.cursor;
         graph = applySnapshot(graph, state.snapshot);
         if (state.snapshot.events?.length) timeline.push(state.snapshot.events);
         setStatus(
@@ -281,6 +285,9 @@ function main(): void {
   // A reload replaces the page's hook, and with it every node id.
   chrome.devtools.network.onNavigated.addListener(() => {
     graph = new Map();
+    // A new hook counts from zero, so an old cursor would ask for a delta against a graph
+    // that never existed.
+    cursor = undefined;
     selected = null;
     view.clear();
     inspector.clear();

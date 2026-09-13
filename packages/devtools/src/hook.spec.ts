@@ -61,13 +61,54 @@ describe('installDevtoolsHook', () => {
       set = setCount as (n: number) => number;
       createMemo(() => count() * 2, undefined, { name: 'double' });
     });
-    hook.snapshot();
+    const first = hook.snapshot()!;
 
-    expect(hook.snapshot({ partial: true })!.nodes).toHaveLength(0);
+    expect(hook.snapshot({ partial: true, since: first.cursor })!.nodes).toHaveLength(0);
     set(1);
-    const delta = hook.snapshot({ partial: true })!;
+    const delta = hook.snapshot({ partial: true, since: first.cursor })!;
     expect(delta.partial).toBe(true);
     expect(delta.nodes.map((n) => n.label).sort()).toEqual(['count', 'double']);
+  });
+
+  it('gives everything to a consumer that asks for a delta without a cursor', () => {
+    const hook = installDevtoolsHook();
+    injectRuntime(hook);
+    createRoot(() => createSignal(0, { name: 'count' }));
+    // Nothing to fold a delta into, so a delta would lose whatever came before.
+    const answer = hook.snapshot({ partial: true })!;
+    expect(answer.partial).toBeUndefined();
+    expect(answer.nodes.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * A page can have two of them: a browser panel and the dev server's own agent. The cursor
+   * used to be shared, so whichever polled first consumed the other's changes.
+   */
+  it('gives every consumer every change, whatever order they poll in', () => {
+    const hook = installDevtoolsHook();
+    injectRuntime(hook);
+    let set!: (n: number) => number;
+    createRoot(() => {
+      const [, setCount] = createSignal(0, { name: 'count' });
+      set = setCount as (n: number) => number;
+    });
+
+    // Both start from the same place.
+    let panel = hook.snapshot()!.cursor;
+    let agent = hook.snapshot()!.cursor;
+
+    set(1);
+    // The panel reads first and would previously have taken it.
+    const seenByPanel = hook.snapshot({ partial: true, since: panel })!;
+    const seenByAgent = hook.snapshot({ partial: true, since: agent })!;
+    expect(seenByPanel.nodes.map((n) => n.label)).toContain('count');
+    expect(seenByAgent.nodes.map((n) => n.label)).toContain('count');
+
+    panel = seenByPanel.cursor;
+    agent = seenByAgent.cursor;
+    // And neither sees it a second time.
+    expect(hook.snapshot({ partial: true, since: panel })!.nodes).toHaveLength(0);
+    expect(hook.snapshot({ partial: true, since: agent })!.nodes).toHaveLength(0);
   });
 
   it('is shared, so two agents do not each watch half a graph', () => {
