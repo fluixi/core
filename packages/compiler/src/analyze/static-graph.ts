@@ -56,6 +56,27 @@ export interface StaticNode {
   createdIn?: number;
   /** Where this value is written into the document. */
   targets?: StaticDomTarget[];
+  /**
+   * The elements this component writes, as a tree, read from the source rather than from a
+   * page. Only what is written literally: anything inside a hole is decided at runtime.
+   */
+  dom?: StaticDomNode[];
+}
+
+/**
+ * An element a component writes, in the shape a panel already draws.
+ *
+ * Deliberately the same fields as devtools' `DomNode`, minus the ones only a running page
+ * can fill. Mirrored rather than imported: the compiler does not depend on devtools.
+ */
+export interface StaticDomNode {
+  /** The element as written: `div#root`, `span.num`. */
+  label: string;
+  children: StaticDomNode[];
+  /** The component rendered here, when a tag stands in this position rather than an element. */
+  owner?: number;
+  /** Where the tag was written. */
+  at?: { file: string; line: number; column: number };
 }
 
 /** Where a value reaches the document, read from the jsx rather than from a running page. */
@@ -381,6 +402,10 @@ export function analyzeReactiveGraph(
   const routeRefs: RouteRef[] = [];
   /** Holes, resolved to the nodes they name once every file has been read. */
   const holes: { file: string; name: string; target: StaticDomTarget }[] = [];
+  /** The elements each component writes, by component id. */
+  const domFor = new Map<number, StaticDomNode[]>();
+  /** Tags standing in a dom tree whose component is declared in some other file. */
+  const unresolved: { node: StaticDomNode; tag: string; file: string }[] = [];
   /**
    * What each component's body names. Kept apart from `reads`, which becomes dependency
    * edges — a component mentioning a route table does not depend on it reactively.
@@ -576,6 +601,64 @@ export function analyzeReactiveGraph(
         source: { file: file.path, line: at.line, column: at.column },
       };
       for (const name of mentions(expr)) holes.push({ file: file.path, name, target });
+    });
+
+    /**
+     * The elements each component writes, as a tree.
+     *
+     * Nothing has run, so this is the structure the source states outright. A hole —
+     * `{items().map(...)}`, a `<Show>` body — is decided at runtime and has no elements
+     * here; the tag stands in its place and fills in once the application is up.
+     */
+    const describeTree = (el: Node): StaticDomNode | undefined => {
+      const opening = (el.openingElement as Node | undefined) ?? undefined;
+      const tag = (opening?.name as Node | undefined)?.name as string | undefined;
+      if (!opening || !tag) return undefined;
+      const at = el.loc?.start;
+      const where = at ? { file: file.path, line: at.line, column: at.column } : undefined;
+
+      const children: StaticDomNode[] = [];
+      for (const child of ((el.children as Node[] | undefined) ?? [])) {
+        if (child?.type !== 'JSXElement') continue;
+        const sub = describeTree(child);
+        if (sub) children.push(sub);
+      }
+
+      // A capitalised tag renders its own dom, so it stands here as itself and the panel
+      // pulls that component's row in. `components` has the directives, `here` the names
+      // this file declares; anything else is a name another file exports, which is only
+      // resolvable once they have all been read. The children stay either way — they are
+      // written here, and a row that resolves replaces them with the component's own.
+      if (tag[0] === tag[0]?.toUpperCase()) {
+        const node: StaticDomNode = { label: tag, children, ...(where ? { at: where } : {}) };
+        const id = components.get(el) ?? here.get(tag);
+        if (id !== undefined) node.owner = id;
+        else unresolved.push({ node, tag, file: file.path });
+        return node;
+      }
+
+      return { label: describeJsx(opening), children, ...(where ? { at: where } : {}) };
+    };
+
+    walk(program, (node, stack) => {
+      if (node.type !== 'JSXElement') return;
+      // Only the outermost element of a body: the rest are reached by recursing into it.
+      let owner: number | undefined;
+      for (let i = stack.length - 1; i >= 0; i--) {
+        const found = stack[i]!;
+        if (found.type === 'JSXElement') return;
+        const id = components.get(found);
+        if (id !== undefined) {
+          owner = id;
+          break;
+        }
+      }
+      if (owner === undefined) return;
+      const tree = describeTree(node);
+      if (!tree) return;
+      const held = domFor.get(owner);
+      if (held) held.push(tree);
+      else domFor.set(owner, [tree]);
     });
 
     /**
@@ -800,6 +883,19 @@ export function analyzeReactiveGraph(
   }
 
   const byId = new Map(pending.map((p) => [p.node.id, p.node]));
+
+  // A tag naming a component another file declares, now that they have all been read.
+  for (const entry of unresolved) {
+    const id = resolve(entry.file, entry.tag) ?? unique.get(entry.tag) ?? undefined;
+    if (id !== undefined && byId.get(id)?.kind === 'component') entry.node.owner = id;
+  }
+
+  // What each component writes. Attached here because the walks that read it run per file,
+  // while a node is only final once every file has been read.
+  for (const [id, dom] of domFor) {
+    const node = byId.get(id);
+    if (node && dom.length) node.dom = dom;
+  }
 
   for (const hole of holes) {
     const id = resolve(hole.file, hole.name);

@@ -472,3 +472,90 @@ export function Server() { return table; }`,
     expect(find(nodes, 'api')?.source.file).toBe('server/routes');
   });
 });
+
+/**
+ * Nothing has run, so the elements come from the source. This is what lets the panel draw a
+ * page's shape before the application is up.
+ */
+describe('the elements a component writes', () => {
+  it('reads the tree out of the jsx, with a line for each element', () => {
+    const { nodes } = graphOf([
+      {
+        path: 'src/routes/index.tsx',
+        code: `export default function Home() {
+  return (
+    <section class="home">
+      <h1>hi</h1>
+      <p>there</p>
+    </section>
+  );
+}`,
+      },
+    ]);
+    const home = find(nodes, 'Home')!;
+    expect(home.dom).toEqual([
+      {
+        label: 'section.home',
+        at: { file: 'src/routes/index.tsx', line: 3, column: 4 },
+        children: [
+          { label: 'h1', at: { file: 'src/routes/index.tsx', line: 4, column: 6 }, children: [] },
+          { label: 'p', at: { file: 'src/routes/index.tsx', line: 5, column: 6 }, children: [] },
+        ],
+      },
+    ]);
+  });
+
+  it('stands a component in its place, naming the node it renders', () => {
+    const { nodes } = graphOf([
+      {
+        path: 'src/App.tsx',
+        code: `function Panel() { return <p>x</p>; }
+export function App() {
+  return <div class="app"><Panel /></div>;
+}`,
+      },
+    ]);
+    const app = find(nodes, 'App')!;
+    const panel = find(nodes, 'Panel')!;
+    expect(app.dom?.[0]?.label).toBe('div.app');
+    expect(app.dom?.[0]?.children).toEqual([
+      { label: 'Panel', at: { file: 'src/App.tsx', line: 3, column: 26 }, children: [], owner: panel.id },
+    ]);
+  });
+
+  it('finds a component another file declares', () => {
+    const { nodes } = graphOf([
+      { path: 'src/Panel.tsx', code: `export function Panel() { return <p>x</p>; }` },
+      {
+        path: 'src/App.tsx',
+        code: `import { Panel } from './Panel';
+export function App() { return <div><Panel /></div>; }`,
+      },
+    ]);
+    const panel = find(nodes, 'Panel')!;
+    expect(find(nodes, 'App')!.dom?.[0]?.children[0]?.owner).toBe(panel.id);
+  });
+
+  it('keeps a tag it cannot resolve, and what was written inside it', () => {
+    const { nodes } = graphOf([
+      {
+        path: 'src/App.tsx',
+        code: `import { Form } from '@fluixi/start';
+export function App() {
+  return <div><Form><input /></Form></div>;
+}`,
+      },
+    ]);
+    const form = find(nodes, 'App')!.dom?.[0]?.children[0];
+    expect(form?.label).toBe('Form');
+    expect(form?.owner).toBeUndefined();
+    expect(form?.children.map((c) => c.label)).toEqual(['input']);
+  });
+
+  it('says nothing for a component that writes no elements', () => {
+    const { nodes } = graphOf([
+      { path: 'src/App.tsx', code: `export function App() { return null; }` },
+    ]);
+    expect(find(nodes, 'App')?.dom).toBeUndefined();
+  });
+});
