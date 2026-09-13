@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { RNode } from './instrument.js';
 import type { ElementPick } from './tree.js';
 import { componentTree, createComponentTree, idsIn, TREE_KINDS, type ComponentTree } from './tree.js';
-import { describeAll } from './dom.js';
+import { describeAll, type DomNode } from './dom.js';
 
 const node = (id: number, over: Partial<RNode> = {}): RNode => ({
   id,
@@ -529,6 +529,50 @@ describe('a tag that renders no element of its own', () => {
     expect(marks).toHaveLength(1);
     const row = marks[0]!.closest('.fx-tree-row')!;
     expect(row.querySelector('.fx-tree-tag')!.textContent).toBe('<Home />');
+  });
+
+  it('draws a component once per place that names it', () => {
+    // A graph read from source has one node per declaration, so two <Badge/> point at it.
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App' })],
+      [1, node(1, { kind: 'component', label: 'Badge', createdIn: 0 })],
+    ]);
+    const dom: Record<number, DomNode[]> = {
+      0: [
+        {
+          label: 'main.app',
+          children: [
+            { label: 'span.badge', owner: 1, children: [] },
+            { label: 'span.badge', owner: 1, children: [] },
+          ],
+        },
+      ],
+      1: [{ label: 'span.badge', children: [] }],
+    };
+    const tree = createComponentTree(host, { domFor: (id) => dom[id] ?? [] });
+    tree.render(graph);
+    const tags = [...host.querySelectorAll('.fx-tree-tag')].map((t) => t.textContent);
+    expect(tags.filter((t) => t === '<Badge>')).toHaveLength(2);
+    // Two rows, two keys, so folding one leaves the other alone.
+    const keys = [...host.querySelectorAll('.fx-tree-row')].map((r) => (r as HTMLElement).dataset.key);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('still drops a subtree reached a second way', () => {
+    // A running graph gives each use its own node, so one owner named once is one subtree.
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App' })],
+      [1, node(1, { kind: 'component', label: 'Page', createdIn: 0 })],
+    ]);
+    const dom: Record<number, DomNode[]> = {
+      0: [{ label: 'main', children: [{ label: 'section', owner: 1, children: [] }] }],
+      1: [{ label: 'section', children: [{ label: 'h1', children: [] }] }],
+    };
+    const tree = createComponentTree(host, { domFor: (id) => dom[id] ?? [] });
+    tree.render(graph);
+    const tags = [...host.querySelectorAll('.fx-tree-tag')].map((t) => t.textContent);
+    expect(tags.filter((t) => t === '<section>')).toHaveLength(1);
+    expect(tags.filter((t) => t === '<h1 />')).toHaveLength(1);
   });
 
   it('does not cut the tree at the element it writes into', () => {

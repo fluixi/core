@@ -378,6 +378,30 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
      */
     const done = new Set<Row>();
 
+    /**
+     * How many places in the dom name each tag.
+     *
+     * A graph read from source has one node per component *declaration*, so two `<Badge/>`
+     * both point at it. Drawing only the first would take the second out of the tree — but
+     * a running graph gives each use its own node, where a tag named twice really is one
+     * subtree reached two ways and the second must go. Counting tells them apart.
+     */
+    const uses = new Map<number, number>();
+    const tally = (nodes: readonly DomNode[]): void => {
+      for (const node of nodes) {
+        if (node.owner !== undefined) uses.set(node.owner, (uses.get(node.owner) ?? 0) + 1);
+        tally(node.children);
+      }
+    };
+    for (const row of byId.values()) if (row.id !== undefined) tally(domFor(row.id));
+
+    /** The same row again at another place, re-keyed so the two fold independently. */
+    const again = (row: Row, key: string): Row => ({
+      ...row,
+      key,
+      children: row.children.map((child, i) => again(child, `${key}/${i}`)),
+    });
+
     const expand = (row: Row): Row => {
       if (row.value || row.id === undefined) return row;
       if (done.has(row)) return row;
@@ -391,9 +415,12 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       const walk = (node: DomNode, key: string): Row | undefined => {
         const owner = node.owner === undefined ? undefined : byId.get(node.owner);
         if (owner && owner !== row) {
-          // Already somewhere in the tree, and this element is what it rendered — so it is
-          // showing there. Drawing it here too would be the same subtree twice.
-          if (done.has(owner)) return undefined;
+          if (done.has(owner)) {
+            // Named from one place only, so it is already showing where it belongs and
+            // drawing it here as well would be the same subtree twice.
+            const count = uses.get(node.owner!) ?? 0;
+            return count > 1 ? again(owner, key) : undefined;
+          }
           placed.add(owner);
           return expand(owner);
         }
