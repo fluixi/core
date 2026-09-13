@@ -4,6 +4,7 @@ import { planPartialTemplate } from '../partial-template.js';
 import {
   isSerializable,
   serializeStatic,
+  templatePositions,
   isPlainLiteralAttr,
   htmlAttrName,
 } from '../serialize-static.js';
@@ -187,7 +188,10 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       return emitChildren(node.children, used, templates);
 
     case 'component':
-      return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt);
+      // No reactive prop means no `bindAt`, which is most tags. The insert that places the
+      // subtree still has to report somewhere, and the tag itself is where it was written —
+      // without this it reports whatever the runtime stack says, a line in the compiled file.
+      return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt ?? node.at);
 
     case 'control': {
       const name = CONTROL_COMPONENT[node.control] ?? node.control;
@@ -206,7 +210,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         used.add('templateNode');
         const id = `_tmpl$${templates.length}`;
         templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });
-        return `templateNode(${id}, ${JSON.stringify(node.tag)})`;
+        // The positions ride along so devtools can name the line each element was written
+        // on; the template string itself maps back to the root and nothing finer.
+        const at = templatePositions(node);
+        return at
+          ? `templateNode(${id}, ${JSON.stringify(node.tag)}, false, false, ${JSON.stringify(at)})`
+          : `templateNode(${id}, ${JSON.stringify(node.tag)})`;
       }
       // Structure static, contents dynamic — the common shape. One template for the
       // structure, then each hole filled through a reference into the clone. Every
@@ -222,7 +231,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           const id = `_tmpl$${templates.length}`;
           templates.push({ id, html: plan.html, tag: plan.tag, svg: false });
 
-          const lines = [`const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true);`];
+          const at = templatePositions(node);
+          const lines = [
+            `const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true${
+              at ? `, false, ${JSON.stringify(at)}` : ''
+            });`,
+          ];
           // Every reference first: inserting shifts what follows, so the walk has to be
           // complete before any content goes in.
           for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);

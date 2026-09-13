@@ -61,6 +61,12 @@ export interface IRElement {
   children: IRNode[];
   /** analyze/statics: subtree has no dynamic parts → hoistable (template-clone) */
   static: boolean;
+  /**
+   * Where the tag was written, when the transform was asked for source locations. A
+   * template is emitted as one string, so this is the only record of where each element in
+   * it came from.
+   */
+  at?: { file: string; line: number; column: number };
   loc?: SourceSpan;
 }
 

@@ -147,3 +147,27 @@ function escapeAttr(value: string): string {
 function escapeText(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+/**
+ * Where each element of a template was written, in the order a clone walks them.
+ *
+ * A template is emitted as one string, so a source map traces everything in it back to the
+ * line the root opens at — every element in a component reports the same place. The order
+ * is pre-order over the elements the template contains, which is what
+ * `[root, ...root.querySelectorAll('*')]` gives back on the clone, since holes are filled
+ * only after it is built.
+ *
+ * Undefined when the transform was not asked for source locations, so a production build
+ * emits nothing and pays nothing.
+ */
+export function templatePositions(root: IRElement): { file: string; pos: number[] } | undefined {
+  const pos: number[] = [];
+  let file: string | undefined;
+  const walk = (el: IRElement): void => {
+    file ??= el.at?.file;
+    pos.push(el.at?.line ?? 0, el.at?.column ?? 0);
+    for (const child of el.children) if (child.kind === 'element') walk(child);
+  };
+  walk(root);
+  return file && pos.some((n) => n !== 0) ? { file, pos } : undefined;
+}
