@@ -139,7 +139,7 @@ export function installDevtoolsHook(): DevtoolsHook {
     snapshot({ partial = false, since } = {}) {
       if (!observed) return null;
       // Detection is shared and has to run: it is what notices anything moved at all.
-      observed.sample();
+      const changed = observed.sample();
       const cursor = observed.revision;
       // Kept, not handed out once. The hook can have more than one reader — a dev server
       // agent polling and a browser panel open at the same time — and draining here gave
@@ -154,10 +154,25 @@ export function installDevtoolsHook(): DevtoolsHook {
         const described = observed!.domFor(id);
         return described.length ? withoutElements(described) : undefined;
       };
+      // The observer can be older than this hook — the application hands its own over, and
+      // the two are built separately — so a cursor is only offered when it can be honoured.
+      const cursors = typeof observed.changedSince === 'function';
       // Everything, and the cursor to come back with. Also the answer for a consumer that
       // has fallen further behind than the log reaches.
-      const whole = partial === false || since === undefined || observed.outrun(since);
-      if (whole) return serializeGraph(observed.graph, Date.now(), { events, dom, cursor });
+      const whole = partial === false || since === undefined || !cursors || observed.outrun(since);
+      if (whole) {
+        // An older observer cannot say what was dropped after a revision, so a delta from
+        // it would quietly keep nodes that are gone. Everything, every time, is correct.
+        if (partial && !cursors) {
+          return serializeGraph(observed.graph, Date.now(), {
+            ids: changed,
+            removed: observed.takeRemoved(),
+            events,
+            dom,
+          });
+        }
+        return serializeGraph(observed.graph, Date.now(), { events, dom, cursor });
+      }
       return serializeGraph(observed.graph, Date.now(), {
         ids: observed.changedSince(since),
         removed: observed.removedSince(since),

@@ -54,6 +54,14 @@ export interface ObservedGraph {
   removedSince(rev: number): number[];
   /** Whether `rev` is old enough that the removal log no longer covers it. */
   outrun(rev: number): boolean;
+  /**
+   * Removals since the last call, draining as it goes.
+   *
+   * Superseded by `removedSince`, and kept because the hook that calls it can be older
+   * than this: a browser extension bundles its own and hands the application's observer
+   * to it. Removing the method outright crashed every panel that had not been reloaded.
+   */
+  takeRemoved(): number[];
   /** What happened since the last call, in order. Empty when history is off. */
   takeEvents(): GraphEvent[];
   /** Where this node reaches the page, for whatever is still on it. */
@@ -307,6 +315,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   let revision = 0;
   /** The revision each node last moved at. */
   const revs = new Map<number, number>();
+  /** How far `takeRemoved` has drained, for a caller too old to keep a cursor of its own. */
+  let drained = 0;
   /** The nearest node the graph knows, looking outward through anything it does not. */
   const ancestor = (parents?: readonly unknown[]): number | undefined => {
     if (!parents) return undefined;
@@ -641,6 +651,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     },
     get revision() {
       return revision;
+    },
+    takeRemoved() {
+      const out = removed.filter((entry) => entry.rev > drained).map((entry) => entry.id);
+      drained = revision;
+      return out;
     },
     changedSince(rev) {
       const out: number[] = [];

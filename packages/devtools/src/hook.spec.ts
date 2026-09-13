@@ -111,6 +111,37 @@ describe('installDevtoolsHook', () => {
     expect(hook.snapshot({ partial: true, since: agent })!.nodes).toHaveLength(0);
   });
 
+  /**
+   * The observer comes from the application and the hook from whatever injected first, so
+   * one can be older than the other. It used to throw.
+   */
+  it('still answers when the observer is older than the hook', () => {
+    const hook = installDevtoolsHook();
+    const removed: number[] = [];
+    hook.inject({
+      observeReactiveNodes: observeReactiveNodes as never,
+      version: '0.0.0',
+      // An observer from before cursors: sample and takeRemoved, nothing else.
+      watch: () => ({
+        graph: new Map(),
+        sample: () => [],
+        takeRemoved: () => removed,
+        takeEvents: () => [],
+        elementsFor: () => [],
+        renderedFor: () => [],
+        nodeAt: () => undefined,
+        setValue: () => false,
+        domFor: () => [],
+        detach: () => {},
+      }),
+    } as never);
+
+    expect(() => hook.snapshot()).not.toThrow();
+    // A delta it cannot honour comes back as one built the old way, not as a crash.
+    expect(() => hook.snapshot({ partial: true, since: 5 })).not.toThrow();
+    expect(hook.snapshot({ partial: true, since: 5 })!.partial).toBe(true);
+  });
+
   it('is shared, so two agents do not each watch half a graph', () => {
     const first = installDevtoolsHook();
     expect(installDevtoolsHook()).toBe(first);
