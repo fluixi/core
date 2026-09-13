@@ -364,6 +364,42 @@ describe('an edit that never finishes', () => {
   });
 });
 
+/**
+ * A signal passed through a prop is read by machinery the graph does not draw, so its card
+ * has an edge to whatever declared it and to nothing else. The descriptions say where it
+ * actually lands.
+ */
+describe('where a value reaches', () => {
+  const passed = () =>
+    new Map<number, RNode>([
+      [1, node(1, { kind: 'component', label: 'App' })],
+      [2, node(2, { label: 'name', value: '"Ada"', createdIn: 1 })],
+      [4, node(4, { kind: 'component', label: 'Label', createdIn: 1, dom: [{ label: 'p.label', writes: [2], children: [] }] })],
+      [5, node(5, { kind: 'component', label: 'Badge', createdIn: 1, dom: [{ label: 'span.badge', writes: [2], children: [] }] })],
+      [6, node(6, { kind: 'component', label: 'Badge', createdIn: 1, dom: [{ label: 'span.badge', writes: [2], children: [] }] })],
+      [7, node(7, { kind: 'component', label: 'Card', createdIn: 1, dom: [{ label: 'div', children: [{ label: 'b', writes: [2], children: [] }] }] })],
+    ]);
+
+  it('names the tags it writes inside, counting repeats', () => {
+    const inspector = createInspector(host);
+    inspector.show(passed(), 2);
+    const text = host.textContent ?? '';
+    expect(text).toContain('reaches');
+    expect(text).toContain('Label');
+    expect(text).toContain('Badge ×2');
+    // Found through a nested element, not only a root one.
+    expect(text).toContain('Card');
+  });
+
+  it('says nothing for a value no description mentions', () => {
+    const graph = passed();
+    graph.set(9, node(9, { label: 'unused', createdIn: 1 }));
+    const inspector = createInspector(host);
+    inspector.show(graph, 9);
+    expect(host.textContent).not.toContain('reaches');
+  });
+});
+
 describe('what a component was handed', () => {
   const withProps = () =>
     new Map<number, RNode>([

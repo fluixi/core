@@ -11,6 +11,7 @@ import { nodeState, nodeVersion, type RNode } from './instrument.js';
 import { formatValue } from './format.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { shortenPath } from './path.js';
+import type { DomNode } from './dom.js';
 
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
@@ -118,6 +119,26 @@ function authoredPlace(node: RNode): ReactiveSourceLocation | undefined {
     if (place && !place.external) return place;
   }
   return node.declaredAt ?? node.source ?? node.usedAt;
+}
+
+/**
+ * The tags this value writes inside, and how many times each.
+ *
+ * A signal handed to a component through a prop is read by the render effect that binds it,
+ * which is machinery the graph does not draw — so there is no edge from the signal to the
+ * component, and a card for it looks connected only to whatever declared it. The
+ * descriptions already say it exactly: each element records the values writing into it, and
+ * it sits in the tree of the tag that rendered it.
+ */
+function reaches(graph: Map<number, RNode>, id: number): string[] {
+  const count = new Map<string, number>();
+  const writesHere = (nodes: readonly DomNode[]): boolean =>
+    nodes.some((n) => n.writes?.includes(id) || writesHere(n.children));
+  for (const node of graph.values()) {
+    if (node.id === id || !node.dom?.length) continue;
+    if (writesHere(node.dom)) count.set(node.label, (count.get(node.label) ?? 0) + 1);
+  }
+  return [...count].map(([label, n]) => (n > 1 ? `${label} ×${n}` : label));
 }
 
 /** The live value when the node can be read, the last one it reported otherwise. */
@@ -231,6 +252,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
       const synthetic = node.kind === 'binding' || node.kind === 'setter' || node.kind === 'group';
 
       const owner = node.createdIn !== undefined ? graph.get(node.createdIn)?.label : undefined;
+      const reaching = reaches(graph, node.id);
       const made = [...graph.values()].filter((n) => n.createdIn === node.id).map((n) => n.label);
       // Bindings are not nodes, so a signal read only by the dom shows no readers at all.
       // Named when the dom layer said what they write, counted when it did not.
@@ -262,6 +284,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           ? `<span>⌁ set at <b>${node.setAt.map((w) => place(bothAt(w, root), w, reveals)).join(', ')}</b></span>`
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
+        reaching.length ? `<span>◨ reaches <b>${escape(reaching.join(', '))}</b></span>` : '',
         // What the tag was written with. A prop's position has no file of its own: it was
         // written on the tag, so it belongs to whichever file that is.
         ...(node.props ?? []).map((p) => {
