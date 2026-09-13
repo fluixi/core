@@ -97,10 +97,12 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
   const v = attr.value;
   if (v == null) {
     base.literal = true; // valueless attribute
+    base.at = posOf(attr, ctx);
     return base;
   }
   if (isString(v)) {
     base.literal = literalOf(v) as string;
+    base.at = posOf(v, ctx);
     return base;
   }
   if (v.type === 'JSXExpressionContainer' && v.expression?.type !== 'JSXEmptyExpression') {
@@ -108,12 +110,14 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
     const literal = literalOf(expr);
     if (literal !== undefined) {
       base.literal = literal;
+      base.at = posOf(expr, ctx);
       return base;
     }
     base.expr = ctx.code(expr);
     base.reactive = isHandler ? false : isReactive(expr);
-    // Only the ones that become a binding.
-    if (base.reactive) base.at = posOf(expr, ctx);
+    // Every prop, not only the ones that move: a panel names the line for each of them.
+    // Nothing treats this as a binding position — that asks for `reactive` as well.
+    base.at = posOf(expr, ctx);
     if (expr.type === 'JSXElement' || expr.type === 'JSXFragment') base.jsxElement = true;
     return base;
   }

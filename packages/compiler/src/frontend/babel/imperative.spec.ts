@@ -314,3 +314,31 @@ describe('imperative backend via the IR codegen path (codegen: ir)', () => {
     expect(el.textContent).toBe('ab');
   });
 });
+
+/**
+ * A component's props are getters, so none of them can carry a position of its own. The
+ * positions ride alongside the object instead, for a panel that names the line each was
+ * written on.
+ */
+describe('component prop positions', () => {
+  const withLocations = (src: string) =>
+    compileEsm(src, { ...IMPERATIVE, sourceLocations: true }).replace(/\s+/g, ' ');
+
+  it('emits a position for every prop, reactive or not', () => {
+    const code = withLocations(`export const r = (n) => <Badge text={n()} size="lg" />;`);
+    expect(code).toContain('__fx_props');
+    // Both props, at their own columns on line 1.
+    expect(code).toMatch(/"text":\s*\[1,\s*\d+\]/);
+    expect(code).toMatch(/"size":\s*\[1,\s*\d+\]/);
+  });
+
+  it('says nothing when the build did not ask for locations', () => {
+    const code = compileEsm(`export const r = (n) => <Badge text={n()} />;`).replace(/\s+/g, ' ');
+    expect(code).not.toContain('__fx_props');
+  });
+
+  it('leaves a tag with no props alone', () => {
+    const code = withLocations(`export const r = () => <Badge />;`);
+    expect(code).not.toContain('__fx_props');
+  });
+});
