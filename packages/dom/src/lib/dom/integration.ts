@@ -3,7 +3,7 @@
 // every read — a list rebuilt every node whenever it changed, and only for consumers
 // who had not loaded core. The slot stays so a host can still override it.
 
-import { untrack, isSignal } from '@fluixi/reactive';
+import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
 import { asComponent } from '../component/modifiers.js';
 import type { CreateComponentReturnType } from './types.js';
 
@@ -35,6 +35,10 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   props?: U | undefined,
 ): CreateComponentReturnType<T, U> {
   if (_slot.fn) return _slot.fn(Comp, props);
+
+  // Before the call, so the computation this is created inside is still the running one.
+  // A property read when nobody is watching.
+  if (props) reportReactiveProps(props);
 
   // Untracked: a component reading a signal while it is created must not make its
   // caller depend on that signal, or the caller re-runs and rebuilds the subtree.

@@ -11,7 +11,7 @@
 export * from './graph/signal-next.js';
 
 // Watching nodes as they are made — what @fluixi/devtools attaches to.
-export { observeReactiveNodes, reportReactiveBinding } from './graph/observe.js';
+export { observeReactiveNodes, reportReactiveBinding, reportReactiveProps } from './graph/observe.js';
 export type { ReactiveNodeKind, ReactiveNodeReport, ReactiveObserver } from './graph/observe.js';
 
 // The short API — `signal`/`memo`/`effect` over the same primitives.

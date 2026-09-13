@@ -5,8 +5,9 @@
 // different packages, and a binding that quietly stopped reporting would break neither suite
 // on its own.
 import { describe, it, expect, afterEach } from 'vitest';
-import { createRoot, createSignal, observeReactiveNodes } from '@fluixi/reactive/signal';
+import { createRoot, createSignal, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
 import { holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
+import { createComponent } from './integration.js';
 import { hydration } from './hydration-state.js';
 
 interface Bound {
@@ -115,5 +116,60 @@ describe('a hole keeps where it was written', () => {
     } finally {
       hydration.active = false;
     }
+  });
+});
+
+/**
+ * The other half of what a watcher needs about a component: what it was handed. Reported
+ * from `createComponent`, where the computation it belongs to is still the running one.
+ */
+describe('a component says what it was given', () => {
+  it('reports the props object, before the component runs', () => {
+    const seen: { node: unknown; props: unknown }[] = [];
+    let ranWith: unknown;
+    stop = observeReactiveNodes({
+      created() {},
+      props(node, props) {
+        seen.push({ node, props });
+      },
+    });
+
+    createRoot(() => {
+      const [name] = createSignal('Ada');
+      // The memo is what a watcher draws the component as, so the report has to land inside
+      // it — that is the node the props belong to.
+      createMemo(() =>
+        createComponent((p: any) => {
+          ranWith = p;
+          return null;
+        }, { get text() { return name(); }, size: 'lg' }),
+      )();
+    });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.props).toBe(ranWith);
+    expect(Object.keys(seen[0]!.props as object).sort()).toEqual(['size', 'text']);
+  });
+
+  it('reads nothing itself', () => {
+    let reads = 0;
+    stop = observeReactiveNodes({ created() {}, props() {} });
+    createRoot(() => {
+      createMemo(() =>
+        createComponent(() => null, {
+          get text() {
+            reads++;
+            return 'x';
+          },
+        }),
+      )();
+    });
+    // The report holds the object. Reading a getter here would run the caller's expression
+    // and subscribe whatever is running to it.
+    expect(reads).toBe(0);
+  });
+
+  it('costs nothing when nobody is watching', () => {
+    expect(() => createComponent(() => null, { a: 1 })).not.toThrow();
   });
 });
