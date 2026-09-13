@@ -20,7 +20,12 @@ const MIN_H = 160;
  * once the pointer crosses the graph or an iframe, the release is never seen, and the card
  * keeps following the mouse.
  */
-function draggable(handle: HTMLElement, onMove: (dx: number, dy: number) => void): void {
+function draggable(
+  handle: HTMLElement,
+  /** Total travel since the press, not the step since the last event. */
+  onMove: (dx: number, dy: number) => void,
+  onStart?: () => void,
+): void {
   handle.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     // Capture retargets the click that follows onto the handle, so a button inside it would
@@ -28,14 +33,14 @@ function draggable(handle: HTMLElement, onMove: (dx: number, dy: number) => void
     if ((event.target as HTMLElement).closest('button')) return;
     event.preventDefault();
     handle.setPointerCapture(event.pointerId);
-    let lastX = event.clientX;
-    let lastY = event.clientY;
+    const fromX = event.clientX;
+    const fromY = event.clientY;
+    onStart?.();
 
-    const move = (e: PointerEvent): void => {
-      onMove(e.clientX - lastX, e.clientY - lastY);
-      lastX = e.clientX;
-      lastY = e.clientY;
-    };
+    // Measured from where the press began. Adding up each step instead loses whatever a
+    // clamp refused, so dragging back out of a minimum grows the card immediately rather
+    // than when the pointer returns to where it stopped shrinking.
+    const move = (e: PointerEvent): void => onMove(e.clientX - fromX, e.clientY - fromY);
     const stop = (): void => {
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', stop);
@@ -120,10 +125,6 @@ export function makeFloatable(pane: HTMLElement, options: FloatOptions): Floatab
       height: 280,
     };
     opened += 1;
-    card.style.left = `${spot.x}px`;
-    card.style.top = `${spot.y}px`;
-    card.style.width = `${spot.width}px`;
-    card.style.height = `${spot.height}px`;
 
     const bar = doc.createElement('div');
     bar.className = 'fx-float-bar';
@@ -131,25 +132,79 @@ export function makeFloatable(pane: HTMLElement, options: FloatOptions): Floatab
     name.textContent = options.title;
     bar.append(name);
 
-    const grip = doc.createElement('div');
-    grip.className = 'fx-float-grip';
-    grip.title = 'Drag to resize';
-
-    card.append(bar, pane, grip);
+    card.append(bar, pane);
     doc.body.appendChild(card);
 
     pane.classList.add('fx-floated');
     button.textContent = '⇲';
     button.title = `Put ${options.title} back`;
 
-    draggable(bar, (dx, dy) => {
-      card!.style.left = `${card!.offsetLeft + dx}px`;
-      card!.style.top = `${Math.max(0, card!.offsetTop + dy)}px`;
-    });
-    draggable(grip, (dx, dy) => {
-      card!.style.width = `${Math.max(MIN_W, card!.offsetWidth + dx)}px`;
-      card!.style.height = `${Math.max(MIN_H, card!.offsetHeight + dy)}px`;
-    });
+    // Kept here rather than read back from the element each move. offsetWidth is what the
+    // card ended up at, so once a size clamps, every further move measures from the clamp
+    // and the card grows when the pointer is still travelling the other way.
+    let x = spot.x;
+    let y = spot.y;
+    let w = spot.width;
+    let h = spot.height;
+
+    const apply = (): void => {
+      const view = doc.defaultView;
+      const vw = view?.innerWidth ?? w;
+      const vh = view?.innerHeight ?? h;
+      w = Math.min(Math.max(MIN_W, w), vw);
+      h = Math.min(Math.max(MIN_H, h), vh);
+      // Fully on screen: a card wider than the window puts its own resize handles past the
+      // edge, and then there is no way to make it smaller again.
+      x = Math.min(Math.max(0, x), Math.max(0, vw - w));
+      y = Math.min(Math.max(0, y), Math.max(0, vh - h));
+      card!.style.left = `${x}px`;
+      card!.style.top = `${y}px`;
+      card!.style.width = `${w}px`;
+      card!.style.height = `${h}px`;
+    };
+
+    // Every edge and corner, so a card against one side of the window can still be resized
+    // from the other.
+    let from = { x, y, w, h };
+    const remember = (): void => {
+      from = { x, y, w, h };
+    };
+
+    for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const) {
+      const handle = doc.createElement('div');
+      handle.className = `fx-float-h fx-float-${edge}`;
+      card.append(handle);
+      draggable(
+        handle,
+        (dx, dy) => {
+          if (edge.includes('e')) w = from.w + dx;
+          if (edge.includes('s')) h = from.h + dy;
+          // A top or left edge leaves the opposite one where it is, so the card only moves
+          // by as much as the size actually gave.
+          if (edge.includes('w')) {
+            w = Math.max(MIN_W, from.w - dx);
+            x = from.x + from.w - w;
+          }
+          if (edge.includes('n')) {
+            h = Math.max(MIN_H, from.h - dy);
+            y = from.y + from.h - h;
+          }
+          apply();
+        },
+        remember,
+      );
+    }
+
+    draggable(
+      bar,
+      (dx, dy) => {
+        x = from.x + dx;
+        y = from.y + dy;
+        apply();
+      },
+      remember,
+    );
+    apply();
 
     options.onChange?.(true);
   }
@@ -208,9 +263,21 @@ export const FLOAT_CSS = `
 .fx-float > .fx-floated {
   flex: 1; min-height: 0; width: auto; height: auto; overflow: auto;
 }
-.fx-float-grip {
-  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
-  cursor: nwse-resize;
+/* Edges and corners. Thin, and over everything, so a card can be resized from whichever
+   side is reachable. */
+.fx-float-h { position: absolute; z-index: 1; }
+.fx-float-n, .fx-float-s { left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+.fx-float-e, .fx-float-w { top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+.fx-float-n { top: -3px; }
+.fx-float-s { bottom: -3px; }
+.fx-float-e { right: -3px; }
+.fx-float-w { left: -3px; }
+.fx-float-ne, .fx-float-nw, .fx-float-se, .fx-float-sw { width: 14px; height: 14px; }
+.fx-float-nw { top: -3px; left: -3px; cursor: nwse-resize; }
+.fx-float-ne { top: -3px; right: -3px; cursor: nesw-resize; }
+.fx-float-sw { bottom: -3px; left: -3px; cursor: nesw-resize; }
+.fx-float-se {
+  bottom: 0; right: 0; cursor: nwse-resize;
   background: linear-gradient(135deg, transparent 50%, var(--fx-line, #262a35) 50%);
 }
 `;

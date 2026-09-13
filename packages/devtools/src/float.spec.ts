@@ -113,16 +113,76 @@ describe('floating a pane', () => {
     expect(pane.querySelector('.fx-float-btn')).toBeNull();
   });
 
+  /** jsdom lays nothing out, so the card's own numbers are what there is to check. */
+  const grab = (el: HTMLElement) => {
+    el.setPointerCapture = () => {};
+    el.hasPointerCapture = () => false;
+    el.releasePointerCapture = () => {};
+    el.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true }));
+    return (x: number, y: number) =>
+      el.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true }));
+  };
+  const handle = (edge: string) => card()!.querySelector(`.fx-float-${edge}`) as HTMLElement;
+  const size = () => [parseInt(card()!.style.width), parseInt(card()!.style.height)];
+  const at = () => [parseInt(card()!.style.left), parseInt(card()!.style.top)];
+
   it('drags by the bar', () => {
     button().click();
-    const bar = card()!.querySelector('.fx-float-bar') as HTMLElement;
-    bar.setPointerCapture = () => {};
-    bar.hasPointerCapture = () => false;
-    bar.releasePointerCapture = () => {};
-    const was = card()!.offsetLeft;
-    bar.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true }));
-    bar.dispatchEvent(new PointerEvent('pointermove', { clientX: 40, clientY: 15, bubbles: true }));
-    expect(card()!.style.left).toBe(`${was + 40}px`);
+    const [x, y] = at();
+    grab(card()!.querySelector('.fx-float-bar') as HTMLElement)(40, 15);
+    expect(at()).toEqual([x + 40, y + 15]);
+  });
+
+  it('resizes from every edge and corner', () => {
+    button().click();
+    for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
+      expect(handle(edge)).not.toBeNull();
+    }
+  });
+
+  it('grows and shrinks from the bottom right', () => {
+    button().click();
+    const [w, h] = size();
+    grab(handle('se'))(30, 20);
+    expect(size()).toEqual([w + 30, h + 20]);
+  });
+
+  it('does not grow when a shrink has already hit the floor', () => {
+    // The size used to be read back off the element, so once it clamped every further move
+    // measured from the clamp and dragging inward started making the card wider.
+    button().click();
+    const move = grab(handle('e'));
+    move(-4000, 0);
+    const [floor] = size();
+    move(-3900, 0);
+    expect(size()[0]).toBe(floor);
+  });
+
+  it('moves the card when a left edge is dragged, and stops when the width does', () => {
+    button().click();
+    const [x] = at();
+    const [w] = size();
+    const move = grab(handle('w'));
+    move(20, 0);
+    expect(at()[0]).toBe(x + 20);
+    expect(size()[0]).toBe(w - 20);
+
+    // Past the floor the card must stay put rather than slide on.
+    move(-20 + 4000, 0);
+    const parked = at()[0];
+    grab(handle('w'))(4000, 0);
+    expect(at()[0]).toBe(parked);
+  });
+
+  it('keeps the card on screen, so its handles stay reachable', () => {
+    button().click();
+    grab(handle('se'))(9000, 9000);
+    const [w, h] = size();
+    const [x, y] = at();
+    expect(w).toBeLessThanOrEqual(window.innerWidth);
+    expect(h).toBeLessThanOrEqual(window.innerHeight);
+    expect(x + w).toBeLessThanOrEqual(window.innerWidth);
+    expect(y + h).toBeLessThanOrEqual(window.innerHeight);
   });
 
   it('leaves a button inside the bar alone, since capture would steal its click', () => {
