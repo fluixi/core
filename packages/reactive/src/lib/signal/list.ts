@@ -58,7 +58,7 @@ export function mapArray<T, U>(
           let rendered!: U, setIndex!: (n: number) => void, dispose!: () => void;
           createRoot((d) => {
             dispose = d;
-            const [index, setIdx] = createSignal(i);
+            const [index, setIdx] = createSignal(i, { name: 'row index' });
             setIndex = setIdx;
             rendered = mapFn(value, index);
           });
@@ -71,7 +71,7 @@ export function mapArray<T, U>(
       items = result;
       return result.map((e) => e.rendered);
     });
-  });
+  }, undefined, { name: 'mapArray' });
 }
 
 /**
@@ -117,7 +117,7 @@ export function keyArray<T, U>(
           let rendered!: U, setIndex!: (n: number) => void, dispose!: () => void;
           createRoot((d) => {
             dispose = d;
-            const [index, setIdx] = createSignal(i);
+            const [index, setIdx] = createSignal(i, { name: 'row index' });
             setIndex = setIdx;
             // Live accessor: reads the current list at this index. Falls back to the
             // last known value while the array is mid-shrink (idx out of bounds)
@@ -139,7 +139,7 @@ export function keyArray<T, U>(
       entries = resultEntries;
       return resultEntries.map((e) => e.rendered);
     });
-  });
+  }, undefined, { name: 'keyArray' });
 }
 
 /**
@@ -190,5 +190,5 @@ export function indexArray<T, U>(
 
       return slots.map((s) => s.rendered);
     });
-  });
+  }, undefined, { name: 'indexArray' });
 }

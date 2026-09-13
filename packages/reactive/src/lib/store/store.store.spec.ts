@@ -1,4 +1,4 @@
-import { batch, createEffect, createMemo } from '@fluixi/reactive/signal';
+import { batch, createEffect, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
 import { createStore, unwrap } from './store.js';
 
 interface Base {
@@ -547,5 +547,113 @@ describe('store with arrays - comprehensive tests', () => {
 
       expect(items.every((item) => item.active)).toBe(true);
     });
+  });
+});
+
+describe('a store under a watcher', () => {
+  it('lets go of the nodes of what a write replaced, and keeps what moved', () => {
+    const disposed: unknown[] = [];
+    const seen = new Map<unknown, string | undefined>();
+    const stop = observeReactiveNodes({
+      created: (r) => seen.set(r.handle, r.name),
+      disposed: (n) => disposed.push(n),
+    });
+    try {
+      const first = { name: 'Bolt', qty: 2 };
+      const [cart, setCart] = createStore({ items: [first] }, { name: 'cart' });
+      // Reading is what makes the nodes.
+      expect(cart.items.length).toBe(1);
+      expect(cart.items[0]!.qty).toBe(2);
+
+      const nodeFor = (label: string) => [...seen].find(([, name]) => name === label)?.[0];
+      const oldArray = nodeFor('cart.items[length]');
+      const itemQty = nodeFor('cart.items[0].qty');
+      expect(oldArray).toBeDefined();
+      expect(itemQty).toBeDefined();
+
+      setCart('items', [first, { name: 'Widget', qty: 1 }]);
+
+      // The array it replaced is gone; the item it still holds is not.
+      expect(disposed).toContain(oldArray);
+      expect(disposed).not.toContain(itemQty);
+    } finally {
+      stop();
+    }
+  });
+
+  it('keeps one node per key when a write spreads the store back into itself', () => {
+    const live = new Map<unknown, string | undefined>();
+    const stop = observeReactiveNodes({
+      created: (r) => live.set(r.handle, r.name),
+      disposed: (n) => live.delete(n),
+    });
+    try {
+      const [cart, setCart] = createStore(
+        { items: [{ name: 'Bolt', qty: 2 }] },
+        { name: 'cart' },
+      );
+      const total = createMemo(() => cart.items.reduce((sum, i) => sum + i.qty, 0), undefined, {
+        name: 'total',
+      });
+      expect(total()).toBe(2);
+
+      // `[...cart.items]` hands back the store's own proxies; storing those would track each
+      // object a second time, through a proxy of a proxy.
+      setCart({ items: [...cart.items, { name: 'Widget', qty: 1 }] });
+      expect(total()).toBe(3);
+      cart.items.map((i) => i.name);
+
+      const names = [...live.values()];
+      expect(names.filter((n) => n === undefined)).toEqual([]);
+      expect(new Set(names).size).toBe(names.length);
+    } finally {
+      stop();
+    }
+  });
+
+  it('keeps an item\'s signals attached to it when the list around it is replaced', () => {
+    const parents = new Map<unknown, unknown>();
+    const names = new Map<unknown, string | undefined>();
+    const stop = observeReactiveNodes({
+      created: (r) => {
+        names.set(r.handle, r.name);
+        parents.set(r.handle, r.origin);
+      },
+      moved: (node, origin, name) => {
+        parents.set(node, origin);
+        if (name) names.set(node, name);
+      },
+    });
+    try {
+      const first = { name: 'Bolt', qty: 2 };
+      const [cart, setCart] = createStore({ items: [first] }, { name: 'cart' });
+      expect(cart.items[0]!.name).toBe('Bolt');
+
+      const nameNode = [...names].find(([, label]) => label === 'cart.items[0].name')![0];
+      const before = parents.get(nameNode);
+
+      setCart({ items: [{ name: 'Widget', qty: 1 }, ...cart.items] });
+      // Reading is what re-attaches it: the item is at a new index now.
+      expect(cart.items[1]!.name).toBe('Bolt');
+
+      expect(parents.get(nameNode)).not.toBe(before);
+      expect(names.get(nameNode)).toBe('cart.items[1].name');
+    } finally {
+      stop();
+    }
+  });
+
+  it('names a key signal for the object it belongs to', () => {
+    const names: (string | undefined)[] = [];
+    const stop = observeReactiveNodes({ created: (r) => names.push(r.name) });
+    try {
+      const [cart] = createStore({ items: [{ qty: 2 }] }, { name: 'cart' });
+      void cart.items[0]!.qty;
+      expect(names).toContain('cart.items');
+      expect(names).toContain('cart.items[0]');
+      expect(names).toContain('cart.items[0].qty');
+    } finally {
+      stop();
+    }
   });
 });

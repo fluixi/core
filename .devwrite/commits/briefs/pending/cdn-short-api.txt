@@ -1,9 +1,0 @@
-files:  packages/dom/src/cdn/dom.ts
-what:   signal, memo, effect and store are now on the CDN global.
-why:    They were missing, so a script tag could only reach createSignal while every
-        documentation page opens with signal(). A script tag has no import statement,
-        so anything absent from the global does not exist for that reader.
-size:   The bundle grew by 100 bytes gzipped. It did not shrink. The tuple form stays
-        alongside, because signal is the accessor createSignal returns with .set
-        attached and the two share an implementation.
-verify: both CDN bundles run in a VM, signal and store both work

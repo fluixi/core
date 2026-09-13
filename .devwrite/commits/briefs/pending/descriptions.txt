@@ -1,9 +1,0 @@
-files:  package.json for core, reactive, compiler, template-parser, ts-plugin,
-        plus a changeset
-what:   Corrected the npm description on five packages.
-why:    Four claimed something untrue, and that line is what npmjs.com shows before
-        anyone opens a README. core said Solid-compatible; it is inspired by Solid,
-        not compatible with it. compiler named an SWC front-end, which exists only as
-        the words "swc later" in a comment. template-parser listed a language server
-        and a Biome plugin as consumers; neither exists. ts-plugin described one
-        feature and omitted hover, completion, navigation and quick fixes.

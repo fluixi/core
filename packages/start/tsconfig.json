@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../vite-plugin"
+    },
+    {
       "path": "../compiler"
     },
     {

@@ -23,6 +23,8 @@ export interface JsxContext {
   code(node: Node): string;
   /** Runtime symbols the emitted code needs; `use:` directives register here too. */
   used: Set<string>;
+  /** The file being compiled, when component usage sites are to be recorded. */
+  sourceFile?: string;
 }
 
 export const SVG_TAGS = new Set([
@@ -37,6 +39,13 @@ const DELEGATED = new Set([
 ]);
 
 const isReactive = (node: Node): boolean => isReactiveShape(shapeOf(node as never));
+
+/** Only when the host asked for source locations — the flag that records usage sites too. */
+const posOf = (node: Node, ctx: JsxContext): { line: number; column: number } | undefined => {
+  if (!ctx.sourceFile) return undefined;
+  const at = node.loc?.start;
+  return at ? { line: at.line, column: at.column } : undefined;
+};
 
 /** A literal value, or undefined when the node is not one. */
 function literalOf(node: Node): string | number | boolean | undefined {
@@ -103,6 +112,8 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
     }
     base.expr = ctx.code(expr);
     base.reactive = isHandler ? false : isReactive(expr);
+    // Only the ones that become a binding.
+    if (base.reactive) base.at = posOf(expr, ctx);
     if (expr.type === 'JSXElement' || expr.type === 'JSXFragment') base.jsxElement = true;
     return base;
   }
@@ -168,7 +179,13 @@ function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
     } else if (child.type === 'JSXExpressionContainer') {
       if (child.expression?.type !== 'JSXEmptyExpression') {
         const expr = child.expression as Node;
-        out.push({ kind: 'expr', code: ctx.code(expr), reactive: isReactive(expr) });
+        const reactive = isReactive(expr);
+        out.push({
+          kind: 'expr',
+          code: ctx.code(expr),
+          reactive,
+          ...(reactive ? { at: posOf(expr, ctx) } : {}),
+        });
       }
     } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
       out.push(buildNode(child, ctx));
@@ -202,12 +219,15 @@ function buildNode(node: Node, ctx: JsxContext): IRNode {
   const { tag, component } = tagInfo(node.openingElement.name, ctx);
   const props = buildProps(node.openingElement.attributes, ctx);
   const children = buildChildren(node.children, ctx);
+  const at = ctx.sourceFile && node.loc?.start
+    ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
+    : undefined;
 
   if (component) {
     const load = readLoad(node.openingElement.attributes);
-    return { kind: 'component', name: tag, props, children, ...(load ? { load } : {}) };
+    return { kind: 'component', name: tag, props, children, ...(load ? { load } : {}), ...(at ? { at } : {}) };
   }
-  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false };
+  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false, ...(at ? { at } : {}) };
 }
 
 /** Build IR from a JSXElement or JSXFragment. */

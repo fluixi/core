@@ -95,3 +95,10 @@ Desktop.ini
 
 # generated before dev and build, from the markdown sources
 docs/public/search-index.json
+
+# Working notes for commit and changeset drafting — never committed.
+.devwrite/
+
+# Editor and scanner working directories.
+.continue/
+.scannerwork/

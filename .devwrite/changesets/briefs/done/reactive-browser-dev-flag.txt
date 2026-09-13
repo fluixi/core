@@ -1,7 +1,0 @@
-packages: @fluixi/reactive
-bump:     patch
-what:     the package loads in a browser without a bundler
-why:      it read `process.env.NODE_ENV` at module scope to decide the dev flag.
-          A bundler replaces that; a browser loading the module over the network
-          does not, and the module threw before it ran. It now falls back to a
-          `window.__FLUIXI_PROD__` flag when there is no `process`.

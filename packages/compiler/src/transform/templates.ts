@@ -25,6 +25,7 @@ import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
+import { collectSourceEdits, mayHaveReactiveCall } from './source-locations.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -64,6 +65,20 @@ export interface TransformOptions extends CompileTemplateOptions {
    * @default true
    */
   propsDestructure?: boolean;
+  /**
+   * Record where each reactive primitive was created, so the devtools graph can say where a
+   * node comes from. Development tooling: leave it off for production, which then carries
+   * none of it.
+   * @default false
+   */
+  sourceLocations?: boolean;
+
+  /**
+   * Trim this prefix off the file name a source mark records, so a location reads
+   * `src/app.tsx:5:16` rather than an absolute path that means nothing to whoever opens it.
+   */
+  sourceRoot?: string;
+
   /**
    * Compile the `$` reactive intrinsics — `$signal`, `$memo`, `$effect`, `$store` — into
    * the runtime calls they stand for, importing what they need.
@@ -156,7 +171,19 @@ function isTemplateTag(node: Node, litTag: string): boolean {
 /** The edits in `list` that no other edit in `list` contains. */
 function outermost(list: Edit[]): Edit[] {
   return list.filter(
-    (e) => !list.some((o) => o !== e && o.start <= e.start && o.end >= e.end && o.end - o.start > e.end - e.start),
+    (e) =>
+      !list.some(
+        (o) =>
+          o !== e &&
+          o.start <= e.start &&
+          o.end >= e.end &&
+          o.end - o.start > e.end - e.start &&
+          // An insertion at either edge of the container sits beside it, not inside it, so
+          // it is not something the container's code already folded in. A statement can
+          // start where its callee starts (`$effect(…)`) and a declarator can end where its
+          // JSX ends (`const Row = () => <b/>`).
+          !(e.start === e.end && (e.start === o.start || e.start === o.end)),
+      ),
   );
 }
 
@@ -176,10 +203,14 @@ function slice(code: string, start: number, end: number, edits: Edit[]): string 
 }
 
 /** Describe one `${…}` for the lowering, substituting any template already compiled inside it. */
-function bindHole(code: string, expr: Node, edits: Edit[]): TemplateHole {
+function bindHole(code: string, expr: Node, edits: Edit[], keepPosition = false): TemplateHole {
+  const at = keepPosition ? expr.loc?.start : undefined;
   const hole: TemplateHole = {
     code: slice(code, expr.start, expr.end, edits),
     reactive: isReactiveShape(shapeOf(expr)),
+    // Where the `${…}` is, so a binding made from it can say so. The source map cannot:
+    // the whole template is one overwrite. Only when source locations were asked for.
+    ...(at ? { at: { line: at.line, column: at.column } } : {}),
   };
 
   if (expr.type === 'ArrowFunctionExpression' && expr.body?.type !== 'BlockStatement') {
@@ -347,6 +378,27 @@ function strategyLiteral(s: IRLoadStrategy): string {
   return `{ ${parts.join(', ')} }`;
 }
 
+/**
+ * Offset → line and column, built once per module.
+ *
+ * The parser reports offsets into this file, since the pieces it is given carry the
+ * positions Babel recorded for the quasis.
+ */
+function positionsIn(code: string): (offset: number) => { line: number; column: number } {
+  const starts = [0];
+  for (let i = 0; i < code.length; i++) if (code.charCodeAt(i) === 10) starts.push(i + 1);
+  return (offset) => {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (starts[mid] <= offset) low = mid;
+      else high = mid - 1;
+    }
+    return { line: low + 1, column: offset - starts[low] };
+  };
+}
+
 /** Quasis and holes as position-carrying parser pieces. */
 function toPieces(node: Node): Piece[] {
   const pieces: Piece[] = [];
@@ -364,6 +416,13 @@ function toPieces(node: Node): Piece[] {
  * Compile every template in `code`. Returns null when the module has none, so a
  * bundler can skip the file untouched.
  */
+/** No path module here: this runs in the browser as well as in a bundler. */
+function relativeToRoot(id: string, root?: string): string {
+  if (!root) return id;
+  const base = root.endsWith('/') ? root : `${root}/`;
+  return id.startsWith(base) ? id.slice(base.length) : id;
+}
+
 export function transformTemplates(
   code: string,
   id: string,
@@ -377,7 +436,13 @@ export function transformTemplates(
   // A module can be nothing but `$signal` calls, so the skip check has to look for those
   // too or the file is never parsed.
   const wantsIntrinsics = options.intrinsics !== false && mayHaveIntrinsic(code);
-  if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics) return null;
+  // A module can be nothing but reactive calls and still need marking, so the skip check
+  // has to look for those too when source locations are wanted.
+  const wantsSources = options.sourceLocations === true && mayHaveReactiveCall(code);
+  // What a mark calls this file. The declaration marks and the usage marks are read back by
+  // name, so both passes have to spell it the same way.
+  const sourceName = relativeToRoot(id, options.sourceRoot);
+  if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics && !wantsSources) return null;
 
   const ast = parse(code, {
     sourceType: 'module',
@@ -404,11 +469,21 @@ export function transformTemplates(
       ? { edits: [], diagnostics: [], imports: new Map<string, Set<string>>() }
       : collectIntrinsicEdits(ast.program);
 
+  // Where each reactive primitive was created, for the devtools graph. Off unless asked
+  // for: it is development tooling, and production should carry none of it.
+  // `wantsSources` only decides whether a module with nothing else in it is worth parsing.
+  // Past that point the ast exists, and a component declaration is worth marking too.
+  const sources =
+    options.sourceLocations === true
+      ? collectSourceEdits(ast.program, sourceName)
+      : { edits: [], marked: 0 };
+
   // Nothing to emit still returns a result when there's something to say — a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
   const silent =
     found.length === 0 &&
     props.edits.length === 0 &&
+    sources.edits.length === 0 &&
     intrinsics.edits.length === 0 &&
     intrinsics.diagnostics.length === 0 &&
     props.diagnostics.length === 0;
@@ -427,7 +502,7 @@ export function transformTemplates(
     declared: declaredNames(ast.program),
   };
   const hoisted = new Map<string, string>();
-  const edits: Edit[] = [...props.edits, ...intrinsics.edits];
+  const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
     // matching what the plugin does for nested emits. Marker layout has to agree
@@ -436,13 +511,21 @@ export function transformTemplates(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName) });
       continue;
     }
-    const holes = node.quasi.expressions.map((e: Node) => bindHole(code, e, edits));
+    const holes = node.quasi.expressions.map((e: Node) =>
+      bindHole(code, e, edits, options.sourceLocations === true),
+    );
     const result = compilePieces(toPieces(node), holes, {
       ...options,
       hoistTemplates: true,
+      // A tag inside a template gets the same mark a JSX tag does. Without one, the nodes it
+      // makes are the only ones in the module carrying no mark, and they take whichever was
+      // left behind by the last declaration that did.
+      ...(options.sourceLocations === true
+        ? { sourceFile: sourceName, positionAt: positionsIn(code) }
+        : {}),
       // Same defaults as the plugin, so moving a build over is not a rendering change.
       templateClone: options.templateClone ?? true,
       partialTemplates: nested ? false : options.partialTemplates ?? true,
@@ -569,10 +652,12 @@ function compileJsx(
   needs: Needs,
   hoisted: Map<string, string>,
   options: TransformOptions,
+  sourceFile?: string,
 ): string {
   const ir = buildJsxIR(node as never, {
     code: (n) => slice(code, (n as Node).start, (n as Node).end, edits),
     used,
+    ...(options.sourceLocations === true && sourceFile ? { sourceFile } : {}),
   });
   analyzeStatic(ir);
   const report = resolveComponentSources(ir, {

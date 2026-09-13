@@ -181,7 +181,7 @@ export function startTypesPlugin(cfg: ResolvedConfig): any {
  * bits only (optimizeDeps, ssr.noExternal via config, etc.).
  */
 export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
-  const { createVitePlugin, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
+  const { fluixi, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
   const { serverFunctionsVitePlugin } = await import('@fluixi/compiler/integrations');
   // polyfills:false — the meta-framework is SSR-first; the browser node-polyfill shims
   // break server rendering. Apps that need Buffer/process in the browser opt in later.
@@ -192,7 +192,11 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
     fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }),
     // The app's component-resolution rules reach the compiler here; without this an SSR
     // app has no way to say where an unimported tag comes from.
-    createVitePlugin({ resolve: cfg.resolve }),
+    //
+    // `fluixi()` and not `createVitePlugin()`: the latter is the bare compiler integration,
+    // and the reactive graph — agent, source marks, /__fluixi/graph — is composed on top of
+    // it by the former. A start app got no graph at all until this changed.
+    fluixi({ resolve: cfg.resolve }),
   ];
   // Auto-discover translations (src/i18n/<locale>.json → virtual:fluixi-i18n) unless disabled.
   if (cfg.i18n) plugins.push(i18nVitePlugin(cfg.i18n));

@@ -20,16 +20,70 @@ import {
   resource,
 } from '@fluixi/reactive/signal';
 import { createStore, Immutable, store, StoreSetter } from '@fluixi/reactive/store';
+import { componentSource, installSourceMarker, takeReactiveSource, type ReactiveSourceLocation } from './source.js';
+import { formatValue, shorten } from './format.js';
+import type { DomNode } from './dom.js';
 
 const $NODE = Symbol.for('signal-node');
 
-export type NodeKind = 'state' | 'memo' | 'effect' | 'store' | 'resource';
+export type NodeKind =
+  | 'state'
+  | 'memo'
+  | 'effect'
+  | 'store'
+  | 'resource'
+  | 'component'
+  /** Control flow the framework supplies — `Show`, `For`, `Switch`, `Suspense`, `Await`. */
+  | 'control'
+  /** The router's own tags — `Router`, `Outlet`, `Link`, `Redirect`. */
+  | 'router'
+  /** A server route handler — `GET`, `POST` in an api file. */
+  | 'handler'
+  /** Not a node: a card a view draws to stand for several of them. */
+  | 'group'
+  /** Not a node: a place in the document a signal writes to. */
+  | 'binding'
+  /** Not a node: a place in the code that sets a signal. */
+  | 'setter';
 export type NodeState = 'clean' | 'check' | 'dirty';
+
+/**
+ * The names the compiler supplies without an import, and what each one is. A control-flow
+ * tag stamps its name the same way an author's component does, so without this `Match` and
+ * `Switch` are drawn as components the author wrote.
+ *
+ * Mirrors `resolve/builtins.ts` in @fluixi/compiler. Not imported from there: this package
+ * runs beside the application, and the compiler is not on that side of the wall.
+ */
+export const KIND_OF_BUILTIN: Record<string, NodeKind> = {
+  Show: 'control', For: 'control', Index: 'control', Switch: 'control', Match: 'control',
+  Portal: 'control', Dynamic: 'control', ErrorBoundary: 'control',
+  Suspense: 'control', SuspenseList: 'control', Await: 'control',
+  Router: 'router', Outlet: 'router', Redirect: 'router', Link: 'router',
+};
+
+/** One place in the document that a signal drives. */
+export interface DomTarget {
+  /** `content` for a text or element hole, `attribute` or `property` otherwise. */
+  kind: string;
+  /** The attribute or property name, when there is one. */
+  name?: string;
+  /** The element, as a selector-ish description: `li.done`, `#total`. */
+  element: string;
+  /** The line of the application that wired this binding up. */
+  source?: ReactiveSourceLocation;
+}
 
 export interface RNode {
   id: number;
   label: string;
   kind: NodeKind;
+  /**
+   * Whether the label is the author's own, from a compiler mark. False for a positional
+   * label and for one the runtime supplied, which between them are the framework's own
+   * machinery — what a view offers to keep behind one card.
+   */
+  authored?: boolean;
   /** Source ids read on the last run (read edges: source → this). */
   deps: Set<number>;
   /** Signal ids written while this node ran (write edges: this → signal). */
@@ -38,14 +92,55 @@ export interface RNode {
   read?: () => unknown;
   /** Last serialized value, for change detection / display. */
   value?: string;
+  /** The same value with room to read it — what a tooltip or an inspector shows. */
+  detail?: string;
   /** Times this node recomputed / re-ran. */
   runs: number;
   /** performance.now() of the last change — drives the flash. */
   lastPulse: number;
   /** Live core node, when reachable — gives the real version + state. */
   core?: { version?: number; state?: number } | null;
+  /** Where the author created this node, when the compiler said so. Always optional. */
+  source?: ReactiveSourceLocation;
+  /**
+   * The node whose run created this one. A component's memo reads nothing of its own, so
+   * what it created is what connects it to the rest of the graph.
+   */
+  createdIn?: number;
+  /**
+   * Components only: where the component itself was declared, which is a different place
+   * from where it was used and the node made.
+   */
+  declaredAt?: ReactiveSourceLocation;
+  /**
+   * The line of the application that led to this node, for one the compiler did not mark —
+   * a signal a package created on the caller's behalf.
+   */
+  usedAt?: ReactiveSourceLocation;
+  /**
+   * How many dom bindings read this node. They are not drawn — one per attribute and text
+   * hole would bury the graph — but a signal read only by them is not a signal nothing uses.
+   */
+  bindings?: number;
+  /**
+   * What those bindings write: the text of an `<li>`, the `class` of a `<div>`. Described,
+   * never referenced: holding dom nodes would keep a removed subtree alive.
+   */
+  targets?: DomTarget[];
+  /**
+   * Set from outside any computation — a handler, a timer. The graph has no node to draw an
+   * edge from for these, so this is the only record of where they came from.
+   */
+  setAt?: ReactiveSourceLocation[];
+  /**
+   * What this tag rendered, when a producer described it. A panel in the page reads the
+   * elements instead; this is for one that cannot.
+   */
+  dom?: DomNode[];
   /** Resource only. */
   loading?: boolean;
+  /** This tag arrived as its own chunk, so it is not in the bundle the page started with. */
+  lazy?: boolean;
   depth?: number;
 }
 
@@ -64,7 +159,9 @@ export interface ReactorApi {
     value: T,
     options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
   ): [() => T, (v: T | ((prev: T) => T)) => T];
-  createMemo<T>(fn: () => T, options?: { name?: string }): () => T;
+  // (fn, value?, options?) — matching the real createMemo. Declaring options second read
+  // `{ name: 'double' }` as the initial value, so a named memo showed up as m1.
+  createMemo<T>(fn: () => T, value?: T, options?: { name?: string }): () => T;
   createEffect(fn: () => void, options?: { name?: string }): void;
   createStore<T extends object>(
     initial: T,
@@ -77,7 +174,7 @@ export interface ReactorApi {
     value: T,
     options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
   ): (() => T) & ((v: T | ((prev: T) => T)) => T);
-  memo<T>(fn: () => T, options?: { name?: string }): () => T;
+  memo<T>(fn: () => T, value?: T, options?: { name?: string }): () => T;
   effect(fn: () => void, options?: { name?: string }): void;
   store<T extends object>(
     initial: T,
@@ -101,21 +198,18 @@ export interface Reactor {
   dispose(): void;
 }
 
-const fmt = (v: unknown): string => {
-  try {
-    if (typeof v === 'string') return JSON.stringify(v);
-    if (typeof v === 'function') return 'ƒ';
-    if (typeof v === 'bigint') return `${v}n`;
-    if (typeof v === 'object' && v) return JSON.stringify(v);
-    return String(v);
-  } catch {
-    return '?';
-  }
-};
-const short = (s: string, n = 18): string => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+// Kept as the names the rest of this package already uses.
+export const fmt = (v: unknown): string => formatValue(v);
+export const short = (s: string, n = 18): string => shorten(s, n);
 
 export function createReactor(): Reactor {
+  installSourceMarker();
+
   const graph = new Map<number, RNode>();
+  /** Run counts as of the last sample, so a node with no readable value can still pulse. */
+  const runsAtLastSample = new Map<number, number>();
+  /** Nodes still carrying a positional label, so a better one can replace it later. */
+  const unnamed = new Set<number>();
   const consumerStack: number[] = [];
   let seq = 0;
   let dispose = () => {};
@@ -125,10 +219,34 @@ export function createReactor(): Reactor {
   // node disappears the moment it is made, which is why the graph came up empty.
   let rootOwner: ReturnType<typeof getOwner> = null;
 
+  /**
+   * Whether this node is the wrapper that made the stamped value, rather than one further
+   * down that only passes it along.
+   *
+   * `$name` is set on what a component returns, so it travels with the value: every memo
+   * holding it looks like the component. The one that made it is the one none of its
+   * dependencies already has — otherwise a component under `Suspense` draws twice.
+   */
+  const claims = (node: RNode, value: unknown): boolean => {
+    for (const dep of node.deps) {
+      const other = graph.get(dep);
+      if (other?.read && other.read() === value) return false;
+    }
+    return true;
+  };
+
   /** Remove a node when whatever created it goes away, or when the reactor is torn down. */
   const forget = (id: number) => {
     const owner = getOwner() ?? rootOwner;
-    if (owner) runWithOwner(owner, () => onCleanup(() => graph.delete(id)));
+    if (owner) {
+      runWithOwner(owner, () =>
+        onCleanup(() => {
+          graph.delete(id);
+          runsAtLastSample.delete(id);
+          unnamed.delete(id);
+        }),
+      );
+    }
   };
 
   const recordRead = (sourceId: number) => {
@@ -139,22 +257,31 @@ export function createReactor(): Reactor {
     const c = consumerStack[consumerStack.length - 1];
     if (c != null && c !== targetId) graph.get(c)?.writes.add(targetId);
   };
-  const base = (id: number, label: string, kind: NodeKind): RNode => ({
-    id,
-    label,
-    kind,
-    deps: new Set(),
-    writes: new Set(),
-    runs: 0,
-    lastPulse: 0,
-  });
+  // Every tracked primitive comes through here, so it is the one place a mark is taken. An
+  // explicit `{ name }` wins; otherwise the node borrows the variable name the compiler
+  // read, which is why `const count = signal(0)` shows as `count` rather than `s0`.
+  const base = (id: number, named: string | undefined, kind: NodeKind, fallback: string): RNode => {
+    const mark = takeReactiveSource();
+    if (!named && !mark?.name) unnamed.add(id);
+    return {
+      id,
+      label: named ?? mark?.name ?? fallback,
+      kind,
+      deps: new Set(),
+      writes: new Set(),
+      runs: 0,
+      lastPulse: 0,
+      ...(mark?.location ? { source: mark.location } : {}),
+    };
+  };
 
   const trackedCreateSignal: ReactorApi['createSignal'] = (value, options) => {
     const id = seq++;
     const [get, set] = createSignal(value, options as never);
-    const node = base(id, options?.name ?? `s${id}`, 'state');
+    const node = base(id, options?.name, 'state', `s${id}`);
     node.read = () => untrack(get);
-    node.value = short(fmt(value));
+    node.detail = formatValue(value);
+    node.value = shorten(node.detail);
     node.core = (get as unknown as Record<symbol, { version?: number }>)[$NODE] ?? null;
     graph.set(id, node);
     forget(id);
@@ -169,9 +296,9 @@ export function createReactor(): Reactor {
     return [read, write as never];
   };
 
-  const trackedCreateMemo: ReactorApi['createMemo'] = (fn, options) => {
+  const trackedCreateMemo: ReactorApi['createMemo'] = (fn, value, options) => {
     const id = seq++;
-    const node = base(id, options?.name ?? `m${id}`, 'memo');
+    const node = base(id, options?.name, 'memo', `m${id}`);
     graph.set(id, node);
     forget(id);
     const m = createMemo(() => {
@@ -185,7 +312,7 @@ export function createReactor(): Reactor {
       } finally {
         consumerStack.pop();
       }
-    });
+    }, value, options as never);
     node.read = () => untrack(m);
     return () => {
       recordRead(id);
@@ -195,7 +322,7 @@ export function createReactor(): Reactor {
 
   const trackedCreateEffect: ReactorApi['createEffect'] = (fn, options) => {
     const id = seq++;
-    const node = base(id, options?.name ?? `e${id}`, 'effect');
+    const node = base(id, options?.name, 'effect', `e${id}`);
     graph.set(id, node);
     forget(id);
     createEffect(() => {
@@ -216,7 +343,7 @@ export function createReactor(): Reactor {
   const trackedCreateStore: ReactorApi['createStore'] = (initial, options) => {
     const id = seq++;
     const [proxy, setter] = createStore(initial as object, { immutable: true, ...(options as object) } as never);
-    const node = base(id, options?.name ?? `store${id}`, 'store');
+    const node = base(id, options?.name, 'store', `store${id}`);
     node.read = () => {
       try {
         return untrack(() => JSON.stringify(proxy));
@@ -244,7 +371,7 @@ export function createReactor(): Reactor {
     const id = seq++;
     const last = args[args.length - 1];
     const name = last && typeof last === 'object' && !Array.isArray(last) && typeof last !== 'function' ? (last as { name?: string }).name : undefined;
-    const node = base(id, name ?? `res${id}`, 'resource');
+    const node = base(id, name, 'resource', `res${id}`);
     const [data, actions] = (createResource as unknown as (...a: unknown[]) => [Record<string, unknown> & (() => unknown), unknown])(...args);
     node.read = () => {
       try {
@@ -312,6 +439,8 @@ export function createReactor(): Reactor {
     run(setup) {
       dispose();
       graph.clear();
+      runsAtLastSample.clear();
+      unnamed.clear();
       seq = 0;
       consumerStack.length = 0;
       createRoot((d) => {
@@ -322,16 +451,56 @@ export function createReactor(): Reactor {
     },
     sample() {
       const changed: number[] = [];
-      const now = performance.now();
+      // Date.now rather than performance.now: the reactor may run in one realm and the view
+      // in another — an iframe preview does exactly that — and each realm's performance
+      // clock has its own origin, so the age the view computed was nonsense and nothing
+      // ever pulsed.
+      const now = Date.now();
       for (const node of graph.values()) {
-        if (!node.read) continue;
-        const next = short(fmt(node.read()));
-        if (next !== node.value) {
+        // An effect has no value to read, so what marks it as having done something is the
+        // run count the wrapper keeps. Without this an effect never pulsed.
+        if (!node.read) {
+          const seen = runsAtLastSample.get(node.id);
+          if (seen !== undefined && node.runs > seen) {
+            node.lastPulse = now;
+            changed.push(node.id);
+          }
+          runsAtLastSample.set(node.id, node.runs);
+          continue;
+        }
+        const raw = node.read();
+        // The compiler wraps each component in a memo, and `createComponent` stamps the
+        // component's name on what it returns. A memo that has no name of its own is that
+        // wrapper, so it can say `Counter` rather than `m5`.
+        // The runtime stamps a component's name on what it returned, so a memo holding
+        // that is the wrapper the compiler put round a component. Not gated on the node
+        // being unnamed: the compiler marks the tag with the component's name too, which
+        // would leave the node named and never recognised.
+        const stamped = (raw as { $name?: unknown })?.$name;
+        if (node.kind === 'memo' && typeof stamped === 'string' && stamped && claims(node, raw)) {
+          // Still a memo underneath. This only says so, so a renderer can draw it as what
+          // the author wrote rather than as the wrapper around it.
+          node.kind = KIND_OF_BUILTIN[stamped] ?? 'component';
+          // `source` stays what it is for every other node — where this one was created,
+          // which for a wrapper is where the tag was written. Where the component itself
+          // lives is a second fact, and it stands in for the first when nothing marked it.
+          node.declaredAt = componentSource(stamped);
+          node.source ??= node.declaredAt;
+          if (unnamed.has(node.id)) {
+            node.label = stamped;
+            unnamed.delete(node.id);
+          }
+        }
+        const detail = formatValue(raw);
+        const next = shorten(detail);
+        if (next !== node.value || detail !== node.detail) {
+          node.detail = detail;
           node.value = next;
           node.runs++;
           node.lastPulse = now;
           changed.push(node.id);
         }
+        runsAtLastSample.set(node.id, node.runs);
       }
       return changed;
     },

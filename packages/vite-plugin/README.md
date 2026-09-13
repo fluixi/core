@@ -60,6 +60,24 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | `delegateEvents` | `true` | event delegation |
 | `sourceMaps` | `true` | emit source maps |
 | `babel` | `false` | compile through the babel front-end instead, for a project whose own babel plugins have to see the output. Needs `@babel/core`, which is an optional peer |
+| `devtools` | on in dev | serve the running app's reactive graph, and mark where each node was created. `{ external: true }` marks dependencies too |
+
+## 🕸️ Reactive graph
+
+The plugin adds a small agent to the page in development mode, which reports the reactive graph at `GET /__fluixi/graph`. This graph is available as plain JSON, making it easy to read and use in tools like editor extensions or panels. The agent comes with the plugin, so a project needs nothing else installed; only the framework itself is resolved from the project, since watching a second copy of the runtime would watch a graph nothing is using.
+
+Here is how you can configure the plugin:
+
+```ts
+// vite.config.ts
+plugins: [fluixi()],                            // graph on in dev
+plugins: [fluixi({ devtools: false })],         // off
+plugins: [fluixi({ devtools: { external: true } })],  // dependencies too
+```
+
+Each node in the graph carries the file, line, and column it was created at, named relative to the project root. By default, nodes from dependencies are not marked, which keeps the graph focused on the code you are editing.
+
+The `external` option is useful for working on the framework itself. It marks nodes from `node_modules` and outside the project root as `external`, allowing you to see which nodes were created by libraries and which by your application. The application's call site takes precedence over the wrapper that created the node, so `count` appears as the line you wrote it on, not the line inside `signal()`.
 
 ## 📄 License
 

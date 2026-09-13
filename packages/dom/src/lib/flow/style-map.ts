@@ -82,5 +82,5 @@ export function styleMap(input: StyleMapInput): Accessor<string> {
     }
 
     return parts.join('; ');
-  });
+  }, undefined, { name: 'StyleMap' });
 }

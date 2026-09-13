@@ -39,6 +39,9 @@ export interface GraphState {
   onSuspend: ((promise: Promise<unknown>, owner: any) => void) | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onError: ((error: unknown, owner: any) => boolean) | null;
+  /** A tool watching the graph (see observe.ts). Here for the same reason the rest is. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  observer: any;
 }
 
 const KEY = '__fluixi_signal_next_state__';
@@ -61,4 +64,5 @@ export const G: GraphState =
     hostSchedule: defaultSchedule,
     onSuspend: null,
     onError: null,
+    observer: null,
   } satisfies GraphState);

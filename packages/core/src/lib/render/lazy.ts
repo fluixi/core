@@ -11,7 +11,7 @@
  *     before the component is rendered.
  */
 
-import { Component, ComponentProps } from '@fluixi/dom';
+import { Component, ComponentProps, createComponent } from '@fluixi/dom';
 import {
   Accessor,
   untrack,
@@ -30,6 +30,21 @@ export interface LazyOptions {
   fallback?: any;
   /** If true, start loading immediately when lazy() is called */
   preload?: boolean;
+}
+
+/**
+ * Say that this came out of a chunk of its own, so devtools can tell a routed component apart
+ * from one that shipped in the first bundle. Nothing but a watcher reads it.
+ */
+function fromChunk<T>(value: T): T {
+  if (value != null && (typeof value === 'object' || typeof value === 'function')) {
+    try {
+      (value as Record<string, unknown>)['$lazy'] = true;
+    } catch {
+      /* frozen or exotic */
+    }
+  }
+  return value;
 }
 
 // ─── Implementation ──────────────────────────────────────────────────────────
@@ -66,7 +81,7 @@ export function lazy<T extends (...args: any[]) => any>(
     // Render straight through — under hydration this consumes the cursor in place.
     if (resolved) {
       const C = resolved;
-      return untrack(() => C(props));
+      return fromChunk(untrack(() => C(props)));
     }
 
     // Cold path: not loaded yet (client-side navigation to a route whose chunk hasn't been
@@ -81,10 +96,12 @@ export function lazy<T extends (...args: any[]) => any>(
       component = resource;
       if (resource.error) throw resource.error;
     }
+    // Left unnamed: this memo is the routed component's wrapper, so it should end up carrying
+    // that component's name rather than a label of its own.
     return createMemo(() => {
       const C = component!();
-      return C ? untrack(() => C(props)) : undefined;
-    }, undefined, { name: 'lazy' });
+      return C ? fromChunk(createComponent(C, props)) : undefined;
+    });
   }) as unknown as T & { preload: () => Promise<void> };
 
   // Callers (link hover, router prefetch, the hydration preload pass) start the download

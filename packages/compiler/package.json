@@ -52,44 +52,86 @@
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "default": "./dist/index.js"
     },
     "./babel": {
       "development": "./src/frontend/babel/index.ts",
-      "types": "./dist/frontend/babel/index.d.ts",
-      "import": "./dist/frontend/babel/index.mjs",
-      "require": "./dist/frontend/babel/index.cjs",
+      "import": {
+        "types": "./dist/frontend/babel/index.d.ts",
+        "default": "./dist/frontend/babel/index.mjs"
+      },
+      "require": {
+        "types": "./dist/frontend/babel/index.d.cts",
+        "default": "./dist/frontend/babel/index.cjs"
+      },
       "default": "./dist/frontend/babel/index.js"
     },
     "./integrations": {
       "development": "./src/integrations.ts",
-      "types": "./dist/integrations.d.ts",
-      "import": "./dist/integrations.mjs",
-      "require": "./dist/integrations.cjs",
+      "import": {
+        "types": "./dist/integrations.d.ts",
+        "default": "./dist/integrations.mjs"
+      },
+      "require": {
+        "types": "./dist/integrations.d.cts",
+        "default": "./dist/integrations.cjs"
+      },
       "default": "./dist/integrations.js"
     },
     "./builtins": {
       "development": "./src/resolve/builtins.ts",
-      "types": "./dist/resolve/builtins.d.ts",
-      "import": "./dist/resolve/builtins.mjs",
-      "require": "./dist/resolve/builtins.cjs",
+      "import": {
+        "types": "./dist/resolve/builtins.d.ts",
+        "default": "./dist/resolve/builtins.mjs"
+      },
+      "require": {
+        "types": "./dist/resolve/builtins.d.cts",
+        "default": "./dist/resolve/builtins.cjs"
+      },
       "default": "./dist/resolve/builtins.js"
     },
     "./transform": {
       "development": "./src/transform/index.ts",
-      "types": "./dist/transform/index.d.ts",
-      "import": "./dist/transform/index.mjs",
-      "require": "./dist/transform/index.cjs",
+      "import": {
+        "types": "./dist/transform/index.d.ts",
+        "default": "./dist/transform/index.mjs"
+      },
+      "require": {
+        "types": "./dist/transform/index.d.cts",
+        "default": "./dist/transform/index.cjs"
+      },
       "default": "./dist/transform/index.js"
+    },
+    "./analyze": {
+      "development": "./src/analyze/static-graph.ts",
+      "import": {
+        "types": "./dist/analyze/static-graph.d.ts",
+        "default": "./dist/analyze/static-graph.mjs"
+      },
+      "require": {
+        "types": "./dist/analyze/static-graph.d.cts",
+        "default": "./dist/analyze/static-graph.cjs"
+      },
+      "default": "./dist/analyze/static-graph.js"
     },
     "./compile": {
       "development": "./src/lower/compile-template.ts",
-      "types": "./dist/lower/compile-template.d.ts",
-      "import": "./dist/lower/compile-template.mjs",
-      "require": "./dist/lower/compile-template.cjs",
+      "import": {
+        "types": "./dist/lower/compile-template.d.ts",
+        "default": "./dist/lower/compile-template.mjs"
+      },
+      "require": {
+        "types": "./dist/lower/compile-template.d.cts",
+        "default": "./dist/lower/compile-template.cjs"
+      },
       "default": "./dist/lower/compile-template.js"
     }
   },

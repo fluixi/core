@@ -78,6 +78,21 @@ export interface CompilerOptions {
   format?: 'jsx' | 'lit' | 'both';
 
   /**
+   * Record where each reactive node is created, and serve the running app's graph to a tool
+   * that asks for it. Development only — a build never carries either.
+   *
+   * On by default when the dev server is running and @fluixi/devtools is installed. The
+   * marks are what turn `m5` into `double @ src/app.tsx:6`, and the endpoint is what an
+   * editor or a graph panel reads.
+   *
+   * `{ external: true }` marks dependencies too — node_modules and anything outside the
+   * project. That is for working on the framework itself: the graph then shows which nodes
+   * a library created and which the application did, at the cost of a mark per node in code
+   * you are not editing.
+   */
+  devtools?: boolean | { external?: boolean };
+
+  /**
    * Compile through babel instead of rewriting the source directly.
    *
    * The default path parses once and splices the emitted code over the spans it
@@ -373,10 +388,36 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 }
 
 /** CompilerOptions as the transform wants them. Shared by every adapter. */
-function transformOptions(options: CompilerOptions) {
+/**
+ * A dependency's own signals are not the author's, and marking them costs a call per node in
+ * code nobody is going to open. Source marks stop at the project boundary.
+ */
+function marks(
+  options: { sourceLocations?: boolean; sourceLocationsExternal?: boolean; sourceRoot?: string },
+  id?: string,
+): boolean {
+  if (options.sourceLocations !== true) return false;
+  if (options.sourceLocationsExternal) return true;
+  if (!id || id.includes('/node_modules/')) return false;
+  const root = options.sourceRoot;
+  if (!root) return true;
+  const base = root.endsWith('/') ? root : `${root}/`;
+  return id.startsWith(base);
+}
+
+function transformOptions(
+  options: CompilerOptions & {
+    sourceLocations?: boolean;
+    sourceLocationsExternal?: boolean;
+    sourceRoot?: string;
+  },
+  id?: string,
+) {
   return {
     resolve: options.resolve,
     litTag: options.litTag,
+    sourceLocations: marks(options, id),
+    sourceRoot: options.sourceRoot,
     templateClone: options.templateClone,
     partialTemplates: options.partialTemplates,
     runtimeModule: options.signalModule,
@@ -448,7 +489,7 @@ function reportDiagnostics(result: unknown, id: string): void {
 async function compileModule(code: string, id: string, options: CompilerOptions) {
   if (!options.babel) {
     const { transformTemplates } = await import('./transform/index.js');
-    const result = transformTemplates(code, id, transformOptions(options));
+    const result = transformTemplates(code, id, transformOptions(options, id));
     reportDiagnostics(result, id);
     return result;
   }

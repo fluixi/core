@@ -202,6 +202,10 @@ current view. Pure computations still settle immediately.
 - `createComputed(fn)` - Runs eagerly, unlike a memo
 - `on(deps, fn, options?)` - Explicit dependencies
 
+### Observation
+
+- `observeReactiveNodes(observer)` - Watch nodes being created, recomputed and disposed. What @fluixi/devtools attaches to; unwatched, it costs one null check per node.
+
 ### Owner Management
 
 - `getOwner()` - Get current reactive owner

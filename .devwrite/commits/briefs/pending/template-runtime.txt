@@ -1,9 +1,0 @@
-files:  packages/template-runtime (new)
-what:   html`` and svg`` that compile in the browser, and the CDN build carrying them
-why:    the tag @fluixi/dom carries throws unless a build replaced it, so a page with
-        a script tag and no bundler could not use a template at all.
-        the compile path is already free of babel, so the browser runs the same
-        parse, lower and codegen that a build runs, then evaluates the expression
-        that comes out. One implementation rather than a second set of semantics to
-        keep in step with the first.
-verify: specs, browser

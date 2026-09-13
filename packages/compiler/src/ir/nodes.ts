@@ -10,6 +10,12 @@ export type { IRLoadStrategy };
 
 export interface SourceSpan { start: number; end: number; }
 
+/**
+ * Where a hole was written. Carried as data because the source map cannot say: a template is
+ * emitted as one overwrite, so every hole in it traces back to the line the root opens at.
+ */
+export interface HolePosition { line: number; column: number }
+
 export type IRNode =
   | IRElement
   | IRComponent
@@ -34,6 +40,8 @@ export interface IRProp {
   expr?: string;
   /** When true, `expr` must be wired reactively (emitted as a `() => expr` thunk). */
   reactive?: boolean;
+  /** Where the expression was written. Only kept when the host asked for source locations. */
+  at?: HolePosition;
   /**
    * `expr` is an inline JSX element/fragment passed as a component prop (e.g.
    * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter — like children — so the DOM is
@@ -53,6 +61,12 @@ export interface IRElement {
   children: IRNode[];
   /** analyze/statics: subtree has no dynamic parts → hoistable (template-clone) */
   static: boolean;
+  /**
+   * Where the tag was written, when the transform was asked for source locations. A
+   * template is emitted as one string, so this is the only record of where each element in
+   * it came from.
+   */
+  at?: { file: string; line: number; column: number };
   loc?: SourceSpan;
 }
 
@@ -98,6 +112,18 @@ export interface IRComponent {
    */
   source?: IRComponentSource;
   /**
+   * Where the tag was written, when the transform was asked for source locations. Distinct
+   * from `source`, which says where the component reference was resolved from.
+   */
+  at?: { file: string; line: number; column: number };
+  /**
+   * Where the `${…}` that drives this subtree was written — the condition of an `if=`,
+   * the list of an `each=`. The insert that adds and removes the subtree is a reactive
+   * binding, and this is the position it reports. Distinct from `at`, which marks the
+   * node itself rather than the binding that places it.
+   */
+  bindAt?: HolePosition;
+  /**
    * A `load:` strategy read off the tag by the frontend. The resolve pass folds it into
    * `source.loading`; it lives here first because the frontend knows the directive and
    * the resolve pass knows whether the name is deferrable at all.
@@ -113,6 +139,8 @@ export interface IRExpression {
   code: string;
   reactive: boolean;
   loc?: SourceSpan;
+  /** Where the expression was written. Only kept when the host asked for source locations. */
+  at?: HolePosition;
 }
 
 export interface IRFragment { kind: 'fragment'; children: IRNode[]; loc?: SourceSpan; }
@@ -126,5 +154,7 @@ export interface IRControl {
   control: ControlKind;
   props: IRProp[];
   children: IRNode[];
+  /** As on IRComponent: where the hole driving this subtree was written. */
+  bindAt?: HolePosition;
   loc?: SourceSpan;
 }

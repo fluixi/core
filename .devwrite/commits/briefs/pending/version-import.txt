@@ -1,7 +1,0 @@
-files:  packages/dom/src/lib/dom/versions.ts, packages/reactive/package.json
-what:   A counter app drops from 7,229 to 5,227 bytes gzipped.
-why:    versions.ts imported the @fluixi/reactive root barrel to read one version
-        string. That barrel reaches the whole reactive surface, so a bundler could
-        not drop any of it. Reading the string from a new @fluixi/reactive/version
-        entry costs nothing and lets the rest go.
-verify: spec run, green

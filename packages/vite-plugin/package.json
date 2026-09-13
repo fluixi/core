@@ -16,7 +16,7 @@
       }
     }
   },
-  "description": "Vite plugin for Fluixi — compiles JSX via @fluixi/compiler (jsx or imperative backend).",
+  "description": "Vite plugin for Fluixi \u2014 compiles JSX via @fluixi/compiler (jsx or imperative backend).",
   "type": "module",
   "files": [
     "dist",
@@ -43,7 +43,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*"
+    "@fluixi/compiler": "workspace:*",
+    "@fluixi/devtools": "workspace:*"
   },
   "peerDependencies": {
     "vite": ">=4"
@@ -54,15 +55,15 @@
     }
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/generator": "^7.29.1",
+    "@babel/helper-plugin-utils": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5",
     "@bambiste/mix-builder": "^0.1.0",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2",
     "vite": "^5.0.0",
-    "vitest": "^1.6.1",
-    "@babel/core": "^7.28.5",
-    "@babel/generator": "^7.29.1",
-    "@babel/helper-plugin-utils": "^7.27.1",
-    "@babel/preset-typescript": "^7.28.5"
+    "vitest": "^1.6.1"
   },
   "repository": {
     "type": "git",

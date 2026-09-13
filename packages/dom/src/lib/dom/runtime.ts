@@ -22,7 +22,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // NOT in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -132,6 +132,12 @@ export type Children =
 
 const EMPTY_OBJ = {};
 const EMPTY_ARR: any[] = [];
+
+/** Where devtools leaves the source position of a hole. Absent in a production build. */
+const HOLE_TAG = '__fx_at';
+
+/** Where an element's own source position goes, for devtools to read back. */
+const LOC_TAG = '__fx_loc';
 
 // Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
@@ -293,7 +299,13 @@ export function createTemplate(html: string, isSVG = false): HTMLTemplateElement
  *    is inert, so there is nothing inside to wire up.
  *  - **client** — parse once (cached by HTML) and clone per instance.
  */
-export function templateNode(html: string, tag: string, holes = false, isSVG = false): Node {
+export function templateNode(
+  html: string,
+  tag: string,
+  holes = false,
+  isSVG = false,
+  at?: TemplatePositions,
+): Node {
   if (isServer) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
@@ -304,9 +316,36 @@ export function templateNode(html: string, tag: string, holes = false, isSVG = f
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag);
-    if (node) return node;
+    if (node) return stampPositions(node, at);
   }
-  return cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node;
+  return stampPositions(cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node, at);
+}
+
+/** Line and column per element of a template, flattened, in document order. */
+export interface TemplatePositions {
+  file: string;
+  pos: number[];
+}
+
+/**
+ * Write each element's own source position onto it.
+ *
+ * The whole template is one string, so a source map traces every element in it back to the
+ * line the root opens at — devtools would name the component and nothing finer. This is the
+ * one moment the two line up: the tree holds exactly the elements the compiler listed, in
+ * the same order, because holes are filled after this returns.
+ *
+ * Only reached when the compiler emitted positions, which it does for a dev build.
+ */
+function stampPositions(node: Node, at?: TemplatePositions): Node {
+  const root = node as Element;
+  if (!at || typeof root?.querySelectorAll !== 'function') return node;
+  const all: Element[] = [root, ...root.querySelectorAll('*')];
+  for (let i = 0; i < all.length && i * 2 + 1 < at.pos.length; i++) {
+    const line = at.pos[i * 2]!;
+    if (line) (all[i] as any)[LOC_TAG] = { file: at.file, line, column: at.pos[i * 2 + 1]! };
+  }
+  return node;
 }
 
 /**
@@ -336,12 +375,25 @@ export function holeScope<T>(start: Node, produce: () => T): T {
   // hydration is over, later updates must render normally rather than re-enter it.
   if (typeof value === 'function') {
     const accessor = value as unknown as (...args: unknown[]) => unknown;
-    return ((...args: unknown[]) =>
+    const wrapped = (...args: unknown[]) =>
       hydration.active
         ? runHydrationAt(start.nextSibling, () => accessor(...args))
-        : accessor(...args)) as unknown as T;
+        : accessor(...args);
+    return carryHoleTag(accessor, wrapped) as unknown as T;
   }
   return value;
+}
+
+/**
+ * The compiler tags a hole's accessor with where it was written, and devtools reads the tag
+ * off whatever finally reaches `insert`. Under hydration that is this wrapper, not the
+ * accessor, so the tag has to come along — otherwise the binding reports the frame it was
+ * created from, which is a line in this file.
+ */
+function carryHoleTag<T extends object>(from: object, to: T): T {
+  const tag = (from as Record<string, unknown>)[HOLE_TAG];
+  if (tag !== undefined) (to as Record<string, unknown>)[HOLE_TAG] = tag;
+  return to;
 }
 
 /**
@@ -454,6 +506,11 @@ function _createInsertEffect(
   let current = initialCurrent;
   const componentCache = new Map<Function, any>();
   return createRenderEffect(() => {
+    // The accessor, never its result: it carries the compiler's hole position, and calling it
+    // again here builds the dom twice — during hydration, a duplicated subtree.
+    //
+    // Every run, because what this effect writes into moves as the value does.
+    reportReactiveBinding(marker ?? parent, 'content', undefined, getAccessor);
     let value: any;
 
     // ── 0. If accessor itself is a component thunk (not a signal/memo), call it once via cache ──
@@ -1120,6 +1177,7 @@ export function setDynamicAttribute(
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setAttribute(element, name, value, isSVG);
   });
@@ -1131,6 +1189,7 @@ export function setDynamicProperty(element: any, name: string, accessor: any): (
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'property', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setProperty(element, name, value);
   });
@@ -1144,6 +1203,7 @@ export function setDynamicBoolAttribute(element: Element, name: string, accessor
     return () => {};
   }
   return createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', name, accessor);
     const value = (accessor as () => unknown)();
     setAttribute(element, name, !!value);
   });
@@ -1158,7 +1218,10 @@ export function setClassName(element: Element, value: any): void {
   if (typeof value === 'function') {
     // A render effect, like every other attribute binding — `spread` already wraps
     // class this way, so going through `applyProps` shouldn't schedule it later.
-    createRenderEffect(() => setClassName(element, value()));
+    createRenderEffect(() => {
+      reportReactiveBinding(element, 'attribute', 'class', value);
+      setClassName(element, value());
+    });
     return;
   }
 
@@ -1305,7 +1368,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'class' || key === 'className') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setClassName(element, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassName(element, value());
+          }),
+        );
       } else {
         setClassName(element, value);
       }
@@ -1314,7 +1382,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'classList') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setClassList(element, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassList(element, value());
+          }),
+        );
       } else {
         setClassList(element, value, disposers);
       }
@@ -1323,7 +1396,12 @@ export function spread(options: SpreadOptions): () => void {
 
     if (key === 'style') {
       if (typeof value === 'function') {
-        disposers.push(createRenderEffect(() => setStyle(element as any, value())));
+        disposers.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'style', value);
+            setStyle(element as any, value());
+          }),
+        );
       } else {
         setStyle(element as any, value);
       }
@@ -1419,7 +1497,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // setClassName unwraps an accessor itself.
       setClassName(element, val); continue; }
     if (key === 'classList') {
-      if (typeof val === 'function') createRenderEffect(() => setClassList(element, val()));
+      if (typeof val === 'function')
+        createRenderEffect(() => {
+          reportReactiveBinding(element, 'attribute', 'class', val);
+          setClassList(element, val());
+        });
       else setClassList(element, val);
       continue;
     }
@@ -1428,7 +1510,11 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // style through a props object rather than as a compiled JSX attribute —
       // which is what every polymorphic/`as` wrapper does. class and classList
       // already handled that; style applied once and never updated.
-      if (typeof val === 'function') createRenderEffect(() => setStyle(element as HTMLElement, (val as () => unknown)()));
+      if (typeof val === 'function')
+        createRenderEffect(() => {
+          reportReactiveBinding(element, 'attribute', 'style', val);
+          setStyle(element as HTMLElement, (val as () => unknown)());
+        });
       else setStyle(element as HTMLElement, val);
       continue;
     }

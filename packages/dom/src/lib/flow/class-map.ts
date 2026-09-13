@@ -61,5 +61,5 @@ export function classMap(input: ClassMapInput): Accessor<string> {
     }
 
     return classes.join(' ');
-  });
+  }, undefined, { name: 'ClassMap' });
 }

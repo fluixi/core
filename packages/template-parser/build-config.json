@@ -2,13 +2,22 @@
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".js", ".ts"],
+    "extensions": [
+      ".js",
+      ".ts"
+    ],
     "target": "es2021",
-    "formats": ["es", "cjs"],
-    "entries": ["src/**/*.ts"],
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
     "rootDir": "src",
     "externals": [],
     "minify": false,
-    "clean": true
+    "clean": true,
+    "cjsTypes": true
   }
 }

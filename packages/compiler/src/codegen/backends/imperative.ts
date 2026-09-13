@@ -1,14 +1,16 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
-import type { IRNode, IRProp } from '../../ir/nodes.js';
+import type { HolePosition, IRNode, IRProp } from '../../ir/nodes.js';
 import { planPartialTemplate } from '../partial-template.js';
 import {
   isSerializable,
   serializeStatic,
+  templatePositions,
   isPlainLiteralAttr,
   htmlAttrName,
 } from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
+import { markHole, SOURCE_MARKER } from '../../transform/source-locations.js';
 
 /**
  * Imperative fine-grained backend — emits createNativeElement/insert/spread/
@@ -49,7 +51,10 @@ function propValue(p: IRProp): string {
   if (p.expr !== undefined) {
     // Events and non-reactive expressions pass through; reactive ones become thunks
     // so the runtime (spread/insert) can wire a render effect.
-    return p.reactive ? `() => (${p.expr})` : `(${p.expr})`;
+    if (!p.reactive) return `(${p.expr})`;
+    const accessor = `() => (${p.expr})`;
+    // `at` is the gate: a production build carries no marker.
+    return p.at ? markHole(accessor, p.at.line, p.at.column) : accessor;
   }
   return JSON.stringify(p.literal ?? true);
 }
@@ -81,12 +86,28 @@ function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<strin
   return obj;
 }
 
+/**
+ * The memo a component lowers to is an accessor, so it takes the same hole mark as any
+ * other reactive binding. Without it, the insert that places the subtree reports whatever
+ * the runtime stack says — a position in the compiled file.
+ */
+function markBind(code: string, at?: HolePosition): string {
+  return at ? markHole(code, at.line, at.column) : code;
+}
+
 function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
   if (children.length === 1) return emitNode(children[0], used, templates);
   return `[${children.map((c) => emitNode(c, used, templates)).join(', ')}]`;
 }
 
-function emitComponent(name: string, props: IRProp[], children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
+function emitComponent(
+  name: string,
+  props: IRProp[],
+  children: IRNode[],
+  used: Set<string>,
+  templates?: StaticTemplate[],
+  at?: { file: string; line: number; column: number },
+): string {
   used.add('createMemo');
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
@@ -131,7 +152,12 @@ function emitComponent(name: string, props: IRProp[], children: IRNode[], used: 
   // Control flow does use a bare arrow, and that is not a counter-example: control flow
   // is the reactive boundary and is *meant* to re-run. A user component is meant to run
   // once.
-  return `createMemo(() => createComponent(${name}, ${obj}))`;
+  // The mark goes inside the call, where it runs before createMemo makes the node and so
+  // is the one the node takes. Devtools installs the global; without it this is a no-op.
+  const mark = at
+    ? `globalThis.${SOURCE_MARKER}?.(${JSON.stringify(at.file)},${at.line},${at.column},${JSON.stringify(name)}), `
+    : '';
+  return `createMemo((${mark}() => createComponent(${name}, ${obj})))`;
 }
 
 /** `el.setAttribute("class", "card")` for a compile-time constant. */
@@ -151,20 +177,26 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
     case 'text':
       return JSON.stringify(node.value);
 
-    case 'expr':
-      return node.reactive ? `() => (${node.code})` : `(${node.code})`;
+    case 'expr': {
+      if (!node.reactive) return `(${node.code})`;
+      const accessor = `() => (${node.code})`;
+      return node.at ? markHole(accessor, node.at.line, node.at.column) : accessor;
+    }
 
     case 'fragment':
       if (node.children.length === 0) return 'null';
       return emitChildren(node.children, used, templates);
 
     case 'component':
-      return emitComponent(node.name, node.props, node.children, used, templates);
+      // No reactive prop means no `bindAt`, which is most tags. The insert that places the
+      // subtree still has to report somewhere, and the tag itself is where it was written —
+      // without this it reports whatever the runtime stack says, a line in the compiled file.
+      return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt ?? node.at);
 
     case 'control': {
       const name = CONTROL_COMPONENT[node.control] ?? node.control;
       used.add(name);
-      return emitComponent(name, node.props, node.children, used, templates);
+      return markBind(emitComponent(name, node.props, node.children, used, templates), node.bindAt);
     }
 
     case 'element': {
@@ -178,7 +210,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         used.add('templateNode');
         const id = `_tmpl$${templates.length}`;
         templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });
-        return `templateNode(${id}, ${JSON.stringify(node.tag)})`;
+        // The positions ride along so devtools can name the line each element was written
+        // on; the template string itself maps back to the root and nothing finer.
+        const at = templatePositions(node);
+        return at
+          ? `templateNode(${id}, ${JSON.stringify(node.tag)}, false, false, ${JSON.stringify(at)})`
+          : `templateNode(${id}, ${JSON.stringify(node.tag)})`;
       }
       // Structure static, contents dynamic — the common shape. One template for the
       // structure, then each hole filled through a reference into the clone. Every
@@ -194,7 +231,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           const id = `_tmpl$${templates.length}`;
           templates.push({ id, html: plan.html, tag: plan.tag, svg: false });
 
-          const lines = [`const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true);`];
+          const at = templatePositions(node);
+          const lines = [
+            `const _el$ = templateNode(${id}, ${JSON.stringify(plan.tag)}, true${
+              at ? `, false, ${JSON.stringify(at)}` : ''
+            });`,
+          ];
           // Every reference first: inserting shifts what follows, so the walk has to be
           // complete before any content goes in.
           for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);

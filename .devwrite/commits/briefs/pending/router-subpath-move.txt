@@ -1,6 +1,0 @@
-files:  packages/core/src/lib/router-next/ -> packages/core/src/lib/router/
-what:   the ./router-next subpath is ./router
-why:    -next was a development label sitting in a public path. The old ./router
-        barrel had been retired some time ago, before this change, so the name was
-        already free to take.
-verify: spec run, green

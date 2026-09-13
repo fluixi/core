@@ -7,11 +7,13 @@
 //
 // A blob URL has to exist before anything can reference it, so files are linked in dependency
 // order. That leaves import cycles unrepresentable; they are reported rather than half-run.
-import { compileFile } from './compile';
+import { compileFileWithOrigin, type CompiledFile, type Position } from './compile';
 import { createRegistry } from './modules';
 import type { Project, ProjectFile } from './project';
 
 const SOURCE = /\.(tsx?|jsx?)$/;
+const STYLE = /\.css$/;
+const DATA = /\.json$/;
 const RESOLVE_ORDER = ['', '.tsx', '.ts', '.jsx', '.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
 
 /** Every specifier a module imports, with the span to rewrite. */
@@ -80,6 +82,10 @@ export function orderFiles(files: ProjectFile[], entry: string): { order: string
 export interface LinkResult {
   entryUrl: string;
   compiled: Map<string, string>;
+  /** Non-source files as urls, for the html shell's own `<link>` and `<img>` to point at. */
+  assets: Map<string, string>;
+  /** `//# sourceURL` gets the file right; the line is compiled. This knows both maps. */
+  origin(file: string, at: Position): Position | undefined;
   revoke: () => void;
 }
 
@@ -105,7 +111,10 @@ export async function linkProject(
     return url;
   };
 
-  // One shim per bare specifier actually used, re-exporting the registry namespace by name.
+  // One shim per bare specifier actually used, re-exporting from the registry the preview
+  // publishes. The names are read here, from the same packages, but the values come from
+  // whichever realm ends up running the code — the preview is an iframe, and a function
+  // taken from this document would build its DOM in the wrong one.
   const shims = new Map<string, string>();
   const shimFor = (specifier: string): string => {
     const existing = shims.get(specifier);
@@ -116,11 +125,9 @@ export async function linkProject(
         `Cannot resolve "${specifier}". The playground bundles ${Object.keys(registry).sort().join(', ')}.`,
       );
     }
-    const key = `__fx_registry_${shims.size}`;
-    (globalThis as Record<string, unknown>)[key] = namespace;
     const names = Object.keys(namespace).filter((n) => /^[A-Za-z_$][\w$]*$/.test(n) && n !== 'default');
     const body =
-      `const ns = globalThis[${JSON.stringify(key)}];\n` +
+      `const ns = globalThis[Symbol.for('fluixi.playground.registry')][${JSON.stringify(specifier)}];\n` +
       names.map((n) => `export const ${n} = ns[${JSON.stringify(n)}];`).join('\n') +
       `\nexport default ns;\n`;
     const url = track(new Blob([body], { type: 'text/javascript' }));
@@ -130,13 +137,39 @@ export async function linkProject(
 
   const moduleUrls = new Map<string, string>();
   const compiled = new Map<string, string>();
+  /** Per file: a position in its compiled output, put back in the author's file. */
+  const origins = new Map<string, CompiledFile['origin']>();
+  /** What a non-source file resolves to, for `index.html` to point at. */
+  const assets = new Map<string, string>();
+
+  // Styles and data first: a module importing one needs its url before it is linked.
+  for (const file of files) {
+    if (STYLE.test(file.path)) {
+      // What a bundler does with `import './styles.css'`: run it for its effect. The blob is
+      // evaluated in the preview's realm, so `document` is the page being styled.
+      const body =
+        `const css = ${JSON.stringify(file.code)};\n` +
+        `const el = document.createElement('style');\n` +
+        `el.setAttribute('data-fx-style', ${JSON.stringify(file.path)});\n` +
+        `el.textContent = css;\n` +
+        `document.head.appendChild(el);\n` +
+        `export default css;\n`;
+      moduleUrls.set(file.path, track(new Blob([body], { type: 'text/javascript' })));
+      assets.set(file.path, track(new Blob([file.code], { type: 'text/css' })));
+    } else if (DATA.test(file.path)) {
+      const body = `export default ${file.code.trim() || 'null'};\n`;
+      moduleUrls.set(file.path, track(new Blob([body], { type: 'text/javascript' })));
+      assets.set(file.path, track(new Blob([file.code], { type: 'application/json' })));
+    }
+  }
 
   for (const path of order) {
     const file = files.find((f) => f.path === path);
     if (!file || !SOURCE.test(path)) continue;
 
-    const code = await compileFile(file.code, path);
+    const { code, origin } = await compileFileWithOrigin(file.code, path);
     compiled.set(path, code);
+    origins.set(path, origin);
 
     const linked = code.replace(IMPORT_SPECIFIER, (whole, lead: string, quote: string, specifier: string) => {
       if (isRelative(specifier)) {
@@ -148,8 +181,13 @@ export async function linkProject(
       return `${lead}${quote}${shimFor(specifier)}${quote}`;
     });
 
-    moduleUrls.set(path, track(new Blob([linked], { type: 'text/javascript' })));
+    // Name the module after its file: a stack trace otherwise reports `blob:http://…/9f2c`,
+    // and devtools reads stacks to place dom bindings and setters.
+    const named = `${linked}\n//# sourceURL=${path}\n`;
+    moduleUrls.set(path, track(new Blob([named], { type: 'text/javascript' })));
   }
+
+  const origin = (file: string, at: Position): Position | undefined => origins.get(file)?.(at);
 
   const entryUrl = moduleUrls.get(project.entry);
   if (!entryUrl) throw new Error(`No entry module: ${project.entry}`);
@@ -157,6 +195,8 @@ export async function linkProject(
   return {
     entryUrl,
     compiled,
+    assets,
+    origin,
     revoke() {
       for (const url of urls) URL.revokeObjectURL(url);
     },
