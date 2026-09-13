@@ -147,10 +147,23 @@ export function takeReactiveSource(): ReactiveSourceMetadata | null {
  */
 const HOLES = new WeakMap<object, ReactiveSourceLocation>();
 
+/**
+ * Also written onto the accessor itself, because the runtime does not always hand the same
+ * object on to `insert`: hydration wraps an accessor so the cursor can be replaced when it
+ * is finally read. The wrapper copies this across, and the WeakMap alone would miss it.
+ */
+const HOLE_TAG = '__fx_at';
+
 /** Returns the accessor, not a wrapper: it is the binding's value. */
 function markHole<T>(accessor: T, line: number, column: number): T {
   if (accessor && (typeof accessor === 'object' || typeof accessor === 'function')) {
-    HOLES.set(accessor as object, { line, column });
+    const at = { line, column };
+    HOLES.set(accessor as object, at);
+    try {
+      Object.defineProperty(accessor, HOLE_TAG, { value: at, configurable: true });
+    } catch {
+      // Frozen or a proxy that refuses writes; the WeakMap still covers the unwrapped case.
+    }
   }
   // The template is being built, so whatever declaration left a mark is finished with. A
   // mark outlives the statement that set it on purpose — a store's key signals are made
@@ -162,9 +175,8 @@ function markHole<T>(accessor: T, line: number, column: number): T {
 
 /** The hole an accessor came from, when the compiler marked it. */
 export function holeLocation(accessor: unknown): ReactiveSourceLocation | undefined {
-  return accessor && (typeof accessor === 'object' || typeof accessor === 'function')
-    ? HOLES.get(accessor as object)
-    : undefined;
+  if (!accessor || (typeof accessor !== 'object' && typeof accessor !== 'function')) return undefined;
+  return HOLES.get(accessor as object) ?? (accessor as Record<string, ReactiveSourceLocation | undefined>)[HOLE_TAG];
 }
 
 export function installSourceMarker(): void {

@@ -133,6 +133,12 @@ export type Children =
 const EMPTY_OBJ = {};
 const EMPTY_ARR: any[] = [];
 
+/** Where devtools leaves the source position of a hole. Absent in a production build. */
+const HOLE_TAG = '__fx_at';
+
+/** Where an element's own source position goes, for devtools to read back. */
+const LOC_TAG = '__fx_loc';
+
 // Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
 
@@ -293,7 +299,13 @@ export function createTemplate(html: string, isSVG = false): HTMLTemplateElement
  *    is inert, so there is nothing inside to wire up.
  *  - **client** — parse once (cached by HTML) and clone per instance.
  */
-export function templateNode(html: string, tag: string, holes = false, isSVG = false): Node {
+export function templateNode(
+  html: string,
+  tag: string,
+  holes = false,
+  isSVG = false,
+  at?: TemplatePositions,
+): Node {
   if (isServer) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
@@ -304,9 +316,36 @@ export function templateNode(html: string, tag: string, holes = false, isSVG = f
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag);
-    if (node) return node;
+    if (node) return stampPositions(node, at);
   }
-  return cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node;
+  return stampPositions(cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node, at);
+}
+
+/** Line and column per element of a template, flattened, in document order. */
+export interface TemplatePositions {
+  file: string;
+  pos: number[];
+}
+
+/**
+ * Write each element's own source position onto it.
+ *
+ * The whole template is one string, so a source map traces every element in it back to the
+ * line the root opens at — devtools would name the component and nothing finer. This is the
+ * one moment the two line up: the tree holds exactly the elements the compiler listed, in
+ * the same order, because holes are filled after this returns.
+ *
+ * Only reached when the compiler emitted positions, which it does for a dev build.
+ */
+function stampPositions(node: Node, at?: TemplatePositions): Node {
+  const root = node as Element;
+  if (!at || typeof root?.querySelectorAll !== 'function') return node;
+  const all: Element[] = [root, ...root.querySelectorAll('*')];
+  for (let i = 0; i < all.length && i * 2 + 1 < at.pos.length; i++) {
+    const line = at.pos[i * 2]!;
+    if (line) (all[i] as any)[LOC_TAG] = { file: at.file, line, column: at.pos[i * 2 + 1]! };
+  }
+  return node;
 }
 
 /**
@@ -336,12 +375,25 @@ export function holeScope<T>(start: Node, produce: () => T): T {
   // hydration is over, later updates must render normally rather than re-enter it.
   if (typeof value === 'function') {
     const accessor = value as unknown as (...args: unknown[]) => unknown;
-    return ((...args: unknown[]) =>
+    const wrapped = (...args: unknown[]) =>
       hydration.active
         ? runHydrationAt(start.nextSibling, () => accessor(...args))
-        : accessor(...args)) as unknown as T;
+        : accessor(...args);
+    return carryHoleTag(accessor, wrapped) as unknown as T;
   }
   return value;
+}
+
+/**
+ * The compiler tags a hole's accessor with where it was written, and devtools reads the tag
+ * off whatever finally reaches `insert`. Under hydration that is this wrapper, not the
+ * accessor, so the tag has to come along — otherwise the binding reports the frame it was
+ * created from, which is a line in this file.
+ */
+function carryHoleTag<T extends object>(from: object, to: T): T {
+  const tag = (from as Record<string, unknown>)[HOLE_TAG];
+  if (tag !== undefined) (to as Record<string, unknown>)[HOLE_TAG] = tag;
+  return to;
 }
 
 /**

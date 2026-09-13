@@ -6,7 +6,8 @@
 // on its own.
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRoot, createSignal, observeReactiveNodes } from '@fluixi/reactive/signal';
-import { insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
+import { holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
+import { hydration } from './hydration-state.js';
 
 interface Bound {
   target: unknown;
@@ -80,5 +81,39 @@ describe('a dom binding says what it writes', () => {
       expect(() => setDynamicAttribute(el, 'title', title)).not.toThrow();
     });
     expect(el.getAttribute('title')).toBe('hi');
+  });
+});
+
+describe('a hole keeps where it was written', () => {
+  function hole(): Node {
+    const host = document.createElement('div');
+    host.innerHTML = '<!--fx--><!--fx/-->';
+    return host.firstChild!;
+  }
+
+  it('carries the tag onto the accessor hydration wraps', () => {
+    const accessor = () => 'x';
+    (accessor as Record<string, unknown>)['__fx_at'] = { line: 11, column: 11 };
+
+    hydration.active = true;
+    try {
+      const out = holeScope(hole(), () => accessor);
+      // A different function, or the cursor could not be replaced when it is read.
+      expect(out).not.toBe(accessor);
+      expect((out as Record<string, unknown>)['__fx_at']).toEqual({ line: 11, column: 11 });
+    } finally {
+      hydration.active = false;
+    }
+  });
+
+  it('leaves an untagged accessor alone', () => {
+    const accessor = () => 'x';
+    hydration.active = true;
+    try {
+      const out = holeScope(hole(), () => accessor);
+      expect('__fx_at' in (out as object)).toBe(false);
+    } finally {
+      hydration.active = false;
+    }
   });
 });
