@@ -60,9 +60,19 @@ vi.mock('@fluixi/dom', async () => {
   return {
     ...reactive,
     // dom render helpers not provided by reactive (stubbed — no live DOM in node).
-    // Mirror the real fallback shapes: both return an accessor (a function).
-    createComponent: (Comp: any, props: any) =>
-      () => (typeof Comp === 'function' ? Comp(props) : Comp),
+    // The real one calls the component and hands back what it returned, with the name on it.
+    // It does not wrap in an accessor, and a stub that does hides how callers use the result.
+    createComponent: (Comp: any, props: any) => {
+      const out = typeof Comp === 'function' ? Comp(props) : Comp;
+      if (out != null && (typeof out === 'function' || typeof out === 'object')) {
+        try {
+          (out as any).$name = Comp?.name;
+        } catch {
+          /* frozen */
+        }
+      }
+      return out;
+    },
     resolveChildren: (value: any) => () => value,
     render: vi.fn(),
     hydrate: vi.fn(),
