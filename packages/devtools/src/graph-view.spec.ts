@@ -537,6 +537,41 @@ describe('the document and the handlers as cards', () => {
     expect(labels()).toEqual(['count', 'double']);
   });
 
+  it('draws one card per place, however many values write there', () => {
+    // A resource's three signals all write the same heading. A card each read as three
+    // copies of one binding.
+    const target = {
+      kind: 'content' as const,
+      element: 'h1',
+      source: { file: 'src/Home.tsx', line: 13, column: 4 },
+    };
+    const graph = new Map<number, RNode>([
+      [0, node(0, { label: 'value', targets: [target] })],
+      [1, node(1, { label: 'error', targets: [target] })],
+      [2, node(2, { label: 'state', targets: [target] })],
+    ]);
+    const view = createGraphView(svg, { showBindings: true, groupExternal: false });
+    view.update(graph);
+
+    const cards = [...view.shown.values()].filter((n) => n.kind === 'binding');
+    expect(cards).toHaveLength(1);
+    expect([...cards[0]!.deps].sort()).toEqual([0, 1, 2]);
+  });
+
+  it('keeps two places apart, even with the same element', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, {
+        targets: [
+          { kind: 'content', element: 'span', source: { file: 'a.tsx', line: 1, column: 0 } },
+          { kind: 'content', element: 'span', source: { file: 'a.tsx', line: 9, column: 0 } },
+        ],
+      })],
+    ]);
+    const view = createGraphView(svg, { showBindings: true, groupExternal: false });
+    view.update(graph);
+    expect([...view.shown.values()].filter((n) => n.kind === 'binding')).toHaveLength(2);
+  });
+
   it('keeps a binding card out of the packages group', () => {
     const graph = new Map<number, RNode>([
       [

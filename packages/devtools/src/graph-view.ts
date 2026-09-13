@@ -72,7 +72,21 @@ const GROUP_ID = -1;
  * Counted down from below the group card, and derived from the node they hang off so they
  * stay the same across renders — an id that moved would make the view rebuild every frame.
  */
-const bindingId = (owner: number, index: number): number => -100 - owner * 32 - index;
+/**
+ * One card per place in the document, not per reader.
+ *
+ * Several values can drive the same binding — a resource's three signals all write the same
+ * heading — and a card each made them look like duplicates of one another. Ids are handed
+ * out per place and kept, so a card kept its identity between frames.
+ */
+const bindingIds = new Map<string, number>();
+const bindingId = (place: string): number => {
+  const held = bindingIds.get(place);
+  if (held !== undefined) return held;
+  const id = -100 - bindingIds.size;
+  bindingIds.set(place, id);
+  return id;
+};
 const setterId = (owner: number, index: number): number => -100000 - owner * 32 - index;
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
@@ -453,20 +467,26 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
     let added = false;
 
     for (const node of graph.values()) {
-      node.targets?.forEach((target, i) => {
-        const id = bindingId(node.id, i);
-        shown.set(id, {
+      node.targets?.forEach((target) => {
+        const at = target.source;
+        const place = `${target.name ?? ''}|${target.element}|${at?.file ?? ''}:${at?.line ?? ''}:${at?.column ?? ''}`;
+        const id = bindingId(place);
+        const card = shown.get(id) ?? {
           id,
           label: target.name ? `${target.name} of ${target.element}` : target.element,
-          kind: 'binding',
+          kind: 'binding' as const,
           // The card reads the signal, so the arrow runs the way the value does.
-          deps: new Set([node.id]),
-          writes: new Set(),
-          runs: node.runs,
-          // The signal's pulse, so it joins the propagation; the edge orders it after.
-          lastPulse: node.lastPulse,
-          ...(target.source ? { source: target.source } : {}),
-        });
+          deps: new Set<number>(),
+          writes: new Set<number>(),
+          runs: 0,
+          lastPulse: 0,
+          ...(at ? { source: at } : {}),
+        };
+        card.deps.add(node.id);
+        // Whichever of its readers ran last is when this place last changed.
+        card.runs = Math.max(card.runs, node.runs);
+        card.lastPulse = Math.max(card.lastPulse, node.lastPulse);
+        shown.set(id, card);
         added = true;
       });
       node.setAt?.forEach((at, i) => {
@@ -709,8 +729,16 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       const full = node.detail ?? node.value;
       if (full) value.appendChild(el('title')).textContent = full;
       g.append(kind, label, value);
+      // A routed component arrives with its chunk, so it is missing from the graph until the
+      // navigation that fetches it. Saying so beats looking like it was never there.
+      if (node.lazy) {
+        const chunk = el('text', { class: 'fx-lazy', x: 12, y: 52 });
+        chunk.textContent = 'lazy';
+        chunk.appendChild(el('title')).textContent = 'loaded as its own chunk';
+        g.appendChild(chunk);
+      }
       const summary = el('title');
-      summary.textContent = `${node.kind} ${node.label}${full ? ` = ${full}` : ''}${
+      summary.textContent = `${node.kind} ${node.label}${node.lazy ? ' (lazy)' : ''}${full ? ` = ${full}` : ''}${
         placeOf(node)
           ? `\n${placeOf(node)!.file ?? ''}:${placeOf(node)!.line ?? ''}:${placeOf(node)!.column ?? ''}`
           : ''
@@ -1013,6 +1041,7 @@ export const DEVTOOLS_CSS = `
 .fx-label { fill: var(--fx-label, #e7e9ee); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; }
 .fx-value { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 12px; }
 .fx-source { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 9.5px; opacity: .75; }
+.fx-lazy { fill: var(--fx-router, #7dd3fc); font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: .04em; opacity: .9; }
 .fx-fold { fill: var(--glow, #5eead4); font-family: ui-monospace, monospace; font-size: 10px; cursor: pointer; opacity: .8; }
 .fx-fold:hover { opacity: 1; }
 .fx-node.n-effect .fx-value { fill: var(--effect, #fbbf24); }
