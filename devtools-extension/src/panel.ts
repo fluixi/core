@@ -10,6 +10,7 @@ import {
   createDetailPanel,
   createGraphView,
   createComponentTree,
+  type ElementPick,
   createInspector,
   createKindFilter,
   makeFloatable,
@@ -81,6 +82,8 @@ function main(): void {
   const svg = document.querySelector('svg') as SVGSVGElement;
   let graph: Map<number, RNode> = new Map();
   let selected: number | null = null;
+  /** An element row, which is not a node and so cannot be held as an id. */
+  let picked: ElementPick | null = null;
 
   /**
    * Open a file in the Sources panel.
@@ -107,18 +110,43 @@ function main(): void {
   });
   inspector.clear();
 
-  // No `domFor` here: the panel reads a snapshot of the page rather than the page itself,
-  // so it has no elements to list. The tags are what crosses the wire.
   const tree = createComponentTree(document.getElementById('tree') as HTMLElement, {
     empty: 'nothing rendered yet',
+    // Described by the agent and sent with the snapshot: this panel holds no elements.
+    domFor: (id) => graph.get(id)?.dom ?? [],
+    // Nor can it draw on the page. The hook can, so it is asked to.
+    onHover: (id, _element, path) => {
+      const target = path !== undefined ? JSON.stringify(path) : id === null ? 'null' : String(id);
+      chrome.devtools.inspectedWindow.eval(
+        `globalThis.__FLUIXI_DEVTOOLS_HOOK__?.highlight?.(${target})`,
+        () => {},
+      );
+    },
     onSelect: (id) => {
       selected = id;
+      picked = null;
       view.select(id);
       inspector.show(view.shown.size ? view.shown : graph, id);
+    },
+    onPick: (pick) => {
+      picked = pick;
+      selected = null;
+      view.select(null);
+      inspector.showElement(view.shown.size ? view.shown : graph, pick);
     },
     onReveal: (id) => {
       const node = (view.shown.size ? view.shown : graph).get(id);
       if (node) openSource(node.source ?? node.usedAt ?? node.declaredAt ?? {});
+    },
+    // An element has no line of its own, so the tag that rendered it is where to go.
+    onRevealPick: (pick) => {
+      if (pick.at) {
+        openSource(pick.at);
+        return;
+      }
+      const node = pick.owner === undefined ? undefined : (view.shown.size ? view.shown : graph).get(pick.owner);
+      // Where it was written, not where the framework instantiated it.
+      if (node) openSource(node.declaredAt ?? node.source ?? node.usedAt ?? {});
     },
   });
   tree.clear();
@@ -127,6 +155,7 @@ function main(): void {
     onReveal: (node) => openSource(node.source ?? node.usedAt ?? node.declaredAt ?? {}),
     onSelect: (node) => {
       selected = node ? node.id : null;
+      picked = null;
       inspector.show(view.shown.size ? view.shown : graph, selected);
     },
   });
@@ -134,6 +163,7 @@ function main(): void {
   const detail = createDetailPanel(document.body, {
     onPick: (id) => {
       selected = id;
+      picked = null;
       view.select(id);
       inspector.show(view.shown.size ? view.shown : graph, id);
     },
@@ -213,7 +243,9 @@ function main(): void {
 
   const tick = (): void => {
     view.update(graph, Date.now());
-    inspector.show(view.shown.size ? view.shown : graph, selected);
+    const map = view.shown.size ? view.shown : graph;
+    if (picked) inspector.showElement(map, picked);
+    else inspector.show(map, selected);
     tree.render(graph, selected);
     timeline.render(view.shown.size ? view.shown : graph);
     requestAnimationFrame(tick);

@@ -9,7 +9,9 @@
 // The app imports nothing and knows nothing about this. It also works against a production
 // build: the reporting calls are unconditional, so only the names and source locations are
 // missing there.
+import { withoutElements } from './dom.js';
 import { observeGraph, type ObservedGraph } from './observe.js';
+import { hideHighlight, showHighlight } from './highlight.js';
 import { serializeGraph, type GraphEvent, type GraphSnapshot } from './wire.js';
 
 /** A few hundred interactions' worth. */
@@ -46,6 +48,14 @@ export interface DevtoolsHook {
   readonly copies: number;
   /** Everything, or only what moved since the last call. */
   snapshot(options?: { partial?: boolean }): GraphSnapshot | null;
+  /**
+   * Draw the overlay over something in the page, for a panel that is not in it.
+   *
+   * A number is a node, and covers everywhere it reaches. A string is one element, written
+   * as the tree keys them: the tag's id, the index of the root it rendered, then a child
+   * index per step — `12:0/1/2`. Null clears it.
+   */
+  highlight(target: number | string | null): void;
 }
 
 /**
@@ -94,6 +104,28 @@ export function installDevtoolsHook(): DevtoolsHook {
     get version() {
       return version;
     },
+    highlight(target) {
+      if (!observed || target === null) {
+        hideHighlight();
+        return;
+      }
+      if (typeof target === 'number') {
+        const found = observed.elementsFor(target);
+        if (found.length) showHighlight(found, observed.graph.get(target)?.label);
+        else hideHighlight();
+        return;
+      }
+      // Walked through the description rather than the elements, because that is what the
+      // keys were built from: a tag's roots there include what it was mounted into and what
+      // it writes to, neither of which it rendered.
+      const [head, ...steps] = target.split('/');
+      const [tag, root] = (head ?? '').split(':');
+      let node = observed.domFor(Number(tag))[Number(root)];
+      for (const step of steps) node = node?.children[Number(step)];
+      const element = node?.element;
+      if (element) showHighlight(element, element.tagName.toLowerCase());
+      else hideHighlight();
+    },
     snapshot({ partial = false } = {}) {
       if (!observed) return null;
       const changed = observed.sample();
@@ -105,8 +137,14 @@ export function installDevtoolsHook(): DevtoolsHook {
       history.push(...observed.takeEvents());
       if (history.length > HISTORY) history.splice(0, history.length - HISTORY);
       const events = history.slice();
-      if (!partial) return serializeGraph(observed.graph, Date.now(), { events });
-      return serializeGraph(observed.graph, Date.now(), { ids: changed, removed: dropped, events });
+      // Described, not held: whoever reads this snapshot is usually not in the page, and the
+      // elements would only cross as empty objects anyway.
+      const dom = (id: number) => {
+        const described = observed!.domFor(id);
+        return described.length ? withoutElements(described) : undefined;
+      };
+      if (!partial) return serializeGraph(observed.graph, Date.now(), { events, dom });
+      return serializeGraph(observed.graph, Date.now(), { ids: changed, removed: dropped, events, dom });
     },
   };
 

@@ -15,7 +15,25 @@ import { shortenPath } from './path.js';
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
   show(graph: Map<number, RNode>, id: number | null | undefined): void;
+  /**
+   * Draw an element instead of a node.
+   *
+   * An element is not in the graph — nothing computes it — but it is the part of the page a
+   * reader recognises, and the graph knows which tag rendered it and which values write into
+   * it. Those, and the line each binding was written on, are what there is to say.
+   */
+  showElement(graph: Map<number, RNode>, pick: ElementInspection | null | undefined): void;
   clear(): void;
+}
+
+/** An element to inspect. The shape `createComponentTree` hands to its `onPick`. */
+export interface ElementInspection {
+  key: string;
+  label: string;
+  owner?: number;
+  writes?: number[];
+  /** Where the element itself was written, when the build recorded it. */
+  at?: ReactiveSourceLocation;
 }
 
 export interface InspectorOptions {
@@ -41,6 +59,12 @@ export interface InspectorOptions {
    * wants — there is nothing on the other end to write to.
    */
   onEdit?: (id: number, raw: string) => boolean;
+  /**
+   * Start with framework locations shown. Off by default: for someone writing an
+   * application, where the framework instantiated a component is noise. For someone working
+   * on the framework it is the whole point, so it is a toggle rather than a rule.
+   */
+  internals?: boolean;
 }
 
 const escape = (text: string): string =>
@@ -82,6 +106,20 @@ const bothAt = (source?: ReactiveSourceLocation, root?: string): string => {
     : at(source, root);
 };
 
+/**
+ * The line worth opening for a tag.
+ *
+ * A component the framework instantiated — a lazy route, a layout the router mounted — was
+ * created inside the framework, so `source` is a line in a package. `declaredAt` is where it
+ * was actually written. Only one line is shown for an element, so it had better be that one.
+ */
+function authoredPlace(node: RNode): ReactiveSourceLocation | undefined {
+  for (const place of [node.source, node.declaredAt, node.usedAt]) {
+    if (place && !place.external) return place;
+  }
+  return node.declaredAt ?? node.source ?? node.usedAt;
+}
+
 /** The live value when the node can be read, the last one it reported otherwise. */
 function valueOf(node: RNode, limit: number): string {
   if (node.read) {
@@ -103,6 +141,25 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
   /** While the reader is typing, nothing redraws: the input would go with it. */
   let editing: number | null = null;
   let field: HTMLInputElement | null = null;
+  let internals = options.internals === true;
+
+  const doc = host.ownerDocument;
+  // Kept out of the redrawn markup: the panel replaces its content wholesale, and a control
+  // inside it would be rebuilt under the pointer every time something changed.
+  const bar = doc.createElement('label');
+  bar.className = 'ins-bar';
+  const box = doc.createElement('input');
+  box.type = 'checkbox';
+  box.checked = internals;
+  bar.append(box, doc.createTextNode('framework'));
+  bar.title = 'Also show where the framework created this, not only where it was written';
+  const body = doc.createElement('div');
+  body.className = 'ins-body';
+  host.replaceChildren(bar, body);
+  box.addEventListener('change', () => {
+    internals = box.checked;
+    signature = '';
+  });
 
   if (edits) {
     host.addEventListener('click', (event) => {
@@ -155,7 +212,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
       if (!node) {
         if (signature === 'empty') return;
         signature = 'empty';
-        host.innerHTML = `<span class="ins-empty">${escape(empty)}</span>`;
+        body.innerHTML = `<span class="ins-empty">${escape(empty)}</span>`;
         return;
       }
 
@@ -222,7 +279,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
       if (next === signature) return;
       signature = next;
 
-      host.innerHTML =
+      body.innerHTML =
         `<div class="ins-head"><span class="ins-kind n-${node.kind}">${node.kind}</span>` +
         `<b>${escape(node.label)}</b>` +
         (synthetic
@@ -254,9 +311,74 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           ? '<div class="ins-source">— no source: build without sourceLocations</div>'
           : '');
     },
+    showElement(graph, pick) {
+      if (!pick) {
+        if (signature === 'empty') return;
+        signature = 'empty';
+        body.innerHTML = `<span class="ins-empty">${escape(empty)}</span>`;
+        return;
+      }
+      const owner = pick.owner === undefined ? undefined : graph.get(pick.owner);
+      const writers = (pick.writes ?? [])
+        .map((id) => graph.get(id))
+        .filter((n): n is RNode => n !== undefined);
+
+      // Where the binding into this element was written. A value can write to several
+      // places, so it is the one naming this element that matters, not the first.
+      const bindingAt = (node: RNode): ReactiveSourceLocation | undefined =>
+        node.targets?.find((t) => t.element === pick.label || t.element.endsWith(` in ${pick.label}`))
+          ?.source;
+
+      const rows = writers
+        .map((node) => {
+          const where = bindingAt(node);
+          const text = where ? bothAt(where, root) : '';
+          return `<span>⌁ <b>${escape(node.label)}</b>${
+            text ? ` ${place(text, where, reveals)}` : ''
+          }</span>`;
+        })
+        .join('');
+
+      const relations = [
+        owner
+          ? `<span>◧ rendered by <b>${escape(owner.label)}</b></span>`
+          : '<span>◧ rendered by <i>nothing in the graph</i></span>',
+        writers.length ? rows : '<span>⌁ <i>nothing writes here</i></span>',
+      ].join('');
+
+      // The element's own line when the build recorded one. Falling back to the tag means
+      // every element in a component reports the line the component opens at.
+      const source = pick.at ?? (owner && authoredPlace(owner));
+      // Where the framework built it, when that is somewhere else. Only on request: for an
+      // application it is a line in a package nobody asked about.
+      const madeIn =
+        internals && owner?.source && owner.source !== source ? owner.source : undefined;
+      const next = `el|${pick.key}|${pick.label}|${relations}|${at(source, root)}|${at(madeIn, root)}`;
+      if (editing !== null && field?.isConnected !== true) {
+        editing = null;
+        field = null;
+      }
+      if (editing !== null) return;
+      if (next === signature) return;
+      signature = next;
+
+      body.innerHTML =
+        `<div class="ins-head"><span class="ins-kind n-element">element</span>` +
+        `<b>${escape(pick.label)}</b>` +
+        `<span class="ins-meta">not a node</span></div>` +
+        `<div class="ins-rel">${relations}</div>` +
+        // The tag's own line. An element has no position of its own in the graph — only the
+        // component that rendered it does — so this is as close as the source gets.
+        (source
+          ? `<div class="ins-source">${source.external ? '📦' : '📍'} ${place(bothAt(source, root), source, reveals)}</div>`
+          : '') +
+        (madeIn
+          ? `<div class="ins-source">📦 made in ${place(bothAt(madeIn, root), madeIn, reveals)}</div>`
+          : '');
+    },
     clear() {
       signature = '';
-      host.innerHTML = `<span class="ins-empty">${escape(empty)}</span>`;
+      body.innerHTML = `<span class="ins-empty">${escape(empty)}</span>`;
     },
   };
 }
@@ -264,6 +386,12 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
 /** Default styling for what createInspector writes, in the shape DEVTOOLS_CSS is used. */
 export const INSPECTOR_CSS = `
 .ins-empty { color: var(--fx-muted, #8a90a2); font-size: 12px; }
+.ins-bar {
+  display: flex; align-items: center; gap: 5px; margin-bottom: 6px;
+  font-size: 10.5px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
+}
+.ins-bar:hover { color: var(--fx-label, #e7e9ee); }
+.ins-bar input { width: 11px; height: 11px; margin: 0; accent-color: var(--fx-accent, #5eead4); }
 .ins-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .ins-head b { font-size: 13px; color: var(--fx-label, #e7e9ee); }
 .ins-kind { font-family: ui-monospace, monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; }
@@ -279,6 +407,7 @@ export const INSPECTOR_CSS = `
 .ins-kind.n-binding { color: var(--fx-accent, #5eead4); }
 .ins-kind.n-setter { color: var(--fx-write, #fb7185); }
 .ins-kind.n-group { color: var(--fx-muted, #8a90a2); }
+.ins-kind.n-element { color: var(--fx-muted, #8a90a2); }
 .ins-meta { margin-left: auto; color: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 10.5px; }
 .ins-val { font-family: ui-monospace, monospace; font-size: 12px; color: var(--fx-label, #e7e9ee); word-break: break-word; }
 .ins-rel { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--fx-muted, #8a90a2); font-size: 11.5px; }

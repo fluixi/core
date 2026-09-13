@@ -21,6 +21,7 @@ import {
   graphToJson,
   type DetailPanel,
   type Inspector,
+  type ElementPick,
   type ComponentTree,
   type GraphView,
   type ObservedGraph,
@@ -114,6 +115,8 @@ export function Playground() {
   let view: GraphView | null = null;
   let current: RunResult | null = null;
   let selectedId: number | null = null;
+  /** An element row from the tree. Not a node, so it cannot be held as an id. */
+  let pickedEl: ElementPick | null = null;
   let raf = 0;
   let saveTimer = 0;
 
@@ -139,7 +142,8 @@ export function Playground() {
       onReveal: openInEditor,
       onEdit: (id, raw) => reactor?.setValue(id, parseValue(raw)) ?? false,
     });
-    inspector.show(drawn(), selectedId);
+    if (pickedEl) inspector.showElement(drawn(), pickedEl);
+    else inspector.show(drawn(), selectedId);
   }
 
   /**
@@ -207,6 +211,7 @@ export function Playground() {
     view ??= createGraphView(svgEl, {
       onSelect: (n) => {
         selectedId = n ? n.id : null;
+        pickedEl = null;
         renderInspector();
       },
       onReveal: (n) => openInEditor(n.source ?? n.usedAt ?? n.declaredAt ?? {}),
@@ -215,6 +220,7 @@ export function Playground() {
     detail ??= createDetailPanel(document.body, {
       onPick: (id) => {
         selectedId = id;
+        pickedEl = null;
         view?.select(id);
         renderInspector();
       },
@@ -225,6 +231,7 @@ export function Playground() {
       onExpand: (commit) => reactor && detail?.open(commit, reactor.graph),
     });
     selectedId = null;
+    pickedEl = null;
     view.clear();
     // A new run is a new graph; the old ids name nodes that are gone.
     timeline.clear();
@@ -740,6 +747,7 @@ export function Playground() {
                   onPick: (id) => {
                     done();
                     selectedId = id;
+                    pickedEl = null;
                     view?.select(id);
                     renderInspector();
                   },
@@ -809,7 +817,7 @@ export function Playground() {
               ref={(el: HTMLDivElement) => {
                 makeFloatable(el, { title: 'tree' });
                 tagTree = createComponentTree(el, {
-                  domFor: (id) => reactor?.elementsFor(id) ?? [],
+                  domFor: (id) => reactor?.domFor(id) ?? [],
                   onHover: (id, element) => {
                     // An element row knows exactly what it is; a tag row covers everything
                     // it rendered, and boxing only the first makes it look like its parent.
@@ -824,12 +832,28 @@ export function Playground() {
                   },
                   onSelect: (id) => {
                     selectedId = id;
+                    pickedEl = null;
                     view?.select(id);
+                    renderInspector();
+                  },
+                  onPick: (pick) => {
+                    pickedEl = pick;
+                    selectedId = null;
+                    view?.select(null);
                     renderInspector();
                   },
                   onReveal: (id) => {
                     const n = drawn().get(id);
                     if (n) openInEditor(n.source ?? n.usedAt ?? n.declaredAt ?? {});
+                  },
+                  // An element has no line of its own; the tag that rendered it does.
+                  onRevealPick: (pick) => {
+                    if (pick.at) {
+                      openInEditor(pick.at);
+                      return;
+                    }
+                    const n = pick.owner === undefined ? undefined : drawn().get(pick.owner);
+                    if (n) openInEditor(n.declaredAt ?? n.source ?? n.usedAt ?? {});
                   },
                 });
               }}

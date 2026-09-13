@@ -22,6 +22,7 @@ import {
 import { createStore, Immutable, store, StoreSetter } from '@fluixi/reactive/store';
 import { componentSource, installSourceMarker, takeReactiveSource, type ReactiveSourceLocation } from './source.js';
 import { formatValue, shorten } from './format.js';
+import type { DomNode } from './dom.js';
 
 const $NODE = Symbol.for('signal-node');
 
@@ -131,8 +132,15 @@ export interface RNode {
    * edge from for these, so this is the only record of where they came from.
    */
   setAt?: ReactiveSourceLocation[];
+  /**
+   * What this tag rendered, when a producer described it. A panel in the page reads the
+   * elements instead; this is for one that cannot.
+   */
+  dom?: DomNode[];
   /** Resource only. */
   loading?: boolean;
+  /** This tag arrived as its own chunk, so it is not in the bundle the page started with. */
+  lazy?: boolean;
   depth?: number;
 }
 

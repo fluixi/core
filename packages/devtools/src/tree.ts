@@ -10,6 +10,7 @@
  * compiler wraps each component in a memo and that memo is not something anyone wrote.
  */
 import type { NodeKind, RNode } from './instrument.js';
+import type { DomNode } from './dom.js';
 
 /** Kinds that are tags in the source, and so have a place in a tree of them. */
 export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
@@ -26,6 +27,8 @@ export interface TreeNode {
   children: TreeNode[];
   /** A value the author declared rather than a tag they wrote. */
   value?: boolean;
+  /** Came down as its own chunk. */
+  lazy?: boolean;
 }
 
 /** A row in the drawn tree: a node from the graph, or an element one of them rendered. */
@@ -38,27 +41,36 @@ interface Row {
   id?: number;
   element?: Element;
   value?: boolean;
+  lazy?: boolean;
+  /** Element rows only: the tag whose dom this element is part of. */
+  owner?: number;
+  /** Element rows only: ids of the values writing into it. */
+  writes?: number[];
+  /** Element rows only: where the element was written. */
+  at?: { file: string; line: number; column: number };
 }
 
-/** `div.row`, `button`, `span.num` — an element as a tag, with what distinguishes it. */
-function describeElement(element: Element): string {
-  const tag = element.tagName.toLowerCase();
-  const id = element.id ? `#${element.id}` : '';
-  const classes = [...element.classList].slice(0, 2).map((c) => `.${c}`).join('');
-  return `${tag}${id}${classes}`;
+/**
+ * An element row, for a host that wants to say something about one.
+ *
+ * An element is not a node, so it has no id to select. What it does have is the tag it
+ * belongs to and the values writing into it, which between them are what there is to say.
+ */
+export interface ElementPick {
+  /** The row key, which doubles as a path to the element. */
+  key: string;
+  /** The element as a selector: `div#app.card`. */
+  label: string;
+  owner?: number;
+  writes?: number[];
+  /** Where the element itself was written, when the build recorded it. */
+  at?: { file: string; line: number; column: number };
+  /** Only in a host that is in the page. */
+  element?: Element;
 }
 
-/** How many element rows one tag may contribute, so a large page stays a tree and not a dump. */
-const ELEMENT_BUDGET = 200;
-
-function elementRow(element: Element, key: string, budget: { left: number }): Row {
-  const children: Row[] = [];
-  for (let i = 0; i < element.children.length && budget.left > 0; i++) {
-    budget.left -= 1;
-    children.push(elementRow(element.children[i]!, `${key}/${i}`, budget));
-  }
-  return { key, label: describeElement(element), kind: 'element', element, children };
-}
+/** Whatever the host can say about the dom under a tag. Elements only when it has them. */
+export type { DomNode } from './dom.js';
 
 /**
  * The tags in `graph`, each under the tag that made it.
@@ -97,6 +109,7 @@ export function componentTree(graph: Map<number, RNode>, options: TreeOptions = 
       kind: node.kind,
       children: [],
       ...(TREE_KINDS.has(node.kind) ? {} : { value: true }),
+      ...(node.lazy ? { lazy: true } : {}),
     });
   }
 
@@ -151,19 +164,26 @@ export function idsIn(nodes: readonly TreeNode[]): number[] {
 export interface ComponentTreeOptions {
   /** Clicking a row. The host decides what selecting means — usually the inspector. */
   onSelect?: (id: number) => void;
+  /**
+   * Clicking an element row. Elements have no id, so a host that leaves this out gets no
+   * selection for them at all — which is what made half the tree look inert.
+   */
+  onPick?: (pick: ElementPick) => void;
   /** Double-clicking a row, for a host that can open the file it came from. */
   onReveal?: (id: number) => void;
+  /** Double-clicking an element row. */
+  onRevealPick?: (pick: ElementPick) => void;
   /**
    * The row under the pointer, and null on the way out. For a host that can reach the page
    * and show where the node writes. An element row gives the element itself, which needs no
    * looking up.
    */
-  onHover?: (id: number | null, element?: Element) => void;
+  onHover?: (id: number | null, element?: Element, path?: string) => void;
   /**
-   * What each tag rendered, for listing the dom underneath it. Omitted draws tags only,
-   * which is what a panel reading a snapshot from elsewhere can offer.
+   * What each tag rendered. A host in the page walks its own elements; one reading a
+   * snapshot passes what the producer described. Omitted draws tags only.
    */
-  domFor?: (id: number) => readonly Element[];
+  domFor?: (id: number) => readonly DomNode[];
   /** What to say when nothing has rendered yet. */
   empty?: string;
   /** Start with the values shown. @default false */
@@ -186,6 +206,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   const shut = new Set<string>();
   let signature = '';
   let marked: number | null = null;
+  /** Element rows have no id, so what is selected is tracked by row key. */
+  let markedKey: string | null = null;
   let values = options.values === true;
   let filter = '';
 
@@ -226,15 +248,31 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
         ? `&lt;${escape(node.label)}&gt;`
         : `&lt;${escape(node.label)} /&gt;`;
     const count = has && !open ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
+    // Says the chunk it came from was fetched separately, which is why it appeared late.
+    const chunk = node.lazy ? '<span class="fx-tree-lazy" title="loaded as its own chunk">lazy</span>' : '';
     return (
       `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}"` +
       ` data-key="${escape(node.key)}"${node.id !== undefined ? ` data-id="${node.id}"` : ''}` +
       ` style="--depth:${depth}">` +
       `<button type="button" class="fx-tree-twist" data-twist="${escape(node.key)}"${has ? '' : ' tabindex="-1"'}>${twist}</button>` +
-      `<span class="fx-tree-tag">${tag}</span>${count}` +
+      `<span class="fx-tree-tag">${tag}</span>${chunk}${count}` +
       `</div>` +
       (open ? node.children.map((child) => row(child, depth + 1)).join('') : '')
     );
+  };
+
+  /** The element a row stands for, out of what was drawn for it. */
+  const pickOf = (rowEl: HTMLElement): ElementPick | undefined => {
+    const found = shown.get(rowEl.dataset.key ?? '');
+    if (!found || found.kind !== 'element') return undefined;
+    return {
+      key: found.key,
+      label: found.label,
+      ...(found.owner !== undefined ? { owner: found.owner } : {}),
+      ...(found.writes?.length ? { writes: found.writes } : {}),
+      ...(found.at ? { at: found.at } : {}),
+      ...(found.element ? { element: found.element } : {}),
+    };
   };
 
   const onClick = (event: Event): void => {
@@ -249,12 +287,28 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       return;
     }
     const rowEl = target?.closest?.('.fx-tree-row') as HTMLElement | null;
-    if (rowEl?.dataset.id) options.onSelect?.(Number(rowEl.dataset.id));
+    if (!rowEl) return;
+    if (rowEl.dataset.id) {
+      markedKey = null;
+      options.onSelect?.(Number(rowEl.dataset.id));
+      return;
+    }
+    const pick = pickOf(rowEl);
+    if (!pick) return;
+    markedKey = pick.key;
+    paint();
+    options.onPick?.(pick);
   };
 
   const onDouble = (event: Event): void => {
     const rowEl = (event.target as HTMLElement | null)?.closest?.('.fx-tree-row') as HTMLElement | null;
-    if (rowEl?.dataset.id) options.onReveal?.(Number(rowEl.dataset.id));
+    if (!rowEl) return;
+    if (rowEl.dataset.id) {
+      options.onReveal?.(Number(rowEl.dataset.id));
+      return;
+    }
+    const pick = pickOf(rowEl);
+    if (pick) options.onRevealPick?.(pick);
   };
 
   /** Rows by key, so a pointer over one can be answered without searching the tree again. */
@@ -267,7 +321,9 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       options.onHover?.(null);
       return;
     }
-    options.onHover?.(found.id ?? null, found.element);
+    // The key doubles as a path to the element, for a host that has to ask the page to
+    // highlight rather than doing it itself.
+    options.onHover?.(found.id ?? null, found.element, found.id === undefined ? found.key : undefined);
   };
   const onOut = (): void => options.onHover?.(null);
 
@@ -280,95 +336,130 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
 
   const paint = (): void => {
     for (const el of list.querySelectorAll('.fx-tree-row')) {
-      const id = (el as HTMLElement).dataset.id;
-      el.classList.toggle('on', id !== undefined && Number(id) === marked);
+      const row = el as HTMLElement;
+      const id = row.dataset.id;
+      const on = id !== undefined ? Number(id) === marked : row.dataset.key === markedKey;
+      el.classList.toggle('on', on);
     }
   };
 
   /**
-   * The graph tree, with each tag's rendered dom woven into it.
+   * Build the rows, weaving each tag's DOM into the graph tree.
    *
-   * A row goes where its element is, not where the graph happened to make it. A child
-   * component's root element sits inside its parent's dom, so its row goes there; a value
-   * goes inside the element it writes into. That matters most for a value declared at module
-   * scope — a store shared between files belongs to no component, and listing it as a root
-   * says nothing about the heading it renders.
+   * A row goes where its element is rather than where the graph made it. A child component
+   * sits inside its parent's DOM, so its row goes there; a value goes inside the element it
+   * writes into. The second matters for a store declared at module scope, which belongs to
+   * no component but still renders somewhere.
    */
   function rowsFor(nodes: readonly TreeNode[]): Row[] {
-    const build = (node: TreeNode): Row => ({
-      key: String(node.id),
-      label: node.label,
-      kind: node.kind,
-      id: node.id,
-      children: node.children.map(build),
-      ...(node.value ? { value: true } : {}),
-    });
+    const byId = new Map<number, Row>();
+    const build = (node: TreeNode): Row => {
+      const row: Row = {
+        key: String(node.id),
+        label: node.label,
+        kind: node.kind,
+        id: node.id,
+        children: node.children.map(build),
+        ...(node.value ? { value: true } : {}),
+        ...(node.lazy ? { lazy: true } : {}),
+      };
+      byId.set(node.id, row);
+      return row;
+    };
     const roots = nodes.map(build);
     const domFor = options.domFor;
     if (!domFor) return roots;
 
-    // Every row by the elements it covers, so the walk can hand over to any of them rather
-    // than only to a child of whatever it is currently inside.
-    const owners = new Map<Element, Row>();
-    const written = new Map<Element, Row[]>();
-    const index = (row: Row): void => {
-      if (row.id !== undefined) {
-        for (const element of domFor(row.id)) {
-          if (row.value) {
-            const held = written.get(element);
-            if (held) held.push(row);
-            else written.set(element, [row]);
-          } else if (!owners.has(element)) {
-            owners.set(element, row);
-          }
-        }
-      }
-      row.children.forEach(index);
-    };
-    roots.forEach(index);
-
     const placed = new Set<Row>();
+    /**
+     * Rows already written into the tree. A tag is reachable two ways — down the component
+     * nesting, and through the element it rendered — and `expand` rewrites the row it is
+     * given, so without this the second arrival appends its dom all over again.
+     */
+    const done = new Set<Row>();
+
     const expand = (row: Row): Row => {
       if (row.value || row.id === undefined) return row;
-      const rendered = [...domFor(row.id)];
-      if (!rendered.length) {
+      if (done.has(row)) return row;
+      done.add(row);
+      const dom = domFor(row.id);
+      if (!dom.length) {
         row.children = row.children.map(expand);
         return row;
       }
 
-      const budget = { left: ELEMENT_BUDGET };
-      const walk = (element: Element, key: string): Row => {
-        const owner = owners.get(element);
-        // A tag starts here, so it stands for this element and everything under it.
-        if (owner && owner !== row && !placed.has(owner)) {
+      const walk = (node: DomNode, key: string): Row | undefined => {
+        const owner = node.owner === undefined ? undefined : byId.get(node.owner);
+        if (owner && owner !== row) {
+          // Already somewhere in the tree, and this element is what it rendered — so it is
+          // showing there. Drawing it here too would be the same subtree twice.
+          if (done.has(owner)) return undefined;
           placed.add(owner);
           return expand(owner);
         }
         const kids: Row[] = [];
-        // The values first: they are why this element changes at all.
-        for (const value of written.get(element) ?? []) {
-          if (placed.has(value)) continue;
+        // Values first. They are the reason this element changes.
+        for (const id of node.writes ?? []) {
+          const value = byId.get(id);
+          if (!value?.value || placed.has(value)) continue;
           placed.add(value);
           kids.push(value);
         }
-        for (let i = 0; i < element.children.length && budget.left > 0; i++) {
-          budget.left -= 1;
-          kids.push(walk(element.children[i]!, `${key}/${i}`));
+        // Then tags that render in here without an element of their own, so they read as
+        // being inside it rather than next to it.
+        for (const id of node.inside ?? []) {
+          const tag = byId.get(id);
+          if (!tag || tag === row || placed.has(tag) || done.has(tag)) continue;
+          placed.add(tag);
+          kids.push(expand(tag));
         }
-        return { key, label: describeElement(element), kind: 'element', element, children: kids };
+        node.children.forEach((child, i) => {
+          const kid = walk(child, `${key}/${i}`);
+          if (kid) kids.push(kid);
+        });
+        return {
+          key,
+          label: node.label,
+          kind: 'element',
+          children: kids,
+          owner: row.id,
+          ...(node.writes?.length ? { writes: node.writes } : {}),
+          ...(node.at ? { at: node.at } : {}),
+          ...(node.element ? { element: node.element } : {}),
+        };
       };
 
-      const dom = rendered.map((element, i) => walk(element, `${row.id}:${i}`));
-      // Whatever the dom did not account for — a portal, a value writing nowhere visible —
-      // is still this row's, and is kept rather than lost.
+      // The mount container was on the page before anything rendered, so the tag goes inside
+      // it rather than the other way round.
+      const mount = dom.findIndex((node) => node.container);
+      if (mount !== -1) {
+        const node = dom[mount]!;
+        row.children = row.children.map(expand);
+        return {
+          key: `${row.id}:${mount}`,
+          label: node.label,
+          kind: 'element',
+          children: [row],
+          owner: row.id,
+          ...(node.at ? { at: node.at } : {}),
+          ...(node.element ? { element: node.element } : {}),
+        };
+      }
+
+      const rendered = dom
+        .map((node, i) => walk(node, `${row.id}:${i}`))
+        .filter((node): node is Row => node !== undefined);
+      // Anything the DOM did not account for: a portal, or a value writing somewhere the
+      // description did not reach.
       const rest = row.children.filter((child) => !placed.has(child)).map(expand);
-      row.children = [...dom, ...rest];
+      row.children = [...rendered, ...rest];
       return row;
     };
 
-    for (const root of roots) if (!placed.has(root)) expand(root);
-    // A root that turned out to belong inside another is no longer a root.
-    return roots.filter((root) => !placed.has(root));
+    // Mapped, not just visited: expanding a root can return a different row, because the
+    // container it was mounted into ends up above it.
+    const top = roots.map((root) => (placed.has(root) ? root : expand(root)));
+    return top.filter((_, i) => !placed.has(roots[i]!));
   }
 
   return {
@@ -426,6 +517,10 @@ export const TREE_CSS = `
 .fx-tree-twist {
   width: 12px; padding: 0; border: 0; background: none; cursor: pointer;
   color: var(--fx-muted, #8a90a2); font-size: 9px; line-height: 1;
+}
+.fx-tree-lazy {
+  font-size: 9px; letter-spacing: .04em; color: var(--fx-router, #7dd3fc);
+  border: 1px solid var(--fx-line, #262a35); border-radius: 6px; padding: 0 4px;
 }
 .fx-tree-count {
   font-size: 9.5px; color: var(--fx-muted, #8a90a2);

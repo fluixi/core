@@ -9,6 +9,7 @@
 // gains a field, which is how `component`, `source` and `declaredAt` went missing from one.
 import type { DomTarget, NodeKind, NodeState, RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
+import type { DomNode } from './dom.js';
 import type { GraphEvent } from './history.js';
 
 // A consumer reading a snapshot needs the vocabulary it is written in, and this module is
@@ -39,6 +40,8 @@ export interface WireNode {
   readonly version?: number;
   readonly state?: NodeState;
   readonly loading?: boolean;
+  /** Arrived as its own chunk rather than in the page's first bundle. */
+  readonly lazy?: boolean;
   /** Where the node was created, when the compiler marked it. */
   readonly source?: ReactiveSourceLocation;
   /** Components only: where the component itself was declared. */
@@ -53,6 +56,11 @@ export interface WireNode {
   readonly targets?: DomTarget[];
   /** Where it is set from outside any computation. */
   readonly setAt?: ReactiveSourceLocation[];
+  /**
+   * What this tag rendered, for a panel that is not in the page and so has no elements of
+   * its own. Only sent when the producer was asked for it.
+   */
+  readonly dom?: DomNode[];
 }
 
 export interface GraphSnapshot {
@@ -79,6 +87,12 @@ export interface SerializeOptions {
   removed?: Iterable<number>;
   /** What `takeEvents()` returned. Omitted rather than sent empty. */
   events?: readonly GraphEvent[];
+  /**
+   * Describe what each tag rendered, so a panel elsewhere can draw the dom too. Off unless
+   * asked: it is the largest thing a snapshot can carry. Undefined for a node that rendered
+   * nothing, so the field is left off instead of sending an empty array per node.
+   */
+  dom?: (id: number) => DomNode[] | undefined;
 }
 
 /** Flatten a live graph for transport. */
@@ -106,6 +120,7 @@ export function serializeGraph(
       version: node.core?.version,
       state,
       loading: node.loading,
+      lazy: node.lazy,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
@@ -113,6 +128,9 @@ export function serializeGraph(
       bindings: node.bindings,
       targets: node.targets,
       setAt: node.setAt,
+      // Falls back to what the node already carries, so a relay that re-serialises a
+      // snapshot it received does not drop the description.
+      dom: options.dom?.(node.id) ?? node.dom,
     });
   }
   const removed = options.removed ? [...options.removed] : undefined;
@@ -137,6 +155,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       lastPulse: node.lastPulse,
       core: { version: node.version, state: node.state ? STATE_CODE[node.state] : undefined },
       loading: node.loading,
+      lazy: node.lazy,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
@@ -144,6 +163,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       bindings: node.bindings,
       targets: node.targets,
       setAt: node.setAt,
+      dom: node.dom,
     });
   }
   return map;

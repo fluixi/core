@@ -88,7 +88,7 @@ describe('createInspector', () => {
 
   it('says so when nothing is selected', () => {
     createInspector(host, { empty: 'pick one' }).show(graph(), null);
-    expect(host.textContent).toBe('pick one');
+    expect(host.querySelector('.ins-empty')?.textContent).toBe('pick one');
   });
 
   it('leaves the dom alone when nothing it says has changed', () => {
@@ -361,5 +361,124 @@ describe('an edit that never finishes', () => {
     graph.set(0, node(0, { kind: 'state', value: '99' }));
     inspector.show(graph, 0);
     expect(host.querySelector('.ins-edit')?.textContent).toBe('99');
+  });
+});
+
+describe('inspecting an element', () => {
+  /** Counter renders a span the count writes into. */
+  const rendered = () =>
+    new Map<number, RNode>([
+      [
+        3,
+        node(3, {
+          kind: 'component',
+          label: 'Counter',
+          source: { file: 'src/counter.tsx', line: 4, column: 0 },
+        }),
+      ],
+      [
+        4,
+        node(4, {
+          label: 'count',
+          value: '2',
+          targets: [
+            { kind: 'content', element: 'slot in span.num', source: { file: 'src/counter.tsx', line: 9, column: 12 } },
+            { kind: 'content', element: 'slot in small', source: { file: 'src/counter.tsx', line: 11, column: 12 } },
+          ],
+        }),
+      ],
+    ]);
+
+  it('names the tag that rendered it and the values writing into it', () => {
+    const inspector = createInspector(host);
+    inspector.showElement(rendered(), { key: '3:0/1', label: 'span.num', owner: 3, writes: [4] });
+    const text = host.textContent ?? '';
+    expect(text).toContain('span.num');
+    expect(text).toContain('Counter');
+    expect(text).toContain('count');
+  });
+
+  it('shows the line of the binding into this element, not another one', () => {
+    const inspector = createInspector(host, { onReveal: () => {} });
+    inspector.showElement(rendered(), { key: '3:0/1', label: 'span.num', owner: 3, writes: [4] });
+    const text = host.textContent ?? '';
+    // 9 is the span; 11 is the <small> the same signal also writes to.
+    expect(text).toContain(':9:12');
+    expect(text).not.toContain(':11:12');
+  });
+
+  it('says so when nothing writes into it', () => {
+    const inspector = createInspector(host);
+    inspector.showElement(rendered(), { key: '3:0/0', label: 'nav', owner: 3 });
+    expect(host.textContent).toContain('nothing writes here');
+  });
+
+  it('prefers where the tag was written over where the framework made it', () => {
+    // A lazy route is instantiated inside the framework, so its source is a package line.
+    const graph = new Map<number, RNode>([
+      [
+        5,
+        node(5, {
+          kind: 'component',
+          label: 'About',
+          source: { file: '/pkgs/core/src/render/lazy.ts', line: 37, column: 12, external: true },
+          declaredAt: { file: 'src/routes/about.tsx', line: 1, column: 15 },
+        }),
+      ],
+    ]);
+    const inspector = createInspector(host, { onReveal: () => {} });
+    inspector.showElement(graph, { key: '5:0', label: 'section.about', owner: 5 });
+    const links = [...host.querySelectorAll('.ins-at')].map((b) => (b as HTMLElement).dataset.file);
+    expect(links).toEqual(['src/routes/about.tsx']);
+  });
+
+  it('adds the framework line only when asked for it', () => {
+    const graph = new Map<number, RNode>([
+      [
+        5,
+        node(5, {
+          kind: 'component',
+          label: 'About',
+          source: { file: '/pkgs/core/src/render/lazy.ts', line: 37, column: 12, external: true },
+          declaredAt: { file: 'src/routes/about.tsx', line: 1, column: 15 },
+        }),
+      ],
+    ]);
+    const pick = { key: '5:0', label: 'section.about', owner: 5 };
+    const files = () =>
+      [...host.querySelectorAll('.ins-at')].map((b) => (b as HTMLElement).dataset.file);
+
+    const inspector = createInspector(host, { onReveal: () => {} });
+    inspector.showElement(graph, pick);
+    expect(files()).toEqual(['src/routes/about.tsx']);
+
+    const box = host.querySelector('.ins-bar input') as HTMLInputElement;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    inspector.showElement(graph, pick);
+    expect(files()).toEqual(['src/routes/about.tsx', '/pkgs/core/src/render/lazy.ts']);
+  });
+
+  it('starts with the framework line when the host asks for it', () => {
+    const graph = new Map<number, RNode>([
+      [
+        5,
+        node(5, {
+          kind: 'component',
+          label: 'About',
+          source: { file: '/pkgs/core/src/render/lazy.ts', line: 37, column: 12, external: true },
+          declaredAt: { file: 'src/routes/about.tsx', line: 1, column: 15 },
+        }),
+      ],
+    ]);
+    const inspector = createInspector(host, { onReveal: () => {}, internals: true });
+    inspector.showElement(graph, { key: '5:0', label: 'section.about', owner: 5 });
+    expect(host.textContent).toContain('made in');
+  });
+
+  it('falls back to the empty state without a pick', () => {
+    const inspector = createInspector(host, { empty: 'pick something' });
+    inspector.showElement(rendered(), null);
+    expect(host.querySelector('.ins-empty')?.textContent).toBe('pick something');
   });
 });

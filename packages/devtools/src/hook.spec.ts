@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRoot, createSignal, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
 import { installDevtoolsHook, type DevtoolsHook } from './hook.js';
@@ -187,5 +188,64 @@ describe('two copies on one page', () => {
     // The application ships its own devtools; the hook may belong to an extension.
     expect(asked).toBe(1);
     expect(hook.observed).toBe(mine);
+  });
+});
+
+/**
+ * A panel outside the page cannot hold elements, so it asks the hook to draw instead. The
+ * string form is how the tree keys an element: tag id, which root it rendered, then a child
+ * index per step.
+ */
+describe('highlighting from outside the page', () => {
+  const asDom = (element: Element): { label: string; children: unknown[]; element: Element } => ({
+    label: element.tagName.toLowerCase(),
+    children: [...element.children].map(asDom),
+    element,
+  });
+
+  it('resolves an element path against what the tag rendered', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<p></p><section><b></b><i></i></section>';
+    document.body.append(root);
+
+    const hook = installDevtoolsHook();
+    const drawn: Element[] = [];
+    hook.inject({
+      observeReactiveNodes,
+      version: '0.0.0',
+      watch: () => ({
+        graph: new Map(),
+        sample: () => [],
+        takeRemoved: () => [],
+        takeEvents: () => [],
+        elementsFor: () => [],
+        renderedFor: (id: number) => (id === 12 ? [root] : []),
+        nodeAt: () => undefined,
+        setValue: () => false,
+        // What the real one builds out of what the tag rendered. A stub answering nothing
+        // here would let a path resolve that the tree could never have keyed.
+        domFor: (id: number) => (id === 12 ? [asDom(root)] : []),
+        detach: () => {},
+      }),
+    } as never);
+
+    // 12:0/1/0 — node 12, its first root, second child, first child of that.
+    hook.highlight('12:0/1/0');
+    const layer = document.getElementById('fx-highlight-layer');
+    expect(layer).not.toBeNull();
+    expect(layer!.textContent).toBe('b');
+    drawn.length = 0;
+  });
+
+  it('clears on null', () => {
+    const hook = installDevtoolsHook();
+    hook.highlight(null);
+    const layer = document.getElementById('fx-highlight-layer');
+    expect(layer === null || layer.style.display === 'none').toBe(true);
+  });
+
+  it('says nothing for a path that no longer resolves', () => {
+    const hook = installDevtoolsHook();
+    expect(() => hook.highlight('99:0/4/4')).not.toThrow();
   });
 });

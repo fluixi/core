@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { RNode } from './instrument.js';
-import { componentTree, createComponentTree, idsIn, type ComponentTree } from './tree.js';
+import type { ElementPick } from './tree.js';
+import { componentTree, createComponentTree, idsIn, TREE_KINDS, type ComponentTree } from './tree.js';
+import { describeAll } from './dom.js';
 
 const node = (id: number, over: Partial<RNode> = {}): RNode => ({
   id,
@@ -220,6 +222,15 @@ describe('drawing it', () => {
 });
 
 describe('the dom a tag rendered', () => {
+  /**
+   * The real description, built from what each node rendered. Going through describeAll
+   * keeps these honest about the shape a host actually receives.
+   */
+  const domOf = (rendered: Record<number, Element[]>, graph: Map<number, RNode>) => {
+    const all = describeAll(graph, (of) => rendered[of] ?? [], (of) => rendered[of] ?? [], TREE_KINDS);
+    return (id: number) => all.get(id) ?? [];
+  };
+
   let host: HTMLElement;
   let tree: ComponentTree;
   const hovered: (Element | undefined)[] = [];
@@ -244,8 +255,9 @@ describe('the dom a tag rendered', () => {
 
   it('lists the elements under the tag that rendered them', () => {
     const dom = counterDom();
-    tree = createComponentTree(host, { domFor: (id) => (id === 3 ? [dom] : []) });
-    tree.render(app());
+    const graph = app();
+    tree = createComponentTree(host, { domFor: domOf({ 3: [dom] }, graph) });
+    tree.render(graph);
     expect(labels()).toEqual([
       '<App>',
       '<Router>',
@@ -266,8 +278,9 @@ describe('the dom a tag rendered', () => {
   });
 
   it('collapses an element subtree like any other', () => {
-    tree = createComponentTree(host, { domFor: (id) => (id === 3 ? [counterDom()] : []) });
-    tree.render(app());
+    const graph = app();
+    tree = createComponentTree(host, { domFor: domOf({ 3: [counterDom()] }, graph) });
+    tree.render(graph);
     const twist = host.querySelector('[data-twist="3:0"]') as HTMLElement;
     twist.click();
     tree.render(app());
@@ -277,11 +290,12 @@ describe('the dom a tag rendered', () => {
 
   it('hands the element itself to a hover, with no node id', () => {
     const dom = counterDom();
+    const graph = app();
     tree = createComponentTree(host, {
-      domFor: (id) => (id === 3 ? [dom] : []),
+      domFor: domOf({ 3: [dom] }, graph),
       onHover: (id, element) => hovered.push(element),
     });
-    tree.render(app());
+    tree.render(graph);
     const row = [...host.querySelectorAll('.fx-tree-row')].find(
       (r) => r.textContent?.includes('span.num'),
     )!;
@@ -298,14 +312,14 @@ describe('the dom a tag rendered', () => {
     card.append(first, second);
 
     const dom: Record<number, Element[]> = { 0: [card], 3: [first], 4: [second] };
-    tree = createComponentTree(host, { domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<number, RNode>([
         [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [3, { id: 3, label: 'Counter', kind: 'component', createdIn: 0, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [4, { id: 4, label: 'Another', kind: 'component', createdIn: 0, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toEqual([
       '<App>',
       '<div.card>',
@@ -330,14 +344,14 @@ describe('the dom a tag rendered', () => {
     const span = row.querySelector('span')!;
     const small = row.querySelector('small')!;
     const dom: Record<number, Element[]> = { 3: [row], 10: [span], 11: [small] };
-    tree = createComponentTree(host, { values: true, domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<number, RNode>([
         [3, { id: 3, label: 'Counter', kind: 'component', deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [10, { id: 10, label: 'count', kind: 'state', createdIn: 3, authored: true, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [11, { id: 11, label: 'double', kind: 'memo', createdIn: 3, authored: true, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { values: true, domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toEqual([
       '<Counter>',
       '<div.row>',
@@ -353,13 +367,13 @@ describe('the dom a tag rendered', () => {
   it('keeps a value that writes nowhere the dom shows, rather than losing it', () => {
     const row = counterDom();
     const dom: Record<number, Element[]> = { 3: [row] };
-    tree = createComponentTree(host, { values: true, domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<number, RNode>([
         [3, { id: 3, label: 'Counter', kind: 'component', deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [10, { id: 10, label: 'quiet', kind: 'state', createdIn: 3, authored: true, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { values: true, domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toContain('quiet');
   });
 
@@ -372,25 +386,25 @@ describe('the dom a tag rendered', () => {
     card.append(heading);
 
     const dom: Record<number, Element[]> = { 0: [card], 9: [heading] };
-    tree = createComponentTree(host, { values: true, domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<RNode['id'], RNode>([
         [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         // No createdIn: declared at the top of another module.
         [9, { id: 9, label: 'total', kind: 'memo', authored: true, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { values: true, domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toEqual(['<App>', '<div.card>', '<h3>', 'total']);
   });
 
   it('leaves a module-scope value at the top when it renders nowhere', () => {
     const dom: Record<number, Element[]> = {};
-    tree = createComponentTree(host, { values: true, domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<RNode['id'], RNode>([
         [9, { id: 9, label: 'total', kind: 'memo', authored: true, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { values: true, domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toEqual(['total']);
   });
 
@@ -398,27 +412,138 @@ describe('the dom a tag rendered', () => {
     const own = document.createElement('div');
     const away = document.createElement('aside');
     const dom: Record<number, Element[]> = { 0: [own], 3: [away] };
-    tree = createComponentTree(host, { domFor: (id) => dom[id] ?? [] });
-    tree.render(
+    const graph =
       new Map<number, RNode>([
         [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
         [3, { id: 3, label: 'Away', kind: 'component', createdIn: 0, deps: new Set(), writes: new Set(), runs: 0, lastPulse: 0 }],
-      ]),
-    );
+      ]);
+    tree = createComponentTree(host, { domFor: domOf(dom, graph) });
+    tree.render(graph);
     expect(labels()).toEqual(['<App>', '<div />', '<Away>', '<aside />']);
   });
 
   it('selects nothing for an element row, which is not a node', () => {
     const picked: number[] = [];
+    const graph = app();
     tree = createComponentTree(host, {
-      domFor: (id) => (id === 3 ? [counterDom()] : []),
+      domFor: domOf({ 3: [counterDom()] }, graph),
       onSelect: (id) => picked.push(id),
     });
-    tree.render(app());
+    tree.render(graph);
     const row = [...host.querySelectorAll('.fx-tree-row')].find(
       (r) => r.textContent?.includes('small'),
     )!;
     (row as HTMLElement).click();
     expect(picked).toEqual([]);
+  });
+
+  it('hands an element row to onPick, naming the tag it belongs to', () => {
+    const picks: ElementPick[] = [];
+    const graph = app();
+    tree = createComponentTree(host, {
+      domFor: domOf({ 3: [counterDom()] }, graph),
+      onPick: (pick) => picks.push(pick),
+    });
+    tree.render(graph);
+    const row = [...host.querySelectorAll('.fx-tree-row')].find(
+      (r) => r.textContent?.includes('span.num'),
+    )! as HTMLElement;
+    row.click();
+    expect(picks).toHaveLength(1);
+    expect(picks[0]!.label).toBe('span.num');
+    // Counter rendered it, so that is where its source is.
+    expect(picks[0]!.owner).toBe(3);
+    expect(row.classList.contains('on')).toBe(true);
+  });
+});
+
+/**
+ * The shape a routed app makes: a layout renders the page frame, and a boundary inside it
+ * renders no element of its own — the routed content lands in the layout's <main>. Modelled
+ * on the start example, where this put Suspense next to the layout instead of in it.
+ */
+describe('a tag that renders no element of its own', () => {
+  const shell = () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    root.innerHTML = '<div class="app"><nav></nav><main><section class="home"></section></main></div>';
+    document.body.replaceChildren(root);
+    return {
+      root,
+      app: root.querySelector('.app') as Element,
+      main: root.querySelector('main') as Element,
+    };
+  };
+
+  const routed = () =>
+    new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App' })],
+      [1, node(1, { kind: 'router', label: 'Router', createdIn: 0 })],
+      [2, node(2, { kind: 'component', label: 'RootLayout', createdIn: 1 })],
+      [3, node(3, { kind: 'control', label: 'Suspense', createdIn: 2 })],
+    ]);
+
+  let host: HTMLElement;
+  const labels = () => [...host.querySelectorAll('.fx-tree-tag')].map((t) => t.textContent ?? '');
+
+  beforeEach(() => {
+    host = document.createElement('div');
+    document.body.append(host);
+  });
+
+  it('sits inside the element its content goes into', () => {
+    const el = shell();
+    const graph = routed();
+    const all = describeAll(
+      graph,
+      (of) => (of === 2 ? [el.app] : []),
+      // App and Router both write through the element the app was mounted into.
+      (of) => (of === 3 ? [el.main] : of === 1 || of === 0 ? [el.root] : []),
+      TREE_KINDS,
+    );
+    const tree = createComponentTree(host, { domFor: (id) => all.get(id) ?? [] });
+    tree.render(graph);
+
+    const rows = labels();
+    // The mount container is above the root tag, Suspense is inside <main> rather than
+    // beside the layout, and nothing the layout rendered is lost.
+    expect(rows).toEqual([
+      '<div#root>',
+      '<App>',
+      '<Router>',
+      '<RootLayout>',
+      '<div.app>',
+      '<nav />',
+      '<main>',
+      '<Suspense />',
+      '<section.home />',
+    ]);
+  });
+
+  it('marks a tag that came down as its own chunk', () => {
+    const graph = routed();
+    graph.set(4, node(4, { kind: 'component', label: 'Home', createdIn: 3, lazy: true }));
+    const tree = createComponentTree(host, {});
+    tree.render(graph);
+    const marks = [...host.querySelectorAll('.fx-tree-lazy')];
+    expect(marks).toHaveLength(1);
+    const row = marks[0]!.closest('.fx-tree-row')!;
+    expect(row.querySelector('.fx-tree-tag')!.textContent).toBe('<Home />');
+  });
+
+  it('does not cut the tree at the element it writes into', () => {
+    const el = shell();
+    const graph = routed();
+    const all = describeAll(
+      graph,
+      (of) => (of === 2 ? [el.app] : []),
+      (of) => (of === 3 ? [el.main] : []),
+      TREE_KINDS,
+    );
+    // main keeps its children rather than becoming a stub handed to Suspense.
+    const layout = all.get(2)!;
+    const main = layout[0]!.children.find((c) => c.label === 'main')!;
+    expect(main.children.map((c) => c.label)).toEqual(['section.home']);
+    expect(main.inside).toEqual([3]);
   });
 });

@@ -31,7 +31,7 @@ export { markReactiveSource } from './source.js';
 export type { ReactiveSourceLocation, ReactiveSourceMetadata } from './source.js';
 export { createGraphView, DEVTOOLS_CSS } from './graph-view.js';
 export { createInspector, INSPECTOR_CSS } from './inspector.js';
-export type { Inspector, InspectorOptions } from './inspector.js';
+export type { Inspector, InspectorOptions, ElementInspection } from './inspector.js';
 export { createTimeline, TIMELINE_CSS } from './timeline.js';
 export type { Timeline, TimelineOptions } from './timeline.js';
 export { shortenPath } from './path.js';
@@ -40,7 +40,7 @@ export { showHighlight, hideHighlight, removeHighlight, startPicking } from './h
 export { makeFloatable, FLOAT_CSS } from './float.js';
 export type { Floatable, FloatOptions } from './float.js';
 export type { PickOptions } from './highlight.js';
-export type { ComponentTree, ComponentTreeOptions, TreeNode } from './tree.js';
+export type { ComponentTree, ComponentTreeOptions, TreeNode, ElementPick } from './tree.js';
 export { createKindFilter, FILTERABLE_KINDS, KIND_FILTER_CSS } from './kind-filter.js';
 export type { KindFilter, KindFilterOptions } from './kind-filter.js';
 export { createDetailPanel, DETAIL_PANEL_CSS } from './detail-panel.js';

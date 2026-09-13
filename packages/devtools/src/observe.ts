@@ -22,6 +22,8 @@ import { formatValue, shorten } from './format.js';
 import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
+import { describeAll, type DomNode } from './dom.js';
+import { TREE_KINDS } from './tree.js';
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
 interface CoreNode {
@@ -43,6 +45,17 @@ export interface ObservedGraph {
   elementsFor(id: number): Element[];
   /** The node driving `element`, or the nearest ancestor that has one. */
   nodeAt(element: Element | null): number | undefined;
+  /**
+   * What this node rendered, described so it can be shown by a panel that is not in the
+   * page. Stops wherever another tag begins, naming it.
+   */
+  domFor(id: number): DomNode[];
+  /**
+   * The elements this tag returned, and nothing else. Unlike `elementsFor` there is no
+   * fallback to what the values inside it write to, so two tags can never claim the same
+   * element.
+   */
+  renderedFor(id: number): Element[];
   /**
    * Write a signal from outside the application. False when the node is not something that
    * can be written — a memo is computed, and setting it would be a lie the next run undoes.
@@ -170,6 +183,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const drivenBy = new WeakMap<Element, number>();
   /** Per node, the elements it drives. Rebuilt each sample, like the descriptions are. */
   let reaches = new Map<number, WeakRef<Element>[]>();
+  /** Cleared on each sample: the page has moved on. */
+  let described: Map<number, DomNode[]> | null = null;
   /**
    * What each tag rendered, weakly.
    *
@@ -451,9 +466,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     }
   };
 
-  return {
+  const api: ObservedGraph = {
     graph,
     sample() {
+      described = null;
       const changed: number[] = [];
       const now = Date.now();
 
@@ -519,6 +535,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           node.kind = KIND_OF_BUILTIN[stamped] ?? 'component';
           node.declaredAt = componentSource(stamped);
           node.source ??= node.declaredAt;
+          // Loaded as its own chunk. Worth saying: it explains a tag that only turns up after
+          // a navigation, and a suspense boundary that had something to wait for.
+          if ((raw as { $lazy?: unknown }).$lazy) node.lazy = true;
           if (unnamed.has(node.id)) {
             node.label = stamped;
             unnamed.delete(node.id);
@@ -587,6 +606,20 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       write(next);
       return true;
     },
+    renderedFor(id) {
+      const live: Element[] = [];
+      for (const ref of rendered.get(id) ?? []) {
+        const found = ref.deref();
+        if (found?.isConnected && !live.includes(found)) live.push(found);
+      }
+      return live;
+    },
+    domFor(id) {
+      // Built once per sample. Every tag needs the same element maps, and a page redraws
+      // this many times a second.
+      described ??= describeAll(graph, (of) => api.renderedFor(of), (of) => api.elementsFor(of), TREE_KINDS);
+      return described.get(id) ?? [];
+    },
     nodeAt(element) {
       let at: Element | null = element;
       while (at) {
@@ -612,4 +645,6 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       history.clear();
     },
   };
+
+  return api;
 }
