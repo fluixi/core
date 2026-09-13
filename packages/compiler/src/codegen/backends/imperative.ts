@@ -10,7 +10,7 @@ import {
 } from '../serialize-static.js';
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
-import { markHole, SOURCE_MARKER } from '../../transform/source-locations.js';
+import { markHole, markProps, SOURCE_MARKER } from '../../transform/source-locations.js';
 
 /**
  * Imperative fine-grained backend — emits createNativeElement/insert/spread/
@@ -132,6 +132,11 @@ function emitComponent(
     used.add('mergeProps');
     obj = `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
   }
+  // Every prop is a getter, so none of them can carry a position. The map rides alongside,
+  // and a build that recorded no locations emits nothing.
+  const propAt: Record<string, [number, number]> = {};
+  for (const p of normal) if (p.at) propAt[p.name] = [p.at.line, p.at.column];
+  if (Object.keys(propAt).length) obj = markProps(obj, propAt);
   // The memo never recomputes — every prop is a getter, so this callback reads nothing
   // reactive. It is here for what it makes `insert` do, and it cannot be elided.
   //

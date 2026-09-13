@@ -59,6 +59,19 @@ export const HOLE_MARKER = '__fx_hole';
 export const markHole = (accessor: string, line: number, column: number): string =>
   `(globalThis.${HOLE_MARKER} ?? ((f) => f))(${accessor},${line},${column})`;
 
+/**
+ * Where each prop of a component tag was written.
+ *
+ * The props object is built as getters, so nothing in it can carry a position of its own.
+ * The marker takes the object and a name-to-position map, and hands the object straight
+ * back — devtools keeps the map, and a build without it passes the object through.
+ */
+export const PROPS_MARKER = '__fx_props';
+
+/** `_({ get a() {…} }, {"a":[9,25]})`, or the object untouched when nothing is watching. */
+export const markProps = (object: string, at: Record<string, [number, number]>): string =>
+  `(globalThis.${PROPS_MARKER} ?? ((p) => p))(${object},${JSON.stringify(at)})`;
+
 /** The runtime names that make a node. */
 const RUNTIME_PRIMITIVES = new Set([
   'signal', 'memo', 'effect', 'store', 'resource', 'watch',

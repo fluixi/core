@@ -82,6 +82,14 @@ export interface ReactiveObserver {
    * compiler may have stamped with the hole's position.
    */
   bound?(node: unknown, target: unknown, kind: string, name?: string, accessor?: unknown): void;
+  /**
+   * The props a component was handed.
+   *
+   * `node` is the computation the component was created inside, which is the node a watcher
+   * draws it as. The object is kept rather than read: every prop is a getter over whatever
+   * the caller passed, so reading one here would subscribe the wrong computation to it.
+   */
+  props?(node: unknown, props: unknown): void;
 }
 
 /**
@@ -163,6 +171,17 @@ export function reportReactiveBinding(
   // The compiler may have stamped the accessor with the hole's line. A stack cannot say it:
   // every binding in a template comes from the same generated expression.
   observer.bound(running[running.length - 1], target, kind, name, accessor);
+}
+
+/**
+ * A component's props, reported where it is created so the running computation is the one
+ * the props belong to. Nothing is read: the caller keeps the object and reads it untracked
+ * when someone asks.
+ */
+export function reportReactiveProps(props: unknown): void {
+  const observer = G.observer as ReactiveObserver | null;
+  if (!observer?.props || !running.length || !props) return;
+  observer.props(running[running.length - 1], props);
 }
 
 export function reportReactiveMove(node: unknown, origin: unknown, name?: string): void {

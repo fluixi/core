@@ -40,6 +40,7 @@ export interface ReactiveSourceMetadata {
 const MARKER = '__fx_source';
 const COMPONENT_MARKER = '__fx_component';
 const HOLE_MARKER = '__fx_hole';
+const PROPS_MARKER = '__fx_props';
 
 /**
  * The mark, and what components were declared, on shared state.
@@ -173,6 +174,22 @@ function markHole<T>(accessor: T, line: number, column: number): T {
   return accessor;
 }
 
+/** Where each prop of a component tag was written, by the props object it was passed in. */
+const PROPS = new WeakMap<object, Record<string, [number, number]>>();
+
+/** Returns the props object untouched: it is what the component is about to be handed. */
+function markProps<T>(props: T, at: Record<string, [number, number]>): T {
+  if (props && typeof props === 'object') PROPS.set(props as object, at);
+  return props;
+}
+
+/** Where the props of this object were written, when the compiler recorded them. */
+export function propsLocations(
+  props: unknown,
+): Record<string, [number, number]> | undefined {
+  return props && typeof props === 'object' ? PROPS.get(props as object) : undefined;
+}
+
 /** The hole an accessor came from, when the compiler marked it. */
 export function holeLocation(accessor: unknown): ReactiveSourceLocation | undefined {
   if (!accessor || (typeof accessor !== 'object' && typeof accessor !== 'function')) return undefined;
@@ -183,4 +200,5 @@ export function installSourceMarker(): void {
   if (typeof host[MARKER] !== 'function') host[MARKER] = markReactiveSource;
   if (typeof host[COMPONENT_MARKER] !== 'function') host[COMPONENT_MARKER] = markComponentSource;
   if (typeof host[HOLE_MARKER] !== 'function') host[HOLE_MARKER] = markHole;
+  if (typeof host[PROPS_MARKER] !== 'function') host[PROPS_MARKER] = markProps;
 }

@@ -226,7 +226,8 @@ class Lowerer {
     // tag itself has none to give. The first hole is the closest thing that does, and for
     // the control-flow components — `<Show when=${…}>`, `<For each=${…}>` — it is the
     // expression driving the subtree anyway.
-    const bindAt = props.find((p) => p.at)?.at;
+    // A reactive one: a literal carries a position too now, and it drives nothing.
+    const bindAt = props.find((p) => p.at && p.reactive)?.at;
 
     const at = this.tagAt(el);
 
