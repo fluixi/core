@@ -23,7 +23,13 @@ import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
 import { describeAll, type DomNode } from './dom.js';
-import { devtoolsPlugins, type CollectContext, type DirectiveReport, type PluginNode } from './plugin.js';
+import {
+  devtoolsPlugins,
+  type CollectContext,
+  type ContextReport,
+  type DirectiveReport,
+  type PluginNode,
+} from './plugin.js';
 import { TREE_KINDS } from './tree.js';
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
@@ -145,6 +151,7 @@ const PREFIX: Record<NodeKind, string> = {
   // A plugin's, and it names them itself.
   directive: 'd',
   context: 'ctx',
+  provider: 'p',
 };
 
 /**
@@ -323,6 +330,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   let drained = 0;
   /** What plugins asked to hear about. Empty unless one registered. */
   const onDirective: ((report: DirectiveReport) => void)[] = [];
+  const onContext: ((report: ContextReport) => void)[] = [];
+  /** What plugins decided a node really is, applied once it has been named. */
+  const retyped = new Map<number, NodeKind>();
+  /** Where each context was written, taken from the stack at the moment it was made. */
+  const contextSites = new Map<symbol, ReactiveSourceLocation>();
   /** What plugins attached to elements, by element then plugin name. */
   const elementExtra = new WeakMap<object, Record<string, unknown>>();
   /** The nearest node the graph knows, looking outward through anything it does not. */
@@ -501,6 +513,36 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         }
       }
     },
+    contextCreated(id) {
+      if (!onContext.length || contextSites.has(id)) return;
+      const site = currentCallSite(origin);
+      if (site) contextSites.set(id, mapped(site.location));
+    },
+    context(node, id, kind, value) {
+      if (!onContext.length) return;
+      const core = node as CoreNode;
+      const owner = core && typeof core === 'object' ? ids.get(core) : undefined;
+      const report: ContextReport = {
+        owner: owner !== undefined ? (through.get(core) ?? owner) : undefined,
+        id,
+        name: id.description || 'context',
+        ...(owner !== undefined ? { ownerLabel: graph.get(owner)?.label } : {}),
+        // Where the context itself was written. The provider's line is a fallback, and it
+        // reads as a lie when two providers share one context.
+        ...(contextSites.get(id) ?? graph.get(owner ?? -1)?.source
+          ? { at: contextSites.get(id) ?? graph.get(owner ?? -1)?.source }
+          : {}),
+        kind,
+        ...(value === undefined ? {} : { value: formatValue(value) }),
+      };
+      for (const fn of onContext) {
+        try {
+          fn(report);
+        } catch {
+          /* ignored */
+        }
+      }
+    },
     props(node, props) {
       const core = node as CoreNode;
       if (!core || typeof core !== 'object' || !props) return;
@@ -656,7 +698,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         }
         // Whatever it returned, for a panel asking where this is on the page. Read every
         // sample because a tag can re-render into different elements.
-        if (node.kind === 'component' || node.kind === 'control' || node.kind === 'router') {
+        if (TREE_KINDS.has(node.kind)) {
           const found = elementsIn(raw);
           if (found.length) rendered.set(node.id, found.map((el) => new WeakRef(el)));
           const given = handed.get(node.id);
@@ -675,6 +717,13 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           moved(node.id);
         }
         runsAtLastSample.set(node.id, node.runs);
+      }
+      // After the promotion above, so a plugin's answer survives being named. Only a plain
+      // component is sharpened: a Router that provides a context is still a Router, and a
+      // plugin does not get to overrule a kind the framework already knows.
+      for (const [id, kind] of retyped) {
+        const node = graph.get(id);
+        if (node?.kind === 'component') node.kind = kind;
       }
       return changed;
     },
@@ -786,11 +835,15 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     if (!plugin.collect) continue;
     const context: CollectContext = {
       onDirective: (fn) => onDirective.push(fn),
+      onContext: (fn) => onContext.push(fn),
       annotate: (id, data) => {
         const node = graph.get(id);
         if (node) (node.extra ??= {})[plugin.name] = data;
       },
       annotation: (id) => graph.get(id)?.extra?.[plugin.name],
+      // Remembered, not applied here. A component is still a memo when its context is
+      // provided, and the promotion that gives it its name only runs while it is one.
+      retype: (id, kind) => retyped.set(id, kind),
       annotateElement: (target, data) => {
         if (!target || typeof target !== 'object') return;
         const held = elementExtra.get(target) ?? {};
@@ -809,9 +862,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           writes: new Set(),
           runs: 0,
           lastPulse: 0,
-          authored: false,
+          authored: spec.authored ?? false,
           ...(spec.createdIn !== undefined ? { createdIn: spec.createdIn } : {}),
           ...(spec.value !== undefined ? { value: spec.value } : {}),
+          ...(spec.detail !== undefined ? { detail: spec.detail } : {}),
           ...(spec.source ? { source: spec.source } : {}),
         });
         return id;

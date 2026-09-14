@@ -12,6 +12,7 @@
 import type { NodeKind, RNode } from './instrument.js';
 import type { DomNode } from './dom.js';
 import { pluginBadge, pluginElementBadge } from './plugin.js';
+import { kindRules } from './palette.js';
 
 /** Kinds that are tags in the source, and so have a place in a tree of them. */
 export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
@@ -19,6 +20,9 @@ export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
   'control',
   'router',
   'handler',
+  // A component a plugin recognised as providing a context. Still a tag the author wrote,
+  // so leaving it out took it and everything it rendered out of the tree.
+  'provider',
 ]);
 
 export interface TreeNode {
@@ -581,20 +585,16 @@ export const TREE_CSS = `
   font-size: 9.5px; color: var(--fx-muted, #8a90a2);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px; padding: 0 4px;
 }
-.fx-tree-row.n-control .fx-tree-tag { color: var(--fx-control, #c4b5fd); }
-.fx-tree-row.n-router .fx-tree-tag { color: var(--fx-router, #7dd3fc); }
-.fx-tree-row.n-handler .fx-tree-tag { color: var(--fx-write, #fb7185); }
+${kindRules((k) => `.fx-tree-row.n-${k} .fx-tree-tag`, 'color')}
 .fx-tree-bar {
   display: flex; align-items: center; gap: 5px; padding: 2px 8px 5px;
   font-size: 10.5px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
 }
 .fx-tree-bar:hover { color: var(--fx-label, #e7e9ee); }
 .fx-tree-bar input { width: 11px; height: 11px; margin: 0; accent-color: var(--fx-accent, #5eead4); }
-.fx-tree-row.n-element .fx-tree-tag { color: var(--fx-muted, #8a90a2); }
 .fx-tree-row.n-element:hover .fx-tree-tag { color: var(--fx-label, #e7e9ee); }
-.fx-tree-row.is-value .fx-tree-tag { color: var(--fx-muted, #8a90a2); font-style: italic; }
-.fx-tree-row.is-value.n-state .fx-tree-tag { color: var(--fx-state, #6ee7b7); font-style: normal; }
-.fx-tree-row.is-value.n-memo .fx-tree-tag { color: var(--fx-memo, #a5b4fc); font-style: normal; }
+/* A declared value is listed inside the tag that made it, so it reads quieter than a tag. */
+.fx-tree-row.is-value .fx-tree-tag { font-style: italic; opacity: .85; }
 .fx-tree-search {
   width: calc(100% - 16px); margin: 0 8px 4px; padding: 2px 6px;
   font: inherit; font-size: 10.5px;

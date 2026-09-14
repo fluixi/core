@@ -26,13 +26,39 @@ export interface PluginNode {
   kind: NodeKind;
   createdIn?: number;
   deps?: number[];
+  /** Short enough for a card. */
   value?: string;
+  /** The whole of it, for the inspector. */
+  detail?: string;
+  /**
+   * Whether the application wrote this or the framework did. False folds it into the
+   * machinery card, the way an unnamed memo is folded.
+   */
+  authored?: boolean;
   source?: { file?: string; line?: number; column?: number };
+}
+
+/** A context provided or read. */
+export interface ContextReport {
+  /** The node it happened in. */
+  owner: number | undefined;
+  /** Identity of the context, stable for its lifetime. */
+  id: symbol;
+  /** What the symbol was created with, when it says anything. */
+  name: string;
+  /** Label of the node it happened in, for naming a context nobody named. */
+  ownerLabel?: string;
+  /** Where the context was written, and whether that was inside a package. */
+  at?: { file?: string; line?: number; column?: number; external?: boolean };
+  kind: 'provide' | 'read';
+  /** Formatted, since a panel elsewhere cannot hold the value itself. Not yet clipped. */
+  value?: string;
 }
 
 /** What a plugin gets in the page. */
 export interface CollectContext {
   onDirective(fn: (report: DirectiveReport) => void): void;
+  onContext(fn: (report: ContextReport) => void): void;
   /** Attach data under this plugin's name. Must survive JSON.stringify. */
   annotate(id: number, data: unknown): void;
   /**
@@ -44,6 +70,12 @@ export interface CollectContext {
   /** What this plugin already attached to an element. */
   elementAnnotation(target: unknown): unknown;
   add(node: PluginNode): number;
+  /**
+   * Say what a plain component really is. A component that exists to provide a context is a
+   * provider, and nothing but the plugin watching the context can know that. Ignored for a
+   * node the framework already named: a Router that provides one is still a Router.
+   */
+  retype(id: number, kind: NodeKind): void;
   /** What this plugin already attached, for adding to it rather than replacing it. */
   annotation(id: number): unknown;
 }

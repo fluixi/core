@@ -11,7 +11,8 @@ import type { NodeKind } from './instrument.js';
 
 /** Every kind a graph can hold, in the order they are offered. */
 export const FILTERABLE_KINDS: readonly NodeKind[] = [
-  'state', 'memo', 'effect', 'store', 'resource', 'component', 'control', 'router', 'handler',
+  'state', 'memo', 'effect', 'store', 'resource', 'component', 'provider', 'control', 'router', 'handler',
+  'context', 'directive',
 ];
 
 /** Only `handler` needs renaming; the other kinds read fine as they are. */

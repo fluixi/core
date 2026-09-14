@@ -702,3 +702,46 @@ describe('zooming a graph that is tall rather than wide', () => {
     expect(Number(/scale\(([\d.]+)\)/.exec(t)?.[1] ?? 1)).toBeGreaterThan(20);
   });
 });
+
+/**
+ * A tag the framework made is nobody's to edit, so it belongs in the machinery card. The
+ * routed component it loads is created in the same file and is entirely the author's.
+ */
+describe('which tags count as machinery', () => {
+  const app = () =>
+    new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App', authored: true })],
+      [
+        1,
+        node(1, {
+          kind: 'component',
+          label: 'LazyWrapper',
+          authored: false,
+          createdIn: 0,
+          source: { file: '/pkgs/core/render/lazy.ts', line: 75, column: 10, external: true },
+        }),
+      ],
+      [
+        2,
+        node(2, {
+          kind: 'component',
+          label: 'Home',
+          authored: false,
+          createdIn: 1,
+          // Instantiated inside lazy(), declared in the project.
+          source: { file: '/pkgs/core/render/lazy.ts', line: 37, column: 12, external: true },
+          declaredAt: { file: 'src/pages/home.tsx', line: 1, column: 15 },
+        }),
+      ],
+    ]);
+
+  it('folds a tag with no line in the project, and keeps one that has', () => {
+    const view = createGraphView(svg);
+    view.update(app());
+    const drawn = labels();
+    expect(drawn).toContain('App');
+    expect(drawn).toContain('Home');
+    expect(drawn).not.toContain('LazyWrapper');
+    expect(drawn).toContain('framework');
+  });
+});

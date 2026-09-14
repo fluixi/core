@@ -47,6 +47,8 @@ export type NodeKind =
   | 'directive'
   /** A context, and the components that provide or read it. */
   | 'context'
+  /** A component whose job is providing a context. */
+  | 'provider'
   /** Not a node: a place in the code that sets a signal. */
   | 'setter';
 export type NodeState = 'clean' | 'check' | 'dirty';

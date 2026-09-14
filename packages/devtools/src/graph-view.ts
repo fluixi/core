@@ -6,6 +6,7 @@
 import type { RNode, NodeKind } from './instrument.js';
 import { shortenPath } from './path.js';
 import { pluginBadge } from './plugin.js';
+import { kindColor, kindRules } from './palette.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const COL = 200;
@@ -61,8 +62,8 @@ const ABSOLUTE_MAX_ZOOM = 4000;
 /** Past this the pointer was panning, not clicking. */
 const DRAG_SLOP = 4;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter', directive: 'n-directive', context: 'n-context' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets', directive: '⌘ directive', context: '◈ context' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter', directive: 'n-directive', context: 'n-context', provider: 'n-provider' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets', directive: '⌘ directive', context: '◈ context', provider: '◈ provider' };
 
 /** The card that stands for everything a dependency made and the application never touched. */
 const GROUP_ID = -1;
@@ -521,9 +522,24 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
    *
    * Control flow is excluded on purpose. `Show` and `Switch` are tags in the source, so
    * they stay drawn as themselves.
+   *
+   * A tag is harder: `LazyWrapper` is made by `lazy()` and is nobody's to edit, while the
+   * routed component it loads is created in the same file and is entirely the author's. The
+   * difference is whether the project holds a line for it, not where it was instantiated.
    */
-  const machinery = (n: RNode): boolean =>
-    n.authored === false && (n.kind === 'state' || n.kind === 'memo' || n.kind === 'effect');
+  const inProject = (at?: { file?: string; external?: boolean }): boolean =>
+    !!at?.file && at.external !== true;
+
+  const machinery = (n: RNode): boolean => {
+    if (n.authored !== false) return false;
+    if (n.kind === 'state' || n.kind === 'memo' || n.kind === 'effect' || n.kind === 'context') {
+      return true;
+    }
+    if (n.kind === 'component' || n.kind === 'provider') {
+      return !inProject(n.declaredAt) && !inProject(n.source) && !inProject(n.usedAt);
+    }
+    return false;
+  };
 
   /**
    * Cards a view makes rather than nodes the application has. They follow their own toggles
@@ -1028,20 +1044,12 @@ export const DEVTOOLS_CSS = `
   opacity: calc(.65 + var(--pulse, 0) * .35);
 }
 .fx-node { color: var(--fx-accent, #5eead4); filter: drop-shadow(0 0 calc(var(--pulse,0) * 13px) var(--glow, #5eead4)); }
-.fx-node.n-state { --glow: var(--state, #34d399); }
-.fx-node.n-memo { --glow: var(--memo, #a78bfa); }
-.fx-node.n-effect { --glow: var(--effect, #fbbf24); }
-.fx-node.n-store { --glow: var(--store, #38bdf8); }
-.fx-node.n-resource { --glow: var(--fx-write, #fb7185); }
-.fx-node.n-component { --glow: var(--component, #f0abfc); }
-.fx-node.n-group { --glow: var(--fx-muted, #8a90a2); opacity: .8; }
+${kindRules((k) => `.fx-node.n-${k}`, '--glow')}
+.fx-node.n-group { opacity: .8; }
 .fx-node.n-group .fx-box { stroke-dasharray: 4 3; }
 /* Neither is a node: dashed and dimmer, so the reactive shape reads first. */
-.fx-node.n-control { --glow: var(--control, #7dd3fc); }
-.fx-node.n-router { --glow: var(--router, #c4b5fd); }
-.fx-node.n-handler { --glow: var(--handler, #fca5a5); }
-.fx-node.n-binding { --glow: var(--fx-accent, #5eead4); opacity: .72; }
-.fx-node.n-setter { --glow: var(--fx-write, #fb7185); opacity: .72; }
+.fx-node.n-binding { opacity: .72; }
+.fx-node.n-setter { opacity: .72; }
 .fx-node.n-binding .fx-box, .fx-node.n-setter .fx-box { stroke-dasharray: 3 3; }
 .fx-node.n-external { opacity: .55; }
 .fx-node.n-external .fx-box { stroke-dasharray: 3 2; }
