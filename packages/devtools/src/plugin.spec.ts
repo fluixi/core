@@ -2,129 +2,173 @@
 //
 // A plugin has a half in the page and a half in a panel, with json between them. These go
 // through both, because the seam is where the mistakes are.
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   createRoot,
-  createSignal,
   createMemo,
   observeReactiveNodes,
   reportReactiveDirective,
 } from '@fluixi/reactive/signal';
-import { observeGraph } from './observe.js';
+import { observeGraph, type ObservedGraph } from './observe.js';
 import { serializeGraph, snapshotToRenderMap } from './wire.js';
-import { registerDevtoolsPlugin, pluginRows, pluginBadge, devtoolsPlugins } from './plugin.js';
+import {
+  registerDevtoolsPlugin,
+  pluginElementRows,
+  pluginElementBadge,
+  devtoolsPlugins,
+} from './plugin.js';
 import { directivesPlugin, NAME } from './plugins/directives.js';
+import { createComponentTree } from './tree.js';
+import { createInspector } from './inspector.js';
+import type { RNode } from './instrument.js';
 
-let watching: { detach(): void } | undefined;
+let watching: ObservedGraph | undefined;
 afterEach(() => {
   watching?.detach();
   watching = undefined;
 });
+beforeEach(() => registerDevtoolsPlugin(directivesPlugin));
 
-const watch = () => (watching = observeGraph({ observe: observeReactiveNodes as never }));
+/**
+ * A component rendering one element, which is the shape that matters: a directive is applied
+ * to an element, and only a tag that returned one gets a description a panel can draw.
+ */
+function rendered(el: Element, apply: () => void): { graph: ObservedGraph; tag: number } {
+  // On the page: a description only covers elements still connected to it.
+  document.body.replaceChildren(el);
+  const graph = (watching = observeGraph({ observe: observeReactiveNodes as never }));
+  createRoot(() => {
+    createMemo(() => {
+      apply();
+      // What createComponent stamps, and what makes the memo a component to a watcher.
+      (el as unknown as Record<string, string>)['$name'] = 'Field';
+      return el;
+    })();
+  });
+  graph.sample();
+  const tag = [...graph.graph.values()].find((n) => n.label === 'Field')!.id;
+  return { graph, tag };
+}
 
 describe('a devtools plugin', () => {
   it('is registered once however often its module is evaluated', () => {
     registerDevtoolsPlugin(directivesPlugin);
-    registerDevtoolsPlugin(directivesPlugin);
     expect(devtoolsPlugins().filter((p) => p.name === NAME)).toHaveLength(1);
   });
 
-  it('sees a use: directive and puts it on the node that applied it', () => {
-    registerDevtoolsPlugin(directivesPlugin);
-    const graph = watch();
-    const el = document.createElement('div');
-    function tooltip() {}
+  it('puts a use: directive on the element it was applied to', () => {
+    const el = document.createElement('input');
+    function autofocus() {}
+    const { graph, tag } = rendered(el, () =>
+      reportReactiveDirective(el, 'use', autofocus.name),
+    );
 
-    createRoot(() => {
-      // A component is a memo whose body builds the element, which is where a directive is
-      // applied, so the report lands on that memo.
-      createMemo(() => {
-        reportReactiveDirective(el, 'use', tooltip.name);
-        return 1;
-      }, undefined, { name: 'Anchor' })();
-    });
-    graph.sample();
-
-    const carrying = [...graph.graph.values()].filter((n) => n.extra?.[NAME]);
-    expect(carrying.length).toBeGreaterThan(0);
-    expect(carrying[0]!.extra![NAME]).toEqual([
-      { kind: 'use', name: 'tooltip', element: 'div' },
+    expect(graph.domFor(tag)[0]!.extra?.[NAME]).toEqual([
+      { kind: 'use', name: 'autofocus', element: 'input' },
     ]);
   });
 
   it('records a directive once however often the effect re-runs', () => {
-    registerDevtoolsPlugin(directivesPlugin);
-    const graph = watch();
-    const el = document.createElement('div');
-    function tooltip() {}
-    createRoot(() => {
-      createMemo(() => {
-        reportReactiveDirective(el, 'use', tooltip.name);
-        reportReactiveDirective(el, 'use', tooltip.name);
-        return 1;
-      }, undefined, { name: 'Anchor' })();
+    const el = document.createElement('input');
+    const { graph, tag } = rendered(el, () => {
+      reportReactiveDirective(el, 'use', 'autofocus');
+      reportReactiveDirective(el, 'use', 'autofocus');
     });
-    graph.sample();
-    const carrying = [...graph.graph.values()].find((n) => n.extra?.[NAME]);
-    expect(carrying!.extra![NAME]).toHaveLength(1);
+    expect(graph.domFor(tag)[0]!.extra?.[NAME]).toHaveLength(1);
   });
 
-  it('carries what it attached over the wire and reads it in a panel', () => {
-    registerDevtoolsPlugin(directivesPlugin);
-    const graph = watch();
-    const el = document.createElement('div');
-    function autofocus() {}
-    createRoot(() => {
-      createMemo(() => {
-        reportReactiveDirective(el, 'use', autofocus.name);
-        return 1;
-      }, undefined, { name: 'Anchor' })();
-    });
-    graph.sample();
-
-    const wire = snapshotToRenderMap(serializeGraph(graph.graph));
-    const node = [...wire.values()].find((n) => n.extra?.[NAME])!;
-    expect(pluginRows(node, wire)).toEqual([
-      { label: 'use:autofocus', value: 'div' },
-    ]);
-    expect(pluginBadge(node)).toBe('use:autofocus');
-  });
-
-  it('names the variable a ref is held in, from the compiler mark', () => {
-    registerDevtoolsPlugin(directivesPlugin);
-    const graph = watch();
-    const el = document.createElement('div');
+  it('keeps the position the compiler marked on a ref', () => {
+    const el = document.createElement('input');
     const box = { current: null as Element | null };
-    // What the compiled output does: the marker is installed by the observer.
     const mark = (globalThis as Record<string, unknown>)['__fx_hole'] as
       | ((v: unknown, l: number, c: number, n?: string) => unknown)
       | undefined;
-    const marked = mark ? mark(box, 12, 9, 'boxRef') : box;
 
-    createRoot(() => {
-      createMemo(() => {
-        reportReactiveDirective(el, 'ref', 'ref', marked);
-        return 1;
-      }, undefined, { name: 'Panel' })();
-    });
-    graph.sample();
+    // The runtime resolves the name from the mark; this is about the position surviving.
+    const { graph, tag } = rendered(el, () =>
+      reportReactiveDirective(el, 'ref', 'boxRef', mark ? mark(box, 12, 9, 'boxRef') : box),
+    );
 
-    const node = [...graph.graph.values()].find((n) => n.extra?.[NAME])!;
-    const notes = node.extra![NAME] as { kind: string; name: string; at?: { line?: number } }[];
+    const notes = graph.domFor(tag)[0]!.extra?.[NAME] as {
+      kind: string;
+      name: string;
+      at?: { line?: number };
+    }[];
     expect(notes[0]!.kind).toBe('ref');
     expect(notes[0]!.name).toBe('boxRef');
     expect(notes[0]!.at?.line).toBe(12);
-    expect(pluginRows(node, graph.graph)[0]!.label).toBe('ref boxRef');
   });
 
-  it('says nothing about a node no plugin touched', () => {
-    registerDevtoolsPlugin(directivesPlugin);
-    const graph = watch();
-    createRoot(() => createSignal(0, { name: 'plain' }));
-    graph.sample();
-    const node = [...graph.graph.values()].find((n) => n.label === 'plain')!;
-    expect(pluginRows(node, graph.graph)).toEqual([]);
-    expect(pluginBadge(node)).toBeUndefined();
+  it('carries what it attached over the wire', () => {
+    const el = document.createElement('input');
+    const { graph, tag } = rendered(el, () => reportReactiveDirective(el, 'use', 'autofocus'));
+    const snapshot = serializeGraph(graph.graph, Date.now(), { dom: (id) => graph.domFor(id) });
+    const wire = snapshotToRenderMap(snapshot);
+    const extra = wire.get(tag)!.dom![0]!.extra;
+    expect(pluginElementRows(extra)).toEqual([{ label: 'use:autofocus', value: 'input' }]);
+    expect(pluginElementBadge(extra)).toBe('use:autofocus');
+  });
+
+  it('says nothing about an element no plugin touched', () => {
+    const el = document.createElement('input');
+    const { graph, tag } = rendered(el, () => {});
+    expect(graph.domFor(tag)[0]!.extra).toBeUndefined();
+    expect(pluginElementRows(undefined)).toEqual([]);
+    expect(pluginElementBadge(undefined)).toBeUndefined();
+  });
+});
+
+/** The badge is only worth anything if something draws it. */
+describe('a plugin badge reaches the panels', () => {
+  const marked = (): Map<number, RNode> =>
+    new Map<number, RNode>([
+      [
+        1,
+        {
+          id: 1,
+          label: 'Field',
+          kind: 'component',
+          deps: new Set(),
+          writes: new Set(),
+          runs: 1,
+          lastPulse: 0,
+          source: { file: 'src/App.ts', line: 70, column: 4 },
+          dom: [
+            {
+              label: 'input',
+              children: [],
+              extra: { [NAME]: [{ kind: 'ref', name: 'boxRef', element: 'input', at: { line: 76, column: 23 } }] },
+            },
+          ],
+        },
+      ],
+    ]);
+
+  it('shows on the element row in the tree', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const graph = marked();
+    createComponentTree(host, { domFor: (id) => graph.get(id)?.dom ?? [] }).render(graph);
+    const row = [...host.querySelectorAll('.fx-tree-row')].find((r) =>
+      r.textContent?.includes('input'),
+    )!;
+    expect(row.querySelector('.fx-tree-plugin')?.textContent).toBe('ref');
+  });
+
+  it('shows in the inspector for that element, with the line it was written on', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const graph = marked();
+    createInspector(host, { onReveal: () => {} }).showElement(graph, {
+      key: '1:0',
+      label: 'input',
+      owner: 1,
+      extra: graph.get(1)!.dom![0]!.extra,
+    });
+    expect(host.textContent).toContain('ref boxRef');
+    const link = [...host.querySelectorAll('.ins-at')].find(
+      (b) => (b as HTMLElement).dataset.line === '76',
+    );
+    expect(link).toBeDefined();
   });
 });

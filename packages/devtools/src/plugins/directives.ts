@@ -8,6 +8,28 @@ import type { RNode } from '../instrument.js';
 
 export const NAME = 'directives';
 
+/** The notes on an element of a description, for a panel drawing element rows. */
+export function directivesOn(extra?: Record<string, unknown>): DirectiveNote[] {
+  return (extra?.[NAME] as DirectiveNote[] | undefined) ?? [];
+}
+
+/** A short word for a badge. The whole expression an inline ref was written as is not one. */
+export function directiveBadge(notes: DirectiveNote[]): string | undefined {
+  if (!notes.length) return undefined;
+  const first = notes[0]!;
+  const short = first.kind === 'ref' ? 'ref' : label(first);
+  return notes.length > 1 ? `${short} +${notes.length - 1}` : short;
+}
+
+/** A row per directive, for the inspector. */
+export function directiveRows(notes: DirectiveNote[]): { label: string; value?: string; at?: DirectiveNote['at'] }[] {
+  return notes.map((note) => ({
+    label: label(note),
+    value: note.element,
+    ...(note.at ? { at: note.at } : {}),
+  }));
+}
+
 /** What lands on a node under this plugin's name. */
 export interface DirectiveNote {
   kind: string;
@@ -24,13 +46,12 @@ export const directivesPlugin: DevtoolsPlugin = {
 
   collect(ctx) {
     ctx.onDirective((report: DirectiveReport) => {
-      if (report.owner === undefined) return;
-      const held = (ctx.annotation(report.owner) as DirectiveNote[] | undefined) ?? [];
-      // One entry per directive per element. A render effect re-runs and would otherwise
-      // add the same one on every pass.
-      const already = held.some(
-        (n) => n.kind === report.kind && n.name === report.name && n.element === report.element,
-      );
+      // On the element, which is what the directive was applied to. The component that ran
+      // is only where the call happened.
+      if (!report.target) return;
+      const held = (ctx.elementAnnotation(report.target) as DirectiveNote[] | undefined) ?? [];
+      // A render effect re-runs, so the same directive arrives more than once.
+      const already = held.some((n) => n.kind === report.kind && n.name === report.name);
       if (already) return;
       held.push({
         kind: report.kind,
@@ -38,7 +59,7 @@ export const directivesPlugin: DevtoolsPlugin = {
         element: report.element,
         ...(report.at ? { at: report.at } : {}),
       });
-      ctx.annotate(report.owner, held);
+      ctx.annotateElement(report.target, held);
     });
   },
 
@@ -52,9 +73,22 @@ export const directivesPlugin: DevtoolsPlugin = {
     }));
   },
 
+  elementRows(extra) {
+    return directiveRows(directivesOn(extra));
+  },
+
+  elementBadge(extra) {
+    return directiveBadge(directivesOn(extra));
+  },
+
   badge(node: RNode) {
     const notes = node.extra?.[NAME] as DirectiveNote[] | undefined;
-    return notes?.length ? label(notes[0]!) : undefined;
+    if (!notes?.length) return undefined;
+    // A badge sits beside a label, so it says which directive and not the whole expression
+    // an inline ref was written as.
+    const first = notes[0]!;
+    const short = first.kind === 'ref' ? 'ref' : label(first);
+    return notes.length > 1 ? `${short} +${notes.length - 1}` : short;
   },
 };
 

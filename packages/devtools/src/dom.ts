@@ -37,6 +37,8 @@ export interface DomNode {
    * the positions of a template's elements; absent in a build without source locations.
    */
   at?: { file: string; line: number; column: number };
+  /** What plugins attached to this element, by plugin name. */
+  extra?: Record<string, unknown>;
   /** Set only in-page. A description that crossed a wire has no element. */
   element?: Element;
 }
@@ -83,6 +85,8 @@ export function describeAll(
   /** Where a value writes. */
   writtenBy: (of: number) => readonly Element[],
   kinds: ReadonlySet<string>,
+  /** What plugins attached to an element, when any did. */
+  extraFor?: (element: Element) => Record<string, unknown> | undefined,
 ): Map<number, DomNode[]> {
   const owners = new Map<Element, number>();
   const writers = new Map<Element, number[]>();
@@ -138,6 +142,7 @@ export function describeAll(
         children.push(walk(kids[i]!));
       }
       const writes = writers.get(element);
+      const extra = extraFor?.(element);
       // Only tags nested inside this one. A tag further out writes through this element on
       // its way down, and putting it here would nest it under its own child.
       const inside = landing.get(element)?.filter((id) => within(graph, id, node.id));
@@ -148,6 +153,7 @@ export function describeAll(
         ...(where ? { at: where } : {}),
         ...(writes?.length ? { writes } : {}),
         ...(inside?.length ? { inside } : {}),
+        ...(extra ? { extra } : {}),
       };
     };
     out.set(node.id, [...(rendered.get(node.id) ?? []), ...(claims.get(node.id) ?? [])].map(walk));

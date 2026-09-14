@@ -29,6 +29,8 @@ import {
   type RNode,
 } from '@fluixi/devtools';
 import { readPage } from './read-page.js';
+// The presenting half: rows and badges for what the agent collected.
+import '@fluixi/devtools/plugins';
 
 /** Fast enough to watch a propagation, slow enough to leave the page alone. */
 const INTERVAL = 250;

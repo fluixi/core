@@ -12,7 +12,7 @@ import { formatValue } from './format.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { shortenPath } from './path.js';
 import type { DomNode } from './dom.js';
-import { pluginRows } from './plugin.js';
+import { pluginRows, pluginElementRows } from './plugin.js';
 
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
@@ -34,6 +34,8 @@ export interface ElementInspection {
   label: string;
   owner?: number;
   writes?: number[];
+  /** What plugins attached to this element. */
+  extra?: Record<string, unknown>;
   /** Where the element itself was written, when the build recorded it. */
   at?: ReactiveSourceLocation;
 }
@@ -384,11 +386,19 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           ? `<span>◧ rendered by <b>${escape(owner.label)}</b></span>`
           : '<span>◧ rendered by <i>nothing in the graph</i></span>',
         writers.length ? rows : '<span>⌁ <i>nothing writes here</i></span>',
+        ...pluginElementRows(pick.extra).map((row) => {
+          const where = row.at && { ...row.at, file: row.at.file ?? owner?.source?.file };
+          const text = where?.file ? bothAt(where, root) : '';
+          return `<span>⌘ ${escape(row.label)}${row.value ? `=<b>${escape(clip(row.value, 60))}</b>` : ''}${
+            text ? ` ${place(text, where, reveals)}` : ''
+          }</span>`;
+        }),
       ].join('');
 
-      // The element's own line when the build recorded one. Falling back to the tag means
-      // every element in a component reports the line the component opens at.
-      const source = pick.at ?? (owner && authoredPlace(owner));
+      // The element's own line when the build recorded one. Failing that, where the tag was
+      // declared rather than where it was used: an element sits in the component's body, so
+      // the line `<App/>` was written on says nothing about it.
+      const source = pick.at ?? (owner && (owner.declaredAt ?? authoredPlace(owner)));
       // Where the framework built it, when that is somewhere else. Only on request: for an
       // application it is a line in a package nobody asked about.
       const madeIn =

@@ -5,6 +5,7 @@
 // the pulse glow.
 import type { RNode, NodeKind } from './instrument.js';
 import { shortenPath } from './path.js';
+import { pluginBadge } from './plugin.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const COL = 200;
@@ -737,6 +738,15 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
         chunk.appendChild(el('title')).textContent = 'loaded as its own chunk';
         g.appendChild(chunk);
       }
+      // What a plugin wants said about this node. Right-aligned so it does not collide with
+      // the lazy mark on the same line.
+      const mark = pluginBadge(node);
+      if (mark) {
+        const badge = el('text', { class: 'fx-plugin', x: NW - 12, y: 52, 'text-anchor': 'end' });
+        badge.textContent = fit(mark);
+        badge.appendChild(el('title')).textContent = mark;
+        g.appendChild(badge);
+      }
       const summary = el('title');
       summary.textContent = `${node.kind} ${node.label}${node.lazy ? ' (lazy)' : ''}${full ? ` = ${full}` : ''}${
         placeOf(node)
@@ -1041,6 +1051,7 @@ export const DEVTOOLS_CSS = `
 .fx-label { fill: var(--fx-label, #e7e9ee); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; }
 .fx-value { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 12px; }
 .fx-source { fill: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 9.5px; opacity: .75; }
+.fx-plugin { fill: var(--fx-accent, #5eead4); font-family: ui-monospace, monospace; font-size: 9px; opacity: .9; }
 .fx-lazy { fill: var(--fx-router, #7dd3fc); font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: .04em; opacity: .9; }
 .fx-fold { fill: var(--glow, #5eead4); font-family: ui-monospace, monospace; font-size: 10px; cursor: pointer; opacity: .8; }
 .fx-fold:hover { opacity: 1; }

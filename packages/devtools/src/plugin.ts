@@ -13,7 +13,10 @@ export interface DirectiveReport {
   kind: string;
   /** The key after the colon, or the function name for `use:`. */
   name: string;
+  /** The element as a selector. */
   element: string;
+  /** The element itself. Only in the page, and the key to annotate it by. */
+  target?: unknown;
   at?: { file?: string; line?: number; column?: number };
 }
 
@@ -32,6 +35,14 @@ export interface CollectContext {
   onDirective(fn: (report: DirectiveReport) => void): void;
   /** Attach data under this plugin's name. Must survive JSON.stringify. */
   annotate(id: number, data: unknown): void;
+  /**
+   * The same, for an element rather than a node. A directive belongs to the element it was
+   * applied to, and an element is not a node, so it is keyed by the element itself and
+   * lands on the description a panel draws.
+   */
+  annotateElement(target: unknown, data: unknown): void;
+  /** What this plugin already attached to an element. */
+  elementAnnotation(target: unknown): unknown;
   add(node: PluginNode): number;
   /** What this plugin already attached, for adding to it rather than replacing it. */
   annotation(id: number): unknown;
@@ -53,6 +64,10 @@ export interface DevtoolsPlugin {
   rows?(node: RNode, graph: Map<number, RNode>): PluginRow[];
   /** A short word next to the label, in the tree and on the card. */
   badge?(node: RNode): string | undefined;
+  /** The same, for an element row. Given what plugins attached to that element. */
+  elementBadge?(extra: Record<string, unknown>): string | undefined;
+  /** Rows for a selected element row. */
+  elementRows?(extra: Record<string, unknown>): PluginRow[];
 }
 
 const plugins: DevtoolsPlugin[] = [];
@@ -84,6 +99,33 @@ export function pluginRows(node: RNode, graph: Map<number, RNode>): PluginRow[] 
     }
   }
   return out;
+}
+
+export function pluginElementRows(extra?: Record<string, unknown>): PluginRow[] {
+  if (!extra) return [];
+  const out: PluginRow[] = [];
+  for (const plugin of plugins) {
+    if (!plugin.elementRows) continue;
+    try {
+      out.push(...plugin.elementRows(extra));
+    } catch {
+      /* ignored */
+    }
+  }
+  return out;
+}
+
+export function pluginElementBadge(extra?: Record<string, unknown>): string | undefined {
+  if (!extra) return undefined;
+  for (const plugin of plugins) {
+    try {
+      const badge = plugin.elementBadge?.(extra);
+      if (badge) return badge;
+    } catch {
+      /* ignored */
+    }
+  }
+  return undefined;
 }
 
 export function pluginBadge(node: RNode): string | undefined {

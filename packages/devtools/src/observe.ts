@@ -323,6 +323,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   let drained = 0;
   /** What plugins asked to hear about. Empty unless one registered. */
   const onDirective: ((report: DirectiveReport) => void)[] = [];
+  /** What plugins attached to elements, by element then plugin name. */
+  const elementExtra = new WeakMap<object, Record<string, unknown>>();
   /** The nearest node the graph knows, looking outward through anything it does not. */
   const ancestor = (parents?: readonly unknown[]): number | undefined => {
     if (!parents) return undefined;
@@ -486,9 +488,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const report: DirectiveReport = {
         owner: owner !== undefined ? (through.get(core) ?? owner) : undefined,
         kind,
-        // The mark carries the source text, which for a ref is the variable holding it.
-        name: at?.name ?? name,
+        name,
         element: describeNode(target),
+        target,
         ...(at ? { at } : {}),
       };
       for (const fn of onDirective) {
@@ -744,7 +746,13 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     domFor(id) {
       // Built once per sample. Every tag needs the same element maps, and a page redraws
       // this many times a second.
-      described ??= describeAll(graph, (of) => api.renderedFor(of), (of) => api.elementsFor(of), TREE_KINDS);
+      described ??= describeAll(
+        graph,
+        (of) => api.renderedFor(of),
+        (of) => api.elementsFor(of),
+        TREE_KINDS,
+        (element) => elementExtra.get(element),
+      );
       return described.get(id) ?? [];
     },
     nodeAt(element) {
@@ -783,6 +791,14 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         if (node) (node.extra ??= {})[plugin.name] = data;
       },
       annotation: (id) => graph.get(id)?.extra?.[plugin.name],
+      annotateElement: (target, data) => {
+        if (!target || typeof target !== 'object') return;
+        const held = elementExtra.get(target) ?? {};
+        held[plugin.name] = data;
+        elementExtra.set(target, held);
+      },
+      elementAnnotation: (target) =>
+        target && typeof target === 'object' ? elementExtra.get(target)?.[plugin.name] : undefined,
       add: (spec) => {
         const id = seq++;
         graph.set(id, {
