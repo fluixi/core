@@ -319,7 +319,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    *
    * Draining meant whichever consumer polled first took them, and a page with both a
    * browser panel and an editor panel watching has two. Bounded, because nothing here is
-   * ever consumed — a consumer older than the oldest entry is told to start again.
+   * ever consumed. A consumer older than the oldest entry is told to start again.
    */
   const removed: { id: number; rev: number }[] = [];
   /** Monotonic, bumped for every node the sample finds moved. */

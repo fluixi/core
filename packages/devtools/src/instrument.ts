@@ -43,7 +43,7 @@ export type NodeKind =
   | 'group'
   /** Not a node: a place in the document a signal writes to. */
   | 'binding'
-  /** A directive applied to an element — `use:`, `class:`, `bind:`. */
+  /** A directive applied to an element: `use:`, `class:`, `bind:`. */
   | 'directive'
   /** A context, and the components that provide or read it. */
   | 'context'

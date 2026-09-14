@@ -51,7 +51,7 @@ export interface DevtoolsHook {
    *
    * The cursor comes back on every snapshot; a consumer folding in deltas keeps it and
    * hands it back. Asking consumes nothing, so a page with a browser panel and an editor
-   * panel watching at the same time gives each of them every change — draining a shared
+   * panel watching at the same time gives each of them every change. Draining a shared
    * one meant whichever polled first took them.
    *
    * A cursor older than the removal log gets a full snapshot instead, since there is no
@@ -154,8 +154,8 @@ export function installDevtoolsHook(): DevtoolsHook {
         const described = observed!.domFor(id);
         return described.length ? withoutElements(described) : undefined;
       };
-      // The observer can be older than this hook — the application hands its own over, and
-      // the two are built separately — so a cursor is only offered when it can be honoured.
+      // The observer can be older than this hook. The application hands its own over and the
+      // two are built separately, so a cursor is only offered when it can be honoured.
       const cursors = typeof observed.changedSince === 'function';
       // Everything, and the cursor to come back with. Also the answer for a consumer that
       // has fallen further behind than the log reaches.

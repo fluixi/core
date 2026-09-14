@@ -38,7 +38,7 @@ const read = (since?: number): string => `(() => {
 /**
  * One read of the page.
  *
- * Without a cursor this asks for everything — the panel is re-created whenever devtools is
+ * Without a cursor this asks for everything. The panel is re-created whenever devtools is
  * closed and reopened, and a delta stream that began before it existed has nothing to fold
  * into. With one it asks for what came after, which is the difference between a few hundred
  * bytes and the whole graph four times a second.

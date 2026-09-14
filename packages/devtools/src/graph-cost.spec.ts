@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Where a frame goes as an application gets bigger. Skipped unless FLUIXI_BENCH is set — a
- * measurement, not an assertion.
+ * Where a frame goes as an application gets bigger. A measurement rather than an assertion,
+ * so it is skipped unless FLUIXI_BENCH is set.
  *
  *   FLUIXI_BENCH=1 npx vitest run src/graph-cost.spec.ts
  *
@@ -103,7 +103,7 @@ const ms = (label: string, fn: () => void, runs = 3): void => {
 
 run('what a frame costs as the page grows', () => {
   for (const count of [50, 200, 1000]) {
-    it(`${count} components — ${count * (1 + SIGNALS) + 1} nodes`, () => {
+    it(`${count} components, ${count * (1 + SIGNALS) + 1} nodes`, () => {
       const { graph, rendered, writes } = build(count);
       const roots = (of: number) => rendered.get(of) ?? [];
       const written = (of: number) => writes.get(of) ?? [];
