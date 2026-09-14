@@ -19,6 +19,22 @@ export default defineConfig({
       '@babel/core': fileURLToPath(new URL('./src/babel-core.ts', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      // The preview iframe loads its bootstrap by url at runtime, so it is an entry of its
+      // own — nothing imports it, and without this the build never emits it and the iframe
+      // asks a static host for a source file it does not have.
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        bootstrap: fileURLToPath(new URL('./src/preview/bootstrap.ts', import.meta.url)),
+      },
+      output: {
+        // Unhashed, because `run.ts` has to name it before the build exists.
+        entryFileNames: (chunk) =>
+          chunk.name === 'bootstrap' ? 'preview/bootstrap.js' : 'assets/[name]-[hash].js',
+      },
+    },
+  },
   optimizeDeps: {
     // @babel/standalone is a large prebundle; include the babel plugin too.
     include: ['@babel/standalone'],
