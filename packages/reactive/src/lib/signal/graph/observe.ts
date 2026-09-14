@@ -103,6 +103,19 @@ export interface ReactiveObserver {
     name: string,
     accessor?: unknown,
   ): void;
+  /**
+   * A context provided or read.
+   *
+   * Nothing else in the graph records it: a provider stamps a value on the owner chain and a
+   * reader walks up looking for it, so neither is a dependency and no edge is ever made.
+   */
+  context?(node: unknown, id: symbol, kind: 'provide' | 'read', value?: unknown): void;
+  /**
+   * A context was created. Separate from providing it, because a context is usually made at
+   * module scope with nothing running, and the line it was written on is the one worth
+   * showing. The watcher reads its own stack for that.
+   */
+  contextCreated?(id: symbol): void;
 }
 
 /**
@@ -210,6 +223,22 @@ export function reportReactiveDirective(
   const observer = G.observer as ReactiveObserver | null;
   if (!observer?.directive || !running.length) return;
   observer.directive(running[running.length - 1], target, kind, name, accessor);
+}
+
+/** Called where the context is made, so a watcher can take the line from its own stack. */
+export function reportReactiveContextCreated(id: symbol): void {
+  (G.observer as ReactiveObserver | null)?.contextCreated?.(id);
+}
+
+/** As the others: the node is whatever is running, and nothing happens without a watcher. */
+export function reportReactiveContext(
+  id: symbol,
+  kind: 'provide' | 'read',
+  value?: unknown,
+): void {
+  const observer = G.observer as ReactiveObserver | null;
+  if (!observer?.context || !running.length) return;
+  observer.context(running[running.length - 1], id, kind, value);
 }
 
 export function reportReactiveMove(node: unknown, origin: unknown, name?: string): void {
