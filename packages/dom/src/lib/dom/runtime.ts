@@ -22,7 +22,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // NOT in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -1154,7 +1154,10 @@ export function addNativeEventListener(element: Element, name: string, value: an
 
 export function applyUse(element: Element, value: any): void {
   const call = (dir: any, accessor?: any) => {
-    if (typeof dir === 'function') dir(element, accessor ?? (() => undefined));
+    if (typeof dir !== 'function') return;
+    // Named so a watcher can tell one directive from another. Nothing else reads it.
+    reportReactiveDirective(element, 'use', dir.name || 'use', accessor);
+    dir(element, accessor ?? (() => undefined));
   };
   if (typeof value === 'function') { call(value); return; }
   if (!Array.isArray(value)) return;
@@ -1741,6 +1744,9 @@ export function splitProps<T extends object, K extends (keyof T)[][]>(
 
 export function handleRef(ref: any, element: Element): void {
   if (!ref) return;
+  // Which variable ends up holding the element is the question a ref raises, and only the
+  // compiler's mark on the value can answer it.
+  reportReactiveDirective(element, 'ref', typeof ref === 'function' ? ref.name || 'ref' : 'ref', ref);
 
   // Swapped-argument guard
   if (isDomNode(ref)) {

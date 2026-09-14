@@ -60,8 +60,8 @@ const ABSOLUTE_MAX_ZOOM = 4000;
 /** Past this the pointer was panning, not clicking. */
 const DRAG_SLOP = 4;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter', directive: 'n-directive', context: 'n-context' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets', directive: '⌘ directive', context: '◈ context' };
 
 /** The card that stands for everything a dependency made and the application never touched. */
 const GROUP_ID = -1;

@@ -23,6 +23,7 @@ import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
 import { describeAll, type DomNode } from './dom.js';
+import { devtoolsPlugins, type CollectContext, type DirectiveReport, type PluginNode } from './plugin.js';
 import { TREE_KINDS } from './tree.js';
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
@@ -141,6 +142,9 @@ const PREFIX: Record<NodeKind, string> = {
   group: 'g',
   binding: 'b',
   setter: 'w',
+  // A plugin's, and it names them itself.
+  directive: 'd',
+  context: 'ctx',
 };
 
 /**
@@ -317,6 +321,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const revs = new Map<number, number>();
   /** How far `takeRemoved` has drained, for a caller too old to keep a cursor of its own. */
   let drained = 0;
+  /** What plugins asked to hear about. Empty unless one registered. */
+  const onDirective: ((report: DirectiveReport) => void)[] = [];
   /** The nearest node the graph knows, looking outward through anything it does not. */
   const ancestor = (parents?: readonly unknown[]): number | undefined => {
     if (!parents) return undefined;
@@ -471,6 +477,27 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       // Only a write from inside a computation is an edge: a handler is not a node.
       if (writer === undefined || writer === written) return;
       graph.get(writer)?.writes.add(written);
+    },
+    directive(node, target, kind, name, accessor) {
+      if (!onDirective.length) return;
+      const core = node as CoreNode;
+      const owner = core && typeof core === 'object' ? ids.get(core) : undefined;
+      const at = holeLocation(accessor);
+      const report: DirectiveReport = {
+        owner: owner !== undefined ? (through.get(core) ?? owner) : undefined,
+        kind,
+        // The mark carries the source text, which for a ref is the variable holding it.
+        name: at?.name ?? name,
+        element: describeNode(target),
+        ...(at ? { at } : {}),
+      };
+      for (const fn of onDirective) {
+        try {
+          fn(report);
+        } catch {
+          // A plugin with a bug does not get to stop the graph being built.
+        }
+      }
     },
     props(node, props) {
       const core = node as CoreNode;
@@ -745,6 +772,41 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       history.clear();
     },
   };
+
+  // Started last, so a plugin adding a node finds the graph ready.
+  for (const plugin of devtoolsPlugins()) {
+    if (!plugin.collect) continue;
+    const context: CollectContext = {
+      onDirective: (fn) => onDirective.push(fn),
+      annotate: (id, data) => {
+        const node = graph.get(id);
+        if (node) (node.extra ??= {})[plugin.name] = data;
+      },
+      annotation: (id) => graph.get(id)?.extra?.[plugin.name],
+      add: (spec) => {
+        const id = seq++;
+        graph.set(id, {
+          id,
+          label: spec.label,
+          kind: spec.kind,
+          deps: new Set(spec.deps ?? []),
+          writes: new Set(),
+          runs: 0,
+          lastPulse: 0,
+          authored: false,
+          ...(spec.createdIn !== undefined ? { createdIn: spec.createdIn } : {}),
+          ...(spec.value !== undefined ? { value: spec.value } : {}),
+          ...(spec.source ? { source: spec.source } : {}),
+        });
+        return id;
+      },
+    };
+    try {
+      plugin.collect(context);
+    } catch {
+      /* ignored */
+    }
+  }
 
   return api;
 }

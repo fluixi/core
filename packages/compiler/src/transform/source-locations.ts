@@ -55,9 +55,21 @@ export const COMPONENT_MARKER = '__fx_component';
  */
 export const HOLE_MARKER = '__fx_hole';
 
-/** `_(() => x(), 9, 25)`, or the accessor untouched when nothing is watching. */
-export const markHole = (accessor: string, line: number, column: number): string =>
-  `(globalThis.${HOLE_MARKER} ?? ((f) => f))(${accessor},${line},${column})`;
+/**
+ * `_(() => x(), 9, 25)`, or the accessor untouched when nothing is watching.
+ *
+ * `name` is the source text the value came from, for a `ref` where knowing which variable
+ * holds the element is the whole question.
+ */
+export const markHole = (
+  accessor: string,
+  line: number,
+  column: number,
+  name?: string,
+): string =>
+  `(globalThis.${HOLE_MARKER} ?? ((f) => f))(${accessor},${line},${column}${
+    name === undefined ? '' : `,${JSON.stringify(name)}`
+  })`;
 
 /**
  * Where each prop of a component tag was written.

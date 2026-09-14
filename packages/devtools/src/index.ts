@@ -35,6 +35,14 @@ export type { Inspector, InspectorOptions, ElementInspection } from './inspector
 export { createTimeline, TIMELINE_CSS } from './timeline.js';
 export type { Timeline, TimelineOptions } from './timeline.js';
 export { shortenPath } from './path.js';
+export { registerDevtoolsPlugin, devtoolsPlugins, annotationOf, pluginRows, pluginBadge } from './plugin.js';
+export type {
+  DevtoolsPlugin,
+  CollectContext,
+  DirectiveReport,
+  PluginNode,
+  PluginRow,
+} from './plugin.js';
 export { createComponentTree, componentTree, TREE_KINDS, TREE_CSS } from './tree.js';
 export { showHighlight, hideHighlight, removeHighlight, startPicking } from './highlight.js';
 export { makeFloatable, FLOAT_CSS } from './float.js';

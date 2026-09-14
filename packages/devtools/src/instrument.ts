@@ -43,6 +43,10 @@ export type NodeKind =
   | 'group'
   /** Not a node: a place in the document a signal writes to. */
   | 'binding'
+  /** A directive applied to an element — `use:`, `class:`, `bind:`. */
+  | 'directive'
+  /** A context, and the components that provide or read it. */
+  | 'context'
   /** Not a node: a place in the code that sets a signal. */
   | 'setter';
 export type NodeState = 'clean' | 'check' | 'dirty';
@@ -143,6 +147,11 @@ export interface RNode {
   lazy?: boolean;
   /** Components only: what the tag was handed, and where each was written. */
   props?: PropReport[];
+  /**
+   * What plugins have attached, by plugin name. Serialisable, and carried across the wire
+   * untouched by anything that does not know the plugin that wrote it.
+   */
+  extra?: Record<string, unknown>;
   depth?: number;
 }
 

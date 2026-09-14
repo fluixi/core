@@ -44,6 +44,8 @@ export interface WireNode {
   readonly lazy?: boolean;
   /** Components only: the props the tag was handed. */
   readonly props?: PropReport[];
+  /** What plugins attached, by plugin name. Passed through by a reader that lacks them. */
+  readonly extra?: Record<string, unknown>;
   /** Where the node was created, when the compiler marked it. */
   readonly source?: ReactiveSourceLocation;
   /** Components only: where the component itself was declared. */
@@ -131,6 +133,7 @@ export function serializeGraph(
       loading: node.loading,
       lazy: node.lazy,
       props: node.props,
+      extra: node.extra,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
@@ -170,6 +173,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       loading: node.loading,
       lazy: node.lazy,
       props: node.props,
+      extra: node.extra,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,

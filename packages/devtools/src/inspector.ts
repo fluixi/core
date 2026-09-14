@@ -12,6 +12,7 @@ import { formatValue } from './format.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { shortenPath } from './path.js';
 import type { DomNode } from './dom.js';
+import { pluginRows } from './plugin.js';
 
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
@@ -285,6 +286,13 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
         reaching.length ? `<span>◨ reaches <b>${escape(reaching.join(', '))}</b></span>` : '',
+        ...pluginRows(node, graph).map((row) => {
+          const where = row.at && { ...row.at, file: row.at.file ?? node.source?.file };
+          const text = where?.file ? bothAt(where, root) : '';
+          return `<span>⌘ ${escape(row.label)}${row.value ? `=<b>${escape(clip(row.value, 60))}</b>` : ''}${
+            text ? ` ${place(text, where, reveals)}` : ''
+          }</span>`;
+        }),
         // What the tag was written with. A prop's position has no file of its own: it was
         // written on the tag, so it belongs to whichever file that is.
         ...(node.props ?? []).map((p) => {

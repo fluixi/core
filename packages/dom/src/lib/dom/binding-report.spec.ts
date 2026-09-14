@@ -6,7 +6,7 @@
 // on its own.
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRoot, createSignal, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
-import { holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
+import { applyUse, holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
 import { createComponent } from './integration.js';
 import { hydration } from './hydration-state.js';
 
@@ -171,5 +171,33 @@ describe('a component says what it was given', () => {
 
   it('costs nothing when nobody is watching', () => {
     expect(() => createComponent(() => null, { a: 1 })).not.toThrow();
+  });
+});
+
+describe('a directive says it was applied', () => {
+  it('names the directive and the element it went on', () => {
+    const seen: { kind: string; name: string }[] = [];
+    stop = observeReactiveNodes({
+      created() {},
+      directive(_node, _target, kind, name) {
+        seen.push({ kind, name });
+      },
+    });
+    const el = document.createElement('div');
+    function tooltip() {}
+    createRoot(() => {
+      createMemo(() => {
+        applyUse(el, [[tooltip]]);
+        return 1;
+      })();
+    });
+    expect(seen).toEqual([{ kind: 'use', name: 'tooltip' }]);
+  });
+
+  it('still applies the directive when nobody is watching', () => {
+    const el = document.createElement('div');
+    let got: Element | null = null;
+    applyUse(el, [[(node: Element) => (got = node)]]);
+    expect(got).toBe(el);
   });
 });

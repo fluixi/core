@@ -49,6 +49,9 @@ function propKey(name: string): string {
 
 function propValue(p: IRProp): string {
   if (p.expr !== undefined) {
+    // A ref is not reactive, but which variable ends up holding the element is worth
+    // saying, so it carries its own text and position.
+    if (p.name === 'ref' && p.at) return markHole(`(${p.expr})`, p.at.line, p.at.column, p.expr);
     // Events and non-reactive expressions pass through; reactive ones become thunks
     // so the runtime (spread/insert) can wire a render effect.
     if (!p.reactive) return `(${p.expr})`;

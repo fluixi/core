@@ -90,6 +90,19 @@ export interface ReactiveObserver {
    * the caller passed, so reading one here would subscribe the wrong computation to it.
    */
   props?(node: unknown, props: unknown): void;
+  /**
+   * A directive applied to an element: `use:`, `class:`, `style:`, `bind:`.
+   *
+   * `bound` says a value writes to a class or a style but not which key, so two `class:`
+   * directives on one element both report as `class`. This carries the key too.
+   */
+  directive?(
+    node: unknown,
+    target: unknown,
+    kind: string,
+    name: string,
+    accessor?: unknown,
+  ): void;
 }
 
 /**
@@ -182,6 +195,21 @@ export function reportReactiveProps(props: unknown): void {
   const observer = G.observer as ReactiveObserver | null;
   if (!observer?.props || !running.length || !props) return;
   observer.props(running[running.length - 1], props);
+}
+
+/**
+ * As `reportReactiveBinding`: the node is whatever is running, since a directive is applied
+ * while its element is being built. A property read when nobody is watching.
+ */
+export function reportReactiveDirective(
+  target: unknown,
+  kind: string,
+  name: string,
+  accessor?: unknown,
+): void {
+  const observer = G.observer as ReactiveObserver | null;
+  if (!observer?.directive || !running.length) return;
+  observer.directive(running[running.length - 1], target, kind, name, accessor);
 }
 
 export function reportReactiveMove(node: unknown, origin: unknown, name?: string): void {
