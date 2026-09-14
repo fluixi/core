@@ -6,7 +6,7 @@
 // on its own.
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRoot, createSignal, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
-import { applyUse, holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
+import { applyUse, handleRef, holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
 import { createComponent } from './integration.js';
 import { hydration } from './hydration-state.js';
 
@@ -199,5 +199,49 @@ describe('a directive says it was applied', () => {
     let got: Element | null = null;
     applyUse(el, [[(node: Element) => (got = node)]]);
     expect(got).toBe(el);
+  });
+});
+
+describe('a ref says which variable holds it', () => {
+  it('takes the name the compiler marked on the value', () => {
+    const seen: { kind: string; name: string }[] = [];
+    stop = observeReactiveNodes({
+      created() {},
+      directive(_node, _target, kind, name) {
+        seen.push({ kind, name });
+      },
+    });
+    const el = document.createElement('input');
+    const box = { current: null as Element | null };
+    // What `__fx_hole` leaves on the value when the build records locations.
+    (box as Record<string, unknown>)['__fx_at'] = { line: 12, column: 9, name: 'boxRef' };
+
+    createRoot(() => {
+      createMemo(() => {
+        handleRef(box, el);
+        return 1;
+      })();
+    });
+    expect(seen).toEqual([{ kind: 'ref', name: 'boxRef' }]);
+    expect(box.current).toBe(el);
+  });
+
+  it('falls back to the function name when nothing marked it', () => {
+    const seen: string[] = [];
+    stop = observeReactiveNodes({
+      created() {},
+      directive(_node, _target, _kind, name) {
+        seen.push(name);
+      },
+    });
+    const el = document.createElement('input');
+    function keepEl() {}
+    createRoot(() => {
+      createMemo(() => {
+        handleRef(keepEl, el);
+        return 1;
+      })();
+    });
+    expect(seen).toEqual(['keepEl']);
   });
 });

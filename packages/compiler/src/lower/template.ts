@@ -178,6 +178,7 @@ class Lowerer {
       node.props.unshift({ name: 'component', kind: 'attr', expr: `() => (${this.hole(isAttr.value.hole).code})` });
       return node;
     }
+    const at = this.tagAt(el);
     return {
       kind: 'element',
       tag: el.tag,
@@ -185,6 +186,7 @@ class Lowerer {
       props: this.lowerAttributes(el.attributes),
       children: this.lowerChildren(el.children),
       static: false,
+      ...(at ? { at } : {}),
     };
   }
 
@@ -333,7 +335,16 @@ class Lowerer {
       el.attributes.filter((a) => a.kind !== 'EachDirective'),
     );
     if (el.kind === 'Element') {
-      return { kind: 'element', tag: el.tag, svg: el.namespace === 'svg', props, children, static: false };
+      const at = this.tagAt(el);
+      return {
+        kind: 'element',
+        tag: el.tag,
+        svg: el.namespace === 'svg',
+        props,
+        children,
+        static: false,
+        ...(at ? { at } : {}),
+      };
     }
     return { kind: 'component', name: el.tag, props, children };
   }
@@ -372,7 +383,14 @@ class Lowerer {
           props.push(this.eventProp(a));
           break;
         case 'RefBinding':
-          props.push({ name: 'ref', kind: 'ref', expr: this.hole(a.hole).code, reactive: this.hole(a.hole).reactive });
+          props.push({
+            name: 'ref',
+            kind: 'ref',
+            expr: this.hole(a.hole).code,
+            reactive: this.hole(a.hole).reactive,
+            // Which variable ends up holding the element, and where it was written.
+            ...(this.hole(a.hole).at ? { at: this.hole(a.hole).at } : {}),
+          });
           break;
         case 'Spread':
           props.push({ name: '', kind: 'spread', expr: this.hole(a.hole).code });
@@ -492,7 +510,14 @@ class Lowerer {
     this.used.add('bindPair');
     const sig = `bindPair(${sigCode})`;
     return [
-      { name: prop, kind: 'attr', expr: `${sig}[0]()`, reactive: true, ...(h.at ? { at: h.at } : {}) },
+      {
+        name: prop,
+        kind: 'attr',
+        expr: `${sig}[0]()`,
+        reactive: true,
+        directive: `bind:${prop}`,
+        ...(h.at ? { at: h.at } : {}),
+      },
       {
         name: 'on' + capitalize(evt),
         kind: 'event',

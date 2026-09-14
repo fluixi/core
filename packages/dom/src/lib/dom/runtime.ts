@@ -139,6 +139,12 @@ const HOLE_TAG = '__fx_at';
 /** Where an element's own source position goes, for devtools to read back. */
 const LOC_TAG = '__fx_loc';
 
+/** Only ever called with a position when the compiler recorded one. */
+function located<T extends Element>(element: T, at?: { file: string; line: number; column: number }): T {
+  if (at) (element as unknown as Record<string, unknown>)[LOC_TAG] = at;
+  return element;
+}
+
 // Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
 
@@ -263,15 +269,20 @@ function createMarker(value: string): Comment {
   return document.createComment(value);
 }
 
-export function createNativeElement(tag: string, isSVG = false): Element {
+export function createNativeElement(
+  tag: string,
+  isSVG = false,
+  at?: { file: string; line: number; column: number },
+): Element {
   if (isServer) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
   if (hydration.active) {
     const node = getHydrationWalker()?.hydrateElement(tag);
-    if (node) return node;
+    if (node) return at ? located(node, at) : node;
   }
-  return isSVG
-    ? document.createElementNS(SVG_NAMESPACE, tag)
-    : document.createElement(tag);
+  return located(
+    isSVG ? document.createElementNS(SVG_NAMESPACE, tag) : document.createElement(tag),
+    at,
+  );
 }
 
 export function createTemplate(html: string, isSVG = false): HTMLTemplateElement {
@@ -1152,6 +1163,31 @@ export function addNativeEventListener(element: Element, name: string, value: an
   return () => element.removeEventListener(name, handler as EventListener, options);
 }
 
+/**
+ * Name each key of a class or style object as the directive it came from.
+ *
+ * `class:a class:b` are merged by the compiler into one classList prop, so the keys are the
+ * only record that two directives were written.
+ */
+/**
+ * A directive the compiler had to name, because the runtime sees only what it lowers to.
+ * `bind:value` arrives as an ordinary value and an input handler.
+ */
+function reportMarked(element: Element, accessor: unknown): void {
+  if (!accessor || typeof accessor !== 'function') return;
+  const written = (accessor as unknown as Record<string, { name?: string }>)[HOLE_TAG]?.name;
+  if (!written) return;
+  const colon = written.indexOf(':');
+  if (colon === -1) return;
+  reportReactiveDirective(element, written.slice(0, colon), written.slice(colon + 1), accessor);
+}
+
+function reportKeys(element: Element, kind: string, value: unknown): void {
+  const from = typeof value === 'function' ? untrack(() => (value as () => unknown)()) : value;
+  if (!from || typeof from !== 'object') return;
+  for (const key of Object.keys(from)) reportReactiveDirective(element, kind, key);
+}
+
 export function applyUse(element: Element, value: any): void {
   const call = (dir: any, accessor?: any) => {
     if (typeof dir !== 'function') return;
@@ -1175,6 +1211,7 @@ export function setDynamicAttribute(
   accessor: any,
   isSVG = false
 ): () => void {
+  reportMarked(element, accessor);
   if (typeof accessor !== 'function') {
     setAttribute(element, name, accessor, isSVG);
     return () => {};
@@ -1191,6 +1228,7 @@ export function setDynamicProperty(element: any, name: string, accessor: any): (
     setProperty(element, name, accessor);
     return () => {};
   }
+  reportMarked(element, accessor);
   return createRenderEffect(() => {
     reportReactiveBinding(element, 'property', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
@@ -1357,14 +1395,17 @@ export function spread(options: SpreadOptions): () => void {
     // Forced bindings: prop:x always assigns the property, attr:x always sets the
     // attribute, bool:x toggles a boolean attribute — skipping the heuristic below.
     if (key.startsWith('prop:')) {
+      reportReactiveDirective(element, 'prop', key.slice(5), value);
       disposers.push(setDynamicProperty(element, key.slice(5), value));
       continue;
     }
     if (key.startsWith('attr:')) {
+      reportReactiveDirective(element, 'attr', key.slice(5), value);
       disposers.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
       continue;
     }
     if (key.startsWith('bool:')) {
+      reportReactiveDirective(element, 'bool', key.slice(5), value);
       disposers.push(setDynamicBoolAttribute(element, key.slice(5), value));
       continue;
     }
@@ -1384,6 +1425,7 @@ export function spread(options: SpreadOptions): () => void {
     }
 
     if (key === 'classList') {
+      reportKeys(element, 'class', value);
       if (typeof value === 'function') {
         disposers.push(
           createRenderEffect(() => {
@@ -1398,6 +1440,7 @@ export function spread(options: SpreadOptions): () => void {
     }
 
     if (key === 'style') {
+      reportKeys(element, 'style', value);
       if (typeof value === 'function') {
         disposers.push(
           createRenderEffect(() => {
@@ -1471,9 +1514,18 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     if (key === 'use') { applyUse(element, val); continue; }
     if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
     // Forced bindings — see spread().
-    if (key.startsWith('prop:')) { setDynamicProperty(element, key.slice(5), val); continue; }
-    if (key.startsWith('attr:')) { setDynamicAttribute(element, key.slice(5), val, isSVG); continue; }
-    if (key.startsWith('bool:')) { setDynamicBoolAttribute(element, key.slice(5), val); continue; }
+    if (key.startsWith('prop:')) {
+      reportReactiveDirective(element, 'prop', key.slice(5), val);
+      setDynamicProperty(element, key.slice(5), val); continue;
+    }
+    if (key.startsWith('attr:')) {
+      reportReactiveDirective(element, 'attr', key.slice(5), val);
+      setDynamicAttribute(element, key.slice(5), val, isSVG); continue;
+    }
+    if (key.startsWith('bool:')) {
+      reportReactiveDirective(element, 'bool', key.slice(5), val);
+      setDynamicBoolAttribute(element, key.slice(5), val); continue;
+    }
     if (key.startsWith('on') && key.length > 2) {
       const name = key.slice(2).toLowerCase();
       if (typeof val === 'function') {
@@ -1500,6 +1552,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // setClassName unwraps an accessor itself.
       setClassName(element, val); continue; }
     if (key === 'classList') {
+      reportKeys(element, 'class', val);
       if (typeof val === 'function')
         createRenderEffect(() => {
           reportReactiveBinding(element, 'attribute', 'class', val);
@@ -1513,6 +1566,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       // style through a props object rather than as a compiled JSX attribute —
       // which is what every polymorphic/`as` wrapper does. class and classList
       // already handled that; style applied once and never updated.
+      reportKeys(element, 'style', val);
       if (typeof val === 'function')
         createRenderEffect(() => {
           reportReactiveBinding(element, 'attribute', 'style', val);
@@ -1746,7 +1800,15 @@ export function handleRef(ref: any, element: Element): void {
   if (!ref) return;
   // Which variable ends up holding the element is the question a ref raises, and only the
   // compiler's mark on the value can answer it.
-  reportReactiveDirective(element, 'ref', typeof ref === 'function' ? ref.name || 'ref' : 'ref', ref);
+  // The compiler's mark names the variable it is stored in; a function's own name is the
+  // next best thing.
+  const held = (ref as Record<string, { name?: string }>)[HOLE_TAG]?.name;
+  reportReactiveDirective(
+    element,
+    'ref',
+    held || (typeof ref === 'function' ? ref.name || 'ref' : 'ref'),
+    ref,
+  );
 
   // Swapped-argument guard
   if (isDomNode(ref)) {

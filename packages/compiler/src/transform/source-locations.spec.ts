@@ -77,7 +77,9 @@ export function App() {
   </div>\`;
 }`;
     const lines = src.split('\n');
-    const marks = [...run(src).matchAll(/\(f\) => f\)\)\(([\s\S]*?),(\d+),(\d+)\)/g)].map((m) => ({
+    // The fourth argument is optional: a hole carries the directive it was written as when
+    // the runtime could not tell, which is how `bind:value` is recognised.
+    const marks = [...run(src).matchAll(/\(f\) => f\)\)\(([\s\S]*?),(\d+),(\d+)(?:,"[^"]*")?\)/g)].map((m) => ({
       expr: m[1],
       line: Number(m[2]),
     }));
