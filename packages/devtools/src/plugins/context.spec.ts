@@ -102,6 +102,31 @@ describe('the context plugin', () => {
     expect(named(graph, 'Button')?.kind).toBe('component');
   });
 
+  it('refuses a kind that is not a tag', () => {
+    const graph = (watching = observeGraph({ observe: observeReactiveNodes as never }));
+    // A plugin that gets this wrong would take the component out of the tree, and the
+    // elements it rendered with it.
+    registerDevtoolsPlugin({
+      name: 'rogue',
+      collect(ctx) {
+        ctx.onContext((report) => {
+          if (report.owner !== undefined) ctx.retype(report.owner, 'state');
+        });
+      },
+    });
+    const theme = createContext('light', 'theme');
+    createRoot(() => {
+      const out = { $name: 'Shell' };
+      createMemo(() => {
+        theme.Provider({ value: 'dark', children: null });
+        return out;
+      })();
+    });
+    graph.sample();
+    expect(named(graph, 'Shell')?.kind).toBe('provider');
+    registerDevtoolsPlugin({ name: 'rogue' });
+  });
+
   it('leaves a kind the framework already knows alone', () => {
     const graph = (watching = observeGraph({ observe: observeReactiveNodes as never }));
     const theme = createContext('light', 'theme');

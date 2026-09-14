@@ -718,12 +718,16 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         }
         runsAtLastSample.set(node.id, node.runs);
       }
-      // After the promotion above, so a plugin's answer survives being named. Only a plain
-      // component is sharpened: a Router that provides a context is still a Router, and a
-      // plugin does not get to overrule a kind the framework already knows.
+      // After the promotion above, so a plugin's answer survives being named.
+      //
+      // Two limits, both because a kind decides more than a colour. Only a plain component
+      // is sharpened, so a Router that provides a context is still a Router. And only into
+      // another tag: every other kind is outside TREE_KINDS, which is what puts a node in
+      // the tree and lets it own the elements it rendered, so a component turned into a
+      // state would quietly take its whole subtree with it.
       for (const [id, kind] of retyped) {
         const node = graph.get(id);
-        if (node?.kind === 'component') node.kind = kind;
+        if (node?.kind === 'component' && TREE_KINDS.has(kind)) node.kind = kind;
       }
       return changed;
     },

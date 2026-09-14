@@ -72,8 +72,11 @@ export interface CollectContext {
   add(node: PluginNode): number;
   /**
    * Say what a plain component really is. A component that exists to provide a context is a
-   * provider, and nothing but the plugin watching the context can know that. Ignored for a
-   * node the framework already named: a Router that provides one is still a Router.
+   * provider, and nothing but the plugin watching the context can know that.
+   *
+   * Ignored for a node the framework already named, and ignored for any kind that is not
+   * itself a tag: a Router that provides a context is still a Router, and a component
+   * relabelled a signal would leave the tree along with everything it rendered.
    */
   retype(id: number, kind: NodeKind): void;
   /** What this plugin already attached, for adding to it rather than replacing it. */
