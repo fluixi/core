@@ -279,9 +279,15 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   const list = doc.createElement('div');
   list.className = 'fx-tree-list';
   host.replaceChildren(bar, search, list);
+  /** What was last drawn, so a control can redraw without waiting for the app to move. */
+  let last: { graph: Map<number, RNode>; selected: number | null } | null = null;
+
   box.addEventListener('change', () => {
     values = box.checked;
     signature = '';
+    // Clearing the signature only marks it stale. On an idle page nothing calls render
+    // again, so ticking the box appeared to do nothing at all until something else changed.
+    if (last) api.render(last.graph, last.selected);
   });
 
   const row = (node: Row, depth: number): string => {
@@ -529,10 +535,20 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       const rendered = dom
         .map((node, i) => walk(node, `${row.id}:${i}`))
         .filter((node): node is Row => node !== undefined);
-      // Anything the DOM did not account for: a portal, or a value writing somewhere the
-      // description did not reach.
+      // Anything the dom did not account for: a portal, or a value read across a tag
+      // boundary rather than written into an element here.
+      //
+      // Above the markup, not below it. A signal a nested tag consumes writes nowhere this
+      // description reaches, so it never nests beside an element, and appending it left
+      // `todos` alone at the bottom of `App` well away from the `For` that reads it.
       const rest = row.children.filter((child) => !placed.has(child)).map(expand);
-      row.children = [...rendered, ...rest];
+      // Values lead, tags follow. A portal renders somewhere else and still reads as part of
+      // the markup, so it keeps its place at the end.
+      row.children = [
+        ...rest.filter((child) => child.value),
+        ...rendered,
+        ...rest.filter((child) => !child.value),
+      ];
       return row;
     };
 
@@ -542,8 +558,9 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     return top.filter((_, i) => !placed.has(roots[i]!));
   }
 
-  return {
+  const api: ComponentTree = {
     render(graph, selected = null) {
+      last = { graph, selected };
       const roots = rowsFor(componentTree(graph, { values, filter }));
       // Rebuilt only when the shape changes: this runs every frame, and replacing the markup
       // each time would drop whatever the reader was about to click.
@@ -583,6 +600,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       host.innerHTML = '';
     },
   };
+
+  return api;
 }
 
 export const TREE_CSS = `

@@ -339,7 +339,7 @@ describe('the dom a tag rendered', () => {
   });
 
   it('lists a value inside the element it writes into', () => {
-    // `count` renders into the span, `double` into the small — not in a list after them.
+    // `count` renders into the span and `double` into the small, not in a list after them.
     const row = counterDom();
     const span = row.querySelector('span')!;
     const small = row.querySelector('small')!;
@@ -459,7 +459,7 @@ describe('the dom a tag rendered', () => {
 
 /**
  * The shape a routed app makes: a layout renders the page frame, and a boundary inside it
- * renders no element of its own — the routed content lands in the layout's <main>. Modelled
+ * renders no element of its own, since the routed content lands in the layout's <main>. Modelled
  * on the start example, where this put Suspense next to the layout instead of in it.
  */
 describe('a tag that renders no element of its own', () => {
@@ -637,5 +637,74 @@ describe('a rebuilt row keeps its place', () => {
       [3, rowNode(3)],
     ]);
     expect(componentTree(graph).map((n) => n.id)).toEqual([3, 7]);
+  });
+});
+
+/**
+ * Ticking `values` only marked the drawing stale. Nothing calls render on an idle page, so
+ * the box appeared dead until something in the app happened to move.
+ */
+describe('the values checkbox', () => {
+  const graph = new Map<number, RNode>([
+    [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+    [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+    [2, { id: 2, label: 'mapArray', kind: 'memo', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: false, createdIn: 0 }],
+  ]);
+
+  it('redraws as soon as it is ticked', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const tree = createComponentTree(host, {});
+    tree.render(graph);
+    expect(host.textContent).not.toContain('todos');
+
+    const box = host.querySelector('.fx-tree-bar input') as HTMLInputElement;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    // No second render call: the tick is what used to supply it, and an idle page has none.
+    expect(host.textContent).toContain('todos');
+    host.remove();
+  });
+
+  it('leaves out what the framework made', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const tree = createComponentTree(host, { values: true });
+    tree.render(graph);
+    expect(host.textContent).toContain('todos');
+    expect(host.textContent).not.toContain('mapArray');
+    host.remove();
+  });
+});
+
+/**
+ * A value a nested tag reads writes nowhere the owning tag's description reaches, so it never
+ * nests beside an element. Appending it left `todos` alone at the bottom of `App`, well away
+ * from the `For` that reads it.
+ */
+describe('a value the dom cannot place', () => {
+  it('reads above the markup, not after it', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const el = document.createElement('div');
+    el.className = 'card';
+    document.body.append(el);
+
+    const graph = new Map<number, RNode>([
+      [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+      [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+    ]);
+
+    const tree = createComponentTree(host, {
+      values: true,
+      domFor: (id) => (id === 0 ? [{ label: 'div.card', children: [], element: el }] : []),
+    });
+    tree.render(graph);
+
+    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    expect(rows[0]).toContain('App');
+    expect(rows[1]).toContain('todos');
+    host.remove();
+    el.remove();
   });
 });
