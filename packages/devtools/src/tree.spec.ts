@@ -689,14 +689,16 @@ describe('a value the dom cannot place', () => {
     return el;
   };
 
-  it('nests under the tag that reads it', () => {
-    // `For` reads `todos` and renders the rows itself, so no element here writes from it.
+  it('nests under the tag that reads it, through the machinery that really reads it', () => {
+    // What the runtime actually builds: `For` does not read the list, the `mapArray` inside
+    // it does, and that is machinery the tree never draws. The lookup has to climb past it.
     const list = document.createElement('ul');
     document.body.append(list);
     const graph = new Map<number, RNode>([
       [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
       [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
-      [2, { id: 2, label: 'For', kind: 'control', deps: new Set([1]), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+      [2, { id: 2, label: 'For', kind: 'control', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+      [3, { id: 3, label: 'mapArray', kind: 'memo', deps: new Set([1]), writes: new Set(), runs: 1, lastPulse: 0, authored: false, createdIn: 2 }],
     ]);
     const where = host();
     createComponentTree(where, {

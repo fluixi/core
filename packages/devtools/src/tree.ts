@@ -455,19 +455,36 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     /**
      * The innermost tag row that reads `id`, if one is in this tree.
      *
-     * Deepest wins: a value read by a component inside a `For` belongs to the component, not
-     * to the `For` that holds it. `skip` keeps a tag from adopting its own value.
+     * The node doing the reading is often machinery the tree never draws: `For` does not read
+     * its list, `mapArray` does, and that is hidden. So climb from whatever reads it to the
+     * nearest tag that is drawn, which is the `For`.
+     *
+     * Deepest wins, so a value read by a component inside a `For` belongs to the component.
+     * `skip` keeps the tag that declared it from adopting it back.
      */
     const readerOf = (id: number, skip: Row): Row | undefined => {
+      const drawn = (from: number): Row | undefined => {
+        const seen = new Set<number>();
+        let at: number | undefined = from;
+        while (at !== undefined && !seen.has(at)) {
+          seen.add(at);
+          const row = byId.get(at);
+          if (row && !row.value && row !== skip) return row;
+          at = graph.get(at)?.createdIn;
+        }
+        return undefined;
+      };
+
       let best: Row | undefined;
       let deepest = -1;
-      for (const [nodeId, candidate] of byId) {
-        if (candidate === skip || candidate.value) continue;
-        if (!graph.get(nodeId)?.deps.has(id)) continue;
-        const depth = graph.get(nodeId)?.depth ?? 0;
+      for (const [nodeId, node] of graph) {
+        if (nodeId === id || !node.deps.has(id)) continue;
+        const row = drawn(nodeId);
+        if (!row || row.id === undefined) continue;
+        const depth = graph.get(row.id)?.depth ?? 0;
         if (depth >= deepest) {
           deepest = depth;
-          best = candidate;
+          best = row;
         }
       }
       return best;
