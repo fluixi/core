@@ -43,6 +43,12 @@ export interface IRProp {
   /** Where the expression was written. Only kept when the host asked for source locations. */
   at?: HolePosition;
   /**
+   * The directive this prop was written as, when it is not recoverable at runtime.
+   * `bind:value` becomes an ordinary value plus an input handler, and nothing downstream
+   * could tell it from the two written by hand.
+   */
+  directive?: string;
+  /**
    * `expr` is an inline JSX element/fragment passed as a component prop (e.g.
    * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter — like children — so the DOM is
    * built only when the component reads the prop, not eagerly when the props object is

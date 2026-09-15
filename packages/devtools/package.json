@@ -17,6 +17,12 @@
       "types": "./dist/wire.d.ts",
       "import": "./dist/wire.js",
       "default": "./dist/wire.js"
+    },
+    "./plugins": {
+      "development": "./src/plugins/index.ts",
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.js",
+      "default": "./dist/plugins/index.js"
     }
   },
   "files": [

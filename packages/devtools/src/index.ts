@@ -31,10 +31,21 @@ export { markReactiveSource } from './source.js';
 export type { ReactiveSourceLocation, ReactiveSourceMetadata } from './source.js';
 export { createGraphView, DEVTOOLS_CSS } from './graph-view.js';
 export { createInspector, INSPECTOR_CSS } from './inspector.js';
+export { createValuePane, VALUE_PANE_CSS } from './value-pane.js';
+export type { ValuePane } from './value-pane.js';
+export { indentValue } from './format.js';
 export type { Inspector, InspectorOptions, ElementInspection } from './inspector.js';
 export { createTimeline, TIMELINE_CSS } from './timeline.js';
 export type { Timeline, TimelineOptions } from './timeline.js';
 export { shortenPath } from './path.js';
+export { registerDevtoolsPlugin, devtoolsPlugins, annotationOf, pluginRows, pluginBadge } from './plugin.js';
+export type {
+  DevtoolsPlugin,
+  CollectContext,
+  DirectiveReport,
+  PluginNode,
+  PluginRow,
+} from './plugin.js';
 export { createComponentTree, componentTree, TREE_KINDS, TREE_CSS } from './tree.js';
 export { showHighlight, hideHighlight, removeHighlight, startPicking } from './highlight.js';
 export { makeFloatable, FLOAT_CSS } from './float.js';

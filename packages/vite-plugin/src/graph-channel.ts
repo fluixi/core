@@ -30,8 +30,9 @@ const INTERVAL = 100;
 const HISTORY = 500;
 
 /** Written with the ids resolved: a virtual module has no directory to resolve a bare one from. */
-const agentSource = (devtools: string, signal: string, reactive: string) => `
+const agentSource = (devtools: string, plugins: string, signal: string, reactive: string) => `
 import { installDevtoolsHook, observeGraph } from ${JSON.stringify(devtools)};
+import ${JSON.stringify(plugins)};
 import { observeReactiveNodes } from ${JSON.stringify(signal)};
 import { VERSION } from ${JSON.stringify(reactive)};
 
@@ -46,11 +47,17 @@ hook.inject({ observeReactiveNodes, version: VERSION, watch: observeGraph });
 
 const send = (kind, snapshot) => import.meta.hot?.send(${JSON.stringify(EVENT)}, { kind, snapshot });
 
-send('full', hook.snapshot());
+const first = hook.snapshot();
+// Kept and handed back, so a browser panel polling the same hook cannot consume what this
+// one has not been told about yet.
+let cursor = first?.cursor;
+send('full', first);
 const timer = setInterval(() => {
-  const delta = hook.snapshot({ partial: true });
+  const delta = hook.snapshot({ partial: true, since: cursor });
+  if (!delta) return;
+  cursor = delta.cursor;
   // Events count on their own: an effect that ran without changing a value moves no node.
-  if (delta && (delta.nodes.length || delta.removed?.length || delta.events?.length)) send('delta', delta);
+  if (delta.nodes.length || delta.removed?.length || delta.events?.length) send('delta', delta);
 }, ${INTERVAL});
 
 import.meta.hot?.dispose(() => clearInterval(timer));
@@ -68,6 +75,15 @@ type WireModule = typeof import('@fluixi/devtools/wire');
 function ownDevtools(): string | null {
   try {
     return createRequire(import.meta.url).resolve('@fluixi/devtools');
+  } catch {
+    return null;
+  }
+}
+
+/** The built-in plugins, beside the bundle they extend. Collecting happens in the agent. */
+function ownPlugins(): string | null {
+  try {
+    return createRequire(import.meta.url).resolve('@fluixi/devtools/plugins');
   } catch {
     return null;
   }
@@ -114,8 +130,9 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       const ids = await Promise.all(specs.map((spec) => this.resolve?.(spec, from, { skipSelf: true })));
       const missing = specs.filter((_, i) => !ids[i]?.id);
       const devtools = ownDevtools();
+      const plugins = ownPlugins();
       // Nothing to watch with is not an error worth breaking the page over.
-      if (missing.length || !devtools) {
+      if (missing.length || !devtools || !plugins) {
         reason = missing.length
           ? `${missing.join(', ')} did not resolve from ${root}`
           : MISSING;
@@ -123,7 +140,7 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
         return 'export {};';
       }
       // Served by path: it is this package's copy, not one the application imports.
-      return agentSource(`/@fs/${devtools}`, ids[0]!.id, ids[1]!.id);
+      return agentSource(`/@fs/${devtools}`, `/@fs/${plugins}`, ids[0]!.id, ids[1]!.id);
     },
 
     async configureServer(server: {

@@ -23,11 +23,11 @@ export type PageState =
   | { kind: 'absent' }
   | { kind: 'error'; message: string };
 
-const READ = `(() => {
+const read = (since?: number): string => `(() => {
   try {
     const hook = window['${HOOK}'];
     if (!hook || typeof hook.snapshot !== 'function') return JSON.stringify({ kind: 'absent' });
-    const snapshot = hook.snapshot({ partial: false });
+    const snapshot = hook.snapshot(${since === undefined ? '{}' : `{ partial: true, since: ${since} }`});
     if (!snapshot) return JSON.stringify({ kind: 'waiting' });
     return JSON.stringify({ kind: 'graph', snapshot: snapshot, version: hook.version || null });
   } catch (e) {
@@ -38,12 +38,17 @@ const READ = `(() => {
 /**
  * One read of the page.
  *
- * Full snapshots rather than deltas: the panel is re-created whenever devtools is closed and
- * reopened, and a delta stream that started before it existed has nothing to fold into.
+ * Without a cursor this asks for everything. The panel is re-created whenever devtools is
+ * closed and reopened, and a delta stream that began before it existed has nothing to fold
+ * into. With one it asks for what came after, which is the difference between a few hundred
+ * bytes and the whole graph four times a second.
+ *
+ * The cursor belongs to this panel alone. The dev server's own agent watches the same hook
+ * and keeps its own, so neither takes the other's changes.
  */
-export function readPage(): Promise<PageState> {
+export function readPage(since?: number): Promise<PageState> {
   return new Promise((resolve) => {
-    chrome.devtools.inspectedWindow.eval(READ, (result, error) => {
+    chrome.devtools.inspectedWindow.eval(read(since), (result, error) => {
       if (error) {
         // A navigation mid-eval, or a page the extension is not allowed into.
         const message = (error as { value?: string; description?: string }).description

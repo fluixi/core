@@ -14,6 +14,8 @@ export interface ReactiveSourceLocation {
   file?: string;
   line?: number;
   column?: number;
+  /** The source text this came from, when the compiler recorded it. Refs carry it. */
+  name?: string;
   /**
    * The node came from a dependency rather than from the project. Only ever set when the
    * compiler was told to mark dependencies too; otherwise they carry no location at all.
@@ -156,9 +158,9 @@ const HOLES = new WeakMap<object, ReactiveSourceLocation>();
 const HOLE_TAG = '__fx_at';
 
 /** Returns the accessor, not a wrapper: it is the binding's value. */
-function markHole<T>(accessor: T, line: number, column: number): T {
+function markHole<T>(accessor: T, line: number, column: number, name?: string): T {
   if (accessor && (typeof accessor === 'object' || typeof accessor === 'function')) {
-    const at = { line, column };
+    const at = name === undefined ? { line, column } : { line, column, name };
     HOLES.set(accessor as object, at);
     try {
       Object.defineProperty(accessor, HOLE_TAG, { value: at, configurable: true });

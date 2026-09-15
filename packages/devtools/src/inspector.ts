@@ -12,6 +12,9 @@ import { formatValue } from './format.js';
 import type { ReactiveSourceLocation } from './source.js';
 import { shortenPath } from './path.js';
 import type { DomNode } from './dom.js';
+import { pluginRows, pluginElementRows } from './plugin.js';
+import { kindRules } from './palette.js';
+import { createValuePane, VALUE_PANE_CSS, type ValuePane } from './value-pane.js';
 
 export interface Inspector {
   /** Draw the node with this id, or the empty state when it is undefined. */
@@ -33,6 +36,8 @@ export interface ElementInspection {
   label: string;
   owner?: number;
   writes?: number[];
+  /** What plugins attached to this element. */
+  extra?: Record<string, unknown>;
   /** Where the element itself was written, when the build recorded it. */
   at?: ReactiveSourceLocation;
 }
@@ -163,8 +168,17 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
   let editing: number | null = null;
   let field: HTMLInputElement | null = null;
   let internals = options.internals === true;
+  /** Built on first use: most sessions never open one. */
+  let pane: ValuePane | null = null;
 
   const doc = host.ownerDocument;
+  // Anything cut to fit carries the whole of it, and opens a pane rather than a tooltip.
+  host.addEventListener('click', (event) => {
+    const cell = (event.target as HTMLElement | null)?.closest?.('[data-full]') as HTMLElement | null;
+    if (!cell) return;
+    pane ??= createValuePane(host);
+    pane.open(cell.dataset.label || 'value', cell.dataset.full || '');
+  });
   // Kept out of the redrawn markup: the panel replaces its content wholesale, and a control
   // inside it would be rebuilt under the pointer every time something changed.
   const bar = doc.createElement('label');
@@ -285,6 +299,18 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           : '',
         owner ? `<span>◧ made in <b>${escape(owner)}</b></span>` : '',
         reaching.length ? `<span>◨ reaches <b>${escape(reaching.join(', '))}</b></span>` : '',
+        ...pluginRows(node, graph).map((row) => {
+          const where = row.at && { ...row.at, file: row.at.file ?? node.source?.file };
+          const text = where?.file ? bothAt(where, root) : '';
+          const more = row.value !== undefined && row.value.length > 140;
+          return `<span${
+            more
+              ? ` class="ins-more" data-full="${escape(row.value!)}" data-label="${escape(row.label)}"`
+              : ''
+          } title="${escape(row.value ?? row.label)}">⌘ ${escape(row.label)}${
+            row.value ? `=<b>${escape(clip(row.value))}</b>` : ''
+          }${text ? ` ${place(text, where, reveals)}` : ''}</span>`;
+        }),
         // What the tag was written with. A prop's position has no file of its own: it was
         // written on the tag, so it belongs to whichever file that is.
         ...(node.props ?? []).map((p) => {
@@ -320,7 +346,9 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         (edits && node.kind === 'state'
           ? `<div class="ins-val ins-edit" data-id="${node.id}" data-raw="${escape(value)}"` +
             ` title="Click to set ${escape(node.label)}">${escape(clip(value))}</div>`
-          : `<div class="ins-val" title="${escape(value)}">${escape(clip(value))}</div>`) +
+          : `<div class="ins-val${value.length > 140 ? ' ins-more' : ''}"${
+              value.length > 140 ? ` data-full="${escape(value)}" data-label="${escape(node.label)}"` : ''
+            } title="${escape(value)}">${escape(clip(value))}</div>`) +
         `<div class="ins-rel">${relations}</div>` +
         // Only when the graph carries one. A snapshot from a build that was not marked has
         // no locations at all, and an empty line there reads as missing data.
@@ -376,11 +404,24 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
           ? `<span>◧ rendered by <b>${escape(owner.label)}</b></span>`
           : '<span>◧ rendered by <i>nothing in the graph</i></span>',
         writers.length ? rows : '<span>⌁ <i>nothing writes here</i></span>',
+        ...pluginElementRows(pick.extra).map((row) => {
+          const where = row.at && { ...row.at, file: row.at.file ?? owner?.source?.file };
+          const text = where?.file ? bothAt(where, root) : '';
+          const more = row.value !== undefined && row.value.length > 140;
+          return `<span${
+            more
+              ? ` class="ins-more" data-full="${escape(row.value!)}" data-label="${escape(row.label)}"`
+              : ''
+          } title="${escape(row.value ?? row.label)}">⌘ ${escape(row.label)}${
+            row.value ? `=<b>${escape(clip(row.value))}</b>` : ''
+          }${text ? ` ${place(text, where, reveals)}` : ''}</span>`;
+        }),
       ].join('');
 
-      // The element's own line when the build recorded one. Falling back to the tag means
-      // every element in a component reports the line the component opens at.
-      const source = pick.at ?? (owner && authoredPlace(owner));
+      // The element's own line when the build recorded one. Failing that, where the tag was
+      // declared rather than where it was used: an element sits in the component's body, so
+      // the line `<App/>` was written on says nothing about it.
+      const source = pick.at ?? (owner && (owner.declaredAt ?? authoredPlace(owner)));
       // Where the framework built it, when that is somewhere else. Only on request: for an
       // application it is a line in a package nobody asked about.
       const madeIn =
@@ -417,6 +458,10 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
 
 /** Default styling for what createInspector writes, in the shape DEVTOOLS_CSS is used. */
 export const INSPECTOR_CSS = `
+${VALUE_PANE_CSS}
+/* Anything cut to fit says so, and opens the whole of it. */
+.ins-more { cursor: zoom-in; }
+.ins-more:hover { text-decoration: underline dotted; }
 .ins-empty { color: var(--fx-muted, #8a90a2); font-size: 12px; }
 .ins-bar {
   display: flex; align-items: center; gap: 5px; margin-bottom: 6px;
@@ -427,19 +472,7 @@ export const INSPECTOR_CSS = `
 .ins-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .ins-head b { font-size: 13px; color: var(--fx-label, #e7e9ee); }
 .ins-kind { font-family: ui-monospace, monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; }
-.ins-kind.n-state { color: var(--state, #34d399); }
-.ins-kind.n-memo { color: var(--memo, #a78bfa); }
-.ins-kind.n-effect { color: var(--effect, #fbbf24); }
-.ins-kind.n-store { color: var(--store, #38bdf8); }
-.ins-kind.n-resource { color: var(--fx-write, #fb7185); }
-.ins-kind.n-component { color: var(--component, #f0abfc); }
-.ins-kind.n-control { color: var(--control, #7dd3fc); }
-.ins-kind.n-router { color: var(--router, #c4b5fd); }
-.ins-kind.n-handler { color: var(--handler, #fca5a5); }
-.ins-kind.n-binding { color: var(--fx-accent, #5eead4); }
-.ins-kind.n-setter { color: var(--fx-write, #fb7185); }
-.ins-kind.n-group { color: var(--fx-muted, #8a90a2); }
-.ins-kind.n-element { color: var(--fx-muted, #8a90a2); }
+${kindRules((k) => `.ins-kind.n-${k}`, 'color')}
 .ins-meta { margin-left: auto; color: var(--fx-muted, #8a90a2); font-family: ui-monospace, monospace; font-size: 10.5px; }
 .ins-val { font-family: ui-monospace, monospace; font-size: 12px; color: var(--fx-label, #e7e9ee); word-break: break-word; }
 .ins-rel { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--fx-muted, #8a90a2); font-size: 11.5px; }

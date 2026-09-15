@@ -602,12 +602,12 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
  * `
  * ```
  */
-export function createContext<T>(defaultValue?: T): {
+export function createContext<T>(defaultValue?: T, name?: string): {
   id: symbol;
   Provider: (props: { value: T; children?: any, debug?: boolean }) => any;
   defaultValue: T;
 } {
-  const context = createReactiveContext(defaultValue);
+  const context = createReactiveContext(defaultValue, name);
 
   // Wrap Provider to work with both JSX and Lit-html
   const Provider = (props: { value: T; children?: any, debug?: boolean }) => {

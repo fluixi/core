@@ -55,7 +55,7 @@ interface RouterCtxValue {
   location: () => RouterLocation;
   params: () => Record<string, string>;
 }
-const RouterContext = createContext<RouterCtxValue>();
+const RouterContext = createContext<RouterCtxValue>(undefined, 'router');
 
 /** What an <Outlet/> needs to render the next layer. */
 interface OutletCtxValue {
@@ -66,10 +66,10 @@ interface OutletCtxValue {
   /** Only set on the ROOT: rendered when nothing matched, instead of a blank page. */
   notFound?: () => any;
 }
-const OutletContext = createContext<OutletCtxValue | undefined>();
+const OutletContext = createContext<OutletCtxValue | undefined>(undefined, 'outlet');
 
-const LevelParamsContext = createContext<Record<string, string>>();
-const RouteDataContext = createContext<(() => any) | undefined>();
+const LevelParamsContext = createContext<Record<string, string>>(undefined, 'route-params');
+const RouteDataContext = createContext<(() => any) | undefined>(undefined, 'route-data');
 
 interface RouteDataArgsLocal {
   params: () => Record<string, string>;

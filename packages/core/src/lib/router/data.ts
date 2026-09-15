@@ -284,7 +284,7 @@ export type RouteLoadFunc = (
   isCancelled?: () => boolean
 ) => any;
 
-export const RouteDataContext = createContext<any>();
+export const RouteDataContext = createContext<any>(undefined, 'route-data');
 
 export const RouteDataProvider = RouteDataContext.Provider;
 

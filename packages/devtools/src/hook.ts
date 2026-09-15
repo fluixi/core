@@ -46,8 +46,18 @@ export interface DevtoolsHook {
    * reporting what it is attached to; which one watches is settled by `inject`.
    */
   readonly copies: number;
-  /** Everything, or only what moved since the last call. */
-  snapshot(options?: { partial?: boolean }): GraphSnapshot | null;
+  /**
+   * Everything, or only what moved after `since`.
+   *
+   * The cursor comes back on every snapshot; a consumer folding in deltas keeps it and
+   * hands it back. Asking consumes nothing, so a page with a browser panel and an editor
+   * panel watching at the same time gives each of them every change. Draining a shared
+   * one meant whichever polled first took them.
+   *
+   * A cursor older than the removal log gets a full snapshot instead, since there is no
+   * longer any way to say what went missing.
+   */
+  snapshot(options?: { partial?: boolean; since?: number }): GraphSnapshot | null;
   /**
    * Draw the overlay over something in the page, for a panel that is not in it.
    *
@@ -126,10 +136,11 @@ export function installDevtoolsHook(): DevtoolsHook {
       if (element) showHighlight(element, element.tagName.toLowerCase());
       else hideHighlight();
     },
-    snapshot({ partial = false } = {}) {
+    snapshot({ partial = false, since } = {}) {
       if (!observed) return null;
+      // Detection is shared and has to run: it is what notices anything moved at all.
       const changed = observed.sample();
-      const dropped = observed.takeRemoved();
+      const cursor = observed.revision;
       // Kept, not handed out once. The hook can have more than one reader — a dev server
       // agent polling and a browser panel open at the same time — and draining here gave
       // each of them whichever events the other had not taken yet. Every event carries a
@@ -143,8 +154,32 @@ export function installDevtoolsHook(): DevtoolsHook {
         const described = observed!.domFor(id);
         return described.length ? withoutElements(described) : undefined;
       };
-      if (!partial) return serializeGraph(observed.graph, Date.now(), { events, dom });
-      return serializeGraph(observed.graph, Date.now(), { ids: changed, removed: dropped, events, dom });
+      // The observer can be older than this hook. The application hands its own over and the
+      // two are built separately, so a cursor is only offered when it can be honoured.
+      const cursors = typeof observed.changedSince === 'function';
+      // Everything, and the cursor to come back with. Also the answer for a consumer that
+      // has fallen further behind than the log reaches.
+      const whole = partial === false || since === undefined || !cursors || observed.outrun(since);
+      if (whole) {
+        // An older observer cannot say what was dropped after a revision, so a delta from
+        // it would quietly keep nodes that are gone. Everything, every time, is correct.
+        if (partial && !cursors) {
+          return serializeGraph(observed.graph, Date.now(), {
+            ids: changed,
+            removed: observed.takeRemoved(),
+            events,
+            dom,
+          });
+        }
+        return serializeGraph(observed.graph, Date.now(), { events, dom, cursor });
+      }
+      return serializeGraph(observed.graph, Date.now(), {
+        ids: observed.changedSince(since),
+        removed: observed.removedSince(since),
+        events,
+        dom,
+        cursor,
+      });
     },
   };
 

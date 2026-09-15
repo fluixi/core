@@ -74,7 +74,7 @@ interface SuspenseListRegistration {
 interface SuspenseListCoordinator {
   register(inFallback: Accessor<boolean>): SuspenseListRegistration;
 }
-const SuspenseListContext = createContext<SuspenseListCoordinator | undefined>();
+const SuspenseListContext = createContext<SuspenseListCoordinator | undefined>(undefined, 'suspense-list');
 
 export function Suspense(props: SuspenseProps): any {
   return createComponent(SuspenseImpl, props);

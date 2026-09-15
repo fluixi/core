@@ -29,6 +29,8 @@ import {
   type RNode,
 } from '@fluixi/devtools';
 import { readPage } from './read-page.js';
+// The presenting half: rows and badges for what the agent collected.
+import '@fluixi/devtools/plugins';
 
 /** Fast enough to watch a propagation, slow enough to leave the page alone. */
 const INTERVAL = 250;
@@ -252,10 +254,14 @@ function main(): void {
   };
   requestAnimationFrame(tick);
 
+  /** Where this panel has read up to. Undefined asks for the whole graph. */
+  let cursor: number | undefined;
+
   async function poll(): Promise<void> {
-    const state = await readPage();
+    const state = await readPage(cursor);
     switch (state.kind) {
       case 'graph':
+        cursor = state.snapshot.cursor;
         graph = applySnapshot(graph, state.snapshot);
         if (state.snapshot.events?.length) timeline.push(state.snapshot.events);
         setStatus(
@@ -281,6 +287,9 @@ function main(): void {
   // A reload replaces the page's hook, and with it every node id.
   chrome.devtools.network.onNavigated.addListener(() => {
     graph = new Map();
+    // A new hook counts from zero, so an old cursor would ask for a delta against a graph
+    // that never existed.
+    cursor = undefined;
     selected = null;
     view.clear();
     inspector.clear();

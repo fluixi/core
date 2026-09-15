@@ -23,6 +23,13 @@ import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
 import { describeAll, type DomNode } from './dom.js';
+import {
+  devtoolsPlugins,
+  type CollectContext,
+  type ContextReport,
+  type DirectiveReport,
+  type PluginNode,
+} from './plugin.js';
 import { TREE_KINDS } from './tree.js';
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
@@ -33,11 +40,34 @@ interface CoreNode {
   observers?: Set<CoreNode> | null;
 }
 
+/** How far back a consumer may be and still be told what was dropped. */
+const REMOVED_LOG = 500;
+
 export interface ObservedGraph {
   readonly graph: Map<number, RNode>;
   /** Ids whose value or run count moved since the last call. Drives the pulse. */
   sample(): number[];
-  /** Ids dropped since the last call, for a consumer folding in deltas. Reading clears it. */
+  /**
+   * The cursor as it stands. A consumer folding in deltas keeps the one it was given and
+   * asks for what came after it.
+   */
+  readonly revision: number;
+  /**
+   * Ids that moved after `rev`. Unlike `sample`, asking does not consume anything, so two
+   * consumers reading at their own pace each see every change.
+   */
+  changedSince(rev: number): number[];
+  /** Ids dropped after `rev`. Bounded: a consumer further back than that is told to reload. */
+  removedSince(rev: number): number[];
+  /** Whether `rev` is old enough that the removal log no longer covers it. */
+  outrun(rev: number): boolean;
+  /**
+   * Removals since the last call, draining as it goes.
+   *
+   * Superseded by `removedSince`, and kept because the hook that calls it can be older
+   * than this: a browser extension bundles its own and hands the application's observer
+   * to it. Removing the method outright crashed every panel that had not been reloaded.
+   */
   takeRemoved(): number[];
   /** What happened since the last call, in order. Empty when history is off. */
   takeEvents(): GraphEvent[];
@@ -118,6 +148,10 @@ const PREFIX: Record<NodeKind, string> = {
   group: 'g',
   binding: 'b',
   setter: 'w',
+  // A plugin's, and it names them itself.
+  directive: 'd',
+  context: 'ctx',
+  provider: 'p',
 };
 
 /**
@@ -280,7 +314,29 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     }
   };
 
-  const removed: number[] = [];
+  /**
+   * Removals, kept rather than drained, each stamped with the revision it happened at.
+   *
+   * Draining meant whichever consumer polled first took them, and a page with both a
+   * browser panel and an editor panel watching has two. Bounded, because nothing here is
+   * ever consumed. A consumer older than the oldest entry is told to start again.
+   */
+  const removed: { id: number; rev: number }[] = [];
+  /** Monotonic, bumped for every node the sample finds moved. */
+  let revision = 0;
+  /** The revision each node last moved at. */
+  const revs = new Map<number, number>();
+  /** How far `takeRemoved` has drained, for a caller too old to keep a cursor of its own. */
+  let drained = 0;
+  /** What plugins asked to hear about. Empty unless one registered. */
+  const onDirective: ((report: DirectiveReport) => void)[] = [];
+  const onContext: ((report: ContextReport) => void)[] = [];
+  /** What plugins decided a node really is, applied once it has been named. */
+  const retyped = new Map<number, NodeKind>();
+  /** Where each context was written, taken from the stack at the moment it was made. */
+  const contextSites = new Map<symbol, ReactiveSourceLocation>();
+  /** What plugins attached to elements, by element then plugin name. */
+  const elementExtra = new WeakMap<object, Record<string, unknown>>();
   /** The nearest node the graph knows, looking outward through anything it does not. */
   const ancestor = (parents?: readonly unknown[]): number | undefined => {
     if (!parents) return undefined;
@@ -436,6 +492,57 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       if (writer === undefined || writer === written) return;
       graph.get(writer)?.writes.add(written);
     },
+    directive(node, target, kind, name, accessor) {
+      if (!onDirective.length) return;
+      const core = node as CoreNode;
+      const owner = core && typeof core === 'object' ? ids.get(core) : undefined;
+      const at = holeLocation(accessor);
+      const report: DirectiveReport = {
+        owner: owner !== undefined ? (through.get(core) ?? owner) : undefined,
+        kind,
+        name,
+        element: describeNode(target),
+        target,
+        ...(at ? { at } : {}),
+      };
+      for (const fn of onDirective) {
+        try {
+          fn(report);
+        } catch {
+          // A plugin with a bug does not get to stop the graph being built.
+        }
+      }
+    },
+    contextCreated(id) {
+      if (!onContext.length || contextSites.has(id)) return;
+      const site = currentCallSite(origin);
+      if (site) contextSites.set(id, mapped(site.location));
+    },
+    context(node, id, kind, value) {
+      if (!onContext.length) return;
+      const core = node as CoreNode;
+      const owner = core && typeof core === 'object' ? ids.get(core) : undefined;
+      const report: ContextReport = {
+        owner: owner !== undefined ? (through.get(core) ?? owner) : undefined,
+        id,
+        name: id.description || 'context',
+        ...(owner !== undefined ? { ownerLabel: graph.get(owner)?.label } : {}),
+        // Where the context itself was written. The provider's line is a fallback, and it
+        // reads as a lie when two providers share one context.
+        ...(contextSites.get(id) ?? graph.get(owner ?? -1)?.source
+          ? { at: contextSites.get(id) ?? graph.get(owner ?? -1)?.source }
+          : {}),
+        kind,
+        ...(value === undefined ? {} : { value: formatValue(value) }),
+      };
+      for (const fn of onContext) {
+        try {
+          fn(report);
+        } catch {
+          /* ignored */
+        }
+      }
+    },
     props(node, props) {
       const core = node as CoreNode;
       if (!core || typeof core !== 'object' || !props) return;
@@ -480,7 +587,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       internals.delete(target as CoreNode);
       const id = ids.get(target as object);
       if (id === undefined) return;
-      removed.push(id);
+      removed.push({ id, rev: ++revision });
+      revs.delete(id);
+      if (removed.length > REMOVED_LOG) removed.splice(0, removed.length - REMOVED_LOG);
       // The label goes with it: nothing is left to look the name up in.
       history.disposed(id, graph.get(id)?.label);
       graph.delete(id);
@@ -510,6 +619,11 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     sample() {
       described = null;
       const changed: number[] = [];
+      /** Recorded once here, so every consumer can be told about it at its own pace. */
+      const moved = (id: number): void => {
+        changed.push(id);
+        revs.set(id, ++revision);
+      };
       const now = Date.now();
 
       // What the dom reads, per node. Recounted rather than kept: a binding's sources change
@@ -554,7 +668,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           const seen = runsAtLastSample.get(node.id);
           if (seen === undefined || node.runs > seen) {
             node.lastPulse = now;
-            changed.push(node.id);
+            moved(node.id);
           }
           runsAtLastSample.set(node.id, node.runs);
           continue;
@@ -584,7 +698,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         }
         // Whatever it returned, for a panel asking where this is on the page. Read every
         // sample because a tag can re-render into different elements.
-        if (node.kind === 'component' || node.kind === 'control' || node.kind === 'router') {
+        if (TREE_KINDS.has(node.kind)) {
           const found = elementsIn(raw);
           if (found.length) rendered.set(node.id, found.map((el) => new WeakRef(el)));
           const given = handed.get(node.id);
@@ -600,14 +714,41 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           // A signal never recomputes, so a write is the only thing it can count.
           if (node.kind === 'state') node.runs++;
           node.lastPulse = now;
-          changed.push(node.id);
+          moved(node.id);
         }
         runsAtLastSample.set(node.id, node.runs);
       }
+      // After the promotion above, so a plugin's answer survives being named.
+      //
+      // Two limits, both because a kind decides more than a colour. Only a plain component
+      // is sharpened, so a Router that provides a context is still a Router. And only into
+      // another tag: every other kind is outside TREE_KINDS, which is what puts a node in
+      // the tree and lets it own the elements it rendered, so a component turned into a
+      // state would quietly take its whole subtree with it.
+      for (const [id, kind] of retyped) {
+        const node = graph.get(id);
+        if (node?.kind === 'component' && TREE_KINDS.has(kind)) node.kind = kind;
+      }
       return changed;
     },
+    get revision() {
+      return revision;
+    },
     takeRemoved() {
-      return removed.splice(0, removed.length);
+      const out = removed.filter((entry) => entry.rev > drained).map((entry) => entry.id);
+      drained = revision;
+      return out;
+    },
+    changedSince(rev) {
+      const out: number[] = [];
+      for (const [id, at] of revs) if (at > rev) out.push(id);
+      return out;
+    },
+    removedSince(rev) {
+      return removed.filter((entry) => entry.rev > rev).map((entry) => entry.id);
+    },
+    outrun(rev) {
+      return removed.length >= REMOVED_LOG && rev < removed[0]!.rev;
     },
     elementsFor(id) {
       const live: Element[] = [];
@@ -658,7 +799,13 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     domFor(id) {
       // Built once per sample. Every tag needs the same element maps, and a page redraws
       // this many times a second.
-      described ??= describeAll(graph, (of) => api.renderedFor(of), (of) => api.elementsFor(of), TREE_KINDS);
+      described ??= describeAll(
+        graph,
+        (of) => api.renderedFor(of),
+        (of) => api.elementsFor(of),
+        TREE_KINDS,
+        (element) => elementExtra.get(element),
+      );
       return described.get(id) ?? [];
     },
     nodeAt(element) {
@@ -686,6 +833,54 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       history.clear();
     },
   };
+
+  // Started last, so a plugin adding a node finds the graph ready.
+  for (const plugin of devtoolsPlugins()) {
+    if (!plugin.collect) continue;
+    const context: CollectContext = {
+      onDirective: (fn) => onDirective.push(fn),
+      onContext: (fn) => onContext.push(fn),
+      annotate: (id, data) => {
+        const node = graph.get(id);
+        if (node) (node.extra ??= {})[plugin.name] = data;
+      },
+      annotation: (id) => graph.get(id)?.extra?.[plugin.name],
+      // Remembered, not applied here. A component is still a memo when its context is
+      // provided, and the promotion that gives it its name only runs while it is one.
+      retype: (id, kind) => retyped.set(id, kind),
+      annotateElement: (target, data) => {
+        if (!target || typeof target !== 'object') return;
+        const held = elementExtra.get(target) ?? {};
+        held[plugin.name] = data;
+        elementExtra.set(target, held);
+      },
+      elementAnnotation: (target) =>
+        target && typeof target === 'object' ? elementExtra.get(target)?.[plugin.name] : undefined,
+      add: (spec) => {
+        const id = seq++;
+        graph.set(id, {
+          id,
+          label: spec.label,
+          kind: spec.kind,
+          deps: new Set(spec.deps ?? []),
+          writes: new Set(),
+          runs: 0,
+          lastPulse: 0,
+          authored: spec.authored ?? false,
+          ...(spec.createdIn !== undefined ? { createdIn: spec.createdIn } : {}),
+          ...(spec.value !== undefined ? { value: spec.value } : {}),
+          ...(spec.detail !== undefined ? { detail: spec.detail } : {}),
+          ...(spec.source ? { source: spec.source } : {}),
+        });
+        return id;
+      },
+    };
+    try {
+      plugin.collect(context);
+    } catch {
+      /* ignored */
+    }
+  }
 
   return api;
 }

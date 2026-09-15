@@ -11,5 +11,7 @@
  * to keep in step.
  */
 import { installDevtoolsHook } from '@fluixi/devtools';
+// Collecting happens here, so the plugins have to be registered here too.
+import '@fluixi/devtools/plugins';
 
 installDevtoolsHook();

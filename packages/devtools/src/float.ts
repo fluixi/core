@@ -76,6 +76,113 @@ export interface Floatable {
 /** Enough of a cascade that two cards opened together do not sit on top of each other. */
 let opened = 0;
 
+
+/** A card the reader can move and resize, with the pane's own content inside it. */
+export interface FloatCard {
+  readonly card: HTMLElement;
+  /** The bar along the top, for a title or a close button. */
+  readonly bar: HTMLElement;
+  remove(): void;
+}
+
+/**
+ * The moving and resizing, on its own.
+ *
+ * Both a floated pane and the value pane want the same card, and writing the drag twice is
+ * how two of them end up behaving differently.
+ */
+export function floatCard(
+  doc: Document,
+  title: string,
+  at?: { x: number; y: number; width: number; height: number },
+): FloatCard {
+  const card = doc.createElement('div');
+  card.className = 'fx-float';
+  const spot = at ?? {
+    x: 60 + (opened % 4) * 28,
+    y: 60 + (opened % 4) * 28,
+    width: 360,
+    height: 280,
+  };
+  opened += 1;
+
+  const bar = doc.createElement('div');
+  bar.className = 'fx-float-bar';
+  const name = doc.createElement('span');
+  name.textContent = title;
+  bar.append(name);
+  card.append(bar);
+
+  // Kept here rather than read back from the element each move. offsetWidth is what the
+  // card ended up at, so once a size clamps, every further move measures from the clamp
+  // and the card grows when the pointer is still travelling the other way.
+  let x = spot.x;
+  let y = spot.y;
+  let w = spot.width;
+  let h = spot.height;
+
+  const apply = (): void => {
+    const view = doc.defaultView;
+    const vw = view?.innerWidth ?? w;
+    const vh = view?.innerHeight ?? h;
+    w = Math.min(Math.max(MIN_W, w), vw);
+    h = Math.min(Math.max(MIN_H, h), vh);
+    // Fully on screen: a card wider than the window puts its own resize handles past the
+    // edge, and then there is no way to make it smaller again.
+    x = Math.min(Math.max(0, x), Math.max(0, vw - w));
+    y = Math.min(Math.max(0, y), Math.max(0, vh - h));
+    card.style.left = `${x}px`;
+    card.style.top = `${y}px`;
+    card.style.width = `${w}px`;
+    card.style.height = `${h}px`;
+  };
+
+  // Every edge and corner, so a card against one side of the window can still be resized
+  // from the other.
+  let from = { x, y, w, h };
+  const remember = (): void => {
+    from = { x, y, w, h };
+  };
+
+  for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const) {
+    const handle = doc.createElement('div');
+    handle.className = `fx-float-h fx-float-${edge}`;
+    card.append(handle);
+    draggable(
+      handle,
+      (dx, dy) => {
+        if (edge.includes('e')) w = from.w + dx;
+        if (edge.includes('s')) h = from.h + dy;
+        // A top or left edge leaves the opposite one where it is, so the card only moves
+        // by as much as the size actually gave.
+        if (edge.includes('w')) {
+          w = Math.max(MIN_W, from.w - dx);
+          x = from.x + from.w - w;
+        }
+        if (edge.includes('n')) {
+          h = Math.max(MIN_H, from.h - dy);
+          y = from.y + from.h - h;
+        }
+        apply();
+      },
+      remember,
+    );
+  }
+
+  draggable(
+    bar,
+    (dx, dy) => {
+      x = from.x + dx;
+      y = from.y + dy;
+      apply();
+    },
+    remember,
+  );
+  apply();
+
+  return { card, bar, remove: () => card.remove() };
+}
+
 export function makeFloatable(pane: HTMLElement, options: FloatOptions): Floatable {
   const doc = pane.ownerDocument;
   let card: HTMLElement | null = null;
@@ -116,95 +223,14 @@ export function makeFloatable(pane: HTMLElement, options: FloatOptions): Floatab
     if (card || !pane.parentNode) return;
     home = { parent: pane.parentNode, before: pane.nextSibling };
 
-    card = doc.createElement('div');
-    card.className = 'fx-float';
-    const spot = options.at ?? {
-      x: 60 + (opened % 4) * 28,
-      y: 60 + (opened % 4) * 28,
-      width: 360,
-      height: 280,
-    };
-    opened += 1;
-
-    const bar = doc.createElement('div');
-    bar.className = 'fx-float-bar';
-    const name = doc.createElement('span');
-    name.textContent = options.title;
-    bar.append(name);
-
-    card.append(bar, pane);
+    const built = floatCard(doc, options.title, options.at);
+    card = built.card;
+    card.append(pane);
     doc.body.appendChild(card);
 
     pane.classList.add('fx-floated');
     button.textContent = '⇲';
     button.title = `Put ${options.title} back`;
-
-    // Kept here rather than read back from the element each move. offsetWidth is what the
-    // card ended up at, so once a size clamps, every further move measures from the clamp
-    // and the card grows when the pointer is still travelling the other way.
-    let x = spot.x;
-    let y = spot.y;
-    let w = spot.width;
-    let h = spot.height;
-
-    const apply = (): void => {
-      const view = doc.defaultView;
-      const vw = view?.innerWidth ?? w;
-      const vh = view?.innerHeight ?? h;
-      w = Math.min(Math.max(MIN_W, w), vw);
-      h = Math.min(Math.max(MIN_H, h), vh);
-      // Fully on screen: a card wider than the window puts its own resize handles past the
-      // edge, and then there is no way to make it smaller again.
-      x = Math.min(Math.max(0, x), Math.max(0, vw - w));
-      y = Math.min(Math.max(0, y), Math.max(0, vh - h));
-      card!.style.left = `${x}px`;
-      card!.style.top = `${y}px`;
-      card!.style.width = `${w}px`;
-      card!.style.height = `${h}px`;
-    };
-
-    // Every edge and corner, so a card against one side of the window can still be resized
-    // from the other.
-    let from = { x, y, w, h };
-    const remember = (): void => {
-      from = { x, y, w, h };
-    };
-
-    for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const) {
-      const handle = doc.createElement('div');
-      handle.className = `fx-float-h fx-float-${edge}`;
-      card.append(handle);
-      draggable(
-        handle,
-        (dx, dy) => {
-          if (edge.includes('e')) w = from.w + dx;
-          if (edge.includes('s')) h = from.h + dy;
-          // A top or left edge leaves the opposite one where it is, so the card only moves
-          // by as much as the size actually gave.
-          if (edge.includes('w')) {
-            w = Math.max(MIN_W, from.w - dx);
-            x = from.x + from.w - w;
-          }
-          if (edge.includes('n')) {
-            h = Math.max(MIN_H, from.h - dy);
-            y = from.y + from.h - h;
-          }
-          apply();
-        },
-        remember,
-      );
-    }
-
-    draggable(
-      bar,
-      (dx, dy) => {
-        x = from.x + dx;
-        y = from.y + dy;
-        apply();
-      },
-      remember,
-    );
-    apply();
 
     options.onChange?.(true);
   }

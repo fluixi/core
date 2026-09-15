@@ -16,7 +16,12 @@
  */
 import { Computed, Watcher } from './core.js';
 import { G } from './state.js';
-import { reportReactiveDispose, reportReactiveNode } from './observe.js';
+import {
+  reportReactiveContext,
+  reportReactiveContextCreated,
+  reportReactiveDispose,
+  reportReactiveNode,
+} from './observe.js';
 
 // ── Ownership (TC39 has none) ────────────────────────────────────────────────
 export interface Owner {
@@ -77,8 +82,10 @@ export interface Context<T> {
   Provider: (props: { value: T; children?: unknown; debug?: boolean }) => any;
 }
 
-export function createContext<T>(defaultValue?: T): Context<T> {
-  const id = Symbol('context');
+export function createContext<T>(defaultValue?: T, name?: string): Context<T> {
+  // Named so a watcher can tell two of them apart. Nothing else reads the description.
+  const id = Symbol(name ?? 'context');
+  reportReactiveContextCreated(id);
   const Provider = (props: { value: T; children?: unknown; debug?: boolean }): any => {
     // Stamp the value on a DEDICATED child owner, then read `children` under it — never
     // on the current owner directly. Two sibling <Ctx.Provider> elements used inline (no
@@ -87,6 +94,7 @@ export function createContext<T>(defaultValue?: T): Context<T> {
     // A child scope isolates each Provider; because createMemo captures the owner at
     // creation, the children memos built while reading `props.children` here capture this
     // scope and resolve the right value even when rendered lazily (Portal/Show/For).
+    reportReactiveContext(id, 'provide', props.value);
     const parent = G.owner;
     const owner = makeOwner(parent);
     (owner.contexts = new Map()).set(id, props.value);
@@ -105,9 +113,14 @@ export function createContext<T>(defaultValue?: T): Context<T> {
 export function useContext<T>(context: { id: symbol; defaultValue?: T }): T | undefined {
   let o = G.owner;
   while (o) {
-    if (o.contexts && o.contexts.has(context.id)) return o.contexts.get(context.id) as T;
+    if (o.contexts && o.contexts.has(context.id)) {
+      const found = o.contexts.get(context.id) as T;
+      reportReactiveContext(context.id, 'read', found);
+      return found;
+    }
     o = o.parent;
   }
+  reportReactiveContext(context.id, 'read', context.defaultValue);
   return context.defaultValue;
 }
 

@@ -44,6 +44,8 @@ export interface WireNode {
   readonly lazy?: boolean;
   /** Components only: the props the tag was handed. */
   readonly props?: PropReport[];
+  /** What plugins attached, by plugin name. Passed through by a reader that lacks them. */
+  readonly extra?: Record<string, unknown>;
   /** Where the node was created, when the compiler marked it. */
   readonly source?: ReactiveSourceLocation;
   /** Components only: where the component itself was declared. */
@@ -81,6 +83,11 @@ export interface GraphSnapshot {
   readonly reason?: string;
   /** Oldest first, and always a delta: resending it would replay what the consumer has. */
   readonly events?: GraphEvent[];
+  /**
+   * Where the producer had got to. A consumer folding in deltas keeps this and asks for
+   * what came after it, so two of them reading at their own pace both see every change.
+   */
+  readonly cursor?: number;
 }
 
 export interface SerializeOptions {
@@ -95,6 +102,8 @@ export interface SerializeOptions {
    * nothing, so the field is left off instead of sending an empty array per node.
    */
   dom?: (id: number) => DomNode[] | undefined;
+  /** Passed through to the snapshot, for a consumer that will come back for more. */
+  cursor?: number;
 }
 
 /** Flatten a live graph for transport. */
@@ -124,6 +133,7 @@ export function serializeGraph(
       loading: node.loading,
       lazy: node.lazy,
       props: node.props,
+      extra: node.extra,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
@@ -138,7 +148,10 @@ export function serializeGraph(
   }
   const removed = options.removed ? [...options.removed] : undefined;
   const events = options.events?.length ? [...options.events] : undefined;
-  return wanted ? { t: now, nodes, partial: true, removed, events } : { t: now, nodes, events };
+  const cursor = options.cursor;
+  return wanted
+    ? { t: now, nodes, partial: true, removed, events, cursor }
+    : { t: now, nodes, events, cursor };
 }
 
 /** Rebuild a graph the renderer can draw. Nodes have no reader: a snapshot is already read. */
@@ -160,6 +173,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       loading: node.loading,
       lazy: node.lazy,
       props: node.props,
+      extra: node.extra,
       source: node.source,
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,

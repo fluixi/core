@@ -7,6 +7,7 @@ import {
   createTimeline,
   DETAIL_PANEL_CSS,
   DEVTOOLS_CSS,
+  VALUE_PANE_CSS,
   FLOAT_CSS,
   KIND_FILTER_CSS,
   TREE_CSS,
@@ -506,7 +507,7 @@ export function Playground() {
   onMount(() => {
     document.documentElement.dataset.theme = theme();
     const style = document.createElement('style');
-    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}\n${TREE_CSS}\n${FLOAT_CSS}`;
+    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}\n${TREE_CSS}\n${FLOAT_CSS}\n${VALUE_PANE_CSS}`;
     document.head.appendChild(style);
     editor = createEditor(editorHost, {
       files: files(),

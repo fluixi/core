@@ -5,8 +5,8 @@ import { Router, lazy } from '@fluixi/core/router';
 // the Router (and its lazy routes) live *inside* context providers.
 const ThemeCtx = createContext<string>('light');
 const LocaleCtx = createContext<string>('en');
-const ThemeProvider = (p: any) => createProvider({ context: ThemeCtx, value: 'dark', children: p.children });
-const LocaleProvider = (p: any) => createProvider({ context: LocaleCtx, value: 'fr', children: p.children });
+const ThemeProvider = (p: any) => createProvider(ThemeCtx, 'dark', p);
+const LocaleProvider = (p: any) => createProvider(LocaleCtx, 'fr', p);
 
 const routes = [{ path: '/', component: lazy(() => import('./pages/home.js')) }];
 

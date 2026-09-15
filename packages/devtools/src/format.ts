@@ -133,3 +133,55 @@ export function formatValue(value: unknown, limit = 240): string {
 export function shorten(text: string, limit = 18): string {
   return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
 }
+
+/**
+ * The same text across lines, so a value too wide to read is readable.
+ *
+ * Works on what `formatValue` produced rather than on the value itself: a panel elsewhere
+ * has only the string. Quotes are tracked so a brace inside one is left alone.
+ */
+export function indentValue(text: string, pad = '  '): string {
+  const out: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let line = '';
+
+  const flush = (): void => {
+    if (line.trim()) out.push(pad.repeat(depth) + line.trim());
+    line = '';
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!;
+    if (quote) {
+      line += c;
+      if (c === quote && text[i - 1] !== '\\') quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      line += c;
+      continue;
+    }
+    if (c === '{' || c === '[') {
+      line += c;
+      flush();
+      depth++;
+      continue;
+    }
+    if (c === '}' || c === ']') {
+      flush();
+      depth = Math.max(0, depth - 1);
+      line = c;
+      continue;
+    }
+    if (c === ',') {
+      line += c;
+      flush();
+      continue;
+    }
+    line += c;
+  }
+  flush();
+  return out.join('\n');
+}

@@ -11,6 +11,8 @@
  */
 import type { NodeKind, RNode } from './instrument.js';
 import type { DomNode } from './dom.js';
+import { pluginBadge, pluginElementBadge } from './plugin.js';
+import { kindRules } from './palette.js';
 
 /** Kinds that are tags in the source, and so have a place in a tree of them. */
 export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
@@ -18,6 +20,9 @@ export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
   'control',
   'router',
   'handler',
+  // A component a plugin recognised as providing a context. Still a tag the author wrote,
+  // so leaving it out took it and everything it rendered out of the tree.
+  'provider',
 ]);
 
 export interface TreeNode {
@@ -29,6 +34,8 @@ export interface TreeNode {
   value?: boolean;
   /** Came down as its own chunk. */
   lazy?: boolean;
+  /** What a plugin wants said beside the label. */
+  badge?: string;
 }
 
 /** A row in the drawn tree: a node from the graph, or an element one of them rendered. */
@@ -42,12 +49,15 @@ interface Row {
   element?: Element;
   value?: boolean;
   lazy?: boolean;
+  badge?: string;
   /** Element rows only: the tag whose dom this element is part of. */
   owner?: number;
   /** Element rows only: ids of the values writing into it. */
   writes?: number[];
   /** Element rows only: where the element was written. */
   at?: { file: string; line: number; column: number };
+  /** Element rows only: what plugins attached to it. */
+  extra?: Record<string, unknown>;
 }
 
 /**
@@ -65,6 +75,8 @@ export interface ElementPick {
   writes?: number[];
   /** Where the element itself was written, when the build recorded it. */
   at?: { file: string; line: number; column: number };
+  /** What plugins attached to this element. */
+  extra?: Record<string, unknown>;
   /** Only in a host that is in the page. */
   element?: Element;
 }
@@ -95,6 +107,13 @@ export interface TreeOptions {
   filter?: string;
 }
 
+/** Cached per call: a plugin's badge is computed from the node and asked for twice. */
+const badges = new WeakMap<RNode, string | undefined>();
+function badgeOf(node: RNode): string | undefined {
+  if (!badges.has(node)) badges.set(node, pluginBadge(node));
+  return badges.get(node);
+}
+
 export function componentTree(graph: Map<number, RNode>, options: TreeOptions = {}): TreeNode[] {
   const wanted = (node: RNode): boolean =>
     TREE_KINDS.has(node.kind) || (options.values === true && node.authored !== false);
@@ -110,6 +129,7 @@ export function componentTree(graph: Map<number, RNode>, options: TreeOptions = 
       children: [],
       ...(TREE_KINDS.has(node.kind) ? {} : { value: true }),
       ...(node.lazy ? { lazy: true } : {}),
+      ...(badgeOf(node) ? { badge: badgeOf(node) } : {}),
     });
   }
 
@@ -250,12 +270,15 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     const count = has && !open ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
     // Says the chunk it came from was fetched separately, which is why it appeared late.
     const chunk = node.lazy ? '<span class="fx-tree-lazy" title="loaded as its own chunk">lazy</span>' : '';
+    const mark = node.badge
+      ? `<span class="fx-tree-plugin" title="${escape(node.badge)}">${escape(node.badge)}</span>`
+      : '';
     return (
       `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}"` +
       ` data-key="${escape(node.key)}"${node.id !== undefined ? ` data-id="${node.id}"` : ''}` +
       ` style="--depth:${depth}">` +
       `<button type="button" class="fx-tree-twist" data-twist="${escape(node.key)}"${has ? '' : ' tabindex="-1"'}>${twist}</button>` +
-      `<span class="fx-tree-tag">${tag}</span>${chunk}${count}` +
+      `<span class="fx-tree-tag">${tag}</span>${mark}${chunk}${count}` +
       `</div>` +
       (open ? node.children.map((child) => row(child, depth + 1)).join('') : '')
     );
@@ -271,6 +294,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       ...(found.owner !== undefined ? { owner: found.owner } : {}),
       ...(found.writes?.length ? { writes: found.writes } : {}),
       ...(found.at ? { at: found.at } : {}),
+      ...(found.extra ? { extra: found.extra } : {}),
       ...(found.element ? { element: found.element } : {}),
     };
   };
@@ -362,6 +386,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
         children: node.children.map(build),
         ...(node.value ? { value: true } : {}),
         ...(node.lazy ? { lazy: true } : {}),
+        ...(node.badge ? { badge: node.badge } : {}),
       };
       byId.set(node.id, row);
       return row;
@@ -452,6 +477,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
           owner: row.id,
           ...(node.writes?.length ? { writes: node.writes } : {}),
           ...(node.at ? { at: node.at } : {}),
+          ...(node.extra ? { extra: node.extra } : {}),
+          ...(pluginElementBadge(node.extra) ? { badge: pluginElementBadge(node.extra) } : {}),
           ...(node.element ? { element: node.element } : {}),
         };
       };
@@ -545,6 +572,11 @@ export const TREE_CSS = `
   width: 12px; padding: 0; border: 0; background: none; cursor: pointer;
   color: var(--fx-muted, #8a90a2); font-size: 9px; line-height: 1;
 }
+.fx-tree-plugin {
+  font-size: 9px; color: var(--fx-accent, #5eead4);
+  border: 1px solid var(--fx-line, #262a35); border-radius: 6px; padding: 0 4px;
+  max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .fx-tree-lazy {
   font-size: 9px; letter-spacing: .04em; color: var(--fx-router, #7dd3fc);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px; padding: 0 4px;
@@ -553,20 +585,16 @@ export const TREE_CSS = `
   font-size: 9.5px; color: var(--fx-muted, #8a90a2);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px; padding: 0 4px;
 }
-.fx-tree-row.n-control .fx-tree-tag { color: var(--fx-control, #c4b5fd); }
-.fx-tree-row.n-router .fx-tree-tag { color: var(--fx-router, #7dd3fc); }
-.fx-tree-row.n-handler .fx-tree-tag { color: var(--fx-write, #fb7185); }
+${kindRules((k) => `.fx-tree-row.n-${k} .fx-tree-tag`, 'color')}
 .fx-tree-bar {
   display: flex; align-items: center; gap: 5px; padding: 2px 8px 5px;
   font-size: 10.5px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
 }
 .fx-tree-bar:hover { color: var(--fx-label, #e7e9ee); }
 .fx-tree-bar input { width: 11px; height: 11px; margin: 0; accent-color: var(--fx-accent, #5eead4); }
-.fx-tree-row.n-element .fx-tree-tag { color: var(--fx-muted, #8a90a2); }
 .fx-tree-row.n-element:hover .fx-tree-tag { color: var(--fx-label, #e7e9ee); }
-.fx-tree-row.is-value .fx-tree-tag { color: var(--fx-muted, #8a90a2); font-style: italic; }
-.fx-tree-row.is-value.n-state .fx-tree-tag { color: var(--fx-state, #6ee7b7); font-style: normal; }
-.fx-tree-row.is-value.n-memo .fx-tree-tag { color: var(--fx-memo, #a5b4fc); font-style: normal; }
+/* A declared value is listed inside the tag that made it, so it reads quieter than a tag. */
+.fx-tree-row.is-value .fx-tree-tag { font-style: italic; opacity: .85; }
 .fx-tree-search {
   width: calc(100% - 16px); margin: 0 8px 4px; padding: 2px 6px;
   font: inherit; font-size: 10.5px;

@@ -49,12 +49,15 @@ function propKey(name: string): string {
 
 function propValue(p: IRProp): string {
   if (p.expr !== undefined) {
+    // A ref is not reactive, but which variable ends up holding the element is worth
+    // saying, so it carries its own text and position.
+    if (p.name === 'ref' && p.at) return markHole(`(${p.expr})`, p.at.line, p.at.column, p.expr);
     // Events and non-reactive expressions pass through; reactive ones become thunks
     // so the runtime (spread/insert) can wire a render effect.
     if (!p.reactive) return `(${p.expr})`;
     const accessor = `() => (${p.expr})`;
     // `at` is the gate: a production build carries no marker.
-    return p.at ? markHole(accessor, p.at.line, p.at.column) : accessor;
+    return p.at ? markHole(accessor, p.at.line, p.at.column, p.directive) : accessor;
   }
   return JSON.stringify(p.literal ?? true);
 }
@@ -266,7 +269,13 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       const tag = JSON.stringify(node.tag);
       const el = '_el$';
       const parts: string[] = [];
-      const createArgs = node.svg ? `${tag}, true` : tag;
+      // The third argument is where the tag was written. An element built this way is not
+      // in a template, so nothing else records it.
+      const createArgs = node.at
+        ? `${tag}, ${node.svg}, ${JSON.stringify(node.at)}`
+        : node.svg
+          ? `${tag}, true`
+          : tag;
       parts.push(`const ${el} = createNativeElement(${createArgs});`);
 
       if (node.props.length > 0) {

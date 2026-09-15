@@ -37,6 +37,8 @@ export interface DomNode {
    * the positions of a template's elements; absent in a build without source locations.
    */
   at?: { file: string; line: number; column: number };
+  /** What plugins attached to this element, by plugin name. */
+  extra?: Record<string, unknown>;
   /** Set only in-page. A description that crossed a wire has no element. */
   element?: Element;
 }
@@ -52,12 +54,22 @@ function locationOf(element: Element): { file: string; line: number; column: num
 /** Elements described per tag. Caps how large a snapshot can get. */
 export const DOM_BUDGET = 200;
 
-/** Static attributes only: a class computed at runtime is not in the source. */
+/**
+ * Static attributes only: a class computed at runtime is not in the source.
+ *
+ * Written out rather than spread-and-join. This runs once per element of the page on every
+ * sample, and building three throwaway arrays to read at most two class names cost more
+ * than everything else the walk does.
+ */
 export function describeElement(element: Element): string {
-  const tag = element.tagName.toLowerCase();
-  const id = element.id ? `#${element.id}` : '';
-  const classes = [...element.classList].slice(0, 2).map((c) => `.${c}`).join('');
-  return `${tag}${id}${classes}`;
+  let out = element.tagName.toLowerCase();
+  if (element.id) out += `#${element.id}`;
+  const classes = element.classList;
+  if (classes.length > 0) {
+    out += `.${classes[0]}`;
+    if (classes.length > 1) out += `.${classes[1]}`;
+  }
+  return out;
 }
 
 /**
@@ -73,6 +85,8 @@ export function describeAll(
   /** Where a value writes. */
   writtenBy: (of: number) => readonly Element[],
   kinds: ReadonlySet<string>,
+  /** What plugins attached to an element, when any did. */
+  extraFor?: (element: Element) => Record<string, unknown> | undefined,
 ): Map<number, DomNode[]> {
   const owners = new Map<Element, number>();
   const writers = new Map<Element, number[]>();
@@ -120,11 +134,15 @@ export function describeAll(
         return { label: describeElement(element), children: [], container: true, element, ...(where ? { at: where } : {}) };
       }
       const children: DomNode[] = [];
-      for (let i = 0; i < element.children.length && budget.left > 0; i++) {
+      // Read once: `children` is live, so indexing it in the condition re-resolves the
+      // collection on every step and a parent with a thousand of them goes quadratic.
+      const kids = element.children;
+      for (let i = 0, n = kids.length; i < n && budget.left > 0; i++) {
         budget.left -= 1;
-        children.push(walk(element.children[i]!));
+        children.push(walk(kids[i]!));
       }
       const writes = writers.get(element);
+      const extra = extraFor?.(element);
       // Only tags nested inside this one. A tag further out writes through this element on
       // its way down, and putting it here would nest it under its own child.
       const inside = landing.get(element)?.filter((id) => within(graph, id, node.id));
@@ -135,6 +153,7 @@ export function describeAll(
         ...(where ? { at: where } : {}),
         ...(writes?.length ? { writes } : {}),
         ...(inside?.length ? { inside } : {}),
+        ...(extra ? { extra } : {}),
       };
     };
     out.set(node.id, [...(rendered.get(node.id) ?? []), ...(claims.get(node.id) ?? [])].map(walk));
