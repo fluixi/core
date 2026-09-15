@@ -1,9 +1,13 @@
 # Introduction
 
-Fluixi est une **plateforme réactive native au compilateur**. Son compilateur comprend les valeurs
+Fluixi est un **framework réactif natif au compilateur**. Son compilateur comprend les valeurs
 réactives en tant que valeurs, pas via une convention de nommage, et porte cette compréhension à
 travers JSX et les gabarits `` html`` ``, la génération DOM, le rendu serveur, l'hydratation, le
 routage et le méta-framework, comme un seul modèle.
+
+Ce modèle appartenant au compilateur, et non à un débogueur greffé à côté, il peut être relu :
+depuis les sources avant toute exécution, et depuis une application en cours dans l'éditeur, le
+navigateur et le playground.
 
 C'est toute l'idée, et il vaut la peine d'être précis sur ce qu'elle apporte : « réactivité fine »
 et « pas de DOM virtuel » décrivent plusieurs frameworks, et Fluixi ne cherche pas à en être une

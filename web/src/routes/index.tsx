@@ -7,9 +7,9 @@ const DOCS_URL = 'https://docs.fluixi.com';
 const PLAYGROUND_URL = 'https://playground.fluixi.com';
 const GITHUB_URL = 'https://github.com/fluixi/core';
 
-const TITLE = 'Fluixi, your JSX becomes DOM calls';
+const TITLE = 'Fluixi, a compiler-native reactive framework';
 const DESC =
-  'Fluixi compiles components into imperative DOM calls, no virtual DOM, no diffing, no re-renders. Fine-grained reactivity on a TC39-Signals core, with SSR, streaming, SSG, file routing, server functions, DI and i18n.';
+  'Fluixi compiles components into imperative DOM calls, no virtual DOM, no diffing, no re-renders. Fine-grained reactivity on a TC39-Signals core, with SSR, streaming, SSG, file routing, server functions, DI and i18n. The reactive model the compiler builds is the one the devtools read, from source and at runtime.';
 
 const FEATURES: { title: string; body: string }[] = [
   { title: 'Fine-grained reactivity', body: 'A TC39-Signals graph updates exactly the DOM that changed, no virtual DOM, no diffing, no re-renders.' },
@@ -228,7 +228,7 @@ function Hero() {
   return (
     <header class="hero">
       <div class="hero-copy">
-        <div class="eyebrow">compiler-native · reactive · full-stack</div>
+        <div class="eyebrow">compiler-native · reactive · full-stack · inspectable</div>
         <h1>
           The compiler knows
           <br />
@@ -239,6 +239,8 @@ function Hero() {
           may not destructure. Fluixi's compiler resolves that itself, by where a value came
           from, not by how it's named, and carries it through JSX, templates, the DOM it
           generates, SSR, hydration and routing as one model. You write ordinary TypeScript.
+          And because the model is the compiler's own, you can read it back: from source, and
+          from a running app in your editor or the browser.
         </p>
         <div class="cta">
           <a class="btn primary" href={DOCS_URL}>

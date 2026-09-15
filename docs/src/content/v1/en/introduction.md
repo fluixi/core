@@ -1,8 +1,12 @@
 # Introduction
 
-Fluixi is a **compiler-native reactive platform**. Its compiler understands reactive values as
+Fluixi is a **compiler-native reactive framework**. Its compiler understands reactive values as
 values, not as a naming convention, and carries that understanding through JSX and `` html`` ``
 templates, DOM generation, SSR, hydration, routing and the meta-framework as one model.
+
+Because that model belongs to the compiler rather than to a debugger bolted on beside it, it can
+be read back: from source before anything runs, and from a running application in the editor, the
+browser and the playground.
 
 That is the whole idea, and it is worth being precise about what it buys, because "fine-grained
 reactivity" and "no virtual DOM" describe several frameworks and Fluixi is not trying to be a
