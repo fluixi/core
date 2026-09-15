@@ -1,5 +1,26 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.83
+
+### Major Changes
+
+- 5f6a72f: `isServer` is now a function, and server mode is stored on the realm instead of a module variable. Replace any usage of the `isServer` variable with a call to `isServer()`.
+
+### Minor Changes
+
+- e005759: A hole now retains its recorded position during hydration when substituted by a wrapper, and `templateNode` now accepts a list of positions and applies one to each cloned element.
+- ae9784f: A component now reports the props it was handed, the compiler records where each was written, and the inspector shows both.
+- f5b4031: `use`, `ref`, `bind`, `class` and `style` directives now report their name, their element and the position they were written at.
+
+### Patch Changes
+
+- f1d153c: Each DOM binding now reports the element and the attribute or content it writes, along with the accessor it reads, as it is wired up. Only the DOM layer can know what a signal's reader is, such as the text of an `<li>` rather than a `class`, and the accessor is included because the compiler may have stamped it with the line the hole was written on.
+- Updated dependencies [f5b4031]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f1d153c]
+- Updated dependencies [f5b4031]
+  - @fluixi/reactive@1.0.0-alpha.83
+
 ## 1.0.0-alpha.82
 
 ### Patch Changes

@@ -1,5 +1,40 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.83
+
+### Major Changes
+
+- 5f6a72f: `isServer` is now a function, and server mode is stored on the realm instead of a module variable. Replace any usage of the `isServer` variable with a call to `isServer()`.
+
+### Minor Changes
+
+- f5b4031: `createContext` now takes an optional name parameter, and creating, providing, and reading a context are announced to a watcher.
+
+### Patch Changes
+
+- e005759: A lazily loaded route now carries the name of its component when created through `createComponent`, making it visible to watchers.
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [e005759]
+- Updated dependencies [f5b4031]
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [51433c3]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f1d153c]
+- Updated dependencies [f5b4031]
+- Updated dependencies [5f6a72f]
+- Updated dependencies [f1d153c]
+  - @fluixi/compiler@1.0.0-alpha.83
+  - @fluixi/reactive@1.0.0-alpha.83
+  - @fluixi/vite-plugin@1.0.0-alpha.83
+  - @fluixi/dom@1.0.0-alpha.83
+  - @fluixi/jsx@1.0.0-alpha.83
+  - @fluixi/head@1.0.0-alpha.50
+  - @fluixi/server@1.0.0-alpha.83
+  - @fluixi/utils@1.0.0-alpha.83
+
 ## 1.0.0-alpha.82
 
 ### Patch Changes

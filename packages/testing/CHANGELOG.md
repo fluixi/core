@@ -1,5 +1,19 @@
 # @fluixi/testing
 
+## 1.0.0-alpha.31
+
+### Patch Changes
+
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f1d153c]
+- Updated dependencies [f5b4031]
+- Updated dependencies [5f6a72f]
+  - @fluixi/reactive@1.0.0-alpha.83
+  - @fluixi/dom@1.0.0-alpha.83
+
 ## 1.0.0-alpha.30
 
 ### Patch Changes

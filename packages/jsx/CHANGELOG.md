@@ -1,5 +1,20 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.83
+
+### Patch Changes
+
+- 51433c3: The global JSX namespace now declares each name once, and JSX.IntrinsicElements correctly carries the element types, with JSX.Element being an alias for what the DOM can insert. Before this, `<div>` was "Property 'div' does not exist" in every application, and no editor could complete an element or an attribute.
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f1d153c]
+- Updated dependencies [f5b4031]
+- Updated dependencies [5f6a72f]
+  - @fluixi/reactive@1.0.0-alpha.83
+  - @fluixi/dom@1.0.0-alpha.83
+
 ## 1.0.0-alpha.82
 
 ### Patch Changes

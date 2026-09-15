@@ -1,5 +1,31 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.83
+
+### Minor Changes
+
+- f5b4031: Each consumer of the graph now keeps its own cursor instead of sharing one drained queue, so updates are no longer lost when multiple tools watch the same page.
+
+### Patch Changes
+
+- f1d153c: The graph channel now carries timeline events and the dev server retains its event buffer instead of discarding it after the first delivery. The endpoint has no single reader — an editor panel and a browser panel can both be watching — and draining it gave each of them whichever events the other had not taken. Every event carries a seq, so consumers deduplicate.
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [e005759]
+- Updated dependencies [e005759]
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [f5b4031]
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [5f6a72f]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f5b4031]
+- Updated dependencies [17993da]
+  - @fluixi/compiler@1.0.0-alpha.83
+  - @fluixi/devtools@0.2.0-alpha.3
+
 ## 1.0.0-alpha.82
 
 ### Patch Changes
