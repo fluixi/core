@@ -276,8 +276,9 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
 
 /** Default styling for what createTimeline writes, in the shape DEVTOOLS_CSS is used. */
 export const TIMELINE_CSS = `
-.tl-head { display: flex; gap: 4px; padding: 0 .25rem; background-color: var(--panel); }
+.tl-head { position: relative; display: flex; gap: 4px; padding: 0 .25rem; }
 .tl-pause {
+  position: absolute; right: .4rem; top: 40%; transform: translateY(-50%);
   flex: none; width: 26px; cursor: pointer; font: inherit; font-size: 10px;
   border: 1px solid var(--fx-line, #ffffff1f); border-radius: 4px;
   background: transparent; color: var(--fx-muted, #8a90a2);
@@ -289,6 +290,7 @@ export const TIMELINE_CSS = `
   font: inherit; font-size: 11.5px; border-radius: 4px;
   border: 1px solid var(--fx-line, #ffffff1f);
   background: var(--fx-input, transparent); color: var(--fx-label, #e7e9ee);
+  padding-inline-end: 2rem;
 }
 .tl-empty { color: var(--fx-muted, #8a90a2); font-size: 12px; }
 .tl-commit { padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11.5px; }

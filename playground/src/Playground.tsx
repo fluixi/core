@@ -826,7 +826,7 @@ export function Playground() {
             );
           }}
         >
-          <div class="panel-bar">
+          <div class="graph-panel-bar">
               <span class="stats">
                 {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
               </span>
@@ -856,7 +856,7 @@ export function Playground() {
               </button>
             </span>
           </div>
-          <div class="panel-bar">
+          <div class="graph-panel-bar" style="border: none">
             <div class="panel-bar-row">
               <button
                 type="button"
@@ -867,7 +867,7 @@ export function Playground() {
               >
                 ⊹
               </button>
-              <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next) })} />
+              <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next), panelClass: "fx-panel-left" })} />
               <span
                 class="graph-menu"
                 ref={(el: HTMLSpanElement) =>
@@ -895,6 +895,7 @@ export function Playground() {
                         },
                       },
                     ],
+                    menuClass: "fx-panel-left"
                   })
                 }
               />

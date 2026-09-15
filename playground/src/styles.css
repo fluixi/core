@@ -128,16 +128,16 @@ body {
 .mode .m:hover { color: var(--fg); }
 .mode .m.on { color: var(--accent); border-color: var(--accent); }
 .panel-bar .tabs .t { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
-.panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.panel-bar, .graph-panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
 /* Same chrome as the zoom controls: a glyph on its own, lit while it is armed. */
-.panel-bar .pick {
+.graph-panel-bar .pick {
   width: 22px; height: 20px; padding: 0; line-height: 1;
   border: 1px solid var(--line); border-radius: 5px;
   background: var(--surface-2); color: var(--muted);
   font-family: var(--mono); font-size: 12px; cursor: pointer;
 }
-.panel-bar .pick:hover { color: var(--fg); border-color: var(--accent); }
-.panel-bar .pick.on { color: var(--accent); border-color: var(--accent); }
+.graph-panel-bar .pick:hover { color: var(--fg); border-color: var(--accent); }
+.graph-panel-bar .pick.on { color: var(--accent); border-color: var(--accent); }
 .pick + .kinds { margin-left: 6px; }
 .kinds { margin-left: auto; display: inline-flex; }
 .kinds + .graph-menu { margin-left: 6px; }
@@ -184,13 +184,16 @@ body {
 body.dragging { user-select: none; }
 body.dragging iframe { pointer-events: none; }
 
-.graph-split { height: 6px; cursor: row-resize; border-top: 1px solid var(--line); }
+.graph-split { height: 6px; cursor: row-resize; border-top: 1px solid var(--panel); }
 .graph-split:hover { background: var(--accent); }
 .timeline-split { width: 2px; flex: none; cursor: col-resize; border-left: 1px solid var(--line); }
 .timeline-split:hover { background: var(--accent); width: 5px; }
 .graph-bottom { display: flex; height: var(--graph-bottom, 170px); background: var(--panel-2); min-height: 0; }
 .graph-bottom .inspector { flex: 1; min-width: 0; border-top: 0; overflow: auto; }
 .timeline { width: var(--timeline-width, 320px); flex: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.tl-head{
+  background-color: var(--panel);
+}
 .tl-list { overflow: auto; padding: .25rem; }
 .tl-filter {
   width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 3px 6px;
@@ -218,6 +221,7 @@ body.dragging iframe { pointer-events: none; }
 .tl-verb { color: var(--muted); }
 
 .inspector { border-top: 1px solid var(--line); padding: 0; min-height: 64px; font-size: 12.5px; }
+.ins-header{background-color: var(--panel)}
 .ins-empty { color: var(--muted); font-size: 12px; }
 .ins-head { display: flex; align-items: center; gap: 8px; }
 .ins-head b { font-size: 13px; }
@@ -267,7 +271,7 @@ body.dragging iframe { pointer-events: none; }
 
 /* The divider between the halves. Wider hit area than it looks, because a 5px target is a
    fight; the visible line stays hairline. */
-.splitter { grid-area: split; position: relative; background: var(--line); cursor: col-resize; touch-action: none; }
+.splitter { grid-area: split; position: relative; background: var(--panel); cursor: col-resize; touch-action: none; }
 .splitter::after { content: ""; position: absolute; inset: 0 -4px; }
 .splitter:hover, .splitter:active { background: var(--accent); }
 /* The divider inside the right column, so the preview can take space from the graph.
@@ -355,7 +359,7 @@ body.dragging iframe { pointer-events: none; }
 .graph-wrap { display: flex; }
 .graph-tree {
   width: 180px; flex: none; overflow: auto;
-  padding: 4px 0; border-right: 1px solid var(--fx-line, #262a35);
+  padding: 4px 0;
   background-color: var(--panel);
 }
 .graph-wrap .graph { flex: 1; min-width: 0; }

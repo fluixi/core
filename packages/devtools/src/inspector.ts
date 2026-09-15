@@ -464,7 +464,7 @@ export const INSPECTOR_CSS = `
 ${VALUE_PANE_CSS}
 /* Anything cut to fit says so, and opens the whole of it. */
 .ins-more { cursor: zoom-in; }
-.ins-header{ display: flex; align-items: center; gap: 8px; padding: .3rem .5rem; background-color: var(--panel) }
+.ins-header{ display: flex; align-items: center; gap: 8px; padding: .3rem .5rem; }
 .ins-body { padding: .5rem; }
 .ins-more:hover { text-decoration: underline dotted; }
 .ins-empty { color: var(--fx-muted, #8a90a2); font-size: 12px; }

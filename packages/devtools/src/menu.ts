@@ -28,6 +28,8 @@ export interface MenuOptions {
   items: readonly MenuItem[];
   /** The button's own tooltip. */
   hint?: string;
+
+  menuClass?: string;
 }
 
 export interface Menu {
@@ -53,6 +55,9 @@ export function createMenu(host: HTMLElement, options: MenuOptions): Menu {
 
   const panel = doc.createElement('div');
   panel.className = 'fx-menu-panel';
+  if (options.menuClass) {
+    panel.classList.add(...options.menuClass.split(/\s+/).filter((c) => c));
+  }
   panel.hidden = true;
 
   const boxes = new Map<string, HTMLInputElement>();
@@ -141,12 +146,14 @@ export const MENU_CSS = `
 /* hidden is display:none from the user agent, which a class setting display outranks. */
 .fx-menu-panel[hidden] { display: none; }
 .fx-menu-panel {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
+  position: absolute; top: calc(100% + 4px); z-index: 40;
   display: grid; gap: 2px; padding: 6px 8px; min-width: 150px;
   background: var(--fx-panel, #14161c);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .38);
 }
+.fx-menu-panel:not(.fx-panel-left){ right: 0; }
+.fx-menu-panel.fx-panel-left { left: 0; }
 .fx-menu-panel label {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;

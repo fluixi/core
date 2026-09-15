@@ -28,6 +28,8 @@ export interface KindFilterOptions {
   onChange: (kinds: NodeKind[] | null) => void;
   /** What the button says. @default 'Kinds' */
   label?: string;
+
+  panelClass?: string;
 }
 
 export interface KindFilter {
@@ -62,6 +64,9 @@ export function createKindFilter(host: HTMLElement, options: KindFilterOptions):
 
   const panel = doc.createElement('div');
   panel.className = 'fx-kinds-panel';
+  if (options.panelClass) {
+    panel.classList.add(...options.panelClass.split(/\s+/).filter((c) => c));
+  }
   panel.hidden = true;
 
   const all = doc.createElement('input');
@@ -164,12 +169,14 @@ export const KIND_FILTER_CSS = `
 /* The hidden attribute is display:none from the user agent, which a class setting display outranks. */
 .fx-kinds-panel[hidden] { display: none; }
 .fx-kinds-panel {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
+  position: absolute; top: calc(100% + 4px); z-index: 40;
   display: grid; gap: 2px; padding: 6px 8px; min-width: 132px;
   background: var(--fx-panel, #14161c);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .38);
-}
+  }
+.fx-kinds-panel:not(.fx-panel-left){ right: 0; }
+.fx-kinds-panel.fx-panel-left { left: 0; }
 .fx-kinds-panel label {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
