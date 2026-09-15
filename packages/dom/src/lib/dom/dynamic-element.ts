@@ -89,7 +89,7 @@ export function createDynamicElement<T extends DynamicType>(
   if (typeof type !== 'string' || type.length === 0) return null as Result;
 
   const svgTag = isSVGElement(type);
-  if (isServer) return getServerNodes().createElement(type, svgTag) as Result;
+  if (isServer()) return getServerNodes().createElement(type, svgTag) as Result;
 
   const element = svgTag
     ? document.createElementNS(SVG_NAMESPACE, type)

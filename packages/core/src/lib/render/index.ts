@@ -9,6 +9,7 @@
  * Following SolidJS structure: render logic separated from component creation
  */
 
+import { isServer } from '@fluixi/dom';
 import { createRoot } from '@fluixi/reactive/signal';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
 import {
@@ -20,7 +21,7 @@ import {
   ensureIntegration,
 } from './component.js';
 
-const isServer = typeof window === 'undefined';
+
 
 // ============================================================================
 // TYPES
@@ -85,7 +86,7 @@ export function render(
 ): () => void {
   delegateEvents(['click', 'input', 'change', 'submit']);
 
-  if (isServer) {
+  if (isServer()) {
     throw new Error(
       'render() is for client-side only. Use renderToString() on server.'
     );
@@ -225,7 +226,7 @@ export function isRenderable(value: any): boolean {
  * ```
  */
 export function initDelegation(): void {
-  if (isServer) return;
+  if (isServer()) return;
   delegateEvents(['click', 'input', 'change', 'submit']);
 }
 
@@ -234,7 +235,7 @@ export function initDelegation(): void {
  * Should be called when app unmounts
  */
 export function cleanupDelegation(): void {
-  if (isServer) return;
+  if (isServer()) return;
   // Clear delegated events manually if needed
 }
 

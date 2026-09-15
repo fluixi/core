@@ -15,7 +15,7 @@ afterEach(() => {
 describe('ClientOnly', () => {
   it('renders the fallback, not children, on the server', () => {
     setServerMode(true);
-    expect(isServer).toBe(true);
+    expect(isServer()).toBe(true);
     const out = ClientOnly({ fallback: 'placeholder', children: 'browser-only' });
     expect(read(out)).toBe('placeholder');
   });

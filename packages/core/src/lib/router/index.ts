@@ -13,6 +13,7 @@
  * <Outlet/> works at any depth.
  */
 
+import { isServer } from '@fluixi/dom';
 import {
   createSignal,
   createMemo,
@@ -574,12 +575,12 @@ const LINK_OWN_PROPS = new Set([
 
 export function Link(props: LinkProps) {
   const ctx = useContext(RouterContext);
-  const isServer = typeof document === 'undefined';
+  
 
   const navigate = () =>
     ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
 
-  // createNativeElement branches on isServer → a real ServerNode <a> (serialized as a true
+  // createNativeElement branches on isServer() → a real ServerNode <a> (serialized as a true
   // element, not an escaped string) on the server, a real DOM <a> on the client.
   const a = createNativeElement('a') as any;
   setAttribute(a, 'href', read(props.href) ?? '');
@@ -665,7 +666,7 @@ export function Form(props: FormProps) {
   const cls = (props.className ?? props.class) as string | undefined; // compiler passes class→className
   const url = (action as any).url ?? '';
 
-  // createNativeElement/setAttribute branch on isServer, so this builds a real ServerNode
+  // createNativeElement/setAttribute branch on isServer(), so this builds a real ServerNode
   // <form> on the server (serialized as a true element, NOT an escaped string) and a real
   // DOM <form> on the client — hydration reuses the same element.
   const form = createNativeElement('form') as any;

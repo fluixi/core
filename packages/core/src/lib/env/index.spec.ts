@@ -30,7 +30,7 @@ describe('universal env utilities', () => {
   });
 
   it('clientOnly runs the fn on the client and returns its value', () => {
-    expect(isClient).toBe(true);
+    expect(isClient()).toBe(true);
     expect(clientOnly(() => 42, 0)).toBe(42);
   });
 });

@@ -6,10 +6,16 @@
  * `typeof window === 'undefined'` guards.
  */
 
-/** True when there is no DOM document — i.e. we're rendering on the server. */
-export const isServer: boolean = typeof document === 'undefined';
+// One answer for the whole framework, from the renderer that decides it. The constant
+// this used to be was read once at module eval, so it could not see renderToString turn
+// server mode on and reported false for the whole of a server render.
+export { isServer } from '@fluixi/dom';
+import { isServer as onServer } from '@fluixi/dom';
+
 /** True in a browser (or jsdom) environment. */
-export const isClient: boolean = !isServer;
+export function isClient(): boolean {
+  return !onServer();
+}
 
 /** A Map-backed in-memory implementation of the Web Storage API (server/tests). */
 export function createMemoryStorage(): Storage {
@@ -59,5 +65,5 @@ export const env = {
 export function clientOnly<T>(fn: () => T): T | undefined;
 export function clientOnly<T>(fn: () => T, fallback: T): T;
 export function clientOnly<T>(fn: () => T, fallback?: T): T | undefined {
-  return isClient ? fn() : fallback;
+  return isClient() ? fn() : fallback;
 }

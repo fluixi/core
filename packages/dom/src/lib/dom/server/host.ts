@@ -2,15 +2,44 @@
 // ServerNode classes in ./nodes.ts stay out of client bundles — they get pulled
 // in (and registered) only when @fluixi/dom/server loads.
 
-// Live binding; renderToString and jsdom tests flip it via setServerMode.
-export let isServer = typeof document === 'undefined';
-export function setServerMode(on: boolean): void {
-  isServer = on;
-}
-
 // Stamped on every server node so the guards below can spot one without an
 // instanceof against the (unbundled) classes.
 export const SERVER_NODE: unique symbol = Symbol.for('fluixi.server-node');
+
+// The mode and the node factory hang off the realm, not off this module.
+//
+// This file can exist twice. Each dist entry is bundled on its own, so `index.mjs` and
+// `lib/dom/server-renderer.mjs` both carry a copy, and a bundler pulling in `@fluixi/dom`
+// and `@fluixi/dom/server` gets two. With the flag as a module variable, renderToString
+// flipped one and createNativeElement read the other, so a string render built real DOM
+// and the serializer walked a NamedNodeMap expecting a Map. It only showed in a build:
+// a dev server resolves both specifiers to the same source file.
+const STATE: unique symbol = Symbol.for('fluixi.dom.server-host') as never;
+
+interface HostState {
+  server: boolean;
+  nodes: ServerNodeFactory | null;
+}
+
+const realm = globalThis as unknown as Record<PropertyKey, HostState | undefined>;
+const state: HostState = (realm[STATE] ??= {
+  server: typeof document === 'undefined',
+  nodes: null,
+});
+
+/**
+ * Whether nodes should be built as strings rather than DOM.
+ *
+ * A function rather than a live binding: a second copy of this module would keep its own
+ * binding, and the two would disagree for the whole of a render.
+ */
+export function isServer(): boolean {
+  return state.server;
+}
+
+export function setServerMode(on: boolean): void {
+  state.server = on;
+}
 
 export interface ServerNodeFactory {
   createElement(tag: string, isSVG: boolean): any;
@@ -22,17 +51,17 @@ export interface ServerNodeFactory {
   parseTemplate(html: string, isSVG: boolean): any;
 }
 
-let _nodes: ServerNodeFactory | null = null;
-
+// Shared for the same reason as the mode: the subpath registers the factory and the main
+// entry is the one that asks for it, and those can be two copies of this file.
 export function registerServerNodes(factory: ServerNodeFactory): void {
-  _nodes = factory;
+  state.nodes = factory;
 }
 
 export function getServerNodes(): ServerNodeFactory {
-  if (!_nodes) {
+  if (!state.nodes) {
     throw new Error('[fluixi] server render ran before @fluixi/dom/server loaded');
   }
-  return _nodes;
+  return state.nodes;
 }
 
 // Brand check for server nodes, instanceof for real DOM. On the client the brand

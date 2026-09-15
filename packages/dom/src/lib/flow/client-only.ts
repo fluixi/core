@@ -40,7 +40,7 @@ export interface ClientOnlyProps {
  * ClientOnly({ fallback: html`<div class="skeleton"></div>`, children: () => html`<x-chart></x-chart>` })
  */
 export function ClientOnly(props: ClientOnlyProps): ComponentChild {
-  if (isServer) return props.fallback ?? null;
+  if (isServer()) return props.fallback ?? null;
 
   // Captured now, not read inside the memo: `hydration.active` is a global that
   // flips when the pass ends, and this subtree's behaviour is decided by whether

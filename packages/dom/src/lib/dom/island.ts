@@ -53,7 +53,7 @@ export function Island<P = any>(props: IslandProps<P>): any {
   // (`name#N` in render order). The render-once model runs the insert effect
   // synchronously, so resources created while the island's subtree renders are
   // numbered within the scope — and the client reproduces the same ids per island.
-  const ctx = isServer ? getRequestContext() : undefined;
+  const ctx = isServer() ? getRequestContext() : undefined;
   if (ctx) {
     const ns = ctx.nextIslandNamespace(islandName);
     insert(el as Element, () => ctx.withResourceScope(ns, () => (component as any)(cprops)));
