@@ -776,6 +776,41 @@ describe('props in the tree', () => {
     host.remove();
   });
 
+  it('lists them above the markup even when the tag rendered something', () => {
+    // A tag with dom of its own goes through the element split, which treated a prop as a
+    // leftover and put it after everything the tag rendered.
+    const li = document.createElement('li');
+    document.body.append(li);
+    const host = document.createElement('div');
+    document.body.append(host);
+    createComponentTree(host, {
+      values: true,
+      domFor: (id) => (id === 1 ? [{ label: 'li.done', children: [], element: li }] : []),
+    }).render(graph);
+
+    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const at = rows.findIndex((r) => r.includes('TodoItem'));
+    expect(rows[at + 1]).toContain('todo=');
+    expect(rows[at + 3]).toContain('li.done');
+    host.remove();
+    li.remove();
+  });
+
+  it('selects the tag it was written on when clicked', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const picked: (number | null)[] = [];
+    createComponentTree(host, { values: true, onSelect: (id) => picked.push(id) }).render(graph);
+
+    const prop = [...host.querySelectorAll('.fx-tree-row.is-prop')].find((r) =>
+      r.textContent!.includes('onToggle'),
+    ) as HTMLElement;
+    prop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // The prop belongs to TodoItem, which is the node the inspector can speak about.
+    expect(picked).toEqual([1]);
+    host.remove();
+  });
+
   it('says nothing about props until values are asked for', () => {
     const host = document.createElement('div');
     document.body.append(host);

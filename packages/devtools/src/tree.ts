@@ -358,6 +358,16 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       options.onSelect?.(Number(rowEl.dataset.id));
       return;
     }
+    // A prop is not a node of its own, so selecting it selects the tag it was written on,
+    // which is where its value came from and what the inspector has something to say about.
+    const held = shown.get(rowEl.dataset.key ?? '');
+    if (held?.prop) {
+      if (held.owner === undefined) return;
+      markedKey = held.key;
+      paint();
+      options.onSelect?.(held.owner);
+      return;
+    }
     const pick = pickOf(rowEl);
     if (!pick) return;
     markedKey = pick.key;
@@ -429,6 +439,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
         kind: node.kind,
         children: [],
         prop: { name: p.name, ...(p.value === undefined ? {} : { value: p.value }) },
+        owner: node.id,
         ...(p.at?.line === undefined
           ? {}
           : { at: { file: p.at.file ?? '', line: p.at.line, column: p.at.column ?? 0 } }),
@@ -624,13 +635,13 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
           placed.add(child);
           continue;
         }
-        (child.value ? lifted : spare).push(child);
+        (child.value || child.prop ? lifted : spare).push(child);
       }
       // Ahead of what the tag rendered. A value reads as what the tag was given, so it
       // belongs above the rows it produced rather than after them.
       for (const [reader, values] of adopt) reader.children.unshift(...values);
-      // Whatever is left: values first, then a portal, which renders elsewhere and still
-      // reads as part of the markup.
+      // Whatever is left: what the tag was given first, then a portal, which renders
+      // elsewhere and still reads as part of the markup.
       row.children = [...lifted, ...rendered, ...spare];
       return row;
     };
