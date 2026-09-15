@@ -1,5 +1,29 @@
 # @fluixi/start
 
+## 0.1.0-alpha.73
+
+### Patch Changes
+
+- f1d153c: `fluixiPlugins` now composes `fluixi()` instead of `createVitePlugin()` to correctly set up the reactive graph, source marks, and /\_\_fluixi/graph endpoint. `createVitePlugin` is the bare compiler integration and the graph is composed on top of it by `fluixi()`, so no `@fluixi/start` app had one. Nothing to change in an application.
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [e005759]
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f5b4031]
+- Updated dependencies [e005759]
+- Updated dependencies [f1d153c]
+- Updated dependencies [ae9784f]
+- Updated dependencies [f5b4031]
+- Updated dependencies [5f6a72f]
+- Updated dependencies [f1d153c]
+  - @fluixi/compiler@1.0.0-alpha.83
+  - @fluixi/core@1.0.0-alpha.83
+  - @fluixi/vite-plugin@1.0.0-alpha.83
+  - @fluixi/dom@1.0.0-alpha.83
+  - @fluixi/head@1.0.0-alpha.50
+  - @fluixi/server@1.0.0-alpha.83
+
 ## 0.1.0-alpha.72
 
 ### Patch Changes

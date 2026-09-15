@@ -1,5 +1,14 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.83
+
+### Minor Changes
+
+- f5b4031: `createContext` now takes an optional name parameter, and creating, providing, and reading a context are announced to a watcher.
+- ae9784f: A component now reports the props it was handed, the compiler records where each was written, and the inspector shows both.
+- f1d153c: The observer can now be told who wrote a signal, and what each DOM binding writes, via `reportReactiveBinding`, `wrote`, and `bound`. A node already carries its own dependencies, so reads were readable off the graph; once a write had propagated, nothing recorded what caused it, and a signal's readers could be counted but not named.
+- f5b4031: `use`, `ref`, `bind`, `class` and `style` directives now report their name, their element and the position they were written at.
+
 ## 1.0.0-alpha.82
 
 ## 1.0.0-alpha.81
