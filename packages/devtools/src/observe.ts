@@ -22,7 +22,7 @@ import { formatValue, shorten } from './format.js';
 import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
-import { describeAll, type DomNode } from './dom.js';
+import { describeAll, tagDepths, type DomNode } from './dom.js';
 
 import {
   devtoolsPlugins,
@@ -851,11 +851,34 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       return described.get(id) ?? [];
     },
     nodeAt(element) {
-      let at: Element | null = element;
-      while (at) {
+      // What rendered it, before what writes into it.
+      //
+      // `drivenBy` answers with the value that reached an element first, which for a row in
+      // a keyed list is the `For` that put it there rather than the component the row is.
+      // Picking a TodoItem, or anything inside one, therefore selected `For` every time.
+      //
+      // Several tags can claim one element, since a component returning another component's
+      // output shares it. The innermost is the one a pointer is over, so depth in the
+      // component nesting decides, the same way the dom description does.
+      const depth = tagDepths(graph, TREE_KINDS);
+      const rendering = new Map<Element, number>();
+      for (const node of graph.values()) {
+        if (!TREE_KINDS.has(node.kind)) continue;
+        for (const found of api.renderedFor(node.id)) {
+          const held = rendering.get(found);
+          if (held === undefined || (depth.get(node.id) ?? 0) > (depth.get(held) ?? 0)) {
+            rendering.set(found, node.id);
+          }
+        }
+      }
+      for (let at: Element | null = element; at; at = at.parentElement) {
+        const owner = rendering.get(at);
+        if (owner !== undefined && graph.has(owner)) return owner;
+      }
+      // Nothing rendered it, so fall back to whatever writes into it.
+      for (let at: Element | null = element; at; at = at.parentElement) {
         const id = drivenBy.get(at);
         if (id !== undefined && graph.has(id)) return id;
-        at = at.parentElement;
       }
       return undefined;
     },

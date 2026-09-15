@@ -2,7 +2,7 @@
  * Showing where something is on the page.
  *
  * Two things use this. Hovering a node in a panel draws a box round what it writes into, and
- * picking works the other way — move over the page and the box follows whatever is under the
+ * picking works the other way: move over the page and the box follows whatever is under the
  * pointer, until a click says which one.
  *
  * The overlay is not part of the application: it sits in its own fixed layer, takes no
@@ -117,12 +117,25 @@ export function removeHighlight(): void {
 export interface PickOptions {
   /** The node under the pointer, for the box's label and for what a click reports. */
   nodeAt: (element: Element | null) => number | undefined;
-  /** What to call the node in the label. */
-  describe?: (id: number) => string;
-  /** A click on something the graph knows. Picking stops first. */
-  onPick: (id: number) => void;
-  /** Escape, or a click on nothing. Picking stops first. */
+  /**
+   * What the box is labelled. The element comes too, because the owning tag alone reads
+   * `App` over every heading and input that component wrote.
+   */
+  describe?: (id: number, element: Element) => string;
+  /**
+   * A click on something the graph knows. Picking stops first unless `sticky`.
+   *
+   * The element comes too: the owning tag alone is too coarse to be useful, since every
+   * `<h3>` and `<input>` a component wrote answers with that component.
+   */
+  onPick: (id: number, element: Element | null) => void;
+  /** Picking has ended: escape, or a click on nothing when it is not sticky. */
   onCancel?: () => void;
+  /**
+   * Stay armed after a pick, so several elements can be chosen in a row. Escape and the
+   * returned stop still end it, and a click on nothing is ignored rather than cancelling.
+   */
+  sticky?: boolean;
   /** Defaults to the page this module is running in. */
   document?: Document;
 }
@@ -131,7 +144,7 @@ export interface PickOptions {
  * Follow the pointer until something is clicked.
  *
  * Listeners are on the capture phase so the application never sees the click that chose an
- * element — picking a button should not press it. Returns a function that stops early.
+ * element, since picking a button should not press it. Returns a function that stops early.
  */
 export function startPicking(options: PickOptions): () => void {
   const doc = options.document ?? globalThis.document;
@@ -149,17 +162,20 @@ export function startPicking(options: PickOptions): () => void {
   const move = (event: Event): void => {
     const element = under(event);
     const id = options.nodeAt(element);
-    if (element && id !== undefined) showHighlight(element, options.describe?.(id));
+    if (element && id !== undefined) showHighlight(element, options.describe?.(id, element));
     else hideHighlight();
   };
 
   const click = (event: Event): void => {
     event.preventDefault();
     event.stopPropagation();
-    const id = options.nodeAt(under(event));
-    stop();
-    if (id === undefined) options.onCancel?.();
-    else options.onPick(id);
+    const target = under(event);
+    const id = options.nodeAt(target);
+    if (!options.sticky) stop();
+    if (id !== undefined) options.onPick(id, target);
+    // Only a real end reports a cancel. A sticky miss leaves the pointer armed, so saying
+    // it ended would put the toolbar out of step with the listeners still attached.
+    else if (!options.sticky) options.onCancel?.();
   };
 
   const key = (event: KeyboardEvent): void => {

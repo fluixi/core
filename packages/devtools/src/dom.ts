@@ -216,7 +216,7 @@ function landings(
 }
 
 /** How deep a tag sits in the component nesting, following what created it. */
-function tagDepths(graph: Map<number, RNode>, kinds: ReadonlySet<string>): Map<number, number> {
+export function tagDepths(graph: Map<number, RNode>, kinds: ReadonlySet<string>): Map<number, number> {
   const depth = new Map<number, number>();
   const of = (id: number, seen: Set<number>): number => {
     const held = depth.get(id);

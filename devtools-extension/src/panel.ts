@@ -23,6 +23,7 @@ import {
   INSPECTOR_CSS,
   FLOAT_CSS,
   KIND_FILTER_CSS,
+  DROPDOWN_FILTER_CSS,
   TREE_CSS,
   TIMELINE_CSS,
   type GraphDirection,
@@ -37,7 +38,7 @@ const INTERVAL = 250;
 
 function injectStyles(): void {
   const style = document.createElement('style');
-  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS, KIND_FILTER_CSS, TREE_CSS, FLOAT_CSS].join('\n');
+  style.textContent = [DEVTOOLS_CSS, INSPECTOR_CSS, TIMELINE_CSS, DETAIL_PANEL_CSS, CHANGE_CSS, KIND_FILTER_CSS, DROPDOWN_FILTER_CSS, TREE_CSS, FLOAT_CSS].join('\n');
   document.head.appendChild(style);
 }
 

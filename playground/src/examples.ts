@@ -191,9 +191,9 @@ export function App() {
         <button onClick={add}>Add</button>
       </div>
       <ul class="list">
-        {todos().map((todo) => (
-          <TodoItem todo={todo} onToggle={toggle} />
-        ))}
+        <For each={todos()}>
+          {(todo) => <TodoItem todo={todo} onToggle={toggle} />}
+        </For>
       </ul>
     </div>
   );
