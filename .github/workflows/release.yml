@@ -11,7 +11,7 @@ on:
   push:
     branches: [main, next, alpha]
   # Manual fallback. A push is normally the trigger, but that depends on GitHub
-  # delivering the event — during the 2026-08-06 Actions incident a push landed with no
+  # delivering the event. During the 2026-08-06 Actions incident a push landed with no
   # run created, and with no dispatch there was no way to start one short of
   # manufacturing an empty commit.
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # A "Version Packages" push is manifests and changelogs — the code in it was
+      # A "Version Packages" push is manifests and changelogs: the code in it was
       # tested on the PR that produced it, and again when that PR merged. Read the
       # diff rather than the commit message, so a hand-edited version PR still runs.
       - name: Is there code in this push
@@ -65,7 +65,7 @@ jobs:
 
       # Registry routing/auth comes from the repo .npmrc (@fluixi → npm, @bambiste
       # → GitHub Packages). NODE_AUTH_TOKEN authenticates the @bambiste install.
-      # Write auth to the user ~/.npmrc — pnpm v10 ignores _authToken lines in the
+      # Write auth to the user ~/.npmrc, since pnpm v10 ignores _authToken lines in the
       # committed project .npmrc, so credentials must come from a trusted source.
       # GitHub Packages (@bambiste) install + npm (@fluixi) publish.
       - name: Configure registry auth
@@ -134,7 +134,7 @@ jobs:
         with:
           version: 10
 
-      # NOTE: no `registry-url` here on purpose — it writes a temp .npmrc via
+      # NOTE: no `registry-url` here on purpose, because it writes a temp .npmrc via
       # NPM_CONFIG_USERCONFIG that authenticates npm with NODE_AUTH_TOKEN (the GitHub
       # PAT), overriding the per-registry tokens the "Configure registry auth" step
       # writes to ~/.npmrc. Dual-registry auth (npm + GitHub Packages) must come from
@@ -148,7 +148,7 @@ jobs:
       # the repo-scoped GITHUB_TOKEN can't read it. PACKAGES_TOKEN is a classic PAT
       # with read:packages (for @bambiste). Falls back to GITHUB_TOKEN when unset.
       # Registry routing is driven by the repo .npmrc.
-      # Write auth to the user ~/.npmrc — pnpm v10 ignores _authToken lines in the
+      # Write auth to the user ~/.npmrc, since pnpm v10 ignores _authToken lines in the
       # committed project .npmrc, so credentials must come from a trusted source.
       # GitHub Packages (@bambiste) install + npm (@fluixi) publish.
       - name: Configure registry auth
@@ -192,11 +192,11 @@ jobs:
 
       # `changeset publish` puts prerelease versions on the npm `latest` tag but a
       # brand-new package (no stable release) lands on `latest` only, leaving its
-      # prerelease dist-tag (`alpha`/`next`) stale — so `@fluixi/x@alpha` resolves the
+      # prerelease dist-tag (`alpha`/`next`) stale, so `@fluixi/x@alpha` resolves the
       # OLD version. Reconcile every publishable package's `<tag>` to the version on
       # npm.
       #
-      # Runs on `!cancelled()` — NOT gated on the changesets step succeeding — because
+      # Runs on `!cancelled()`, deliberately not gated on the changesets step succeeding, because
       # the npm publish happens BEFORE the action's git-tag push, so a failed tag push
       # (which reds the step) must not skip this. Independent of the action's
       # `publishedPackages` output (unset on a failed step): reads each workspace
@@ -207,12 +207,36 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           if [ ! -f .changeset/pre.json ]; then
-            echo "Not in pre mode — latest is authoritative; nothing to do."; exit 0
+            echo "Not in pre mode, latest is authoritative; nothing to do."; exit 0
           fi
           tag="$(jq -r '.tag // empty' .changeset/pre.json)"
           if [ -z "$tag" ]; then
-            echo "No pre-mode tag found — skipping."; exit 0
+            echo "No pre-mode tag found, skipping."; exit 0
           fi
+
+          # npm is read-after-write eventual: a version published seconds ago by the step
+          # above is not yet visible to `npm view`. This used to give up on the first look,
+          # so the tag was never moved and the run still went green. On 2026-09-15 that
+          # shipped alpha.83 with ten packages still tagged alpha.82, published and
+          # installable by nobody.
+          #
+          # Retry only until one version proves genuinely absent. On a version-PR push
+          # nothing is published yet, and waiting on every package there would add the best
+          # part of an hour to a run that has nothing to do.
+          settled=""
+          published() {
+            npm view "$1" version >/dev/null 2>&1 && return 0
+            [ -n "$settled" ] && return 1
+            for delay in 5 10 15 30; do
+              sleep "$delay"
+              npm view "$1" version >/dev/null 2>&1 && return 0
+            done
+            settled=yes
+            return 1
+          }
+
+          moved=0
+          missing=""
           for pkgjson in packages/*/package.json; do
             name="$(jq -r '.name // empty' "$pkgjson")"
             version="$(jq -r '.version // empty' "$pkgjson")"
@@ -221,13 +245,33 @@ jobs:
             [ "$private" = "true" ] && continue
             # Only prerelease versions of THIS pre-mode tag (e.g. 1.2.3-alpha.4).
             case "$version" in *-"$tag".*) ;; *) continue ;; esac
-            # Only if that exact version is actually published.
-            npm view "${name}@${version}" version >/dev/null 2>&1 || continue
+
             current="$(npm dist-tag ls "$name" 2>/dev/null | awk -F': ' -v t="$tag" '$1==t {print $2}')"
-            if [ "$current" != "$version" ]; then
-              echo "Repointing ${name}@${tag}: ${current:-<none>} -> ${version}"
-              npm dist-tag add "${name}@${version}" "$tag" || echo "  (dist-tag add failed — continuing)"
-            else
+            if [ "$current" = "$version" ]; then
               echo "${name}@${tag} already at ${version}"
+              continue
+            fi
+
+            if ! published "${name}@${version}"; then
+              echo "not on npm, leaving ${tag} alone: ${name}@${version}"
+              missing="${missing} ${name}@${version}"
+              continue
+            fi
+
+            echo "Repointing ${name}@${tag}: ${current:-<none>} -> ${version}"
+            if npm dist-tag add "${name}@${version}" "$tag"; then
+              moved=$((moved + 1))
+            else
+              echo "::error::could not move ${tag} to ${name}@${version}"
+              missing="${missing} ${name}@${version}"
             fi
           done
+
+          # Nothing moved means nothing was published either, which is what a version-PR
+          # push looks like. Having moved some and not others is the failure worth shouting
+          # about: the release is on npm and part of it cannot be installed.
+          if [ "$moved" -gt 0 ] && [ -n "$missing" ]; then
+            echo "::error::dist-tag ${tag} was not advanced for:${missing}"
+            exit 1
+          fi
+          echo "moved ${moved} dist-tag(s)"
