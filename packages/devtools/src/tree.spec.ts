@@ -751,62 +751,69 @@ describe('props in the tree', () => {
       lastPulse: 0, authored: true, createdIn: 0,
       props: [
         { name: 'todo', value: '{ id: 1, text: "Read the compiler docs" }', at: { file: 'src/app.tsx', line: 41, column: 12 } },
-        { name: 'onToggle', value: 'ƒ toggle()' },
+        { name: 'onToggle', value: 'f toggle()' },
       ],
     }],
   ]);
 
-  it('lists what a tag was handed, above what it rendered', () => {
+  const mount = (options: Parameters<typeof createComponentTree>[1] = {}) => {
     const host = document.createElement('div');
     document.body.append(host);
-    createComponentTree(host, { values: true }).render(graph);
-    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
-    const at = rows.findIndex((r) => r.includes('TodoItem'));
-    expect(rows[at + 1]).toContain('todo=');
-    expect(rows[at + 2]).toContain('onToggle=');
+    const tree = createComponentTree(host, { values: true, ...options });
+    tree.render(graph);
+    return host;
+  };
+
+  const open = (host: HTMLElement): void => {
+    const group = host.querySelector('.fx-tree-row.is-props') as HTMLElement;
+    group.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  };
+
+  const labels = (host: HTMLElement): string[] =>
+    [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+
+  it('folds them into one row, counted', () => {
+    // A tag with six props would otherwise bury what it rendered.
+    const host = mount();
+    const group = host.querySelector('.fx-tree-row.is-props');
+    expect(group).toBeTruthy();
+    expect(group!.textContent).toContain('2');
+    expect(host.textContent).not.toContain('onToggle');
     host.remove();
   });
 
-  it('shows the value it was given', () => {
-    const host = document.createElement('div');
-    document.body.append(host);
-    createComponentTree(host, { values: true }).render(graph);
-    expect(host.textContent).toContain('onToggle');
-    expect(host.querySelector('.fx-tree-row.is-prop')).toBeTruthy();
+  it('lists them once opened', () => {
+    const host = mount();
+    open(host);
+    const rows = labels(host);
+    const at = rows.findIndex((r) => r.includes('props'));
+    expect(rows[at + 1]).toContain('todo');
+    expect(rows[at + 2]).toContain('onToggle');
     host.remove();
   });
 
-  it('lists them above the markup even when the tag rendered something', () => {
-    // A tag with dom of its own goes through the element split, which treated a prop as a
-    // leftover and put it after everything the tag rendered.
+  it('sits above the markup even when the tag rendered something', () => {
     const li = document.createElement('li');
     document.body.append(li);
-    const host = document.createElement('div');
-    document.body.append(host);
-    createComponentTree(host, {
-      values: true,
-      domFor: (id) => (id === 1 ? [{ label: 'li.done', children: [], element: li }] : []),
-    }).render(graph);
-
-    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const host = mount({
+      domFor: (id: number) => (id === 1 ? [{ label: 'li.done', children: [], element: li }] : []),
+    });
+    const rows = labels(host);
     const at = rows.findIndex((r) => r.includes('TodoItem'));
-    expect(rows[at + 1]).toContain('todo=');
-    expect(rows[at + 3]).toContain('li.done');
+    expect(rows[at + 1]).toContain('props');
+    expect(rows[at + 2]).toContain('li.done');
     host.remove();
     li.remove();
   });
 
-  it('selects the tag it was written on when clicked', () => {
-    const host = document.createElement('div');
-    document.body.append(host);
+  it('selects the tag a prop was written on when clicked', () => {
     const picked: (number | null)[] = [];
-    createComponentTree(host, { values: true, onSelect: (id) => picked.push(id) }).render(graph);
-
+    const host = mount({ onSelect: (id: number | null) => picked.push(id) });
+    open(host);
     const prop = [...host.querySelectorAll('.fx-tree-row.is-prop')].find((r) =>
       r.textContent!.includes('onToggle'),
     ) as HTMLElement;
     prop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    // The prop belongs to TodoItem, which is the node the inspector can speak about.
     expect(picked).toEqual([1]);
     host.remove();
   });
@@ -815,7 +822,7 @@ describe('props in the tree', () => {
     const host = document.createElement('div');
     document.body.append(host);
     createComponentTree(host, {}).render(graph);
-    expect(host.textContent).not.toContain('onToggle');
+    expect(host.querySelector('.fx-tree-row.is-props')).toBeNull();
     host.remove();
   });
 });

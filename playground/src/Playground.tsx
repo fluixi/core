@@ -113,6 +113,7 @@ export function Playground() {
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
   let tagTree: ComponentTree | undefined;
+  let graphWrapEl!: HTMLDivElement;
   let timelineEl!: HTMLDivElement;
   let timeline: Timeline | null = null;
   let detail: DetailPanel | null = null;
@@ -500,6 +501,14 @@ export function Playground() {
     const height = Math.max(60, Math.min(box.height - 90, box.bottom - e.clientY));
     graphRowEl.style.setProperty('--graph-bottom', `${Math.round(height)}px`);
     localStorage.setItem('fluixi-pg-graph-bottom', String(Math.round(height)));
+  }
+
+  /** The line between the tree and the graph beside it. */
+  function dragTree(e: PointerEvent) {
+    const box = graphWrapEl.getBoundingClientRect();
+    const width = Math.max(120, Math.min(box.width - 160, e.clientX - box.left));
+    graphWrapEl.style.setProperty('--tree-width', `${Math.round(width)}px`);
+    localStorage.setItem('fluixi-pg-tree-width', String(Math.round(width)));
   }
 
   /** The line between the inspector and the timeline beside it. */
@@ -912,7 +921,16 @@ export function Playground() {
               </button>
             </span>
           </div>
-          <div class="graph-wrap">
+          <div
+            class="graph-wrap"
+            ref={(el: HTMLDivElement) => {
+              graphWrapEl = el;
+              el.style.setProperty(
+                '--tree-width',
+                `${Number(localStorage.getItem('fluixi-pg-tree-width')) || 180}px`,
+              );
+            }}
+          >
             <div
               class="graph-tree"
               ref={(el: HTMLDivElement) => {
@@ -958,6 +976,13 @@ export function Playground() {
                   },
                 });
               }}
+            />
+            <div
+              class="tree-split"
+              role="separator"
+              aria-orientation="vertical"
+              title="Drag to resize"
+              ref={(el: HTMLDivElement) => drag(el, dragTree)}
             />
             <svg class="graph" ref={(el: SVGSVGElement) => (svgEl = el)} preserveAspectRatio="xMidYMid meet" />
           </div>

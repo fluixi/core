@@ -358,8 +358,11 @@ body.dragging iframe { pointer-events: none; }
 
 .graph-wrap { display: flex; }
 .graph-tree {
-  width: 180px; flex: none; overflow: auto;
+  width: var(--tree-width, 180px); flex: none; overflow: auto;
   padding: 4px 0;
   background-color: var(--panel);
 }
+/* Matches .graph-split, turned ninety degrees. */
+.tree-split { width: 6px; flex: none; cursor: col-resize; border-left: 1px solid var(--panel); }
+.tree-split:hover { background: var(--accent); }
 .graph-wrap .graph { flex: 1; min-width: 0; }

@@ -61,6 +61,8 @@ interface Row {
   extra?: Record<string, unknown>;
   /** A prop row: what the tag above it was handed. */
   prop?: { name: string; value?: string };
+  /** The row holding a tag's props, which folds them away. */
+  props?: boolean;
 }
 
 /**
@@ -254,6 +256,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   /** Shut by the reader. Everything else is open, so a new subtree arrives visible. */
   const shut = new Set<string>();
   let signature = '';
+  /** Prop groups already given their starting fold, so reopening one is not undone. */
+  const defaulted = new Set<string>();
   let marked: number | null = null;
   /** Element rows have no id, so what is selected is tracked by row key. */
   let markedKey: string | null = null;
@@ -296,30 +300,34 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   const row = (node: Row, depth: number): string => {
     const has = node.children.length > 0;
     const open = has && !shut.has(node.key);
-    const twist = has ? (open ? '▾' : '▸') : '·';
-    const tag = node.prop
-      ? `${escape(node.prop.name)}<span class="fx-tree-prop-eq">=</span>${
+    const twist = has ? (open ? '▾' : '▸') : node.prop ? '' : '·';
+    const tag = node.props
+      ? `<span class="fx-tree-props-label">props</span><span class="fx-tree-props-count">${node.children.length}</span>`
+      : node.prop
+      ? `<span class="fx-tree-prop-name">${escape(node.prop.name)}</span>${
           node.prop.value === undefined
             ? ''
-            : `<b class="fx-tree-prop-value">${escape(shorten(node.prop.value, 40))}</b>`
+            : `<span class="fx-tree-prop-value">${escape(shorten(node.prop.value, 44))}</span>`
         }`
       : node.value
         ? escape(node.label)
         : has
           ? `&lt;${escape(node.label)}&gt;`
           : `&lt;${escape(node.label)} /&gt;`;
-    const count = has && !open ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
+    const count = has && !open && !node.props ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
     // Says the chunk it came from was fetched separately, which is why it appeared late.
     const chunk = node.lazy ? '<span class="fx-tree-lazy" title="loaded as its own chunk">lazy</span>' : '';
     const mark = node.badge
       ? `<span class="fx-tree-plugin" title="${escape(node.badge)}">${escape(node.badge)}</span>`
       : '';
     return (
-      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}${node.prop ? ' is-prop' : ''}"` +
+      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}${node.prop ? ' is-prop' : ''}${node.props ? ' is-props' : ''}"` +
       ` data-key="${escape(node.key)}"${node.id !== undefined ? ` data-id="${node.id}"` : ''}` +
       ` style="--depth:${depth}">` +
       `<button type="button" class="fx-tree-twist" data-twist="${escape(node.key)}"${has ? '' : ' tabindex="-1"'}>${twist}</button>` +
-      `<span class="fx-tree-tag">${tag}</span>${mark}${chunk}${count}` +
+      `<span class="fx-tree-tag"${
+        node.prop?.value ? ` title="${escape(node.prop.name)}=${escape(node.prop.value)}"` : ''
+      }>${tag}</span>${mark}${chunk}${count}` +
       `</div>` +
       (open ? node.children.map((child) => row(child, depth + 1)).join('') : '')
     );
@@ -361,6 +369,13 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     // A prop is not a node of its own, so selecting it selects the tag it was written on,
     // which is where its value came from and what the inspector has something to say about.
     const held = shown.get(rowEl.dataset.key ?? '');
+    if (held?.props) {
+      if (shut.has(held.key)) shut.delete(held.key);
+      else shut.add(held.key);
+      signature = '';
+      if (last) api.render(last.graph, last.selected);
+      return;
+    }
     if (held?.prop) {
       if (held.owner === undefined) return;
       markedKey = held.key;
@@ -433,7 +448,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       // story a tag tells: `<For each={todos()}>` says as much through `each` as through the
       // rows it went on to render, and every component takes them.
       const written = values ? (graph.get(node.id)?.props ?? []) : [];
-      const props: Row[] = written.map((p, i) => ({
+      const listed: Row[] = written.map((p, i) => ({
         key: `${node.id}=${i}`,
         label: p.name,
         kind: node.kind,
@@ -444,6 +459,18 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
           ? {}
           : { at: { file: p.at.file ?? '', line: p.at.line, column: p.at.column ?? 0 } }),
       }));
+
+      // One folded row rather than a prop per line. A tag with six of them otherwise buries
+      // what it rendered, which is the thing the tree is for.
+      const group = `${node.id}=props`;
+      // Shut the first time it is met, and whatever the reader does with it after that sticks.
+      if (listed.length && !defaulted.has(group)) {
+        defaulted.add(group);
+        shut.add(group);
+      }
+      const props: Row[] = listed.length
+        ? [{ key: group, label: 'props', kind: node.kind, children: listed, props: true, owner: node.id }]
+        : [];
 
       const row: Row = {
         key: String(node.id),
@@ -635,7 +662,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
           placed.add(child);
           continue;
         }
-        (child.value || child.prop ? lifted : spare).push(child);
+        (child.value || child.prop || child.props ? lifted : spare).push(child);
       }
       // Ahead of what the tag rendered. A value reads as what the tag was given, so it
       // belongs above the rows it produced rather than after them.
@@ -743,7 +770,27 @@ ${kindRules((k) => `.fx-tree-row.n-${k} .fx-tree-tag`, 'color')}
 .fx-tree-search:focus { outline: none; border-color: var(--fx-accent, #5eead4); }
 .fx-tree-empty { display: block; padding: 8px; font-size: 11px; color: var(--fx-muted, #8a90a2); }
 /* A prop reads as what was written on the tag, so it is quieter than the tag itself. */
-.fx-tree-row.is-prop .fx-tree-tag { color: var(--fx-muted, #8a90a2); }
-.fx-tree-prop-eq { opacity: .5; }
-.fx-tree-prop-value { font-weight: 400; color: var(--fx-label, #e7e9ee); }
+/* The row that folds a tag's props away. Dashed, because it stands for something written
+   rather than something rendered. */
+.fx-tree-row.is-props .fx-tree-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 5px; border: 1px dashed var(--fx-line, #262a35); border-radius: 3px;
+  color: var(--fx-muted, #8a90a2); font-size: 10px; letter-spacing: .04em; text-transform: uppercase;
+}
+.fx-tree-row.is-props:hover .fx-tree-tag { border-color: var(--fx-accent, #5eead4); color: var(--fx-label, #e7e9ee); }
+.fx-tree-props-count { opacity: .7; }
+
+/* A prop is what was written on the tag above it, so it reads as an aside: the name in a
+   quiet chip, the value beside it, and no marker pretending it opens. */
+.fx-tree-row.is-prop .fx-tree-tag { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
+.fx-tree-prop-name {
+  flex: none; padding: 0 4px; border-radius: 3px;
+  background: var(--fx-chip, rgba(138, 144, 162, .14));
+  color: var(--fx-muted, #8a90a2); font-size: 10px; letter-spacing: .02em;
+}
+.fx-tree-row.is-prop:hover .fx-tree-prop-name { color: var(--fx-label, #e7e9ee); }
+.fx-tree-prop-value {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--fx-label, #e7e9ee); opacity: .75;
+}
 `;
