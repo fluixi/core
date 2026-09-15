@@ -2,8 +2,8 @@
 //
 // createReactor hands out its own primitives, so it only ever sees code written against it.
 // This sees code written against @fluixi/core: the runtime reports each node it makes, and
-// the node it reports carries its own edges — a source keeps `observers`, a consumer keeps
-// `sources` — so dependencies are read off the real graph instead of being rebuilt from
+// the node it reports carries its own edges. A source keeps `observers` and a consumer keeps
+// `sources`, so dependencies are read off the real graph instead of being rebuilt from
 // wrapped reads.
 //
 // The graph it fills is the same Map<number, RNode> createGraphView already draws, so a
@@ -23,6 +23,7 @@ import { createHistory, type GraphEvent } from './history.js';
 import { diffValues } from './diff.js';
 import { describeNode } from './describe.js';
 import { describeAll, type DomNode } from './dom.js';
+
 import {
   devtoolsPlugins,
   type CollectContext,
@@ -31,6 +32,35 @@ import {
   type PluginNode,
 } from './plugin.js';
 import { TREE_KINDS } from './tree.js';
+
+/**
+ * Number each tag by where its element sits in the document.
+ *
+ * A keyed list rebuilds a row instead of mutating it, so the replacement carries the highest
+ * id. Sorting by id then put the new card last whichever row changed, and the flash always
+ * appeared at the bottom of the list. Only something holding the elements can say otherwise.
+ *
+ * Done in `sample`, not when a description is asked for: the graph view never asks for one,
+ * so stamping this lazily left every node unnumbered there and the fix showed only in the tree.
+ */
+function stampDocumentOrder(
+  graph: Map<number, RNode>,
+  rendered: (id: number) => readonly Element[],
+): void {
+  const roots: { id: number; element: Element }[] = [];
+  for (const node of graph.values()) {
+    if (!TREE_KINDS.has(node.kind)) continue;
+    const element = rendered(node.id)[0];
+    if (element?.isConnected) roots.push({ id: node.id, element });
+  }
+  // DOCUMENT_POSITION_FOLLOWING: b comes after a, so a sorts first.
+  roots.sort((a, b) => (a.element.compareDocumentPosition(b.element) & 4 ? -1 : 1));
+  for (const node of graph.values()) node.order = undefined;
+  roots.forEach(({ id }, at) => {
+    const node = graph.get(id);
+    if (node) node.order = at;
+  });
+}
 
 /** The core node behind a signal or a computation, as far as this file needs to see it. */
 interface CoreNode {
@@ -88,7 +118,7 @@ export interface ObservedGraph {
   renderedFor(id: number): Element[];
   /**
    * Write a signal from outside the application. False when the node is not something that
-   * can be written — a memo is computed, and setting it would be a lie the next run undoes.
+   * can be written. A memo is computed, and setting it would be a lie the next run undoes.
    */
   setValue(id: number, next: unknown): boolean;
   detach(): void;
@@ -101,7 +131,7 @@ export interface ObserveOptions {
    */
   origin?: string;
   /**
-   * How to register. Defaults to this copy of the runtime — pass the application's own
+   * How to register. Defaults to this copy of the runtime, so pass the application's own
    * `observeReactiveNodes` when watching from outside its module graph, since a second copy
    * of the framework watches a graph nobody is using.
    */
@@ -113,7 +143,7 @@ export interface ObserveOptions {
   /**
    * Put a stack location back in the author's file. A frame reports the compiled position and
    * knows nothing of the file it was generated from; a host with the source maps closes that.
-   * Only stack-derived locations pass through — a compiler mark is already original.
+   * Only stack-derived locations pass through. A compiler mark is already original.
    */
   mapSource?: (location: ReactiveSourceLocation) => ReactiveSourceLocation | undefined;
 }
@@ -155,7 +185,7 @@ const PREFIX: Record<NodeKind, string> = {
 };
 
 /**
- * Start watching. Nodes made before this returns are not in the graph — attach before the
+ * Start watching. Nodes made before this returns are not in the graph, so attach before the
  * app's modules load, which in practice means before the entry import.
  */
 /**
@@ -198,7 +228,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    *
    * `$name` is set on what a component returns, so it travels with the value and every memo
    * holding it looks like the component. The one that made it is the one none of its
-   * dependencies already has — otherwise a component under `Suspense` draws twice.
+   * dependencies already has. Otherwise a component under `Suspense` draws twice.
    */
   const claims = (node: RNode, value: unknown): boolean => {
     for (const dep of node.deps) {
@@ -271,7 +301,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
    * How to write each signal, when the runtime said.
    *
    * The core node can be set directly, and doing that marks its readers dirty without
-   * flushing them — the graph moves and the page does not. This is the application's own
+   * flushing them: the graph moves and the page does not. This is the application's own
    * setter, so a write from a panel lands the same way a click would.
    */
   const setters = new Map<number, (value: unknown) => void>();
@@ -368,13 +398,13 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       }
       const id = seq++;
       const handle = report.handle;
-      // One mark, one node — read here and nowhere else, matching the reactor.
+      // One mark, one node, read here and nowhere else, matching the reactor.
       const mark = takeReactiveSource();
       // What a builtin tag is, decided from its name before anything reads its value.
       //
       // `Switch` names its own memo and returns a dom node, so nothing downstream carries a
       // `$name` to recognise it by later. `Router`, `Suspense` and `Outlet` are not named by
-      // the runtime at all — what names them is the compiler's mark on the tag, and without
+      // the runtime at all. What names them is the compiler's mark on the tag, and without
       // reading that they stay plain memos and the tree lists them as values.
       //
       // A mark on a memo is a tag the compiler saw. On anything else it is whatever the
@@ -393,7 +423,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         label: named ?? `${PREFIX[kind]}${id}`,
         kind,
         // Only a compiler mark means the author wrote this and gave it that name. A name
-        // the runtime supplies — `Show.when`, `mapArray`, `row index` — describes framework
+        // the runtime supplies, such as `Show.when`, `mapArray` or `row index`, describes framework
         // machinery, and so does no name at all.
         authored: mark?.name != null,
         deps: new Set(),
@@ -414,8 +444,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const owner = ancestor(report.parents);
       if (owner !== undefined) node.createdIn = owner;
 
-      // A node made on another's behalf — a store's key signal, built the first time
-      // something reads it — belongs where that one was declared, not where it was read.
+      // A node made on another's behalf, such as a store's key signal built the first time
+      // something reads it, belongs where that one was declared rather than where it was read.
       const originId = report.origin ? ids.get(report.origin as object) : undefined;
       const from = originId !== undefined ? graph.get(originId) : undefined;
       if (from) {
@@ -603,7 +633,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     },
   });
 
-  /** What this node read on its last run, as ids — the edges the core already holds. */
+  /** What this node read on its last run, as ids: the edges the core already holds. */
   const edges = (id: number, node: RNode): void => {
     const sources = cores.get(id)?.sources;
     node.deps.clear();
@@ -729,6 +759,18 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         const node = graph.get(id);
         if (node?.kind === 'component' && TREE_KINDS.has(kind)) node.kind = kind;
       }
+
+      // When something moved, and when a tag is still unnumbered. The first samples run
+      // before the elements are on the page, so without the second test the numbering only
+      // appeared after the first edit and the layout shifted under the user at that point.
+      // A still page with everything numbered does none of this.
+      const unnumbered = (): boolean => {
+        for (const node of graph.values()) {
+          if (TREE_KINDS.has(node.kind) && node.order === undefined) return true;
+        }
+        return false;
+      };
+      if (changed.length || unnumbered()) stampDocumentOrder(graph, (of) => api.renderedFor(of));
       return changed;
     },
     get revision() {

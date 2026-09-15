@@ -591,3 +591,51 @@ describe('a tag that renders no element of its own', () => {
     expect(main.inside).toEqual([3]);
   });
 });
+
+/**
+ * A keyed list rebuilds a row rather than mutating it, so the replacement carries a higher id
+ * than every row that did not change. Sorting siblings by id put it last, and the pulse that
+ * belonged to the first item flashed at the bottom of the list.
+ */
+describe('a rebuilt row keeps its place', () => {
+  const rowNode = (id: number, order?: number): RNode => ({
+    id,
+    label: 'TodoItem',
+    kind: 'component',
+    deps: new Set(),
+    writes: new Set(),
+    runs: 1,
+    lastPulse: 0,
+    ...(order === undefined ? {} : { order }),
+  });
+
+  it('sorts by where the element sits, not by when the node was made', () => {
+    // The second row is untouched at id 19; the first was rebuilt and came back as id 21.
+    const graph = new Map<number, RNode>([
+      [19, rowNode(19, 2)],
+      [21, rowNode(21, 1)],
+    ]);
+    expect(componentTree(graph).map((n) => n.id)).toEqual([21, 19]);
+  });
+
+  it('leaves a tag that rendered nothing exactly where it was', () => {
+    // `left` is a memo between two rows. Reordering the rows must not move it, which is what
+    // sorting the whole band by `order` did.
+    const graph = new Map<number, RNode>([
+      [13, { ...rowNode(13), label: 'left', kind: 'memo' }],
+      [19, rowNode(19, 2)],
+      [21, rowNode(21, 1)],
+    ]);
+    const rows = componentTree(graph, { values: true });
+    expect(rows.map((n) => n.label)).toEqual(['left', 'TodoItem', 'TodoItem']);
+    expect(rows.map((n) => n.id)).toEqual([13, 21, 19]);
+  });
+
+  it('keeps creation order when nothing rendered', () => {
+    const graph = new Map<number, RNode>([
+      [7, rowNode(7)],
+      [3, rowNode(3)],
+    ]);
+    expect(componentTree(graph).map((n) => n.id)).toEqual([3, 7]);
+  });
+});

@@ -22,14 +22,14 @@ export interface DomNode {
    */
   writes?: number[];
   /**
-   * Tags that render inside this element without producing one of their own — a boundary
+   * Tags that render inside this element without producing one of their own, such as a boundary
    * like Suspense, or a component whose body is another component. They sit here rather than
    * beside the element, which is where the nesting actually puts them.
    */
   inside?: number[];
   /**
-   * The element the application was mounted into. It is nobody's output — it was on the page
-   * first — so it belongs above the root tag rather than under it.
+   * The element the application was mounted into. It is nobody's output, having been on the
+   * page first, so it belongs above the root tag rather than under it.
    */
   container?: boolean;
   /**
@@ -174,7 +174,7 @@ function within(graph: Map<number, RNode>, id: number, ancestor: number): boolea
 /**
  * Where a tag that rendered nothing of its own goes: the shallowest element it writes into.
  * A tag writes to its own insertion point and, through whatever it renders, to everything
- * below that — so the shallowest is the one it is responsible for.
+ * below that, so the shallowest is the one it is responsible for.
  *
  * Where several land on the same element only the outermost is kept, because the rest come
  * with it as its children.
@@ -239,14 +239,14 @@ function depthInDocument(element: Element): number {
 }
 
 /**
- * Where to put a tag that returned no element of its own — one whose body is another
+ * Where to put a tag that returned no element of its own, one whose body is another
  * component, or a boundary like Suspense. What it writes into is the only evidence of where
  * its content went.
  *
  * Two rules keep this from doing damage. Only elements with no owned ancestor are taken: one
  * below an owned element is already inside that tag's tree, and claiming it there would cut
  * the tree in half at an arbitrary point. And where several tags write to the same place, the
- * innermost wins — every tag on the path from the root writes through to the leaves, so the
+ * innermost wins. Every tag on the path from the root writes through to the leaves, so the
  * outermost is always a match and never the interesting one.
  */
 function claimOrphans(
@@ -305,7 +305,7 @@ function claimOrphans(
  * Drop the Elements so the result can be serialised.
  *
  * Everything else is copied as-is rather than field by field. The copy that describes and the
- * copy that strips are built separately — an extension bundles its own — so a list of fields
+ * copy that strips are built separately, since an extension bundles its own, so a list of fields
  * here goes stale against a description made elsewhere, and the field just disappears.
  */
 export function withoutElements(nodes: readonly DomNode[]): DomNode[] {

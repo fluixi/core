@@ -5,8 +5,8 @@
  * from, and that is the question a tree is for: `<Router>` holding a `<Counter>` and an
  * `<Another>`, each openable to see what it holds.
  *
- * Both are drawn from the same nodes. A component's place in the tree is `createdIn` — the
- * node whose run made it — lifted through everything that is not itself a tag, since the
+ * Both are drawn from the same nodes. A component's place in the tree is `createdIn`, the
+ * node whose run made it, lifted through everything that is not itself a tag, since the
  * compiler wraps each component in a memo and that memo is not something anyone wrote.
  */
 import type { NodeKind, RNode } from './instrument.js';
@@ -92,7 +92,7 @@ export type { DomNode } from './dom.js';
  */
 export interface TreeOptions {
   /**
-   * Also list the reactive values each tag made — the signals and memos the author wrote
+   * Also list the reactive values each tag made: the signals and memos the author wrote
    * inside it. Machinery is left out: a node the framework named itself does not count, so
    * a component shows `count` and not the memo it was wrapped in.
    *
@@ -107,6 +107,32 @@ export interface TreeOptions {
   filter?: string;
 }
 
+/**
+ * Put the tags that rendered back into page order, leaving everything else untouched.
+ *
+ * Sorting by id alone reads as creation order, which is wrong for a keyed list: rebuilding a
+ * row hands the replacement the highest id, so the row you edited jumped to the bottom.
+ *
+ * Only the slots those tags already occupy are reshuffled. Sorting the whole list by `order`
+ * instead sent every value to the end of its band, so editing a todo moved the `left` memo
+ * as well, which had nothing to do with the change.
+ */
+export function inPageOrder<T extends { order?: number }>(nodes: T[]): T[] {
+  const slots: number[] = [];
+  const placed: T[] = [];
+  nodes.forEach((node, at) => {
+    if (node.order !== undefined) {
+      slots.push(at);
+      placed.push(node);
+    }
+  });
+  if (placed.length < 2) return nodes;
+  placed.sort((a, b) => a.order! - b.order!);
+  const out = nodes.slice();
+  slots.forEach((slot, i) => (out[slot] = placed[i]!));
+  return out;
+}
+
 /** Cached per call: a plugin's badge is computed from the node and asked for twice. */
 const badges = new WeakMap<RNode, string | undefined>();
 function badgeOf(node: RNode): string | undefined {
@@ -118,7 +144,7 @@ export function componentTree(graph: Map<number, RNode>, options: TreeOptions = 
   const wanted = (node: RNode): boolean =>
     TREE_KINDS.has(node.kind) || (options.values === true && node.authored !== false);
 
-  const tagged = [...graph.values()].filter(wanted).sort((a, b) => a.id - b.id);
+  const tagged = inPageOrder([...graph.values()].filter(wanted).sort((a, b) => a.id - b.id));
 
   const made = new Map<number, TreeNode>();
   for (const node of tagged) {
@@ -182,11 +208,11 @@ export function idsIn(nodes: readonly TreeNode[]): number[] {
 }
 
 export interface ComponentTreeOptions {
-  /** Clicking a row. The host decides what selecting means — usually the inspector. */
+  /** Clicking a row. The host decides what selecting means, usually the inspector. */
   onSelect?: (id: number) => void;
   /**
    * Clicking an element row. Elements have no id, so a host that leaves this out gets no
-   * selection for them at all — which is what made half the tree look inert.
+   * selection for them at all, which is what made half the tree look inert.
    */
   onPick?: (pick: ElementPick) => void;
   /** Double-clicking a row, for a host that can open the file it came from. */
@@ -397,8 +423,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
 
     const placed = new Set<Row>();
     /**
-     * Rows already written into the tree. A tag is reachable two ways — down the component
-     * nesting, and through the element it rendered — and `expand` rewrites the row it is
+     * Rows already written into the tree. A tag is reachable two ways, down the component
+     * nesting and through the element it rendered, and `expand` rewrites the row it is
      * given, so without this the second arrival appends its dom all over again.
      */
     const done = new Set<Row>();
@@ -407,7 +433,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
      * How many places in the dom name each tag.
      *
      * A graph read from source has one node per component *declaration*, so two `<Badge/>`
-     * both point at it. Drawing only the first would take the second out of the tree — but
+     * both point at it. Drawing only the first would take the second out of the tree, but
      * a running graph gives each use its own node, where a tag named twice really is one
      * subtree reached two ways and the second must go. Counting tells them apart.
      */
