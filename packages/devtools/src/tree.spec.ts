@@ -699,6 +699,7 @@ describe('a value the dom cannot place', () => {
       [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
       [2, { id: 2, label: 'For', kind: 'control', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
       [3, { id: 3, label: 'mapArray', kind: 'memo', deps: new Set([1]), writes: new Set(), runs: 1, lastPulse: 0, authored: false, createdIn: 2 }],
+      [4, { id: 4, label: 'TodoItem', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 3 }],
     ]);
     const where = host();
     createComponentTree(where, {
@@ -709,7 +710,9 @@ describe('a value the dom cannot place', () => {
     const rows = [...where.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
     const at = rows.findIndex((r) => r.includes('For'));
     expect(at).toBeGreaterThan(-1);
+    // Ahead of the rows the tag produced: the value is what it was given.
     expect(rows[at + 1]).toContain('todos');
+    expect(rows[at + 2]).toContain('TodoItem');
     where.remove();
     list.remove();
   });
@@ -733,5 +736,51 @@ describe('a value the dom cannot place', () => {
     expect(rows[1]).toContain('todos');
     where.remove();
     el.remove();
+  });
+});
+
+/**
+ * A prop is the other half of what a tag says. `<For each={todos()}>` is as much `each` as it
+ * is the rows it went on to render, and every component takes them.
+ */
+describe('props in the tree', () => {
+  const graph = new Map<number, RNode>([
+    [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+    [1, {
+      id: 1, label: 'TodoItem', kind: 'component', deps: new Set(), writes: new Set(), runs: 1,
+      lastPulse: 0, authored: true, createdIn: 0,
+      props: [
+        { name: 'todo', value: '{ id: 1, text: "Read the compiler docs" }', at: { file: 'src/app.tsx', line: 41, column: 12 } },
+        { name: 'onToggle', value: 'ƒ toggle()' },
+      ],
+    }],
+  ]);
+
+  it('lists what a tag was handed, above what it rendered', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    createComponentTree(host, { values: true }).render(graph);
+    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const at = rows.findIndex((r) => r.includes('TodoItem'));
+    expect(rows[at + 1]).toContain('todo=');
+    expect(rows[at + 2]).toContain('onToggle=');
+    host.remove();
+  });
+
+  it('shows the value it was given', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    createComponentTree(host, { values: true }).render(graph);
+    expect(host.textContent).toContain('onToggle');
+    expect(host.querySelector('.fx-tree-row.is-prop')).toBeTruthy();
+    host.remove();
+  });
+
+  it('says nothing about props until values are asked for', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    createComponentTree(host, {}).render(graph);
+    expect(host.textContent).not.toContain('onToggle');
+    host.remove();
   });
 });

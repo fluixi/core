@@ -13,6 +13,7 @@ import type { NodeKind, RNode } from './instrument.js';
 import type { DomNode } from './dom.js';
 import { pluginBadge, pluginElementBadge } from './plugin.js';
 import { kindRules } from './palette.js';
+import { shorten } from './format.js';
 
 /** Kinds that are tags in the source, and so have a place in a tree of them. */
 export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
@@ -58,6 +59,8 @@ interface Row {
   at?: { file: string; line: number; column: number };
   /** Element rows only: what plugins attached to it. */
   extra?: Record<string, unknown>;
+  /** A prop row: what the tag above it was handed. */
+  prop?: { name: string; value?: string };
 }
 
 /**
@@ -294,11 +297,17 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     const has = node.children.length > 0;
     const open = has && !shut.has(node.key);
     const twist = has ? (open ? '▾' : '▸') : '·';
-    const tag = node.value
-      ? escape(node.label)
-      : has
-        ? `&lt;${escape(node.label)}&gt;`
-        : `&lt;${escape(node.label)} /&gt;`;
+    const tag = node.prop
+      ? `${escape(node.prop.name)}<span class="fx-tree-prop-eq">=</span>${
+          node.prop.value === undefined
+            ? ''
+            : `<b class="fx-tree-prop-value">${escape(shorten(node.prop.value, 40))}</b>`
+        }`
+      : node.value
+        ? escape(node.label)
+        : has
+          ? `&lt;${escape(node.label)}&gt;`
+          : `&lt;${escape(node.label)} /&gt;`;
     const count = has && !open ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
     // Says the chunk it came from was fetched separately, which is why it appeared late.
     const chunk = node.lazy ? '<span class="fx-tree-lazy" title="loaded as its own chunk">lazy</span>' : '';
@@ -306,7 +315,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       ? `<span class="fx-tree-plugin" title="${escape(node.badge)}">${escape(node.badge)}</span>`
       : '';
     return (
-      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}"` +
+      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}${node.prop ? ' is-prop' : ''}"` +
       ` data-key="${escape(node.key)}"${node.id !== undefined ? ` data-id="${node.id}"` : ''}` +
       ` style="--depth:${depth}">` +
       `<button type="button" class="fx-tree-twist" data-twist="${escape(node.key)}"${has ? '' : ' tabindex="-1"'}>${twist}</button>` +
@@ -410,12 +419,27 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   function rowsFor(nodes: readonly TreeNode[], graph: Map<number, RNode>): Row[] {
     const byId = new Map<number, Row>();
     const build = (node: TreeNode): Row => {
+      // What the tag was handed, ahead of what it produced. A prop is the other half of the
+      // story a tag tells: `<For each={todos()}>` says as much through `each` as through the
+      // rows it went on to render, and every component takes them.
+      const written = values ? (graph.get(node.id)?.props ?? []) : [];
+      const props: Row[] = written.map((p, i) => ({
+        key: `${node.id}=${i}`,
+        label: p.name,
+        kind: node.kind,
+        children: [],
+        prop: { name: p.name, ...(p.value === undefined ? {} : { value: p.value }) },
+        ...(p.at?.line === undefined
+          ? {}
+          : { at: { file: p.at.file ?? '', line: p.at.line, column: p.at.column ?? 0 } }),
+      }));
+
       const row: Row = {
         key: String(node.id),
         label: node.label,
         kind: node.kind,
         id: node.id,
-        children: node.children.map(build),
+        children: [...props, ...node.children.map(build)],
         ...(node.value ? { value: true } : {}),
         ...(node.lazy ? { lazy: true } : {}),
         ...(node.badge ? { badge: node.badge } : {}),
@@ -589,15 +613,22 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       // tag that depends on it is the honest place, and it reads the same way as `draft`.
       const lifted: Row[] = [];
       const spare: Row[] = [];
+      /** Collected per reader so several values keep their order when they go in. */
+      const adopt = new Map<Row, Row[]>();
       for (const child of rest) {
         const reader = child.value && child.id !== undefined ? readerOf(child.id, row) : undefined;
         if (reader) {
-          reader.children.push(child);
+          const held = adopt.get(reader);
+          if (held) held.push(child);
+          else adopt.set(reader, [child]);
           placed.add(child);
           continue;
         }
         (child.value ? lifted : spare).push(child);
       }
+      // Ahead of what the tag rendered. A value reads as what the tag was given, so it
+      // belongs above the rows it produced rather than after them.
+      for (const [reader, values] of adopt) reader.children.unshift(...values);
       // Whatever is left: values first, then a portal, which renders elsewhere and still
       // reads as part of the markup.
       row.children = [...lifted, ...rendered, ...spare];
@@ -700,4 +731,8 @@ ${kindRules((k) => `.fx-tree-row.n-${k} .fx-tree-tag`, 'color')}
 }
 .fx-tree-search:focus { outline: none; border-color: var(--fx-accent, #5eead4); }
 .fx-tree-empty { display: block; padding: 8px; font-size: 11px; color: var(--fx-muted, #8a90a2); }
+/* A prop reads as what was written on the tag, so it is quieter than the tag itself. */
+.fx-tree-row.is-prop .fx-tree-tag { color: var(--fx-muted, #8a90a2); }
+.fx-tree-prop-eq { opacity: .5; }
+.fx-tree-prop-value { font-weight: 400; color: var(--fx-label, #e7e9ee); }
 `;
