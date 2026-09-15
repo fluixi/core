@@ -13,6 +13,19 @@ import { createRegistry } from './modules';
 import { HTML_SHELL, normalizePath, type Project } from './project';
 import type { ObservedGraph } from '@fluixi/devtools';
 
+/**
+ * Where the iframe loads its bootstrap from.
+ *
+ * The dev server compiles the module on request; a build emits it as an entry of its own,
+ * under a name that is not hashed so this can say it without reading a manifest. Getting
+ * this wrong is quiet: a static host answers an unknown path with index.html, and the
+ * iframe refuses it for its mime type rather than for being the wrong file.
+ */
+const bootstrapUrl = (): string => {
+  const path = import.meta.env.DEV ? 'src/preview/bootstrap.ts' : 'preview/bootstrap.js';
+  return new URL(`${import.meta.env.BASE_URL}${path}`, location.origin).href;
+};
+
 export interface RunResult {
   error: string | null;
   compiled: Map<string, string>;
@@ -108,7 +121,7 @@ export async function runProject(
     await new Promise<void>((resolve) => {
       const script = doc.createElement('script');
       script.type = 'module';
-      script.src = new URL('/src/preview/bootstrap.ts', location.origin).href;
+      script.src = bootstrapUrl();
       script.onload = () => resolve();
       script.onerror = () => {
         error = 'The preview could not start.';
