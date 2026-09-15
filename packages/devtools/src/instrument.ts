@@ -33,11 +33,11 @@ export type NodeKind =
   | 'store'
   | 'resource'
   | 'component'
-  /** Control flow the framework supplies — `Show`, `For`, `Switch`, `Suspense`, `Await`. */
+  /** Control flow the framework supplies: `Show`, `For`, `Switch`, `Suspense`, `Await`. */
   | 'control'
-  /** The router's own tags — `Router`, `Outlet`, `Link`, `Redirect`. */
+  /** The router's own tags: `Router`, `Outlet`, `Link`, `Redirect`. */
   | 'router'
-  /** A server route handler — `GET`, `POST` in an api file. */
+  /** A server route handler: `GET`, `POST` in an api file. */
   | 'handler'
   /** Not a node: a card a view draws to stand for several of them. */
   | 'group'
@@ -87,7 +87,7 @@ export interface RNode {
   /**
    * Whether the label is the author's own, from a compiler mark. False for a positional
    * label and for one the runtime supplied, which between them are the framework's own
-   * machinery — what a view offers to keep behind one card.
+   * machinery, which is what a view offers to keep behind one card.
    */
   authored?: boolean;
   /** Source ids read on the last run (read edges: source → this). */
@@ -98,13 +98,13 @@ export interface RNode {
   read?: () => unknown;
   /** Last serialized value, for change detection / display. */
   value?: string;
-  /** The same value with room to read it — what a tooltip or an inspector shows. */
+  /** The same value with room to read it, for a tooltip or an inspector. */
   detail?: string;
   /** Times this node recomputed / re-ran. */
   runs: number;
-  /** performance.now() of the last change — drives the flash. */
+  /** performance.now() of the last change. Drives the flash. */
   lastPulse: number;
-  /** Live core node, when reachable — gives the real version + state. */
+  /** Live core node, when reachable. Gives the real version and state. */
   core?: { version?: number; state?: number } | null;
   /** Where the author created this node, when the compiler said so. Always optional. */
   source?: ReactiveSourceLocation;
@@ -119,13 +119,13 @@ export interface RNode {
    */
   declaredAt?: ReactiveSourceLocation;
   /**
-   * The line of the application that led to this node, for one the compiler did not mark —
+   * The line of the application that led to this node, for one the compiler did not mark:
    * a signal a package created on the caller's behalf.
    */
   usedAt?: ReactiveSourceLocation;
   /**
-   * How many dom bindings read this node. They are not drawn — one per attribute and text
-   * hole would bury the graph — but a signal read only by them is not a signal nothing uses.
+   * How many dom bindings read this node. They are not drawn, since one per attribute and
+   * text hole would bury the graph, but a signal read only by them is still read.
    */
   bindings?: number;
   /**
@@ -134,7 +134,7 @@ export interface RNode {
    */
   targets?: DomTarget[];
   /**
-   * Set from outside any computation — a handler, a timer. The graph has no node to draw an
+   * Set from outside any computation, by a handler or a timer. The graph has no node to draw an
    * edge from for these, so this is the only record of where they came from.
    */
   setAt?: ReactiveSourceLocation[];
@@ -143,6 +143,15 @@ export interface RNode {
    * elements instead; this is for one that cannot.
    */
   dom?: DomNode[];
+  /**
+   * Where this tag's element sits in the document, counted across every tag that owns one.
+   *
+   * Siblings would otherwise sort by id, which is creation order. A keyed list rebuilds a row
+   * rather than mutating it, so the replacement takes the highest id and sorted last: toggling
+   * the first item in a list moved its card to the end of the band and the flash always landed
+   * on the bottom row. Only a producer in the page can work this out.
+   */
+  order?: number;
   /** Resource only. */
   loading?: boolean;
   /** This tag arrived as its own chunk, so it is not in the bundle the page started with. */
@@ -181,7 +190,7 @@ export interface ReactorApi {
     value: T,
     options?: { name?: string; equals?: false | ((a: T, b: T) => boolean) }
   ): [() => T, (v: T | ((prev: T) => T)) => T];
-  // (fn, value?, options?) — matching the real createMemo. Declaring options second read
+  // (fn, value?, options?), matching the real createMemo. Declaring options second read
   // `{ name: 'double' }` as the initial value, so a named memo showed up as m1.
   createMemo<T>(fn: () => T, value?: T, options?: { name?: string }): () => T;
   createEffect(fn: () => void, options?: { name?: string }): void;
@@ -237,7 +246,7 @@ export function createReactor(): Reactor {
   let dispose = () => {};
   // The root's owner, kept so a node created after `run` returned still has somewhere to
   // hang its cleanup. A project's modules load asynchronously, so most registration lands
-  // well after the synchronous setup — with no owner, `onCleanup` runs immediately and the
+  // well after the synchronous setup. With no owner, `onCleanup` runs immediately and the
   // node disappears the moment it is made, which is why the graph came up empty.
   let rootOwner: ReturnType<typeof getOwner> = null;
 
@@ -247,7 +256,7 @@ export function createReactor(): Reactor {
    *
    * `$name` is set on what a component returns, so it travels with the value: every memo
    * holding it looks like the component. The one that made it is the one none of its
-   * dependencies already has — otherwise a component under `Suspense` draws twice.
+   * dependencies already has. Otherwise a component under `Suspense` draws twice.
    */
   const claims = (node: RNode, value: unknown): boolean => {
     for (const dep of node.deps) {
@@ -415,7 +424,7 @@ export function createReactor(): Reactor {
     return [accessor, actions];
   };
 
-  // The short API is the long one with a handle around it — `signal` is
+  // The short API is the long one with a handle around it. `signal` is
   // `Object.assign(createSignal(...), { set })`, `memo` and `effect` are the same function
   // under another name. Deriving them keeps one definition of what tracking means, instead
   // of a second copy of the node bookkeeping that drifts from the first.
@@ -474,7 +483,7 @@ export function createReactor(): Reactor {
     sample() {
       const changed: number[] = [];
       // Date.now rather than performance.now: the reactor may run in one realm and the view
-      // in another — an iframe preview does exactly that — and each realm's performance
+      // in another, which an iframe preview does, and each realm's performance
       // clock has its own origin, so the age the view computed was nonsense and nothing
       // ever pulsed.
       const now = Date.now();
@@ -503,7 +512,7 @@ export function createReactor(): Reactor {
           // Still a memo underneath. This only says so, so a renderer can draw it as what
           // the author wrote rather than as the wrapper around it.
           node.kind = KIND_OF_BUILTIN[stamped] ?? 'component';
-          // `source` stays what it is for every other node — where this one was created,
+          // `source` stays what it is for every other node: where this one was created,
           // which for a wrapper is where the tag was written. Where the component itself
           // lives is a second fact, and it stands in for the first when nothing marked it.
           node.declaredAt = componentSource(stamped);

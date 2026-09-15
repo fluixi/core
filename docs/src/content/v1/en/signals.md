@@ -12,7 +12,7 @@ count.set(1);          // write → 1
 count.set(c => c + 1); // update from the previous value → 2
 ```
 
-Inside a component, `$signal` is the same thing without the import — the compiler resolves it
+Inside a component, `$signal` is the same thing without the import, the compiler resolves it
 and adds what it needs:
 
 ```ts
@@ -31,7 +31,7 @@ effect(() => {
 count.set(5); // logs "count is 5"
 ```
 
-Reading outside any reactive scope just returns the value — no subscription.
+Reading outside any reactive scope just returns the value, no subscription.
 
 ## Equality
 
@@ -69,7 +69,7 @@ count();       // read
 setCount(1);   // write
 ```
 
-These are one primitive with two spellings, not two implementations — `signal` is
+These are one primitive with two spellings, not two implementations, `signal` is
 `createSignal` with the pair packed into an object, and its `get`/`set` **are** that pair. So
 they track each other, mix freely in a module, and behave identically through SSR and
 hydration. Prefer `signal`; reach for the tuple when you want the halves apart, and note that

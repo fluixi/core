@@ -1,7 +1,7 @@
 # Components
 
 A component is just a function that returns markup. There is no base class and no lifecycle of
-re-renders — a component runs **once** to create its DOM, and reactivity keeps it up to date.
+re-renders, a component runs **once** to create its DOM, and reactivity keeps it up to date.
 
 ```tsx
 function Greeting(props: { name: string }) {
@@ -20,7 +20,7 @@ call time. Read props **where you use them** and updates flow through:
 function Hello(props: { name: string }) {
   return <p>{props.name}</p>;   // stays reactive
 }
-// const { name } = props;       // reads once — see below
+// const { name } = props;       // reads once, see below
 ```
 
 Destructuring copies the value out at that moment, so `name` stops following the prop. That is
@@ -36,7 +36,7 @@ function Hello({ name, tone = 'calm' }) {
 }
 ```
 
-It compiles to `props.name` at each use — the binding keeps its type, so nothing else about the
+It compiles to `props.name` at each use, the binding keeps its type, so nothing else about the
 function changes. This is on by default; `fluixi({ propsDestructure: false })` turns it off, which
 you want for a package that ships its source for consumers to compile.
 
@@ -55,12 +55,12 @@ function Field({ label, ...rest }) {
 signal behind a forwarded prop still reaches the element.
 
 Where the compiler can't prove the rewrite is safe it leaves your code exactly as written and
-says why — a reassigned binding, a computed key, a default it would have to re-run on every
+says why, a reassigned binding, a computed key, a default it would have to re-run on every
 read. Those keep the JavaScript meaning they always had.
 
 One thing to watch: this is a property of **how the code is compiled**, not of the code itself.
 If you publish a package that ships its source for consumers to compile, write props the
-explicit way — a consumer without the option would read them once. Compiled output is fine
+explicit way, a consumer without the option would read them once. Compiled output is fine
 either way.
 
 The [props example](https://github.com/fluixi/core/tree/main/examples/props) has all of it

@@ -10,11 +10,12 @@
  * literal `import()`, which is what lets the bundler do chunking, hashing and
  * tree-shaking as ordinary behaviour rather than as an integration.
  */
+import { isServer } from '@fluixi/dom';
 import { createMemo, createSignal } from '@fluixi/reactive/signal';
 import { observeIntersection } from '@fluixi/dom/utils';
 import { lazy } from './lazy.js';
 
-const isServer = typeof window === 'undefined';
+
 
 /** When to fetch. Mirrors the compiler's `IRLoadStrategy`. */
 export type LoadStrategy =
@@ -67,8 +68,8 @@ export function deferred(
     // `never` is server-only: the component renders during SSR and its code is meant to
     // stay out of the client bundle entirely. The compiler is what actually drops it —
     // this guard only stops the client from fetching it if one slips through.
-    if (options.strategy.kind === 'never') return isServer ? Lazy(props) : null;
-    if (isServer || options.strategy.kind === 'eager') return Lazy(props);
+    if (options.strategy.kind === 'never') return isServer() ? Lazy(props) : null;
+    if (isServer() || options.strategy.kind === 'eager') return Lazy(props);
 
     const [ready, setReady] = createSignal(false);
     const start = (): void => {

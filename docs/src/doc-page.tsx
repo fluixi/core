@@ -20,7 +20,7 @@ function describe(html: string | undefined): string {
     .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .trim();
-  return (text || 'Fluixi documentation — reactivity, compiled.').slice(0, 155);
+  return (text || 'Fluixi documentation, reactivity, compiled.').slice(0, 155);
 }
 
 /**
@@ -41,7 +41,7 @@ function onProseClick(event: MouseEvent): void {
     setTimeout(() => (button.textContent = 'Copy'), ms);
   };
 
-  // No clipboard in an insecure context, and the user can refuse — say so rather than
+  // No clipboard in an insecure context, and the user can refuse, say so rather than
   // leaving the label unchanged.
   const write = navigator.clipboard?.writeText(code);
   if (!write) return say('Press ⌘C', 2400);
@@ -54,7 +54,7 @@ interface Hit { v: string; l: string; s: string; t: string; h: string[]; b: stri
  * Docs search.
  *
  * The index is a build-time asset (`search-index.json`), fetched the first time search is
- * opened and kept for the session — it is 95 KB, which is worth downloading once on demand
+ * opened and kept for the session, it is 95 KB, which is worth downloading once on demand
  * and not at all for the majority who never search.
  *
  * Ranking is deliberately simple and explainable: a title match beats a heading match beats
@@ -76,7 +76,7 @@ function excerpt(hit: Hit, q: string): string {
   const at = hit.b.toLowerCase().indexOf(q);
   if (at < 0) return hit.b.slice(0, 110);
   const from = Math.max(0, at - 45);
-  return (from > 0 ? '…' : '') + hit.b.slice(from, from + 130).trim() + '…';
+  return (from > 0 ? '...' : '') + hit.b.slice(from, from + 130).trim() + '...';
 }
 
 let cachedIndex: Hit[] | null = null;
@@ -161,7 +161,7 @@ function Search(props: { lang: Lang; version: string; label: string }) {
       </button>
 
       {/* Through a portal to the body: the header sets `backdrop-filter`, which makes
-          it a containing block for fixed-position descendants — the overlay would
+          it a containing block for fixed-position descendants, the overlay would
           otherwise resolve against the header and be clipped to its 56px box. */}
       {() =>
         open() ? (
@@ -222,7 +222,7 @@ const THEME_KEY = 'fluixi-docs-theme';
  *
  * The stored value pins `color-scheme`; with nothing stored the page follows the OS, so
  * the first visit matches whatever the reader already set system-wide. The inline script
- * in index.html re-applies the choice before first paint — doing it here would mean a
+ * in index.html re-applies the choice before first paint, doing it here would mean a
  * flash of the wrong theme on every prerendered page.
  */
 function toggleTheme(): void {
@@ -236,12 +236,12 @@ function toggleTheme(): void {
   try {
     localStorage.setItem(THEME_KEY, next);
   } catch {
-    // Private mode or blocked storage — the theme still applies for this page.
+    // Private mode or blocked storage, the theme still applies for this page.
   }
 }
 
-// The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/…)
-// so each version has its own route wrapper — the router merges the inner [lang]/[slug] params.
+// The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/...)
+// so each version has its own route wrapper, the router merges the inner [lang]/[slug] params.
 export default function DocPage(props: { version: string; lang: Lang; slug: string }) {
   const { version, slug } = props;
   const lang = props.lang;
@@ -262,7 +262,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   const prev = i > 0 ? ORDER[i - 1] : null;
   const next = i >= 0 && i < ORDER.length - 1 ? ORDER[i + 1] : null;
 
-  // Per-doc document head — rendered into <head> at prerender (each page is static), so crawlers
+  // Per-doc document head, rendered into <head> at prerender (each page is static), so crawlers
   // get a unique title/description/canonical per doc, plus en/fr hreflang alternates.
   const title = `${doc?.title ?? slug} · ${ui.product}`;
   const description = describe(doc?.html);

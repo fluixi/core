@@ -37,6 +37,7 @@ export interface WireNode {
   readonly runs: number;
   /** Producer's Date.now() at the last change. The consumer's clock agrees with it. */
   readonly lastPulse: number;
+  readonly order?: number;
   readonly version?: number;
   readonly state?: NodeState;
   readonly loading?: boolean;
@@ -91,7 +92,7 @@ export interface GraphSnapshot {
 }
 
 export interface SerializeOptions {
-  /** Send only these nodes — what `sample()` returned. Makes it a partial. */
+  /** Send only these nodes, being what `sample()` returned. Makes it a partial. */
   ids?: Iterable<number>;
   removed?: Iterable<number>;
   /** What `takeEvents()` returned. Omitted rather than sent empty. */
@@ -128,6 +129,7 @@ export function serializeGraph(
       detail: node.detail,
       runs: node.runs,
       lastPulse: node.lastPulse,
+      order: node.order,
       version: node.core?.version,
       state,
       loading: node.loading,
@@ -169,6 +171,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       detail: node.detail,
       runs: node.runs,
       lastPulse: node.lastPulse,
+      order: node.order,
       core: { version: node.version, state: node.state ? STATE_CODE[node.state] : undefined },
       loading: node.loading,
       lazy: node.lazy,

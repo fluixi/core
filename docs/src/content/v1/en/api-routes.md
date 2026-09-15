@@ -1,6 +1,6 @@
 # API routes
 
-Drop a file in `src/api/` and export HTTP-method handlers — they are served under
+Drop a file in `src/api/` and export HTTP-method handlers, they are served under
 `/api/*`.
 
 ```ts
@@ -20,7 +20,7 @@ Export one function per method you support: `GET`, `POST`, `PUT`, `PATCH`, `DELE
 
 ## Return values
 
-A handler returns a Web `Response`, or any value — which is sent as JSON:
+A handler returns a Web `Response`, or any value, which is sent as JSON:
 
 ```ts
 export function GET() {
@@ -52,7 +52,7 @@ export function GET(_req: Request, { params }: { params: { id: string } }) {
 // src/api/files/[...path].ts  →  catch-all, /api/files/**
 ```
 
-Params arrive as **plain strings** on the second argument, not as accessors — an API
+Params arrive as **plain strings** on the second argument, not as accessors, an API
 handler runs once per request, so there is nothing reactive about it.
 
 Everything else about the request comes from the standard `Request`: the query string via
@@ -71,10 +71,10 @@ Both run only on the server, so the choice is about who calls them:
 
 - A **server function** is for your own client code. It is typed end to end, and the call
   looks like a function call rather than a fetch.
-- An **API route** is for callers you do not control — a webhook, a mobile app, a CLI,
+- An **API route** is for callers you do not control, a webhook, a mobile app, a CLI,
   anything that needs a stable URL, a specific status code, or a non-JSON body.
 
-If you are reaching for `fetch('/api/…')` inside your own app, a
+If you are reaching for `fetch('/api/...')` inside your own app, a
 [server function](/v1/en/server-functions) is usually the shorter path.
 
 Next: **[Middleware](/v1/en/middleware)**.

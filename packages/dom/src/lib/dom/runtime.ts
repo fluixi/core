@@ -166,7 +166,7 @@ const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resi
  * Stores handlers as `element.$$eventname = handler` properties.
  */
 export function delegateEvents(eventNames: string[]): void {
-  if (isServer) return; // no document to attach to; events are inert in SSR
+  if (isServer()) return; // no document to attach to; events are inert in SSR
   for (const name of eventNames) {
     if (delegatedSet.has(name) || NON_DELEGATED.has(name)) continue;
     delegatedSet.add(name);
@@ -249,7 +249,7 @@ export function isFunction(value: any): value is Function {
 }
 
 function createTextNode(value: string, anchor = false): Text {
-  if (isServer) return getServerNodes().createText(value) as unknown as Text;
+  if (isServer()) return getServerNodes().createText(value) as unknown as Text;
   // Anchors/placeholders (insert markers) are client-only insertion points — the server
   // serialized nothing for them, so they must never adopt a server text node. Only real
   // content goes through the hydration walker.
@@ -261,7 +261,7 @@ function createTextNode(value: string, anchor = false): Text {
 }
 
 function createMarker(value: string): Comment {
-  if (isServer) return getServerNodes().createComment(value) as unknown as Comment;
+  if (isServer()) return getServerNodes().createComment(value) as unknown as Comment;
   if (hydration.active) {
     const node = getHydrationWalker()?.hydrateMarker(value);
     if (node) return node;
@@ -274,7 +274,7 @@ export function createNativeElement(
   isSVG = false,
   at?: { file: string; line: number; column: number },
 ): Element {
-  if (isServer) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
+  if (isServer()) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
   if (hydration.active) {
     const node = getHydrationWalker()?.hydrateElement(tag);
     if (node) return at ? located(node, at) : node;
@@ -317,7 +317,7 @@ export function templateNode(
   isSVG = false,
   at?: TemplatePositions,
 ): Node {
-  if (isServer) {
+  if (isServer()) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
     const nodes = getServerNodes();

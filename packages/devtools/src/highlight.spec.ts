@@ -141,3 +141,48 @@ describe('picking', () => {
     expect(layer()!.style.display).toBe('none');
   });
 });
+
+/**
+ * Picking used to end at the first click. Choosing several elements in a row meant going back
+ * to the toolbar between each, so the button is a mode now and this keeps it one.
+ */
+describe('sticky picking', () => {
+  it('stays armed after a pick, and reports each one', () => {
+    const picked: number[] = [];
+    const host = document.createElement('div');
+    host.innerHTML = '<p id="a"></p><p id="b"></p>';
+    document.body.append(host);
+    const stop = startPicking({
+      sticky: true,
+      nodeAt: (el) => (el?.id === 'a' ? 1 : el?.id === 'b' ? 2 : undefined),
+      onPick: (id) => picked.push(id),
+    });
+
+    host.querySelector('#a')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    host.querySelector('#b')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(picked).toEqual([1, 2]);
+
+    stop();
+    host.querySelector('#a')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(picked).toEqual([1, 2]);
+    host.remove();
+  });
+
+  it('ignores a click on nothing rather than calling it a cancel', () => {
+    let cancelled = 0;
+    const host = document.createElement('div');
+    host.innerHTML = '<p id="c"></p>';
+    document.body.append(host);
+    const stop = startPicking({
+      sticky: true,
+      nodeAt: () => undefined,
+      onPick: () => {},
+      onCancel: () => cancelled++,
+    });
+    host.querySelector('#c')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // Still armed, so saying it ended would leave the toolbar out of step with the listeners.
+    expect(cancelled).toBe(0);
+    stop();
+    host.remove();
+  });
+});

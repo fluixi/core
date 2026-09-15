@@ -10,12 +10,12 @@
     <link rel="icon" type="image/webp" sizes="192x192" href="/icons/android-chrome-192x192.webp" />
     <link rel="icon" type="image/webp" sizes="512x512" href="/icons/android-chrome-512x512.webp" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.webp" />
-    <!-- Fallback title only — the home route's seo() owns title/description/canonical/og and
+    <!-- Fallback title only, the home route's seo() owns title/description/canonical/og and
          injects them into <head> at prerender (and keeps them reactive on the client). -->
     <!--
       Re-apply a stored theme before the first paint. The page is prerendered with no theme
       pinned and follows the OS by default; without this, a reader whose choice differs from
-      their OS setting would see it flash on every load. Inline and synchronous on purpose —
+      their OS setting would see it flash on every load. Inline and synchronous on purpose,
       a deferred script runs too late to prevent the flash.
     -->
     <script>
@@ -23,10 +23,10 @@
         var t = localStorage.getItem('fluixi-theme');
         if (t) document.documentElement.dataset.theme = t;
       } catch (e) {
-        /* blocked storage — fall back to the OS preference */
+        /* blocked storage, fall back to the OS preference */
       }
     </script>
-    <title>Fluixi — the reactive framework, compiled</title>
+    <title>Fluixi, the reactive framework, compiled</title>
   </head>
   <body>
     <div id="root"></div>

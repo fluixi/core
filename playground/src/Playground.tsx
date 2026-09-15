@@ -1,4 +1,4 @@
-// Playground app — compiles a multi-file project in-browser, mounts it, and graphs its
+// Playground app. Compiles a multi-file project in-browser, mounts it, and graphs its
 // reactivity via @fluixi/devtools. Left = file tree + editor; right = preview + graph.
 import { createSignal, onMount } from '@fluixi/core';
 import {
@@ -10,19 +10,25 @@ import {
   VALUE_PANE_CSS,
   FLOAT_CSS,
   KIND_FILTER_CSS,
+  DROPDOWN_FILTER_CSS,
   TREE_CSS,
+  TIMELINE_CSS,
+  INSPECTOR_CSS,
   createComponentTree,
   createInspector,
   hideHighlight,
   showHighlight,
   startPicking,
   createKindFilter,
+  createMenu,
+  MENU_CSS,
   makeFloatable,
   copyText,
   graphToJson,
   type DetailPanel,
   type Inspector,
   type ElementPick,
+  type DomNode,
   type ComponentTree,
   type GraphView,
   type ObservedGraph,
@@ -107,6 +113,7 @@ export function Playground() {
   let svgEl!: SVGSVGElement;
   let inspectorEl!: HTMLDivElement;
   let tagTree: ComponentTree | undefined;
+  let graphWrapEl!: HTMLDivElement;
   let timelineEl!: HTMLDivElement;
   let timeline: Timeline | null = null;
   let detail: DetailPanel | null = null;
@@ -136,6 +143,106 @@ export function Playground() {
    * the shared one had to be added twice or silently went missing. Same `.ins-*` classes.
    */
   let inspector: Inspector | null = null;
+
+  /**
+   * Follow the pointer in the preview and select whatever drives the element under it.
+   *
+   * Lives here rather than in the button because it is a menu item now, and a handler
+   * written inline in jsx cannot be reached from one.
+   */
+  /**
+   * The described row for `element` under the tag that rendered it, when there is one.
+   *
+   * Descriptions stop where another tag begins, so the walk only covers what this tag owns.
+   * A component's own root has no row of its own and comes back undefined, which selects the
+   * component, which is the right answer for it.
+   */
+  function findDescribed(owner: number, element: Element): ElementPick | undefined {
+    const walk = (nodes: readonly DomNode[], path: string): ElementPick | undefined => {
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i]!;
+        const key = `${path}:${i}`;
+        if (node.element === element) {
+          return {
+            key,
+            label: node.label,
+            owner,
+            ...(node.writes ? { writes: node.writes } : {}),
+            ...(node.at ? { at: node.at } : {}),
+            ...(node.extra ? { extra: node.extra } : {}),
+            element,
+          };
+        }
+        const deeper = walk(node.children, key);
+        if (deeper) return deeper;
+      }
+      return undefined;
+    };
+    const described = reactor?.domFor(owner) ?? [];
+    // The root row is the tag itself; picking it should select the tag, not a row.
+    if (described.length === 1 && described[0]!.element === element) return undefined;
+    return walk(described, String(owner));
+  }
+
+  let stopPicking: (() => void) | null = null;
+
+  function beginPick(): void {
+    // A second click on the button is what ends it, so picking survives a pick and several
+    // elements can be chosen in a row without going back to the toolbar between each.
+    if (picking()) {
+      stopPicking?.();
+      stopPicking = null;
+      setPicking(false);
+      return;
+    }
+    // `nodeAt` reads what the last sample recorded, and an idle page has not sampled since
+    // it rendered. Without this the first pick after loading answers with nothing.
+    reactor?.sample();
+    setPicking(true);
+    const done = () => {
+      stopPicking = null;
+      setPicking(false);
+    };
+    // The application runs in the preview iframe, so that is the document the pointer has
+    // to be followed in, not the panel's own.
+    const frame = previewEl?.querySelector('iframe') as HTMLIFrameElement | null;
+    const doc = frame?.contentDocument;
+    if (!doc) {
+      done();
+      return;
+    }
+    stopPicking = startPicking({
+      document: doc,
+      sticky: true,
+      nodeAt: (el) => reactor?.nodeAt(el),
+      describe: (id, element) => {
+        const owner = reactor?.graph.get(id)?.label;
+        const tag = element.tagName.toLowerCase();
+        // `input · TodoItem` reads better over a checkbox than `TodoItem` on its own, and
+        // far better than `App` over every element that component wrote.
+        return owner ? `${tag} · ${owner}` : tag;
+      },
+      onPick: (id, element) => {
+        // The tag that rendered it is the coarse answer, and for anything below a component's
+        // root it is the same answer every time: every element App wrote reports App. When the
+        // description holds the element itself, select that row instead, which is what the
+        // tree offers for the same element.
+        const found = element ? findDescribed(id, element) : undefined;
+        if (found) {
+          pickedEl = found;
+          selectedId = null;
+          view?.select(null);
+        } else {
+          selectedId = id;
+          pickedEl = null;
+          view?.select(id);
+        }
+        renderInspector();
+      },
+      // Escape, which is the other way out.
+      onCancel: done,
+    });
+  }
 
   function renderInspector() {
     if (!inspectorEl) return;
@@ -227,7 +334,7 @@ export function Playground() {
       },
     });
     timeline ??= createTimeline(timelineEl, {
-      empty: 'no updates yet — interact with the preview',
+      empty: 'no updates yet, interact with the preview',
       onSelect: (ids) => view?.focus(ids),
       onExpand: (commit) => reactor && detail?.open(commit, reactor.graph),
     });
@@ -396,6 +503,14 @@ export function Playground() {
     localStorage.setItem('fluixi-pg-graph-bottom', String(Math.round(height)));
   }
 
+  /** The line between the tree and the graph beside it. */
+  function dragTree(e: PointerEvent) {
+    const box = graphWrapEl.getBoundingClientRect();
+    const width = Math.max(120, Math.min(box.width - 160, e.clientX - box.left));
+    graphWrapEl.style.setProperty('--tree-width', `${Math.round(width)}px`);
+    localStorage.setItem('fluixi-pg-tree-width', String(Math.round(width)));
+  }
+
   /** The line between the inspector and the timeline beside it. */
   function dragTimeline(e: PointerEvent) {
     const box = graphBottomEl.getBoundingClientRect();
@@ -500,14 +615,14 @@ export function Playground() {
       setShared(true);
       setTimeout(() => setShared(false), 1600);
     } catch {
-      setError('Could not copy — the URL bar now holds the shareable link.');
+      setError('Could not copy. The URL bar now holds the shareable link.');
     }
   }
 
   onMount(() => {
     document.documentElement.dataset.theme = theme();
     const style = document.createElement('style');
-    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}\n${TREE_CSS}\n${FLOAT_CSS}\n${VALUE_PANE_CSS}`;
+    style.textContent = `${DEVTOOLS_CSS}\n${DETAIL_PANEL_CSS}\n${KIND_FILTER_CSS}\n${MENU_CSS}\n${DROPDOWN_FILTER_CSS}\n${TREE_CSS}\n${INSPECTOR_CSS}\n${TIMELINE_CSS}\n${FLOAT_CSS}\n${VALUE_PANE_CSS}`;
     document.head.appendChild(style);
     editor = createEditor(editorHost, {
       files: files(),
@@ -687,7 +802,7 @@ export function Playground() {
               </button>
               <button
                 class={mode() === 'ssr' ? 'm on' : 'm'}
-                title="Render to html first, then hydrate — the same compiled code either way"
+                title="Render to html first, then hydrate. The same compiled code either way"
                 onClick={() => setRenderMode('ssr')}
               >
                 ssr
@@ -720,45 +835,10 @@ export function Playground() {
             );
           }}
         >
-          <div class="panel-bar">
-            <span>reactive graph</span>
-            <span class="stats">
-              {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
-            </span>
-            <button
-              type="button"
-              class={picking() ? 'on' : ''}
-              title="Pick an element in the preview, and select what drives it"
-              onClick={() => {
-                if (picking()) return;
-                setPicking(true);
-                const done = () => setPicking(false);
-                // The application runs in the preview iframe, so that is the document the
-                // pointer has to be followed in — not the panel's own.
-                const frame = previewEl?.querySelector('iframe') as HTMLIFrameElement | null;
-                const doc = frame?.contentDocument;
-                if (!doc) {
-                  done();
-                  return;
-                }
-                startPicking({
-                  document: doc,
-                  nodeAt: (el) => reactor?.nodeAt(el),
-                  describe: (id) => reactor?.graph.get(id)?.label ?? '',
-                  onPick: (id) => {
-                    done();
-                    selectedId = id;
-                    pickedEl = null;
-                    view?.select(id);
-                    renderInspector();
-                  },
-                  onCancel: done,
-                });
-              }}
-            >
-              ⊹
-            </button>
-            <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next) })} />
+          <div class="graph-panel-bar">
+              <span class="stats">
+                {stats().nodes} nodes · {stats().edges} edges · {stats().runs} recomputes
+              </span>
             <span class="zoom">
               <button
                 type="button"
@@ -772,35 +852,64 @@ export function Playground() {
               </button>
               <button
                 type="button"
-                class={grouped() ? 'on' : ''}
-                title="Show what the packages made, or keep it behind one card"
-                onClick={() => {
-                  view?.setGroupExternal(!grouped());
-                  setGrouped(view?.groupExternal ?? true);
-                }}
-              >
-                ▤
-              </button>
-              <button
-                type="button"
-                class={bindings() ? 'on' : ''}
-                title="Show where each value reaches the page, and what sets it"
-                onClick={() => {
-                  view?.setShowBindings(!bindings());
-                  setBindings(view?.showBindings ?? false);
-                }}
-              >
-                ⇥
-              </button>
-              <button
-                type="button"
-                title="Copy the whole graph as JSON — every node with its value, source, what it reaches and where it is set"
+                title="Copy the whole graph as JSON: every node with its value, source, what it reaches and where it is set"
                 onClick={(e: MouseEvent) => {
                   void copyText(graphToJson(drawn()), e.currentTarget as HTMLElement);
                 }}
               >
-                ⇩
+                {/* A clipboard reads as copy without a caption; the rest of the bar is words. */}
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+                  <rect x="4.5" y="2.5" width="7" height="2.6" rx="0.8" />
+                  <path d="M4.5 3.8H3.2v9.7h9.6V3.8h-1.3" />
+                </svg>
               </button>
+            </span>
+          </div>
+          <div class="graph-panel-bar" style="border: none">
+            <div class="panel-bar-row">
+              <button
+                type="button"
+                class={picking() ? 'pick on' : 'pick'}
+                title="Pick elements in the preview and select what drives them. Click again, or press escape, to stop"
+                aria-pressed={() => picking()}
+                onClick={beginPick}
+              >
+                ⊹
+              </button>
+              <span class="kinds" ref={(el: HTMLSpanElement) => createKindFilter(el, { onChange: (next) => view?.setKinds(next), panelClass: "fx-panel-left" })} />
+              <span
+                class="graph-menu"
+                ref={(el: HTMLSpanElement) =>
+                  createMenu(el, {
+                    label: 'Options',
+                    items: [
+                      {
+                        type: 'toggle',
+                        label: 'packages',
+                        on: grouped(),
+                        hint: 'Show what the packages made, or keep it behind one card',
+                        onChange: (on) => {
+                          view?.setGroupExternal(on);
+                          setGrouped(view?.groupExternal ?? true);
+                        },
+                      },
+                      {
+                        type: 'toggle',
+                        label: 'bindings',
+                        on: bindings(),
+                        hint: 'Show where each value reaches the page, and what sets it',
+                        onChange: (on) => {
+                          view?.setShowBindings(on);
+                          setBindings(view?.showBindings ?? false);
+                        },
+                      },
+                    ],
+                    menuClass: "fx-panel-left"
+                  })
+                }
+              />
+            </div>
+            <span class="zoom">
               <button type="button" title="Zoom out" onClick={() => view?.zoomBy(1 / 1.25)}>
                 −
               </button>
@@ -812,7 +921,16 @@ export function Playground() {
               </button>
             </span>
           </div>
-          <div class="graph-wrap">
+          <div
+            class="graph-wrap"
+            ref={(el: HTMLDivElement) => {
+              graphWrapEl = el;
+              el.style.setProperty(
+                '--tree-width',
+                `${Number(localStorage.getItem('fluixi-pg-tree-width')) || 180}px`,
+              );
+            }}
+          >
             <div
               class="graph-tree"
               ref={(el: HTMLDivElement) => {
@@ -858,6 +976,13 @@ export function Playground() {
                   },
                 });
               }}
+            />
+            <div
+              class="tree-split"
+              role="separator"
+              aria-orientation="vertical"
+              title="Drag to resize"
+              ref={(el: HTMLDivElement) => drag(el, dragTree)}
             />
             <svg class="graph" ref={(el: SVGSVGElement) => (svgEl = el)} preserveAspectRatio="xMidYMid meet" />
           </div>

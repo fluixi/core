@@ -12,7 +12,7 @@ export default function Index() {
   return (
     <div class="redirect">
       <p>
-        Redirecting to <a href={TARGET}>the documentation</a>…
+        Redirecting to <a href={TARGET}>the documentation</a>...
       </p>
     </div>
   );

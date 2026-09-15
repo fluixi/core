@@ -9,8 +9,8 @@ npm create fluixi@latest mon-app
 
 Il pose deux questions :
 
-- **Mode d'application** — **SSR** (rendu serveur via `@fluixi/start`) ou **SPA** (côté client via Vite).
-- **Syntaxe des templates** — **JSX** (par défaut) ou **html``** (sans JSX, fichiers `.ts` simples).
+- **Mode d'application**, **SSR** (rendu serveur via `@fluixi/start`) ou **SPA** (côté client via Vite).
+- **Syntaxe des templates**, **JSX** (par défaut) ou **html``** (sans JSX, fichiers `.ts` simples).
 
 Ensuite :
 
@@ -28,11 +28,11 @@ npm create fluixi@latest mon-app -- --ssr --jsx    # ou --spa / --html
 
 ## JSX ou html`` ?
 
-Fluixi compile **les deux** — JSX et les templates `` html`` `` — vers les mêmes appels DOM à
+Fluixi compile **les deux**, JSX et les templates `` html`` ``, vers les mêmes appels DOM à
 granularité fine. Choisissez ce que vous préférez, ou mélangez-les dans un même fichier.
 
 ```tsx
-// JSX — nécessite `jsx` dans le tsconfig
+// JSX, nécessite `jsx` dans le tsconfig
 function Counter() {
   const n = $signal(0);
   return <button onClick={() => n.set(n() + 1)}>{n()}</button>;
@@ -40,7 +40,7 @@ function Counter() {
 ```
 
 ```ts
-// html`` — .ts simple, pas de jsx dans le tsconfig
+// html``, .ts simple, pas de jsx dans le tsconfig
 import { html } from '@fluixi/core';
 
 function Counter() {
@@ -54,7 +54,7 @@ script, ou une base de code en TypeScript pur). Voir **[templates html``](/v1/fr
 pour la syntaxe complète.
 
 Chaque application générée inclut **[@fluixi/ts-plugin](/v1/fr/html-templates)**, qui apporte un vrai
-support TypeScript aux templates `` html`` `` dans votre éditeur — survol, complétion et
+support TypeScript aux templates `` html`` `` dans votre éditeur, survol, complétion et
 vérification de types à l'intérieur du template.
 
 ## Ajouter un composant ou une route
@@ -94,8 +94,8 @@ render(() => html`<${App} />`, document.getElementById('app')!);
 
 ## Quelle version est en cours d'exécution ?
 
-Quelle que soit la façon de monter — `render` depuis `@fluixi/core`, ou l'hydratation via
-`startClient` — l'élément de montage porte les versions réellement exécutées, également
+Quelle que soit la façon de monter, `render` depuis `@fluixi/core`, ou l'hydratation via
+`startClient`, l'élément de montage porte les versions réellement exécutées, également
 exposées dans `window.Fluixi` :
 
 ```html

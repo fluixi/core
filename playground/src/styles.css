@@ -4,7 +4,7 @@
    which is the one place it earns more than a hairline would. */
 :root {
   /* The devtools modules read these. Mapped once here rather than per component: every
-     pane that was added later — the tree, the kind filter, a floating card on the body —
+     pane that was added later, such as the tree, the kind filter or a floating card,
      kept the dark defaults on a light page until it was listed somewhere. */
   --fx-bg: var(--bg);
   --fx-panel: var(--panel);
@@ -20,6 +20,9 @@
   --fx-memo: var(--memo);
   --fx-control: var(--memo);
   --fx-router: var(--store);
+
+  --surface: var(--panel);
+  --surface-2: var(--panel-2);
 
   --state: #34d399;
   --memo: #a78bfa;
@@ -113,29 +116,51 @@ body {
 
 /* right half: preview (top) + graph (bottom) */
 .pg-right { grid-area: right; display: grid; grid-template-rows: var(--rows, 45%) 5px minmax(0, 1fr); gap: 0; background: var(--line); min-width: 0; }
-.r-preview, .r-graph { display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
+.r-preview, .r-graph { display: flex; flex-direction: column; background: var(--panel); min-height: 0; width: 100%; overflow: hidden;}
 /* The bar carries the preview/compiled tabs, so it sits tighter than a plain title. */
 .panel-bar .tabs { display: inline-flex; gap: 2px; margin: -4px 0; height: 100%; }
 .mode { display: inline-flex; align-items: center; gap: 6px; }
 .mode .m {
-  border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px;
+  border: 1px solid var(--line); border-radius: 5px; padding: 3px 8px;
   background: var(--surface-2); color: var(--muted);
   font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
 }
 .mode .m:hover { color: var(--fg); }
 .mode .m.on { color: var(--accent); border-color: var(--accent); }
 .panel-bar .tabs .t { padding: 5px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
-.panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
-.kinds { margin-left: auto; display: inline-flex; }
-.kinds + .zoom { margin-left: 8px; }
-.zoom { margin-left: auto; display: inline-flex; gap: 2px; }
-.zoom button {
+.panel-bar, .graph-panel-bar { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 43px; padding: 9px 14px 0px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--line); }
+/* Same chrome as the zoom controls: a glyph on its own, lit while it is armed. */
+.graph-panel-bar .pick {
   width: 22px; height: 20px; padding: 0; line-height: 1;
-  border: 1px solid var(--border); border-radius: 5px;
+  border: 1px solid var(--line); border-radius: 5px;
   background: var(--surface-2); color: var(--muted);
   font-family: var(--mono); font-size: 12px; cursor: pointer;
 }
-.zoom button:hover { color: var(--fg); border-color: var(--accent); }
+.graph-panel-bar .pick:hover { color: var(--fg); border-color: var(--accent); }
+.graph-panel-bar .pick.on { color: var(--accent); border-color: var(--accent); }
+.pick + .kinds { margin-left: 6px; }
+.kinds { margin-left: auto; display: inline-flex; }
+.kinds + .graph-menu { margin-left: 6px; }
+.graph-menu { display: inline-flex; }
+.graph-menu + .zoom { margin-left: 8px; }
+.kinds + .zoom { margin-left: 8px; }
+.zoom, .panel-bar-row { display: inline-flex; gap: 2px; align-items: center; }
+.zoom button {
+  width: 22px; height: 20px; padding: 0; line-height: 1;
+  border: 1px solid var(--line); border-radius: 5px;
+  background: var(--surface-2); color: var(--muted);
+  font-family: var(--mono); font-size: 12px; cursor: pointer;
+  display: flex; justify-content: center; align-items: center; white-space: nowrap;
+}
+/* Wide enough for a word beside the arrow. The rest of the bar reads as words now, so a
+   lone glyph here would be the only thing left to guess at. */
+.zoom button.labelled {
+  width: auto; padding: 0 8px; gap: 4px;
+  display: inline-flex; align-items: center;
+  text-transform: uppercase; letter-spacing: 1px; font-size: 11px;
+}
+.zoom button svg { display: block; }
+.zoom button:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 50%, transparent); background-color: var(--bg); }
 .zoom button.on { color: var(--accent); border-color: var(--accent); }
 .stats { text-transform: none; letter-spacing: 0; color: var(--accent); font-family: var(--mono); }
 
@@ -150,7 +175,7 @@ body {
 .preview button:hover { border-color: var(--line-strong); }
 .preview button:active { transform: translateY(1px); }
 
-.graph-wrap { flex: 1; overflow: auto; min-height: 0; padding: 8px; }
+.graph-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0; }
 .graph { width: 100%; height: 100%; min-height: 240px; }
 
 /* While a handle is being dragged nothing else may claim the pointer. Pointer capture
@@ -159,13 +184,16 @@ body {
 body.dragging { user-select: none; }
 body.dragging iframe { pointer-events: none; }
 
-.graph-split { height: 6px; cursor: row-resize; border-top: 1px solid var(--line); }
+.graph-split { height: 6px; cursor: row-resize; border-top: 1px solid var(--panel); }
 .graph-split:hover { background: var(--accent); }
-.timeline-split { width: 6px; flex: none; cursor: col-resize; border-left: 1px solid var(--line); }
-.timeline-split:hover { background: var(--accent); }
+.timeline-split { width: 2px; flex: none; cursor: col-resize; border-left: 1px solid var(--line); }
+.timeline-split:hover { background: var(--accent); width: 5px; }
 .graph-bottom { display: flex; height: var(--graph-bottom, 170px); background: var(--panel-2); min-height: 0; }
 .graph-bottom .inspector { flex: 1; min-width: 0; border-top: 0; overflow: auto; }
-.timeline { width: var(--timeline-width, 320px); flex: none; padding: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.timeline { width: var(--timeline-width, 320px); flex: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.tl-head{
+  background-color: var(--panel);
+}
 .tl-list { overflow: auto; padding: .25rem; }
 .tl-filter {
   width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 3px 6px;
@@ -192,7 +220,8 @@ body.dragging iframe { pointer-events: none; }
 .tl-part { color: var(--text); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .tl-verb { color: var(--muted); }
 
-.inspector { border-top: 1px solid var(--line); padding: 10px 14px; min-height: 64px; font-size: 12.5px; background: var(--panel-2); }
+.inspector { border-top: 1px solid var(--line); padding: 0; min-height: 64px; font-size: 12.5px; }
+.ins-header{background-color: var(--panel)}
 .ins-empty { color: var(--muted); font-size: 12px; }
 .ins-head { display: flex; align-items: center; gap: 8px; }
 .ins-head b { font-size: 13px; }
@@ -217,7 +246,7 @@ body.dragging iframe { pointer-events: none; }
 }
 
 @media (max-width: 860px) {
-  /* The file tree turns into a strip above the editor — a column of its own costs
+  /* The file tree turns into a strip above the editor, because a column of its own costs
      more width than the names need. */
   .pg-left { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .files { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -242,7 +271,7 @@ body.dragging iframe { pointer-events: none; }
 
 /* The divider between the halves. Wider hit area than it looks, because a 5px target is a
    fight; the visible line stays hairline. */
-.splitter { grid-area: split; position: relative; background: var(--line); cursor: col-resize; touch-action: none; }
+.splitter { grid-area: split; position: relative; background: var(--panel); cursor: col-resize; touch-action: none; }
 .splitter::after { content: ""; position: absolute; inset: 0 -4px; }
 .splitter:hover, .splitter:active { background: var(--accent); }
 /* The divider inside the right column, so the preview can take space from the graph.
@@ -252,7 +281,7 @@ body.dragging iframe { pointer-events: none; }
 .splitter.row::after { inset: -4px 0; }
 
 /* Collapsed: the tree stops taking part in layout rather than merely turning invisible, and
-   its column goes with it — a zero-width track still leaves the header text to overflow. */
+   its column goes with it. A zero-width track still leaves the header text to overflow. */
 .pg.no-sidebar { --sb: 0px; }
 .pg.no-sidebar .files { display: none; }
 .pg.no-sidebar .pg-left { grid-template-columns: minmax(0, 1fr); }
@@ -281,7 +310,7 @@ body.dragging iframe { pointer-events: none; }
 }
 
 /* The preview is the project's own document, so it fills its panel and brings its own
-   background — the page's palette stops at the frame's edge. */
+   background, since the page's palette stops at the frame's edge. */
 .preview-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 
 /* The floating panel is on the body, outside .graph, so it needs the same mapping or it
@@ -329,7 +358,11 @@ body.dragging iframe { pointer-events: none; }
 
 .graph-wrap { display: flex; }
 .graph-tree {
-  width: 180px; flex: none; overflow: auto;
-  padding: 4px 0; border-right: 1px solid var(--fx-line, #262a35);
+  width: var(--tree-width, 180px); flex: none; overflow: auto;
+  padding: 4px 0;
+  background-color: var(--panel);
 }
+/* Matches .graph-split, turned ninety degrees. */
+.tree-split { width: 6px; flex: none; cursor: col-resize; border-left: 1px solid var(--panel); }
+.tree-split:hover { background: var(--accent); }
 .graph-wrap .graph { flex: 1; min-width: 0; }

@@ -21,7 +21,7 @@ function or an array; they run in order, and the last `next()` reaches the rende
 
 ## The two things middleware can do
 
-**Short-circuit** — return a `Response` and nothing further runs, not the rest of the chain
+**Short-circuit**, return a `Response` and nothing further runs, not the rest of the chain
 and not the renderer. This is the shape for auth redirects, maintenance pages, and blocking
 a bad request early:
 
@@ -32,7 +32,7 @@ async (request, next) => {
 };
 ```
 
-**Wrap** — call `next()` and adjust what comes back. The response is a standard `Response`,
+**Wrap**, call `next()` and adjust what comes back. The response is a standard `Response`,
 so add headers by rebuilding it:
 
 ```ts
@@ -50,8 +50,8 @@ assigning in place.
 ## Order and cost
 
 Middleware runs on **every** request that reaches the server, including navigations that
-render a page. Put the cheap discriminating checks first and anything expensive — a
-database lookup, a token verification — behind a path test, so a request for a static asset
+render a page. Put the cheap discriminating checks first and anything expensive, a
+database lookup, a token verification, behind a path test, so a request for a static asset
 does not pay for it.
 
 Middleware does not run for prerendered pages at request time. Those were rendered at build
@@ -60,8 +60,8 @@ here if the route is also prerendered.
 
 ## Interceptors
 
-Middleware is the server side. For the client, `addInterceptor` wraps `fetch` — including
-server-function RPC — with a request/response/error pipeline:
+Middleware is the server side. For the client, `addInterceptor` wraps `fetch`, including
+server-function RPC, with a request/response/error pipeline:
 
 ```ts
 import { addInterceptor } from '@fluixi/start';
@@ -78,7 +78,7 @@ const remove = addInterceptor({
 ```
 
 Every hook receives the real `Request`/`Response`, not a config object, and each is
-optional. An `error` hook that returns a `Response` **recovers** the call — which is what
+optional. An `error` hook that returns a `Response` **recovers** the call, which is what
 makes refresh-and-retry a few lines; returning nothing lets the failure propagate.
 
 `addInterceptor` returns a remover, which matters in tests and anywhere one is installed

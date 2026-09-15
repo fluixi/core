@@ -56,7 +56,7 @@ export interface RenderOptions {
 }
 
 export function renderToString(app: () => any, options: RenderOptions = {}): string {
-  const prev = isServer;
+  const prev = isServer();
   ensureServerNodes();
   setServerMode(true);
   const ctx = createRequestContext(options.event);
@@ -169,7 +169,7 @@ export async function renderToStringAsync(
   app: () => any,
   options: RenderOptions = {},
 ): Promise<string> {
-  const prev = isServer;
+  const prev = isServer();
   ensureServerNodes();
   setServerMode(true);
   ensureResourceHooks();

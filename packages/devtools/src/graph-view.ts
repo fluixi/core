@@ -7,17 +7,18 @@ import type { RNode, NodeKind } from './instrument.js';
 import { shortenPath } from './path.js';
 import { pluginBadge } from './plugin.js';
 import { kindColor, kindRules } from './palette.js';
+import { inPageOrder } from './tree.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const COL = 200;
 const ROW = 92;
 const NW = 132;
-/** file.ts:12 — the path's tail only; the full one is for an inspector with room for it. */
+/** file.ts:12, the path's tail only. The full one is for an inspector with room for it. */
 /**
  * The location a card shows.
  *
- * `source` is where the compiler marked it. A node the compiler never saw — anything the
- * framework made on the application's behalf — carries `usedAt` instead, and a component
+ * `source` is where the compiler marked it. A node the compiler never saw, meaning anything
+ * the framework made on the application's behalf, carries `usedAt` instead, and a component
  * carries where it was declared. The inspector already falls back this way; the card read
  * only the first of the three, so those nodes showed a location in one place and not the
  * other.
@@ -50,7 +51,7 @@ const MIN_ZOOM = 0.2;
  * How far past natural size the zoom goes.
  *
  * The ceiling cannot be a constant. The viewBox is the whole graph, so a big one is already
- * shrunk to fit before `scale` applies — a five-hundred-node graph is shrunk enormously, and
+ * shrunk to fit before `scale` applies. A five-hundred-node graph is shrunk enormously, and
  * any fixed limit leaves its cards unreadable. The limit is worked out from how much the
  * viewBox is shrinking, so it grows with the graph.
  */
@@ -72,13 +73,13 @@ const GROUP_ID = -1;
  * Ids for the cards that stand for something outside the graph.
  *
  * Counted down from below the group card, and derived from the node they hang off so they
- * stay the same across renders — an id that moved would make the view rebuild every frame.
+ * stay the same across renders. An id that moved would make the view rebuild every frame.
  */
 /**
  * One card per place in the document, not per reader.
  *
- * Several values can drive the same binding — a resource's three signals all write the same
- * heading — and a card each made them look like duplicates of one another. Ids are handed
+ * Several values can drive the same binding, as a resource's three signals all write the same
+ * heading, and a card each made them look like duplicates of one another. Ids are handed
  * out per place and kept, so a card kept its identity between frames.
  */
 const bindingIds = new Map<string, number>();
@@ -121,7 +122,7 @@ export interface GraphViewOptions {
   onSelect?: (node: RNode | null) => void;
   /**
    * Double-clicking a card. Given the node so the host can pick which of its locations to
-   * open — a component has one for where it was declared and another for where it was used.
+   * open: a component has one for where it was declared and another for where it was used.
    */
   onReveal?: (node: RNode) => void;
   /**
@@ -147,13 +148,13 @@ export interface GraphViewOptions {
    * Draw a card for each place a signal reaches the document, and each place it is set from.
    *
    * Off by default: one card per attribute and text hole is more cards than nodes on most
-   * pages, and the graph is about the nodes. On, it is the whole chain — handler, signal,
+   * pages, and the graph is about the nodes. On, it is the whole chain: handler, signal,
    * memo, element.
    * @default false
    */
   showBindings?: boolean;
   /**
-   * Draw only these kinds. Omitted — or null — draws every kind, which is what an empty
+   * Draw only these kinds. Omitted, or null, draws every kind, which is what an empty
    * filter means to a reader: no filter, rather than nothing to see.
    */
   kinds?: Iterable<NodeKind> | null;
@@ -169,7 +170,7 @@ export interface GraphView {
   zoomBy(factor: number): void;
   /** Back to 1:1, everything in frame. */
   resetView(): void;
-  /** Open or fold a node that has children — a store. Returns what it now is. */
+  /** Open or fold a node that has children, such as a store. Returns what it now is. */
   toggle(id: number): boolean;
   /** Lay the graph out along the other axis. */
   setDirection(direction: GraphDirection): void;
@@ -197,7 +198,7 @@ export interface GraphView {
 export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = {}): GraphView {
   let signature = '';
   let selected: number | null = null;
-  /** A set held lit until something clears it — one commit from the timeline. */
+  /** A set held lit until something clears it, being one commit from the timeline. */
   let focused: Set<number> | null = null;
   const nodeEls = new Map<
     number,
@@ -210,7 +211,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
    *
    * A write reaches every node that depends on it in one flush, so the graph knows about all
    * of them in the same frame. Flashing them together says "these changed"; flashing them a
-   * step apart, along the edges between them, says which one caused which — which is the
+   * step apart, along the edges between them, says which one caused which, and that is the
    * thing the graph is for.
    */
   const staged = new Map<number, number>();
@@ -391,7 +392,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
    * What this node is part of: everything upstream of it and everything downstream, along
    * the direction values actually travel.
    *
-   * Ownership is one hop only — a component owns most of a page, and following it would
+   * Ownership is one hop only. A component owns most of a page, and following it would
    * light the whole graph up, which is the same as highlighting nothing.
    */
   function related(graph: Map<number, RNode>, from: number): Set<number> {
@@ -454,7 +455,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
    * The graph as it is drawn: the nodes the application made, plus one card standing for
    * everything a dependency made on its own account.
    *
-   * A copy, not the host's map — what is drawn is a view of the graph, and the graph belongs
+   * A copy, not the host's map. What is drawn is a view of the graph, and the graph belongs
    * to whoever is filling it.
    */
   /**
@@ -644,7 +645,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       else hiddenCount.set(shown, (hiddenCount.get(shown) ?? 0) + 1);
     }
 
-    /** Read edges after folding, deduplicated — several keys of one store are one edge. */
+    /** Read edges after folding, deduplicated: several keys of one store are one edge. */
     const readsOf = (node: RNode): Set<number> => {
       const out = new Set<number>();
       for (const dep of node.deps) {
@@ -667,6 +668,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       (byDepth.get(d) ?? byDepth.set(d, []).get(d)!).push(node);
       maxDepth = Math.max(maxDepth, d);
     }
+    // Page order inside a band, for the same reason the tree uses it.
+    for (const [d, nodes] of byDepth) byDepth.set(d, inPageOrder(nodes));
     let maxRows = 0;
     for (const nodes of byDepth.values()) maxRows = Math.max(maxRows, nodes.length);
     // Depth runs along one axis and the nodes at a depth along the other; which is which is
@@ -736,8 +739,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       label.setAttribute('clip-path', `url(#${labelClip})`);
       label.textContent = node.label;
       // Left-anchored and truncated rather than clipped from the right: an end-anchored
-      // string is cut at its start, so a store's value showed the tail of a json blob —
-      // `unter…`, `"App"}` — instead of what it is.
+      // string is cut at its start, so a store's value showed the tail of a json blob,
+      // `unter...` or `"App"}`, instead of what it is.
       const value = el('text', { class: 'fx-value', x: 8 + LABEL_W + 6, y: 38 });
       value.setAttribute('clip-path', `url(#${valueClip})`);
       value.textContent = fit(node.value);
@@ -771,7 +774,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
       }`;
       g.appendChild(summary);
 
-      // Always made, filled per frame. A source can arrive after the card does — the layout
+      // Always made, filled per frame. A source can arrive after the card does, and the layout
       // signature does not depend on it, so waiting for a rebuild meant it never showed.
       // Empty text draws nothing, so an unmarked node still reads as unmarked.
       const source = el('text', { class: 'fx-source', x: 12, y: 52 });
@@ -835,7 +838,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   /**
    * What is folded right now: a store and anything inside it, minus what the viewer opened.
    *
-   * Nesting matters — a cart holds items, an item holds its properties. Opening the store
+   * Nesting matters: a cart holds items, an item holds its properties. Opening the store
    * shows the items as their own cards, each still folded over its own keys, rather than
    * every signal in the tree at once.
    */
@@ -888,7 +891,7 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
   }
 
   return {
-    // Date.now, matching what the reactor stamps on a node — see instrument.ts.
+    // Date.now, matching what the reactor stamps on a node. See instrument.ts.
     update(graph, now = Date.now()) {
       lastGraph = graph;
       // Bindings first: a card hung off a signal is not an outsider.
@@ -1020,8 +1023,8 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
 /**
  * Default theme.
  *
- * Every colour reads a custom property first, so a host that defines them — a page with a
- * light mode, say — restyles the graph without replacing this. The fallbacks are the dark
+ * Every colour reads a custom property first, so a host that defines them, a page with a
+ * light mode say, restyles the graph without replacing this. The fallbacks are the dark
  * values it always had. The four node hues stay as they are: here colour is the distinction
  * being drawn, not decoration.
  */

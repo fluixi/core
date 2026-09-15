@@ -1,6 +1,6 @@
 # Control flow
 
-Use control-flow components instead of raw `if`/`map` in markup — they keep updates fine-grained
+Use control-flow components instead of raw `if`/`map` in markup, they keep updates fine-grained
 and only touch the DOM that changed.
 
 ## Show

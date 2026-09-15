@@ -1,4 +1,4 @@
-// @fluixi/devtools — live inspector for the Fluixi reactive graph.
+// @fluixi/devtools: live inspector for the Fluixi reactive graph.
 // Instrumented signal/memo/effect register into a graph; createGraphView renders + animates the
 // State → Memo → Effect propagation.
 //
@@ -52,8 +52,11 @@ export { makeFloatable, FLOAT_CSS } from './float.js';
 export type { Floatable, FloatOptions } from './float.js';
 export type { PickOptions } from './highlight.js';
 export type { ComponentTree, ComponentTreeOptions, TreeNode, ElementPick } from './tree.js';
-export { createKindFilter, FILTERABLE_KINDS, KIND_FILTER_CSS } from './kind-filter.js';
+export { createKindFilter, FILTERABLE_KINDS, DROPDOWN_FILTER_CSS, KIND_FILTER_CSS } from './kind-filter.js';
 export type { KindFilter, KindFilterOptions } from './kind-filter.js';
+export type { DomNode } from './dom.js';
+export { createMenu, MENU_CSS } from './menu.js';
+export type { Menu, MenuItem, MenuOptions } from './menu.js';
 export { createDetailPanel, DETAIL_PANEL_CSS } from './detail-panel.js';
 export type { DetailPanel, DetailPanelOptions } from './detail-panel.js';
 export { changeRows, handleCopyClick, CHANGE_CSS } from './change-view.js';

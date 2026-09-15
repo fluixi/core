@@ -1,7 +1,7 @@
 # CDN & bundles
 
 Chaque package runtime de Fluixi fournit un **build global IIFE** autonome que vous pouvez
-déposer dans une page avec un seul `<script>` — sans bundler, sans étape de build, sans
+déposer dans une page avec un seul `<script>`, sans bundler, sans étape de build, sans
 installation npm. Ils sont publiés à chaque release et servis depuis
 [unpkg](https://unpkg.com) et [jsDelivr](https://www.jsdelivr.com).
 
@@ -21,7 +21,7 @@ qu'un seul fichier. Les tailles sont minifiées ; le `gzip` est ce qui transite 
 Choisissez le plus petit qui couvre votre besoin : juste la réactivité → `signal` ou `reactive` ;
 une UI réactive → `dom` ; le framework applicatif complet → `core`.
 
-## Réactivité seule — `window.Signal`
+## Réactivité seule, `window.Signal`
 
 L'option la plus légère : les primitives Signals de la spécification, rien d'autre.
 
@@ -40,7 +40,7 @@ L'option la plus légère : les primitives Signals de la spécification, rien d'
 </script>
 ```
 
-## L'API réactive — `window.Fluixi`
+## L'API réactive, `window.Fluixi`
 
 La surface ergonomique `createSignal`/`createMemo`/`createEffect`/`createStore`, sur le même cœur :
 
@@ -57,7 +57,7 @@ La surface ergonomique `createSignal`/`createMemo`/`createEffect`/`createStore`,
 </script>
 ```
 
-## Une UI réactive — `window.FluixiDOM`
+## Une UI réactive, `window.FluixiDOM`
 
 Le runtime DOM plus l'API réactive, pour qu'un seul script construise une interface vivante. Il
 ré-exporte les primitives réactives (le dom ne les inclut plus lui-même), donc pas besoin d'un
@@ -84,9 +84,9 @@ second fichier.
 Comme il n'y a pas de compilateur dans une page en `<script>` simple, écrivez le balisage avec le
 tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 
-## Tout le framework — `window.Fluixi`
+## Tout le framework, `window.Fluixi`
 
-`core.global.js` inclut tout — réactivité, composants, contrôle de flux, le router, et
+`core.global.js` inclut tout, réactivité, composants, contrôle de flux, le router, et
 `startClient`. À utiliser quand vous voulez le framework complet sans build :
 
 ```html
@@ -107,15 +107,15 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 </script>
 ```
 
-> `reactive.global.js` et `core.global.js` exposent tous deux `window.Fluixi` — chargez **l'un**
+> `reactive.global.js` et `core.global.js` exposent tous deux `window.Fluixi`, chargez **l'un**
 > des deux, pas les deux. `signal.global.js` utilise `window.Signal` et peut coexister avec l'un
 > ou l'autre.
 
-## Imports nus — `@fluixi/cdn`
+## Imports nus, `@fluixi/cdn`
 
 L’utilisation d’un objet global pose un seul objet sur `window`, et `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut être chargé. Avec une carte, la page écrit les mêmes `import` qu’une application compilée, et ne charge que les sous-chemins qu’elle touche. Un navigateur ne résout un spécificateur nu que par une carte et ne lit jamais `package.json`, donc chaque sous-chemin transitif doit y figurer ; `@fluixi/cdn` est cette liste, générée à chaque version et épinglée sur elle.
 
-- `min` (15 entrées — `core`, `dom`, `utils` et le graphe derrière)
+- `min` (15 entrées, `core`, `dom`, `utils` et le graphe derrière)
 - `templates` (3 entrées, pour compiler `html`` dans la page)
 - `full` (19, tout ce qu’un navigateur peut utiliser)
 
@@ -139,7 +139,7 @@ Chacune existe en `.json` à lire ou coller et en `.js` à charger. Le `.js` ins
 </script>
 ```
 
-`html`` exige le runtime de templates ; le `html` réexporté par `@fluixi/core` est la balise que le compilateur remplace à la construction — l’appeler dans la page lève une erreur.
+`html`` exige le runtime de templates ; le `html` réexporté par `@fluixi/core` est la balise que le compilateur remplace à la construction ; l’appeler dans la page lève une erreur.
 
 ```html
 <div id="app"></div>
@@ -161,10 +161,10 @@ Le `.json` reste pour une page qui préfère porter la carte dans son propre bal
 
 ## Épinglage de version
 
-`unpkg.com/@fluixi/core@1/…` suit la version majeure ; épinglez une version exacte pour la
+`unpkg.com/@fluixi/core@1/...` suit la version majeure ; épinglez une version exacte pour la
 reproductibilité, par ex. `unpkg.com/@fluixi/core@1.0.0-alpha.79/dist/cdn/core.global.js`.
 jsDelivr fonctionne pareil : `cdn.jsdelivr.net/npm/@fluixi/core/dist/cdn/core.global.js`.
 
-Pour de vraies applications, préférez le chemin compilé (`npm create fluixi`) — le compilateur
+Pour de vraies applications, préférez le chemin compilé (`npm create fluixi`) : le compilateur
 produit une sortie plus petite et tree-shakée que n'importe quel bundle global. Les builds CDN
 sont pour les démos, prototypes, CodePen/JSFiddle, et l'ajout de réactivité à une page existante.

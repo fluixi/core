@@ -1,7 +1,7 @@
 # Static generation
 
 Set `prerender` in `fluixi.config` and `fluixi build` renders your routes to **static
-HTML** in `dist/client` — deploy to any static host; the pages hydrate on the client.
+HTML** in `dist/client`, deploy to any static host; the pages hydrate on the client.
 
 ```ts
 // fluixi.config.ts
@@ -21,7 +21,7 @@ This documentation site is built this way.
 ## Choosing what gets rendered
 
 `prerender: true` starts at `/` and follows internal links. That covers a site whose pages
-are reachable by navigation, and misses anything that is not linked — a route behind a
+are reachable by navigation, and misses anything that is not linked, a route behind a
 form, a detail page whose list is paginated, an unlisted URL.
 
 List those explicitly:
@@ -43,7 +43,7 @@ so `/blog/hello` and `/blog/world` are separate entries.
 ## What the output is
 
 Each page is rendered through the **real production handler**, so the static output is
-identical to what `fluixi start` would serve — assets, serialized data, hydration markers
+identical to what `fluixi start` would serve, assets, serialized data, hydration markers
 and all. There is no second rendering path to drift.
 
 That also means anything the page loads at render time is baked in at build time. A route
@@ -55,8 +55,8 @@ the prerender set and served by a running server.
 
 A prerendered page is a file. At request time there is no server work, which means
 [middleware](/v1/en/middleware) does not run for it, and neither do server functions until
-the page has hydrated and calls one. A per-request check — auth, geolocation, an A/B split
-— cannot live only in middleware if the route is also prerendered.
+the page has hydrated and calls one. A per-request check, auth, geolocation, an A/B split,
+cannot live only in middleware if the route is also prerendered.
 
 Mixed deployments are fine: prerender the marketing pages and let the app routes be served
 by `fluixi start`.

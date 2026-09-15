@@ -1,7 +1,7 @@
 # CDN & bundles
 
 Every Fluixi runtime package ships a self-contained **IIFE global build** you can drop into a
-page with a single `<script>` — no bundler, no build step, no npm install. They're published on
+page with a single `<script>`, no bundler, no build step, no npm install. They're published on
 every release and served from [unpkg](https://unpkg.com) and [jsDelivr](https://www.jsdelivr.com).
 
 ## Bundle sizes
@@ -20,7 +20,7 @@ file. Sizes are minified; `gzip` is what ships over the wire.
 Pick the smallest one that covers what you need: just reactivity → `signal` or `reactive`; a
 reactive UI → `dom`; the full app framework → `core`; `` html`` `` in the page → `fluixi`.
 
-## Reactivity only — `window.Signal`
+## Reactivity only, `window.Signal`
 
 The leanest option: the standards-track Signals primitives, nothing else.
 
@@ -39,7 +39,7 @@ The leanest option: the standards-track Signals primitives, nothing else.
 </script>
 ```
 
-## The reactive API — `window.Fluixi`
+## The reactive API, `window.Fluixi`
 
 The ergonomic `createSignal`/`createMemo`/`createEffect`/`createStore` surface, on the same core:
 
@@ -56,7 +56,7 @@ The ergonomic `createSignal`/`createMemo`/`createEffect`/`createStore` surface, 
 </script>
 ```
 
-## A reactive UI — `window.FluixiDOM`
+## A reactive UI, `window.FluixiDOM`
 
 The DOM runtime plus the reactive API, so one script builds a live interface. It re-exports the
 reactive primitives (dom no longer bundles them itself), so you don't need a second file.
@@ -79,9 +79,9 @@ reactive primitives (dom no longer bundles them itself), so you don't need a sec
 </script>
 ```
 
-## The whole framework — `window.Fluixi`
+## The whole framework, `window.Fluixi`
 
-`core.global.js` bundles everything — reactivity, components, control flow, the router, and
+`core.global.js` bundles everything, reactivity, components, control flow, the router, and
 `startClient`. Use it when you want the full framework without a build:
 
 ```html
@@ -102,10 +102,10 @@ reactive primitives (dom no longer bundles them itself), so you don't need a sec
 </script>
 ```
 
-> `reactive.global.js`, `core.global.js` and `fluixi.global.js` all expose `window.Fluixi` — load
+> `reactive.global.js`, `core.global.js` and `fluixi.global.js` all expose `window.Fluixi`, load
 > **one** of them, not several. `signal.global.js` uses `window.Signal` and can sit alongside either.
 
-## Templates in the page — `window.Fluixi`
+## Templates in the page, `window.Fluixi`
 
 `` html`` `` needs the full build because the compiler normally replaces the tag at build time;
 `fluixi.global.js` carries the compiler itself, so a page with no build step compiles its
@@ -147,7 +147,7 @@ other globals. `dom.global.js` and `core.global.js` are smaller for that reason.
 Compiling in the page evaluates the code it emits, so a Content-Security-Policy without
 `unsafe-eval` blocks the full build. The other globals are unaffected.
 
-## Bare imports — `@fluixi/cdn`
+## Bare imports, `@fluixi/cdn`
 
 A global puts one object on `window`, and `reactive`, `core` and `fluixi` all claim the same name, so only one may be loaded. With a map the page writes the same `import` statements a built app writes, and loads only the subpaths it touches. A browser resolves a bare specifier only through a map and never reads package.json, so every transitive subpath has to be listed; `@fluixi/cdn` is that list, generated per release and pinned to it.
 
@@ -175,7 +175,7 @@ The `.js` installs the map, and has to come before the first module script, beca
 </script>
 ```
 
-`html`` needs the template runtime, and the `html` re-exported from `@fluixi/core` is the tag the compiler replaces at build time — calling it in the page throws.
+`html`` needs the template runtime, and the `html` re-exported from `@fluixi/core` is the tag the compiler replaces at build time; calling it in the page throws.
 
 ```html
 <div id="app"></div>
@@ -197,10 +197,10 @@ The `.json` is there for a page that would rather hold the map in its own markup
 
 ## Version pinning
 
-`unpkg.com/@fluixi/core@1/…` follows the major; pin an exact version for reproducibility, e.g.
+`unpkg.com/@fluixi/core@1/...` follows the major; pin an exact version for reproducibility, e.g.
 `unpkg.com/@fluixi/core@1.0.0-alpha.79/dist/cdn/core.global.js`. jsDelivr works the same:
 `cdn.jsdelivr.net/npm/@fluixi/core/dist/cdn/core.global.js`.
 
-For real apps, prefer the compiled path (`npm create fluixi`) — the compiler produces smaller,
+For real apps, prefer the compiled path (`npm create fluixi`): the compiler produces smaller,
 tree-shaken output than any single global bundle. The CDN builds are for demos, prototypes,
 CodePen/JSFiddle, and dropping reactivity into an existing page.

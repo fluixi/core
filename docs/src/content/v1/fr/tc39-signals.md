@@ -1,13 +1,13 @@
 # Le cœur TC39 Signals
 
-Les primitives que vous avez vues — `createSignal`, `createMemo`, `createEffect` — reposent sur un
+Les primitives que vous avez vues, `createSignal`, `createMemo`, `createEffect`, reposent sur un
 petit cœur normalisé : une implémentation de la **proposition TC39 Signals**. Vous en avez rarement
 besoin directement, mais il est là quand vous voulez l'API la plus bas niveau ou construire vos
 propres abstractions réactives.
 
 ## Signal.State
 
-Un signal modifiable — l'équivalent de `createSignal` :
+Un signal modifiable, l'équivalent de `createSignal` :
 
 ```ts
 import { Signal } from '@fluixi/reactive/signal';
@@ -23,7 +23,7 @@ Il est régi par l'égalité comme `createSignal` ; passez `{ equals }` pour per
 
 ## Signal.Computed
 
-Un signal dérivé, paresseux et mis en cache — l'équivalent de `createMemo` :
+Un signal dérivé, paresseux et mis en cache, l'équivalent de `createMemo` :
 
 ```ts
 const doubled = new Signal.Computed(() => count.get() * 2);
@@ -32,12 +32,12 @@ doubled.get(); // ne recalcule que lorsque count change
 ```
 
 Un computed ne s'exécute que lorsqu'il est lu, et ne recalcule que si une dépendance lue a vraiment
-changé — le même comportement paresseux et sans incohérence qu'un mémo.
+changé, le même comportement paresseux et sans incohérence qu'un mémo.
 
 ## Signal.subtle.Watcher
 
 `State` et `Computed` sont **tirés par la lecture** (pull) : rien ne s'exécute tout seul. Pour
-réagir *avec empressement* — la base des effets — utilisez un `Watcher`. Son rappel se déclenche
+réagir *avec empressement*, la base des effets : utilisez un `Watcher`. Son rappel se déclenche
 quand un signal observé a pu changer ; il ne doit pas lire de signaux lui-même, seulement planifier
 le travail :
 
@@ -70,8 +70,8 @@ observateur observe un signal).
 ## Pourquoi c'est important
 
 Parce que le cœur suit le modèle TC39, votre état réactif est **interopérable** et le graphe est
-**introspectable** — c'est précisément ce qui alimente le graphe de dépendances en direct du
+**introspectable**, c'est précisément ce qui alimente le graphe de dépendances en direct du
 [Bac à sable](https://playground.fluixi.com) et de `@fluixi/devtools`.
 
-L'API du quotidien (`createSignal` et compagnie) est presque toujours ce que vous voulez — mais vous
+L'API du quotidien (`createSignal` et compagnie) est presque toujours ce que vous voulez, mais vous
 savez désormais ce qu'il y a en dessous.

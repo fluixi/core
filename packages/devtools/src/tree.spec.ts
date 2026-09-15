@@ -339,7 +339,7 @@ describe('the dom a tag rendered', () => {
   });
 
   it('lists a value inside the element it writes into', () => {
-    // `count` renders into the span, `double` into the small — not in a list after them.
+    // `count` renders into the span and `double` into the small, not in a list after them.
     const row = counterDom();
     const span = row.querySelector('span')!;
     const small = row.querySelector('small')!;
@@ -459,7 +459,7 @@ describe('the dom a tag rendered', () => {
 
 /**
  * The shape a routed app makes: a layout renders the page frame, and a boundary inside it
- * renders no element of its own — the routed content lands in the layout's <main>. Modelled
+ * renders no element of its own, since the routed content lands in the layout's <main>. Modelled
  * on the start example, where this put Suspense next to the layout instead of in it.
  */
 describe('a tag that renders no element of its own', () => {
@@ -589,5 +589,240 @@ describe('a tag that renders no element of its own', () => {
     const main = layout[0]!.children.find((c) => c.label === 'main')!;
     expect(main.children.map((c) => c.label)).toEqual(['section.home']);
     expect(main.inside).toEqual([3]);
+  });
+});
+
+/**
+ * A keyed list rebuilds a row rather than mutating it, so the replacement carries a higher id
+ * than every row that did not change. Sorting siblings by id put it last, and the pulse that
+ * belonged to the first item flashed at the bottom of the list.
+ */
+describe('a rebuilt row keeps its place', () => {
+  const rowNode = (id: number, order?: number): RNode => ({
+    id,
+    label: 'TodoItem',
+    kind: 'component',
+    deps: new Set(),
+    writes: new Set(),
+    runs: 1,
+    lastPulse: 0,
+    ...(order === undefined ? {} : { order }),
+  });
+
+  it('sorts by where the element sits, not by when the node was made', () => {
+    // The second row is untouched at id 19; the first was rebuilt and came back as id 21.
+    const graph = new Map<number, RNode>([
+      [19, rowNode(19, 2)],
+      [21, rowNode(21, 1)],
+    ]);
+    expect(componentTree(graph).map((n) => n.id)).toEqual([21, 19]);
+  });
+
+  it('leaves a tag that rendered nothing exactly where it was', () => {
+    // `left` is a memo between two rows. Reordering the rows must not move it, which is what
+    // sorting the whole band by `order` did.
+    const graph = new Map<number, RNode>([
+      [13, { ...rowNode(13), label: 'left', kind: 'memo' }],
+      [19, rowNode(19, 2)],
+      [21, rowNode(21, 1)],
+    ]);
+    const rows = componentTree(graph, { values: true });
+    expect(rows.map((n) => n.label)).toEqual(['left', 'TodoItem', 'TodoItem']);
+    expect(rows.map((n) => n.id)).toEqual([13, 21, 19]);
+  });
+
+  it('keeps creation order when nothing rendered', () => {
+    const graph = new Map<number, RNode>([
+      [7, rowNode(7)],
+      [3, rowNode(3)],
+    ]);
+    expect(componentTree(graph).map((n) => n.id)).toEqual([3, 7]);
+  });
+});
+
+/**
+ * Ticking `values` only marked the drawing stale. Nothing calls render on an idle page, so
+ * the box appeared dead until something in the app happened to move.
+ */
+describe('the values checkbox', () => {
+  const graph = new Map<number, RNode>([
+    [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+    [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+    [2, { id: 2, label: 'mapArray', kind: 'memo', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: false, createdIn: 0 }],
+  ]);
+
+  it('redraws as soon as it is ticked', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const tree = createComponentTree(host, {});
+    tree.render(graph);
+    expect(host.textContent).not.toContain('todos');
+
+    const box = host.querySelector('.fx-tree-bar input') as HTMLInputElement;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    // No second render call: the tick is what used to supply it, and an idle page has none.
+    expect(host.textContent).toContain('todos');
+    host.remove();
+  });
+
+  it('leaves out what the framework made', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const tree = createComponentTree(host, { values: true });
+    tree.render(graph);
+    expect(host.textContent).toContain('todos');
+    expect(host.textContent).not.toContain('mapArray');
+    host.remove();
+  });
+});
+
+/**
+ * A value a nested tag reads writes nowhere the owning tag's description reaches, so it never
+ * nests beside an element. Appending it left `todos` alone at the bottom of `App`, well away
+ * from the `For` that reads it.
+ */
+describe('a value the dom cannot place', () => {
+  const host = () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    return el;
+  };
+
+  it('nests under the tag that reads it, through the machinery that really reads it', () => {
+    // What the runtime actually builds: `For` does not read the list, the `mapArray` inside
+    // it does, and that is machinery the tree never draws. The lookup has to climb past it.
+    const list = document.createElement('ul');
+    document.body.append(list);
+    const graph = new Map<number, RNode>([
+      [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+      [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+      [2, { id: 2, label: 'For', kind: 'control', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+      [3, { id: 3, label: 'mapArray', kind: 'memo', deps: new Set([1]), writes: new Set(), runs: 1, lastPulse: 0, authored: false, createdIn: 2 }],
+      [4, { id: 4, label: 'TodoItem', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 3 }],
+    ]);
+    const where = host();
+    createComponentTree(where, {
+      values: true,
+      domFor: (id) => (id === 0 ? [{ label: 'ul.list', children: [], element: list }] : []),
+    }).render(graph);
+
+    const rows = [...where.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const at = rows.findIndex((r) => r.includes('For'));
+    expect(at).toBeGreaterThan(-1);
+    // Ahead of the rows the tag produced: the value is what it was given.
+    expect(rows[at + 1]).toContain('todos');
+    expect(rows[at + 2]).toContain('TodoItem');
+    where.remove();
+    list.remove();
+  });
+
+  it('leads the tag own children when nothing reads it', () => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    document.body.append(el);
+    const graph = new Map<number, RNode>([
+      [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+      [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+    ]);
+    const where = host();
+    createComponentTree(where, {
+      values: true,
+      domFor: (id) => (id === 0 ? [{ label: 'div.card', children: [], element: el }] : []),
+    }).render(graph);
+
+    const rows = [...where.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    expect(rows[0]).toContain('App');
+    expect(rows[1]).toContain('todos');
+    where.remove();
+    el.remove();
+  });
+});
+
+/**
+ * A prop is the other half of what a tag says. `<For each={todos()}>` is as much `each` as it
+ * is the rows it went on to render, and every component takes them.
+ */
+describe('props in the tree', () => {
+  const graph = new Map<number, RNode>([
+    [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+    [1, {
+      id: 1, label: 'TodoItem', kind: 'component', deps: new Set(), writes: new Set(), runs: 1,
+      lastPulse: 0, authored: true, createdIn: 0,
+      props: [
+        { name: 'todo', value: '{ id: 1, text: "Read the compiler docs" }', at: { file: 'src/app.tsx', line: 41, column: 12 } },
+        { name: 'onToggle', value: 'f toggle()' },
+      ],
+    }],
+  ]);
+
+  const mount = (options: Parameters<typeof createComponentTree>[1] = {}) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const tree = createComponentTree(host, { values: true, ...options });
+    tree.render(graph);
+    return host;
+  };
+
+  const open = (host: HTMLElement): void => {
+    const group = host.querySelector('.fx-tree-row.is-props') as HTMLElement;
+    group.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  };
+
+  const labels = (host: HTMLElement): string[] =>
+    [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+
+  it('folds them into one row, counted', () => {
+    // A tag with six props would otherwise bury what it rendered.
+    const host = mount();
+    const group = host.querySelector('.fx-tree-row.is-props');
+    expect(group).toBeTruthy();
+    expect(group!.textContent).toContain('2');
+    expect(host.textContent).not.toContain('onToggle');
+    host.remove();
+  });
+
+  it('lists them once opened', () => {
+    const host = mount();
+    open(host);
+    const rows = labels(host);
+    const at = rows.findIndex((r) => r.includes('props'));
+    expect(rows[at + 1]).toContain('todo');
+    expect(rows[at + 2]).toContain('onToggle');
+    host.remove();
+  });
+
+  it('sits above the markup even when the tag rendered something', () => {
+    const li = document.createElement('li');
+    document.body.append(li);
+    const host = mount({
+      domFor: (id: number) => (id === 1 ? [{ label: 'li.done', children: [], element: li }] : []),
+    });
+    const rows = labels(host);
+    const at = rows.findIndex((r) => r.includes('TodoItem'));
+    expect(rows[at + 1]).toContain('props');
+    expect(rows[at + 2]).toContain('li.done');
+    host.remove();
+    li.remove();
+  });
+
+  it('selects the tag a prop was written on when clicked', () => {
+    const picked: (number | null)[] = [];
+    const host = mount({ onSelect: (id: number | null) => picked.push(id) });
+    open(host);
+    const prop = [...host.querySelectorAll('.fx-tree-row.is-prop')].find((r) =>
+      r.textContent!.includes('onToggle'),
+    ) as HTMLElement;
+    prop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(picked).toEqual([1]);
+    host.remove();
+  });
+
+  it('says nothing about props until values are asked for', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    createComponentTree(host, {}).render(graph);
+    expect(host.querySelector('.fx-tree-row.is-props')).toBeNull();
+    host.remove();
   });
 });

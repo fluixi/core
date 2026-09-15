@@ -28,6 +28,8 @@ export interface KindFilterOptions {
   onChange: (kinds: NodeKind[] | null) => void;
   /** What the button says. @default 'Kinds' */
   label?: string;
+
+  panelClass?: string;
 }
 
 export interface KindFilter {
@@ -52,13 +54,19 @@ export function createKindFilter(host: HTMLElement, options: KindFilterOptions):
 
   const button = doc.createElement('button');
   button.type = 'button';
-  button.className = 'fx-kinds-button';
+  button.className = 'fx-kinds-button fx-dropdown-btn';
   button.setAttribute('aria-haspopup', 'true');
   button.setAttribute('aria-expanded', 'false');
   button.title = 'Choose which kinds of node the graph draws';
 
+  const caret = doc.createElement('div');
+  caret.className = 'fx-dropdown-caret';
+
   const panel = doc.createElement('div');
   panel.className = 'fx-kinds-panel';
+  if (options.panelClass) {
+    panel.classList.add(...options.panelClass.split(/\s+/).filter((c) => c));
+  }
   panel.hidden = true;
 
   const all = doc.createElement('input');
@@ -90,6 +98,7 @@ export function createKindFilter(host: HTMLElement, options: KindFilterOptions):
     button.textContent = everything() ? name : `${name} · ${on.size}`;
     button.classList.toggle('on', !everything());
     all.checked = everything();
+    button.appendChild(caret);
     // Partly selected: show the box as indeterminate rather than guessing a state.
     all.indeterminate = on.size > 0 && !everything();
     for (const [kind, box] of boxes) box.checked = on.has(kind);
@@ -160,12 +169,14 @@ export const KIND_FILTER_CSS = `
 /* The hidden attribute is display:none from the user agent, which a class setting display outranks. */
 .fx-kinds-panel[hidden] { display: none; }
 .fx-kinds-panel {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
+  position: absolute; top: calc(100% + 4px); z-index: 40;
   display: grid; gap: 2px; padding: 6px 8px; min-width: 132px;
   background: var(--fx-panel, #14161c);
   border: 1px solid var(--fx-line, #262a35); border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .38);
-}
+  }
+.fx-kinds-panel:not(.fx-panel-left){ right: 0; }
+.fx-kinds-panel.fx-panel-left { left: 0; }
 .fx-kinds-panel label {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; color: var(--fx-muted, #8a90a2); cursor: pointer; user-select: none;
@@ -177,4 +188,10 @@ export const KIND_FILTER_CSS = `
   border-bottom: 1px solid var(--fx-line, #262a35);
   color: var(--fx-label, #e7e9ee) !important;
 }
+`;
+
+export const DROPDOWN_FILTER_CSS = `
+.fx-dropdown-btn { background-color: transparent; appearance: none; border: 1px solid var(--line-strong); outline: none; border-radius: .25rem; padding-block: .25rem; padding-inline: .875rem; font-size: .75rem; cursor: pointer }
+.fx-dropdown-btn:hover { border-color: color-mix(in oklab, var(--accent) 50%, transparent); background-color: var(--bg); }
+.fx-dropdown-caret { width: 0;height: 0;border-left: .15rem solid transparent; border-right: .15rem solid transparent; border-top: .15rem solid currentColor; transition: transform 0.2s ease; right: .4rem; top: 50%; color: color-mix(in oklab, var(--muted) 50%, transparent); position: absolute; }
 `;

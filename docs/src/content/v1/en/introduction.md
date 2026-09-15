@@ -1,8 +1,12 @@
 # Introduction
 
-Fluixi is a **compiler-native reactive platform**. Its compiler understands reactive values as
-values — not as a naming convention — and carries that understanding through JSX and `` html`` ``
+Fluixi is a **compiler-native reactive framework**. Its compiler understands reactive values as
+values, not as a naming convention, and carries that understanding through JSX and `` html`` ``
 templates, DOM generation, SSR, hydration, routing and the meta-framework as one model.
+
+Because that model belongs to the compiler rather than to a debugger bolted on beside it, it can
+be read back: from source before anything runs, and from a running application in the editor, the
+browser and the playground.
 
 That is the whole idea, and it is worth being precise about what it buys, because "fine-grained
 reactivity" and "no virtual DOM" describe several frameworks and Fluixi is not trying to be a
@@ -13,7 +17,7 @@ different spelling of any of them.
 Every reactive framework asks you to keep a model in your head that the language does not share.
 You learn which reads are tracked, which values may be destructured, where a value has to stay a
 function, and which of your ordinary JavaScript habits will silently sever a dependency. The
-compiler cannot help, because it does not know what any of your values are — so the burden lands on
+compiler cannot help, because it does not know what any of your values are, so the burden lands on
 you, and the failures are quiet: a stale label, a list that stops updating, nothing thrown.
 
 Fluixi's answer is to make the compiler know. It resolves a reactive primitive by the binding it
@@ -21,10 +25,10 @@ came from, not by how the name reads:
 
 ```ts
 import { signal as state } from '@fluixi/reactive/signal';
-const count = state(0);        // a signal — resolved through the import
+const count = state(0);        // a signal, resolved through the import
 
 function signal() { return 42; }
-const value = signal();        // not a signal — a local function
+const value = signal();        // not a signal, a local function
 ```
 
 From there it can do things a runtime alone cannot. Destructure a component's props and the
@@ -37,7 +41,7 @@ function Card({ title, ...rest }) {
 ```
 
 Where it cannot prove a rewrite is safe, it leaves your code exactly as written and says why. That
-is the contract: **normal TypeScript, with the compiler carrying the reactivity — and telling you
+is the contract: **normal TypeScript, with the compiler carrying the reactivity, and telling you
 when it can't.**
 
 ## What follows from that
@@ -62,14 +66,14 @@ const doubled = memo(() => count() * 2);          // derived
 effect(() => console.log(doubled()));             // side effect
 ```
 
-Inside a compiled app, drop the import — `$signal`, `$memo` and `$effect` are the same primitives,
+Inside a compiled app, drop the import: `$signal`, `$memo` and `$effect` are the same primitives,
 resolved by the compiler.
 
 - A **signal** holds a value and tracks who reads it. Call it to read, `.set()` to write.
 - A **memo** derives a value and recomputes only when its dependencies change.
 - An **effect** runs a side effect and re-runs when its reactive reads change.
 
-The reactive core — `@fluixi/reactive` — is a standalone library implementing the **TC39 Signals**
+The reactive core, `@fluixi/reactive`, is a standalone library implementing the **TC39 Signals**
 model: a glitch-free, lazy, push-pull dependency graph you can use in the browser, on the server,
 or entirely on its own.
 
@@ -82,6 +86,6 @@ here, and pretending otherwise would be silly.
 What is Fluixi's own is the **contract between compiler and reactive graph**, and how far it
 reaches: one semantic model from a value's creation, through aliasing and destructuring and derived
 computations, into generated DOM bindings, across SSR and hydration, and out to disposal. Judge it
-on whether writing ordinary TypeScript keeps working — not on the feature list.
+on whether writing ordinary TypeScript keeps working, not on the feature list.
 
 Next: **[Quickstart](/v1/en/quickstart)**.

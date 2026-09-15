@@ -181,6 +181,8 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
   });
   // Kept out of the redrawn markup: the panel replaces its content wholesale, and a control
   // inside it would be rebuilt under the pointer every time something changed.
+  const header = doc.createElement('div');
+  header.className = 'ins-header';
   const bar = doc.createElement('label');
   bar.className = 'ins-bar';
   const box = doc.createElement('input');
@@ -190,7 +192,8 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
   bar.title = 'Also show where the framework created this, not only where it was written';
   const body = doc.createElement('div');
   body.className = 'ins-body';
-  host.replaceChildren(bar, body);
+  header.appendChild(bar);
+  host.replaceChildren(header, body);
   box.addEventListener('change', () => {
     internals = box.checked;
     signature = '';
@@ -461,6 +464,8 @@ export const INSPECTOR_CSS = `
 ${VALUE_PANE_CSS}
 /* Anything cut to fit says so, and opens the whole of it. */
 .ins-more { cursor: zoom-in; }
+.ins-header{ display: flex; align-items: center; gap: 8px; padding: .3rem .5rem; }
+.ins-body { padding: .5rem; }
 .ins-more:hover { text-decoration: underline dotted; }
 .ins-empty { color: var(--fx-muted, #8a90a2); font-size: 12px; }
 .ins-bar {

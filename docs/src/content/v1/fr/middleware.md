@@ -22,7 +22,7 @@ atteint le moteur de rendu.
 
 ## Les deux choses qu'un middleware peut faire
 
-**Court-circuiter** — renvoyez une `Response` et plus rien ne s'exécute, ni la suite de la
+**Court-circuiter**, renvoyez une `Response` et plus rien ne s'exécute, ni la suite de la
 chaîne ni le rendu. C'est la forme des redirections d'authentification, des pages de
 maintenance et du rejet précoce d'une mauvaise requête :
 
@@ -33,7 +33,7 @@ async (request, next) => {
 };
 ```
 
-**Envelopper** — appelez `next()` et ajustez ce qui revient. La réponse est une `Response`
+**Envelopper** : appelez `next()` et ajustez ce qui revient. La réponse est une `Response`
 standard : pour ajouter des en-têtes, reconstruisez-la.
 
 ```ts
@@ -52,7 +52,7 @@ qu'une affectation en place.
 
 Le middleware s'exécute pour **chaque** requête atteignant le serveur, y compris les
 navigations qui rendent une page. Placez d'abord les vérifications discriminantes et peu
-coûteuses, et mettez tout ce qui est cher — une requête en base, une vérification de jeton —
+coûteuses, et mettez tout ce qui est cher, une requête en base, une vérification de jeton,
 derrière un test de chemin, pour qu'une requête d'asset statique ne le paie pas.
 
 Le middleware ne s'exécute pas pour les pages prérendues. Celles-ci ont été rendues au
@@ -61,8 +61,8 @@ chaque requête ne peut donc pas vivre uniquement ici si la route est aussi pré
 
 ## Intercepteurs
 
-Le middleware est le côté serveur. Côté client, `addInterceptor` enveloppe `fetch` — y
-compris le RPC des fonctions serveur — d'un pipeline requête/réponse/erreur :
+Le middleware est le côté serveur. Côté client, `addInterceptor` enveloppe `fetch`, y
+compris le RPC des fonctions serveur, d'un pipeline requête/réponse/erreur :
 
 ```ts
 import { addInterceptor } from '@fluixi/start';
@@ -79,7 +79,7 @@ const remove = addInterceptor({
 ```
 
 Chaque hook reçoit la véritable `Request`/`Response`, pas un objet de configuration, et
-chacun est optionnel. Un hook `error` qui renvoie une `Response` **récupère** l'appel — ce
+chacun est optionnel. Un hook `error` qui renvoie une `Response` **récupère** l'appel, ce
 qui réduit « rafraîchir puis réessayer » à quelques lignes ; ne rien renvoyer laisse l'échec
 se propager.
 

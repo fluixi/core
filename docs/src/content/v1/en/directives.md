@@ -9,7 +9,7 @@ Directives are special attributes the compiler understands. Most work in **both*
 Delegated events (one listener at the root, dispatched by the framework):
 
 ```ts
-html`<button @click=${onClick}>Save</button>`;   // html`` — @event
+html`<button @click=${onClick}>Save</button>`;   // html``, @event
 // JSX equivalent:
 <button onClick={onClick}>Save</button>;
 ```
@@ -22,12 +22,12 @@ Four events are delegated: **`click`, `input`, `change`, `submit`**. One listene
 attached at the root and dispatched to the right element, so a thousand rows cost one
 listener rather than a thousand.
 
-Everything else attaches directly. For a **native** listener on a delegated event —
-required for `capture`, `once` or `passive` — use `on:`:
+Everything else attaches directly. For a **native** listener on a delegated event,
+required for `capture`, `once` or `passive`, use `on:`:
 
 ```ts
 html`<div on:scroll=${onScroll}></div>`;
-<div on:scroll={onScroll} />;   // JSX — on: index signature
+<div on:scroll={onScroll} />;   // JSX, on: index signature
 ```
 
 Delegation is worth knowing about in one case: inside a delegated handler, `currentTarget`
@@ -74,9 +74,9 @@ html`<input ref=${(node) => (el = node)} />`;
 ```
 
 The ref is set as the element is created, **before** it is attached to the document. Read
-layout in `onMount`, not in the ref callback — at ref time the element has no box.
+layout in `onMount`, not in the ref callback, at ref time the element has no box.
 
-### use — custom directives
+### use, custom directives
 
 `use=${fn}` calls `fn(element)` when the element mounts; the named form passes options:
 
@@ -86,7 +86,7 @@ html`<div use:tooltip=${{ text: 'Hi' }}></div>`;
 <div use:tooltip={{ text: 'Hi' }} />;   // JSX
 ```
 
-A directive is an ordinary function — `(el, options) => …`. Options are passed as an
+A directive is an ordinary function, `(el, options) => ...`. Options are passed as an
 accessor so the directive can track them, and anything the directive registers should be
 cleaned up with `onCleanup` inside it.
 
@@ -99,7 +99,7 @@ Force how a value is applied, bypassing the property-vs-attribute heuristic. The
 **both** JSX and `` html`` ``:
 
 ```ts
-html`<input prop:value=${text()} />`;      // always the DOM property (element.value = …)
+html`<input prop:value=${text()} />`;      // always the DOM property (element.value = ...)
 html`<div attr:data-id=${id()} />`;        // always setAttribute
 html`<button bool:disabled=${busy()} />`;  // present when truthy, removed when falsy
 ```
@@ -113,19 +113,19 @@ html`<button bool:disabled=${busy()} />`;  // present when truthy, removed when 
 Normally the heuristic gets it right. The three cases where it does not, and you need to
 force it:
 
-- **Custom elements** taking rich values — an object must go through a property, since an
+- **Custom elements** taking rich values, an object must go through a property, since an
   attribute would stringify it to `[object Object]`.
-- **Values that differ from their attribute** — `input.value` is the live value, while the
+- **Values that differ from their attribute**, `input.value` is the live value, while the
   `value` attribute is only the default.
-- **Boolean attributes** — `disabled="false"` is still disabled; `bool:` removes it.
+- **Boolean attributes**, `disabled="false"` is still disabled; `bool:` removes it.
 
 ### .prop and ?attr (html`` shorthands)
 
 Lit-style shorthands for the same idea:
 
 ```ts
-html`<video .currentTime=${t()}></video>`;   // property binding — same as prop:
-html`<button ?disabled=${busy()}></button>`; // boolean attribute — same as bool:
+html`<video .currentTime=${t()}></video>`;   // property binding, same as prop:
+html`<button ?disabled=${busy()}></button>`; // boolean attribute, same as bool:
 ```
 
 ### class and style
@@ -138,7 +138,7 @@ html`<div style=${{ color: c(), '--x': px() }}></div>`;
 <div classList={{ active: on() }} style={{ color: c() }} />;
 ```
 
-A static `class` and a dynamic one combine — `class="box"` stays as the element's class
+A static `class` and a dynamic one combine, `class="box"` stays as the element's class
 and the object adds to it, so you can keep base classes in markup.
 
 > **`class=` only becomes `classList` for a literal object.** The compiler decides by
@@ -155,11 +155,11 @@ html`<div style:color=${c()} style:--x=${px()}></div>`;
 
 Custom properties (`--x`) are set through `setProperty`, so they work in both forms.
 
-### html — raw innerHTML
+### html, raw innerHTML
 
 ```ts
-html`<div html=${markup()}></div>`;      // html`` — sets innerHTML
-<div innerHTML={markup()} />;            // JSX — the prop is named innerHTML
+html`<div html=${markup()}></div>`;      // html``, sets innerHTML
+<div innerHTML={markup()} />;            // JSX, the prop is named innerHTML
 ```
 
 The `html=` spelling is `` html`` ``-only; in JSX write `innerHTML` directly. Both are
@@ -167,11 +167,11 @@ reactive when given an accessor.
 
 > **This is the one place a hole is parsed as HTML.** Everywhere else a value becomes text
 > or an attribute and cannot inject markup. Never pass user-supplied content here without
-> sanitising it — a string containing `<img onerror=…>` will execute. If you only need
+> sanitising it, a string containing `<img onerror=...>` will execute. If you only need
 > text, interpolate normally; that is already safe.
 
 Content set this way is replaced wholesale on change, so anything inside it is outside the
-reactive system — no bindings, no components, no cleanup.
+reactive system, no bindings, no components, no cleanup.
 
 ### ...spread
 
@@ -187,7 +187,7 @@ can be overwritten. Pass a getter or a store when the set of props itself change
 
 ## Control flow (html`` only)
 
-These compile to the `<Show>` / `<For>` components — sugar for common cases. In JSX, use
+These compile to the `<Show>` / `<For>` components, sugar for common cases. In JSX, use
 the components directly.
 
 ### if / else
@@ -200,7 +200,7 @@ html`
 ```
 
 `if` compiles to `<Show when>`; an **immediately following sibling** with `else` becomes
-the fallback. Anything between them — even a text node — breaks the pairing, so keep them
+the fallback. Anything between them, even a text node, breaks the pairing, so keep them
 adjacent.
 
 The branch is created and destroyed, not hidden: leaving it runs cleanup, and returning
@@ -212,7 +212,7 @@ builds it fresh.
 html`<li each=${items()}>${(item) => item.label}</li>`;
 ```
 
-`each` compiles to `<For each>`; the `${item => …}` child is the render function, and it
+`each` compiles to `<For each>`; the `${item => ...}` child is the render function, and it
 receives **the item itself**, not an accessor. The element carrying `each` is the one
 repeated.
 
@@ -223,11 +223,11 @@ position:
 html`<li each=${rows()} key="id">${(row) => row.name}</li>`;
 ```
 
-Without a key, a row's DOM is tied to its index — inserting at the front rebuilds
+Without a key, a row's DOM is tied to its index: inserting at the front rebuilds
 everything after it. With one, only what actually moved is touched. Key any list whose
 items are inserted, removed or reordered.
 
-### bind: — two-way binding
+### bind: two-way binding
 
 `bind:value` and `bind:checked` bind an input to a signal:
 
@@ -237,10 +237,10 @@ html`<input bind:value=${name} />`;                 // value + input event
 html`<input type="checkbox" bind:checked=${on} />`; // checked + change event
 ```
 
-Pass the signal itself — `signal(…)` or the `[get, set]` pair from `createSignal(…)`, either
-works — never a bare accessor, since the binding writes as well as reads. The
+Pass the signal itself, `signal(...)` or the `[get, set]` pair from `createSignal(...)`, either
+works, never a bare accessor, since the binding writes as well as reads. The
 binding reads `event.target`, so it works on any element that carries a `value` or
-`checked`. For anything else — a select's multiple values, a number that needs parsing —
+`checked`. For anything else, a select's multiple values, a number that needs parsing,
 write the two halves yourself; `bind:` is deliberately only the common case.
 
 ## JSX vs html`` at a glance
@@ -253,7 +253,7 @@ write the two halves yourself; `bind:` is deliberately only the common case.
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
 | `classList`, `style` object, `...spread` | ✓ | ✓ |
 | raw HTML | `innerHTML` | `html=` or `innerHTML` |
-| `oncapture:event` | ✓ | — |
-| `.prop`, `?attr` | — | ✓ |
-| `class:name`, `style:prop` | — | ✓ |
-| `if` / `else`, `each` / `key`, `bind:` | — (use `<Show>`/`<For>`) | ✓ |
+| `oncapture:event` | ✓ |, |
+| `.prop`, `?attr` |, | ✓ |
+| `class:name`, `style:prop` |, | ✓ |
+| `if` / `else`, `each` / `key`, `bind:` |, (use `<Show>`/`<For>`) | ✓ |

@@ -12,7 +12,7 @@ fluixi start     →  serves it with the node adapter
 ## The three shapes
 
 **A static site.** With [`prerender`](/v1/en/static-generation) every route is written to
-`dist/client` as HTML. Upload that directory anywhere — there is no server to run.
+`dist/client` as HTML. Upload that directory anywhere, there is no server to run.
 
 **A Node server.** `fluixi start` runs the node adapter: it listens on a port and serves
 `dist/client` from disk, falling through to the handler for anything not found. This is the
@@ -24,7 +24,7 @@ want a module exporting `fetch`. That is what the web adapter returns:
 ```ts
 import { createProdHandler, webAdapter } from '@fluixi/start';
 
-const handler = await createProdHandler(/* … */);
+const handler = await createProdHandler(/* ... */);
 
 export default webAdapter.serve({ handler, cfg, clientDir });
 // → { fetch: (request) => Promise<Response> }
@@ -47,7 +47,7 @@ export default defineConfig({
 });
 ```
 
-`fluixi start` serves with that adapter too — with `webAdapter` it has nothing to run, and
+`fluixi start` serves with that adapter too, with `webAdapter` it has nothing to run, and
 says so instead of pretending to have started.
 
 ## How the server gets bundled
@@ -62,21 +62,21 @@ mode and `fluixi build` follows it:
 | unset (no adapter) | Vite's own heuristic | usually |
 
 A long-running Node process runs from the app directory, where the dependencies are already
-installed — copying the framework into the bundle only makes the build slower. On the
+installed, copying the framework into the bundle only makes the build slower. On the
 `examples/start-app` app that is `dist/server/entry-server.js` at **4.6 KB instead of
-76 KB** — the app's own code and nothing else — with the whole build dropping from 1.9 s to
+76 KB**, the app's own code and nothing else, with the whole build dropping from 1.9 s to
 0.8 s. The rendered HTML is byte-identical either way.
 
 An edge or serverless runtime is the opposite case: you upload a file, not an install, so
-nothing may be left to resolve — `'inline'` puts everything in the bundle.
+nothing may be left to resolve, `'inline'` puts everything in the bundle.
 
 `'external'` externalizes the `@fluixi/*` packages **your app declares as dependencies**,
 and nothing else. Under a strict `node_modules` layout (pnpm) a package you never declared
 is not resolvable from your app root, so externalizing one would produce a bundle importing
 something Node cannot find. Each package is listed with every subpath it exports, because
-half-externalizing one — `@fluixi/core` an import, `@fluixi/core/router` copied into the
-bundle — would put two routers with two sets of module state in the same server.
-`ssrNoExternal` still wins over all of this — it is the app saying "bundle this one anyway".
+half-externalizing one, `@fluixi/core` an import, `@fluixi/core/router` copied into the
+bundle, would put two routers with two sets of module state in the same server.
+`ssrNoExternal` still wins over all of this, it is the app saying "bundle this one anyway".
 
 > Only the build reads `bundle`. Dev never externalizes: `fluixi dev` loads server modules
 > through Vite so that editing them still triggers HMR.
@@ -98,18 +98,18 @@ export default defineConfig({ adapter: cloudflareAdapter });
 | --- | --- | --- |
 | `cloudflareAdapter` | `dist/client/_worker.js` + `_routes.json` | publish `dist/client` |
 | `netlifyAdapter` | `.netlify/functions-internal/fluixi-server.mjs` | publish `dist/client` |
-| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | nothing — Vercel reads it directly |
+| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | nothing, Vercel reads it directly |
 
 Each one serves static files first and only reaches the server for a miss: Cloudflare
 through the `ASSETS` binding, Netlify through `preferStatic`, Vercel through a
 `filesystem` route ahead of the function. A prerendered page is a file, so it stays one.
 
-The entry is generated and bundled into a single file — no chunks. On Cloudflare that
+The entry is generated and bundled into a single file, no chunks. On Cloudflare that
 is not a size choice: the worker is written into the directory you publish, so a split
 chunk would be a publicly downloadable piece of your server.
 
 An app with no server entry (a fully prerendered SPA) gets the static output alone,
-which is not a failure — there is nothing to wrap.
+which is not a failure, there is nothing to wrap.
 
 ## Writing an adapter
 
@@ -122,7 +122,7 @@ export const myAdapter: Adapter = {
   name: 'my-platform',
   bundle: 'inline',
   serve({ handler, cfg, clientDir }) {
-    // Either take over the process — listen, block, never return —
+    // Either take over the process, listen, block, never return,
     // or return { fetch } for the platform to invoke.
     return { fetch: handler };
   },
@@ -149,7 +149,7 @@ export const myAdapter: Adapter = {
 
 `bundleEntry` inlines the server bundle and the HTML template into one file. Both have
 to be inlined rather than read: `createProdHandler` reads `index.html` off disk and
-imports the server entry by path, which is exactly what a worker cannot do — so the
+imports the server entry by path, which is exactly what a worker cannot do, so the
 generated entry imports them statically and calls `createHandlerFrom` instead. Same
 handler, same dispatch order, no filesystem.
 
@@ -157,20 +157,20 @@ handler, same dispatch order, no filesystem.
 
 | Path | What it is | Needed at runtime |
 | --- | --- | --- |
-| `dist/client` | assets, prerendered HTML | yes — by the server or a CDN |
+| `dist/client` | assets, prerendered HTML | yes, by the server or a CDN |
 | `dist/server` | the fetch handler | only for SSR |
 
 A fully prerendered site needs `dist/client` alone. With an `'external'` build, `dist/server`
-is not enough on its own — ship `package.json` and install dependencies where it runs.
+is not enough on its own, ship `package.json` and install dependencies where it runs.
 
 ## Before you deploy
 
 - **`prerender` requires `ssr: true`.** Prerendering is server rendering moved to build
   time; with SSR off there is nothing to render with.
-- **Middleware does not run for prerendered pages.** They are files. A per-request check —
-  auth, geolocation — has to live somewhere that actually runs per request.
+- **Middleware does not run for prerendered pages.** They are files. A per-request check,
+  auth, geolocation, has to live somewhere that actually runs per request.
 - **Check the version stamps.** The mount element carries `fluixi`, `fx-dom` and
   `fx-reactive`, and `window.Fluixi` reports the same. If they disagree in a deployed
-  build, the install resolved two copies — worth catching before it becomes a bug report.
+  build, the install resolved two copies, worth catching before it becomes a bug report.
 
 Next: **[Dependency injection](/v1/en/dependency-injection)**.

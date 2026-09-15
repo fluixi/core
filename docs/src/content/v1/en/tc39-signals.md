@@ -1,13 +1,13 @@
 # The TC39 Signals core
 
-The primitives you've seen — `createSignal`, `createMemo`, `createEffect` — are built on a small,
+The primitives you've seen, `createSignal`, `createMemo`, `createEffect`, are built on a small,
 standards-shaped core: an implementation of the **TC39 Signals proposal**. You rarely need it
 directly, but it's there when you want the lowest-level API or to build your own reactive
 abstractions.
 
 ## Signal.State
 
-A writable signal — the equivalent of `createSignal`:
+A writable signal, the equivalent of `createSignal`:
 
 ```ts
 import { Signal } from '@fluixi/reactive/signal';
@@ -23,7 +23,7 @@ It's equality-gated like `createSignal`; pass `{ equals }` to customize.
 
 ## Signal.Computed
 
-A lazy, cached derived signal — the equivalent of `createMemo`:
+A lazy, cached derived signal, the equivalent of `createMemo`:
 
 ```ts
 const doubled = new Signal.Computed(() => count.get() * 2);
@@ -31,13 +31,13 @@ const doubled = new Signal.Computed(() => count.get() * 2);
 doubled.get(); // recomputes only when count changes
 ```
 
-A computed runs only when read, and only recomputes when a dependency it read actually changed —
+A computed runs only when read, and only recomputes when a dependency it read actually changed,
 the same glitch-free, lazy behavior as a memo.
 
 ## Signal.subtle.Watcher
 
-`State` and `Computed` are **pull-based**: nothing runs on its own. To react *eagerly* — the basis of
-effects — use a `Watcher`. Its callback fires when a watched signal might have changed; it must not
+`State` and `Computed` are **pull-based**: nothing runs on its own. To react *eagerly*, the basis of
+effects: use a `Watcher`. Its callback fires when a watched signal might have changed; it must not
 read signals itself, only schedule work:
 
 ```ts
@@ -68,8 +68,8 @@ anything observes a signal).
 ## Why this matters
 
 Because the core follows the TC39 model, your reactive state is **interoperable** and the graph is
-**introspectable** — which is precisely what powers the live dependency graph in the
+**introspectable**, which is precisely what powers the live dependency graph in the
 [Playground](https://playground.fluixi.com) and `@fluixi/devtools`.
 
-The everyday API (`createSignal` and friends) is almost always what you want — but now you know
+The everyday API (`createSignal` and friends) is almost always what you want, but now you know
 what's underneath it.

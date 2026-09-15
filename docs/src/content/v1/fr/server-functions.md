@@ -27,7 +27,7 @@ Deux conséquences en découlent, et elles sont à l'origine de la plupart des s
 
 - **Arguments et valeurs de retour traversent le réseau** : ils doivent être
   sérialisables. Passer une instance de classe, une fonction, un nœud DOM ou un signal ne
-  fonctionnera pas — envoyez des données simples.
+  fonctionnera pas, envoyez des données simples.
 - **Le corps n'est plus dans le client**, donc tout ce qu'il capture disparaît aussi. Les
   imports utilisés uniquement dans des fonctions serveur sont retirés du bundle navigateur :
   c'est précisément pourquoi un client de base de données peut être importé en tête d'un
@@ -38,7 +38,7 @@ promesse même là où le corps d'origine était synchrone.
 
 ## Contexte de requête
 
-Dans une fonction serveur, vous pouvez atteindre la requête courante — en-têtes, cookies,
+Dans une fonction serveur, vous pouvez atteindre la requête courante, en-têtes, cookies,
 URL :
 
 ```ts
@@ -52,7 +52,7 @@ async function whoAmI() {
 ```
 
 `getRequestEvent()` renvoie `undefined` quand aucune requête n'est en cours : le chaînage
-optionnel ci-dessus n'est donc pas décoratif — le même module peut être importé pendant un
+optionnel ci-dessus n'est donc pas décoratif, le même module peut être importé pendant un
 prérendu au moment du build.
 
 Le contexte étant lié à la requête, lisez-le **avant** le premier `await` dans les flux
@@ -61,7 +61,7 @@ complexes, et transmettez ce dont vous avez besoin plutôt que d'y revenir plus 
 ## Erreurs
 
 Une exception levée côté serveur ressort en promesse rejetée au site d'appel. Seul le
-message traverse le réseau — les traces de pile restent sur le serveur, une erreur interne
+message traverse le réseau, les traces de pile restent sur le serveur, une erreur interne
 ne peut donc pas divulguer de chemins ni de requêtes SQL au navigateur. Levez une erreur
 délibérée et lisible pour ce que le client doit traiter, et laissez le reste être un échec
 générique.
@@ -70,6 +70,6 @@ générique.
 
 `@fluixi/forms` transforme une fonction serveur en `<form action>` à amélioration
 progressive : elle fonctionne avant le chargement de JavaScript. Pour le flux de mutation
-du routeur — état en attente, réessai — voir [`action` et `<Form>`](/v1/fr/routing).
+du routeur, état en attente, réessai, voir [`action` et `<Form>`](/v1/fr/routing).
 
 Ensuite : **[Routes d'API](/v1/fr/api-routes)**.

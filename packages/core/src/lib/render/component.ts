@@ -3,6 +3,7 @@
  * the reactive system, rendering in render/index.ts, and SSR in server/.
  */
 
+import { isServer } from '@fluixi/dom';
 import {
   registerCreateComponent,
   createComponent as domCreateComponent,
@@ -135,7 +136,7 @@ function getOwnerLifecycle(): OwnerLifecycle | null {
   return owner[_LIFECYCLE];
 }
 
-const isServer = typeof window === 'undefined';
+
 
 /**
  * Schedule a microtask to flush the lifecycle for the current Owner.
@@ -146,7 +147,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
 
   // The flush is a microtask, so on the server it lands after renderToString has
   // returned and reaches for a DOM that is not there.
-  if (isServer) {
+  if (isServer()) {
     lc.mounts = [];
     lc.effects = [];
     return;
@@ -307,7 +308,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
  * ```
  */
 export function onMount(fn: LifecycleCallback, reactive: boolean = true): void {
-  if (isServer) return;
+  if (isServer()) return;
 
   const lc = getOwnerLifecycle();
   if (lc) {

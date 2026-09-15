@@ -28,14 +28,14 @@ Reading it again returns the cached value for free:
 ```ts
 const expensive = memo(() => heavyCompute(data()));
 expensive(); // computes once
-expensive(); // cached — no recompute
+expensive(); // cached, no recompute
 ```
 
 If nothing observes a memo, it never runs at all.
 
 ## Glitch-free
 
-When a change fans out and re-converges, a memo recomputes **exactly once** with consistent inputs —
+When a change fans out and re-converges, a memo recomputes **exactly once** with consistent inputs,
 never with a half-updated, "torn" value:
 
 ```ts

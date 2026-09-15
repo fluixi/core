@@ -5,7 +5,7 @@ liées à l'arbre de propriété réactif.
 
 ## onMount
 
-Exécuter du code une fois, après que le DOM du composant est en place (côté client uniquement — ne
+Exécuter du code une fois, après que le DOM du composant est en place (côté client uniquement, ne
 s'exécute jamais pendant le SSR) :
 
 ```tsx

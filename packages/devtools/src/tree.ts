@@ -5,14 +5,15 @@
  * from, and that is the question a tree is for: `<Router>` holding a `<Counter>` and an
  * `<Another>`, each openable to see what it holds.
  *
- * Both are drawn from the same nodes. A component's place in the tree is `createdIn` — the
- * node whose run made it — lifted through everything that is not itself a tag, since the
+ * Both are drawn from the same nodes. A component's place in the tree is `createdIn`, the
+ * node whose run made it, lifted through everything that is not itself a tag, since the
  * compiler wraps each component in a memo and that memo is not something anyone wrote.
  */
 import type { NodeKind, RNode } from './instrument.js';
 import type { DomNode } from './dom.js';
 import { pluginBadge, pluginElementBadge } from './plugin.js';
 import { kindRules } from './palette.js';
+import { shorten } from './format.js';
 
 /** Kinds that are tags in the source, and so have a place in a tree of them. */
 export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
@@ -58,6 +59,10 @@ interface Row {
   at?: { file: string; line: number; column: number };
   /** Element rows only: what plugins attached to it. */
   extra?: Record<string, unknown>;
+  /** A prop row: what the tag above it was handed. */
+  prop?: { name: string; value?: string };
+  /** The row holding a tag's props, which folds them away. */
+  props?: boolean;
 }
 
 /**
@@ -92,7 +97,7 @@ export type { DomNode } from './dom.js';
  */
 export interface TreeOptions {
   /**
-   * Also list the reactive values each tag made — the signals and memos the author wrote
+   * Also list the reactive values each tag made: the signals and memos the author wrote
    * inside it. Machinery is left out: a node the framework named itself does not count, so
    * a component shows `count` and not the memo it was wrapped in.
    *
@@ -107,6 +112,32 @@ export interface TreeOptions {
   filter?: string;
 }
 
+/**
+ * Put the tags that rendered back into page order, leaving everything else untouched.
+ *
+ * Sorting by id alone reads as creation order, which is wrong for a keyed list: rebuilding a
+ * row hands the replacement the highest id, so the row you edited jumped to the bottom.
+ *
+ * Only the slots those tags already occupy are reshuffled. Sorting the whole list by `order`
+ * instead sent every value to the end of its band, so editing a todo moved the `left` memo
+ * as well, which had nothing to do with the change.
+ */
+export function inPageOrder<T extends { order?: number }>(nodes: T[]): T[] {
+  const slots: number[] = [];
+  const placed: T[] = [];
+  nodes.forEach((node, at) => {
+    if (node.order !== undefined) {
+      slots.push(at);
+      placed.push(node);
+    }
+  });
+  if (placed.length < 2) return nodes;
+  placed.sort((a, b) => a.order! - b.order!);
+  const out = nodes.slice();
+  slots.forEach((slot, i) => (out[slot] = placed[i]!));
+  return out;
+}
+
 /** Cached per call: a plugin's badge is computed from the node and asked for twice. */
 const badges = new WeakMap<RNode, string | undefined>();
 function badgeOf(node: RNode): string | undefined {
@@ -118,7 +149,7 @@ export function componentTree(graph: Map<number, RNode>, options: TreeOptions = 
   const wanted = (node: RNode): boolean =>
     TREE_KINDS.has(node.kind) || (options.values === true && node.authored !== false);
 
-  const tagged = [...graph.values()].filter(wanted).sort((a, b) => a.id - b.id);
+  const tagged = inPageOrder([...graph.values()].filter(wanted).sort((a, b) => a.id - b.id));
 
   const made = new Map<number, TreeNode>();
   for (const node of tagged) {
@@ -182,11 +213,11 @@ export function idsIn(nodes: readonly TreeNode[]): number[] {
 }
 
 export interface ComponentTreeOptions {
-  /** Clicking a row. The host decides what selecting means — usually the inspector. */
+  /** Clicking a row. The host decides what selecting means, usually the inspector. */
   onSelect?: (id: number) => void;
   /**
    * Clicking an element row. Elements have no id, so a host that leaves this out gets no
-   * selection for them at all — which is what made half the tree look inert.
+   * selection for them at all, which is what made half the tree look inert.
    */
   onPick?: (pick: ElementPick) => void;
   /** Double-clicking a row, for a host that can open the file it came from. */
@@ -225,6 +256,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   /** Shut by the reader. Everything else is open, so a new subtree arrives visible. */
   const shut = new Set<string>();
   let signature = '';
+  /** Prop groups already given their starting fold, so reopening one is not undone. */
+  const defaulted = new Set<string>();
   let marked: number | null = null;
   /** Element rows have no id, so what is selected is tracked by row key. */
   let markedKey: string | null = null;
@@ -253,32 +286,48 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   const list = doc.createElement('div');
   list.className = 'fx-tree-list';
   host.replaceChildren(bar, search, list);
+  /** What was last drawn, so a control can redraw without waiting for the app to move. */
+  let last: { graph: Map<number, RNode>; selected: number | null } | null = null;
+
   box.addEventListener('change', () => {
     values = box.checked;
     signature = '';
+    // Clearing the signature only marks it stale. On an idle page nothing calls render
+    // again, so ticking the box appeared to do nothing at all until something else changed.
+    if (last) api.render(last.graph, last.selected);
   });
 
   const row = (node: Row, depth: number): string => {
     const has = node.children.length > 0;
     const open = has && !shut.has(node.key);
-    const twist = has ? (open ? '▾' : '▸') : '·';
-    const tag = node.value
-      ? escape(node.label)
-      : has
-        ? `&lt;${escape(node.label)}&gt;`
-        : `&lt;${escape(node.label)} /&gt;`;
-    const count = has && !open ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
+    const twist = has ? (open ? '▾' : '▸') : node.prop ? '' : '·';
+    const tag = node.props
+      ? `<span class="fx-tree-props-label">props</span><span class="fx-tree-props-count">${node.children.length}</span>`
+      : node.prop
+      ? `<span class="fx-tree-prop-name">${escape(node.prop.name)}</span>${
+          node.prop.value === undefined
+            ? ''
+            : `<span class="fx-tree-prop-value">${escape(shorten(node.prop.value, 44))}</span>`
+        }`
+      : node.value
+        ? escape(node.label)
+        : has
+          ? `&lt;${escape(node.label)}&gt;`
+          : `&lt;${escape(node.label)} /&gt;`;
+    const count = has && !open && !node.props ? `<span class="fx-tree-count">${node.children.length}</span>` : '';
     // Says the chunk it came from was fetched separately, which is why it appeared late.
     const chunk = node.lazy ? '<span class="fx-tree-lazy" title="loaded as its own chunk">lazy</span>' : '';
     const mark = node.badge
       ? `<span class="fx-tree-plugin" title="${escape(node.badge)}">${escape(node.badge)}</span>`
       : '';
     return (
-      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}"` +
+      `<div class="fx-tree-row n-${node.kind}${node.value ? ' is-value' : ''}${node.prop ? ' is-prop' : ''}${node.props ? ' is-props' : ''}"` +
       ` data-key="${escape(node.key)}"${node.id !== undefined ? ` data-id="${node.id}"` : ''}` +
       ` style="--depth:${depth}">` +
       `<button type="button" class="fx-tree-twist" data-twist="${escape(node.key)}"${has ? '' : ' tabindex="-1"'}>${twist}</button>` +
-      `<span class="fx-tree-tag">${tag}</span>${mark}${chunk}${count}` +
+      `<span class="fx-tree-tag"${
+        node.prop?.value ? ` title="${escape(node.prop.name)}=${escape(node.prop.value)}"` : ''
+      }>${tag}</span>${mark}${chunk}${count}` +
       `</div>` +
       (open ? node.children.map((child) => row(child, depth + 1)).join('') : '')
     );
@@ -315,6 +364,23 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     if (rowEl.dataset.id) {
       markedKey = null;
       options.onSelect?.(Number(rowEl.dataset.id));
+      return;
+    }
+    // A prop is not a node of its own, so selecting it selects the tag it was written on,
+    // which is where its value came from and what the inspector has something to say about.
+    const held = shown.get(rowEl.dataset.key ?? '');
+    if (held?.props) {
+      if (shut.has(held.key)) shut.delete(held.key);
+      else shut.add(held.key);
+      signature = '';
+      if (last) api.render(last.graph, last.selected);
+      return;
+    }
+    if (held?.prop) {
+      if (held.owner === undefined) return;
+      markedKey = held.key;
+      paint();
+      options.onSelect?.(held.owner);
       return;
     }
     const pick = pickOf(rowEl);
@@ -375,15 +441,43 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
    * writes into. The second matters for a store declared at module scope, which belongs to
    * no component but still renders somewhere.
    */
-  function rowsFor(nodes: readonly TreeNode[]): Row[] {
+  function rowsFor(nodes: readonly TreeNode[], graph: Map<number, RNode>): Row[] {
     const byId = new Map<number, Row>();
     const build = (node: TreeNode): Row => {
+      // What the tag was handed, ahead of what it produced. A prop is the other half of the
+      // story a tag tells: `<For each={todos()}>` says as much through `each` as through the
+      // rows it went on to render, and every component takes them.
+      const written = values ? (graph.get(node.id)?.props ?? []) : [];
+      const listed: Row[] = written.map((p, i) => ({
+        key: `${node.id}=${i}`,
+        label: p.name,
+        kind: node.kind,
+        children: [],
+        prop: { name: p.name, ...(p.value === undefined ? {} : { value: p.value }) },
+        owner: node.id,
+        ...(p.at?.line === undefined
+          ? {}
+          : { at: { file: p.at.file ?? '', line: p.at.line, column: p.at.column ?? 0 } }),
+      }));
+
+      // One folded row rather than a prop per line. A tag with six of them otherwise buries
+      // what it rendered, which is the thing the tree is for.
+      const group = `${node.id}=props`;
+      // Shut the first time it is met, and whatever the reader does with it after that sticks.
+      if (listed.length && !defaulted.has(group)) {
+        defaulted.add(group);
+        shut.add(group);
+      }
+      const props: Row[] = listed.length
+        ? [{ key: group, label: 'props', kind: node.kind, children: listed, props: true, owner: node.id }]
+        : [];
+
       const row: Row = {
         key: String(node.id),
         label: node.label,
         kind: node.kind,
         id: node.id,
-        children: node.children.map(build),
+        children: [...props, ...node.children.map(build)],
         ...(node.value ? { value: true } : {}),
         ...(node.lazy ? { lazy: true } : {}),
         ...(node.badge ? { badge: node.badge } : {}),
@@ -397,8 +491,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
 
     const placed = new Set<Row>();
     /**
-     * Rows already written into the tree. A tag is reachable two ways — down the component
-     * nesting, and through the element it rendered — and `expand` rewrites the row it is
+     * Rows already written into the tree. A tag is reachable two ways, down the component
+     * nesting and through the element it rendered, and `expand` rewrites the row it is
      * given, so without this the second arrival appends its dom all over again.
      */
     const done = new Set<Row>();
@@ -407,7 +501,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
      * How many places in the dom name each tag.
      *
      * A graph read from source has one node per component *declaration*, so two `<Badge/>`
-     * both point at it. Drawing only the first would take the second out of the tree — but
+     * both point at it. Drawing only the first would take the second out of the tree, but
      * a running graph gives each use its own node, where a tag named twice really is one
      * subtree reached two ways and the second must go. Counting tells them apart.
      */
@@ -419,6 +513,44 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       }
     };
     for (const row of byId.values()) if (row.id !== undefined) tally(domFor(row.id));
+
+    /**
+     * The innermost tag row that reads `id`, if one is in this tree.
+     *
+     * The node doing the reading is often machinery the tree never draws: `For` does not read
+     * its list, `mapArray` does, and that is hidden. So climb from whatever reads it to the
+     * nearest tag that is drawn, which is the `For`.
+     *
+     * Deepest wins, so a value read by a component inside a `For` belongs to the component.
+     * `skip` keeps the tag that declared it from adopting it back.
+     */
+    const readerOf = (id: number, skip: Row): Row | undefined => {
+      const drawn = (from: number): Row | undefined => {
+        const seen = new Set<number>();
+        let at: number | undefined = from;
+        while (at !== undefined && !seen.has(at)) {
+          seen.add(at);
+          const row = byId.get(at);
+          if (row && !row.value && row !== skip) return row;
+          at = graph.get(at)?.createdIn;
+        }
+        return undefined;
+      };
+
+      let best: Row | undefined;
+      let deepest = -1;
+      for (const [nodeId, node] of graph) {
+        if (nodeId === id || !node.deps.has(id)) continue;
+        const row = drawn(nodeId);
+        if (!row || row.id === undefined) continue;
+        const depth = graph.get(row.id)?.depth ?? 0;
+        if (depth >= deepest) {
+          deepest = depth;
+          best = row;
+        }
+      }
+      return best;
+    };
 
     /** The same row again at another place, re-keyed so the two fold independently. */
     const again = (row: Row, key: string): Row => ({
@@ -503,10 +635,41 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       const rendered = dom
         .map((node, i) => walk(node, `${row.id}:${i}`))
         .filter((node): node is Row => node !== undefined);
-      // Anything the DOM did not account for: a portal, or a value writing somewhere the
-      // description did not reach.
+      // Anything the dom did not account for: a portal, or a value read across a tag
+      // boundary rather than written into an element here.
+      //
+      // Above the markup, not below it. A signal a nested tag consumes writes nowhere this
+      // description reaches, so it never nests beside an element, and appending it left
+      // `todos` alone at the bottom of `App` well away from the `For` that reads it.
       const rest = row.children.filter((child) => !placed.has(child)).map(expand);
-      row.children = [...rendered, ...rest];
+
+      // A value the dom cannot place goes under the tag that reads it.
+      //
+      // `draft` nests under the `<input>` it writes into, because the description names the
+      // values writing to each element. `todos` writes into no element here: `For` reads it
+      // and renders the rows itself, so it had nowhere to go and sat loose under `App`. The
+      // tag that depends on it is the honest place, and it reads the same way as `draft`.
+      const lifted: Row[] = [];
+      const spare: Row[] = [];
+      /** Collected per reader so several values keep their order when they go in. */
+      const adopt = new Map<Row, Row[]>();
+      for (const child of rest) {
+        const reader = child.value && child.id !== undefined ? readerOf(child.id, row) : undefined;
+        if (reader) {
+          const held = adopt.get(reader);
+          if (held) held.push(child);
+          else adopt.set(reader, [child]);
+          placed.add(child);
+          continue;
+        }
+        (child.value || child.prop || child.props ? lifted : spare).push(child);
+      }
+      // Ahead of what the tag rendered. A value reads as what the tag was given, so it
+      // belongs above the rows it produced rather than after them.
+      for (const [reader, values] of adopt) reader.children.unshift(...values);
+      // Whatever is left: what the tag was given first, then a portal, which renders
+      // elsewhere and still reads as part of the markup.
+      row.children = [...lifted, ...rendered, ...spare];
       return row;
     };
 
@@ -516,9 +679,10 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
     return top.filter((_, i) => !placed.has(roots[i]!));
   }
 
-  return {
+  const api: ComponentTree = {
     render(graph, selected = null) {
-      const roots = rowsFor(componentTree(graph, { values, filter }));
+      last = { graph, selected };
+      const roots = rowsFor(componentTree(graph, { values, filter }), graph);
       // Rebuilt only when the shape changes: this runs every frame, and replacing the markup
       // each time would drop whatever the reader was about to click.
       const next = `${values}|${filter}|${[...shut].sort().join(',')}|${roots.map(function label(n): string {
@@ -557,6 +721,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       host.innerHTML = '';
     },
   };
+
+  return api;
 }
 
 export const TREE_CSS = `
@@ -603,4 +769,28 @@ ${kindRules((k) => `.fx-tree-row.n-${k} .fx-tree-tag`, 'color')}
 }
 .fx-tree-search:focus { outline: none; border-color: var(--fx-accent, #5eead4); }
 .fx-tree-empty { display: block; padding: 8px; font-size: 11px; color: var(--fx-muted, #8a90a2); }
+/* A prop reads as what was written on the tag, so it is quieter than the tag itself. */
+/* The row that folds a tag's props away. Dashed, because it stands for something written
+   rather than something rendered. */
+.fx-tree-row.is-props .fx-tree-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 5px; border: 1px dashed var(--fx-line, #262a35); border-radius: 3px;
+  color: var(--fx-muted, #8a90a2); font-size: 10px; letter-spacing: .04em; text-transform: uppercase;
+}
+.fx-tree-row.is-props:hover .fx-tree-tag { border-color: var(--fx-accent, #5eead4); color: var(--fx-label, #e7e9ee); }
+.fx-tree-props-count { opacity: .7; }
+
+/* A prop is what was written on the tag above it, so it reads as an aside: the name in a
+   quiet chip, the value beside it, and no marker pretending it opens. */
+.fx-tree-row.is-prop .fx-tree-tag { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
+.fx-tree-prop-name {
+  flex: none; padding: 0 4px; border-radius: 3px;
+  background: var(--fx-chip, rgba(138, 144, 162, .14));
+  color: var(--fx-muted, #8a90a2); font-size: 10px; letter-spacing: .02em;
+}
+.fx-tree-row.is-prop:hover .fx-tree-prop-name { color: var(--fx-label, #e7e9ee); }
+.fx-tree-prop-value {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--fx-label, #e7e9ee); opacity: .75;
+}
 `;

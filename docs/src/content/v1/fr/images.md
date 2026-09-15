@@ -21,7 +21,7 @@ const loader = imageLoader();   // par défaut /api/image
 ```
 
 Le gestionnaire lit `url`, `w` et éventuellement `q` dans la chaîne de requête : le seul
-rôle du loader est de construire cette URL — donc tout ce qui sait produire un `srcset`
+rôle du loader est de construire cette URL, donc tout ce qui sait produire un `srcset`
 peut l'utiliser.
 
 ## Configurer le gestionnaire
@@ -42,7 +42,7 @@ délibérément.
 
 **`domains` est une protection contre le SSRF.** Un point d'entrée d'images qui récupère
 n'importe quelle URL qu'on lui donne permet de faire émettre à votre serveur des requêtes
-arbitraires — y compris vers des adresses internes qu'un navigateur n'atteindrait jamais.
+arbitraires, y compris vers des adresses internes qu'un navigateur n'atteindrait jamais.
 Les sources absolues ne sont récupérées que depuis les hôtes que vous listez : ne rien
 mettre signifie donc n'autoriser que les fichiers locaux. C'est la valeur par défaut sûre,
 et la raison de l'élargir consciemment.
@@ -52,7 +52,7 @@ plutôt que redimensionnée : un robot qui parcourt `?w=1`, `?w=2`, `?w=3` ne pe
 faire encoder des milliers de variantes ni saturer le cache. La liste par défaut couvre les
 largeurs d'appareils courantes.
 
-`quality` est à la fois la valeur par défaut et le plafond — une requête qui demande plus
+`quality` est à la fois la valeur par défaut et le plafond, une requête qui demande plus
 que la qualité configurée ne l'obtient pas.
 
 ## Encodage

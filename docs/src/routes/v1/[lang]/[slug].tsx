@@ -7,7 +7,7 @@ export default function V1Doc() {
   const params = useParams<{ lang: string; slug: string }>();
   // Every doc page is the same route, so navigating between two of them changes
   // the params without remounting. Reading params() once at setup snapshots them
-  // and the page never updates — which only looked fine while every link did a
+  // and the page never updates, which only looked fine while every link did a
   // full page load.
   return createMemo(() => {
     const p = params();

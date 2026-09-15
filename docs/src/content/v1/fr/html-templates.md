@@ -36,14 +36,14 @@ Deux conséquences à connaître :
   insère ce texte, cela ne crée pas d'élément. La seule exception délibérée est
   [`html=`](/v1/fr/directives), documentée comme une échappatoire pour cette raison même.
 - **La forme du template est figée à la compilation.** Un trou peut fournir une valeur, un
-  enfant, un composant ou un ensemble de props — mais pas un nom de balise ni un nom
+  enfant, un composant ou un ensemble de props, mais pas un nom de balise ni un nom
   d'attribut, car ceux-là déterminent la forme. Voir [les composants](#composants) pour le
   cas des balises dynamiques.
 
 ## Interpolation
 
-Tout `${…}` est un trou réactif. Lire un signal à l'intérieur maintient cet endroit — et
-uniquement celui-là — à jour :
+Tout `${...}` est un trou réactif. Lire un signal à l'intérieur maintient cet endroit, et
+uniquement celui-là, à jour :
 
 ```ts
 const count = $signal(0);
@@ -53,7 +53,7 @@ html`<p>Compteur : ${count()}</p>`;
 ### Où placer un trou
 
 ```ts
-html`<p>${text()}</p>`;                    // enfant — texte, nœud, tableau, autre template
+html`<p>${text()}</p>`;                    // enfant, texte, nœud, tableau, autre template
 html`<div title=${label()}></div>`;        // valeur d'attribut entière
 html`<div class="card ${theme()}"></div>`; // partie d'une valeur entre guillemets
 html`<div ...${attrs}></div>`;             // un objet de props entier
@@ -61,7 +61,7 @@ html`<${Card} />`;                         // un composant en position de balise
 ```
 
 Un trou qui remplit **toute** la valeur d'un attribut la transmet telle quelle : elle peut
-donc être de n'importe quel type — un nombre, un booléen, un objet pour `class`/`style`.
+donc être de n'importe quel type, un nombre, un booléen, un objet pour `class`/`style`.
 Les guillemets n'y changent rien : `value=${n}` et `value="${n}"` compilent à l'identique.
 
 Mêler du texte statique et un trou relève de l'interpolation de chaîne, et le résultat est
@@ -78,7 +78,7 @@ Appelez l'accesseur dans le trou. Le trou est lui-même la frontière réactive 
 compilateur l'enveloppe dans un effet pour vous.
 
 ```ts
-html`<p>${count()}</p>`;   // ✓ suivi — ne réexécute que ce nœud texte
+html`<p>${count()}</p>`;   // ✓ suivi, ne réexécute que ce nœud texte
 html`<p>${count}</p>`;     // affiche la fonction, pas sa valeur
 ```
 
@@ -87,10 +87,10 @@ html`<p>${count}</p>`;     // affiche la fonction, pas sa valeur
 Deux formes, dont la différence ne tient qu'à la façon dont TypeScript voit le nom :
 
 ```ts
-// Balise dynamique — `${Card}` est une vraie expression, TypeScript la compte comme utilisée.
+// Balise dynamique, `${Card}` est une vraie expression, TypeScript la compte comme utilisée.
 html`<${Card} title=${t()} />`;
 
-// Balise statique — nom nu, comme en JSX.
+// Balise statique, nom nu, comme en JSX.
 html`<Card title=${t()} />`;
 ```
 
@@ -113,7 +113,7 @@ html`<Card>
 </Card>`;
 ```
 
-L'auto-fermeture fonctionne pour les deux formes et — contrairement à HTML — pour
+L'auto-fermeture fonctionne pour les deux formes et, contrairement à HTML, pour
 n'importe quel composant.
 
 ### Composants auto-importés
@@ -129,7 +129,7 @@ html`
 `;
 ```
 
-Vos propres composants et ceux d'une bibliothèque peuvent les rejoindre — voir
+Vos propres composants et ceux d'une bibliothèque peuvent les rejoindre, voir
 **[résolution des composants](/v1/fr/component-resolution)**.
 
 ### Props
@@ -145,7 +145,7 @@ c'est ce sur quoi reposent `<For>` et `each`.
 
 ## Templates imbriqués
 
-Un trou peut contenir un autre template — pratique pour `fallback`, les éléments de liste
+Un trou peut contenir un autre template, pratique pour `fallback`, les éléments de liste
 ou les branches conditionnelles :
 
 ```ts
@@ -153,7 +153,7 @@ html`<ul>${items().map((i) => html`<li>${i.label}</li>`)}</ul>`;
 ```
 
 Un template imbriqué compile comme les autres : construit une fois, réutilisé à chaque
-appel. Pour une liste qui change, préférez [`each`](/v1/fr/directives) ou `<For>` —
+appel. Pour une liste qui change, préférez [`each`](/v1/fr/directives) ou `<For>`,
 `.map()` reconstruit toutes les lignes à chaque changement, là où `<For>` réutilise celles
 dont la donnée n'a pas bougé.
 
@@ -168,14 +168,14 @@ import { svg } from '@fluixi/core';
 svg`<circle cx="50" cy="50" r=${r()} />`;
 ```
 
-Une racine `<svg>` écrite dans `` html`` `` fonctionne aussi — le compilateur reconnaît la
+Une racine `<svg>` écrite dans `` html`` `` fonctionne aussi, le compilateur reconnaît la
 balise et crée le sous-arbre dans le bon espace de noms. Réservez `` svg`` `` aux templates
 qui *commencent* en dessous de la racine, avec un `<circle>` ou un `<path>` sans ancêtre
 `<svg>` dans le même template pour le signaler.
 
 ## Espaces et texte
 
-Les espaces sont conservés tels quels, comme en HTML — repliés par CSS au rendu, pas par le
+Les espaces sont conservés tels quels, comme en HTML, repliés par CSS au rendu, pas par le
 compilateur. `<pre>`, `<textarea>`, `<script>` et `<style>` gardent leur contenu verbatim.
 
 ## Prise en charge de l'éditeur
@@ -183,7 +183,7 @@ compilateur. `<pre>`, `<textarea>`, `<script>` et `<style>` gardent leur contenu
 `@fluixi/ts-plugin` (inclus dans toute application créée par le scaffolding, et livré dans
 l'extension VS Code) donne à `` html`` `` une véritable IntelliSense : survol, complétion
 des attributs d'élément et des props de composant, aller à la définition sur les balises,
-et vérification de types du JavaScript dans les trous — la même expérience qu'en JSX.
+et vérification de types du JavaScript dans les trous, la même expérience qu'en JSX.
 Référencez-le dans `tsconfig.json` :
 
 ```json
@@ -197,8 +197,8 @@ Référencez-le dans `tsconfig.json` :
 - Vous préférez le balisage en template littéral.
 - Vous voulez les directives réservées à `` html`` `` : `if`/`else`, `each`, `bind:`,
   `class:name`, `style:prop`.
-- Vous voulez mélanger les deux — un bloc `` html`` `` dans un composant JSX, ou l'inverse :
+- Vous voulez mélanger les deux, un bloc `` html`` `` dans un composant JSX, ou l'inverse :
   les deux compilent.
 
 Ensuite : la référence complète des **[directives](/v1/fr/directives)** (événements,
-liaisons, `if`/`each`, …).
+liaisons, `if`/`each`, ...).

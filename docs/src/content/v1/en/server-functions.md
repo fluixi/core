@@ -1,7 +1,7 @@
 # Server functions
 
 Mark a function `"use server"` and its body runs **only on the server**. The compiler
-strips it from the client bundle and replaces the call with a typed RPC — so secrets and
+strips it from the client bundle and replaces the call with a typed RPC, so secrets and
 database access never reach the browser.
 
 ```ts
@@ -26,7 +26,7 @@ runs and the result comes back.
 Two things follow from that, and they are the source of most surprises:
 
 - **Arguments and return values cross the wire**, so they must be serialisable. Passing a
-  class instance, a function, a DOM node or a signal will not work — send plain data.
+  class instance, a function, a DOM node or a signal will not work, send plain data.
 - **The body is gone from the client**, so anything it closes over is gone too. Imports
   used only inside server functions are dropped from the browser bundle, which is exactly
   why a database client can be imported at the top of a route file.
@@ -36,7 +36,7 @@ even where the original body was synchronous.
 
 ## Request context
 
-Inside a server function you can reach the current request — headers, cookies, the URL:
+Inside a server function you can reach the current request, headers, cookies, the URL:
 
 ```ts
 import { getRequestEvent } from '@fluixi/server';
@@ -49,7 +49,7 @@ async function whoAmI() {
 ```
 
 `getRequestEvent()` returns `undefined` when there is no request in scope, which is why the
-optional chaining above is not decoration — the same module may be imported during a
+optional chaining above is not decoration, the same module may be imported during a
 build-time prerender.
 
 Because the context is bound to the request, read it **before** the first `await` in
@@ -58,14 +58,14 @@ complex flows, and pass what you need down rather than reaching for it again lat
 ## Errors
 
 An exception thrown on the server surfaces as a rejected promise at the call site. Only the
-message crosses the wire — stack traces stay on the server, so an internal error cannot
+message crosses the wire, stack traces stay on the server, so an internal error cannot
 leak paths or query text to the browser. Throw a deliberate, readable error for anything
 the client is meant to act on, and let everything else be a generic failure.
 
 ## Form actions
 
 `@fluixi/forms` turns a server function into a progressive-enhancement `<form action>`, so
-it works before JavaScript loads. For the router's own mutation flow — pending state, retry
-— see [`action` and `<Form>`](/v1/en/routing).
+it works before JavaScript loads. For the router's own mutation flow, pending state, retry,
+see [`action` and `<Form>`](/v1/en/routing).
 
 Next: **[API routes](/v1/en/api-routes)**.

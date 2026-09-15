@@ -12,7 +12,7 @@ count.set(1);          // écriture → 1
 count.set(c => c + 1); // mise à jour depuis la valeur précédente → 2
 ```
 
-Dans un composant, `$signal` fait la même chose sans l'import — le compilateur le résout et
+Dans un composant, `$signal` fait la même chose sans l'import, le compilateur le résout et
 ajoute ce qu'il faut :
 
 ```ts
@@ -31,7 +31,7 @@ effect(() => {
 count.set(5); // affiche « count vaut 5 »
 ```
 
-Lire hors de toute portée réactive renvoie simplement la valeur — sans abonnement.
+Lire hors de toute portée réactive renvoie simplement la valeur, sans abonnement.
 
 ## Égalité
 
