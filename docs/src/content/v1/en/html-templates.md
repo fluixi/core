@@ -1,7 +1,7 @@
 # html`` templates
 
 Fluixi lets you author markup two ways: **JSX**, or a tagged `` html`` `` template. Both
-compile to the *same* fine-grained DOM calls, so there is no runtime difference —
+compile to the *same* fine-grained DOM calls, so there is no runtime difference,
 `` html`` `` is a JSX-free authoring surface for when you do not want to configure JSX in
 your tsconfig.
 
@@ -36,13 +36,13 @@ Two consequences worth knowing:
   not create an element. The one deliberate exception is [`html=`](/v1/en/directives),
   which is documented as an escape hatch for exactly that reason.
 - **The template's shape is fixed at build time.** A hole can supply a value, a child, a
-  component or a set of props — but not a tag name or an attribute name, because those
+  component or a set of props, but not a tag name or an attribute name, because those
   decide the shape. See [dynamic tags](#components) for the component case.
 
 ## Interpolation
 
-Any `${…}` is a reactive hole. Reading a signal inside one keeps that spot — and only
-that spot — up to date:
+Any `${...}` is a reactive hole. Reading a signal inside one keeps that spot, and only
+that spot, up to date:
 
 ```ts
 const count = $signal(0);
@@ -52,7 +52,7 @@ html`<p>Count: ${count()}</p>`;
 ### Where a hole can go
 
 ```ts
-html`<p>${text()}</p>`;                    // child — text, node, array, or another template
+html`<p>${text()}</p>`;                    // child, text, node, array, or another template
 html`<div title=${label()}></div>`;        // whole attribute value
 html`<div class="card ${theme()}"></div>`; // part of a quoted value
 html`<div ...${attrs}></div>`;             // a whole props object
@@ -60,7 +60,7 @@ html`<${Card} />`;                         // a component in tag position
 ```
 
 A hole that fills an **entire** attribute value passes through untouched, so it can be any
-type — a number, a boolean, an object for `class`/`style`. Quoting makes no difference
+type, a number, a boolean, an object for `class`/`style`. Quoting makes no difference
 there; `value=${n}` and `value="${n}"` compile identically.
 
 Mixing static text with a hole is string interpolation, and the result is always a string:
@@ -76,7 +76,7 @@ Read the signal inside the hole. The hole itself is the reactive boundary, so th
 compiler wraps it in an effect for you:
 
 ```ts
-html`<p>${count()}</p>`;   // ✓ tracked — re-runs this text node only
+html`<p>${count()}</p>`;   // ✓ tracked, re-runs this text node only
 html`<p>${count}</p>`;         // renders the object, not its value
 ```
 
@@ -85,10 +85,10 @@ html`<p>${count}</p>`;         // renders the object, not its value
 Two forms, and the difference is only about how TypeScript sees the name:
 
 ```ts
-// Dynamic tag — `${Card}` is a real expression, so TypeScript counts it as used.
+// Dynamic tag, `${Card}` is a real expression, so TypeScript counts it as used.
 html`<${Card} title=${t()} />`;
 
-// Static tag — bare name, matching JSX.
+// Static tag, bare name, matching JSX.
 html`<Card title=${t()} />`;
 ```
 
@@ -110,7 +110,7 @@ html`<Card>
 </Card>`;
 ```
 
-Self-closing works for both forms, and — unlike HTML — for any component.
+Self-closing works for both forms, and, unlike HTML, for any component.
 
 ### Auto-imported components
 
@@ -125,7 +125,7 @@ html`
 `;
 ```
 
-Your own components and a component library's can join them — see
+Your own components and a component library's can join them, see
 **[component resolution](/v1/en/component-resolution)**.
 
 ### Props
@@ -141,7 +141,7 @@ which is what `<For>` and `each` rely on.
 
 ## Nested templates
 
-A hole can hold another template — useful for `fallback`, list items, or conditional
+A hole can hold another template, useful for `fallback`, list items, or conditional
 branches:
 
 ```ts
@@ -149,7 +149,7 @@ html`<ul>${items().map((i) => html`<li>${i.label}</li>`)}</ul>`;
 ```
 
 Nested templates compile like any other: the inner one is built once and reused per call.
-For a list that changes, prefer [`each`](/v1/en/directives) or `<For>` — `.map()` rebuilds
+For a list that changes, prefer [`each`](/v1/en/directives) or `<For>`, `.map()` rebuilds
 every row on every change, while `<For>` reuses the rows whose data did not move.
 
 ## SVG
@@ -163,14 +163,14 @@ import { svg } from '@fluixi/core';
 svg`<circle cx="50" cy="50" r=${r()} />`;
 ```
 
-An `<svg>` root written inside `` html`` `` also works — the compiler recognises the tag
+An `<svg>` root written inside `` html`` `` also works, the compiler recognises the tag
 and creates the subtree in the SVG namespace. Reach for `` svg`` `` when a template
 *starts* below the root, with a `<circle>` or `<path>` that has no `<svg>` ancestor in the
 same template to give it away.
 
 ## Whitespace and text
 
-Whitespace is preserved as written, like HTML — collapsed by CSS at render time, not by
+Whitespace is preserved as written, like HTML, collapsed by CSS at render time, not by
 the compiler. `<pre>`, `<textarea>`, `<script>` and `<style>` keep their content verbatim.
 
 ## Editor support
@@ -178,7 +178,7 @@ the compiler. `<pre>`, `<textarea>`, `<script>` and `<style>` keep their content
 `@fluixi/ts-plugin` (included in every scaffolded app, and shipped in the VS Code
 extension) gives `` html`` `` real IntelliSense: hover, completion of element attributes
 and component props, go-to-definition on tags, and type-checking of the JavaScript inside
-the holes — the same experience JSX gets. Reference it in `tsconfig.json`:
+the holes, the same experience JSX gets. Reference it in `tsconfig.json`:
 
 ```json
 { "compilerOptions": { "plugins": [{ "name": "@fluixi/ts-plugin" }] } }
@@ -190,8 +190,8 @@ the holes — the same experience JSX gets. Reference it in `tsconfig.json`:
 - You prefer template-literal markup.
 - You want the `` html`` ``-only directives: `if`/`else`, `each`, `bind:`, `class:name`,
   `style:prop`.
-- You want to mix the two — a `` html`` `` block inside a JSX component, or vice-versa,
+- You want to mix the two, a `` html`` `` block inside a JSX component, or vice-versa,
   both compile.
 
 Next: the full **[directives](/v1/en/directives)** reference (events, bindings,
-`if`/`each`, …).
+`if`/`each`, ...).

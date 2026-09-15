@@ -34,7 +34,7 @@ export const UI: Record<Lang, { product: string; tagline: string; onThisPage: st
 /**
  * What the version picker shows for a docs line.
  *
- * The path segment stays `v1` — URLs are permanent — but "v1" alone does not say which
+ * The path segment stays `v1`, URLs are permanent, but "v1" alone does not say which
  * build the page describes. The line matching the framework actually installed here is
  * labelled with its exact version, so a reader on an alpha can tell which one they are
  * reading. Older lines keep the bare segment, since this build knows nothing about them.

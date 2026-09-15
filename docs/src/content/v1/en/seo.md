@@ -1,7 +1,7 @@
 # SEO and the document head
 
-`@fluixi/start/head` manages everything between `<head>` and `</head>` — title, meta,
-Open Graph, structured data — with the values resolved on the server so a crawler sees them
+`@fluixi/start/head` manages everything between `<head>` and `</head>`, title, meta,
+Open Graph, structured data, with the values resolved on the server so a crawler sees them
 in the HTML, not after hydration.
 
 ```tsx
@@ -14,7 +14,7 @@ export default function Post() {
     canonical: 'https://example.com/blog/compiled-reactivity',
   });
 
-  return <article>…</article>;
+  return <article>...</article>;
 }
 ```
 
@@ -46,7 +46,7 @@ does:
 seo({ title: () => `${unread()} unread` });
 ```
 
-On a route transition the previous page's head is dropped automatically — the registration
+On a route transition the previous page's head is dropped automatically, the registration
 is tied to the owner, so leaving the page removes what it added.
 
 ## What is first-class
@@ -69,11 +69,11 @@ seo({
   alternates: [{ hreflang: 'fr', href: 'https://example.com/fr/pricing' }],
   feeds: [{ href: '/rss.xml', title: 'Blog' }],
   icons: { icon: '/favicon.svg', apple: '/apple-touch-icon.png' },
-  verification: { google: '…' },
+  verification: { google: '...' },
 });
 ```
 
-Structured data is a field too — pass an object or an array and it is emitted as
+Structured data is a field too: pass an object or an array and it is emitted as
 `application/ld+json`:
 
 ```tsx
@@ -100,7 +100,7 @@ seo({
 
 ## Components
 
-For markup-shaped code there are components covering the same ground — `Title`, `Meta`,
+For markup-shaped code there are components covering the same ground, `Title`, `Meta`,
 `Link`, `Script`, `Base`, `JsonLD`. They render nothing and register into the same
 registry, so they compose with `seo` calls and dedupe against them.
 
@@ -115,7 +115,7 @@ import { Title, Meta } from '@fluixi/start/head';
 
 ## Deduplication
 
-Sources are merged and deduplicated by identity before rendering — one `<title>`, one
+Sources are merged and deduplicated by identity before rendering, one `<title>`, one
 canonical link, one `og:image`, whichever the most specific caller set. That is what makes
 layout defaults safe: a page overriding `description` replaces it rather than emitting a
 second tag.

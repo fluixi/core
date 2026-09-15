@@ -3,7 +3,7 @@
 `fluixi()` compiles by **rewriting your source**. It parses the file once, works out what
 each template and each JSX element should become, and splices the result over the spans it
 replaces. Nothing reprints the file, so everything you did not write a template in comes out
-byte for byte as you wrote it — formatting, comments, and the text inside a `${...}` hole
+byte for byte as you wrote it, formatting, comments, and the text inside a `${...}` hole
 included. Types are left alone for your bundler to strip.
 
 That is the whole default path. It is not a Babel plugin, and an app installs no Babel
@@ -12,7 +12,7 @@ toolchain to use it.
 ## What an app installs
 
 `@babel/parser`, pulled in by `@fluixi/compiler`. That is the only piece of that namespace on
-the default path — the parser, not the plugin system, not the traversal, not the printer.
+the default path, the parser, not the plugin system, not the traversal, not the printer.
 `@fluixi/vite-plugin` and `@fluixi/start` declare none of it themselves.
 
 Everything downstream of the parse is the framework's own: the IR, the optimizer, the
@@ -20,7 +20,7 @@ component resolver, the codegen backend, and `@fluixi/template-parser` for `` ht
 
 ## Using Babel anyway
 
-Some projects have Babel plugins that must see the output — a macro, an instrumentation
+Some projects have Babel plugins that must see the output, a macro, an instrumentation
 pass, a coverage tool wired into a Babel pipeline. Ask for it:
 
 ```ts
@@ -31,7 +31,7 @@ export default defineConfig({
 });
 ```
 
-That selects the Babel front end instead. Same IR, same passes, same backend — the only
+That selects the Babel front end instead. Same IR, same passes, same backend, the only
 difference is who holds the AST while the work happens. `@babel/core` and the plugin
 machinery are optional peer dependencies, installed only when you opt in:
 
@@ -49,7 +49,7 @@ not want it otherwise: it is slower, and it is the path with fewer users.
   the same pipeline behind the same IR, and a template nested inside the other works in
   either direction.
 - **The emitted code is identical.** The two front ends were validated against a corpus of
-  real application files and compared on what the output *does* — element and template
+  real application files and compared on what the output *does*, element and template
   calls, inserts, spreads, component calls, and every attribute name that reaches the DOM.
 - **Source maps** are emitted on the default path. Code outside a template keeps its exact
   original position. A template resolves to the position of the template itself rather than
@@ -68,14 +68,14 @@ it on your own source):
 | --- | --- |
 | parsing | ~3% of a compile |
 | the framework's own IR work | ~29% |
-| the rest — traversal, reparsing emitted code, printing | ~68% on the Babel path, absent on the default one |
+| the rest, traversal, reparsing emitted code, printing | ~68% on the Babel path, absent on the default one |
 
 The default path is roughly **13-15× faster** than the Babel one on the same source, and the
 reason is structural rather than clever: the Babel path emits code as a string and then
 parses that string back into the host's AST, so the same code gets parsed twice.
 
-A first compile costs several times a later one in the same process — JIT warm-up, not
-framework state — so a dev server pays more for the first request to a module than for every
+A first compile costs several times a later one in the same process, JIT warm-up, not
+framework state, so a dev server pays more for the first request to a module than for every
 edit after it. Directive-heavy templates cost slightly more per template than plain ones and
 slightly *less* per kilobyte, so directives are not a thing to avoid for build speed.
 

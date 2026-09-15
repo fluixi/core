@@ -1,7 +1,7 @@
 # SEO et en-tête de document
 
-`@fluixi/start/head` gère tout ce qui se trouve entre `<head>` et `</head>` — titre, meta,
-Open Graph, données structurées — avec des valeurs résolues sur le serveur : un robot les
+`@fluixi/start/head` gère tout ce qui se trouve entre `<head>` et `</head>`, titre, meta,
+Open Graph, données structurées, avec des valeurs résolues sur le serveur : un robot les
 voit dans le HTML, pas après hydratation.
 
 ```tsx
@@ -14,7 +14,7 @@ export default function Post() {
     canonical: 'https://example.com/blog/reactivite-compilee',
   });
 
-  return <article>…</article>;
+  return <article>...</article>;
 }
 ```
 
@@ -46,7 +46,7 @@ seo({ title: () => `${unread()} non lus` });
 ```
 
 Lors d'une transition de route, l'en-tête de la page précédente est retiré
-automatiquement — l'enregistrement est lié au propriétaire, quitter la page retire donc ce
+automatiquement, l'enregistrement est lié au propriétaire, quitter la page retire donc ce
 qu'elle avait ajouté.
 
 ## Ce qui est de première classe
@@ -70,11 +70,11 @@ seo({
   alternates: [{ hreflang: 'en', href: 'https://example.com/pricing' }],
   feeds: [{ href: '/rss.xml', title: 'Blog' }],
   icons: { icon: '/favicon.svg', apple: '/apple-touch-icon.png' },
-  verification: { google: '…' },
+  verification: { google: '...' },
 });
 ```
 
-Les données structurées sont un champ elles aussi — passez un objet ou un tableau, elles
+Les données structurées sont un champ elles aussi : passez un objet ou un tableau, elles
 sont émises en `application/ld+json` :
 
 ```tsx
@@ -101,7 +101,7 @@ seo({
 
 ## Composants
 
-Pour du code en forme de balisage, des composants couvrent le même terrain — `Title`,
+Pour du code en forme de balisage, des composants couvrent le même terrain, `Title`,
 `Meta`, `Link`, `Script`, `Base`, `JsonLD`. Ils n'affichent rien et s'enregistrent dans le
 même registre : ils se composent donc avec les appels à `seo` et se dédupliquent avec eux.
 
@@ -117,7 +117,7 @@ import { Title, Meta } from '@fluixi/start/head';
 ## Déduplication
 
 Les sources sont fusionnées et dédupliquées par identité avant le rendu : un seul
-`<title>`, un seul lien canonique, un seul `og:image` — celui défini par l'appelant le plus
+`<title>`, un seul lien canonique, un seul `og:image`, celui défini par l'appelant le plus
 spécifique. C'est ce qui rend les valeurs par défaut d'un layout sûres : une page qui
 redéfinit `description` la remplace au lieu d'émettre une seconde balise.
 

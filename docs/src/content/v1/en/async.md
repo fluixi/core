@@ -1,6 +1,6 @@
 # Async data
 
-A **resource** wraps asynchronous data — a fetch, a query, anything that returns a promise — in a
+A **resource** wraps asynchronous data, a fetch, a query, anything that returns a promise, in a
 value that tracks its loading and error state:
 
 ```ts
@@ -13,7 +13,7 @@ const user = resource(userId, async (id) => {
   return res.json();
 });
 
-user();      // the value — suspends under <Suspense>
+user();      // the value, suspends under <Suspense>
 user.loading;    // boolean
 user.latest;     // last settled value, kept across a refetch
 user.refetch();
@@ -37,7 +37,7 @@ user();   // the resolved value (suspends while pending)
 ## Server-side rendering
 
 On the server, Fluixi **awaits** resources before serializing the HTML, then seeds the resolved
-value into the page so the client hydrates without refetching — no loading flash, no waterfall.
+value into the page so the client hydrates without refetching, no loading flash, no waterfall.
 
 ```ts
 // the same code renders on the server (awaited) and the client (streamed):
@@ -61,5 +61,5 @@ user.loading;
 refetch();
 ```
 
-`resource` is that pair folded together — `get` **is** the accessor `createResource`
+`resource` is that pair folded together, `get` **is** the accessor `createResource`
 returned, so suspending, tracking and SSR seeding are unchanged.

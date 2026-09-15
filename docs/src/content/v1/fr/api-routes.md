@@ -1,6 +1,6 @@
 # Routes d'API
 
-Déposez un fichier dans `src/api/` et exportez des gestionnaires par méthode HTTP — ils
+Déposez un fichier dans `src/api/` et exportez des gestionnaires par méthode HTTP, ils
 sont servis sous `/api/*`.
 
 ```ts
@@ -20,7 +20,7 @@ Exportez une fonction par méthode prise en charge : `GET`, `POST`, `PUT`, `PATC
 
 ## Valeurs de retour
 
-Un gestionnaire renvoie une `Response` Web, ou n'importe quelle valeur — envoyée en JSON :
+Un gestionnaire renvoie une `Response` Web, ou n'importe quelle valeur, envoyée en JSON :
 
 ```ts
 export function GET() {
@@ -72,11 +72,11 @@ Les deux ne s'exécutent que sur le serveur : le choix porte donc sur l'appelant
 
 - Une **fonction serveur** s'adresse à votre propre code client. Elle est typée de bout en
   bout, et l'appel ressemble à un appel de fonction plutôt qu'à un fetch.
-- Une **route d'API** s'adresse à des appelants que vous ne contrôlez pas — un webhook, une
+- Une **route d'API** s'adresse à des appelants que vous ne contrôlez pas, un webhook, une
   application mobile, un CLI : tout ce qui a besoin d'une URL stable, d'un code de statut
   précis ou d'un corps non-JSON.
 
-Si vous écrivez `fetch('/api/…')` depuis votre propre application, une
+Si vous écrivez `fetch('/api/...')` depuis votre propre application, une
 [fonction serveur](/v1/fr/server-functions) est généralement le chemin le plus court.
 
 Ensuite : **[Middleware](/v1/fr/middleware)**.

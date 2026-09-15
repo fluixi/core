@@ -10,7 +10,7 @@ d'équivalent JSX propre et vérifiable par le typage.
 Événements délégués (un seul écouteur à la racine, distribué par le framework) :
 
 ```ts
-html`<button @click=${onClick}>Enregistrer</button>`;   // html`` — @event
+html`<button @click=${onClick}>Enregistrer</button>`;   // html``, @event
 // Équivalent JSX :
 <button onClick={onClick}>Enregistrer</button>;
 ```
@@ -23,12 +23,12 @@ Quatre événements sont délégués : **`click`, `input`, `change`, `submit`**.
 écouteur est posé à la racine puis distribué au bon élément : mille lignes coûtent un
 écouteur, pas mille.
 
-Tout le reste est attaché directement. Pour un écouteur **natif** sur un événement délégué
-— nécessaire pour `capture`, `once` ou `passive` — utilisez `on:` :
+Tout le reste est attaché directement. Pour un écouteur **natif** sur un événement délégué,
+nécessaire pour `capture`, `once` ou `passive` : utilisez `on:` :
 
 ```ts
 html`<div on:scroll=${onScroll}></div>`;
-<div on:scroll={onScroll} />;   // JSX — signature d'index on:
+<div on:scroll={onScroll} />;   // JSX, signature d'index on:
 ```
 
 La délégation compte dans un cas : dans un gestionnaire délégué, `currentTarget` est la
@@ -76,10 +76,10 @@ html`<input ref=${(node) => (el = node)} />`;
 ```
 
 La ref est affectée à la création de l'élément, **avant** son insertion dans le document.
-Lisez la mise en page dans `onMount`, pas dans la fonction ref — à ce moment-là l'élément
+Lisez la mise en page dans `onMount`, pas dans la fonction ref, à ce moment-là l'élément
 n'a pas encore de boîte.
 
-### use — directives personnalisées
+### use, directives personnalisées
 
 `use=${fn}` appelle `fn(element)` au montage ; la forme nommée passe des options :
 
@@ -89,7 +89,7 @@ html`<div use:tooltip=${{ text: 'Salut' }}></div>`;
 <div use:tooltip={{ text: 'Salut' }} />;   // JSX
 ```
 
-Une directive est une fonction ordinaire — `(el, options) => …`. Les options sont passées
+Une directive est une fonction ordinaire, `(el, options) => ...`. Les options sont passées
 sous forme d'accesseur pour que la directive puisse les suivre, et tout ce qu'elle
 enregistre doit être libéré avec `onCleanup` en son sein.
 
@@ -102,7 +102,7 @@ Forcent la façon dont une valeur est appliquée, en contournant l'heuristique
 propriété/attribut. Fonctionnent dans **JSX et `` html`` ``** :
 
 ```ts
-html`<input prop:value=${text()} />`;      // toujours la propriété DOM (element.value = …)
+html`<input prop:value=${text()} />`;      // toujours la propriété DOM (element.value = ...)
 html`<div attr:data-id=${id()} />`;        // toujours setAttribute
 html`<button bool:disabled=${busy()} />`;  // présent si vrai, retiré si faux
 ```
@@ -116,19 +116,19 @@ html`<button bool:disabled=${busy()} />`;  // présent si vrai, retiré si faux
 L'heuristique tombe juste la plupart du temps. Les trois cas où elle échoue, et où il faut
 forcer :
 
-- **Les éléments personnalisés** qui reçoivent des valeurs riches — un objet doit passer
+- **Les éléments personnalisés** qui reçoivent des valeurs riches, un objet doit passer
   par une propriété, un attribut le transformerait en `[object Object]`.
-- **Les valeurs qui diffèrent de leur attribut** — `input.value` est la valeur courante,
+- **Les valeurs qui diffèrent de leur attribut**, `input.value` est la valeur courante,
   alors que l'attribut `value` n'est que la valeur par défaut.
-- **Les attributs booléens** — `disabled="false"` reste désactivé ; `bool:` le retire.
+- **Les attributs booléens**, `disabled="false"` reste désactivé ; `bool:` le retire.
 
 ### .prop et ?attr (raccourcis html``)
 
 Raccourcis à la Lit pour la même idée :
 
 ```ts
-html`<video .currentTime=${t()}></video>`;   // liaison de propriété — comme prop:
-html`<button ?disabled=${busy()}></button>`; // attribut booléen — comme bool:
+html`<video .currentTime=${t()}></video>`;   // liaison de propriété, comme prop:
+html`<button ?disabled=${busy()}></button>`; // attribut booléen, comme bool:
 ```
 
 ### class et style
@@ -141,7 +141,7 @@ html`<div style=${{ color: c(), '--x': px() }}></div>`;
 <div classList={{ active: on() }} style={{ color: c() }} />;
 ```
 
-Un `class` statique et un `class` dynamique se cumulent — `class="box"` reste la classe de
+Un `class` statique et un `class` dynamique se cumulent, `class="box"` reste la classe de
 l'élément et l'objet s'y ajoute : vous pouvez garder les classes de base dans le balisage.
 
 > **`class=` ne devient `classList` que pour un objet littéral.** Le compilateur décide en
@@ -159,11 +159,11 @@ html`<div style:color=${c()} style:--x=${px()}></div>`;
 Les propriétés personnalisées (`--x`) passent par `setProperty` : elles fonctionnent dans
 les deux formes.
 
-### html — innerHTML brut
+### html, innerHTML brut
 
 ```ts
-html`<div html=${markup()}></div>`;      // html`` — affecte innerHTML
-<div innerHTML={markup()} />;            // JSX — la prop s'appelle innerHTML
+html`<div html=${markup()}></div>`;      // html``, affecte innerHTML
+<div innerHTML={markup()} />;            // JSX, la prop s'appelle innerHTML
 ```
 
 L'écriture `html=` est réservée à `` html`` `` ; en JSX, écrivez `innerHTML` directement.
@@ -171,12 +171,12 @@ Les deux sont réactives si on leur donne un accesseur.
 
 > **C'est le seul endroit où un trou est analysé comme du HTML.** Partout ailleurs une
 > valeur devient du texte ou un attribut et ne peut pas injecter de balisage. Ne passez
-> jamais ici du contenu fourni par l'utilisateur sans l'assainir — une chaîne contenant
-> `<img onerror=…>` s'exécutera. Si vous n'avez besoin que de texte, interpolez
+> jamais ici du contenu fourni par l'utilisateur sans l'assainir, une chaîne contenant
+> `<img onerror=...>` s'exécutera. Si vous n'avez besoin que de texte, interpolez
 > normalement : c'est déjà sûr.
 
 Le contenu ainsi défini est remplacé en bloc à chaque changement : tout ce qu'il contient
-est hors du système réactif — pas de liaisons, pas de composants, pas de nettoyage.
+est hors du système réactif, pas de liaisons, pas de composants, pas de nettoyage.
 
 ### ...spread
 
@@ -193,7 +193,7 @@ change lui-même.
 
 ## Contrôle de flux (html`` uniquement)
 
-Ces formes compilent vers les composants `<Show>` / `<For>` — du sucre pour les cas
+Ces formes compilent vers les composants `<Show>` / `<For>`, du sucre pour les cas
 courants. En JSX, utilisez directement les composants.
 
 ### if / else
@@ -206,7 +206,7 @@ html`
 ```
 
 `if` compile en `<Show when>` ; un **frère immédiatement suivant** portant `else` devient
-le fallback. Tout ce qui s'intercale — même un nœud texte — casse l'appariement : gardez-les
+le fallback. Tout ce qui s'intercale, même un nœud texte, casse l'appariement : gardez-les
 adjacents.
 
 La branche est créée et détruite, pas masquée : la quitter déclenche le nettoyage, y
@@ -218,7 +218,7 @@ revenir la reconstruit.
 html`<li each=${items()}>${(item) => item.label}</li>`;
 ```
 
-`each` compile en `<For each>` ; l'enfant `${item => …}` est la fonction de rendu, et elle
+`each` compile en `<For each>` ; l'enfant `${item => ...}` est la fonction de rendu, et elle
 reçoit **l'élément lui-même**, pas un accesseur. L'élément qui porte `each` est celui qui
 est répété.
 
@@ -229,11 +229,11 @@ réutilisées par identité plutôt que par position :
 html`<li each=${rows()} key="id">${(row) => row.name}</li>`;
 ```
 
-Sans clé, le DOM d'une ligne est lié à son indice — insérer en tête reconstruit tout ce qui
+Sans clé, le DOM d'une ligne est lié à son indice, insérer en tête reconstruit tout ce qui
 suit. Avec une clé, seul ce qui a réellement bougé est touché. Indexez toute liste dont les
 éléments sont insérés, retirés ou réordonnés.
 
-### bind: — liaison bidirectionnelle
+### bind: liaison bidirectionnelle
 
 `bind:value` et `bind:checked` lient un champ à un tuple de signal `[get, set]` :
 
@@ -243,10 +243,10 @@ html`<input bind:value=${name} />`;                 // value + événement input
 html`<input type="checkbox" bind:checked=${on} />`; // checked + événement change
 ```
 
-Passez le signal lui-même — `signal(…)` ou la paire `[get, set]` de `createSignal(…)`, les
-deux marchent — jamais un accesseur seul, puisque la liaison écrit autant qu'elle lit. La
+Passez le signal lui-même, `signal(...)` ou la paire `[get, set]` de `createSignal(...)`, les
+deux marchent, jamais un accesseur seul, puisque la liaison écrit autant qu'elle lit. La
 liaison lit `event.target` : elle fonctionne donc sur tout élément portant `value` ou
-`checked`. Pour le reste — les valeurs multiples d'un `select`, un nombre à convertir —
+`checked`. Pour le reste, les valeurs multiples d'un `select`, un nombre à convertir,
 écrivez les deux moitiés vous-même ; `bind:` ne couvre délibérément que le cas courant.
 
 ## JSX et html`` en un coup d'œil
@@ -259,7 +259,7 @@ liaison lit `event.target` : elle fonctionne donc sur tout élément portant `va
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
 | `classList`, objet `style`, `...spread` | ✓ | ✓ |
 | HTML brut | `innerHTML` | `html=` ou `innerHTML` |
-| `oncapture:event` | ✓ | — |
-| `.prop`, `?attr` | — | ✓ |
-| `class:name`, `style:prop` | — | ✓ |
-| `if` / `else`, `each` / `key`, `bind:` | — (utilisez `<Show>`/`<For>`) | ✓ |
+| `oncapture:event` | ✓ |, |
+| `.prop`, `?attr` |, | ✓ |
+| `class:name`, `style:prop` |, | ✓ |
+| `if` / `else`, `each` / `key`, `bind:` |, (utilisez `<Show>`/`<For>`) | ✓ |

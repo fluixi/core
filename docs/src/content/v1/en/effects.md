@@ -1,6 +1,6 @@
 # Effects
 
-An **effect** runs a side effect — DOM work, logging, network calls — and re-runs whenever its
+An **effect** runs a side effect, DOM work, logging, network calls, and re-runs whenever its
 reactive reads change:
 
 ```ts
@@ -21,7 +21,7 @@ The effect runs once immediately to establish its dependencies, then again on ev
 ## Cleanup
 
 Register cleanup with `onCleanup`. It runs before the effect re-runs and when the effect is
-disposed — perfect for timers, listeners and subscriptions:
+disposed, perfect for timers, listeners and subscriptions:
 
 ```ts
 import { onCleanup } from '@fluixi/reactive/signal';

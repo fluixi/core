@@ -4,7 +4,7 @@ Components don't re-render, so "lifecycle" is just a few primitives tied to the 
 
 ## onMount
 
-Run code once, after the component's DOM is in place (client-only — it never runs during SSR):
+Run code once, after the component's DOM is in place (client-only, it never runs during SSR):
 
 ```tsx
 import { onMount } from '@fluixi/core';

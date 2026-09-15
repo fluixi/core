@@ -12,10 +12,10 @@ const cart = store({
 });
 
 cart.total;              // read a property reactively
-cart.set('total', 42);   // update one property — only readers of total re-run
+cart.set('total', 42);   // update one property, only readers of total re-run
 ```
 
-You read a store's properties directly — it is an object, and the property access **is** the
+You read a store's properties directly, it is an object, and the property access **is** the
 reactive read, where a signal is a value you call. `$store` is the same thing without the import:
 
 ```ts
@@ -32,7 +32,7 @@ cart.set('items', items => [...items, newItem]);
 cart.set('items', 0, 'qty', q => q + 1); // nested path
 ```
 
-A reader of `cart.total` is **not** disturbed by a write to `cart.items` — that is the point of a
+A reader of `cart.total` is **not** disturbed by a write to `cart.items`, that is the point of a
 store over a single signal holding an object.
 
 ## Reading in computations
@@ -57,7 +57,7 @@ setCart('total', 42);
 ```
 
 `store` is that pair with the setter attached to the state, so both are one primitive. Use
-`createStore` when your own state needs a `set` key of its own — the attached setter would
+`createStore` when your own state needs a `set` key of its own, the attached setter would
 shadow it.
 
 Next: **[Async data](/v1/en/async)**.

@@ -22,7 +22,7 @@ Le relire renvoie la valeur en cache, gratuitement :
 ```ts
 const expensive = memo(() => heavyCompute(data()));
 expensive(); // calcule une fois
-expensive(); // en cache — aucun recalcul
+expensive(); // en cache, aucun recalcul
 ```
 
 Si rien n'observe un mémo, il ne s'exécute jamais.
@@ -30,7 +30,7 @@ Si rien n'observe un mémo, il ne s'exécute jamais.
 ## Sans incohérence (glitch-free)
 
 Quand un changement se diffuse puis re-converge, un mémo recalcule **exactement une fois** avec des
-entrées cohérentes — jamais avec une valeur à moitié mise à jour :
+entrées cohérentes, jamais avec une valeur à moitié mise à jour :
 
 ```ts
 const a = signal(1);

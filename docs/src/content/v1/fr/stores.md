@@ -12,7 +12,7 @@ const cart = store({
 });
 
 cart.total;            // lecture réactive d'une propriété
-cart.set('total', 42);  // met à jour une propriété — seuls les lecteurs de total se ré-exécutent
+cart.set('total', 42);  // met à jour une propriété, seuls les lecteurs de total se ré-exécutent
 ```
 
 ## Mises à jour par chemin
@@ -25,7 +25,7 @@ cart.set('items', items => [...items, newItem]);
 cart.set('items', 0, 'qty', q => q + 1); // chemin imbriqué
 ```
 
-Un lecteur de `cart.total` n'est **pas** affecté par une écriture sur `cart.items` — c'est tout
+Un lecteur de `cart.total` n'est **pas** affecté par une écriture sur `cart.items`, c'est tout
 l'intérêt d'un store par rapport à un simple signal contenant un objet.
 
 ## Lire dans les calculs

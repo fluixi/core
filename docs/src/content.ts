@@ -1,5 +1,5 @@
 // Build-time docs registry: every content/<version>/<lang>/<slug>.md is imported raw, parsed to
-// HTML with marked, and code is syntax-highlighted with highlight.js — all at build, so the
+// HTML with marked, and code is syntax-highlighted with highlight.js, all at build, so the
 // prerendered pages ship as static, highlighted HTML (no client-side markdown/highlight cost).
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
@@ -60,7 +60,7 @@ for (const [path, md] of Object.entries(raw)) {
  * Wrap each code block so it can carry a copy button.
  *
  * Done here, at build time, so the button is in the prerendered HTML rather than being
- * grafted on after hydration — no layout shift, and it works on a page whose JS has not
+ * grafted on after hydration, no layout shift, and it works on a page whose JS has not
  * arrived yet (the handler is delegated, so it starts working the moment it does).
  *
  * The language label comes from the class marked already emits, so it costs nothing.
@@ -69,7 +69,7 @@ function withCopyButtons(html: string): string {
   // ONE paired match over the whole block, so the wrapper can never be unbalanced.
   //
   // This previously opened on `<pre><code class="hljs language-X">` but closed on every
-  // `</code></pre>`. A fence with no language — a file tree, a bare shell line — got a
+  // `</code></pre>`. A fence with no language, a file tree, a bare shell line, got a
   // closing `</div>` with no opening one, which closed `<article class="prose">` early and
   // spilled the rest of the page out of the layout.
   //

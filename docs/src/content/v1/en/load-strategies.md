@@ -8,7 +8,7 @@ same everywhere and belongs in config; whether *this particular usage* should wa
 viewport is a property of the usage.
 
 ```tsx
-<Summary total={total()} />                    {/* eager — entry chunk */}
+<Summary total={total()} />                    {/* eager, entry chunk */}
 <ExportDialog load:interaction />              {/* own chunk, on first interaction */}
 <AuditLog load:media="(min-width: 1024px)" />  {/* own chunk, desktop only */}
 <RevenueChart load:visible="200px" />          {/* own chunk, just before it scrolls in */}
@@ -26,7 +26,7 @@ the deferred binding.
 | `load:visible` | When the element approaches the viewport. |
 | `load:interaction` | On first interaction with the element. |
 | `load:media` | When a media query matches. |
-| `load:never` | Never — no client code at all. |
+| `load:never` | Never, no client code at all. |
 
 ### `load:visible`
 
@@ -42,7 +42,7 @@ blank space while the network works.
 
 ### `load:interaction`
 
-Defaults to `pointerdown`, `focusin` and `keydown` — the three that reliably precede a
+Defaults to `pointerdown`, `focusin` and `keydown`, the three that reliably precede a
 real interaction, keyboard and pointer alike. Name your own to narrow it:
 
 ```tsx
@@ -60,7 +60,7 @@ The query is required, since there is no sensible default:
 
 ### `load:never`
 
-A statement that the component has no place in the client bundle at all — server-rendered
+A statement that the component has no place in the client bundle at all, server-rendered
 output only. Unlike the others this is not about timing, so it is never collapsed away
 (below), and pairing it with an eager usage of the same module is reported as the
 contradiction it is.
@@ -68,11 +68,11 @@ contradiction it is.
 ## The strategy has to be static
 
 `load:` is read at compile time, because it decides how the module is emitted. A runtime
-value cannot answer that, so a `${…}` hole is rejected rather than silently ignored.
+value cannot answer that, so a `${...}` hole is rejected rather than silently ignored.
 
 ## Deferring nothing is not free
 
-If a module is already in the parent chunk — because something else uses it eagerly — then
+If a module is already in the parent chunk, because something else uses it eagerly, then
 deferring it elsewhere buys nothing and costs a wrapper, a promise and a re-render. The
 compiler notices and demotes those references back to eager.
 
@@ -82,7 +82,7 @@ deferring the second is pointless.
 
 ## Verifying it
 
-Rendering passes either way, so an assertion has to be about the build output — which
+Rendering passes either way, so an assertion has to be about the build output, which
 chunk each component landed in. `examples/load-strategies` in the repository does exactly
 that: it runs a real build and checks that the three deferred components are in their own
 chunks and absent from the entry.

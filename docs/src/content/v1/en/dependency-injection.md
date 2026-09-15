@@ -1,6 +1,6 @@
 # Dependency injection
 
-`@fluixi/start/di` provides an Angular-style injector — useful for sharing services,
+`@fluixi/start/di` provides an Angular-style injector, useful for sharing services,
 clients and config without prop-drilling, with **per-request isolation** on the server.
 
 ```ts
@@ -22,7 +22,7 @@ the injector it created.
 
 ## Tokens
 
-A token is an identity, not a value — two tokens with the same name are still distinct,
+A token is an identity, not a value, two tokens with the same name are still distinct,
 and the type parameter is what makes `inject` return the right type.
 
 ```ts
@@ -30,7 +30,7 @@ const Config = injectionToken<AppConfig>('Config');
 const Now = injectionToken<() => Date>('Now', { factory: () => () => new Date() });
 ```
 
-A token with a `factory` has a default, so `inject(Now)` works with nothing provided —
+A token with a `factory` has a default, so `inject(Now)` works with nothing provided,
 useful for things that almost always have one sensible implementation and occasionally
 need swapping in a test.
 
@@ -66,13 +66,13 @@ inject(T);     // back to the outer value
 
 `provideRoot` registers on the root injector instead, which is what an app-wide service
 usually wants. `runInInjectionContext(injector, fn)` runs `fn` against a specific
-injector — needed when you have to inject from a callback that has left the owner tree.
+injector, needed when you have to inject from a callback that has left the owner tree.
 
 ## Per-request roots
 
 On the server the root injector is created **per request**, so two concurrent requests
-never share instances. A request-scoped service — a database connection, the current user's
-session — stays isolated without any work on your part. On the client there is one root for
+never share instances. A request-scoped service, a database connection, the current user's
+session, stays isolated without any work on your part. On the client there is one root for
 the life of the page.
 
 This is the reason to prefer DI over a module-level singleton in an SSR app: a module
@@ -81,7 +81,7 @@ another's render is the kind of bug that only appears under concurrency.
 
 ## Cleanup
 
-A provider can implement `onDestroy`, called when its injector is disposed — at the end of
+A provider can implement `onDestroy`, called when its injector is disposed, at the end of
 the request on the server, or when the owning root is disposed on the client.
 
 Next: **[Internationalization](/v1/en/i18n)**.

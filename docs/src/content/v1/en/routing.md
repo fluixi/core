@@ -13,7 +13,7 @@ src/routes/
   blog/
     [...slug].tsx    →  /blog/* (catch-all)
   (auth)/
-    login.tsx        →  /login   — the group is not in the URL
+    login.tsx        →  /login   (the group is not in the URL)
 ```
 
 Four conventions, and that is the whole file layer:
@@ -22,12 +22,12 @@ Four conventions, and that is the whole file layer:
 | --- | --- |
 | `index.tsx` | the directory's own path |
 | `[id].tsx` | one dynamic segment, matched as `:id` |
-| `[...slug].tsx` | catch-all — matches the rest of the path |
+| `[...slug].tsx` | catch-all, matches the rest of the path |
 | `layout.tsx` | wraps the routes beside and below it |
-| `(name)/` | **grouping only** — organises files without adding a URL segment |
+| `(name)/` | **grouping only**, organises files without adding a URL segment |
 
 A route group `(auth)` is flattened: `(auth)/login.tsx` serves `/login`, not `/auth/login`.
-It exists so a set of routes can share a folder — and, if you add one, a `layout.tsx` —
+It exists so a set of routes can share a folder, and, if you add one, a `layout.tsx`,
 without that folder appearing in the URL.
 
 ## Dynamic segments and params
@@ -69,8 +69,8 @@ export default function UsersLayout() {
 }
 ```
 
-A layout stays mounted while you navigate between the routes inside it, so state it holds
-— a scroll position, an open panel, a fetched list — survives the transition. That is the
+A layout stays mounted while you navigate between the routes inside it, so state it holds,
+a scroll position, an open panel, a fetched list, survives the transition. That is the
 main reason to reach for one.
 
 ## Navigation
@@ -102,7 +102,7 @@ navigate('/login', { replace: true });
 ### Links you didn't write
 
 `<Link>` covers the links you author as JSX. It can't cover the ones that arrive as
-markup — rendered markdown, a CMS payload, anything inserted through `innerHTML`. Those
+markup, rendered markdown, a CMS payload, anything inserted through `innerHTML`. Those
 are plain anchors with nothing to bind to, so each one reloads the document.
 `useLinkNavigation` returns a single delegated handler for the container they live in:
 
@@ -128,9 +128,9 @@ These are left to the browser, deliberately:
 | `target`, `download`, `rel="external"` | The markup already said what it wants |
 | `mailto:`, `tel:`, any non-http scheme | Belongs to the OS |
 | A different origin | Not ours to route |
-| A hash pointing inside the current page | That's the browser's scroll — intercepting it breaks in-page anchors |
+| A hash pointing inside the current page | That's the browser's scroll; intercepting it breaks in-page anchors |
 
-`shouldNavigate` opts out a section that has to load as a document — a different bundle, a
+`shouldNavigate` opts out a section that has to load as a document, a different bundle, a
 server-rendered admin area:
 
 ```tsx
@@ -143,7 +143,7 @@ It also takes `replace`, like `<Link>`.
 
 ### Location and query string
 
-`useLocation()` returns a live object — read properties directly, no call:
+`useLocation()` returns a live object: read properties directly, no call:
 
 ```tsx
 const location = useLocation();
@@ -217,12 +217,12 @@ function Profile() {
 }
 ```
 
-Use `<Form>`, not a plain `<form action={save}>` — the action is a function, and an `action`
+Use `<Form>`, not a plain `<form action={save}>`, the action is a function, and an `action`
 attribute has to be a URL. `<Form>` builds the `FormData`, calls the action without a page
 navigation, and still emits `method="post"` with the action's real URL in the markup, so a
 submit works before JavaScript loads.
 
-`useSubmission` reports the in-flight state — pending, result, error — along with `retry`
+`useSubmission` reports the in-flight state, pending, result, error, along with `retry`
 and `clear`, which is what a form needs to disable its button and show a failure without
 tracking that by hand.
 

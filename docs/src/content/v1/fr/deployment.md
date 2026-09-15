@@ -13,7 +13,7 @@ fluixi start     →  le sert avec l'adaptateur node
 ## Les trois formes
 
 **Un site statique.** Avec [`prerender`](/v1/fr/static-generation), chaque route est écrite
-dans `dist/client` en HTML. Envoyez ce dossier n'importe où — il n'y a aucun serveur à faire
+dans `dist/client` en HTML. Envoyez ce dossier n'importe où, il n'y a aucun serveur à faire
 tourner.
 
 **Un serveur Node.** `fluixi start` lance l'adaptateur node : il écoute sur un port et sert
@@ -26,7 +26,7 @@ mais d'un module exportant `fetch`. C'est ce que renvoie l'adaptateur web :
 ```ts
 import { createProdHandler, webAdapter } from '@fluixi/start';
 
-const handler = await createProdHandler(/* … */);
+const handler = await createProdHandler(/* ... */);
 
 export default webAdapter.serve({ handler, cfg, clientDir });
 // → { fetch: (request) => Promise<Response> }
@@ -49,7 +49,7 @@ export default defineConfig({
 });
 ```
 
-`fluixi start` sert lui aussi avec cet adaptateur — avec `webAdapter`, il n'a rien à lancer,
+`fluixi start` sert lui aussi avec cet adaptateur, avec `webAdapter`, il n'a rien à lancer,
 et le dit plutôt que de faire semblant d'avoir démarré.
 
 ## Comment le serveur est bundlé
@@ -66,20 +66,20 @@ donc un mode `bundle`, que `fluixi build` applique.
 Un processus Node de longue durée tourne depuis le dossier de l'application, où les
 dépendances sont déjà installées : copier le framework dans le bundle ne fait que ralentir le
 build. Sur l'application `examples/start-app`, cela donne un `dist/server/entry-server.js` de
-**4,6 Ko au lieu de 76 Ko** — le code de l'application et rien d'autre — et un build complet
+**4,6 Ko au lieu de 76 Ko**, le code de l'application et rien d'autre, et un build complet
 qui passe de 1,9 s à 0,8 s. Le HTML rendu est identique octet pour octet dans les deux cas.
 
 Un runtime edge ou serverless est le cas inverse : vous envoyez un fichier, pas une
-installation — rien ne doit rester à résoudre, et `'inline'` met tout dans le bundle.
+installation, rien ne doit rester à résoudre, et `'inline'` met tout dans le bundle.
 
 `'external'` externalise les paquets `@fluixi/*` **que votre application déclare en
 dépendances**, et rien d'autre. Avec une disposition stricte de `node_modules` (pnpm), un
 paquet que vous n'avez jamais déclaré n'est pas résolvable depuis la racine de
 l'application : l'externaliser produirait un bundle important quelque chose que Node ne
 trouve pas. Chaque paquet est listé avec tous les sous-chemins qu'il exporte, car
-l'externaliser à moitié — `@fluixi/core` en import, `@fluixi/core/router` copié dans le
-bundle — mettrait deux routeurs, et deux états de module, dans le même serveur.
-`ssrNoExternal` reste prioritaire sur tout cela — c'est l'application qui dit « celui-ci,
+l'externaliser à moitié, `@fluixi/core` en import, `@fluixi/core/router` copié dans le
+bundle, mettrait deux routeurs, et deux états de module, dans le même serveur.
+`ssrNoExternal` reste prioritaire sur tout cela, c'est l'application qui dit « celui-ci,
 bundle-le quand même ».
 
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
@@ -102,7 +102,7 @@ export default defineConfig({ adapter: cloudflareAdapter });
 | --- | --- | --- |
 | `cloudflareAdapter` | `dist/client/_worker.js` + `_routes.json` | publiez `dist/client` |
 | `netlifyAdapter` | `.netlify/functions-internal/fluixi-server.mjs` | publiez `dist/client` |
-| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | rien — Vercel le lit directement |
+| `vercelAdapter` | `.vercel/output/` (Build Output API v3) | rien, Vercel le lit directement |
 
 Chacun sert d'abord les fichiers statiques et n'atteint le serveur qu'en cas d'absence :
 Cloudflare via le binding `ASSETS`, Netlify via `preferStatic`, Vercel via une route
@@ -113,7 +113,7 @@ ce n'est pas un choix de taille : le worker est écrit dans le dossier que vous 
 donc un chunk séparé serait un morceau de votre serveur téléchargeable publiquement.
 
 Une application sans point d'entrée serveur (une SPA entièrement prérendue) reçoit la
-sortie statique seule — ce n'est pas un échec, il n'y a rien à envelopper.
+sortie statique seule, ce n'est pas un échec, il n'y a rien à envelopper.
 
 ## Écrire un adaptateur
 
@@ -127,7 +127,7 @@ export const myAdapter: Adapter = {
   name: 'ma-plateforme',
   bundle: 'inline',
   serve({ handler, cfg, clientDir }) {
-    // Soit prendre le contrôle du processus — écouter, bloquer, ne jamais rendre la main —
+    // Soit prendre le contrôle du processus, écouter, bloquer, ne jamais rendre la main,
     // soit renvoyer { fetch } pour que la plateforme l'invoque.
     return { fetch: handler };
   },
@@ -142,7 +142,7 @@ Un adaptateur peut aussi produire la disposition de sortie de la plateforme, via
 hook `build` optionnel exécuté après le build client, le build serveur et le prérendu.
 `bundleEntry` inline le bundle serveur et le gabarit HTML dans un seul fichier : les
 deux doivent être inlinés plutôt que lus, puisque `createProdHandler` lit `index.html`
-sur le disque et importe l'entrée serveur par chemin — exactement ce qu'un worker ne
+sur le disque et importe l'entrée serveur par chemin, exactement ce qu'un worker ne
 peut pas faire. L'entrée générée les importe statiquement et appelle
 `createHandlerFrom` : même gestionnaire, même ordre de dispatch, aucun système de
 fichiers.
@@ -151,7 +151,7 @@ fichiers.
 
 | Chemin | Contenu | Nécessaire à l'exécution |
 | --- | --- | --- |
-| `dist/client` | assets, HTML prérendu | oui — par le serveur ou un CDN |
+| `dist/client` | assets, HTML prérendu | oui, par le serveur ou un CDN |
 | `dist/server` | le gestionnaire fetch | seulement pour le SSR |
 
 Un site entièrement prérendu n'a besoin que de `dist/client`. Avec un build `'external'`,
@@ -163,11 +163,11 @@ dépendances là où il s'exécute.
 - **`prerender` exige `ssr: true`.** Le prérendu est du rendu serveur déplacé au moment du
   build ; sans SSR, il n'y a rien avec quoi rendre.
 - **Le middleware ne s'exécute pas pour les pages prérendues.** Ce sont des fichiers. Une
-  vérification par requête — authentification, géolocalisation — doit vivre là où quelque
+  vérification par requête, authentification, géolocalisation, doit vivre là où quelque
   chose s'exécute réellement à chaque requête.
 - **Vérifiez les versions estampillées.** L'élément de montage porte `fluixi`, `fx-dom` et
   `fx-reactive`, et `window.Fluixi` rapporte la même chose. Si elles divergent dans une
-  version déployée, l'installation a résolu deux copies — mieux vaut le voir avant que cela
+  version déployée, l'installation a résolu deux copies, mieux vaut le voir avant que cela
   ne devienne un rapport de bug.
 
 Ensuite : **[Injection de dépendances](/v1/fr/dependency-injection)**.

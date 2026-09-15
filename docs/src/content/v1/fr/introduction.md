@@ -1,7 +1,7 @@
 # Introduction
 
 Fluixi est une **plateforme réactive native au compilateur**. Son compilateur comprend les valeurs
-réactives en tant que valeurs — pas via une convention de nommage — et porte cette compréhension à
+réactives en tant que valeurs, pas via une convention de nommage, et porte cette compréhension à
 travers JSX et les gabarits `` html`` ``, la génération DOM, le rendu serveur, l'hydratation, le
 routage et le méta-framework, comme un seul modèle.
 
@@ -15,7 +15,7 @@ Tout framework réactif vous demande de garder en tête un modèle que le langag
 apprenez quelles lectures sont suivies, quelles valeurs peuvent être déstructurées, où une valeur
 doit rester une fonction, et lesquelles de vos habitudes JavaScript vont silencieusement couper une
 dépendance. Le compilateur ne peut pas aider, puisqu'il ne sait pas ce que sont vos valeurs : la
-charge retombe sur vous, et les échecs sont muets — un libellé figé, une liste qui cesse de se
+charge retombe sur vous, et les échecs sont muets, un libellé figé, une liste qui cesse de se
 mettre à jour, aucune erreur.
 
 La réponse de Fluixi : faire en sorte que le compilateur sache. Il résout une primitive réactive par
@@ -23,10 +23,10 @@ la liaison dont elle vient, pas par la façon dont le nom se lit :
 
 ```ts
 import { signal as state } from '@fluixi/reactive/signal';
-const count = state(0);        // un signal — résolu via l'import
+const count = state(0);        // un signal, résolu via l'import
 
 function signal() { return 42; }
-const value = signal();        // pas un signal — une fonction locale
+const value = signal();        // pas un signal, une fonction locale
 ```
 
 De là, il peut faire ce qu'un runtime seul ne peut pas. Déstructurez les props d'un composant et le
@@ -39,7 +39,7 @@ function Card({ title, ...rest }) {
 ```
 
 Là où il ne peut pas prouver que la réécriture est sûre, il laisse votre code tel quel et explique
-pourquoi. C'est le contrat : **du TypeScript normal, la réactivité portée par le compilateur — qui
+pourquoi. C'est le contrat : **du TypeScript normal, la réactivité portée par le compilateur, qui
 vous dit quand il n'y arrive pas.**
 
 ## Ce qui en découle
@@ -71,7 +71,7 @@ mêmes primitives, résolues par le compilateur.
 - Un **mémo** dérive une valeur et ne recalcule que quand ses dépendances changent.
 - Un **effet** exécute un effet de bord et se ré-exécute quand ses lectures réactives changent.
 
-Le cœur réactif — `@fluixi/reactive` — est une bibliothèque autonome qui implémente le modèle
+Le cœur réactif, `@fluixi/reactive`, est une bibliothèque autonome qui implémente le modèle
 **TC39 Signals** : un graphe de dépendances paresseux et sans incohérence (« glitch-free »),
 utilisable dans le navigateur, sur le serveur, ou seul.
 

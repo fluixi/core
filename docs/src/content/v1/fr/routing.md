@@ -14,7 +14,7 @@ src/routes/
   blog/
     [...slug].tsx    →  /blog/* (attrape-tout)
   (auth)/
-    login.tsx        →  /login   — le groupe n'apparaît pas dans l'URL
+    login.tsx        →  /login   (le groupe n'apparaît pas dans l'URL)
 ```
 
 Quatre conventions, et c'est toute la couche fichier :
@@ -23,13 +23,13 @@ Quatre conventions, et c'est toute la couche fichier :
 | --- | --- |
 | `index.tsx` | le chemin du dossier lui-même |
 | `[id].tsx` | un segment dynamique, exposé comme `:id` |
-| `[...slug].tsx` | attrape-tout — correspond au reste du chemin |
+| `[...slug].tsx` | attrape-tout, correspond au reste du chemin |
 | `layout.tsx` | englobe les routes voisines et situées en dessous |
-| `(nom)/` | **regroupement seul** — organise les fichiers sans ajouter de segment d'URL |
+| `(nom)/` | **regroupement seul**, organise les fichiers sans ajouter de segment d'URL |
 
 Un groupe `(auth)` est aplati : `(auth)/login.tsx` sert `/login`, pas `/auth/login`. Il
-existe pour qu'un ensemble de routes partage un dossier — et, si vous en ajoutez un, un
-`layout.tsx` — sans que ce dossier apparaisse dans l'URL.
+existe pour qu'un ensemble de routes partage un dossier, et, si vous en ajoutez un, un
+`layout.tsx`, sans que ce dossier apparaisse dans l'URL.
 
 ## Segments dynamiques et paramètres
 
@@ -71,7 +71,7 @@ export default function UsersLayout() {
 ```
 
 Un layout reste monté pendant la navigation entre les routes qu'il contient : l'état qu'il
-détient — une position de défilement, un panneau ouvert, une liste chargée — survit à la
+détient, une position de défilement, un panneau ouvert, une liste chargée, survit à la
 transition. C'est la raison principale d'en utiliser un.
 
 ## Navigation
@@ -104,7 +104,7 @@ navigate('/login', { replace: true });
 ### Les liens que vous n'avez pas écrits
 
 `<Link>` couvre les liens que vous écrivez en JSX. Il ne peut rien pour ceux qui arrivent
-sous forme de balisage — du markdown rendu, une réponse de CMS, tout ce qui est inséré via
+sous forme de balisage, du markdown rendu, une réponse de CMS, tout ce qui est inséré via
 `innerHTML`. Ce sont de simples ancres, sans rien à quoi se rattacher : chacune recharge
 la page entière. `useLinkNavigation` renvoie un seul gestionnaire délégué, posé sur le
 conteneur qui les contient :
@@ -132,9 +132,9 @@ Ce qui est laissé au navigateur, délibérément :
 | `target`, `download`, `rel="external"` | Le balisage a déjà dit ce qu'il voulait |
 | `mailto:`, `tel:`, tout schéma non http | Relève du système |
 | Une autre origine | Ce n'est pas à nous de router |
-| Une ancre interne à la page courante | C'est le défilement du navigateur — l'intercepter casse les ancres internes |
+| Une ancre interne à la page courante | C'est le défilement du navigateur, l'intercepter casse les ancres internes |
 
-`shouldNavigate` exclut une section qui doit se charger comme un document — un autre
+`shouldNavigate` exclut une section qui doit se charger comme un document, un autre
 bundle, une zone d'administration rendue côté serveur :
 
 ```tsx
@@ -147,7 +147,7 @@ Il accepte aussi `replace`, comme `<Link>`.
 
 ### Emplacement et chaîne de requête
 
-`useLocation()` renvoie un objet vivant — lisez les propriétés directement, sans appel :
+`useLocation()` renvoie un objet vivant : lisez les propriétés directement, sans appel :
 
 ```tsx
 const location = useLocation();
@@ -224,9 +224,9 @@ function Profile() {
 Utilisez `<Form>`, pas un `<form action={save}>` simple : l'action est une fonction, et un
 attribut `action` doit être une URL. `<Form>` construit le `FormData`, appelle l'action sans
 navigation, et émet quand même `method="post"` avec la véritable URL de l'action dans le
-balisage — l'envoi fonctionne donc avant le chargement de JavaScript.
+balisage, l'envoi fonctionne donc avant le chargement de JavaScript.
 
-`useSubmission` rapporte l'état en cours — en attente, résultat, erreur — avec `retry` et
+`useSubmission` rapporte l'état en cours, en attente, résultat, erreur, avec `retry` et
 `clear` : exactement ce qu'il faut à un formulaire pour désactiver son bouton et signaler un
 échec sans suivre cela à la main.
 

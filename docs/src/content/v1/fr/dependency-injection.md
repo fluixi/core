@@ -1,6 +1,6 @@
 # Injection de dépendances
 
-`@fluixi/start/di` fournit un injecteur à la Angular — pratique pour partager services,
+`@fluixi/start/di` fournit un injecteur à la Angular, pratique pour partager services,
 clients et configuration sans faire descendre des props, avec une **isolation par requête**
 sur le serveur.
 
@@ -23,7 +23,7 @@ ensemble, et renvoie l'injecteur créé.
 
 ## Jetons
 
-Un jeton est une identité, pas une valeur — deux jetons de même nom restent distincts, et
+Un jeton est une identité, pas une valeur, deux jetons de même nom restent distincts, et
 c'est le paramètre de type qui fait renvoyer le bon type à `inject`.
 
 ```ts
@@ -32,7 +32,7 @@ const Now = injectionToken<() => Date>('Now', { factory: () => () => new Date() 
 ```
 
 Un jeton doté d'une `factory` a une valeur par défaut : `inject(Now)` fonctionne sans que
-rien n'ait été fourni — utile pour ce qui a presque toujours une implémentation évidente et
+rien n'ait été fourni, utile pour ce qui a presque toujours une implémentation évidente et
 qu'on remplace parfois dans un test.
 
 ## Formes de fournisseur
@@ -66,14 +66,14 @@ inject(T);     // de retour à la valeur externe
 ```
 
 `provideRoot` enregistre sur l'injecteur racine, ce que veut généralement un service
-applicatif. `runInInjectionContext(injector, fn)` exécute `fn` avec un injecteur précis —
+applicatif. `runInInjectionContext(injector, fn)` exécute `fn` avec un injecteur précis,
 nécessaire quand il faut injecter depuis un callback sorti de l'arbre de propriété.
 
 ## Racines par requête
 
 Sur le serveur, l'injecteur racine est créé **par requête** : deux requêtes traitées
-simultanément ne partagent donc jamais d'instances. Un service à portée de requête — une
-connexion à la base, la session de l'utilisateur courant — reste isolé sans effort de votre
+simultanément ne partagent donc jamais d'instances. Un service à portée de requête, une
+connexion à la base, la session de l'utilisateur courant, reste isolé sans effort de votre
 part. Côté client, il y a une seule racine pour la durée de vie de la page.
 
 C'est la raison de préférer l'injection à un singleton de module dans une application SSR :
@@ -83,7 +83,7 @@ n'apparaît qu'en concurrence.
 
 ## Nettoyage
 
-Un fournisseur peut implémenter `onDestroy`, appelé quand son injecteur est libéré — en fin
+Un fournisseur peut implémenter `onDestroy`, appelé quand son injecteur est libéré, en fin
 de requête sur le serveur, ou à la libération de la racine propriétaire côté client.
 
 Ensuite : **[Internationalisation](/v1/fr/i18n)**.
