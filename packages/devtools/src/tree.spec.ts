@@ -683,28 +683,53 @@ describe('the values checkbox', () => {
  * from the `For` that reads it.
  */
 describe('a value the dom cannot place', () => {
-  it('reads above the markup, not after it', () => {
-    const host = document.createElement('div');
-    document.body.append(host);
+  const host = () => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    return el;
+  };
+
+  it('nests under the tag that reads it', () => {
+    // `For` reads `todos` and renders the rows itself, so no element here writes from it.
+    const list = document.createElement('ul');
+    document.body.append(list);
+    const graph = new Map<number, RNode>([
+      [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
+      [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+      [2, { id: 2, label: 'For', kind: 'control', deps: new Set([1]), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
+    ]);
+    const where = host();
+    createComponentTree(where, {
+      values: true,
+      domFor: (id) => (id === 0 ? [{ label: 'ul.list', children: [], element: list }] : []),
+    }).render(graph);
+
+    const rows = [...where.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const at = rows.findIndex((r) => r.includes('For'));
+    expect(at).toBeGreaterThan(-1);
+    expect(rows[at + 1]).toContain('todos');
+    where.remove();
+    list.remove();
+  });
+
+  it('leads the tag own children when nothing reads it', () => {
     const el = document.createElement('div');
     el.className = 'card';
     document.body.append(el);
-
     const graph = new Map<number, RNode>([
       [0, { id: 0, label: 'App', kind: 'component', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true }],
       [1, { id: 1, label: 'todos', kind: 'state', deps: new Set(), writes: new Set(), runs: 1, lastPulse: 0, authored: true, createdIn: 0 }],
     ]);
-
-    const tree = createComponentTree(host, {
+    const where = host();
+    createComponentTree(where, {
       values: true,
       domFor: (id) => (id === 0 ? [{ label: 'div.card', children: [], element: el }] : []),
-    });
-    tree.render(graph);
+    }).render(graph);
 
-    const rows = [...host.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
+    const rows = [...where.querySelectorAll('.fx-tree-row')].map((r) => r.textContent!.trim());
     expect(rows[0]).toContain('App');
     expect(rows[1]).toContain('todos');
-    host.remove();
+    where.remove();
     el.remove();
   });
 });

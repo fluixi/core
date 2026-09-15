@@ -407,7 +407,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
    * writes into. The second matters for a store declared at module scope, which belongs to
    * no component but still renders somewhere.
    */
-  function rowsFor(nodes: readonly TreeNode[]): Row[] {
+  function rowsFor(nodes: readonly TreeNode[], graph: Map<number, RNode>): Row[] {
     const byId = new Map<number, Row>();
     const build = (node: TreeNode): Row => {
       const row: Row = {
@@ -451,6 +451,27 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       }
     };
     for (const row of byId.values()) if (row.id !== undefined) tally(domFor(row.id));
+
+    /**
+     * The innermost tag row that reads `id`, if one is in this tree.
+     *
+     * Deepest wins: a value read by a component inside a `For` belongs to the component, not
+     * to the `For` that holds it. `skip` keeps a tag from adopting its own value.
+     */
+    const readerOf = (id: number, skip: Row): Row | undefined => {
+      let best: Row | undefined;
+      let deepest = -1;
+      for (const [nodeId, candidate] of byId) {
+        if (candidate === skip || candidate.value) continue;
+        if (!graph.get(nodeId)?.deps.has(id)) continue;
+        const depth = graph.get(nodeId)?.depth ?? 0;
+        if (depth >= deepest) {
+          deepest = depth;
+          best = candidate;
+        }
+      }
+      return best;
+    };
 
     /** The same row again at another place, re-keyed so the two fold independently. */
     const again = (row: Row, key: string): Row => ({
@@ -542,13 +563,27 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       // description reaches, so it never nests beside an element, and appending it left
       // `todos` alone at the bottom of `App` well away from the `For` that reads it.
       const rest = row.children.filter((child) => !placed.has(child)).map(expand);
-      // Values lead, tags follow. A portal renders somewhere else and still reads as part of
-      // the markup, so it keeps its place at the end.
-      row.children = [
-        ...rest.filter((child) => child.value),
-        ...rendered,
-        ...rest.filter((child) => !child.value),
-      ];
+
+      // A value the dom cannot place goes under the tag that reads it.
+      //
+      // `draft` nests under the `<input>` it writes into, because the description names the
+      // values writing to each element. `todos` writes into no element here: `For` reads it
+      // and renders the rows itself, so it had nowhere to go and sat loose under `App`. The
+      // tag that depends on it is the honest place, and it reads the same way as `draft`.
+      const lifted: Row[] = [];
+      const spare: Row[] = [];
+      for (const child of rest) {
+        const reader = child.value && child.id !== undefined ? readerOf(child.id, row) : undefined;
+        if (reader) {
+          reader.children.push(child);
+          placed.add(child);
+          continue;
+        }
+        (child.value ? lifted : spare).push(child);
+      }
+      // Whatever is left: values first, then a portal, which renders elsewhere and still
+      // reads as part of the markup.
+      row.children = [...lifted, ...rendered, ...spare];
       return row;
     };
 
@@ -561,7 +596,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
   const api: ComponentTree = {
     render(graph, selected = null) {
       last = { graph, selected };
-      const roots = rowsFor(componentTree(graph, { values, filter }));
+      const roots = rowsFor(componentTree(graph, { values, filter }), graph);
       // Rebuilt only when the shape changes: this runs every frame, and replacing the markup
       // each time would drop whatever the reader was about to click.
       const next = `${values}|${filter}|${[...shut].sort().join(',')}|${roots.map(function label(n): string {
