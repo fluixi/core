@@ -1,0 +1,37 @@
+/**
+ * Publish a Fluixi component as a standard custom element.
+ *
+ * The boundary, and nothing below it. Signals, effects, ownership, DOM insertion and
+ * cleanup all come from `@fluixi/reactive` and `@fluixi/dom`; this package translates
+ * between them and the four browser callbacks. It depends on both and neither depends
+ * on it, so the direction stays reactive, then dom, then here, then the compiler.
+ *
+ * @example
+ * ```ts
+ * import { defineElement, prop } from '@fluixi/web-components';
+ * import { html } from '@fluixi/dom';
+ * import { signal } from '@fluixi/reactive/signal';
+ *
+ * defineElement('my-counter', ({ props, dispatch }) => {
+ *   const count = signal(0);
+ *   return html`
+ *     <button @click=${() => { count.set(count() + 1); dispatch('change', { value: count() }); }}>
+ *       ${() => count() + props.step()}
+ *     </button>`;
+ * }, { props: { step: prop.number(1) } });
+ * ```
+ */
+export { defineElement, createElementClass } from './element.js';
+export type { ElementOptions, Host, Setup, ShadowOption } from './element.js';
+
+export { prop } from './props.js';
+export type { PropDeclaration, PropOptions, PropAccessors } from './props.js';
+
+export { defineCustomElement, defineWhenUsed, isDefined } from './registry.js';
+export type { DefineOptions } from './registry.js';
+
+export { createDispatch } from './events.js';
+export type { Dispatch, DispatchInit } from './events.js';
+
+export { createTargets } from './targets.js';
+export type { Targets } from './targets.js';
