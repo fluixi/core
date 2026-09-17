@@ -1,8 +1,20 @@
 /**
- * createCachedResource — reactive resource with TTL-based caching.
+ * createCachedResource: a reactive resource with TTL-based caching.
  *
  * Fetches once and returns the cached result for subsequent reads within the
  * TTL window. After the TTL expires the next read triggers a re-fetch.
+ *
+ * It runs on the live graph, as of this change. It used to build on `./signal.js`,
+ * which tracks its current consumer in a module-level `Listener` while everything on
+ * the default entry tracks through `G.consumer`. The two never saw each other, so
+ * `createEffect(() => data())` subscribed to nothing and a binding kept whatever it
+ * first rendered, which on an initial load is the loading state. `cross-graph.spec.ts`
+ * holds the general shape of that hazard; this file is no longer an instance of it.
+ *
+ * Suspense needs no bookkeeping here. The accessor throws the pending promise and the
+ * runtime's suspend handler finds the nearest boundary from the effect that was
+ * reading, which is what `graph/resource.ts` relies on too. The manual increment and
+ * decrement against a lazily-resolved context went with the port.
  *
  * Two forms (mirrors createResource):
  *
@@ -43,13 +55,11 @@ import {
   onCleanup,
   batch,
   untrack,
-  useContext,
-  getSuspenseContext,
-  trackResourcePromise,
-  type Setter,
-  type Resource,
-  type ResourceState,
-} from './signal.js';
+} from './graph/compat.js';
+// Graph-agnostic SSR hooks, the same ones graph/resource.ts uses.
+import { trackResourcePromise } from './graph/ssr-hooks.js';
+// Types only. The archive contributes no runtime here, which is the point.
+import type { Setter, Resource, ResourceState } from './signal.js';
 
 // ── Module-level TTL cache ────────────────────────────────────────────────────
 // Shared across instances that use the same `name + key` combination.
@@ -104,7 +114,9 @@ export type CachedResourceReturn<T> = [
   },
 ];
 
-// ── Symbol constants (must match signal.ts) ───────────────────────────────────
+// ── Brand symbols ─────────────────────────────────────────────────────────────
+// Registry symbols, so every copy of every graph agrees on them without importing
+// anything. graph/resource.ts stamps a resource with the same two.
 const $SIGNAL = Symbol.for('signal');
 const $RESOURCE = Symbol.for('resource');
 
@@ -208,12 +220,9 @@ export function createCachedResource<T, S = true>(
     if (!background) {
       trackResourcePromise(promise); // server async SSR: collect & await
       setPendingP(promise);
-      // Register with nearest Suspense boundary for initial loads.
-      const suspCtx = _SuspenseContext && useContext(_SuspenseContext);
-      if (suspCtx) {
-        suspCtx.increment();
-        promise.finally(() => suspCtx.decrement());
-      }
+      // No boundary bookkeeping here. The accessor throws the pending promise, and
+      // the runtime's suspend handler finds the nearest boundary from the effect that
+      // was reading. graph/resource.ts leaves it to the same path.
     }
 
     promise.then(
@@ -240,17 +249,8 @@ export function createCachedResource<T, S = true>(
     });
   }
 
-  // ── Suspense context (lazy, avoid module-init order issues) ───────────────
-  let _SuspenseContext: ReturnType<typeof getSuspenseContext> | undefined;
-
   // ── Main effect ───────────────────────────────────────────────────────────
   createEffect(() => {
-    // Lazily grab the suspense context the first time the effect runs,
-    // so it's looked up in the correct component Owner scope.
-    if (_SuspenseContext === undefined) {
-      _SuspenseContext = getSuspenseContext();
-    }
-
     const key = sourceFn() as S | false | null | undefined;
     tick(); // track manual triggers
 

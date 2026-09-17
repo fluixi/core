@@ -33,9 +33,11 @@ export type {
   SuspenseContextType, SuspenseListContextType, SuspenseListRegisteredState,
 } from '../signal.js';
 // Signal operators (`@fluixi/reactive/operators`) and the cached-resource helper
-// (`@fluixi/reactive/cached-resource`) live on their own subpaths — cached-resource
-// still runs on the legacy graph, and keeping both out of the default entry lets the
-// legacy `signal.js` fully tree-shake. `list.ts` stays: dom <For>/<Index> use it.
+// (`@fluixi/reactive/cached-resource`) keep their own subpaths so the default entry
+// stays small. cached-resource runs on this graph now, so it no longer pulls the
+// archive in either; the subpath is about entry size rather than tree-shaking, and
+// moving it here is a decision nobody has taken. `list.ts` stays: dom <For> and
+// <Index> use it.
 export * from '../list.js';
 
 // Detection guards + helpers — sourced from the TC39-owned module (not signal.js),
