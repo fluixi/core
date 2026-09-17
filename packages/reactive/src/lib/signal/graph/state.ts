@@ -13,7 +13,20 @@
  * This is strictly more robust than SolidJS, which keeps this state in module `let`s and
  * relies on dedup + a "multiple instances" warning. Node-ref fields are loosely typed
  * (`any`) to avoid import cycles with core.ts/runtime.ts; the public API stays fully typed.
+ *
+ * Sharing is deliberate, and a standalone web component makes it load-bearing: several
+ * independent bundles can land on one page, each carrying its own copy of this module, and they
+ * have to end up on one graph or an effect in one will not see a signal from another.
+ *
+ * Two consequences that the original `??=` got wrong once more than one version is in play.
+ * The first copy to run used to define the whole object, so a field added in a later
+ * release stayed absent for every copy, including the one that expected it. Fields are
+ * backfilled now instead. And nothing recorded which builds had joined, so a genuine
+ * mismatch was invisible; `joinedVersions()` reports it, and @fluixi/dom's version-skew
+ * warning is where that surfaces.
  */
+
+import { VERSION } from '../../../version.generated.js';
 
 export interface GraphState {
   /** The computation currently evaluating — reads inside it subscribe to it. */
@@ -45,15 +58,15 @@ export interface GraphState {
 }
 
 const KEY = '__fluixi_signal_next_state__';
+const VERSIONS_KEY = '__fluixi_signal_builds__';
 
 const defaultSchedule = (run: () => void): void => {
   if (typeof queueMicrotask === 'function') queueMicrotask(run);
   else void Promise.resolve().then(run);
 };
 
-export const G: GraphState =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ((globalThis as any)[KEY] ??= {
+function defaults(): GraphState {
+  return {
     consumer: null,
     untracked: false,
     owner: null,
@@ -65,4 +78,35 @@ export const G: GraphState =
     onSuspend: null,
     onError: null,
     observer: null,
-  } satisfies GraphState);
+  } satisfies GraphState;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const realm = globalThis as any;
+
+function claim(): GraphState {
+  const existing = realm[KEY] as GraphState | undefined;
+  if (!existing) return (realm[KEY] = defaults());
+  // A copy from an earlier release created the object without the fields a later one
+  // reads. `in` rather than `??`, so a field whose default is null is not rewritten
+  // every time another copy loads.
+  const fresh = defaults();
+  const target = existing as unknown as Record<string, unknown>;
+  for (const field of Object.keys(fresh)) {
+    if (!(field in existing)) target[field] = fresh[field as keyof GraphState];
+  }
+  return existing;
+}
+
+export const G: GraphState = claim();
+
+// Which builds of this module reached the shared graph, in the order they loaded.
+// One entry is the normal case. More than one distinct version means two releases are
+// driving the same graph, which is worth saying out loud but not worth refusing: the
+// alternative is a page where half the components are inert.
+(realm[VERSIONS_KEY] ??= []).push(VERSION);
+
+/** Every `@fluixi/reactive` build that has joined the shared graph, deduplicated. */
+export function joinedVersions(): string[] {
+  return [...new Set((realm[VERSIONS_KEY] ?? []) as string[])];
+}

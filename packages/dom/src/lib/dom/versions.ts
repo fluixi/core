@@ -16,6 +16,7 @@
  */
 import { VERSION as DOM } from '../../version.generated.js';
 import { VERSION as REACTIVE } from '@fluixi/reactive/version';
+import { joinedVersions } from '@fluixi/reactive/signal';
 
 /** The versions of the packages this app is running. */
 export interface FluixiVersions {
@@ -63,6 +64,20 @@ export function stampVersions(container: Element): void {
  * surface later as a reactivity bug nobody can reproduce.
  */
 export function warnOnVersionSkew(): void {
+  // Two or more builds of @fluixi/reactive sharing one graph. `versions` is module
+  // state, so it only ever describes the bundle it was compiled into and cannot see
+  // this; the graph itself keeps the list. Standalone web components are how it
+  // happens in practice, each carrying its own runtime onto the same page.
+  const builds = joinedVersions();
+  if (builds.length > 1) {
+    console.warn(
+      `[fluixi] ${builds.length} builds of @fluixi/reactive are driving one reactive ` +
+        `graph: ${builds.join(', ')}. They share it on purpose, so signals still cross ` +
+        `between them, but the oldest one decided what the graph looks like. Build the ` +
+        `components on one release, or load them as shared-runtime bundles.`,
+    );
+  }
+
   const present = [versions.core, versions.dom, versions.reactive].filter(
     (v): v is string => v !== undefined,
   );
