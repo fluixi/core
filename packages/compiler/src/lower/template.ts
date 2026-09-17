@@ -20,6 +20,7 @@ import type { HolePosition, IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
 import { parseLoadDirective } from '../resolve/load-directive.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 import { cleanTemplateText } from './text.js';
+import { paren } from '../analyze/paren.js';
 
 /**
  * One `${…}` slot, as the front-end describes it. Conclusions about the
@@ -175,7 +176,7 @@ class Lowerer {
     if (el.tag === 'component' && isAttr && isAttr.value && isAttr.value.kind === 'hole') {
       const rest = el.attributes.filter((a) => a !== isAttr);
       const node = this.lowerComponent({ ...el, kind: 'Component', tag: 'Dynamic', tagHole: null, attributes: rest }) as IRNode & { props: IRProp[] };
-      node.props.unshift({ name: 'component', kind: 'attr', expr: `() => (${this.hole(isAttr.value.hole).code})` });
+      node.props.unshift({ name: 'component', kind: 'attr', expr: `() => ${paren(this.hole(isAttr.value.hole).code, 'arrowBody')}` });
       return node;
     }
     const at = this.tagAt(el);
@@ -306,10 +307,10 @@ class Lowerer {
     if (arrow) {
       const bodyIR: IRNode = { kind: 'expr', code: arrow.body, reactive: arrow.bodyReactive };
       const repeated = this.rebuildWithChildren(el, [bodyIR]);
-      childrenCode = `(${arrow.params.join(', ')}) => (${this.emit(repeated)})`;
+      childrenCode = `(${arrow.params.join(', ')}) => ${paren(this.emit(repeated), 'arrowBody')}`;
     } else {
       const repeated = this.stripAndLower(el, (a) => a.kind === 'EachDirective');
-      childrenCode = `() => (${this.emit(repeated)})`;
+      childrenCode = `() => ${paren(this.emit(repeated), 'arrowBody')}`;
     }
     const children: IRNode[] = [{ kind: 'expr', code: childrenCode, reactive: false }];
     const at = this.tagAt(el);
@@ -418,7 +419,7 @@ class Lowerer {
           const dir = a.name ?? (a.hole != null ? this.hole(a.hole).code : null);
           if (!dir) break;
           // parens so an object literal opts isn't read as a block body
-          usePairs.push(a.name != null && a.hole != null ? `[${dir}, () => (${this.hole(a.hole).code})]` : `[${dir}]`);
+          usePairs.push(a.name != null && a.hole != null ? `[${dir}, () => ${paren(this.hole(a.hole).code, 'arrowBody')}]` : `[${dir}]`);
           break;
         }
       }

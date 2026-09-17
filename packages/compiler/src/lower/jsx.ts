@@ -12,6 +12,7 @@ import { isReactiveShape } from '../analyze/reactive-expr.js';
 import { shapeOf } from '../analyze/expr-shape.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { cleanTemplateText } from './text.js';
+import { paren } from '../analyze/paren.js';
 
 interface Node {
   type: string;
@@ -155,7 +156,7 @@ function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
       ctx.used.add(dir); // keep the import
       const opts = attrExprCode(a, ctx);
       // parens round the body so an object literal is not read as a block
-      usePairs.push(opts != null ? `[${dir}, () => (${opts})]` : `[${dir}]`);
+      usePairs.push(opts != null ? `[${dir}, () => ${paren(opts, 'arrowBody')}]` : `[${dir}]`);
       continue;
     }
     // oncapture:name -> native on:name with { capture: true }

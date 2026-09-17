@@ -132,7 +132,7 @@ describe('Solid-style JSX directives (parity)', () => {
     const ir: any = buildIR(parseJSX('(<div use:tooltip={opts} use:autofocus></div>)'));
     const use = ir.props.find((p: any) => p.name === 'use');
     expect(use).toBeDefined();
-    expect(use.expr).toBe('[[tooltip, () => (opts)], [autofocus]]');
+    expect(use.expr).toBe('[[tooltip, () => opts], [autofocus]]');
   });
 
   it('runs a use: directive with the element + options accessor', () => {

@@ -11,6 +11,7 @@ import {
 import type { CompilerOptions } from '../../options.js';
 import { RUNTIME_CONTRACT_V1 } from '../contract.js';
 import { markHole, markProps, SOURCE_MARKER } from '../../transform/source-locations.js';
+import { paren } from '../../analyze/paren.js';
 
 /**
  * Imperative fine-grained backend — emits createNativeElement/insert/spread/
@@ -43,6 +44,7 @@ function isIdent(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
 
+
 function propKey(name: string): string {
   return isIdent(name) ? name : JSON.stringify(name);
 }
@@ -51,11 +53,12 @@ function propValue(p: IRProp): string {
   if (p.expr !== undefined) {
     // A ref is not reactive, but which variable ends up holding the element is worth
     // saying, so it carries its own text and position.
-    if (p.name === 'ref' && p.at) return markHole(`(${p.expr})`, p.at.line, p.at.column, p.expr);
+    if (p.name === 'ref' && p.at)
+      return markHole(paren(p.expr, 'value'), p.at.line, p.at.column, p.expr);
     // Events and non-reactive expressions pass through; reactive ones become thunks
     // so the runtime (spread/insert) can wire a render effect.
-    if (!p.reactive) return `(${p.expr})`;
-    const accessor = `() => (${p.expr})`;
+    if (!p.reactive) return paren(p.expr, 'value');
+    const accessor = `() => ${paren(p.expr, 'arrowBody')}`;
     // `at` is the gate: a production build carries no marker.
     return p.at ? markHole(accessor, p.at.line, p.at.column, p.directive) : accessor;
   }
@@ -71,7 +74,8 @@ function propValue(p: IRProp): string {
  * function instead of the value (e.g. `history.get is not a function`).
  */
 function componentPropValue(p: IRProp): string {
-  if (p.expr !== undefined) return `(${p.expr})`;
+  // Sits in a `return`, where a top-level comma would read as a sequence.
+  if (p.expr !== undefined) return paren(p.expr, 'value');
   return JSON.stringify(p.literal ?? true);
 }
 
@@ -165,7 +169,9 @@ function emitComponent(
   const mark = at
     ? `globalThis.${SOURCE_MARKER}?.(${JSON.stringify(at.file)},${at.line},${at.column},${JSON.stringify(name)}), `
     : '';
-  return `createMemo((${mark}() => createComponent(${name}, ${obj})))`;
+  // The mark makes this a sequence, which has to stay wrapped to pass as one argument.
+  // Without one there is nothing to wrap, and a production build never has one.
+  return `createMemo(${paren(`${mark}() => createComponent(${name}, ${obj})`, 'value')})`;
 }
 
 /** `el.setAttribute("class", "card")` for a compile-time constant. */
@@ -186,8 +192,8 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       return JSON.stringify(node.value);
 
     case 'expr': {
-      if (!node.reactive) return `(${node.code})`;
-      const accessor = `() => (${node.code})`;
+      if (!node.reactive) return paren(node.code, 'value');
+      const accessor = `() => ${paren(node.code, 'arrowBody')}`;
       return node.at ? markHole(accessor, node.at.line, node.at.column) : accessor;
     }
 
@@ -256,7 +262,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
             // this hole, so anything the content builds internally adopts too.
             lines.push(
               `insert(${hole.parentRef}, holeScope(${hole.startRef}, () => ` +
-                `(${emitNode(hole.node, used, templates)})), ` +
+                `${paren(emitNode(hole.node, used, templates), 'arrowBody')}), ` +
                 `${hole.endRef}, holeContent(${hole.startRef}, ${hole.endRef}));`,
             );
           }

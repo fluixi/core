@@ -31,7 +31,7 @@ describe('lit directives — events & bindings', () => {
   });
 
   it('ref binding emits a ref prop', () => {
-    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('ref: (ref)');
+    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('ref: ref');
   });
 
   it('property binding stays a property', () => {
@@ -122,7 +122,7 @@ describe('lit directives — if / else', () => {
   it('if lowers to <Show> and auto-imports it', () => {
     const code = compileEsm('export const r = (cond) => html`<div if=${cond()}>hi</div>`;');
     expect(code).toContain('createComponent');
-    expect(flat(code)).toContain('get when() { return (cond()); }');
+    expect(flat(code)).toContain('get when() { return cond(); }');
     expect(code).toMatch(/import \{[^}]*\bShow\b[^}]*\} from "@fluixi\/dom"/);
   });
 
@@ -164,7 +164,7 @@ describe('lit directives — each', () => {
 
   it('each folds a static key into a `by` prop', () => {
     const code = compileEsm('export const r = (rows) => html`<li each=${rows()} key="id">${(r) => r.id}</li>`;');
-    expect(flat(code)).toContain('get by() { return ((item) => item["id"]); }');
+    expect(flat(code)).toContain('get by() { return (item) => item["id"]; }');
   });
 });
 
