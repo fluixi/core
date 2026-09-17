@@ -1,9 +1,3 @@
-/**
- * @fileoverview Signal Utility Functions
- * @description Common utility functions for transforming and combining signals
- * @version 1.0.0
- */
-
 import { type Accessor, type MemoOptions, type EnhancedSignal } from './signal.js';
 import { createSignal, createMemo, createEffect } from './graph/compat.js';
 import { Observable } from '../observable/observable.js';
@@ -14,12 +8,6 @@ import { Observable } from '../observable/observable.js';
 
 /**
  * Transform a signal value through a mapping function
- * @template T - Input signal type
- * @template U - Output signal type
- * @param signal - Source signal to transform
- * @param fn - Mapping function to apply to signal value
- * @param options - Memo options for equality checking
- * @returns New accessor with transformed value
  *
  * @example
  * ```typescript
@@ -38,11 +26,6 @@ export function mapSignal<T, U>(
 
 /**
  * Filter an array signal using a predicate function
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param predicate - Filter function to test each element
- * @param options - Memo options for equality checking
- * @returns New accessor with filtered array
  *
  * @example
  * ```typescript
@@ -61,13 +44,6 @@ export function filterSignal<T>(
 
 /**
  * Reduce an array signal to a single value
- * @template T - Array element type
- * @template U - Accumulator type
- * @param signal - Source signal containing array
- * @param reducer - Reducer function
- * @param initialValue - Initial accumulator value
- * @param options - Memo options for equality checking
- * @returns New accessor with reduced value
  *
  * @example
  * ```typescript
@@ -91,11 +67,6 @@ export function reduceSignal<T, U>(
 
 /**
  * Find first element in array signal matching predicate
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param predicate - Predicate function to test elements
- * @param options - Memo options for equality checking
- * @returns New accessor with found element or undefined
  *
  * @example
  * ```typescript
@@ -114,11 +85,6 @@ export function findSignal<T>(
 
 /**
  * Check if any element in array signal matches predicate
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param predicate - Predicate function to test elements
- * @param options - Memo options for equality checking
- * @returns New accessor returning boolean
  *
  * @example
  * ```typescript
@@ -137,11 +103,6 @@ export function someSignal<T>(
 
 /**
  * Check if all elements in array signal match predicate
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param predicate - Predicate function to test elements
- * @param options - Memo options for equality checking
- * @returns New accessor returning boolean
  *
  * @example
  * ```typescript
@@ -160,11 +121,6 @@ export function everySignal<T>(
 
 /**
  * Sort an array signal
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param compareFn - Optional compare function for sorting
- * @param options - Memo options for equality checking
- * @returns New accessor with sorted array
  *
  * @example
  * ```typescript
@@ -183,10 +139,6 @@ export function sortSignal<T>(
 
 /**
  * Get unique values from array signal
- * @template T - Array element type
- * @param signal - Source signal containing array
- * @param options - Memo options for equality checking
- * @returns New accessor with unique values
  *
  * @example
  * ```typescript
@@ -208,12 +160,6 @@ export function distinctSignal<T>(
 
 /**
  * Combine multiple signals into a single computed signal
- * @template T - Tuple type of signal values
- * @template U - Result type
- * @param signals - Array of signals to combine
- * @param combiner - Function to combine signal values
- * @param options - Memo options for equality checking
- * @returns New accessor with combined value
  *
  * @example
  * ```typescript
@@ -272,58 +218,6 @@ export function combineSignals<T extends any[]>(
       });
     };
   });
-  //   return {
-  //     subscribe(
-  //       observerOrNext?: ((value: T) => void) | Partial<SignalObserver<T>>,
-  //       error?: (error: any) => void,
-  //       complete?: () => void
-  //     ): Subscription {
-  //       const observer = typeof observerOrNext === 'function'
-  //         ? { next: observerOrNext, error, complete }
-  //         : observerOrNext || {};
-
-  //       const getValues = () => signals.map(s =>
-  //         typeof s === 'function' ? s() : s.get()
-  //       ) as T;
-
-  //       if (observer.next) {
-  //         observer.next(getValues());
-  //       }
-
-  //       const disposers = signals.map(signal => {
-  //         if (typeof signal === 'function' && (signal as any).subscribe) {
-  //           return (signal as any).subscribe(() => {
-  //             if (observer.next) {
-  //               observer.next(getValues());
-  //             }
-  //           });
-  //         } else if (typeof signal !== 'function') {
-  //           return signal.subscribe(() => {
-  //             if (observer.next) {
-  //               observer.next(getValues());
-  //             }
-  //           });
-  //         }
-
-  //         return createEffect(() => {
-  //           getValues();
-  //           if (observer.next) {
-  //             observer.next(getValues());
-  //           }
-  //         });
-  //       });
-
-  //       return {
-  //         unsubscribe: () => {
-  //           disposers.forEach(dispose => {
-  //             if (typeof dispose === 'function') dispose();
-  //             else if (dispose && typeof dispose.unsubscribe === 'function') {
-  //               dispose.unsubscribe();
-  //             }
-  //           });
-  //         },
-  //         closed: false
-  //       };
   //     },
   //     pipe(...operators: any[]): Observable<any> {
   //       throw new Error('Pipe requires RxJS');
@@ -331,21 +225,8 @@ export function combineSignals<T extends any[]>(
   //   };
 }
 
-// export function isSignal<T>(fn: any): fn is () => T {
-//   return typeof fn === 'function' && fn.length === 0;
-// }
-
-// export function isEffect(fn: any): fn is SignalObserver {
-//   return typeof fn === 'function' && 'dependencies' in fn;
-// }
-
 /**
  * Merge two signals, returning value from first truthy signal
- * @template T - Signal value type
- * @param primary - Primary signal
- * @param fallback - Fallback signal if primary is falsy
- * @param options - Memo options for equality checking
- * @returns New accessor with merged value
  *
  * @example
  * ```typescript
@@ -365,14 +246,6 @@ export function mergeSignal<T>(
 
 /**
  * Combine two signals using a binary operator
- * @template T - First signal type
- * @template U - Second signal type
- * @template V - Result type
- * @param a - First signal
- * @param b - Second signal
- * @param operator - Binary operator function
- * @param options - Memo options for equality checking
- * @returns New accessor with combined value
  *
  * @example
  * ```typescript
@@ -398,12 +271,6 @@ export function zipSignal<T, U, V>(
 /**
  * Select a derived value from a signal with custom equality
  * Only updates when selected value changes according to equals function
- * @template T - Signal type
- * @template U - Selected value type
- * @param signal - Source signal
- * @param selector - Function to select value from signal
- * @param equals - Optional equality function (defaults to Object.is)
- * @returns New accessor with selected value
  *
  * @example
  * ```typescript
@@ -425,12 +292,6 @@ export function selectSignal<T, U>(
 
 /**
  * Pick specific properties from an object signal
- * @template T - Object type
- * @template K - Property keys
- * @param signal - Source signal containing object
- * @param keys - Array of property keys to pick
- * @param options - Memo options for equality checking
- * @returns New accessor with picked properties
  *
  * @example
  * ```typescript
@@ -460,12 +321,6 @@ export function pickSignal<T extends Record<string, any>, K extends keyof T>(
 
 /**
  * Omit specific properties from an object signal
- * @template T - Object type
- * @template K - Property keys to omit
- * @param signal - Source signal containing object
- * @param keys - Array of property keys to omit
- * @param options - Memo options for equality checking
- * @returns New accessor with omitted properties
  *
  * @example
  * ```typescript
@@ -499,12 +354,6 @@ export function omitSignal<T extends Record<string, any>, K extends keyof T>(
 
 /**
  * Conditionally compute signal based on condition
- * @template T - Result type
- * @param condition - Condition signal or accessor
- * @param whenTrue - Accessor to use when condition is true
- * @param whenFalse - Accessor to use when condition is false
- * @param options - Memo options for equality checking
- * @returns New accessor with conditional value
  *
  * @example
  * ```typescript
@@ -530,11 +379,6 @@ export function whenSignal<T>(
 
 /**
  * Compute signal only when condition is true, otherwise return undefined
- * @template T - Result type
- * @param condition - Condition signal or accessor
- * @param accessor - Accessor to use when condition is true
- * @param options - Memo options for equality checking
- * @returns New accessor with conditional value or undefined
  *
  * @example
  * ```typescript
@@ -562,11 +406,6 @@ export function guardSignal<T>(
 
 /**
  * Debounce a signal - only update after delay period with no changes
- * @template T - Signal type
- * @param signal - Source signal to debounce
- * @param delay - Delay in milliseconds
- * @param options - Memo options for equality checking
- * @returns New accessor with debounced value
  *
  * @example
  * ```typescript
@@ -594,11 +433,6 @@ export function debounceSignal<T>(
 
 /**
  * Throttle a signal - limit update frequency
- * @template T - Signal type
- * @param signal - Source signal to throttle
- * @param delay - Minimum delay between updates in milliseconds
- * @param options - Memo options for equality checking
- * @returns New accessor with throttled value
  *
  * @example
  * ```typescript
@@ -645,9 +479,6 @@ export { type Accessor, type MemoOptions } from './signal.js';
  * Useful for converting callback-based APIs to promises, implementing timeouts,
  * or coordinating complex async flows.
  *
- * @template T - The type of the value the promise resolves with
- * @returns An object containing the promise, resolve function, and reject function
- *
  * @example
  * ```typescript
  * // Create a promise with external controls
@@ -668,21 +499,6 @@ export { type Accessor, type MemoOptions } from './signal.js';
  * return deferred.promise;
  * ```
  */
-// export function createDeferred<T>(): {
-//   promise: Promise<T>;
-//   resolve: (value: T | PromiseLike<T>) => void;
-//   reject: (reason?: any) => void;
-// } {
-//   let resolve!: (value: T | PromiseLike<T>) => void;
-//   let reject!: (reason?: any) => void;
-
-//   const promise = new Promise<T>((res, rej) => {
-//     resolve = res;
-//     reject = rej;
-//   });
-
-//   return { promise, resolve, reject };
-// }
 
 
 export type ReadSignal<T, depth extends 0 | 1 | 2 | 3 | 4 = 0> = depth extends 4 ? T : T extends Accessor<infer U> ? U extends (()=>any) ? ReadSignal<U, depth extends 4 ? 4 : depth extends 3 ? 3 : depth extends 2 ? 2 : depth extends 1 ? 1 : 0> : U : T;

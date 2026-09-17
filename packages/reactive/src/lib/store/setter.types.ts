@@ -90,31 +90,6 @@ type NormalizePath<P extends string> =
     ? NormalizePath<R>
     : P;
 
-// type ResolvePath<
-//   T,
-//   P extends string
-// > = NormalizePath<P> extends `${infer Head}.${infer Tail}`
-//   ? ResolveSegment<T, Head, Tail>
-//   : ResolveSegment<T, NormalizePath<P>, never>;
-
-// type ResolveSegment<T, Segment extends string, Tail> = Segment extends keyof T
-//   ? Tail extends string
-//     ? ResolvePath<T[Segment], Tail>
-//     : T[Segment]
-//   : Segment extends '[*]'
-//   ? T extends readonly (infer U)[]
-//     ? Tail extends string
-//       ? ResolvePath<U[], Tail>
-//       : U[]
-//     : never
-//   : Segment extends `[${number}]`
-//   ? T extends readonly (infer U)[]
-//     ? Tail extends string
-//       ? ResolvePath<U, Tail>
-//       : U
-//     : never
-//   : never;
-
 // 1. Clean the path and split it into a union of segments
 type SplitPath<P extends string> =
   P extends `${infer Head}[${infer Index}]${infer Tail}`
@@ -160,9 +135,6 @@ export type PathValue<T, P extends string> = ResolvePath<T, P>;
  * Update Values
  * ============================================================ */
 
-// export type UpdateValue<T> = T extends Primitive
-//   ? T | Callback<T>
-//   : Expand<T> | Partial<Expand<T>> | Callback<Expand<T>>;
 export type UpdateValue<V> = V extends Primitive
   ? V | ((prev: V) => V)
   : V | Partial<V> | DeepReadonly<V> | Partial<DeepReadonly<V>> | ((prev: V) => V);
@@ -274,18 +246,9 @@ export type SetterArgs<T> =
  * Main Setter
  * ============================================================ */
 
-// export type SetStoreFunction<T> = (<A extends SetterArgs<T>>(
-//   ...args: A
-// ) => void) &
-//   (T extends readonly any[] ? ArrayStoreMethods<T> : {});
-
 /* ============================================================
  * Main Setter with Overloads
  * ============================================================ */
-
-// export type SetStoreFunction<T> = {
-//   // Option A: Single Object Update
-//   (value: UpdateValue<T>): void;
 
 //   // Option B: Path-based Updates using a "Distributed" tuple
 //   <P extends string>(

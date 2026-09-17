@@ -2,7 +2,6 @@ import { Observable, Subscription } from '@fluixi/reactive/observable';
 import { Subject } from '../subject.js';
 
 // Core types
-// export type SignalMode = 'granular' | 'stream' | 'adaptive';
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 
 export enum SignalMode {

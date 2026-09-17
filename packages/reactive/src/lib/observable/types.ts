@@ -19,7 +19,6 @@ export interface SubscriptionLike {
     unsubscribe(): void;
 }
 
-// export type TeardownLogic = () => void | { unsubscribe: () => void } | void;
 export type TeardownLogic = Subscription | Unsubscribable | (() => void) | void;
 
 

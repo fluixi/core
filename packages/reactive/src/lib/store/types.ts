@@ -146,7 +146,6 @@ export type PathValue<T, P = SinglePath<T>> = P extends string
     ? ValueOf<{ [K1 in keyof T as K1 extends P ? K1 : never]: T[K1] }>
     : never
   : never;
-// type _Keys<T> = NonNullable<keyof T>
 type _Keys<T> = T extends Record<string, any>
   ? NonNullable<{ [K in keyof T]: K }>[keyof T]
   : never;
@@ -155,7 +154,6 @@ export type Keys<T> = NonNullable<_Keys<T>> extends string
   ? NonNullable<_Keys<T>>
   : never;
 
-// export type keys<T extends any> = isObject<T> extends true ? T : T extends Array<any> ? MergeUnionObjectSingle<{[key in T[number]]: key}>: T extends readonly string[] ? MergeUnionObjectSingle<{[key1 in [...T][number]]: key1}>: never;
 export interface ReconcileOptions {
   /** Merge instead of replace (default: false) */
   merge?: boolean;

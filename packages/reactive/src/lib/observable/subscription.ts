@@ -36,8 +36,6 @@ export class Subscription implements SubscriptionLike {
 
   /**
    * Creates a new Subscription.
-   *
-   * @param {Unsubscribable} [unsubscribe] - Optional cleanup function to call on unsubscribe
    */
   constructor(unsubscribe?: Unsubscribable) {
     if (unsubscribe) {
@@ -47,8 +45,6 @@ export class Subscription implements SubscriptionLike {
 
   /**
    * Whether the subscription is closed.
-   *
-   * @returns {boolean} True if the subscription is closed
    */
   get closed(): boolean {
     return this._closed;
@@ -57,8 +53,6 @@ export class Subscription implements SubscriptionLike {
   /**
    * Disposes the resources held by the subscription.
    * May be called multiple times (idempotent).
-   *
-   * @returns {void}
    */
   unsubscribe(): void {
     if (this._closed) {
@@ -102,9 +96,6 @@ export class Subscription implements SubscriptionLike {
   /**
    * Adds a child subscription or cleanup function to this subscription.
    * When this subscription is unsubscribed, all added subscriptions/functions will be unsubscribed/called.
-   *
-   * @param {SubscriptionLike|Unsubscribable} subscription - Subscription or cleanup function to add
-   * @returns {Subscription} This subscription for chaining
    *
    * @throws {TypeError} If the argument is not a subscription-like object or function
    */
@@ -156,9 +147,6 @@ export class Subscription implements SubscriptionLike {
 
   /**
    * Removes a child subscription from this subscription.
-   *
-   * @param {Subscription} subscription - Subscription to remove
-   * @returns {void}
    */
   remove(subscription: Subscription): void {
     const { _subscriptions } = this;

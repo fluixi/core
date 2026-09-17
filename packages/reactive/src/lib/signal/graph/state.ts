@@ -39,13 +39,23 @@ export interface GraphState {
   owner: any;
   /** Pending effects awaiting flush. */
   queue: Array<{ queued: boolean; disposed: boolean; run(): void }>;
-  /** A flush has been scheduled (microtask) but not yet run. */
+  /**
+   * Effects are queued and a flush is pending.
+   *
+   * Not a microtask on the shipped path: `compat.ts` installs a no-op host scheduler
+   * and flushes explicitly after a write, so this says a drain is owed rather than
+   * that one is booked.
+   */
   scheduled: boolean;
   /** A flush is in progress (re-entrancy guard). */
   flushing: boolean;
   /** Depth of active batch() calls; >0 defers flushing. */
   batchDepth: number;
-  /** Host scheduler for the deferred flush (overridable: SSR/tests/compat). */
+  /**
+   * How a pending drain gets run. `compat.ts` sets it to a no-op because it owns the
+   * flush points itself; `setScheduler(null)` restores the microtask default. SSR and
+   * tests override it too.
+   */
   hostSchedule: (run: () => void) => void;
   /** Boundary hooks (injected by the Suspense / error-boundary layers). */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
