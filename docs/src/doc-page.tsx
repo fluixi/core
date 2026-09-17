@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, Portal } from '@fluixi/core';
+import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
@@ -243,13 +243,19 @@ function toggleTheme(): void {
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/...)
 // so each version has its own route wrapper, the router merges the inner [lang]/[slug] params.
 export default function DocPage(props: { version: string; lang: Lang; slug: string }) {
-  const { version, slug } = props;
-  const lang = props.lang;
-  const doc = getDoc(version, lang, slug);
-  const ui = UI[lang];
-  const link = (s: string) => `/${version}/${lang}/${s}`;
-  const titleOf = (s: string) => getDoc(version, lang, s)?.title ?? s;
-  const other: Lang = lang === 'en' ? 'fr' : 'en';
+  // Read through, never snapshot. Every doc is the same route, so navigating between two
+  // of them changes these props on a page that stays mounted. Taking a copy here is what
+  // forced the route to rebuild the whole page, header and sidebar included, to show a
+  // different article.
+  const version = () => props.version;
+  const lang = () => props.lang;
+  const slug = () => props.slug;
+
+  const doc = createMemo(() => getDoc(version(), lang(), slug()));
+  const ui = createMemo(() => UI[lang()]);
+  const link = (s: string) => `/${version()}/${lang()}/${s}`;
+  const titleOf = (s: string) => getDoc(version(), lang(), s)?.title ?? s;
+  const other = createMemo<Lang>(() => (lang() === 'en' ? 'fr' : 'en'));
 
   // The prose is prerendered HTML, so its cross-links are raw anchors with no <Link> to
   // render. One delegated handler makes them navigate client-side like the rest.
@@ -258,15 +264,23 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   // Mobile sidebar drawer (no effect on desktop, where the sidebar is a grid column).
   const [navOpen, setNavOpen] = createSignal(false);
 
-  const i = ORDER.indexOf(slug);
-  const prev = i > 0 ? ORDER[i - 1] : null;
-  const next = i >= 0 && i < ORDER.length - 1 ? ORDER[i + 1] : null;
+  const i = createMemo(() => ORDER.indexOf(slug()));
+  const prev = createMemo(() => (i() > 0 ? ORDER[i() - 1] : null));
+  const next = createMemo(() => (i() >= 0 && i() < ORDER.length - 1 ? ORDER[i() + 1] : null));
 
   // Per-doc document head, rendered into <head> at prerender (each page is static), so crawlers
   // get a unique title/description/canonical per doc, plus en/fr hreflang alternates.
-  const title = `${doc?.title ?? slug} · ${ui.product}`;
-  const description = describe(doc?.html);
-  const canonical = `${SITE}${link(slug)}`;
+  //
+  // Called straight through, not from an effect: effects do not run while prerendering, and
+  // an effect here left every generated page with an empty <title>. `seo` takes accessors for
+  // the fields that move, so a client navigation updates them on a page that stays mounted.
+  //
+  // og and twitter take plain values, so they keep whatever the first render saw. That is the
+  // right trade: they exist for crawlers, and a crawler reads the prerendered page, where each
+  // doc is its own render.
+  const title = createMemo(() => `${doc()?.title ?? slug()} · ${ui().product}`);
+  const description = createMemo(() => describe(doc()?.html));
+  const canonical = createMemo(() => `${SITE}${link(slug())}`);
   seo({
     title,
     description,
@@ -274,18 +288,18 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
     lang,
     og: {
       type: 'article',
-      siteName: ui.product,
-      url: canonical,
-      title,
-      description,
-      locale: lang,
-      image: { url: `${SITE}/og.png`, width: 1200, height: 630, alt: ui.product },
+      siteName: ui().product,
+      url: canonical(),
+      title: title(),
+      description: description(),
+      locale: lang(),
+      image: { url: `${SITE}/og.png`, width: 1200, height: 630, alt: ui().product },
     },
-    twitter: { card: 'summary_large_image', title, description, image: `${SITE}/og.png` },
+    twitter: { card: 'summary_large_image', title: title(), description: description(), image: `${SITE}/og.png` },
     alternates: [
-      { hreflang: 'en', href: `${SITE}/${version}/en/${slug}` },
-      { hreflang: 'fr', href: `${SITE}/${version}/fr/${slug}` },
-      { hreflang: 'x-default', href: `${SITE}/${version}/en/${slug}` },
+      { hreflang: 'en', href: `${SITE}/${version()}/en/${slug()}` },
+      { hreflang: 'fr', href: `${SITE}/${version()}/fr/${slug()}` },
+      { hreflang: 'x-default', href: `${SITE}/${version()}/en/${slug()}` },
     ],
   });
 
@@ -293,7 +307,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
     <div class="docs">
       {/* First tab stop: the sidebar is ~25 links, so a keyboard or screen-reader user
           would otherwise traverse the whole nav on every page to reach the content. */}
-      <a class="skip" href="#content">{ui.skip}</a>
+      <a class="skip" href="#content">{ui().skip}</a>
       <header class="d-head">
         <div class="d-head-left">
           <button
@@ -305,16 +319,16 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             {() => (navOpen() ? '✕' : '☰')}
           </button>
           <Link class="d-brand" href={link('introduction')}>
-            <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> {ui.product}
+            <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> {ui().product}
           </Link>
         </div>
         <div class="d-actions">
-          <Search lang={lang} version={version} label={ui.search} />
+          <Search lang={lang()} version={version()} label={ui().search} />
           <label class="ver">
-            <span>{ui.version}</span>
-            <select onChange={(e: any) => (location.href = `/${e.target.value}/${lang}/${slug}`)}>
+            <span>{ui().version}</span>
+            <select onChange={(e: any) => (location.href = `/${e.target.value}/${lang()}/${slug()}`)}>
               {VERSIONS.map((v) => (
-                <option value={v} selected={v === version}>
+                <option value={v} selected={v === version()}>
                   {versionLabel(v)}
                 </option>
               ))}
@@ -323,17 +337,17 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           <button
             type="button"
             class="theme-toggle"
-            aria-label={ui.theme}
-            title={ui.theme}
+            aria-label={ui().theme}
+            title={ui().theme}
             onClick={toggleTheme}
           >
             ◐
           </button>
-          <a class="lang-toggle" href={`/${version}/${other}/${slug}`}>
-            {LANG_LABEL[other]}
+          <a class="lang-toggle" href={`/${version()}/${other()}/${slug()}`}>
+            {LANG_LABEL[other()]}
           </a>
           <a class="d-link" href="https://playground.fluixi.com">
-            {ui.playground}
+            {ui().playground}
           </a>
         </div>
       </header>
@@ -347,10 +361,10 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         <aside class="d-sidebar" classList={{ open: navOpen() }}>
           {NAV.map((section) => (
             <div class="nav-group">
-              <div class="nav-group-title">{section.group[lang]}</div>
+              <div class="nav-group-title">{section.group[lang()]}</div>
               {section.slugs.map((s) => (
                 <Link
-                  class={s === slug ? 'nav-item on' : 'nav-item'}
+                  class={() => (s === slug() ? 'nav-item on' : 'nav-item')}
                   href={link(s)}
                   onClick={() => setNavOpen(false)}
                 >
@@ -370,24 +384,24 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             onLinkClick(e);
           }}
         >
-          <article class="prose" innerHTML={doc?.html ?? '<h1>Not found</h1>'} />
+          <article class="prose" innerHTML={doc()?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
-            {prev ? (
-              <Link class="pager" href={link(prev)}>
-                <span>← {ui.prev}</span>
-                <b>{titleOf(prev)}</b>
+            {() => (prev() ? (
+              <Link class="pager" href={link(prev()!)}>
+                <span>← {ui().prev}</span>
+                <b>{titleOf(prev()!)}</b>
               </Link>
             ) : (
               <span />
-            )}
-            {next ? (
-              <Link class="pager next" href={link(next)}>
-                <span>{ui.next} →</span>
-                <b>{titleOf(next)}</b>
+            ))}
+            {() => (next() ? (
+              <Link class="pager next" href={link(next()!)}>
+                <span>{ui().next} →</span>
+                <b>{titleOf(next()!)}</b>
               </Link>
             ) : (
               <span />
-            )}
+            ))}
           </nav>
         </main>
       </div>
