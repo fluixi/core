@@ -1,26 +1,34 @@
 /**
- * L0 — the TC39-shaped reactive graph core.
+ * The TC39-shaped reactive graph core.
  *
- * Class-based primitives (`State`, `Computed`, `Watcher`) that own ONLY the
- * dependency graph: values, versions, source/observer edges, the lazy push-pull
- * state machine, and glitch-free pull evaluation. They know nothing about
- * ownership, scheduling, effects, suspense, or resources — those live in the L1
- * runtime that sits on top (see ../signal.ts). This is a re-shaping of the exact
- * algorithm the existing graph already runs (CLEAN/CHECK/DIRTY + version + the
- * `Listener`/observers edges), so behaviour is preserved; it's just relocated
- * onto classes whose shape matches the TC39 Signals proposal.
+ * `State`, `Computed` and `Watcher` own the dependency graph and nothing else:
+ * values, versions, source and observer edges, the lazy state machine, and
+ * glitch-free pull evaluation. Ownership, scheduling, effects, suspense and
+ * resources all live in `runtime.ts`, with the `create*` surface over them in
+ * `compat.ts`.
  *
- * The model is the "push the dirt, pull the value" scheme (Reactively / SolidJS /
- * the TC39 polyfill): a write PUSHES a maybe-dirty mark down to observers without
- * recomputing; a read PULLS, settling upstream lazily and recomputing only what
- * actually changed (equality-gated). Reads outside a tracking scope don't subscribe.
+ * `../signal.ts` also implements a graph and is not the one that runs. It is
+ * archive, reachable only through the `@fluixi/reactive/signal-legacy` entry, and
+ * editing it changes nothing here. Its `Computation` and `signalObservers` are the
+ * earlier spelling of what `Computed` and `Source.observers` do below, which is
+ * the only reason to open it.
+ *
+ * The scheme is push the dirt, pull the value, as in Reactively, SolidJS and the
+ * TC39 polyfill. A write pushes a maybe-dirty mark down to observers without
+ * recomputing anything. A read pulls: upstream settles lazily and only what
+ * actually changed recomputes, gated on equality. A read outside a tracking scope
+ * subscribes to nothing.
  */
 
 import { G } from './state.js';
 import { enterReactiveRun, exitReactiveRun, reportReactiveRun, reportReactiveWrite } from './observe.js';
 
-// Node states. CHECK = "a source may have changed — verify on read" (your STALE);
-// DIRTY = "definitely recompute"; CLEAN = "cached value is current".
+// CLEAN, the cached value is current. CHECK, a source may have changed, so verify on
+// read. DIRTY, recompute without checking.
+//
+// CHECK is what keeps a diamond from recomputing twice: a write marks direct observers
+// DIRTY and everything downstream of them CHECK, so a transitive reader asks its
+// sources whether their versions moved before it runs its own function.
 const CLEAN = 0;
 const CHECK = 1;
 const DIRTY = 2;
@@ -31,10 +39,10 @@ type NodeState = typeof CLEAN | typeof CHECK | typeof DIRTY;
 
 /** A thing that can be depended upon: holds observers + a monotonic version. */
 abstract class Source {
-  /** Computeds (and watched leaves) that read this node. (was the signalObservers entry) */
+  /** Computeds, and watched leaves, that read this node. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   observers: Set<Computed<any>> | null = null;
-  /** Watchers eagerly observing this node, for effect scheduling (L1). */
+  /** Watchers eagerly observing this node, which is how `runtime.ts` schedules effects. */
   watchers: Set<Watcher> | null = null;
   /** Bumped whenever this node's value actually changes (equality-gated). */
   version = 0;
@@ -73,10 +81,11 @@ export class State<T> extends Source {
     this.version++;
     // Who wrote it: once a write has propagated, nothing else records what caused it.
     reportReactiveWrite(this, G.consumer);
-    // Push: direct observers are DIRTY, their transitive observers are CHECK.
-    // Snapshot first — a synchronous scheduler can re-run an effect mid-propagation,
-    // which re-subscribes (mutates `observers`); iterating the live Set would then
-    // re-visit the re-added node forever. (Matches the legacy Array.from(observers).)
+    // Push: direct observers go DIRTY, their transitive observers CHECK.
+    //
+    // Snapshot first. The scheduler is synchronous, so an effect can re-run part way
+    // through this loop, and re-running re-subscribes it, which mutates `observers`.
+    // Iterating the live Set would then reach the re-added node again, and again.
     if (this.observers) for (const o of [...this.observers]) o.markDirty(DIRTY);
     notifyWatchers(this);
   }
@@ -93,7 +102,7 @@ export class Computed<T> extends Source {
   private _threw = false;
   private _initialized = false;
   state: NodeState = DIRTY;
-  /** Nodes this computation read on its last run. (was Computation.sources) */
+  /** Nodes this computation read on its last run. Rebuilt on every run. */
   sources: Set<Source> | null = null;
   private readonly _fn: () => T;
   private readonly _equals: (a: T, b: T) => boolean;
@@ -207,7 +216,7 @@ function notifyWatchers(node: Source): void {
 /**
  * Signal.subtle.Watcher — the only eager observation primitive. Its callback fires
  * when a watched signal MAY have changed; the callback MUST NOT read or write
- * signals. Effects (L1) are built on this + a scheduler.
+ * signals. Effects are built on this and a scheduler, in `runtime.ts`.
  */
 export class Watcher {
   private readonly _notifyFn: () => void;

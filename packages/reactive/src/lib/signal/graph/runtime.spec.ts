@@ -10,7 +10,7 @@ import {
   runWithOwner,
 } from './runtime.js';
 
-describe('L1 runtime — effect', () => {
+describe('runtime: effect', () => {
   it('runs once immediately, re-runs when a dep changes', () => {
     const a = new State(1);
     const seen: number[] = [];
@@ -78,7 +78,7 @@ describe('L1 runtime — effect', () => {
   });
 });
 
-describe('L1 runtime — batch', () => {
+describe('runtime: batch', () => {
   it('coalesces multiple writes into a single effect run', () => {
     const a = new State(1);
     const b = new State(10);
@@ -97,7 +97,7 @@ describe('L1 runtime — batch', () => {
   });
 });
 
-describe('L1 runtime — ownership', () => {
+describe('runtime: ownership', () => {
   it('createRoot disposal tears down nested effects', () => {
     const a = new State(1);
     const seen: number[] = [];

@@ -2,7 +2,7 @@
  * Error boundaries ported onto the TC39 core (additive; legacy untouched).
  *
  * Same shape as the Suspense port: a boundary is a context carrying an error sink.
- * When an effect under it throws a real (non-promise) error, the L1 effect's run()
+ * When an effect under it throws a real, non-promise error, the runtime effect's run()
  * routes it here via the injected error handler, which records it on the nearest
  * boundary (reactively, so the UI can swap to a fallback) and reports it handled.
  */
@@ -28,7 +28,7 @@ interface InternalBoundary extends ErrorBoundary {
 
 const ErrorContext = createContext<InternalBoundary | undefined>();
 
-// Wire the L1 effect's error path to the nearest boundary. Registered once.
+// Wire the runtime effect's error path to the nearest boundary. Registered once.
 setErrorHandler((error: unknown, owner: Owner | null): boolean => {
   const boundary = readContextFrom(owner, ErrorContext);
   if (!boundary) return false; // no boundary → not handled (rethrows)

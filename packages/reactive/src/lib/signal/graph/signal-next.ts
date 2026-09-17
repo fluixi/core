@@ -1,11 +1,11 @@
 /**
- * The complete reactive API running on the TC39 Signals core (L0 graph + L1 runtime).
+ * The complete reactive API, running on the TC39 Signals core and the runtime over it.
  *
  * This is what `@fluixi/reactive/signal` re-exports, so it is the default and not an
  * opt-in. It had its own `signal-next` subpath during the migration, when the legacy
  * implementation was still the default; that subpath is gone, having ended up with no
  * export `./signal` did not already have. When the native `globalThis.Signal` ships,
- * L0 becomes a thin polyfill swap underneath this same surface.
+ * `core.ts` becomes a thin polyfill swap underneath this same surface.
  *
  * Coverage: signals, memos, effects, computed, render effects, roots, ownership,
  * batch, untrack, on, transitions (minimal), context, resources (+ SSR seeding),
@@ -76,7 +76,7 @@ export {
 // Reactive children resolver.
 export { readChildren } from './children.js';
 
-// Core primitives + scheduling (L2 compat over L0/L1)
+// Primitives and scheduling, from the compat layer
 export {
   createSignal,
   createMemo,

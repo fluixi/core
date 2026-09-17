@@ -1,18 +1,22 @@
 /**
- * L1 — the runtime layer the TC39 proposal deliberately OMITS, rebuilt on top of
- * the L0 graph core (./core.ts). TC39 ships only State/Computed/Watcher; everything
- * a framework needs — ownership/disposal, a scheduler, batching, and effects — is
- * left to userland. This module is that userland, expressed once, cleanly:
+ * The runtime layer, on top of the graph core in `core.ts`.
  *
- *   - Owner tree:   createRoot / onCleanup / getOwner / runWithOwner  (no graph entanglement)
- *   - Scheduler:    a microtask-batched effect queue + flushSync / batch
- *   - effect():     re-running side effect built on a Computed + a Watcher + an owner
+ * TC39 ships `State`, `Computed` and `Watcher` and stops there. Everything else a
+ * framework needs is left to userland, and this module is that userland:
  *
- * It is intentionally NOT wired into the package's public exports yet (those names
- * clash with the legacy createEffect/createRoot/onCleanup/batch). It is the staged
- * replacement: once proven, the legacy public API re-points onto this. Effects are
- * built on `Signal.subtle.Watcher` exactly as the proposal intends — the watcher's
- * notify only schedules; the actual re-run (a tracked recompute) happens on flush.
+ *   - Owner tree:   createRoot, onCleanup, getOwner, runWithOwner. No graph edges;
+ *                   ownership is about disposal, not dependency.
+ *   - Scheduler:    an effect queue with flushSync and batch.
+ *   - effect():     a re-running side effect, built from a Computed, a Watcher and
+ *                   an owner.
+ *
+ * This is the live implementation. `@fluixi/reactive/signal` re-exports it through
+ * `signal-next.ts`, and `compat.ts` puts the `create*` names over the top, so the
+ * long-standing public API lands here.
+ *
+ * Effects are built on `Signal.subtle.Watcher` the way the proposal intends: the
+ * watcher's notify only schedules, and the re-run, a tracked recompute, happens on
+ * flush.
  */
 import { Computed, Watcher } from './core.js';
 import { G } from './state.js';
@@ -148,7 +152,7 @@ export function provide<T, R>(context: Context<T>, value: T, fn: () => R): R {
   }
 }
 
-// ── Suspend / error hooks (injected by the boundary layers; L1 stays decoupled) ──
+// ── Suspend / error hooks, injected by the boundary layers so this file stays clear of them ──
 /** Register how a thrown promise (a suspended read) is reported to a boundary. */
 export function setSuspendHandler(
   fn: ((promise: Promise<unknown>, owner: Owner | null) => void) | null,

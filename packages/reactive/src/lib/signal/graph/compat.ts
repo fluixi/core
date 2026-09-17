@@ -1,17 +1,19 @@
 /**
- * L2 (core) — the legacy public reactive API re-expressed on top of L0 (graph) +
- * L1 (runtime), with byte-identical signatures so it is a drop-in for the existing
- * `createSignal`/`createMemo`/`createEffect`/… surface. This is the "re-point": the
- * old API delegates to the TC39-shaped core instead of the bespoke Computation graph.
+ * The `create*` names, over the graph core and the runtime.
  *
- * Scope: the CORE primitives (signals, memos, effects, roots, batch, untrack, on).
- * The wider surface (resources, stores, context, suspense, transitions, the SSR
- * eager-stale/drain hooks) is ported separately before the production export flips
- * — until then this lives behind its own module + spec, validated for behavioural
- * equivalence against the legacy oracle.
+ * Signatures are identical to the ones this API has always had, so nothing calling
+ * `createSignal`, `createMemo` or `createEffect` can tell the difference. What
+ * changed underneath is that they now delegate to the TC39-shaped core in `core.ts`
+ * rather than to the bespoke `Computation` graph, which survives in `../signal.ts`
+ * as archive.
  *
- * Timing note: legacy effects flush SYNCHRONOUSLY on a write (outside batch), so we
- * install a synchronous L1 scheduler here; `batch` still coalesces to one flush.
+ * This module covers the primitives: signals, memos, effects, roots, batch, untrack
+ * and on. The wider surface, resources and stores and context and suspense and
+ * transitions and the SSR hooks, is ported in the modules beside it.
+ *
+ * Timing: effects flush synchronously on a write outside a batch, which is what this
+ * API has always done, so the scheduler installed here is synchronous. `batch` still
+ * coalesces a group of writes into one flush.
  */
 import { State, Computed, untrack as l0untrack } from './core.js';
 import {
@@ -161,8 +163,8 @@ export function createEffect<T>(
 /**
  * createComputed — an EAGER, owner-managed reactive computation (returns void).
  * Unlike a lazy memo it runs immediately and re-runs eagerly when a dep changes;
- * used for derivations with side effects (e.g. store internals). On L1 that is an
- * eager effect whose dispose is owned by the current scope.
+ * used for derivations with side effects, such as store internals. It is an eager
+ * effect whose dispose is owned by the current scope.
  */
 export function createComputed<T>(fn: (prev?: T) => T, value?: T): void {
   let prev = value;

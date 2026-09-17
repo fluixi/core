@@ -2,7 +2,7 @@
  * Suspense ported onto the TC39 core (additive; legacy signal.ts untouched).
  *
  * A Suspense boundary is just a context carrying a pending counter. A suspended read
- * (createResource while pending throws its promise) bubbles to the L1 effect's run(),
+ * (createResource while pending throws its promise) bubbles to the runtime effect's run(),
  * which calls the injected suspend handler registered here — it finds the nearest
  * boundary (via the effect's owner chain) and increments it; the promise settling
  * decrements it. The effect itself re-runs through normal reactivity once the
@@ -26,7 +26,7 @@ export interface SuspenseBoundary {
 
 const SuspenseContext = createContext<SuspenseBoundary | undefined>();
 
-// Wire the L1 effect's suspend path to the nearest boundary. Registered once.
+// Wire the runtime effect's suspend path to the nearest boundary. Registered once.
 setSuspendHandler((promise: Promise<unknown>, owner: Owner | null) => {
   const boundary = readContextFrom(owner, SuspenseContext);
   if (!boundary) return; // no boundary above → let it stay pending (no crash)

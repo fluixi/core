@@ -1,10 +1,11 @@
 /**
- * The TC39-shaped public surface for the L0 graph core: `Signal.State`,
- * `Signal.Computed`, and the `Signal.subtle` namespace (Watcher / untrack /
- * currentComputed / hasSinks). This mirrors the TC39 Signals proposal so the L1
- * runtime (and, eventually, app code) can target the same shape that a native
- * `globalThis.Signal` would expose — at which point L0 becomes a thin
- * `globalThis.Signal ?? polyfill` swap.
+ * The TC39-shaped surface over the graph core: `Signal.State`, `Signal.Computed`,
+ * and the `Signal.subtle` namespace of Watcher, untrack, currentComputed and
+ * hasSinks.
+ *
+ * It mirrors the proposal so that the runtime layer, and eventually app code, target
+ * the shape a native `globalThis.Signal` would expose. When that ships, `core.ts`
+ * becomes a `globalThis.Signal ?? polyfill` swap and nothing above it moves.
  */
 import { State, Computed, Watcher, untrack, currentComputed, hasSinks } from './core.js';
 

@@ -1,21 +1,28 @@
 /**
- * The short reactive API: `signal`, `memo`, `effect`.
+ * The short reactive API: the `create` prefix dropped, where dropping it loses nothing.
+ *
+ *   signal  memo  effect  root  renderEffect  computed  context  childOwner
  *
  *   const count = signal(0);
  *   count();          // read
  *   count.set(1);     // write
  *
- * `signal` is `createSignal` with the setter attached to the accessor instead of handed
- * back beside it. The function IS that accessor, so a read is the same call it always
- * was, `count` passes anywhere an accessor is expected, and only the write changes
- * spelling. `memo` is `createMemo` under a shorter name — a derived value has nothing to
- * set, so there is nothing to attach.
+ * `signal` is `createSignal` with the setter attached to the accessor rather than handed
+ * back beside it. The returned function is the accessor itself, so a read is the call it
+ * always was and `count` still passes anywhere an accessor is expected. Only the write
+ * changes spelling. `memo` is `createMemo` renamed and no more than that: a derived value
+ * has nothing to set, so there is nothing to attach.
  *
- * The rule across the API: read it the way its shape implies — a call for a value, a
- * property for an object (see `store`) — and `.set()` writes.
+ * The rule across the API is to read a thing the way its shape implies. A call for a
+ * value, a property for an object (see `store`), and `.set()` to write.
  *
- * `createSignal` and friends are unchanged; the two forms are one primitive and mix
- * freely.
+ * The long names are unchanged and the two spellings are one primitive, so they mix
+ * freely. `onCleanup`, `getOwner` and `runWithOwner` are not here: they have no `create`
+ * to drop, and `cleanup` would read as performing one rather than registering one.
+ *
+ * Two of these names promise scheduling they do not deliver, which the per-function
+ * docs say outright: `renderEffect` has the same timing as `effect`, and `computed` runs
+ * in creation order alongside it rather than in an earlier phase.
  */
 import {
   createComputed,

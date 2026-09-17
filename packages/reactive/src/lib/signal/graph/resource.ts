@@ -1,5 +1,5 @@
 /**
- * createResource ported onto the TC39 core (L0+L1 via the compat layer). This is
+ * createResource, on the TC39 core by way of the compat layer. This is
  * ADDITIVE — the legacy `createResource` in ../signal.ts stays intact; this is the
  * parallel implementation that runs on the new graph.
  *

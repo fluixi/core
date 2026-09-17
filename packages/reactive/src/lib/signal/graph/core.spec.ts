@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Signal } from './index.js';
 
-describe('L0 graph core — Signal.State / Computed', () => {
+describe('graph core: Signal.State and Computed', () => {
   it('state get/set with equality gating', () => {
     const s = new Signal.State(1);
     expect(s.get()).toBe(1);
@@ -113,7 +113,7 @@ describe('L0 graph core — Signal.State / Computed', () => {
   });
 });
 
-describe('L0 graph core — Watcher', () => {
+describe('graph core: Watcher', () => {
   it('notifies (edge-triggered) when a watched computed goes dirty, re-arms after getPending+read', () => {
     const a = new Signal.State(1);
     const doubled = new Signal.Computed(() => a.get() * 2);
@@ -140,7 +140,7 @@ describe('L0 graph core — Watcher', () => {
     const c = new Signal.Computed(() => a.get().toUpperCase());
     let runs = 0;
     const w = new Signal.subtle.Watcher(() => {
-      // schedule: drain pending, then read (NOT inside this callback in real L1)
+      // Drain pending, then read. The real runtime does not read inside this callback.
       for (const _ of w.getPending()) runs++;
     });
     c.get();
