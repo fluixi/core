@@ -24,6 +24,7 @@
           "iife"
         ]
       }
-    }
+    },
+    "banner": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */"
   }
 }

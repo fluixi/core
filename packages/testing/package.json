@@ -2,6 +2,7 @@
   "name": "@fluixi/testing",
   "version": "1.0.0-alpha.31",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -42,9 +43,8 @@
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
-  "dependencies": {},
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.1.0",
+    "@bambiste/mix-builder": "^0.2.1",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3",

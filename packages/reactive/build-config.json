@@ -21,6 +21,18 @@
       "reactive/*",
       "@fluixi/*"
     ],
-    "clean": true
+    "clean": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/index.ts",
+        "src/lib/signal/graph/compat.ts",
+        "src/lib/signal/graph/core.ts",
+        "src/lib/signal/graph/index.ts",
+        "src/lib/signal/index.ts",
+        "src/lib/signal/graph/signal-next.ts",
+        "src/lib/store/index.ts"
+      ]
+    }
   }
 }

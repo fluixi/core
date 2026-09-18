@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha.83",
   "description": "Compiles JSX into fine-grained reactive DOM calls for Fluixi — no virtual DOM.",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -42,14 +43,14 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
     "@babel/core": "^7.28.5",
     "@babel/generator": "^7.29.1",
     "@babel/helper-plugin-utils": "^7.27.1",
-    "@babel/preset-typescript": "^7.28.5"
+    "@babel/preset-typescript": "^7.28.5",
+    "@fluixi/compiler": "workspace:*"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.1.0",
+    "@bambiste/mix-builder": "^0.2.1",
     "inquirer": "^14.0.2"
   },
   "repository": {

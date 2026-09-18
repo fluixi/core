@@ -15,5 +15,6 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": {}
+  "dependencies": {},
+  "author": "Ibrahima Touré"
 }

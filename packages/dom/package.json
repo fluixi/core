@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha.83",
   "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -142,11 +143,11 @@
     "stream": "^0.0.3"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.1.0",
+    "@bambiste/mix-builder": "^0.2.1",
+    "@fluixi/reactive": "workspace:*",
     "inquirer": "^13.1.0",
-    "vitest": "^1.6.1",
     "jsdom": "^25.0.0",
-    "@fluixi/reactive": "workspace:*"
+    "vitest": "^1.6.1"
   },
   "repository": {
     "type": "git",

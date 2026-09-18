@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha.83",
   "description": "Zero-dependency, strongly-typed utilities for everyday TypeScript.",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
@@ -207,9 +208,8 @@
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
-  "dependencies": {},
   "devDependencies": {
-    "inquirer": "^13.1.0",
-    "@bambiste/mix-builder": "^0.1.0"
+    "@bambiste/mix-builder": "^0.2.1",
+    "inquirer": "^13.1.0"
   }
 }

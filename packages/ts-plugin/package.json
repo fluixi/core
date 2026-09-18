@@ -2,6 +2,7 @@
   "name": "@fluixi/ts-plugin",
   "version": "0.1.0-alpha.17",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

@@ -18,6 +18,12 @@
     "rootDir": "src",
     "externals": [],
     "minify": false,
-    "clean": false
+    "clean": false,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/index.ts"
+      ]
+    }
   }
 }

@@ -2,6 +2,7 @@
   "name": "@fluixi/web-components",
   "version": "0.1.0-alpha.0",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": true,
   "description": "Publish a Fluixi component as a standard custom element, with fine-grained updates, native slots and no framework in the consumer.",
   "type": "module",

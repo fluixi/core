@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha.83",
   "description": "implements TC39 Signals proposal with zero runtime dependencies; observable layer for RxJS interop with signals, memos, effects, stores",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -171,7 +172,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.1.0",
+    "@bambiste/mix-builder": "^0.2.1",
     "@fluixi/utils": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",

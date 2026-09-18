@@ -18,6 +18,12 @@
     "externals": [],
     "minify": false,
     "clean": true,
-    "cjsTypes": true
+    "cjsTypes": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/index.ts"
+      ]
+    }
   }
 }

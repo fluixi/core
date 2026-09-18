@@ -2,11 +2,28 @@
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
     "target": "es2021",
-    "formats": ["es", "cjs"],
-    "entries": ["src/**/*.ts"],
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
     "rootDir": "src",
-    "clean": true
+    "clean": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/server.ts",
+        "src/client.ts"
+      ]
+    }
   }
 }

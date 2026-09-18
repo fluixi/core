@@ -2,7 +2,9 @@
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
   "esbuild": {
-    "extensions": [".ts"],
+    "extensions": [
+      ".ts"
+    ],
     "target": "es2021",
     "platform": "browser",
     "minify": true,
@@ -12,8 +14,11 @@
     "entries": {
       "src/cdn/fluixi.ts": {
         "globalName": "Fluixi",
-        "formats": ["iife"]
+        "formats": [
+          "iife"
+        ]
       }
-    }
+    },
+    "banner": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */"
   }
 }

@@ -62,6 +62,9 @@
     },
     {
       "path": "./packages/template-runtime"
+    },
+    {
+      "path": "./packages/web-components"
     }
   ]
 }

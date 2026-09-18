@@ -2,6 +2,7 @@
   "name": "@fluixi/template-parser",
   "version": "0.1.0-alpha.4",
   "license": "MIT",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -48,7 +49,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.1.0",
+    "@bambiste/mix-builder": "^0.2.1",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2",
     "vitest": "^1.6.1"

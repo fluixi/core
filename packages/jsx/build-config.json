@@ -38,6 +38,12 @@
       "react"
     ],
     "minify": false,
-    "clean": true
+    "clean": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/index.ts"
+      ]
+    }
   }
 }
