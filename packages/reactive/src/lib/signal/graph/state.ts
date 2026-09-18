@@ -67,8 +67,24 @@ export interface GraphState {
   observer: any;
 }
 
-const KEY = '__fluixi_signal_next_state__';
-const VERSIONS_KEY = '__fluixi_signal_builds__';
+/**
+ * The graph is shared per major version.
+ *
+ * Copies of one major share it, which is the point: several bundles on a page each carry
+ * their own copy of this module, and an effect in one has to see a signal from another.
+ * Fields are backfilled below so a copy from a later release finds what it expects.
+ *
+ * A different major gets its own graph instead. Within a major the state shape only
+ * grows, so backfilling is enough; across one it can change meaning, and sharing then
+ * means the older copy's semantics silently win for everybody. Two isolated graphs on a
+ * page is a visible problem. One graph running two sets of rules is not.
+ *
+ * Derived from the package version rather than written by hand, so it cannot be
+ * forgotten at a major bump.
+ */
+const MAJOR = VERSION.split('.')[0];
+const KEY = `__fluixi_signal_state_v${MAJOR}__`;
+const VERSIONS_KEY = `__fluixi_signal_builds_v${MAJOR}__`;
 
 const defaultSchedule = (run: () => void): void => {
   if (typeof queueMicrotask === 'function') queueMicrotask(run);
@@ -94,18 +110,25 @@ function defaults(): GraphState {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const realm = globalThis as any;
 
-function claim(): GraphState {
-  const existing = realm[KEY] as GraphState | undefined;
-  if (!existing) return (realm[KEY] = defaults());
-  // A copy from an earlier release created the object without the fields a later one
-  // reads. `in` rather than `??`, so a field whose default is null is not rewritten
-  // every time another copy loads.
+/**
+ * Add any field this release reads that an earlier copy never created.
+ *
+ * `in` rather than `??`, so a field whose default is null is not rewritten every time
+ * another copy loads. Mutates and returns the object it was given, because the whole
+ * point is that every copy keeps pointing at the same one.
+ */
+export function backfillState(existing: GraphState): GraphState {
   const fresh = defaults();
   const target = existing as unknown as Record<string, unknown>;
   for (const field of Object.keys(fresh)) {
     if (!(field in existing)) target[field] = fresh[field as keyof GraphState];
   }
   return existing;
+}
+
+function claim(): GraphState {
+  const existing = realm[KEY] as GraphState | undefined;
+  return existing ? backfillState(existing) : (realm[KEY] = defaults());
 }
 
 export const G: GraphState = claim();

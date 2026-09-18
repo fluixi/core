@@ -21,6 +21,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@fluixi/core-test"
+    "@fluixi/core-test",
+    "@fluixi/web-components"
   ]
 }
