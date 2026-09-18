@@ -1,10 +1,10 @@
 /**
- * `deferred(loader, options)` — a component whose module is fetched on a schedule.
+ * `deferred(loader, options)`, a component whose module is fetched on a schedule.
  *
  * This is the runtime half of the `load:` directive. It adds only the *when*: which
  * browser signal starts the download. Resolution, Suspense integration and the
  * synchronous-when-preloaded hydration path all come from {@link lazy}, reused unchanged
- * — so a deferred component behaves exactly like a lazy one once its trigger fires.
+ *, so a deferred component behaves exactly like a lazy one once its trigger fires.
  *
  * There is no registry and no runtime name lookup. The compiler emits a call with a
  * literal `import()`, which is what lets the bundler do chunking, hashing and
@@ -66,7 +66,7 @@ export function deferred(
 
   function Deferred(props: Record<string, unknown>): unknown {
     // `never` is server-only: the component renders during SSR and its code is meant to
-    // stay out of the client bundle entirely. The compiler is what actually drops it —
+    // stay out of the client bundle entirely. The compiler is what actually drops it
     // this guard only stops the client from fetching it if one slips through.
     if (options.strategy.kind === 'never') return isServer() ? Lazy(props) : null;
     if (isServer() || options.strategy.kind === 'eager') return Lazy(props);
@@ -102,7 +102,7 @@ function createAnchor(): HTMLElement {
   return el;
 }
 
-/** Run `start` when the strategy's trigger fires. Idempotent — it fires at most once. */
+/** Run `start` when the strategy's trigger fires. Idempotent, it fires at most once. */
 function schedule(strategy: LoadStrategy, start: () => void, anchor?: HTMLElement): void {
   let fired = false;
   const once = (): void => {
@@ -124,7 +124,7 @@ function schedule(strategy: LoadStrategy, start: () => void, anchor?: HTMLElemen
 
     case 'visible': {
       // Without an observer there is no signal to wait for, so load rather than never
-      // rendering — a missing capability should degrade to eager, not to broken.
+      // rendering, a missing capability should degrade to eager, not to broken.
       if (!anchor || typeof IntersectionObserver === 'undefined') {
         once();
         return;

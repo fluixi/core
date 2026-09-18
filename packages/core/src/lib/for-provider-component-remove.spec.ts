@@ -71,7 +71,7 @@ describe('<For> + Provider -> component child removal', () => {
     await mount(mod);
     expect([...document.querySelectorAll('.row')].map((l) => l.textContent)).toEqual(['B', 'C']);
     mod.push(); await tick(); await tick();
-    // window slid to ['C','D'] — must be exactly two rows, not stale leftovers.
+    // window slid to ['C','D']: must be exactly two rows, not stale leftovers.
     expect([...document.querySelectorAll('.row')].map((l) => l.textContent)).toEqual(['C', 'D']);
   });
 

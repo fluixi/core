@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// router needs a DOM at import time (HTMLElement), so load under jsdom — then
+// router needs a DOM at import time (HTMLElement), so load under jsdom, then
 // stub `window` away to exercise the server (no-window) branch of the router hooks.
 import { describe, it, expect } from 'vitest';
 import { createRoot } from '@fluixi/reactive/signal';
@@ -15,10 +15,10 @@ function withoutWindow(fn: () => void) {
   }
 }
 
-describe('router hooks — SSR-safe outside <Router>', () => {
-  // The storefront crash: a slow data resource settles AFTER the response is
+describe('router hooks: SSR-safe outside <Router>', () => {
+  // The storefront crash: a slow data resource settles after the response is
   // serialized + the root disposed, re-running a layout (Navbar) on a detached owner
-  // where RouterContext is gone. On the server the hooks must degrade, not throw —
+  // where RouterContext is gone. On the server the hooks must degrade, not throw
   // that re-render's output is discarded anyway.
   it('useRouter returns a safe stub on the server (no throw)', () => {
     withoutWindow(() => {

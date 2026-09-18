@@ -1,9 +1,8 @@
 /**
- * @fileoverview File-system route scanner
  * @module @fluixi/core/plugins/route-scanner
  *
  * Scans a routes directory and builds a route tree following SolidStart conventions.
- * Pure utility — no bundler dependency.
+ * Pure utility, no bundler dependency.
  */
 
 import * as fs from 'fs';
@@ -131,7 +130,7 @@ function scanDirectory(
     } else {
       // Regular directory: becomes a nested route
       // If there's a DIRECT layout in the children (urlPath matches this dir's path),
-      // it becomes the parent route. We must NOT pick up layouts from deeper descendants
+      // it becomes the parent route. We must not pick up layouts from deeper descendants
       // (e.g. campaigns/[id]/workspace/layout.tsx must not be the layout for campaigns/).
       const childLayout = children.find((c) => c.isLayout && c.urlPath === childUrlPath);
       const childNonLayout = children.filter((c) => !c.isLayout || c.urlPath !== childUrlPath);
@@ -141,7 +140,7 @@ function scanDirectory(
         childLayout.children = [...childLayout.children, ...childNonLayout];
         dirRoutes.push(childLayout);
       } else if (childNonLayout.length > 0) {
-        // No layout — just add children with their full paths
+        // No layout, just add children with their full paths
         dirRoutes.push(...childNonLayout);
       }
     }
@@ -182,11 +181,11 @@ function buildFileRoute(
   } else if (isIndex) {
     urlSegment = '/';
   } else if (isCatchAll) {
-    // [...rest] → *rest
+    // [...rest] -> *rest
     const paramName = baseName.slice(4, -1); // remove '[...' and ']'
     urlSegment = `*${paramName}`;
   } else if (isDynamic) {
-    // [id] → :id
+    // [id] -> :id
     const paramName = baseName.slice(1, -1); // remove '[' and ']'
     urlSegment = `:${paramName}`;
   } else {
@@ -246,10 +245,10 @@ function isRouteGroup(dirName: string): boolean {
 /** Convert a directory name to its URL segment, matching the same rules as file names. */
 function dirNameToSegment(dirName: string): string {
   if (dirName.startsWith('[...') && dirName.endsWith(']')) {
-    return '*' + dirName.slice(4, -1); // [...rest] → *rest
+    return '*' + dirName.slice(4, -1); // [...rest] -> *rest
   }
   if (dirName.startsWith('[') && dirName.endsWith(']')) {
-    return ':' + dirName.slice(1, -1); // [id] → :id
+    return ':' + dirName.slice(1, -1); // [id] -> :id
   }
   return dirName;
 }

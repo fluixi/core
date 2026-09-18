@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 /**
- * Event-replay integration: a click fired BEFORE hydration is replayed once the
+ * Event-replay integration: a click fired before hydration is replayed once the
  * delegated handlers are wired, so the interaction isn't lost.
  *
  * Server-render a <button onClick> to HTML, put it in #app, record a click on that
  * button in window.__FX_REPLAY__ (what the server's eventCaptureScript would do),
- * then startClient(hydrate) — which re-wires the handler over the reused DOM and
+ * then startClient(hydrate), which re-wires the handler over the reused DOM and
  * calls replayEvents(). Asserts the handler ran (and the reactive update landed).
  *
- * Compiles REAL JSX through the imperative backend so the onClick goes through the
+ * Compiles real JSX through the imperative backend so the onClick goes through the
  * runtime's event delegation, exactly like an app.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -129,7 +129,7 @@ describe('event-replay (hydration)', () => {
     (window as any).__FX_REPLAY__ = [{ type: 'click', target: btn }];
     (window as any).__FX_REPLAY_STOP__ = () => {};
 
-    // 4. Hydrate — wires the handler over the reused DOM, then replays.
+    // 4. Hydrate: wires the handler over the reused DOM, then replays.
     startClient(App as any, { root: '#app', hydrate: true });
     await tick();
 

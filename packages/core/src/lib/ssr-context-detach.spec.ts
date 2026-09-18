@@ -4,19 +4,19 @@
  * <Outlet/> must inherit the layout's context. The route got `undefined` from
  * useContext while a non-lazy sibling of the same provider worked.
  *
- * Compiles REAL JSX through the imperative backend (hand-written createComponent
- * calls did NOT reproduce it), renders SSR via renderToStringAsync, asserts CTX.
+ * Compiles real JSX through the imperative backend (hand-written createComponent
+ * calls did not reproduce it), renders SSR via renderToStringAsync, asserts CTX.
  *
- * ── ROOT CAUSE ───────────────────────────────────────────────────────────────
+ * ── root CAUSE ───────────────────────────────────────────────────────────────
  * The eager createProvider({ context, value, children: props.children }) form reads
- * `children` when the object literal is built — i.e. BEFORE the reactive Provider
+ * `children` when the object literal is built: i.e. before the reactive Provider
  * stamps its context. With an <Outlet/> among siblings, the route subtree then
  * renders in an owner root disjoint from the provider, so route descendants see no
  * context. (provider > <Outlet/> alone passed; provider > <Navbar/><Outlet/><Footer/>
  * detached.) Related: [[imperative-array-children-reactivity]].
  *
  * ── FIX ──────────────────────────────────────────────────────────────────────
- * createProvider has a lazy-safe overload — createProvider(context, value, props) —
+ * createProvider has a lazy-safe overload, createProvider(context, value, props),
  * that reads children through a getter (inside the stamped scope). The old eager
  * { context, value, children } form is deprecated (warns) but still works. This test
  * uses the lazy-safe form (+ JSX <Ctx.Provider> for the outer one) and must PASS.
@@ -140,8 +140,8 @@ describe('SSR: lazy route inherits layout context (compiled JSX)', () => {
       const AuthCtx = createContext();
 
       // Lazy-safe createProvider form: pass the component's props so children stay
-      // a getter (rendered inside the stamped scope). The old eager form —
-      // createProvider({ context, value, children: props.children }) — detached the
+      // a getter (rendered inside the stamped scope). The old eager form
+      // createProvider({ context, value, children: props.children }): detached the
       // routed <Outlet/> and is what broke the storefront.
       function ThemeProvider(props) {
         return createProvider(ThemeCtx, { name: 'CTX-OK' }, props);
@@ -176,7 +176,7 @@ describe('SSR: lazy route inherits layout context (compiled JSX)', () => {
         { path: '/', component: Layout, children: [{ path: '/', component: HomeLazy }] },
       ];
 
-      // Outer AuthContext provider around the Router — JSX .Provider (lazy children).
+      // Outer AuthContext provider around the Router. JSX .Provider (lazy children).
       export function App() {
         return (
           <AuthCtx.Provider value={{ user: 1 }}>
@@ -191,7 +191,7 @@ describe('SSR: lazy route inherits layout context (compiled JSX)', () => {
     await renderToStringAsync(() => App());
     for (let i = 0; i < 20; i++) await Promise.resolve();
 
-    // Render 2: the lazy chunk is warm, so the route renders synchronously — this
+    // Render 2: the lazy chunk is warm, so the route renders synchronously, this
     // is the storefront scenario where useContext returned undefined.
     const html = await renderToStringAsync(() => App());
 

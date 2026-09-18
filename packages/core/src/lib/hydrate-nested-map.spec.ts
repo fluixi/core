@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Repro: nested `.map()` children duplicate on hydration. The docs sidebar shape —
+ * Repro: nested `.map()` children duplicate on hydration. The docs sidebar shape
  * an outer `list.map(group => <div><div class="title"/>{group.items.map(i => <a class="item"/>)}</div>)`
- * — server-renders N items but hydration produces ~2N: the INNER mapped array (a sibling after a
+ *: server-renders N items but hydration produces ~2N: the INNER mapped array (a sibling after a
  * non-array element) is re-inserted fresh instead of adopting the server nodes.
  *
- * Compiles REAL JSX through the imperative backend, server-renders, then hydrates.
+ * Compiles real JSX through the imperative backend, server-renders, then hydrates.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
@@ -117,7 +117,7 @@ describe('hydration: nested .map() children', () => {
     expect(container.querySelectorAll('.side').length).toBe(1);
     expect(container.querySelectorAll('.group').length).toBe(2);
     expect(container.querySelectorAll('.title').length).toBe(2);
-    // The bug: inner mapped items duplicated (5 → 9). Must adopt the server nodes in place.
+    // The bug: inner mapped items duplicated (5 -> 9). Must adopt the server nodes in place.
     expect(container.querySelectorAll('.item').length).toBe(5);
     // And it must have reused the server DOM, not rebuilt a fresh copy.
     expect(container.querySelector('.item')).toBe(firstServerItem);

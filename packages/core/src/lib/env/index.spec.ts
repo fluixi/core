@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { storage, createMemoryStorage, env, clientOnly, isClient } from './index.js';
 
 describe('universal env utilities', () => {
-  it('storage round-trips like localStorage (jsdom → real localStorage)', () => {
+  it('storage round-trips like localStorage (jsdom to real localStorage)', () => {
     storage.setItem('k', 'v');
     expect(storage.getItem('k')).toBe('v');
     storage.removeItem('k');

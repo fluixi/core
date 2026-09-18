@@ -66,7 +66,7 @@ function isJSXElement(value: any): boolean {
   return !!(value && typeof value === 'object' && 'type' in value && 'props' in value);
 }
 
-// Only one instance is needed — the list context just carries the coordinator object.
+// Only one instance is needed, the list context just carries the coordinator object.
 interface SuspenseListRegistration {
   showContent: Accessor<boolean>;
   showFallback: Accessor<boolean>;
@@ -76,6 +76,25 @@ interface SuspenseListCoordinator {
 }
 const SuspenseListContext = createContext<SuspenseListCoordinator | undefined>(undefined, 'suspense-list');
 
+/**
+ * Show `fallback` while anything below is still pending.
+ *
+ * A boundary is a counter on the owner tree. A read that suspends, which is a resource
+ * throwing its pending promise, bubbles to the effect that was reading, and the runtime
+ * hands it to the nearest boundary above. The promise settling decrements the counter,
+ * and the content replaces the fallback through ordinary reactivity.
+ *
+ * Nothing needs to be wired by hand. Anything that suspends reports here on its own,
+ * including a `lazy` component on a cold navigation and a `createResource` still loading.
+ *
+ * @example
+ * ```ts
+ * html`
+ *   <${Suspense} fallback=${html`<p>loading...</p>`}>
+ *     <${Profile} />
+ *   </${Suspense}>`;
+ * ```
+ */
 export function Suspense(props: SuspenseProps): any {
   return createComponent(SuspenseImpl, props);
 }
@@ -93,17 +112,17 @@ function SuspenseImpl(props: SuspenseProps): any {
     return val;
   }
 
-  // Build the fallback off the hydration cursor — it isn't shown when the server
+  // Build the fallback off the hydration cursor, it isn't shown when the server
   // already rendered content, so it must not adopt (and duplicate) server nodes.
   const fallback = runWithoutHydration(() => instantiateOnce(props.fallback ?? null));
 
   // Read the children under the boundary so the memos they create capture its owner;
-  // then a suspended resource read inside them throws to THIS boundary, not the parent.
+  // then a suspended resource read inside them throws to this boundary, not the parent.
   //
   // `readChildren`, not a bare `props.children` read: a component child arrives as a THUNK
   // that instantiates when called, so reading the prop alone hands back a function and the
   // component never runs here. It would then be instantiated later, downstream of the output
-  // memo, where a suspend has no boundary that can re-run it — the failure that produced an
+  // memo, where a suspend has no boundary that can re-run it, the failure that produced an
   // empty node on a client navigation into a not-yet-loaded lazy route: no fallback, no
   // content, no error. `readChildren` unwraps the thunks (so the lazy component runs under
   // this boundary), stops at signals so dynamic children stay reactive, and memoises the
@@ -111,14 +130,14 @@ function SuspenseImpl(props: SuspenseProps): any {
   const children = provideSuspense(boundary, () => readChildren(() => props.children));
 
   // Instantiate the children now, in their own effect under the boundary. A suspended
-  // resource read inside them throws here synchronously — a sibling of the output memo
-  // below — so the increment reschedules the output cleanly (matching the canary). If we
+  // resource read inside them throws here synchronously, a sibling of the output memo
+  // below, so the increment reschedules the output cleanly (matching the canary). If we
   // only rendered children through the output's return, the resource read would be nested
   // inside the output's own insert effect, which then never re-runs to show the fallback.
   //
   // Follow NESTED accessors, not just the outer one: the compiler wraps a dynamic child in
   // its own memo, and `readChildren` stops at signals on purpose so they stay reactive. Stop
-  // at the outer read and a lazy component behind a condition is never instantiated here —
+  // at the outer read and a lazy component behind a condition is never instantiated here
   // it runs later, downstream, where its suspend reaches no boundary. Reading a memo is
   // idempotent (it caches, and the output reads the same one), so following the chain costs
   // nothing and cannot duplicate the subtree.
@@ -157,6 +176,27 @@ function SuspenseImpl(props: SuspenseProps): any {
   });
 }
 
+/**
+ * Order how a group of sibling `Suspense` boundaries reveal themselves.
+ *
+ * Without it, each boundary swaps its fallback for content the moment its own work
+ * finishes, so a list of independently-loading rows appears in whatever order the
+ * network happened to return. `revealOrder` imposes one instead.
+ *
+ * `forwards` and `backwards` hold a boundary in its fallback until the ones before it in
+ * that direction have resolved. `together`, the default, holds all of them until every
+ * one has. `tail` decides what the unrevealed ones show: `collapsed` keeps only the next
+ * fallback, `hidden` shows none.
+ *
+ * @example
+ * ```ts
+ * html`
+ *   <${SuspenseList} revealOrder="forwards" tail="collapsed">
+ *     <${Suspense} fallback=${skeleton}><${Row} id=${1} /></${Suspense}>
+ *     <${Suspense} fallback=${skeleton}><${Row} id=${2} /></${Suspense}>
+ *   </${SuspenseList}>`;
+ * ```
+ */
 export function SuspenseList(props: SuspenseListProps): any {
   return createComponent(SuspenseListImpl, props);
 }

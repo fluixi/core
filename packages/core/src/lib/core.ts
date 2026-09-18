@@ -1,7 +1,5 @@
 /**
- * @fileoverview Fluixi — a compiler-native reactive framework
  * @module fluixi
- * @version 0.0.1
  *
  * Fluixi compiles JSX and `html` templates into direct DOM calls over the fine-grained
  * reactivity in @fluixi/reactive. The template layer is our own and compiled; the
@@ -27,7 +25,7 @@
  */
 
 import {
-  // The short API — same primitives, one object instead of a tuple.
+  // The short API, same primitives, one object instead of a tuple.
   signal,
   memo,
   effect,
@@ -73,7 +71,7 @@ import {
 import { createContext, useContext } from './context/index.js';
 export * from './context/index.js';
 
-// Isomorphic request state (server-resolved → serialized → client-seeded). Public
+// Isomorphic request state (server-resolved -> serialized -> client-seeded). Public
 // barrel is lib/core.ts (src/index.ts re-exports it), so the export must live here.
 export {
   createIsomorphicState,
@@ -84,7 +82,7 @@ export {
   type IsomorphicStoreOptions,
 } from './isomorphic.js';
 
-// Universal env utilities — isomorphic storage + safe browser-global access, so app
+// Universal env utilities: isomorphic storage + safe browser-global access, so app
 // modules import these instead of touching localStorage/window/document directly.
 export {
   isServer,
@@ -95,16 +93,13 @@ export {
   clientOnly,
 } from './env/index.js';
 
-// Theme store — detect → persist → apply → toggle + no-flash head script.
+// Theme store: detect -> persist -> apply -> toggle + no-flash head script.
 export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
 
-// NOT re-exported from the main entry. `export * from '@fluixi/utils'` here put the
-// whole utility library in every app's graph — 56% of a counter's bundle, 74% of its
-// bytes — because a barrel re-export of a barrel cannot be shaken in practice. Import
+// not re-exported from the main entry. `export * from '@fluixi/utils'` here put the
+// whole utility library in every app's graph: 56% of a counter's bundle, 74% of its
+// bytes, because a barrel re-export of a barrel cannot be shaken in practice. Import
 // from `@fluixi/utils` directly, or from `@fluixi/core/utils` for the same surface.
-// import { createContext, Provider, useContext } from './context/index.js';
-// import { createContext, useContext } from './render/component.js';
-// import { createResource } from './resources/index.js';
 import {
   Link,
   Router,
@@ -113,14 +108,14 @@ import {
 } from './router/index.js';
 import { ensureIntegration } from './render/component.js';
 
-// html`` / svg`` template markers — the no-JSX authoring surface. They live in
+// html`` / svg`` template markers, the no-JSX authoring surface. They live in
 // @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
-// `import { html } from '@fluixi/core'` works. Inert typed functions — no lit runtime.
+// `import { html } from '@fluixi/core'` works. Inert typed functions, no lit runtime.
 export { html, svg } from '@fluixi/dom';
 export type { TemplateResult, Reactive } from '@fluixi/dom';
 
 // createReactiveJSX (a deprecated legacy adapter) lived here but pulled the jsx-runtime
-// `.` entry into the core graph. It's gone — compiled JSX uses the jsx-runtime subpath
+// `.` entry into the core graph. It's gone: compiled JSX uses the jsx-runtime subpath
 // directly, and nothing in the framework needs the adapter.
 // Re-export reactive directives
 export {
@@ -147,17 +142,17 @@ export {
   observeIntersection,
   observeResize,
 } from '@fluixi/dom';
-// (No lit runtime exists anymore — html`` compiles to @fluixi/dom calls.)
+// (No lit runtime exists anymore: html`` compiles to @fluixi/dom calls.)
 
 // import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
-//   /** Reactive array to iterate over — static, readonly, accessor, or signal. */
+//   /** Reactive array to iterate over: static, readonly, accessor, or signal. */
 //   each: ReadonlyArray<T> | (() => ReadonlyArray<T> | null | undefined) | Accessor<ReadonlyArray<T>> | null | undefined | false;
 //   /** Rendered when the array is empty or nullish. */
 //   fallback?: any;
 //   /**
 //    * Render function called once per unique item (keyed by reference).
-//    * `index` is a reactive accessor — updates when the item moves position.
+//    * `index` is a reactive accessor: updates when the item moves position.
 //    *
 //    * JSX:    <For each={() => store.items}>{(item, index) => <li>{item.name}</li>}</For>
 //    * lit:    For({ each: items, children: (item, index) => html`<li>${item.name}</li>` })
@@ -176,7 +171,7 @@ export {
   // split a reactive props object into groups + rest. The compiler emits mergeProps for JSX spreads.
   mergeProps,
   splitProps,
-  // Component typing: annotate `const C: Component<Props> = (props) => …` (or the FxComponent/FxC
+  // Component typing: annotate `const C: Component<Props> = (props) => ...` (or the FxComponent/FxC
   // brand aliases). FxParent adds optional `children`; FxVoid forbids them; FxFlow requires them.
   type ComponentFn,
   type ComponentChild,
@@ -247,45 +242,11 @@ export {
   type RefObject,
 } from './render/index.js';
 
-// export type {
-//   Component,
-//   ComponentProps,
-//   ComponentChild,
-//   LifecycleCallback,
-// } from './core/index.js';
-
-
 // Context API
-// export {
-//   // createContext,
-//   // useContext,
-//   Provider,
-//   createContextWithProvider,
-//   composeProviders,
-//   createConsumer,
-//   useProvide,
-//   createScopedContext,
-// } from './context/index.js';
-
 // export type { Context, ProviderProps } from './context/index.js';
 
 // Resources for async data
-// export {
-//   createResource,
-//   createResources,
-//   createResourceWithRetry,
-//   createLazyResource,
-// } from './resources/index.js';
-
-// export type {
-//   Resource,
-//   ResourceState,
-//   ResourceOptions,
-//   ResourceFetcher,
-//   ResourceSource,
-// } from './resources/index.js';
-
-// Router — from router (the framework-agnostic router). The old lit-based router
+// Router, from router (the framework-agnostic router). The old lit-based router
 // (./router) has been removed: it imported `html` from @fluixi/lit, which dragged lit
 // (extends HTMLElement at module init) into the core/SSR graph. router is the
 // only router now; `<Router routes={...}/>` replaces the old `<Routes>`/`<Route>` JSX.

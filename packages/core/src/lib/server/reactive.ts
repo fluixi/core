@@ -1,5 +1,4 @@
 /**
- * @fileoverview Server Reactive Primitives for Fluixi
  * @module @fluixi/core/server/reactive
  *
  * Maps reactive primitives for server-side execution
@@ -28,13 +27,8 @@ import type {
 /**
  * Server createSignal - Returns snapshot value
  *
- * Section 4: Signals read-only snapshot on server
+ * Signals read-only snapshot on server
  * No reactivity, no tracking, just initial value
- *
- * @template T
- * @param {T} value - Initial value
- * @param {SignalOptions<T>} options - SignalTuple options (ignored on server)
- * @returns {SignalTuple<T>} Tuple of [getter, setter]
  *
  * @example
  * ```typescript
@@ -72,13 +66,8 @@ export function createSignal<T>(
 /**
  * Server createEffect - Runs once, no tracking
  *
- * Section 4: Effects run once on server, no scheduling
+ * Effects run once on server, no scheduling
  * Execute immediately and return no-op disposer
- *
- * @param {(v?: any) => any} fn - Effect function
- * @param {any} value - Initial value (optional)
- * @param {any} options - Effect options (ignored on server)
- * @returns {{ dispose: () => void }} Disposer object
  *
  * @example
  * ```typescript
@@ -111,14 +100,8 @@ export function createEffect(
 /**
  * Server createMemo - Compute once, return static accessor
  *
- * Section 4: No tracking on server, single evaluation
+ * No tracking on server, single evaluation
  * Memoizes value at creation time
- *
- * @template T
- * @param {(v?: T) => T} fn - Computation function
- * @param {T} value - Initial value (optional)
- * @param {any} options - Memo options (ignored on server)
- * @returns {Accessor<T>} Static accessor
  *
  * @example
  * ```typescript
@@ -144,12 +127,8 @@ export function createMemo<T>(
 /**
  * Server createRoot - Creates owner but no reactive tracking
  *
- * Section 5: Owners exist on server for tree structure
+ * Owners exist on server for tree structure
  * Needed for context and cleanup, but no reactive tracking
- *
- * @template T
- * @param {(dispose: () => void) => T} fn - Root function
- * @returns {T} Function result
  *
  * @example
  * ```typescript
@@ -190,12 +169,8 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
 /**
  * Server batch - Execute immediately, no batching
  *
- * Section 4: No scheduling on server
+ * No scheduling on server
  * Just runs the function synchronously
- *
- * @template T
- * @param {() => T} fn - Function to batch
- * @returns {T} Function result
  *
  * @example
  * ```typescript
@@ -217,12 +192,8 @@ export function batch<T>(fn: () => T): T {
 /**
  * Server untrack - Execute function (already untracked)
  *
- * Section 4: No tracking on server anyway
+ * No tracking on server anyway
  * This is a no-op but exists for API compatibility
- *
- * @template T
- * @param {() => T} fn - Function to run untracked
- * @returns {T} Function result
  *
  * @example
  * ```typescript
@@ -245,10 +216,8 @@ let currentCleanups: Array<() => void> | null = null;
 /**
  * Server onCleanup - Register cleanup function
  *
- * Section 5: Cleanup still needed for SSR resource management
+ * Cleanup still needed for SSR resource management
  * Stores cleanup for execution when root disposes
- *
- * @param {() => void} fn - Cleanup function
  *
  * @example
  * ```typescript
@@ -275,9 +244,7 @@ let currentOwner: RootOwner | null = null;
 /**
  * Server getOwner - Get current reactive owner
  *
- * Section 5: Owner tree maintained on server for context
- *
- * @returns {RootOwner | null} Current owner or null
+ * Owner tree maintained on server for context
  */
 export function getOwner(): RootOwner | null {
   return currentOwner;
@@ -286,12 +253,7 @@ export function getOwner(): RootOwner | null {
 /**
  * Server runWithOwner - Run function with specific owner
  *
- * Section 5: Owner switching for proper context nesting
- *
- * @template T
- * @param {RootOwner | null} owner - Owner to run with
- * @param {() => T} fn - Function to run
- * @returns {T} Function result
+ * Owner switching for proper context nesting
  */
 export function runWithOwner<T>(owner: RootOwner | null, fn: () => T): T {
   const prev = currentOwner;
@@ -312,11 +274,7 @@ const contextMap = new Map<symbol, any>();
 /**
  * Server createContext - Create context with default value
  *
- * Section 9: Context lookup-based, no subscriptions on server
- *
- * @template T
- * @param {T} defaultValue - Default context value
- * @returns {Context<T>} Context object
+ * Context lookup-based, no subscriptions on server
  *
  * @example
  * ```typescript
@@ -353,11 +311,7 @@ export function createContext<T>(defaultValue?: T): Context<T> {
 /**
  * Server useContext - Retrieve context value
  *
- * Section 9: No subscriptions on server, just lookup
- *
- * @template T
- * @param {Context<T>} context - Context to use
- * @returns {T} Context value
+ * No subscriptions on server, just lookup
  *
  * @example
  * ```typescript
@@ -378,9 +332,6 @@ export function useContext<T>(context: Context<T>): T {
  * Server createComputed - Alias for createEffect
  *
  * On server, computed values run once like effects
- *
- * @param {() => any} fn - Computation function
- * @returns {{ dispose: () => void }} Disposer
  */
 export function createComputed(fn: () => any): { dispose: () => void } {
   return createEffect(fn);
@@ -392,9 +343,6 @@ export function createComputed(fn: () => any): { dispose: () => void } {
 
 /**
  * Server createRenderEffect - Runs once for SSR rendering
- *
- * @param {() => any} fn - Render effect function
- * @returns {{ dispose: () => void }} Disposer
  */
 export function createRenderEffect(fn: () => any): { dispose: () => void } {
   return createEffect(fn);
@@ -406,10 +354,6 @@ export function createRenderEffect(fn: () => any): { dispose: () => void } {
 
 /**
  * Server createDeferred - No deferring on server
- *
- * @template T
- * @param {() => T} fn - Deferred computation
- * @returns {Accessor<T>} Accessor
  */
 export function createDeferred<T>(fn: () => T): Accessor<T> {
   return createMemo(fn);
@@ -421,12 +365,15 @@ export function createDeferred<T>(fn: () => T): Accessor<T> {
 
 /**
  * Server createSelector - Returns static equality check
- *
- * @template T
- * @param {() => T} source - Source value
- * @returns {(key: T) => boolean} Selector function
  */
 // ENVIRONMENT
+/**
+ * The server stand-in for `createSelector`.
+ *
+ * On the client a selector is a fine-grained membership test that only notifies the two
+ * keys whose match changed. A server render produces one pass and has no subscriptions to
+ * be fine-grained about, so this reads the source once and compares.
+ */
 export function createSelector<T>(source: () => T): (key: T) => boolean {
   const value = source();
   return (key: T) => key === value;
@@ -438,10 +385,6 @@ export function createSelector<T>(source: () => T): (key: T) => boolean {
 
 /**
  * Server createResource - Stub for resource creation
- *
- * @param source Source signal or value
- * @param fetcher Fetcher function
- * @param options Resource options
  */
 export function createResource<T, S = true>(
   source: any,
@@ -468,7 +411,7 @@ export type SetStoreFunction<T extends object> = {
 };
 
 /**
- * Server createStore — plain object wrapper, no reactivity.
+ * Server createStore: plain object wrapper, no reactivity.
  * Mirrors the client API so shared code compiles on both sides.
  */
 export function createStore<T extends object>(
@@ -501,8 +444,6 @@ export function createStore<T extends object>(
 
 /**
  * Server startTransition - Execute immediately
- *
- * @param fn Transition function
  */
 export function startTransition(fn: () => void): void {
   fn();

@@ -7,12 +7,3 @@ export type {JSX} from "@fluixi/jsx"
 // declare global {
 //   namespace JSX {
 //     // type Element = FluixiJSX.Element;
-//     interface IntrinsicElements extends JSX.IntrinsicElements {}
-//     interface ElementChildrenAttribute {
-//       children: {};
-//     }
-//     interface IntrinsicAttributes {
-//       key?: string | number;
-//     }
-//   }
-// }

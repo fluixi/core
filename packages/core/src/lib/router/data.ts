@@ -1,5 +1,4 @@
 /**
- * @fileoverview Data fetching and caching primitives for Fluixi Router
  * @module @fluixi/core/router/data
  */
 
@@ -58,9 +57,6 @@ const inflightRequests = new Map<string, Promise<any>>();
  * - Deduplication
  * - Hydration (Server -> Client)
  * - Revalidation
- *
- * @param fn Async function to cache
- * @param name Unique name for the cache key
  */
 export function cache<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T> | T,
@@ -121,8 +117,6 @@ const revalidationKeys = new Set<string>();
 /**
  * Revalidate a cache key. Clears the memory cache and triggers
  * reactive invalidation so resources using createAsync re-fetch.
- *
- * @param key Key prefix string or predicate function to match cache keys
  */
 export function revalidate(key: string | ((key: string) => boolean)) {
   const predicate =
@@ -145,9 +139,6 @@ export function revalidate(key: string | ((key: string) => boolean)) {
 
 /**
  * Create an async resource from a promise or cache function
- *
- * @param fetcher Function that returns a promise
- * @param source Dependency signal (optional)
  */
 export function createAsync<T, S extends any = true>(
   fetcher: (source: S) => Promise<T> | T,
@@ -185,9 +176,6 @@ function getSubmissionSignal<T, Args extends any[]>(url: string) {
 
 /**
  * Create a server action
- *
- * @param fn Function to execute (server-side)
- * @param name Action name
  */
 export function action<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T> | T,
@@ -267,7 +255,7 @@ export function useAction<T, Args extends any[]>(
 
 export interface RouteDataArgs {
   /**
-   * Route params — either a reactive signal accessor (when called from the
+   * Route params, either a reactive signal accessor (when called from the
    * router's createRoot during layout creation) or a plain snapshot object
    * (legacy / manual usage). Always normalise with:
    *   `const getParams = typeof args.params === 'function' ? args.params : () => args.params;`

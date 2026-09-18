@@ -1,5 +1,4 @@
 /**
- * @fileoverview Server exports for Fluixi
  * @module @fluixi/core/server
  *
  * This module provides server-side rendering and hydration utilities.

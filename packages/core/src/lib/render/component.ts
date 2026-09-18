@@ -1,5 +1,5 @@
 /**
- * Component creation for Fluixi. Component-creation logic only — context lives in
+ * Component creation for Fluixi. Component-creation logic only: context lives in
  * the reactive system, rendering in render/index.ts, and SSR in server/.
  */
 
@@ -111,7 +111,7 @@ export interface RefObject<T> {
 //   1. All onMount callbacks run first
 //   2. Then all useEffect callbacks are created as reactive effects
 // This works regardless of whether the component goes through $component,
-// the JSX runtime, or is called directly — as long as there's an Owner.
+// the JSX runtime, or is called directly, as long as there's an Owner.
 
 const _LIFECYCLE = Symbol.for('fluixi-lifecycle');
 
@@ -140,7 +140,7 @@ function getOwnerLifecycle(): OwnerLifecycle | null {
 
 /**
  * Schedule a microtask to flush the lifecycle for the current Owner.
- * Only schedules once per Owner — subsequent calls are no-ops.
+ * Only schedules once per Owner: subsequent calls are no-ops.
  */
 function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   if (lc.scheduled) return;
@@ -161,7 +161,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
   queueMicrotask(() => {
     // The scope may have been torn down before this microtask ran (e.g. a <Portal>
     // inside a <Show> that closed synchronously). Running mount/effect callbacks on a
-    // dead owner would re-attach listeners/effects whose cleanup never fires — a leak.
+    // dead owner would re-attach listeners/effects whose cleanup never fires, a leak.
     // Match Solid: an unmounted component's onMount simply does not run.
     if (isOwnerDisposed(owner)) {
       lc.mounts = [];
@@ -204,7 +204,7 @@ function scheduleLifecycleFlush(lc: OwnerLifecycle): void {
  * The runtime creates components itself now, so nothing has to be registered for
  * it to work and this does nothing. It stays because callers exist, and because
  * `registerCreateComponent` is still the way to install a different component
- * model — pass your own implementation there and the runtime uses it instead.
+ * model: pass your own implementation there and the runtime uses it instead.
  *
  * Do not register a function that calls the runtime's own `createComponent`: it
  * consults the slot first, so that recurses.
@@ -216,11 +216,6 @@ export function ensureIntegration(_from?: string): void {}
  * captures its output, keeps children lazy, propagates context (via sharedConfig), and
  * attaches cleanup. Components execute once and never re-execute.
  *
- * @template P - Props type
- * @param {Component<P>} Comp - Component function
- * @param {P} props - Component props
- * @returns {any} Component output
- *
  * @example
  * ```typescript
  * const MyComponent = (props: { name: string }) => {
@@ -230,17 +225,6 @@ export function ensureIntegration(_from?: string): void {}
  * const result = createComponent(MyComponent, { name: 'World' });
  * ```
  */
-// export function $component<T, U = any>(value: T, props?: U) {
-//   const component = () => (typeof value === 'function' && props) ?(value as any)(props) : value;
-//   Object.defineProperty(component, '__fluixi', {
-//     enumerable: true,
-//     configurable: true,
-//     value: true,
-//   });
-//    // (component as any).$COMPONENT = true;
-//   return asComponent(component) as C<T, U>;
-// }
-//
 export function createComponent<T extends (props?: any) => any, U = any>(
   Comp: T,
   props?: U
@@ -255,7 +239,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   // //   if(!cached.has(value)){
   // //     cached.set(value, ()=>untrack(()=>value(props)))
   // //   }else{
-      
+
   // //     console.log('skipp track', value)
   // //   }
   // //  return cached.get(value)()
@@ -264,7 +248,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   const component = (typeof value === 'function')
     ? untrack(() => value(props))
     : value;
-  // Only stamp $name and $COMPONENT on functions/objects — primitives (strings, numbers)
+  // Only stamp $name and $COMPONENT on functions/objects: primitives (strings, numbers)
   // cannot have properties added in strict mode and would throw TypeError.
   // Also skip stamping reactive values (signals/memos) with $COMPONENT so the DOM
   // runtime doesn't misidentify them as static component thunks and cache them.
@@ -293,8 +277,6 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
  * The effect runs once after the reactive graph is established,
  * tied to the current Owner for automatic cleanup.
  *
- * @param {LifecycleCallback} fn - Mount callback
- *
  * @example
  * ```typescript
  * const MyComponent = () => {
@@ -318,7 +300,7 @@ export function onMount(fn: LifecycleCallback, reactive: boolean = true): void {
       }
       return;
     }
-    // Attach to Owner — will run BEFORE useEffect callbacks in the flush.
+    // Attach to Owner: will run before useEffect callbacks in the flush.
     lc.mounts.push(fn);
     scheduleLifecycleFlush(lc);
   } else {
@@ -342,8 +324,6 @@ export function onMount(fn: LifecycleCallback, reactive: boolean = true): void {
  * SolidJS-aligned: directly delegates to onCleanup which registers
  * with the current reactive Owner for automatic disposal.
  *
- * @param {() => void} fn - Unmount callback
- *
  * @example
  * ```typescript
  * const MyComponent = () => {
@@ -362,9 +342,7 @@ export function onUnmount(fn: () => void): void {
 /**
  * Register a cleanup function
  *
- * Section 1: Component constructs reactive graph including cleanup
- *
- * @param {() => void} fn - Cleanup function
+ * Component constructs reactive graph including cleanup
  *
  * @example
  * ```typescript
@@ -389,8 +367,6 @@ export { onCleanup };
  * Effects run when their dependencies change
  * On server, effects run once
  *
- * @param {(v?: any) => any} fn - Effect function
- *
  * @example
  * ```typescript
  * const MyComponent = () => {
@@ -407,7 +383,7 @@ export { onCleanup };
 export function useEffect(callback: () => void | (() => void)): void {
   const lc = getOwnerLifecycle();
   if (lc) {
-    // Attach to the Owner — created as an effect after all onMount callbacks.
+    // Attach to the Owner: created as an effect after all onMount callbacks.
     lc.effects.push(callback);
     scheduleLifecycleFlush(lc);
   } else {
@@ -430,10 +406,6 @@ export function useEffect(callback: () => void | (() => void)): void {
 /**
  * Create a memoized computed value
  *
- * @template T
- * @param {() => T} fn - Computation function
- * @returns {() => T} Memoized accessor
- *
  * @example
  * ```typescript
  * const MyComponent = () => {
@@ -455,10 +427,6 @@ export function useMemo<T>(fn: () => T): () => T {
  *
  * Refs persist across component re-renders (though components only run once)
  * Useful for storing DOM references and mutable values
- *
- * @template T
- * @param {T} initialValue - Initial value
- * @returns {RefObject<T>} Ref object
  *
  * @example
  * ```typescript
@@ -486,12 +454,6 @@ export function useRef<T>(initialValue: T): RefObject<T> {
 
 /**
  * Create a reducer for state management
- *
- * @template S - State type
- * @template A - Action type
- * @param {(state: S, action: A) => S} reducer - Reducer function
- * @param {S} initialState - Initial state
- * @returns {[() => S, (action: A) => void]} State accessor and dispatch function
  *
  * @example
  * ```typescript
@@ -532,12 +494,6 @@ export function useReducer<S, A>(
 /**
  * Attach an event listener with automatic cleanup
  *
- * @template K - Event type key
- * @param {EventTarget | RefObject<EventTarget | null>} target - Event target or ref
- * @param {K} event - Event name
- * @param {(event: Event) => void} handler - Event handler
- * @param {AddEventListenerOptions} options - Event listener options
- *
  * @example
  * ```typescript
  * const MyComponent = () => {
@@ -561,6 +517,20 @@ export function useEventListener<K extends keyof WindowEventMap>(
   handler: (event: WindowEventMap[K]) => void,
   options?: AddEventListenerOptions
 ): void;
+/**
+ * Attach a listener for as long as the current owner lives.
+ *
+ * Runs through `useEffect`, so the removal it returns is called on disposal and before
+ * any re-run. Nothing has to be undone by hand. `target` may be a ref, read when the
+ * listener is attached rather than when this is called, so it works for an element the
+ * template has not created yet.
+ *
+ * @example
+ * ```ts
+ * useEventListener(window, 'resize', () => setWidth(window.innerWidth));
+ * useEventListener(dialogRef, 'keydown', onKey, { capture: true });
+ * ```
+ */
 export function useEventListener(
   target: EventTarget | RefObject<EventTarget | null>,
   event: string,
@@ -591,10 +561,6 @@ export function useEventListener(
  *
  * In Fluixi, components only run once, so this is mostly for
  * API compatibility and explicit intent
- *
- * @template T
- * @param {T} callback - Callback function
- * @returns {T} Callback function
  *
  * @example
  * ```typescript
@@ -664,8 +630,6 @@ export function hasLifecycleContext(): boolean {
 /**
  * Check if in development mode
  *
- * @returns {boolean} True if in development mode
- *
  * @example
  * ```typescript
  * if (isDev()) {
@@ -680,8 +644,6 @@ export function isDev(): boolean {
 
 /**
  * Development-only code execution
- *
- * @param {() => void} fn - Function to run in dev mode
  *
  * @example
  * ```typescript

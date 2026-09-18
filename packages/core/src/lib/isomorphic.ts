@@ -1,5 +1,5 @@
 /**
- * Isomorphic request state — the generic form of "ensureInit + transfer".
+ * Isomorphic request state, the generic form of "ensureInit + transfer".
  *
  * A value that is resolved ONCE on the server (per request, before the app renders),
  * serialized into the page, and seeded SYNCHRONOUSLY on the client so the first client
@@ -11,11 +11,11 @@
  * - Client: `createIsomorphicState` reads that seed at creation and starts there.
  *
  * This module is client-safe (no node imports) so app stores can call it on both sides.
- * It talks to @fluixi/server only through a `globalThis` registry — no import edge.
+ * It talks to @fluixi/server only through a `globalThis` registry, no import edge.
  *
  * NOTE (prototype): the signal is module-scoped, so concurrent SSR requests share it.
  * That is fine for a single default value; per-user, per-request isolation wants the
- * request-scoped (AsyncLocalStorage) store — a follow-up.
+ * request-scoped (AsyncLocalStorage) store, a follow-up.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
 import { getServerData } from '@fluixi/dom';
@@ -33,7 +33,7 @@ function registry(): Map<string, IsoEntry> {
 }
 
 export interface IsomorphicState<T> {
-  /** Reactive accessor for the current value (a real signal — safe in JSX/control flow). */
+  /** Reactive accessor for the current value (a real signal: safe in JSX/control flow). */
   value: Accessor<T | undefined>;
   /** Update the value (client-side preference changes, optimistic updates). */
   set: (v: T | undefined) => void;
@@ -42,7 +42,7 @@ export interface IsomorphicState<T> {
 }
 
 export interface IsomorphicOptions<T> {
-  /** Resolve the value on the server for THIS request (receives the RequestEvent). */
+  /** Resolve the value on the server for this request (receives the RequestEvent). */
   server: (event: any) => T | Promise<T>;
   /** Optional client-only initial value when there is no server seed (pure SPA load). */
   client?: () => T | undefined;
@@ -57,6 +57,23 @@ function readSeed<T>(key: string): T | undefined {
   return data ? (data[SEED_PREFIX + key] as T | undefined) : undefined;
 }
 
+/**
+ * A value resolved on the server, transferred to the client, and resolvable there too.
+ *
+ * The server resolver runs per request and its result is serialized into the page, so the
+ * client starts with the answer rather than fetching it again. On a cold client load with
+ * no seed, the client resolver runs once instead.
+ *
+ * `key` names the transfer slot and has to be stable across the two sides.
+ *
+ * @example
+ * ```ts
+ * const user = createIsomorphicState('user', {
+ *   server: (event) => event.locals.user,
+ *   client: () => fetch('/api/me').then((r) => r.json()),
+ * });
+ * ```
+ */
 export function createIsomorphicState<T>(
   key: string,
   options: IsomorphicOptions<T>,
@@ -78,21 +95,21 @@ export function createIsomorphicState<T>(
 // ─── createIsomorphicStore ─────────────────────────────────────────────────────
 //
 // The object-shaped sibling of createIsomorphicState: for an isomorphic value that
-// is a RECORD ({ active, list }, { region, regions }, …). It removes the boilerplate
+// is a RECORD ({ active, list }, { region, regions }, ...). It removes the boilerplate
 // that piles up when you hand-roll this on top of the single-value primitive:
 //
-//   • per-field accessors (so JSX reads `store.fields.region()`, fine-grained)
-//   • a field setter that PRESERVES the other fields (no `{ ...current, k: v }` by hand)
-//   • a built-in `ensureInit()` — memoised once + retry-on-failure — that runs the
-//     async `client` resolver exactly once on a pure-SPA cold load and is a NO-OP
+//   - per-field accessors (so JSX reads `store.fields.region()`, fine-grained)
+//   - a field setter that PRESERVES the other fields (no `{ ...current, k: v }` by hand)
+//   - a built-in `ensureInit()`, memoised once + retry-on-failure, that runs the
+//     async `client` resolver exactly once on a pure-SPA cold load and is a no-op
 //     when the server already seeded the value (kills the duplicate cold-load fetch)
-//   • optional localStorage `persist` mirror on every write
+//   - optional localStorage `persist` mirror on every write
 //
 // Server-resolve / serialize / client-seed all flow through createIsomorphicState, so
 // the @fluixi/server half (preloadServerState) needs no changes.
 
 export interface IsomorphicStore<T extends Record<string, any>> {
-  /** Reactive accessor for the whole record (always defined — falls back to `fallback`). */
+  /** Reactive accessor for the whole record (always defined: falls back to `fallback`). */
   value: Accessor<T>;
   /** Per-field reactive accessors, one for every key of `fallback`. */
   fields: { [K in keyof T]: Accessor<T[K]> };
@@ -102,7 +119,7 @@ export interface IsomorphicStore<T extends Record<string, any>> {
   setField: <K extends keyof T>(key: K, val: T[K]) => void;
   /**
    * Run the async `client` resolver exactly once (memoised; the promise is reset on
-   * failure so a later call can retry). A NO-OP when the value was server-seeded — the
+   * failure so a later call can retry). A no-op when the value was server-seeded, the
    * server already resolved and transferred it, so there is nothing to fetch.
    */
   ensureInit: () => Promise<void>;
@@ -111,7 +128,7 @@ export interface IsomorphicStore<T extends Record<string, any>> {
 }
 
 export interface IsomorphicStoreOptions<T> {
-  /** Resolve the record on the server for THIS request (receives the RequestEvent). */
+  /** Resolve the record on the server for this request (receives the RequestEvent). */
   server: (event: any) => T | Promise<T>;
   /** Resolve the record on a pure-SPA cold load (no server seed). Run once by ensureInit(). */
   client?: () => T | Promise<T>;
@@ -121,11 +138,27 @@ export interface IsomorphicStoreOptions<T> {
   persist?: string;
 }
 
+/**
+ * `createIsomorphicState` for a record, exposed as a store rather than a single value.
+ *
+ * Reads track per key, so a component using one field is untouched when another changes.
+ * Otherwise the transfer is the same: the server resolver runs per request, the result is
+ * serialized into the page, and a seeded client does not refetch.
+ *
+ * @example
+ * ```ts
+ * const settings = createIsomorphicStore('settings', {
+ *   server: (event) => loadSettings(event.locals.userId),
+ *   client: () => fetch('/api/settings').then((r) => r.json()),
+ * });
+ * settings.state.theme;   // tracks `theme` alone
+ * ```
+ */
 export function createIsomorphicStore<T extends Record<string, any>>(
   key: string,
   options: IsomorphicStoreOptions<T>,
 ): IsomorphicStore<T> {
-  // Whether the server transferred a value for this key (read BEFORE the base state
+  // Whether the server transferred a value for this key (read before the base state
   // consumes the seed). When true, ensureInit() must not refetch on the client.
   const seeded = readSeed<T>(key) !== undefined;
 
@@ -141,7 +174,7 @@ export function createIsomorphicStore<T extends Record<string, any>>(
     try {
       localStorage.setItem(options.persist, JSON.stringify(v));
     } catch {
-      /* quota / private mode — persistence is best-effort */
+      /* quota / private mode: persistence is best-effort */
     }
   };
 

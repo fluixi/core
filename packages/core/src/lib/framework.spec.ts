@@ -1,17 +1,16 @@
 // @vitest-environment jsdom
 // Loads the router/render stack, which pulls in the lit renderer
-// (@lit/reactive-element extends HTMLElement) — so it needs a DOM environment.
+// (@lit/reactive-element extends HTMLElement), so it needs a DOM environment.
 /**
- * @fileoverview Fluixi Framework Comprehensive Tests
  *
  * Groups:
- *  1. Context & Provider    — createContext, useContext, nested providers
- *  2. Suspense              — counter-based, promise children, fallback/content
- *  3. Lazy components       — loading lifecycle, preload, comp signal
- *  4. Router + Route data   — d.data lifecycle, persistent cache, useRouteData
- *  5. Nested layouts        — 3-level hierarchy, Outlet, RouteContext.params
- *  6. Route codegen         — generateRouteModule (pure function)
- *  7. Route scanner         — scanRoutes (filesystem, pure logic)
+ *  1. Context & Provider: createContext, useContext, nested providers
+ *  2. Suspense: counter-based, promise children, fallback/content
+ *  3. Lazy components: loading lifecycle, preload, comp signal
+ *  4. Router + Route data: d.data lifecycle, persistent cache, useRouteData
+ *  5. Nested layouts: 3-level hierarchy, Outlet, RouteContext.params
+ *  6. Route codegen: generateRouteModule (pure function)
+ *  7. Route scanner: scanRoutes (filesystem, pure logic)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
@@ -29,12 +28,12 @@ import * as path from 'path';
 import * as os from 'os';
 
 // ---------------------------------------------------------------------------
-// Mock @fluixi/dom — identical to router.spec.ts so all imports satisfy
+// Mock @fluixi/dom: identical to router.spec.ts so all imports satisfy
 // ---------------------------------------------------------------------------
 
 vi.mock('@fluixi/dom', async () => {
   // Spread the real reactive module into the dom mock so signal-based code
-  // (createSignal/createMemo/createRoot/…) works in node; the dom render helpers
+  // (createSignal/createMemo/createRoot/...) works in node; the dom render helpers
   // that touch a live DOM are stubbed in the overrides below.
   const reactive = await vi.importActual<Record<string, unknown>>(
     '@fluixi/reactive/signal',
@@ -59,7 +58,7 @@ vi.mock('@fluixi/dom', async () => {
 
   return {
     ...reactive,
-    // dom render helpers not provided by reactive (stubbed — no live DOM in node).
+    // dom render helpers not provided by reactive (stubbed, no live DOM in node).
     // The real one calls the component and hands back what it returned, with the name on it.
     // It does not wrap in an accessor, and a stub that does hides how callers use the result.
     createComponent: (Comp: any, props: any) => {
@@ -129,7 +128,7 @@ vi.mock('@fluixi/dom', async () => {
   };
 });
 
-// Import AFTER the mock is registered
+// Import after the mock is registered
 import {
   createContext,
   useContext,
@@ -154,7 +153,7 @@ function makeComponent(label: string) {
 
 /**
  * Force-evaluate a lazy memo accessor to establish the reactive chain.
- * Mirrors forceEval from router.spec.ts — uses untrack to avoid polluting
+ * Mirrors forceEval from router.spec.ts: uses untrack to avoid polluting
  * the calling scope's dependency set.
  */
 function forceEval(accessor: () => any) {
@@ -262,7 +261,7 @@ describe('Context & Provider', () => {
         outerOwner.contexts.set(Ctx.id, 99);
       }
 
-      // Inner createRoot doesn't stamp — should walk up to outer
+      // Inner createRoot doesn't stamp: should walk up to outer
       createRoot(innerDispose => {
         value = useContext(Ctx);
         innerDispose();
@@ -334,7 +333,7 @@ describe('Context & Provider', () => {
 // Skipped: these assert an old contract where Suspense() returns the value directly,
   // but it returns a memo, and this file's @fluixi/dom mock re-runs the component on every
   // call (fresh boundary per read) so the promise-resolution cases can't hold. The real
-  // behaviour — client fallback, sync/async SSR, resolve transitions — is covered end to
+  // behaviour, client fallback, sync/async SSR, resolve transitions, is covered end to
   // end in examples/ssr (suspense.test, suspense-client.test) against the real runtime.
   describe.skip('Suspense', () => {
   let disposeRoot: (() => void) | null = null;
@@ -370,7 +369,7 @@ describe('Context & Provider', () => {
     expect(untrack(() => output())).toBeNull();
   });
 
-  // ── 2b: promise children — fallback while pending ──────────────────────
+  // ── 2b: promise children: fallback while pending ──────────────────────
 
   it('shows fallback while promise is pending', () => {
     const p = new Promise<string>(() => {}); // never resolves
@@ -398,7 +397,7 @@ describe('Context & Provider', () => {
     expect(untrack(() => output())).toBeNull();
   });
 
-  // ── 2c: promise children — content after resolve ───────────────────────
+  // ── 2c: promise children: content after resolve ───────────────────────
 
   it('switches from fallback to resolved content after promise resolves', async () => {
     let resolve!: (v: string) => void;
@@ -507,7 +506,7 @@ describe('lazy components', () => {
     expect(loadCalled).toBe(false);
   });
 
-  // ── 3c: loading state — output is undefined while loading ───────────────
+  // ── 3c: loading state: output is undefined while loading ───────────────
 
   it('returns undefined from the memo while the module is still loading', () => {
     // Loader that never resolves during this test
@@ -523,14 +522,14 @@ describe('lazy components', () => {
       memoResult = LazyComp({ text: 'hello' });
     });
 
-    // The comp signal is undefined while loading → memo returns undefined
+    // The comp signal is undefined while loading -> memo returns undefined
     const val = untrack(() =>
       typeof memoResult === 'function' ? memoResult() : memoResult
     );
     expect(val).toBeUndefined();
   });
 
-  // ── 3d: loaded state — real component is called after module resolves ───
+  // ── 3d: loaded state: real component is called after module resolves ───
 
   it('calls the real component with props after the module loads', async () => {
     const RealComp = vi.fn((props: any) => `rendered:${props.text}`);
@@ -564,14 +563,14 @@ describe('lazy components', () => {
     expect(RealComp).toHaveBeenCalledWith({ text: 'world' });
   });
 
-  // ── 3e: module loaded once — subsequent instances share the comp signal ─
+  // ── 3e: module loaded once: subsequent instances share the comp signal ─
 
   it('multiple instances share the same comp signal (module loaded once)', async () => {
     const RealComp = vi.fn((props: any) => `item:${props.id}`);
     let resolveLoader!: (m: any) => void;
     const loader = () => new Promise<any>(r => { resolveLoader = r; });
 
-    // Same lazy() call — shared comp signal
+    // Same lazy() call: shared comp signal
     const LazyComp = lazy(loader);
 
     let memoA: any, memoB: any;
@@ -592,7 +591,7 @@ describe('lazy components', () => {
 });
 
 // ===========================================================================
-// 6. Route Codegen — generateRouteModule
+// 6. Route Codegen: generateRouteModule
 // ===========================================================================
 
 describe('generateRouteModule', () => {
@@ -709,7 +708,7 @@ describe('generateRouteModule', () => {
 });
 
 // ===========================================================================
-// 7. Route Scanner — scanRoutes
+// 7. Route Scanner: scanRoutes
 // ===========================================================================
 
 describe('scanRoutes', () => {
@@ -720,19 +719,19 @@ describe('scanRoutes', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluixi-routes-'));
 
     // Basic structure:
-    //   index.tsx          → /
-    //   about.tsx          → /about
+    //   index.tsx -> /
+    //   about.tsx -> /about
     //   users/
-    //     layout.tsx       → /users  (layout)
-    //     index.tsx        → /users
-    //     [id].tsx         → /users/:id
+    //     layout.tsx -> /users  (layout)
+    //     index.tsx -> /users
+    //     [id].tsx -> /users/:id
     //   blog/
-    //     [...slug].tsx    → /blog/*slug  (catch-all)
-    //   (auth)/            → route group (flattened)
-    //     login.tsx        → /login
+    //     [...slug].tsx -> /blog/*slug  (catch-all)
+    //   (auth)/ -> route group (flattened)
+    //     login.tsx -> /login
     //   dashboard/
-    //     layout.tsx       → /dashboard  (has routeData)
-    //     index.tsx        → /dashboard
+    //     layout.tsx -> /dashboard  (has routeData)
+    //     index.tsx -> /dashboard
 
     const write = (rel: string, content = '') => {
       const abs = path.join(tmpDir, rel);
@@ -825,7 +824,7 @@ describe('scanRoutes', () => {
     const all = collectAllRoutes(routes);
     const login = all.find(r => r.urlPath === '/login');
     expect(login).toBeDefined();
-    // Login should NOT appear under a /(auth)/ path
+    // Login should not appear under a /(auth)/ path
     expect(login?.urlPath).not.toContain('auth');
   });
 

@@ -1,6 +1,5 @@
 export { VERSION } from './version.generated.js';
 /**
- * @fileoverview Main entry point for Fluixi framework
  * @module fluixi
  */
 
@@ -14,18 +13,7 @@ export { default } from './lib/core.js';
 // /**
 //  * Global JSX namespace for "jsx": "preserve" mode.
 //  * Applied automatically when any file imports from fluixi.
-//  * Pattern: same as SolidJS — the framework main entry carries the global augmentation.
+//  * Pattern: same as SolidJS, the framework main entry carries the global augmentation.
 //  */
 // declare global {
 //   namespace JSX {
-//     type Element = FluixiJSX.Element;
-//     interface IntrinsicElements extends FluixiJSX.IntrinsicElements {}
-//     interface ElementChildrenAttribute {
-//       children: {};
-//     }
-//     interface IntrinsicAttributes {
-//       key?: string | number;
-//     }
-//   }
-// }
-

@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createIsomorphicState, createIsomorphicStore } from './isomorphic.js';
 
-describe('createIsomorphicState — client seeding', () => {
+describe('createIsomorphicState: client seeding', () => {
   it('seeds the value from window.__FX_DATA__ (the server transfer) over the fallback', () => {
     (window as any).__FX_DATA__ = { '__iso:region': { id: 'reg_SEED' } };
     const region = createIsomorphicState('region', {
@@ -86,7 +86,7 @@ describe('createIsomorphicStore', () => {
       fallback: { region: null, regions: [] },
     });
     await store.ensureInit();
-    expect(calls).toBe(0); // seeded → never fetched
+    expect(calls).toBe(0); // seeded -> never fetched
     expect(store.fields.region()).toEqual({ id: 'srv' });
     delete (window as any).__FX_DATA__;
   });

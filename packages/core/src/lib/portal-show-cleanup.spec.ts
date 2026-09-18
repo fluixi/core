@@ -2,7 +2,7 @@
 /**
  * Bug: onCleanup for <Portal> children inside a closing <Show> runs a tick late,
  * leaking document listeners. Compiled through the imperative backend (the memo-
- * wrapped createComponent form is where the owner deferral happens — the direct
+ * wrapped createComponent form is where the owner deferral happens, the direct
  * runtime call disposes synchronously, so this must go through the compiler).
  */
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -136,8 +136,8 @@ describe('Portal cleanup timing inside a closing Show (compiled)', () => {
   }
 });
 
-// The core bug: a listener attached in onMount whose owner is torn down BEFORE the
-// mount microtask fires. Pre-fix, onMount ran on the dead owner — the listener was
+// The core bug: a listener attached in onMount whose owner is torn down before the
+// mount microtask fires. Pre-fix, onMount ran on the dead owner, the listener was
 // added but its onCleanup never fired (the disposed owner never tears down again).
 const RACE_SRC = `${PRELUDE}
   const C = { added: 0, removed: 0 };
@@ -162,7 +162,7 @@ describe('Portal onMount listener leak when Show closes before mount', () => {
   it('does not leak a document listener when the Show closes before onMount runs', async () => {
     const { run } = load(RACE_SRC);
     const app = run();
-    // Close in the SAME tick — before the mount microtask fires.
+    // Close in the same tick: before the mount microtask fires.
     app.setOpen(false);
     S.flush();
     await microtask();

@@ -12,17 +12,7 @@ export type { JSX } from '@fluixi/jsx';
  * any file imports from fluixi, because TypeScript processes declare global
  * from all transitively-loaded modules.
  *
- * Pattern: same as SolidJS — the framework's main entry carries the global augmentation.
+ * Pattern: same as SolidJS, the framework's main entry carries the global augmentation.
  */
 // declare global {
 //   namespace JSX {
-//     type Element = FluixiJSX.Element;
-//     interface IntrinsicElements extends FluixiJSX.IntrinsicElements {}
-//     interface ElementChildrenAttribute {
-//       children: {};
-//     }
-//     interface IntrinsicAttributes {
-//       key?: string | number;
-//     }
-//   }
-// }

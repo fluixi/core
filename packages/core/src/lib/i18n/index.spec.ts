@@ -44,7 +44,7 @@ describe('@fluixi/core/i18n', () => {
     const i = make();
     expect(i.t('does.not.exist')).toBe('does.not.exist');
     i.setLocale('fr');
-    expect(i.t('nested.deep.key')).toBe('deep en'); // only in en → fallback
+    expect(i.t('nested.deep.key')).toBe('deep en'); // only in en -> fallback
   });
 
   it('setLocale switches the active locale (reactive)', () => {
@@ -69,16 +69,16 @@ describe('@fluixi/core/i18n', () => {
     expect(detectLocale('de-DE,de;q=0.9', ['en', 'fr'])).toBeUndefined();
   });
 
-  it('infers translation keys for t() — leaf paths only (autocomplete)', () => {
-    // MessageKey derives the leaf-key union: flat, plural leaves, and nested dot-paths —
-    // but NOT intermediate branch keys (`cart`, `nested.deep`), which would render objects.
+  it('infers translation keys for t(), leaf paths only (autocomplete)', () => {
+    // MessageKey derives the leaf-key union: flat, plural leaves, and nested dot-paths
+    // but not intermediate branch keys (`cart`, `nested.deep`), which would render objects.
     type M = {
       welcome: string;
       'nav.dashboard': string; // flat dotted
       cart: { items: { one: string; other: string } };
       nested: { deep: { key: string } };
-      // A subtree whose children are ALL strings must still recurse to each leaf —
-      // NOT collapse to the branch key `settings` (regression: it looked like a plural map).
+      // A subtree whose children are ALL strings must still recurse to each leaf
+      // not collapse to the branch key `settings` (regression: it looked like a plural map).
       settings: { theme: string; lang: string };
     };
     expectTypeOf<MessageKey<M>>().toEqualTypeOf<

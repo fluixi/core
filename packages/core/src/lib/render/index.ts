@@ -1,5 +1,4 @@
 /**
- * @fileoverview Client-Side Rendering for Fluixi
  * @module @fluixi/core/render
  *
  * Client-side rendering:
@@ -48,23 +47,18 @@ export interface RenderOptions {
 }
 
 // ============================================================================
-// SECTION 7 — RENDERING (CLIENT)
+// RENDERING (CLIENT)
 // ============================================================================
 
 /**
  * Render a component into a DOM element
  *
- * Section 7 — CLIENT:
+ * On the client:
  * - Real DOM (no Virtual DOM)
  * - Fine-grained mutation (no reconciliation)
  *
- * Section 1: Component executes once during render
- * Section 5: Creates reactive owner (root)
- *
- * @param {() => any} code - Component or function to render
- * @param {HTMLElement} container - Target DOM element
- * @param {RenderOptions} options - Render options
- * @returns {() => void} Dispose function
+ * Component executes once during render
+ * Creates reactive owner (root)
  *
  * @example
  * ```typescript
@@ -100,12 +94,12 @@ export function render(
   // domRender(code, container)
   createRoot((dispose) => {
     disposer = dispose;
-    // Section 1: Execute code function once — Providers run here with Owner = root
+    // Execute code function once. Providers run here with Owner = root
     // so "also stamp" in createProvider sets context on root.contexts, making
     // it reachable from every render effect created by insert() below.
     const result = typeof code === 'function' ? code() : code;
 
-    // Section 7: Insert into real DOM using the SAME root as code() so that
+    // Insert into real DOM using the same root as code() so that
     // render effects share the Owner chain with Provider context nodes.
     // Using domRender() would create a second createRoot, severing the chain.
     container.textContent = '';
@@ -114,8 +108,8 @@ export function render(
     stampVersions(container);
     warnOnVersionSkew();
     // Wrap the (already-computed) result in a STABLE thunk so insert() creates a
-    // top-level render effect. Without this, a static array result — e.g. the
-    // imperative backend's `[createMemo(() => createComponent(App)), " "]` — is
+    // top-level render effect. Without this, a static array result: e.g. the
+    // imperative backend's `[createMemo(() => createComponent(App)), " "]`: is
     // flattened ONCE with no enclosing effect, so the nested memos are read
     // untracked and reactive boundaries deep in the tree (Suspense fallback ->
     // content, Outlet, Show/For) never update. The thunk returns the same result
@@ -150,11 +144,6 @@ function isLitTemplateResult(value: any): boolean {
 
 /**
  * Render into a different part of the DOM tree
- *
- * @param {() => any} code - Component to render
- * @param {HTMLElement} target - Target element (outside current tree)
- * @param {RenderOptions} options - Render options
- * @returns {() => void} Dispose function
  *
  * @example
  * ```typescript
@@ -193,9 +182,6 @@ export function portal(
 
 /**
  * Check if a value can be rendered
- *
- * @param {any} value - Value to check
- * @returns {boolean} True if renderable
  */
 export function isRenderable(value: any): boolean {
   if (value == null) return true;

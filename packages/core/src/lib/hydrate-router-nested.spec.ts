@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Whole-app hydration over a nested Router → Suspense → Outlet → route tree (the shape every
+ * Whole-app hydration over a nested Router -> Suspense -> Outlet -> route tree (the shape every
  * @fluixi/start app has). Regression for the "renders the app N× / triples" duplication: the
  * hydration cursor must reuse the server DOM through the component/Suspense/Outlet boundaries,
  * not rebuild fresh subtrees next to it.
  *
- * Compiles REAL JSX through the imperative backend, server-renders to HTML, then hydrates.
+ * Compiles real JSX through the imperative backend, server-renders to HTML, then hydrates.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
@@ -144,7 +144,7 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
     await tick();
 
     const root = document.querySelector('#app')!;
-    // The whole tree must appear exactly once — no duplicate render stacked on the server DOM.
+    // The whole tree must appear exactly once, no duplicate render stacked on the server DOM.
     expect(root.querySelectorAll('.page').length).toBe(1);
     expect(root.querySelectorAll('.card').length).toBe(2);
     expect(root.querySelectorAll('.hd').length).toBe(1);
@@ -185,7 +185,7 @@ describe('hydration: nested Router/Suspense/Outlet app', () => {
 
     document.body.innerHTML = `<div id="app">${html}</div>`;
     // Real apps pass their route tree so startClient preloads the matched lazy chunk before
-    // hydrating — that's what makes the lazy route resolve synchronously and adopt the server DOM.
+    // hydrating, that's what makes the lazy route resolve synchronously and adopt the server DOM.
     await startClient(App as any, { root: '#app', hydrate: true, routes: appRoutes });
     await tick();
     await tick();

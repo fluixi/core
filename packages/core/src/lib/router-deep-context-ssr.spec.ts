@@ -8,9 +8,9 @@
  * SSR. The '/' route works; a deep route (/products/category/:cat) intermittently
  * loses RouterContext on the owner chain during the lazy serialize, so useRouter
  * throws. (useNavigate is patched to no-op on the server, but useRouter/useParams
- * can't degrade — they need the real context. This test exercises that root cause.)
+ * can't degrade, they need the real context. This test exercises that root cause.)
  *
- * Compiles REAL JSX through the imperative backend; drives the Router with
+ * Compiles real JSX through the imperative backend; drives the Router with
  * createMemoryHistory at a deep path; single cold renderToStringAsync.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -104,7 +104,7 @@ describe('SSR: deep nested route keeps RouterContext (storefront crash repro)', 
       const LocaleCtx = createContext();
       function LocaleProvider(props) { return createProvider(LocaleCtx, { lang: 'en' }, props); }
 
-      // The storefront Navbar — a SEPARATE component, sibling of <main>, OUTSIDE the
+      // The storefront Navbar, a SEPARATE component, sibling of <main>, OUTSIDE the
       // <Suspense>, reading the router context at render top.
       function Navbar() {
         const r = useRouter();

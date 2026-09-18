@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 /**
- * Client navigation to a route whose chunk is NOT loaded yet.
+ * Client navigation to a route whose chunk is not loaded yet.
  *
  * Hydration preloads the matched route, so a server-rendered lazy route resolves
  * synchronously (see hydrate-router-nested.spec). Navigating to a *different* chunk has no
  * such preload: the import starts on click and Suspense covers the gap. The page has to
- * appear when the chunk lands — the failure this guards is a fetched chunk that mounts
+ * appear when the chunk lands, the failure this guards is a fetched chunk that mounts
  * nothing, leaving an empty root and no error.
  *
- * Compiles REAL JSX through the imperative backend, the same shape a @fluixi/start app has.
+ * Compiles real JSX through the imperative backend, the same shape a @fluixi/start app has.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';

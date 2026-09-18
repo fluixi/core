@@ -1,11 +1,10 @@
 /**
- * @fileoverview Fluixi adapter for the framework-agnostic @fluixi/router core.
  *
  * Renders the resolved match tree TOP-DOWN. Each layer's component is rendered
  * inside the PARENT layer's <Outlet/> scope, so a child route inherits whatever
  * context a parent layout provides. <Outlet/> is reactive but keyed on the child's
  * component reference, so it only re-renders when the child route at that depth
- * actually changes — sibling navigation reuses the layout, deeper navigation
+ * actually changes: sibling navigation reuses the layout, deeper navigation
  * leaves shallower layouts untouched.
  *
  * No parentGate, no deferred content memo: a child is rendered straight from the
@@ -30,7 +29,7 @@ import {
   setAttribute,
 } from '@fluixi/dom';
 // Reactive context (not fluixi createProvider, which destructures children
-// eagerly) so a `get children()` getter renders AFTER the context is stamped.
+// eagerly) so a `get children()` getter renders after the context is stamped.
 import { createContext, useContext } from '@fluixi/reactive/signal';
 import { get, type GetAtPath } from '@fluixi/utils/object';
 import type { IsUndefined } from '@fluixi/utils/primitive';
@@ -64,7 +63,7 @@ interface OutletCtxValue {
   matched: () => MatchedRoute<any>[];
   params: () => Record<string, string>;
   location: () => RouterLocation;
-  /** Only set on the ROOT: rendered when nothing matched, instead of a blank page. */
+  /** Only set on the root: rendered when nothing matched, instead of a blank page. */
   notFound?: () => any;
 }
 const OutletContext = createContext<OutletCtxValue | undefined>(undefined, 'outlet');
@@ -124,14 +123,14 @@ function renderLayer(
 
   if (!data) return buildPage();
 
-  // Gate on the data being resolved — like the old router — so the page reads
+  // Gate on the data being resolved, like the old router, so the page reads
   // ready data (rd() returns the value, not a thrown promise) and works without a
   // Suspense boundary. Signal-gated (`ready` only flips when loading actually
   // changes) so navigation re-renders don't re-run this and rebuild the page.
   const res = data as () => any;
   const isLoading = () => (res as any).loading as boolean;
   // untrack the initial read so the enclosing render memo doesn't subscribe to the
-  // resource state (that would re-run renderLayer and recreate the resource — a loop).
+  // resource state (that would re-run renderLayer and recreate the resource, a loop).
   const [ready, setReady] = createSignal(untrack(() => !isLoading()));
   createEffect(() => setReady(!isLoading()));
   return createMemo(() => (ready() ? buildPage() : null));
@@ -150,7 +149,7 @@ function renderChild(ctx: OutletCtxValue): any {
   // signal write (no value check), so a memo that read `matched` would re-run on
   // every navigation and re-render the child. A signal only notifies when its value
   // actually changes, so the render memo below re-runs only when the route at this
-  // depth changes — sibling navigation reuses the layout, deeper navigation leaves
+  // depth changes: sibling navigation reuses the layout, deeper navigation leaves
   // this level untouched. The child is rendered INLINE (no detached createRoot), so
   // it stays connected to the Suspense / context owner chain.
   const [childComp, setChildComp] = createSignal<any>(
@@ -164,8 +163,8 @@ function renderChild(ctx: OutletCtxValue): any {
   return createMemo(() => {
     const component = childComp();
     if (!component) {
-      // No route at this depth. At the ROOT (the only ctx carrying `notFound`) that means the
-      // URL matched nothing — render the not-found fallback instead of a blank page. Nested
+      // No route at this depth. At the root (the only ctx carrying `notFound`) that means the
+      // URL matched nothing: render the not-found fallback instead of a blank page. Nested
       // Outlets have no `notFound`, so they stay null (a missing child is just an empty Outlet).
       return ctx.notFound ? ctx.notFound() : null;
     }
@@ -181,8 +180,8 @@ function renderChild(ctx: OutletCtxValue): any {
 /**
  * Resolve the Router's `notFound` prop to a renderable view. A component is instantiated; an
  * element/value is returned as-is; when omitted, a minimal built-in 404 keeps the page from
- * rendering blank. Prefer a catch-all file route (`[...slug].tsx` → `*`) when the 404 should sit
- * inside your layout — this prop is the app-level fallback for an otherwise unmatched URL.
+ * rendering blank. Prefer a catch-all file route (`[...slug].tsx` -> `*`) when the 404 should sit
+ * inside your layout, this prop is the app-level fallback for an otherwise unmatched URL.
  */
 function renderNotFound(notFound: any): any {
   if (notFound == null) return buildDefaultNotFound();
@@ -218,13 +217,27 @@ export interface RouterProps<C = any> {
   base?: string;
   history?: HistoryAdapter;
   /**
-   * Rendered when the current URL matches no route — a component, an element, or any renderable.
+   * Rendered when the current URL matches no route, a component, an element, or any renderable.
    * Defaults to a minimal built-in 404 so an unmatched URL never renders a blank page. For a 404
-   * that keeps your layout/chrome, add a catch-all file route instead (`[...slug].tsx` → `*`).
+   * that keeps your layout/chrome, add a catch-all file route instead (`[...slug].tsx` -> `*`).
    */
   notFound?: any;
 }
 
+/**
+ * The router. Matches the current URL against `routes` and renders what matches.
+ *
+ * Supplies the router context everything below reaches through `useRouter`,
+ * `useNavigate` and `Link`, so those only work inside it. `history` defaults to a
+ * browser history; pass a memory history for tests or a server render. An unmatched URL
+ * renders `notFound`, which defaults to a minimal built-in page so a bad URL is never
+ * blank. For a 404 that keeps your layout, add a catch-all file route instead.
+ *
+ * @example
+ * ```ts
+ * html`<${Router} routes=${routes} base="/app" />`;
+ * ```
+ */
 export function Router<C = any>(props: RouterProps<C>) {
   const history = props.history ?? createBrowserHistory();
   const router = createCoreRouter<C>({
@@ -240,7 +253,7 @@ export function Router<C = any>(props: RouterProps<C>) {
     router.destroy();
   });
 
-  // Drop pathless layers (no component) — their params still appear in the merged
+  // Drop pathless layers (no component), their params still appear in the merged
   // params exposed by RouterContext.
   const matched = createMemo(() =>
     (state().match?.matched ?? []).filter((m) => m.component)
@@ -258,13 +271,13 @@ export function Router<C = any>(props: RouterProps<C>) {
     matched,
     params: ctx.params,
     location: ctx.location,
-    // Only the root carries this — renderChild shows it when the URL matched nothing.
+    // Only the root carries this: renderChild shows it when the URL matched nothing.
     notFound: () => renderNotFound(props.notFound),
   };
 
   // Build the root view once, lazily, inside the provider's children getter: the
   // getter must run in the provider scope (so components can useRouter), but the
-  // reactive provider re-invokes it whenever content changes — caching keeps the
+  // reactive provider re-invokes it whenever content changes: caching keeps the
   // root chain from being rebuilt on every navigation.
   let rootView: any;
   return RouterContext.Provider({
@@ -289,7 +302,7 @@ export function Redirect(props: { to: string; replace?: boolean }) {
   const ctx = useContext(RouterContext);
   // Nothing to do without a router, and nothing to navigate on the server.
   if (ctx && typeof window !== 'undefined') {
-    // Navigate AFTER the current render commits. Navigating during render (an effect
+    // Navigate after the current render commits. Navigating during render (an effect
     // running mid-render) updated the location but the route never re-matched, so the
     // target never showed. Guard against firing if this Redirect is torn down first.
     let cancelled = false;
@@ -305,9 +318,9 @@ export function Redirect(props: { to: string; replace?: boolean }) {
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
 // Safe stub returned by useRouter on the SERVER when no RouterContext is on the owner
-// chain. That happens during a late/detached re-render — e.g. a slow data resource
-// settling AFTER renderToStringAsync already serialized the response and disposed the
-// root — whose output is discarded. Returning this (instead of throwing) prevents a
+// chain. That happens during a late/detached re-render: e.g. a slow data resource
+// settling after renderToStringAsync already serialized the response and disposed the
+// root: whose output is discarded. Returning this (instead of throwing) prevents a
 // floating rejection that crashes the dev server / shows an error overlay seconds
 // after the page already rendered.
 const _ssrRouterStub: RouterCtxValue = {
@@ -317,11 +330,19 @@ const _ssrRouterStub: RouterCtxValue = {
   params: () => ({}),
 };
 
+/**
+ * The router context: the router itself, the current match, and the location.
+ *
+ * Safe to call during a server render, where a detached context yields a no-op stub
+ * rather than throwing, since an SSR pass has nowhere to navigate to. On the client a
+ * missing router is genuine misuse and throws, because the alternative is a component
+ * that silently never navigates.
+ */
 export function useRouter(): RouterCtxValue {
   const ctx = useContext(RouterContext);
   if (ctx) return ctx;
   // On the server, degrade to a no-op stub (see above). On the client, a missing
-  // router is genuine misuse — throw.
+  // router is genuine misuse: throw.
   if (typeof window === 'undefined') return _ssrRouterStub;
   throw new Error('[router] useRouter must be used within <Router>');
 }
@@ -347,7 +368,7 @@ export function useLevelParams(): Record<string, string> {
 
 /**
  * Reactive accessor for a single route param. Default `===` equality on the
- * string value, so it only re-triggers when THIS key changes — not when other
+ * string value, so it only re-triggers when this key changes, not when other
  * params at the same level change.
  */
 export function useParam(key: string): () => string | undefined {
@@ -460,7 +481,7 @@ export interface LinkNavigationOptions {
   replace?: boolean;
   /**
    * Called with the resolved URL before navigating. Return false to leave the click
-   * alone — for a section of the app that must load as a document (a different
+   * alone, for a section of the app that must load as a document (a different
    * bundle, a server-rendered admin area, a file route).
    */
   shouldNavigate?: (url: URL, anchor: HTMLAnchorElement) => boolean;
@@ -479,13 +500,13 @@ export interface LinkNavigationOptions {
  * <article onClick={onClick} innerHTML={doc.html} />
  * ```
  *
- * The anchors stay real anchors — middle-click, right-click → open in new tab, "copy
+ * The anchors stay real anchors: middle-click, right-click -> open in new tab, "copy
  * link address" and crawlers all keep working, because the element is untouched and only
  * a plain left-click is intercepted.
  *
  * Left alone: modified clicks, anything but the primary button, an already-prevented
  * event, `target`, `download`, `rel="external"`, a non-http scheme (`mailto:`, `tel:`),
- * another origin, and a hash pointing inside the current page — that last one is the
+ * another origin, and a hash pointing inside the current page, that last one is the
  * browser's scroll, and hijacking it breaks in-page anchors.
  */
 export function useLinkNavigation(
@@ -517,6 +538,22 @@ export function useLinkNavigation(
   };
 }
 
+/**
+ * A function that navigates, for use outside a `Link`.
+ *
+ * Reach for it after an action rather than for a plain link: a form that redirects on
+ * success, a guard that bounces an unauthenticated visitor. Prefer `Link` for anything a
+ * visitor clicks, since an anchor is what middle-click, copy-link and a crawler expect.
+ *
+ * Navigation is a no-op during a server render, for the reason `useRouter` explains.
+ *
+ * @example
+ * ```ts
+ * const navigate = useNavigate();
+ * await save(form);
+ * navigate(`/posts/${id}`, { replace: true });
+ * ```
+ */
 export function useNavigate(): (to: string, options?: NavigateOptions) => void {
   // useRouter is SSR-safe (returns a no-op stub on the server when the context is
   // detached), so navigation degrades to a no-op during SSR and only throws on
@@ -553,7 +590,7 @@ export interface LinkProps {
   slot?: string;
   children?: any;
   /**
-   * Everything else is forwarded onto the `<a>` — id, style, title, aria-*,
+   * Everything else is forwarded onto the `<a>`: id, style, title, aria-*,
    * data-*, event handlers. Typed openly because the forwarding is
    * allow-by-default: a prop this interface forgot still reaches the DOM, and
    * refusing it here would only mean the type disagreeing with the runtime.
@@ -573,22 +610,37 @@ const LINK_OWN_PROPS = new Set([
   'children',
 ]);
 
+/**
+ * An anchor that navigates without a full page load.
+ *
+ * Renders a real `<a href>`, so middle-click, copy-link, and a crawler all behave. A
+ * plain left click is intercepted and routed instead.
+ *
+ * Active state defaults to the current pathname matching `href`, and `activeClass` is
+ * added while it holds. Override `active` when a section link should stay lit for its
+ * children.
+ *
+ * @example
+ * ```ts
+ * html`<${Link} href="/about" activeClass="current">About</${Link}>`;
+ * ```
+ */
 export function Link(props: LinkProps) {
   const ctx = useContext(RouterContext);
-  
+
 
   const navigate = () =>
     ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
 
-  // createNativeElement branches on isServer() → a real ServerNode <a> (serialized as a true
+  // createNativeElement branches on isServer() -> a real ServerNode <a> (serialized as a true
   // element, not an escaped string) on the server, a real DOM <a> on the client.
   const a = createNativeElement('a') as any;
   setAttribute(a, 'href', read(props.href) ?? '');
   if (props.slot) setAttribute(a, 'slot', read(props.slot) as string);
 
-  // Forward any other author attributes (data-*, aria-*, style, id, title, role, …)
+  // Forward any other author attributes (data-*, aria-*, style, id, title, role, ...)
   // onto the <a>, the way <Form> does. Without this a component composed via
-  // `as={Link}` (polymorphic) silently loses its styling hooks — e.g. @fluixi-ui
+  // `as={Link}` (polymorphic) silently loses its styling hooks: e.g. @fluixi-ui
   // parts carry `data-*` slots + inline styles that would otherwise be dropped, so
   // the element renders unstyled. Own-props handled elsewhere are skipped:
   // href/slot above, class/className/active/activeClass in the effect, and
@@ -596,7 +648,7 @@ export function Link(props: LinkProps) {
   // Keys, not entries: `Object.entries` reads every prop, and `children` is a getter
   // that builds fresh nodes per access. Under hydration that discarded first build
   // consumes the server's nodes, so the real read below produced a second copy of
-  // them — a duplicated logo and pager on every prerendered page.
+  // them, a duplicated logo and pager on every prerendered page.
   for (const k of Object.keys(props)) {
     if (LINK_OWN_PROPS.has(k)) continue;
     const v = (props as Record<string, unknown>)[k];
@@ -618,7 +670,7 @@ export function Link(props: LinkProps) {
   }
 
   // Client only: keep href + active class in sync with reactive props / location.
-  // (Skipped on the server — `a` is a ServerNode without these DOM setters; the static
+  // (Skipped on the server: `a` is a ServerNode without these DOM setters; the static
   // href/class were set above.)
   if (typeof a.addEventListener === 'function') {
     createEffect(() => {
@@ -663,17 +715,17 @@ export interface FormProps {
  */
 export function Form(props: FormProps) {
   const action = props.action;
-  const cls = (props.className ?? props.class) as string | undefined; // compiler passes class→className
+  const cls = (props.className ?? props.class) as string | undefined; // compiler passes class -> className
   const url = (action as any).url ?? '';
 
   // createNativeElement/setAttribute branch on isServer(), so this builds a real ServerNode
-  // <form> on the server (serialized as a true element, NOT an escaped string) and a real
-  // DOM <form> on the client — hydration reuses the same element.
+  // <form> on the server (serialized as a true element, not an escaped string) and a real
+  // DOM <form> on the client: hydration reuses the same element.
   const form = createNativeElement('form') as any;
   setAttribute(form, 'method', 'post');
   if (url) setAttribute(form, 'action', url);
   if (cls) setAttribute(form, 'class', cls);
-  // Keys, not entries — same reason as Link: reading `children` here would build its
+  // Keys, not entries, same reason as Link: reading `children` here would build its
   // nodes once and throw them away.
   for (const k of Object.keys(props)) {
     if (k === 'action' || k === 'children' || k === 'class' || k === 'className') continue;
@@ -699,7 +751,7 @@ export function Form(props: FormProps) {
 
   // Read children ONCE: the compiler emits `get children()` as a getter that builds fresh
   // nodes on every access, so reading it twice (here + the null check) created a duplicate
-  // set — under hydration that meant two <input>s in the form.
+  // set: under hydration that meant two <input>s in the form.
   const children = props.children;
   if (children != null) insert(form, children as any);
   return form;
@@ -709,7 +761,7 @@ export function Form(props: FormProps) {
 
 /**
  * Download the lazy component chunks for the route(s) matching `pathname` and resolve when
- * they're all loaded. Await this BEFORE hydrating: once each matched lazy file-route is
+ * they're all loaded. Await this before hydrating: once each matched lazy file-route is
  * resolved it renders synchronously on the first pass (no Suspense fallback, no late
  * re-render), so hydration adopts the server DOM in place instead of building a duplicate
  * subtree next to it. No-op for routes with no lazy components. Safe to call when the URL
@@ -746,7 +798,7 @@ export type {
   HistoryAdapter,
 } from '@fluixi/router';
 
-// Action/cache/lazy layer is orthogonal to routing — re-export so a route file can
+// Action/cache/lazy layer is orthogonal to routing: re-export so a route file can
 // swap its import path wholesale. (Routing hooks above are the router ones.)
 export {
   cache,

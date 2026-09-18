@@ -3,17 +3,17 @@
  * <Suspense> resolution under renderToStringAsync (async SSR), on current source.
  *
  * ── STATE ────────────────────────────────────────────────────────────────────
- * - <Suspense> + a plain createResource → resolves to content. ✅
+ * - <Suspense> + a plain createResource -> resolves to content.
  * - <Suspense> + a lazy() child whose module load is async (then the loaded child
- *   fetches its own resource) → resolves to content. ✅ (was the storefront-route gap)
+ *   fetches its own resource) -> resolves to content. (was the storefront-route gap)
  *
  * ── How the lazy case resolves (the fix) ─────────────────────────────────────
- * The lazy child does NOT suspend via throw/catch — it's driven by the load
+ * The lazy child does not suspend via throw/catch, it's driven by the load
  * resource's trackPromise increment on the boundary. SuspenseImpl registers its
  * `triggerLazy` render effect in the boundary's resume `effects` list, so when the
  * load resolves and the boundary decrements to 0, resumeEffects() re-runs it during
- * the async drain → the now-resolved child renders → ITS own resource self-registers
- * in ctx.pending → the drain awaits that too (a 2nd round). Before the fix, `effects`
+ * the async drain -> the now-resolved child renders -> ITS own resource self-registers
+ * in ctx.pending -> the drain awaits that too (a 2nd round). Before the fix, `effects`
  * was empty at decrement, so the resolved child only re-rendered at serialize time
  * (after the drain exited) and the FALLBACK got serialised.
  */
@@ -47,7 +47,7 @@ describe('renderToStringAsync + Suspense', () => {
   });
 
   // The storefront route shape: a lazy() route whose loaded component then fetches
-  // its own resource. Drives a 2-round drain (load → child fetch). See file header.
+  // its own resource. Drives a 2-round drain (load -> child fetch). See file header.
   it('resolves a LAZY child + its resource (the storefront route shape)', async () => {
     function Inner() {
       const [data] = createResource(() => tick('LAZY-LOADED'));

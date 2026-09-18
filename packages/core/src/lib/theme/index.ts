@@ -1,6 +1,6 @@
 /**
- * createTheme — a reusable, SSR-safe theme store so every Fluixi app gets the whole
- * theme workflow (detect → persist → apply → toggle, + the no-flash head script)
+ * createTheme, a reusable, SSR-safe theme store so every Fluixi app gets the whole
+ * theme workflow (detect -> persist -> apply -> toggle, + the no-flash head script)
  * without rewriting it. Generic over an arbitrary theme list (not just light/dark),
  * with optional async theme loading and lifecycle hooks.
  *
@@ -36,7 +36,7 @@ export interface ThemeOptions<T extends string> {
 export interface Theme<T extends string> {
   /** Reactive current theme. */
   value: Accessor<T>;
-  /** Reactive — true while an async `load` is running. */
+  /** Reactive: true while an async `load` is running. */
   isLoading: Accessor<boolean>;
   /** Set a specific theme (persists, applies, runs `load`/hooks). */
   set: (theme: T) => void;
@@ -44,7 +44,7 @@ export interface Theme<T extends string> {
   toggle: () => void;
   /** Apply the current theme to the DOM (call once on client mount). */
   init: () => void;
-  /** Inline `<script>` for `<head>` that sets the attribute BEFORE first paint (no flash). */
+  /** Inline `<script>` for `<head>` that sets the attribute before first paint (no flash). */
   headScript: () => string;
 }
 
@@ -56,6 +56,21 @@ function systemMap<T extends string>(
   return system;
 }
 
+/**
+ * A theme controller: a reactive current theme, written to an attribute on the document.
+ *
+ * The initial value is taken from storage, then from the system preference, then from
+ * `options.default`, so a returning visitor keeps their choice and a new one gets what
+ * their OS asked for. The attribute defaults to `data-theme`, which is what a CSS
+ * `[data-theme="dark"]` block selects on.
+ *
+ * @example
+ * ```ts
+ * const theme = createTheme({ themes: ['light', 'dark'], system: { dark: 'dark' } });
+ * theme.set('dark');
+ * theme.current();   // 'dark', and the document now carries data-theme="dark"
+ * ```
+ */
 export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T> {
   const storageKey = options.storageKey ?? 'theme';
   const attribute = options.attribute ?? 'data-theme';

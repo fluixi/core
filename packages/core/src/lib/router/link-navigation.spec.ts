@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * `useLinkNavigation` — client-side navigation for anchors the app didn't author, the
+ * `useLinkNavigation`: client-side navigation for anchors the app didn't author, the
  * markdown/CMS `innerHTML` case where there is no <Link> to render.
  *
  * The point of the guards is that the element stays a real anchor: everything a user or a

@@ -5,7 +5,7 @@
  * The source-level tests in props.spec check what comes out. This one runs it: compile a
  * component that destructures its props, render it with a signal behind the prop, change
  * the signal, and look at the DOM. Destructuring without the rewrite reads once, so the
- * text would stay put — that's the failure this has to rule out.
+ * text would stay put, that's the failure this has to rule out.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -19,14 +19,14 @@ import { ensureIntegration } from './component.js';
  * Compiled output is written here and imported, rather than converted to CJS and run
  * with a stubbed module map. The directory has to sit inside the package: node resolves
  * a bare specifier by walking up from the file, so `@fluixi/dom` and
- * `@fluixi/reactive/signal` only resolve — and resolve to the same instances this file
- * imported — from within core. That is also what makes a transformer unnecessary, and
+ * `@fluixi/reactive/signal` only resolve, and resolve to the same instances this file
+ * imported, from within core. That is also what makes a transformer unnecessary, and
  * this package has no business depending on one to run a test.
  */
 let dir: string;
 let seq = 0;
 
-/** Compile the way a build does — one pass, the rewrite folded in — then load it. */
+/** Compile the way a build does, one pass, the rewrite folded in, then load it. */
 async function build(src: string, format: 'jsx' | 'lit') {
   const compiled =
     transformTemplates(src, 'component.tsx', {

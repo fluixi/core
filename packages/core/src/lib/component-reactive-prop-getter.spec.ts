@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// A reactive prop on a component (<Comp prop={sig()} />) must NOT re-create the
-// component on every change — it should be created once and reactivity flows
+// A reactive prop on a component (<Comp prop={sig()} />) must not re-create the
+// component on every change, it should be created once and reactivity flows
 // through a prop getter. Otherwise a component rendering a <Portal> re-mounts and
 // the portaled nodes pile up in <body>.
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -85,7 +85,7 @@ describe('reactive prop on a component does not re-create it', () => {
     expect(document.querySelectorAll('.modal').length).toBe(1);
     mod.bump(); await tick(); await tick();
     mod.bump(); await tick(); await tick();
-    // exactly one portaled node — not one per prop change
+    // exactly one portaled node, not one per prop change
     expect(document.querySelectorAll('.modal').length).toBe(1);
     expect(document.querySelector('.modal')!.getAttribute('data-n')).toBe('3');
   });

@@ -11,14 +11,6 @@ import {
   readChildren,
 } from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
-// import {
-//   createContext as reactiveCreateContext,
-//   useContext as reactiveUseContext,
-//   type CreateContext as ReactiveContext,
-//   type Accessor,
-// } from '@fluixi/reactive/signal';
-// import { html, TemplateResult } from 'lit';
-
 // /**
 //  * Re-export Context type from @fluixi/reactive
 //  */
@@ -62,10 +54,6 @@ import { ensureIntegration } from '../render/component.js';
 //  * const UserContext = createContext<User | null>(null);
 //  * ```
 //  */
-// export function createContext<T>(defaultValue: T): Context<T> {
-//   return reactiveCreateContext(defaultValue);
-// }
-
 // /**
 //  * Retrieves the value of a context using @fluixi/reactive's context system
 //  *
@@ -114,10 +102,6 @@ import { ensureIntegration } from '../render/component.js';
 //  * }
 //  * ```
 //  */
-// export function useContext<T>(context: Context<T>): T {
-//   return reactiveUseContext(context) as T;
-// }
-
 type C = Component | Component[];
 
 interface Children {
@@ -160,10 +144,6 @@ export interface ProviderProps<Child> {
  * Provider component that supplies a context value to its descendants
  *
  * This wraps @fluixi/reactive's Provider for use with Lit templates.
- *
- * @template T - Type of the context value
- * @param {ContextProvider<T>} props - Component props
- * @returns {TemplateResult} Rendered children with context
  *
  * @example
  * ```typescript
@@ -230,12 +210,12 @@ function warnEagerProvider(): void {
     'routed <Outlet/> that has siblings inside the provider renders detached and its ' +
     'descendants see no context under SSR. Use the lazy form instead:\n' +
     '  createProvider(Context, value, props)   // children stays a getter\n' +
-    '  // or JSX:  <Context.Provider value={…}>{props.children}</Context.Provider>',
+    '  // or JSX:  <Context.Provider value={...}>{props.children}</Context.Provider>',
   );
 }
 
 /**
- * Lazy-safe form — pass the component's `props` so `children` is read through a
+ * Lazy-safe form: pass the component's `props` so `children` is read through a
  * getter (inside the stamped scope), never materialised early. This is the
  * recommended way to wrap an <Outlet/>.
  *
@@ -249,12 +229,27 @@ export function createProvider<T>(
   props: { children?: any },
 ): ComponentChild;
 /**
- * @deprecated Eager form — `{ context, value, children }` reads `children` before
+ * @deprecated Eager form: `{ context, value, children }` reads `children` before
  * the context is stamped (see warnEagerProvider). Use `createProvider(context,
  * value, props)` or `<Context.Provider>` instead.
  */
+/**
+ * Provide a context value to a subtree, without writing the `Provider` tag.
+ *
+ * Takes either a `Context` from `createContext` or a provider component, so it works for
+ * both shapes the context API hands back. `value` may be an accessor, in which case
+ * descendants see it change.
+ *
+ * Reach for the `Provider` tag in markup; this is for providing a value from code, such as
+ * a wrapper that supplies context around children it was handed.
+ *
+ * @example
+ * ```ts
+ * createProvider(ThemeContext, 'dark', { children: () => renderPage() });
+ * ```
+ */
 export function createProvider<T, S = Children>(props: ContextProvider<T, S>): ComponentChild;
-// Returns the Provider's rendered output, not a component — it was annotated
+// Returns the Provider's rendered output, not a component, it was annotated
 // `Component<T>`, which made `<MyProvider>` fail as a JSX element.
 export function createProvider<T, S = Children>(
   a: Context<T> | ContextProvider<T, S>,
@@ -278,7 +273,7 @@ export function createProvider<T, S = Children>(
   // Always read children through a getter so they render INSIDE the stamped scope.
   // For the lazy form `childProps.children` is still a getter here (untouched); for
   // the eager form the caller already materialised it, so this can only mitigate,
-  // not fully fix — hence the deprecation warning above.
+  // not fully fix: hence the deprecation warning above.
   const sourceProps = isLazyForm ? childProps : (a as ContextProvider<T, S>);
   return context.Provider({
     value: resolvedValue,
@@ -299,10 +294,6 @@ export function createProvider<T, S = Children>(
  *
  * Returns both the context and a convenience component that combines
  * context creation with the provider.
- *
- * @template T - Type of the context value
- * @param {T} defaultValue - Default value for the context
- * @returns {[Context<T>, (props: { value: T | Accessor<T>; children: TemplateResult | TemplateResult[] }) => TemplateResult]} Context and provider component
  *
  * @example
  * ```typescript
@@ -353,10 +344,6 @@ export function createContextWithProvider<T, U>(
  * Creates multiple context providers in a nested structure
  *
  * Utility function to avoid deeply nested Provider components.
- *
- * @param {Array<[Context<any>, any]>} contexts - Array of [context, value] tuples
- * @param {TemplateResult | TemplateResult[]} children - Children to render
- * @returns {TemplateResult} Nested providers with children
  *
  * @example
  * ```typescript
@@ -409,10 +396,6 @@ export function composeProviders(
  *
  * Alternative to useContext hook, useful for rendering props patterns.
  *
- * @template T - Type of the context value
- * @param {Context<T>} context - Context to consume
- * @returns {(props: { children: (value: T) => TemplateResult }) => TemplateResult} Consumer component
- *
  * @example
  * ```typescript
  * import { createContext, createConsumer } from '@fluixi/core/context';
@@ -449,11 +432,6 @@ export function createConsumer<T>(
  * Hook to provide and consume a context in one component
  *
  * Useful for creating context-based stores or services.
- *
- * @template T - Type of the context value
- * @param {Context<T>} context - Context to use
- * @param {() => T} factory - Factory function to create the context value
- * @returns {T} Context value
  *
  * @example
  * ```typescript
@@ -507,10 +485,6 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
 /**
  * Creates a scoped context that only exists within a specific component tree
  *
- * @template T - Type of the context value
- * @param {T} defaultValue - Default value for the context
- * @returns {Context<T>} Scoped context object
- *
  * @example
  * ```typescript
  * import { createContext } from '@fluixi/core/context';
@@ -532,12 +506,8 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
 /**
  * Create a context for sharing state across component tree
  *
- * Section 9: Context is lookup-based, works on server and client
+ * Context is lookup-based, works on server and client
  * Supports nested contexts and complex values
- *
- * @template T - Context value type
- * @param {T} defaultValue - Default value
- * @returns {Context<T>} Context object with Provider
  *
  * @example
  * ```typescript
@@ -566,10 +536,6 @@ export function useProvide<T>(context: Context<T>, factory: () => T): T {
 
 /**
  * Creates a scoped context that only exists within a specific component tree
- *
- * @template T - Type of the context value
- * @param {T} defaultValue - Default value for the context
- * @returns {Context<T>} Scoped context object
  *
  * @example
  * ```typescript
@@ -614,9 +580,9 @@ export function createContext<T>(defaultValue?: T, name?: string): {
     if (props.debug === true) {
     }
     // Pass children LAZILY (a getter). The reactive Provider reads children inside
-    // its render effect, AFTER stamping the context on the owner. Reading
+    // its render effect, after stamping the context on the owner. Reading
     // props.children here (e.g. `children: props.children`) evaluates the imperative
-    // `get children()` getter eagerly, so the children — and any <Outlet/> in them —
+    // `get children()` getter eagerly, so the children, and any <Outlet/> in them,
     // render before the context is available.
     return context.Provider({
       value: props.value,
@@ -643,11 +609,7 @@ export function createContext<T>(defaultValue?: T, name?: string): {
 /**
  * Use context value from nearest Provider
  *
- * Section 9: Lookup-based, no subscriptions on server
- *
- * @template T - Context value type
- * @param {Context} context - Context to use
- * @returns {T} Context value
+ * Lookup-based, no subscriptions on server
  *
  * @example
  * ```typescript
@@ -670,7 +632,7 @@ export function useContext<T>(context: {
   defaultValue: T;
   [key: string]: any;
 }): T {
-  // Use reactive context lookup — walks up Owner chain
+  // Use reactive context lookup: walks up Owner chain
   const value = useReactiveContext(context as any);
   return value !== undefined ? (value as T) : context.defaultValue;
 }
@@ -685,12 +647,4 @@ export function useContext<T>(context: {
 //  * @param {any} children - Child components
 //  * @returns {any} Provider element
 //  */
-// export function createProvider<T>(
-//   context: { Provider: any },
-//   value: T,
-//   children: any
-// ): any {
-//   return context.Provider({ value, children });
-// }
-
 export type { Context };

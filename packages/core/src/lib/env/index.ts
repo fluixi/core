@@ -1,8 +1,8 @@
 /**
- * Universal environment utilities — the same imports work on the server and the
+ * Universal environment utilities, the same imports work on the server and the
  * client, so app code never reaches for raw globals (`localStorage`, `window`,
  * `document`) that don't exist under SSR and crash at module-eval time. This
- * replaces hand-rolled `globalThis.localStorage = …` shims and scattered
+ * replaces hand-rolled `globalThis.localStorage = ...` shims and scattered
  * `typeof window === 'undefined'` guards.
  */
 
@@ -34,7 +34,7 @@ export function createMemoryStorage(): Storage {
 
 /**
  * Universal key/value storage with the exact `localStorage` API. On the client it
- * IS `localStorage`; on the server (no DOM) it is an ephemeral in-memory store, so
+ * is `localStorage`; on the server (no DOM) it is an ephemeral in-memory store, so
  * a module that reads `storage.getItem(...)` at import time never crashes under SSR.
  * Server reads/writes do not persist across requests (a later pass can back them with
  * the request cookie for true per-user server state).
@@ -45,8 +45,8 @@ export const storage: Storage =
 /**
  * Lazy, typed accessors for the browser globals. They return the real object on the
  * client and `undefined` on the server, so `env.window?.matchMedia(...)` is safe and
- * typed everywhere. Deliberately NOT faked on the server: a stub `location`/`innerWidth`
- * would return wrong values and cause hydration mismatches — guard with `?.` instead.
+ * typed everywhere. Deliberately not faked on the server: a stub `location`/`innerWidth`
+ * would return wrong values and cause hydration mismatches: guard with `?.` instead.
  */
 export const env = {
   get window(): (Window & typeof globalThis) | undefined {

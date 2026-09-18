@@ -1,5 +1,4 @@
 /**
- * @fileoverview Vite/Rollup plugin for file-system routing
  * @module @fluixi/core/plugins/fluixi-routes-plugin
  *
  * Scans a routes directory at build time and generates a virtual module
@@ -37,6 +36,21 @@ const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_MODULE_ID;
  */
 const PUBLIC_MODULE_ID = '@fluixi/core/routes';
 
+/**
+ * The Vite plugin that turns a routes directory into a route tree.
+ *
+ * Scans `routesDir` and serves the result as `@fluixi/core/routes`, so an app imports a
+ * real module from this package and needs no generated `declare module` of its own. The
+ * shipped file is a typed empty array, which is what the plugin replaces.
+ *
+ * Without it that import resolves to the empty array and an app has no routes, which is
+ * the error `routes.ts` raises rather than rendering a blank page.
+ *
+ * @example
+ * ```ts
+ * export default defineConfig({ plugins: [fluixiRoutesPlugin({ routesDir: 'src/routes' })] });
+ * ```
+ */
 export function fluixiRoutesPlugin(
   options: FluixiRoutesPluginOptions = {}
 ): any[] {
@@ -57,7 +71,7 @@ export function fluixiRoutesPlugin(
 
   // nodePolyfills injects `vite-plugin-node-polyfills/shims/*` (browser polyfills for
   // Buffer/process/global/fs/path) into transformed modules. It's needed by some apps
-  // for the BROWSER, but it BREAKS SSR — Node already has those globals, and the
+  // for the BROWSER, but it BREAKS SSR. Node already has those globals, and the
   // injected CJS shim can't be ESM-evaluated (and often can't be resolved at all:
   // "Cannot find module .../shims/buffer"). So it's opt-out: on by default for
   // back-compat, but SSR-first setups (e.g. @fluixi/start) pass `polyfills: false`.
@@ -100,7 +114,7 @@ export function fluixiRoutesPlugin(
 
         // `change` matters as much as add/unlink. The route tree is not only a list of
         // files: `routeData` is detected by reading each file at scan time, so EDITING a
-        // route — adding a `routeData` export, or changing one — changes the generated
+        // route, adding a `routeData` export, or changing one, changes the generated
         // module even though no file appeared or vanished. Leaving `change` out meant
         // those edits needed a dev-server restart to take effect.
         if (!['add', 'unlink', 'addDir', 'unlinkDir', 'change'].includes(event)) return;
@@ -115,7 +129,7 @@ export function fluixiRoutesPlugin(
         }
 
         // Regenerate and compare before invalidating. Every save of a route component now
-        // reaches this handler, and most change nothing about the tree — reloading the
+        // reaches this handler, and most change nothing about the tree: reloading the
         // page on each of them would undo the point of HMR. A full reload is only correct
         // when the generated module actually differs.
         const next = generateModule(root);
@@ -131,7 +145,7 @@ export function fluixiRoutesPlugin(
     },
   };
 
-  // Vite flattens plugin arrays automatically — consumers just use:
+  // Vite flattens plugin arrays automatically: consumers just use:
   //   plugins: [fluixiRoutesPlugin({ routesDir: 'src/routes' })]
   return polyfillsPlugin ? [polyfillsPlugin, routesPlugin] : [routesPlugin];
 }

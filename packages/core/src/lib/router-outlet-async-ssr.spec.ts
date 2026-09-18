@@ -1,35 +1,35 @@
 // @vitest-environment jsdom
 /**
- * Scenario 2 — the storefront's REAL route shape under async SSR.
+ * Scenario 2, the storefront's real route shape under async SSR.
  *
  * A lazy route rendered through router's <Outlet/>, whose component fetches a
  * resource, on a SINGLE cold renderToStringAsync (no pre-warm). The storefront does
  * exactly this and serialises the <Suspense> fallback (spinner) instead of the route
- * content — JS-disabled shows only the shell + spinner, no products.
+ * content. JS-disabled shows only the shell + spinner, no products.
  *
- * Distinct from suspense-async-ssr.spec.ts (a DIRECT lazy child — scenario 1, fixed)
+ * Distinct from suspense-async-ssr.spec.ts (a DIRECT lazy child: scenario 1, fixed)
  * and ssr-context-detach.spec.ts (which warms the lazy cache across two renders to
  * sidestep the cold path). This drives the Router with createMemoryHistory('/') and
  * asserts the resolved resource content is in the payload after one async render.
  *
- * Compiles REAL JSX through the imperative backend (hand-written createComponent did
- * NOT reproduce the related detach bug).
+ * Compiles real JSX through the imperative backend (hand-written createComponent did
+ * not reproduce the related detach bug).
  *
- * ── FIXED (2026-06-18) — two changes, both needed ────────────────────────────
+ * ── FIXED (2026-06-18), two changes, both needed ────────────────────────────
  * Took two distinct bugs, one in the reactive core and one in the async-SSR drain:
  *
- * (1) reactive/signal.ts — `propagateDirty` was INCONSISTENT between its two impls.
+ * (1) reactive/signal.ts: `propagateDirty` was INCONSISTENT between its two impls.
  *     The memo-recompute one schedules a STALE non-pure effect (pushes to
  *     toUpdate/Updates); the signal-WRITE one only marked it STALE and returned
  *     WITHOUT scheduling. So when `setInFallback(false)`'s write marked the <Suspense>
  *     OUTPUT insert effect STALE, the later output-memo recompute skipped it (it only
- *     schedules when prevState===CLEAN) → it never re-ran → <main> kept the fallback.
+ *     schedules when prevState===CLEAN) -> it never re-ran -> <main> kept the fallback.
  *     Fix: the signal-write path now schedules the STALE effect too (mirrors the memo
  *     path). Makes the resolved content reach <main> reactively.
  *
- * (2) dom/.../server/render.ts — the component tree is built LAZILY (a router <Outlet/>
- *     sits behind deferred memos), so the initial render created NO resources and
- *     ctx.pending was empty when the drain checked → it exited and serialized the
+ * (2) dom/.../server/render.ts, the component tree is built LAZILY (a router <Outlet/>
+ *     sits behind deferred memos), so the initial render created no resources and
+ *     ctx.pending was empty when the drain checked -> it exited and serialized the
  *     fallback; the route only rendered when serializeNode finally read the tree.
  *     Fix: renderToStringAsync now PROBE-serializes the tree before the drain (and
  *     after each round) to force evaluation, so lazy/route resources self-register in
@@ -38,7 +38,7 @@
  *
  * Both suites + this test green (reactive 187 / dom 40 / fluixi 80). Note: the
  * storefront still doesn't pass the request URL to <Router> on the server (app.tsx
- * ignores props.url → defaults to createBrowserHistory; only '/' SSR-matches) — pass
+ * ignores props.url -> defaults to createBrowserHistory; only '/' SSR-matches): pass
  * history={createMemoryHistory(url)} there to SSR non-'/' routes.
  */
 import { describe, it, expect, beforeAll } from 'vitest';

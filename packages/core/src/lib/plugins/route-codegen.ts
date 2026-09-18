@@ -1,5 +1,4 @@
 /**
- * @fileoverview Route code generator
  * @module @fluixi/core/plugins/route-codegen
  *
  * Generates an ES module from a ScannedRoute tree.
@@ -35,7 +34,7 @@ export function generateRouteModule(
   lines.push(``);
   // router is lit-free; the old './router' barrel imported @fluixi/lit (extends
   // HTMLElement at module init) which crashed SSR/prod server bundles. (runWithOwner was
-  // imported here but never used in the generated output — dropped.)
+  // imported here but never used in the generated output: dropped.)
   lines.push(`import { lazy } from '@fluixi/core/router';`);
   lines.push(``);
   lines.push(`export const routes = ${generateRouteArray(routes, routesDir, 0)};`);
@@ -70,10 +69,10 @@ function generateRouteObject(
   const routePath = computeRoutePath(route);
   props.push(`${indent}  path: ${JSON.stringify(routePath)}`);
 
-  // Component — lazy-loaded via dynamic import + Suspense
+  // Component: lazy-loaded via dynamic import + Suspense
   props.push(`${indent}  component: lazy(() => import(${JSON.stringify(importPath)}))`);
 
-  // Data loader — only generated for routes that export `routeData`
+  // Data loader, only generated for routes that export `routeData`
   // This prevents unnecessary async imports and avoids calling d.data() for
   // levels that have no data, which kept the router's if (d.data) check clean.
   if (route.hasRouteData) {
@@ -97,7 +96,7 @@ function generateRouteObject(
 /**
  * Compute the route path for a RouteDefinition.
  * The scanner already resolves groups, dynamic segments, and index paths
- * into the correct urlPath — just use it directly.
+ * into the correct urlPath, just use it directly.
  */
 function computeRoutePath(route: ScannedRoute): string {
   return route.urlPath;

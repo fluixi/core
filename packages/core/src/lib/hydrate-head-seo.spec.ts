@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
  * Repro: calling seo()/useHead() inside a route component during hydration duplicates the page
- * content. seo() does a signal write (registry.push → bump) synchronously while the component is
- * rendering under the hydration walk. This spec compiles REAL JSX through the imperative backend,
- * server-renders, then hydrates — the tree must appear exactly once.
+ * content. seo() does a signal write (registry.push -> bump) synchronously while the component is
+ * rendering under the hydration walk. This spec compiles real JSX through the imperative backend,
+ * server-renders, then hydrates, the tree must appear exactly once.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as babel from '@babel/core';
@@ -128,7 +128,7 @@ describe('hydration: seo() inside a route component', () => {
 
     // Simulate a server that leaves the @fluixi/head transport marker in the body (streaming /
     // custom server that doesn't lift it into <head>). encodeHeadMarker prepends it, so it lands
-    // as the mount root's first child — the exact shape that stranded the hydration cursor.
+    // as the mount root's first child, the exact shape that stranded the hydration cursor.
     const marker = Head.encodeHeadMarker(Head.renderHead((() => { const h = Head.createHead(); h.push({ title: 'Home' }); return h; })()));
     expect(marker).toContain('<!--fh:');
     document.body.innerHTML = `<div id="app">${marker}${html}</div>`;

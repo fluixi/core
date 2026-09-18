@@ -1,7 +1,5 @@
 /**
- * @fileoverview Fluixi - Solid-Compatible Fine-Grained UI Framework
  * @module fluixi
- * @version 0.0.1
  *
  * A fine-grained reactive framework following SolidJS principles:
  * - Components execute once
@@ -51,7 +49,7 @@ export type { ReadSignal } from '@fluixi/reactive/operators';
 export { createStore, untrackStore,   Store, type StoreSetter} from '@fluixi/reactive/store';
 
 // ============================================================================
-// SECTION 2 — createComponent & LIFECYCLE
+// createComponent & LIFECYCLE
 // ============================================================================
 
 export {
@@ -71,7 +69,7 @@ export {
   isRenderable,
   initDelegation,
   cleanupDelegation,
-  // Context API (Section 9) - from core for proper nesting
+  // Context API, from core for proper nesting
   Suspense,
   // Dev mode
   isDev,
@@ -84,7 +82,7 @@ export {
 
 export * from './context/index.js';
 
-// Isomorphic request state (server-resolved → serialized → client-seeded).
+// Isomorphic request state (server-resolved -> serialized -> client-seeded).
 export {
   createIsomorphicState,
   type IsomorphicState,
@@ -101,7 +99,7 @@ export type {
 };
 
 // ============================================================================
-// SECTION 7 — RENDERING (CLIENT)
+// RENDERING (CLIENT)
 // ============================================================================
 
 // export { render } from './core/index.js';
@@ -113,11 +111,6 @@ export type {
 // ============================================================================
 // DOM UTILITIES (from @fluixi/dom)
 // ============================================================================
-// import {For as _For, ForProps, ForPropsKeyed, ForPropsUnkeyed} from "@fluixi/dom"
-// export function For<T, U>(props: ForPropsKeyed<T, U>): Accessor<U[]>;
-// export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
-// export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> { return _For(props as any); }
-
 export {
   // Framework-agnostic reactive attribute maps (return Accessor<string>)
   classMap,
@@ -228,7 +221,7 @@ import {
 import { render as _render } from './render/index.js';
 // './core/index.js';
 
-// Web Component support moved to @fluixi/element (wc-element repo) — import from there.
+// Web Component support moved to @fluixi/element (wc-element repo): import from there.
 
 export default {
   // Core
