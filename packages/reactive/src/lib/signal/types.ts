@@ -91,8 +91,8 @@ export interface UniversalSignal<T> {
 //     lastAccessed: number;
 //     mode: SignalMode;
 //     // Debugging
-//     name?: string;
-//     creationStack?: string;
+//     name?, string;
+//     creationStack?, string;
 //   }
 
 /**

@@ -1,12 +1,12 @@
 /**
  * createResource, on the TC39 core by way of the compat layer. This is
- * ADDITIVE — the legacy `createResource` in ../signal.ts stays intact; this is the
+ * Additive, the legacy `createResource` in ../signal.ts stays intact; this is the
  * parallel implementation that runs on the new graph.
  *
  * Resources are the one part of the surface that touches framework-coupled bits, so
  * they're ported by hand. The SSR transport hooks (`nextResourceId`/`getServerData`/
  * `trackResourcePromise`/`reportResourceData`) are standalone module functions, so we
- * REUSE them from ../signal.ts — same `__FX_DATA__` seeding + async-SSR drain as legacy.
+ * Reuse them from ../signal.ts, same `__FX_DATA__` seeding + async-SSR drain as legacy.
  *
  * Suspense boundary integration (throwing the pending promise to a boundary that
  * increments/decrements) lands with the Suspense port; the throwing getter is here so
@@ -19,7 +19,7 @@ import {
   untrack,
   onCleanup,
 } from './compat.js';
-// Standalone SSR hooks — graph-agnostic injectables.
+// Standalone SSR hooks: graph-agnostic injectables.
 import {
   nextResourceId,
   getServerData,
@@ -53,7 +53,7 @@ const UNSET = Symbol();
  * createResource(fetcher, options?) or createResource(source, fetcher, options?).
  * Matches the legacy state machine + SSR seeding (no first fetch when seeded).
  *
- * The two typed overloads infer `T` from the fetcher's return — without them the
+ * The two typed overloads infer `T` from the fetcher's return: without them the
  * `unknown` implementation signature gives every call site `ResourceReturn<{}>`,
  * so the accessor loses its type (the regression seen after the TC39-core switch).
  */
@@ -85,14 +85,13 @@ export function createResource<T, S = true>(
   }
 
   // SSR data transport: stable id; on the client seed from server-serialized value.
-  //
   // `transport: false` opts out, and takes the id with it. The id is a position in
   // a per-render sequence that the client re-derives by counting resources in the
   // same order, so a resource that exists on one side and not the other shifts
   // every id after it. `lazy()` is exactly that: on the server the first request
   // for a route creates a resource for the module import and later requests find
   // it cached and create none, so the page's own resource was r1 for the first
-  // visitor after a restart and r0 for everyone else — while the client, which
+  // visitor after a restart and r0 for everyone else, while the client, which
   // preloads routes before hydrating, always said r0. Its value is a component
   // function and was never transportable anyway.
   const ssrId = options.transport === false ? undefined : nextResourceId();
@@ -132,7 +131,7 @@ export function createResource<T, S = true>(
     prevKey = val;
     if (skipFirstFetch) {
       skipFirstFetch = false;
-      return; // seeded — source tracked, but no first fetch (no flash on hydration)
+      return; // seeded: source tracked, but no first fetch (no flash on hydration)
     }
     let cancelled = false;
     onCleanup(() => (cancelled = true));
@@ -193,7 +192,7 @@ export function createResource<T, S = true>(
     if (e) throw e;
     if (loading()) {
       const p = promise();
-      if (p) throw p; // suspends — a boundary on the new effect catches this
+      if (p) throw p; // suspends, a boundary on the new effect catches this
     }
     return value();
   }) as ResourceReturn<T>[0];

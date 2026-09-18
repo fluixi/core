@@ -1,5 +1,5 @@
 /**
- * The legacy (pre-TC39) reactive core — available ONLY at `@fluixi/reactive/signal-legacy`.
+ * The legacy (pre-TC39) reactive core: available only at `@fluixi/reactive/signal-legacy`.
  *
  * `@fluixi/reactive/signal` (and the relative `./index.js`) now resolve to the TC39 core
  * (see ./index.ts). This module keeps the original implementation intact as an explicit

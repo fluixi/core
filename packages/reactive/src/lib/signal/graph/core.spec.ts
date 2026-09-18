@@ -7,7 +7,7 @@ describe('graph core: Signal.State and Computed', () => {
     expect(s.get()).toBe(1);
     s.set(2);
     expect(s.get()).toBe(2);
-    s.set(2); // no change → no version bump (equality)
+    s.set(2); // no change -> no version bump (equality)
     expect(s.get()).toBe(2);
   });
 
@@ -38,10 +38,10 @@ describe('graph core: Signal.State and Computed', () => {
     });
     expect(label.get()).toBe('even');
     expect(downstream).toHaveBeenCalledTimes(1);
-    a.set(6); // still even → isEven stays true → label must NOT recompute
+    a.set(6); // still even, so isEven stays true and label must not recompute
     expect(label.get()).toBe('even');
     expect(downstream).toHaveBeenCalledTimes(1);
-    a.set(7); // now odd → isEven flips → label recomputes
+    a.set(7); // now odd -> isEven flips -> label recomputes
     expect(label.get()).toBe('odd');
     expect(downstream).toHaveBeenCalledTimes(2);
   });
@@ -73,7 +73,7 @@ describe('graph core: Signal.State and Computed', () => {
     });
     expect(out.get()).toBe('x');
     expect(runs).toHaveBeenCalledTimes(1);
-    y.set('y2'); // y not currently a dep → no recompute
+    y.set('y2'); // y not currently a dep -> no recompute
     expect(out.get()).toBe('x');
     expect(runs).toHaveBeenCalledTimes(1);
     cond.set(false); // now depends on y, not x
@@ -92,7 +92,7 @@ describe('graph core: Signal.State and Computed', () => {
       return a.get() + Signal.subtle.untrack(() => b.get());
     });
     expect(sum.get()).toBe(101);
-    b.set(200); // untracked → no recompute
+    b.set(200); // untracked -> no recompute
     expect(sum.get()).toBe(101);
     expect(runs).toHaveBeenCalledTimes(1);
     a.set(2);
@@ -124,18 +124,18 @@ describe('graph core: Watcher', () => {
 
     a.set(2);
     expect(notify).toHaveBeenCalledTimes(1);
-    a.set(3); // already pending → no second notify (edge-triggered)
+    a.set(3); // already pending -> no second notify (edge-triggered)
     expect(notify).toHaveBeenCalledTimes(1);
 
     const pending = w.getPending();
     expect(pending).toContain(doubled);
     expect(doubled.get()).toBe(6); // re-read settles it
 
-    a.set(4); // re-armed → notifies again
+    a.set(4); // re-armed -> notifies again
     expect(notify).toHaveBeenCalledTimes(2);
   });
 
-  it('the notify callback is purely a signal — getPending drives the work', () => {
+  it('the notify callback is purely a signal: getPending drives the work', () => {
     const a = new Signal.State('a');
     const c = new Signal.Computed(() => a.get().toUpperCase());
     let runs = 0;

@@ -1,10 +1,10 @@
 /**
- * Keyed list reconciliation primitives — the reactive foundation for `<For>`,
+ * Keyed list reconciliation primitives, the reactive foundation for `<For>`,
  * `<For by>` and `<Index>` (mirrors SolidJS `mapArray`/`keyArray`/`indexArray`).
  *
  * Each maps a reactive array to an array of mapped values and reuses per-item
  * reactive scopes across updates so only changed items re-run their map fn. Every
- * mapped item lives in its own `createRoot`, so it has a disposable owner scope —
+ * mapped item lives in its own `createRoot`, so it has a disposable owner scope
  * this is what keeps list items owner-stable (the thing ad-hoc array handling gets
  * wrong).
  */
@@ -78,7 +78,7 @@ export function mapArray<T, U>(
  * Key-function map. Like `mapArray` but reuse is keyed by `keyFn(item)` (so the
  * same key survives object recreation), and the map fn receives a *live* item
  * accessor (reads through to the current list value, so sub-property updates
- * propagate). Backs `<For by={…}>`.
+ * propagate). Backs `<For by={...}>`.
  */
 export function keyArray<T, U>(
   list: ListSource<T>,
@@ -143,9 +143,9 @@ export function keyArray<T, U>(
 }
 
 /**
- * Index-keyed map. Reuse is keyed by *position*: growing adds slots, shrinking
+ * Index-keyed map. Reuse is keyed by *position*, growing adds slots, shrinking
  * disposes trailing slots, and when the value at a position changes only that
- * slot's item signal updates (the map fn is NOT re-run). The map fn receives a
+ * slot's item signal updates (the map fn is not re-run). The map fn receives a
  * live item accessor and a plain (stable) index. Backs `<Index>`.
  */
 export function indexArray<T, U>(

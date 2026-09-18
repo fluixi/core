@@ -37,10 +37,10 @@ export {
   isProvider,
   makeArrayFlat,
 };
-// Derived utilities ported onto the TC39 graph — live in ./graph/derived.js.
+// Derived utilities ported onto the TC39 graph: live in ./graph/derived.js.
 import { createSelector, createDeferred, createDebounce } from './graph/derived.js';
 export { createSelector, createDeferred, createDebounce };
-// Reactive children resolver (was the mis-named `childrens`) — ./graph/children.js.
+// Reactive children resolver (was the mis-named `childrens`): ./graph/children.js.
 import { readChildren } from './graph/children.js';
 export { readChildren };
 export type EqualityFn<T> = (a: T, b: T) => boolean;
@@ -96,7 +96,7 @@ export interface Computation {
   accessor?: Accessor<any>;
   renderEffect?: boolean;
   suspense?: SuspenseContextType;
-  /** set once dispose() has run — a disposed computation must never re-run. */
+  /** set once dispose() has run, a disposed computation must never re-run. */
   disposed?: boolean;
 }
 export interface ReactiveNode {
@@ -200,7 +200,7 @@ const DIRTY = 2;
 // RUNNING is a sentinel state set on a computation just before its fn executes.
 // Any propagateDirty() call that fires DURING the fn (e.g. a signal write inside
 // a route component's setup code) will override it with DIRTY.  After the fn,
-// RUNNING → CLEAN (nothing re-dirtied it) or DIRTY → stay DIRTY (needs re-run).
+// RUNNING -> CLEAN (nothing re-dirtied it) or DIRTY -> stay DIRTY (needs re-run).
 // This correctly distinguishes "was dirty going in" from "re-dirtied during fn."
 const RUNNING = 3;
 let Owner: RootOwner | null = null;
@@ -210,7 +210,7 @@ let Effects: Computation[] | null = null;
 let ExecCount = 0;
 
 // When true, a signal write eagerly schedules a stale effect reached through a
-// Legacy propagateDirty flag. Never enabled anymore — SSR runs on the TC39 graph,
+// Legacy propagateDirty flag. Never enabled anymore. SSR runs on the TC39 graph,
 // which schedules its own re-runs, so this is always off (dead branch below).
 const _eagerStaleEffects = false;
 let Pending = false;
@@ -218,7 +218,7 @@ let Pending = false;
 let BatchDepth = 0;
 const MAX_ITERATIONS = 1000000;
 const signalObservers = new WeakMap<SignalTuple<any>, Set<Computation>>();
-/** Active transition — non-null while startTransition's fn is running or effects are deferred. */
+/** Active transition: non-null while startTransition's fn is running or effects are deferred. */
 let Transition: TransitionState | null = null;
 const errorHandlers: ErrorBoundary[] = [];
 let Scheduler: ((fn: () => void) => void) | null = null;
@@ -318,11 +318,11 @@ function ensureTransPending() {
 /**
  * Central computation scheduling that respects batch mode and active transitions.
  *
- *  - In batch    → always queue in Updates (flushed by flushUpdates).
- *  - In transition (non-pure) → defer to Transition.effects (flush async).
- *  - Computed (pure=true, computed=true) → run eagerly.
- *  - Effect (pure=false) → run eagerly (unless deferred by transition).
- *  - Memo (pure=true, computed=false) → skip here; lazy, runs on next read.
+ *  - In batch -> always queue in Updates (flushed by flushUpdates).
+ *  - In transition (non-pure) -> defer to Transition.effects (flush async).
+ *  - Computed (pure=true, computed=true) -> run eagerly.
+ *  - Effect (pure=false) -> run eagerly (unless deferred by transition).
+ *  - Memo (pure=true, computed=false) -> skip here; lazy, runs on next read.
  */
 function scheduleComputation(c: Computation): void {
   if (Updates) {
@@ -334,11 +334,10 @@ function scheduleComputation(c: Computation): void {
   } else if (c.pure && !c.computed && c.accessor) {
     // Pure memo outside batch: evaluate now so its equality check gates whether
     // downstream effects are scheduled. If value unchanged, observers not notified.
-    //
     // Set Updates=[] so any signal writes during the memo's fn (e.g. setOutlet
     // inside routeStates.fn) are deferred instead of running effects immediately
     // before the DOM structure is ready. Process them via runCascadeAndEffects
-    // afterwards — same cascade that batch uses.
+    // afterwards, same cascade that batch uses.
     const prevListener = Listener;
     const prevUpdatesM = Updates;
     Listener = null;
@@ -403,14 +402,14 @@ export function createSignal<T>(
           if (viaPureMemo && !comp.pure) {
             if (prevState === CLEAN) {
               comp.state = STALE;
-              // Eagerly SCHEDULE the stale effect — but ONLY when enabled (server SSR
+              // Eagerly SCHEDULE the stale effect, but only when enabled (server SSR
               // drain). There is no scheduler/read loop on the server to re-run a
               // stranded STALE effect, so the <Suspense> output insert effect wouldn't
               // re-render on the inFallback flip and the resolved children never
               // replaced the fallback in the serialized tree. On the CLIENT this stays
               // OFF: eager scheduling here removes a loop-breaker and can spin a
-              // memo↔effect cycle forever (froze the storefront after hydration). The
-              // client keeps the lazy behavior — the effect re-runs when next read.
+              // memo and effect cycling off each other forever (froze the storefront after hydration). The
+              // client keeps the lazy behavior, the effect re-runs when next read.
               if (_eagerStaleEffects) {
                 if (Updates !== null && Updates.indexOf(comp) === -1)
                   Updates.push(comp);
@@ -641,7 +640,7 @@ export function createMemo<T>(
             const observerList = Array.from(observers);
             const toUpdate: Computation[] = [];
             const visited = new Set<Computation>();
-            // Mirror the signal-write propagateDirty (see createSignal.write): when an
+            // Mirror the signal-write propagateDirty (see createSignal.write), when an
             // observer is itself a pure memo, recurse through it to its observers so
             // they are marked stale too. Without this, a memo M observed by another
             // memo N (e.g. a child route content/outlet memo gating on a parent content
@@ -733,7 +732,7 @@ export function createMemo<T>(
  * Cascade-evaluates pure memos from `initial`, transitively following any
  * newly-triggered pure memos, then runs all collected non-pure effects.
  *
- * Pure memos with no downstream observers are skipped (lazy — they'll
+ * Pure memos with no downstream observers are skipped (lazy, they'll
  * re-evaluate on next read without side effects).
  */
 function runCascadeAndEffects(initial: Computation[]): void {
@@ -963,7 +962,7 @@ export function createResource<T, S = true>(
   let prevKey: S | typeof UNSET = UNSET;
   let manualRefetch = false;
   const saveToCache = (data: T): void => {
-    // No localStorage on the server (SSR) — skip silently.
+    // No localStorage on the server (SSR): skip silently.
     if (typeof localStorage === 'undefined') return;
     try {
       if (data)
@@ -991,7 +990,7 @@ export function createResource<T, S = true>(
     manualRefetch = false;
     if (prevKey !== UNSET && (val as any) === prevKey && !isManual) return;
     prevKey = val;
-    // Seeded from server data during hydration — value is already set, skip the
+    // Seeded from server data during hydration: value is already set, skip the
     // first fetch (still tracked the source above, so later refetches work).
     if (skipFirstFetch) {
       skipFirstFetch = false;
@@ -1167,7 +1166,7 @@ export function flush(): Promise<void> {
   });
 }
 /**
- * startTransition — defer non-critical effect updates.
+ * startTransition: defer non-critical effect updates.
  *
  * Runs `fn` synchronously, capturing all non-pure effects that would fire as
  * a result into a deferred queue. Pure computations (memos, createComputed)
@@ -1212,7 +1211,7 @@ export function startTransition(fn: () => void): Promise<void> {
   return done;
 }
 /**
- * useTransition — reactive hook version of startTransition.
+ * useTransition: reactive hook version of startTransition.
  * Returns `[isPending, start]`
  */
 export function useTransition(): [
@@ -1320,7 +1319,7 @@ function runRenderComputation(c: Computation): void {
     // Flush computations scheduled during this render effect via the full cascade,
     // which re-evaluates PURE MEMOS (and propagates to their observers) as well as
     // running effects. The old loop processed only effects, so a pure memo scheduled
-    // here was left dirty and never notified its own downstream effects — e.g. a
+    // here was left dirty and never notified its own downstream effects: e.g. a
     // child route content/outlet memo that settled while a parent layout rendered
     // would never re-render the child (deeply nested <Outlet/> stayed empty).
     if (deferred !== prevUpdates && deferred && deferred.length > 0) {
@@ -1331,7 +1330,7 @@ function runRenderComputation(c: Computation): void {
   }
 }
 /**
- * createComputed — synchronous pre-render computation.
+ * createComputed: synchronous pre-render computation.
  */
 export function createComputed<T>(
   fn: ComputationFn<T>,

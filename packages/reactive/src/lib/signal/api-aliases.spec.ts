@@ -118,7 +118,7 @@ describe('childOwner', () => {
       const parent = getOwner();
       const child = childOwner(parent);
       expect(child).not.toBe(parent);
-      // Still the outer owner: making a child is not the same as running in it.
+      // Still the outer owner, making a child is not the same as running in it.
       expect(getOwner()).toBe(parent);
     });
   });

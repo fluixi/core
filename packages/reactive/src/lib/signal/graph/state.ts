@@ -1,14 +1,14 @@
 /**
- * The reactive graph's mutable state, kept as a SINGLE object cached on globalThis.
+ * The reactive graph's mutable state, kept as a single object cached on globalThis.
  *
- * Why: tracking/scheduling reads module-global state ("who's the current consumer?",
+ * Why, tracking/scheduling reads module-global state ("who's the current consumer?",
  * "what owner are we under?", "the effect queue"). If a production bundle emits more
- * than one copy of this module (a common cross-package hazard — see @fluixi/dom's
- * integration bridge), plain `let`s would be DUPLICATED: an effect would set copy A's
- * consumer while a signal read checks copy B's → no subscription → reactivity silently
+ * than one copy of this module (a common cross-package hazard: see @fluixi/dom's
+ * integration bridge), plain `let`s would be duplicated: an effect would set copy A's
+ * consumer while a signal read checks copy B's -> no subscription -> reactivity silently
  * lost (works in dev, breaks in prod). Caching the state on globalThis means every copy
- * of this module reads/writes the SAME object, so the graph stays unified no matter how
- * many times the module is bundled — no integration bridge required.
+ * of this module reads/writes the same object, so the graph stays unified no matter how
+ * many times the module is bundled, no integration bridge required.
  *
  * This is strictly more robust than SolidJS, which keeps this state in module `let`s and
  * relies on dedup + a "multiple instances" warning. Node-ref fields are loosely typed
@@ -29,7 +29,7 @@
 import { VERSION } from '../../../version.generated.js';
 
 export interface GraphState {
-  /** The computation currently evaluating — reads inside it subscribe to it. */
+  /** The computation currently evaluating: reads inside it subscribe to it. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   consumer: any;
   /** When true, reads don't subscribe (untrack / peek). */

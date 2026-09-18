@@ -51,7 +51,7 @@ export function createDeferred<T>(
 }
 
 /**
- * Debounce wrapper — delays invoking `fn` until `delay` ms after the last call.
+ * Debounce wrapper: delays invoking `fn` until `delay` ms after the last call.
  * Pending timers are cancelled when the owning scope disposes (via onCleanup).
  */
 export function createDebounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {

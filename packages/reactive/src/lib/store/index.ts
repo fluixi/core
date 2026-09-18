@@ -43,6 +43,6 @@ export { produce as produceUtil, reconcile as reconcileUtil } from './utils.js';
 
 export type { ReconcileOptions, Producer } from './types.js';
 
-// The short API — one object instead of a tuple, matching `signal`.
+// The short API, one object instead of a tuple, matching `signal`.
 export { store } from './api.js';
 export type { StoreHandle } from './api.js';

@@ -53,19 +53,19 @@ describe('Store Fine-Grained Reactivity', () => {
       // Update 'a' - only first effect should run
       setState('a', 10);
       expect(aRuns).toBe(2);
-      expect(bRuns).toBe(1); // ✅ Not affected
-      expect(cRuns).toBe(1); // ✅ Not affected
+      expect(bRuns).toBe(1); // Not affected
+      expect(cRuns).toBe(1); // Not affected
 
       // Update 'b' - only second effect should run
       setState('b', 20);
-      expect(aRuns).toBe(2); // ✅ Not affected
+      expect(aRuns).toBe(2); // Not affected
       expect(bRuns).toBe(2);
-      expect(cRuns).toBe(1); // ✅ Not affected
+      expect(cRuns).toBe(1); // Not affected
 
       // Update 'c' - only third effect should run
       setState('c', 30);
-      expect(aRuns).toBe(2); // ✅ Not affected
-      expect(bRuns).toBe(2); // ✅ Not affected
+      expect(aRuns).toBe(2); // Not affected
+      expect(bRuns).toBe(2); // Not affected
       expect(cRuns).toBe(2);
     });
 
@@ -109,18 +109,18 @@ describe('Store Fine-Grained Reactivity', () => {
       setState('user.name', 'Bob');
       expect(nameRuns).toBe(2);
       expect(ageRuns).toBeGreaterThanOrEqual(1); // May be affected by parent reconciliation
-      expect(themeRuns).toBe(1); // ✅ Different branch
+      expect(themeRuns).toBe(1); // Different branch
 
       // Update age - age effect runs
       setState('user.age', 31);
       expect(nameRuns).toBeGreaterThanOrEqual(2); // May be affected by parent reconciliation
       expect(ageRuns).toBeGreaterThanOrEqual(2);
-      expect(themeRuns).toBe(1); // ✅ Different branch
+      expect(themeRuns).toBe(1); // Different branch
 
       // Update theme - theme effect runs (user branch is independent)
       setState('settings.theme', 'light');
-      expect(nameRuns).toBeGreaterThanOrEqual(2); // ✅ Different branch
-      expect(ageRuns).toBeGreaterThanOrEqual(2); // ✅ Different branch
+      expect(nameRuns).toBeGreaterThanOrEqual(2); // Different branch
+      expect(ageRuns).toBeGreaterThanOrEqual(2); // Different branch
       expect(themeRuns).toBe(2);
     });
 
@@ -153,14 +153,14 @@ describe('Store Fine-Grained Reactivity', () => {
       // Update first element - only first effect runs
       setItems('[0]', 10);
       expect(firstRuns).toBe(2);
-      expect(secondRuns).toBe(1); // ✅ Independent
-      expect(thirdRuns).toBe(1); // ✅ Independent
+      expect(secondRuns).toBe(1); // Independent
+      expect(thirdRuns).toBe(1); // Independent
 
       // Update second element - only second effect runs
       setItems('[1]', 20);
-      expect(firstRuns).toBe(2); // ✅ Independent
+      expect(firstRuns).toBe(2); // Independent
       expect(secondRuns).toBe(2);
-      expect(thirdRuns).toBe(1); // ✅ Independent
+      expect(thirdRuns).toBe(1); // Independent
     });
 
     it('should track array object properties independently', () => {
@@ -244,19 +244,19 @@ describe('Store Fine-Grained Reactivity', () => {
       setState('firstName', 'Alicia');
       expect(fullName()).toBe('Alicia Johnson');
       expect(fullNameComputeCount).toBe(2);
-      expect(ageGroupComputeCount).toBe(1); // ✅ Not recomputed
+      expect(ageGroupComputeCount).toBe(1); // Not recomputed
 
       // Update age - only ageGroup recomputes
       setState('age', 31);
       expect(ageGroup()).toBe('adult');
-      expect(fullNameComputeCount).toBe(2); // ✅ Not recomputed
+      expect(fullNameComputeCount).toBe(2); // Not recomputed
       expect(ageGroupComputeCount).toBe(2);
 
       // Update lastName - only fullName recomputes
       setState('lastName', 'Smith');
       expect(fullName()).toBe('Alicia Smith');
       expect(fullNameComputeCount).toBe(3);
-      expect(ageGroupComputeCount).toBe(2); // ✅ Not recomputed
+      expect(ageGroupComputeCount).toBe(2); // Not recomputed
     });
 
     it('should track array iteration independently from element properties', () => {
@@ -345,8 +345,8 @@ describe('Store Fine-Grained Reactivity', () => {
 
       // Update only 'c' - only 'all' effect runs
       setState('c', 30);
-      expect(aRuns).toBe(2); // ✅ Not affected
-      expect(bRuns).toBe(2); // ✅ Not affected
+      expect(aRuns).toBe(2); // Not affected
+      expect(bRuns).toBe(2); // Not affected
       expect(allRuns).toBe(3);
     });
   });
@@ -522,15 +522,15 @@ describe('Store Fine-Grained Reactivity', () => {
       });
 
       // None of the effects should run - perfect fine-grained tracking
-      expect(prop0Runs).toBe(1); // ✅ Not affected by unrelated updates
-      expect(prop50Runs).toBe(1); // ✅ Not affected by unrelated updates
-      expect(prop99Runs).toBe(1); // ✅ Not affected by unrelated updates
+      expect(prop0Runs).toBe(1); // Not affected by unrelated updates
+      expect(prop50Runs).toBe(1); // Not affected by unrelated updates
+      expect(prop99Runs).toBe(1); // Not affected by unrelated updates
 
       // Update tracked property
       setState('prop50' as any, 5000);
-      expect(prop0Runs).toBe(1); // ✅ Still not affected
-      expect(prop50Runs).toBe(2); // ✅ Only this one updates
-      expect(prop99Runs).toBe(1); // ✅ Still not affected
+      expect(prop0Runs).toBe(1); // Still not affected
+      expect(prop50Runs).toBe(2); // Only this one updates
+      expect(prop99Runs).toBe(1); // Still not affected
     });
   });
 
@@ -576,8 +576,8 @@ describe('Store Fine-Grained Reactivity', () => {
 
       // Update text - only text effect runs
       setTodos('[0].text', 'Updated Task 1');
-      expect(activeCountRuns).toBe(1); // ✅ Independent
-      expect(highPriorityRuns).toBe(1); // ✅ Independent
+      expect(activeCountRuns).toBe(1); // Independent
+      expect(highPriorityRuns).toBe(1); // Independent
       expect(firstTextRuns).toBe(2);
 
       // Update done status - array iteration triggers all array-dependent effects
@@ -653,27 +653,27 @@ describe('Store Fine-Grained Reactivity', () => {
       setUser('profile.firstName', 'Alicia');
       expect(fullName()).toBe('Alicia Johnson');
       expect(fullNameRuns).toBe(2);
-      expect(themeRuns).toBe(1); // ✅ Independent
-      expect(emailNotifRuns).toBe(1); // ✅ Independent
-      expect(statsRuns).toBe(1); // ✅ Independent
+      expect(themeRuns).toBe(1); // Independent
+      expect(emailNotifRuns).toBe(1); // Independent
+      expect(statsRuns).toBe(1); // Independent
 
       // Update theme (settings level may trigger other settings observers)
       setUser('settings.theme', 'light');
-      expect(fullNameRuns).toBe(2); // ✅ Independent
+      expect(fullNameRuns).toBe(2); // Independent
       expect(themeRuns).toBe(2);
       expect(emailNotifRuns).toBeGreaterThanOrEqual(1); // May be affected by parent update
-      expect(statsRuns).toBe(1); // ✅ Independent
+      expect(statsRuns).toBe(1); // Independent
 
       // Update email notification
       setUser('settings.notifications.email', false);
-      expect(fullNameRuns).toBe(2); // ✅ Independent
+      expect(fullNameRuns).toBe(2); // Independent
       expect(themeRuns).toBeGreaterThanOrEqual(2); // May be affected by parent update
       expect(emailNotifRuns).toBeGreaterThanOrEqual(2);
-      expect(statsRuns).toBe(1); // ✅ Independent
+      expect(statsRuns).toBe(1); // Independent
 
       // Update stats.followers (tracks posts and followers)
       setUser('stats.followers', 151);
-      expect(fullNameRuns).toBe(2); // ✅ Independent
+      expect(fullNameRuns).toBe(2); // Independent
       const themeRunsBeforeStats = themeRuns;
       const emailNotifRunsBeforeStats = emailNotifRuns;
       expect(statsRuns).toBeGreaterThanOrEqual(2);
@@ -681,9 +681,9 @@ describe('Store Fine-Grained Reactivity', () => {
       // Update following (statsRuns tracks posts and followers, not following)
       // But fine-grained tracking still means other properties are independent
       setUser('stats.following', 81);
-      expect(fullNameRuns).toBe(2); // ✅ Independent from profile
-      expect(themeRuns).toBe(themeRunsBeforeStats); // ✅ Independent from stats
-      expect(emailNotifRuns).toBe(emailNotifRunsBeforeStats); // ✅ Independent from stats
+      expect(fullNameRuns).toBe(2); // Independent from profile
+      expect(themeRuns).toBe(themeRunsBeforeStats); // Independent from stats
+      expect(emailNotifRuns).toBe(emailNotifRunsBeforeStats); // Independent from stats
       // statsRuns may or may not increment depending on parent signal behavior
     });
   });
@@ -714,11 +714,11 @@ describe('Store Fine-Grained Reactivity', () => {
       // Set 'a' - only a effect runs
       setState('a', 1);
       expect(aRuns).toBe(2);
-      expect(bRuns).toBe(1); // ✅ Independent
+      expect(bRuns).toBe(1); // Independent
 
       // Set 'b' - only b effect runs
       setState('b', 2);
-      expect(aRuns).toBe(2); // ✅ Independent
+      expect(aRuns).toBe(2); // Independent
       expect(bRuns).toBe(2);
     });
 
@@ -750,11 +750,11 @@ describe('Store Fine-Grained Reactivity', () => {
       // Update null value
       setState('value', 'hello');
       expect(valueRuns).toBe(2);
-      expect(otherRuns).toBe(1); // ✅ Independent
+      expect(otherRuns).toBe(1); // Independent
 
       // Update other
       setState('other', 100);
-      expect(valueRuns).toBe(2); // ✅ Independent
+      expect(valueRuns).toBe(2); // Independent
       expect(otherRuns).toBe(2);
     });
   });

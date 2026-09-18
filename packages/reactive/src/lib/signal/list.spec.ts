@@ -18,7 +18,7 @@ describe('mapArray (reference-keyed)', () => {
       expect(out().map((g) => g())).toEqual(['a0', 'b1']);
       expect(maps).toBe(2);
 
-      // reorder (same refs) — reuse both, only index signals change
+      // reorder (same refs): reuse both, only index signals change
       setList([b, a]);
       expect(out().map((g) => g())).toEqual(['b0', 'a1']);
       expect(maps).toBe(2);
@@ -66,10 +66,10 @@ describe('keyArray (key-function keyed)', () => {
       expect(out().map((g) => g())).toEqual(['a0', 'b1']);
       expect(maps).toBe(2);
 
-      // recreate objects with same ids + changed value — reuse by key, value updates live
+      // recreate objects with same ids + changed value: reuse by key, value updates live
       setList([{ id: 2, v: 'B' }, { id: 1, v: 'A' }]);
       expect(out().map((g) => g())).toEqual(['B0', 'A1']);
-      expect(maps).toBe(2); // no new maps — reused by key
+      expect(maps).toBe(2); // no new maps: reused by key
 
       dispose();
     });
@@ -88,7 +88,7 @@ describe('indexArray (index-keyed)', () => {
       expect(out().map((g) => g())).toEqual(['a0', 'b1']);
       expect(maps).toBe(2);
 
-      // value at index 0 changes — slot signal updates, map fn NOT re-run
+      // value at index 0 changes: slot signal updates, map fn not re-run
       setList(['X', 'b']);
       expect(out().map((g) => g())).toEqual(['X0', 'b1']);
       expect(maps).toBe(2);

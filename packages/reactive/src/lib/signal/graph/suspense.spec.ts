@@ -38,18 +38,18 @@ describe('Suspense boundary', () => {
     let value: string | undefined;
     createRoot(() => {
       provideSuspense(boundary, () => {
-        // reads data() — throws the pending promise → reported to the boundary
+        // reads data(): throws the pending promise -> reported to the boundary
         createEffect(() => {
           value = data();
         });
       });
     });
 
-    expect(boundary.inFallback()).toBe(true); // pending → fallback
+    expect(boundary.inFallback()).toBe(true); // pending -> fallback
     expect(value).toBeUndefined();
 
     await tick(20);
-    expect(boundary.inFallback()).toBe(false); // resolved → content
+    expect(boundary.inFallback()).toBe(false); // resolved -> content
     expect(value).toBe('LOADED');
   });
 

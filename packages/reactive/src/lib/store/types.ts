@@ -16,7 +16,7 @@ export type Primitive =
   | symbol
   | bigint;
 
-/** Convert a dot-path "a.b.0.c" → ["a","b",0,"c"] */
+/** Convert a dot-path "a.b.0.c" -> ["a","b",0,"c"] */
 export type SinglePath<
   T,
   Prev extends string = '',
@@ -141,7 +141,7 @@ export type PathValue<T, P = SinglePath<T>> = P extends string
       : K extends Keys<T>
       ? PathValue<T[K], Rest>
       : false
-    : // : Keys<{[K1 in keyof T as K1 extends K ? K : never]: K1 extends K ? Rest extends keyof T[K1] ? T[K1][Rest] : PathValue<T[K1], Rest> : never}>
+    : // : Keys<{[K1 in keyof T as K1 extends K ? K , never]: K1 extends K ? Rest extends keyof T[K1] ? T[K1][Rest] : PathValue<T[K1], Rest> , never}>
     P extends Keys<T>
     ? ValueOf<{ [K1 in keyof T as K1 extends P ? K1 : never]: T[K1] }>
     : never

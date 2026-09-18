@@ -25,7 +25,6 @@ import { enterReactiveRun, exitReactiveRun, reportReactiveRun, reportReactiveWri
 
 // CLEAN, the cached value is current. CHECK, a source may have changed, so verify on
 // read. DIRTY, recompute without checking.
-//
 // CHECK is what keeps a diamond from recomputing twice: a write marks direct observers
 // DIRTY and everything downstream of them CHECK, so a transitive reader asks its
 // sources whether their versions moved before it runs its own function.
@@ -82,7 +81,6 @@ export class State<T> extends Source {
     // Who wrote it: once a write has propagated, nothing else records what caused it.
     reportReactiveWrite(this, G.consumer);
     // Push: direct observers go DIRTY, their transitive observers CHECK.
-    //
     // Snapshot first. The scheduler is synchronous, so an effect can re-run part way
     // through this loop, and re-running re-subscribes it, which mutates `observers`.
     // Iterating the live Set would then reach the re-added node again, and again.
@@ -124,7 +122,7 @@ export class Computed<T> extends Source {
     return this._value as T;
   }
 
-  /** Settle: if CHECK, verify sources; if DIRTY (or never run), recompute. */
+  /** Settle, if CHECK, verify sources; if DIRTY (or never run), recompute. */
   override updateIfNecessary(): void {
     if (this.state === CHECK) {
       // Pull each source; if one recomputes to a new value it will have flipped
@@ -180,7 +178,7 @@ export class Computed<T> extends Source {
 
     if (changed) {
       this.version++;
-      // Our value moved → observers that were merely CHECK must now recompute.
+      // Our value moved -> observers that were merely CHECK must now recompute.
       if (this.observers) for (const o of [...this.observers]) o.markDirty(DIRTY);
       notifyWatchers(this);
     }
@@ -188,7 +186,7 @@ export class Computed<T> extends Source {
 
   /**
    * Push a maybe-dirty mark. A direct observer of a changed node gets DIRTY; its
-   * own observers get CHECK (recurse) — stopping where already marked, so the
+   * own observers get CHECK (recurse), stopping where already marked, so the
    * push is O(newly-dirtied) and never recomputes.
    */
   markDirty(level: NodeState): void {
@@ -214,8 +212,8 @@ function notifyWatchers(node: Source): void {
 }
 
 /**
- * Signal.subtle.Watcher — the only eager observation primitive. Its callback fires
- * when a watched signal MAY have changed; the callback MUST NOT read or write
+ * Signal.subtle.Watcher, the only eager observation primitive. Its callback fires
+ * when a watched signal MAY have changed; the callback must not read or write
  * signals. Effects are built on this and a scheduler, in `runtime.ts`.
  */
 export class Watcher {
@@ -249,7 +247,7 @@ export class Watcher {
     return out;
   }
 
-  /** @internal — a watched node became non-clean. Edge-triggered: notify once. */
+  /** @internal, a watched node became non-clean. Edge-triggered: notify once. */
   _notify(node: Source): void {
     if (!this._watched.has(node) || this._pending.has(node)) return;
     const wasEmpty = this._pending.size === 0;
@@ -258,7 +256,7 @@ export class Watcher {
   }
 }
 
-/** Signal.subtle.untrack — run `fn` without subscribing the current consumer. */
+/** Signal.subtle.untrack: run `fn` without subscribing the current consumer. */
 export function untrack<T>(fn: () => T): T {
   if (G.untracked) return fn();
   G.untracked = true;
@@ -269,7 +267,7 @@ export function untrack<T>(fn: () => T): T {
   }
 }
 
-/** Signal.subtle.currentComputed — the computed currently evaluating, or null. */
+/** Signal.subtle.currentComputed, the computed currently evaluating, or null. */
 export function currentComputed(): Computed<unknown> | null {
   return G.consumer;
 }

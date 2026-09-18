@@ -1,9 +1,9 @@
 /**
- * `resource` — `createResource` as one binding instead of a tuple.
+ * `resource`: `createResource` as one binding instead of a tuple.
  *
  *   const user = resource(userId, fetchUser);
  *
- *   user();          // the value — suspends under <Suspense>, exactly as before
+ *   user();          // the value: suspends under <Suspense>, exactly as before
  *   user.latest;     // last settled value, kept across a refetch
  *   user.loading;    // boolean
  *   user.error;
@@ -11,11 +11,11 @@
  *   user.mutate(next);
  *
  * `createResource` already hands back a callable carrying `loading`/`error`/`latest`,
- * with only the two actions split into a second tuple slot — so this mostly folds that
+ * with only the two actions split into a second tuple slot, so this mostly folds that
  * split away.
  *
- * The returned function IS the accessor `createResource` gave back, with the two actions
- * assigned onto it — so suspending, tracking and SSR seeding are untouched, and a read is
+ * The returned function is the accessor `createResource` gave back, with the two actions
+ * assigned onto it, so suspending, tracking and SSR seeding are untouched, and a read is
  * the same call it always was.
  */
 import { createResource } from './graph/resource.js';

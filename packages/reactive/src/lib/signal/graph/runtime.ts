@@ -32,10 +32,10 @@ export interface Owner {
   cleanups: Array<() => void> | null;
   owned: Owner[] | null;
   parent: Owner | null;
-  /** Context values provided at this scope — useContext walks up the parent chain. */
+  /** Context values provided at this scope: useContext walks up the parent chain. */
   contexts: Map<symbol, unknown> | null;
   /** Set once disposeOwner has torn this scope down; guards deferred work (e.g. a
-   * queued onMount) from running against — and resurrecting — a dead owner. */
+   * queued onMount) from running against, and resurrecting, a dead owner. */
   disposed?: boolean;
 }
 
@@ -44,7 +44,7 @@ export interface Owner {
  *
  * For a derivation that re-runs: context still resolves up the chain from the
  * creation-time owner, while anything registered during a run belongs to this
- * scope and can be torn down before the next one — instead of accumulating on
+ * scope and can be torn down before the next one: instead of accumulating on
  * the enclosing scope and only running when that finally dies.
  */
 export function createChildOwner(parent: Owner | null): Owner {
@@ -56,7 +56,7 @@ export function createChildOwner(parent: Owner | null): Owner {
 /**
  * Tear down a scope's children and cleanups.
  *
- * `final: false` keeps the scope itself alive and reusable — what a re-running
+ * `final: false` keeps the scope itself alive and reusable, what a re-running
  * derivation needs between runs.
  */
 export function disposeScope(owner: Owner, final = true): void {
@@ -75,13 +75,13 @@ function makeOwner(parent: Owner | null): Owner {
   return { cleanups: null, owned: null, parent, contexts: null };
 }
 
-// ── Context (TC39 has none — lives on the owner tree) ────────────────────────
+// ── Context (TC39 has none: lives on the owner tree) ────────────────────────
 export interface Context<T> {
   id: symbol;
   defaultValue: T | undefined;
-  /** Component that stamps `value` for descendants: `<Ctx.Provider value=… >children</…>`. */
-  // Returns `any` (not `unknown`) so a component whose body is `return Ctx.Provider(…)`
-  // — e.g. <Router> — stays a valid JSX component. `unknown` is not assignable to the
+  /** Component that stamps `value` for descendants: `<Ctx.Provider value={...}>children</Ctx.Provider>`. */
+  // Returns `any` (not `unknown`) so a component whose body is `return Ctx.Provider(...)`
+  //, e.g. <Router>, stays a valid JSX component. `unknown` is not assignable to the
   // JSX element type, which surfaced as TS2786 "X cannot be used as a JSX component".
   Provider: (props: { value: T; children?: unknown; debug?: boolean }) => any;
 }
@@ -91,10 +91,10 @@ export function createContext<T>(defaultValue?: T, name?: string): Context<T> {
   const id = Symbol(name ?? 'context');
   reportReactiveContextCreated(id);
   const Provider = (props: { value: T; children?: unknown; debug?: boolean }): any => {
-    // Stamp the value on a DEDICATED child owner, then read `children` under it — never
+    // Stamp the value on a DEDICATED child owner, then read `children` under it: never
     // on the current owner directly. Two sibling <Ctx.Provider> elements used inline (no
-    // wrapping component) run under the SAME ambient owner, so stamping there lets the
-    // second clobber the first's entry — every descendant then resolves the last value.
+    // wrapping component) run under the same ambient owner, so stamping there lets the
+    // second clobber the first's entry, every descendant then resolves the last value.
     // A child scope isolates each Provider; because createMemo captures the owner at
     // creation, the children memos built while reading `props.children` here capture this
     // scope and resolve the right value even when rendered lazily (Portal/Show/For).
@@ -199,18 +199,18 @@ export function runWithOwner<T>(owner: Owner | null, fn: () => T): T {
 
 /** Register a teardown for the current owner scope. */
 export function onCleanup(fn: () => void): void {
-  if (!G.owner) return; // no owner → not retained, runs never (matches Solid)
-  // A disposed owner is dead: pushing here would recreate its (nulled) cleanups
-  // array and never run — a leak. Run the teardown immediately instead, so a
+  if (!G.owner) return; // no owner -> not retained, runs never (matches Solid)
+  // A disposed owner is dead, pushing here would recreate its (nulled) cleanups
+  // array and never run, a leak. Run the teardown immediately instead, so a
   // teardown registered from deferred work (a queued onMount) still fires.
   if (G.owner.disposed) { fn(); return; }
   (G.owner.cleanups ??= []).push(fn);
 }
 
-// `final` distinguishes a permanent teardown (the scope is gone — mark it disposed so
+// `final` distinguishes a permanent teardown (the scope is gone: mark it disposed so
 // deferred work bails) from an effect's between-runs cleanup (the owner is REUSED for
-// the next run, so it must NOT be marked disposed). Children are always torn down
-// permanently — only the effect's own owner survives a re-run.
+// the next run, so it must not be marked disposed). Children are always torn down
+// permanently, only the effect's own owner survives a re-run.
 function disposeOwner(owner: Owner, final = true): void {
   if (owner.disposed) return;
   if (owner.owned) {
@@ -237,7 +237,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
   }
 }
 
-// ── Scheduler (TC39 has none) — state on G (see ./state.ts) ───────────────────
+// ── Scheduler (TC39 has none): state on G (see ./state.ts) ───────────────────
 export function setScheduler(fn: ((run: () => void) => void) | null): void {
   G.hostSchedule = fn ?? ((run) => void Promise.resolve().then(run));
 }
@@ -277,8 +277,8 @@ export function flushSync(): void {
 }
 
 /**
- * Run pending effects after a write completes — but only at the top level (not
- * inside a batch). A single write thus marks the WHOLE graph dirty first, then
+ * Run pending effects after a write completes, but only at the top level (not
+ * inside a batch). A single write thus marks the whole graph dirty first, then
  * flushes once (legacy-equivalent synchronous effects, glitch-free). The `G.flushing`
  * guard makes a write inside an effect a no-op here (the running loop drains it).
  */
@@ -296,7 +296,7 @@ export function batch<T>(fn: () => T): T {
   }
 }
 
-// ── effect() — built on Computed + Watcher + Owner ───────────────────────────
+// ── effect(): built on Computed + Watcher + Owner ───────────────────────────
 class EffectNode {
   private readonly computed: Computed<void>;
   private readonly watcher: Watcher;
@@ -306,7 +306,7 @@ class EffectNode {
 
   constructor(fn: () => void | (() => void), report = false) {
     this.owner = makeOwner(G.owner);
-    // Tie disposal to the creating scope: when the parent owner tears down it must
+    // Tie disposal to the creating scope, when the parent owner tears down it must
     // fully dispose this effect (unwatch + body cleanups), not just run the body
     // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
     if (G.owner) (G.owner.cleanups ??= []).push(() => this.dispose());
@@ -314,7 +314,7 @@ class EffectNode {
     // The Computed runs the user fn inside a tracking scope + this effect's owner,
     // so reads subscribe and onCleanup/nested roots attach here.
     this.computed = new Computed<void>(() => {
-      // teardown previous run's cleanups before re-running — NOT final: the owner is
+      // teardown previous run's cleanups before re-running. not final: the owner is
       // reused for this run, so it must stay alive (only its children are disposed).
       disposeOwner(this.owner, false);
       runWithOwner(this.owner, () => {

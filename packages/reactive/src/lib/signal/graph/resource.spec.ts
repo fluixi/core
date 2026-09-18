@@ -10,8 +10,8 @@ afterEach(() => {
   setServerDataGetter(null);
 });
 
-describe('resource port — async fetch', () => {
-  it('loading → ready with the resolved value', async () => {
+describe('resource port: async fetch', () => {
+  it('loading -> ready with the resolved value', async () => {
     const [data] = createResource(() => Promise.resolve('hello'));
     expect(data.loading).toBe(true);
     expect(data.latest).toBeUndefined();
@@ -51,8 +51,8 @@ describe('resource port — async fetch', () => {
   });
 });
 
-describe('resource port — SSR seeding (reuses the legacy __FX_DATA__ hooks)', () => {
-  it('seeds from server data and does NOT fetch on the first run', async () => {
+describe('resource port. SSR seeding (reuses the legacy __FX_DATA__ hooks)', () => {
+  it('seeds from server data and does not fetch on the first run', async () => {
     let rid = 0;
     setResourceIdSource(() => `r${rid++}`);
     setServerDataGetter((id) => (id === 'r0' ? { value: 'from-server' } : undefined));

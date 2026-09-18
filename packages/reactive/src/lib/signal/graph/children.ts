@@ -1,5 +1,5 @@
 /**
- * readChildren — resolve a children thunk into a reactive accessor: unwrap nested
+ * readChildren: resolve a children thunk into a reactive accessor, unwrap nested
  * thunks, flatten arrays, and stop at signals/memos so they stay reactive. Built on
  * the TC39 memo (compat), so the resolution tracks TC39 signals correctly.
  */

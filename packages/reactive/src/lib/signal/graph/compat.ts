@@ -36,9 +36,9 @@ function isThenable(v: unknown): v is Promise<unknown> {
 export { createRoot, onCleanup, getOwner, setOwner, runWithOwner } from './runtime.js';
 
 // Compat owns all flush points (afterWrite / batch), so the host scheduler is a
-// no-op: enqueue only QUEUES; a write marks the whole graph then flushes once via
+// no-op: enqueue only queues; a write marks the whole graph then flushes once via
 // afterWrite. This separates marking from running (glitch-free, legacy-equivalent
-// synchronous effects) — a synchronous scheduler that flushed mid-propagation would
+// synchronous effects), a synchronous scheduler that flushed mid-propagation would
 // run effects before all observers were marked.
 setScheduler(() => {});
 
@@ -62,7 +62,7 @@ export interface MemoOptions<T> extends SignalOptions<T> {
   initial?: T;
 }
 
-/** createSignal — a writable cell, returned as the legacy `[get, set]` tuple. */
+/** createSignal, a writable cell, returned as the legacy `[get, set]` tuple. */
 export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T> {
   const state = new State<T>(value, { equals: options?.equals });
   const read = (() => state.get()) as Accessor<T>;
@@ -99,7 +99,7 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
   return [read, write];
 }
 
-/** createMemo — a lazy, cached derived value (legacy accessor). */
+/** createMemo, a lazy, cached derived value (legacy accessor). */
 export function createMemo<T>(
   fn: (prev?: T) => T,
   value?: T,
@@ -107,7 +107,7 @@ export function createMemo<T>(
 ): Accessor<T> {
   let prev = value;
   // Capture the owner at creation so the memo's fn (and any component it renders, e.g.
-  // a lazy route) runs under THIS scope's owner — preserving context up the owner chain
+  // a lazy route) runs under this scope's owner, preserving context up the owner chain
   // even when the memo recomputes later (async SSR drain). Matches legacy memo semantics.
   const owner = getOwner();
   const c = new Computed<T>(
@@ -129,21 +129,21 @@ export function createMemo<T>(
     { equals: options?.equals },
   );
   const read = (() => c.get()) as Accessor<T>;
-  // A memo IS a readable reactive accessor — stamp $SIGNAL (matching the legacy
+  // A memo is a readable reactive accessor: stamp $SIGNAL (matching the legacy
   // createMemo) so `isSignal(memo)` is true. Without this, the DOM runtime's
   // insert() fails to recognise a control-flow memo (For/Switch/Index/Dynamic)
-  // as reactive, caches it as a component, and freezes it → updates never apply.
+  // as reactive, caches it as a component, and freezes it -> updates never apply.
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
   reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
-  // A memo has no dispose of its own — it goes when its owner does. Without saying so, a
+  // A memo has no dispose of its own, it goes when its owner does. Without saying so, a
   // list that re-renders leaves every row it ever had in a watcher's graph.
   if (isObserved()) l1onCleanup(() => reportReactiveDispose(c));
   return read;
 }
 
 /**
- * createEffect — a re-running side effect. The fn receives the previous return
+ * createEffect, a re-running side effect. The fn receives the previous return
  * value and may return a new one (legacy signature) or a cleanup function.
  */
 export function createEffect<T>(
@@ -153,7 +153,7 @@ export function createEffect<T>(
   let prev = value;
   return l1effect(() => {
     const r = fn(prev);
-    // A function result is treated as the next "prev" (legacy) — unless the fn
+    // A function result is treated as the next "prev" (legacy), unless the fn
     // never returns one, in which case onCleanup is the cleanup path. We keep the
     // legacy carry-the-value behaviour; cleanups use onCleanup.
     prev = r as T;
@@ -161,7 +161,7 @@ export function createEffect<T>(
 }
 
 /**
- * createComputed — an EAGER, owner-managed reactive computation (returns void).
+ * createComputed, an EAGER, owner-managed reactive computation (returns void).
  * Unlike a lazy memo it runs immediately and re-runs eagerly when a dep changes;
  * used for derivations with side effects, such as store internals. It is an eager
  * effect whose dispose is owned by the current scope.
@@ -174,7 +174,7 @@ export function createComputed<T>(fn: (prev?: T) => T, value?: T): void {
 }
 
 /**
- * createRenderEffect — an effect that runs in the render phase. For the reactive
+ * createRenderEffect, an effect that runs in the render phase. For the reactive
  * core this is an eager effect (the render-vs-commit timing distinction is a DOM-
  * layer concern); returns a dispose like createEffect.
  */
@@ -188,18 +188,18 @@ export function createRenderEffect<T>(
   });
 }
 
-/** batch — coalesce writes so dependent effects flush once. */
+/** batch: coalesce writes so dependent effects flush once. */
 export function batch<T>(fn: () => T): T {
   return l1batch(fn);
 }
 
-/** untrack — read without subscribing. */
+/** untrack: read without subscribing. */
 export function untrack<T>(fn: () => T): T {
   return l0untrack(fn);
 }
 
 /**
- * startTransition — run `fn`'s updates as one batch. (Minimal port: the concurrent
+ * startTransition: run `fn`'s updates as one batch. (Minimal port, the concurrent
  * time-slicing/deferral of the legacy implementation is a later refinement; the
  * batched-commit semantics that callers rely on are preserved.)
  */
@@ -208,7 +208,7 @@ export function startTransition(fn: () => void): Promise<void> {
   return Promise.resolve();
 }
 
-/** useTransition — `[isPending, startTransition]`. isPending is synchronous here (no deferral). */
+/** useTransition: `[isPending, startTransition]`. isPending is synchronous here (no deferral). */
 export function useTransition(): [() => boolean, (fn: () => void) => Promise<void>] {
   return [() => false, startTransition];
 }
@@ -217,7 +217,7 @@ export function useTransition(): [() => boolean, (fn: () => void) => Promise<voi
 export { flushSync };
 
 /**
- * flush — drain pending effects, returning a Promise (legacy `flush()` is async; many
+ * flush: drain pending effects, returning a Promise (legacy `flush()` is async; many
  * callers do `flush().then(...)`). Effects already flush synchronously on each write via
  * afterWrite, so this just settles any remainder and resolves.
  */
@@ -227,7 +227,7 @@ export function flush(): Promise<void> {
 }
 
 /**
- * on(deps, fn, { defer }) — an explicit-dependency helper. Reads `deps` (tracked),
+ * on(deps, fn, { defer }), an explicit-dependency helper. Reads `deps` (tracked),
  * then runs `fn(value, prevValue, prevResult)` untracked. `defer` skips the first run.
  */
 export function on<D, R>(

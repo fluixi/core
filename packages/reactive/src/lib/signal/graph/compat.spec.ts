@@ -12,9 +12,9 @@ import {
 } from './compat.js';
 
 // These mirror the legacy core semantics: tuple signals, lazy memos, and effects
-// that flush SYNCHRONOUSLY on a write (no microtask) — proving compat is a drop-in.
+// that flush synchronously on a write (no microtask), proving compat is a drop-in.
 
-describe('compat — createSignal', () => {
+describe('compat: createSignal', () => {
   it('tuple get/set + functional updater + equality', () => {
     const [count, setCount] = createSignal(0);
     expect(count()).toBe(0);
@@ -25,7 +25,7 @@ describe('compat — createSignal', () => {
   });
 });
 
-describe('compat — createMemo', () => {
+describe('compat: createMemo', () => {
   it('lazy + memoized; recomputes only on real change', () => {
     const runs = vi.fn();
     const [a, setA] = createSignal(2);
@@ -51,7 +51,7 @@ describe('compat — createMemo', () => {
   });
 });
 
-describe('compat — createEffect (synchronous flush on write, legacy semantics)', () => {
+describe('compat: createEffect (synchronous flush on write, legacy semantics)', () => {
   it('runs immediately, then synchronously on each dep change', () => {
     const [a, setA] = createSignal(1);
     const seen: number[] = [];
@@ -97,7 +97,7 @@ describe('compat — createEffect (synchronous flush on write, legacy semantics)
   });
 });
 
-describe('compat — createComputed (eager)', () => {
+describe('compat: createComputed (eager)', () => {
   it('runs immediately and re-runs eagerly on dep change', () => {
     const [a, setA] = createSignal(1);
     const [mirror, setMirror] = createSignal(0);
@@ -108,7 +108,7 @@ describe('compat — createComputed (eager)', () => {
   });
 });
 
-describe('compat — batch / untrack / on', () => {
+describe('compat: batch / untrack / on', () => {
   it('batch coalesces writes into a single synchronous effect run', () => {
     const [a, setA] = createSignal(1);
     const [b, setB] = createSignal(10);
@@ -132,7 +132,7 @@ describe('compat — batch / untrack / on', () => {
     const seen: number[] = [];
     createEffect(() => seen.push(a() + untrack(() => b())));
     expect(seen).toEqual([101]);
-    setB(200); // untracked → no run
+    setB(200); // untracked -> no run
     expect(seen).toEqual([101]);
     setA(2);
     expect(seen).toEqual([101, 202]);
@@ -148,7 +148,7 @@ describe('compat — batch / untrack / on', () => {
   });
 });
 
-describe('compat — createRoot', () => {
+describe('compat: createRoot', () => {
   it('disposal tears down nested effects', () => {
     const [a, setA] = createSignal(1);
     const seen: number[] = [];
@@ -168,11 +168,11 @@ describe('compat — createRoot', () => {
 
 // Regression: the DOM runtime detects reactivity via marker symbols ($SIGNAL via
 // isSignal, $RESOURCE via isResource). insert()/control-flow treat a non-signal
-// function as a component → cache & FREEZE it after first render. The TC39 compat
+// function as a component -> cache & FREEZE it after first render. The TC39 compat
 // layer once dropped these markers (memos had only $MEMO; resources had none),
 // which froze For/Switch/Index/Dynamic and resource reads after the first paint.
 // Keep them tagged to match the legacy core.
-describe('compat — reactive detection markers (legacy parity)', () => {
+describe('compat: reactive detection markers (legacy parity)', () => {
   const $SIGNAL = Symbol.for('signal');
   const $RESOURCE = Symbol.for('resource');
 
@@ -181,7 +181,7 @@ describe('compat — reactive detection markers (legacy parity)', () => {
       const [a] = createSignal(1);
       const m = createMemo(() => a() + 1);
       expect((a as any)[$SIGNAL]).toBe(true);
-      expect((m as any)[$SIGNAL]).toBe(true); // memos MUST be isSignal-detectable
+      expect((m as any)[$SIGNAL]).toBe(true); // memos have to be isSignal-detectable
       d();
     });
   });

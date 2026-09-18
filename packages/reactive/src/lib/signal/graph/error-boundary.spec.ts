@@ -14,7 +14,7 @@ describe('error boundary', () => {
       });
     });
     expect(boundary.error()).toBeUndefined();
-    setExplode(true); // effect re-runs → throws → routed to boundary
+    setExplode(true); // effect re-runs -> throws -> routed to boundary
     expect((boundary.error() as Error).message).toBe('boom');
   });
 
@@ -31,7 +31,7 @@ describe('error boundary', () => {
       });
     });
     expect((boundary.error() as Error).message).toBe('boom');
-    setExplode(false); // fix the cause → effect re-runs cleanly
+    setExplode(false); // fix the cause -> effect re-runs cleanly
     boundary.reset();
     expect(boundary.error()).toBeUndefined();
     expect(ran).toBeGreaterThanOrEqual(2);

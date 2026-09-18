@@ -53,7 +53,7 @@ describe('createResource (core reactive primitive)', () => {
   });
 
   // it("registers with nearest Suspense boundary", async () => {
-  //   let resolve!: (v: number) => void;
+  //   let resolve!: (v, number) => void;
 
   //   const fetcher = () =>
   //     new Promise<number>(r => {
@@ -163,7 +163,7 @@ describe('createResource (core reactive primitive)', () => {
   });
 
   // it("supports nested suspense", async () => {
-  //   let resolve!: (v: string) => void;
+  //   let resolve!: (v, string) => void;
 
   //   const fetcher = () =>
   //     new Promise<string>(r => {

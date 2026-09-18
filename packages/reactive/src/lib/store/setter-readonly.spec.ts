@@ -3,7 +3,7 @@
  * `setB(untrackStore(a))` is how state gets seeded or reset, and the setter only
  * copies values out of what it is given.
  *
- * These assert at compile time — each case has to typecheck. The runtime
+ * These assert at compile time, each case has to typecheck. The runtime
  * expectations are there so a type cannot pass for the wrong reason.
  */
 import { describe, it, expect } from 'vitest';
@@ -39,7 +39,7 @@ describe('a setter takes what the store gives back', () => {
   });
 
   it('accepts a plain readonly object, not only a store snapshot', () => {
-    // The widening is structural: anything deeply readonly works, not just the exact
+    // The widening is structural, anything deeply readonly works, not just the exact
     // type `untrackStore` returns.
     const frozen: Readonly<{ title: string; tags: readonly string[] }> = { title: 'b', tags: ['y'] };
     const [target, setTarget] = createStore<State>(initial());

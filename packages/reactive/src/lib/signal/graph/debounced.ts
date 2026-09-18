@@ -18,7 +18,7 @@ import type { ResourceFetcherInfo, ResourceReturn } from './resource.js';
 
 /** Controls beyond reading and writing the value. */
 export interface DebounceControls<T> {
-  /** The value as written, before the delay — bind a controlled input to this. */
+  /** The value as written, before the delay: bind a controlled input to this. */
   immediate: Accessor<T>;
   /** True while a write is waiting to settle. Distinct from a request in flight. */
   pending: Accessor<boolean>;
@@ -61,7 +61,7 @@ export function createDebouncedSignal<T>(
 
   const settle = (): T => {
     clear();
-    // untrack: settling is a write, and must not subscribe whoever triggered it.
+    // untrack, settling is a write, and must not subscribe whoever triggered it.
     const value = untrack(immediate);
     setSettled(() => value);
     setPending(false);
@@ -92,7 +92,7 @@ export interface DebouncedResourceOptions<T> {
   initialValue?: T;
   /**
    * Whether a settled query should be fetched at all. Defaults to rejecting
-   * `undefined`, `null` and `''` — an empty search box shouldn't hit the network.
+   * `undefined`, `null` and `''`, an empty search box shouldn't hit the network.
    */
   shouldFetch?: (query: unknown) => boolean;
 }
@@ -109,7 +109,7 @@ function meaningful(query: unknown): boolean {
 }
 
 /**
- * A resource driven by a debounced query — search-as-you-type, as one primitive.
+ * A resource driven by a debounced query: search-as-you-type, as one primitive.
  *
  * Two waiting states exist and they are not the same thing: `pending` is "the user
  * is still typing", `resource.loading` is "a request is in flight". A UI that
@@ -123,8 +123,8 @@ function meaningful(query: unknown): boolean {
  *   createDebouncedResource('', (q) => api.search(q));
  *
  * <input value={immediate()} onInput={(e) => setQuery(e.currentTarget.value)} />
- * <Show when={pending()}>typing…</Show>
- * <Show when={results.loading}>searching…</Show>
+ * <Show when={pending()}>typing...</Show>
+ * <Show when={results.loading}>searching...</Show>
  * ```
  */
 export function createDebouncedResource<T, S>(
@@ -136,7 +136,7 @@ export function createDebouncedResource<T, S>(
   const [query, setQuery, controls] = createDebouncedSignal(initial, delay);
 
   // createResource treats a falsy source as "don't fetch", which is exactly the
-  // empty-query case — so the predicate rides on the source rather than the fetcher.
+  // empty-query case, so the predicate rides on the source rather than the fetcher.
   const source = (): S | false => (shouldFetch(query()) ? query() : false);
 
   const [resource, { refetch }] = createResource<T, S>(

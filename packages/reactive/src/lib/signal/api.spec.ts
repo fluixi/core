@@ -21,7 +21,7 @@ describe('signal', () => {
   });
 
   it('is the accessor createSignal returned, with the setter on it', () => {
-    // Not a copy of the machinery — the same function, so a read is the same call.
+    // Not a copy of the machinery, the same function, so a read is the same call.
     const count = signal(0);
     expect(typeof count).toBe('function');
     count.set(3);

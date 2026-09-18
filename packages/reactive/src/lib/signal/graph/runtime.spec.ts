@@ -19,7 +19,7 @@ describe('runtime: effect', () => {
     a.set(2);
     flushSync();
     expect(seen).toEqual([1, 2]);
-    a.set(2); // equal → no run
+    a.set(2); // equal -> no run
     flushSync();
     expect(seen).toEqual([1, 2]);
   });
@@ -49,7 +49,7 @@ describe('runtime: effect', () => {
     expect(log).toEqual(['run 0', 'cleanup 0', 'run 1']);
     dispose();
     expect(log).toEqual(['run 0', 'cleanup 0', 'run 1', 'cleanup 1']);
-    a.set(2); // disposed → nothing
+    a.set(2); // disposed -> nothing
     flushSync();
     expect(log).toEqual(['run 0', 'cleanup 0', 'run 1', 'cleanup 1']);
   });
@@ -72,7 +72,7 @@ describe('runtime: effect', () => {
     const seen: number[] = [];
     effect(() => seen.push(a.get()));
     a.set(2);
-    expect(seen).toEqual([1]); // not yet — scheduled
+    expect(seen).toEqual([1]); // not yet: scheduled
     await Promise.resolve();
     expect(seen).toEqual([1, 2]);
   });
@@ -93,7 +93,7 @@ describe('runtime: batch', () => {
       a.set(2);
       b.set(20);
     });
-    expect(run).toHaveBeenCalledTimes(2); // once, after the batch — not twice
+    expect(run).toHaveBeenCalledTimes(2); // once, after the batch, not twice
   });
 });
 
@@ -110,7 +110,7 @@ describe('runtime: ownership', () => {
     a.set(2);
     flushSync();
     expect(seen).toEqual([1, 2]);
-    dispose(); // disposes the root → its effect
+    dispose(); // disposes the root -> its effect
     a.set(3);
     flushSync();
     expect(seen).toEqual([1, 2]); // effect gone

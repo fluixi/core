@@ -9,7 +9,7 @@ function clone<T>(value: T): T {
 }
 
 /**
- * Creates a producer function for immutable updates: `set(produce(draft => …))`.
+ * Creates a producer function for immutable updates: `set(produce(draft => ...))`.
  * The producer mutates a clone; the result replaces the state.
  */
 function produce<T>(producer: Producer<T>): (state: T) => T {

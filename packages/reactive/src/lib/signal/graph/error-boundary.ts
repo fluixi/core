@@ -31,7 +31,7 @@ const ErrorContext = createContext<InternalBoundary | undefined>();
 // Wire the runtime effect's error path to the nearest boundary. Registered once.
 setErrorHandler((error: unknown, owner: Owner | null): boolean => {
   const boundary = readContextFrom(owner, ErrorContext);
-  if (!boundary) return false; // no boundary → not handled (rethrows)
+  if (!boundary) return false; // no boundary -> not handled (rethrows)
   boundary.setError(error);
   return true;
 });

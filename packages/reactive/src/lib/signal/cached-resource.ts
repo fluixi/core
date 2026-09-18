@@ -32,21 +32,21 @@
  *   );
  *
  * Options:
- *   ttl                  — cache lifetime in ms. Default: Infinity (manual invalidate only)
- *   name                 — cache namespace. If omitted, each call-site gets its own isolated cache.
- *   staleWhileRevalidate — when true (default), show stale data while background-fetching.
+ *   ttl: cache lifetime in ms. Default: Infinity (manual invalidate only)
+ *   name: cache namespace. If omitted, each call-site gets its own isolated cache.
+ *   staleWhileRevalidate, when true (default), show stale data while background-fetching.
  *                          When false, show a loading state during revalidation.
  *
  * Resource shape (same as createResource):
- *   data()        — current value (throws pending promise during initial load for Suspense)
- *   data.loading  — true during initial load
- *   data.latest   — value without throwing
- *   data.error    — last error
- *   data.stale    — true when showing stale data during background revalidation
+ *   data(): current value (throws pending promise during initial load for Suspense)
+ *   data.loading: true during initial load
+ *   data.latest: value without throwing
+ *   data.error: last error
+ *   data.stale: true when showing stale data during background revalidation
  *
  * Actions:
- *   refetch()     — force re-fetch regardless of TTL, keeps showing current value while loading
- *   invalidate()  — delete cache entry and re-fetch (shows loading on next read)
+ *   refetch(): force re-fetch regardless of TTL, keeps showing current value while loading
+ *   invalidate(): delete cache entry and re-fetch (shows loading on next read)
  */
 
 import {
@@ -78,7 +78,7 @@ let _autoId = 0;
 export interface CachedResourceOptions {
   /**
    * Cache lifetime in milliseconds.
-   * Default: `Infinity` — data lives until `invalidate()` is called.
+   * Default: `Infinity`, data lives until `invalidate()` is called.
    */
   ttl?: number;
   /**
@@ -90,7 +90,7 @@ export interface CachedResourceOptions {
   /**
    * When `true` (default), stale data is returned immediately while a
    * background re-fetch runs. The resource stays in `state='ready'` and
-   * `stale=true` during revalidation — no loading skeleton.
+   * `stale=true` during revalidation, no loading skeleton.
    *
    * When `false`, a foreground re-fetch is triggered that sets
    * `state='refreshing'` (data is still visible but `loading=true`).
@@ -123,7 +123,7 @@ const $RESOURCE = Symbol.for('resource');
 // ── Implementation ─────────────────────────────────────────────────────────────
 
 /**
- * No-source overload — fetch is not keyed by any reactive value.
+ * No-source overload: fetch is not keyed by any reactive value.
  */
 export function createCachedResource<T>(
   fetcher: () => Promise<T> | T,
@@ -131,7 +131,7 @@ export function createCachedResource<T>(
 ): CachedResourceReturn<T>;
 
 /**
- * With-source overload — fetch re-runs whenever the source accessor returns a
+ * With-source overload: fetch re-runs whenever the source accessor returns a
  * new value (falsy source suspends the fetch, same as `createResource`).
  */
 export function createCachedResource<T, S>(
@@ -155,7 +155,7 @@ export function createCachedResource<T, S = true>(
     fetchFn = fetcherOrOptions;
     options = opts;
   } else {
-    // No source — treat the first arg as fetcher, source = () => true
+    // No source: treat the first arg as fetcher, source = () => true
     sourceFn = () => true as unknown as S;
     fetchFn = sourceOrFetcher as unknown as (key: S) => Promise<T> | T;
     options = (fetcherOrOptions as CachedResourceOptions) ?? opts;
@@ -285,7 +285,7 @@ export function createCachedResource<T, S = true>(
 
     // ── Cache HIT (fresh) ─────────────────────────────────────────────────
     if (cached && isFresh(cached) && !doRefetch && !doInvalidate) {
-      // Serve synchronously — no loading state, no fetch.
+      // Serve synchronously, no loading state, no fetch.
       const cur = untrack(resourceState);
       if (cur !== 'ready' || untrack(value) !== cached.value) {
         batch(() => {
@@ -325,7 +325,7 @@ export function createCachedResource<T, S = true>(
   });
 
   // ── Resource accessor ─────────────────────────────────────────────────────
-  // During 'pending': throw the pending promise → Suspense shows skeleton.
+  // During 'pending': throw the pending promise -> Suspense shows skeleton.
   // During 'refreshing': return stale value (no Suspense regression).
   // During 'ready'/'errored': return value or throw error.
   const resource = (() => {

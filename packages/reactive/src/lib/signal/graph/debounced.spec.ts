@@ -63,7 +63,7 @@ describe('createDebouncedSignal', () => {
     });
   });
 
-  it('flushes on demand — what Enter needs', () => {
+  it('flushes on demand: what Enter needs', () => {
     createRoot(() => {
       const [settled, set, { flush, pending }] = createDebouncedSignal('', 300);
       set('go');
@@ -137,7 +137,7 @@ describe('createDebouncedResource', () => {
       );
 
       setQuery('a');
-      // Typing, but nothing has been asked for yet — conflating these is what makes
+      // Typing, but nothing has been asked for yet, conflating these is what makes
       // a search box flicker on every keystroke.
       expect(pending()).toBe(true);
       expect(resource.loading).toBe(false);

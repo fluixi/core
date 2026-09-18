@@ -2,8 +2,8 @@
  * A place for a tool to watch the reactive graph from outside it.
  *
  * The runtime says a node exists, a computation re-ran, or an effect went away, and hands
- * over the node itself. It does nothing else. Edges are already on the node — a source keeps
- * its `observers`, a consumer keeps its `sources` — so a watcher reads the graph rather than
+ * over the node itself. It does nothing else. Edges are already on the node, a source keeps
+ * its `observers`, a consumer keeps its `sources`, so a watcher reads the graph rather than
  * reconstructing it, and nothing here wraps or replaces a primitive.
  *
  * Nothing is registered by default: an unwatched runtime pays one null check per node
@@ -12,7 +12,7 @@
  * @fluixi/devtools is the intended caller. Nothing in the framework reads it back.
  *
  * The observer lives on the shared graph state rather than in a module `let`, so a bundle
- * carrying two copies of this module still has one observer — the same reason G exists.
+ * carrying two copies of this module still has one observer, the same reason G exists.
  */
 import { G } from './state.js';
 import { VERSION } from '../../../version.generated.js';
@@ -29,24 +29,24 @@ export interface ReactiveNodeReport {
   name?: string;
   /**
    * How to write it, for a signal. A watcher setting the value through this goes through
-   * the same path the application does — writing the node directly marks its readers dirty
+   * the same path the application does, writing the node directly marks its readers dirty
    * without ever flushing them, so the page keeps whatever it last rendered.
    */
   set?: (value: unknown) => void;
   /**
    * The node this one was built for. A store creates a signal per key, lazily, wherever it
-   * is first read — the useful location is the store's, not the reader's.
+   * is first read, the useful location is the store's, not the reader's.
    */
   origin?: unknown;
   /**
-   * The node is the framework's own plumbing — a render effect, one per dom binding. A graph
+   * The node is the framework's own plumbing, a render effect, one per dom binding. A graph
    * does not show these, but it needs to know they exist: a row added to a list is created
    * inside one, and without it the row has no ancestor it can be attached to.
    */
   internal?: boolean;
   /**
    * The computations running when this node was made, outermost first. A component's wrapper
-   * memo reads nothing itself, so what it created is the only thing tying it to the graph —
+   * memo reads nothing itself, so what it created is the only thing tying it to the graph
    * and the whole chain is given because the nearest one is often a render effect, which no
    * graph shows.
    *
@@ -62,15 +62,15 @@ export interface ReactiveObserver {
   /** An effect was disposed. Memos and signals go with their owner and are not reported. */
   disposed?(node: unknown): void;
   /**
-   * A signal was written, and by which computation — nothing, when the write came from an
+   * A signal was written, and by which computation, nothing, when the write came from an
    * event handler, which is where most of them come from.
    */
   wrote?(node: unknown, by: unknown): void;
   /**
    * A node now belongs somewhere else, and is called something else.
    *
-   * A store write replaces the object that held a value — `set({ items: [...items, one] })`
-   * builds a new array — and the signals underneath it are the same signals in a new place.
+   * A store write replaces the object that held a value: `set({ items: [...items, one] })`
+   * builds a new array, and the signals underneath it are the same signals in a new place.
    * Without this they keep pointing at a node that no longer exists.
    */
   moved?(node: unknown, origin: unknown, name?: string): void;
@@ -121,7 +121,7 @@ export interface ReactiveObserver {
 /**
  * Watch the graph. Returns a function that stops watching.
  *
- * One observer at a time — the last to register wins. Two tools watching one page at once is
+ * One observer at a time, the last to register wins. Two tools watching one page at once is
  * not a case worth carrying state for.
  */
 export function observeReactiveNodes(next: ReactiveObserver): () => void {
@@ -256,7 +256,7 @@ export function reportReactiveDispose(node: unknown): void {
  * have to import a debugger to be debuggable. So a tool sets this global before any of the
  * app loads, and the runtime hands it the door on the way past.
  *
- * Set it too late and nothing happens — the runtime only offers once, when this module is
+ * Set it too late and nothing happens, the runtime only offers once, when this module is
  * first evaluated. A browser agent has to run at document_start for that reason.
  */
 const HOOK = '__FLUIXI_DEVTOOLS_HOOK__';
