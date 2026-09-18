@@ -142,8 +142,8 @@ export type UpdateValue<V> = V extends Primitive
 /**
  * The shape a store hands back when read, which the setter also accepts.
  *
- * `set(untrackStore(other))` is a call the setter handles fine — it copies values out
- * of what it is given and never writes to it — but a mutable-only input type rejected
+ * `set(untrackStore(other))` is a call the setter handles fine, it copies values out
+ * of what it is given and never writes to it, but a mutable-only input type rejected
  * it, so every such site needed a cast.
  */
 export type DeepReadonly<T> = T extends ImmutablePrimitive
@@ -272,7 +272,48 @@ export type SetterArgs<T> =
 // } & (T extends readonly any[] ? ArrayStoreMethods<T> : {});
 
 // Merge Array methods if T is an array
-export interface SetStoreFunction<T> {
+/**
+ * The methods `createStore` hangs off the setter.
+ *
+ * They were attached at runtime and absent from this type, so every one of them was an
+ * error at the call site despite working. Each takes a dot path, or no path at all
+ * where the root is the target.
+ */
+export interface StoreSetterMethods<T> {
+  /** Read the current state without subscribing. */
+  get(): T;
+  /** Read a slice without subscribing. */
+  select<U>(selector: (state: T) => U): U;
+  /** Run `fn` on every change to the selected slice. */
+  watch<U>(selector: (state: T) => U, fn: (value: U) => void): () => void;
+  /** Subscribe to whole-state changes. */
+  subscribe(fn: (state: T) => void): () => void;
+  /** Mutate a draft; the result is applied as one change. */
+  produce(recipe: (draft: T) => void): void;
+  /** Merge `value` in, keeping the nodes of anything that compares equal. */
+  reconcile(value: T, options?: { key?: string; merge?: boolean }): void;
+
+  push(path: string, ...items: unknown[]): void;
+  pop(path: string): unknown;
+  shift(path: string): unknown;
+  splice(path: string, start: number, deleteCount: number, ...items: unknown[]): unknown[];
+  insert(path: string, index: number, value: unknown): void;
+  removeAt(path: string, index: number): unknown[];
+
+  /** Swap a whole value instead of merging into it. No path means the root. */
+  replace(value: unknown): void;
+  replace(path: string, value: unknown): void;
+  /** Empty an array, or strip an object's keys. No path means the root. */
+  clear(path?: string): void;
+
+  /** The plain, non-reactive value. */
+  unwrap(): T;
+  toObservable(): unknown;
+  /** The reactive accessor for a path. */
+  $(path?: string): unknown;
+}
+
+export interface SetStoreFunction<T> extends StoreSetterMethods<T> {
   // 1. Root Object Update: set({ name: 'John' })
   (value: UpdateValue<T>): void;
 
@@ -325,7 +366,7 @@ export interface SetStoreFunction<T> {
     k2: K2,
     value: UpdateValue<V>
   ): void;
-  //   <K extends any[]>(...args: [...K, UpdateValue<any>]): void;
+  //   <K extends any[]>(...args: [...K, UpdateValue<any>]), void;
 }
 
 export type SetStore<T> = SetStoreFunction<T> &

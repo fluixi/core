@@ -126,7 +126,7 @@ function createDataNode(initial?: any, ns?: NodeStore, key?: PropertyKey): DataN
 function nodesOf(target: object): NodeStore {
   let ns = NODES.get(target);
   if (!ns) NODES.set(target, (ns = { keys: new Map(), owner: OWNERS.get(target), array: Array.isArray(target) }));
-  // An object can be reached before the store has claimed it — a write touches it, or it is
+  // An object can be reached before the store has claimed it, a write touches it, or it is
   // read through something other than its parent's proxy. Caching "no owner" there would
   // leave every key signal it ever makes unnamed and unattached.
   else if (!ns.owner) ns.owner = OWNERS.get(target);
@@ -166,7 +166,7 @@ function trackKeys(target: object): void {
   const ns = nodesOf(target);
   // Which keys exist, as opposed to what any one of them holds. It has no value of its own,
   // so a graph would otherwise show an unexplained empty node the first time a list is
-  // iterated — which is exactly when one appears.
+  // iterated, which is exactly when one appears.
   (ns.all || (ns.all = createDataNode(undefined, ns, '*')))();
 }
 
@@ -383,6 +383,37 @@ function applyPath(root: any, path: string, value: any): void {
 }
 
 /**
+ * Whether a lone array argument is a batch of `[path, value]` pairs.
+ *
+ * The batch form and a replacement array are the same shape at the call site, so the
+ * entries decide. Every one has to be a pair with a string path; anything else is a
+ * value. An empty array is not a batch, which is what made `set([])` on an array root
+ * do nothing at all.
+ */
+function isPathBatch(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((e) => Array.isArray(e) && e.length >= 2 && typeof e[0] === 'string')
+  );
+}
+
+/**
+ * Replace an array's contents in place, keeping its identity.
+ *
+ * The tail is written away before the length moves, so an index that had a signal is
+ * told it is gone. Assigning `length` alone truncates without notifying anyone, which
+ * leaves a stale read behind on every removed index.
+ */
+function replaceArray(target: any[], next: readonly any[]): void {
+  // Keys are strings everywhere else, because every other path reaches writeKey through
+  // parsePath. A numeric key here would miss the node the proxy registered under '2'.
+  for (let i = target.length - 1; i >= next.length; i--) writeKey(target, String(i), undefined);
+  if (target.length !== next.length) writeKey(target, 'length', next.length);
+  for (let i = 0; i < next.length; i++) writeKey(target, String(i), next[i]);
+}
+
+/**
  * Runs the setter overloads against the raw root:
  *   set(state => newState)        whole-state updater, merged back
  *   set(partialObject)            per-key merge
@@ -399,9 +430,22 @@ function applySet(root: any, args: any[]): void {
     return;
   }
   if (Array.isArray(first) && args.length === 1) {
-    for (const entry of first)
-      if (Array.isArray(entry)) applyPath(root, entry[0], entry[1]);
-    return;
+    if (isPathBatch(first)) {
+      for (const entry of first) applyPath(root, entry[0], entry[1]);
+      return;
+    }
+    // Not a batch, so it is a value. Against an array root that is a replacement.
+    if (Array.isArray(root)) {
+      replaceArray(root, first);
+      return;
+    }
+    // An empty array asks for no updates, which is harmless either way.
+    if (first.length === 0) return;
+    throw new TypeError(
+      '[fluixi] set() was given an array that is neither a batch of [path, value] ' +
+        'pairs nor a replacement for an array root. Name the path you meant, as in ' +
+        "set('items', [...]).",
+    );
   }
   if (
     first &&
@@ -574,6 +618,59 @@ class Store<T> {
     return removed;
   }
 
+  /**
+   * Swap a whole value, rather than merging into it.
+   *
+   * `set(partial)` merges per key, which is what you want for an object and never what
+   * you want for an array. This replaces: `replace(value)` at the root, or
+   * `replace(path, value)` further down.
+   *
+   * @example
+   * ```ts
+   * const [items, set] = createStore([1, 2, 3]);
+   * set.replace([]);            // now empty
+   * set.replace(['a', 'b']);    // now two entries
+   * ```
+   */
+  replace(pathOrValue: any, maybeValue?: any): void {
+    if (arguments.length >= 2) {
+      const target = rawAt(this.root, String(pathOrValue));
+      const next = maybeValue;
+      if (Array.isArray(target) && Array.isArray(next)) {
+        replaceArray(target, next);
+        return;
+      }
+      this.set(pathOrValue as any, next as any);
+      return;
+    }
+    const root: any = this.root;
+    if (Array.isArray(root) && Array.isArray(pathOrValue)) {
+      replaceArray(root, pathOrValue);
+      return;
+    }
+    this.set(pathOrValue as any);
+  }
+
+  /**
+   * Empty an array, at the root or at a path.
+   *
+   * @example
+   * ```ts
+   * set.clear();          // the root array
+   * set.clear('todos');   // a nested one
+   * ```
+   */
+  clear(path?: string): void {
+    const target = path === undefined ? (this.root as any) : rawAt(this.root, path);
+    if (Array.isArray(target)) {
+      replaceArray(target, []);
+      return;
+    }
+    if (target && typeof target === 'object') {
+      for (const key of Object.keys(target)) writeKey(target, key, undefined);
+    }
+  }
+
   toObservable(): Observable<T> {
     const [get] = createSignal(this.state);
     return (get as any).toObservable();
@@ -597,6 +694,8 @@ const SETTER_METHODS = [
   'splice',
   'insert',
   'removeAt',
+  'replace',
+  'clear',
   'unwrap',
   'toObservable',
 ] as const;
@@ -608,6 +707,38 @@ function attachStoreMethods(target: any, store: Store<any>): void {
 
 // public api
 
+/**
+ * A fine-grained reactive store: a plain object tree that tracks reads per key.
+ *
+ * Returns the state and its setter as a tuple. The state is a proxy, so reading a
+ * property subscribes the current computation to that property alone, and a write
+ * elsewhere in the tree does not disturb it. Signals are created lazily, one per key
+ * that something actually reads, so the cost follows what the app looks at rather than
+ * the size of the state.
+ *
+ * The state is immutable from the outside by default, assigning to it does nothing, and
+ * `set` is the way in. That is what makes the tracking trustworthy, since every change
+ * goes through a path the store can see.
+ *
+ * `store()` wraps this as a single binding for the common case. Prefer it unless the
+ * state has a `set` key of its own, which the single-binding form cannot express.
+ *
+ * @example
+ * ```ts
+ * const [state, setState] = createStore({ user: { name: 'Ada' }, count: 0 });
+ *
+ * effect(() => console.log(state.user.name));   // tracks user.name only
+ * setState('count', 1);                         // the effect does not re-run
+ * setState('user.name', 'Grace');               // now it does
+ * ```
+ *
+ * @example A patch merges the keys it names; a dot path reaches through arrays:
+ * ```ts
+ * setState({ count: 5 });                       // user is untouched
+ * setState('todos.0.done', true);
+ * setState('count', (n) => n + 1);              // or derive from the current value
+ * ```
+ */
 function createStore<T>(
   initialState: T,
   options: StoreOptions<T> = { immutable: true }
@@ -617,6 +748,21 @@ function createStore<T>(
   return [store.proxy as Immutable<T>, store.set];
 }
 
+/**
+ * A store you assign to directly, without a setter.
+ *
+ * The same per-key tracking as `createStore`, with the immutability dropped, so
+ * `state.count = 1` is a tracked write. Reach for it when the state is local to one
+ * component and the indirection of a setter buys nothing. The cost is that a change
+ * can come from anywhere holding the object.
+ *
+ * @example
+ * ```ts
+ * const state = createMutableStore({ count: 0 });
+ * effect(() => console.log(state.count));
+ * state.count = 1;   // the effect re-runs
+ * ```
+ */
 function createMutableStore<T>(
   initialState: T,
   options: Omit<StoreOptions<T>, 'immutable'> = {}
