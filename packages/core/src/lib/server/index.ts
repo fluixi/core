@@ -1,5 +1,4 @@
 /**
- * @fileoverview Server-Side Rendering Entry Point for Fluixi
  * @module @fluixi/core/server
  *
  * Implements Unified SSR Engine compatible with Lit and JSX.
@@ -94,10 +93,6 @@ export function withSSRContext<T>(context: SSRContext, fn: () => T): T {
 
 /**
  * Render complete HTML page
- *
- * @param {() => any} code - Component function
- * @param {DocumentOptions} options - Document options
- * @returns {Promise<string>} Complete HTML document
  */
 export async function renderToPage(
   code: () => any,
@@ -151,20 +146,47 @@ export function createHtmlDocument(
 // ENVIRONMENT DETECTION
 // ============================================================================
 
-export function isServer(): boolean {
-  return typeof window === 'undefined';
-}
+/**
+ * Whether this is a server render.
+ *
+ * Re-exported from `@fluixi/dom`, which owns the answer: the flag lives on a realm
+ * singleton that `renderToString` sets, so it is true for the whole of a server render
+ * even in a jsdom process where `window` exists.
+ *
+ * This used to be a local `typeof window === 'undefined'`, which meant
+ * `@fluixi/core/server` and `@fluixi/core` disagreed about the same question, and the
+ * local one was wrong in exactly the case that matters. Four copies of that test were
+ * the alpha.83 SSR bug; do not add a fifth.
+ */
+export { isServer } from '@fluixi/dom';
 
+/** Whether this is running in a browser, which is the negation of a server render. */
 export function isClient(): boolean {
-  return typeof window !== 'undefined';
+  return !domIsServer();
 }
 
+/**
+ * Run `fn` only during a server render, otherwise take `fallback`.
+ *
+ * @example
+ * ```ts
+ * const secret = onServer(() => process.env.API_KEY, '');
+ * ```
+ */
 export function onServer<T>(fn: () => T, fallback: T): T {
-  return isServer() ? fn() : fallback;
+  return domIsServer() ? fn() : fallback;
 }
 
+/**
+ * Run `fn` only in the browser, otherwise take `fallback`.
+ *
+ * @example
+ * ```ts
+ * const width = onClient(() => window.innerWidth, 0);
+ * ```
+ */
 export function onClient<T>(fn: () => T, fallback: T): T {
-  return isClient() ? fn() : fallback;
+  return !domIsServer() ? fn() : fallback;
 }
 
 // ============================================================================
@@ -246,6 +268,7 @@ export type {
   RootOwner,
   Context,
 } from './reactive.js';
+import { isServer as domIsServer } from '@fluixi/dom';
 
 // Re-export all hydration utilities
 export {

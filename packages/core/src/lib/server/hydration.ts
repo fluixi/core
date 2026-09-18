@@ -1,5 +1,4 @@
 /**
- * @fileoverview Hydration utilities for Fluixi
  * @module @fluixi/core/server/hydration
  *
  * Hydration:
@@ -8,6 +7,8 @@
  * - Bindings reattached
  * - Structural markers required
  */
+
+import { isServer as domIsServer } from '@fluixi/dom';
 
 // ============================================================================
 // TYPES
@@ -26,7 +27,7 @@ export interface HydrationData {
 
 /**
  * Global hydration flag
- * Section 11: Indicates if we're currently hydrating
+ * Indicates if we're currently hydrating
  */
 let hydrating = false;
 
@@ -48,9 +49,7 @@ let markerCounter = 0;
 /**
  * Check if currently hydrating
  *
- * Section 11: During hydration, DOM is reused, not recreated
- *
- * @returns {boolean} True if hydrating
+ * During hydration, DOM is reused, not recreated
  *
  * @example
  * ```typescript
@@ -68,7 +67,6 @@ export function isHydrating(): boolean {
 /**
  * Set hydration state
  *
- * @param {boolean} state - Hydration state
  * @internal
  */
 export function setHydrating(state: boolean): void {
@@ -82,11 +80,8 @@ export function setHydrating(state: boolean): void {
 /**
  * Store data for hydration
  *
- * Section 11: On server, store data to serialize into HTML
+ * On server, store data to serialize into HTML
  * On client during hydration, this data is reused
- *
- * @param {string} key - Unique key
- * @param {any} data - Data to store
  *
  * @example
  * ```typescript
@@ -103,10 +98,7 @@ export function setHydrationData(key: string, data: any): void {
 /**
  * Get hydration data
  *
- * Section 11: On client, retrieve data stored on server
- *
- * @param {string} key - Unique key
- * @returns {any} Data or undefined
+ * On client, retrieve data stored on server
  *
  * @example
  * ```typescript
@@ -122,9 +114,6 @@ export function getHydrationData(key: string): any {
 
 /**
  * Check if hydration data exists
- *
- * @param {string} key - Unique key
- * @returns {boolean} True if exists
  */
 export function hasHydrationData(key: string): boolean {
   return hydrationDataMap.has(key);
@@ -141,8 +130,6 @@ export function clearHydrationData(): void {
 
 /**
  * Clear specific hydration data
- *
- * @param {string} key - Key to clear
  */
 export function clearHydrationDataKey(key: string): void {
   hydrationDataMap.delete(key);
@@ -155,9 +142,7 @@ export function clearHydrationDataKey(key: string): void {
 /**
  * Serialize hydration data to script tag
  *
- * Section 11: Embed data in HTML for client hydration
- *
- * @returns {string} Script tag with JSON data
+ * Embed data in HTML for client hydration
  *
  * @example
  * ```typescript
@@ -182,9 +167,7 @@ export function serializeHydrationData(): string {
 /**
  * Deserialize hydration data from DOM
  *
- * Section 11: On client, load data from script tag
- *
- * @returns {boolean} True if data was loaded
+ * On client, load data from script tag
  *
  * @example
  * ```typescript
@@ -228,7 +211,6 @@ export function deserializeHydrationData(): boolean {
 /**
  * Generate unique hydration marker ID
  *
- * @returns {string} Unique marker ID
  * @internal
  */
 export function generateMarkerID(): string {
@@ -238,10 +220,7 @@ export function generateMarkerID(): string {
 /**
  * Create hydration marker
  *
- * Section 11: Structural markers required for hydration points
- *
- * @param {string} id - Marker ID
- * @returns {string} HTML comment marker
+ * Structural markers required for hydration points
  *
  * @example
  * ```typescript
@@ -257,9 +236,6 @@ export function hydrationMarker(id: string): string {
 
 /**
  * Create start hydration marker
- *
- * @param {string} id - Marker ID
- * @returns {string} Start marker
  */
 export function hydrationMarkerStart(id: string): string {
   return `<!--#${id}-->`;
@@ -267,9 +243,6 @@ export function hydrationMarkerStart(id: string): string {
 
 /**
  * Create end hydration marker
- *
- * @param {string} id - Marker ID
- * @returns {string} End marker
  */
 export function hydrationMarkerEnd(id: string): string {
   return `<!--/${id}-->`;
@@ -282,13 +255,8 @@ export function hydrationMarkerEnd(id: string): string {
 /**
  * Create hydration-friendly resource
  *
- * Section 11: Resources loaded on server are serialized
+ * Resources loaded on server are serialized
  * On client, reused during hydration (no re-fetch)
- *
- * @template T
- * @param {string} key - Unique resource key
- * @param {() => Promise<T>} fetcher - Resource fetcher
- * @returns {() => Promise<T>} Hydration-aware fetcher
  *
  * @example
  * ```typescript
@@ -305,7 +273,7 @@ export function createHydratableResource<T>(
   fetcher: () => Promise<T>
 ): () => Promise<T> {
   return async () => {
-    // Section 11: During hydration or on client, check for cached data
+    // During hydration or on client, check for cached data
     if (isHydrating() || typeof window !== 'undefined') {
       const cached = getHydrationData(key);
       if (cached !== undefined) {
@@ -316,7 +284,7 @@ export function createHydratableResource<T>(
     // Server or no cache: fetch data
     const data = await fetcher();
 
-    // Section 11: On server, store for serialization
+    // On server, store for serialization
     if (typeof window === 'undefined') {
       setHydrationData(key, data);
     }
@@ -328,13 +296,8 @@ export function createHydratableResource<T>(
 /**
  * Use hydration data in component
  *
- * Section 11: Components use hydration data to restore state
+ * Components use hydration data to restore state
  * without re-execution
- *
- * @template T
- * @param {string} key - Data key
- * @param {T | (() => T)} value - Value or getter
- * @returns {T} Value
  *
  * @example
  * ```typescript
@@ -347,7 +310,7 @@ export function createHydratableResource<T>(
  * ```
  */
 export function useHydrationData<T>(key: string, value: T | (() => T)): T {
-  // Section 11: Check for hydration data first
+  // Check for hydration data first
   const hydrationData = getHydrationData(key);
   if (hydrationData !== undefined) {
     return hydrationData as T;
@@ -357,7 +320,7 @@ export function useHydrationData<T>(key: string, value: T | (() => T)): T {
   const computedValue =
     typeof value === 'function' ? (value as () => T)() : value;
 
-  // Section 11: On server, store for serialization
+  // On server, store for serialization
   if (typeof window === 'undefined') {
     setHydrationData(key, computedValue);
   }
@@ -372,7 +335,7 @@ export function useHydrationData<T>(key: string, value: T | (() => T)): T {
 /**
  * Cleanup hydration artifacts from DOM
  *
- * Section 11: After hydration, remove markers and serialized data
+ * After hydration, remove markers and serialized data
  *
  * @example
  * ```typescript
@@ -432,19 +395,18 @@ if (typeof window !== 'undefined') {
 // ============================================================================
 
 /**
- * Check if on server
+ * Whether this is a server render.
  *
- * @returns {boolean} True if server
+ * Defers to `@fluixi/dom`, which keeps the flag on a realm singleton that
+ * `renderToString` sets. A local `typeof window` test disagrees with it inside a jsdom
+ * process, which is where server rendering is usually tested, and `router/data.ts`
+ * branches on this to decide whether a loader may touch the client.
  */
 export function isServerEnvironment(): boolean {
-  return typeof window === 'undefined';
+  return domIsServer();
 }
 
-/**
- * Check if on client
- *
- * @returns {boolean} True if client
- */
+/** Whether this is running in a browser, the negation of a server render. */
 export function isClientEnvironment(): boolean {
-  return typeof window !== 'undefined';
+  return !domIsServer();
 }
