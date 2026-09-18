@@ -1,5 +1,5 @@
 /**
- * @fluixi/dom server rendering — universal string renderer. The leaf node
+ * @fluixi/dom server rendering: universal string renderer. The leaf node
  * factories in runtime.ts branch to ServerNode when `isServer`, so the same
  * imperative runtime (insert/spread/Show/For/createComponent) builds a
  * serializable tree that renderToString turns into HTML.

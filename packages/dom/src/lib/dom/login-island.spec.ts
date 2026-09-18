@@ -1,6 +1,6 @@
-// "Test island hydration on the login page" — a login form as an <Island>: the static page
+// "Test island hydration on the login page", a login form as an <Island>: the static page
 // is server-rendered, only the form hydrates, and a value that must be fetched SERVER-side
-// (e.g. behind an API key) is read by a resource inside the island → seeded into __FX_DATA__
+// (e.g. behind an API key) is read by a resource inside the island -> seeded into __FX_DATA__
 // and reused on the client with NO refetch, while the form stays interactive.
 //
 // Own spec file so vitest isolates it: the island resource-transport id counter is
@@ -25,7 +25,7 @@ describe('login-form island', () => {
     let serverConfigFetches = 0;
     const LoginForm = (_props: { brand?: string }) => {
       const [email, setEmail] = createSignal('');
-      // The "API-key" data — fetched once on the server, seeded for the client.
+      // The "API-key" data: fetched once on the server, seeded for the client.
       const [cfg] = createResource(() => {
         serverConfigFetches++;
         return Promise.resolve({ domain: 'leuzma.com' });
@@ -38,7 +38,7 @@ describe('login-form island', () => {
       const echo = createNativeElement('p') as any;
       insert(echo, () => email(), null);
       const hint = createNativeElement('small') as any;
-      insert(hint, () => (cfg.loading ? '…' : `@${cfg.latest?.domain ?? ''}`), null);
+      insert(hint, () => (cfg.loading ? '...' : `@${cfg.latest?.domain ?? ''}`), null);
       insert(form, input, null);
       insert(form, echo, null);
       insert(form, hint, null);

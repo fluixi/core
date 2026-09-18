@@ -1,15 +1,15 @@
 /**
- * The SSR data transport (`__FX_DATA__`) — emission escaping + client reader.
+ * The SSR data transport (`__FX_DATA__`): emission escaping + client reader.
  *
  * The server collects resolved resource values + seeds (i18n locale, isomorphic state) and
  * embeds them in the page so the client hydrates without refetching. SECURITY MODEL:
  *
- *  - It is NON-SECRET BY DESIGN — it's in the page, readable by the user. Encrypting it buys
+ *  - It is NON-SECRET BY DESIGN, it's in the page, readable by the user. Encrypting it buys
  *    nothing (the client would need the key). Keep server-only fields OUT via setDataRedactor;
  *    fetch truly sensitive data through a `"use server"` function instead. Don't obfuscate.
  *
  *  - Emitted as a NON-EXECUTABLE `<script type="application/json">`, read via `JSON.parse` of
- *    its `textContent`. So (a) a value can never execute as JS, and (b) it's CSP-friendly —
+ *    its `textContent`. So (a) a value can never execute as JS, and (b) it's CSP-friendly:
  *    it works under a strict `script-src` that forbids inline executable scripts.
  *
  *  - The JSON is escaped with the standard SSR-JSON set (`<`, `>`, `&`, U+2028, U+2029) so no
@@ -22,8 +22,8 @@ export const FX_DATA_ID = '__FX_DATA__';
 
 /**
  * Escape a JSON string for safe embedding inside a `<script>` element.
- * `<`/`>` → can't form `</script>`, `<!--` or `-->`; `&` → no HTML-entity surprises;
- * U+2028/U+2029 → JS line terminators that would break an inline-script read.
+ * `<`/`>` -> can't form `</script>`, `<!--` or `-->`; `&` -> no HTML-entity surprises;
+ * U+2028/U+2029 -> JS line terminators that would break an inline-script read.
  * JSON.parse decodes every `\uXXXX` back to the original character.
  */
 export function escapeFxJson(json: string): string {
@@ -54,7 +54,7 @@ export function getServerData(): Record<string, unknown> | null {
       try {
         parsed = JSON.parse(text) as Record<string, unknown>;
       } catch {
-        parsed = null; // malformed transport → behave as if not server-rendered (refetch)
+        parsed = null; // malformed transport -> behave as if not server-rendered (refetch)
       }
     }
   }

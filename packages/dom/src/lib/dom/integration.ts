@@ -1,6 +1,6 @@
 // createComponent lives here. It used to live in core and be registered through the
 // slot below, which left the runtime with a fallback that re-invoked a component on
-// every read — a list rebuilt every node whenever it changed, and only for consumers
+// every read, a list rebuilt every node whenever it changed, and only for consumers
 // who had not loaded core. The slot stays so a host can still override it.
 
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
@@ -24,7 +24,7 @@ export function registerCreateComponent(createComponent: CreateComponentFn): voi
   _slot.fn = createComponent;
 }
 
-// Old init entry — now just picks createComponent off the passed system.
+// Old init entry, now just picks createComponent off the passed system.
 export function initializeIntegration(options: IntegrationOptions = {}): void {
   const cc = options.signalSystem?.createComponent;
   if (cc) _slot.fn = cc;
@@ -50,7 +50,7 @@ export function createComponent<T extends (props?: any) => any, U = any>(
     component != null && (typeof component === 'function' || typeof component === 'object');
   if (nameable) {
     // The name goes on whatever came back, reactive or not. Only `asComponent` has to skip a
-    // signal — the runtime would cache it as a static thunk. Nothing reads `$name` but a
+    // signal, the runtime would cache it as a static thunk. Nothing reads `$name` but a
     // watcher, and skipping it there hid every component that returns another one: an App
     // whose whole body is `<Router/>` was named nowhere.
     try {

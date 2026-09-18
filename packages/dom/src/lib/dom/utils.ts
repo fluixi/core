@@ -1,5 +1,4 @@
 /**
- * @fileoverview DOM utilities for Fluixi
  * @module @fluixi/core/dom
  *
  * This module provides utilities for DOM manipulation and queries.
@@ -138,7 +137,7 @@ export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 /**
  * Returns true for custom elements (tag name contains a hyphen per the Web
- * Components spec — e.g. `adf-accounts-selector`).
+ * Components spec: e.g. `adf-accounts-selector`).
  */
 export function isCustomElement(element: Element): boolean {
   return element.localName.includes('-');
@@ -175,7 +174,7 @@ export function applyElementProp(
 
   // }
   if (isCustomElement(element)) {
-    // if ((element as any)[name]!==value) 
+    // if ((element as any)[name]!==value)
       (element as any)[name] = value;
     return;
   }
@@ -197,11 +196,6 @@ export const JSX_PROPERTIES = new Set([
 /**
  * Queries a single element with type safety
  *
- * @template T - Element type
- * @param {string} selector - CSS selector
- * @param {Element | Document} root - Root element (default: document)
- * @returns {T | null} Found element or null
- *
  * @example
  * ```typescript
  * import { query } from '@fluixi/core/dom';
@@ -219,11 +213,6 @@ export function query<T extends Element = Element>(
 
 /**
  * Queries all matching elements with type safety
- *
- * @template T - Element type
- * @param {string} selector - CSS selector
- * @param {Element | Document} root - Root element (default: document)
- * @returns {T[]} Array of matching elements
  *
  * @example
  * ```typescript
@@ -243,11 +232,6 @@ export function queryAll<T extends Element = Element>(
 /**
  * Queries the closest matching ancestor element
  *
- * @template T - Element type
- * @param {Element} element - Starting element
- * @param {string} selector - CSS selector
- * @returns {T | null} Closest matching ancestor or null
- *
  * @example
  * ```typescript
  * import { closest } from '@fluixi/core/dom';
@@ -266,9 +250,6 @@ export function closest<T extends Element = Element>(
 /**
  * Adds one or more classes to an element
  *
- * @param {Element} element - Target element
- * @param {...string} classes - Classes to add
- *
  * @example
  * ```typescript
  * import { addClass } from '@fluixi/core/dom';
@@ -282,9 +263,6 @@ export function addClass(element: Element, ...classes: string[]): void {
 
 /**
  * Removes one or more classes from an element
- *
- * @param {Element} element - Target element
- * @param {...string} classes - Classes to remove
  *
  * @example
  * ```typescript
@@ -300,9 +278,6 @@ export function removeClass(element: Element, ...classes: string[]): void {
 /**
  * Toggles one or more classes on an element
  *
- * @param {Element} element - Target element
- * @param {...string} classes - Classes to toggle
- *
  * @example
  * ```typescript
  * import { toggleClass } from '@fluixi/core/dom';
@@ -316,10 +291,6 @@ export function toggleClass(element: Element, ...classes: string[]): void {
 
 /**
  * Checks if element has a class
- *
- * @param {Element} element - Target element
- * @param {string} className - Class name to check
- * @returns {boolean} True if element has the class
  *
  * @example
  * ```typescript
@@ -336,10 +307,6 @@ export function hasClass(element: Element, className: string): boolean {
 
 /**
  * Sets an attribute on an element
- *
- * @param {Element} element - Target element
- * @param {string} name - Attribute name
- * @param {string | number | boolean} value - Attribute value
  *
  * @example
  * ```typescript
@@ -376,17 +343,6 @@ export function setAttribute(
 // /**
 //  * Set an attribute or property on an element
 //  */
-// export function setAttribute(
-//   element: Element,
-//   name: string,
-//   value: any,
-//   isSVG = false
-// ): void {
-//   if (value == null || value === false) {
-//     element.removeAttribute(name);
-//     return;
-//   }
-
 //   if (value === true) {
 //     element.setAttribute(name, '');
 //     return;
@@ -397,10 +353,6 @@ export function setAttribute(
 
 /**
  * Gets an attribute from an element
- *
- * @param {Element} element - Target element
- * @param {string} name - Attribute name
- * @returns {string | null} Attribute value or null
  *
  * @example
  * ```typescript
@@ -416,9 +368,6 @@ export function getAttribute(element: Element, name: string): string | null {
 /**
  * Removes an attribute from an element
  *
- * @param {Element} element - Target element
- * @param {string} name - Attribute name
- *
  * @example
  * ```typescript
  * import { removeAttribute } from '@fluixi/core/dom';
@@ -432,9 +381,6 @@ export function removeAttribute(element: Element, name: string): void {
 
 /**
  * Sets multiple styles on an element
- *
- * @param {HTMLElement} element - Target element
- * @param {Partial<CSSStyleDeclaration>} styles - Styles object
  *
  * @example
  * ```typescript
@@ -457,10 +403,6 @@ export function setStyles(
 /**
  * Gets computed style of an element
  *
- * @param {Element} element - Target element
- * @param {string} property - CSS property name
- * @returns {string} Computed style value
- *
  * @example
  * ```typescript
  * import { getStyle } from '@fluixi/core/dom';
@@ -474,12 +416,6 @@ export function getStyle(element: Element, property: string): string {
 
 /**
  * Creates an element with attributes and children
- *
- * @template K - Element tag name
- * @param {K} tagName - HTML tag name
- * @param {Record<string, any>} attributes - Element attributes
- * @param {...(Node | string)} children - Child nodes or text
- * @returns {HTMLElementTagNameMap[K]} Created element
  *
  * @example
  * ```typescript
@@ -525,8 +461,6 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
 /**
  * Removes all children from an element
  *
- * @param {Element} element - Target element
- *
  * @example
  * ```typescript
  * import { removeChildren } from '@fluixi/core/dom';
@@ -542,9 +476,6 @@ export function removeChildren(element: Element): void {
 
 /**
  * Appends multiple children to an element
- *
- * @param {Element} parent - Parent element
- * @param {...(Node | string)} children - Children to append
  *
  * @example
  * ```typescript
@@ -573,9 +504,6 @@ export function appendChildren(
 /**
  * Checks if element is visible in the viewport
  *
- * @param {Element} element - Target element
- * @returns {boolean} True if element is visible
- *
  * @example
  * ```typescript
  * import { isVisible } from '@fluixi/core/dom';
@@ -598,9 +526,6 @@ export function isVisible(element: Element): boolean {
 /**
  * Scrolls element into view smoothly
  *
- * @param {Element} element - Target element
- * @param {ScrollIntoViewOptions} options - Scroll options
- *
  * @example
  * ```typescript
  * import { scrollIntoView } from '@fluixi/core/dom';
@@ -617,9 +542,6 @@ export function scrollIntoView(
 
 /**
  * Gets element's offset relative to document
- *
- * @param {Element} element - Target element
- * @returns {{ top: number; left: number }} Offset coordinates
  *
  * @example
  * ```typescript
@@ -638,13 +560,6 @@ export function getOffset(element: Element): { top: number; left: number } {
 
 /**
  * Delegates event handling to a parent element
- *
- * @template K - Event type
- * @param {Element} parent - Parent element
- * @param {K} eventName - Event name
- * @param {string} selector - Child selector
- * @param {(event: Event, target: Element) => void} handler - Event handler
- * @returns {() => void} Cleanup function
  *
  * @example
  * ```typescript
@@ -677,10 +592,6 @@ export function delegate<K extends keyof HTMLElementEventMap>(
 
 /**
  * Waits for an element to appear in the DOM
- *
- * @param {string} selector - CSS selector
- * @param {number} timeout - Timeout in milliseconds (default: 5000)
- * @returns {Promise<Element>} Promise that resolves with the element
  *
  * @example
  * ```typescript
@@ -724,11 +635,6 @@ export function waitForElement(
 /**
  * Observes element intersection with viewport
  *
- * @param {Element} element - Target element
- * @param {(isIntersecting: boolean) => void} callback - Callback function
- * @param {IntersectionObserverInit} options - Observer options
- * @returns {() => void} Cleanup function
- *
  * @example
  * ```typescript
  * import { observeIntersection } from '@fluixi/core/dom';
@@ -758,10 +664,6 @@ export function observeIntersection(
 
 /**
  * Observes element size changes
- *
- * @param {Element} element - Target element
- * @param {(entry: ResizeObserverEntry) => void} callback - Callback function
- * @returns {() => void} Cleanup function
  *
  * @example
  * ```typescript

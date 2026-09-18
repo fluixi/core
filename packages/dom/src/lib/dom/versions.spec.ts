@@ -19,7 +19,7 @@ describe('version stamping', () => {
   });
 
   // The bug this file exists for: only core's render stamped, so every app that reached
-  // the DOM through startClient → hydrate had no version attributes at all.
+  // the DOM through startClient -> hydrate had no version attributes at all.
   it('stamps on hydrate too', () => {
     const container = document.createElement('div');
     container.innerHTML = '<span>hi</span>';
@@ -33,7 +33,7 @@ describe('version stamping', () => {
 
   it('stamps the core version once core has registered it', () => {
     // Core sits above this package, so it pushes its version down rather than being
-    // imported — the alternative is a dependency cycle.
+    // imported, the alternative is a dependency cycle.
     registerCoreVersion('9.9.9-test');
     const container = document.createElement('div');
     document.body.append(container);

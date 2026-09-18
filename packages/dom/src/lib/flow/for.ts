@@ -10,9 +10,9 @@ type EachSource<T> =
   | undefined
   | false;
 
-/** Props when `by` is NOT provided — item is the plain value `T`. */
+/** Props when `by` is not provided: item is the plain value `T`. */
 export interface ForPropsUnkeyed<T, U = any> {
-  /** Reactive array to iterate over — static, readonly, accessor, or signal. */
+  /** Reactive array to iterate over: static, readonly, accessor, or signal. */
   each: EachSource<T>;
   /** Rendered when the array is empty or nullish. */
   fallback?: any;
@@ -26,15 +26,15 @@ export interface ForPropsUnkeyed<T, U = any> {
   by?: undefined;
 }
 
-/** Props when `by` IS provided — item is a reactive `Accessor<T>`. */
+/** Props when `by` is provided: item is a reactive `Accessor<T>`. */
 export interface ForPropsKeyed<T, U = any> {
-  /** Reactive array to iterate over — static, readonly, accessor, or signal. */
+  /** Reactive array to iterate over: static, readonly, accessor, or signal. */
   each: EachSource<T>;
   /** Rendered when the array is empty or nullish. */
   fallback?: any;
   /**
    * Render function called once per unique key.
-   * `item` is a reactive accessor — call `item()` inside to read the current value.
+   * `item` is a reactive accessor: call `item()` inside to read the current value.
    * The same DOM is reused whenever `by(item)` returns the same key, even if the
    * object reference changes.
    *
@@ -52,21 +52,21 @@ export interface ForPropsKeyed<T, U = any> {
 export type ForProps<T, U = any> = ForPropsUnkeyed<T, U> | ForPropsKeyed<T, U>;
 
 /**
- * Keyed list rendering — mirrors SolidJS `<For>`.
+ * Keyed list rendering: mirrors SolidJS `<For>`.
  *
- * Default: keyed by object reference. Same object at new index → only index
+ * Default: keyed by object reference. Same object at new index -> only index
  * signal updates (no DOM re-render). Removed items are disposed.
  *
  * With `by`: keyed by the return value of `by(item)`. When the same key is
  * found in the previous render, the DOM entry is reused and the index signal
  * is updated. The item accessor is a live `createMemo(() => list[idx()])` so
  * that reading `item().someField` inside a reactive context creates a
- * fine-grained dependency on the store proxy property — not a frozen snapshot.
+ * fine-grained dependency on the store proxy property, not a frozen snapshot.
  *
  * @example Reference-keyed (default)
  * <For each={items}>{(item, idx) => <li>{item.name}</li>}</For>
  *
- * @example Stable-key (by prop) — survives object recreation
+ * @example Stable-key (by prop): survives object recreation
  * <For each={rows} by={r => r.id}>
  *   {(row, idx) => <tr><td>{() => row().name}</td></tr>}
  * </For>
@@ -78,7 +78,7 @@ export function For<T, U>(props: ForPropsUnkeyed<T, U>): Accessor<U[]>;
 export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> {
   // Read `each` lazily through the prop getter so `each={items()}` re-runs inside
   // mapArray's tracking memo (fine-grained keyed diffing), while `each={items}` still
-  // works — resolveReactiveProp unwraps the accessor form once.
+  // works: resolveReactiveProp unwraps the accessor form once.
   const each = resolveReactiveProp<ReadonlyArray<T>>(() => props.each as any);
   const fallback = () => props.fallback ?? null;
 
@@ -97,7 +97,7 @@ export function For<T, U>(props: ForProps<T, U>): Accessor<U[]> {
     return rendered;
   };
 
-  // `by` → key-function reconciliation (item is a live accessor); default →
+  // `by` -> key-function reconciliation (item is a live accessor); default -> 
   // reference reconciliation (item is the plain value). Both keep each item in
   // its own root so list items stay owner-stable.
   return props.by

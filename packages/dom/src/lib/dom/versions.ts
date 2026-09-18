@@ -2,8 +2,8 @@
  * Which build of each package is actually running.
  *
  * This used to live in `@fluixi/core`, stamped only by *its* `render`. But an app can
- * reach the DOM through either entry point — `@fluixi/core`'s `render`, or this package's
- * `render`/`hydrate` by way of `startClient` — and only the first stamped anything. An app
+ * reach the DOM through either entry point: `@fluixi/core`'s `render`, or this package's
+ * `render`/`hydrate` by way of `startClient`, and only the first stamped anything. An app
  * that hydrated (the docs site, every SSR app) therefore had no version attributes at all,
  * which is exactly the case where a bug report needs them most.
  *
@@ -20,7 +20,7 @@ import { joinedVersions } from '@fluixi/reactive/signal';
 
 /** The versions of the packages this app is running. */
 export interface FluixiVersions {
-  /** Absent when the app does not use `@fluixi/core` — dom and reactive can run alone. */
+  /** Absent when the app does not use `@fluixi/core`: dom and reactive can run alone. */
   core?: string;
   dom: string;
   reactive: string;
@@ -45,8 +45,8 @@ export function registerCoreVersion(version: string): void {
 /**
  * Stamp the versions onto the mount element and expose them as `window.Fluixi`.
  *
- * The attributes make it visible in the page source and in a screenshot of devtools —
- * usually all a bug report contains — while the global is what you reach for in a console.
+ * The attributes make it visible in the page source and in a screenshot of devtools,
+ * usually all a bug report contains, while the global is what you reach for in a console.
  */
 export function stampVersions(container: Element): void {
   if (versions.core) container.setAttribute('fluixi', versions.core);
@@ -84,7 +84,7 @@ export function warnOnVersionSkew(): void {
   if (new Set(present).size <= 1) return;
 
   console.warn(
-    `[fluixi] package versions disagree — core ${versions.core ?? '(absent)'}, ` +
+    `[fluixi] package versions disagree: core ${versions.core ?? '(absent)'}, ` +
       `dom ${versions.dom}, reactive ${versions.reactive}. These ship as one release, so a ` +
       `mismatch usually means a stale lockfile or two copies resolved side by side. ` +
       `Reinstall, or check for duplicates with \`pnpm why @fluixi/dom\`.`,

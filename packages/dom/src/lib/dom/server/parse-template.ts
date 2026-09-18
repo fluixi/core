@@ -5,7 +5,7 @@
  * compiler's `serializeStatic`, which emits a narrow, known grammar: lowercase tag names,
  * double-quoted attribute values, entity-escaped text, void elements left unclosed, no
  * namespaces, no comments, no raw `<script>`/`<style>` content. Keeping the input
- * controlled is what makes this a small total function instead of a spec project — and
+ * controlled is what makes this a small total function instead of a spec project, and
  * the round-trip test pins the two together, so the grammar cannot drift on one side.
  *
  * A hole-free template never reaches here: it is carried verbatim as a `ServerRaw` node,
@@ -15,7 +15,7 @@
 import { ServerComment, ServerElement, ServerText } from './nodes.js';
 import type { ServerNode } from './nodes.js';
 
-/** Elements the HTML parser closes itself — they never have children. */
+/** Elements the HTML parser closes itself, they never have children. */
 const VOID_ELEMENTS = new Set([
   'area',
   'base',
@@ -115,7 +115,7 @@ export function parseTemplate(html: string, isSVG = false): ServerElement {
     append(new ServerText(unescape(raw)));
   }
 
-  /** Consume `<tag attr="v" …>` starting at `lt`, returning the offset just past it. */
+  /** Consume `<tag attr="v" ...>` starting at `lt`, returning the offset just past it. */
   function openTag(lt: number): number {
     const nameEnd = /[\s/>]/.exec(html.slice(lt + 1));
     if (!nameEnd) throw new TemplateParseError(`unterminated tag at ${lt}`);
@@ -141,7 +141,7 @@ export function parseTemplate(html: string, isSVG = false): ServerElement {
 
       if (html[j] === '=') {
         // The serializer always quotes, so an unquoted value means the input did not
-        // come from it — refuse rather than guess.
+        // come from it: refuse rather than guess.
         if (html[j + 1] !== '"') {
           throw new TemplateParseError(`attribute ${name} must have a double-quoted value`);
         }

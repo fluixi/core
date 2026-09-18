@@ -51,7 +51,7 @@ function serializeStyle(style: ServerStyle | undefined): string {
 function serializeAttrs(el: any): string {
   let out = '';
   // style comes from the style object, not the attribute map, unless set as a
-  // plain attribute string (setStyle uses cssText; spread style="..." → cssText).
+  // plain attribute string (setStyle uses cssText; spread style="..." -> cssText).
   const inlineStyle = serializeStyle(el.style);
   for (const [name, value] of el.attributes) {
     if (name === 'style' && inlineStyle) continue; // style object wins / merges below
@@ -75,7 +75,7 @@ export function serializeNode(node: any): string {
   if (typeof node === 'function') return serializeNode(node());
   if (Array.isArray(node)) return node.map(serializeNode).join('');
 
-  // A template subtree carried as text — written out untouched.
+  // A template subtree carried as text: written out untouched.
   if (typeof node.rawOuterHTML === 'string') return node.rawOuterHTML;
 
   // Duck-type on nodeType rather than `instanceof`: a node can come from a
@@ -101,6 +101,6 @@ export function serializeNode(node: any): string {
   // Any other node-like value with children (fragments etc.).
   if (Array.isArray(node.childNodes)) return node.childNodes.map(serializeNode).join('');
 
-  // Unknown value (e.g. a stray object) — render nothing rather than [object].
+  // Unknown value (e.g. a stray object): render nothing rather than [object].
   return '';
 }

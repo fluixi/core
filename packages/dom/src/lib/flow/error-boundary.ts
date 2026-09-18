@@ -11,10 +11,10 @@ export interface ErrorBoundaryProps {
  * Catches synchronous errors thrown during child rendering.
  *
  * When a child throws, renders `fallback` instead.  `fallback` can be a
- * static value or a function `(err, reset) => UI` — calling `reset()` clears
+ * static value or a function `(err, reset) => UI`, calling `reset()` clears
  * the error state and retries rendering the children.
  *
- * Returns a memo — works in both JSX and `html` templates.
+ * Returns a memo: works in both JSX and `html` templates.
  *
  * Note: Only catches errors thrown synchronously during the render phase
  * (memo evaluation).  Async errors inside effects are not caught here.
@@ -51,7 +51,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
         typeof props.children === 'function' ? props.children() : props.children;
       return content;
     } catch (e) {
-      // Caught a synchronous render error — switch to fallback.
+      // Caught a synchronous render error: switch to fallback.
       setError(e);
       return typeof props.fallback === 'function'
         ? props.fallback(e, reset)

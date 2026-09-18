@@ -59,7 +59,7 @@ describe('Show branch ownership', () => {
       setCount(3);
       read(view);
 
-      // Still truthy throughout — the branch never changed.
+      // Still truthy throughout, the branch never changed.
       expect(cleanups).toBe(0);
     });
   });

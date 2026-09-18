@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Canary: prove the TC39 core drives real DOM with fine-grained updates — the core
+ * Canary: prove the TC39 core drives real DOM with fine-grained updates, the core
  * claim of the migration. Imports the public `@fluixi/reactive/signal` entry, which
- * IS that core, with no integration bridge, exercising the globalThis-singleton
+ * is that core, with no integration bridge, exercising the globalThis-singleton
  * graph end to end.
  *
  * This read `@fluixi/reactive/signal-next` until that subpath was removed for having
@@ -21,7 +21,7 @@ import {
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 
-describe('canary — signal-next drives DOM', () => {
+describe('canary: signal-next drives DOM', () => {
   it('a signal updates a text node fine-grained (no re-render)', () => {
     const host = document.createElement('div');
     const [count, setCount] = createSignal(0);
@@ -59,7 +59,7 @@ describe('canary — signal-next drives DOM', () => {
     expect(a.textContent).toBe('x1');
     expect(b.textContent).toBe('y0');
     expect(aRuns).toBe(aBefore + 1);
-    expect(bRuns).toBe(bBefore); // b untouched — fine-grained
+    expect(bRuns).toBe(bBefore); // b untouched, fine-grained
   });
 
   it('a memo chain drives derived DOM', () => {
@@ -72,25 +72,25 @@ describe('canary — signal-next drives DOM', () => {
     expect(host.textContent).toBe('=20');
   });
 
-  it('a Suspense + resource drives DOM: fallback → content', async () => {
+  it('a Suspense + resource drives DOM: fallback -> content', async () => {
     const host = document.createElement('div');
     const boundary = createSuspenseBoundary();
     const [data] = createResource(() => new Promise<string>((r) => setTimeout(() => r('LOADED'), 5)));
 
     createRoot(() => {
-      // boundary state → DOM
+      // boundary state -> DOM
       createEffect(() => {
-        host.textContent = boundary.inFallback() ? 'loading…' : '';
+        host.textContent = boundary.inFallback() ? 'loading...' : '';
       });
       provideSuspense(boundary, () => {
         createEffect(() => {
-          const v = data(); // suspends while pending → boundary flips
+          const v = data(); // suspends while pending -> boundary flips
           if (!boundary.inFallback()) host.textContent = v ?? '';
         });
       });
     });
 
-    expect(host.textContent).toBe('loading…');
+    expect(host.textContent).toBe('loading...');
     await tick(20);
     expect(host.textContent).toBe('LOADED');
   });

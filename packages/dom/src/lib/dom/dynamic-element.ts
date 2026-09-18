@@ -7,7 +7,7 @@
  * be its first caller.
  *
  * It belongs in dom. Both authoring modes compile to the same dom calls, so an
- * `as`-polymorphic component shouldn't have to depend on `@fluixi/jsx` — which it
+ * `as`-polymorphic component shouldn't have to depend on `@fluixi/jsx`, which it
  * did, making `@fluixi/jsx` a runtime dependency of every component library built
  * on `as`, including for apps that only ever write html`` templates.
  *
@@ -41,7 +41,7 @@ type ElementFor<T extends string> = T extends keyof HTMLElementTagNameMap
  * type, or the element its tag name builds.
  *
  * Distributes over a union, so a polymorphic `as?: string | Component` yields the
- * union of both rather than collapsing — which is what keeps `as` from being a
+ * union of both rather than collapsing, which is what keeps `as` from being a
  * hole in the type system.
  */
 export type DynamicResult<T extends DynamicType> = T extends (props: any) => infer R
@@ -53,13 +53,13 @@ export type DynamicResult<T extends DynamicType> = T extends (props: any) => inf
 /**
  * Build-time guards. `as` is the one place a component library hands the type
  * system a runtime value, so if inference regresses to `any` here it takes every
- * polymorphic component's props with it — silently.
+ * polymorphic component's props with it: silently.
  */
 type Assert<T extends true> = T;
 type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
   ? true
   : false;
-/** What an actual call returns — asserting the alias alone would miss a signature
+/** What an actual call returns, asserting the alias alone would miss a signature
  *  regressed back to `any`, which is the regression that matters. */
 type Returns<T extends DynamicType> = ReturnType<typeof createDynamicElement<T>>;
 
@@ -102,7 +102,7 @@ export function createDynamicElement<T extends DynamicType>(
 
 /**
  * Insert `props.children`, read through `readChildren` so a lazy `get children()`
- * — which is how the compiler emits component children — resolves here rather
+ *, which is how the compiler emits component children, resolves here rather
  * than being materialised early.
  */
 function insertChildren(element: Element, props: Record<string, any>): void {

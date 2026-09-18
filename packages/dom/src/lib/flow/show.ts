@@ -37,7 +37,7 @@ export interface ShowProps<T, W = any> {
 /**
  * Conditionally renders content based on a reactive condition.
  *
- * Returns a memo — works in both JSX and `html` templates.
+ * Returns a memo: works in both JSX and `html` templates.
  *
  * @example JSX
  * <Show when={isLoggedIn()} fallback={<Login />}>
@@ -47,36 +47,23 @@ export interface ShowProps<T, W = any> {
  * @example html template
  * Show({ when: isLoggedIn, fallback: html`<p>Login</p>`, children: html`<p>Dashboard</p>` })
  */
-// export function Show<T>(props: ShowProps<T>): Accessor<any> {
-//   const when = normalizeAccessor(props.when);
-
 //   return createMemo(() => {
-//     const value = when();
-    // if (isTruthy(value)) {
-    //   return typeof props.children === 'function'
-    //     ? props.children(value)
-    //     : props.children;
-    // }
-//     return props.fallback ?? null;
-//   });
-// }
 export function Show<T>(props: ShowProps<T>): any {
   // Read `when` lazily through the prop getter so `when={cond()}` re-runs the caller's
   // expression inside these memos (reactive), while `when={cond}` / `when={() => cond}`
-  // still work — resolveReactiveProp unwraps the accessor form once.
+  // still work: resolveReactiveProp unwraps the accessor form once.
   const when = resolveReactiveProp<T>(() => props.when as any);
-  // const {when} = props
   // Named for a watcher: three memos at one line, two of them anonymous, is what a graph of
   // a page with a few conditions turns into.
   const value = createMemo(when, undefined, { name: 'Show.when' });
     const cond = createMemo(value, undefined, { name: 'Show.cond' });
 
     // Each branch renders in its own scope so that leaving it tears down whatever
-    // it registered — an event listener, an observer, a timer. Without this the
+    // it registered, an event listener, an observer, a timer. Without this the
     // branch's `onCleanup`s land on the enclosing owner and only run when the
     // whole tree dies, so a closed <Show> kept listening and reacting.
     //
-    // Keyed on which branch is showing, NOT on every re-run: the memo also re-runs
+    // Keyed on which branch is showing, not on every re-run: the memo also re-runs
     // when the value changes within the same branch, and disposing then would
     // throw away DOM the runtime deliberately reuses.
     const parentOwner = getOwner();
@@ -97,7 +84,6 @@ export function Show<T>(props: ShowProps<T>): any {
             //     return props.fallback ?? null;
             //   }
             // }
-            // const value = when();
           const evaluate = cond()
           enterBranch(evaluate ? 'when' : 'fallback');
           return runWithOwner(branchScope, () => {
@@ -119,40 +105,6 @@ export function Show<T>(props: ShowProps<T>): any {
         return props.fallback
           });
       // if (isTruthy(value)) {
-      //   let children = props.children;
-      //   // handle children on jsx
-      //   // if(Array.isArray(children)) {
-      //   //   children = makeArrayFlat(children);
-      //   //   // console.log('is truthy', children);
-      //   //   // if(children)
-      //   //   // children = (children as any[]).map((c: any) => typeof c === 'function' ? c(value) : c) as any;
-      //   //   // return children;
-      //   // }
-      //   if (typeof children === 'function' && !isLitResult(children)) {
-      //     if (isSignal<any>(value)) {
-      //       // value = (value as any)() as any;
-      //       return (children as (item: T) => any)((value as any)());
-      //     }
-      //     return (children as (item: T) => any)(value as T);
-      //   }
-      //   return children;
-      //   // return typeof props.children === 'function'
-      //   //   ? props.children(value)
-      //   //   : props.children;
-      // }
-      // let value =
-      //   typeof condition === 'function' ? (condition as () => T)() : condition;
-      // if (value != null && value !== false) {
-      //   // console.log('value', value);
-      //   const children = props.children;
-      //   if (typeof children === 'function' && !isLitResult(children)) {
-      //     if (isSignal<any>(value)) {
-      //       value = (value as any)() as any;
-      //     }
-      //     return (children as (item: T) => any)(value as T);
-      //   }
-      //   return children;
-      // }
       return props.fallback ?? null;
     },
     undefined,
@@ -161,69 +113,4 @@ export function Show<T>(props: ShowProps<T>): any {
     { name: 'Show.result' }
   );
 }
-// export function Show1<T>(props: ShowProps<T>): any {
-//   const when = normalizeAccessor(props.when);
-//   return createMemo(
-//     () => {
-//       if (isResource(when)) {
-//         if (when.loading) {
-//           return props.fallback ?? null;
-//         }
-//       }
-//       const value = when();
-//       if (isTruthy(value)) {
-//         let children = props.children;
-//         // handle children on jsx
-//         // if(Array.isArray(children)) {
-//         //   children = makeArrayFlat(children);
-//         //   // console.log('is truthy', children);
-//         //   // if(children)
-//         //   // children = (children as any[]).map((c: any) => typeof c === 'function' ? c(value) : c) as any;
-//         //   // return children;
-//         // }
-//         if (typeof children === 'function' && !isLitResult(children)) {
-//           if (isSignal<any>(value)) {
-//             // value = (value as any)() as any;
-//             return (children as (item: T) => any)((value as any)());
-//           }
-//           return (children as (item: T) => any)(value as T);
-//         }
-//         return children;
-//         // return typeof props.children === 'function'
-//         //   ? props.children(value)
-//         //   : props.children;
-//       }
-//       // let value =
-//       //   typeof condition === 'function' ? (condition as () => T)() : condition;
-//       // if (value != null && value !== false) {
-//       //   // console.log('value', value);
-//       //   const children = props.children;
-//       //   if (typeof children === 'function' && !isLitResult(children)) {
-//       //     if (isSignal<any>(value)) {
-//       //       value = (value as any)() as any;
-//       //     }
-//       //     return (children as (item: T) => any)(value as T);
-//       //   }
-//       //   return children;
-//       // }
-//       return props.fallback ?? null;
-//     },
-//     undefined,
-//     { name: 'show' }
-//   );
-// }
-
       // if (isTruthy(value)) {
-      //   const children = props.children;
-      //   if (typeof children === 'function' && !isLitResult(children)) {
-      //     if (isSignal<any>(value)) {
-      //       // value = (value as any)() as any;
-      //       return (children as (item: T) => any)((value as any)());
-      //     }
-      //     return (children as (item: T) => any)(value as T);
-      //   }
-      //   return children;
-      //   // return typeof props.children === 'function'
-      //   //   ? props.children(value)
-      //   //   : props.children;
-      // }

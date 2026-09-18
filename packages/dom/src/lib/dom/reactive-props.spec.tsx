@@ -3,13 +3,13 @@ import { describe, it, expect } from 'vitest';
 import { createSignal, createRoot } from '@fluixi/reactive/signal';
 import { splitProps, spread, applyProps, createNativeElement } from '@fluixi/dom';
 
-// A component prop compiles to a getter — `get value() { return sig().toUpperCase() }`
-// — whose current result is a plain (non-function) value. When that prop reaches a
+// A component prop compiles to a getter: `get value() { return sig().toUpperCase() }`
+//: whose current result is a plain (non-function) value. When that prop reaches a
 // native element through {...spread} or the jsx runtime, the read must happen inside
 // an effect or the getter's dependency is snapshotted once and the DOM never updates.
 // These guard that both prop-application paths re-read getter-backed values live.
 
-describe('spread — getter-backed props stay reactive', () => {
+describe('spread: getter-backed props stay reactive', () => {
   it('re-reads a getter that returns a plain value (property path)', () => {
     createRoot(() => {
       const [cur, setCur] = createSignal('usd');
@@ -42,7 +42,7 @@ describe('spread — getter-backed props stay reactive', () => {
     });
   });
 
-  it('forwards through splitProps rest — the real component shape', () => {
+  it('forwards through splitProps rest, the real component shape', () => {
     createRoot(() => {
       const [cur, setCur] = createSignal('usd');
       // parent passes a getter prop; the component splits + spreads the rest.
@@ -66,7 +66,7 @@ describe('spread — getter-backed props stay reactive', () => {
   });
 });
 
-describe('applyProps — getter-backed props stay reactive', () => {
+describe('applyProps: getter-backed props stay reactive', () => {
   const build = (props: Record<string, any>): HTMLInputElement => {
     const el = document.createElement('input');
     applyProps(el, props);
@@ -109,7 +109,7 @@ describe('applyProps — getter-backed props stay reactive', () => {
       const el = build({ get value() { return cur().toUpperCase(); } });
       document.body.appendChild(el);
       el.focus();
-      setCur('eur'); // update arrives while focused — must be ignored
+      setCur('eur'); // update arrives while focused, must be ignored
       expect(el.value).toBe('USD');
       el.remove();
     });

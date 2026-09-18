@@ -29,7 +29,7 @@ describe('ClientOnly', () => {
   });
 
   it('renders the fallback during hydration, then swaps after the pass', async () => {
-    // The point of the component: rendering children mid-hydration would desync
+    // The point of the component, rendering children mid-hydration would desync
     // the cursor from the server markup.
     hydration.active = true;
     await createRoot(async () => {

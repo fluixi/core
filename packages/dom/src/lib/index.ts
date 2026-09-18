@@ -1,5 +1,4 @@
 /**
- * @fileoverview Main entry point for @fluixi/dom package
  * @module @fluixi/dom
  *
  * This package provides a comprehensive reactive DOM runtime with fine-grained updates
@@ -29,11 +28,11 @@ export type {
   ComponentObserver,
 } from './dom/types.js';
 
-// No reactive primitives re-exported here — import createSignal/createMemo/… from
+// No reactive primitives re-exported here: import createSignal/createMemo/... from
 // @fluixi/reactive. dom only owns createComponent (./dom/integration.js).
 
 // SSR string renderer + request context. Re-exported as named bindings (not spread into a
-// barrel), so a client-only bundle that never references them tree-shakes them out — they
+// barrel), so a client-only bundle that never references them tree-shakes them out, they
 // also live on the `@fluixi/dom/server` subpath. The node classes/guards (isServer, etc.)
 // come from the runtime barrel above; keep them out of this list to avoid duplicate exports.
 export {

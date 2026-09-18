@@ -5,7 +5,7 @@ import { serializeNode } from './serialize.js';
 /**
  * The parser's contract is a round trip: whatever the compiler serialized must parse back
  * into a tree that serializes to the same string. That pins the parser to the serializer
- * without either having to describe the grammar in prose — and it is the check that would
+ * without either having to describe the grammar in prose, and it is the check that would
  * have caught template cloning breaking SSR before it shipped.
  */
 /** Tag, attributes and children, so two canonical spellings compare equal. */
@@ -23,8 +23,8 @@ function shape(node: any): unknown {
  * Parsing then serializing then parsing again must reach the same tree.
  *
  * Structural rather than byte-for-byte: the two serializers have small differences in
- * canonical form — the compiler writes `<input disabled>` where the server writes
- * `disabled=""` — which lose no information. What must never differ is the tree.
+ * canonical form, the compiler writes `<input disabled>` where the server writes
+ * `disabled=""`, which lose no information. What must never differ is the tree.
  */
 function roundTrips(html: string): void {
   const once = parseTemplate(html);

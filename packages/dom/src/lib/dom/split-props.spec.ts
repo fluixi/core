@@ -24,7 +24,7 @@ describe('splitProps', () => {
     expect({ ...rest }).toEqual({ c: 3 });
   });
 
-  it('preserves reactivity — a signal-backed prop stays live', () => {
+  it('preserves reactivity, a signal-backed prop stays live', () => {
     const [cls, setCls] = createSignal('a');
     const props = {
       get class() {

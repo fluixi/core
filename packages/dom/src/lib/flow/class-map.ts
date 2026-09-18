@@ -1,7 +1,7 @@
 import { Accessor, createMemo } from '@fluixi/reactive/signal';
 
 /**
- * A single class condition — static boolean or a reactive function.
+ * A single class condition: static boolean or a reactive function.
  */
 export type ClassCondition =
   | boolean
@@ -33,7 +33,7 @@ export type ClassMapInput =
  *
  * @example
  * // Static
- * classMap({ active: true, disabled: false })         // → "active"
+ * classMap({ active: true, disabled: false })         // -> "active"
  *
  * // Per-key reactive values
  * classMap({ active: isActive, 'text-sm': () => size() === 'sm' })
@@ -41,7 +41,7 @@ export type ClassMapInput =
  * // Whole map reactive
  * classMap(() => ({ active: isActive(), error: hasError() }))
  *
- * // Mixed — combine a static base class with reactive conditions
+ * // Mixed: combine a static base class with reactive conditions
  * classMap({ 'btn': true, 'btn-primary': isPrimary, 'btn-disabled': disabled })
  */
 export function classMap(input: ClassMapInput): Accessor<string> {

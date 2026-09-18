@@ -40,8 +40,8 @@ describe('__FX_DATA__ redaction', () => {
 });
 
 /**
- * A resource can resolve to something JSON cannot carry — most often a lazy
- * route's module, where the resource value IS the component function. That entry
+ * A resource can resolve to something JSON cannot carry: most often a lazy
+ * route's module, where the resource value is the component function. That entry
  * used to reach `JSON.stringify`, which drops the key without a word, so the
  * document shipped `<script id="__FX_DATA__">{}</script>`: a transport with
  * nothing in it, on every page whose only resource was a lazy import.

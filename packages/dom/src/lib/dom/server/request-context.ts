@@ -1,6 +1,6 @@
 /**
- * Per-request SSR context — the request-scoping that fixes the "P0 #4"
- * module-global concurrency hazard. State that must NOT be shared across
+ * Per-request SSR context, the request-scoping that fixes the "P0 #4"
+ * module-global concurrency hazard. State that must not be shared across
  * concurrent server renders (route data, the matched-route map, the hydration
  * id counter, the request event) lives here, keyed by an injectable store.
  *
@@ -8,7 +8,7 @@
  * (`run(store, cb)` + `getStore()`), so a real ALS can be injected verbatim by
  * the Node-only @fluixi/server package (and by tests). @fluixi/dom itself stays
  * environment-agnostic: it never imports `node:async_hooks`, so browser bundles
- * don't pull it in. The default store is a synchronous module-global — correct
+ * don't pull it in. The default store is a synchronous module-global: correct
  * for a single sync render; concurrency isolation comes from the injected ALS.
  */
 
@@ -45,9 +45,9 @@ export interface RequestContext {
   /** monotonic per-request id source for hydration markers (was module-global ssrMarkerId) */
   nextId(): string;
   /**
-   * Per-request resource id (creation order) — matched on the client. Outside an island
-   * the id is global creation order (`r0`, `r1`, …). Inside an island scope it is namespaced
-   * and counted PER island (`Counter#0:r0`, …) so the client, which hydrates each island
+   * Per-request resource id (creation order): matched on the client. Outside an island
+   * the id is global creation order (`r0`, `r1`, ...). Inside an island scope it is namespaced
+   * and counted PER island (`Counter#0:r0`, ...) so the client, which hydrates each island
    * independently and restarts its local counter, reproduces the same ids and seeds each
    * island's resources from `__FX_DATA__` without a global render.
    */
@@ -62,7 +62,7 @@ export interface RequestContext {
   data: Map<string, unknown>;
 }
 
-/** Matches AsyncLocalStorage<RequestContext> — inject one for real isolation. */
+/** Matches AsyncLocalStorage<RequestContext>: inject one for real isolation. */
 export interface RequestStore {
   getStore(): RequestContext | undefined;
   run<T>(ctx: RequestContext, fn: () => T): T;
@@ -92,9 +92,16 @@ export function setRequestStore(store: RequestStore | null): void {
   _store = store ?? syncStore;
 }
 
+/**
+ * A per-request context: the event, its locals, and the data bag hydration reads.
+ *
+ * `locals` is adopted from the platform request when there is one, so anything
+ * middleware wrote is the same object the render sees. Without a request it starts
+ * empty.
+ */
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
-  // Seed the locals bag: if the event carries the platform request, ADOPT the bag that
-  // middleware wrote via getRequestLocals(request) (the middleware→render bridge); else
+  // Seed the locals bag, if the event carries the platform request, ADOPT the bag that
+  // middleware wrote via getRequestLocals(request) (the middleware -> render bridge); else
   // start a fresh empty one. Either way the render's getLocals() sees the right object.
   if (!event.locals) {
     event.locals = event.request ? getRequestLocals(event.request as object) : {};
@@ -136,6 +143,13 @@ export function createRequestContext(event: RequestEvent = {}): RequestContext {
   };
 }
 
+/**
+ * Run `fn` with `ctx` as the current request.
+ *
+ * Backed by `AsyncLocalStorage` where the host provides one, which is what keeps two
+ * concurrent renders from reading each other's request. A synchronous fallback covers
+ * hosts without it.
+ */
 export function runWithRequestContext<T>(ctx: RequestContext, fn: () => T): T {
   return _store.run(ctx, fn);
 }
@@ -144,6 +158,12 @@ export function getRequestContext(): RequestContext | undefined {
   return _store.getStore();
 }
 
+/**
+ * The request being rendered, or undefined outside a server render.
+ *
+ * Undefined rather than throwing, because the same component code runs on the client
+ * where there is no request to have.
+ */
 export function getRequestEvent(): RequestEvent | undefined {
   return getRequestContext()?.event;
 }
@@ -151,7 +171,7 @@ export function getRequestEvent(): RequestEvent | undefined {
 /**
  * The current request's mutable `locals` bag (created if absent). Returns a fresh empty
  * object when called outside a request context, so reads never throw. This is the seam
- * middleware writes (e.g. `getLocals().auth = …`) and loaders / server functions read.
+ * middleware writes (e.g. `getLocals().auth = ...`) and loaders / server functions read.
  */
 export function getLocals(): RequestLocals {
   const event = getRequestEvent();
@@ -160,7 +180,7 @@ export function getLocals(): RequestLocals {
   return event.locals;
 }
 
-// ─── middleware → render bridge ─────────────────────────────────────────────────
+// ─── middleware -> render bridge ─────────────────────────────────────────────────
 // Middleware runs on the raw platform request, OUTSIDE the render's request context.
 // This WeakMap associates a per-request locals bag with that request object; the render
 // adopts it in createRequestContext when the app forwards `request` on the event. Keyed
@@ -169,7 +189,7 @@ const _requestLocals = new WeakMap<object, RequestLocals>();
 
 /**
  * The mutable `locals` bag for a platform request object (created on first access).
- * Middleware writes here (e.g. `getRequestLocals(request).auth = …`) before calling
+ * Middleware writes here (e.g. `getRequestLocals(request).auth = ...`) before calling
  * `next()`; the render then reads the same object via `getLocals()`. Pairs with the app
  * entry forwarding `request` on the render event (`renderRequestAsync(App, { url, request })`).
  */

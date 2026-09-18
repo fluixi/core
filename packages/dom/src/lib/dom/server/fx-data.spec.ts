@@ -12,11 +12,11 @@ describe('__FX_DATA__ transport (escaping + reader)', () => {
   it('escapes the standard SSR-JSON set so a value cannot break out of <script>', () => {
     const raw = '</script><!-- a & b \u2028\u2029';
     const out = escapeFxJson(JSON.stringify({ x: raw }));
-    // No raw breakout / line-terminator characters survive…
+    // No raw breakout / line-terminator characters survive...
     expect(out).not.toContain('</script>');
     expect(out).not.toContain('<!--');
     expect(out).not.toMatch(/[<>&\u2028\u2029]/);
-    // …and it still round-trips back to the original value via JSON.parse.
+    // ...and it still round-trips back to the original value via JSON.parse.
     expect(JSON.parse(out)).toEqual({ x: raw });
   });
 

@@ -1,5 +1,5 @@
 // The server seam the runtime imports from. Deliberately class-free so the
-// ServerNode classes in ./nodes.ts stay out of client bundles — they get pulled
+// ServerNode classes in ./nodes.ts stay out of client bundles, they get pulled
 // in (and registered) only when @fluixi/dom/server loads.
 
 // Stamped on every server node so the guards below can spot one without an
@@ -37,6 +37,12 @@ export function isServer(): boolean {
   return state.server;
 }
 
+/**
+ * Turn server mode on or off for this realm.
+ *
+ * `renderToString` owns this and restores the previous value, so it is rarely called
+ * directly. A test that needs to exercise a server path is the exception.
+ */
 export function setServerMode(on: boolean): void {
   state.server = on;
 }

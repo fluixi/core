@@ -1,7 +1,15 @@
-// /**
-//  * Development mode flag
-//  */
-
+/**
+ * Brands on a function, and the guards that read them back.
+ *
+ * The runtime has to know what a value is before it calls it. A router has to be entered
+ * differently from a provider, and a provider's children have to be read under its own
+ * owner, so `insert` and `createComponent` ask before dispatching. None of that is
+ * inferable from a function, which is why each `as*` stamps a registry symbol and the
+ * matching `is*` tests for it.
+ *
+ * `Symbol.for` rather than a local symbol, so two bundled copies of this module agree.
+ * That is the same reason the reactive graph brands its nodes that way.
+ */
 
 export function asRouter(value: any) {
   Object.defineProperty(value, Symbol.for('fluixi-router'), { value: true, enumerable: true });

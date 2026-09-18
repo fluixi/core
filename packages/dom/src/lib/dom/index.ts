@@ -12,7 +12,7 @@ export {
   isDomText,
 } from './server/host.js';
 export { Island, hydrateIslands, type IslandProps, type IslandRegistry } from './island.js';
-// hydrate() is the heavy DOM-reuse walker — its own module so render-only apps
+// hydrate() is the heavy DOM-reuse walker, its own module so render-only apps
 // tree-shake it. The small cursor helpers stay in the weightless state module.
 export { hydrate } from './hydration.js';
 export {

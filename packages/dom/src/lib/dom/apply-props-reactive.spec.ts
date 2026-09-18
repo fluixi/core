@@ -5,7 +5,7 @@ import { applyProps } from './runtime.js';
 
 /**
  * `applyProps` is the path a component takes when it forwards a computed value
- * through a props object rather than as a compiled JSX attribute — which is what
+ * through a props object rather than as a compiled JSX attribute, which is what
  * every polymorphic/`as` wrapper does. `class` and `classList` already unwrapped
  * an accessor there; `style` applied once and never updated.
  */

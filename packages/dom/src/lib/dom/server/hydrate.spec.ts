@@ -11,7 +11,7 @@ import {
 
 // Build the same tree on server and client, mirroring exactly what the
 // imperative codegen emits: each element is a nested IIFE, fully built (incl.
-// its children) before being inserted into its parent — so siblings are created
+// its children) before being inserted into its parent, so siblings are created
 // in document order, which is what the hydration cursor walks.
 function App() {
   const [n, setN] = createSignal(0);
@@ -41,7 +41,7 @@ function App() {
   })();
 }
 
-describe('SSR → client handoff', () => {
+describe('SSR -> client handoff', () => {
   // SHIP-NOW PATH: client renders fresh into the container that held server
   // HTML (render() clears + rebuilds). Correct interactivity, at the cost of a
   // re-render (no DOM reuse). Valid for SSR-for-first-paint/SEO + CSR.
@@ -64,7 +64,7 @@ describe('SSR → client handoff', () => {
   // OPEN GAP: true hydration (reuse server DOM, no re-render). The existing
   // hydrate()/isHydrating machinery reuses the root node but never descends the
   // cursor into children, so App() rebuilds fresh orphan children and wires
-  // events/reactivity onto those — leaving the server DOM inert. Needs a
+  // events/reactivity onto those, leaving the server DOM inert. Needs a
   // cursor descend/ascend rework of insert's hydration path. Documented; fix
   // is its own focused pass.
   it('hydrate reuses server DOM (no recreation) and wires events/reactivity', async () => {
@@ -77,7 +77,7 @@ describe('SSR → client handoff', () => {
 
     hydrate(() => App(), container);
 
-    // same node objects → hydration reused them rather than recreating
+    // same node objects -> hydration reused them rather than recreating
     expect(container.querySelector('span')).toBe(serverSpan);
     expect(container.querySelector('button')).toBe(serverBtn);
     // no duplicate render (still one span / one button)
@@ -92,7 +92,7 @@ describe('SSR → client handoff', () => {
 
 describe('static innerHTML prop', () => {
   // Regression: spread used to always call val() on innerHTML, so a plain string
-  // threw ("val is not a function") and aborted the render mid-walk — wiping the
+  // threw ("val is not a function") and aborted the render mid-walk, wiping the
   // whole root on hydration. A static value must just be assigned.
   function HtmlApp(markup: string) {
     return (() => {

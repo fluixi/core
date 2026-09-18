@@ -12,7 +12,7 @@ import { Show } from '../../flow/show.js';
 import { For } from '../../flow/for.js';
 
 // Wire a faithful component runner (createComponent is unregistered until core
-// calls registerCreateComponent). Mirrors the runtime contract spec — Comp(props)
+// calls registerCreateComponent). Mirrors the runtime contract spec. Comp(props)
 // lets components read props (including the `get children()` getter the codegen emits).
 beforeAll(() => {
   registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
@@ -31,7 +31,7 @@ function comp(Comp: any, props: any, children?: any) {
   return createMemo(() => createComponent(Comp as any, p as any));
 }
 
-describe('renderToString — elements + text', () => {
+describe('renderToString: elements + text', () => {
   it('renders a simple element with a text child', () => {
     expect(renderToString(() => el('div', null, 'hello'))).toBe('<div>hello</div>');
   });
@@ -51,7 +51,7 @@ describe('renderToString — elements + text', () => {
   });
 });
 
-describe('renderToString — attributes', () => {
+describe('renderToString: attributes', () => {
   it('serializes string attrs, class, and a style object', () => {
     const html = renderToString(() =>
       el('div', { id: 'box', class: 'a b', style: { color: 'red', fontSize: '12px' } }),
@@ -61,18 +61,18 @@ describe('renderToString — attributes', () => {
 
   it('emits boolean attrs as empty and drops false ones', () => {
     // `disabled` is not a JSX property on the mock, so it routes through
-    // setAttribute; spread sends boolean true → setAttribute('disabled','').
+    // setAttribute; spread sends boolean true -> setAttribute('disabled','').
     const html = renderToString(() => el('button', { disabled: true }, 'go'));
     expect(html).toBe('<button disabled="">go</button>');
   });
 
-  it('maps htmlFor → for and className → class', () => {
+  it('maps htmlFor -> for and className -> class', () => {
     const html = renderToString(() => el('label', { htmlFor: 'n', className: 'lbl' }, 'Name'));
     expect(html).toBe('<label for="n" class="lbl">Name</label>');
   });
 });
 
-describe('renderToString — reactive children resolved once', () => {
+describe('renderToString: reactive children resolved once', () => {
   it('reads a signal accessor child a single time', () => {
     const html = renderToString(() => {
       const [name] = createSignal('world');
@@ -82,7 +82,7 @@ describe('renderToString — reactive children resolved once', () => {
   });
 });
 
-describe('renderToString — control flow', () => {
+describe('renderToString: control flow', () => {
   it('Show renders children when true, fallback when false', () => {
     expect(
       renderToString(() => el('div', null, Show({ when: () => true, children: () => 'yes', fallback: 'no' } as any))),
@@ -100,7 +100,7 @@ describe('renderToString — control flow', () => {
   });
 });
 
-describe('renderToString — components + children', () => {
+describe('renderToString: components + children', () => {
   it('renders a component tree', () => {
     const Hello = (p: any) => el('span', null, p.label);
     expect(renderToString(() => comp(Hello, { label: 'hi' }))).toBe('<span>hi</span>');
@@ -113,7 +113,7 @@ describe('renderToString — components + children', () => {
   });
 });
 
-describe('renderToString — escaping', () => {
+describe('renderToString: escaping', () => {
   it('escapes text and attribute values', () => {
     const html = renderToString(() => el('div', { title: '<a> & "b"' }, 'x < y & z'));
     expect(html).toBe(// `<`/`>` are escaped in attribute values too. Not required inside quotes, but it
@@ -123,7 +123,7 @@ describe('renderToString — escaping', () => {
   });
 });
 
-describe('renderToString — isolation', () => {
+describe('renderToString: isolation', () => {
   it('does not leak nodes between sequential renders', () => {
     const a = renderToString(() => el('div', null, 'A'));
     const b = renderToString(() => el('div', null, 'B'));

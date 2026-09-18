@@ -1,6 +1,6 @@
 export * from './lib/index.js';
 
-// Namespace for `import DOM from '@fluixi/dom'` — just the rendering runtime.
+// Namespace for `import DOM from '@fluixi/dom'`, just the rendering runtime.
 // Guards/read-only helpers are named exports only. Plain literal so it drops when
 // unused.
 import {
@@ -82,7 +82,7 @@ const DOM = {
 };
 
 export { VERSION } from './version.generated.js';
-// Version stamping lives here, not in core, so the hydrate path stamps too — core sits
+// Version stamping lives here, not in core, so the hydrate path stamps too: core sits
 // above this package and registers its own version rather than being imported.
 export {
   registerCoreVersion,

@@ -1,10 +1,9 @@
 /**
- * @fileoverview Core Reactive DOM Runtime
  * @module @fluixi/dom/runtime
  *
  * Fine-grained reactive DOM manipulation utilities inspired by SolidJS.
  * Key design: Event delegation uses `$$eventname` properties on DOM nodes
- * (the SolidJS pattern) — simpler and more reliable than Map-based lookup.
+ * (the SolidJS pattern): simpler and more reliable than Map-based lookup.
  *
  * Critical fixes applied:
  * - insertContent array branch: nested signal content cleanup via onCleanup
@@ -21,7 +20,7 @@ import { stampVersions, warnOnVersionSkew } from './versions.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
-// NOT in the reactive core (e.g. createComponent).
+// not in the reactive core (e.g. createComponent).
 import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
@@ -149,16 +148,16 @@ function located<T extends Element>(element: T, at?: { file: string; line: numbe
 const templateCache = new Map<string, HTMLTemplateElement>();
 
 // ============================================================================
-// Event Delegation — SolidJS $$eventname property pattern
+// Event Delegation. SolidJS $$eventname property pattern
 //
 // Handlers are stored directly on DOM nodes as `node.$$click = handler`.
-// The capture listener reads `node.$$click` directly — no Map lookups needed.
+// The capture listener reads `node.$$click` directly, no Map lookups needed.
 // This approach correctly handles e.preventDefault() and stopPropagation.
 // ============================================================================
 
 const delegatedSet = new Set<string>();
 
-// Events that don't bubble — must use direct addEventListener
+// Events that don't bubble: must use direct addEventListener
 const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize', 'mouseenter', 'mouseleave', 'pointerenter', 'pointerleave', 'gotpointercapture', 'lostpointercapture']);
 
 /**
@@ -192,7 +191,7 @@ function delegatedEventHandler(e: Event): void {
 }
 
 /**
- * Add a delegated event handler — stores as $$eventname property
+ * Add a delegated event handler: stores as $$eventname property
  */
 export function addDelegatedEventListener(
   element: Element,
@@ -201,7 +200,7 @@ export function addDelegatedEventListener(
 ): void {
   (element as any)[`$$${name}`] = handler;
   if (NON_DELEGATED.has(name)) {
-    // Non-bubbling event (focus/blur/pointerenter/…): document delegation can't observe it, so
+    // Non-bubbling event (focus/blur/pointerenter/...): document delegation can't observe it, so
     // attach a direct listener once. A stable forwarder reads $$name so updating the handler
     // doesn't churn addEventListener/removeEventListener.
     const key = `__fx_${name}`;
@@ -250,7 +249,7 @@ export function isFunction(value: any): value is Function {
 
 function createTextNode(value: string, anchor = false): Text {
   if (isServer()) return getServerNodes().createText(value) as unknown as Text;
-  // Anchors/placeholders (insert markers) are client-only insertion points — the server
+  // Anchors/placeholders (insert markers) are client-only insertion points, the server
   // serialized nothing for them, so they must never adopt a server text node. Only real
   // content goes through the hydration walker.
   if (hydration.active && !anchor) {
@@ -269,6 +268,17 @@ function createMarker(value: string): Comment {
   return document.createComment(value);
 }
 
+/**
+ * Create an element, or adopt the server's during hydration.
+ *
+ * One of the calls the compiler emits, so its three modes are the whole of how a
+ * template becomes DOM. Server rendering routes to the realm's node factory and returns
+ * a string-serializable stand-in rather than a real element. Hydration asks the walker
+ * for the next element the server wrote and reuses it. Otherwise it creates one.
+ *
+ * `at` is a dev-only source position, stamped onto the node for devtools. A production
+ * build passes none and carries no marker.
+ */
 export function createNativeElement(
   tag: string,
   isSVG = false,
@@ -285,6 +295,13 @@ export function createNativeElement(
   );
 }
 
+/**
+ * Parse static template HTML once and cache it by that string.
+ *
+ * Every clone of a template comes from one parse, which is most of why a compiled
+ * template is cheap. The cache is keyed by the markup rather than by identity, so two
+ * modules emitting the same HTML share the parse.
+ */
 export function createTemplate(html: string, isSVG = false): HTMLTemplateElement {
   const cached = templateCache.get(html);
   if (cached) return cached;
@@ -301,14 +318,14 @@ export function createTemplate(html: string, isSVG = false): HTMLTemplateElement
  * needs it.
  *
  * The three cases mirror {@link createNativeElement}, which is the point: a template has
- * to behave like the elements it replaces, or it works only in client-rendered apps —
+ * to behave like the elements it replaces, or it works only in client-rendered apps,
  * which is exactly how it failed before this existed.
  *
- *  - **server** — carried as text and written out verbatim. Parsing it into elements
+ *  - **server**: carried as text and written out verbatim. Parsing it into elements
  *    only to serialize them straight back would be pure cost.
- *  - **hydrating** — adopt the server's existing subtree and skip past it. The subtree
+ *  - **hydrating**: adopt the server's existing subtree and skip past it. The subtree
  *    is inert, so there is nothing inside to wire up.
- *  - **client** — parse once (cached by HTML) and clone per instance.
+ *  - **client**: parse once (cached by HTML) and clone per instance.
  */
 export function templateNode(
   html: string,
@@ -342,7 +359,7 @@ export interface TemplatePositions {
  * Write each element's own source position onto it.
  *
  * The whole template is one string, so a source map traces every element in it back to the
- * line the root opens at — devtools would name the component and nothing finer. This is the
+ * line the root opens at: devtools would name the component and nothing finer. This is the
  * one moment the two line up: the tree holds exactly the elements the compiler listed, in
  * the same order, because holes are filled after this returns.
  *
@@ -364,7 +381,7 @@ function stampPositions(node: Node, at?: TemplatePositions): Node {
  * for *that hole*.
  *
  * Without this, only the hole's top level adopts. `templateNode` moves the cursor past the
- * whole template — the subtree is inert, so there is nothing in it to walk — which leaves
+ * whole template, the subtree is inert, so there is nothing in it to walk, which leaves
  * the cursor in the wrong place for anything the hole builds internally. A component in a
  * hole would then recreate its own elements: no duplication, but every server node thrown
  * away, which is most of what hydration is for.
@@ -375,14 +392,14 @@ export function holeScope<T>(start: Node, produce: () => T): T {
   if (!hydration.active) return produce();
 
   // `produce` is called with the cursor already placed, because the value may be built
-  // eagerly — `props.children` is a getter, and reading it constructs its nodes there and
+  // eagerly: `props.children` is a getter, and reading it constructs its nodes there and
   // then. Wrapping the result instead would be too late: the DOM would already exist,
   // built against whatever cursor happened to be current, and the server's nodes would be
   // left behind as duplicates.
   const value = runHydrationAt(start.nextSibling, produce);
 
   // A memo or accessor builds nothing until it is read, which happens inside `insert`'s
-  // effect — so it needs the cursor placed again at that moment. The guard matters: once
+  // effect, so it needs the cursor placed again at that moment. The guard matters: once
   // hydration is over, later updates must render normally rather than re-enter it.
   if (typeof value === 'function') {
     const accessor = value as unknown as (...args: unknown[]) => unknown;
@@ -398,7 +415,7 @@ export function holeScope<T>(start: Node, produce: () => T): T {
 /**
  * The compiler tags a hole's accessor with where it was written, and devtools reads the tag
  * off whatever finally reaches `insert`. Under hydration that is this wrapper, not the
- * accessor, so the tag has to come along — otherwise the binding reports the frame it was
+ * accessor, so the tag has to come along: otherwise the binding reports the frame it was
  * created from, which is a line in this file.
  */
 function carryHoleTag<T extends object>(from: object, to: T): T {
@@ -427,7 +444,7 @@ export function holeEnd(start: Node): Node {
  *
  * On a fresh clone the markers are adjacent and this is empty, so `insert` builds the
  * content. When hydrating, the server's rendered content sits between them and is handed
- * back — `insertExpression` then reuses those nodes (setting `.data` on a text node
+ * back: `insertExpression` then reuses those nodes (setting `.data` on a text node
  * rather than creating one), which is what adoption means here.
  *
  * Paired markers are what make this exact: a hole's content is *by definition* the nodes
@@ -465,12 +482,12 @@ export function fnName(fn: Function) {
 }
 
 /**
- * iterateFn — resolves a value by calling through plain function wrappers.
+ * iterateFn: resolves a value by calling through plain function wrappers.
  *
  * Must stop at signals/memos/resources ($SIGNAL marker) and
  * component thunks (fluixi-component marker). Without this:
  *  - components returning memos get unwrapped to static values, losing reactivity
- *  - lazy component createMemo re-triggers C(props) → infinite recursion
+ *  - lazy component createMemo re-triggers C(props) -> infinite recursion
  */
 export function iterateFn(item: any): any {
   // Stop immediately if it's a signal, memo, or resource
@@ -480,7 +497,7 @@ export function iterateFn(item: any): any {
 
   if (typeof item !== 'function') return item;
 
-  // Unwrap plain function wrappers — stop at signals and component thunks
+  // Unwrap plain function wrappers: stop at signals and component thunks
   let content = item();
   while (
     typeof content === 'function' &&
@@ -503,7 +520,7 @@ const MAX_INSERT_DEPTH = 200;
 // _createInsertEffect
 //
 // Creates a reactive render effect for DOM insertion.
-// Uses a componentCache to ensure component thunks are called at most once —
+// Uses a componentCache to ensure component thunks are called at most once:
 // same thunk function reference always returns the same output across re-runs.
 // ============================================================================
 
@@ -518,7 +535,7 @@ function _createInsertEffect(
   const componentCache = new Map<Function, any>();
   return createRenderEffect(() => {
     // The accessor, never its result: it carries the compiler's hole position, and calling it
-    // again here builds the dom twice — during hydration, a duplicated subtree.
+    // again here builds the dom twice, during hydration, a duplicated subtree.
     //
     // Every run, because what this effect writes into moves as the value does.
     reportReactiveBinding(marker ?? parent, 'content', undefined, getAccessor);
@@ -589,6 +606,19 @@ function _createInsertEffect(
 // insert
 // ============================================================================
 
+/**
+ * Place content in a parent, and keep it current when the content is reactive.
+ *
+ * The other half of the compiler's output. `accessor` may be a value or a function: a
+ * function is read inside a render effect, so the position updates on its own when
+ * anything it read changes. That is where fine-grained updating actually happens, since
+ * only this position is touched rather than the subtree around it.
+ *
+ * `marker` is the node the content sits before, which is what makes several holes in one
+ * parent independent. `init` is what the position already holds, empty on a fresh clone
+ * and the server's nodes when hydrating, so hydration reconciles against them instead of
+ * building a second copy.
+ */
 export function insert(
   parent: Node,
   accessor?: Children | Accessor<Children> | null,
@@ -596,7 +626,7 @@ export function insert(
   init?: Node | Node[] | null
 ): (() => Node | Node[] | null) | (Node | Node[] | null) {
   if (_insertDepth > MAX_INSERT_DEPTH) {
-    console.error('[insert] Exceeded max call depth — possible infinite loop.');
+    console.error('[insert] Exceeded max call depth, possible infinite loop.');
     return () => null;
   }
 
@@ -617,7 +647,7 @@ export function insert(
   if (typeof accessor !== 'function' && !isReactiveArray(accessor)) {
     _insertDepth++;
     try {
-      // `current` — not null. The caller passes what is already in this slot, and for a
+      // `current`, not null. The caller passes what is already in this slot, and for a
       // hydrating template hole that is the server's own nodes (`holeContent`). Dropping it
       // meant a static value never adopted: insertExpression saw an empty slot and appended
       // a second copy beside the server's, so `{cmd}` rendered the string twice.
@@ -721,7 +751,7 @@ export function insertExpression(
       parent.replaceChild(node, current as Node);
     } else if (!isAdopted(parent, node)) {
       // during hydration createTextNode reuses the in-place server text node and
-      // already advanced the cursor — don't re-insert (that would reorder).
+      // already advanced the cursor: don't re-insert (that would reorder).
       insertBefore(parent, node, marker);
     }
     return node;
@@ -729,7 +759,7 @@ export function insertExpression(
 
   if (isDomNode(value)) {
     // Hydration: the node was already produced from the server DOM (reused by
-    // createNativeElement) and sits in `parent` in place — adopt it without
+    // createNativeElement) and sits in `parent` in place: adopt it without
     // re-inserting, and ascend the cursor past its (already-walked) subtree.
     if (isAdopted(parent, value as Node)) {
       ascendPast(value as Node);
@@ -772,13 +802,13 @@ export function insertExpression(
     const reactiveSlots: Array<{ marker: Node; sig: any }> = [];
     flattenArray(value, array, parent, marker, true, componentCache, reactiveSlots);
     const reconciled = reconcileArrays(parent, currentArray, array, marker);
-    // Markers are now in the DOM — wire a per-slot reactive insert. insert() sets up a nested
+    // Markers are now in the DOM: wire a per-slot reactive insert. insert() sets up a nested
     // render effect that re-inserts the member's content before its marker on change, so a bare
     // control-flow component return (<Show>/<Switch>/<For>) updates in place.
     //
     // The per-slot content lives OUTSIDE the reconcile array (only the marker is tracked), so if
-    // this enclosing effect re-runs with a shorter array — e.g. a <For> item dropped, or its child
-    // resolved to a memo (Provider -> component) — reconcile removes the marker but would orphan the
+    // this enclosing effect re-runs with a shorter array: e.g. a <For> item dropped, or its child
+    // resolved to a memo (Provider -> component): reconcile removes the marker but would orphan the
     // content. Register a cleanup that removes the slot's nodes when its effect is torn down. This
     // only fires when the enclosing effect re-runs (the array itself changed); an in-place update
     // (e.g. <Show> toggling) never re-runs this effect, so it keeps updating in place.
@@ -806,7 +836,7 @@ export function insertExpression(
   return cleanChildren(parent, current, marker);
 }
 
-// flattenArray — flatten a children array to DOM nodes. A signal whose result is a
+// flattenArray: flatten a children array to DOM nodes. A signal whose result is a
 // component thunk (e.g. a router memo returning a SuspenseThunk) is recursed through
 // flattenArray, not read inline, so the thunk goes through componentCache and stays
 // stable across navigations.
@@ -817,7 +847,7 @@ function flattenArray(
   marker?: Node,
   track = true,
   componentCache?: Map<Function, any>,
-  // When provided, a reactive member is NOT read inline (which would subscribe the enclosing
+  // When provided, a reactive member is not read inline (which would subscribe the enclosing
   // render effect and re-render the whole subtree on change). Instead it emits a placeholder
   // marker and records itself here; the array caller wires a fine-grained insert() per slot
   // after the markers are placed. This is what makes a bare control-flow component return
@@ -841,30 +871,30 @@ function flattenArray(
       let resolved: any;
 
       if (isComponent(item) && !isSignal(item)) {
-        // Pure component thunk (e.g. () => <div>) — call exactly once and cache so
+        // Pure component thunk (e.g. () => <div>): call exactly once and cache so
         // re-runs of the enclosing render effect return the same DOM nodes (keeps
         // focus etc. stable across navigations).
         // must check !isSignal. A memo stamped as a component (e.g. an
         // Outlet/Routes/Suspense output returned via $component/asComponent) is BOTH
         // isComponent AND isSignal; caching it would freeze its first value (so a
-        // boundary that later switches from a single node to an array — fallback ->
-        // children — would never update). Read those reactively in the else branch.
+        // boundary that later switches from a single node to an array: fallback ->
+        // children: would never update). Read those reactively in the else branch.
         if (!componentCache) componentCache = new Map();
         if (!componentCache.has(item)) componentCache.set(item, item());
         resolved = componentCache.get(item);
       } else {
-        // Signal/memo (or memo-stamped component) — read to track reactivity.
+        // Signal/memo (or memo-stamped component): read to track reactivity.
         resolved = item();
       }
 
       // Unwrap plain wrappers; stop at signals and component thunks.
-      // Cache calls by function reference — a plain function returned by a
+      // Cache calls by function reference, a plain function returned by a
       // signal/memo (e.g. `createMemo(() => cond ? () => <JSX> : ...)`) is a
       // stable reference as long as the memo doesn't re-evaluate. Calling it
       // once and caching the result means re-runs of the outer render effect
       // (triggered by unrelated signals like `activeLevel()`) hit the cache and
       // return the same DOM nodes. reconcileArrays then sees identical references
-      // and skips the slot — the focused <input> is never removed.
+      // and skips the slot, the focused <input> is never removed.
       while (
         typeof resolved === 'function' &&
         !isPromise(resolved) &&
@@ -889,8 +919,8 @@ function flattenArray(
             reactiveSlots.push({ marker: slot, sig: resolved });
             continue;
           }
-          // Read the signal — tracked inside the enclosing render effect.
-          // Use flattenArray recursively (NOT normalizeValue) so
+          // Read the signal: tracked inside the enclosing render effect.
+          // Use flattenArray recursively (not normalizeValue) so
           // component thunks inside the result go through componentCache.
           let val = resolved();
           while (typeof val === 'function' && isSignal(val)) val = val();
@@ -900,7 +930,7 @@ function flattenArray(
           }else flattenArray([val], result, parent, marker, track, componentCache);
           continue;
         }
-        // Other function type — skip
+        // Other function type: skip
         continue;
       }
 
@@ -977,15 +1007,15 @@ function reconcileArrays(
   marker?: Node
 ): Node[] {
   // Pre-process: clone any node already owned by a different parent.
-  // The Babel plugin hoists static elements to module-level — the same node
+  // The Babel plugin hoists static elements to module-level, the same node
   // can appear in `b` for multiple parents simultaneously. Clone to avoid
   // stealing it from its current owner; future reconciles track the clone.
   //
-  // A DocumentFragment is NOT such an owner. `cloneTemplate` hands back the clone still
+  // A DocumentFragment is not such an owner. `cloneTemplate` hands back the clone still
   // sitting in its fragment, so a template-cloned element arrives here with a non-null
   // parent that nothing else refers to. Cloning it again threw away the node whose props
-  // had just been applied — `cloneNode` copies attributes but not the event-handler
-  // properties — so an element built from a template lost its handlers the moment it was
+  // had just been applied: `cloneNode` copies attributes but not the event-handler
+  // properties, so an element built from a template lost its handlers the moment it was
   // inserted as part of an array. Moving it out of the fragment is exactly right.
   for (let i = 0; i < b.length; i++) {
     const owner = b[i].parentNode;
@@ -1009,20 +1039,20 @@ function reconcileArrays(
     map: Map<Node, number> | null = null;
 
   while (aStart < aEnd || bStart < bEnd) {
-    // 1. Common prefix — already in the right place, skip.
+    // 1. Common prefix: already in the right place, skip.
     if (a[aStart] === b[bStart]) {
       aStart++;
       bStart++;
       continue;
     }
 
-    // 2. Common suffix — already in the right place, shrink window.
+    // 2. Common suffix: already in the right place, shrink window.
     while (aEnd > aStart && bEnd > bStart && a[aEnd - 1] === b[bEnd - 1]) {
       aEnd--;
       bEnd--;
     }
 
-    // 3. Old list exhausted — insert remaining new nodes.
+    // 3. Old list exhausted: insert remaining new nodes.
     if (aEnd === aStart) {
       const node: Node | undefined = bEnd < bLength
         ? bStart
@@ -1032,7 +1062,7 @@ function reconcileArrays(
       while (bStart < bEnd) insertBefore(parent, b[bStart++], node);
     }
 
-    // 4. New list exhausted — remove remaining old nodes.
+    // 4. New list exhausted: remove remaining old nodes.
     else if (bEnd === bStart) {
       while (aStart < aEnd) {
         if ((!map || !map.has(a[aStart])) && a[aStart].parentNode === parent)
@@ -1068,7 +1098,7 @@ function reconcileArrays(
             const node = a[aStart];
             while (bStart < index) insertBefore(parent, b[bStart++], node);
           } else {
-            // Guard replaceChild: if a[aStart] was moved out by another effect, insert instead.
+            // Guard replaceChild, if a[aStart] was moved out by another effect, insert instead.
             if (a[aStart].parentNode === parent) {
               parent.replaceChild(b[bStart++], a[aStart++]);
             } else {
@@ -1257,7 +1287,7 @@ export function setClassName(element: Element, value: any): void {
   if (value == null) { element.removeAttribute('class'); return; }
 
   if (typeof value === 'function') {
-    // A render effect, like every other attribute binding — `spread` already wraps
+    // A render effect, like every other attribute binding: `spread` already wraps
     // class this way, so going through `applyProps` shouldn't schedule it later.
     createRenderEffect(() => {
       reportReactiveBinding(element, 'attribute', 'class', value);
@@ -1289,7 +1319,7 @@ export function setClassName(element: Element, value: any): void {
 }
 
 /**
- * Apply a `classList`-style map `{ 'a b': condition }` — toggling each class on
+ * Apply a `classList`-style map `{ 'a b': condition }`, toggling each class on
  * the element. A condition may be a value or a reactive accessor; when
  * `disposers` is provided, accessor entries are wired with a render effect so
  * they update fine-grained (Solid-style `classList`).
@@ -1320,7 +1350,7 @@ export function setClassList(
 export function setStyle(element: any, _value: any): void {
   let value = _value;
   while(typeof value === 'function') value = value()
-  
+
   if (value == null) { element.removeAttribute('style'); return; }
 
   if (typeof value === 'string') { element.style.cssText = value; return; }
@@ -1338,6 +1368,19 @@ export function setStyle(element: any, _value: any): void {
 // spread
 // ============================================================================
 
+/**
+ * Apply a props object to an element, and re-apply what changes.
+ *
+ * Handles every prop kind the compiler can emit: attributes, properties, events,
+ * `class`/`style` in their object and string forms, `ref` and `use:`. Each reactive prop
+ * gets its own effect, so a change touches one attribute rather than re-running the
+ * element.
+ *
+ * `prevProps` is what was applied last, which is how a removed key is cleared rather
+ * than left behind. A getter-backed prop stays reactive: the value is read inside the
+ * effect, not when the object was built, which is what keeps `splitProps` and a
+ * polymorphic wrapper live.
+ */
 export function spread(options: SpreadOptions): () => void {
   const {
     element,
@@ -1359,7 +1402,7 @@ export function spread(options: SpreadOptions): () => void {
 
   // Trust the element's real namespace over the compile-time isSVG flag: the codegen only marks
   // some SVG elements (e.g. <svg>/<defs>) and misses nested ones (<linearGradient>, <stop>). For
-  // an actually-SVG element, a key like `x1` IS `in element` (read-only SVGAnimatedLength), so the
+  // an actually-SVG element, a key like `x1` is `in element` (read-only SVGAnimatedLength), so the
   // property branch below would throw "Cannot set property x1". Detecting SVG by namespaceURI keeps
   // those on the setAttribute path. (Matters under hydration, where we adopt the real, correctly
   // namespaced server node.)
@@ -1393,7 +1436,7 @@ export function spread(options: SpreadOptions): () => void {
     }
 
     // Forced bindings: prop:x always assigns the property, attr:x always sets the
-    // attribute, bool:x toggles a boolean attribute — skipping the heuristic below.
+    // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
     if (key.startsWith('prop:')) {
       reportReactiveDirective(element, 'prop', key.slice(5), value);
       disposers.push(setDynamicProperty(element, key.slice(5), value));
@@ -1470,12 +1513,12 @@ export function spread(options: SpreadOptions): () => void {
           : setDynamicAttribute(element, key, value, elementIsSVG),
       );
     } else {
-      // A plain, non-function value may still be backed by a reactive GETTER —
+      // A plain, non-function value may still be backed by a reactive getter:
       // component props compile to `get x() {...}`, and splitProps/mergeProps
       // forward those getters. Reading `props[key]` once (above) snapshots the
       // current value and drops the dependency, so the DOM never updates. Re-read
       // it inside a render effect so the getter's reads are tracked. (A truly
-      // static value just runs the effect once with no deps — negligible.)
+      // static value just runs the effect once with no deps: negligible.)
       disposers.push(
         createRenderEffect(() =>
           asProperty
@@ -1513,7 +1556,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     if (key === 'children') continue;
     if (key === 'use') { applyUse(element, val); continue; }
     if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
-    // Forced bindings — see spread().
+    // Forced bindings: see spread().
     if (key.startsWith('prop:')) {
       reportReactiveDirective(element, 'prop', key.slice(5), val);
       setDynamicProperty(element, key.slice(5), val); continue;
@@ -1530,7 +1573,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       const name = key.slice(2).toLowerCase();
       if (typeof val === 'function') {
         if (NON_DELEGATED.has(name)) {
-          // Non-bubbling events (blur, focus, scroll…): store handler on the element
+          // Non-bubbling events (blur, focus, scroll...): store handler on the element
           // and attach a single stable forwarder listener. This avoids
           // addEventListener/removeEventListener churn when a reactive scope re-runs,
           // which would silently drop the listener via onCleanup before re-adding it.
@@ -1563,7 +1606,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     }
     if (key === 'style') {
       // An accessor reaches applyProps whenever a component forwards a computed
-      // style through a props object rather than as a compiled JSX attribute —
+      // style through a props object rather than as a compiled JSX attribute,
       // which is what every polymorphic/`as` wrapper does. class and classList
       // already handled that; style applied once and never updated.
       reportKeys(element, 'style', val);
@@ -1576,9 +1619,9 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       continue;
     }
     if (key === 'innerHTML') {
-      // Accept a static string OR a reactive accessor. A function is wrapped in an effect so
+      // Accept a static string or a reactive accessor. A function is wrapped in an effect so
       // updates apply; a plain value is set once. (The previous code always called val(), which
-      // threw on a static string — wiping content during hydration.)
+      // threw on a static string, wiping content during hydration.)
       if (typeof val === 'function') {
         const dispose = createEffect(() => {
           let v: unknown = (val as () => unknown)();
@@ -1591,7 +1634,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       }
       continue;
     }
-    // Special case: <input>/<textarea> value — use DOM property assignment, not
+    // Special case: <input>/<textarea> value: use DOM property assignment, not
     // setAttribute. Skip reactive updates while the element has focus so user
     // input is never interrupted and focus is never lost due to signal writes.
     if (key === 'value' && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA')) {
@@ -1600,7 +1643,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
           let v = val();
           //  console.log('apply inpit props', v, element);
           while (typeof v === 'function' && (v as Function).length === 0) v = v();
-          // Only update if element is NOT currently focused — don't fight user input
+          // Only update if element is not currently focused: don't fight user input
           if (document.activeElement !== element) {
             (element as HTMLInputElement).value = v ?? '';
           }
@@ -1624,14 +1667,14 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
         const dispose = createEffect(() => {
           let v = val();
           while (typeof v === 'function' && (v as Function).length === 0) v = v();
-          // Only update if element is NOT currently focused — don't fight user input
+          // Only update if element is not currently focused: don't fight user input
           if (document.activeElement !== element) {
             (element as any).checked = v ?? '';
           }
         });
         onCleanup(() => { dispose(); });
       } else {
-        // Plain value possibly behind a reactive getter — re-read live. See the
+        // Plain value possibly behind a reactive getter: re-read live. See the
         // value branch above.
         createRenderEffect(() => {
           if (document.activeElement !== element) {
@@ -1642,8 +1685,8 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       continue;
     }
 
-    // Special case: <select value=...> — must assign .value as DOM property
-    // AFTER options are in the DOM. We defer the initial run via queueMicrotask
+    // Special case: <select value=...>: must assign .value as DOM property
+    // after options are in the DOM. We defer the initial run via queueMicrotask
     // (children/options are inserted synchronously after applyProps returns).
     if (key === 'value' && (element as Element).tagName === 'SELECT') {
       if (typeof val === 'function') {
@@ -1660,7 +1703,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
         });
         onCleanup(() => { dispose(); });
       } else {
-        // Plain value possibly behind a reactive getter — re-read live, keeping the
+        // Plain value possibly behind a reactive getter: re-read live, keeping the
         // first assignment deferred until the options are in the DOM.
         let firstRun = true;
         createRenderEffect(() => {
@@ -1675,7 +1718,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       }
       continue;
     }
-    
+
     if (typeof val === 'function') {
       const dispose = createEffect(() => {
         let v = val()
@@ -1699,19 +1742,19 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
 }
 
 /**
- * Merge several (possibly reactive) prop sources into one, last-source-wins — but a later
- * source's `undefined` does NOT clobber an earlier defined value; it falls through to it. This
+ * Merge several (possibly reactive) prop sources into one, last-source-wins, but a later
+ * source's `undefined` does not clobber an earlier defined value; it falls through to it. This
  * is what makes `mergeProps(defaults, props)` work, and why the compiler can emit
  * `mergeProps(...spreads, baseProps)` for JSX spreads (`<div {...a} {...b} />`) without a missing
  * `b.x` wiping `a.x`.
  *
  * Like Solid's mergeProps (and `splitProps` above), the result is a Proxy that resolves each key
- * LAZILY off the sources — getter/signal-backed props stay live (re-read on every access, not
+ * LAZILY off the sources: getter/signal-backed props stay live (re-read on every access, not
  * snapshotted), and the key set is the union across all sources (so dynamic prop objects work).
  */
 export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
   // Last defined (non-undefined) value wins; scan sources from the end so a later `undefined`
-  // falls through to an earlier source. Reads `source[key]` live each call — no snapshot.
+  // falls through to an earlier source. Reads `source[key]` live each call, no snapshot.
   const resolve = (key: string | symbol): any => {
     for (let i = sources.length - 1; i >= 0; i--) {
       const s = sources[i] as any;
@@ -1745,7 +1788,7 @@ type SplitArgs<T, K extends (keyof T)[][]> = {
 
 /**
  * Split a (possibly reactive) props object into groups of keys plus a `rest`,
- * preserving reactivity — each returned object is a Proxy whose `get` forwards
+ * preserving reactivity, each returned object is a Proxy whose `get` forwards
  * to the original `props`, so a getter/signal-backed prop stays live.
  *
  *   const [local, rest] = splitProps(props, ['class', 'id']);
@@ -1841,11 +1884,11 @@ export function createPortal(children: any, element: any, props?: any) {
     const dispose = createRenderEffect(() => {
       const nodes = resolved();
       // console.log('resolved', nodes)
-  
+
       // 3. Handle the insertion
       if (Array.isArray(nodes)) {
         nodes.forEach((node) => container.appendChild(node));
-  
+
         // 4. Cleanup: Remove nodes when the effect re-runs or component unmounts
         cleanups.push(() => {
           nodes.forEach((node) => {
@@ -1869,7 +1912,7 @@ export function createPortal(children: any, element: any, props?: any) {
       cleanups.forEach((fn) => fn());
       // dispose();
     });
-    
+
   })
 
 
@@ -1912,7 +1955,7 @@ export function isPromise(v: any): v is Promise<any> {
 }
 
 // ============================================================================
-// isAccessor — deprecated, kept for backward compat
+// isAccessor: deprecated, kept for backward compat
 // ============================================================================
 
 export function isAccessor<T>(value: any): value is Accessor<T> {
@@ -1938,7 +1981,7 @@ export function render<T>(
 
   createRoot((dispose) => {
     batch(() => {
-      // Clear container (but not when hydrating — we reuse the server DOM).
+      // Clear container (but not when hydrating: we reuse the server DOM).
       if (!hydration.active) {
         container.textContent = '';
       }
@@ -1970,16 +2013,16 @@ export function render<T>(
  * Normalize what `bind:` was given into a `[read, write]` pair.
  *
  * `createSignal` hands back that pair already; `signal` hands back `{ get, set }`. Both
- * are the same primitive, so `bind:value` has to take either — steering people to the
+ * are the same primitive, so `bind:value` has to take either, steering people to the
  * new API and then refusing it in a directive would be its own kind of broken.
  */
 export function bindPair(source: any): [() => any, (value: any) => void] {
   if (Array.isArray(source)) return source as [() => any, (value: any) => void];
-  // `signal(…)` is the accessor itself with `set` attached.
+  // `signal(...)` is the accessor itself with `set` attached.
   if (typeof source === 'function' && typeof source.set === 'function') {
     return [source, source.set];
   }
   throw new TypeError(
-    '[fluixi] bind: needs a signal — either `signal(…)` or the `[get, set]` pair from `createSignal(…)`.',
+    '[fluixi] bind: needs a signal, either `signal(...)` or the `[get, set]` pair from `createSignal(...)`.',
   );
 }

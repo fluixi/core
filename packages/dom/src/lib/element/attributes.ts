@@ -1,5 +1,5 @@
 /**
- * DOM element attribute types — the props every element accepts, independent of
+ * DOM element attribute types, the props every element accepts, independent of
  * how it was authored. `@fluixi/jsx` re-exports these into the `JSX` namespace
  * for JSX consumers; html`` tooling reads them from here directly.
  *
@@ -20,8 +20,8 @@ import type { ComponentChild } from '../shared/types.js';
  * applies a function-valued prop as a reactive render effect, so any attribute typed with this
  * accepts `() => value` without a cast.
  *
- * The accessor may return `undefined` to omit the attribute reactively — `setAttribute`
- * removes the attr on `undefined`/`null`/`false` — so `() => (cond ? 'true' : undefined)`
+ * The accessor may return `undefined` to omit the attribute reactively: `setAttribute`
+ * removes the attr on `undefined`/`null`/`false`, so `() => (cond ? 'true' : undefined)`
  * type-checks without a cast.
  */
 export type Reactive<T> = T | undefined | Accessor<T | undefined>;
@@ -61,7 +61,7 @@ export type HTMLReferrerPolicy =
  *
  * Selecting the string-valued members keeps the properties and drops
  * `CSSStyleDeclaration`'s methods, `length` and numeric index. There is
- * deliberately no open `[key: string]` fallback — it would make every misspelled
+ * deliberately no open `[key: string]` fallback, it would make every misspelled
  * property type-check, and `--*` already covers custom properties. For a property
  * newer than the TypeScript lib, set it as a custom property or widen at the call
  * site.
@@ -335,7 +335,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
   spellcheck?: boolean;
   // `Reactive<>` like every other attribute: the accessor may return undefined to
   // drop the attribute, which `setStyle` already handles (it removes it on null).
-  // Without this, a computed style can't be omitted — the one attribute that couldn't.
+  // Without this, a computed style can't be omitted, the one attribute that couldn't.
   style?: Reactive<string | CSSProperties>;
   tabIndex?: Reactive<number>;
   tabindex?: Reactive<number>;
@@ -382,7 +382,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
   // Data attributes
   [key: `data-${string}`]: string | number | boolean | undefined;
 
-  // Ref (bivariant callback + base-element object form — see RefCallback)
+  // Ref (bivariant callback + base-element object form: see RefCallback)
   ref?: RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
   key?: string | number;
 
@@ -950,7 +950,7 @@ export interface AudioHTMLAttributes<T = HTMLAudioElement> extends MediaHTMLAttr
 // ============================================================================
 
 export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
-  // Core SVG attributes. Reactive like the HTML ones — the presentation
+  // Core SVG attributes. Reactive like the HTML ones, the presentation
   // attributes below already were, so an SVG that could animate its `fill` still
   // couldn't compute its `id` or `style`.
   id?: Reactive<string>;
@@ -1258,15 +1258,15 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
 }
 
 // ============================================================================
-// Renderable value + the tag → attributes map
+// Renderable value + the tag -> attributes map
 // ============================================================================
 
 /**
  * Anything the renderer accepts as output. `JSX.Element` aliases this; html``
  * templates produce the same values, so the type is shared rather than duplicated.
  *
- * It is now literally the same type, not a parallel copy. The two had drifted —
- * this one lacked `ComponentChild`'s recursive array and lazy child — so a
+ * It is now literally the same type, not a parallel copy. The two had drifted:
+ * this one lacked `ComponentChild`'s recursive array and lazy child, so a
  * component annotated with the shared `ComponentChild` was rejected as a JSX
  * component. Both authoring modes compile to the same runtime calls, so
  * "renderable" has to mean one thing.
@@ -1276,7 +1276,7 @@ export type FxElement = ComponentChild;
 /**
  * Every intrinsic tag mapped to the attributes it accepts. `JSX.IntrinsicElements`
  * aliases this. It lives here because html`` tooling needs the same map to type
- * `<div class=…>` inside a template — that has nothing to do with JSX.
+ * `<div class=...>` inside a template, that has nothing to do with JSX.
  */
 export interface IntrinsicElements {
   // HTML
@@ -1460,7 +1460,7 @@ export interface IntrinsicElements {
   view: SVGAttributes<SVGViewElement>;
 
   // Custom elements: picks up FluixiElements augmentations automatically.
-  // (There was a second, identical index signature here — legal only because
+  // (There was a second, identical index signature here: legal only because
   // skipLibCheck never type-checked the .d.ts this came from.)
   [elemName: string]: any;
 }

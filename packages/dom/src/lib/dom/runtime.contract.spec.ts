@@ -9,7 +9,7 @@ import { For } from '../flow/for.js';
 // Step-3 of the compiled-fine-grained migration: lock the runtime contract the
 // compiler will target in Step 5 (so codegen has a tested surface to emit into).
 // Covers attribute/prop spread, event delegation, component instantiation and a
-// control-flow component — the staples of compiled JSX output.
+// control-flow component, the staples of compiled JSX output.
 beforeAll(() => {
   initializeIntegration({
     signalSystem: {
@@ -45,8 +45,8 @@ describe('spread', () => {
 
   it('SVG element: an attribute that collides with a read-only DOM property uses setAttribute', () => {
     // The codegen doesn't flag nested SVG elements (<linearGradient>, <stop>), so spread gets
-    // isSVG=false. For a real SVG node, a key like `x1` IS `in element` (a read-only
-    // SVGAnimatedLength) — the old `!isSVG && key in element` check took the property branch and
+    // isSVG=false. For a real SVG node, a key like `x1` is `in element` (a read-only
+    // SVGAnimatedLength), the old `!isSVG && key in element` check took the property branch and
     // threw "Cannot set property x1". spread must detect SVG by namespaceURI and use setAttribute.
     S.createRoot(() => {
       const el = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');

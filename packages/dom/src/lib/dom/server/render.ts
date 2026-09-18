@@ -1,5 +1,5 @@
 /**
- * Server rendering — run an imperative app() under server mode and serialize the
+ * Server rendering: run an imperative app() under server mode and serialize the
  * resulting node tree to HTML. `renderToString` is synchronous render-once (for
  * loader-free apps); `renderToStringAsync` awaits in-flight resources/Suspense
  * before serializing. Both wrap the render in createRoot so effects/owner are
@@ -44,7 +44,7 @@ import {
 } from './request-context.js';
 
 export interface RenderOptions {
-  /** request being rendered — exposed to the app via getRequestEvent() */
+  /** request being rendered: exposed to the app via getRequestEvent() */
   event?: RequestEvent;
   /**
    * Runs ONCE inside the request context, before the app renders. Use it to resolve
@@ -55,6 +55,14 @@ export interface RenderOptions {
   preload?: (event?: RequestEvent) => void | Promise<void>;
 }
 
+/**
+ * Render an app to an HTML string.
+ *
+ * Turns on server mode for the duration, so `createNativeElement` builds serializable
+ * stand-ins rather than DOM, and restores whatever it was afterwards. Everything runs
+ * inside one request context and one owner, so a resource created during the render is
+ * collected and its data serialized for the client to hydrate from.
+ */
 export function renderToString(app: () => any, options: RenderOptions = {}): string {
   const prev = isServer();
   ensureServerNodes();
@@ -77,7 +85,7 @@ export function renderToString(app: () => any, options: RenderOptions = {}): str
 }
 
 // Install the SSR resource hooks once (never unset). They route to the *current*
-// request context — so concurrent async renders stay isolated (with an
+// request context, so concurrent async renders stay isolated (with an
 // AsyncLocalStorage store injected) instead of a per-call setter clobbering a
 // sibling render's sink.
 let _hooksInstalled = false;
@@ -127,15 +135,15 @@ export function serializeResourceData(ctx: RequestContext): string {
   for (const [k, v] of ctx.data) {
     let out: unknown = v;
     if (_redactor) {
-      // A throwing redactor must not crash the render or leak — omit on error.
+      // A throwing redactor must not crash the render or leak: omit on error.
       try {
         out = _redactor(v, k);
       } catch {
         continue;
       }
     }
-    if (out === undefined) continue; // redacted → omit (client refetches)
-    // A value JSON cannot represent is not data the client can be seeded with —
+    if (out === undefined) continue; // redacted -> omit (client refetches)
+    // A value JSON cannot represent is not data the client can be seeded with:
     // JSON.stringify drops the key silently, so keeping it here only produces an
     // entry that disappears later. A lazy route's resolved module is the common
     // case: the resource holds the component function itself.
@@ -145,7 +153,7 @@ export function serializeResourceData(ctx: RequestContext): string {
   if (Object.keys(obj).length === 0) return '';
   // Non-executable JSON block (CSP-friendly; never runs as JS), escaped with the standard
   // SSR-JSON set so no value can break out of the <script>. The client reads it via
-  // getServerData() → JSON.parse(textContent).
+  // getServerData() -> JSON.parse(textContent).
   const json = escapeFxJson(JSON.stringify(obj));
   // Decided on the serialized form, not on the map: the checks above catch the
   // values we know about, and this catches the rest (a nested undefined, a class
@@ -155,7 +163,7 @@ export function serializeResourceData(ctx: RequestContext): string {
   return `<script type="application/json" id="${FX_DATA_ID}">${json}</script>`;
 }
 
-/** Bound on resolve→refetch waterfalls so a buggy loader can't spin forever. */
+/** Bound on resolve -> refetch waterfalls so a buggy loader can't spin forever. */
 const MAX_ASYNC_ROUNDS = 50;
 
 /** Ref-count of in-flight async renders, to scope eager stale-effect scheduling. */
@@ -176,7 +184,7 @@ export async function renderToStringAsync(
   const ctx = createRequestContext(options.event);
   try {
     return await runWithRequestContext(ctx, async () => {
-      // Resolve request-scoped state (region/locale/session) BEFORE the app renders,
+      // Resolve request-scoped state (region/locale/session) before the app renders,
       // inside the request context so it can read the event and write into ctx.data
       // for client transfer. Runs once per request. Guarded so the no-preload path
       // keeps its original synchronous flow into createRoot (an extra `await undefined`
@@ -194,15 +202,15 @@ export async function renderToStringAsync(
       // lazy subtrees to render, which can CREATE resources; running with the root as
       // owner makes those resources owned by the root, so dispose() cancels them. If
       // we serialized with Owner=null (the default after createRoot returns), a
-      // resource created during serialize would be unowned → never cancelled → it
-      // settles AFTER the response is serialized and the root disposed, re-running an
+      // resource created during serialize would be unowned -> never cancelled -> it
+      // settles after the response is serialized and the root disposed, re-running an
       // effect on a torn-down/detached tree (the storefront's "page shows, then errors
       // ~2-3s later" crash). Wrapped because a suspended read may throw its promise.
       const probe = () => {
-        try { runWithOwner(rootOwner, () => serializeNode(tree)); } catch { /* suspended read — resource self-registered */ }
+        try { runWithOwner(rootOwner, () => serializeNode(tree)); } catch { /* suspended read, resource self-registered */ }
       };
       // Force the (lazily-built) component tree to evaluate so every resource/lazy
-      // load is created and self-registers in ctx.pending BEFORE we drain. A tree
+      // load is created and self-registers in ctx.pending before we drain. A tree
       // behind deferred memos (e.g. a router <Outlet/>) renders NOTHING until serialize.
       probe();
       let rounds = 0;
@@ -210,11 +218,11 @@ export async function renderToStringAsync(
         const batch = Array.from(ctx.pending);
         ctx.pending.clear();
         await Promise.allSettled(batch);
-        // resource settle() queues the dependent render effects — run them so
+        // resource settle() queues the dependent render effects: run them so
         // the tree reflects resolved data (and any waterfall fetch registers).
         await flush();
-        // Re-probe: a freshly-resolved lazy/route reveals its OWN resources only
-        // when its subtree is evaluated — force that so they register for the next round.
+        // Re-probe: a freshly-resolved lazy/route reveals its own resources only
+        // when its subtree is evaluated: force that so they register for the next round.
         probe();
       }
       // Serialize the resolved resource data so the client seeds it (no refetch).

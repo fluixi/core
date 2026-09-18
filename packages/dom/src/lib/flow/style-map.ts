@@ -1,7 +1,7 @@
 import { Accessor, createMemo } from '@fluixi/reactive/signal';
 
 /**
- * A single style property value — static or reactive.
+ * A single style property value: static or reactive.
  * Numbers are converted to strings as-is (no `px` appended automatically).
  */
 export type StyleValue =
@@ -25,7 +25,7 @@ export type StyleMapInput =
   | Accessor<Record<string, StyleValue>>
   | (() => Record<string, StyleValue>);
 
-/** camelCase → kebab-case; CSS custom properties (--) pass through unchanged. */
+/** camelCase -> kebab-case; CSS custom properties (--) pass through unchanged. */
 function toKebab(prop: string): string {
   return prop.startsWith('--')
     ? prop
@@ -55,11 +55,11 @@ function toKebab(prop: string): string {
  *
  * // camelCase is converted automatically
  * styleMap({ backgroundColor: '#fff', fontSize: '1rem' })
- * // → "background-color: #fff; font-size: 1rem"
+ * // -> "background-color: #fff; font-size: 1rem"
  *
  * // CSS custom properties pass through unchanged
  * styleMap({ '--radius': radius })
- * // → "--radius: 8px"
+ * // -> "--radius: 8px"
  */
 export function styleMap(input: StyleMapInput): Accessor<string> {
   return createMemo(() => {

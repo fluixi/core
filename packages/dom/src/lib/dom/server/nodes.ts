@@ -1,5 +1,5 @@
 /**
- * Server node model — a minimal, serialization-oriented stand-in for the DOM
+ * Server node model, a minimal, serialization-oriented stand-in for the DOM
  * Node/Element API that @fluixi/dom's runtime calls. Under server mode the leaf
  * factories (createNativeElement/createTextNode/createMarker) return these
  * instead of real DOM nodes, so insert/spread/Show/For run unchanged and the
@@ -21,7 +21,7 @@ export const NODE_TEXT = 3;
 export const NODE_COMMENT = 8;
 
 // ---------------------------------------------------------------------------
-// Base node — the linked-tree mechanics insert() relies on.
+// Base node, the linked-tree mechanics insert() relies on.
 // ---------------------------------------------------------------------------
 export abstract class ServerNode {
   // Brand the host.ts guards check for (lets them skip an instanceof on these classes).
@@ -208,7 +208,7 @@ class ServerClassList {
 }
 
 // ---------------------------------------------------------------------------
-// Element — attributes + the JSX_PROPERTIES properties + style/classList.
+// Element: attributes + the JSX_PROPERTIES properties + style/classList.
 // ---------------------------------------------------------------------------
 export class ServerElement extends ServerNode {
   nodeType = NODE_ELEMENT;
@@ -219,7 +219,7 @@ export class ServerElement extends ServerNode {
   attributes = new Map<string, string>();
   style = new ServerStyle();
   classList: ServerClassList = new ServerClassList(this);
-  /** raw HTML set via innerHTML — emitted verbatim, bypassing childNodes. */
+  /** raw HTML set via innerHTML: emitted verbatim, bypassing childNodes. */
   rawHTML: string | null = null;
 
   constructor(tag: string, isSVG = false) {

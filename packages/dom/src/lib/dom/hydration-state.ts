@@ -76,7 +76,7 @@ export function runHydrationAt<T>(cursor: Node | null, fn: () => T): T {
 
 /**
  * Run `fn` with DOM-reuse hydration temporarily OFF, restoring the cursor afterwards.
- * For a detached subtree mid-hydration that must NOT consume the cursor (e.g. an eagerly
+ * For a detached subtree mid-hydration that must not consume the cursor (e.g. an eagerly
  * instantiated Suspense fallback that isn't showing).
  */
 export function runWithoutHydration<T>(fn: () => T): T {

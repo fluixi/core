@@ -1,5 +1,4 @@
 /**
- * @fileoverview Advanced types for @fluixi/element
  * @module @fluixi/dom/element/types
  */
 
@@ -39,7 +38,7 @@ export type InferPropType<D extends PropDefinition> = D extends PropDefinition<
     : Def
   : unknown;
 
-/** Signal tuple: [accessor, setter] — matches createSignal return */
+/** Signal tuple: [accessor, setter]: matches createSignal return */
 export type SignalTuple<T> = [
   get: () => T,
   set: (v: T | ((prev: T) => T)) => void
@@ -50,7 +49,7 @@ export type PropsSignals<T extends Record<string, PropDefinition>> = {
   [K in keyof T]: SignalTuple<InferPropType<T[K]>>;
 };
 
-/** Render function for defineElement — fully typed props and event context */
+/** Render function for defineElement: fully typed props and event context */
 export type ElementRenderFn<
   T extends Record<string, PropDefinition>,
   E extends Record<string, EventDefinition> = Record<string, EventDefinition>
@@ -147,7 +146,7 @@ export interface TypedFluixiElement<P extends Record<string, PropDefinition>>
   getProp<K extends string & keyof P>(name: K): InferPropType<P[K]>;
 }
 
-/** Constructor type returned by defineElement — carries tag name + prop types + event types */
+/** Constructor type returned by defineElement: carries tag name + prop types + event types */
 export interface FluixiElementConstructor<
   Tag extends string = string,
   P extends Record<string, PropDefinition> = Record<string, PropDefinition>,
@@ -226,7 +225,7 @@ export interface FluixiHTMLAttributes {
 }
 
 // ============================================================================
-// Type-level camelCase → kebab-case
+// Type-level camelCase -> kebab-case
 // ============================================================================
 
 /** Map to build HTML attribute keys from prop defs (uses attribute override or kebab-case) */
@@ -240,7 +239,7 @@ export type PropToAttribute<P extends Record<string, PropDefinition>> = {
     : never]?: InferPropType<P[K]>;
 };
 
-/** CamelCase → kebab-case at the type level */
+/** CamelCase -> kebab-case at the type level */
 export type CamelToKebab<S extends string> = S extends `${infer C}${infer Rest}`
   ? C extends Uppercase<C>
     ? `-${Lowercase<C>}${CamelToKebab<Rest>}`

@@ -7,9 +7,9 @@
  *
  * Same shape as `dom.global.js` and the same global name, minus the string renderer,
  * node serialisation, template parsing and the request context. A `<script>` tag
- * cannot tree-shake, so anything reachable from the entry ships — which makes the
+ * cannot tree-shake, so anything reachable from the entry ships, which makes the
  * server half pure weight for a page that renders in a browser. Measured against the
- * full build: 21.0 kB gzipped → 12.2 kB.
+ * full build: 21.0 kB gzipped -> 12.2 kB.
  *
  * `hydrate` stays: a page hydrating server-rendered HTML runs in the browser, and it
  * is the one thing here that touches SSR output. Use `dom.global.js` if you actually
@@ -48,7 +48,7 @@ export {
 } from '../lib/index.js';
 
 export {
-  // reactive primitives — the short API and the tuple form, as the full entry does
+  // reactive primitives, the short API and the tuple form, as the full entry does
   signal,
   memo,
   effect,

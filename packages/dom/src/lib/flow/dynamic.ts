@@ -14,11 +14,11 @@ export interface DynamicProps<T extends Record<string, any> = Record<string, any
 }
 
 /**
- * Renders a component dynamically — mirrors SolidJS `<Dynamic>`.
+ * Renders a component dynamically: mirrors SolidJS `<Dynamic>`.
  *
  * The `component` prop can be a reactive accessor.  When it changes,
  * the old output is discarded and the new component is called.
- * Returns a memo — works in both JSX and `html` templates.
+ * Returns a memo: works in both JSX and `html` templates.
  *
  * @example JSX
  * <Dynamic component={tab() === 'a' ? CompA : CompB} value={x()} />
@@ -51,7 +51,7 @@ export function Dynamic<T extends Record<string, any> = Record<string, any>>(
     }
     if (C == null) return null;
     if (typeof C === 'string') {
-      // Intrinsic element — return a descriptor that the runtime can handle.
+      // Intrinsic element: return a descriptor that the runtime can handle.
       return { tag: C, props: rest };
     }
     return runWithOwner(scope, () => (C as (p: any) => any)(rest));

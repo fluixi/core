@@ -2,7 +2,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { onCleanup, createEffect, createSignal, flush } from '@fluixi/reactive/signal';
 import { render, Portal, Show, createNativeElement } from '@fluixi/dom';
-// import { ensureIntegration } from '../../../../core/src/lib/render/component.js';
 
 // beforeAll(() => ensureIntegration());
 

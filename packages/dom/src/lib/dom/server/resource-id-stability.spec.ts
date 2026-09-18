@@ -10,8 +10,8 @@ import { createNativeElement, insert, renderToStringAsync, setRequestStore } fro
  *
  * `lazy()` used to break that: its module-load resource is created on the cold
  * path only, and on the server the module stays loaded after the first request.
- * The first visitor after a restart got `{"r1": …}` for the page's own resource
- * and everyone after them got `{"r0": …}` — while the client, which preloads
+ * The first visitor after a restart got `{"r1": ...}` for the page's own resource
+ * and everyone after them got `{"r0": ...}`, while the client, which preloads
  * routes before hydrating, always counted from r0. One of the two had to be
  * wrong, so either the first visitor or all the rest were served data their
  * client would never find.
@@ -32,13 +32,13 @@ describe('resource ids do not depend on cross-request state', () => {
     const App = () => {
       if (!cached) {
         // Opted out of the transport, so it must not consume an id either. Not read
-        // here: reading an unresolved resource outside a Suspense boundary suspends,
+        // here, reading an unresolved resource outside a Suspense boundary suspends,
         // and what is under test is the id it does or does not take.
         createResource(() => tick('module').then((m) => (cached = m)), { transport: false });
       }
       const [data] = createResource(() => tick('PAGE'));
       const div = createNativeElement('div') as any;
-      insert(div, () => data() ?? '…', null);
+      insert(div, () => data() ?? '...', null);
       return div;
     };
 
@@ -47,7 +47,7 @@ describe('resource ids do not depend on cross-request state', () => {
 
     expect(first).toContain('PAGE');
     expect(second).toContain('PAGE');
-    // The id the client will look for — identical across the two.
+    // The id the client will look for: identical across the two.
     expect(first).toContain('"r0"');
     expect(second).toContain('"r0"');
     expect(first).toEqual(second);
@@ -57,7 +57,7 @@ describe('resource ids do not depend on cross-request state', () => {
     const App = () => {
       const [hidden] = createResource(() => tick('SECRET'), { transport: false });
       const div = createNativeElement('div') as any;
-      insert(div, () => (hidden() ? 'ready' : '…'), null);
+      insert(div, () => (hidden() ? 'ready' : '...'), null);
       return div;
     };
     const html = await renderToStringAsync(() => App());

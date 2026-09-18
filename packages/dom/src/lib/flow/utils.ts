@@ -14,7 +14,7 @@ export function normalizeAccessor<T>(value: T | Accessor<T>): Accessor<T> {
  *
  * The compiler emits control-flow value props (each/when/component/mount) as getters, so
  * `read()` re-runs the caller's expression INSIDE the tracking scope where the returned
- * accessor is invoked — this is what makes `each={items()}` reactive. If the read value is
+ * accessor is invoked, this is what makes `each={items()}` reactive. If the read value is
  * itself a function (the `each={items}` accessor form), it is called once. This unwraps at
  * most one level, so `each={() => items()}` doesn't double-call.
  */

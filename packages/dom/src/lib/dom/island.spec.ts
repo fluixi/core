@@ -12,7 +12,7 @@ import {
 } from '@fluixi/dom';
 
 // Async SSR (renderToStringAsync) needs the request context to survive awaits so
-// resolved resource data routes to the right request — inject the ALS store the
+// resolved resource data routes to the right request: inject the ALS store the
 // way @fluixi/server does in production.
 beforeAll(() => setRequestStore(new AsyncLocalStorage()));
 afterAll(() => setRequestStore(null));
@@ -94,7 +94,7 @@ describe('Island', () => {
     const spans = container.querySelectorAll('fluixi-island span');
     expect(spans[0].textContent).toBe('Alpha'); // first island seeded its OWN data
     expect(spans[1].textContent).toBe('Beta');  // second island seeded its OWN data
-    // No refetch on the client — counts unchanged from the server render.
+    // No refetch on the client: counts unchanged from the server render.
     expect(fetches).toEqual({ a: 1, b: 1 });
 
     delete (window as any).__FX_DATA__;

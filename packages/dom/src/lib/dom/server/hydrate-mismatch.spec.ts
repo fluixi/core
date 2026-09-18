@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createNativeElement, insert, hydrate } from '@fluixi/dom';
 
-// children are deferred (thunks) so the parent is created BEFORE its children —
+// children are deferred (thunks) so the parent is created before its children,
 // mirroring the codegen's nested-IIFE order, which is what hydration walks.
 const el = (tag: string, ...children: any[]) => {
   const node = createNativeElement(tag) as any;

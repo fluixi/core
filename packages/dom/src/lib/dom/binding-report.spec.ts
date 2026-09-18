@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // The dom half of the devtools binding contract. Devtools tests that it turns these reports
-// into named targets; this tests that the reports are made at all — the two halves are in
+// into named targets; this tests that the reports are made at all, the two halves are in
 // different packages, and a binding that quietly stopped reporting would break neither suite
 // on its own.
 import { describe, it, expect, afterEach } from 'vitest';
@@ -137,7 +137,7 @@ describe('a component says what it was given', () => {
     createRoot(() => {
       const [name] = createSignal('Ada');
       // The memo is what a watcher draws the component as, so the report has to land inside
-      // it — that is the node the props belong to.
+      // it, that is the node the props belong to.
       createMemo(() =>
         createComponent((p: any) => {
           ranWith = p;

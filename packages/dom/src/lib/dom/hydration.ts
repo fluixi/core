@@ -5,7 +5,7 @@
  * existing nodes instead of recreating them. The runtime's leaf factories call the
  * walker registered here (hydrateElement/hydrateText/hydrateMarker); insert() and
  * control flow use the small cursor helpers in ./hydration-state.ts. This module is
- * the heavy half — pulled in only when an app imports hydrate().
+ * the heavy half: pulled in only when an app imports hydrate().
  *
  * This matches the depth-first nested order the imperative codegen emits (each
  * element is fully built before the next sibling is created).
@@ -18,7 +18,7 @@ import { hydration, registerHydrationWalker } from './hydration-state.js';
 /**
  * Re-sync the cursor onto the next adoptable server node. Two things can leave it off-target
  * after an element subtree is built by user code (e.g. `list.map(...)`): it's `null` (sibling
- * list exhausted — ascend to an open parent's next sibling) or it's a client-only empty-text
+ * list exhausted: ascend to an open parent's next sibling) or it's a client-only empty-text
  * insertion anchor (skip past it). Loop until a real node is found or nothing's left.
  */
 function recoverCursor(): void {
@@ -35,7 +35,7 @@ function recoverCursor(): void {
   }
 }
 
-// Void elements have no children — ascend to nextSibling instead of descending into a
+// Void elements have no children: ascend to nextSibling instead of descending into a
 // null firstChild (which would strand the cursor). Matches VOID_ELEMENTS in the serializer.
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -83,8 +83,8 @@ function hydrateElement(tag: string): Element | null {
 /**
  * Adopt a whole static subtree at the cursor without descending into it.
  *
- * A compiler-emitted template is inert by construction — the analysis only marks a
- * subtree static when nothing inside it can change — so the server's markup for it is
+ * A compiler-emitted template is inert by construction, the analysis only marks a
+ * subtree static when nothing inside it can change, so the server's markup for it is
  * exactly the template. There is nothing in there to hydrate, and stepping through it
  * element by element would only give the cursor more chances to desynchronise.
  */
@@ -104,7 +104,7 @@ function hydrateText(value: string): Text | null {
   if (value === '') {
     // Empty reactive CONTENT (anchors bypass this via createTextNode(_, true)). When the
     // client renders '' but the server rendered NON-empty content here (e.g. a resource's
-    // loading state, resolved on the server), adopt+clear that server text node — else it
+    // loading state, resolved on the server), adopt+clear that server text node: else it
     // is orphaned and duplicates once the value resolves ("User #9User #9"). A genuinely
     // empty text (no server node, cursor not at a non-empty text node) builds fresh.
     const c = hydration.cursor;
@@ -164,7 +164,7 @@ export function hydrate<T>(
   hydration.cursor = container.firstChild;
   hydration.parents = [];
 
-  // Seed resources from server-serialized data (__FX_DATA__) so they don't refetch — ids
+  // Seed resources from server-serialized data (__FX_DATA__) so they don't refetch: ids
   // match by creation order. hydrate() is synchronous, so setting these module-globals is safe.
   const data: Record<string, unknown> | null = getServerData();
   const ns = options?.resourceNamespace;
@@ -176,7 +176,7 @@ export function hydrate<T>(
     return render(element, container);
   } finally {
     // Stop DOM-reuse after the synchronous pass, but KEEP the resource id source + server-data
-    // getter active — lazy file-routes create resources after this returns and still seed
+    // getter active: lazy file-routes create resources after this returns and still seed
     // from __FX_DATA__ by creation order (later ids simply aren't present and fetch).
     hydration.active = false;
     hydration.cursor = null;

@@ -32,7 +32,7 @@ describe('request locals seam', () => {
     expect(getLocals()).toEqual({});
   });
 
-  it('adopts the request-keyed locals bag middleware wrote (middleware→render bridge)', () => {
+  it('adopts the request-keyed locals bag middleware wrote (middleware -> render bridge)', () => {
     const request = {} as object; // stand-in for the platform Request (WeakMap key)
     getRequestLocals(request).auth = { user: 'ada' }; // middleware writes BEFORE render
     const ctx = createRequestContext({ url: '/', request }); // app forwards `request`

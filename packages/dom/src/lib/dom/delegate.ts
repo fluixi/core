@@ -2,7 +2,7 @@
 
 const delegatedEvents = new Set<string>();
 
-// Events that should NOT be delegated (no bubbling or special behavior)
+// Events that should not be delegated (no bubbling or special behavior)
 const NON_DELEGATED = new Set([
   "scroll",
   "focus",
@@ -17,13 +17,13 @@ export function delegateEvents(eventNames: string[]) {
     if (delegatedEvents.has(name) || NON_DELEGATED.has(name)) continue;
 
     delegatedEvents.add(name);
-    
+
     document.addEventListener(name, (event: Event) => {
         let node = event.target as any;
-        
+
         while (node && node !== document.documentElement) {
             const handler = node["$$" + name];
-            
+
             if (handler) {
           handler.call(node, event);
 

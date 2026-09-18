@@ -14,7 +14,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 afterEach(() => setRequestStore(null)); // restore the default sync store
 
-describe('request context — basic access', () => {
+describe('request context: basic access', () => {
   it('exposes the request event to the app during render', () => {
     const html = renderToString(
       () => {
@@ -55,7 +55,7 @@ describe('request context — basic access', () => {
   });
 });
 
-describe('request context — concurrency isolation (the P0 #4 fix)', () => {
+describe('request context: concurrency isolation (the P0 #4 fix)', () => {
   it('interleaved async renders do not bleed state when an ALS store is injected', async () => {
     setRequestStore(new AsyncLocalStorage());
 
@@ -63,7 +63,7 @@ describe('request context — concurrency isolation (the P0 #4 fix)', () => {
       const ctx = createRequestContext({ url: `/${tag}` });
       return runWithRequestContext(ctx, async () => {
         getRequestContext()!.routeData.set('user', tag);
-        await delay(ms); // yield — the other flow runs in between
+        await delay(ms); // yield, the other flow runs in between
         const seen = getRequestContext()!;
         return `${seen.event.url}:${seen.routeData.get('user')}:${seen.nextId()}`;
       });

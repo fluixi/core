@@ -7,7 +7,7 @@ export interface ClientOnlyProps {
   /**
    * Rendered instead of `children` on the server, and during hydration.
    *
-   * When hydrating, this must produce the same markup the server emitted —
+   * When hydrating, this must produce the same markup the server emitted,
    * that is the whole point: the fallback is what both sides agree on.
    */
   fallback?: ComponentChild;
@@ -18,13 +18,13 @@ export interface ClientOnlyProps {
 /**
  * Renders `children` only in the browser.
  *
- * For subtrees that cannot render on the server — they read `window`,
+ * For subtrees that cannot render on the server, they read `window`,
  * `localStorage`, a canvas, or produce time/locale-dependent output that would
  * differ between the two passes and corrupt hydration.
  *
  * The swap is deferred to a microtask rather than done immediately, because
  * rendering `children` mid-hydration would desync the hydration cursor from the
- * server markup — the exact bug this component exists to prevent. `hydrate()`
+ * server markup, the exact bug this component exists to prevent. `hydrate()`
  * runs synchronously and clears its flag in a `finally`, so a microtask is the
  * first moment the pass is guaranteed to be over.
  *
@@ -56,7 +56,7 @@ export function ClientOnly(props: ClientOnlyProps): ComponentChild {
 }
 
 /**
- * `NoSsr` is {@link ClientOnly} — the same component under the name used by
+ * `NoSsr` is {@link ClientOnly}, the same component under the name used by
  * other libraries, so the concept is findable either way.
  */
 export const NoSsr = ClientOnly;

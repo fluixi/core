@@ -11,7 +11,7 @@ describe('mergeProps', () => {
     expect(mergeProps({ value: 1 }, { value: 2 }).value).toBe(2);
   });
 
-  it('preserves reactivity — re-reads the source, not a snapshot', () => {
+  it('preserves reactivity: re-reads the source, not a snapshot', () => {
     let v = 'a';
     const live = {} as { value: string };
     Object.defineProperty(live, 'value', { enumerable: true, get: () => v });
