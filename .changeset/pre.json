@@ -38,7 +38,8 @@
     "@fluixi/example-cdn-html": "0.0.0",
     "@fluixi/template-runtime": "0.0.0",
     "@fluixi/cdn": "0.0.0",
-    "@fluixi/devtools-extension": "0.0.0"
+    "@fluixi/devtools-extension": "0.0.0",
+    "@fluixi/web-components": "0.1.0-alpha.0"
   },
   "changesets": [
     "adapter-bundle-mode",
@@ -49,7 +50,10 @@
     "auth-session-cookies-cli",
     "babel-optional-peer",
     "branch-ownership",
+    "build-banners",
     "builtin-components-as-data",
+    "bundled-subpath-entries",
+    "cached-resource-live-graph",
     "cdn-installer-scripts",
     "cdn-package",
     "cf-routes-prerendered",
@@ -189,8 +193,10 @@
     "native-vite-path",
     "nested-delegated-events",
     "nested-jsx-resolution",
+    "one-is-server",
     "own-the-transform",
     "package-descriptions",
+    "paren-only-when-needed",
     "peer-runtime-singletons",
     "platform-adapters",
     "portal-onmount-cleanup-leak",
@@ -242,6 +248,8 @@
     "server-functions",
     "server-host-realm",
     "session-auth-rbac",
+    "shared-graph-builds",
+    "short-api-aliases",
     "slice-outermost-fix",
     "slim-integration-bridge",
     "slot-duplicate-key",
@@ -268,6 +276,7 @@
     "start-ts-config",
     "static-attrs-direct",
     "store-proxy-write",
+    "store-root-array",
     "store-setter-readonly",
     "suspense-lazy-child",
     "suspense-list-auto-import",
@@ -292,6 +301,7 @@
     "value-reaches-tags",
     "version-stamps",
     "versions-on-both-render-paths",
-    "vite-plugin-graph-events"
+    "vite-plugin-graph-events",
+    "web-components"
   ]
 }
