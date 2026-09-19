@@ -16,7 +16,6 @@
     ],
     "rootDir": "src",
     "externals": [],
-    "minify": false,
     "clean": true,
     "cjsTypes": true,
     "banner": {

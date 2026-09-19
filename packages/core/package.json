@@ -180,7 +180,7 @@
     "@fluixi/utils": "workspace:*"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.2.1",
+    "@bambiste/mix-builder": "^0.3.0",
     "@fluixi/compiler": "workspace:*",
     "@fluixi/vite-plugin": "workspace:*",
     "@types/fs-extra": "^11.0.4",

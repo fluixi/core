@@ -44,7 +44,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.2.1",
+    "@bambiste/mix-builder": "^0.3.0",
     "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3",

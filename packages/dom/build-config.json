@@ -33,7 +33,6 @@
       "@fluixi/core/plugins",
       "@fluixi/utils"
     ],
-    "minify": false,
     "clean": true,
     "banner": {
       "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",

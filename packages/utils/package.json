@@ -209,7 +209,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.2.1",
+    "@bambiste/mix-builder": "^0.3.0",
     "inquirer": "^13.1.0"
   }
 }
