@@ -21,8 +21,8 @@
     "banner": {
       "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
       "include": [
-        "src/server.ts",
-        "src/client.ts"
+        "src/client.ts",
+        "src/server.ts"
       ]
     }
   }

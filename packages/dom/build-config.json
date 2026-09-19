@@ -37,7 +37,15 @@
     "banner": {
       "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
       "include": [
-        "src/index.ts"
+        "src/index.ts",
+        "src/lib/dom/integration.ts",
+        "src/lib/dom/runtime.ts",
+        "src/lib/dom/index.ts",
+        "src/lib/dom/server-renderer.ts",
+        "src/lib/dom/utils.ts",
+        "src/lib/element/attributes.ts",
+        "src/lib/element/index.ts",
+        "src/lib/flow/index.ts"
       ]
     }
   }

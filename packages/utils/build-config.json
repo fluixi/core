@@ -21,7 +21,19 @@
     "banner": {
       "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
       "include": [
-        "src/index.ts"
+        "src/index.ts",
+        "src/lib/array/index.ts",
+        "src/lib/color/index.ts",
+        "src/lib/compare/index.ts",
+        "src/lib/dom/index.ts",
+        "src/lib/functions/index.ts",
+        "src/lib/maths/constants.ts",
+        "src/lib/maths/fn/index.ts",
+        "src/lib/maths/guards.ts",
+        "src/lib/maths/index.ts",
+        "src/lib/maths/types/index.ts",
+        "src/lib/object/index.ts",
+        "src/lib/primitive/index.ts"
       ]
     }
   }
