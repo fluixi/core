@@ -1,5 +1,20 @@
 # @fluixi/session
 
+## 1.0.0-alpha.84
+
+### Patch Changes
+
+- 9565405: The published entry files now include a copyright banner, and `@fluixi/dom`, `@fluixi/jsx`, `@fluixi/template-parser` and `@fluixi/template-runtime` ship unminified, which their build configs had always asked for.
+- Updated dependencies [9565405]
+- Updated dependencies [aa17d01]
+- Updated dependencies [76e286a]
+- Updated dependencies [bef4cb6]
+- Updated dependencies [c3d5026]
+- Updated dependencies [c3d5026]
+- Updated dependencies [4bd2bf1]
+  - @fluixi/reactive@1.0.0-alpha.84
+  - @fluixi/core@1.0.0-alpha.84
+
 ## 1.0.0-alpha.83
 
 ### Patch Changes

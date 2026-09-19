@@ -1,5 +1,11 @@
 # @fluixi/utils
 
+## 1.0.0-alpha.84
+
+### Patch Changes
+
+- 9565405: The published entry files now include a copyright banner, and `@fluixi/dom`, `@fluixi/jsx`, `@fluixi/template-parser` and `@fluixi/template-runtime` ship unminified, which their build configs had always asked for.
+
 ## 1.0.0-alpha.83
 
 ## 1.0.0-alpha.82
