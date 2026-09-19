@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "tsc": {
+    "project": "tsconfig.lib.json"
+  },
+  "esbuild": {
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
+    "target": "es2021",
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
+    "rootDir": "src",
+    "clean": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/index.ts",
+        "src/plugins/index.ts",
+        "src/wire.ts"
+      ]
+    }
+  }
+}

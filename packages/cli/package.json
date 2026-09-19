@@ -17,7 +17,8 @@
       "./package.json": "./package.json",
       ".": {
         "types": "./dist/index.d.ts",
-        "import": "./dist/index.js",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
         "default": "./dist/index.js"
       }
     }
@@ -34,19 +35,26 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.lib.json",
-    "test": "vitest run"
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "test": "vitest run",
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "dev": "tsc -w -p tsconfig.lib.json"
   },
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     }
   },
   "dependencies": {
     "@fluixi/start": "workspace:*"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "cross-env": "^7.0.3"
   }
 }

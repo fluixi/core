@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
+  "tsc": {
+    "project": "tsconfig.lib.json"
+  },
   "esbuild": {
     "extensions": [
       ".js",
@@ -75,7 +78,8 @@
         "src/lib/plugins/index.ts",
         "src/lib/router/index.ts",
         "src/lib/server/index.ts",
-        "src/routes.ts"
+        "src/routes.ts",
+        "src/utils.ts"
       ]
     }
   }

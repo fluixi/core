@@ -17,77 +17,92 @@
       "./package.json": "./package.json",
       "./ui": {
         "types": "./dist/ui.d.ts",
-        "import": "./dist/ui.js",
+        "import": "./dist/ui.mjs",
+        "require": "./dist/ui.cjs",
         "default": "./dist/ui.js"
       },
       ".": {
         "types": "./dist/index.d.ts",
-        "import": "./dist/index.js",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
         "default": "./dist/index.js"
       },
       "./config": {
         "types": "./dist/config.d.ts",
-        "import": "./dist/config.js",
+        "import": "./dist/config.mjs",
+        "require": "./dist/config.cjs",
         "default": "./dist/config.js"
       },
       "./adapter": {
         "types": "./dist/adapter.d.ts",
-        "import": "./dist/adapter.js",
+        "import": "./dist/adapter.mjs",
+        "require": "./dist/adapter.cjs",
         "default": "./dist/adapter.js"
       },
       "./router": {
         "types": "./dist/router.d.ts",
-        "import": "./dist/router.js",
+        "import": "./dist/router.mjs",
+        "require": "./dist/router.cjs",
         "default": "./dist/router.js"
       },
       "./head": {
         "types": "./dist/head.d.ts",
-        "import": "./dist/head.js",
+        "import": "./dist/head.mjs",
+        "require": "./dist/head.cjs",
         "default": "./dist/head.js"
       },
       "./server-fn": {
         "types": "./dist/server-fn.d.ts",
-        "import": "./dist/server-fn.js",
+        "import": "./dist/server-fn.mjs",
+        "require": "./dist/server-fn.cjs",
         "default": "./dist/server-fn.js"
       },
       "./server-fn-setup": {
         "types": "./dist/server-fn-setup.d.ts",
-        "import": "./dist/server-fn-setup.js",
+        "import": "./dist/server-fn-setup.mjs",
+        "require": "./dist/server-fn-setup.cjs",
         "default": "./dist/server-fn-setup.js"
       },
       "./di": {
         "types": "./dist/di.d.ts",
-        "import": "./dist/di.js",
+        "import": "./dist/di.mjs",
+        "require": "./dist/di.cjs",
         "default": "./dist/di.js"
       },
       "./server-fns": {
         "types": "./dist/generated-server-fns.d.ts",
-        "import": "./dist/generated-server-fns.js",
+        "import": "./dist/generated-server-fns.mjs",
+        "require": "./dist/generated-server-fns.cjs",
         "default": "./dist/generated-server-fns.js"
       },
       "./api-routes": {
         "types": "./dist/generated-api.d.ts",
-        "import": "./dist/generated-api.js",
+        "import": "./dist/generated-api.mjs",
+        "require": "./dist/generated-api.cjs",
         "default": "./dist/generated-api.js"
       },
       "./api": {
         "types": "./dist/api.d.ts",
-        "import": "./dist/api.js",
+        "import": "./dist/api.mjs",
+        "require": "./dist/api.cjs",
         "default": "./dist/api.js"
       },
       "./handler-core": {
         "types": "./dist/handler-core.d.ts",
-        "import": "./dist/handler-core.js",
+        "import": "./dist/handler-core.mjs",
+        "require": "./dist/handler-core.cjs",
         "default": "./dist/handler-core.js"
       },
       "./preload": {
         "types": "./dist/preload.d.ts",
-        "import": "./dist/preload.js",
+        "import": "./dist/preload.mjs",
+        "require": "./dist/preload.cjs",
         "default": "./dist/preload.js"
       },
       "./commands": {
         "types": "./dist/commands/index.d.ts",
-        "import": "./dist/commands/index.js",
+        "import": "./dist/commands/index.mjs",
+        "require": "./dist/commands/index.cjs",
         "default": "./dist/commands/index.js"
       }
     }
@@ -102,99 +117,116 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.lib.json",
-    "test": "vitest run"
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "test": "vitest run",
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "dev": "tsc -w -p tsconfig.lib.json"
   },
   "exports": {
     "./package.json": "./package.json",
     "./ui": {
       "development": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
-      "import": "./dist/ui.js",
+      "import": "./dist/ui.mjs",
+      "require": "./dist/ui.cjs",
       "default": "./dist/ui.js"
     },
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./config": {
       "development": "./src/config.ts",
       "types": "./dist/config.d.ts",
-      "import": "./dist/config.js",
+      "import": "./dist/config.mjs",
+      "require": "./dist/config.cjs",
       "default": "./dist/config.js"
     },
     "./adapter": {
       "development": "./src/adapter.ts",
       "types": "./dist/adapter.d.ts",
-      "import": "./dist/adapter.js",
+      "import": "./dist/adapter.mjs",
+      "require": "./dist/adapter.cjs",
       "default": "./dist/adapter.js"
     },
     "./router": {
       "development": "./src/router.ts",
       "types": "./dist/router.d.ts",
-      "import": "./dist/router.js",
+      "import": "./dist/router.mjs",
+      "require": "./dist/router.cjs",
       "default": "./dist/router.js"
     },
     "./head": {
       "development": "./src/head.ts",
       "types": "./dist/head.d.ts",
-      "import": "./dist/head.js",
+      "import": "./dist/head.mjs",
+      "require": "./dist/head.cjs",
       "default": "./dist/head.js"
     },
     "./server-fn": {
       "development": "./src/server-fn.ts",
       "types": "./dist/server-fn.d.ts",
-      "import": "./dist/server-fn.js",
+      "import": "./dist/server-fn.mjs",
+      "require": "./dist/server-fn.cjs",
       "default": "./dist/server-fn.js"
     },
     "./server-fn-setup": {
       "development": "./src/server-fn-setup.ts",
       "types": "./dist/server-fn-setup.d.ts",
-      "import": "./dist/server-fn-setup.js",
+      "import": "./dist/server-fn-setup.mjs",
+      "require": "./dist/server-fn-setup.cjs",
       "default": "./dist/server-fn-setup.js"
     },
     "./di": {
       "development": "./src/di.ts",
       "types": "./dist/di.d.ts",
-      "import": "./dist/di.js",
+      "import": "./dist/di.mjs",
+      "require": "./dist/di.cjs",
       "default": "./dist/di.js"
     },
     "./server-fns": {
       "development": "./src/generated-server-fns.ts",
       "types": "./dist/generated-server-fns.d.ts",
-      "import": "./dist/generated-server-fns.js",
+      "import": "./dist/generated-server-fns.mjs",
+      "require": "./dist/generated-server-fns.cjs",
       "default": "./dist/generated-server-fns.js"
     },
     "./api-routes": {
       "development": "./src/generated-api.ts",
       "types": "./dist/generated-api.d.ts",
-      "import": "./dist/generated-api.js",
+      "import": "./dist/generated-api.mjs",
+      "require": "./dist/generated-api.cjs",
       "default": "./dist/generated-api.js"
     },
     "./api": {
       "development": "./src/api.ts",
       "types": "./dist/api.d.ts",
-      "import": "./dist/api.js",
+      "import": "./dist/api.mjs",
+      "require": "./dist/api.cjs",
       "default": "./dist/api.js"
     },
     "./handler-core": {
       "development": "./src/handler-core.ts",
       "types": "./dist/handler-core.d.ts",
-      "import": "./dist/handler-core.js",
+      "import": "./dist/handler-core.mjs",
+      "require": "./dist/handler-core.cjs",
       "default": "./dist/handler-core.js"
     },
     "./preload": {
       "development": "./src/preload.ts",
       "types": "./dist/preload.d.ts",
-      "import": "./dist/preload.js",
+      "import": "./dist/preload.mjs",
+      "require": "./dist/preload.cjs",
       "default": "./dist/preload.js"
     },
     "./commands": {
       "development": "./src/commands/index.ts",
       "types": "./dist/commands/index.d.ts",
-      "import": "./dist/commands/index.js",
+      "import": "./dist/commands/index.mjs",
+      "require": "./dist/commands/index.cjs",
       "default": "./dist/commands/index.js"
     }
   },
@@ -215,6 +247,8 @@
     "@babel/core": "^7.28.5",
     "@babel/generator": "^7.29.1",
     "@babel/helper-plugin-utils": "^7.27.1",
-    "@babel/preset-typescript": "^7.28.5"
+    "@babel/preset-typescript": "^7.28.5",
+    "@bambiste/mix-builder": "^0.4.0",
+    "cross-env": "^7.0.3"
   }
 }

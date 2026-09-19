@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
+    "build": "cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
     "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
@@ -53,7 +53,7 @@
     "@fluixi/template-parser": "workspace:*"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "cross-env": "^7.0.3",
     "jsdom": "^25.0.0",
     "vitest": "^1.6.1"

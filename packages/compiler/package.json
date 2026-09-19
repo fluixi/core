@@ -138,7 +138,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "cross-env NODE_ENV=production mix-builder",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
@@ -153,7 +153,7 @@
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/plugin-transform-modules-commonjs": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@jridgewell/trace-mapping": "^0.3.31",

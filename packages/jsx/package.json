@@ -65,13 +65,13 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run copy:types",
+    "build": "cross-env NODE_ENV=production mix-builder && pnpm run copy:types",
     "copy:types": "cp ./src/lib/jsx.d.ts dist/lib",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "inquirer": "^13.1.0",

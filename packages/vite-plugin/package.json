@@ -39,7 +39,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "cross-env NODE_ENV=production mix-builder",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
@@ -60,7 +60,7 @@
     "@babel/generator": "^7.29.1",
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/preset-typescript": "^7.28.5",
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2",
     "vite": "^5.0.0",

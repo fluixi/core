@@ -39,7 +39,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "cross-env NODE_ENV=production mix-builder",
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "dependencies": {
@@ -50,7 +50,7 @@
     "@fluixi/compiler": "workspace:*"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "inquirer": "^14.0.2"
   },
   "repository": {

@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "tsc": {
+    "project": "tsconfig.lib.json"
+  },
+  "esbuild": {
+    "extensions": [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx"
+    ],
+    "target": "es2021",
+    "formats": [
+      "es",
+      "cjs"
+    ],
+    "entries": [
+      "src/**/*.ts"
+    ],
+    "rootDir": "src",
+    "clean": true,
+    "banner": {
+      "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
+      "include": [
+        "src/adapter.ts",
+        "src/api.ts",
+        "src/commands/index.ts",
+        "src/config.ts",
+        "src/di.ts",
+        "src/generated-api.ts",
+        "src/generated-server-fns.ts",
+        "src/handler-core.ts",
+        "src/head.ts",
+        "src/index.ts",
+        "src/preload.ts",
+        "src/router.ts",
+        "src/server-fn-setup.ts",
+        "src/server-fn.ts",
+        "src/ui.ts"
+      ]
+    },
+    "platform": "node",
+    "pkgExternal": true,
+    "libExternal": true
+  }
+}

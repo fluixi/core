@@ -203,13 +203,13 @@
     "test": "vitest",
     "build:old": "tsc -p tsconfig.json",
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "pnpm run build:typings && cross-env NODE_ENV=production mix-builder",
+    "build": "cross-env NODE_ENV=production mix-builder",
     "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "inquirer": "^13.1.0"
   }
 }

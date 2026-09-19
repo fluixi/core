@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
   "builder": "esbuild",
+  "tsc": {
+    "project": "tsconfig.lib.json"
+  },
   "esbuild": {
     "extensions": [
       ".js",
@@ -31,10 +34,13 @@
     "banner": {
       "js": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */",
       "include": [
+        "src/analyze/static-graph.ts",
         "src/frontend/babel/index.ts",
         "src/index.ts",
         "src/integrations.ts",
-        "src/lower/compile-template.ts"
+        "src/lower/compile-template.ts",
+        "src/resolve/builtins.ts",
+        "src/transform/index.ts"
       ]
     }
   }

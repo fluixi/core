@@ -133,7 +133,7 @@
   },
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
-    "build": "node ../../scripts/gen-version.mjs && pnpm run build:typings && cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
+    "build": "node ../../scripts/gen-version.mjs && cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
     "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run",
@@ -143,7 +143,7 @@
     "stream": "^0.0.3"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.3.0",
+    "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/reactive": "workspace:*",
     "inquirer": "^13.1.0",
     "jsdom": "^25.0.0",
