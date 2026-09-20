@@ -11,8 +11,6 @@
  * matched array, never by re-entering a still-building parent, so deeply nested
  * <Outlet/> works at any depth.
  */
-
-import { isServer } from '@fluixi/dom';
 import {
   createSignal,
   createMemo,
@@ -21,7 +19,13 @@ import {
   getOwner,
   onCleanup,
   untrack,
+  flush,
 } from '@fluixi/reactive/signal';
+import {
+  prepareComponents,
+  runTransition,
+  type TransitionMode,
+} from './transition.js';
 import {
   insert,
   createComponent,
@@ -157,7 +161,10 @@ function renderChild(ctx: OutletCtxValue): any {
   );
   createEffect(() => {
     const c = ctx.matched()[childIdx]?.component;
-    setChildComp(() => c);
+    // `matched` is invalidated more than once per navigation, so this effect runs more
+    // than once. Writing only on a real change keeps the redundant runs from touching
+    // the graph at all.
+    if (untrack(childComp) !== c) setChildComp(() => c);
   });
 
   return createMemo(() => {
@@ -222,7 +229,23 @@ export interface RouterProps<C = any> {
    * that keeps your layout/chrome, add a catch-all file route instead (`[...slug].tsx` -> `*`).
    */
   notFound?: any;
+  /**
+   * How route changes are presented. `'auto'` (the default) hands the DOM swap to the
+   * browser's View Transition API where there is one, and navigates directly where
+   * there is not; `'none'` always navigates directly.
+   *
+   * A reader who asked for reduced motion never gets an animation either way. Styling
+   * is the native mechanism — `::view-transition-old(root)` and
+   * `::view-transition-new(root)` — so the router imposes no visual style of its own.
+   */
+  transition?: TransitionMode;
 }
+
+/**
+ * The presentation for the navigation about to happen, handed from `useNavigate` to the
+ * subscriber in `Router`. Read and cleared within the same synchronous call.
+ */
+let pendingTransitionMode: TransitionMode | undefined;
 
 /**
  * The router. Matches the current URL against `routes` and renders what matches.
@@ -247,10 +270,71 @@ export function Router<C = any>(props: RouterProps<C>) {
   });
 
   const [state, setState] = createSignal(router.state());
-  const unsub = router.subscribe(setState);
+
+  /**
+   * Which navigation is allowed to commit.
+   *
+   * Preparation is async, so two navigations can be in flight at once: A→B starts
+   * loading B's chunk, the reader clicks through to C before it lands. Each navigation
+   * takes the next number and checks it is still the current one before writing the
+   * match signal, so B resolving late finds itself superseded and returns without
+   * touching anything. Without this, B would commit over C — the URL would say /c and
+   * the page would show B.
+   */
+  let navigationId = 0;
+
+  /**
+   * How to present the next commit, set by `useNavigate` immediately before it calls
+   * into the core router.
+   *
+   * A module-level hand-off rather than a parameter because the core router's
+   * `navigate` does not carry options through to its listeners, and it notifies
+   * synchronously — the value is written and read within the same call, never left
+   * lying around for an unrelated navigation to pick up.
+   */
+  const takeMode = (): TransitionMode => {
+    const mode = pendingTransitionMode ?? (props.transition ?? 'auto');
+    pendingTransitionMode = undefined;
+    return mode;
+  };
+
+  const unsub = router.subscribe((next) => {
+    const id = ++navigationId;
+    const mode = takeMode();
+
+    // Load the modules the next route needs before anything is torn down, so a lazy
+    // route renders straight through instead of suspending into a fallback with the
+    // old page already gone.
+    const prepared = prepareComponents(
+      (next.match?.matched ?? []).map((m) => m.component).filter(Boolean),
+    );
+
+    const commit = () => {
+      setState(next);
+      // The write only queues; effects are scheduled. Flushing here is what lets the
+      // browser snapshot a settled DOM rather than a half-built one.
+      return flush();
+    };
+
+    if (!prepared) {
+      // Nothing to wait for: stay on the tick this navigation was already on.
+      void runTransition(mode, commit);
+      return;
+    }
+
+    void prepared.then(() => {
+      // Superseded while the module loaded. The newer navigation owns the DOM now.
+      if (id !== navigationId) return;
+      return runTransition(mode, commit);
+    });
+  });
+
   onCleanup(() => {
     unsub();
     router.destroy();
+    // Anything still preparing is now stale, so nothing can commit into a torn-down
+    // router.
+    navigationId++;
   });
 
   // Drop pathless layers (no component), their params still appear in the merged
@@ -479,6 +563,8 @@ export function useLocation(): RouterLocation {
 export interface LinkNavigationOptions {
   /** Replace the current history entry instead of pushing a new one. */
   replace?: boolean;
+  /** How this navigation is presented. Defaults to the Router's own setting. */
+  transition?: TransitionMode;
   /**
    * Called with the resolved URL before navigating. Return false to leave the click
    * alone, for a section of the app that must load as a document (a different
@@ -534,6 +620,7 @@ export function useLinkNavigation(
     if (options.shouldNavigate && !options.shouldNavigate(url, anchor)) return;
 
     event.preventDefault();
+    pendingTransitionMode = options.transition;
     ctx.router.navigate(url.pathname + url.search + url.hash, { replace: options.replace });
   };
 }
@@ -554,12 +641,21 @@ export function useLinkNavigation(
  * navigate(`/posts/${id}`, { replace: true });
  * ```
  */
-export function useNavigate(): (to: string, options?: NavigateOptions) => void {
+export function useNavigate(): (
+  to: string,
+  options?: NavigateOptions & { transition?: TransitionMode },
+) => void {
   // useRouter is SSR-safe (returns a no-op stub on the server when the context is
   // detached), so navigation degrades to a no-op during SSR and only throws on
   // genuine client-side misuse outside <Router>.
   const { router } = useRouter();
-  return (to, options) => router.navigate(to, options);
+  return (to, options) => {
+    // Handed to the Router's subscriber, which runs synchronously inside the call
+    // below and clears it. `transition: 'none'` on one navigation leaves the router's
+    // own setting alone for the next.
+    pendingTransitionMode = options?.transition;
+    router.navigate(to, options);
+  };
 }
 
 /**
@@ -816,5 +912,12 @@ export type {
   CacheFn,
 } from './data.js';
 export { lazy } from '../render/lazy.js';
+// Navigation presentation. The router owns the integration; these are exported for
+// apps that need to ask what the environment supports.
+export {
+  supportsViewTransitions,
+  prefersReducedMotion,
+  type TransitionMode,
+} from './transition.js';
 // Carried over from the barrel this replaced; route codegen imports it from here.
 export { runWithOwner } from '@fluixi/reactive/signal';

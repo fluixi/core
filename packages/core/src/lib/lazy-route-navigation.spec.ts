@@ -4,9 +4,10 @@
  *
  * Hydration preloads the matched route, so a server-rendered lazy route resolves
  * synchronously (see hydrate-router-nested.spec). Navigating to a *different* chunk has no
- * such preload: the import starts on click and Suspense covers the gap. The page has to
- * appear when the chunk lands, the failure this guards is a fetched chunk that mounts
- * nothing, leaving an empty root and no error.
+ * such preload: the import starts on navigation, and the router holds the commit until it
+ * lands, so the page being left is what stays on screen meanwhile. The page has to appear
+ * when the chunk lands, the failure this guards is a fetched chunk that mounts nothing,
+ * leaving an empty root and no error.
  *
  * Compiles real JSX through the imperative backend, the same shape a @fluixi/start app has.
  */
@@ -181,11 +182,14 @@ describe('navigating to a route chunk that is not loaded yet', () => {
     DOM.render(() => App(), container);
     expect(container.textContent).toContain('HOME');
 
-    // Cold navigation: the import starts now, so the boundary covers the gap.
+    // Cold navigation: the import starts now, and the router does not commit until it
+    // resolves. The previous page stays up rather than being replaced by a fallback —
+    // the old route is removed only once the new one can render.
     history.pushState(null, '', '/one');
     dispatchEvent(new PopStateEvent('popstate'));
     await tick();
-    expect(container.textContent).toContain('LOADING');
+    expect(container.textContent).toContain('HOME');
+    expect(container.textContent).not.toContain('LOADING');
 
     await (globalThis as any).__land.one();
     await tick();
