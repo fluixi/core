@@ -91,6 +91,7 @@
     "create-prompts",
     "create-provider-return-type",
     "create-ssr-tsconfig-fix",
+    "create-stylesheet",
     "css-properties-strict",
     "dead-export-subpaths",
     "debounced-primitives",
