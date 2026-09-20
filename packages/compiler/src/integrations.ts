@@ -606,6 +606,28 @@ import { join as _join } from 'node:path';
 const SERVER_FNS_VMOD = 'virtual:fluixi-server-fns';
 
 /** Recursively find source files containing the `"use server"` directive under `dir`. */
+/**
+ * Whether a file actually carries a `"use server"` directive.
+ *
+ * Every module this matches is side-effect imported into the server bundle, so a false
+ * positive does more than waste a line: it runs that file on the server. A plain
+ * `includes('use server')` matched the words wherever they appeared, and a client entry
+ * that merely *mentioned* the directive in a comment was imported into the SSR graph and
+ * called `startClient` there, which fails with `document is not defined` from a line
+ * nobody wrote.
+ *
+ * Comments are stripped before the test rather than parsed around, because the answer
+ * only has to be good enough to decide whether the real transform should look at the
+ * file. A directive inside a string literal still matches, which costs an extra import
+ * and nothing else.
+ */
+function hasServerDirective(source: string): boolean {
+  const withoutComments = source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  return /(^|[\s;{(,])['"]use server['"]/.test(withoutComments);
+}
+
 function findServerFnModules(dir: string, out: string[] = []): string[] {
   let entries: any[];
   try {
@@ -619,7 +641,7 @@ function findServerFnModules(dir: string, out: string[] = []): string[] {
     if (e.isDirectory()) findServerFnModules(full, out);
     else if (/\.[jt]sx?$/.test(e.name)) {
       try {
-        if (readFileSync(full, 'utf8').includes('use server')) out.push(full);
+        if (hasServerDirective(readFileSync(full, 'utf8'))) out.push(full);
       } catch {
         /* unreadable — skip */
       }
