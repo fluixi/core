@@ -1,5 +1,16 @@
 # @fluixi/example-intrinsics
 
+## 0.0.1-alpha.9
+
+### Patch Changes
+
+- Updated dependencies [39a87cd]
+- Updated dependencies [ea498ef]
+  - @fluixi/core@1.0.0-alpha.85
+  - @fluixi/reactive@1.0.0-alpha.85
+  - @fluixi/dom@1.0.0-alpha.85
+  - @fluixi/jsx@1.0.0-alpha.85
+
 ## 0.0.1-alpha.8
 
 ### Patch Changes

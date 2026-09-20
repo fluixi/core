@@ -1,5 +1,14 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.76
+
+### Patch Changes
+
+- 5062033: The `@fluixi/start` root export now is safe to import from a browser bundle. Import `loadConfig`, `serveNode`, adapters, or `createImageHandler` from their subpaths instead of the package root.
+- Updated dependencies [a2f0eb8]
+- Updated dependencies [5062033]
+  - @fluixi/start@0.1.0-alpha.75
+
 ## 0.1.0-alpha.75
 
 ### Patch Changes

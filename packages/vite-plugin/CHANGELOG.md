@@ -1,5 +1,14 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.85
+
+### Patch Changes
+
+- ea498ef: `set` now writes to the path it names using the provided step(s) and value, the server-function `scan` now ignores directives inside comments, the devtools agent now resolves the ESM build instead of the CJS one, and the AsyncLocalStorage warning now appears only on the server.
+- Updated dependencies [ea498ef]
+  - @fluixi/compiler@1.0.0-alpha.85
+  - @fluixi/devtools@0.2.0-alpha.4
+
 ## 1.0.0-alpha.84
 
 ### Patch Changes

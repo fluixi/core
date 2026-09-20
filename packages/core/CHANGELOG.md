@@ -1,5 +1,23 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.85
+
+### Minor Changes
+
+- 39a87cd: `Router` now keeps the current page visible until the new route can render, and you can control this with the new `transition` prop on `Router` and the `transition` option on `navigate` and `useLinkNavigation`.
+
+### Patch Changes
+
+- Updated dependencies [ea498ef]
+  - @fluixi/reactive@1.0.0-alpha.85
+  - @fluixi/compiler@1.0.0-alpha.85
+  - @fluixi/vite-plugin@1.0.0-alpha.85
+  - @fluixi/server@1.0.0-alpha.85
+  - @fluixi/dom@1.0.0-alpha.85
+  - @fluixi/head@1.0.0-alpha.52
+  - @fluixi/jsx@1.0.0-alpha.85
+  - @fluixi/utils@1.0.0-alpha.85
+
 ## 1.0.0-alpha.84
 
 ### Patch Changes
