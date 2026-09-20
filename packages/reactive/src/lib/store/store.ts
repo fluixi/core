@@ -418,7 +418,8 @@ function replaceArray(target: any[], next: readonly any[]): void {
  *   set(state => newState)        whole-state updater, merged back
  *   set(partialObject)            per-key merge
  *   set([[path, valOrFn], ...])   batch of path updates
- *   set(path, ['seg', ...], val)  path plus extra segments
+ *   set(path, ...steps, val)      a step per argument: key, index, [indices],
+ *                                 { from, to, by }, a predicate, or '*'
  *   set(path, val | updater)      the common form (dotted, [n], [*])
  */
 function applySet(root: any, args: any[]): void {
@@ -456,11 +457,101 @@ function applySet(root: any, args: any[]): void {
     mergeInto(root, first);
     return;
   }
-  if (Array.isArray(args[1]) && args.length >= 3) {
-    applyPath(root, `${first}.${args[1].join('.')}`, args[2]);
+  // Three or more arguments: every one but the last selects a step, the last is the
+  // value. This used to read `args[1]` as the value and ignore the rest, so
+  // `set('items', 0, 'done', true)` wrote the number 0 over `items` — accepted by the
+  // typings, and silent.
+  if (args.length >= 3) {
+    setDeep(root, args.slice(0, -1), args[args.length - 1]);
     return;
   }
   applyPath(root, String(first), args[1]);
+}
+
+/**
+ * Which keys a selector names at this level.
+ *
+ * The typings offer four shapes for the steps between a path and a value, and each one
+ * resolves here rather than at a call site:
+ *   'name' | 2        a single key, dotted paths expanded by the caller
+ *   [0, 2]            several indices of an array
+ *   { from, to, by }  a range of indices
+ *   (item, i) => bool a predicate over an array
+ *   '*'               every key
+ */
+function selectKeys(current: any, selector: any): Array<string | number> {
+  if (typeof selector === 'function') {
+    if (!Array.isArray(current)) return [];
+    const keys: number[] = [];
+    for (let i = 0; i < current.length; i++) if (selector(current[i], i)) keys.push(i);
+    return keys;
+  }
+
+  if (Array.isArray(selector)) {
+    // Against an array these are indices. Against anything else there is nothing to
+    // index, so they are path segments — the form this function used to be given.
+    return Array.isArray(current) ? selector.map(Number) : selector.map(String);
+  }
+
+  if (
+    selector &&
+    typeof selector === 'object' &&
+    ('from' in selector || 'to' in selector || 'by' in selector)
+  ) {
+    if (!Array.isArray(current)) return [];
+    const by = selector.by ?? 1;
+    const from = selector.from ?? 0;
+    const to = selector.to ?? current.length - 1;
+    const keys: number[] = [];
+    for (let i = from; i <= to; i += by) if (i >= 0 && i < current.length) keys.push(i);
+    return keys;
+  }
+
+  if (selector === '*') {
+    return Array.isArray(current)
+      ? current.map((_, i) => i)
+      : Object.keys(current ?? {});
+  }
+
+  return [selector as string | number];
+}
+
+/**
+ * Walk the selectors, writing the value at every leaf they reach.
+ *
+ * A string step is expanded first, so `set('a.b', 'c', v)` and `set('a', 'b', 'c', v)`
+ * land in the same place. Missing containers are created on the way down, as an array
+ * when the next step looks like an index.
+ */
+function setDeep(current: any, selectors: any[], value: any): void {
+  if (current == null) return;
+
+  // Expand a dotted or bracketed string into its own steps before selecting.
+  const [head, ...rest] = selectors;
+  if (typeof head === 'string') {
+    const parts = parsePath(head);
+    if (parts.length > 1) {
+      setDeep(current, [...parts, ...rest], value);
+      return;
+    }
+  }
+
+  const keys = selectKeys(current, head);
+
+  if (rest.length === 0) {
+    for (const key of keys) writeKey(current, key, nextValue(value, current[key]));
+    return;
+  }
+
+  for (const key of keys) {
+    let next = current[key];
+    if (next == null || typeof next !== 'object') {
+      const lookahead = rest[0];
+      next = typeof lookahead === 'number' || /^\d+$/.test(String(lookahead)) ? [] : {};
+      writeKey(current, key, next);
+    }
+    setDeep(next, rest, value);
+  }
 }
 
 function clone<T>(value: T): T {
