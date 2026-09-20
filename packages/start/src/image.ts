@@ -85,7 +85,7 @@ function imageResponse(body: Uint8Array, contentType: string, maxAge: number): R
  *
  * ```ts
  * // src/api/image.ts
- * import { createImageHandler } from '@fluixi/start';
+ * import { createImageHandler } from '@fluixi/start/image';
  * export const GET = createImageHandler({ root: 'public', domains: ['cdn.example.com'] });
  * ```
  *
@@ -162,25 +162,5 @@ export function createImageHandler(options: ImageHandlerOptions = {}): (request:
   };
 }
 
-export interface ImageLoaderOptions {
-  /** Path the {@link createImageHandler} route is mounted at. Default `/api/image`. */
-  path?: string;
-}
-
-/**
- * A loader for `@fluixi-ui/image` that targets a {@link createImageHandler} route.
- *
- * ```tsx
- * import { imageLoader } from '@fluixi/start';
- * const loader = imageLoader({ path: '/api/image' });
- * <Image src="/mug.jpg" loader={loader} widths={[120, 240, 480]} />
- * ```
- */
-export function imageLoader(options: ImageLoaderOptions = {}): (args: { src: string; width: number; quality?: number }) => string {
-  const path = options.path ?? '/api/image';
-  return ({ src, width, quality }) => {
-    const params = new URLSearchParams({ url: src, w: String(width) });
-    if (quality != null) params.set('q', String(quality));
-    return `${path}?${params.toString()}`;
-  };
-}
+// The loader lives apart, so a page can import it without this module's `node:fs`.
+export { imageLoader, type ImageLoaderOptions } from './image-loader.js';

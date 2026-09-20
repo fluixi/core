@@ -95,9 +95,9 @@ export type ResolvedConfig = Required<
 };
 
 /** Identity helper for editor types in `fluixi.config.ts`. */
-export function defineConfig(config: FluixiConfig): FluixiConfig {
-  return config;
-}
+// One implementation, re-exported: the root entry needs it without this module's
+// `node:fs`, and two copies of an identity function is how their signatures drift.
+export { defineConfig } from './define-config.js';
 
 /** Apply defaults. */
 export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {

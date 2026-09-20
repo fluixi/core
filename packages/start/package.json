@@ -104,6 +104,24 @@
         "import": "./dist/commands/index.mjs",
         "require": "./dist/commands/index.cjs",
         "default": "./dist/commands/index.js"
+      },
+      "./interceptors": {
+        "types": "./dist/interceptors.d.ts",
+        "import": "./dist/interceptors.mjs",
+        "require": "./dist/interceptors.cjs",
+        "default": "./dist/interceptors.js"
+      },
+      "./handler": {
+        "types": "./dist/handler.d.ts",
+        "import": "./dist/handler.mjs",
+        "require": "./dist/handler.cjs",
+        "default": "./dist/handler.js"
+      },
+      "./image": {
+        "types": "./dist/image.d.ts",
+        "import": "./dist/image.mjs",
+        "require": "./dist/image.cjs",
+        "default": "./dist/image.js"
       }
     }
   },
@@ -228,6 +246,27 @@
       "import": "./dist/commands/index.mjs",
       "require": "./dist/commands/index.cjs",
       "default": "./dist/commands/index.js"
+    },
+    "./interceptors": {
+      "development": "./src/interceptors.ts",
+      "types": "./dist/interceptors.d.ts",
+      "import": "./dist/interceptors.mjs",
+      "require": "./dist/interceptors.cjs",
+      "default": "./dist/interceptors.js"
+    },
+    "./handler": {
+      "development": "./src/handler.ts",
+      "types": "./dist/handler.d.ts",
+      "import": "./dist/handler.mjs",
+      "require": "./dist/handler.cjs",
+      "default": "./dist/handler.js"
+    },
+    "./image": {
+      "development": "./src/image.ts",
+      "types": "./dist/image.d.ts",
+      "import": "./dist/image.mjs",
+      "require": "./dist/image.cjs",
+      "default": "./dist/image.js"
     }
   },
   "dependencies": {
