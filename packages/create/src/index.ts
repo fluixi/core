@@ -70,19 +70,143 @@ function askSelect(label: string, choices: Choice[]): Promise<string> {
     const onKey = (_s: string, k: { name?: string; ctrl?: boolean }) => {
       if (k.name === 'up' || k.name === 'k') { idx = (idx - 1 + choices.length) % choices.length; draw(false); }
       else if (k.name === 'down' || k.name === 'j') { idx = (idx + 1) % choices.length; draw(false); }
-      else if (k.name === 'return') { finish(); done(choices[idx].value); }
+      // Both names. A terminal sends `\r` and readline calls that `return`; a pty or a
+      // piped answer sends `\n`, which it calls `enter`. Accepting only the first left
+      // the prompt waiting for a key that never came.
+      else if (k.name === 'return' || k.name === 'enter') { finish(); done(choices[idx].value); }
       else if (k.name === 'c' && k.ctrl) { finish(); output.write('\n'); exit(1); }
     };
+    // Enter on a closed stream still means "take what is highlighted". Without this a
+    // piped answer (`printf 'app\n\n\n' | create-fluixi`) drew the list and stopped.
+    const onEnd = () => { finish(); done(choices[idx].value); };
     const finish = () => {
       input.off('keypress', onKey);
+      input.off('end', onEnd);
+      input.off('close', onEnd);
       if (input.isTTY) input.setRawMode(false);
-      // emitKeypressEvents() resumed stdin to read keys; pause it again or the
-      // live stdin handle keeps the event loop alive and the CLI never exits.
+      // Pause it again or the live stdin handle keeps the event loop alive and the CLI
+      // never exits.
       input.pause();
       output.write(`${BAR}\n`);
     };
+    // Already at EOF, so no event is coming: a fully buffered answer
+    // (`printf 'app\n\n\n' | create-fluixi`) is consumed by the name prompt and the
+    // stream ends before this one is set up. Take the highlighted value now.
+    if (input.readableEnded) { finish(); done(choices[idx].value); return; }
+
     input.on('keypress', onKey);
+    input.on('end', onEnd);
+    input.on('close', onEnd);
+    // The reason this prompt used to go nowhere. `askText` closes its readline
+    // interface, which leaves stdin paused, and `emitKeypressEvents` only wires the
+    // stream up the first time it is called. Attaching a listener to a paused stream
+    // reads nothing, so no key ever arrived: the list drew with the first option
+    // highlighted, the event loop drained, and the process exited 0 having created
+    // nothing.
+    input.resume();
   });
+}
+
+/**
+ * What every @fluixi-ui app needs, and nothing more.
+ *
+ * The base layer: tokens and theme, the primitives and the behaviour they share, the
+ * layout and animation helpers. No component package is here on purpose, an app installs
+ * the ones it uses, and the resolver turns `<Button />` into an import from whichever it
+ * installed.
+ */
+const UI_DEPS: Record<string, string> = {
+  '@fluixi-ui/fx': 'alpha',
+  '@fluixi-ui/interactions': 'alpha',
+  '@fluixi-ui/kit': 'alpha',
+  '@fluixi-ui/layout': 'alpha',
+  '@fluixi-ui/polymorphic': 'alpha',
+  '@fluixi-ui/primitives': 'alpha',
+  '@fluixi-ui/theme': 'alpha',
+  '@fluixi-ui/tokens': 'alpha',
+};
+/** Build-time only: it runs in the config, not in the app. */
+const UI_DEV_DEPS: Record<string, string> = { '@fluixi-ui/resolver': 'alpha' };
+
+type Ui = 'none' | 'fluixi-ui';
+type Css = 'none' | 'tailwind' | 'fluixi-css';
+
+/** Add to a package.json section without dropping what the template already had. */
+function addDeps(pkg: Record<string, any>, section: string, deps: Record<string, string>): void {
+  pkg[section] = Object.fromEntries(
+    Object.entries({ ...(pkg[section] ?? {}), ...deps }).sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
+
+/**
+ * The stylesheet the app imports, assembled from what was chosen.
+ *
+ * Tokens first: the kit's components read those custom properties, so a framework layer
+ * loaded before them would be overridden by nothing and a component would render unstyled.
+ */
+function styleSheet(ui: Ui, css: Css): string {
+  const lines: string[] = [];
+  if (ui === 'fluixi-ui') lines.push(`@import '@fluixi-ui/tokens/css';`);
+  if (css === 'tailwind') lines.push(`@import 'tailwindcss';`);
+  if (css === 'fluixi-css') lines.push(`@import '@fluixi-css/core';`);
+  return lines.join('\n') + '\n';
+}
+
+/** Where the component resolver is configured, which differs by mode. */
+const configFor = (mode: 'ssr' | 'spa') =>
+  mode === 'ssr' ? 'fluixi.config.ts' : 'vite.config.ts';
+
+/**
+ * Let a capitalised tag resolve to a @fluixi-ui package.
+ *
+ * Added alongside the rule the template ships rather than replacing it, so a local
+ * `src/components/Card.tsx` still wins and only the names it does not define fall
+ * through to the kit.
+ */
+function addUiResolver(target: string, mode: 'ssr' | 'spa'): void {
+  const file = join(target, configFor(mode));
+  if (!existsSync(file)) return;
+  let src = readFileSync(file, 'utf8');
+  src = `import { uiComponents } from '@fluixi-ui/resolver';\n` + src;
+  src = src.replace(
+    "resolve: [{ match: /^([A-Z]\\w+)$/, module: '/src/components/$1.tsx' }]",
+    "resolve: [{ match: /^([A-Z]\\w+)$/, module: '/src/components/$1.tsx' }, uiComponents()]",
+  );
+  writeFileSync(file, src);
+}
+
+/**
+ * Put a plugin in the app's vite config.
+ *
+ * An SSR app has none by default, because @fluixi/start owns the build. It still reads
+ * one when it is there, so a css engine that ships a vite plugin gets a file created for
+ * it rather than having nowhere to go.
+ */
+function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, call: string): void {
+  const file = join(target, 'vite.config.ts');
+
+  if (!existsSync(file)) {
+    writeFileSync(
+      file,
+      `${importLine}\n\n// @fluixi/start owns routing, the JSX/SSR transform and the build.\n// This file is only here to add plugins to it.\nexport default {\n  plugins: [${call}],\n};\n`,
+    );
+    return;
+  }
+
+  let src = readFileSync(file, 'utf8');
+  src = importLine + '\n' + src;
+  src = src.replace('plugins: [', `plugins: [\n    ${call},`);
+  writeFileSync(file, src);
+}
+
+/** Import the stylesheet from whichever file boots the client. */
+function importStyles(target: string, mode: 'ssr' | 'spa', format: 'jsx' | 'html'): void {
+  const base = mode === 'ssr' ? 'entry-client' : 'main';
+  const file = ['tsx', 'ts']
+    .map((ext) => join(target, 'src', `${base}.${ext}`))
+    .find((p) => existsSync(p));
+  if (!file) return;
+  writeFileSync(file, `import './styles.css';\n` + readFileSync(file, 'utf8'));
 }
 
 async function main(): Promise<void> {
@@ -92,8 +216,15 @@ async function main(): Promise<void> {
     args.includes('--spa') ? 'spa' : args.includes('--ssr') ? 'ssr' : undefined;
   let format: 'jsx' | 'html' | undefined =
     args.includes('--html') ? 'html' : args.includes('--jsx') ? 'jsx' : undefined;
+  let ui: Ui | undefined =
+    args.includes('--ui') ? 'fluixi-ui' : args.includes('--no-ui') ? 'none' : undefined;
+  let css: Css | undefined =
+    args.includes('--tailwind') ? 'tailwind'
+    : args.includes('--fluixi-css') ? 'fluixi-css'
+    : args.includes('--no-css') ? 'none'
+    : undefined;
 
-  const interactive = input.isTTY && (!dir || !mode || !format);
+  const interactive = input.isTTY && (!dir || !mode || !format || !ui || !css);
   if (interactive) {
     output.write(`\n${c.gray('┌')}  ${gradient('◆')} ${c.bold(gradient('create-fluixi'))}\n${BAR}\n`);
     if (!dir) dir = await askText('Project name', 'fluixi-app');
@@ -109,10 +240,25 @@ async function main(): Promise<void> {
         { value: 'html', label: 'html``', hint: 'no JSX · plain .ts · @fluixi/ts-plugin' },
       ])) as 'jsx' | 'html';
     }
+    if (!ui) {
+      ui = (await askSelect('Component library', [
+        { value: 'none', label: 'None', hint: 'bring your own components' },
+        { value: 'fluixi-ui', label: '@fluixi-ui', hint: 'kit + tokens · install components as you need them' },
+      ])) as Ui;
+    }
+    if (!css) {
+      css = (await askSelect('Styling', [
+        { value: 'none', label: 'None', hint: 'plain css' },
+        { value: 'tailwind', label: 'Tailwind CSS', hint: 'v4 · via @tailwindcss/vite' },
+        { value: 'fluixi-css', label: '@fluixi-css', hint: 'the Fluixi stylesheet' },
+      ])) as Css;
+    }
   }
   dir = dir ?? 'fluixi-app';
   mode = mode ?? 'ssr';
   format = format ?? 'jsx';
+  ui = ui ?? 'none';
+  css = css ?? 'none';
 
   const target = resolve(dir);
   const name = basename(target);
@@ -131,6 +277,40 @@ async function main(): Promise<void> {
   const pkgPath = join(target, 'package.json');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
   pkg.name = name;
+
+  if (ui === 'fluixi-ui') {
+    addDeps(pkg, 'dependencies', UI_DEPS);
+    addDeps(pkg, 'devDependencies', UI_DEV_DEPS);
+    addUiResolver(target, mode);
+  }
+
+  if (css === 'tailwind') {
+    addDeps(pkg, 'devDependencies', { tailwindcss: '^4', '@tailwindcss/vite': '^4' });
+    addVitePlugin(target, mode, `import tailwindcss from '@tailwindcss/vite';`, 'tailwindcss()');
+  }
+
+  if (css === 'fluixi-css') {
+    addDeps(pkg, 'dependencies', { '@fluixi-css/core': 'next' });
+    addDeps(pkg, 'devDependencies', { '@fluixi-css/vite': 'next', lightningcss: '^1.29.3' });
+    addVitePlugin(
+      target,
+      mode,
+      `import fluixiCss from '@fluixi-css/vite';`,
+      // The bridge only matters with the component kit installed: it maps the theme
+      // scales onto the `--flx-ui-*` custom properties those components read.
+      `fluixiCss({ reset: true${ui === 'fluixi-ui' ? ', emitUiTokens: true' : ''} })`,
+    );
+    writeFileSync(
+      join(target, 'fluixi.css.config.js'),
+      `const config = {\n  purge: true,\n  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],\n  mode: { dark: '[data-theme="dark"]' },\n  theme: { extend: {} },\n};\n\nexport default config;\n`,
+    );
+  }
+
+  if (ui === 'fluixi-ui' || css !== 'none') {
+    writeFileSync(join(target, 'src', 'styles.css'), styleSheet(ui, css));
+    importStyles(target, mode, format);
+  }
+
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
   // Outro + next steps. The leading gutter only makes sense after the intro/prompts.
