@@ -11,8 +11,8 @@
  * and it keeps the file about navigation.
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { render, createNativeElement, insert } from '@fluixi/dom';
-import { ensureIntegration } from '../render/component.js';
+import { render, createNativeElement, insert, createComponent } from '@fluixi/dom';
+import { createMemo, createRoot } from '@fluixi/reactive/signal';
 import { Router, Outlet } from './index.js';
 import { createBrowserHistory } from '@fluixi/router';
 
@@ -44,10 +44,9 @@ const plain = (text: string) => () => box(text);
 
 let container: HTMLDivElement;
 let dispose: (() => void) | undefined;
+let disposeOwner: (() => void) | undefined;
 
 beforeEach(() => {
-  // The component integration has to be installed before anything renders.
-  ensureIntegration();
   history.replaceState(null, '', '/');
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -56,17 +55,34 @@ beforeEach(() => {
 
 afterEach(() => {
   dispose?.();
+  // The root that owns the memo, and with it the Router's onCleanup. Without this the
+  // router stays subscribed to history and reacts to the next test's navigation.
+  disposeOwner?.();
   dispose = undefined;
+  disposeOwner = undefined;
   container.remove();
   delete (document as any).startViewTransition;
   vi.restoreAllMocks();
 });
 
+/**
+ * Mounted the way `startClient` mounts an app: a memo over `createComponent`.
+ *
+ * Not a detail. `insert` calls a bare thunk again on every run of its render effect, and
+ * that effect tracks the router's own memo — so mounting `() => Router(...)` directly
+ * builds a second Router, with a second history subscription, on the first navigation.
+ * A memo is a signal, `insert` caches it, and `createComponent` untracks the body, so
+ * the component is built once.
+ */
 function mount(routes: any[], props: Record<string, unknown> = {}) {
-  dispose = render(
-    () => Router({ routes, history: createBrowserHistory(), ...props } as any),
-    container,
-  );
+  const history = createBrowserHistory();
+  createRoot((d) => {
+    disposeOwner = d;
+    const root = createMemo(() =>
+      createComponent(Router as any, { routes, history, ...props } as any),
+    );
+    dispose = render(root as any, container);
+  });
 }
 
 const go = (path: string) => {
@@ -92,41 +108,10 @@ describe('basic navigation', () => {
 
     expect(container.textContent).toContain('B');
     expect(container.textContent).not.toContain('A');
-    // One route is on screen, and it is the one that was navigated to.
-    expect(container.querySelectorAll('div').length).toBeGreaterThan(0);
+    // Built once. A second build would mean a second Router subscribed to history.
+    expect(bRenders).toBe(1);
   });
 
-  it('invokes the route component twice per navigation, which predates the transition work', async () => {
-    // Recorded, not wanted. The cause is upstream of this file: `Router` itself is
-    // invoked twice, so two core routers exist and both subscribe to history. One tree
-    // is orphaned — only one is in the DOM — but its router still reacts to every
-    // navigation, which is both a leak and the reason the route component is built
-    // twice.
-    //
-    // Measured: Router() 2, createCoreRouter() 2, route component 2, mounted trees 1.
-    // Unchanged with the transition controller removed, and unchanged whether the
-    // router is mounted directly or through `createComponent`, so it is neither caused
-    // by this work nor by how this file mounts it.
-    //
-    // Fixing it belongs in the component/reactive integration that re-invokes the
-    // component, not in the router. Whoever does should change this to 1.
-    let renders = 0;
-    const B = () => {
-      renders++;
-      return box('B');
-    };
-    mount([
-      { path: '/', component: plain('A') },
-      { path: '/b', component: B },
-    ]);
-
-    go('/b');
-    await tick();
-
-    expect(renders).toBe(2);
-    // Twice invoked, once mounted: the duplicate is wasted work, not a duplicated page.
-    expect(container.textContent).toBe('B');
-  });
 });
 
 describe('a route that has to be prepared', () => {
