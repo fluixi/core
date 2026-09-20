@@ -1,15 +1,15 @@
 /**
- * @fluixi/auth/client — the reactive client hooks.
+ * @fluixi/auth/client: the reactive client hooks.
  *
  * The session is an isomorphic store: resolved on the server from `locals.auth`
  * (serialized into the page) and seeded synchronously on the client → no auth flash, no
  * post-hydration refetch. Two ways to drive it:
- *   • `{ client }` — a Better Auth client.
- *   • `{ session }` — an existing reactive session (e.g. @fluixi/session's createSession or
+ *   • `{ client }`: a Better Auth client.
+ *   • `{ session }`: an existing reactive session (e.g. @fluixi/session's createSession or
  *     any `{ user(), login?, logout? }`). The framework OWNS the reactive sync, so apps stop
  *     hand-writing a `createEffect` to mirror their store into the auth hooks.
  *
- * Client-only deps: fluixi + @fluixi/dom's pure `getLocals` — never @fluixi/server.
+ * Client-only deps: fluixi + @fluixi/dom's pure `getLocals`, never @fluixi/server.
  */
 import { createIsomorphicStore, createEffect, createRoot, env } from '@fluixi/core';
 import { getLocals } from '@fluixi/dom';
@@ -19,6 +19,7 @@ import {
   type BetterAuthClient,
   type SessionData,
 } from './types.js';
+// import { isUseNavigate } from '@fluixi/core/router';
 
 export interface ProtectedRouteOptions<Q = (p: any) => boolean> {
   guestOnly?: boolean;
@@ -26,13 +27,15 @@ export interface ProtectedRouteOptions<Q = (p: any) => boolean> {
   role?: string;
   /** Require ANY of these roles. */
   roles?: string[];
-  /** Require a permission — your access matcher's query (default: a predicate). */
+  /** Require a permission: your access matcher's query (default: a predicate). */
   permission?: Q;
+
+  navigator?: Partial<Navigator>;
 }
 
 /**
  * Any reactive session with a `user` accessor (e.g. @fluixi/session's createSession).
- * The RBAC accessors (`roles` / `permissions` / `can`) are optional — provide them (as
+ * The RBAC accessors (`roles` / `permissions` / `can`) are optional, provide them (as
  * createSession's `access` config does) to unlock `<Can>`, `usePermissions`, and
  * permission-gated routes. They are a UI affordance only; the server enforces authz.
  */
@@ -45,13 +48,25 @@ export interface SessionLike<U = AuthUser, P = unknown, Q = (p: P) => boolean> {
   can?: (query: Q) => boolean;
 }
 
+export interface NavigateOptions {
+  /** Replace the current history entry instead of pushing a new one. */
+  replace?: boolean;
+  /** Opaque history state to attach. */
+  state?: unknown;
+  transition?: unknown;
+}
+export interface Navigator {
+  handler: () => (to: string, opts?: any) => void;
+  options?: NavigateOptions;
+}
+
 export interface AuthHooksOptions<U = AuthUser, P = unknown, Q = (p: P) => boolean> {
   /** A Better Auth client (`createAuthClient(...)`). Mutually exclusive with `session`. */
   client?: BetterAuthClient;
-  /** An existing reactive session — the framework syncs it into the hooks for you. */
+  /** An existing reactive session: the framework syncs it into the hooks for you. */
   session?: SessionLike<U, P, Q>;
   /** Navigate for `protectedRoute` redirects (default: `window.location.assign`). */
-  navigate?: (to: string) => void;
+  navigate?: ((to: string, opts?: NavigateOptions) => void) | Navigator;
   loginPath?: string;
   homePath?: string;
   forbiddenPath?: string;
@@ -98,7 +113,44 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
         store.set({ user: null, session: null });
       };
 
-  const go = (to: string): void => (options.navigate ?? ((t) => env.window?.location.assign(t)))(to);
+  /**
+   * Send the visitor somewhere else.
+   *
+   * The route's own `navigator` wins, then the one given to `createAuthHooks`, then a
+   * document load. A handler is a factory rather than a function: `useNavigate` has to
+   * run inside the component being rendered, so it is called here, at the redirect,
+   * instead of when the hooks were built.
+   *
+   * Without a handler this assigns `location`, which loads a document and rebuilds the
+   * whole app. That is right for an app with no client router and wrong for one that
+   * has it, which is what the option exists to fix.
+   */
+  const go = (to: string, opts?: Partial<Navigator>): void => {
+    const fromRoute = typeof opts?.handler === 'function' ? opts.handler() : undefined;
+    const fromHooks =
+      typeof options.navigate === 'function'
+        ? options.navigate
+        : typeof options.navigate?.handler === 'function'
+          ? // Called, not passed along. Handing back the factory made `fn(to)` build a
+            // navigate function and return it, so the redirect silently did nothing.
+            options.navigate.handler()
+          : undefined;
+
+    const fn = fromRoute ?? fromHooks;
+    if (fn) {
+      const navigateOptions =
+        opts?.options ??
+        (typeof options.navigate === 'object' ? options.navigate?.options : undefined);
+      // Only when there are some. Deciding on the handler's arity instead dropped them
+      // for anything declaring the parameter optional, which `useNavigate` does; passing
+      // `undefined` regardless would change the call every handler sees.
+      if (navigateOptions) fn(to, navigateOptions);
+      else fn(to);
+      return;
+    }
+
+    env.window?.location.assign(to);
+  };
 
   // ── RBAC surface (driven by the bound session's access config) ────────────────
   const permissions = (): P | undefined => sess?.permissions?.();
@@ -138,9 +190,9 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
     return (props: Props) => {
       const user = store.fields.user();
       if (opts?.guestOnly) {
-        if (user) return go(options.homePath ?? '/'), null;
+        if (user) return go(options.homePath ?? '/', opts?.navigator), null;
       } else {
-        if (!user) return go(options.loginPath ?? '/login'), null;
+        if (!user) return go(options.loginPath ?? '/login', opts?.navigator), null;
         if (!passesRole(opts)) return go(options.forbiddenPath ?? '/403'), null;
       }
       return Comp(props);
@@ -163,7 +215,7 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
     useSignOut: () => signOut,
     /** Reactive accessor for the active permission set (UI affordance only). */
     usePermissions: () => permissions,
-    /** Returns `can(check)` — `false` unless the session provides RBAC. */
+    /** Returns `can(check)`: `false` unless the session provides RBAC. */
     useCan: () => can,
     Can,
     Protect,

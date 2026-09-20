@@ -120,3 +120,80 @@ describe('@fluixi/auth/client — RBAC surface', () => {
     expect((Protect({ role: 'viewer', children: 'panel' }) as any)()).toBe('panel');
   });
 });
+
+/**
+ * Where a `protectedRoute` redirect goes through.
+ *
+ * The default is `location.assign`, which loads a document: the reactive tree is thrown
+ * away and the whole app is rebuilt. That is correct for an app with no client router
+ * and wrong for one that has it, so a handler can be supplied and the redirect becomes
+ * an ordinary in-app navigation.
+ */
+describe('protectedRoute redirects through the app router when given one', () => {
+  beforeEach(() => {
+    (window as any).location = { assign: vi.fn() } as any;
+  });
+
+  it('uses a handler supplied to createAuthHooks', () => {
+    const navigate = vi.fn();
+    const { protectedRoute } = createAuthHooks({
+      client: mockClient(),
+      navigate: { handler: () => navigate },
+    });
+
+    protectedRoute(() => 'secret')({});
+
+    expect(navigate).toHaveBeenCalledWith('/login');
+    // The point of the option: no document load, so nothing above this is rebuilt.
+    expect((window as any).location.assign).not.toHaveBeenCalled();
+  });
+
+  it('uses a handler supplied on the route itself', () => {
+    const hookLevel = vi.fn();
+    const routeLevel = vi.fn();
+    const { protectedRoute } = createAuthHooks({
+      client: mockClient(),
+      navigate: { handler: () => hookLevel },
+    });
+
+    protectedRoute(() => 'secret', { navigator: { handler: () => routeLevel } })({});
+
+    expect(routeLevel).toHaveBeenCalledWith('/login');
+    expect(hookLevel).not.toHaveBeenCalled();
+  });
+
+  it('resolves the handler at redirect time, not when the hooks are made', () => {
+    // `useNavigate` has to run inside the component, so the option takes a factory and
+    // calls it during the redirect rather than storing its result.
+    const navigate = vi.fn();
+    const handler = vi.fn(() => navigate);
+    const { protectedRoute } = createAuthHooks({
+      client: mockClient(),
+      navigate: { handler },
+    });
+
+    expect(handler).not.toHaveBeenCalled();
+    protectedRoute(() => 'secret')({});
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to a document load when no handler is given', () => {
+    const { protectedRoute } = createAuthHooks({ client: mockClient() });
+    protectedRoute(() => 'secret')({});
+    expect((window as any).location.assign).toHaveBeenCalledWith('/login');
+  });
+
+  it('sends a role-gated route to the forbidden path', () => {
+    const navigate = vi.fn();
+    const { protectedRoute } = createAuthHooks({
+      client: mockClient(),
+      session: { user: () => ({ id: 'u' }) as any, roles: () => ['agent'] },
+      navigate: { handler: () => navigate },
+    });
+
+    protectedRoute(() => 'secret', { role: 'admin' })({});
+
+    expect(navigate).toHaveBeenCalledWith('/403');
+    expect((window as any).location.assign).not.toHaveBeenCalled();
+  });
+});

@@ -1,7 +1,7 @@
 /**
  * The client-side half of access control.
  *
- * There are two guards in this app and they are not alternatives — they cover different
+ * There are two guards in this app and they are not alternatives, they cover different
  * moments, and neither one covers the other's.
  *
  *  - `src/middleware.ts` runs on the **server**, before SSR. It is the enforcement
