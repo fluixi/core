@@ -1,5 +1,20 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.85
+
+### Patch Changes
+
+- b902491: `protectedRoute` now accepts a `navigator` option, e.g., `protectedRoute(Admin, { role: 'admin', navigator: { handler: useNavigate } })`, and redirects via the app router instead of assigning `window.location`.
+- Updated dependencies [39a87cd]
+- Updated dependencies [a2f0eb8]
+- Updated dependencies [5062033]
+- Updated dependencies [ea498ef]
+  - @fluixi/core@1.0.0-alpha.85
+  - @fluixi/start@0.1.0-alpha.75
+  - @fluixi/reactive@1.0.0-alpha.85
+  - @fluixi/server@1.0.0-alpha.85
+  - @fluixi/dom@1.0.0-alpha.85
+
 ## 1.0.0-alpha.84
 
 ### Patch Changes
