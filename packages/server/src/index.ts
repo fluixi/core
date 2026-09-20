@@ -55,8 +55,19 @@ function resolveALS(): ALSCtor | undefined {
 const ALS = resolveALS();
 if (ALS) {
   setRequestStore(new ALS<RequestContext>());
-} else {
-  console.warn('[fluixi/server] AsyncLocalStorage unavailable — using a sync request store (no async isolation across concurrent requests)');
+} else if (!isBrowser()) {
+  // Only where it is a real loss. A browser serves one request — its own page — so a
+  // sync store is the correct implementation there, not a degraded one, and warning
+  // about lost isolation between concurrent requests described a situation that cannot
+  // arise. It fired on every page load of every app.
+  console.warn(
+    '[fluixi/server] AsyncLocalStorage unavailable — using a sync request store (no async isolation across concurrent requests)',
+  );
+}
+
+/** A document means a page, and a page is the one request this runtime will ever serve. */
+function isBrowser(): boolean {
+  return typeof document !== 'undefined' || typeof window !== 'undefined';
 }
 
 export {
