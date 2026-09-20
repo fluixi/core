@@ -183,19 +183,17 @@ function addUiResolver(target: string, mode: 'ssr' | 'spa'): void {
  * it rather than having nowhere to go.
  */
 function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, call: string): void {
-  const file = join(target, 'vite.config.ts');
+  // A start app declares extra plugins in its own config; it has no vite config, and
+  // adding one just to hold a plugin would leave the project with two build configs
+  // that have to agree.
+  const file = join(target, configFor(mode));
+  if (!existsSync(file)) return;
 
-  if (!existsSync(file)) {
-    writeFileSync(
-      file,
-      `${importLine}\n\n// @fluixi/start owns routing, the JSX/SSR transform and the build.\n// This file is only here to add plugins to it.\nexport default {\n  plugins: [${call}],\n};\n`,
-    );
-    return;
-  }
-
-  let src = readFileSync(file, 'utf8');
-  src = importLine + '\n' + src;
-  src = src.replace('plugins: [', `plugins: [\n    ${call},`);
+  let src = importLine + '\n' + readFileSync(file, 'utf8');
+  src =
+    mode === 'ssr'
+      ? src.replace('export default defineConfig({', `export default defineConfig({\n  plugins: [${call}],`)
+      : src.replace('plugins: [', `plugins: [\n    ${call},`);
   writeFileSync(file, src);
 }
 

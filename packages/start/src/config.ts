@@ -50,6 +50,23 @@ export interface FluixiConfig {
    */
   resolve?: readonly ComponentResolverRule[];
   /**
+   * Options handed to the fluixi vite plugin.
+   *
+   * A start app does not write `fluixi()` into a vite config, the framework adds the
+   * plugin itself, so this is where its options go: `propsDestructure`, and anything
+   * else the compiler takes. `resolve` above is the shorthand for the one most apps
+   * set, and wins over a `resolve` given here.
+   */
+  vitePlugin?: Record<string, unknown>;
+  /**
+   * Extra vite plugins, appended after the framework's own.
+   *
+   * A start app has no vite config of its own, so a plugin it needs but the framework
+   * does not ship, a css engine for instance, is declared here instead of forcing a
+   * second config file into the project.
+   */
+  plugins?: unknown[];
+  /**
    * Deploy target. Decides how `fluixi build` bundles the server (see the adapter's
    * `bundle` mode) and how `fluixi start` serves it. Unset keeps Vite's own bundling
    * heuristic and serves with `nodeAdapter`.
@@ -115,6 +132,8 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
     resolve: config.resolve ?? [],
+    vitePlugin: config.vitePlugin ?? {},
+    plugins: config.plugins ?? [],
     adapter: config.adapter,
     i18n: resolveI18n(config.i18n),
     prerender: resolvePrerender(config.prerender),

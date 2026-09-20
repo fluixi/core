@@ -196,8 +196,15 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
     // `fluixi()` and not `createVitePlugin()`: the latter is the bare compiler integration,
     // and the reactive graph: agent, source marks, /__fluixi/graph, is composed on top of
     // it by the former. A start app got no graph at all until this changed.
-    fluixi({ resolve: cfg.resolve }),
+    // Everything the app declared for the compiler, with `resolve` still usable on its
+    // own because it is the one most apps set. A start app never writes
+    // `fluixi()` itself, so without this passthrough the plugin's other options
+    // (propsDestructure and the rest) had nowhere to be declared.
+    fluixi({ ...(cfg.vitePlugin ?? {}), ...(cfg.resolve ? { resolve: cfg.resolve } : {}) }),
   ];
+  // The app's own, after the framework's: a plugin that transforms css or assets runs
+  // on what the framework produced rather than racing it.
+  if (cfg.plugins?.length) plugins.push(...cfg.plugins);
   // Auto-discover translations (src/i18n/<locale>.json → virtual:fluixi-i18n) unless disabled.
   if (cfg.i18n) plugins.push(i18nVitePlugin(cfg.i18n));
   // File-based API routes (src/api/** → virtual:fluixi-api). No-op until the folder has files.
