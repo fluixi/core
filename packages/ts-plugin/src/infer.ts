@@ -3,7 +3,7 @@
  *
  * A template is an opaque string to TypeScript, so a callback like
  * `${(it) => it.label}` (an each render fn) or `${(e) => …}` (an event handler)
- * gets no contextual type — `it`/`e` are implicit `any`. We recover the type the
+ * gets no contextual type: `it`/`e` are implicit `any`. We recover the type the
  * way JSX would infer it, by understanding the template STRUCTURE:
  *
  *   - `<li each=${items}>${(it) => …}</li>`  → `it` is the element type of `items`
@@ -110,7 +110,7 @@ export interface ParamTypeInfo {
   paramName: string;
   /** The rendered type string, e.g. `{ id: number; label: string }` or `MouseEvent`. */
   typeText: string;
-  /** The resolved type, when available — used for member completion (`param.` → members). */
+  /** The resolved type, when available: used for member completion (`param.` → members). */
   type?: TS.Type;
   /** The param identifier's span (for the hover range). */
   start: number;
@@ -128,7 +128,7 @@ function resolveElementType(ts: typeof TS, checker: TS.TypeChecker, location: TS
   const map = resolveGlobalType(ts, checker, location, 'HTMLElementTagNameMap');
   const prop = map?.getProperty(tag.toLowerCase());
   const t = prop ? checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration ?? location) : undefined;
-  // Unknown/custom tags aren't in the map — use the generic element type.
+  // Unknown/custom tags aren't in the map: use the generic element type.
   return t ?? resolveGlobalType(ts, checker, location, 'HTMLElement');
 }
 

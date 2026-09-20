@@ -1,5 +1,5 @@
 /**
- * The Template AST — the stable, host-agnostic contract this package exists to
+ * The Template AST: the stable, host-agnostic contract this package exists to
  * produce. It is deliberately NOT the compiler's codegen IR: it models the
  * template *as written* (every directive is an explicit node, every node keeps
  * a source span, whitespace is preserved) so it can power the compiler AND the
@@ -8,7 +8,7 @@
  * Design rules baked into these types:
  *  - Expression holes (`${…}`) are OPAQUE SLOTS. A node stores the hole's
  *    integer `index` (its position in the template's `expressions[]`) and its
- *    source span — never resolved JS. Each consumer binds a slot to its own
+ *    source span: never resolved JS. Each consumer binds a slot to its own
  *    representation afterward (a Babel node in the compiler, a `ts.Expression`
  *    in the LSP, raw text in Biome). This single seam is what lets one parser
  *    serve every downstream tool.
@@ -104,7 +104,7 @@ export interface ElementNode extends NodeBase {
   attributes: AttributeLikeNode[];
   children: TemplateNode[];
   selfClosing: boolean;
-  /** Raw-text element (`script`/`style`/`textarea`/`title`) — children kept verbatim. */
+  /** Raw-text element (`script`/`style`/`textarea`/`title`), children kept verbatim. */
   rawText: boolean;
 }
 
@@ -114,7 +114,7 @@ export interface ComponentNode extends NodeBase {
   tag: string;
   /**
    * Dynamic tag `<${Comp} />`: the hole index of the component expression. When
-   * set, `tag` is '' and the component identity comes from this hole — which
+   * set, `tag` is '' and the component identity comes from this hole, which
    * also means the referenced binding is visible to TypeScript (no "unused").
    */
   tagHole: number | null;
@@ -132,7 +132,7 @@ export interface FragmentNode extends NodeBase {
 export interface TextNode extends NodeBase {
   kind: 'Text';
   value: string;
-  /** Inside a raw-text element — do not whitespace-normalize when lowering. */
+  /** Inside a raw-text element: do not whitespace-normalize when lowering. */
   raw: boolean;
 }
 
@@ -171,7 +171,7 @@ export type AttrValue =
   | { kind: 'hole'; hole: number }
   | { kind: 'mixed'; parts: ValuePart[] };
 
-/** `.prop=${x}` — DOM property binding. */
+/** `.prop=${x}`: DOM property binding. */
 export interface PropertyBindingNode extends NodeBase {
   kind: 'PropertyBinding';
   name: string;
@@ -246,16 +246,16 @@ export interface StyleDirectiveNode extends NodeBase {
 }
 
 /**
- * `load:visible`, `load:interaction="click"`, … — when the component's module is
+ * `load:visible`, `load:interaction="click"`, …: when the component's module is
  * fetched.
  *
  * The node carries the strategy and its literal modifier as written; turning that into
- * a load plan is the compiler's job, so the parser stays free of module semantics —
+ * a load plan is the compiler's job, so the parser stays free of module semantics , 
  * the same reason resolution has no syntax here either.
  */
 export interface LoadDirectiveNode extends NodeBase {
   kind: 'LoadDirective';
-  /** The part after `load:`, unvalidated — the compiler reports unknown strategies. */
+  /** The part after `load:`, unvalidated: the compiler reports unknown strategies. */
   strategy: string;
   /** `load:visible="200px"` → `'200px'`. Null for a bare directive. */
   modifier: string | null;
@@ -298,7 +298,7 @@ export type DiagnosticCode =
   | 'invalid-directive'
   | 'invalid-binding'
   | 'unsupported-combination'
-  // Accessibility. Warnings, never errors — they describe a barrier, not invalid
+  // Accessibility. Warnings, never errors: they describe a barrier, not invalid
   // markup, and failing a build on them would be the wrong trade.
   | 'a11y-img-alt'
   | 'a11y-anchor-href'

@@ -1,11 +1,11 @@
 /**
- * @fluixi/template-parser — the dependency-free foundation for every tool that
+ * @fluixi/template-parser: the dependency-free foundation for every tool that
  * needs to understand a Fluixi `` html`...` `` template: the compiler, the
  * language server, the TypeScript plugin, and the Biome/formatter plugin.
  *
  * Pipeline:  pieces → {@link Reader} (lexing/holes) → {@link parseTemplate}
  * (structure + diagnostics) → Template AST. Downstream, each tool binds the
- * opaque hole slots to its own representation and consumes the AST — the
+ * opaque hole slots to its own representation and consumes the AST, the
  * compiler lowers it to codegen IR, the LSP answers completion/hover/rename.
  *
  * The parser never resolves the JS inside `${…}`; it records each hole as an
@@ -28,7 +28,7 @@ import type { ParseResult, SourceSpan } from './ast.js';
 /**
  * Build a piece list from the static string segments of a tagged template
  * (`quasi.strings`), inserting a hole between each pair. Offsets are synthetic
- * (cumulative over the joined text) — good enough for standalone parsing and
+ * (cumulative over the joined text), good enough for standalone parsing and
  * tests. Hosts with real source positions (the compiler, the LSP) should build
  * {@link Piece}s directly so spans map back to the original file.
  */

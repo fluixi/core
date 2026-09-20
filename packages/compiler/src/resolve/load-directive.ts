@@ -1,17 +1,17 @@
 /**
- * The `load:` directive — when a component's code is fetched.
+ * The `load:` directive: when a component's code is fetched.
  *
  * Resolution decides *where* a component comes from; this decides *when*. They are
  * separate because they vary independently: the location of `<RevenueChart>` is the
  * same everywhere and belongs in config, while whether this particular usage should
- * wait for the viewport is a property of the usage. Fusing them — `<Chart lazy="./Chart">`
- * — was rejected for exactly that reason.
+ * wait for the viewport is a property of the usage. Fusing them, `<Chart lazy="./Chart">`
+ *: was rejected for exactly that reason.
  *
  * `load:` joins the existing `use:`/`prop:`/`attr:`/`bool:` namespace, so it cannot
  * collide with a real prop and the parser already has a directive taxonomy to hang it on.
  *
  * One parser for both frontends. `load:visible` is already a valid `JSXNamespacedName`,
- * so JSX needs no parser change, and the html`` path produces a `LoadDirective` node —
+ * so JSX needs no parser change, and the html`` path produces a `LoadDirective` node , 
  * but both funnel through {@link parseLoadDirective}, so the two syntaxes cannot drift.
  */
 
@@ -42,7 +42,7 @@ export function isLoadDirective(name: string): boolean {
 /**
  * Parse `load:<strategy>` plus its optional value into a strategy.
  *
- * `value` is the attribute's literal text — `load:visible="200px"` — or null for a bare
+ * `value` is the attribute's literal text: `load:visible="200px"`, or null for a bare
  * directive. A `${…}` hole is rejected: the strategy has to be known at compile time
  * because it decides how the module is emitted, and a runtime value cannot.
  */
@@ -64,7 +64,7 @@ export function parseLoadDirective(name: string, value: string | null): IRLoadSt
       return { kind: 'never' };
     case 'visible':
       // `load:visible="200px"` starts the fetch before the element reaches the
-      // viewport, which is usually what you want — arriving exactly on intersection
+      // viewport, which is usually what you want, arriving exactly on intersection
       // means the user waits for the network.
       return value ? { kind: 'visible', rootMargin: value } : { kind: 'visible' };
     case 'interaction':

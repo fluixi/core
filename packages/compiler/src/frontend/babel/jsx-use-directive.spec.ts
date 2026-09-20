@@ -7,13 +7,13 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
 /**
- * `use:` on the INLINE codegen path — the default, and the one where it silently did
+ * `use:` on the INLINE codegen path: the default, and the one where it silently did
  * nothing. The attribute reached the runtime as a prop literally named `use:tooltip`,
  * which nothing dispatches on, so the directive never ran and no error said so. The IR
  * path had always normalised it into a single `use` prop.
  *
  * These drive the whole plugin with its default options and assert the directive actually
- * runs, rather than asserting on emitted code — that is what the earlier tests missed.
+ * runs, rather than asserting on emitted code: that is what the earlier tests missed.
  */
 const OPTIONS = {
   signalModule: '@fluixi/dom',

@@ -3,7 +3,7 @@
 // Commits, not a flat log: one click makes a write, four runs and a disposal, interleaved with
 // whatever the router was doing. Grouped, they read as "this is what that click did".
 //
-// Newest first, and re-rendered only when it would say something different — a panel that
+// Newest first, and re-rendered only when it would say something different, a panel that
 // repaints on every poll cannot be scrolled or selected.
 import { toCommits, type Commit, type GraphEvent } from './history.js';
 import { changeRows, handleCopyClick, CHANGE_CSS } from './change-view.js';
@@ -72,7 +72,7 @@ function detail(commit: Commit, nameOf: NameOf): string {
   return lines.join('\n');
 }
 
-/** "2 ran · 1 created" — what the commit caused, without listing every line of it. */
+/** "2 ran · 1 created": what the commit caused, without listing every line of it. */
 function summary(commit: Commit): string {
   const counts = { ran: 0, created: 0, disposed: 0, write: 0 };
   for (const event of commit.events) counts[event.kind]++;
@@ -168,7 +168,7 @@ export function createTimeline(host: HTMLElement, options: TimelineOptions = {})
       return;
     }
 
-    // Clicking the open one shuts it — the only way back to watching everything.
+    // Clicking the open one shuts it: the only way back to watching everything.
     selected = selected === number ? null : number;
     const commit = all().find((c) => c.commit === selected) ?? null;
     options.onSelect?.(commit ? idsOf(commit) : [], commit);

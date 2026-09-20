@@ -1,7 +1,7 @@
 // Turning a live value into something a graph can print.
 //
-// Not JSON.stringify: a signal holds whatever the author put in it — a Map, a Date, a class
-// instance, a dom node, something that refers to itself, a getter that throws — and
+// Not JSON.stringify: a signal holds whatever the author put in it, a Map, a Date, a class
+// instance, a dom node, something that refers to itself, a getter that throws, and
 // stringify answers `{}`, `[object Object]` or an exception for most of that. This walks the
 // value instead, so every case has an answer and none of them is a crash.
 //
@@ -10,7 +10,7 @@
 const MAX_DEPTH = 3;
 const MAX_ENTRIES = 8;
 
-/** A dom node, without assuming this realm's Node — an iframe's is a different class. */
+/** A dom node, without assuming this realm's Node, an iframe's is a different class. */
 function domName(v: { nodeType?: number; nodeName?: string; tagName?: string }): string | null {
   if (typeof v?.nodeType !== 'number' || typeof v.nodeName !== 'string') return null;
   return v.tagName ? `<${v.tagName.toLowerCase()}>` : `#${v.nodeName.toLowerCase()}`;

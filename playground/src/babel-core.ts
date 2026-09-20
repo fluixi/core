@@ -1,6 +1,6 @@
 // `@babel/core` for the browser.
 //
-// @fluixi/compiler takes @babel/core as an optional peer — the babel frontend is opt-in, and
+// @fluixi/compiler takes @babel/core as an optional peer, the babel frontend is opt-in, and
 // whoever uses it supplies the babel. In a page that has to be @babel/standalone; resolving the
 // real one drags Node's `path` in, which Vite externalises with a warning and which would fail
 // the moment anything touched it.

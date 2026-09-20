@@ -1,4 +1,4 @@
-// A diff, drawn. Shared between the timeline's open row and the panel that opens from it —
+// A diff, drawn. Shared between the timeline's open row and the panel that opens from it , 
 // same rows, cut to a handful in the sidebar and shown in full when there is room.
 //
 // An object is drawn as an object: `{id: 1, text: "go"}` on one line is what the cards
@@ -18,7 +18,7 @@ function pretty(json: string | undefined): string | undefined {
   try {
     return JSON.stringify(JSON.parse(json), null, 2);
   } catch {
-    // It came from JSON.stringify, so this should not happen — but a malformed payload is
+    // It came from JSON.stringify, so this should not happen, but a malformed payload is
     // not worth losing the row over.
     return undefined;
   }

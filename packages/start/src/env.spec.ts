@@ -19,7 +19,7 @@ describe('loadServerEnv (env management)', () => {
     added.push('FX_TEST_SECRET', 'VITE_FX_TEST_PUBLIC');
 
     await loadServerEnv(root, 'development');
-    // The secret (server-only — never inlined into the client bundle) reaches process.env.
+    // The secret (server-only: never inlined into the client bundle) reaches process.env.
     expect(process.env.FX_TEST_SECRET).toBe('s3cr3t');
     expect(process.env.VITE_FX_TEST_PUBLIC).toBe('pub');
   });

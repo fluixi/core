@@ -8,8 +8,8 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 
 /**
- * An `` html`...` `` template and its JSX twin flow through the SAME compiler — one IR,
- * one backend — and emit byte-identical code. That is what let the template layer become
+ * An `` html`...` `` template and its JSX twin flow through the SAME compiler, one IR,
+ * one backend: and emit byte-identical code. That is what let the template layer become
  * a compile target instead of the runtime directive bridge it started as.
  *
  * (`lit` in these filenames is the compiler's internal name for the template format, not

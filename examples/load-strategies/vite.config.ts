@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     fluixi({
       // Resolution: which module a capitalised tag comes from. Nothing in `src/App.tsx`
-      // imports these components — the compiler injects the import, or a `deferred()`
+      // imports these components: the compiler injects the import, or a `deferred()`
       // binding when a `load:` directive says the module should wait.
       //
       // Not required for `load:` to work: a component you import yourself is deferred

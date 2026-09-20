@@ -69,7 +69,7 @@ export interface AlternateLink {
 }
 
 export interface IconInput {
-  /** favicon(s) — rel="icon" */
+  /** favicon(s), rel="icon" */
   icon?: string | Array<{ url: string; type?: string; sizes?: string }>;
   /** apple-touch-icon */
   apple?: string | Array<{ url: string; sizes?: string }>;
@@ -127,7 +127,7 @@ export interface HeadInput {
   og?: OpenGraph;
   twitter?: TwitterCard;
 
-  /** Structured data — one object or many. Emitted as <script type="application/ld+json">. */
+  /** Structured data: one object or many. Emitted as <script type="application/ld+json">. */
   jsonLd?: Reactive<object | object[]>;
 
   /** hreflang alternates. */
@@ -140,7 +140,7 @@ export interface HeadInput {
 
   base?: string;
 
-  /** Escape hatches — anything not first-classed above. */
+  /** Escape hatches: anything not first-classed above. */
   meta?: MetaTag[];
   link?: LinkTag[];
   script?: ScriptTag[];

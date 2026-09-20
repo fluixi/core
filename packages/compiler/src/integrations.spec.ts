@@ -1,6 +1,6 @@
 /**
  * Every adapter compiles the same way and needs nothing from babel unless asked.
- * They are thin, which is the point — a bundler integration that grows its own
+ * They are thin, which is the point: a bundler integration that grows its own
  * compile logic is how the two paths drifted apart last time.
  */
 import { describe, it, expect } from 'vitest';

@@ -11,7 +11,7 @@ export function htmlPath(url: string): string {
   return clean === '' ? 'index.html' : `${clean.replace(/^\//, '')}/index.html`;
 }
 
-// internal links from rendered HTML — skip files (.js/.css/…), anchors, queries, external
+// internal links from rendered HTML: skip files (.js/.css/…), anchors, queries, external
 export function extractLinks(html: string): string[] {
   const out = new Set<string>();
   for (const m of html.matchAll(/href=["'](\/[^"'#?]*)["']/g)) {
@@ -28,7 +28,7 @@ const norm = (u: string) => {
 };
 
 /**
- * Render routes to static HTML in dist/client, via the real prod handler — so each page is
+ * Render routes to static HTML in dist/client, via the real prod handler, so each page is
  * byte-identical to what `fluixi start` would serve (assets, __FX_DATA__, hydration), it just
  * lives on disk. Seeds from `prerender.routes` (default `/`) and, when `crawl`, follows internal
  * links. Returns the written route paths.

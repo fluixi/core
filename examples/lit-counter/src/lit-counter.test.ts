@@ -6,7 +6,7 @@ import { Counter } from './App';
 
 // Real-DOM proof: App.ts is authored with lit html`` and compiled by the
 // @fluixi/vite-plugin (format: 'lit') into @fluixi/dom runtime calls, then
-// rendered into jsdom. Same guarantees as the JSX counter — fine-grained
+// rendered into jsdom. Same guarantees as the JSX counter, fine-grained
 // reactivity, delegated events, control flow.
 describe('lit-html counter compiled through the shared IR', () => {
   it('renders the initial markup', () => {

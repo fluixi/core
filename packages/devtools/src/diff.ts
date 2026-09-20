@@ -1,7 +1,7 @@
 // What changed, rather than what the value is now.
 //
 // `todos [{…}] → [{…}, {…}]` says nothing the graph did not. "One row added at index 2, here
-// it is" does. Computed at the write, while both sides are still in hand — afterwards only
+// it is" does. Computed at the write, while both sides are still in hand, afterwards only
 // the new value exists.
 
 import { formatValue } from './format.js';

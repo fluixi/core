@@ -1,17 +1,17 @@
 /**
- * @fluixi/start/di — dependency injection, the Angular way, but SSR-correct and reactive.
+ * @fluixi/start/di: dependency injection, the Angular way, but SSR-correct and reactive.
  *
  * Three things make this distinct from Angular's DI:
  *
  *  1. **SSR request isolation, for free.** A "root" provider is a singleton on the CLIENT but
- *     a fresh instance PER REQUEST on the server — because the root injector lives in the
+ *     a fresh instance PER REQUEST on the server, because the root injector lives in the
  *     per-request `RequestContext` (the same machinery that isolates resources/markers). So
  *     a stateful root service (a per-user cache, a DB unit-of-work) never leaks across two
  *     concurrent SSR requests. No zone, no `providedIn` ceremony, no manual request injectors.
  *
  *  2. **The reactive owner tree IS the injector hierarchy.** `provide()` in a component
  *     attaches a child injector to that component's reactive owner; descendants `inject()`
- *     by walking the owner chain — exactly how context resolves. Component-scoped services
+ *     by walking the owner chain: exactly how context resolves. Component-scoped services
  *     are disposed with the component (their `onDestroy()` runs on owner cleanup).
  *
  *  3. **Function injection, tree-shakable tokens.** No decorators/reflect-metadata. A token
@@ -144,7 +144,7 @@ const _ownerInjectors = new WeakMap<object, Injector>(); // per reactive owner (
 let _clientRoot: Injector | null = null;
 let _explicit: Injector | null = null;
 
-/** The root injector — per-request during SSR (isolated), a module singleton on the client. */
+/** The root injector: per-request during SSR (isolated), a module singleton on the client. */
 function rootInjector(): Injector {
   const ctx = getRequestContext() as object | undefined;
   if (ctx) {
@@ -155,7 +155,7 @@ function rootInjector(): Injector {
   return (_clientRoot ??= new Injector(null).register(_rootProviders));
 }
 
-/** Nearest ancestor owner injector, else the root — the parent of a new component injector. */
+/** Nearest ancestor owner injector, else the root, the parent of a new component injector. */
 function parentInjectorOf(owner: any): Injector {
   let o = owner?.parent;
   while (o) {
@@ -187,7 +187,7 @@ export function inject<T>(token: Token<T>): T {
 
 /**
  * Provide services for the CURRENT component/route and its descendants (owner-scoped). The
- * injector is disposed — running each service's `onDestroy()` — when the component unmounts.
+ * injector is disposed: running each service's `onDestroy()`, when the component unmounts.
  */
 export function provide(providers: ReadonlyArray<Provider>): Injector {
   const owner = getOwner() as any;
@@ -206,7 +206,7 @@ export function provide(providers: ReadonlyArray<Provider>): Injector {
 
 /**
  * Provide app-wide services. On the client these are singletons; during SSR each request gets
- * its OWN instances (the root injector is per-request) — so a stateful root service can never
+ * its OWN instances (the root injector is per-request), so a stateful root service can never
  * leak between concurrent requests. Call at module load (e.g. in entry-client / entry-server).
  */
 export function provideRoot(providers: ReadonlyArray<Provider>): void {
@@ -227,12 +227,12 @@ export function runInInjectionContext<R>(injector: Injector, fn: () => R): R {
   }
 }
 
-/** The injector for the current scope (advanced — for passing to runInInjectionContext later). */
+/** The injector for the current scope (advanced: for passing to runInInjectionContext later). */
 export function getInjector(): Injector {
   return currentInjector();
 }
 
-/** A standalone injector (parent defaults to the root) — for tests / manual hierarchies. */
+/** A standalone injector (parent defaults to the root), for tests / manual hierarchies. */
 export function createInjector(providers: ReadonlyArray<Provider>, parent?: Injector | null): Injector {
   return new Injector(parent === undefined ? rootInjector() : parent).register(providers);
 }

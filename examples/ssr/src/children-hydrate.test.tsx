@@ -6,7 +6,7 @@ import { hydrate } from '@fluixi/dom';
 import { ChildrenApp } from './ChildrenApp';
 
 // Native children passed THROUGH a component boundary must hydrate (adopt the
-// server DOM) exactly once — not duplicate.
+// server DOM) exactly once: not duplicate.
 describe('hydrate component-children', () => {
   it('does not duplicate native children passed to a component', async () => {
     const html = renderToString(() => ChildrenApp());
@@ -21,7 +21,7 @@ describe('hydrate component-children', () => {
 
     hydrate(() => ChildrenApp(), container);
 
-    // no duplication — every native child (incl. across void elements) adopted once
+    // no duplication: every native child (incl. across void elements) adopted once
     expect(container.querySelectorAll('.field').length).toBe(1);
     expect(container.querySelectorAll('.field2').length).toBe(1);
     expect(container.querySelectorAll('br').length).toBe(1);

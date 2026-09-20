@@ -22,7 +22,7 @@ export interface KindFilterOptions {
   /** Offered, in this order. Defaults to every kind a graph can hold. */
   kinds?: readonly NodeKind[];
   /**
-   * Called when the selection changes. Null means every kind is on — passing a set of all
+   * Called when the selection changes. Null means every kind is on, passing a set of all
    * nine instead would hide any kind that has no checkbox here.
    */
   onChange: (kinds: NodeKind[] | null) => void;
@@ -41,7 +41,7 @@ export interface KindFilter {
 }
 
 /**
- * Builds the control inside `host`. Call `destroy` to remove it — it holds a document
+ * Builds the control inside `host`. Call `destroy` to remove it, it holds a document
  * listener for closing the panel on an outside click.
  */
 export function createKindFilter(host: HTMLElement, options: KindFilterOptions): KindFilter {

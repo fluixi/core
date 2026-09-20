@@ -15,14 +15,14 @@ export default defineConfig({
     conditions: ['development', 'browser', 'import', 'default'],
     alias: {
       // The compiler's babel frontend imports @babel/core, an optional peer it expects the
-      // consumer to supply. In a page that is @babel/standalone — see src/babel-core.ts.
+      // consumer to supply. In a page that is @babel/standalone, see src/babel-core.ts.
       '@babel/core': fileURLToPath(new URL('./src/babel-core.ts', import.meta.url)),
     },
   },
   build: {
     rollupOptions: {
       // The preview iframe loads its bootstrap by url at runtime, so it is an entry of its
-      // own — nothing imports it, and without this the build never emits it and the iframe
+      // own: nothing imports it, and without this the build never emits it and the iframe
       // asks a static host for a source file it does not have.
       input: {
         index: fileURLToPath(new URL('./index.html', import.meta.url)),
@@ -39,7 +39,7 @@ export default defineConfig({
     // @babel/standalone is a large prebundle; include the babel plugin too.
     include: ['@babel/standalone'],
   },
-  // The playground has real logic worth pinning — linking, resolution, and the source-map
+  // The playground has real logic worth pinning: linking, resolution, and the source-map
   // composition the devtools cards depend on.
   test: {
     environment: 'jsdom',

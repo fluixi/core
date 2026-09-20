@@ -1,11 +1,11 @@
 /**
- * Strategy collapsing — demote a deferred reference whose module is already present.
+ * Strategy collapsing: demote a deferred reference whose module is already present.
  *
  * This is not a nice-to-have. Without it the naive feature is a regression: if a module
  * is referenced eagerly anywhere in the compilation unit, it is in the parent chunk
  * already, so a `load:visible` boundary elsewhere adds a wrapper, a promise and a
- * re-render in order to fetch nothing. The bytes are paid twice — once in the chunk,
- * once in the deferral machinery — and the component renders later than it needs to.
+ * re-render in order to fetch nothing. The bytes are paid twice, once in the chunk,
+ * once in the deferral machinery: and the component renders later than it needs to.
  *
  * Collapsing runs per module, not per component name, because a chunk is a module:
  * `<Button>` eager and `<ButtonGroup load:visible>` from the same package means the

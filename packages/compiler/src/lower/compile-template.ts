@@ -6,7 +6,7 @@
  *
  * Finding templates in a module and describing each hole still needs a front-end;
  * everything after that point is here. Passes run in the same order as
- * `emitLitViaIR` — compile-template.spec.ts compares the two.
+ * `emitLitViaIR`: compile-template.spec.ts compares the two.
  */
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { collapseStrategies } from '../optimize/collapse-strategies.js';
@@ -21,7 +21,7 @@ import type { StaticTemplate } from '../codegen/backend.js';
 
 export interface TemplateSource {
   /**
-   * The static text runs, in order. Always one more than `holes` — the text
+   * The static text runs, in order. Always one more than `holes`, the text
    * before the first `${`, between each pair, and after the last `}`.
    */
   statics: readonly string[];
@@ -53,7 +53,7 @@ export interface CompileTemplateOptions {
    * The author's file, and a way to turn the parser's offsets into positions in it.
    *
    * Only when the host asked for source locations. Together they let a tag written inside a
-   * template carry the same mark a JSX tag does — without it the nodes it makes are the only
+   * template carry the same mark a JSX tag does: without it the nodes it makes are the only
    * ones in a component with no mark of their own, and they take whichever one was left.
    */
   sourceFile?: string;
@@ -69,7 +69,7 @@ export interface CompileTemplateResult {
   ir: IRNode;
   /**
    * Static templates the code refers to by local `_tmpl$N` id, when the caller
-   * asked to hoist them. `compileTemplate` inlines them instead — it has no module
+   * asked to hoist them. `compileTemplate` inlines them instead, it has no module
    * scope to hoist into.
    */
   templates?: StaticTemplate[];

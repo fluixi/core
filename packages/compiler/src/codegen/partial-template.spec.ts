@@ -46,7 +46,7 @@ describe('planPartialTemplate', () => {
   });
 
   it('handles a hole between two texts, which the markers keep apart', () => {
-    // Omitting holes made this unrepresentable — the texts merged and there was nothing
+    // Omitting holes made this unrepresentable: the texts merged and there was nothing
     // to insert between.
     const p = plan(el('p', [], [text('a '), hole(), text(' b')]))!;
     expect(p.html).toBe('<p>a <!--fx--><!--fx/--> b</p>');

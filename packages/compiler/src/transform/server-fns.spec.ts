@@ -1,6 +1,6 @@
 /**
  * Both paths compile `"use server"`, and a mismatch between them is not a
- * cosmetic difference — the client stub and the server registration are produced
+ * cosmetic difference: the client stub and the server registration are produced
  * by separate builds of the same file and have to agree on the id.
  */
 import { describe, it, expect } from 'vitest';

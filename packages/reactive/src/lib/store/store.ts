@@ -459,7 +459,7 @@ function applySet(root: any, args: any[]): void {
   }
   // Three or more arguments: every one but the last selects a step, the last is the
   // value. This used to read `args[1]` as the value and ignore the rest, so
-  // `set('items', 0, 'done', true)` wrote the number 0 over `items` — accepted by the
+  // `set('items', 0, 'done', true)` wrote the number 0 over `items`, accepted by the
   // typings, and silent.
   if (args.length >= 3) {
     setDeep(root, args.slice(0, -1), args[args.length - 1]);
@@ -489,7 +489,7 @@ function selectKeys(current: any, selector: any): Array<string | number> {
 
   if (Array.isArray(selector)) {
     // Against an array these are indices. Against anything else there is nothing to
-    // index, so they are path segments — the form this function used to be given.
+    // index, so they are path segments: the form this function used to be given.
     return Array.isArray(current) ? selector.map(Number) : selector.map(String);
   }
 

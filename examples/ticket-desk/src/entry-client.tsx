@@ -2,7 +2,7 @@
  * Client entry: hydrate, register the same services, install the fetch interceptors.
  *
  * `provideRoot` here creates genuine singletons, because there is no request context on
- * the client — one browser tab is one user. The identical call in `entry-server.ts`
+ * the client: one browser tab is one user. The identical call in `entry-server.ts`
  * produces per-request instances instead. Same code, different lifetime, decided by
  * where it runs.
  */

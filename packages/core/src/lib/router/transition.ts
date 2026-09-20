@@ -7,7 +7,7 @@
  * Navigation used to be one synchronous chain. `navigate()` pushed history, the core
  * router recomputed the match and notified, the `Router` component wrote the match
  * signal, and the render memo rebuilt the layer at the depth that changed. The old DOM
- * came out at that moment — whether or not the new route had anything to put in its
+ * came out at that moment: whether or not the new route had anything to put in its
  * place:
  *
  *   - a route with a `data` loader renders `null` until the resource resolves,
@@ -130,7 +130,7 @@ export function prepareComponents(components: readonly unknown[]): Promise<void>
  * it is what makes the browser compare two finished frames rather than one finished and
  * one half-built.
  *
- * The returned promise resolves when the DOM has been updated — not when the animation
+ * The returned promise resolves when the DOM has been updated, not when the animation
  * ends. A caller waiting on navigation wants the former; blocking on the latter would
  * make every navigation as slow as its animation.
  */
@@ -148,7 +148,7 @@ export function runTransition(
   try {
     const transition = start.call(document, () => commit());
     // Swallow the rejections a skipped or interrupted transition produces. Both of
-    // these reject when the animation is cut short — by `skipTransition()`, by another
+    // these reject when the animation is cut short, by `skipTransition()`, by another
     // navigation starting, or by the tab going to the background. The DOM update inside
     // the callback still happened, so a navigation must not fail because an animation
     // did not play, and an unobserved rejection here would surface as an unhandled one.

@@ -47,7 +47,7 @@ describe('folding a store', () => {
 
   it('draws an edge to the store for what a hidden signal fed', () => {
     createGraphView(svg).update(storeGraph());
-    // `total` reads cart.items, which is folded away — so it reads the store.
+    // `total` reads cart.items, which is folded away, so it reads the store.
     expect(edges()).toBe(1);
   });
 
@@ -117,7 +117,7 @@ describe('hovering a node', () => {
 
     byLabel('count').dispatchEvent(new MouseEvent('mouseenter'));
     const hot = [...svg.querySelectorAll('.fx-node.hot .fx-label')].map((n) => n.textContent).sort();
-    // Its memo and the component it lives in — not the other half of the same component.
+    // Its memo and the component it lives in: not the other half of the same component.
     expect(hot).toEqual(['App', 'count', 'double']);
   });
 

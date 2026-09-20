@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
  * The proof is the build output, not the rendered DOM.
  *
  * `load:` exists to move code out of the entry chunk, so the assertion has to be about
- * which chunk each module lands in — rendering would pass either way. The real
+ * which chunk each module lands in: rendering would pass either way. The real
  * `vite build` is run rather than vite's programmatic API so this tests the command a
  * developer actually runs.
  */

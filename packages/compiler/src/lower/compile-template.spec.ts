@@ -3,7 +3,7 @@
  * `compileTemplate` must produce the same runtime calls.
  *
  * The lowering is one function now, so what this actually guards is the part
- * either side could still get wrong on its own — which passes run, in what
+ * either side could still get wrong on its own: which passes run, in what
  * order, and with which defaults. `emitLitViaIR` and `compileTemplate` are two
  * entry points into the same pipeline, and two entry points that drift are how
  * the compiler ended up with two lowerings in the first place.
@@ -90,7 +90,7 @@ const CASES: Array<{
     source: 'html`<div class=${{ active: on() }}></div>`',
     statics: ['<div class=', '></div>'],
     // Written the way Babel's printer emits it, so the comparison is about the
-    // pipeline rather than about whitespace — see the formatting test below.
+    // pipeline rather than about whitespace: see the formatting test below.
     holes: [{ code: '{ active: on() }', reactive: true, object: true }],
   },
   {
@@ -145,8 +145,8 @@ describe('compileTemplate', () => {
   /**
    * The Babel path reprints each hole through @babel/generator; this one passes
    * the text it was given straight through. So a hole reaches the output exactly
-   * as the author wrote it — better fidelity, and one less thing between a
-   * breakpoint and the source — but it does mean the two paths agree textually
+   * as the author wrote it: better fidelity, and one less thing between a
+   * breakpoint and the source: but it does mean the two paths agree textually
    * only when the author's formatting matches the printer's.
    */
   it('passes hole source through verbatim, without reprinting it', () => {

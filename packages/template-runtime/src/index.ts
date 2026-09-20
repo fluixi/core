@@ -115,7 +115,7 @@ function build(
 
 // The same call site hands back the same TemplateStringsArray on every
 // evaluation, so it keys the cache. The emitted code differs by whether each hole
-// held an accessor, though, and a site can be called both ways — so the shape is
+// held an accessor, though, and a site can be called both ways, so the shape is
 // part of the key rather than something the first call fixes for good.
 const cache = new WeakMap<TemplateStringsArray, Map<string, Compiled>>();
 

@@ -105,7 +105,7 @@ describe('@fluixi/devtools source metadata', () => {
       createSignal(2);
     });
     const [first, second] = [...r.graph.values()];
-    // One statement can make several nodes — createStore makes one per key — and they all
+    // One statement can make several nodes: createStore makes one per key, and they all
     // came from that line. The name is the declared variable, so only the first takes it.
     expect(first!.source).toEqual({ file: 'src/App.ts', line: 3, column: 6 });
     expect(first!.label).toBe('first');

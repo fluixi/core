@@ -1,7 +1,7 @@
 import type { ComponentResolverRule } from './resolve/component-resolver.js';
 
 /**
- * Public compiler options. This schema is the stable public API — it stays put
+ * Public compiler options. This schema is the stable public API, it stays put
  * as backends change. Switching DOM strategy is `backend`, not a rewrite.
  */
 export interface CompilerOptions {
@@ -14,7 +14,7 @@ export interface CompilerOptions {
    */
   templateClone?: boolean;
   /**
-   * Also clone subtrees whose *structure* is static but which contain dynamic holes —
+   * Also clone subtrees whose *structure* is static but which contain dynamic holes , 
    * the common shape. Roughly halves the emitted code for such a subtree and replaces
    * per-element construction with one clone.
    *

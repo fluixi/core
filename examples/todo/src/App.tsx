@@ -2,7 +2,7 @@ import { createSignal, For, Show } from '@fluixi/core';
 
 interface Todo { id: number; text: string; }
 
-/** A small todo list — reactive array with For, empty-state with Show. */
+/** A small todo list: reactive array with For, empty-state with Show. */
 export function TodoApp() {
   const [todos, setTodos] = createSignal<Todo[]>([]);
   const [text, setText] = createSignal('');

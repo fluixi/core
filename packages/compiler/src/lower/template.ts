@@ -24,7 +24,7 @@ import { paren } from '../analyze/paren.js';
 
 /**
  * One `${…}` slot, as the front-end describes it. Conclusions about the
- * expression only — never a syntax tree, or the parser dependency creeps back.
+ * expression only: never a syntax tree, or the parser dependency creeps back.
  */
 export interface TemplateHole {
   /** The expression source, verbatim. Anything nested inside it is already compiled. */
@@ -32,12 +32,12 @@ export interface TemplateHole {
   /** Whether it must be wired reactively (see analyze/reactive-expr.ts). */
   reactive: boolean;
   /**
-   * Set when the hole is a single-expression arrow — `${item => …}`. `each` turns
+   * Set when the hole is a single-expression arrow, `${item => …}`. `each` turns
    * that into `For`'s render function, so it needs the parameters and the body
    * separately rather than the arrow as written.
    */
   arrow?: { params: string[]; body: string; bodyReactive: boolean };
-  /** Whether the hole is an object literal — `class=${{…}}` lowers to classList. */
+  /** Whether the hole is an object literal: `class=${{…}}` lowers to classList. */
   object?: boolean;
   /**
    * Where the `${…}` was written. Only kept when the host asked for source locations.
@@ -192,14 +192,14 @@ class Lowerer {
   }
 
   private lowerComponent(el: ComponentNode): IRNode {
-    // `<${Comp} />`: the tag is an interpolated expression — use the hole's code
+    // `<${Comp} />`: the tag is an interpolated expression, use the hole's code
     // as the component identity, so `createComponent(<expr>, …)` is emitted.
     const name = el.tagHole != null ? this.hole(el.tagHole).code : el.tag;
     const props = this.lowerAttributes(el.attributes);
 
     // Named slots: a child with `slot="header"` becomes `props.header` (a lazy
     // getter, like `children`); the rest stay the default `children`. This is the
-    // Solid convention — the component reads `props.header` / `props.children`.
+    // Solid convention: the component reads `props.header` / `props.children`.
     const { slots, rest } = this.partitionSlots(el.children);
     for (const [slotName, nodes] of slots) {
       const ir = nodes.length === 1 ? nodes[0] : { kind: 'fragment' as const, children: nodes };
@@ -210,7 +210,7 @@ class Lowerer {
         jsxElement: true,
       };
       // A slot replaces a same-named attribute rather than joining it. `<Card header>`
-      // alongside `<span slot="header">` otherwise emits the key twice — valid JS where
+      // alongside `<span slot="header">` otherwise emits the key twice, valid JS where
       // the last wins, but the first is dead code and esbuild warns on it. Content is
       // the more specific intent, so the slot is what survives.
       const clash = props.findIndex((p) => p.name === slotName);
@@ -227,7 +227,7 @@ class Lowerer {
 
     // The parser's positions are relative to the template string, not the file, so the
     // tag itself has none to give. The first hole is the closest thing that does, and for
-    // the control-flow components — `<Show when=${…}>`, `<For each=${…}>` — it is the
+    // the control-flow components: `<Show when=${…}>`, `<For each=${…}>`, it is the
     // expression driving the subtree anyway.
     // A reactive one: a literal carries a position too now, and it drives nothing.
     const bindAt = props.find((p) => p.at && p.reactive)?.at;
@@ -428,7 +428,7 @@ class Lowerer {
     // Merge all class:/style: directives into one classList/style prop so they
     // don't collide as duplicate keys in the emitted props object.
     // One prop covers every directive of its kind, so it carries the first hole's
-    // position — a real source line beats the stack fallback, which lands in the
+    // position: a real source line beats the stack fallback, which lands in the
     // compiled file.
     if (classEntries.length > 0) {
       props.push({
@@ -529,11 +529,11 @@ class Lowerer {
     ];
   }
 
-  /** A plain attribute (incl. lit `?bool`, mixed values) — old `mkProp` behavior. */
+  /** A plain attribute (incl. lit `?bool`, mixed values), old `mkProp` behavior. */
   private plainAttr(a: AttributeNode): IRProp {
     const v = a.value;
     // `class=${{...}}` (object literal) -> classList (Solid convention), so it
-    // doesn't collide with a static `class="box"` (which stays className) — both
+    // doesn't collide with a static `class="box"` (which stays className), both
     // apply. `class` -> className; `style=${{...}}` stays `style` (runtime merges).
     // `html=${x}` is the raw-HTML escape hatch -> innerHTML.
     let name = a.name;

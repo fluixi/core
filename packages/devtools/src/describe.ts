@@ -3,12 +3,12 @@
 // The element is described at the moment it is reported and the reference dropped: holding
 // one would keep a removed subtree alive for as long as the panel is open.
 //
-// Enough to find it on the page — tag, id, a class or two — without being a selector.
+// Enough to find it on the page: tag, id, a class or two, without being a selector.
 
 /** More than this is a selector, not a label. */
 const MAX_CLASSES = 2;
 
-/** `text in li` — the element it sits in is what locates it. */
+/** `text in li`: the element it sits in is what locates it. */
 function textOwner(node: Node): string {
   const parent = node.parentElement;
   return parent ? `text in ${describeElement(parent)}` : 'text';

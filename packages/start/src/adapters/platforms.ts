@@ -2,7 +2,7 @@
  * Deploy adapters for the three hosts that expect a specific output layout.
  *
  * Each one bundles the same generated entry and then writes whatever the platform
- * reads to route a request. What differs is only that layout — the handler, the
+ * reads to route a request. What differs is only that layout, the handler, the
  * dispatch order and the render are shared.
  *
  * All three inline the framework: a worker or a serverless function is a file that
@@ -46,7 +46,7 @@ async function entrySource(
  * Is `dist/client/index.html` a page, or the shell the server renders into?
  *
  * Vite writes the shell at the path a prerendered `/` would occupy, and every one of
- * these platforms serves a matching file before invoking anything — so `/` is the one
+ * these platforms serves a matching file before invoking anything, so `/` is the one
  * route an SSR app cannot render, and the CDN answers it with an empty mount element.
  * No other route is affected: nothing exists at `/about` unless it was prerendered.
  */
@@ -65,7 +65,7 @@ function skipWhenStatic(ctx: AdapterBuildContext, name: string): boolean {
 
 /**
  * Add a rule to `_redirects` without taking the file over. Apps ship their own (the
- * docs site redirects `/` to its default locale), so ours goes last — first match
+ * docs site redirects `/` to its default locale), so ours goes last, first match
  * wins, so the app's rules are reached first.
  */
 async function appendRedirect(clientDir: string, rule: string): Promise<void> {
@@ -119,7 +119,7 @@ async function prerenderedRoutes(dir: string, mountId: string): Promise<string[]
  * Cloudflare Pages. `_worker.js` at the root of the published directory takes every
  * request; `_routes.json` is what decides whether a request costs an invocation.
  *
- * In advanced mode the worker sees everything not excluded — so a prerendered page
+ * In advanced mode the worker sees everything not excluded, so a prerendered page
  * would wake it just to proxy the file back through the ASSETS binding. On a plan
  * metered by request that is the whole page view budget spent on static files, so
  * every prerendered path is excluded by name.
@@ -140,13 +140,13 @@ export const cloudflareAdapter: Adapter = {
 
     // Everything under /assets is content-hashed and immutable, so it never needs the
     // worker. `_worker.js` itself must be excluded or Pages would route it to itself.
-    // `/` is excluded only when it was prerendered — otherwise the worker is the only
+    // `/` is excluded only when it was prerendered, otherwise the worker is the only
     // thing that can answer it, and excluding it would serve the shell instead.
     const base = ['/assets/*', '/_worker.js'];
     const room = CF_MAX_RULES - base.length;
     const exclude = [...base, ...prerendered.slice(0, room)];
     if (prerendered.length > room) {
-      // Past the cap the remainder still works — it just wakes the worker to hand
+      // Past the cap the remainder still works: it just wakes the worker to hand
       // back a file. Worth saying, because the symptom is a bill, not an error.
       console.warn(
         `  fluixi: ${prerendered.length} prerendered routes exceed Cloudflare's ${CF_MAX_RULES}-rule ` +
@@ -162,7 +162,7 @@ export const cloudflareAdapter: Adapter = {
 
 /**
  * Netlify. The function is a v2 fetch handler under `.netlify/functions-internal/`,
- * which is where a framework — as opposed to the user — puts one, so it cannot
+ * which is where a framework: as opposed to the user, puts one, so it cannot
  * collide with the app's own `netlify/functions`.
  *
  * Publish `dist/client`.
@@ -190,7 +190,7 @@ export const netlifyAdapter: Adapter = {
     );
 
     // `preferStatic` is what keeps assets, prerendered pages and files like
-    // `favicon.ico` off the function — and it is also what would hand back the shell
+    // `favicon.ico` off the function: and it is also what would hand back the shell
     // for `/`. A forced redirect is the one exception the CDN honours over a file, so
     // it claims exactly that path and nothing else. Appended, so an app's own rules in
     // `public/_redirects` still match first.

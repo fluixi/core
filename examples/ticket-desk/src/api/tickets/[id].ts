@@ -1,4 +1,4 @@
-// /api/tickets/:id — one ticket. The `[id]` in the filename becomes `params.id`.
+// /api/tickets/:id: one ticket. The `[id]` in the filename becomes `params.id`.
 import { inject } from '@fluixi/start/di';
 import { can, userFromRequest } from '../../services/auth.js';
 import { TicketRepoToken } from '../../services/tokens.js';

@@ -15,7 +15,7 @@
  * that I leave as written and report, so splitProps stays correct where it's still the
  * right answer.
  *
- * No babel in here (see no-babel-in-core.spec.ts) — nodes are read structurally, the way
+ * No babel in here (see no-babel-in-core.spec.ts), nodes are read structurally, the way
  * transform/bindings.ts does, so either front-end can drive it.
  */
 
@@ -31,7 +31,7 @@ export type DestructureBail =
    * block to put the splitProps call in (`({ a, ...rest }) => …`).
    */
   | 'rest'
-  /** `const { [key]: a } = props` — we don't know the property until it runs. */
+  /** `const { [key]: a } = props`: we don't know the property until it runs. */
   | 'computed'
   /** The binding gets assigned to, and props are read-only, so it can't become a member. */
   | 'reassigned'
@@ -46,7 +46,7 @@ export type DestructureBail =
 export interface PropsRead {
   /** The local name the pattern introduced. */
   name: string;
-  /** Property path to read through instead — `['user', 'name']` for `{ user: { name } }`. */
+  /** Property path to read through instead: `['user', 'name']` for `{ user: { name } }`. */
   path: string[];
   /**
    * Default from the pattern. JS only applies one for `undefined`, not for null, so
@@ -98,8 +98,8 @@ function patternNames(node: Node | null | undefined, out: Set<string>): void {
 
 /**
  * Defaults get re-run on every read now, so they have to be cheap and stable. Literals
- * and identifiers are. A function isn't — it hands out a new identity each read, which
- * breaks anything comparing props — and neither is a call.
+ * and identifiers are. A function isn't: it hands out a new identity each read, which
+ * breaks anything comparing props: and neither is a call.
  */
 function isSafeDefault(node: Node): boolean {
   switch (node.type) {
@@ -141,7 +141,7 @@ function walk(root: Node | null | undefined, visit: (node: Node) => void): void 
   }
 }
 
-/** Anything written to in the body — `name = x`, `name++`, `[name] = …`. */
+/** Anything written to in the body: `name = x`, `name++`, `[name] = …`. */
 function reassignedNames(body: Node | null | undefined): Set<string> {
   const written = new Set<string>();
   walk(body, (node) => {

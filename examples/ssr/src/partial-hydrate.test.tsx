@@ -43,7 +43,7 @@ describe('hydrating a partial template', () => {
     hydrate(() => PartialApp(), container);
     expect(container.querySelectorAll('.partial')).toHaveLength(1);
     expect(container.querySelector('.title')!.textContent).toBe('Ada');
-    // The failure this guards against is "AdaAda" — client content appended beside the
+    // The failure this guards against is "AdaAda", client content appended beside the
     // server's instead of adopting it.
     expect(container.querySelector('.mid')!.textContent).toBe('before Ada after');
     expect(container.querySelector('.multi')!.textContent).toBe('Ada and 7 together');
@@ -58,7 +58,7 @@ describe('hydrating a partial template', () => {
 
   it('adopts the server nodes instead of recreating them', () => {
     // The strongest signal available: the runtime warns whenever it gives up on a server
-    // node and builds a fresh one. Correct output is not enough — content can look right
+    // node and builds a fresh one. Correct output is not enough, content can look right
     // while every text node was thrown away and rebuilt, which is what happened before
     // holes were bracketed by markers.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

@@ -20,7 +20,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const clientDir = resolve(cfg.root, 'dist/client');
   const template = await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
-  // SPA apps may ship no server entry (or one only for server functions) — import if present.
+  // SPA apps may ship no server entry (or one only for server functions), import if present.
   const mod = existsSync(serverEntry)
     ? await import(/* @vite-ignore */ pathToFileURL(serverEntry).href)
     : {};
@@ -37,7 +37,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
 /**
  * The shell the server renders into.
  *
- * `dist/client/index.html` is it, until the app prerenders `/` — then that path holds a
+ * `dist/client/index.html` is it, until the app prerenders `/`, then that path holds a
  * rendered page and the build stashes the shell in `dist/server/template.html` first.
  * Rendering into the page instead puts the home page's markup and head around every
  * SSR response, and leaves hydration two mount elements to choose between.
@@ -85,7 +85,7 @@ export interface AdapterBuildContext {
   hasServer: boolean;
   /**
    * Bundle a generated entry into one self-contained file. Adapters emit a small
-   * platform entry — the worker's `fetch` export, the function's handler — and this
+   * platform entry: the worker's `fetch` export, the function's handler, and this
    * pulls the server bundle and the template into it, because none of these
    * platforms can resolve a module or read a file at runtime.
    */
@@ -96,7 +96,7 @@ export interface AdapterBuildContext {
  * A deploy target.
  *
  * The runtime-neutral fetch handler is the portable core; an adapter packages it for a
- * platform — how the server is bundled (`bundle`), how it is served in development or
+ * platform: how the server is bundled (`bundle`), how it is served in development or
  * on a long-running host (`serve`), and what a deploy actually needs on disk
  * (`build`): a worker entry, a function manifest, a routing config.
  */
@@ -106,10 +106,10 @@ export interface Adapter {
    * How `fluixi build` bundles the framework into the server output. The choice is a
    * property of the deploy target, not of the app:
    *
-   * - `'external'` — `@fluixi/*` stays as bare imports, resolved from `node_modules` at
+   * - `'external'`: `@fluixi/*` stays as bare imports, resolved from `node_modules` at
    *   runtime. Smaller output, faster build; requires the dependencies to be installed
    *   next to it. Right for a long-running Node/Bun/Deno process.
-   * - `'inline'` — everything is bundled into one self-contained file that resolves
+   * - `'inline'`: everything is bundled into one self-contained file that resolves
    *   nothing at runtime. Right for edge/serverless, where there is no `node_modules`.
    *
    * Unset leaves Vite's own heuristic alone (installed deps external, linked ones bundled).
@@ -123,7 +123,7 @@ export interface Adapter {
   build?(ctx: AdapterBuildContext): Promise<void> | void;
 }
 
-/** Reference filesystem adapter — Node `http` + static files from dist/client. */
+/** Reference filesystem adapter: Node `http` + static files from dist/client. */
 export const nodeAdapter: Adapter = {
   name: 'node',
   // A Node server runs from the app directory, so node_modules is right there: keep the
@@ -139,7 +139,7 @@ export const nodeAdapter: Adapter = {
 
 export { cloudflareAdapter, netlifyAdapter, vercelAdapter } from './adapters/platforms.js';
 
-/** Reference edge/web adapter — export `{ fetch }`; the platform serves assets. */
+/** Reference edge/web adapter: export `{ fetch }`; the platform serves assets. */
 export const webAdapter: Adapter = {
   name: 'web',
   // An edge/serverless runtime uploads a file, not an install: nothing may be left to
@@ -154,7 +154,7 @@ export const webAdapter: Adapter = {
  * Subpaths that only look like package entries: a Vite plugin replaces them with the
  * app's generated route/server-fn/API tables, and the real file in the package is a stub
  * that throws. Externalizing one would ship the stub. The plugins run with
- * `enforce: 'pre'` so they win anyway — this list is the second lock on that door.
+ * `enforce: 'pre'` so they win anyway: this list is the second lock on that door.
  */
 const GENERATED_SUBPATHS = new Set(['./routes', './server-fns', './api-routes']);
 
@@ -171,9 +171,9 @@ const GENERATED_SUBPATHS = new Set(['./routes', './server-fns', './api-routes'])
  * only honours an *exact* id in `ssr.external`. A bare package name falls through to a
  * resolvability probe that does not externalize deep imports here, and the result is the
  * worst of both worlds: `@fluixi/core` an import, `@fluixi/core/router` copied into
- * the bundle — two routers, two sets of module state, in one server.
+ * the bundle: two routers, two sets of module state, in one server.
  *
- * `ssrNoExternal` always wins — it is the app saying "this one must be bundled".
+ * `ssrNoExternal` always wins: it is the app saying "this one must be bundled".
  */
 export function ssrBuildOptions(cfg: ResolvedConfig): {
   noExternal?: string[] | true;
@@ -194,7 +194,7 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
     // until someone measures it, so say why nothing was externalized.
     console.warn(
       `  fluixi: adapter "${cfg.adapter?.name}" builds an externalized server, but no ` +
-        `fluixi or @fluixi/* dependency was found in ${join(cfg.root, 'package.json')} — bundling everything.`,
+        `fluixi or @fluixi/* dependency was found in ${join(cfg.root, 'package.json')}, bundling everything.`,
     );
   }
   return { noExternal, external: external.length ? external : undefined };
@@ -211,7 +211,7 @@ function frameworkDeps(root: string): string[] {
 }
 
 /**
- * `['@fluixi/core', '@fluixi/core/router', …]` — the package plus every static subpath it
+ * `['@fluixi/core', '@fluixi/core/router', …]`: the package plus every static subpath it
  * exports. Wildcard entries (`./lib/*`) cannot be enumerated and are left to Vite; an
  * app importing through one gets it bundled, which is the safe direction.
  */
@@ -237,7 +237,7 @@ function resolvePackage(root: string, name: string): any | undefined {
   try {
     return readPackage(createRequire(join(root, 'index.js')).resolve(`${name}/package.json`));
   } catch {
-    /* not exported — fall through */
+    /* not exported: fall through */
   }
   for (let dir = root; ; dir = dirname(dir)) {
     const pkg = readPackage(join(dir, 'node_modules', name, 'package.json'));

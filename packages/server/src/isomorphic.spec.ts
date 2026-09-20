@@ -64,7 +64,7 @@ describe('@fluixi/server — streaming SSR resilience', () => {
       throw new Error('render blew up (e.g. a rejected resource on a dead backend)');
     };
     const stream = renderToBodyStream(Boom as any, { url: '/' });
-    // Must NOT reject/error the stream — it closes cleanly so the client renders CSR.
+    // Must NOT reject/error the stream: it closes cleanly so the client renders CSR.
     const reader = stream.getReader();
     let errored = false;
     try {

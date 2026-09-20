@@ -41,7 +41,7 @@ let loaded = false;
  *
  * Synchronous, and called before the first model exists: a file checked before its types
  * arrive is a file full of errors that were true for a moment, and the markers do not
- * reliably clear when the libraries land — which is why the same project showed "cannot find
+ * reliably clear when the libraries land: which is why the same project showed "cannot find
  * module" on one load and nothing on the next.
  */
 export function loadPackageTypes(): void {

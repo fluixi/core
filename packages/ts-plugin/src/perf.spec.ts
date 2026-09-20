@@ -1,6 +1,6 @@
 /**
  * The plugin sits inside tsserver, so its cost is paid by every TypeScript feature
- * in the editor, in every project the extension activates for — which is any project
+ * in the editor, in every project the extension activates for, which is any project
  * with a `.ts` file, template or not.
  *
  * These pin the two properties that keep it out of the way: repeated diagnostics on
@@ -86,7 +86,7 @@ describe('plugin overhead', () => {
     })();
     const repeat = median(() => ls.getSemanticDiagnostics(fileName), 15);
 
-    // Generous bound — this is asserting "cached", not a specific speed.
+    // Generous bound: this is asserting "cached", not a specific speed.
     expect(repeat).toBeLessThan(Math.max(first, 1));
   });
 
@@ -109,7 +109,7 @@ describe('plugin overhead', () => {
 
   it('a file that cannot hold a template is never walked for one', () => {
     // The guard is a substring test on the source text, so the observable property is
-    // that a file with no `html`/`svg` tag reports no templates and no suppressions —
+    // that a file with no `html`/`svg` tag reports no templates and no suppressions , 
     // reached without traversing the AST.
     const { ls, fileName } = plugin('export const x = `a plain template`;\nexport function f() { return x; }\n');
     expect(ls.getSemanticDiagnostics(fileName)).toHaveLength(0);

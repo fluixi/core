@@ -235,8 +235,8 @@ export interface RouterProps<C = any> {
    * there is not; `'none'` always navigates directly.
    *
    * A reader who asked for reduced motion never gets an animation either way. Styling
-   * is the native mechanism — `::view-transition-old(root)` and
-   * `::view-transition-new(root)` — so the router imposes no visual style of its own.
+   * is the native mechanism: `::view-transition-old(root)` and
+   * `::view-transition-new(root)`: so the router imposes no visual style of its own.
    */
   transition?: TransitionMode;
 }
@@ -278,7 +278,7 @@ export function Router<C = any>(props: RouterProps<C>) {
    * loading B's chunk, the reader clicks through to C before it lands. Each navigation
    * takes the next number and checks it is still the current one before writing the
    * match signal, so B resolving late finds itself superseded and returns without
-   * touching anything. Without this, B would commit over C — the URL would say /c and
+   * touching anything. Without this, B would commit over C, the URL would say /c and
    * the page would show B.
    */
   let navigationId = 0;
@@ -289,7 +289,7 @@ export function Router<C = any>(props: RouterProps<C>) {
    *
    * A module-level hand-off rather than a parameter because the core router's
    * `navigate` does not carry options through to its listeners, and it notifies
-   * synchronously — the value is written and read within the same call, never left
+   * synchronously: the value is written and read within the same call, never left
    * lying around for an unrelated navigation to pick up.
    */
   const takeMode = (): TransitionMode => {

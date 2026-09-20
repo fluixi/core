@@ -1,4 +1,4 @@
-// HTTP interceptors — a request/response/error pipeline around fetch (Angular-style).
+// HTTP interceptors: a request/response/error pipeline around fetch (Angular-style).
 // Register interceptors to attach auth headers, handle 401s, log, or retry. Server-function
 // RPC calls route through this automatically once any interceptor is added; use
 // `fetchWithInterceptors` for your own data fetching too.

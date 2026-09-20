@@ -1,5 +1,5 @@
 /**
- * `"use server"` — a function carrying the directive runs only on the server and
+ * `"use server"`: a function carrying the directive runs only on the server and
  * is callable from the client over RPC.
  *
  *   const getUser = async (id) => { 'use server'; return db.users.find(id); };
@@ -47,7 +47,7 @@ function directive(node: Node): Node | null {
 }
 
 /**
- * Server functions in source order, not descending into one already found — a
+ * Server functions in source order, not descending into one already found, a
  * nested `"use server"` belongs to the body that is about to be replaced or
  * shipped whole, exactly as the babel visitor's `path.skip()` decided.
  */
@@ -95,7 +95,7 @@ export function transformServerFns(
     const declaration = fn.type === 'FunctionDeclaration';
 
     if (!options.ssr) {
-      // The body never reaches the client — it is replaced, not emptied.
+      // The body never reaches the client: it is replaced, not emptied.
       const stub = `${helper}(${JSON.stringify(id)})`;
       out.overwrite(fn.start, fn.end, declaration ? `const ${fn.id.name} = ${stub};` : stub);
       return;

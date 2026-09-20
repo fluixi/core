@@ -3,7 +3,7 @@
  *
  * `provide()` here attaches a child injector to this component's reactive owner, so the
  * `DraftStore` lives exactly as long as the page is mounted. Navigate away and the
- * injector disposes, which runs `onDestroy` and drops the half-written reply — instead of
+ * injector disposes, which runs `onDestroy` and drops the half-written reply, instead of
  * it reappearing on the next ticket, which is what a root-scoped draft would do.
  *
  * The draft's text is a signal, so the counter and the disabled button below both track

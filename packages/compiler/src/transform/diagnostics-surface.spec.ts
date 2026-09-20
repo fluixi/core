@@ -8,7 +8,7 @@
  * None of them throws, so a diagnostic that is collected and then dropped is the same
  * as no diagnostic at all.
  *
- * That happened twice — `propsDiagnostics` and `intrinsicDiagnostics` were both
+ * That happened twice: `propsDiagnostics` and `intrinsicDiagnostics` were both
  * produced by the transform and never read by `reportDiagnostics`. These tests pin
  * both ends: the transform emits them, and the integration prints them.
  */

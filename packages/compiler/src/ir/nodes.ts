@@ -1,7 +1,7 @@
 /**
  * Normalized, host-agnostic IR. Both the babel and (future) swc front-ends
  * produce this; codegen backends consume it. This is the stable contract
- * between parsing and code generation — the layer your own improvements
+ * between parsing and code generation: the layer your own improvements
  * (hoisting, islands, resumability hints) transform.
  */
 import type { IRLoadStrategy } from '../resolve/load-directive.js';
@@ -50,7 +50,7 @@ export interface IRProp {
   directive?: string;
   /**
    * `expr` is an inline JSX element/fragment passed as a component prop (e.g.
-   * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter — like children — so the DOM is
+   * `<Suspense fallback={<div/>}>`). Emitted as a LAZY getter, like children, so the DOM is
    * built only when the component reads the prop, not eagerly when the props object is
    * constructed (which during hydration would walk the cursor and duplicate the tree).
    */
@@ -79,7 +79,7 @@ export interface IRElement {
 /**
  * Where a component reference comes from, attached to the reference itself.
  *
- * A capitalised tag with no binding in the file is supplied by the compiler — from a
+ * A capitalised tag with no binding in the file is supplied by the compiler, from a
  * `resolve` rule, or from the built-in control-flow/router sets. That decision used to
  * live only in the Babel plugin's state, which meant the IR could not see which
  * components a template referenced: no pass could vary a decision per usage, group
@@ -98,7 +98,7 @@ export interface IRComponentSource {
   origin: 'rule' | 'builtin';
   /**
    * When the module is fetched. Set from a `load:` directive at the usage site, and
-   * `eager` otherwise — resolution decides where a component comes from, this decides
+   * `eager` otherwise: resolution decides where a component comes from, this decides
    * when, and the two vary independently.
    */
   loading: IRLoadStrategy;
@@ -113,7 +113,7 @@ export interface IRComponent {
   children: IRNode[];
   /**
    * Set by the resolve pass when the compiler supplies this reference. Absent when the
-   * name is bound in the file — an ordinary import the author wrote — or when nothing
+   * name is bound in the file: an ordinary import the author wrote, or when nothing
    * claims it, which is a diagnostic rather than a resolution.
    */
   source?: IRComponentSource;
@@ -123,7 +123,7 @@ export interface IRComponent {
    */
   at?: { file: string; line: number; column: number };
   /**
-   * Where the `${…}` that drives this subtree was written — the condition of an `if=`,
+   * Where the `${…}` that drives this subtree was written, the condition of an `if=`,
    * the list of an `each=`. The insert that adds and removes the subtree is a reactive
    * binding, and this is the position it reports. Distinct from `at`, which marks the
    * node itself rather than the binding that places it.

@@ -3,7 +3,7 @@
  *
  * A static subtree can be built once as an HTML string and cloned per instance, instead
  * of constructed an element at a time. That is the difference between one `cloneNode`
- * and N `createElement` + N `spread` calls — measured at 2.1x faster for a three-element
+ * and N `createElement` + N `spread` calls: measured at 2.1x faster for a three-element
  * row and 2.4x for a nine-element card, with the gap widening as components grow.
  *
  * `IRElement.static` has existed since the IR was written, documented as
@@ -40,7 +40,7 @@ export interface StaticReport {
  * A prop is inert only when it is a plain attribute or property with a literal value.
  *
  * `expr` means arbitrary JS, which may read a signal or allocate, so it is dynamic even
- * when `reactive` is false — a non-reactive expression still has to run per instance.
+ * when `reactive` is false: a non-reactive expression still has to run per instance.
  */
 function propReason(prop: IRProp): DynamicReason | undefined {
   switch (prop.kind) {
@@ -145,7 +145,7 @@ function childReason(node: IRElement): DynamicReason {
 }
 
 /**
- * The outermost static elements — the roots worth turning into templates.
+ * The outermost static elements: the roots worth turning into templates.
  *
  * Cloning a static child of a static parent is wasted: the parent's template already
  * contains it.

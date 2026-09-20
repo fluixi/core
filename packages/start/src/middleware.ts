@@ -1,8 +1,8 @@
 /**
- * Request middleware — a chain that runs BEFORE the SSR render, in both `fluixi dev`
+ * Request middleware: a chain that runs BEFORE the SSR render, in both `fluixi dev`
  * and `fluixi start`. Each middleware gets `(request, next)`; calling `next()` runs
  * the rest of the chain (ending in the renderer). A middleware may short-circuit
- * (return a Response without calling `next` — e.g. an auth redirect or a 401), or
+ * (return a Response without calling `next`: e.g. an auth redirect or a 401), or
  * call `next()` and adjust the result (add headers, rewrite). Runtime-neutral: a
  * middleware sees a Web `Request` and returns a Web `Response`.
  *
@@ -27,7 +27,7 @@ export type Middleware = (
   next: MiddlewareNext,
 ) => Response | Promise<Response>;
 
-/** Identity helper for `export default` — accepts one middleware or an array. */
+/** Identity helper for `export default`: accepts one middleware or an array. */
 export function defineMiddleware(mw: Middleware | Middleware[]): Middleware[] {
   return Array.isArray(mw) ? mw.slice() : [mw];
 }

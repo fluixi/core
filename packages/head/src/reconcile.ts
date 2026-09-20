@@ -61,7 +61,7 @@ function apply(tags: HeadTag[], htmlAttrs: Record<string, string>): void {
 
 /**
  * Mount reactive head management on the client. Resolves the registry inside an effect so any
- * signal read while resolving re-runs reconciliation — `document.title`, meta, canonical, JSON-LD
+ * signal read while resolving re-runs reconciliation, `document.title`, meta, canonical, JSON-LD
  * etc. update live with no reload and no hydration mismatch (server tags are reused by key).
  * Returns a disposer.
  */

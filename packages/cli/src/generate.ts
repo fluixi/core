@@ -1,5 +1,5 @@
 /**
- * `fluixi generate <kind> <name>` (alias `g`) — scaffold a piece into the current app.
+ * `fluixi generate <kind> <name>` (alias `g`), scaffold a piece into the current app.
  *   fluixi g component Button        → src/components/Button.tsx
  *   fluixi g route about             → src/routes/about.tsx  (a file route)
  *   fluixi g route blog/[id]         → src/routes/blog/[id].tsx
@@ -22,7 +22,7 @@ Component/route syntax follows the project (JSX → .tsx, html\`\` → .ts); ove
 
 /**
  * Which template syntax to emit. Explicit --jsx/--html wins; otherwise infer from
- * the project — an app whose tsconfig doesn't configure `jsx` is html``-authored.
+ * the project: an app whose tsconfig doesn't configure `jsx` is html``-authored.
  */
 function detectFormat(): 'jsx' | 'html' {
   const args = process.argv.slice(3);
@@ -32,7 +32,7 @@ function detectFormat(): 'jsx' | 'html' {
     const ts = JSON.parse(readFileSync(resolve('tsconfig.json'), 'utf8'));
     if (ts?.compilerOptions && !ts.compilerOptions.jsx) return 'html';
   } catch {
-    // no/invalid tsconfig — fall back to JSX
+    // no/invalid tsconfig: fall back to JSX
   }
   return 'jsx';
 }
@@ -49,8 +49,8 @@ function pascal(s: string): string {
 /**
  * Say how to use a generated component without importing it, when nothing would resolve it.
  *
- * Read-only on purpose. A vite/fluixi config is arbitrary TypeScript — it can spread a
- * shared object, compute its rules, or call a resolver function — so editing it means
+ * Read-only on purpose. A vite/fluixi config is arbitrary TypeScript, it can spread a
+ * shared object, compute its rules, or call a resolver function, so editing it means
  * parsing and reprinting, which loses the author's formatting and breaks on any shape we
  * didn't anticipate. Printing the line to paste costs the user one paste and cannot
  * corrupt anything.
@@ -113,7 +113,7 @@ const route = (Name: string) =>
 }
 `;
 
-// html`` variants — plain .ts, no JSX. Emitted when the project is html``-authored
+// html`` variants: plain .ts, no JSX. Emitted when the project is html``-authored
 // (no `jsx` in tsconfig) or with --html.
 const componentHtml = (Name: string) =>
   `import type { Component, ComponentChild } from '@fluixi/core';

@@ -1,4 +1,4 @@
-// GET /api/hello — a file-based API route (returns a Web Response or a plain value → JSON).
+// GET /api/hello: a file-based API route (returns a Web Response or a plain value → JSON).
 export function GET() {
   return Response.json({ msg: 'hello from a fluixi api route' });
 }

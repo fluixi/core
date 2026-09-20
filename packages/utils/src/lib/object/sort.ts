@@ -35,7 +35,7 @@ export interface SortOptions<T = any> {
 
   /**
    * Sort direction.  When `by` is an array you may supply a parallel array
-   * of directions — one per key.  A single value applies to all keys.
+   * of directions: one per key.  A single value applies to all keys.
    * Default: `'asc'`.
    */
   order?: SortOrder | SortOrder[];
@@ -113,14 +113,14 @@ function compareValues(
   locale?: string,
   localeOptions?: Intl.CollatorOptions
 ): number {
-  // null / undefined — treated as "greater than anything" so they sink to the end
+  // null / undefined: treated as "greater than anything" so they sink to the end
   const aN = a == null;
   const bN = b == null;
   if (aN && bN) return 0;
   if (aN) return 1;
   if (bN) return -1;
 
-  // NaN — sink below null
+  // NaN: sink below null
   const aNaN = typeof a === 'number' && Number.isNaN(a);
   const bNaN = typeof b === 'number' && Number.isNaN(b);
   if (aNaN && bNaN) return 0;
@@ -142,7 +142,7 @@ function compareValues(
     return a - b;
   }
 
-  // String — locale-aware
+  // String: locale-aware
   if (typeof a === 'string' && typeof b === 'string') {
     return a.localeCompare(b, locale, localeOptions);
   }

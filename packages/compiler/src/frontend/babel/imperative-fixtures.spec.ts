@@ -13,8 +13,8 @@ import * as Store from '@fluixi/reactive/store';
 // control flow, SVG, …) before real apps do.
 //
 // This ran each fixture through two codegens while a second, inline lowering
-// existed alongside the IR pipeline. That lowering is gone — one path, one set of
-// semantics — so the fixtures now assert the only behaviour there is.
+// existed alongside the IR pipeline. That lowering is gone, one path, one set of
+// semantics: so the fixtures now assert the only behaviour there is.
 
 const OPTS = {
   importSource: '@fluixi/dom',
@@ -291,7 +291,7 @@ const FIXTURES: Fixture[] = [
   {
     // Regression: IR wrapped component prop *values* in `() => …` thunks (unlike
     // inline), so a prop like `history={createMemoryHistory()}` reached the
-    // component as a function — `history.get is not a function`. Component props
+    // component as a function: `history.get is not a function`. Component props
     // must be passed as values (the createComponent call already sits in a memo).
     name: 'component prop (call expr) is passed as a value, not a thunk',
     src: `const makeApi = () => ({ get: () => 'V' });
@@ -389,7 +389,7 @@ const FIXTURES: Fixture[] = [
   {
     // Regression: a resource rendered through control flow. The resource accessor
     // must be isResource/isSignal-detectable so Show's `.loading` gate and insert's
-    // reactive read work — otherwise it freezes on the fallback (compat dropped the
+    // reactive read work: otherwise it freezes on the fallback (compat dropped the
     // $RESOURCE/$SIGNAL markers; this guards them end-to-end through the codegen).
     name: 'Show gated on resource loading',
     src: `import { Show } from '@fluixi/dom';

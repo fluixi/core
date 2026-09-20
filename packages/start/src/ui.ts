@@ -1,5 +1,5 @@
 /**
- * Zero-dependency terminal UI for the Fluixi CLI — colors, the wordmark, and the
+ * Zero-dependency terminal UI for the Fluixi CLI, colors, the wordmark, and the
  * dev-server "ready" panel. Everything degrades to plain text when stdout is not a
  * TTY, when `NO_COLOR` is set, or under a dumb terminal, so logs/pipes stay clean.
  */

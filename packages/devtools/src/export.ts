@@ -2,7 +2,7 @@
  * The graph as something to paste somewhere else.
  *
  * A panel shows one node at a time; a bug report needs all of them at once. This is the whole
- * graph as plain json — values, kinds, ownership, sources, what each node reaches in the
+ * graph as plain json: values, kinds, ownership, sources, what each node reaches in the
  * document and where it is written from.
  *
  * Names rather than ids wherever a reader has to follow a reference: `deps: ["count"]` can be
@@ -27,7 +27,7 @@ interface ExportedNode {
   id: number;
   label: string;
   kind: string;
-  /** Absent when the framework named it — see RNode.authored. */
+  /** Absent when the framework named it: see RNode.authored. */
   authored?: boolean;
   value?: string;
   runs?: number;

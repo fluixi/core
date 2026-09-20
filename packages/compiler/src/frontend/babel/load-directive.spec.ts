@@ -58,7 +58,7 @@ describe('load: directive', () => {
 
 describe('collapsing within a file', () => {
   // A deferred boundary around a module that is already in the chunk adds a wrapper,
-  // a promise and a re-render in order to fetch nothing — and emitting both forms
+  // a promise and a re-render in order to fetch nothing, and emitting both forms
   // would redeclare the binding.
   it('collapses when the eager usage comes first', () => {
     const out = compile('const v = <><Button/><Button load:visible/></>;');
@@ -104,7 +104,7 @@ describe('load: rejects what it cannot honour', () => {
 
 describe('an author-written import and a load: on the same name', () => {
   // These are two instructions that cannot both hold: an import is static, `load:` asks
-  // for a dynamic one. The directive wins — it is the more specific thing to have
+  // for a dynamic one. The directive wins: it is the more specific thing to have
   // written, and honouring the import means silently ignoring it.
   it('defers the import the author wrote, when the name is only a tag', () => {
     const out = compile("import { Chart } from './mine.js';\nconst v = <Chart load:visible/>;");

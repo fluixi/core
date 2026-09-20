@@ -3,7 +3,7 @@
  *
  * The lowering itself is in ../../lower/template.ts and takes no Babel. What is
  * left here is the part that genuinely needs to read JavaScript: turning each
- * `${…}` into a `TemplateHole` — its source text, whether it is reactive, and
+ * `${…}` into a `TemplateHole`: its source text, whether it is reactive, and
  * the two structural facts the lowering branches on (a single-expression arrow,
  * an object literal).
  *
@@ -29,7 +29,7 @@ function bindHole(expr: t.Expression, used: Set<string>, onNested?: NestedHook):
     reactive: isReactiveExpr(expr),
   };
 
-  // `${item => <li>${item}</li>}` — `each` lowers this into For's render
+  // `${item => <li>${item}</li>}`: `each` lowers this into For's render
   // function, which needs the parameters and the body apart from each other. A
   // block body is not a render expression, so it stays an ordinary hole.
   if (t.isArrowFunctionExpression(expr) && !t.isBlockStatement(expr.body)) {

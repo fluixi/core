@@ -45,7 +45,7 @@ export type WriteGlobalsOutcome = (
 /**
  * Whether `target` looks covered by the project's `include`, as best we can tell.
  *
- * `undefined` when there is nothing to judge from — no tsconfig, unreadable, or an
+ * `undefined` when there is nothing to judge from, no tsconfig, unreadable, or an
  * `extends` we would have to resolve to answer honestly. Best-effort by design: this
  * drives a warning, never a failure, so a wrong guess must not be able to break a build.
  */
@@ -110,7 +110,7 @@ function projectDependencies(root: string): string[] | undefined {
       ...Object.keys(manifest.peerDependencies ?? {}),
     ];
   } catch {
-    // No manifest to read — declare everything and let TypeScript report what is missing.
+    // No manifest to read: declare everything and let TypeScript report what is missing.
     return undefined;
   }
 }

@@ -1,19 +1,19 @@
 /**
- * @fluixi/session — the client session lifecycle + access control as reusable primitives.
+ * @fluixi/session: the client session lifecycle + access control as reusable primitives.
  *
  * You provide a small backend ADAPTER (login / fetchUser / logout / optional refresh);
  * the framework owns token + user signals, a status state-machine, persistence (SSR-safe
  * via fluixi's universal `storage`), the hydrate-on-load flow, automatic refresh
  * before expiry, role/permission derivation, and an unauthorized (session-expiry) guard.
- * Apps stop rewriting the same ~150 lines of session glue. (The server-first auth engine —
- * OAuth / MFA / orgs / cookies — is @fluixi/auth.)
+ * Apps stop rewriting the same ~150 lines of session glue. (The server-first auth engine , 
+ * OAuth / MFA / orgs / cookies: is @fluixi/auth.)
  *
  * ── SECURITY BOUNDARY ─────────────────────────────────────────────────────────
  * `roles()`, `permissions()` and `can()` are a CLIENT-SIDE UI affordance: they decide what
  * to RENDER, never what is ALLOWED. A client can forge any role, so authorization MUST be
  * enforced by the backend on every request. Read `can(...)` as "should I show this button",
  * and let the server reject unauthorized calls regardless. The `unauthorized` guard below
- * exists precisely because the server — not the client — is the authority.
+ * exists precisely because the server: not the client, is the authority.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
 import { storage, isClient } from '@fluixi/core';
@@ -45,23 +45,23 @@ export interface SessionAdapter<U, C, R = unknown> {
 export type Role = string;
 
 /**
- * Declarative role → permission mapping. `P` is YOUR permission shape — a nested capability
+ * Declarative role → permission mapping. `P` is YOUR permission shape, a nested capability
  * object, a flat `Set`, a Better-Auth-style `{ resource: action[] }` statement, whatever you
- * check against. `Q` is the QUERY you pass to `can()` — by default a predicate `(p) => bool`,
+ * check against. `Q` is the QUERY you pass to `can()`, by default a predicate `(p) => bool`,
  * but supply a `match` to use a declarative query instead (a `'resource:action'` string, an
  * object, a CASL ability, …). The framework derives the active role(s), hands you the matching
  * permission set, and runs your matcher; it does not prescribe either shape.
  */
 export interface AccessControl<U, P, Q = (p: P) => boolean> {
   /**
-   * Derive the user's role(s) from ANY user field — `u => u?.metadata?.access` returns
+   * Derive the user's role(s) from ANY user field, `u => u?.metadata?.access` returns
    * whatever word lives there. Return one role, several, or null. Optional: omit it when
    * `permissions` is a resolver that reads the user directly.
    */
   getRole?: (user: U | null) => Role | Role[] | null | undefined;
   /**
    * Either a static role → permission map, OR a resolver that derives the permission set
-   * straight from the user (when access isn't a fixed matrix — e.g. computed from user
+   * straight from the user (when access isn't a fixed matrix, e.g. computed from user
    * flags / fields). The resolver also receives the derived roles.
    */
   permissions: Record<Role, P> | ((user: U | null, roles: Role[]) => P | undefined);
@@ -71,7 +71,7 @@ export interface AccessControl<U, P, Q = (p: P) => boolean> {
   merge?: (sets: P[]) => P;
   /**
    * Interpret a `can(query)` call. Default: the query IS a predicate, run as
-   * `query(permissions)`. Override for declarative queries — `match: (perms, q: string) =>
+   * `query(permissions)`. Override for declarative queries, `match: (perms, q: string) =>
    * perms.has(q)` → `can('products:edit')`. The `user` is passed too, so a check can read a
    * user field directly: `match: (_p, q, user) => user?.metadata?.access === q`.
    */
@@ -85,9 +85,9 @@ export interface FetchGuardOptions {
   fetch?: typeof fetch;
   /** Status that signals an expired/invalid session (default 401). */
   status?: number;
-  /** Narrow which responses count as expiry — e.g. your API origin, minus the login route. */
+  /** Narrow which responses count as expiry: e.g. your API origin, minus the login route. */
   shouldHandle?: (url: string, response: Response) => boolean;
-  /** Fired at most once until `reset()` — so one expired session isn't reported N times. */
+  /** Fired at most once until `reset()`: so one expired session isn't reported N times. */
   onUnauthorized: () => void;
 }
 
@@ -97,7 +97,7 @@ const requestUrl = (input: RequestInfo | URL): string =>
   input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
 
 /**
- * Wrap a fetch so a chosen status (401) trips `onUnauthorized` once. Returns a NEW fetch —
+ * Wrap a fetch so a chosen status (401) trips `onUnauthorized` once. Returns a NEW fetch , 
  * pass it to your SDK / data layer. Nothing global is mutated: this is the standards-clean
  * way to react to an expired session. (For SDKs that only ever call the global `fetch`,
  * `installGlobalFetchGuard` is the explicit escape hatch.)
@@ -123,7 +123,7 @@ export function createFetchGuard(opts: FetchGuardOptions): GuardedFetch {
 }
 
 /**
- * Replace the GLOBAL `fetch` with a guarded one. A deliberate global side effect — use it
+ * Replace the GLOBAL `fetch` with a guarded one. A deliberate global side effect, use it
  * only when your SDK gives you no way to inject a custom fetch (e.g. Medusa's JS SDK).
  * No-op on the server. Returns an uninstaller that restores the original fetch.
  */
@@ -153,11 +153,11 @@ export type SessionStatus =
 export interface UnauthorizedOptions {
   /** Status that means "session expired" (default 401). */
   status?: number;
-  /** Narrow which responses count — e.g. only your API, excluding the login endpoint. */
+  /** Narrow which responses count: e.g. only your API, excluding the login endpoint. */
   shouldHandle?: (url: string, response: Response) => boolean;
   /**
    * Patch the GLOBAL fetch. Needed when your data layer always uses the global `fetch`
-   * (Medusa's SDK). Default false — prefer wiring `session.guardedFetch` into your SDK.
+   * (Medusa's SDK). Default false: prefer wiring `session.guardedFetch` into your SDK.
    */
   installGlobal?: boolean;
   /** What to do when the session expires (default: mark expired + logout). */
@@ -170,7 +170,7 @@ export interface SessionOptions<U, C, R = unknown, P = unknown, Q = (p: P) => bo
   storageKeys?: { token?: string; user?: string; expiry?: string };
   /** Refresh this many ms BEFORE expiry (default 60_000). */
   refreshSkewMs?: number;
-  /** Client-side RBAC — see the security note at the top of this file. */
+  /** Client-side RBAC: see the security note at the top of this file. */
   access?: AccessControl<U, P, Q>;
   /** React to server "session expired" (401) responses. */
   unauthorized?: UnauthorizedOptions;
@@ -193,7 +193,7 @@ export interface Session<U, C, R = unknown, P = unknown, Q = (p: P) => boolean> 
   expired: Accessor<boolean>;
   /** The active user's role(s) (empty when unauthenticated / no `access`). */
   roles: Accessor<Role[]>;
-  /** The active permission set (UI affordance only — see the security note). */
+  /** The active permission set (UI affordance only, see the security note). */
   permissions: Accessor<P | undefined>;
   /** Check the active permission set with your matcher (default: a predicate). `false` when there is none. */
   can: (query: Q) => boolean;
@@ -283,7 +283,7 @@ export function createSession<
     }
   };
 
-  // Schedule an automatic refresh `skew` ms before the token expires. Client-only —
+  // Schedule an automatic refresh `skew` ms before the token expires. Client-only , 
   // never run timers during SSR. No-op without a `refresh` adapter or a known expiry.
   const scheduleRefresh = (expiresAt?: number): void => {
     clearTimer();

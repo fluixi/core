@@ -69,7 +69,7 @@ describe('call-the-accessor fix', () => {
   });
 
   it("leaves TypeScript's own fixes in place", () => {
-    // A file with a real TS error, asked about TS's code — the plugin adds nothing
+    // A file with a real TS error, asked about TS's code, the plugin adds nothing
     // and must not remove anything.
     const withError = 'const n: number = "no";';
     const { ls, fileName } = plugin(withError);

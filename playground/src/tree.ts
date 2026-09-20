@@ -1,6 +1,6 @@
 // The file list as a tree.
 //
-// A project is a flat list of paths — `src/app.tsx`, `src/ui/Button.tsx` — which is what the
+// A project is a flat list of paths: `src/app.tsx`, `src/ui/Button.tsx`, which is what the
 // linker and the compiler want. A sidebar showing them that way makes a project of any size
 // unreadable, so the same list is folded into folders here and flattened back into rows the
 // list renders, each carrying how deep it is.
@@ -13,7 +13,7 @@ export interface TreeRow {
   kind: 'folder' | 'file';
   /** Full path for a file; the folder's path for a folder. */
   path: string;
-  /** The last segment — what the row shows. */
+  /** The last segment: what the row shows. */
   name: string;
   depth: number;
   /** Folders only. */
@@ -27,7 +27,7 @@ interface Node {
   file?: ProjectFile;
 }
 
-/** Folders first, then files, each alphabetically — the order an editor shows. */
+/** Folders first, then files, each alphabetically, the order an editor shows. */
 function ordered(nodes: Iterable<Node>): Node[] {
   return [...nodes].sort((a, b) => {
     const aFolder = a.children.size > 0;

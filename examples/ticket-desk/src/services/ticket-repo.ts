@@ -43,7 +43,7 @@ interface DeskState {
 let instances = 0;
 
 export class TicketRepo {
-  /** Distinct per constructed instance — the evidence of request isolation. */
+  /** Distinct per constructed instance: the evidence of request isolation. */
   readonly instanceId = `repo-${++instances}`;
 
   /** Not reactive on purpose: an id counter is never rendered. */

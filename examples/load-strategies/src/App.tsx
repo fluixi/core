@@ -3,8 +3,8 @@
  *
  * `resolve` in vite.config.ts says *where* each tag comes from; the `load:` directive
  * says *when* its module is fetched. Location is the same everywhere so it lives in
- * config; timing varies per usage so it is written at the usage site. Fusing them —
- * `<Chart lazy="./Chart">` — would repeat the path at every usage and say nothing
+ * config; timing varies per usage so it is written at the usage site. Fusing them , 
+ * `<Chart lazy="./Chart">`: would repeat the path at every usage and say nothing
  * about timing.
  *
  * Check the build output: `Summary` is in the entry chunk, the other three are not.

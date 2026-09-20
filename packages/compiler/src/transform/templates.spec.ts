@@ -10,7 +10,7 @@ import { transformTemplates } from './templates.js';
 /**
  * The transform owns the module: parse, splice, done. These run its output
  * against the real runtime, and check it against the plugin path on the same
- * source — the two must render the same DOM.
+ * source: the two must render the same DOM.
  */
 const LIT = { format: 'lit' as const, signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
 const OPTS = { runtimeModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };

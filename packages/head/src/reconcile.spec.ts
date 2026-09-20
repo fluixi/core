@@ -48,7 +48,7 @@ describe('client reconcile (reactive)', () => {
     document.title = 'Page';
     const beforeMetas = document.head.querySelectorAll('meta').length;
 
-    // Hydrate with the same registry — must adopt existing tags, not append clones.
+    // Hydrate with the same registry: must adopt existing tags, not append clones.
     const dispose = mountHead(h);
     await flush();
 

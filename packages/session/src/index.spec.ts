@@ -156,7 +156,7 @@ describe('createSession — access control', () => {
       login: vi.fn(async () => 'tok'),
       fetchUser: vi.fn(async () => ({ metadata: { access: 'admin' } })),
       access: {
-        // no getRole, no matrix — compute the set from the user field directly
+        // no getRole, no matrix: compute the set from the user field directly
         permissions: (u) =>
           u?.metadata?.access === 'admin'
             ? { products: { view: true, edit: true } }

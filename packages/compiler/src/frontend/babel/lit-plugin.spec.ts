@@ -7,7 +7,7 @@ import { compile as compileFixture, compileResult, load as loadModule } from '..
 
 // The lit front-end wired into the plugin behind `format`. Drives the whole-file
 // transform: `html`...`` templates compile through the shared IR + imperative
-// backend, with the runtime imports and delegateEvents() call injected — then the
+// backend, with the runtime imports and delegateEvents() call injected, then the
 // output runs against the live @fluixi/dom runtime.
 
 const LIT = {
@@ -144,7 +144,7 @@ describe('lit front-end (format: lit)', () => {
 
   it('maps generated code back to the template, not to the enclosing statement', () => {
     // Emitted code is spliced over the template's span, so its mappings point
-    // into the template rather than at the statement that encloses it — a
+    // into the template rather than at the statement that encloses it, a
     // breakpoint inside compiled template code lands where the author wrote it.
     const src = 'export const r = (c) => html`<div class=${c}>hi</div>`;';
     const templateStart = src.indexOf('html`');

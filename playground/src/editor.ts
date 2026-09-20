@@ -1,4 +1,4 @@
-// Monaco editor — real in-browser TypeScript service (autocomplete, hover, diagnostics) over the
+// Monaco editor: real in-browser TypeScript service (autocomplete, hover, diagnostics) over the
 // project's own files. One model per file, under file:///project/<path>, so an import of
 // './Counter' resolves to the sibling model and its types come with it.
 // The api entry plus the contributions actually wanted, rather than the aggregate
@@ -52,7 +52,7 @@ function languageFor(path: string): string {
 /**
  * A project's own .d.ts files, handed to the TypeScript worker as libraries.
  *
- * fluixi.d.ts is what makes `$signal` and the resolved components known without an import —
+ * fluixi.d.ts is what makes `$signal` and the resolved components known without an import , 
  * the compiler generates it in a real project, and the editor has to read it for the same
  * reason an editor there would.
  */
@@ -77,7 +77,7 @@ function configure() {
     // Classic node resolution, which is what the worker's own filesystem looks like: models
     // under file:///project and the packages' declarations under file:///node_modules.
     //
-    // Bundler (100) reads better on paper — it is what a project's tsconfig says — but in
+    // Bundler (100) reads better on paper: it is what a project's tsconfig says, but in
     // the TypeScript this worker bundles it failed every relative import: `./Counter` next
     // to `Counter.tsx` came back as "Cannot find module" while the bare packages resolved,
     // and the JSX namespace those packages declare never loaded with it.
@@ -108,7 +108,7 @@ function configure() {
     noSyntaxValidation: false,
   });
   // No stand-in JSX namespace here. @fluixi/jsx declares the global one, and a local
-  // `[el: string]: any` merged into it would swallow every real element type — which is why
+  // `[el: string]: any` merged into it would swallow every real element type, which is why
   // `<div ` suggested nothing and every attribute typed as any. The `$` intrinsics come from
   // the project's own fluixi.d.ts, the same file a real project commits.
   loadPackageTypes();
@@ -162,7 +162,7 @@ export function relativeSpecifier(from: string, to: string): string {
 /**
  * Module paths in an import.
  *
- * Monaco's TypeScript worker has no directory to read — it holds models, not a file system —
+ * Monaco's TypeScript worker has no directory to read, it holds models, not a file system , 
  * so it offers nothing inside an import string. This supplies the project's own files, and the
  * packages the playground bundles, from the same list the linker resolves against.
  */
@@ -221,7 +221,7 @@ export interface CodeEditor {
   readAll(): ProjectFile[];
   rename(from: string, to: string): void;
   remove(path: string): void;
-  /** Replace every model — used when loading a different project. */
+  /** Replace every model: used when loading a different project. */
   reset(files: ProjectFile[]): void;
   onChange(fn: () => void): void;
   layout(): void;
@@ -245,7 +245,7 @@ export interface CodeViewer {
 }
 
 /**
- * A read-only editor for output — the compiled module, in this case.
+ * A read-only editor for output: the compiled module, in this case.
  *
  * Its model is held apart from the project's: a `file:///project/...` uri would make the
  * TypeScript worker treat generated code as part of the program and report the imports it

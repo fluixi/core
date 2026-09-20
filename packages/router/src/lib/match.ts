@@ -2,7 +2,7 @@
  * @fileoverview Pure route matching.
  *
  * `matchRoutes(routes, pathname)` resolves a pathname to a parent → child
- * {@link RouteMatch}. No side effects, no reactivity — same input, same output.
+ * {@link RouteMatch}. No side effects, no reactivity, same input, same output.
  * Ported from the fluixi router's matcher and made framework-agnostic.
  */
 
@@ -97,7 +97,7 @@ export function matchRoutes<C>(
   const params: Record<string, string> = {};
   for (const layer of result.layers) {
     cumulative = normalizePath(joinMatched(cumulative, layer.consumed));
-    // A layer's `params` is the DELTA it introduces — full-path nested routes
+    // A layer's `params` is the DELTA it introduces, full-path nested routes
     // re-match ancestor params, but those belong to the ancestor layer, not here.
     const layerParams: Record<string, string> = {};
     for (const [k, v] of Object.entries(layer.params)) {
@@ -143,7 +143,7 @@ function matchInto<C>(
           ],
         };
       }
-      // A layout matched the prefix but no child matched the remainder — keep
+      // A layout matched the prefix but no child matched the remainder, keep
       // searching siblings (this layout is not the right branch).
       continue;
     }

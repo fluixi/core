@@ -30,7 +30,7 @@ export function splitPath(to: string): {
 }
 
 /**
- * In-memory history — for tests and server-side rendering. Holds a stack of
+ * In-memory history: for tests and server-side rendering. Holds a stack of
  * entries; `push`/`replace` mutate it and notify subscribers synchronously.
  */
 export function createMemoryHistory(initial = '/'): HistoryAdapter {

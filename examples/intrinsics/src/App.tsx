@@ -20,7 +20,7 @@ export function RuntimeCounter() {
   );
 }
 
-/** The intrinsic form. No import — the compiler resolves `$signal` and adds it. */
+/** The intrinsic form. No import: the compiler resolves `$signal` and adds it. */
 export function IntrinsicCounter() {
   const count = $signal(0);
 

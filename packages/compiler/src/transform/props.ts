@@ -3,7 +3,7 @@
  *
  * `function Card({ title, size = 'md' })` becomes `function Card(props)` with `title`
  * rewritten to `props.title` wherever it's used, so the reads stay live. What can't be
- * rewritten is left alone and reported — see analyze/props-destructure for the rules.
+ * rewritten is left alone and reported: see analyze/props-destructure for the rules.
  *
  * Source in, source out, spans spliced with magic-string, so the author's formatting
  * survives and the map comes out of the splice. It runs before templates are compiled,
@@ -57,7 +57,7 @@ export interface PropsEdit {
 export interface PropsEditsResult {
   edits: PropsEdit[];
   diagnostics: PropsDiagnostic[];
-  /** Runtime symbols the emitted code needs — `splitProps`, when a pattern had a rest. */
+  /** Runtime symbols the emitted code needs: `splitProps`, when a pattern had a rest. */
   used: Set<string>;
 }
 
@@ -188,7 +188,7 @@ export function collectPropsEdits(
 
     // `...rest` becomes the splitProps call the author would have written. splitProps
     // carries the getters over instead of reading them, which is the whole reason a
-    // plain rest can't be rewritten — so this hands the job to the runtime helper that
+    // plain rest can't be rewritten: so this hands the job to the runtime helper that
     // does it properly rather than refusing the pattern.
     if (plan.rest) {
       const keys = plan.rest.keys.map((k) => JSON.stringify(k)).join(', ');
@@ -226,7 +226,7 @@ export function collectPropsEdits(
       }
 
       // Say it in the AST too, not only in the text. Whether a hole is wired reactively
-      // is decided from the expression's shape, and a bare identifier is not reactive —
+      // is decided from the expression's shape, and a bare identifier is not reactive , 
       // so leaving the node as an Identifier emits `props.text` read once, which is the
       // bug this whole pass exists to remove. A member read is reactive, which is what
       // the emitted code now is.
@@ -270,7 +270,7 @@ export function transformProps(
     else source.overwrite(e.start, e.end, e.code);
   }
 
-  // Standalone, there's no prologue to join, so the import goes in here — unless the
+  // Standalone, there's no prologue to join, so the import goes in here, unless the
   // module already has the name bound.
   if (used.has('splitProps') && !moduleBindings(ast.program as { body: unknown[] }).has('splitProps')) {
     source.prepend(`import { splitProps } from ${JSON.stringify(options.runtimeModule ?? '@fluixi/dom')};\n`);

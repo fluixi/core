@@ -1,9 +1,9 @@
 /**
- * @fluixi/auth/server — the server-side bindings.
+ * @fluixi/auth/server: the server-side bindings.
  *
  * `defineAuth(betterAuth(...))` registers the engine; `authMiddleware()` resolves the
  * session once per request and writes it to `locals.auth` (via the @fluixi/start locals
- * bridge), so the server helpers — `requireUser`, `requireRole`, `requirePermission` —
+ * bridge), so the server helpers: `requireUser`, `requireRole`, `requirePermission` , 
  * are pure reads of request-scoped state. No manual token parsing; works inside loaders
  * AND server functions (same request context).
  */
@@ -25,7 +25,7 @@ export interface FluixiAuth<U = AuthUser> {
   getSession: (request: Request) => Promise<SessionData<U>>;
 }
 
-// Registered instance — so the helpers/middleware find "the" auth without the app
+// Registered instance: so the helpers/middleware find "the" auth without the app
 // threading it through every call. defineAuth sets it; getAuth reads it.
 let _auth: FluixiAuth<any> | null = null;
 
@@ -83,7 +83,7 @@ function current<U>(): SessionData<U> {
   return (getLocals()[AUTH_LOCALS_KEY] as SessionData<U> | undefined) ?? { user: null, session: null };
 }
 
-/** The current user or null — never throws. */
+/** The current user or null: never throws. */
 export async function optionalUser<U = AuthUser>(): Promise<U | null> {
   return current<U>().user;
 }
@@ -118,7 +118,7 @@ export async function requirePermission(
   if (!ok) throw new AuthError(403, opts?.redirectTo);
 }
 
-// Cookie API — proper, secure-by-default cookie management (parse/serialize/request reads).
+// Cookie API: proper, secure-by-default cookie management (parse/serialize/request reads).
 export {
   parseCookies,
   serializeCookie,

@@ -9,7 +9,7 @@ import type { Adapter } from './adapter.js';
 
 /**
  * An app root with the given dependencies, each installed into node_modules with an
- * `exports` map — externalization reads those to enumerate a package's subpaths.
+ * `exports` map: externalization reads those to enumerate a package's subpaths.
  */
 function appRoot(dependencies: Record<string, string>, exports: Record<string, unknown> = {}): string {
   const dir = mkdtempSync(join(tmpdir(), 'fx-app-'));
@@ -75,7 +75,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
 
   it('node externalizes the app\'s own @fluixi/* deps, nothing else', () => {
     const cfg = resolveConfig({ root: root(), adapter: nodeAdapter });
-    // `vite` is a dependency too — externalizing it is Vite's call, not ours.
+    // `vite` is a dependency too: externalizing it is Vite's call, not ours.
     expect(ssrBuildOptions(cfg)).toEqual({
       noExternal: undefined,
       external: ['@fluixi/start', '@fluixi/core', '@fluixi/core/router'],
@@ -91,7 +91,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     expect(external).not.toContain('@fluixi/core/package.json');
   });
 
-  it('never externalizes a plugin-generated entry — that would ship the throwing stub', () => {
+  it('never externalizes a plugin-generated entry, that would ship the throwing stub', () => {
     const { external } = ssrBuildOptions(resolveConfig({ root: root(), adapter: nodeAdapter }));
     expect(external).not.toContain('@fluixi/core/routes');
   });
@@ -108,7 +108,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     });
   });
 
-  it('web inlines everything — an edge bundle resolves nothing at runtime', () => {
+  it('web inlines everything: an edge bundle resolves nothing at runtime', () => {
     const cfg = resolveConfig({ root: root(), adapter: webAdapter });
     expect(ssrBuildOptions(cfg)).toEqual({ noExternal: true });
   });

@@ -6,7 +6,7 @@ import { flush } from '@fluixi/reactive/signal';
 import { html } from '@fluixi/core';
 
 // Proof that routing works with html``-authored components: the route tree's
-// components return html`` templates and use <Outlet/> — Router/Outlet compile
+// components return html`` templates and use <Outlet/>, Router/Outlet compile
 // to the same createComponent calls JSX produces, so the router adapter drives
 // them identically.
 const tick = async (ms = 40) => {

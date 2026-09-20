@@ -1,7 +1,7 @@
 // What happened, in order.
 //
 // A snapshot says what the graph is; by the time a panel polls, the propagation is over and
-// everything reads as settled. So the observer's callbacks are recorded as they arrive — the
+// everything reads as settled. So the observer's callbacks are recorded as they arrive, the
 // runtime calls them from inside the write, so the order is real rather than reconstructed.
 //
 // Events group into commits: a write with nothing running came from a handler and opens one.
@@ -30,7 +30,7 @@ export interface GraphEvent {
   readonly change?: ValueChange;
   /**
    * The name at the time. A consumer normally reads it off the graph, but a disposed node is
-   * no longer there — and a list re-render is mostly disposals — so it travels with the event.
+   * no longer there: and a list re-render is mostly disposals, so it travels with the event.
    */
   readonly label?: string;
 }
@@ -123,7 +123,7 @@ export interface Commit {
 }
 
 /**
- * Oldest first. A commit whose opening write has aged out still groups — its events carry the
+ * Oldest first. A commit whose opening write has aged out still groups, its events carry the
  * number, and a partial commit beats dropping the runs after it.
  */
 export function toCommits(events: readonly GraphEvent[]): Commit[] {

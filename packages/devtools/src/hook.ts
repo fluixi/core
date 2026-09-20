@@ -3,7 +3,7 @@
 // A browser extension or a dev-server injection runs this before the application loads. It
 // leaves a global behind; when the app's copy of @fluixi/reactive is first evaluated, the
 // runtime finds it and hands over its own `observeReactiveNodes`. The graph is then built
-// from the app's framework rather than this bundle's — two copies of the runtime each keep
+// from the app's framework rather than this bundle's, two copies of the runtime each keep
 // their own nodes, so watching the wrong one shows an empty graph.
 //
 // The app imports nothing and knows nothing about this. It also works against a production
@@ -25,8 +25,8 @@ export interface DevtoolsHook {
    * Called by the runtime when it loads.
    *
    * `watch` is how the caller says it brought its own devtools. Two copies live on a page
-   * routinely — a browser extension injects one at document_start and an application's own
-   * agent loads another — and the first to arrive owns the hook. Without this the graph is
+   * routinely: a browser extension injects one at document_start and an application's own
+   * agent loads another: and the first to arrive owns the hook. Without this the graph is
    * built by whichever copy got there first, which for an installed extension is a build
    * that knows nothing of the compiler that made the application.
    */
@@ -63,7 +63,7 @@ export interface DevtoolsHook {
    *
    * A number is a node, and covers everywhere it reaches. A string is one element, written
    * as the tree keys them: the tag's id, the index of the root it rendered, then a child
-   * index per step — `12:0/1/2`. Null clears it.
+   * index per step: `12:0/1/2`. Null clears it.
    */
   highlight(target: number | string | null): void;
 }
@@ -76,8 +76,8 @@ export function installDevtoolsHook(): DevtoolsHook {
   const host = globalThis as Record<string, unknown>;
   const existing = host[HOOK] as (DevtoolsHook & { copies?: number }) | undefined;
   if (existing) {
-    // Counted, not complained about. Two copies is the ordinary case — an extension injects
-    // one before anything else runs and the application's agent loads another — and `inject`
+    // Counted, not complained about. Two copies is the ordinary case, an extension injects
+    // one before anything else runs and the application's agent loads another, and `inject`
     // sorts out which of them ends up watching.
     existing.copies = (existing.copies ?? 1) + 1;
     return existing;
@@ -100,7 +100,7 @@ export function installDevtoolsHook(): DevtoolsHook {
         return;
       }
       // The runtime injects the moment it is evaluated, and it brings no devtools of its
-      // own — so an extension's copy starts watching first. The application's agent runs
+      // own: so an extension's copy starts watching first. The application's agent runs
       // straight after, before any of its own modules have made a node, and hands over an
       // observer that matches the compiler that built it. That one takes over.
       if (owned || !runtime.watch) return;
@@ -141,8 +141,8 @@ export function installDevtoolsHook(): DevtoolsHook {
       // Detection is shared and has to run: it is what notices anything moved at all.
       const changed = observed.sample();
       const cursor = observed.revision;
-      // Kept, not handed out once. The hook can have more than one reader — a dev server
-      // agent polling and a browser panel open at the same time — and draining here gave
+      // Kept, not handed out once. The hook can have more than one reader, a dev server
+      // agent polling and a browser panel open at the same time, and draining here gave
       // each of them whichever events the other had not taken yet. Every event carries a
       // seq, so a reader keeps what is new to it.
       history.push(...observed.takeEvents());

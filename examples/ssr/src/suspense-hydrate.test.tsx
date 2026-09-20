@@ -11,12 +11,12 @@ afterEach(() => {
   delete (window as any).__FX_DATA__;
 });
 
-// KNOWN, still-open framework bug (NOT lit-specific — JSX and html`` behave the
+// KNOWN, still-open framework bug (NOT lit-specific, JSX and html`` behave the
 // same). A component that reads a resource with a THROWING accessor (`user().name`)
 // under <Suspense> suspends during hydration, so its content isn't adopted; when the
 // resource resolves post-hydration it rebuilds and duplicates ("User #9User #9").
 // Distinct from the empty-reactive-text bug that WAS fixed in @fluixi/dom
-// hydration.ts — the idiomatic non-throwing pattern (user.loading/user.latest, see
+// hydration.ts: the idiomatic non-throwing pattern (user.loading/user.latest, see
 // examples/lit-counter SsrApp) hydrates cleanly. Skipped until the
 // suspend-during-hydrate reconciliation is fixed.
 describe('JSX <Suspense> SSR + hydrate — duplicate check', () => {

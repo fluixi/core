@@ -1,4 +1,4 @@
-// /api/tickets — the collection. GET lists, POST opens.
+// /api/tickets: the collection. GET lists, POST opens.
 //
 // The handlers resolve their dependencies through the injector rather than importing a
 // module-level store, so an API call and an SSR render in the same request see the same

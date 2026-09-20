@@ -2,7 +2,7 @@
  * The file-based API routes, dispatched the way the server dispatches them.
  *
  * `handleApi` does the matching, so these cover the real path from a URL to a handler,
- * including the `[id]` parameter and the verb dispatch — not just the exported functions
+ * including the `[id]` parameter and the verb dispatch, not just the exported functions
  * called directly.
  *
  * Each case builds a fresh injector and runs inside it, which is what the server does

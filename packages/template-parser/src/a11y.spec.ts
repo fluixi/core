@@ -70,7 +70,7 @@ describe('click handlers', () => {
 
 describe('restraint', () => {
   it('says nothing about an element carrying a spread', () => {
-    // The spread may supply alt/href/title — there is no way to know here, and a
+    // The spread may supply alt/href/title: there is no way to know here, and a
     // warning that can't be acted on is worse than silence.
     expect(spreadCodes(['<img ...', '>'])).toEqual([]);
     expect(spreadCodes(['<a ...', '>x</a>'])).toEqual([]);

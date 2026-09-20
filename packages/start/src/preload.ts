@@ -2,7 +2,7 @@
  * Which built files a URL needs.
  *
  * Keyed by URL pattern, not module id: the server only has a path, and the route table
- * that would map one to the other lives inside the bundle it is serving —
+ * that would map one to the other lives inside the bundle it is serving , 
  * `@fluixi/core/routes` resolves to a stub outside a build. `fluixi build` does the
  * join, with each route's layouts folded in.
  *

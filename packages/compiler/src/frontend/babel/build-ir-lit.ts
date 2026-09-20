@@ -6,8 +6,8 @@
  * concerns into one place with no source spans, no diagnostics, and no reuse
  * outside the compiler. It has been split:
  *
- *   `@fluixi/template-parser`  — Babel-free tokenizer + parser → Template AST
- *   `./lower-template`         — Babel-aware lowering: Template AST → IR
+ *   `@fluixi/template-parser` : Babel-free tokenizer + parser → Template AST
+ *   `./lower-template`        : Babel-aware lowering: Template AST → IR
  *
  * `buildIRFromLit` keeps its exact signature so every caller (build-ir's nested
  * composition, plugin's `emitLitViaIR`) is unchanged; the shared Template AST

@@ -2,7 +2,7 @@
  * Serialize a static IR subtree to the HTML a `<template>` can be built from.
  *
  * Only called for nodes `analyzeStatic` marked static, so every prop is a literal and
- * every child is text or another static element — there is nothing here that could need
+ * every child is text or another static element: there is nothing here that could need
  * an expression. That invariant is what makes this safe: the serializer never has to
  * guess, and anything it cannot represent is a bug in the analysis, not a fallback.
  */
@@ -62,8 +62,8 @@ const PROPERTY_ONLY = new Set([
  * Elements whose content the HTML parser does not decode entities inside.
  *
  * Escaping `>` in a `<style>` body would leave a literal `&gt;` in the CSS rather than
- * the character. There is nothing to gain from templating these — their content is the
- * interesting part, not their structure — so they stay on the imperative path.
+ * the character. There is nothing to gain from templating these, their content is the
+ * interesting part, not their structure: so they stay on the imperative path.
  */
 const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
 
@@ -78,7 +78,7 @@ export function htmlAttrName(name: string): string {
 }
 
 /**
- * True for a prop that is a plain HTML attribute with a compile-time constant value —
+ * True for a prop that is a plain HTML attribute with a compile-time constant value , 
  * safe to write straight onto the element, with no runtime interpretation.
  */
 export function isPlainLiteralAttr(prop: IRProp): boolean {
@@ -96,7 +96,7 @@ export function isSerializable(node: IRElement): boolean {
   for (const prop of node.props) {
     // Namespaced names (`prop:value`, `attr:x`, `bool:disabled`, `on:click`) are
     // instructions to the runtime, not HTML, and property-only names are assigned
-    // rather than set — both stay on the imperative path.
+    // rather than set: both stay on the imperative path.
     if (!isPlainLiteralAttr(prop)) return false;
   }
   for (const child of node.children) {
@@ -133,7 +133,7 @@ function serializeProp(prop: IRProp): string {
 
 /**
  * Escaping is deliberately aggressive. This string is assigned to `innerHTML`, so a
- * literal that happens to contain markup would otherwise become elements — a value like
+ * literal that happens to contain markup would otherwise become elements, a value like
  * `class="a<b"` must stay one attribute.
  */
 function escapeAttr(value: string): string {
@@ -152,7 +152,7 @@ function escapeText(value: string): string {
  * Where each element of a template was written, in the order a clone walks them.
  *
  * A template is emitted as one string, so a source map traces everything in it back to the
- * line the root opens at — every element in a component reports the same place. The order
+ * line the root opens at: every element in a component reports the same place. The order
  * is pre-order over the elements the template contains, which is what
  * `[root, ...root.querySelectorAll('*')]` gives back on the clone, since holes are filled
  * only after it is built.

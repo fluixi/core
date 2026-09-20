@@ -1,7 +1,7 @@
 /**
  * Compiling and running a fixture, for the tests.
  *
- * `compile` is the whole compiler as an app sees it — the same entry the bundler
+ * `compile` is the whole compiler as an app sees it, the same entry the bundler
  * adapters call. `load` then runs the result against the real runtime, which is
  * how most of these tests assert: on the DOM that comes out, not on the shape of
  * the emitted code.

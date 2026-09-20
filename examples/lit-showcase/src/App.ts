@@ -4,7 +4,7 @@ import { html } from '@fluixi/core';
 // A single-file tour of every html`` template feature. Control-flow tags
 // (Show/For/Index/Switch/Match/Portal/ErrorBoundary from @fluixi/dom, Suspense
 // from fluixi) are ALL auto-imported by the compiler. Read props as
-// `props.x` — never destructure (props are getters; destructuring freezes them).
+// `props.x`: never destructure (props are getters; destructuring freezes them).
 
 // ── A component with a named slot ────────────────────────────────────────────
 // `<Card><span slot="header">…</span>body</Card>` → props.header + props.children.

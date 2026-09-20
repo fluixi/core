@@ -61,7 +61,7 @@ export function splitTemplate(template: string, mountId = 'root'): { head: strin
  * Reference the files this route needs in the document that renders it.
  *
  * A lazily-imported route is its own chunk with its own stylesheet, mentioned nowhere
- * in the shell — without these the browser discovers them when hydration runs the
+ * in the shell: without these the browser discovers them when hydration runs the
  * dynamic import, so the markup paints before the CSS arrives.
  *
  * Files already named in the template are skipped: the entry chunk is in there from

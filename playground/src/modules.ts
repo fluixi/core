@@ -1,6 +1,6 @@
 // What a bare specifier resolves to in the playground.
 //
-// These are the real packages, already in the bundle — importing '@fluixi/core' here gets the
+// These are the real packages, already in the bundle, importing '@fluixi/core' here gets the
 // same module an application would, not a stub. Nothing is shadowed: the graph comes from the
 // runtime reporting its own nodes, so a project imports the primitives it would ship with.
 import * as core from '@fluixi/core';

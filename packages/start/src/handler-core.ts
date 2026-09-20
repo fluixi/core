@@ -2,13 +2,13 @@
  * The request handler, assembled from things already in memory.
  *
  * `createProdHandler` reads the template off disk and imports the server entry by
- * path — fine on Node, impossible in a worker, where there is no filesystem and
+ * path: fine on Node, impossible in a worker, where there is no filesystem and
  * every module has to be part of the bundle. So the assembly lives here and takes
  * the template and the module as arguments; the platform entry a deploy adapter
  * generates imports both statically and calls this.
  *
  * One assembly, so an edge deploy cannot quietly behave differently from `fluixi
- * start` — the dispatch order (server functions, then API routes, then render,
+ * start`: the dispatch order (server functions, then API routes, then render,
  * all under middleware) is a property of the framework, not of the host.
  */
 import type { ResolvedConfig } from './config.js';
@@ -51,7 +51,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
   let core: FetchHandler;
   if (!cfg.ssr) {
     // SPA: the page is the static shell; the client entry renders it. Server functions +
-    // middleware still run through this handler — there's just no SSR render pass. The
+    // middleware still run through this handler: there's just no SSR render pass. The
     // path is still known, though, and the route it names still loads its own chunk, so
     // the shell can say so and save the client a round trip it would otherwise start
     // only after the router had booted.
@@ -60,7 +60,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
     core = async (request) => {
       const url = new URL(request.url);
       // Split per request rather than once: the preload links belong in the head, and
-      // the head is the part that flushes before the body is known — which is the whole
+      // the head is the part that flushes before the body is known, which is the whole
       // reason streaming wants them, since the browser can start fetching the route's
       // chunk while the server is still awaiting data for it.
       const { head, tail } = splitTemplate(withPreload(template, url.pathname), cfg.mountId);

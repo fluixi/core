@@ -2,7 +2,7 @@
 //
 // Regression for the framework-agnostic router (@fluixi/router) + its fluixi
 // adapter (@fluixi/core/router). This example uses the IMPERATIVE backend
-// (see vite.config.ts) — store-admin's backend — so these prove the adapter works
+// (see vite.config.ts), store-admin's backend: so these prove the adapter works
 // with deferred <Outlet/> AND renders deeply nested layouts (the case the old
 // fluixi router could not render).
 import { describe, it, expect } from 'vitest';
@@ -380,7 +380,7 @@ describe('router Link', () => {
   //   1. `{props.children}` compiled to a reactive `() => props.children` thunk;
   //      now `.children` is non-reactive so insert binds the child's own memo.
   //   2. JSX whitespace between <Shell> and <Suspense> made children an array
-  //      `[" ", memo, " "]` — an array insert doesn't reactively bind the inner
+  //      `[" ", memo, " "]`: an array insert doesn't reactively bind the inner
   //      memo; canonical JSX whitespace cleaning drops it so the child stays lone.
   it('lazy <Suspense><Outlet/> through a component {props.children}', async () => {
     const Page = lazy(async () => ({ default: () => <div class="page"><input class="x" /></div> }));

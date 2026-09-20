@@ -1,4 +1,4 @@
-/** `load:media` — desktop-only panel; a phone never downloads it. */
+/** `load:media`: desktop-only panel; a phone never downloads it. */
 export function AuditLog() {
   return (
     <section class="panel">

@@ -11,7 +11,7 @@ function AsyncName() {
   return <span class="async">{user().name}</span>;
 }
 
-// JSX twin of the lit-counter SsrApp's Suspense section — same shape, to check
+// JSX twin of the lit-counter SsrApp's Suspense section, same shape, to check
 // whether the SSR-hydration duplicate is lit-specific or a framework bug.
 export function SuspenseApp(_props: { url?: string }) {
   return (

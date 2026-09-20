@@ -7,7 +7,7 @@ import { join, extname } from 'node:path';
 /**
  * The runtime-neutral request layer. Everything renders through a Web
  * `Request → Response` handler, so the same core works in Node, Bun, Deno, and
- * edge/worker runtimes — only the *bridge* (Node http here) is platform-specific.
+ * edge/worker runtimes: only the *bridge* (Node http here) is platform-specific.
  * This is the seam deploy adapters plug into.
  */
 
@@ -27,7 +27,7 @@ export type StreamRenderFn = (
  * Compose a streamed HTML Response: flush `head` immediately (browser starts fetching
  * assets while the server awaits data), then pipe the app `body` stream into the mount
  * point, then `tail` (client script + closing tags). A render error after the head is
- * flushed can only error the stream (status is already 200) — truncated HTML; callers
+ * flushed can only error the stream (status is already 200), truncated HTML; callers
  * should guard the pre-flush path for a real 500.
  */
 export function streamDocument(
@@ -92,7 +92,7 @@ export function nodeToRequest(req: IncomingMessage): Request {
   const method = req.method ?? 'GET';
   const init: RequestInit = { method, headers };
   if (method !== 'GET' && method !== 'HEAD') {
-    init.body = req as any; // Node readable — fine for undici/Node fetch
+    init.body = req as any; // Node readable: fine for undici/Node fetch
     (init as any).duplex = 'half';
   }
   return new Request(url, init);
@@ -156,7 +156,7 @@ const MIME: Record<string, string> = {
 };
 
 /**
- * Wrap a handler to serve static files from `dir` first (for filesystem runtimes —
+ * Wrap a handler to serve static files from `dir` first (for filesystem runtimes , 
  * Node/Bun/Deno). Edge runtimes serve assets via the platform, so they use the bare
  * handler instead.
  */

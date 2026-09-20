@@ -102,7 +102,7 @@ export function apiRoutesVitePlugin(opts: { dir: string; prefix?: string }): any
   return {
     name: 'fluixi-api',
     // Must beat node resolution: '@fluixi/start/api-routes' is a real file in this package,
-    // so without `pre` Vite resolves the typed stub and the generated table never loads —
+    // so without `pre` Vite resolves the typed stub and the generated table never loads , 
     // the app builds and every API route 404s.
     enforce: 'pre' as const,
     configResolved(config: { root?: string }) {

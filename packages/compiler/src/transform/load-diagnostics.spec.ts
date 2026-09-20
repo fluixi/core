@@ -2,7 +2,7 @@
  * A `load:` the compiler cannot act on has to say so.
  *
  * Deferring means the compiler creates the binding as a dynamic import. When it doesn't
- * supply the name, the directive does nothing — and the only symptom is a chunk that was
+ * supply the name, the directive does nothing: and the only symptom is a chunk that was
  * never split, which is not something you notice by reading the code.
  */
 import { describe, it, expect } from 'vitest';
@@ -13,7 +13,7 @@ const run = (code: string) => transformTemplates(code, 'a.tsx', OPTS)!;
 
 describe('a load: that cannot take effect', () => {
   // A plain static import is no longer one of these: it gets rewritten into a deferred
-  // binding instead — see load-import.spec. What is left here is what cannot be.
+  // binding instead: see load-import.spec. What is left here is what cannot be.
   it('reports a name nothing supplies, with the other fix', () => {
     const out = run('export function App() { return <Chart load:idle />; }');
     expect(out.loadDiagnostics![0].message).toMatch(/nothing supplies/);

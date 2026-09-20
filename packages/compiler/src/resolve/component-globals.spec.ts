@@ -12,7 +12,7 @@ describe('componentGlobals', () => {
   });
 
   it('falls back to a const for a default export', () => {
-    // `import X = ns.default` is a syntax error — `default` is reserved in that position.
+    // `import X = ns.default` is a syntax error: `default` is reserved in that position.
     const rules = [{ components: { Card: { module: './Card.js', export: 'default' } } }];
     const { source } = componentGlobals(rules, { builtins: false });
     expect(source).toContain('const Card: typeof ___Card_js.default;');

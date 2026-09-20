@@ -73,7 +73,7 @@ const globalDelegatedSet = new Set<string>();
 // Both backends now instantiate components through the framework's registered
 // createComponent (imported from @fluixi/dom; fluixi registers it via
 // registerCreateComponent). That path runs the component untracked AND applies
-// the proper owner/lifecycle handling + asComponent stamping — so the jsx and
+// the proper owner/lifecycle handling + asComponent stamping, so the jsx and
 // imperative backends share one component-instantiation path. The dom shim
 // falls back to `() => Comp(props)` only when no system is registered.
 // ============================================================================
@@ -115,7 +115,7 @@ export function jsx(type: any, props: any, key?: string): JSXElement {
   if (typeof type === 'function') {
     const { type: renderType } = checkRenderType(type);
 
-    // Context Provider is called directly — no memo wrapper.
+    // Context Provider is called directly: no memo wrapper.
     if (
       (type as any).$$typeof === Symbol.for('react.provider') ||
       renderType === 'provider'

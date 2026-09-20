@@ -1,5 +1,5 @@
 /**
- * `@fluixi/start/head` — the app-facing SEO & document-head surface, re-exported from the
+ * `@fluixi/start/head`: the app-facing SEO & document-head surface, re-exported from the
  * framework-agnostic `@fluixi/head` engine. Importing from the meta-framework gives apps a single,
  * stable dependency (like `@fluixi/start/router`) instead of reaching into the engine directly:
  *

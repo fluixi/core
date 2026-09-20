@@ -1,4 +1,4 @@
-/** sitemap.xml + robots.txt generators. Pure functions — the build/server wires routes into them. */
+/** sitemap.xml + robots.txt generators. Pure functions, the build/server wires routes into them. */
 
 export interface SitemapImage {
   loc: string;

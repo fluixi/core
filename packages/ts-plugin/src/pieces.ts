@@ -4,7 +4,7 @@
  * hover/definition, which must point at the exact tag in the template).
  *
  * The text comes from the source, **not** from `node.text`. `node.text` is the *cooked*
- * value, where an escape like `` \` `` is one character while the source spends two — so
+ * value, where an escape like `` \` `` is one character while the source spends two, so
  * every span after an escape is reported short, and hover, completion and diagnostics all
  * land on the wrong offset. A single `` html`\`\`` `` in a file was enough to move a tag's
  * attribute area two characters left, which is exactly the sort of thing that looks like

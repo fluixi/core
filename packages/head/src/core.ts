@@ -35,9 +35,9 @@ function robotsToString(r: string | RobotsMeta): string {
 // ---------------------------------------------------------------------------
 
 export interface HeadRegistry {
-  /** Ordered sources — layouts register before pages, so later entries override. */
+  /** Ordered sources: layouts register before pages, so later entries override. */
   readonly sources: HeadSource[];
-  /** Bumps when a source is added/removed — read it in an effect to re-run on route changes. */
+  /** Bumps when a source is added/removed: read it in an effect to re-run on route changes. */
   readonly version: Accessor<number>;
   push(input: HeadSource): () => void;
 }
@@ -82,7 +82,7 @@ export function runWithHead<T>(h: HeadRegistry, fn: () => T): T {
 }
 
 /**
- * Register metadata for the current page/layout. Static, async-resolved, or reactive — values
+ * Register metadata for the current page/layout. Static, async-resolved, or reactive, values
  * that are signals update the document live on the client. Returns a disposer (client dynamic use).
  */
 export function useHead(input: HeadSource): () => void {
@@ -95,14 +95,14 @@ export function useHead(input: HeadSource): () => void {
     return () => {};
   }
   const dispose = h.push(input);
-  // Drop the source when the owner (page/layout component) unmounts — this is what makes route
+  // Drop the source when the owner (page/layout component) unmounts, this is what makes route
   // transitions update the head on the client. NOT on the server: there it's a single render and
   // we serialize the head before the root disposes, so the source must survive until then.
   if (typeof window !== 'undefined' && getOwner()) onCleanup(dispose);
   return dispose;
 }
 
-/** Ergonomic alias — `seo({ title, description })`. */
+/** Ergonomic alias: `seo({ title, description })`. */
 export const seo = useHead;
 
 // ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ export interface ResolvedHead {
 
 /**
  * Flatten every source (in registration order: layouts first, page last) into tags, then
- * deduplicate by key — last write wins for singletons (title, description, canonical, …),
+ * deduplicate by key: last write wins for singletons (title, description, canonical, …),
  * while repeatable tags (extra og:image, hreflang alternates, json-ld) accumulate.
  */
 export function resolveHead(head: HeadRegistry): ResolvedHead {

@@ -2,7 +2,7 @@
  * @fileoverview The router state machine.
  *
  * Pure: holds the current location + match, recomputes the match on every
- * history change, and notifies subscribers. Performs NO rendering — a view
+ * history change, and notifies subscribers. Performs NO rendering, a view
  * adapter subscribes and renders the resolved match tree top-down (see DESIGN.md).
  */
 
@@ -92,7 +92,7 @@ export function createRouter<C = unknown>(
     navigate(to: string, options: NavigateOptions = {}) {
       const target = withBase(to, base);
       // The history adapter notifies on push/replace (memory + browser), which
-      // drives `recompute` via the subscription below — so we must NOT recompute
+      // drives `recompute` via the subscription below, so we must NOT recompute
       // again here or subscribers would fire twice per navigation.
       if (options.replace) history.replace(target, options.state ?? null);
       else history.push(target, options.state ?? null);

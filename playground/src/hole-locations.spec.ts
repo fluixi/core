@@ -32,7 +32,7 @@ describe('the counter, compiled and run', () => {
 
     const count = [...observed.graph.values()].find((n) => n.label === 'count');
     // `{count()}` is written on line 9 of Counter.tsx, column 25. The source map cannot say
-    // that — every hole in a template traces back to the line the template opens at — so this
+    // that: every hole in a template traces back to the line the template opens at, so this
     // is the compiler's own mark, carried on the accessor to wherever the dom wires it up.
     const target = count?.targets?.[0];
     // A hole with nothing in it yet is a marker comment; the span is where it will go.

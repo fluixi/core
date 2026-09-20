@@ -4,7 +4,7 @@
  *
  * This is a host adapter, not the compiler. It parses with babel and, for each
  * JSX element/fragment and each `` html`...` `` template, hands the node to the
- * shared pipeline — build IR, run the imperative backend — then splices the
+ * shared pipeline: build IR, run the imperative backend, then splices the
  * emitted code back into the program. Everything that decides *what* the output
  * means (directives, control flow, component resolution, load strategies,
  * reactivity, templates) lives in ../../{ir,resolve,optimize,codegen}, which
@@ -42,7 +42,7 @@ import type { IRNode } from '../../ir/nodes.js';
 export interface PluginOptions {
   /**
    * Import source for the JSX types and for whatever JSX this plugin does not
-   * consume — esbuild's automatic runtime and TypeScript's `jsxImportSource`
+   * consume: esbuild's automatic runtime and TypeScript's `jsxImportSource`
    * both point at it. The compiler itself never emits `jsx()` calls.
    * @default '@fluixi/jsx'
    */
@@ -83,14 +83,14 @@ export interface PluginOptions {
    * @default '@fluixi/core/router'
    */
   routerModule?: string;
-  /** Clone static subtrees from a template. Client-only — see CompilerOptions. */
+  /** Clone static subtrees from a template. Client-only, see CompilerOptions. */
   templateClone?: boolean;
   /** Also clone structure-static subtrees with holes. See CompilerOptions. */
   partialTemplates?: boolean;
 
   /**
    * Rules that resolve an unbound capitalised tag to a module, so a component can be
-   * used without an import — the configurable form of the built-in
+   * used without an import: the configurable form of the built-in
    * Suspense/Portal/Router auto-import.
    *
    * A lexical binding always wins, so an explicit import or a local variable is never
@@ -99,7 +99,7 @@ export interface PluginOptions {
   resolve?: readonly ComponentResolverRule[];
 
   /**
-   * Where reactive primitives (createMemo) are imported from — the signal core,
+   * Where reactive primitives (createMemo) are imported from, the signal core,
    * not the dom runtime.
    * @default '@fluixi/reactive/signal'
    */
@@ -160,7 +160,7 @@ interface PluginStateData {
 // Constants
 // ============================================================================
 
-// Control-flow components that live in fluixi, NOT @fluixi/dom — they must
+// Control-flow components that live in fluixi, NOT @fluixi/dom, they must
 // be auto-imported from core (dom doesn't export them).
 const CORE_ONLY_CONTROL_FLOW = new Set<string>(CORE_CONTROL_FLOW);
 
@@ -347,7 +347,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
             // enabling resolution can never change what an existing file means.
             //
             // Grouped by module so several components from one package share a single
-            // declaration, and emitted with the local name equal to the tag — the
+            // declaration, and emitted with the local name equal to the tag, the
             // generated code refers to the tag, not to the export.
             // Deferred components become value bindings, not imports: a literal
             // `import()` is what lets the bundler split, hash and tree-shake the chunk
@@ -462,7 +462,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
                       t.identifier(name),
                       // Just the HTML. Parsing is deferred to `templateNode`, which
                       // knows whether this is a server render, a hydration or a fresh
-                      // client render — a module-scope `createTemplate` would touch
+                      // client render: a module-scope `createTemplate` would touch
                       // `document` at import time and break SSR outright.
                       t.stringLiteral(html),
                     ),
@@ -475,7 +475,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
           // Add all imports at the top, deduped. When a file mixes inline JSX
           // and html`` (format 'both'), the two injection paths can each emit an
-          // import for the same module/name — merge per-module and drop repeated
+          // import for the same module/name: merge per-module and drop repeated
           // specifiers so we never redeclare a binding.
           if (imports.length > 0) {
             path.node.body.unshift(...dedupeImports(imports));
@@ -498,7 +498,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 
       TaggedTemplateExpression(path, state) {
         // `html`...`` and `svg`...`` lower through the same IR and the same
-        // backend as JSX — one pipeline, two authoring syntaxes.
+        // backend as JSX: one pipeline, two authoring syntaxes.
         if (
           compileLit &&
           t.isIdentifier(path.node.tag) &&
@@ -518,14 +518,14 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
 /**
  * Two usages of one component in the same file share a binding, so their strategies
  * have to agree. The earlier-loading one wins: the module is in whichever chunk loads
- * first regardless, so deferring the other buys nothing — the same reasoning as the
+ * first regardless, so deferring the other buys nothing, the same reasoning as the
  * collapse pass, applied within a file.
  */
 /**
  * What to do with JSX or a template found inside an expression: resolve its
  * component references and record what the module needs, exactly as the
  * top-level node gets. The IR itself is emitted and dropped by the walk, so
- * anything not taken off it here is lost — which is how `{(b) => <Input/>}`
+ * anything not taken off it here is lost: which is how `{(b) => <Input/>}`
  * came out referring to a component nothing imported.
  */
 function nestedHook(state: any) {
@@ -590,7 +590,7 @@ function adoptTemplates(
 
   // One pass, not one replacement per id. The backend's local ids and the hoisted names
   // share the `_tmpl$N` namespace, so replacing them in sequence can rewrite a name that
-  // an earlier replacement just produced — which silently points a template at another
+  // an earlier replacement just produced: which silently points a template at another
   // template's HTML.
   return code.replace(/_tmpl\$\d+/g, (id) => rename.get(id) ?? id);
 }
@@ -601,7 +601,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   const used = new Set<string>();
   const ir = buildIR(node, used, nestedHook(state));
   // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped
-  // resolution entirely — a resolved tag compiled to a reference with no import.
+  // resolution entirely: a resolved tag compiled to a reference with no import.
   resolveComponentSources(ir, {
     resolver: state.componentResolver,
     modules: {
@@ -654,7 +654,7 @@ function dedupeImports(imports: t.ImportDeclaration[]): t.ImportDeclaration[] {
 
 /**
  * Lit-pipeline path: build IR from a `` html`...` `` template, emit through the
- * imperative backend, reparse. Mirrors emitViaIR — the whole point is that lit
+ * imperative backend, reparse. Mirrors emitViaIR, the whole point is that lit
  * and JSX share one IR + one backend. Collects runtime imports and the delegated
  * events used so Program.exit wires them.
  */
@@ -663,7 +663,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
   const ir = buildIRFromLit(node, used, { svg, onNested: nestedHook(state) });
   // Resolve pass: annotate each component reference with where it comes from, before
-  // codegen. Bindings are not checked here — Program.exit knows the whole file's scope
+  // codegen. Bindings are not checked here: Program.exit knows the whole file's scope
   // and drops any injected import whose name turns out to be bound.
   resolveComponentSources(ir, {
     resolver: state.componentResolver,
@@ -685,7 +685,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   state.hasLitIR = true;
 
   // The IR is emitted as a string and reparsed, so the resulting nodes carry no
-  // position — which is why compiled html`` had no source map at all. Give every
+  // position: which is why compiled html`` had no source map at all. Give every
   // generated node the template's own location so a breakpoint or stack frame
   // lands on the template instead of nowhere.
   const expression = template.expression(adoptTemplates(code, templates, state), {
@@ -736,7 +736,7 @@ function collectRuntimeNeeds(node: IRNode, state: any): void {
   if (node.kind === 'component' && node.source) {
     // Provenance was decided by the resolve pass and recorded on the node; this only
     // translates it into the two things Program.exit wires. Reading it here rather
-    // than re-resolving is the point — one decision, so import injection and every
+    // than re-resolving is the point: one decision, so import injection and every
     // later pass cannot disagree.
     if (node.source.origin === 'builtin') {
       state.controlFlowComponents.add(node.name);

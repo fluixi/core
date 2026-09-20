@@ -4,8 +4,8 @@ import * as S from '@fluixi/reactive/signal';
 import { jsx, Fragment } from './jsx-runtime.js';
 
 // Step 6 lock: jsx() must instantiate components through the framework's
-// registered createComponent (from @fluixi/dom) — the same path the imperative
-// backend uses — rather than a private untrack(() => Comp(props)).
+// registered createComponent (from @fluixi/dom), the same path the imperative
+// backend uses: rather than a private untrack(() => Comp(props)).
 
 function resolve(node: any): any {
   return typeof node === 'function' ? node() : node;

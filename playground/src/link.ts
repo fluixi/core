@@ -113,7 +113,7 @@ export async function linkProject(
 
   // One shim per bare specifier actually used, re-exporting from the registry the preview
   // publishes. The names are read here, from the same packages, but the values come from
-  // whichever realm ends up running the code — the preview is an iframe, and a function
+  // whichever realm ends up running the code: the preview is an iframe, and a function
   // taken from this document would build its DOM in the wrong one.
   const shims = new Map<string, string>();
   const shimFor = (specifier: string): string => {

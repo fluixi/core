@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * `npm create fluixi <dir>` — scaffold a new Fluixi app. Prompts for a name, a mode
+ * `npm create fluixi <dir>`: scaffold a new Fluixi app. Prompts for a name, a mode
  * (SSR via @fluixi/start, or SPA via vite + @fluixi/vite-plugin), and a template syntax
  * (JSX or html``), unless given on the command line: `create-fluixi my-app --spa --html`
- * (`--ssr`/`--spa`, `--jsx`/`--html`). The html`` variant is JSX-free — plain `.ts`
- * sources, no `jsx` in tsconfig. Zero runtime deps — the styled prompts (gradient
+ * (`--ssr`/`--spa`, `--jsx`/`--html`). The html`` variant is JSX-free, plain `.ts`
+ * sources, no `jsx` in tsconfig. Zero runtime deps, the styled prompts (gradient
  * wordmark, gutter, arrow-key select) are hand-rolled ANSI.
  */
 import { cpSync, renameSync, readFileSync, writeFileSync, existsSync } from 'node:fs';

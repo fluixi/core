@@ -8,7 +8,7 @@ import * as Store from '@fluixi/reactive/store';
 
 // Step 5: prove the imperative backend's compiled output (createNativeElement /
 // spread / insert / createComponent) renders and stays fine-grained reactive
-// against the real @fluixi/dom runtime — not just that it type-checks.
+// against the real @fluixi/dom runtime: not just that it type-checks.
 
 const IMPERATIVE = {
   importSource: '@fluixi/dom',
@@ -20,7 +20,7 @@ const IMPERATIVE = {
 // so the tests written against the IR pipeline read as they did.
 const IMPERATIVE_IR = IMPERATIVE;
 
-/** Compile to ESM — for asserting codegen shape. */
+/** Compile to ESM: for asserting codegen shape. */
 const compileEsm = (src: string, options: Record<string, unknown> = IMPERATIVE): string =>
   compileFixture(src, { filename: 'test.tsx', ...options });
 
@@ -64,7 +64,7 @@ beforeAll(() => {
 describe('imperative backend codegen', () => {
   it('emits runtime calls, not jsx()', () => {
     const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`);
-    // How the element is built is codegen's choice — element-by-element, or cloned from a
+    // How the element is built is codegen's choice, element-by-element, or cloned from a
     // template when its structure is static. Asserting one of those pinned an optimisation
     // rather than the behaviour this test is about.
     expect(code).toMatch(/createNativeElement|templateNode/);
@@ -74,7 +74,7 @@ describe('imperative backend codegen', () => {
   });
 
   it('emits component children as a lazy getter (owner nesting for context/Suspense)', () => {
-    // Children must be a getter, not an eagerly-built value — so child components
+    // Children must be a getter, not an eagerly-built value, so child components
     // are created inside the parent component's execution (nested owner scope),
     // not as sibling memos at the call site. Critical for Suspense/lazy + providers.
     const code = compileEsm(`export const r = () => <Wrap><span>x</span></Wrap>;`);
@@ -83,7 +83,7 @@ describe('imperative backend codegen', () => {
   });
 
   it('emits an inline JSX component prop as a lazy getter', () => {
-    // <Suspense fallback={<div/>}> — the fallback must be a getter, not an eager IIFE built
+    // <Suspense fallback={<div/>}>: the fallback must be a getter, not an eager IIFE built
     // when the props object is constructed. Eager construction walks the hydration cursor and
     // adopts the real server node, duplicating the tree on hydration. Inline AND IR must agree.
     const src = `export const r = () => <Wrap fallback={<div class="fb" />}>hi</Wrap>;`;
@@ -157,7 +157,7 @@ describe('imperative backend codegen', () => {
 
 // Regression: a reactive/component child that is NOT the only child must still be
 // bound reactively. The old codegen emitted insert(el, [c1, c2]) (one array), and
-// insert does not reactively bind function/component elements inside an array — so
+// insert does not reactively bind function/component elements inside an array, so
 // a reactive child or a <Show>/<For> next to siblings rendered once and never
 // updated. The fix emits a separate insert(el, child, marker) per child (like the
 // jsx runtime's applyProps).
@@ -183,7 +183,7 @@ describe('multi-child reactive child (regression)', () => {
     });
   }
 
-  // A component child (Show) with a JSX fallback beside a sibling — the user's exact
+  // A component child (Show) with a JSX fallback beside a sibling, the user's exact
   // case. The default 'inline' path handles JSX-valued props; the 'ir' path does not
   // yet recurse into JSX nested in expressions (see note below), so this is inline-only.
   it('inline: a Show beside a sibling stays reactive', async () => {
@@ -268,8 +268,8 @@ describe('ir: JSX nested in expressions (regression)', () => {
   });
 });
 
-// The `backend: 'jsx'` option — emit jsx()/jsxs() and let the runtime interpret
-// them — was removed. Nothing selected it, and it was the last consumer of a
+// The `backend: 'jsx'` option: emit jsx()/jsxs() and let the runtime interpret
+// them: was removed. Nothing selected it, and it was the last consumer of a
 // second lowering that duplicated every semantic the IR pipeline owns. What the
 // automatic runtime still serves is esbuild and TypeScript's jsxImportSource;
 // this compiler never emits a jsx() call.
@@ -284,7 +284,7 @@ describe('there is no jsx-factory backend', () => {
 describe('imperative backend via the IR codegen path (codegen: ir)', () => {
   it('emits the same runtime calls through the plugin', () => {
     const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`, IMPERATIVE_IR);
-    // Structure static with one hole — a partial template, then the hole is inserted.
+    // Structure static with one hole: a partial template, then the hole is inserted.
     expect(code).toContain('templateNode');
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);

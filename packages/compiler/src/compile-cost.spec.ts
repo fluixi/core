@@ -1,5 +1,5 @@
 /**
- * Where compile time goes. Skipped unless FLUIXI_BENCH is set — a measurement,
+ * Where compile time goes. Skipped unless FLUIXI_BENCH is set, a measurement,
  * not an assertion.
  *
  *   FLUIXI_BENCH=1 npx vitest run src/compile-cost.spec.ts

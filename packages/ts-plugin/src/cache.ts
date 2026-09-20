@@ -2,7 +2,7 @@
  * Per-file caches for work that would otherwise repeat on every keystroke.
  *
  * Everything is keyed on the `SourceFile` object, which TypeScript replaces
- * whenever the file changes — so a `WeakMap` gives exact invalidation for free,
+ * whenever the file changes: so a `WeakMap` gives exact invalidation for free,
  * with no version bookkeeping and no way to serve a stale parse.
  *
  * This matters because the editor calls completion/hover/diagnostics several

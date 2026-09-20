@@ -1,8 +1,8 @@
 /**
  * Map a parsed expression node to an `ExprShape`.
  *
- * Works off `node.type` strings, so it takes any ESTree-shaped AST — @babel/parser,
- * acorn, or whatever replaces them — and accepts the few names Babel spells
+ * Works off `node.type` strings, so it takes any ESTree-shaped AST, @babel/parser,
+ * acorn, or whatever replaces them: and accepts the few names Babel spells
  * differently (`ObjectProperty`, `Optional*Expression`).
  */
 import type { ExprShape } from './reactive-expr.js';
@@ -38,7 +38,7 @@ export function shapeOf(node: Node | null | undefined): ExprShape {
   if (node.type === 'TemplateLiteral') {
     return { kind: 'compound', parts: (node.expressions as Node[]).map(part) };
   }
-  // A computed key or a spread contributes nothing — we cannot see what it
+  // A computed key or a spread contributes nothing, we cannot see what it
   // introduces, so we must not claim it is inert.
   if (node.type === 'ObjectExpression') {
     const props = (node.properties as Node[]).filter(

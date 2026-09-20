@@ -4,7 +4,7 @@
  * An unbound capitalised tag in a template is a name the compiler can resolve to a
  * module, instead of an import the author has to write. The framework already does
  * this for `Suspense`/`Portal`/`Router`, but through a hardcoded name set inside the
- * Babel plugin — which cannot be extended by a UI library or an app, and cannot be
+ * Babel plugin: which cannot be extended by a UI library or an app, and cannot be
  * configured per project.
  *
  * This is the configurable version of the same idea. It is deliberately a pure
@@ -49,7 +49,7 @@ export interface ComponentPatternRule {
 
 export type ComponentResolverRule = ComponentMapRule | ComponentPatternRule;
 
-/** Two rules claiming the same name — reported rather than silently first-wins. */
+/** Two rules claiming the same name: reported rather than silently first-wins. */
 export interface ResolverConflict {
   name: string;
   modules: string[];
@@ -82,7 +82,7 @@ function normalise(name: string, entry: string | ResolvedComponent): ResolvedCom
 /**
  * Build a resolver from rules, in order.
  *
- * Map rules are flattened up front so lookup is a plain object read — resolution runs
+ * Map rules are flattened up front so lookup is a plain object read, resolution runs
  * once per component reference per compile, so it sits on the hot path of every build.
  * Pattern rules are tried afterwards, in declaration order, and only when no map rule
  * matched: an explicit entry should always beat a pattern.
@@ -106,7 +106,7 @@ export function createComponentResolver(
         // Ambiguity is the failure mode that actually happens once a map holds
         // ~80 common words (Card, Table, Text, Link). Silently taking the first
         // rule would compile a working import of the wrong component, which is
-        // far worse to debug than a build error — so it is recorded and reported.
+        // far worse to debug than a build error: so it is recorded and reported.
         const conflict = conflicts.find((c) => c.name === name);
         if (conflict) conflict.modules.push(resolved.module);
         else conflicts.push({ name, modules: [existing.module, resolved.module] });

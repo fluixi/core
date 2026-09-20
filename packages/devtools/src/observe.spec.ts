@@ -445,12 +445,12 @@ describe('where a binding and a setter live', () => {
     });
     observed.sample();
 
-    // The effect's first run is scheduled, so the frame is captured when it is created —
+    // The effect's first run is scheduled, so the frame is captured when it is created , 
     // by the time it runs, the code that asked for it has left the stack.
     //
     // The file cannot be asserted: this spec lives under packages/devtools, which callSite
     // classifies as framework, so it falls back to a package frame. That the fallback is
-    // reached at all is the thing being pinned — without capture at creation there is no
+    // reached at all is the thing being pinned: without capture at creation there is no
     // location of any kind. Which frame gets picked is callsite.spec's business.
     const target = byLabel(observed, 'title')?.targets?.[0];
     expect(target?.source).toBeDefined();
@@ -645,7 +645,7 @@ describe('where a node reaches the page', () => {
 });
 
 /**
- * `Router` and `Suspense` are not named by the runtime — the compiler's mark on the tag is
+ * `Router` and `Suspense` are not named by the runtime, the compiler's mark on the tag is
  * the only thing that says what they are. Read as plain memos they were listed as values.
  */
 describe('a builtin tag the runtime does not name', () => {

@@ -1,5 +1,5 @@
 /**
- * CDN entry: the full build — the browser runtime with the template compiler in
+ * CDN entry: the full build: the browser runtime with the template compiler in
  * front of it, so `` html`...` `` works on a page that has no build step.
  *
  *   <script src="https://.../@fluixi/template-runtime/fluixi.global.js"></script>

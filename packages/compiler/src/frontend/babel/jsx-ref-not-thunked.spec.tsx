@@ -9,14 +9,14 @@ import * as S from '@fluixi/reactive/signal';
 /**
  * `ref` must reach the runtime as the function itself.
  *
- * The compiler used to treat `ref={mergeRefs(a, b)}` as a reactive expression — a call
- * expression, so wrap it — and emitted `ref: () => mergeRefs(a, b)`. The runtime calls
+ * The compiler used to treat `ref={mergeRefs(a, b)}` as a reactive expression, a call
+ * expression, so wrap it: and emitted `ref: () => mergeRefs(a, b)`. The runtime calls
  * `ref(element)`, so it invoked the thunk instead: the real callback never saw the
  * element, and everything hanging off that reference (press state, forwarded refs,
  * activation handlers) stopped working with nothing reported.
  *
  * Asserted by running the callback rather than by matching emitted code, because the
- * emitted shape was plausible — it was the behaviour that was wrong.
+ * emitted shape was plausible: it was the behaviour that was wrong.
  */
 const compile = (src: string) =>
   compileFixture(src, { signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' });

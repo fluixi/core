@@ -1,5 +1,5 @@
 /**
- * The directive registry — the extensibility seam.
+ * The directive registry: the extensibility seam.
  *
  * The core parser never hard-codes what `if`, `each`, `bind:value`, `@click`,
  * `.prop` etc. mean. It parses a raw `name[=value]` pair, then asks the registry
@@ -53,7 +53,7 @@ export interface DirectiveDescriptor {
   build(raw: RawAttribute): AttributeLikeNode;
 }
 
-/** Where an attribute sits — a native element or a component tag. */
+/** Where an attribute sits: a native element or a component tag. */
 export interface AttrContext {
   component: boolean;
 }
@@ -92,7 +92,7 @@ export const CORE_DIRECTIVES: DirectiveDescriptor[] = [
       else { syntax = 'on'; rest = raw.name.slice(2); }
       // Dotted modifiers apply to the @/on: forms; the camelCase name has no dots.
       // Lowercase the name so `onClick`, `@click` and `on:click` all yield `click`
-      // — the AST documents this field as the DOM event name, and a consumer that
+      //: the AST documents this field as the DOM event name, and a consumer that
       // trusts that shouldn't have to know which spelling was written. (`syntax`
       // still records the spelling; the ts-plugin reads the written form from source.)
       const [raw_name, ...modifiers] = rest.split('.');
@@ -148,7 +148,7 @@ export const CORE_DIRECTIVES: DirectiveDescriptor[] = [
       loc: raw.loc,
     }),
   },
-  // Load strategy: `load:visible[="200px"]`. Components only — an intrinsic element
+  // Load strategy: `load:visible[="200px"]`. Components only, an intrinsic element
   // has no module to defer.
   {
     id: 'load',

@@ -2,7 +2,7 @@
 //
 // A dev-only agent module goes into the page ahead of the entry, so no node is created
 // before something is watching. It pushes the graph over the channel Vite already keeps open
-// for HMR, and the dev server holds the latest state and answers a plain GET — so an editor
+// for HMR, and the dev server holds the latest state and answers a plain GET, so an editor
 // extension, a panel, or curl all read the same thing without speaking HMR.
 //
 //   GET /__fluixi/graph  →  { t, nodes: [...] }
@@ -38,7 +38,7 @@ import ${JSON.stringify(plugins)};
 import { observeReactiveNodes } from ${JSON.stringify(signal)};
 import { VERSION } from ${JSON.stringify(reactive)};
 
-// The runtime this module imports is the application's own — same module graph, same nodes.
+// The runtime this module imports is the application's own, same module graph, same nodes.
 // Nothing waits for the runtime to offer itself; that path is for a tool loaded from outside.
 //
 // \`watch\` is this copy of devtools, handed over with the runtime. A browser extension
@@ -72,7 +72,7 @@ type WireModule = typeof import('@fluixi/devtools/wire');
  *
  * Asking the application to install it as well made the graph depend on a devDependency
  * nobody knew to add, and in a workspace it resolved for one project and not the one beside
- * it — which reads as the feature being broken rather than absent.
+ * it: which reads as the feature being broken rather than absent.
  */
 function ownDevtools(): string | null {
   return resolveForBrowser('@fluixi/devtools');
@@ -88,7 +88,7 @@ function ownPlugins(): string | null {
  *
  * The agent below is served to a browser as an ES module and imports these by `/@fs/`
  * path, so the file has to be the one with the named exports. `createRequire().resolve`
- * answers with the `require` condition instead — the CJS build — and a `.cjs` file
+ * answers with the `require` condition instead: the CJS build, and a `.cjs` file
  * offers nothing to import, which surfaces as "does not provide an export named
  * 'installDevtoolsHook'". It only started happening when devtools gained a CJS build;
  * before that there was one file and either resolver found it.
@@ -190,7 +190,7 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       }
 
       // The endpoint answers either way. A tool asking for the graph of a project that has
-      // not turned it on deserves to be told which of the two it is, and 404 says neither —
+      // not turned it on deserves to be told which of the two it is, and 404 says neither , 
       // it reads the same as a dev server that is not a fluixi project at all.
       server.middlewares.use(ENDPOINT, (_req, res) => {
         const snapshot = wire

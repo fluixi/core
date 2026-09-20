@@ -2,7 +2,7 @@
  * The repository's reads have to be reactive, not just correct.
  *
  * A service that hands back a plain array is right exactly once: the first render. These
- * assert the thing a component actually depends on — that a mutation through the service
+ * assert the thing a component actually depends on, that a mutation through the service
  * re-runs whoever read it, without the caller subscribing to anything by hand.
  */
 import { describe, expect, it } from 'vitest';
@@ -166,7 +166,7 @@ describe('the draft is a signal, so the box can bind to it', () => {
     await settle();
 
     // Three runs, not two. `isEmpty` is a getter over the signal, so the effect re-runs
-    // on every write to the text — including the whitespace one, which left the derived
+    // on every write to the text: including the whitespace one, which left the derived
     // value unchanged at `true`.
     expect(states).toEqual([true, true, false]);
     dispose();

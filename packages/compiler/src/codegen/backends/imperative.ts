@@ -14,7 +14,7 @@ import { markHole, markProps, SOURCE_MARKER } from '../../transform/source-locat
 import { paren } from '../../analyze/paren.js';
 
 /**
- * Imperative fine-grained backend — emits createNativeElement/insert/spread/
+ * Imperative fine-grained backend: emits createNativeElement/insert/spread/
  * createComponent (RUNTIME_CONTRACT_V1), the runtime proven by the @fluixi/dom
  * contract tests.
  *
@@ -68,7 +68,7 @@ function propValue(p: IRProp): string {
 /**
  * Component props are passed as VALUES, not thunks (unlike native-element attrs).
  * The whole `createComponent(...)` call sits inside a `createMemo`, so reading a
- * signal in a prop re-evaluates when the memo re-runs — no per-prop thunk needed.
+ * signal in a prop re-evaluates when the memo re-runs, no per-prop thunk needed.
  * This matches the inline codegen; wrapping a prop like
  * `history={createMemoryHistory()}` in `() => …` would hand the component a
  * function instead of the value (e.g. `history.get is not a function`).
@@ -96,7 +96,7 @@ function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<strin
 /**
  * The memo a component lowers to is an accessor, so it takes the same hole mark as any
  * other reactive binding. Without it, the insert that places the subtree reports whatever
- * the runtime stack says — a position in the compiled file.
+ * the runtime stack says: a position in the compiled file.
  */
 function markBind(code: string, at?: HolePosition): string {
   return at ? markHole(code, at.line, at.column) : code;
@@ -144,20 +144,20 @@ function emitComponent(
   const propAt: Record<string, [number, number]> = {};
   for (const p of normal) if (p.at) propAt[p.name] = [p.at.line, p.at.column];
   if (Object.keys(propAt).length) obj = markProps(obj, propAt);
-  // The memo never recomputes — every prop is a getter, so this callback reads nothing
+  // The memo never recomputes: every prop is a getter, so this callback reads nothing
   // reactive. It is here for what it makes `insert` do, and it cannot be elided.
   //
   // A component whose return value is *itself* bare control flow (`return <Show …/>`)
   // produces a memo, which `createComponent` deliberately does not stamp as a component.
   // Without this wrapper `insert` stops re-reading it, and the subtree goes stale when a
-  // sibling updates the context it depends on — see `show-context-insert.spec.ts`.
+  // sibling updates the context it depends on: see `show-context-insert.spec.ts`.
   //
   // Static props are not a sufficient condition for dropping it either: safety depends on
   // what the callee *returns*, which lives in another module and is not visible here.
   //
   // Nor can it be a plain `() => createComponent(...)` thunk. The memo also provides
   // *identity*: it runs once and caches. A thunk is re-invoked by insert's render effect
-  // on every run, rebuilding the component with a fresh owner — which loses context,
+  // on every run, rebuilding the component with a fresh owner, which loses context,
   // duplicates the tree on hydration and piles up Portals. Measured: dropping the wrapper
   // fails 3 tests, replacing it with a thunk fails 14.
   //
@@ -203,7 +203,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
 
     case 'component':
       // No reactive prop means no `bindAt`, which is most tags. The insert that places the
-      // subtree still has to report somewhere, and the tag itself is where it was written —
+      // subtree still has to report somewhere, and the tag itself is where it was written , 
       // without this it reports whatever the runtime stack says, a line in the compiled file.
       return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt ?? node.at);
 
@@ -218,7 +218,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // one cloneNode instead of an createNativeElement + spread per element.
       // SVG is excluded: the runtime wraps SVG template HTML in an <svg> host and
       // `cloneTemplate(t, true)` returns that wrapper, not the serialized element, so
-      // cloning would hand back the wrong node. Correctness first — SVG keeps the
+      // cloning would hand back the wrong node. Correctness first, SVG keeps the
       // imperative path until the runtime grows an unwrapping clone.
       if (templates && node.static && !node.svg && isSerializable(node)) {
         used.add('templateNode');
@@ -231,7 +231,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           ? `templateNode(${id}, ${JSON.stringify(node.tag)}, false, false, ${JSON.stringify(at)})`
           : `templateNode(${id}, ${JSON.stringify(node.tag)})`;
       }
-      // Structure static, contents dynamic — the common shape. One template for the
+      // Structure static, contents dynamic: the common shape. One template for the
       // structure, then each hole filled through a reference into the clone. Every
       // reference is read before any insertion, since inserting shifts later positions.
       if (templates && partial) {
@@ -255,7 +255,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           // complete before any content goes in.
           for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);
           for (const hole of plan.holes) {
-            // The fourth argument is what the hole already holds — nothing on a fresh
+            // The fourth argument is what the hole already holds, nothing on a fresh
             // clone, the server's content when hydrating. `insert` reconciles against it,
             // so hydration reuses those nodes rather than building new ones.
             // `holeScope` places the hydration cursor at what the server rendered for
@@ -287,7 +287,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       if (node.props.length > 0) {
         // Literal attributes are written straight on. `spread` is a generic helper that
         // walks every prop checking for reactivity, events, refs, class/style objects and
-        // namespaces — none of which a compile-time constant needs. Same predicate the
+        // namespaces: none of which a compile-time constant needs. Same predicate the
         // template serializer uses, so the two agree on what a plain attribute is.
         if (!node.svg && node.props.every(isPlainLiteralAttr)) {
           for (const p of node.props) parts.push(staticAttrAssignment(el, p));
@@ -319,7 +319,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
 /**
  * Substitute template declarations into the code as inline `createTemplate` calls.
  *
- * For hosts that cannot hoist — nested JSX lowered inside an expression, where there is
+ * For hosts that cannot hoist: nested JSX lowered inside an expression, where there is
  * no module scope to reach. `createTemplate` caches by HTML string, so this costs a Map
  * lookup per instantiation rather than a re-parse, and is still far cheaper than
  * building the subtree element by element.

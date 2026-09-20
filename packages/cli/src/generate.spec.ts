@@ -3,7 +3,7 @@
  * temporary one and read back what landed.
  *
  * What is pinned is the naming: which directory a kind goes to, how a name becomes a
- * component name, and whether the file is `.tsx` or `.ts` — that follows the
+ * component name, and whether the file is `.tsx` or `.ts`, that follows the
  * project's own syntax and has been wrong in both directions.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -47,7 +47,7 @@ describe('generate component', () => {
   });
 
   it('writes a .ts component for a project with no jsx configured', () => {
-    // No `jsx` in tsconfig means the app authors in html`` — emitting .tsx there
+    // No `jsx` in tsconfig means the app authors in html``, emitting .tsx there
     // produces a file the project cannot compile.
     app({ compilerOptions: {} });
     generate('component', 'button');
@@ -70,7 +70,7 @@ describe('generate route', () => {
     app({ compilerOptions: { jsx: 'preserve' } });
     generate('route', 'blog/[id]');
 
-    // The file keeps the dynamic segment — that is the routing contract — while the
+    // The file keeps the dynamic segment: that is the routing contract, while the
     // component name drops the brackets, which are not valid in an identifier.
     const file = join(dir, 'src/routes/blog/[id].tsx');
     expect(existsSync(file)).toBe(true);

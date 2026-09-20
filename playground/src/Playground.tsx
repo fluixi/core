@@ -100,7 +100,6 @@ export function Playground() {
   const [grouped, setGrouped] = createSignal(true);
   const [picking, setPicking] = createSignal(false);
   const [bindings, setBindings] = createSignal(false);
-
   let rootEl!: HTMLDivElement;
   let rightEl!: HTMLElement;
   let graphRowEl!: HTMLElement;

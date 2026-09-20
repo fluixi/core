@@ -10,7 +10,7 @@
  * and the disabled state of the submit button both read it. A plain field would be read
  * once during render and never again.
  *
- * `disposals` is module-level on purpose — the test asserts it went up, which is how you
+ * `disposals` is module-level on purpose: the test asserts it went up, which is how you
  * tell the owner-scoped injector actually disposed rather than the instance merely going
  * out of scope.
  */

@@ -5,7 +5,7 @@
  * type-checking via `__fxProps`, but object-literal key completion is awkward
  * for a half-typed name. So when the cursor sits in a component tag's attribute
  * area, we compute the component's prop names straight from the checker and
- * return them as completion entries — reliable and independent of the virtual
+ * return them as completion entries: reliable and independent of the virtual
  * document.
  */
 import type * as TS from 'typescript';
@@ -31,7 +31,7 @@ export function componentPropCompletions(
   if (!comp || !comp.tag) return undefined; // dynamic `<${C}>` handled by the virtual doc
 
   // Control-flow components (auto-imported by the compiler) aren't in the file's
-  // scope — offer their known prop names directly.
+  // scope: offer their known prop names directly.
   const span = attrNameSpan(sf.text, position);
 
   const cf = CONTROL_FLOW_PROPS[comp.tag];
@@ -43,8 +43,8 @@ export function componentPropCompletions(
   const checker = program.getTypeChecker();
   const rootName = comp.tag.split('.')[0]!;
   // Resolve through scope, not the file's own statements. A component supplied by a
-  // `resolve` rule has no import to find — it is a global from generated ambient
-  // declarations — which is why scanning the file offered nothing for `<Stack `. This is
+  // `resolve` rule has no import to find: it is a global from generated ambient
+  // declarations: which is why scanning the file offered nothing for `<Stack `. This is
   // the same lookup `hover.ts` uses, so hover and completion now agree on what a tag is.
   const compType = componentTypeOf(ts, program, checker, host, sf, template.template, rootName);
   const propsType = compType && firstParamType(ts, checker, compType);
@@ -181,7 +181,7 @@ function propEntry(ts: typeof TS, name: string, replacementSpan?: TS.TextSpan): 
     sortText: '0_' + name,
     insertText: name,
     // Without a span the editor filters these against whatever word *it* computes at the
-    // cursor, and inside a template literal that is not the attribute name — so the list
+    // cursor, and inside a template literal that is not the attribute name, so the list
     // showed in full until the first keystroke and then emptied. Saying exactly which
     // characters are being replaced makes filtering match what is typed.
     replacementSpan,
@@ -191,7 +191,7 @@ function propEntry(ts: typeof TS, name: string, replacementSpan?: TS.TextSpan): 
 /**
  * The span of the attribute name being typed at `position`, possibly empty.
  *
- * Empty when the cursor sits after whitespace, which is a valid insertion point — the
+ * Empty when the cursor sits after whitespace, which is a valid insertion point, the
  * editor needs a zero-length span there rather than none at all.
  */
 function attrNameSpan(text: string, position: number): TS.TextSpan {

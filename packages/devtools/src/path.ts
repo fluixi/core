@@ -5,7 +5,7 @@
  * ran it: `/Users/someone/work/app/packages/dom/src/lib/dom/runtime.ts`. All of it before
  * the package name says nothing about the project, and it is most of the line.
  *
- * The full path is kept for opening the file — only what is displayed is shortened.
+ * The full path is kept for opening the file: only what is displayed is shortened.
  */
 
 /** Windows separators, and the leading slash an origin-stripped path can lose. */
@@ -22,7 +22,7 @@ const WORKSPACE_DIRS = new Set(['packages', 'apps', 'libs', 'examples']);
  *
  * Tried in order: below the project root when the host knows it, then the package a
  * node_modules path names, then the workspace package a monorepo path names. A path that
- * matches none of those is left as it is — guessing at a shorter form would hide which file
+ * matches none of those is left as it is: guessing at a shorter form would hide which file
  * it is, and the point of the line is to say that.
  */
 export function shortenPath(file: string, root?: string): string {

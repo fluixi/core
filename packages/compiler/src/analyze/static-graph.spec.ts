@@ -149,7 +149,7 @@ export function App() {
 export function App() { return <Show />; }`,
       },
     ]);
-    // One node, and it is the declaration — not control flow that happens to share a name.
+    // One node, and it is the declaration: not control flow that happens to share a name.
     expect(nodes.filter((n) => n.label === 'Show')).toHaveLength(1);
     expect(find(nodes, 'Show')?.kind).toBe('component');
   });

@@ -186,7 +186,7 @@ describe('the tracking operations', () => {
   });
 
   it('does not classify what they return as reactive', () => {
-    // `untrack` hands back a plain value on purpose — that is the whole point of it.
+    // `untrack` hands back a plain value on purpose, that is the whole point of it.
     const { kinds } = bindings('const a = $untrack(() => 1);');
     expect(kinds.get('a')).toBe('plain');
   });

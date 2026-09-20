@@ -3,7 +3,7 @@
  *
  * Two different things have always been bundled into one hardcoded `Set` per group:
  * *which module a name comes from*, and *whether the name has special lowering*. Only
- * the first is interesting outside the compiler, and every tool needs it — the TS
+ * the first is interesting outside the compiler, and every tool needs it, the TS
  * plugin, to resolve `<Show>` for hover and go-to-definition; the language server, to
  * complete and validate tags inside `` html`…` ``; a codemod, to materialise imports.
  * Having no published source, `@fluixi/ts-plugin` duplicated the list and pinned it
@@ -15,13 +15,13 @@
  *
  * The split matters: control-flow names cannot become ordinary rules. `Show`, `For`,
  * `Index` and `Match` read a reactive *value* prop inside their own tracking scope, so
- * the compiler emits that prop as a getter — without it `each={items()}` snapshots once
+ * the compiler emits that prop as a getter: without it `each={items()}` snapshots once
  * and never updates. They are also exempted from `createMemo` wrapping and may be
  * replaced outright by `optimizeControlFlowComponent`. A rule only injects an import,
  * so converting them would keep the import and silently drop the reactivity.
  *
- * Router components have no such behaviour — every reference to them in the plugin is
- * import plumbing — so they are a plain rule.
+ * Router components have no such behaviour: every reference to them in the plugin is
+ * import plumbing: so they are a plain rule.
  */
 import type { ComponentMapRule } from './component-resolver.js';
 
@@ -47,7 +47,7 @@ export const DOM_CONTROL_FLOW = [
   'ErrorBoundary',
 ] as const;
 
-/** Control flow that only `@fluixi/core` exports — importing it from dom resolves to nothing. */
+/** Control flow that only `@fluixi/core` exports, importing it from dom resolves to nothing. */
 export const CORE_CONTROL_FLOW = ['Suspense', 'SuspenseList', 'Await'] as const;
 
 /**
@@ -68,7 +68,7 @@ export const BUILTIN_COMPONENTS: readonly string[] = [
 /**
  * Names whose meaning is fixed by the compiler and cannot be reassigned by a rule.
  *
- * A rule naming one of these is a silent no-op — the compiler matches the built-in
+ * A rule naming one of these is a silent no-op: the compiler matches the built-in
  * first and the tag renders control flow instead of the intended component, with no
  * error. Rule authors should check against this set and report rather than emit.
  */
@@ -96,14 +96,14 @@ export function builtinComponentMap(modules: BuiltinModules = {}): Record<string
  * The built-ins as a resolver rule, for tools that want one uniform lookup.
  *
  * Note this is the *naming* half only. Feeding it to the compiler would not make
- * control flow work through resolution — the compiler still recognises those names
+ * control flow work through resolution: the compiler still recognises those names
  * itself, for the codegen reasons above.
  */
 export function builtinComponents(modules: BuiltinModules = {}): ComponentMapRule {
   return { components: builtinComponentMap(modules) };
 }
 
-/** Just the router group as a rule — the one group that is purely an import. */
+/** Just the router group as a rule: the one group that is purely an import. */
 export function routerComponents(routerModule?: string): ComponentMapRule {
   const module = routerModule ?? '@fluixi/core/router';
   return { components: Object.fromEntries(ROUTER_COMPONENTS.map((n) => [n, module])) };

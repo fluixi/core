@@ -1,7 +1,7 @@
 /**
  * `moduleBindings` decides whether an injected import would collide. Getting it
- * wrong is not subtle in either direction — a missed binding emits a duplicate
- * declaration, a phantom one drops an import the code needs — so every case is
+ * wrong is not subtle in either direction: a missed binding emits a duplicate
+ * declaration, a phantom one drops an import the code needs, so every case is
  * checked against what babel's scope says, which is the answer the plugin path
  * has been giving all along.
  */

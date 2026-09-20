@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { matchRoutes, matchPath, scoreRoute, rankRoutes } from './match.js';
 import type { RouteDefinition } from './types.js';
 
-// Components are opaque tags — the core never calls them.
+// Components are opaque tags: the core never calls them.
 const A = 'A', B = 'B', C = 'C', Leaf = 'Leaf', Home = 'Home', Settings = 'Settings';
 
 describe('matchPath', () => {

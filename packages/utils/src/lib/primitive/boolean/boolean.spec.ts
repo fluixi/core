@@ -851,7 +851,7 @@ describe('Boolean Utilities', () => {
       const end = performance.now();
 
       expect(result).toBe(false);
-      // Generous bound — catches pathological regressions without flaking on noisy
+      // Generous bound: catches pathological regressions without flaking on noisy
       // CI runners (correctness above already proves the early exit).
       expect(end - start).toBeLessThan(100);
     });
@@ -866,7 +866,7 @@ describe('Boolean Utilities', () => {
       const end = performance.now();
 
       expect(count).toBe(50000);
-      // Generous bound — avoids flaking on noisy CI runners (see note above).
+      // Generous bound: avoids flaking on noisy CI runners (see note above).
       expect(end - start).toBeLessThan(100);
     });
   });

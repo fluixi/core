@@ -1,5 +1,5 @@
 /**
- * Declarative head components. They render nothing — each registers metadata via useHead() and
+ * Declarative head components. They render nothing, each registers metadata via useHead() and
  * returns null, so they compose anywhere in the tree and work identically on the server and client
  * (a signal passed to one updates the document live). Usage:
  *

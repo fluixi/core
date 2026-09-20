@@ -3,7 +3,7 @@ import en from './en.json';
 import fr from './fr.json';
 
 /**
- * Keys are inferred from en/fr — `t('...')` autocompletes every LEAF path:
+ * Keys are inferred from en/fr, `t('...')` autocompletes every LEAF path:
  *   'title' · 'clicks' (plural) · 'actions.increment' · 'footer.language' · …
  * (nested branches like 'actions' / 'footer' are correctly NOT offered).
  */

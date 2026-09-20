@@ -181,7 +181,7 @@ describe('two readers', () => {
 /**
  * The first copy to load owns the graph. A browser extension injects at document_start, so
  * it wins over the application's own agent, and every panel then reads what that build
- * decided — silently, which is how a stale extension came to look like a bug in the graph.
+ * decided: silently, which is how a stale extension came to look like a bug in the graph.
  */
 describe('two copies on one page', () => {
   it('keeps the one already watching, and counts the rest', () => {
@@ -301,7 +301,7 @@ describe('highlighting from outside the page', () => {
       }),
     } as never);
 
-    // 12:0/1/0 — node 12, its first root, second child, first child of that.
+    // 12:0/1/0: node 12, its first root, second child, first child of that.
     hook.highlight('12:0/1/0');
     const layer = document.getElementById('fx-highlight-layer');
     expect(layer).not.toBeNull();

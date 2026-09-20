@@ -10,14 +10,14 @@ import * as S from '@fluixi/reactive/signal';
  * Template-cloned elements inserted as an ARRAY must keep their identity.
  *
  * `cloneTemplate` returns the clone still inside its DocumentFragment, so the element
- * arrives at `reconcileArrays` with a non-null parent. The guard there — which exists to
- * avoid stealing a module-hoisted static node from another parent — treated the fragment
+ * arrives at `reconcileArrays` with a non-null parent. The guard there, which exists to
+ * avoid stealing a module-hoisted static node from another parent, treated the fragment
  * as such an owner and cloned the element again. `cloneNode` copies attributes but not
  * event-handler properties, so the live DOM ended up holding handler-less copies while
  * the nodes that had been wired up were discarded, unconnected.
  *
  * It needed both `templateClone` (to produce the fragment parent) and `partialTemplates`
- * (to give the parent a hole), plus two siblings so the hole received an array — one
+ * (to give the parent a hole), plus two siblings so the hole received an array, one
  * child takes a different insert path and always worked. That combination is the default
  * on the IR codegen, which is how a component library hit it and the framework's own
  * tests did not.

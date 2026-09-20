@@ -147,7 +147,7 @@ describe('lit directives — each', () => {
   it('each with a render arrow lowers to <For> and auto-imports it', () => {
     const code = compileEsm('export const r = (items) => html`<li each=${items()}>${(x) => x.name}</li>`;');
     expect(code).toContain('createComponent');
-    // The <li> is built however codegen chooses — a template when its structure is
+    // The <li> is built however codegen chooses: a template when its structure is
     // static (hoisted, or inlined when nested inside an expression), otherwise
     // element-by-element. The point of this test is the <For> lowering.
     expect(code).toMatch(/createNativeElement\("li"\)|<li>/);
@@ -391,7 +391,7 @@ describe('lit framework components (static tags auto-import)', () => {
       'export const r = (el, fb) => html`<Portal mount=${el}><Suspense fallback=${fb}>x</Suspense></Portal>`;',
     );
     expect(code).toMatch(/import \{[^}]*\bPortal\b[^}]*\} from "@fluixi\/dom"/);
-    // Suspense lives in fluixi (dom doesn't export it) — auto-import from core.
+    // Suspense lives in fluixi (dom doesn't export it), auto-import from core.
     expect(code).toMatch(/import \{[^}]*\bSuspense\b[^}]*\} from "@fluixi\/core"/);
     expect(code).toContain('createComponent(Portal');
     expect(code).toContain('createComponent(Suspense');

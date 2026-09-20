@@ -7,7 +7,7 @@ import type { ComponentResolverRule } from '@fluixi/compiler';
 
 /**
  * Fluixi app config. Place in `fluixi.config.{ts,js,mjs}` at the app root and wrap
- * with `defineConfig` for types. Everything is optional — the defaults match the
+ * with `defineConfig` for types. Everything is optional, the defaults match the
  * conventional layout (src/entry-server.ts, src/entry-client.ts, index.html).
  */
 export interface FluixiConfig {
@@ -15,7 +15,7 @@ export interface FluixiConfig {
   root?: string;
   /**
    * Render mode. `true` (default) = SSR: the server entry renders HTML per request. `false`
-   * = SPA: the server serves the static shell and the client renders — but you still get the
+   * = SPA: the server serves the static shell and the client renders, but you still get the
    * full @fluixi/start server (file routing, middleware, env, and `/_server` server functions).
    * The same app code runs either way; flip this to choose where the first paint happens.
    */
@@ -36,7 +36,7 @@ export interface FluixiConfig {
   apiDir?: string;
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;
-  /** SSR deps Vite must bundle (no-external) — e.g. ESM packages without file extensions. */
+  /** SSR deps Vite must bundle (no-external), e.g. ESM packages without file extensions. */
   ssrNoExternal?: string[];
   /**
    * Where a capitalised tag with no import in scope comes from.
@@ -46,7 +46,7 @@ export interface FluixiConfig {
    * so a whole directory is one rule rather than a list to maintain.
    *
    * Only needed for tags you don't import. A `load:` directive works on your own import
-   * too — see the docs on load strategies.
+   * too: see the docs on load strategies.
    */
   resolve?: readonly ComponentResolverRule[];
   /**
@@ -59,7 +59,7 @@ export interface FluixiConfig {
    * Built-in i18n auto-discovery. Scans `<dir>/<locale>.json` and exposes them as
    * `virtual:fluixi-i18n` (`{ messages, locales, defaultLocale }`) to feed `createI18n`.
    * `false` disables it; an object configures the folder / locales / default. Default: enabled
-   * with `src/i18n` — a no-op until that folder has `*.json` files, so it's effectively opt-in.
+   * with `src/i18n`: a no-op until that folder has `*.json` files, so it's effectively opt-in.
    */
   i18n?: boolean | { dir?: string; defaultLocale?: string; locales?: string[] };
   /**
@@ -154,7 +154,7 @@ const CONFIG_NAMES = [
 /**
  * Load `fluixi.config.{ts,mts,mjs,js}` from the app root. TypeScript configs are
  * bundled on the fly with esbuild and imported; plain ESM is imported directly.
- * No config is fine too — every field has a default.
+ * No config is fine too: every field has a default.
  */
 export async function loadConfig(root = process.cwd()): Promise<FluixiConfig> {
   for (const name of CONFIG_NAMES) {
@@ -165,13 +165,13 @@ export async function loadConfig(root = process.cwd()): Promise<FluixiConfig> {
 }
 
 async function loadConfigFile(file: string): Promise<FluixiConfig> {
-  // Plain ESM (.mjs/.js) — import directly, no transform needed.
+  // Plain ESM (.mjs/.js), import directly, no transform needed.
   if (!/\.[mc]?ts$/.test(file)) {
     const mod = await import(/* @vite-ignore */ pathToFileURL(file).href);
     return (mod.default ?? mod) as FluixiConfig;
   }
 
-  // TypeScript — bundle with esbuild, keeping bare specifiers external so
+  // TypeScript: bundle with esbuild, keeping bare specifiers external so
   // `import { defineConfig } from '@fluixi/start'` and node builtins resolve from
   // the app. Relative imports (shared constants, env helpers) ARE bundled in. The
   // output is written to a temp `.mjs` beside the source so those externals resolve

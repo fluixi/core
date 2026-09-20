@@ -11,8 +11,8 @@ import {
 /**
  * The presentation layer on its own, away from a rendered router.
  *
- * These cover the decisions — does this environment animate, what does preparation
- * wait for, what happens when the browser refuses — because each one has a fallback
+ * These cover the decisions: does this environment animate, what does preparation
+ * wait for, what happens when the browser refuses, because each one has a fallback
  * that has to keep navigation working, and a fallback nothing exercises is a fallback
  * that does not work.
  */

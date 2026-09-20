@@ -5,7 +5,7 @@ import { getRequestEvent } from '@fluixi/server';
 export interface Message {
   text: string;
   ua: string;     // captured server-side from the request
-  secret: string; // server-only — redacted from __FX_DATA__ before it reaches the page
+  secret: string; // server-only: redacted from __FX_DATA__ before it reaches the page
 }
 
 // In-memory store (a real app would hit a DB). Module-level → shared across requests.

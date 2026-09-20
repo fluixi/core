@@ -1,7 +1,7 @@
 /**
  * Type errors inside `${…}` holes, checked against the MAIN program.
  *
- * A `${(it) => it.nope}` is a real expression in a real file — TypeScript has
+ * A `${(it) => it.nope}` is a real expression in a real file, TypeScript has
  * already parsed and bound it. The only thing it lacks is a contextual type for
  * `it`, which is why the mistake goes unreported: `it` is implicitly `any`, and
  * every property access on `any` is allowed.
@@ -9,7 +9,7 @@
  * So rather than building a parallel document to make the checker see the
  * template, we supply the missing type ourselves (the same inference hover uses)
  * and ask the checker whether each property access holds. Spans are real source
- * positions, so nothing needs mapping — and nothing is added to the program, no
+ * positions, so nothing needs mapping: and nothing is added to the program, no
  * second service exists, and the host is never touched.
  *
  * The trade-off is honest: this catches property access on an inferred parameter,
@@ -39,14 +39,14 @@ function acceptsAnyProperty(ts: typeof TS, checker: TS.TypeChecker, type: TS.Typ
  * A signal read without calling it.
  *
  * `${count}` in child position renders the function object and never updates;
- * `${count()}` is what was meant — the compiler wraps a call in a reactive insert.
+ * `${count()}` is what was meant: the compiler wraps a call in a reactive insert.
  * The editor's existing rule for this covers JSX only, so html`` templates had no
  * equivalent despite it being the same mistake.
  *
  * Scoped hard to keep it honest: only a bare identifier, only in the children of a
  * NATIVE element, and only when its type is callable with no required arguments.
  * A component legitimately receives accessors (`<For each=${items}>`), and a
- * render-prop child is a function on purpose — neither is touched.
+ * render-prop child is a function on purpose: neither is touched.
  */
 function accessorDiagnostics(
   ts: typeof TS,
@@ -106,7 +106,7 @@ function isAccessorRead(ts: typeof TS, node: TS.Expression): boolean {
   );
 }
 
-/** Callable with no required arguments, and returns something — i.e. a signal read. */
+/** Callable with no required arguments, and returns something, i.e. a signal read. */
 function isAccessor(ts: typeof TS, checker: TS.TypeChecker, node: TS.Expression): boolean {
   const signatures = checker.getTypeAtLocation(node).getCallSignatures();
   if (signatures.length !== 1) return false;
@@ -137,7 +137,7 @@ export function templateDiagnostics(
   if (!program || !sf) return [];
 
   // Keyed on the SourceFile, which TypeScript replaces on edit. Without this the
-  // whole analysis re-ran for every quick-fix request — and the editor asks for
+  // whole analysis re-ran for every quick-fix request, and the editor asks for
   // code actions on every cursor move, not just when something is wrong.
   const hit = cache.get(sf);
   if (hit) return hit;

@@ -10,7 +10,7 @@ function Wrapper(props: { children?: ComponentChild }) {
  * Under hydration these must be adopted from the server DOM exactly once. The bug
  * was that a void element (<input>, <br>) stranded the hydration cursor on its
  * null firstChild, so the following sibling couldn't be matched and was rebuilt
- * fresh — duplicating it.
+ * fresh: duplicating it.
  */
 export function ChildrenApp() {
   const [n, setN] = createSignal(0);

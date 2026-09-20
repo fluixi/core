@@ -9,7 +9,7 @@ const tick = <T,>(v: T, ms = 30) => new Promise<T>((r) => setTimeout(() => r(v),
 export default function Home() {
   const [data] = createResource(() => tick('Hello from Fluixi Start 👋'));
 
-  // Per-route document head — rendered into <head> on the server (great for crawlers/links)
+  // Per-route document head: rendered into <head> on the server (great for crawlers/links)
   // and kept reactive on the client. seo() is optional; call it where you want metadata.
   seo({
     title: 'Fluixi Start',

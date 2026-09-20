@@ -2,7 +2,7 @@
  * `load:` on a component the file imported itself.
  *
  * Deferring means creating the reference as a dynamic import, so a static one has to go.
- * That is only safe when the name is used exclusively as a tag — JSX names are
+ * That is only safe when the name is used exclusively as a tag, JSX names are
  * `JSXIdentifier`, so "any `Identifier` reference at all" is an exact disqualifier rather
  * than a heuristic.
  */

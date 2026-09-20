@@ -2,7 +2,7 @@
  * Quick fixes for the plugin's own diagnostics.
  *
  * A diagnostic you can't act on is half a feature: the editor shows a squiggle,
- * and the fix — which the rule already knows exactly — is left to be typed by
+ * and the fix: which the rule already knows exactly, is left to be typed by
  * hand. Every rule that can name its remedy should offer it.
  *
  * These are keyed to the plugin's diagnostic codes, so they appear alongside

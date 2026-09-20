@@ -66,7 +66,7 @@ export default {
     // Static first, but only for what is static. ASSETS answers "/" with index.html
     // whether that is a prerendered page or the shell, so asking about every path
     // costs an SSR app its home page. Extension means a file, prerendered means a
-    // page, the rest is the handler's — the rule \`withStaticFiles\` already uses.
+    // page, the rest is the handler's: the rule \`withStaticFiles\` already uses.
     const { pathname } = new URL(request.url);
     if (env && env.ASSETS && (prerendered.has(pathname) || /\\.[^/]+$/.test(pathname))) {
       const asset = await env.ASSETS.fetch(request.clone());

@@ -42,7 +42,7 @@ describe('component resolution — html``', () => {
 
   it('leaves an unknown tag alone', () => {
     const out = compile('const v = html`<Mystery />`;', 'lit');
-    // Still referenced in the output — it compiles to a component call either way.
+    // Still referenced in the output: it compiles to a component call either way.
     // What must not happen is an import being invented for it.
     expect(importsOf(out).some((l) => l.includes('Mystery'))).toBe(false);
   });

@@ -2,7 +2,7 @@
  * Components the compiler auto-imports.
  *
  * `<Show>`, `<Portal>`, `<Suspense>`, `<Outlet>` and friends work in a template
- * with no import — the compiler injects one. That's good ergonomics and bad for
+ * with no import: the compiler injects one. That's good ergonomics and bad for
  * tooling: there is no binding in the file, so `getSymbolsInScope` finds nothing
  * and every symbol-driven feature (definition, references, rename, hover) goes
  * quiet on exactly the components used most.
@@ -11,8 +11,8 @@
  * from, and look the name up there.
  *
  * The names come from `@fluixi/compiler/builtins`, which exists so this list is not
- * copied. It used to be duplicated here — the plugin is an esbuild bundle and pulling
- * in the compiler would dwarf it — with a spec reading the compiler source to pin the
+ * copied. It used to be duplicated here: the plugin is an esbuild bundle and pulling
+ * in the compiler would dwarf it: with a spec reading the compiler source to pin the
  * two together. That subpath is pure data with no compiler code behind it, so the
  * bundle stays small and the copy is gone.
  */
@@ -69,7 +69,7 @@ const sitesByProgram = new WeakMap<TS.Program, Map<string, DeclarationSite | und
  * Needed because an auto-imported component means nothing imports its module, so
  * the module's declarations are usually NOT in the program and the checker can say
  * nothing about them. Definition only needs a file and a span, so it can be
- * answered without the program — following `export *` re-exports through the
+ * answered without the program: following `export *` re-exports through the
  * barrels these packages are built from.
  */
 export function declarationSite(
@@ -129,7 +129,7 @@ function findExport(
     if (ts.isExportDeclaration(statement) && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)) {
       const specifier = statement.moduleSpecifier.text;
       if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
-        // `export { Name } from './x'` — the name is here, the declaration is there.
+        // `export { Name } from './x'`: the name is here, the declaration is there.
         const named = statement.exportClause.elements.find((e) => e.name.text === name);
         if (named) reExports.unshift(specifier);
       } else if (!statement.exportClause) {
@@ -166,7 +166,7 @@ function declaredName(ts: typeof TS, statement: TS.Statement, name: string): TS.
 /**
  * Resolve a relative specifier the way TypeScript would.
  *
- * Hand-rolled path joining got this wrong — `./lib/index.js` from a barrel became
+ * Hand-rolled path joining got this wrong: `./lib/index.js` from a barrel became
  * `dist/./lib/index.d.ts`, which matches nothing. TypeScript's resolver also maps
  * the `.js` specifier these ESM packages use to the `.d.ts` that actually exists.
  */
@@ -203,7 +203,7 @@ export function autoImportedSymbol(
   if (!symbol) return undefined;
   if (!(symbol.flags & ts.SymbolFlags.Alias)) return symbol;
 
-  // These modules are barrels, so the export is an alias — follow it to the real
+  // These modules are barrels, so the export is an alias, follow it to the real
   // declaration, which is what a jump should land on.
   try {
     return program.getTypeChecker().getAliasedSymbol(symbol);

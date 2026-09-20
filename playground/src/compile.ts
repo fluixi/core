@@ -1,5 +1,5 @@
 // In-browser JSX → imperative runtime, via @babel/standalone hosting the real Fluixi babel plugin.
-// Babel (~2-3 MB) is dynamically imported on first compile, so it's not in the initial bundle —
+// Babel (~2-3 MB) is dynamically imported on first compile, so it's not in the initial bundle , 
 // the editor loads fast and babel only ships when you hit Run.
 type BabelStandalone = {
   registerPlugin(name: string, plugin: unknown): void;
@@ -66,14 +66,14 @@ export interface CompiledFile {
 
 /**
  * Compile one project file. The filename is passed through because babel reports errors against
- * it — with several files open, "Unexpected token" is useless without knowing which one.
+ * it: with several files open, "Unexpected token" is useless without knowing which one.
  */
 export async function compileFile(code: string, filename: string): Promise<string> {
   const b = await ensureBabel();
   const isTSX = /\.(tsx|jsx)$/.test(filename);
 
   // Two stages, the same two a real app runs. `transformTemplates` resolves the `$`
-  // intrinsics into their runtime calls and compiles html`` — the babel plugin never sees
+  // intrinsics into their runtime calls and compiles html``, the babel plugin never sees
   // `$signal` and would leave it as a free identifier, which is exactly what it did.
   const { transformTemplates } = await import('@fluixi/compiler/transform');
   const pre = transformTemplates(code, filename, {

@@ -2,7 +2,7 @@
  * Build IR from a JSX tree.
  *
  * Reads `node.type` rather than a parser's helpers, and asks the caller for the
- * source of an expression through `code()` — a front-end that can slice the
+ * source of an expression through `code()`: a front-end that can slice the
  * original text returns that, one that reprints returns the printed form. Either
  * way the IR is the same, which is what keeps one builder for both.
  */
@@ -41,7 +41,7 @@ const DELEGATED = new Set([
 
 const isReactive = (node: Node): boolean => isReactiveShape(shapeOf(node as never));
 
-/** Only when the host asked for source locations — the flag that records usage sites too. */
+/** Only when the host asked for source locations, the flag that records usage sites too. */
 const posOf = (node: Node, ctx: JsxContext): { line: number; column: number } | undefined => {
   if (!ctx.sourceFile) return undefined;
   const at = node.loc?.start;
@@ -117,7 +117,7 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
     base.expr = ctx.code(expr);
     base.reactive = isHandler ? false : isReactive(expr);
     // Every prop, not only the ones that move: a panel names the line for each of them.
-    // Nothing treats this as a binding position — that asks for `reactive` as well.
+    // Nothing treats this as a binding position: that asks for `reactive` as well.
     base.at = posOf(expr, ctx);
     if (expr.type === 'JSXElement' || expr.type === 'JSXFragment') base.jsxElement = true;
     return base;
@@ -146,7 +146,7 @@ function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
       continue;
     }
     if (a.type !== 'JSXAttribute') continue;
-    // load: is a directive, not a prop — the resolve pass reads it off the node.
+    // load: is a directive, not a prop: the resolve pass reads it off the node.
     if (isLoadDirective(attrName(a.name))) continue;
 
     const ns = a.name.type === 'JSXNamespacedName' ? a.name.namespace.name : null;
@@ -177,7 +177,7 @@ function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
   const out: IRNode[] = [];
   for (const child of children) {
     if (child.type === 'JSXText') {
-      // Drop whitespace-only text spanning a newline so a lone child stays lone —
+      // Drop whitespace-only text spanning a newline so a lone child stays lone , 
       // an array insert will not reactively bind a memo/component inside it.
       const text = cleanTemplateText(child.value);
       if (text) out.push({ kind: 'text', value: text });

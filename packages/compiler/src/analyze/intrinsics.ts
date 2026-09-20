@@ -23,13 +23,13 @@
 /** What a binding holds, once we know where it came from. */
 export type ReactiveKind =
   | 'plain'
-  /** `signal(0)` — one object, read with `.get()` and written with `.set()`. */
+  /** `signal(0)`: one object, read with `.get()` and written with `.set()`. */
   | 'signal-handle'
-  /** `memo(fn)` — read-only, so `.get()` only. */
+  /** `memo(fn)`: read-only, so `.get()` only. */
   | 'memo-handle'
-  /** `store(obj)` — read properties directly, `.set()` writes. */
+  /** `store(obj)`: read properties directly, `.set()` writes. */
   | 'store-handle'
-  /** `resource(fn)` — `.get()` reads, with `.loading`/`.latest`/`.refetch()` on it. */
+  /** `resource(fn)`: `.get()` reads, with `.loading`/`.latest`/`.refetch()` on it. */
   | 'resource-handle'
   /** The accessor half of the tuple form, `const [count] = createSignal(0)`. */
   | 'signal-accessor'
@@ -45,7 +45,7 @@ export interface Intrinsic {
   module: string;
   /**
    * What the call yields. A tuple means the call is destructured into that many
-   * bindings — `createSignal` gives an accessor and a setter, in that order.
+   * bindings: `createSignal` gives an accessor and a setter, in that order.
    */
   returns: ReactiveKind | readonly ReactiveKind[];
 }
@@ -56,8 +56,8 @@ export const REACTIVE_MODULE = '@fluixi/reactive/signal';
 /**
  * `$name` → the runtime it stands for.
  *
- * The `$` prefix is reserved. A local binding of the same name wins — it has to, or the
- * compiler would rewrite code that means something else — and that's reported rather
+ * The `$` prefix is reserved. A local binding of the same name wins, it has to, or the
+ * compiler would rewrite code that means something else, and that's reported rather
  * than done quietly.
  */
 export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
@@ -69,7 +69,7 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $resource: { export: 'resource', module: REACTIVE_MODULE, returns: 'resource-handle' },
 
   // No short runtime form for these yet, so the intrinsic stands for the `create*`
-  // name. Still worth having — no import to write — and when a shorter form is
+  // name. Still worth having: no import to write, and when a shorter form is
   // designed, the change is this line rather than a compiler pass.
   $selector: { export: 'createSelector', module: REACTIVE_MODULE, returns: 'memo-accessor' },
   $deferred: { export: 'createDeferred', module: REACTIVE_MODULE, returns: 'memo-accessor' },

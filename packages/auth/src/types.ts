@@ -2,7 +2,7 @@
  * Shared types for the Fluixi ↔ Better Auth bindings.
  *
  * We consume Better Auth through STRUCTURAL interfaces (the minimal shape we call), so
- * `@fluixi/auth` never hard-imports `better-auth` — it stays a peer the app owns, and the
+ * `@fluixi/auth` never hard-imports `better-auth`, it stays a peer the app owns, and the
  * bindings tree-shake cleanly. An app's real `betterAuth(...)` instance / `createAuthClient(...)`
  * structurally satisfy `BetterAuthServer` / `BetterAuthClient`.
  */
@@ -24,7 +24,7 @@ export interface AuthSession {
   [key: string]: unknown;
 }
 
-/** The resolved auth state for a request — what lives on `locals.auth`. */
+/** The resolved auth state for a request: what lives on `locals.auth`. */
 export interface SessionData<U = AuthUser> {
   user: U | null;
   session: AuthSession | null;
@@ -32,7 +32,7 @@ export interface SessionData<U = AuthUser> {
 
 /** Minimal shape of a Better Auth server instance we call. */
 export interface BetterAuthServer {
-  /** Mounts at `/api/auth/*` — handles sign-in/up/out, OAuth callbacks, etc. */
+  /** Mounts at `/api/auth/*`: handles sign-in/up/out, OAuth callbacks, etc. */
   handler: (request: Request) => Promise<Response>;
   api: {
     getSession: (ctx: { headers: Headers }) => Promise<{ user: unknown; session: unknown } | null>;

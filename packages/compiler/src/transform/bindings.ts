@@ -6,7 +6,7 @@
  * function shadows our import there but cannot collide with it, which is the same
  * answer `path.scope.hasBinding` gives on the Program path.
  *
- * Missing a binding emits a duplicate declaration — a syntax error. Reporting one
+ * Missing a binding emits a duplicate declaration, a syntax error. Reporting one
  * that isn't there drops an import the code needs. Both are loud, neither is
  * subtle, and the corpus in bindings.spec.ts covers the patterns that bind.
  */

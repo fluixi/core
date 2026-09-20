@@ -19,7 +19,7 @@ export interface DetailPanel {
 }
 
 export interface DetailPanelOptions {
-  /** A node in the panel was clicked — the host can select it on the graph. */
+  /** A node in the panel was clicked: the host can select it on the graph. */
   onPick?(id: number): void;
 }
 
@@ -175,7 +175,7 @@ export function createDetailPanel(host: HTMLElement, options: DetailPanelOptions
         })
         .join('');
 
-      // Where the value reaches the page — the last step of the chain.
+      // Where the value reaches the page: the last step of the chain.
       const node = cause ? graph.get(cause.id) : undefined;
       // Both: a template's holes can share one original position, and then only the compiled
       // line tells them apart.

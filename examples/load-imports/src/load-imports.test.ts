@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
  *
  * Both components are imported identically and both carry a deferring `load:`. Whether
  * one moves out of the entry chunk is the whole question, and rendering would look the
- * same either way — so this runs the real `vite build` and reads the chunks.
+ * same either way: so this runs the real `vite build` and reads the chunks.
  */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const assets = join(root, 'dist', 'assets');
@@ -30,7 +30,7 @@ beforeAll(() => {
   try {
     output += readFileSync(join(root, 'dist', '.build-log'), 'utf8');
   } catch {
-    /* no log file — stdout is enough for the chunk assertions */
+    /* no log file: stdout is enough for the chunk assertions */
   }
 
   chunks = readdirSync(assets)

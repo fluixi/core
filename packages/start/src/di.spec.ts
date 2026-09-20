@@ -102,7 +102,7 @@ describe('@fluixi/start/di', () => {
   });
 
   // The storefront pattern: a request-scoped service (e.g. RegionService) injected during an
-  // SSR render. Each request gets its own instance — no cross-request leak — while the SAME
+  // SSR render. Each request gets its own instance, no cross-request leak, while the SAME
   // code on the client resolves a singleton.
   it('a request-scoped service is injected during SSR render and isolated per request', async () => {
     interface RegionService {

@@ -24,7 +24,7 @@ function service(code: string, fileName = '/a.tsx') {
   return { ls: ts.createLanguageService(host, ts.createDocumentRegistry()), fileName };
 }
 
-// Cursor marker `‸` — a char that won't collide with `|` in union types.
+// Cursor marker `‸`: a char that won't collide with `|` in union types.
 function hover(code: string): string | undefined {
   const at = code.indexOf('‸');
   const clean = code.replace('‸', '');

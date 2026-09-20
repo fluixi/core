@@ -102,7 +102,7 @@ describe('analyzeStatic', () => {
   it('is conservative about unknown-shaped props', () => {
     const node = el('div', [{ name: 'x', kind: 'attr' }]);
     analyzeStatic(node);
-    // No literal and no expr — nothing positively inert, but also nothing dynamic;
+    // No literal and no expr: nothing positively inert, but also nothing dynamic;
     // a valueless attribute is genuinely static.
     expect(node.static).toBe(true);
   });

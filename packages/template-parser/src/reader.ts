@@ -1,7 +1,7 @@
 /**
  * The lexing layer: a hole-aware cursor over the template's pieces.
  *
- * HTML-template lexing is mode-dependent — data text, tag soup, attribute
+ * HTML-template lexing is mode-dependent: data text, tag soup, attribute
  * values, raw-text bodies and comments each lex by different rules, and a
  * `${…}` hole can land in the middle of any of them (`class="a ${x} b"`). A
  * single flat token array can't model that, so instead of pre-tokenizing we
@@ -12,7 +12,7 @@
  * Input is a PIECE LIST rather than a stitched string: alternating static text
  * segments and atomic hole markers, each carrying its ABSOLUTE source offset.
  * That means every span the reader reports maps straight back to the original
- * file — no cooked-vs-raw length drift, no `\x00` sentinels. Structural
+ * file: no cooked-vs-raw length drift, no `\x00` sentinels. Structural
  * delimiters (`<`, `</`, `<!--`, `-->`, `/>`, `=`, quotes) are always contiguous
  * in source, so they never straddle a hole; within-segment peeking is enough.
  */

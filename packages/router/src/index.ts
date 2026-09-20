@@ -1,5 +1,5 @@
 /**
- * @fluixi/router — framework-agnostic router core.
+ * @fluixi/router: framework-agnostic router core.
  *
  * Routing as pure state: URL → resolved match tree + navigation. No reactivity,
  * no DOM, no view framework. View adapters subscribe and render the match tree

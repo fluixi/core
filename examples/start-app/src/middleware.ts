@@ -1,6 +1,6 @@
 // Request middleware runs before SSR, in both `fluixi dev` and `fluixi start`.
 // A middleware returns a Response to short-circuit (guards/redirects), or calls
-// `next()` to continue — optionally adjusting the downstream response.
+// `next()` to continue: optionally adjusting the downstream response.
 import { defineMiddleware } from '@fluixi/start';
 
 export default defineMiddleware([

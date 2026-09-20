@@ -2,13 +2,13 @@
  * The resolve pass: annotate component references in the IR with where they come from.
  *
  * Runs between the frontends and the optimizer, so every later pass reads provenance off
- * the node instead of re-deriving it. Nothing here emits code — the pass only records a
+ * the node instead of re-deriving it. Nothing here emits code, the pass only records a
  * decision, which is what lets the same answer drive import injection, chunk grouping,
  * hint planning and diagnostics without any of them agreeing by coincidence.
  *
  * Two suppliers, in precedence order:
  *
- *  1. **Control flow** (`Show`, `For`, `Switch`, …) — the name selects a lowering, so a
+ *  1. **Control flow** (`Show`, `For`, `Switch`, …), the name selects a lowering, so a
  *     rule cannot re-point it. Recorded as `builtin` so a later pass can tell the
  *     difference between "configured here" and "fixed by the compiler".
  *  2. **Configured rules**, then the **router built-ins**. Router components are only an
@@ -25,13 +25,13 @@ import { EAGER, type IRLoadStrategy } from './load-directive.js';
 export interface ResolveOptions {
   /** Rules configured for the project. Omit when the project configures none. */
   resolver?: ComponentResolver;
-  /** True when the name already has a binding in the file — an import the author wrote. */
+  /** True when the name already has a binding in the file, an import the author wrote. */
   isBound?: (name: string) => boolean;
   /** Module overrides, so `routerModule` and friends are honoured. */
   modules?: Parameters<typeof builtinComponentMap>[0];
   /**
    * The `load:` strategy for a reference, when the frontend found one on the tag.
-   * Keyed by node so two usages of the same component can load differently — the
+   * Keyed by node so two usages of the same component can load differently, the
    * whole reason timing lives at the usage site and location does not.
    */
   strategyFor?: (node: IRComponent) => IRLoadStrategy | undefined;
@@ -43,8 +43,8 @@ export interface ResolveReport {
   /**
    * Capitalised tags nothing supplies and nothing binds.
    *
-   * These compile to a reference to an identifier that does not exist — the build
-   * succeeds and the page throws at runtime — so they are the pass's most useful
+   * These compile to a reference to an identifier that does not exist, the build
+   * succeeds and the page throws at runtime: so they are the pass's most useful
    * output for diagnostics.
    */
   unresolved: string[];
@@ -63,7 +63,7 @@ export function resolveComponentSources(
   const annotate = (node: IRComponent): void => {
     const { name } = node;
     // A dotted path (`Ctx.Provider`) or a dynamic tag needs its root binding, which is
-    // an ordinary expression the author wrote — nothing to supply.
+    // an ordinary expression the author wrote: nothing to supply.
     if (!name || name.includes('.')) return;
     if (isBound?.(name)) return;
 

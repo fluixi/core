@@ -38,7 +38,7 @@ export type StaticNodeKind =
   | 'control'
   /** The router's own tags: `Router`, `Outlet`, `Link`, `Redirect`. */
   | 'router'
-  /** A server route handler — `GET`, `POST` in an api file. Not a component. */
+  /** A server route handler: `GET`, `POST` in an api file. Not a component. */
   | 'handler';
 
 export interface StaticNode {
@@ -295,7 +295,7 @@ function positionsIn(code: string): (offset: number) => { line: number; column: 
   };
 }
 
-/** `span.box` — a template element as written, static attributes only, like describeJsx. */
+/** `span.box`: a template element as written, static attributes only, like describeJsx. */
 function describeTemplateElement(el: ElementNode): string {
   let id = '';
   const classes: string[] = [];
@@ -309,7 +309,7 @@ function describeTemplateElement(el: ElementNode): string {
   return `${el.tag}${id}${classes.map((c) => `.${c}`).join('')}`;
 }
 
-/** Which holes an attribute value reads — one for `=${x}`, several for `"a-${x}-${y}"`. */
+/** Which holes an attribute value reads: one for `=${x}`, several for `"a-${x}-${y}"`. */
 function valueHoles(value: AttrValue | null): number[] {
   if (!value) return [];
   if (value.kind === 'hole') return [value.hole];
@@ -318,7 +318,7 @@ function valueHoles(value: AttrValue | null): number[] {
 }
 
 /**
- * `span.num`, `div#root` — the element as written.
+ * `span.num`, `div#root`: the element as written.
  *
  * Static attributes only: a class computed at runtime is not something the source can name,
  * and guessing would put a lie on the card.
@@ -357,7 +357,7 @@ interface Usage {
 }
 
 /**
- * `{ path: '/', component: RootLayout }` — a component named by a route table.
+ * `{ path: '/', component: RootLayout }`: a component named by a route table.
  *
  * A route is the one place a component is used without ever being written as a tag. The table
  * is usually a module-level constant, so the owner is not known where the reference is: it is
@@ -408,7 +408,7 @@ export function analyzeReactiveGraph(
   const unresolved: { node: StaticDomNode; tag: string; file: string }[] = [];
   /**
    * What each component's body names. Kept apart from `reads`, which becomes dependency
-   * edges — a component mentioning a route table does not depend on it reactively.
+   * edges: a component mentioning a route table does not depend on it reactively.
    */
   const componentMentions = new Map<number, Set<string>>();
   let seq = 0;
@@ -606,8 +606,8 @@ export function analyzeReactiveGraph(
     /**
      * The elements each component writes, as a tree.
      *
-     * Nothing has run, so this is the structure the source states outright. A hole —
-     * `{items().map(...)}`, a `<Show>` body — is decided at runtime and has no elements
+     * Nothing has run, so this is the structure the source states outright. A hole , 
+     * `{items().map(...)}`, a `<Show>` body: is decided at runtime and has no elements
      * here; the tag stands in its place and fills in once the application is up.
      */
     const describeTree = (el: Node): StaticDomNode | undefined => {
@@ -627,7 +627,7 @@ export function analyzeReactiveGraph(
       // A capitalised tag renders its own dom, so it stands here as itself and the panel
       // pulls that component's row in. `components` has the directives, `here` the names
       // this file declares; anything else is a name another file exports, which is only
-      // resolvable once they have all been read. The children stay either way — they are
+      // resolvable once they have all been read. The children stay either way, they are
       // written here, and a row that resolves replaces them with the component's own.
       if (tag[0] === tag[0]?.toUpperCase()) {
         const node: StaticDomNode = { label: tag, children, ...(where ? { at: where } : {}) };
@@ -667,7 +667,7 @@ export function analyzeReactiveGraph(
      * The tags and holes are inside a string, so none of the walks above can see them: a
      * `<Show>` in a template is not a JSXElement and a `${count()}` is not an expression
      * container. The template parser reads the string into the same shape the compiler
-     * lowers, and each hole maps back by index to the expression Babel already parsed —
+     * lowers, and each hole maps back by index to the expression Babel already parsed , 
      * which is where the position and the names read come from.
      */
     walk(program, (node, stack) => {
@@ -820,7 +820,7 @@ export function analyzeReactiveGraph(
         }
       };
 
-      // Whatever body the template is written in — the same lookup the tag walk uses.
+      // Whatever body the template is written in, the same lookup the tag walk uses.
       let owner: number | undefined;
       for (let i = stack.length - 1; i >= 0; i--) {
         const found = components.get(stack[i]!);
@@ -942,7 +942,7 @@ export function analyzeReactiveGraph(
   /**
    * A file-route belongs to the outlet it renders into.
    *
-   * Nothing names these components — the table comes from the directory — so a page that
+   * Nothing names these components: the table comes from the directory, so a page that
    * declares no signals is connected to nothing at all and sits on its own. `<Outlet />` is
    * the hole a matched route fills, so it is the honest owner; a router with no outlet
    * written out renders into itself. Only one of either is a definite answer: with two
@@ -967,7 +967,7 @@ export function analyzeReactiveGraph(
    * The api routes hang off one card of their own.
    *
    * A handler is served because of the directory it sits in, so like a page nothing names it
-   * — but unlike a page nothing renders it either, and hanging it off the router would say
+   *: but unlike a page nothing renders it either, and hanging it off the router would say
    * something false. A root of its own is what it is: one card, the handlers under it.
    */
   const loose = pending.filter(

@@ -152,8 +152,8 @@ describe('the resolve pass is the single decision', () => {
   const rule = [{ components: { Button: '@fluixi-ui/button' } }];
 
   it('injects identical imports from html`` and JSX', () => {
-    // The two frontends reach the decision by different routes — the lit path through
-    // the IR resolve pass, JSX through the Babel lowering — so they are pinned to
+    // The two frontends reach the decision by different routes, the lit path through
+    // the IR resolve pass, JSX through the Babel lowering, so they are pinned to
     // each other rather than each to a literal.
     const litImports = importsOf(
       compile('const v = html`<Button>a</Button>`;', { resolve: rule, format: 'lit' }),

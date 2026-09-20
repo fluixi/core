@@ -1,5 +1,5 @@
 /**
- * Cookie API — proper, secure-by-default cookie management for auth (and anything else).
+ * Cookie API: proper, secure-by-default cookie management for auth (and anything else).
  * Parsing + request-scoped reads work standalone; `serializeCookie` builds a spec-compliant
  * `Set-Cookie` string with safe defaults (HttpOnly, Secure, SameSite=Lax, Path=/) that
  * middleware appends to its Response (`response.headers.append('set-cookie', …)`).

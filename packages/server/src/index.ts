@@ -1,18 +1,18 @@
 /**
- * @fluixi/server — the environment-agnostic SSR engine.
+ * @fluixi/server: the environment-agnostic SSR engine.
  *
  * The string renderer itself lives in @fluixi/dom (the universal `renderToString`
  * + the request-scoping primitives), so it stays usable in any environment.
  * This package is the Node-side home that:
  *
  *   1. injects a real AsyncLocalStorage into @fluixi/dom's request store, so
- *      concurrent SSR requests are isolated out of the box (the "P0 #4" fix) —
+ *      concurrent SSR requests are isolated out of the box (the "P0 #4" fix) , 
  *      @fluixi/dom can't import `node:async_hooks` itself without breaking
  *      browser bundles, so the Node-only server package wires it here;
  *   2. re-exports the SSR surface so apps import one place;
  *   3. adds request helpers (renderRequest / renderToPage / startServer).
  *
- * No vinxi coupling — the meta-framework was never wired into the render path;
+ * No vinxi coupling: the meta-framework was never wired into the render path;
  * SSR is a plain function you call from any server (Express/Hono/Nitro/worker).
  */
 import {
@@ -37,9 +37,9 @@ import { createHead, setActiveHead, renderHead, encodeHeadMarker } from '@fluixi
 // Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage SYNCHRONOUSLY
 // (the async drain reads the request context across awaits, so it must be set before the first
 // render) while staying edge-safe (no static `node:async_hooks` import) and build-safe (no
-// top-level await — esbuild rejects it on es2020 targets):
+// top-level await, esbuild rejects it on es2020 targets):
 //   1. a global ALS (Cloudflare Workers + nodejs_compat, Deno, Bun all expose it), else
-//   2. `process.getBuiltinModule('node:async_hooks')` (Node 20.16+/22+ — sync builtin access,
+//   2. `process.getBuiltinModule('node:async_hooks')` (Node 20.16+/22+, sync builtin access,
 //      no import statement), else fall back to the sync store.
 type ALSCtor = new <T>() => { getStore(): T | undefined; run<R>(s: T, fn: () => R): R };
 function resolveALS(): ALSCtor | undefined {
@@ -56,7 +56,7 @@ const ALS = resolveALS();
 if (ALS) {
   setRequestStore(new ALS<RequestContext>());
 } else if (!isBrowser()) {
-  // Only where it is a real loss. A browser serves one request — its own page — so a
+  // Only where it is a real loss. A browser serves one request, its own page, so a
   // sync store is the correct implementation there, not a degraded one, and warning
   // about lost isolation between concurrent requests described a situation that cannot
   // arise. It fired on every page load of every app.
@@ -104,7 +104,7 @@ export const EVENT_REPLAY_TYPES = ['click', 'input', 'change', 'submit', 'keydow
 /**
  * Inline script that records events fired BEFORE hydration so the client can
  * replay them once the delegated handlers are wired (see startClient →
- * replayEvents). Must run early — emit it near the top of <head>. Records only
+ * replayEvents). Must run early: emit it near the top of <head>. Records only
  * `{type, target}`; since hydration REUSES the server DOM nodes, each recorded
  * target stays live for replay. Custom servers that don't use createHtmlDocument
  * should inject this string into their <head> themselves.
@@ -122,7 +122,7 @@ export function eventCaptureScript(): string {
   );
 }
 
-/** The document up to (and including) the open <body> — flushable before content. */
+/** The document up to (and including) the open <body>, flushable before content. */
 function documentShell(options: DocumentOptions = {}): string {
   const { title = 'Fluixi App', lang = 'en', stylesheets = [], head = '', bodyAttributes = '', eventReplay = true } = options;
   const styleTags = stylesheets.map((href) => `<link rel="stylesheet" href="${href}">`).join('\n    ');
@@ -140,7 +140,7 @@ function documentShell(options: DocumentOptions = {}): string {
     `;
 }
 
-/** The trailing scripts + closing tags — flushed after the app content. */
+/** The trailing scripts + closing tags: flushed after the app content. */
 function documentClose(options: DocumentOptions = {}): string {
   const { scripts = [] } = options;
   const scriptTags = scripts.map((src) => `<script type="module" src="${src}"></script>`).join('\n    ');
@@ -161,7 +161,7 @@ export function renderRequest(app: (props: { url: string }) => any, event: Reque
 }
 
 // Isomorphic request state (paired with fluixi's createIsomorphicState). The
-// two halves communicate only through this globalThis registry — no import edge, so
+// two halves communicate only through this globalThis registry, no import edge, so
 // the client half stays free of this server module.
 const ISO_REGISTRY_KEY = '__fluixi_iso_states__';
 const ISO_SEED_PREFIX = '__iso:';
@@ -193,14 +193,14 @@ export async function preloadServerState(event?: RequestEvent): Promise<void> {
   }
 }
 
-/** Async variant — awaits resources/Suspense before serializing. */
+/** Async variant: awaits resources/Suspense before serializing. */
 export function renderRequestAsync(
   app: (props: { url: string }) => any,
   event: RequestEvent,
 ): Promise<string> {
   // Collect @fluixi/head metadata registered via seo()/useHead during the render, and prepend it
   // as an (inert) marker the adapter/prerender lifts into <head>. No seo() → no marker, no change.
-  // NB: active head is a module global here — fine for sequential prerender/SSG; concurrent live
+  // NB: active head is a module global here: fine for sequential prerender/SSG; concurrent live
   // SSR scoping rides on the request context (a later pass).
   const head = createHead();
   setActiveHead(head);
@@ -227,7 +227,7 @@ export function renderRequestToPage(
 }
 
 /**
- * Render a request to a web `ReadableStream<Uint8Array>` — works in Node 18+,
+ * Render a request to a web `ReadableStream<Uint8Array>`, works in Node 18+,
  * Deno, Bun, and edge/worker runtimes (which want a web stream, not a Node
  * Readable). The document **shell** (`<head>` + open `<body>`) is flushed
  * immediately so the browser can start loading assets, then the app HTML
@@ -252,7 +252,7 @@ export function renderToStream(
         // SSR failed (e.g. backend down). The head/shell is already flushed (status 200),
         // so we can't send a 500. Emit an EMPTY body and still close the document so it
         // stays well-formed and the client bundle renders the app client-side (CSR
-        // fallback) — degrade, never blank-and-truncate.
+        // fallback), degrade, never blank-and-truncate.
         console.error('[fluixi] SSR render failed — falling back to client render:', err);
       }
       controller.enqueue(encoder.encode(documentClose(options)));
@@ -262,7 +262,7 @@ export function renderToStream(
 }
 
 /**
- * Render a request to a web `ReadableStream<Uint8Array>` of JUST the app content —
+ * Render a request to a web `ReadableStream<Uint8Array>` of JUST the app content , 
  * NO document shell. For hosts that own the surrounding HTML document (e.g. a
  * `@fluixi/start` app streaming its `index.html` around the app body): the host
  * flushes the document head first, then pipes this body stream into the mount point,
@@ -270,7 +270,7 @@ export function renderToStream(
  * script (it's part of the async render output), so hydration seeds without refetch.
  *
  * Single chunk today (the async render resolves fully before emitting); progressive
- * out-of-order Suspense streaming is a later pass — same signature.
+ * out-of-order Suspense streaming is a later pass, same signature.
  */
 export function renderToBodyStream(
   app: (props: { url: string }) => any,
@@ -294,7 +294,7 @@ export function renderToBodyStream(
 }
 
 /**
- * Server entry helper — returns render/page closures bound to an app.
+ * Server entry helper: returns render/page closures bound to an app.
  *
  * @example
  *   import { startServer } from '@fluixi/server';
@@ -306,7 +306,7 @@ export function startServer(App: (props: { url: string }) => any) {
   return {
     render: (url: string) => renderRequest(App, { url }),
     page: (url: string, opts?: DocumentOptions) => renderRequestToPage(App, { url }, opts),
-    /** async render — awaits data loaders/Suspense */
+    /** async render: awaits data loaders/Suspense */
     renderAsync: (url: string) => renderRequestAsync(App, { url }),
     /** async full-document render */
     pageAsync: async (url: string, opts?: DocumentOptions) =>

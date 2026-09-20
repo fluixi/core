@@ -4,7 +4,7 @@
  *
  * This is one of the compiler's front-end adapters: it parses with @babel and
  * runs the JSX transform. The transform/codegen it currently performs is the
- * existing behaviour (emits the jsx() automatic runtime) — switching codegen to
+ * existing behaviour (emits the jsx() automatic runtime), switching codegen to
  * the IR-driven backends (see ../../codegen) is a later step. SWC/other
  * front-ends will plug in alongside this without touching the rest of the pipeline.
  */

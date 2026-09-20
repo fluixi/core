@@ -1,7 +1,7 @@
 /**
  * Two rules about babel, both worth failing a build over.
  *
- * The IR entries (`.`, `./builtins`) reach no babel at all — `@fluixi/ts-plugin`
+ * The IR entries (`.`, `./builtins`) reach no babel at all, `@fluixi/ts-plugin`
  * imports the builtin map and nothing else, and a stray import here is a module
  * that fails to resolve for it.
  *
@@ -26,10 +26,10 @@ const PARSER_ONLY_ENTRIES = ['transform/index.ts', 'integrations.ts'];
 const STATIC_PATTERNS = [
   // import … from 'x'  /  export … from 'x'. `import type` and `export type` are
   // erased before anything runs, so they cannot pull a package in.
-  // `[^;]` keeps a match inside one statement — without it an `export interface`
+  // `[^;]` keeps a match inside one statement: without it an `export interface`
   // runs on to the `from` of some later line.
   /(?:^|\n)\s*(?:import|export)(?!\s+type\b)\b[^;]*?\sfrom\s*['"]([^'"]+)['"]/g,
-  // import 'x'  — a side-effect import has no `from`, and is exactly how a
+  // import 'x' : a side-effect import has no `from`, and is exactly how a
   // Babel polyfill or plugin registration would sneak in.
   /(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g,
 ];
@@ -63,7 +63,7 @@ function walk(entry: string, dynamic = true): { files: Set<string>; bare: Map<st
 
     for (const spec of specifiers(readFileSync(file, 'utf-8'), dynamic)) {
       if (!spec.startsWith('.')) {
-        // Record where it was imported from — a bare specifier that turns out to
+        // Record where it was imported from: a bare specifier that turns out to
         // be Babel is far easier to fix with the importer named.
         bare.set(spec, [...(bare.get(spec) ?? []), file.slice(SRC.length + 1)]);
         continue;

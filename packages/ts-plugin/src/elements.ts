@@ -2,7 +2,7 @@
  * Element attribute support inside html`` templates.
  *
  * Everything here is driven by `IntrinsicElements` from `@fluixi/dom/attributes`
- * — the same tag → attributes map JSX type-checks against — so html`` and JSX
+ *: the same tag → attributes map JSX type-checks against, so html`` and JSX
  * agree on what an element accepts, and neither needs the other's package.
  *
  * The editor's HTML language service already offers the standard HTML attribute
@@ -60,7 +60,7 @@ function intrinsics(
       resolved.resolvedModule && program.getSourceFile(resolved.resolvedModule.resolvedFileName),
     );
 
-    // Resolution can come up empty — a non-standard layout, or a host that
+    // Resolution can come up empty: a non-standard layout, or a host that
     // doesn't probe the filesystem. The declarations are still in the program if
     // anything imported dom, so fall back to finding them there.
     if (!type) {

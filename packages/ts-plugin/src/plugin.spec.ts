@@ -24,7 +24,7 @@ function plugin(code: string, fileName = '/a.tsx', extra: Record<string, string>
       noEmit: true,
       strict: true,
       // Without these a `./x.js` specifier does not resolve, so an alias declaration
-      // silently degrades to `any` — which is what a real project would never do.
+      // silently degrades to `any`: which is what a real project would never do.
       module: ts.ModuleKind.ESNext,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
     }),
@@ -95,7 +95,7 @@ describe('component prop completion + hover', () => {
   });
 
   // The editor filters entries against the word it finds at the cursor, and inside a
-  // template literal that word is not the attribute name — so without a span the props
+  // template literal that word is not the attribute name, so without a span the props
   // appeared until the first keystroke and then disappeared.
   it('spans the partially typed name, so the editor filters against it', () => {
     const code =
@@ -175,7 +175,7 @@ describe('control-flow prop hover + use inference', () => {
 
   it('completes props of a component supplied by a resolve rule', () => {
     // The compiler injects the import, so the file has neither an import nor a local
-    // declaration — only an ambient global from generated declarations. Scanning the
+    // declaration: only an ambient global from generated declarations. Scanning the
     // file's own statements found nothing, so `<Stack ` offered no props at all while
     // hover on the same tag worked.
     const decls =
@@ -213,7 +213,7 @@ describe('control-flow prop hover + use inference', () => {
   it('keeps offsets correct after an escape sequence in the template', () => {
     // `node.text` is the *cooked* value, where `\`` is one character while the source
     // spends two. Using it shifted every span after an escape, so a tag's attribute area
-    // moved left and completion silently returned nothing — in a file that looked
+    // moved left and completion silently returned nothing, in a file that looked
     // completely ordinary.
     const code =
       'function Card(props: { alpha?: string }) { return null as any; }\n' +

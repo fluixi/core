@@ -1,8 +1,8 @@
 // What one node is, in words.
 //
 // The graph draws a node in the space of a card: a name, a kind, a clipped value, a file and
-// a line. Everything else about it — the version, the run count, what it reads, what reads
-// it, where it was declared as against where it was used — needs room, and every host that
+// a line. Everything else about it: the version, the run count, what it reads, what reads
+// it, where it was declared as against where it was used, needs room, and every host that
 // draws the graph wants the same answer. So it lives here rather than in each of them.
 //
 // Rendered as html into an element the host owns, and re-rendered only when what it says
@@ -22,7 +22,7 @@ export interface Inspector {
   /**
    * Draw an element instead of a node.
    *
-   * An element is not in the graph — nothing computes it — but it is the part of the page a
+   * An element is not in the graph: nothing computes it, but it is the part of the page a
    * reader recognises, and the graph knows which tag rendered it and which values write into
    * it. Those, and the line each binding was written on, are what there is to say.
    */
@@ -62,7 +62,7 @@ export interface InspectorOptions {
    * counts as a value is the application's business, and returns whether it took.
    *
    * Omitted leaves values read-only, which is what a panel reading a snapshot over a wire
-   * wants — there is nothing on the other end to write to.
+   * wants: there is nothing on the other end to write to.
    */
   onEdit?: (id: number, raw: string) => boolean;
   /**
@@ -115,7 +115,7 @@ const bothAt = (source?: ReactiveSourceLocation, root?: string): string => {
 /**
  * The line worth opening for a tag.
  *
- * A component the framework instantiated — a lazy route, a layout the router mounted — was
+ * A component the framework instantiated: a lazy route, a layout the router mounted, was
  * created inside the framework, so `source` is a line in a package. `declaredAt` is where it
  * was actually written. Only one line is shown for an element, so it had better be that one.
  */
@@ -130,7 +130,7 @@ function authoredPlace(node: RNode): ReactiveSourceLocation | undefined {
  * The tags this value writes inside, and how many times each.
  *
  * A signal handed to a component through a prop is read by the render effect that binds it,
- * which is machinery the graph does not draw — so there is no edge from the signal to the
+ * which is machinery the graph does not draw: so there is no edge from the signal to the
  * component, and a card for it looks connected only to whatever declared it. The
  * descriptions already say it exactly: each element records the values writing into it, and
  * it sits in the tree of the tag that rendered it.
@@ -330,7 +330,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
 
       const next = `${node.id}|${node.kind}|${value}|${node.runs}|${state ?? ''}|${relations}|${at(node.source, root)}|${at(node.usedAt, root)}|${bound}`;
       // An input that has left the page is not one anybody is typing into. Without this a
-      // commit that never arrived — the panel redrew, the tab changed — would hold the
+      // commit that never arrived: the panel redrew, the tab changed, would hold the
       // inspector on whatever it last wrote, for good.
       if (editing !== null && field?.isConnected !== true) {
         editing = null;
@@ -443,8 +443,8 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         `<b>${escape(pick.label)}</b>` +
         `<span class="ins-meta">not a node</span></div>` +
         `<div class="ins-rel">${relations}</div>` +
-        // The tag's own line. An element has no position of its own in the graph — only the
-        // component that rendered it does — so this is as close as the source gets.
+        // The tag's own line. An element has no position of its own in the graph, only the
+        // component that rendered it does: so this is as close as the source gets.
         (source
           ? `<div class="ins-source">${source.external ? '📦' : '📍'} ${place(bothAt(source, root), source, reveals)}</div>`
           : '') +

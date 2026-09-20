@@ -355,7 +355,7 @@ describe('an edit that never finishes', () => {
     (host.querySelector('.ins-edit') as HTMLElement).click();
     expect(host.querySelector('.ins-input')).not.toBeNull();
 
-    // Whatever took the input away — a redraw elsewhere, a panel closing — the inspector
+    // Whatever took the input away: a redraw elsewhere, a panel closing, the inspector
     // has to come back rather than freeze on the row it was editing.
     host.querySelector('.ins-input')!.remove();
     graph.set(0, node(0, { kind: 'state', value: '99' }));

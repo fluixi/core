@@ -2,7 +2,7 @@
  * Go To Definition, Find References and Rename for component tags in templates.
  *
  * A `${…}` hole is a real expression, so TypeScript already answers all three for
- * it — the plugin just has to stop shadowing those methods. The synthetic part is
+ * it: the plugin just has to stop shadowing those methods. The synthetic part is
  * the tag name: `<UserCard>` is text inside a string literal, invisible to the
  * checker.
  *
@@ -11,7 +11,7 @@
  * every template silently broken, because nothing rewrites the tags.
  *
  * Both the opening and closing tag are collected. Rewriting only `<Tag>` and
- * leaving `</Tag>` would produce a mismatched template — worse than not renaming.
+ * leaving `</Tag>` would produce a mismatched template, worse than not renaming.
  */
 import type * as TS from 'typescript';
 import type { ComponentNode, TemplateNode } from '@fluixi/template-parser';
@@ -20,7 +20,7 @@ import { autoImportedSymbol, declarationSite } from './auto-import.js';
 
 /** A tag-name occurrence in a template: where it is, and what it names. */
 export interface TagSpan {
-  /** Root name — `Ctx.Provider` is keyed by `Ctx`, which is the binding. */
+  /** Root name: `Ctx.Provider` is keyed by `Ctx`, which is the binding. */
   name: string;
   /** Offset of the root name itself. */
   start: number;
@@ -94,7 +94,7 @@ function symbolFor(
     ts.SymbolFlags.Value | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias;
   const symbol = checker.getSymbolsInScope(location, flags).find((s) => s.name === name);
 
-  // No binding in scope is the normal case for `<Show>`/`<Portal>`/`<Outlet>` —
+  // No binding in scope is the normal case for `<Show>`/`<Portal>`/`<Outlet>` , 
   // the compiler injects their import, so resolve them the way it would.
   if (!symbol) return autoImportedSymbol(ts, program, host, location.getSourceFile(), name);
 
@@ -134,7 +134,7 @@ export function templateDefinition(
 
   const decl = declarationFor(ts, program, host, sf, tag);
   if (!decl) {
-    // An auto-imported component usually isn't in the program at all — nothing
+    // An auto-imported component usually isn't in the program at all, nothing
     // imports its module, which is the whole point. Definition needs only a file
     // and a span, so read it from disk.
     const site = declarationSite(ts, program, host, sf, tag.name);
@@ -189,7 +189,7 @@ export function tagOccurrences(
     for (const span of tagSpans(ts, sf)) {
       if (span.name !== name) continue;
       const template = templateAtCached(ts, sf, span.start);
-      // Same name is not the same thing — check it resolves to the same symbol,
+      // Same name is not the same thing: check it resolves to the same symbol,
       // so an unrelated local `Button` in another file isn't swept in.
       if (!template || symbolFor(ts, program, host, template, name) !== symbol) continue;
       out.push({ fileName: sf.fileName, span: { start: span.start, length: span.length } });
@@ -198,7 +198,7 @@ export function tagOccurrences(
   return out;
 }
 
-/** The symbol a request at `position` is about — via a tag, or the real checker. */
+/** The symbol a request at `position` is about: via a tag, or the real checker. */
 function symbolAt(
   ts: typeof TS,
   program: TS.Program,
@@ -215,7 +215,7 @@ function symbolAt(
     return symbol ? { symbol, name: tag.name } : undefined;
   }
 
-  // Not in a template — the cursor may be on the declaration itself, in which
+  // Not in a template: the cursor may be on the declaration itself, in which
   // case template usages still belong in the result.
   const token = tokenAt(ts, sf, position);
   if (!token || !ts.isIdentifier(token)) return undefined;

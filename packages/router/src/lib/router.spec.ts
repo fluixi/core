@@ -114,7 +114,7 @@ describe('createRouter (memory history)', () => {
 });
 
 // The whole point of the rewrite: the match is a resolved TOP-DOWN tree. A view
-// adapter renders it by threading each child down as a value — no re-entrancy.
+// adapter renders it by threading each child down as a value, no re-entrancy.
 describe('rendering-contract shape (top-down, no re-entrancy)', () => {
   it('a naive top-down renderer composes nested layouts at any depth', () => {
     const deep: RouteDefinition<string>[] = [

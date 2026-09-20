@@ -3,7 +3,7 @@
  * @module @fluixi/compiler/integrations
  *
  * vite, webpack, rollup and esbuild adapters. Each is a few lines around
- * `compileModule`, which rewrites the source in place — JSX and `` html`` `` both
+ * `compileModule`, which rewrites the source in place, JSX and `` html`` `` both
  * lower to the shared IR and the imperative backend. fluixi re-exports
  * createVitePlugin from here.
  *
@@ -29,7 +29,7 @@ export interface CompilerOptions {
    *
    * Relative to the project root; `false` turns generation off. Without this file every
    * resolved tag is a `Cannot find name` error in the editor and in `tsc`, because the
-   * import only exists after compilation. Committing it is intended — it is what makes a
+   * import only exists after compilation. Committing it is intended, it is what makes a
    * fresh clone type-check before anyone runs the dev server.
    *
    * It must be covered by `include` in tsconfig.json, which for the default means adding
@@ -64,7 +64,7 @@ export interface CompilerOptions {
 
   /**
    * Where the JSX *types* come from, and the `jsxImportSource` handed to esbuild
-   * and TypeScript. The compiler never emits `jsx()` calls itself — this is for
+   * and TypeScript. The compiler never emits `jsx()` calls itself, this is for
    * type resolution and for any JSX the Fluixi transform does not consume.
    * @default '@fluixi/jsx'
    */
@@ -79,13 +79,13 @@ export interface CompilerOptions {
 
   /**
    * Record where each reactive node is created, and serve the running app's graph to a tool
-   * that asks for it. Development only — a build never carries either.
+   * that asks for it. Development only: a build never carries either.
    *
    * On by default when the dev server is running and @fluixi/devtools is installed. The
    * marks are what turn `m5` into `double @ src/app.tsx:6`, and the endpoint is what an
    * editor or a graph panel reads.
    *
-   * `{ external: true }` marks dependencies too — node_modules and anything outside the
+   * `{ external: true }` marks dependencies too: node_modules and anything outside the
    * project. That is for working on the framework itself: the graph then shows which nodes
    * a library created and which the application did, at the cost of a mark per node in code
    * you are not editing.
@@ -98,7 +98,7 @@ export interface CompilerOptions {
    * The default path parses once and splices the emitted code over the spans it
    * replaces: nothing is reprinted, edits carry a source map, and types are left
    * for esbuild to strip. Babel is kept for the cases that need to sit inside its
-   * pipeline — a `babel.config.js` with other plugins that have to see the
+   * pipeline: a `babel.config.js` with other plugins that have to see the
    * output. It needs `@babel/core` and friends installed; they are optional peers.
    * @default false
    */
@@ -113,11 +113,11 @@ export interface CompilerOptions {
   /**
    * Rewrite a component's destructured props into property reads, so
    * `function Card({ title })` keeps updating instead of reading `title` once.
-   * Applies to JSX and html`` alike — it rewrites the function body before either is
+   * Applies to JSX and html`` alike: it rewrites the function body before either is
    * compiled. A pattern it can't prove is left as written, so `splitProps` keeps
    * working wherever it's still needed.
    *
-   * Turn it off for a package that ships its source to be compiled by the consumer —
+   * Turn it off for a package that ships its source to be compiled by the consumer , 
    * rewriting there would bake property reads into what you publish.
    *
    * @default true
@@ -316,7 +316,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         if (!babel) {
           // No silent fallback. This front-end compiles through babel; without it
           // there is no transform, and emitting the source unchanged would ship a
-          // build whose JSX and html`` templates were never compiled — a failure
+          // build whose JSX and html`` templates were never compiled, a failure
           // that looks exactly like success until the page is opened.
           throw new Error(
             `[fluixi] @babel/core is required to compile ${id} but could not be loaded. ` +
@@ -350,7 +350,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
           }
         }
 
-        // Only our custom babel plugin handles JSX — never @babel/preset-react, which
+        // Only our custom babel plugin handles JSX, never @babel/preset-react, which
         // rewrites spreads with Object.assign and breaks store-proxy reactivity.
         if (babelPlugin && babelPlugin.plugin) {
           plugins.push([babelPlugin.plugin, babelPlugin.getOptions()]);
@@ -457,7 +457,7 @@ const reported = new Set<string>();
  * All of these build cleanly and fail at runtime, which is why they are worth printing: an
  * unresolved tag renders nothing, a `load:` it cannot act on ships the chunk eagerly, and a
  * props pattern the rewrite refused reads its value once instead of tracking it. None leaves
- * a trace anywhere else — the last one is a stale value on screen and nothing in the build.
+ * a trace anywhere else: the last one is a stale value on screen and nothing in the build.
  *
  * `console.warn`, deliberately, not a plugin's `this.warn`: that only exists in the
  * rollup/vite context, and this runs for the esbuild and webpack adapters too. A
@@ -594,7 +594,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 
 
 // ============================================================================
-// "use server" — server functions vite plugin
+// "use server": server functions vite plugin
 // ============================================================================
 
 export type { ServerFnTransformOptions } from './frontend/babel/server-functions.js';
@@ -643,7 +643,7 @@ function findServerFnModules(dir: string, out: string[] = []): string[] {
       try {
         if (hasServerDirective(readFileSync(full, 'utf8'))) out.push(full);
       } catch {
-        /* unreadable — skip */
+        /* unreadable: skip */
       }
     }
   }
@@ -652,7 +652,7 @@ function findServerFnModules(dir: string, out: string[] = []): string[] {
 
 /**
  * Vite plugin for `"use server"`: applies the transform (client→RPC stub, server→register
- * the body), and provides `virtual:fluixi-server-fns` — side-effect imports of every
+ * the body), and provides `virtual:fluixi-server-fns`, side-effect imports of every
  * module that defines a server function. The server entry imports it so ALL server
  * functions register at startup (including those in lazy routes, which would otherwise
  * register only when their chunk loads → an RPC registry miss). The client never imports
@@ -677,7 +677,7 @@ export function serverFunctionsVitePlugin<T = any>(options: { babel?: boolean } 
       // First wire the request-context bridge (server-only), then side-effect import each
       // server-fn module so its top-level $$registerServerFn(...) runs, then re-export the
       // dispatcher so the host can route /_server through THIS module graph (sharing the
-      // registry the imports populated) — apps don't need to re-export it from entry-server.
+      // registry the imports populated), apps don't need to re-export it from entry-server.
       const setup = `import '@fluixi/start/server-fn-setup';\n`;
       const imports = mods.map((m) => `import ${JSON.stringify(m)};`).join('\n');
       const dispatcher = `\nexport { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn';\n`;

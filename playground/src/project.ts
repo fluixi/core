@@ -17,7 +17,7 @@ export const ENTRY_CANDIDATES = ['src/main.tsx', 'src/main.ts', 'main.tsx', 'mai
 export const HTML_SHELL = 'index.html';
 
 /**
- * The entry a project actually boots from, taken where possible from its index.html — that
+ * The entry a project actually boots from, taken where possible from its index.html, that
  * is where a real app declares it, and the playground should not keep a second opinion.
  */
 export function entryFromHtml(html: string): string | null {
@@ -69,7 +69,7 @@ export function saveProject(project: Project): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
   } catch {
-    // Private mode or a full quota — the session still works, it just will not survive a reload.
+    // Private mode or a full quota: the session still works, it just will not survive a reload.
   }
 }
 
@@ -94,7 +94,7 @@ export function clearSavedProject(): void {
 }
 
 /**
- * Projects travel in the URL fragment so a link carries the code with it — no server, and
+ * Projects travel in the URL fragment so a link carries the code with it, no server, and
  * nothing to expire. Encoded through UTF-8 before base64, or any non-ASCII character in the
  * source throws.
  */

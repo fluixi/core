@@ -1,5 +1,5 @@
 /**
- * @fluixi/head — built-in, reactive, SSR-first SEO & document-head management.
+ * @fluixi/head: built-in, reactive, SSR-first SEO & document-head management.
  *
  *   import { seo, jsonld } from '@fluixi/head';
  *   seo({ title: 'Home', description: '…', canonical: 'https://site.com/' });

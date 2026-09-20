@@ -1,4 +1,4 @@
-/** `load:interaction` — never fetched unless the user actually interacts. */
+/** `load:interaction`: never fetched unless the user actually interacts. */
 export function ExportDialog() {
   return (
     <section class="panel">

@@ -122,13 +122,13 @@ declare global {
   // Each name declared once, off the element types themselves.
   //
   // These used to be a type alias and an interface of the same name, where the interface
-  // extended `JSX.X` — which inside `declare global { namespace JSX }` is the name being
+  // extended `JSX.X`: which inside `declare global { namespace JSX }` is the name being
   // declared. Extending itself makes it empty, so `JSX.IntrinsicElements` had no elements in
   // it and every `<div>` in an application was "Property 'div' does not exist".
   //
   // `Element` stays an alias, and exactly what the dom can insert: a node, a string, a list,
-  // a function returning one. An interface cannot extend that union, and widening it — even
-  // by one member — makes `<b/>` unassignable to a `children` typed ComponentChild, which is
+  // a function returning one. An interface cannot extend that union, and widening it, even
+  // by one member: makes `<b/>` unassignable to a `children` typed ComponentChild, which is
   // the error every nested element produced.
   namespace JSX {
     type Element = A.FxElement;

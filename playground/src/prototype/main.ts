@@ -1,7 +1,7 @@
 // Spike: the playground editor on @codingame/monaco-vscode-api instead of monaco-editor.
 //
 // The question this answers is narrow. Plain monaco runs its own TypeScript worker, which
-// cannot load a language-service plugin — so the playground can never show what
+// cannot load a language-service plugin: so the playground can never show what
 // @fluixi/ts-plugin shows in VS Code. monaco-vscode-api runs the real VS Code TypeScript
 // extension instead, which is the only route to that.
 //
@@ -22,7 +22,7 @@ import '@codingame/monaco-vscode-theme-defaults-default-extension';
 import '@codingame/monaco-vscode-typescript-language-features-default-extension';
 import * as monaco from '@codingame/monaco-vscode-editor-api';
 
-// The extension host is a worker of its own, and nothing runs without it — the TypeScript
+// The extension host is a worker of its own, and nothing runs without it, the TypeScript
 // extension lives there. Registered the way vscode does it, by label.
 (self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
   getWorker(_moduleId: string, label: string) {

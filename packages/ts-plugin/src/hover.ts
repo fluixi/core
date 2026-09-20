@@ -3,7 +3,7 @@
  *
  * TypeScript sees `<AsyncName …>` as text in a string, so hovering the tag shows
  * nothing. We map the tag to the binding it names, then return the SAME quick
- * info TypeScript would show for that binding (its signature/type) — remapped so
+ * info TypeScript would show for that binding (its signature/type), remapped so
  * the hover highlights the tag in the template. Same idea as ts-lit-plugin.
  */
 import type * as TS from 'typescript';
@@ -31,8 +31,8 @@ export function componentQuickInfo(
   // Resolve the tag's root name to a binding visible at the template.
   const checker = program.getTypeChecker();
   const flags = ts.SymbolFlags.Value | ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Alias;
-  // `<Show>`/`<Portal>`/`<Outlet>` have no binding — the compiler injects their
-  // import — so fall back to resolving them the way it would. Without this, hover
+  // `<Show>`/`<Portal>`/`<Outlet>` have no binding, the compiler injects their
+  // import: so fall back to resolving them the way it would. Without this, hover
   // is silent on precisely the components used most.
   const symbol =
     checker.getSymbolsInScope(template, flags).find((s) => s.name === hit.name) ??
@@ -40,7 +40,7 @@ export function componentQuickInfo(
   const decl = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
   if (!decl) return undefined;
 
-  // The declaration may live in another file — an auto-imported `<Show>` resolves
+  // The declaration may live in another file: an auto-imported `<Show>` resolves
   // into @fluixi/dom. Query the file it's actually in, not the one being edited.
   const declFile = decl.getSourceFile();
   const namePos = (decl as { name?: TS.Node }).name?.getStart(declFile) ?? decl.getStart(declFile);

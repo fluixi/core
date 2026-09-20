@@ -1,11 +1,11 @@
 /**
- * @fileoverview @fluixi/vite-plugin — the Vite integration for Fluixi.
+ * @fileoverview @fluixi/vite-plugin: the Vite integration for Fluixi.
  * @module @fluixi/vite-plugin
  *
  * Thin, well-typed wrapper around @fluixi/compiler's vite integration. It sets
  * the esbuild jsxImportSource and runs the Fluixi transform: JSX and `` html`` ``
  * templates both lower to the shared IR and compile straight into @fluixi/dom
- * runtime calls — no per-render jsx() dispatch.
+ * runtime calls: no per-render jsx() dispatch.
  */
 import type { Plugin } from 'vite';
 import { createVitePlugin, type CompilerOptions } from '@fluixi/compiler/integrations';
@@ -28,7 +28,7 @@ export type FluixiViteOptions = CompilerOptions;
  */
 export function fluixi(options: FluixiViteOptions = {}): Plugin {
   // The compiler reads this object per transform, so turning source marks on once the
-  // command is known reaches every file — they are worth their size in dev and nothing in a
+  // command is known reaches every file: they are worth their size in dev and nothing in a
   // build, which is why the answer waits for configResolved.
   const settings = options as FluixiViteOptions & {
     sourceLocations?: boolean;
@@ -54,7 +54,7 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
       configResolved(config: { root?: string; command?: string }) {
         inherited?.(config);
         // `serve` covers vitest as well as the dev server, and a test run has no page to
-        // watch — the marks would only change what the compiler emits under test. The
+        // watch: the marks would only change what the compiler emits under test. The
         // channel turns them on from configureServer, which only a real server calls.
         serving = config?.command === 'serve';
         settings.sourceRoot = config.root;

@@ -80,7 +80,7 @@ export interface TransformOptions extends CompileTemplateOptions {
   sourceRoot?: string;
 
   /**
-   * Compile the `$` reactive intrinsics — `$signal`, `$memo`, `$effect`, `$store` — into
+   * Compile the `$` reactive intrinsics: `$signal`, `$memo`, `$effect`, `$store`, into
    * the runtime calls they stand for, importing what they need.
    * @default true
    */
@@ -109,11 +109,11 @@ export interface TransformResult {
   intrinsicDiagnostics?: IntrinsicDiagnostic[];
   /** `load:` directives that could not take effect, and why. */
   loadDiagnostics?: LoadDiagnostic[];
-  /** Capitalised tags nothing supplies — they compile to an undefined reference. */
+  /** Capitalised tags nothing supplies: they compile to an undefined reference. */
   unresolvedDiagnostics?: UnresolvedDiagnostic[];
 }
 
-// Which builtin comes from which module is published by resolve/builtins.ts —
+// Which builtin comes from which module is published by resolve/builtins.ts , 
 // the same lists the resolve pass and the TS plugin read. Restating them here is
 // how `Await` ended up imported from the dom runtime, which does not export it.
 const CONTROL_FLOW = new Set<string>(DOM_CONTROL_FLOW);
@@ -149,7 +149,7 @@ const isJsx = (node: Node): boolean => node.type === 'JSXElement' || node.type =
 /**
  * A JSX node the transform compiles on its own.
  *
- * A direct child — `<li>` in `<ul><li/></ul>` — is not one: the builder recurses
+ * A direct child: `<li>` in `<ul><li/></ul>`: is not one: the builder recurses
  * into it, and compiling it separately would splice its output into the middle of
  * its parent's. JSX reached through an expression or an attribute value *is* one,
  * because the builder asks for that expression as source text and needs it
@@ -191,7 +191,7 @@ function outermost(list: Edit[]): Edit[] {
  * Apply edits to a slice of the source.
  *
  * Only the outermost ones: a contained edit was already folded into its
- * container's emitted code, and applying both would splice it twice — the second
+ * container's emitted code, and applying both would splice it twice, the second
  * write landing at an offset the first has already moved.
  */
 function slice(code: string, start: number, end: number, edits: Edit[]): string {
@@ -236,7 +236,7 @@ function bindHole(code: string, expr: Node, edits: Edit[], keepPosition = false)
  *
  * Hoisted names deliberately do not use the backend's `_tmpl$N` namespace. Roots
  * are emitted innermost first and spliced into their parent, so by the time the
- * outer one is renamed its code already contains hoisted names — and with a
+ * outer one is renamed its code already contains hoisted names, and with a
  * shared prefix the rename rewrites those too, pointing two templates at one
  * string. A separate prefix makes the two impossible to confuse.
  */
@@ -267,12 +267,12 @@ interface Needs {
    * Capitalised tags nothing supplies and nothing binds.
    *
    * These compile to a reference to an identifier that does not exist. The build
-   * succeeds — the emitted `createComponent(Summary, …)` is just a free variable — and
+   * succeeds: the emitted `createComponent(Summary, …)` is just a free variable, and
    * the page renders nothing where the component should be. Commenting one line out of a
    * `resolve` map is enough to cause it, which is exactly why it needs saying.
    */
   unresolved: Set<string>;
-  /** Every name the file binds, in any scope — so a diagnostic doesn't fire on them. */
+  /** Every name the file binds, in any scope: so a diagnostic doesn't fire on them. */
   declared: Set<string>;
   /**
    * Components carrying a deferring `load:` that could not be acted on, because the
@@ -280,7 +280,7 @@ interface Needs {
    *
    * Deferring means the compiler *creates* the reference as a dynamic import. A name the
    * author imported is already in the module graph, and rewriting that import away is
-   * not something this pass does — so the directive has no effect. Silently, which is
+   * not something this pass does: so the directive has no effect. Silently, which is
    * the problem: the build succeeds, the chunk ships eagerly, and the only symptom is
    * code that was never split.
    */
@@ -318,7 +318,7 @@ function collectNeeds(node: IRNode, out: Needs): void {
  * chunk splits like any other.
  *
  * Only when the name is used **exclusively as a tag**. JSX element names are
- * `JSXIdentifier`, so a component used only in markup has zero `Identifier` references —
+ * `JSXIdentifier`, so a component used only in markup has zero `Identifier` references , 
  * which makes the check exact rather than a guess. Anything else (passed to a function,
  * re-exported, `Chart.displayName`) keeps its import and its warning: replacing the real
  * binding with a lazy wrapper would change what those sites see.
@@ -357,7 +357,7 @@ function hasNamespaceImport(program: Node, name: string): boolean {
   return false;
 }
 
-/** Whether `name` is referenced as a value anywhere — a tag alone does not count. */
+/** Whether `name` is referenced as a value anywhere, a tag alone does not count. */
 function usedAsValue(program: Node, name: string, specifier: Node): boolean {
   let seen = false;
   walk(program, (node) => {
@@ -478,7 +478,7 @@ export function transformTemplates(
       ? collectSourceEdits(ast.program, sourceName)
       : { edits: [], marked: 0 };
 
-  // Nothing to emit still returns a result when there's something to say — a shadowed
+  // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
   const silent =
     found.length === 0 &&

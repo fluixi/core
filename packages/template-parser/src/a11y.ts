@@ -2,13 +2,13 @@
  * Accessibility rules over the template AST.
  *
  * These live in the parser, not in a consumer, because both the language service
- * and the compiler already parse templates — a rule written here reaches the
+ * and the compiler already parse templates: a rule written here reaches the
  * editor and the build from one implementation.
  *
  * Every rule is structural: no types, no scope analysis, no guessing. A rule that
  * cannot be certain stays silent, because an accessibility warning that cries wolf
  * gets switched off and then the real ones are lost too. That is why anything
- * carrying a spread is skipped — the spread may supply the very attribute the rule
+ * carrying a spread is skipped: the spread may supply the very attribute the rule
  * is looking for, and there is no way to know from the template alone.
  */
 import type {
@@ -105,7 +105,7 @@ function check(
   }
 
   // A positive tabindex overrides document order for the whole page, not just
-  // this element — the classic way to make keyboard navigation unpredictable.
+  // this element: the classic way to make keyboard navigation unpredictable.
   const tabindex = staticValue(node, 'tabindex') ?? staticValue(node, 'tabIndex');
   if (tabindex !== undefined && Number(tabindex) > 0) {
     report(

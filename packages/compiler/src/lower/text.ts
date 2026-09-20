@@ -1,12 +1,12 @@
 /**
  * Whitespace handling for template text runs.
  *
- * JSX and `` html`...` `` collapse a text run the same way — the rule came from
+ * JSX and `` html`...` `` collapse a text run the same way, the rule came from
  * JSX and the template syntax adopted it so an author moving between the two
  * gets the same output. It is pure string work with no parser in it, so it lives
  * here rather than in a front-end, where both can reach it and neither owns it.
  */
-/** Canonical JSX text cleaning — kept identical to plugin.ts cleanTemplateText. */
+/** Canonical JSX text cleaning: kept identical to plugin.ts cleanTemplateText. */
 export function cleanTemplateText(value: string): string {
   const lines = value.split(/\r\n|\n|\r/);
   let lastNonEmpty = 0;

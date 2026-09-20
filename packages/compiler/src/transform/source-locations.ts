@@ -5,7 +5,7 @@
  *   → globalThis.__fx_source?.("src/App.ts",1,14,"count"); const count = signal(0);
  *
  * A statement in front of the one that creates the node, not a wrapper round the call: the
- * call may already be being rewritten — `$signal` becomes `signal` — and two passes editing
+ * call may already be being rewritten: `$signal` becomes `signal`, and two passes editing
  * one span is a splice over a splice.
  *
  * A global rather than an import, so the author's modules do not each take a dependency on
@@ -13,7 +13,7 @@
  *
  * Positions come from the original source, before any pass moves anything.
  *
- * Development only, and one mark per statement — the runtime keeps a single slot, so
+ * Development only, and one mark per statement: the runtime keeps a single slot, so
  * marking two calls in one statement would hand the first node the second's location.
  */
 import { INTRINSICS, isIntrinsicName } from '../analyze/intrinsics.js';
@@ -76,7 +76,7 @@ export const markHole = (
  *
  * The props object is built as getters, so nothing in it can carry a position of its own.
  * The marker takes the object and a name-to-position map, and hands the object straight
- * back — devtools keeps the map, and a build without it passes the object through.
+ * back: devtools keeps the map, and a build without it passes the object through.
  */
 export const PROPS_MARKER = '__fx_props';
 
@@ -185,7 +185,7 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
       // template pass overwrites.
       //
       // Only through what wraps a declaration. Anything else above it is a block or an
-      // argument list, and a statement appended there lands outside the grammar —
+      // argument list, and a statement appended there lands outside the grammar , 
       // `function Page(){}` inside `it('…', () => { … })` ended up between the `}` and the
       // `)`, which is a syntax error in a file that compiled a moment earlier.
       let end = node.end;
@@ -240,7 +240,7 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
     if (!statement) return;
 
     // `export const [cart] = createStore(…)` finds the declaration, which starts after the
-    // keyword — a mark there splits `export` from what it exports.
+    // keyword: a mark there splits `export` from what it exports.
     let start = statement.start;
     let end = statement.end;
     for (let i = index - 1; i >= 0; i--) {

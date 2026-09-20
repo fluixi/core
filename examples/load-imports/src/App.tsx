@@ -6,7 +6,7 @@ import { Legend } from './components/Legend';
  * one of them ends up in its own chunk.
  *
  * Deferring a component means replacing your static import with a dynamic one. The
- * compiler will only do that when the name is used *nowhere but as a tag* — a JSX tag
+ * compiler will only do that when the name is used *nowhere but as a tag*, a JSX tag
  * name is a `JSXIdentifier`, so "no `Identifier` references anywhere" is an exact test
  * rather than a guess.
  *
@@ -16,7 +16,7 @@ import { Legend } from './components/Legend';
  * build time rather than leaving you to find it in a network panel.
  */
 
-/** A plain value reference — this is the whole reason `Legend` cannot be deferred. */
+/** A plain value reference: this is the whole reason `Legend` cannot be deferred. */
 const widgets = { legend: Legend };
 
 export function App() {

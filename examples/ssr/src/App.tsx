@@ -2,7 +2,7 @@
 // reactive instance as the runtime's render effects.
 import { createSignal, createResource } from '@fluixi/core';
 
-/** Fake async data source — stands in for a real loader/fetch. */
+/** Fake async data source: stands in for a real loader/fetch. */
 function fetchUser(id: number): Promise<{ name: string }> {
   return new Promise((resolve) =>
     setTimeout(() => resolve({ name: `User #${id}` }), 10),
@@ -11,12 +11,12 @@ function fetchUser(id: number): Promise<{ name: string }> {
 
 /**
  * A nested component that reads an async resource. renderToStringAsync awaits the
- * fetch and re-renders this component's binding before serializing — so the
+ * fetch and re-renders this component's binding before serializing, so the
  * resolved data ends up in the server HTML, through the createComponent boundary.
  *
  * Read the resource's non-throwing getters (.loading / .latest) rather than
- * calling user(), which throws while pending (Suspense-style) and — without a
- * resolving server <Suspense> — would leave the slot empty.
+ * calling user(), which throws while pending (Suspense-style) and, without a
+ * resolving server <Suspense>: would leave the slot empty.
  */
 function UserCard() {
   const [user] = createResource(() => fetchUser(7));

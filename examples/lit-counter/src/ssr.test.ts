@@ -14,12 +14,12 @@ afterEach(() => {
 });
 
 // Proof that html``-authored apps work with SSR + async resources + hydration,
-// exactly like the JSX examples/ssr app — because html`` compiles to the same
+// exactly like the JSX examples/ssr app: because html`` compiles to the same
 // @fluixi/dom calls, the server renderer and hydration behave identically.
 describe('html`` app through SSR + resources', () => {
   it('sync renderToString emits the shell (resources still loading)', () => {
     // Interpolations are bracketed by `<!--fx-->` markers so the server's markup has the
-    // same shape as the client's template — that is what lets hydration adopt the nodes
+    // same shape as the client's template: that is what lets hydration adopt the nodes
     // rather than rebuild them. Stripped here so the assertions read as the markup does.
     const out = renderToString(() => SsrApp({ url: '/home' })).replace(/<!--fx\/?-->/g, '');
     expect(out).toContain('<h1>Fluixi SSR</h1>');

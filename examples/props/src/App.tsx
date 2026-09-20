@@ -5,7 +5,7 @@ import { createSignal } from '@fluixi/core';
  * `propsDestructure` on, the compiler rewrites each binding back into a read of the
  * props object, so the value stays live instead of being copied once at call time.
  *
- * Turn the option off in vite.config.ts and the labels below stop updating — that is the
+ * Turn the option off in vite.config.ts and the labels below stop updating, that is the
  * whole feature, and it is what the tests check.
  */
 

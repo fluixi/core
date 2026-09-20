@@ -4,14 +4,14 @@ import { renderToString, renderToStringAsync } from '@fluixi/server';
 import { App } from './App';
 
 // End-to-end SSR proof: this .tsx is compiled by @fluixi/vite-plugin (the real
-// imperative compiler), then rendered to an HTML string by @fluixi/server — no
+// imperative compiler), then rendered to an HTML string by @fluixi/server, no
 // browser. renderToString switches the runtime to server mode and builds a
 // serializable tree. The root app is invoked as a plain function, exactly as
 // the real SSR entry (startServer/renderRequest) does.
 describe('SSR example — compiled JSX → HTML', () => {
   it('sync renderToString emits the shell (resource still loading)', () => {
     // Interpolations are bracketed by `<!--fx-->` markers so the server's markup has the
-    // same shape as the client's template — that is what lets hydration adopt the nodes
+    // same shape as the client's template: that is what lets hydration adopt the nodes
     // rather than rebuild them. Stripped so the assertions read as the markup does.
     const html = renderToString(() => App({ url: '/home' })).replace(/<!--fx\/?-->/g, '');
     expect(html).toContain('<h1>Fluixi SSR</h1>');

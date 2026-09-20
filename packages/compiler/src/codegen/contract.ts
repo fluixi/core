@@ -12,7 +12,7 @@ export interface RuntimeContract {
 }
 
 /**
- * v1 — the imperative fine-grained runtime, locked by the @fluixi/dom contract
+ * v1: the imperative fine-grained runtime, locked by the @fluixi/dom contract
  * tests (createNativeElement/insert/spread/delegateEvents/createComponent + the
  * control-flow components).
  */
@@ -33,7 +33,7 @@ export const RUNTIME_CONTRACT_V1: RuntimeContract = {
 };
 
 /**
- * v2 — adds the Solid-style (but ours) template-clone primitives. A future
+ * v2: adds the Solid-style (but ours) template-clone primitives. A future
  * template-clone backend targets this contract; the runtime gains template()/
  * cloneTemplate()/walk() at the same time.
  */

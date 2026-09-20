@@ -1,7 +1,7 @@
 // Run a project in an iframe holding its own document.
 //
 // The preview used to be the body of index.html injected into a div, which threw away the
-// head, any <style>, and everything on <body> — `style="background: red"` there did nothing.
+// head, any <style>, and everything on <body>: `style="background: red"` there did nothing.
 // An iframe is the honest thing: the project's html is the document and its script is the
 // entry, exactly as vite would serve it.
 //
@@ -31,7 +31,7 @@ export interface RunResult {
   compiled: Map<string, string>;
   /** The graph of the run. It is watched from inside the iframe, so it lives there too. */
   graph: ObservedGraph | null;
-  /** The document as it stands now — the shell plus whatever the app put in it. */
+  /** The document as it stands now: the shell plus whatever the app put in it. */
   html(): string;
   /** The stylesheets the run pulled in, in the order they landed. */
   css(): string;
@@ -43,7 +43,7 @@ export interface RunResult {
 const FALLBACK_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8" /></head><body><div id="app"></div></body></html>`;
 
-/** The project's document, with its own module script removed — the entry is injected. */
+/** The project's document, with its own module script removed, the entry is injected. */
 /** `href="./styles.css"` in the shell, pointing at a project file. */
 const ASSET_REF = /(\b(?:href|src)\s*=\s*)(["'])([^"']+)\2/gi;
 

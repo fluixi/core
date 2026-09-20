@@ -3,14 +3,14 @@
  * through `` html`` `` component tags (so TypeScript can't see them), and whether
  * a given "unused" diagnostic should therefore be suppressed.
  *
- * A `<UserCard/>` inside a template is plain text to TypeScript — it never
+ * A `<UserCard/>` inside a template is plain text to TypeScript, it never
  * counts as a reference, so the binding gets flagged "declared but never used".
  * We reparse each template with `@fluixi/template-parser`, collect the component
  * tag roots, and treat those names as used.
  *
  * The `typescript` module is passed in (the instance tsserver hands the plugin
  * via `init({ typescript })`) rather than imported, so the plugin uses the exact
- * TS the editor is running — never a second copy resolved from node_modules.
+ * TS the editor is running: never a second copy resolved from node_modules.
  */
 import type * as TS from 'typescript';
 import type { TemplateNode } from '@fluixi/template-parser';
@@ -30,7 +30,7 @@ const tagCache = new WeakMap<TS.SourceFile, Set<string>>();
  *
  * Cached on the `SourceFile`, which TypeScript replaces on edit. It has to be: the
  * editor asks for semantic AND suggestion diagnostics on every keystroke, so an
- * uncached walk here cost two full traversals of every open file per keypress —
+ * uncached walk here cost two full traversals of every open file per keypress , 
  * including files with no templates at all, in any project the extension activates
  * for. Reuses `templatesIn` and `parseCached` so a file with no `` html`` `` costs
  * one cached lookup and nothing else.
@@ -51,7 +51,7 @@ export function usedComponentTags(ts: typeof TS, sourceFile: TS.SourceFile): Set
 function collectTags(nodes: readonly TemplateNode[], out: Set<string>): void {
   for (const node of nodes) {
     // `<${Comp}/>` (dynamic tag, empty `tag`) is already a real JS reference to
-    // TypeScript, so it never needs suppressing — only static `<Name/>` does.
+    // TypeScript, so it never needs suppressing: only static `<Name/>` does.
     if (node.kind === 'Component' && node.tag) out.add(node.tag.split('.')[0]);
     if ('children' in node && node.children) collectTags(node.children, out);
   }
@@ -59,7 +59,7 @@ function collectTags(nodes: readonly TemplateNode[], out: Set<string>): void {
 
 /**
  * Whether `diagnostic` is an "unused" report for a binding that IS used through
- * a template component tag — and should therefore be dropped.
+ * a template component tag: and should therefore be dropped.
  */
 export function shouldSuppress(
   ts: typeof TS,

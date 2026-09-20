@@ -1,5 +1,5 @@
 /**
- * Server-functions runtime — the target of the `"use server"` compiler transform.
+ * Server-functions runtime: the target of the `"use server"` compiler transform.
  * Client-safe (web APIs only, no node imports): on the client the registry/dispatcher
  * are dead code and the stub `fetch()`es the RPC endpoint; on the server the bodies are
  * registered and `handleServerFn` dispatches them.
@@ -27,7 +27,7 @@ export function $$createServerReference(id: string) {
 /**
  * Runs a server function inside a request context so `getRequestEvent()` (request,
  * headers, cookies) works inside it. Injected by `@fluixi/start/server-fn-setup` (which
- * bridges `@fluixi/server`'s AsyncLocalStorage) so this module stays client-safe — no
+ * bridges `@fluixi/server`'s AsyncLocalStorage) so this module stays client-safe, no
  * node imports here. `event.responseHeaders` set inside the fn are returned to the host.
  */
 type ContextRunner = (
@@ -40,7 +40,7 @@ export function setServerFnContextRunner(runner: ContextRunner | null): void {
 }
 
 // The fetch the RPC client uses. Pluggable so interceptors (auth headers, 401 handling,
-// retry) apply to server-function calls — `addInterceptor` swaps in the intercepted fetch.
+// retry) apply to server-function calls: `addInterceptor` swaps in the intercepted fetch.
 let _fetch: typeof fetch = (...a) => fetch(...a);
 export function setServerFnFetch(f: typeof fetch): void {
   _fetch = f;

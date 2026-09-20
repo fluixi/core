@@ -119,11 +119,11 @@ describe('cloudflare', () => {
 
     const { exclude } = readJson(join(clientDir, '_routes.json'));
     expect(exclude.length).toBeLessThanOrEqual(100);
-    // Past the cap the extra routes still work — they just wake the worker.
+    // Past the cap the extra routes still work: they just wake the worker.
     expect(exclude).toContain('/assets/*');
   });
 
-  it('inlines the template — a worker cannot read index.html', async () => {
+  it('inlines the template: a worker cannot read index.html', async () => {
     const { ctx, entries } = buildOutput();
     await cloudflareAdapter.build!(ctx);
     expect(entries[0].source).toContain('<div id=\\"root\\"></div>');
@@ -241,8 +241,8 @@ describe('vercel', () => {
 
     expect(entries).toHaveLength(0);
     expect(existsSync(join(root, '.vercel/output/functions'))).toBe(false);
-    // The filesystem phase alone answers 404 for a client route — nothing is on disk
-    // at that path — so the catch-all is what makes the output a SPA.
+    // The filesystem phase alone answers 404 for a client route, nothing is on disk
+    // at that path: so the catch-all is what makes the output a SPA.
     const config = readJson(join(root, '.vercel/output/config.json'));
     expect(config.routes).toEqual([{ handle: 'filesystem' }, { src: '/(.*)', dest: '/index.html' }]);
   });
@@ -251,7 +251,7 @@ describe('vercel', () => {
 describe('every deploy adapter', () => {
   const all = [cloudflareAdapter, netlifyAdapter, vercelAdapter];
 
-  it('inlines the framework — none of these can resolve a module at runtime', () => {
+  it('inlines the framework: none of these can resolve a module at runtime', () => {
     for (const adapter of all) expect(adapter.bundle).toBe('inline');
   });
 

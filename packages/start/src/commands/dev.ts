@@ -15,7 +15,7 @@ const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
  * Stylesheets the SSR render pulled in, walked from the server entry.
  *
  * Without these, dev serves a fully rendered page with no CSS at all and the styles
- * arrive with the client bundle — a flash of unstyled content on every load, in the one
+ * arrive with the client bundle: a flash of unstyled content on every load, in the one
  * environment you look at most. The build has no such gap: Vite emits real `<link>`s.
  *
  * Dev serves a `.css` URL as a JS module that injects a style tag, so `?direct` is what
@@ -79,12 +79,12 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     const path = url.pathname + url.search;
     // Server-function RPC: auto-wired. Load the registry vmod (registers every "use server"
     // fn + wires the request-context runner + re-exports the dispatcher) and route /_server
-    // through it — no need for the app's entry-server to re-export anything.
+    // through it: no need for the app's entry-server to re-export anything.
     if (url.pathname === '/_server') {
       const sf = await vite.ssrLoadModule(SERVER_FNS_VMOD);
       if (sf.isServerFnRequest(request)) return sf.handleServerFn(request);
     }
-    // File-based API routes (src/api/** → /api/*) — auto-wired, no entry change needed.
+    // File-based API routes (src/api/** → /api/*), auto-wired, no entry change needed.
     if (isApiPath(url.pathname)) {
       const api = await vite.ssrLoadModule(API_VIRTUAL_MODULE);
       if (api.isApiRequest(request)) return api.handleApiRequest(request);

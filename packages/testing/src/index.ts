@@ -1,5 +1,5 @@
 /**
- * @fluixi/testing — minimal helpers for testing Fluixi components.
+ * @fluixi/testing: minimal helpers for testing Fluixi components.
  *
  * `render` mounts a component into a jsdom container and hands back a disposer
  * plus query shorthands; `flush` awaits pending effects; `fireEvent` dispatches
@@ -60,7 +60,7 @@ export function render(
 }
 
 /**
- * Dispatch a bubbling, cancelable event on a node — sugar over
+ * Dispatch a bubbling, cancelable event on a node, sugar over
  * `node.dispatchEvent`. Bubbling matters because Fluixi delegates `on*` handlers.
  */
 export function fireEvent(

@@ -1,6 +1,6 @@
 // On-demand image optimization: a Web `Request` → `Response` handler that resizes
 // and re-encodes images (to AVIF/WebP by content negotiation), plus a matching
-// `imageLoader` for `@fluixi-ui/image`. The actual codec is pluggable — the
+// `imageLoader` for `@fluixi-ui/image`. The actual codec is pluggable, the
 // default uses `sharp` if it's installed, otherwise it streams the source through
 // unchanged (so the framework never hard-depends on a native module).
 import { readFile } from 'node:fs/promises';
@@ -140,7 +140,7 @@ export function createImageHandler(options: ImageHandlerOptions = {}): (request:
       sourceType = MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
     }
 
-    // Vector / animated sources aren't rasterized — stream them through.
+    // Vector / animated sources aren't rasterized, stream them through.
     if (sourceType === 'image/svg+xml' || sourceType === 'image/gif') {
       return imageResponse(input, sourceType, maxAge);
     }

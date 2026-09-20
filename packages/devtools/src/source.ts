@@ -26,7 +26,7 @@ export interface ReactiveSourceLocation {
    *
    * Both are worth having. The original says which component and which file; the compiled one
    * says which of that component's bindings, because a template's holes all map back to the
-   * position the template opens at — one entry per emitted root is all the map has. Until
+   * position the template opens at: one entry per emitted root is all the map has. Until
    * that changes, the compiled line is the only thing that tells two bindings apart.
    */
   compiled?: { line?: number; column?: number };
@@ -47,8 +47,8 @@ const PROPS_MARKER = '__fx_props';
 /**
  * The mark, and what components were declared, on shared state.
  *
- * Not module-local. A page can carry two copies of this file — a browser extension's agent
- * and the dev server's both bundle it — and only one of them wins `installSourceMarker`.
+ * Not module-local. A page can carry two copies of this file, a browser extension's agent
+ * and the dev server's both bundle it: and only one of them wins `installSourceMarker`.
  * Every `__fx_source` call then landed in that copy's slot while the copy actually watching
  * read its own empty one, so every name and location was lost. Same reason `G` exists in the
  * runtime.
@@ -72,7 +72,7 @@ host[MARKS] = shared;
  * Where each component was declared, by name.
  *
  * The graph sees the memo the compiler wraps a component in, and all that memo carries back
- * is the name stamped on what the component returned — so name is the only key available.
+ * is the name stamped on what the component returned, so name is the only key available.
  * Two components sharing a name are recorded as ambiguous and reported as unknown, since a
  * location pointing at the wrong file is worse than none.
  */
@@ -130,7 +130,7 @@ export function takeReactiveSource(): ReactiveSourceMetadata | null {
   const mark = shared.pending;
   if (mark) {
     // The variable name belongs to the node the author was declaring, not to the ones the
-    // framework built underneath it — `cart`, then two unnamed signals at the same line.
+    // framework built underneath it: `cart`, then two unnamed signals at the same line.
     if (mark.name !== undefined) shared.pending = { location: mark.location };
     if (!shared.expiring) {
       shared.expiring = true;
@@ -169,8 +169,8 @@ function markHole<T>(accessor: T, line: number, column: number, name?: string): 
     }
   }
   // The template is being built, so whatever declaration left a mark is finished with. A
-  // mark outlives the statement that set it on purpose — a store's key signals are made
-  // inside the call and belong to its line — but a component body is one long synchronous
+  // mark outlives the statement that set it on purpose, a store's key signals are made
+  // inside the call and belong to its line: but a component body is one long synchronous
   // run, and without this every node the template makes claimed the last signal's position.
   shared.pending = null;
   return accessor;

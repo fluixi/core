@@ -2,7 +2,7 @@
  * What the emitted source map resolves to.
  *
  * `mappings.length > 0` passes on a broken map, and a map pointing at the wrong line
- * is worse than none — the debugger looks broken rather than absent. These decode it
+ * is worse than none: the debugger looks broken rather than absent. These decode it
  * and trace generated positions back.
  *
  * Two separate properties:
@@ -42,7 +42,7 @@ function trace(source: string, text: string) {
 describe('the source map the transform emits', () => {
   it('puts untouched code exactly where it was', () => {
     // Nothing outside a template is rewritten, so every one of these positions has to
-    // survive byte for byte — this is the half of the map a stack trace usually needs.
+    // survive byte for byte: this is the half of the map a stack trace usually needs.
     expect(trace(SRC, 'createSignal').lands).toMatch(/^createSignal/);
     expect(trace(SRC, 'createSignal').line).toBe(1);
   });

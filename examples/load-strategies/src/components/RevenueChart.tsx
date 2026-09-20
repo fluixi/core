@@ -1,5 +1,5 @@
 /**
- * `load:visible` — deliberately bulky so its chunk is obvious in the build output.
+ * `load:visible`: deliberately bulky so its chunk is obvious in the build output.
  * The padding stands in for a real charting dependency.
  */
 const BULK = Array.from({ length: 300 }, (_, i) => `revenue-chart-payload-row-${i}`);

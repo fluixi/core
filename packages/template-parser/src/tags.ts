@@ -10,7 +10,7 @@ export const SVG_TAGS = new Set([
   'ellipse', 'g', 'defs', 'clipPath', 'text',
 ]);
 
-/** Elements whose content is text, not markup — don't descend into `<` inside. */
+/** Elements whose content is text, not markup: don't descend into `<` inside. */
 export const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
 
 /** Void elements: no children, no close tag (`<input>`, `<br>`, …). */

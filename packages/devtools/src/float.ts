@@ -7,7 +7,7 @@
  * it back exactly where it was.
  *
  * The pane element itself is moved rather than re-rendered. Whatever drew into it keeps its
- * handle on it, its listeners, and its scroll position — a floated timeline is the same
+ * handle on it, its listeners, and its scroll position, a floated timeline is the same
  * timeline, not a copy of one.
  */
 
@@ -198,8 +198,8 @@ export function makeFloatable(pane: HTMLElement, options: FloatOptions): Floatab
   pane.append(button);
 
   /**
-   * The panes rewrite their own contents — the inspector replaces its markup whenever the
-   * selection changes — which takes the button with it. Rather than asking each of them to
+   * The panes rewrite their own contents: the inspector replaces its markup whenever the
+   * selection changes: which takes the button with it. Rather than asking each of them to
    * leave it alone, it is put back when it goes.
    */
   const keep = new MutationObserver(() => {

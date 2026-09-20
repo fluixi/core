@@ -41,7 +41,7 @@ describe('@fluixi/server renderToStream', () => {
     const stream = renderToStream(DataApp, { url: '/p' }, { title: 'T', scripts: ['/client.js'] });
     const chunks = await collectStream(stream);
 
-    // shell is its own (first) chunk — before the body content
+    // shell is its own (first) chunk: before the body content
     expect(chunks[0]).toContain('<title>T</title>');
     expect(chunks[0]).toContain('<body');
     expect(chunks[0]).not.toContain('d:/p'); // content not in the shell

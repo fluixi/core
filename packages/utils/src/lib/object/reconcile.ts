@@ -22,7 +22,7 @@ function reconcileArr(next: any[], current: any[], opts: Required<ReconcileOptio
   const curLen = current.length;
   const nextLen = next.length;
 
-  // Snapshot once — avoids repeated proxy reads returning different references
+  // Snapshot once: avoids repeated proxy reads returning different references
   const curItems: any[] = new Array(curLen);
   for (let i = 0; i < curLen; i++) curItems[i] = current[i];
 

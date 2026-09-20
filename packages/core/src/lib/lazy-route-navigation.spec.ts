@@ -183,7 +183,7 @@ describe('navigating to a route chunk that is not loaded yet', () => {
     expect(container.textContent).toContain('HOME');
 
     // Cold navigation: the import starts now, and the router does not commit until it
-    // resolves. The previous page stays up rather than being replaced by a fallback —
+    // resolves. The previous page stays up rather than being replaced by a fallback , 
     // the old route is removed only once the new one can render.
     history.pushState(null, '', '/one');
     dispatchEvent(new PopStateEvent('popstate'));

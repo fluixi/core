@@ -71,7 +71,7 @@ describe('AST -> IR -> emit() pipeline', () => {
   });
 
   it('emit() targets the runtime contract', () => {
-    // Structure static, one hole — a partial template rather than element-by-element.
+    // Structure static, one hole: a partial template rather than element-by-element.
     const { code, imports } = compile('(<ul><li>{x()}</li></ul>)');
     expect(code).toContain('templateNode');
     expect(code).toContain('insert');

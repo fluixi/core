@@ -7,13 +7,13 @@
  * is dropped, and a component used only through a tag isn't reported unused.
  *
  * Everything is computed on the EXISTING program's checker. The plugin creates no
- * language service, adds no files, and does not touch the host — it only wraps
+ * language service, adds no files, and does not touch the host, it only wraps
  * the service it is handed.
  *
  * That restraint is deliberate. Two earlier designs for deep type-checking inside
  * `${…}` holes both had to go: a second `ts.LanguageService` (a second document
  * registry, so lib.d.ts and node_modules were parsed twice), and shadow files
- * added to the program by patching `getScriptFileNames` — which tsserver calls on
+ * added to the program by patching `getScriptFileNames`, which tsserver calls on
  * every project sync, so building shadows there re-entered host machinery and
  * crashed the language service outright. Hole diagnostics are not worth either.
  *
@@ -66,8 +66,8 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
         isMemberCompletion: false,
         isNewIdentifierLocation: true,
         // Re-ask on every keystroke instead of letting the editor filter what it already
-        // has. Inside a template the valid set changes with the cursor — a tag name, then
-        // that tag's props — and a list cached from one position is wrong at the next.
+        // has. Inside a template the valid set changes with the cursor, a tag name, then
+        // that tag's props: and a list cached from one position is wrong at the next.
         // Without this the props appear only after enough typing to force a fresh
         // request, which reads as completion working intermittently.
         isIncomplete: true,
@@ -105,7 +105,7 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
         const base = reliableFilter(fileName, ls.getSemanticDiagnostics(fileName));
         try {
           // Additive, and computed on the main checker at real source positions,
-          // so a failure here can only cost the extra errors — never the real ones.
+          // so a failure here can only cost the extra errors, never the real ones.
           return base.concat(templateDiagnostics(ts, ls, fileName) as never[]);
         } catch {
           return base;

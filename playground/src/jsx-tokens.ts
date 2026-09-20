@@ -2,9 +2,9 @@
 //
 // Monaco ships a monarch tokenizer for typescript that predates jsx: `<div class="card">`
 // comes out as a comparison, an identifier and a string, so a component reads as flat text
-// next to the html it produces. Rather than register a separate `tsx` language — which would
+// next to the html it produces. Rather than register a separate `tsx` language, which would
 // take the models out from under the TypeScript worker, and with it every completion and
-// type the playground exists to show — the same language gets a tokenizer that also knows
+// type the playground exists to show: the same language gets a tokenizer that also knows
 // about tags.
 //
 // Where a tag begins is a guess: monarch has no lookbehind, so `<` starting a tag is told
@@ -81,7 +81,7 @@ function build(): Promise<monaco.languages.IMonarchLanguage | null> {
  * Teach the typescript tokenizer about jsx.
  *
  * Applied twice on purpose. Monaco registers the language's own tokenizer lazily, the first
- * time something asks for it, and that can land either side of this — which is why the same
+ * time something asks for it, and that can land either side of this, which is why the same
  * build highlighted jsx on one dev server and not on another. Re-applying when the language
  * comes up makes the order stop mattering.
  */

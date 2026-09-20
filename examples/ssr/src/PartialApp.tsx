@@ -1,7 +1,7 @@
 /**
  * The shapes partial templates are most likely to get wrong under hydration: text holes
  * with static text on both sides, several holes in one element, and a hole followed by a
- * static sibling — each of which depends on the marker keeping the server's markup the
+ * static sibling: each of which depends on the marker keeping the server's markup the
  * same shape as the clone.
  */
 import { createSignal } from '@fluixi/core';

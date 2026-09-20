@@ -1,5 +1,5 @@
 /**
- * @fileoverview @fluixi/babel-plugin-jsx — thin adapter.
+ * @fileoverview @fluixi/babel-plugin-jsx: thin adapter.
  * @module @fluixi/babel-plugin-jsx
  *
  * The JSX transform now lives in @fluixi/compiler (the host-agnostic compiler:

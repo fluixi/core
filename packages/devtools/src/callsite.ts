@@ -1,8 +1,8 @@
 // Where the application asked for a node that something else created.
 //
 // The compiler marks creation sites in the code it compiles, which is the project's own. A
-// node the framework makes on the application's behalf — the locale signal behind `locale()`,
-// the router's revalidation counter — is created inside a package, so it carries either the
+// node the framework makes on the application's behalf, the locale signal behind `locale()`,
+// the router's revalidation counter: is created inside a package, so it carries either the
 // package's line or nothing at all, and neither says which line of the application led to it.
 //
 // The observer is called synchronously from inside the creating call, so the stack at that
@@ -65,7 +65,7 @@ function locate(frame: string, origin?: string): ReactiveSourceLocation | undefi
  * Where a node came from, and whether that is the application or something it depends on.
  *
  * The application's own frame is the useful one, but a node made while a package was loading
- * has no application frame above it at all — a router's revalidation counter, made when its
+ * has no application frame above it at all: a router's revalidation counter, made when its
  * module is evaluated. Falling back to the package's own frame is what stops that node being
  * a card with no name, no origin and no explanation.
  */

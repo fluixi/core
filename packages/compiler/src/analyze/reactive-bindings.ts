@@ -93,7 +93,7 @@ function calledPrimitive(node: Node, bindings: ReactiveBindings): Intrinsic['ret
 /** Record what a declaration's pattern holds, given what the call returns. */
 function classify(id: Node, returns: Intrinsic['returns'], kinds: Map<string, ReactiveKind>): void {
   if (Array.isArray(returns)) {
-    // `const [count, setCount] = $signal(0)` — position decides which is which.
+    // `const [count, setCount] = $signal(0)`: position decides which is which.
     if (id.type === 'ArrayPattern') {
       (id.elements as (Node | null)[]).forEach((element, index) => {
         const kind = returns[index];
@@ -111,7 +111,7 @@ function classify(id: Node, returns: Intrinsic['returns'], kinds: Map<string, Re
  * Deliberately scope-blind: it answers "does this file declare this name anywhere", which
  * is the question a diagnostic needs. A component declared inside a function
  * (`const Row = () => …`) is bound just as much as an import, and warning about it would
- * be noise. Over-permissive on purpose — missing a warning beats inventing one.
+ * be noise. Over-permissive on purpose: missing a warning beats inventing one.
  */
 export function declaredNames(program: unknown): Set<string> {
   const names = new Set<string>();

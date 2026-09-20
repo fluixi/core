@@ -3,7 +3,7 @@ import { Suspense } from '@fluixi/core';
 import { routes } from '@fluixi/core/routes';
 
 // Shell layout around the routed page. File-routes (src/routes/*) are lazy, so the
-// <Outlet/> sits under <Suspense> — async SSR resolves their content server-side.
+// <Outlet/> sits under <Suspense>: async SSR resolves their content server-side.
 function RootLayout() {
   return (
     <div class="app">
@@ -21,7 +21,7 @@ function RootLayout() {
   );
 }
 
-// Exported so entry-client can hand it to startClient — it preloads the current route's
+// Exported so entry-client can hand it to startClient, it preloads the current route's
 // lazy chunk before hydrating, so the server-rendered DOM is adopted in place (flash-free).
 export const appRoutes = [{ path: '/', component: RootLayout, children: routes as any }];
 

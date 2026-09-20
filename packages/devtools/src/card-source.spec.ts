@@ -26,7 +26,7 @@ describe('the card', () => {
 
     graph.set(0, node(0, { label: 'count', source: { file: 'src/App.tsx', line: 6, column: 20 } }));
     view.update(graph);
-    // No rebuild happens — the layout signature does not depend on the source — so this only
+    // No rebuild happens: the layout signature does not depend on the source, so this only
     // works because the text is filled per frame.
     expect(svg.querySelector('.fx-source')?.firstChild?.textContent).toBe('App.tsx:6');
   });

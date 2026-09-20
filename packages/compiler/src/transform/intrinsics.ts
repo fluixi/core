@@ -5,7 +5,7 @@
  *   → const [count, setCount] = createSignal(0);   + the import
  *
  * Only the callee is rewritten, so arguments keep the author's text and the span stays
- * put — `$signal(0)` and `createSignal(0)` map to the same place. Imports are collected
+ * put: `$signal(0)` and `createSignal(0)` map to the same place. Imports are collected
  * from what the module actually used, so a file with one `$signal` gets one import.
  *
  * A module that binds `$signal` itself keeps its own meaning and is reported instead;

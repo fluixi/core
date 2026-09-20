@@ -1,4 +1,4 @@
-// SSR entry — @fluixi/start's dev/build/start load this. It calls `renderStream`
+// SSR entry: @fluixi/start's dev/build/start load this. It calls `renderStream`
 // (streaming: head flushed first, body streamed) when present, else `render` (string).
 import App from './app.js';
 import { renderRequestAsync, renderToBodyStream, setDataRedactor } from '@fluixi/server';
@@ -22,10 +22,10 @@ export function renderStream(url: string): ReadableStream<Uint8Array> {
   return renderToBodyStream(App, { url });
 }
 
-// Server-function RPC dispatch — re-exported so the dispatcher shares the registry that
+// Server-function RPC dispatch: re-exported so the dispatcher shares the registry that
 // this app's `"use server"` modules populate. @fluixi/start routes RPC calls here.
 import '@fluixi/start/server-fns'; // registers every "use server" module (incl. lazy routes)
 export { isServerFnRequest, handleServerFn } from '@fluixi/start/server-fn';
 
-// File-based API routes (src/api/**) — re-exported so prod (fluixi start) dispatches them.
+// File-based API routes (src/api/**), re-exported so prod (fluixi start) dispatches them.
 export { isApiRequest, handleApiRequest } from '@fluixi/start/api-routes';

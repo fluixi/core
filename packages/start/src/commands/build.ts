@@ -33,8 +33,8 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     build: { outDir: 'dist/client', ssrManifest: true, emptyOutDir: true },
   });
 
-  // SSR builds a server bundle that renders HTML. A SPA may still ship one — only for server
-  // functions / middleware — so build it when the entry exists; a pure static SPA skips it.
+  // SSR builds a server bundle that renders HTML. A SPA may still ship one, only for server
+  // functions / middleware: so build it when the entry exists; a pure static SPA skips it.
   const serverEntrySrc = resolve(cfg.root, cfg.serverEntry);
   if (cfg.ssr || existsSync(serverEntrySrc)) {
     step(`server bundle${bundleNote(cfg)}`);
@@ -84,7 +84,7 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
     await prerender(config);
   }
 
-  // The deploy target's own output layout — a worker entry, a function manifest, a
+  // The deploy target's own output layout: a worker entry, a function manifest, a
   // routing config. Last, so everything it wraps or copies already exists.
   if (cfg.adapter?.build) {
     step(`${cfg.adapter.name} output`);
@@ -149,7 +149,7 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
  * Bundle a generated platform entry into one self-contained file.
  *
  * The entry is written next to its output so a relative import of the server bundle
- * resolves, then removed — a stray `.fluixi-entry.js` in dist would be served as a
+ * resolves, then removed: a stray `.fluixi-entry.js` in dist would be served as a
  * static asset on every one of these platforms.
  */
 async function bundleEntry(
@@ -178,7 +178,7 @@ async function bundleEntry(
           output: {
             entryFileNames: basename(outFile),
             // One file, no chunks. A lazy route would otherwise be split out beside
-            // the entry — and for Cloudflare that directory is the published one, so
+            // the entry: and for Cloudflare that directory is the published one, so
             // every server chunk would be a public download.
             inlineDynamicImports: true,
           },
@@ -190,7 +190,7 @@ async function bundleEntry(
   }
 }
 
-/** `server bundle (node · external)` — the output shape is not obvious from the file. */
+/** `server bundle (node · external)`: the output shape is not obvious from the file. */
 function bundleNote(cfg: ResolvedConfig): string {
   const adapter = cfg.adapter;
   if (!adapter?.bundle) return '';

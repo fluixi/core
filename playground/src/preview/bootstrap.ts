@@ -2,7 +2,7 @@
 //
 // The framework has to be loaded here rather than handed in from the page around it. Event
 // delegation attaches to `document`, and a runtime taken from the outer document would bind
-// its listeners there — the preview would render and then ignore every click. Loading it in
+// its listeners there: the preview would render and then ignore every click. Loading it in
 // this realm also means `document.getElementById('app')` finds the project's own element,
 // and the project's html, head and body styling are simply the document.
 //
@@ -50,7 +50,7 @@ async function boot(): Promise<void> {
 
   // In ssr mode the entry's `render(() => <App/>, root)` is caught rather than run: the same
   // call says what to render and where, which is all the server pass needs. The compiled code
-  // is the same either way — the runtime builds string nodes instead of dom ones when the
+  // is the same either way: the runtime builds string nodes instead of dom ones when the
   // server mode flag is on, so there is no second compilation to do.
   let root: (() => unknown) | null = null;
   let host: Element | null = null;
@@ -67,7 +67,7 @@ async function boot(): Promise<void> {
   }
 
   // Published under a symbol the linked modules look for, so a shim resolves to this realm's
-  // copy of the framework — the same one being watched.
+  // copy of the framework: the same one being watched.
   (globalThis as Record<PropertyKey, unknown>)[REGISTRY] = registry;
 
   try {

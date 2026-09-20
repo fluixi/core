@@ -54,7 +54,7 @@ export function App() {
   /**
    * Every binding kind a template can produce has to carry the position of its
    * own hole. A binding that carries none falls back to the runtime stack at
-   * inspection time, which reports a line in the *compiled* file — a number that
+   * inspection time, which reports a line in the *compiled* file, a number that
    * looks like a source line, resolves to the wrong code, and is past the end of
    * short files. So the assertion is that the marked line really does hold the
    * expression, not that it holds some particular number.
@@ -97,7 +97,7 @@ export function App() {
 
   /**
    * A tag inside a template is the only kind that used to emit no mark at all, so the nodes
-   * it made took whichever mark the last declaration left behind — in a component that
+   * it made took whichever mark the last declaration left behind, in a component that
    * declares signals and renders no holes, that is every node in the template.
    */
   it('marks a tag written inside a template, where the tag is', () => {

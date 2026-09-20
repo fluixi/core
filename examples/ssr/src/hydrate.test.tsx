@@ -6,7 +6,7 @@ import { hydrate } from '@fluixi/dom';
 import { App } from './App';
 
 // True hydration of REAL compiled JSX: render on the server, drop the HTML into
-// a container, then hydrate() — the client must reuse the server DOM (no
+// a container, then hydrate(), the client must reuse the server DOM (no
 // recreation) and wire up events/reactivity onto those existing nodes.
 describe('hydrate compiled JSX', () => {
   it('reuses server DOM and makes the counter interactive', async () => {

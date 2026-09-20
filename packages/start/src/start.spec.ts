@@ -18,7 +18,7 @@ const streamOf = (s: string) =>
     start(c) { c.enqueue(new TextEncoder().encode(s)); c.close(); },
   });
 
-// Temp config dirs live INSIDE the package — vitest's vite-node only loads files
+// Temp config dirs live INSIDE the package: vitest's vite-node only loads files
 // under the project root, and `loadConfig` import()s the config by absolute path.
 const baseDir = dirname(fileURLToPath(import.meta.url));
 

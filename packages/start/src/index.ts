@@ -1,5 +1,5 @@
 /**
- * @fluixi/start — the Fluixi meta-framework.
+ * @fluixi/start: the Fluixi meta-framework.
  *
  * Packages the dev server, build, and production SSR server over @fluixi/server +
  * Vite, so apps stop hand-rolling server.mjs. Use the `fluixi` CLI (dev/build/start)
@@ -31,7 +31,7 @@
 export { defineConfig } from './define-config.js';
 export type { FluixiConfig, ResolvedConfig } from './config.js';
 
-// The html``/svg`` template tags — so a meta-framework app can author without JSX:
+// The html``/svg`` template tags, so a meta-framework app can author without JSX:
 // `import { html } from '@fluixi/start'`. Inert markers; the compiler lowers them.
 export { html, svg } from '@fluixi/core';
 
@@ -42,11 +42,11 @@ export { injectApp, injectAppAndHead, splitTemplate } from './document.js';
 export { createHandlerFrom } from './handler-core.js';
 export type { HandlerParts, ServerModule } from './handler-core.js';
 
-// Request middleware — a `(request, next) => Response` chain run before render.
+// Request middleware: a `(request, next) => Response` chain run before render.
 export { defineMiddleware, composeMiddleware, normalizeMiddleware } from './middleware.js';
 export type { Middleware, MiddlewareNext } from './middleware.js';
 
-// HTTP interceptors — request/response/error pipeline around fetch (server-fn RPC + app
+// HTTP interceptors: request/response/error pipeline around fetch (server-fn RPC + app
 // fetch). Client-side by nature, and the reason this entry has to stay importable.
 export { addInterceptor, clearInterceptors, fetchWithInterceptors } from './interceptors.js';
 export type { Interceptor } from './interceptors.js';
@@ -58,7 +58,7 @@ export type { ImageHandlerOptions, ImageTransform, ImageTransformArgs } from './
 
 // Middleware→render locals bridge: write `getRequestLocals(request).x = …` in middleware;
 // read it back in loaders/server-fns/render via getLocals() (the app entry forwards
-// `request` on the render event — `renderRequestAsync(App, { url, request })`).
+// `request` on the render event: `renderRequestAsync(App, { url, request })`).
 export { getRequestLocals, getLocals, type RequestLocals } from '@fluixi/server';
 
 // Types only, so naming them here costs a browser bundle nothing.

@@ -2,7 +2,7 @@
  * Server functions: the bodies run on the server, the client calls them over RPC.
  *
  * Each one injects rather than importing a shared instance. That is what keeps them
- * honest under concurrency — `inject(TicketRepoToken)` inside a server function resolves
+ * honest under concurrency: `inject(TicketRepoToken)` inside a server function resolves
  * from the root injector of *this* request, so two users calling `openTicket` at the
  * same moment write to two different repositories.
  *
@@ -22,7 +22,7 @@ export interface DeskSnapshot {
   viewer: string;
   /** The id the middleware minted for this request. */
   requestId: string;
-  /** Which repository instance served this call — different per request on the server. */
+  /** Which repository instance served this call: different per request on the server. */
   servedBy: string;
 }
 

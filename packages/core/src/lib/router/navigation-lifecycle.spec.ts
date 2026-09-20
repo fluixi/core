@@ -7,7 +7,7 @@
  * navigation is allowed to commit, what is on screen while a route is being prepared,
  * and whether a layout survives a sibling change.
  *
- * Components are plain functions rather than compiled JSX — the router does not care,
+ * Components are plain functions rather than compiled JSX, the router does not care,
  * and it keeps the file about navigation.
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
@@ -69,7 +69,7 @@ afterEach(() => {
  * Mounted the way `startClient` mounts an app: a memo over `createComponent`.
  *
  * Not a detail. `insert` calls a bare thunk again on every run of its render effect, and
- * that effect tracks the router's own memo — so mounting `() => Router(...)` directly
+ * that effect tracks the router's own memo: so mounting `() => Router(...)` directly
  * builds a second Router, with a second history subscription, on the first navigation.
  * A memo is a signal, `insert` caches it, and `createComponent` untracks the body, so
  * the component is built once.

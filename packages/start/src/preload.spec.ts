@@ -3,7 +3,7 @@
  *
  * The failure mode worth testing is silence: a miss here does not throw, it just
  * preloads nothing, and a page that is merely slower looks exactly like a page that is
- * correct. So these pin the lookup on both sides — that a match finds its files, and
+ * correct. So these pin the lookup on both sides, that a match finds its files, and
  * that the cases which should find none actually find none.
  */
 import { describe, it, expect } from 'vitest';
@@ -24,7 +24,7 @@ describe('createPreloader', () => {
   });
 
   it('matches a dynamic segment the way the router does', () => {
-    // A string compare would miss this, and preloading nothing is invisible — which is
+    // A string compare would miss this, and preloading nothing is invisible, which is
     // why matching goes through the router rather than being reimplemented here.
     expect(createPreloader(assets)('/blog/hello')).toContain('/assets/blog-id-e.js');
   });

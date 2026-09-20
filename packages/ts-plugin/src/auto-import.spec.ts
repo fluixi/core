@@ -5,7 +5,7 @@ import { AUTO_IMPORTED } from './auto-import.js';
 import { builtinComponentMap } from '@fluixi/compiler/builtins';
 
 /**
- * The map is no longer a copy — it comes from `@fluixi/compiler/builtins`, so the
+ * The map is no longer a copy: it comes from `@fluixi/compiler/builtins`, so the
  * tests that pinned the duplication to the compiler source are gone with it. What is
  * still worth asserting is the shape the rest of the plugin depends on.
  */
@@ -102,7 +102,7 @@ describe('navigation for an auto-imported component', () => {
 
 /**
  * The real packages are barrels that re-export, and an auto-imported component
- * means nothing imports the module — so its declarations are NOT in the program.
+ * means nothing imports the module: so its declarations are NOT in the program.
  * That combination is what actually ships, and it broke every dom-hosted component
  * while `Suspense` kept working, because something else pulled core into the program.
  */
@@ -123,7 +123,7 @@ function barrelSetup(code: string, fileName = '/app.ts') {
   const files: Record<string, string> = { ...BARREL, [fileName]: code, [GLOBALS]: GLOBALS_SRC };
   const host: ts.LanguageServiceHost = {
     // Deliberately NOT listing the package: nothing imports it, so it is not in
-    // the program — exactly the situation an auto-imported tag creates.
+    // the program: exactly the situation an auto-imported tag creates.
     getScriptFileNames: () => [fileName, GLOBALS],
     getScriptVersion: () => '1',
     getScriptSnapshot: (f) => {

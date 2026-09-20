@@ -81,7 +81,7 @@ export function genExpr(node: t.Expression, used: Set<string>, onNested?: Nested
  * Called with the IR of JSX (or a template) found inside an expression.
  *
  * That IR is compiled and thrown away during the walk, so anything the module
- * needs because of it — a component import, a delegated event — has to be taken
+ * needs because of it: a component import, a delegated event, has to be taken
  * off it here or it is lost. Without this, `{(b) => <Input/>}` emitted a
  * reference to `Input` that nothing imported.
  */
@@ -123,7 +123,7 @@ export function isReactiveExpr(node: t.Expression): boolean {
 
 /**
  * Build IR from a JSX node. The builder is shared (lower/jsx.ts); what this
- * front-end supplies is how an expression becomes source — `genExpr`, which also
+ * front-end supplies is how an expression becomes source, `genExpr`, which also
  * compiles any JSX or `` html`` `` nested inside it.
  */
 export function buildIR(
@@ -134,7 +134,7 @@ export function buildIR(
   const ir = buildJsxIR(node as never, {
     code: (n) =>
       // A member-expression tag (`<ns.Foo/>`) is not an Expression, so it cannot go
-      // through the nested-JSX compile — it only ever needs printing.
+      // through the nested-JSX compile: it only ever needs printing.
       (n as t.Node).type === 'JSXMemberExpression'
         ? gen(n as t.Node)
         : genExpr(n as never, used, onNested),
