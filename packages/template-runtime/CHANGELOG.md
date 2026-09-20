@@ -1,5 +1,14 @@
 # @fluixi/template-runtime
 
+## 0.1.0-alpha.5
+
+### Patch Changes
+
+- Updated dependencies [ea498ef]
+  - @fluixi/reactive@1.0.0-alpha.85
+  - @fluixi/compiler@1.0.0-alpha.85
+  - @fluixi/dom@1.0.0-alpha.85
+
 ## 0.1.0-alpha.4
 
 ### Patch Changes

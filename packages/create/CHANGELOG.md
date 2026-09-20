@@ -1,5 +1,12 @@
 # @fluixi/create
 
+## 0.1.0-alpha.10
+
+### Patch Changes
+
+- 51d1d9c: The generator now proceeds past the project name, prompting for a component library and styling choice (with flags like `--ui`, `--no-ui`, `--tailwind`, `--fluixi-css`, `--no-css`) and accepts both Return and Enter keys.
+- a2f0eb8: fluixi.config.ts now accepts the new options `vitePlugin` and `plugins`, allowing configuration of the fluixi Vite plugin options and additional Vite plugins.
+
 ## 0.1.0-alpha.9
 
 ### Minor Changes

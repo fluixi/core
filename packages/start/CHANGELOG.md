@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 0.1.0-alpha.75
+
+### Patch Changes
+
+- a2f0eb8: fluixi.config.ts now accepts the new options `vitePlugin` and `plugins`, allowing configuration of the fluixi Vite plugin options and additional Vite plugins.
+- 5062033: The `@fluixi/start` root export now is safe to import from a browser bundle. Import `loadConfig`, `serveNode`, adapters, or `createImageHandler` from their subpaths instead of the package root.
+- Updated dependencies [39a87cd]
+- Updated dependencies [ea498ef]
+  - @fluixi/core@1.0.0-alpha.85
+  - @fluixi/compiler@1.0.0-alpha.85
+  - @fluixi/vite-plugin@1.0.0-alpha.85
+  - @fluixi/server@1.0.0-alpha.85
+  - @fluixi/dom@1.0.0-alpha.85
+  - @fluixi/head@1.0.0-alpha.52
+
 ## 0.1.0-alpha.74
 
 ### Patch Changes
