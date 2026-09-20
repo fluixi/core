@@ -1,5 +1,21 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.84
+
+### Minor Changes
+
+- 76e286a: A cached resource now updates the effects and bindings that read it.
+- c3d5026: `joinedVersions()` reports every build of the reactive runtime sharing one graph, and a page running more than one now says so.
+
+  The graph is now shared per major version: copies of one major share it, a different major gets its own.
+
+- c3d5026: `root`, `renderEffect`, `computed`, `context` and `childOwner` are now available without the create prefix alongside `signal`, `memo` and `effect`.
+- 4bd2bf1: A store whose root is an array can now be replaced or emptied, and the setter's array methods are typed.
+
+### Patch Changes
+
+- 9565405: The published entry files now include a copyright banner, and `@fluixi/dom`, `@fluixi/jsx`, `@fluixi/template-parser` and `@fluixi/template-runtime` ship unminified, which their build configs had always asked for.
+
 ## 1.0.0-alpha.83
 
 ### Minor Changes

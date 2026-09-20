@@ -1,5 +1,11 @@
 # @fluixi/router
 
+## 0.1.2-alpha.4
+
+### Patch Changes
+
+- aa17d01: `@fluixi/cli`, `@fluixi/devtools`, `@fluixi/head`, `@fluixi/router`, `@fluixi/server`, and `@fluixi/start` now provide bundled builds with import resolving to a `.mjs` file and a require condition resolving to a `.cjs` file, and `@fluixi/core` and `@fluixi/compiler` now include the copyright banner in their subpath exports.
+
 ## 0.1.2-alpha.3
 
 ### Patch Changes

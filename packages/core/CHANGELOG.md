@@ -1,5 +1,29 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.84
+
+### Patch Changes
+
+- 9565405: The published entry files now include a copyright banner, and `@fluixi/dom`, `@fluixi/jsx`, `@fluixi/template-parser` and `@fluixi/template-runtime` ship unminified, which their build configs had always asked for.
+- aa17d01: `@fluixi/cli`, `@fluixi/devtools`, `@fluixi/head`, `@fluixi/router`, `@fluixi/server`, and `@fluixi/start` now provide bundled builds with import resolving to a `.mjs` file and a require condition resolving to a `.cjs` file, and `@fluixi/core` and `@fluixi/compiler` now include the copyright banner in their subpath exports.
+- bef4cb6: `isServer` now reports consistently across the package regardless of import source.
+- Updated dependencies [9565405]
+- Updated dependencies [aa17d01]
+- Updated dependencies [76e286a]
+- Updated dependencies [e077a97]
+- Updated dependencies [c3d5026]
+- Updated dependencies [c3d5026]
+- Updated dependencies [4bd2bf1]
+  - @fluixi/dom@1.0.0-alpha.84
+  - @fluixi/reactive@1.0.0-alpha.84
+  - @fluixi/compiler@1.0.0-alpha.84
+  - @fluixi/jsx@1.0.0-alpha.84
+  - @fluixi/utils@1.0.0-alpha.84
+  - @fluixi/vite-plugin@1.0.0-alpha.84
+  - @fluixi/head@1.0.0-alpha.51
+  - @fluixi/router@0.1.2-alpha.4
+  - @fluixi/server@1.0.0-alpha.84
+
 ## 1.0.0-alpha.83
 
 ### Major Changes

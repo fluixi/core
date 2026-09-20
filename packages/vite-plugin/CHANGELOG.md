@@ -1,5 +1,16 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.84
+
+### Patch Changes
+
+- 9565405: The published entry files now include a copyright banner, and `@fluixi/dom`, `@fluixi/jsx`, `@fluixi/template-parser` and `@fluixi/template-runtime` ship unminified, which their build configs had always asked for.
+- Updated dependencies [9565405]
+- Updated dependencies [aa17d01]
+- Updated dependencies [e077a97]
+  - @fluixi/compiler@1.0.0-alpha.84
+  - @fluixi/devtools@0.2.0-alpha.4
+
 ## 1.0.0-alpha.83
 
 ### Minor Changes
