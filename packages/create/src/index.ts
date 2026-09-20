@@ -139,17 +139,34 @@ function addDeps(pkg: Record<string, any>, section: string, deps: Record<string,
 }
 
 /**
- * The stylesheet the app imports, assembled from what was chosen.
+ * The app's own stylesheet, in the shape the chosen css engine expects.
  *
- * Tokens first: the kit's components read those custom properties, so a framework layer
- * loaded before them would be overridden by nothing and a component would render unstyled.
+ * The component tokens are not here: they are a stylesheet the package ships and the
+ * entry imports directly, so this file only holds what the engine has to read, the dark
+ * variant, where to scan, and the theme the app defines.
  */
 function styleSheet(ui: Ui, css: Css): string {
-  const lines: string[] = [];
-  if (ui === 'fluixi-ui') lines.push(`@import '@fluixi-ui/tokens/css';`);
-  if (css === 'tailwind') lines.push(`@import 'tailwindcss';`);
-  if (css === 'fluixi-css') lines.push(`@import '@fluixi-css/core';`);
-  return lines.join('\n') + '\n';
+  // Dark from the attribute @fluixi/core's createTheme sets, not the OS preference, so
+  // a theme toggle in the app actually drives it.
+  const darkVariant = `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));`;
+  // Where to look for utility classes. Relative to this file.
+  const sources = `@source '.';\n@source '../index.html';`;
+  const theme = `@theme {\n  /* Design tokens. A --color-* scale here drives the whole app. */\n}`;
+
+  if (css === 'fluixi-css') {
+    // No import: the vite plugin injects the engine, and `emitUiTokens` bridges the
+    // scales below onto the `--flx-ui-*` properties the components read, so importing
+    // the token sheet as well would only restate what the bridge already emits.
+    return [darkVariant, '', sources, '', theme, ''].join('\n');
+  }
+
+  if (css === 'tailwind') {
+    return [`@import 'tailwindcss';`, '', darkVariant, '', theme, ''].join('\n');
+  }
+
+  // No css engine: the component tokens are imported from the entry like any other
+  // stylesheet, so there is nothing for this file to hold.
+  return '';
 }
 
 /** Where the component resolver is configured, which differs by mode. */
@@ -197,14 +214,27 @@ function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, 
   writeFileSync(file, src);
 }
 
-/** Import the stylesheet from whichever file boots the client. */
-function importStyles(target: string, mode: 'ssr' | 'spa', format: 'jsx' | 'html'): void {
+/**
+ * Import the stylesheets from whichever file boots the client.
+ *
+ * The component tokens come first and from the entry rather than from `styles.css`:
+ * they are a stylesheet the package ships, not something the app's css engine should be
+ * asked to resolve, and the components below need them defined before their own rules
+ * land. `emitUiTokens` does not replace this, that bridge covers a subset.
+ */
+function importStyles(target: string, mode: 'ssr' | 'spa', ui: Ui): void {
   const base = mode === 'ssr' ? 'entry-client' : 'main';
   const file = ['tsx', 'ts']
     .map((ext) => join(target, 'src', `${base}.${ext}`))
     .find((p) => existsSync(p));
   if (!file) return;
-  writeFileSync(file, `import './styles.css';\n` + readFileSync(file, 'utf8'));
+
+  const head = [
+    ...(ui === 'fluixi-ui' ? [`import '@fluixi-ui/tokens/tokens.css';`] : []),
+    `import './styles.css';`,
+    '',
+  ].join('\n');
+  writeFileSync(file, head + readFileSync(file, 'utf8'));
 }
 
 async function main(): Promise<void> {
@@ -305,8 +335,11 @@ async function main(): Promise<void> {
   }
 
   if (ui === 'fluixi-ui' || css !== 'none') {
-    writeFileSync(join(target, 'src', 'styles.css'), styleSheet(ui, css));
-    importStyles(target, mode, format);
+    const sheet = styleSheet(ui, css);
+    // An empty sheet still gets written: it is where an app puts its own css, and the
+    // entry already imports it.
+    writeFileSync(join(target, 'src', 'styles.css'), sheet);
+    importStyles(target, mode, ui);
   }
 
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
