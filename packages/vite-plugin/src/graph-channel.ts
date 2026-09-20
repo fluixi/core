@@ -12,7 +12,9 @@
 // the framework itself is resolved from the project, because watching a second copy of the
 // runtime would watch a graph nobody is using.
 import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 
 const VIRTUAL = 'virtual:fluixi/devtools-agent';
@@ -73,17 +75,42 @@ type WireModule = typeof import('@fluixi/devtools/wire');
  * it — which reads as the feature being broken rather than absent.
  */
 function ownDevtools(): string | null {
-  try {
-    return createRequire(import.meta.url).resolve('@fluixi/devtools');
-  } catch {
-    return null;
-  }
+  return resolveForBrowser('@fluixi/devtools');
 }
 
 /** The built-in plugins, beside the bundle they extend. Collecting happens in the agent. */
 function ownPlugins(): string | null {
+  return resolveForBrowser('@fluixi/devtools/plugins');
+}
+
+/**
+ * A package's ESM entry, by path.
+ *
+ * The agent below is served to a browser as an ES module and imports these by `/@fs/`
+ * path, so the file has to be the one with the named exports. `createRequire().resolve`
+ * answers with the `require` condition instead — the CJS build — and a `.cjs` file
+ * offers nothing to import, which surfaces as "does not provide an export named
+ * 'installDevtoolsHook'". It only started happening when devtools gained a CJS build;
+ * before that there was one file and either resolver found it.
+ */
+function resolveForBrowser(spec: string): string | null {
+  // Honours the `import` condition, which is the one that matches how this is loaded.
   try {
-    return createRequire(import.meta.url).resolve('@fluixi/devtools/plugins');
+    const resolved = (import.meta as { resolve?: (s: string) => string }).resolve?.(spec);
+    if (resolved) return fileURLToPath(resolved);
+  } catch {
+    // Fall through to the require-based resolution below.
+  }
+
+  try {
+    const required = createRequire(import.meta.url).resolve(spec);
+    if (!required.endsWith('.cjs')) return required;
+    // Landed on the CJS build. Prefer its ESM sibling when the package ships one.
+    for (const ext of ['.mjs', '.js']) {
+      const sibling = required.slice(0, -'.cjs'.length) + ext;
+      if (existsSync(sibling)) return sibling;
+    }
+    return required;
   } catch {
     return null;
   }
