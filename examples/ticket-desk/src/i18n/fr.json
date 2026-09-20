@@ -1,0 +1,8 @@
+{
+  "nav.tickets": "Tickets",
+  "nav.new": "Ouvrir un ticket",
+  "ticket.status.open": "ouvert",
+  "ticket.status.pending": "en attente",
+  "ticket.status.closed": "clos",
+  "desk.empty": "Aucun ticket pour le moment."
+}
