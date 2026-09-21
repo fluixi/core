@@ -24,9 +24,11 @@
  * export default defineMiddleware([auth, …]);
  * ```
  *
- * The cookie is signed and encrypted with AES-GCM through Web Crypto, so it works on
- * Node, Bun, Deno and a worker without a native dependency.
+ * The cookie itself is `@fluixi/session/server`, which knows nothing about OAuth: it
+ * seals a value and reads it back. What this file adds is the flow that decides what
+ * goes in it.
  */
+import { createSessionCookie } from '@fluixi/session/server';
 import { discover } from './discovery.js';
 import { createPkcePair, createStateValue, expiryFrom, timingSafeEqual } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
@@ -64,91 +66,6 @@ interface SessionPayload {
   pending?: { verifier: string; state: string; returnTo?: string };
 }
 
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-/** AES-GCM key from the configured secret. */
-async function keyFrom(secret: string): Promise<CryptoKey> {
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(secret));
-  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, [
-    'encrypt',
-    'decrypt',
-  ]);
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
-  const padded = value.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(padded.padEnd(Math.ceil(padded.length / 4) * 4, '='));
-  // Built on its own buffer, so the type is the one Web Crypto accepts. A
-  // `Uint8Array<ArrayBufferLike>` may be backed by a SharedArrayBuffer, which it refuses.
-  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function seal(payload: SessionPayload, secret: string): Promise<string> {
-  const key = await keyFrom(secret);
-  // A fresh nonce per write. Reusing one with the same key is what breaks AES-GCM.
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const sealed = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoder.encode(JSON.stringify(payload)),
-  );
-  return `${toBase64Url(iv)}.${toBase64Url(new Uint8Array(sealed))}`;
-}
-
-async function open(value: string, secret: string): Promise<SessionPayload | null> {
-  const [ivPart, dataPart] = value.split('.');
-  if (!ivPart || !dataPart) return null;
-  try {
-    const key = await keyFrom(secret);
-    const plain = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: fromBase64Url(ivPart) },
-      key,
-      fromBase64Url(dataPart),
-    );
-    return JSON.parse(decoder.decode(plain)) as SessionPayload;
-  } catch {
-    // Tampered, or sealed with a different secret. Either way there is no session.
-    return null;
-  }
-}
-
-function readCookie(request: Request, name: string): string | null {
-  const header = request.headers.get('cookie');
-  if (!header) return null;
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) return decodeURIComponent(rest.join('='));
-  }
-  return null;
-}
-
-function cookieHeader(
-  name: string,
-  value: string,
-  options: { secure: boolean; maxAge?: number },
-): string {
-  const parts = [
-    `${name}=${encodeURIComponent(value)}`,
-    'Path=/',
-    'HttpOnly',
-    // Lax rather than Strict: the callback is a top-level navigation back from the
-    // authorization server, and Strict would withhold the cookie on exactly that request.
-    'SameSite=Lax',
-  ];
-  if (options.secure) parts.push('Secure');
-  parts.push(`Max-Age=${options.maxAge ?? 60 * 60 * 24 * 30}`);
-  return parts.join('; ');
-}
-
 /**
  * The middleware.
  *
@@ -157,15 +74,12 @@ function cookieHeader(
  */
 export function oauthRoutes(config: OAuthRoutesConfig) {
   const base = (config.basePath ?? '/auth').replace(/\/$/, '');
-  const cookieName = config.cookieName ?? 'fx_session';
-  const secure = config.secureCookie ?? process.env.NODE_ENV === 'production';
   const scopes = config.scopes ?? ['openid', 'profile', 'email'];
-
-  if (config.cookieSecret.length < 32) {
-    throw new Error(
-      '[fluixi/oauth2] cookieSecret must be at least 32 characters: it is the key the session cookie is encrypted with.',
-    );
-  }
+  const cookie = createSessionCookie<SessionPayload>({
+    secret: config.cookieSecret,
+    name: config.cookieName,
+    secure: config.secureCookie,
+  });
 
   let endpoints: Endpoints | null = config.endpoints ?? null;
   const resolve = async (): Promise<Endpoints> => {
@@ -220,8 +134,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 
     const route = url.pathname.slice(base.length);
     const session = async (): Promise<SessionPayload | null> => {
-      const raw = readCookie(request, cookieName);
-      return raw ? open(raw, config.cookieSecret) : null;
+      return cookie.read(request);
     };
 
     if (route === '/login') {
@@ -240,19 +153,21 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 
       // The verifier goes in the cookie, which is the only thing that survives the trip
       // and is not readable by the page.
-      const cookie = await seal(
+      const pendingCookie = await cookie.write(
         {
           accessToken: '',
           pending: { verifier, state, returnTo: url.searchParams.get('returnTo') ?? undefined },
         },
-        config.cookieSecret,
+        // Ten minutes: long enough to sign in, short enough that an abandoned attempt
+        // does not sit in the browser.
+        { maxAge: 600 },
       );
 
       return new Response(null, {
         status: 302,
         headers: {
           location: target.toString(),
-          'set-cookie': cookieHeader(cookieName, cookie, { secure, maxAge: 600 }),
+          'set-cookie': pendingCookie,
         },
       });
     }
@@ -277,22 +192,19 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         code_verifier: pending.verifier,
       });
 
-      const cookie = await seal(
-        {
-          accessToken: String(payload.access_token ?? ''),
-          refreshToken:
-            typeof payload.refresh_token === 'string' ? payload.refresh_token : undefined,
-          idToken: typeof payload.id_token === 'string' ? payload.id_token : undefined,
-          expiresAt: expiryFrom(payload.expires_in),
-        },
-        config.cookieSecret,
-      );
+      const signedIn = await cookie.write({
+        accessToken: String(payload.access_token ?? ''),
+        refreshToken:
+          typeof payload.refresh_token === 'string' ? payload.refresh_token : undefined,
+        idToken: typeof payload.id_token === 'string' ? payload.id_token : undefined,
+        expiresAt: expiryFrom(payload.expires_in),
+      });
 
       return new Response(null, {
         status: 302,
         headers: {
           location: pending.returnTo ?? config.defaultReturnTo ?? '/',
-          'set-cookie': cookieHeader(cookieName, cookie, { secure }),
+          'set-cookie': signedIn,
         },
       });
     }
@@ -305,23 +217,18 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         grant_type: 'refresh_token',
         refresh_token: current.refreshToken,
       });
-      const cookie = await seal(
-        {
-          accessToken: String(payload.access_token ?? ''),
-          // A provider that rotates refresh tokens sends a new one; one that does not
-          // expects the old one to keep working.
-          refreshToken:
-            typeof payload.refresh_token === 'string'
-              ? payload.refresh_token
-              : current.refreshToken,
-          idToken: current.idToken,
-          expiresAt: expiryFrom(payload.expires_in),
-        },
-        config.cookieSecret,
-      );
-      return json({ ok: true }, 200, {
-        'set-cookie': cookieHeader(cookieName, cookie, { secure }),
+      const refreshed = await cookie.write({
+        accessToken: String(payload.access_token ?? ''),
+        // A provider that rotates refresh tokens sends a new one; one that does not
+        // expects the old one to keep working.
+        refreshToken:
+          typeof payload.refresh_token === 'string'
+            ? payload.refresh_token
+            : current.refreshToken,
+        idToken: current.idToken,
+        expiresAt: expiryFrom(payload.expires_in),
       });
+      return json({ ok: true }, 200, { 'set-cookie': refreshed });
     }
 
     if (route === '/me') {
@@ -344,7 +251,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const current = await session();
       const { endSession } = await resolve().catch(() => ({ endSession: undefined }));
       // Max-Age=0 is what removes it. Clearing the value alone leaves a cookie behind.
-      const cleared = cookieHeader(cookieName, '', { secure, maxAge: 0 });
+      const cleared = cookie.clear();
 
       if (endSession && current?.idToken) {
         const target = new URL(endSession);
@@ -390,7 +297,11 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
  * having its session resolved first.
  */
 export function sessionLocals(config: OAuthRoutesConfig) {
-  const cookieName = config.cookieName ?? 'fx_session';
+  const cookie = createSessionCookie<SessionPayload>({
+    secret: config.cookieSecret,
+    name: config.cookieName,
+    secure: config.secureCookie,
+  });
 
   return async function middleware(
     request: Request,
@@ -399,8 +310,7 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     const { getRequestLocals } = await import('@fluixi/server');
     const locals = getRequestLocals(request) as Record<string, unknown>;
 
-    const raw = readCookie(request, cookieName);
-    const session = raw ? await open(raw, config.cookieSecret) : null;
+    const session = await cookie.read(request);
 
     // Written either way. A route that reads locals should find "nobody" rather than
     // nothing, so the absent case and the signed-out case look the same to it.
