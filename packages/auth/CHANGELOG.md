@@ -1,5 +1,17 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.86
+
+### Patch Changes
+
+- Updated dependencies [5b18653]
+- Updated dependencies [128f233]
+  - @fluixi/reactive@1.0.0-alpha.86
+  - @fluixi/start@0.1.0-alpha.76
+  - @fluixi/core@1.0.0-alpha.86
+  - @fluixi/dom@1.0.0-alpha.86
+  - @fluixi/server@1.0.0-alpha.86
+
 ## 1.0.0-alpha.85
 
 ### Patch Changes

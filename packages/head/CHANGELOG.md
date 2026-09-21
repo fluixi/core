@@ -1,5 +1,12 @@
 # @fluixi/head
 
+## 1.0.0-alpha.53
+
+### Patch Changes
+
+- Updated dependencies [5b18653]
+  - @fluixi/reactive@1.0.0-alpha.86
+
 ## 1.0.0-alpha.52
 
 ### Patch Changes
