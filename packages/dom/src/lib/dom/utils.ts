@@ -193,6 +193,24 @@ export const JSX_PROPERTIES = new Set([
   'indeterminate',
   'htmlFor',
 ]);
+
+/**
+ * Names that stay attributes on a custom element.
+ *
+ * Everything else goes to the property, because an element's own API is the reason it
+ * has one. These are the global HTML attributes the browser reads off the attribute.
+ * `slot` matters most: it decides where the element lands, so assigning it as a property
+ * would leave the element unslotted.
+ */
+export const ALWAYS_ATTRIBUTE = new Set([
+  'id', 'class', 'className', 'style', 'slot', 'part', 'exportparts', 'is',
+  'title', 'role', 'lang', 'dir', 'tabindex', 'hidden',
+]);
+
+/** `aria-*` and `data-*` are attributes wherever they appear. */
+export function isAttributeOnlyName(name: string): boolean {
+  return ALWAYS_ATTRIBUTE.has(name) || name.startsWith('aria-') || name.startsWith('data-');
+}
 /**
  * Queries a single element with type safety
  *

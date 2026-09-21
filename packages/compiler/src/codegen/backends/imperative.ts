@@ -294,7 +294,14 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         } else {
           used.add('spread');
           const svgFlag = node.svg ? ', isSVG: true' : '';
-          parts.push(`spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag} });`);
+          // A dash in the tag is what makes it a custom element, and the tag is known
+          // here, so the runtime does not have to read it back off the node. It falls
+          // back to that check when the flag is absent, which is how a hand-written
+          // `spread` call still behaves.
+          const customFlag = node.tag.includes('-') ? ', isCustomElement: true' : '';
+          parts.push(
+            `spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag}${customFlag} });`,
+          );
         }
       }
       // Insert each child individually (like the jsx runtime's applyProps), so a

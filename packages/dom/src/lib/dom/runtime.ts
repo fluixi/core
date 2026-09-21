@@ -15,7 +15,7 @@
 import  {
   isSignal,
 } from '@fluixi/reactive/signal';
-import { JSX_PROPERTIES, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
+import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
@@ -111,6 +111,11 @@ export interface SpreadOptions {
   prevProps?: Record<string, any>;
   isSVG?: boolean;
   skipChildren?: boolean;
+  /**
+   * The tag is a custom element. The compiler sets this from the tag name; a caller that
+   * builds props by hand can leave it out and the tag is read off the element instead.
+   */
+  isCustomElement?: boolean;
 }
 
 export type PropertyValue = any;
@@ -1388,6 +1393,7 @@ export function spread(options: SpreadOptions): () => void {
     prevProps = EMPTY_OBJ as Record<string, any>,
     isSVG = false,
     skipChildren = false,
+    isCustomElement,
   } = options;
 
   if (!element || !isDomElement(element)) {
@@ -1504,7 +1510,19 @@ export function spread(options: SpreadOptions): () => void {
       continue;
     }
 
-    const asProperty = JSX_PROPERTIES.has(key) || (!elementIsSVG && key in element);
+    // A custom element takes the property even when it does not have one yet.
+    //
+    // `key in element` is false until the element upgrades, so a page that renders
+    // before `customElements.define` runs sent every value to an attribute, and an
+    // object arrived as the string `[object Object]`. Upgrading afterwards did not
+    // recover it: the property was never assigned, so the element had nothing to read.
+    // Assigning it now leaves an own property that the element adopts on upgrade (see
+    // the constructor in @fluixi/web-components/element).
+    const custom = isCustomElement ?? element.localName.includes('-');
+    const asProperty =
+      JSX_PROPERTIES.has(key) ||
+      (!elementIsSVG && key in element) ||
+      (custom && !elementIsSVG && !isAttributeOnlyName(key));
     if (typeof value === 'function') {
       // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
       disposers.push(
