@@ -65,19 +65,23 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     );
 
   it('no adapter leaves Vite\'s heuristic alone', () => {
-    expect(ssrBuildOptions(resolveConfig({ root: root() }))).toEqual({ noExternal: undefined });
+    // `@fluixi/core` is always bundled: its `/routes` subpath is a plugin virtual, and
+    // an externalized package is imported by node without the plugin ever seeing it.
+    expect(ssrBuildOptions(resolveConfig({ root: root() }))).toEqual({
+      noExternal: ['@fluixi/core'],
+    });
   });
 
   it('carries ssrNoExternal through when no adapter opts in', () => {
     const cfg = resolveConfig({ root: root(), ssrNoExternal: ['some-esm-dep'] });
-    expect(ssrBuildOptions(cfg)).toEqual({ noExternal: ['some-esm-dep'] });
+    expect(ssrBuildOptions(cfg)).toEqual({ noExternal: ['@fluixi/core', 'some-esm-dep'] });
   });
 
   it('node externalizes the app\'s own @fluixi/* deps, nothing else', () => {
     const cfg = resolveConfig({ root: root(), adapter: nodeAdapter });
     // `vite` is a dependency too: externalizing it is Vite's call, not ours.
     expect(ssrBuildOptions(cfg)).toEqual({
-      noExternal: undefined,
+      noExternal: ['@fluixi/core'],
       external: ['@fluixi/start', '@fluixi/core', '@fluixi/core/router'],
     });
   });
@@ -102,6 +106,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
       adapter: nodeAdapter,
       ssrNoExternal: ['@fluixi/core'],
     });
+    // Named twice, once by the app and once by the rule above; it is listed once.
     expect(ssrBuildOptions(cfg)).toEqual({
       noExternal: ['@fluixi/core'],
       external: ['@fluixi/start'],
@@ -117,7 +122,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cfg = resolveConfig({ root: appRoot({ vite: '*' }), adapter: nodeAdapter });
 
-    expect(ssrBuildOptions(cfg)).toEqual({ noExternal: undefined, external: undefined });
+    expect(ssrBuildOptions(cfg)).toEqual({ noExternal: ['@fluixi/core'], external: undefined });
     expect(warn.mock.calls[0][0]).toContain('bundling everything');
     warn.mockRestore();
   });

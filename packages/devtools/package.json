@@ -56,6 +56,12 @@
         "import": "./dist/wire.mjs",
         "require": "./dist/wire.cjs",
         "default": "./dist/wire.js"
+      },
+      "./plugins": {
+        "types": "./dist/plugins/index.d.ts",
+        "import": "./dist/plugins/index.mjs",
+        "require": "./dist/plugins/index.cjs",
+        "default": "./dist/plugins/index.js"
       }
     }
   },

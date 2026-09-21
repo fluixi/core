@@ -179,7 +179,9 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   noExternal?: string[] | true;
   external?: string[];
 } {
-  const noExternal = cfg.ssrNoExternal.length ? cfg.ssrNoExternal : undefined;
+  // Always bundled, for the reason in commands/dev.ts: the routes module is a plugin
+  // virtual and an externalized package never reaches the plugin.
+  const noExternal = [...new Set(['@fluixi/core', ...cfg.ssrNoExternal])];
   const mode = cfg.adapter?.bundle;
 
   if (mode === 'inline') return { noExternal: true };

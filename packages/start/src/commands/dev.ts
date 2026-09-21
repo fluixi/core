@@ -138,7 +138,12 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (fluixi)
     server: { middlewareMode: true, hmr: { server: http } },
     appType: 'custom',
-    ssr: cfg.ssrNoExternal.length ? { noExternal: cfg.ssrNoExternal } : undefined,
+    // `@fluixi/core` always goes through vite rather than being externalized.
+    // `@fluixi/core/routes` is served by fluixiRoutesPlugin, and an externalized
+    // dependency is imported by node directly, so no plugin ever sees the specifier and
+    // the app gets the "did not replace it" stub instead of its route tree. A workspace
+    // app hides this by resolving the package to source.
+    ssr: { noExternal: ['@fluixi/core', ...cfg.ssrNoExternal] },
   });
 
   http.listen(cfg.port, () => devReady({ port: cfg.port, startedAt }));
