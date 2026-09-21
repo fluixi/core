@@ -160,7 +160,27 @@ const templateCache = new Map<string, HTMLTemplateElement>();
 // This approach correctly handles e.preventDefault() and stopPropagation.
 // ============================================================================
 
-const delegatedSet = new Set<string>();
+/**
+ * Which events already have a document listener, shared across every copy of this module.
+ *
+ * On globalThis for the same reason the reactive graph is (see reactive's `graph/state.ts`):
+ * a page can load more than one build of the runtime, and two standalone custom elements
+ * is the ordinary way that happens. As a module-level `Set` each copy believed it was the
+ * first, each added its own listener to the document, and every handler ran once per copy.
+ * One click on a page with two elements counted twice.
+ *
+ * The dispatcher is stored beside it so the copies share one function rather than adding
+ * an identical listener each.
+ */
+interface DelegationState {
+  names: Set<string>;
+  dispatch?: EventListener;
+}
+const DELEGATION_KEY = '__fluixi_delegated_events__';
+const delegation: DelegationState = ((globalThis as any)[DELEGATION_KEY] ??= {
+  names: new Set<string>(),
+});
+const delegatedSet = delegation.names;
 
 // Events that don't bubble: must use direct addEventListener
 const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resize', 'mouseenter', 'mouseleave', 'pointerenter', 'pointerleave', 'gotpointercapture', 'lostpointercapture']);
@@ -174,7 +194,10 @@ export function delegateEvents(eventNames: string[]): void {
   for (const name of eventNames) {
     if (delegatedSet.has(name) || NON_DELEGATED.has(name)) continue;
     delegatedSet.add(name);
-    document.addEventListener(name, delegatedEventHandler);
+    // The first copy to get here owns the function every copy then registers, so a
+    // second build cannot add a second listener for the same event.
+    delegation.dispatch ??= delegatedEventHandler as EventListener;
+    document.addEventListener(name, delegation.dispatch);
   }
 }
 
