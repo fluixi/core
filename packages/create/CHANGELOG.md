@@ -1,5 +1,12 @@
 # @fluixi/create
 
+## 0.1.0-alpha.12
+
+### Patch Changes
+
+- 26aa684: A fluixi-css app is generated with a `layers.css` that declares the cascade-layer order, imported ahead of any component CSS. A layer ranks by where it is first declared and an undeclared one ranks last, so without this the engine's `flx.base` reset outranks the `@fluixi-ui` components it belongs under.
+- 5b18653: Generated apps use the `$signal`/`$resource` intrinsics, navigate with `<Link>` rather than `<a href>`, and ship a `fluixi.d.ts` so an editor knows the intrinsics before the app has been run. The fluixi-css stylesheet now carries `@fluixi base/utilities/components` and its own `@theme`, so no `fluixi.css.config.js` is generated. `resource()` accepts the single-fetcher form again: it borrowed its parameters from `createResource`, which collapses an overloaded function to its last signature.
+
 ## 0.1.0-alpha.11
 
 ### Patch Changes

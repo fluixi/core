@@ -1,5 +1,17 @@
 # @fluixi/start
 
+## 0.1.0-alpha.76
+
+### Patch Changes
+
+- 128f233: SSR now bundles `@fluixi/core` instead of externalizing it, so `@fluixi/core/routes` reaches the routes plugin and an installed app gets its route tree rather than the "did not replace it" stub. `@fluixi/devtools` publishes its `./plugins` subpath, which the vite plugin needs to turn the reactive graph on.
+  - @fluixi/compiler@1.0.0-alpha.86
+  - @fluixi/core@1.0.0-alpha.86
+  - @fluixi/dom@1.0.0-alpha.86
+  - @fluixi/head@1.0.0-alpha.53
+  - @fluixi/server@1.0.0-alpha.86
+  - @fluixi/vite-plugin@1.0.0-alpha.86
+
 ## 0.1.0-alpha.75
 
 ### Patch Changes
