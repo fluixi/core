@@ -1,5 +1,11 @@
 # @fluixi/create
 
+## 0.1.0-alpha.11
+
+### Patch Changes
+
+- afa9ed7: The generated stylesheet now matches the selected CSS engine, including the correct dark variant, @source scan, empty @theme, appropriate imports, and the @fluixi-ui token sheet is placed at `@fluixi-ui/tokens/tokens.css` before the app's own styles.
+
 ## 0.1.0-alpha.10
 
 ### Patch Changes
