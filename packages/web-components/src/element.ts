@@ -54,6 +54,20 @@ export interface ElementOptions<S extends Record<string, PropDeclaration<unknown
   base?: CustomElementConstructor;
 }
 
+/**
+ * The constructor `customElement` hands back, carrying the element's properties.
+ *
+ * `new Counter().step` is a number rather than an error, and
+ * `HTMLElementTagNameMap['fx-counter'] = InstanceType<typeof Counter>` is the whole
+ * declaration a consumer writes. TypeScript cannot emit a global augmentation from a
+ * runtime call, so that one line stays manual.
+ */
+export interface ElementConstructor<S extends Record<string, PropDeclaration<unknown>>>
+  extends CustomElementConstructor {
+  new (): HTMLElement & { [K in keyof S]: S[K] extends PropDeclaration<infer T> ? T : never };
+  readonly observedAttributes?: string[];
+}
+
 /** What a setup function is handed. */
 export interface Host<S extends Record<string, PropDeclaration<unknown>>> {
   /** The custom element. For focus, measurement, and anything DOM-level. */
@@ -92,7 +106,7 @@ interface Lifecycle {
 export function createElementClass<S extends Record<string, PropDeclaration<unknown>>>(
   setup: Setup<S>,
   options: ElementOptions<S> = {},
-): CustomElementConstructor {
+): ElementConstructor<S> {
   const schema = (options.props ?? {}) as Record<string, PropDeclaration<unknown>>;
   const observed = observedFrom(schema);
   const shadowInit: ShadowRootInit | null =
@@ -260,7 +274,7 @@ export function createElementClass<S extends Record<string, PropDeclaration<unkn
     });
   }
 
-  return FluixiElement as unknown as CustomElementConstructor;
+  return FluixiElement as unknown as ElementConstructor<S>;
 }
 
 /**
@@ -274,8 +288,8 @@ export function defineElement<S extends Record<string, PropDeclaration<unknown>>
   name: string,
   setup: Setup<S>,
   options: ElementOptions<S> = {},
-): CustomElementConstructor {
+): ElementConstructor<S> {
   const constructor = createElementClass(setup, options);
   if (isServer()) return constructor;
-  return defineCustomElement(name, constructor, options.define);
+  return defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
 }

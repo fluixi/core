@@ -9,14 +9,55 @@
  * These are bindings, not wrappers. `customElement === defineElement` is true, so a
  * stack trace names the real function and nothing is added to the bundle.
  */
-import { defineElement, type ElementOptions, type Setup } from './element.js';
+import {
+  defineElement,
+  type ElementConstructor,
+  type ElementOptions,
+  type Setup,
+} from './element.js';
 import { createDispatch } from './events.js';
 import { prop, type PropDeclaration, type PropOptions } from './props.js';
 import { createTargets, type Targets } from './targets.js';
 import { defineCustomElement } from './registry.js';
 
-/** `defineElement`, under the name Lit and Catalyst use. */
-export const customElement = defineElement;
+/**
+ * Define a custom element.
+ *
+ * Two call shapes. The three-argument one matches `defineElement`, which it is:
+ *
+ *     customElement('fx-counter', ({ props }) => …, { props: { step: property.number(1) } })
+ *
+ * The one-object one puts the declaration next to the body that reads it, which is the
+ * difference that shows up while authoring. A prop list cannot move *inside* setup:
+ * `observedAttributes` is a static the browser reads when the element is defined, before
+ * any instance exists, so the names have to be known first.
+ *
+ *     customElement('fx-counter', {
+ *       props: { step: property.number(1) },
+ *       setup: ({ props }) => …,
+ *     })
+ *
+ * The return value carries the element's properties, so
+ * `InstanceType<typeof Counter>` is what a consumer puts in `HTMLElementTagNameMap`.
+ */
+export function customElement<S extends Record<string, PropDeclaration<unknown>>>(
+  name: string,
+  setup: Setup<S>,
+  options?: ElementOptions<S>,
+): ElementConstructor<S>;
+export function customElement<S extends Record<string, PropDeclaration<unknown>>>(
+  name: string,
+  options: ElementOptions<S> & { setup: Setup<S> },
+): ElementConstructor<S>;
+export function customElement<S extends Record<string, PropDeclaration<unknown>>>(
+  name: string,
+  second: Setup<S> | (ElementOptions<S> & { setup: Setup<S> }),
+  third: ElementOptions<S> = {},
+): ElementConstructor<S> {
+  if (typeof second === 'function') return defineElement(name, second, third);
+  const { setup, ...options } = second;
+  return defineElement(name, setup, options as ElementOptions<S>);
+}
 
 /** `defineCustomElement`, already the registry-facing name. */
 export { defineCustomElement };
@@ -85,4 +126,4 @@ export function slot(
   };
 }
 
-export type { ElementOptions, PropDeclaration, PropOptions, Setup, Targets };
+export type { ElementConstructor, ElementOptions, PropDeclaration, PropOptions, Setup, Targets };

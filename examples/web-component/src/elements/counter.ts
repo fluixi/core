@@ -14,22 +14,19 @@ import { customElement, property } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { signal } from '@fluixi/reactive/signal';
 
-/** Declared once, and reused below to type the element for its consumers. */
-export const counterProps = {
-  /** Added on each click. Settable as `step="5"` or as `el.step = 5`. */
-  step: property.number(1),
-  /** Shown before the number. */
-  label: property.string('Count'),
-};
-
 /** What the element dispatches, for the consumer's handler types. */
 export interface CounterEvents {
   change: { value: number };
 }
 
-customElement(
-  'fx-counter',
-  ({ props, dispatch, targets }) => {
+export const FxCounter = customElement('fx-counter', {
+  props: {
+    /** Added on each click. Settable as `step="5"` or as `el.step = 5`. */
+    step: property.number(1),
+    /** Shown before the number. */
+    label: property.string('Count'),
+  },
+  setup: ({ props, dispatch, targets }) => {
     const count = signal(0);
 
     const bump = () => {
@@ -52,11 +49,11 @@ customElement(
       </div>
     `;
   },
-  { props: counterProps },
-);
+});
 
 declare global {
   interface HTMLElementTagNameMap {
-    'fx-counter': HTMLElement & { step: number; label: string };
+    // The constructor carries the properties, so the list is not repeated here.
+    'fx-counter': InstanceType<typeof FxCounter>;
   }
 }

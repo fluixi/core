@@ -11,20 +11,19 @@
 import { attribute, customElement, property } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 
-export const disclosureProps = {
-  /** Reflected, so `[open]` matches in CSS. */
-  open: attribute.boolean(false),
-  /** Used when no `summary` slot is given. */
-  summary: property.string('Details'),
-};
-
 export interface DisclosureEvents {
   toggle: { open: boolean };
 }
 
-customElement(
-  'fx-disclosure',
-  ({ props, dispatch, set }) => {
+export const FxDisclosure = customElement('fx-disclosure', {
+  shadow: 'open',
+  props: {
+    /** Reflected, so `[open]` matches in CSS. */
+    open: attribute.boolean(false),
+    /** Used when no `summary` slot is given. */
+    summary: property.string('Details'),
+  },
+  setup: ({ props, dispatch, set }) => {
     const toggle = () => {
       set('open', !props.open());
       dispatch('toggle', { open: props.open() });
@@ -44,11 +43,10 @@ customElement(
       </div>
     `;
   },
-  { props: disclosureProps, shadow: 'open' },
-);
+});
 
 declare global {
   interface HTMLElementTagNameMap {
-    'fx-disclosure': HTMLElement & { open: boolean; summary: string };
+    'fx-disclosure': InstanceType<typeof FxDisclosure>;
   }
 }
