@@ -1,13 +1,12 @@
-import { createSignal } from '@fluixi/core';
 
 export function App() {
-  const [count, setCount] = createSignal(0);
+  const count = $signal(0);
   return (
     <div class="app">
       <h1>Fluixi</h1>
-      <button onClick={() => setCount(count() - 1)}>-</button>
+      <button onClick={() => count.set(count() - 1)}>-</button>
       <span>{count()}</span>
-      <button onClick={() => setCount(count() + 1)}>+</button>
+      <button onClick={() => count.set(count() + 1)}>+</button>
     </div>
   );
 }

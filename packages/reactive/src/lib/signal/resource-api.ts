@@ -19,13 +19,35 @@
  * the same call it always was.
  */
 import { createResource } from './graph/resource.js';
-import type { ResourceActions, ResourceReturn } from './graph/resource.js';
+import type {
+  ResourceActions,
+  ResourceFetcherInfo,
+  ResourceReturn,
+} from './graph/resource.js';
+
+type ResourceOptions<T> = { initialValue?: T; name?: string; transport?: boolean };
 
 type ResourceAccessor<T> = ResourceReturn<T>[0];
 
 export type ResourceHandle<T> = ResourceAccessor<T> & ResourceActions<T>;
 
-export function resource<T>(...args: Parameters<typeof createResource>): ResourceHandle<T> {
+/**
+ * The overloads are restated rather than borrowed from `createResource`.
+ *
+ * `Parameters<typeof createResource>` collapses an overloaded function to its **last**
+ * signature, which is the one taking a source, so `resource(fetcher)` was rejected for
+ * missing an argument even though the underlying call accepts it.
+ */
+export function resource<T>(
+  fetcher: (k: true, info: ResourceFetcherInfo<T>) => T | Promise<T>,
+  options?: ResourceOptions<T>,
+): ResourceHandle<T>;
+export function resource<T, S>(
+  source: S | false | null | undefined | (() => S | false | null | undefined),
+  fetcher: (k: S, info: ResourceFetcherInfo<T>) => T | Promise<T>,
+  options?: ResourceOptions<T>,
+): ResourceHandle<T>;
+export function resource<T>(...args: unknown[]): ResourceHandle<T> {
   const [read, actions] = (createResource as (...a: unknown[]) => ResourceReturn<T>)(...args);
 
   // Assigned onto the accessor itself, so `loading`/`error`/`latest` stay the live

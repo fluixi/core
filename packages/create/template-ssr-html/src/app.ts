@@ -1,4 +1,4 @@
-import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
+import { Router, Outlet, createMemoryHistory, Link } from '@fluixi/start/router';
 import { Suspense } from '@fluixi/core';
 import { html } from '@fluixi/start';
 import { routes } from '@fluixi/core/routes';
@@ -10,7 +10,7 @@ function RootLayout() {
   return html`
     <div class="app">
       <nav>
-        <a href="/">home</a> · <a href="/about">about</a>
+        <${Link} href="/">home<//> · <${Link} href="/about">about<//>
       </nav>
       <main>
         <${Suspense} fallback=${html`<p>loading…</p>`}>
