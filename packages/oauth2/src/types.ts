@@ -131,6 +131,20 @@ export interface BrowserConfig extends BaseConfig {
    * `sessionStorage`, the narrower one.
    */
   storage?: 'local' | 'session';
+  /**
+   * Namespaces this client's stored values. Defaults to `clientId`.
+   *
+   * Set it when an app runs two clients against the same provider, so their in-flight
+   * logins do not overwrite each other.
+   */
+  storageKey?: string;
+  /**
+   * How the token endpoint is told which client is calling.
+   *
+   * `body` puts the credentials in the form, which most providers accept. `basic` sends
+   * an `Authorization: Basic` header, which some require. Default `body`.
+   */
+  tokenAuthMethod?: 'body' | 'basic';
 }
 
 /**

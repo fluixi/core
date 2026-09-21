@@ -814,6 +814,9 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../server
       '@fluixi/session':
         specifier: workspace:*
         version: link:../session

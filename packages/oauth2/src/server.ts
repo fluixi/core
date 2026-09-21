@@ -48,6 +48,8 @@ export interface OAuthRoutesConfig {
   secureCookie?: boolean;
   /** Where to send the browser after a login with no recorded destination. */
   defaultReturnTo?: string;
+  /** `basic` sends the credentials in an Authorization header. Default `body`. */
+  tokenAuthMethod?: 'body' | 'basic';
   /** Map the provider's userinfo onto the app's own shape. */
   mapUser?: (claims: Record<string, unknown>, accessToken: string) => unknown;
 }
@@ -183,14 +185,22 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 
   async function tokenRequest(body: Record<string, string>) {
     const { token } = await resolve();
-    const form = new URLSearchParams({ ...body, client_id: config.clientId });
-    if (config.clientSecret) form.set('client_secret', config.clientSecret);
+    const headers: Record<string, string> = {
+      'content-type': 'application/x-www-form-urlencoded',
+    };
+    const form = new URLSearchParams(body);
 
-    const response = await fetch(token, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: form.toString(),
-    });
+    if (config.tokenAuthMethod === 'basic' && config.clientSecret) {
+      // Some providers accept only Basic on the token endpoint. The values are
+      // form-encoded before base64, which is what the spec asks for.
+      const pair = `${encodeURIComponent(config.clientId)}:${encodeURIComponent(config.clientSecret)}`;
+      headers.authorization = `Basic ${btoa(pair)}`;
+    } else {
+      form.set('client_id', config.clientId);
+      if (config.clientSecret) form.set('client_secret', config.clientSecret);
+    }
+
+    const response = await fetch(token, { method: 'POST', headers, body: form.toString() });
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
       throw new OAuthError(
@@ -350,6 +360,73 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       return json({ ok: true }, 200, { 'set-cookie': cleared });
     }
 
+    return next();
+  };
+}
+
+/**
+ * Put the signed-in user on the request, so a server render knows who is looking.
+ *
+ * This is the piece that makes `mode: 'server'` able to render authenticated pages. The
+ * cookie is the credential and the server can read it, so the user is resolved before
+ * the render and written where `@fluixi/auth`'s hooks already look: request locals,
+ * under the key they read. `useUser()` then answers during SSR instead of returning null
+ * and filling in after hydration.
+ *
+ * Dependency injection does not solve this and is not meant to. DI decides which
+ * instance a component gets; locals carry what the middleware learned about this
+ * request. They are different questions, and the user is the second one.
+ *
+ * There is no browser-mode equivalent, and that is not an omission. In that mode the
+ * token lives in the browser and is never sent on a document request, so the server has
+ * no credential to resolve and cannot know who is signed in. An app built that way
+ * renders the signed-out shell and fills it in on the client.
+ *
+ * ```ts
+ * export default defineMiddleware([auth, sessionLocals(config), ...]);
+ * ```
+ *
+ * Mount it after `oauthRoutes`, so a request to `/auth/login` is answered rather than
+ * having its session resolved first.
+ */
+export function sessionLocals(config: OAuthRoutesConfig) {
+  const cookieName = config.cookieName ?? 'fx_session';
+
+  return async function middleware(
+    request: Request,
+    next: () => Promise<Response>,
+  ): Promise<Response> {
+    const { getRequestLocals } = await import('@fluixi/server');
+    const locals = getRequestLocals(request) as Record<string, unknown>;
+
+    const raw = readCookie(request, cookieName);
+    const session = raw ? await open(raw, config.cookieSecret) : null;
+
+    // Written either way. A route that reads locals should find "nobody" rather than
+    // nothing, so the absent case and the signed-out case look the same to it.
+    if (!session?.accessToken) {
+      locals.auth = { user: null, session: null };
+      return next();
+    }
+
+    let user: unknown = null;
+    try {
+      const endpoints = config.endpoints ?? (config.issuer ? await discover(config.issuer) : null);
+      if (endpoints?.userinfo) {
+        const response = await fetch(endpoints.userinfo, {
+          headers: { authorization: `Bearer ${session.accessToken}` },
+        });
+        if (response.ok) {
+          const claims = (await response.json()) as Record<string, unknown>;
+          user = config.mapUser ? config.mapUser(claims, session.accessToken) : claims;
+        }
+      }
+    } catch {
+      // A provider that is unreachable should not take the page down with it. The render
+      // proceeds as signed out, and the client retries on its own.
+    }
+
+    locals.auth = { user, session: user ? { expiresAt: session.expiresAt } : null };
     return next();
   };
 }

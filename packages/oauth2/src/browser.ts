@@ -28,11 +28,19 @@ import type {
   Tokens,
 } from './types.js';
 
-/** What survives the redirect, and nothing that does not have to. */
-const VERIFIER_KEY = 'fx.oauth2.verifier';
-const STATE_KEY = 'fx.oauth2.state';
-const RETURN_KEY = 'fx.oauth2.return';
-const REFRESH_KEY = 'fx.oauth2.refresh';
+/**
+ * What survives the redirect, and nothing that does not have to.
+ *
+ * Namespaced per client, because an app can offer more than one provider. Shared keys
+ * meant a second client overwrote the first's verifier and state, so whichever login the
+ * visitor did not finish broke the one they did.
+ */
+const keysFor = (id: string) => ({
+  verifier: `fx.oauth2.${id}.verifier`,
+  state: `fx.oauth2.${id}.state`,
+  returnTo: `fx.oauth2.${id}.return`,
+  refresh: `fx.oauth2.${id}.refresh`,
+});
 
 const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
 
@@ -52,6 +60,9 @@ export function createBrowserClient(
   fetcher: typeof fetch = fetch,
 ): AuthClient {
   const scopes = config.scopes ?? DEFAULT_SCOPES;
+  // The client id by default, which is already distinct per provider. `storageKey`
+  // overrides it for an app running two clients against the same provider.
+  const KEY = keysFor(config.storageKey ?? config.clientId);
   // The flow's temporary values follow the configured storage, so a `session` choice
   // really does end when the tab does.
   const flow = () => store(config.storage ?? 'session');
@@ -77,10 +88,23 @@ export function createBrowserClient(
   /** The token endpoint speaks form encoding, not JSON. */
   async function exchange(body: Record<string, string>): Promise<Tokens> {
     const { token } = await resolveEndpoints();
+    const headers: Record<string, string> = {
+      'content-type': 'application/x-www-form-urlencoded',
+    };
+
+    const form = { ...body };
+    if (config.tokenAuthMethod === 'basic') {
+      // A public client has no secret, so the password half is empty. Providers that
+      // require Basic still accept that, and it is what the spec describes for a client
+      // with no secret.
+      headers.authorization = `Basic ${btoa(`${encodeURIComponent(config.clientId)}:`)}`;
+      delete form.client_id;
+    }
+
     const response = await fetcher(token, {
       method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(body).toString(),
+      headers,
+      body: new URLSearchParams(form).toString(),
     });
 
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
@@ -110,7 +134,7 @@ export function createBrowserClient(
     };
 
     access = tokens;
-    if (tokens.refreshToken) durable()?.setItem(REFRESH_KEY, tokens.refreshToken);
+    if (tokens.refreshToken) durable()?.setItem(KEY.refresh, tokens.refreshToken);
     return tokens;
   }
 
@@ -121,12 +145,12 @@ export function createBrowserClient(
       const state = createStateValue();
 
       const storage = flow();
-      storage?.setItem(VERIFIER_KEY, verifier);
-      storage?.setItem(STATE_KEY, state);
+      storage?.setItem(KEY.verifier, verifier);
+      storage?.setItem(KEY.state, state);
       // Where to land afterwards. Recorded here because the redirect discards everything
       // this module is holding.
       storage?.setItem(
-        RETURN_KEY,
+        KEY.returnTo,
         options.returnTo ?? `${location.pathname}${location.search}`,
       );
 
@@ -161,13 +185,13 @@ export function createBrowserClient(
       }
 
       const storage = flow();
-      const expected = storage?.getItem(STATE_KEY) ?? null;
-      const verifier = storage?.getItem(VERIFIER_KEY) ?? null;
+      const expected = storage?.getItem(KEY.state) ?? null;
+      const verifier = storage?.getItem(KEY.verifier) ?? null;
 
       // Single-use. Cleared before the exchange so a replayed callback finds nothing,
       // whether or not the exchange succeeds.
-      storage?.removeItem(STATE_KEY);
-      storage?.removeItem(VERIFIER_KEY);
+      storage?.removeItem(KEY.state);
+      storage?.removeItem(KEY.verifier);
 
       if (!expected || !params.state || !timingSafeEqual(expected, params.state)) {
         throw new OAuthError(
@@ -192,7 +216,7 @@ export function createBrowserClient(
     },
 
     async refresh(): Promise<Tokens> {
-      const token = access?.refreshToken ?? durable()?.getItem(REFRESH_KEY);
+      const token = access?.refreshToken ?? durable()?.getItem(KEY.refresh);
       if (!token) {
         throw new OAuthError('No refresh token, so the session cannot be extended.', 'no_refresh_token');
       }
@@ -205,7 +229,7 @@ export function createBrowserClient(
       } catch (error) {
         // A refused refresh means the session is over. Holding the dead token would make
         // every later attempt fail the same way.
-        durable()?.removeItem(REFRESH_KEY);
+        durable()?.removeItem(KEY.refresh);
         access = null;
         throw error;
       }
@@ -234,7 +258,7 @@ export function createBrowserClient(
     async logout(options: { returnTo?: string } = {}): Promise<void> {
       const idToken = access?.idToken;
       access = null;
-      durable()?.removeItem(REFRESH_KEY);
+      durable()?.removeItem(KEY.refresh);
 
       const { endSession } = await resolveEndpoints().catch(() => ({ endSession: undefined }));
       const target = options.returnTo ?? config.postLogoutRedirectUri;
@@ -257,7 +281,7 @@ export function createBrowserClient(
       if (access) return access;
       // A refresh token is the only thing that survives a reload, so restoring means
       // spending it for a fresh access token.
-      if (!durable()?.getItem(REFRESH_KEY)) return null;
+      if (!durable()?.getItem(KEY.refresh)) return null;
       try {
         return await this.refresh();
       } catch {
@@ -267,8 +291,8 @@ export function createBrowserClient(
 
     consumeReturnTo(): string | null {
       const storage = flow();
-      const value = storage?.getItem(RETURN_KEY) ?? null;
-      storage?.removeItem(RETURN_KEY);
+      const value = storage?.getItem(KEY.returnTo) ?? null;
+      storage?.removeItem(KEY.returnTo);
       return value;
     },
   };

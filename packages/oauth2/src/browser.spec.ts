@@ -81,7 +81,7 @@ describe('starting a login', () => {
   it('never puts the verifier on the wire', async () => {
     const { fetcher } = server({});
     await createBrowserClient(config(), fetcher).login();
-    const verifier = sessionStorage.getItem('fx.oauth2.verifier')!;
+    const verifier = sessionStorage.getItem('fx.oauth2.admin-spa.verifier')!;
 
     expect(verifier).toBeTruthy();
     // The whole point of PKCE: the challenge travels, the verifier stays.
@@ -91,7 +91,7 @@ describe('starting a login', () => {
   it('records where to return', async () => {
     const { fetcher } = server({});
     await createBrowserClient(config(), fetcher).login({ returnTo: '/reports' });
-    expect(sessionStorage.getItem('fx.oauth2.return')).toBe('/reports');
+    expect(sessionStorage.getItem('fx.oauth2.admin-spa.return')).toBe('/reports');
   });
 
   it('passes extra parameters through', async () => {
@@ -108,7 +108,7 @@ describe('finishing a login', () => {
     });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
-    const state = sessionStorage.getItem('fx.oauth2.state')!;
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
 
     const tokens = await client.handleCallback({ code: 'the-code', state });
 
@@ -143,7 +143,7 @@ describe('finishing a login', () => {
     const { fetcher } = server({ 'oauth-token': { access_token: 'at' } });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
-    const state = sessionStorage.getItem('fx.oauth2.state')!;
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
 
     await client.handleCallback({ code: 'c', state });
     await expect(client.handleCallback({ code: 'c', state })).rejects.toThrow();
@@ -161,7 +161,7 @@ describe('finishing a login', () => {
     const { fetcher } = server({ 'oauth-token': { token_type: 'Bearer' } });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
-    const state = sessionStorage.getItem('fx.oauth2.state')!;
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
     await expect(client.handleCallback({ code: 'c', state })).rejects.toThrow(/no access_token/);
   });
 });
@@ -173,7 +173,7 @@ describe('refreshing', () => {
     });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
-    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.state')! });
+    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.admin-spa.state')! });
     return { client, calls };
   }
 
@@ -189,11 +189,11 @@ describe('refreshing', () => {
       'oauth-token': { error: 'invalid_grant', __status: 400 },
     });
     const client = createBrowserClient(config(), fetcher);
-    sessionStorage.setItem('fx.oauth2.refresh', 'stale');
+    sessionStorage.setItem('fx.oauth2.admin-spa.refresh', 'stale');
 
     await expect(client.refresh()).rejects.toThrow(OAuthError);
     // Keeping it would make every later attempt fail the same way.
-    expect(sessionStorage.getItem('fx.oauth2.refresh')).toBeNull();
+    expect(sessionStorage.getItem('fx.oauth2.admin-spa.refresh')).toBeNull();
   });
 
   it('says so when there is nothing to refresh with', async () => {
@@ -212,7 +212,7 @@ describe('restoring on a cold load', () => {
 
   it('spends a stored refresh token for a fresh session', async () => {
     const { fetcher } = server({ 'oauth-token': { access_token: 'fresh', expires_in: 60 } });
-    sessionStorage.setItem('fx.oauth2.refresh', 'rt');
+    sessionStorage.setItem('fx.oauth2.admin-spa.refresh', 'rt');
     const tokens = await createBrowserClient(config(), fetcher).restore!();
     expect(tokens?.accessToken).toBe('fresh');
   });
@@ -226,7 +226,7 @@ describe('the user', () => {
     });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
-    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.state')! });
+    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.admin-spa.state')! });
 
     expect(await client.fetchUser()).toEqual({ sub: 'u1', email: 'a@b.c' });
   });
@@ -237,13 +237,66 @@ describe('logging out', () => {
     const { fetcher } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });
     const client = createBrowserClient(config({ postLogoutRedirectUri: 'http://localhost:3000/' }), fetcher);
     await client.login();
-    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.state')! });
+    await client.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.admin-spa.state')! });
 
     await client.logout();
 
-    expect(sessionStorage.getItem('fx.oauth2.refresh')).toBeNull();
+    expect(sessionStorage.getItem('fx.oauth2.admin-spa.refresh')).toBeNull();
     expect(assigned.at(-1)).toContain(ENDPOINTS.endSession);
     expect(assigned.at(-1)).toContain('post_logout_redirect_uri');
+  });
+});
+
+describe('more than one provider on a page', () => {
+  it('keeps each client flow separate', async () => {
+    const a = createBrowserClient(config({ clientId: 'app-a' }), server({}).fetcher);
+    const b = createBrowserClient(config({ clientId: 'app-b' }), server({}).fetcher);
+
+    await a.login();
+    const aState = sessionStorage.getItem('fx.oauth2.app-a.state');
+    await b.login();
+
+    // Starting the second login used to overwrite the first's state and verifier, which
+    // broke whichever one the visitor came back to.
+    expect(sessionStorage.getItem('fx.oauth2.app-a.state')).toBe(aState);
+    expect(sessionStorage.getItem('fx.oauth2.app-b.state')).not.toBe(aState);
+  });
+
+  it('gives each client its own refresh token', async () => {
+    const one = server({ 'oauth-token': { access_token: 'a', refresh_token: 'ra' } });
+    const two = server({ 'oauth-token': { access_token: 'b', refresh_token: 'rb' } });
+    const a = createBrowserClient(config({ clientId: 'app-a' }), one.fetcher);
+    const b = createBrowserClient(config({ clientId: 'app-b' }), two.fetcher);
+
+    await a.login();
+    await a.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.app-a.state')! });
+    await b.login();
+    await b.handleCallback({ code: 'c', state: sessionStorage.getItem('fx.oauth2.app-b.state')! });
+
+    expect(sessionStorage.getItem('fx.oauth2.app-a.refresh')).toBe('ra');
+    expect(sessionStorage.getItem('fx.oauth2.app-b.refresh')).toBe('rb');
+  });
+});
+
+describe('providers that want Basic on the token endpoint', () => {
+  it('sends the credentials in a header instead of the form', async () => {
+    const calls: RequestInit[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(init ?? {});
+      return new Response(JSON.stringify({ access_token: 'at' }));
+    }) as unknown as typeof fetch;
+
+    const client = createBrowserClient(config({ tokenAuthMethod: 'basic' }), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+
+    const headers = calls.at(-1)!.headers as Record<string, string>;
+    expect(headers.authorization).toMatch(/^Basic /);
+    expect(atob(headers.authorization.slice(6))).toBe('admin-spa:');
+    expect(String(calls.at(-1)!.body)).not.toContain('client_id');
   });
 });
 
