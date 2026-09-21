@@ -35,3 +35,23 @@ export type { Dispatch, DispatchInit } from './events.js';
 
 export { createTargets } from './targets.js';
 export type { Targets } from './targets.js';
+
+// The web-component vocabulary, over the same functions. See aliases.ts for why both
+// names exist.
+export {
+  customElement,
+  property,
+  attribute,
+  event,
+  target,
+  ref,
+  slot,
+} from './aliases.js';
+
+// Typing an element for its consumers: HTMLElementTagNameMap and the JSX tag.
+export type {
+  PropValues,
+  ElementOf,
+  ElementAttributes,
+  ForeignElementAttributes,
+} from './types.js';

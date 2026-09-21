@@ -95,17 +95,27 @@ export namespace JSX {
 
 
 /**
- * Global augmentable interface for registering custom element JSX types.
- * Augment this instead of JSX.IntrinsicElements to avoid eslint namespace errors.
+ * Where a custom element declares what JSX accepts on its tag.
+ *
+ * Augmented instead of `JSX.IntrinsicElements` directly, which an eslint namespace rule
+ * rejects. `ElementAttributes` from @fluixi/web-components derives the members from the
+ * element's prop schema, so the list is written once.
  *
  * @example
  * ```ts
  * declare global {
- *   interface FluixiElements {
- *     'my-counter': FluixiElementJSXAttributes<typeof MyCounter>;
+ *   interface HTMLReactiveElement {
+ *     'my-counter': ElementAttributes<typeof schema, { change: { value: number } }>;
  *   }
  * }
  * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface HTMLReactiveElement {}
+
+/**
+ * @deprecated Use {@link HTMLReactiveElement}. Kept so an app that already augments this
+ * name keeps compiling; both are merged into `JSX.IntrinsicElements`.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface FluixiElements {}
@@ -115,7 +125,9 @@ export interface FluixiElements {}
 //   interface FluixiElements {}
 // }
 declare global {
-  // Re-export FluixiElements so augmentations merge globally
+  // Declared globally so an app augments it without importing anything.
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface HTMLReactiveElement {}
   // eslint-disable-next-line @typescript-eslint/no-empty-interface
   interface FluixiElements {}
 
@@ -132,7 +144,10 @@ declare global {
   // the error every nested element produced.
   namespace JSX {
     type Element = A.FxElement;
-    interface IntrinsicElements extends A.IntrinsicElements, FluixiElements {}
+    interface IntrinsicElements
+      extends A.IntrinsicElements,
+        HTMLReactiveElement,
+        FluixiElements {}
     interface ElementChildrenAttribute {
       children: {};
     }
