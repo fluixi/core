@@ -156,6 +156,26 @@ declare global {
 }
 `;
 
+/**
+ * The cascade-layer order, declared before anything defines a layer.
+ *
+ * A layer ranks by where it is FIRST declared, and one nobody declared is appended last,
+ * which makes it the strongest. That default is wrong twice over here. The fluixi-css
+ * reset defines `flx.base`, which @fluixi-ui's own sheets do not declare, so the reset
+ * would outrank the components it is meant to sit under, and an app's plain
+ * `button { ... }` reset would outrank them too.
+ *
+ * Declaring the order up front fixes both: the app's element resets sit lowest, then the
+ * engine's preflight, then the component layers. An app's own `@layer base` and
+ * `@layer components` are deliberately absent, so they stay unregistered and keep
+ * winning, which is what an app expects of its own classes.
+ */
+const LAYERS_CSS = `/* Cascade-layer order. Imported before any component CSS, because a layer ranks by
+   where it is first declared and an undeclared one would rank last, above everything.
+   Add this app's own layers only if you want them to rank BELOW the component styles. */
+@layer app-reset, flx.reset, flx.base, flx.tokens, flx.components, flx.skin;
+`;
+
 type Ui = 'none' | 'fluixi-ui';
 type Css = 'none' | 'tailwind' | 'fluixi-css';
 
@@ -260,7 +280,7 @@ function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, 
  * asked to resolve, and the components below need them defined before their own rules
  * land. `emitUiTokens` does not replace this, that bridge covers a subset.
  */
-function importStyles(target: string, mode: 'ssr' | 'spa', ui: Ui): void {
+function importStyles(target: string, mode: 'ssr' | 'spa', ui: Ui, css: Css): void {
   const base = mode === 'ssr' ? 'entry-client' : 'main';
   const file = ['tsx', 'ts']
     .map((ext) => join(target, 'src', `${base}.${ext}`))
@@ -268,6 +288,8 @@ function importStyles(target: string, mode: 'ssr' | 'spa', ui: Ui): void {
   if (!file) return;
 
   const head = [
+    // First, before anything that defines a layer.
+    ...(css === 'fluixi-css' ? [`import './layers.css';`] : []),
     ...(ui === 'fluixi-ui' ? [`import '@fluixi-ui/tokens/tokens.css';`] : []),
     `import './styles.css';`,
     '',
@@ -380,11 +402,14 @@ async function main(): Promise<void> {
   }
 
   if (ui === 'fluixi-ui' || css !== 'none') {
+    // Only for fluixi-css: it is the engine that defines `flx.base`, and without a
+    // declared order that layer lands above the components it belongs under.
+    if (css === 'fluixi-css') writeFileSync(join(target, 'src', 'layers.css'), LAYERS_CSS);
     const sheet = styleSheet(ui, css);
     // An empty sheet still gets written: it is where an app puts its own css, and the
     // entry already imports it.
     writeFileSync(join(target, 'src', 'styles.css'), sheet);
-    importStyles(target, mode, ui);
+    importStyles(target, mode, ui, css);
   }
 
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
