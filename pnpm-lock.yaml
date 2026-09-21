@@ -494,6 +494,31 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@26.6.2)(@vitest/ui@3.2.7)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.51.2)
 
+  examples/web-component:
+    dependencies:
+      '@fluixi/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../../packages/start
+      '@fluixi/web-components':
+        specifier: workspace:*
+        version: link:../../packages/web-components
+    devDependencies:
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@26.6.2)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.51.2)
+
   packages/auth:
     dependencies:
       better-auth:
@@ -780,6 +805,24 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@26.6.2)(@vitest/ui@3.2.7)(jsdom@25.0.1)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.51.2)
+
+  packages/oauth2:
+    devDependencies:
+      '@bambiste/mix-builder':
+        specifier: ^0.4.0
+        version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(terser@5.51.2)(typescript@5.9.3)(yaml@2.9.0)
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@fluixi/session':
+        specifier: workspace:*
+        version: link:../session
+      '@fluixi/start':
+        specifier: workspace:*
+        version: link:../start
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
 
   packages/reactive:
     devDependencies:

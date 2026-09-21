@@ -1,0 +1,82 @@
+{
+  "name": "@fluixi/oauth2",
+  "version": "0.1.0-alpha.0",
+  "license": "MIT",
+  "author": "Ibrahima Touré",
+  "description": "OAuth2 / OIDC for Fluixi apps: an AuthClient that drives the flow, and an AuthService built on @fluixi/session. Browser PKCE or a server-held session, chosen by config.",
+  "private": false,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/oauth2"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.mjs",
+        "require": "./dist/server.cjs",
+        "default": "./dist/server.js"
+      }
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "development": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.cjs",
+      "default": "./dist/server.js"
+    }
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/session": "workspace:*",
+    "@fluixi/start": "workspace:*"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/session": "workspace:*",
+    "cross-env": "^7.0.3",
+    "@fluixi/start": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@fluixi/start": {
+      "optional": true
+    }
+  }
+}
