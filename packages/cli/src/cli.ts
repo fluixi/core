@@ -15,6 +15,7 @@ function usage(): string {
     '',
     cmd('dev', 'start the SSR dev server (Vite middleware + HMR)'),
     cmd('build', 'build the client + server bundles for production'),
+    cmd('build --format=web-component', 'build custom elements as portable files'),
     cmd('start', 'run the production SSR server (after build)'),
     cmd('generate <kind> <name>', 'scaffold a component / route / middleware / auth  ' + c.dim('(alias: g)')),
     '',
@@ -42,9 +43,18 @@ async function main(): Promise<void> {
     case 'dev':
       await dev(config);
       break;
-    case 'build':
-      await build(config);
+    case 'build': {
+      // `--format=web-component` for a portable file, `--format=fluixi` for one that
+      // shares the app's runtime. Anything else builds the app.
+      const flag = process.argv.find((a) => a.startsWith('--format='));
+      const format = flag?.slice('--format='.length) as
+        | 'app'
+        | 'web-component'
+        | 'fluixi'
+        | undefined;
+      await build(config, format ? { format } : {});
       break;
+    }
     case 'start':
       await start(config);
       break;

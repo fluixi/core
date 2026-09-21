@@ -5,6 +5,7 @@ import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv } from '../internal.js';
 import { ssrBuildOptions } from '../adapter.js';
+import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
 import type { ScannedRoute } from '@fluixi/core/plugins';
 import { wordmark, step, done, c } from '../ui.js';
@@ -14,9 +15,34 @@ import { wordmark, step, done, c } from '../ui.js';
  * bundle (the entry that renders HTML). @fluixi/start provides the fluixi plugins
  * (file routing + JSX/SSR transform), so the app's vite.config keeps only app bits.
  */
-export async function build(config: FluixiConfig = {}): Promise<void> {
+export async function build(
+  config: FluixiConfig = {},
+  options: { format?: 'app' | 'web-component' | 'fluixi' } = {},
+): Promise<void> {
   const startedAt = Date.now();
   const cfg = resolveConfig(config);
+
+  // `--format=web-component` builds the elements and stops. A package that publishes
+  // elements has no app to build, and running the client and server passes for it would
+  // emit two bundles nobody loads.
+  const elementsOnly = options.format === 'web-component' || options.format === 'fluixi';
+  if (elementsOnly) {
+    if (!cfg.webComponents) {
+      throw new Error(
+        `[fluixi] build --format=${options.format} needs a \`webComponents\` block in ` +
+          'fluixi.config.ts naming the entries to build.',
+      );
+    }
+    process.stdout.write(`\n  ${wordmark()}  ${c.gray('building custom elements')}\n\n`);
+    step(options.format === 'fluixi' ? 'elements (shared runtime)' : 'elements (standalone)');
+    const written = await buildWebComponents(
+      { ...cfg.webComponents, mode: options.format === 'fluixi' ? 'shared' : 'standalone' },
+      config,
+    );
+    for (const file of written) process.stdout.write(`  ${c.gray('›')} ${file}\n`);
+    process.stdout.write('\n');
+    return;
+  }
   await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
   const { build: viteBuild } = await import('vite');
   const plugins = await fluixiPlugins(cfg);
@@ -66,6 +92,12 @@ export async function build(config: FluixiConfig = {}): Promise<void> {
         emptyOutDir: false,
       },
     });
+  }
+
+  // An app that also publishes elements gets them beside its own bundles.
+  if (cfg.webComponents) {
+    step('custom elements');
+    await buildWebComponents(cfg.webComponents, config);
   }
 
   await collectRouteAssets(cfg);

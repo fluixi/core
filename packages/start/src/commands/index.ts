@@ -11,3 +11,5 @@ export { dev } from './dev.js';
 export { build } from './build.js';
 export { start } from './start.js';
 export { prerender } from './prerender.js';
+export { buildWebComponents } from './web-component.js';
+export type { WebComponentOptions, WebComponentMode } from './web-component.js';

@@ -59,6 +59,23 @@ export interface FluixiConfig {
    */
   vitePlugin?: Record<string, unknown>;
   /**
+   * Components to publish as custom elements.
+   *
+   * `fluixi build` emits one file per entry alongside the app. `fluixi build
+   * --format=web-component` emits only those files, which is what a package that ships
+   * elements and nothing else wants.
+   */
+  webComponents?: {
+    /** The modules to build. Each one defines an element at module scope. */
+    entries: string | string[];
+    /** Default: `dist/elements`. */
+    outDir?: string;
+    /** Default: `standalone`. */
+    mode?: 'standalone' | 'shared';
+    /** Default: true. */
+    minify?: boolean;
+  };
+  /**
    * Extra vite plugins, appended after the framework's own.
    *
    * A start app has no vite config of its own, so a plugin it needs but the framework
@@ -102,11 +119,13 @@ export interface ResolvedPrerender {
 }
 
 export type ResolvedConfig = Required<
-  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter'>
+  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents'>
 > & {
   ssrNoExternal: string[];
   i18n: ResolvedI18n | false;
   prerender: ResolvedPrerender | false;
+  /** Stays optional: an app that publishes no elements declares none. */
+  webComponents?: FluixiConfig['webComponents'];
   /** Stays optional: no adapter means "Vite's defaults + serve with node". */
   adapter?: Adapter;
 };
@@ -134,6 +153,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     resolve: config.resolve ?? [],
     vitePlugin: config.vitePlugin ?? {},
     plugins: config.plugins ?? [],
+    webComponents: config.webComponents,
     adapter: config.adapter,
     i18n: resolveI18n(config.i18n),
     prerender: resolvePrerender(config.prerender),
