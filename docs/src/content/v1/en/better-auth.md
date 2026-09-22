@@ -220,4 +220,4 @@ Better Auth can delegate login to Keycloak through its generic OAuth plugin, but
 session it issues is still its own. Running it purely to broker a provider login means two
 identity stores where one would do.
 
-Next: **[Token verification](/v1/en/token-verification)**.
+Next: **[Service to service](/v1/en/service-to-service)**.

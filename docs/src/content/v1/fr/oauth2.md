@@ -130,6 +130,29 @@ oubli. Dans ce mode le token ne quitte jamais le navigateur et n'est pas envoyé
 requête de document : le serveur n'a donc aucun identifiant à résoudre. Une application
 construite ainsi rend le squelette déconnecté et le remplit côté client.
 
+## Se déconnecter, et ce que cela laisse derrière
+
+`auth.logout()` efface la session ici et envoie la personne vers l'end session endpoint du
+fournisseur, donc le cookie du fournisseur part aussi et la prochaine connexion est une
+invite plutôt qu'une redirection silencieuse.
+
+Il **révoque** aussi le refresh token d'abord, via l'endpoint de révocation du fournisseur
+(RFC 7009). Cela compte plus qu'il n'y paraît : oublier un refresh token localement laisse
+toute copie de celui-ci fonctionner pendant toute sa durée de vie, alors que ce navigateur
+croit s'être déconnecté. Un access token expire seul en quelques minutes ; un refresh token
+non.
+
+Pour retirer un token sans terminer la session, appelez-le directement :
+
+```ts
+await auth.client.revoke();                      // le refresh token
+await auth.client.revoke(token, 'access_token'); // un token précis
+```
+
+Un fournisseur qui ne publie pas d'endpoint de révocation ne peut pas faire cela, et
+l'appel se résout sans rien avoir fait plutôt que de faire échouer une déconnexion pour
+autant.
+
 ## D'où vient l'utilisateur
 
 Par défaut, du endpoint userinfo OIDC du fournisseur. La plupart des applications

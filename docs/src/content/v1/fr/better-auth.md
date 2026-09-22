@@ -222,4 +222,4 @@ Better Auth sait déléguer la connexion à Keycloak via son plugin OAuth géné
 session qu'il émet reste la sienne. Le faire tourner uniquement pour relayer la connexion
 d'un fournisseur revient à tenir deux stockages d'identité là où un seul suffirait.
 
-Suite : **[Vérification des tokens](/v1/fr/token-verification)**.
+Suite : **[Service à service](/v1/fr/service-to-service)**.

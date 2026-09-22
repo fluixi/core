@@ -19,7 +19,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Authentication', fr: 'Authentification' },
-    slugs: ['authentication', 'session', 'oauth2', 'better-auth', 'token-verification'],
+    slugs: ['authentication', 'session', 'oauth2', 'better-auth', 'service-to-service', 'token-verification'],
   },
   {
     group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },

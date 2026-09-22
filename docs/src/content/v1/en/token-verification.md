@@ -126,6 +126,22 @@ set.
 Configuring an audience mapper at the provider and using `audience` is the better end
 state. `authorizedParty` is for when you do not control that.
 
+### A provider that names itself more than one way
+
+Google publishes its issuer as both `accounts.google.com` and
+`https://accounts.google.com`, and a token can carry either. A service pinned to one
+rejects the other, which looks like a signature failure and is not.
+
+`issuer` takes a list for that. Discovery uses the first; any of them is accepted on a
+token.
+
+```ts
+createTokenVerifier({
+  issuer: ['https://accounts.google.com', 'accounts.google.com'],
+  audience: clientId,
+});
+```
+
 ## Extra checks
 
 `require` runs once the token holds, for anything specific to the service. Return `true`,

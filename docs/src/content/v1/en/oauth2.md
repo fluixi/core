@@ -126,6 +126,27 @@ that mode the token never leaves the browser and is not sent on a document reque
 server has no credential to resolve. An app built that way renders the signed-out shell
 and fills it in on the client.
 
+## Signing out, and what it leaves behind
+
+`auth.logout()` clears the session here and sends the visitor to the provider's end
+session endpoint, so the provider's own cookie goes too and the next login is a prompt
+rather than a silent redirect.
+
+It also **revokes** the refresh token first, through the provider's revocation endpoint
+(RFC 7009). That matters more than it looks: forgetting a refresh token locally leaves any
+copy of it working for its whole lifetime, while this browser believes it signed out. An
+access token expires on its own in minutes; a refresh token does not.
+
+To retire a token without ending the session, call it directly:
+
+```ts
+await auth.client.revoke();                      // the refresh token
+await auth.client.revoke(token, 'access_token'); // a specific one
+```
+
+A provider that publishes no revocation endpoint cannot do this, and the call resolves
+without having done anything rather than failing a logout over it.
+
 ## Where the user comes from
 
 By default, the provider's OIDC userinfo endpoint. Most apps want their own, because the

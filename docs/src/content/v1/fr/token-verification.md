@@ -129,6 +129,22 @@ quand ni l'un ni l'autre n'est renseigné.
 Configurer un audience mapper chez le fournisseur et utiliser `audience` reste le
 meilleur état final. `authorizedParty` est pour quand vous ne contrôlez pas cela.
 
+### Un fournisseur qui se nomme de plusieurs façons
+
+Google publie son issuer à la fois comme `accounts.google.com` et
+`https://accounts.google.com`, et un token peut porter l'un ou l'autre. Un service figé sur
+une seule forme rejette l'autre, ce qui ressemble à un échec de signature sans en être un.
+
+`issuer` accepte une liste pour cela. La discovery utilise la première ; n'importe laquelle
+est acceptée sur un token.
+
+```ts
+createTokenVerifier({
+  issuer: ['https://accounts.google.com', 'accounts.google.com'],
+  audience: clientId,
+});
+```
+
 ## Contrôles supplémentaires
 
 `require` s'exécute une fois le token validé, pour ce qui est propre au service. Renvoyez
