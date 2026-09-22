@@ -17,6 +17,7 @@ import { createAuthHooks } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
 import { createBrowserClient } from './browser.js';
 import { createServerClient, COOKIE_SESSION } from './server-client.js';
+import { OAuthError } from './types.js';
 import type { AuthClient, AuthConfig, CallbackParams, LoginOptions, Tokens } from './types.js';
 
 /** The credential a redirect flow produces. */
@@ -90,9 +91,19 @@ export interface AuthService<U, P = unknown, Q = (p: P) => boolean>
   readonly client: AuthClient;
 }
 
-/** The parameters on the current URL, which is what a callback route has. */
-export function paramsFromUrl(url: string | URL = location.href): CallbackParams {
-  const { searchParams } = new URL(String(url));
+/**
+ * The parameters on the current URL, which is what a callback route has.
+ *
+ * Empty during a server render, where there is no location to read. A callback route is
+ * rendered on both sides, and throwing here would fail the render before the browser ever
+ * got the chance to finish the exchange, which is the only place it can happen: the PKCE
+ * verifier is in the browser's storage.
+ */
+export function paramsFromUrl(url?: string | URL): CallbackParams {
+  const href = url ?? (typeof location === 'undefined' ? null : location.href);
+  if (!href) return {};
+
+  const { searchParams } = new URL(String(href));
   return {
     code: searchParams.get('code') ?? undefined,
     state: searchParams.get('state') ?? undefined,
@@ -179,7 +190,14 @@ export function createAuthService<U, P = unknown, Q = (p: P) => boolean>(
     },
 
     async complete(params?: CallbackParams): Promise<string> {
-      await session.login(params ?? paramsFromUrl());
+      const callback = params ?? paramsFromUrl();
+      if (!callback.code && !callback.error) {
+        throw new OAuthError(
+          'complete() found no callback parameters. It runs in the browser, on the redirect URI, where the code and the PKCE verifier both are.',
+          'no_callback_params',
+        );
+      }
+      await session.login(callback);
       return client.consumeReturnTo?.() ?? '/';
     },
   }) as AuthService<U, P, Q>;

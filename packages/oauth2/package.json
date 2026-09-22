@@ -47,14 +47,12 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./server": {
-      "development": "./src/server.ts",
       "types": "./dist/server.d.ts",
       "import": "./dist/server.mjs",
       "require": "./dist/server.cjs",
