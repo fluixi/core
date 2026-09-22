@@ -1,15 +1,19 @@
 {
   "_setup": [
-    "Create a free tenant at auth0.com.",
-    "Applications > Create > Single Page Application. Note the Domain and Client ID.",
-    "Add http://localhost:3000/callback to Allowed Callback URLs.",
-    "Applications > APIs > Create an API with identifier https://api.example.com. Its",
-    "identifier is the `audience` below, and without it Auth0 hands back an opaque token.",
-    "Applications > Create > Machine to Machine, authorise it for that API, for `service`.",
-    "Auth0 does not enable the password grant by default, so the user flow needs `form`",
-    "selectors or is skipped."
+    "1. Applications > Create Application > Single Page Web Applications.",
+    "   Settings > Allowed Callback URLs: http://localhost:3000/callback. Save.",
+    "   Copy the Domain and the Client ID.",
+    "2. Applications > APIs > Create API. Identifier: https://api.example.com",
+    "   That identifier is the `audience` below. Without an API, Auth0 returns an opaque",
+    "   token rather than a JWT and JWKS verification has nothing to verify.",
+    "3. Applications > Create Application > Machine to Machine. Authorise it for that API.",
+    "   Copy its Client ID, and export the secret rather than writing it here.",
+    "4. The user flow is skipped: Auth0's Universal Login is a JavaScript page, not a form",
+    "   this can post to. Everything else runs unattended.",
+    "",
+    "Then: export AUTH0_M2M_SECRET=... && node conformance/run.mjs auth0"
   ],
-  "issuer": "https://YOUR_TENANT.eu.auth0.com/",
+  "issuer": "https://YOUR_TENANT.us.auth0.com/",
   "client": {
     "clientId": "YOUR_SPA_CLIENT_ID",
     "redirectUri": "http://localhost:3000/callback",
@@ -17,7 +21,7 @@
   },
   "service": {
     "clientId": "YOUR_M2M_CLIENT_ID",
-    "clientSecret": "YOUR_M2M_SECRET",
+    "clientSecret": "env:AUTH0_M2M_SECRET",
     "audience": "https://api.example.com"
   }
 }

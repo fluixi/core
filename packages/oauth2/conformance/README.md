@@ -18,6 +18,23 @@ Three kinds of row, and the distinction matters.
   endpoint; that is a fact to document, not a bug.
 - **note**: an observation with no pass or fail, such as whether tokens are JWTs.
 
+## Secrets
+
+A client secret does not belong in a file that sits in a repository. Name the variable
+instead, and the suite reads it at run time:
+
+```jsonc
+"service": { "clientId": "abc123", "clientSecret": "env:AUTH0_M2M_SECRET" }
+```
+
+```
+export AUTH0_M2M_SECRET=...
+node conformance/run.mjs auth0
+```
+
+A missing variable is reported by name rather than failing somewhere deeper. Configs
+matching `*.local.json` are ignored by git, for a tenant you would rather not name at all.
+
 ## Adding a provider
 
 Drop a JSON file in `providers/`. The shape is in `keycloak.json`, and the

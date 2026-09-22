@@ -94,6 +94,28 @@ function claimsOf(token) {
   }
 }
 
+/**
+ * Resolve `env:NAME` to the environment, anything else to itself.
+ *
+ * A real tenant's client secret does not belong in a file that sits in a repository, so
+ * a config names the variable and the value stays outside. Local throwaway providers can
+ * still write the value inline.
+ */
+function resolveSecrets(value) {
+  if (typeof value === 'string') {
+    if (!value.startsWith('env:')) return value;
+    const name = value.slice(4);
+    const found = process.env[name];
+    if (!found) throw new Error(`${value} is referenced by the config but ${name} is not set`);
+    return found;
+  }
+  if (Array.isArray(value)) return value.map(resolveSecrets);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveSecrets(v)]));
+  }
+  return value;
+}
+
 // ─── the suite ────────────────────────────────────────────────────────────────
 
 async function runProvider(name, cfg) {
@@ -471,7 +493,14 @@ if (!wanted.length) {
 
 let anyFailed = false;
 for (const name of wanted) {
-  const cfg = JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8'));
+  let cfg;
+  try {
+    cfg = resolveSecrets(JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8')));
+  } catch (error) {
+    console.log(`\n  ${name}: ${error.message}`);
+    anyFailed = true;
+    continue;
+  }
   anyFailed = (await runProvider(name, cfg)) || anyFailed;
 }
 process.exit(anyFailed ? 1 : 0);
