@@ -2,7 +2,7 @@
   "name": "@fluixi/oauth2",
   "version": "0.1.0-alpha.0",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "description": "OAuth2 / OIDC for Fluixi apps: an AuthClient that drives the flow, and an AuthService built on @fluixi/session. Browser PKCE or a server-held session, chosen by config.",
   "private": false,
   "type": "module",
@@ -33,6 +33,12 @@
         "import": "./dist/verify.mjs",
         "require": "./dist/verify.cjs",
         "default": "./dist/verify.js"
+      },
+      "./service": {
+        "types": "./dist/service-client.d.ts",
+        "import": "./dist/service-client.mjs",
+        "require": "./dist/service-client.cjs",
+        "default": "./dist/service-client.js"
       }
     }
   },
@@ -70,6 +76,13 @@
       "import": "./dist/verify.mjs",
       "require": "./dist/verify.cjs",
       "default": "./dist/verify.js"
+    },
+    "./service": {
+      "development": "./src/service-client.ts",
+      "types": "./dist/service-client.d.ts",
+      "import": "./dist/service-client.mjs",
+      "require": "./dist/service-client.cjs",
+      "default": "./dist/service-client.js"
     }
   },
   "dependencies": {},

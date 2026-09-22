@@ -487,3 +487,72 @@ describe('discovery', () => {
     await expect(client.login()).rejects.toThrow(/issuer/);
   });
 });
+
+describe('retiring a token at the provider', () => {
+  const REVOKE = 'https://idp.test/oauth/v2/revoke';
+
+  function withRevocation() {
+    const calls: { url: string; body?: string }[] = [];
+    const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, body: init?.body as string });
+      if (url.includes('oauth-token')) {
+        return new Response(JSON.stringify({ access_token: 'at', refresh_token: 'rt' }));
+      }
+      return new Response('', { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const client = createBrowserClient(
+      config({ endpoints: { ...ENDPOINTS, revocation: REVOKE } as never }),
+      fetcher,
+    );
+    return { client, calls, revocations: () => calls.filter((c) => c.url === REVOKE) };
+  }
+
+  async function signedIn() {
+    const h = withRevocation();
+    await h.client.login();
+    await h.client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+    return h;
+  }
+
+  it('revokes the refresh token, which is the one worth retiring', async () => {
+    const { client, revocations } = await signedIn();
+    await client.revoke!();
+
+    const body = new URLSearchParams(revocations()[0].body);
+    // An access token expires on its own in minutes; a refresh token does not.
+    expect(body.get('token')).toBe('rt');
+    expect(body.get('token_type_hint')).toBe('refresh_token');
+  });
+
+  it('revokes before forgetting, when signing out', async () => {
+    const { client, revocations } = await signedIn();
+    await client.logout();
+    // Dropping it without revoking leaves a copy usable for its whole lifetime.
+    expect(revocations()).toHaveLength(1);
+  });
+
+  it('does nothing when the provider publishes no revocation endpoint', async () => {
+    const { fetcher, calls } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+
+    const before = calls.length;
+    await expect(client.revoke!()).resolves.toBeUndefined();
+    expect(calls.length).toBe(before);
+  });
+
+  it('does nothing when there is no token to retire', async () => {
+    const { client, revocations } = withRevocation();
+    await expect(client.revoke!()).resolves.toBeUndefined();
+    expect(revocations()).toHaveLength(0);
+  });
+});

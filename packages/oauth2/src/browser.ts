@@ -308,8 +308,43 @@ export function createBrowserClient(
       return custom?.map ? ((await custom.map(raw, bearer)) as U) : (raw as U);
     },
 
+    /**
+     * Retire a token at the provider, per RFC 7009.
+     *
+     * Defaults to the refresh token, which is the one worth retiring: an access token
+     * expires on its own in minutes, a refresh token does not. A provider with no
+     * revocation endpoint resolves without doing anything, because there is nothing this
+     * can do about that and failing a logout over it helps nobody.
+     */
+    async revoke(token?: string, hint: 'access_token' | 'refresh_token' = 'refresh_token'): Promise<void> {
+      const target =
+        token ??
+        (hint === 'refresh_token'
+          ? (access?.refreshToken ?? durable()?.getItem(KEY.refresh) ?? undefined)
+          : access?.accessToken);
+      if (!target) return;
+
+      const { revocation } = await resolveEndpoints().catch(() => ({ revocation: undefined }));
+      if (!revocation) return;
+
+      await fetcher(revocation, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          token: target,
+          token_type_hint: hint,
+          client_id: config.clientId,
+        }).toString(),
+        // RFC 7009 says a provider answers 200 whether or not it knew the token, so
+        // there is nothing to branch on and a failure here is not worth propagating.
+      }).catch(() => undefined);
+    },
+
     async logout(options: { returnTo?: string } = {}): Promise<void> {
       const idToken = access?.idToken;
+      // Retire the refresh token before dropping it, or a copy stays usable for its
+      // whole lifetime while this browser believes it signed out.
+      await this.revoke?.();
       access = null;
       durable()?.removeItem(KEY.refresh);
 

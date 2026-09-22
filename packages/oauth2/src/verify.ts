@@ -62,8 +62,12 @@ export interface VerifierOptions {
    *
    * Required, and never taken from the token: a token that names its own issuer proves
    * nothing, and accepting it is how a service ends up trusting an attacker's provider.
+   *
+   * A list is for a provider that names itself more than one way. Google publishes both
+   * `accounts.google.com` and `https://accounts.google.com`, and a service pinned to one
+   * rejects tokens carrying the other. Discovery uses the first.
    */
-  issuer: string;
+  issuer: string | string[];
   /**
    * Who the token was minted for, checked against `aud`.
    *
@@ -147,9 +151,12 @@ async function loadJose(): Promise<typeof import('jose')> {
 }
 
 export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
-  if (!options.issuer) {
+  const issuers = (Array.isArray(options.issuer) ? options.issuer : [options.issuer]).filter(Boolean);
+  if (!issuers.length) {
     throw new Error('[fluixi/oauth2] createTokenVerifier needs an issuer to accept tokens from.');
   }
+  // Discovery needs one URL. The rest are alternate spellings the same provider uses.
+  const discoveryIssuer = issuers[0];
   if (options.audience === undefined) {
     throw new Error(
       '[fluixi/oauth2] createTokenVerifier needs an audience, or `audience: false` to say this service really does accept a token minted for any client of the issuer.',
@@ -189,12 +196,12 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
 
     let uri = options.jwksUri;
     if (!uri) {
-      const endpoints = await discover(options.issuer);
+      const endpoints = await discover(discoveryIssuer);
       uri = endpoints.jwks;
     }
     if (!uri) {
       throw new OAuthError(
-        `${options.issuer} published no jwks_uri. Give the verifier one directly.`,
+        `${discoveryIssuer} published no jwks_uri. Give the verifier one directly.`,
         'no_jwks',
       );
     }
@@ -210,7 +217,9 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
     let payload: TokenClaims;
     try {
       ({ payload } = await jose.jwtVerify(token, await keySet(), {
-        issuer: options.issuer,
+        // jose takes a list and accepts any of them, which is what a provider naming
+        // itself two ways needs.
+        issuer: issuers,
         ...(options.audience === false ? {} : { audience: options.audience }),
         algorithms,
         clockTolerance: options.clockToleranceSec ?? 5,
@@ -280,8 +289,13 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
  * at once, because `active` is answered live.
  */
 export interface IntrospectorOptions {
-  /** The issuer, used to find the endpoint and checked against the response. */
-  issuer: string;
+  /**
+   * The issuer, used to find the endpoint and checked against the response.
+   *
+   * A list covers a provider that names itself more than one way. Discovery uses the
+   * first.
+   */
+  issuer: string | string[];
   /**
    * This service's own credentials at the provider.
    *
@@ -320,9 +334,11 @@ interface IntrospectionResponse extends TokenClaims {
 }
 
 export function createTokenIntrospector(options: IntrospectorOptions): TokenVerifier {
-  if (!options.issuer) {
+  const issuers = (Array.isArray(options.issuer) ? options.issuer : [options.issuer]).filter(Boolean);
+  if (!issuers.length) {
     throw new Error('[fluixi/oauth2] createTokenIntrospector needs an issuer.');
   }
+  const discoveryIssuer = issuers[0];
   if (!options.clientId || !options.clientSecret) {
     throw new Error(
       '[fluixi/oauth2] createTokenIntrospector needs client credentials: the introspection endpoint is authenticated, and an open one would let anyone test a stolen token.',
@@ -341,10 +357,10 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
   let endpoint: string | null = options.introspectionEndpoint ?? null;
   async function resolveEndpoint(): Promise<string> {
     if (endpoint) return endpoint;
-    const endpoints = await discover(options.issuer);
+    const endpoints = await discover(discoveryIssuer);
     if (!endpoints.introspection) {
       throw new OAuthError(
-        `${options.issuer} published no introspection_endpoint. Give the introspector one directly, or verify JWTs with createTokenVerifier.`,
+        `${discoveryIssuer} published no introspection_endpoint. Give the introspector one directly, or verify JWTs with createTokenVerifier.`,
         'no_introspection',
       );
     }
@@ -403,7 +419,7 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
     // The response carries these only sometimes, so they are checked when present rather
     // than required. A provider that omits `iss` has already told us the token is live at
     // the issuer we asked.
-    if (typeof body.iss === 'string' && body.iss !== options.issuer) {
+    if (typeof body.iss === 'string' && !issuers.includes(body.iss)) {
       throw new TokenError('The token was issued by a different issuer.', 'invalid_issuer');
     }
 

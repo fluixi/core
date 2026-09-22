@@ -78,6 +78,16 @@ export interface AuthClient {
   logout(options?: { returnTo?: string }): Promise<void>;
 
   /**
+   * Retire a token before it expires, per RFC 7009.
+   *
+   * Signing out locally leaves a refresh token usable by anyone holding a copy, so a
+   * logout that matters revokes rather than only forgetting. Providers that publish no
+   * revocation endpoint cannot do this, and the call resolves without having done
+   * anything.
+   */
+  revoke?(token?: string, hint?: 'access_token' | 'refresh_token'): Promise<void>;
+
+  /**
    * Tokens this client already holds, if any.
    *
    * Used on a cold load to restore a session without a network round trip. The
@@ -98,6 +108,8 @@ export interface Endpoints {
   jwks?: string;
   /** RFC 7662. Present when the provider lets a service ask about an opaque token. */
   introspection?: string;
+  /** RFC 7009. Present when a token can be retired before it expires. */
+  revocation?: string;
   issuer?: string;
 }
 

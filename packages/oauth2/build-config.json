@@ -26,7 +26,8 @@
       "include": [
         "src/index.ts",
         "src/server.ts",
-        "src/verify.ts"
+        "src/verify.ts",
+        "src/service-client.ts"
       ]
     }
   }

@@ -445,3 +445,37 @@ describe('providers that name the client in client_id', () => {
     await expect(verify(token)).rejects.toThrow(/different client/);
   });
 })
+
+describe('a provider that names itself more than one way', () => {
+  /** Google publishes both `accounts.google.com` and `https://accounts.google.com`. */
+  const BARE = 'accounts.google.test';
+  const FULL = 'https://accounts.google.test';
+
+  const signedBy = (iss: string) =>
+    new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
+      .setIssuer(iss)
+      .setAudience('adafri-admin')
+      .setSubject('u1')
+      .setExpirationTime('5m')
+      .sign(priv);
+
+  it('accepts either spelling when given both', async () => {
+    const verify = createTokenVerifier({
+      issuer: [FULL, BARE],
+      audience: 'adafri-admin',
+      jwks,
+    });
+    expect((await verify(await signedBy(FULL))).sub).toBe('u1');
+    expect((await verify(await signedBy(BARE))).sub).toBe('u1');
+  });
+
+  it('still refuses an issuer that is on neither spelling', async () => {
+    const verify = createTokenVerifier({ issuer: [FULL, BARE], audience: 'adafri-admin', jwks });
+    await expect(verify(await signedBy('https://evil.test'))).rejects.toThrow(/not accepted/);
+  });
+
+  it('refuses an empty list', () => {
+    expect(() => createTokenVerifier({ issuer: [], audience: 'x', jwks })).toThrow(/issuer/);
+  });
+});
