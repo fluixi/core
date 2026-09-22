@@ -1,0 +1,19 @@
+{
+  "issuer": "http://localhost:5556/dex",
+  "client": {
+    "clientId": "adafri-admin",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email", "offline_access"]
+  },
+  "user": {
+    "username": "admin@adafri.test",
+    "password": "admin123",
+    "form": {
+      "actionPattern": "action=\"([^\"]+)\"",
+      "usernameField": "login",
+      "passwordField": "password",
+      "extraFields": {}
+    }
+  },
+  "notes": "No client_credentials grant and no revocation endpoint, so those checks do not apply."
+}

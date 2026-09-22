@@ -1,0 +1,18 @@
+{
+  "_setup": [
+    "console.cloud.google.com > APIs & Services > Credentials > Create OAuth client ID.",
+    "Web application, authorised redirect URI http://localhost:3000/callback.",
+    "Google publishes its issuer as both spellings below, and a token can carry either,",
+    "which is why `issuer` here is a list. There is no client_credentials grant for a",
+    "normal OAuth client, so `service` is omitted: that path needs a service account.",
+    "There is no password grant and the login form is not scriptable, so the user flow",
+    "is skipped and only the unattended checks run."
+  ],
+  "issuer": "https://accounts.google.com",
+  "issuerAliases": ["accounts.google.com"],
+  "client": {
+    "clientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email"]
+  }
+}

@@ -2,7 +2,7 @@
   "name": "@fluixi/oauth2",
   "version": "0.1.0-alpha.0",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "description": "OAuth2 / OIDC for Fluixi apps: an AuthClient that drives the flow, and an AuthService built on @fluixi/session. Browser PKCE or a server-held session, chosen by config.",
   "private": false,
   "type": "module",
@@ -46,7 +46,8 @@
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "cross-env NODE_ENV=production mix-builder",
     "dev": "tsc -w -p tsconfig.lib.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "conformance": "node conformance/run.mjs"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",

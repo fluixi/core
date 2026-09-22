@@ -1,0 +1,20 @@
+{
+  "_setup": [
+    "Create a free developer account at developer.okta.com.",
+    "Applications > Create App Integration > OIDC > Single-Page Application.",
+    "Sign-in redirect URI http://localhost:3000/callback.",
+    "For `service`, create a second app as API Services, which enables client_credentials.",
+    "The issuer is usually https://YOUR_DOMAIN/oauth2/default, not the bare domain."
+  ],
+  "issuer": "https://YOUR_DOMAIN.okta.com/oauth2/default",
+  "client": {
+    "clientId": "YOUR_SPA_CLIENT_ID",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email", "offline_access"]
+  },
+  "service": {
+    "clientId": "YOUR_API_SERVICES_CLIENT_ID",
+    "clientSecret": "YOUR_API_SERVICES_SECRET",
+    "scopes": ["okta.users.read"]
+  }
+}

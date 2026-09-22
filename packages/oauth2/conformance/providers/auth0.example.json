@@ -1,0 +1,23 @@
+{
+  "_setup": [
+    "Create a free tenant at auth0.com.",
+    "Applications > Create > Single Page Application. Note the Domain and Client ID.",
+    "Add http://localhost:3000/callback to Allowed Callback URLs.",
+    "Applications > APIs > Create an API with identifier https://api.example.com. Its",
+    "identifier is the `audience` below, and without it Auth0 hands back an opaque token.",
+    "Applications > Create > Machine to Machine, authorise it for that API, for `service`.",
+    "Auth0 does not enable the password grant by default, so the user flow needs `form`",
+    "selectors or is skipped."
+  ],
+  "issuer": "https://YOUR_TENANT.eu.auth0.com/",
+  "client": {
+    "clientId": "YOUR_SPA_CLIENT_ID",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email"]
+  },
+  "service": {
+    "clientId": "YOUR_M2M_CLIENT_ID",
+    "clientSecret": "YOUR_M2M_SECRET",
+    "audience": "https://api.example.com"
+  }
+}

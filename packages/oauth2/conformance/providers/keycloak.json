@@ -1,0 +1,22 @@
+{
+  "issuer": "http://localhost:8080/realms/adafri",
+  "client": {
+    "clientId": "adafri-admin",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email"]
+  },
+  "service": {
+    "clientId": "orders-api",
+    "clientSecret": "orders-api-secret"
+  },
+  "user": {
+    "username": "admin",
+    "password": "admin123",
+    "form": {
+      "actionPattern": "action=\"([^\"]+)\"",
+      "usernameField": "username",
+      "passwordField": "password",
+      "extraFields": { "credentialId": "" }
+    }
+  }
+}

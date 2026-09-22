@@ -1,0 +1,20 @@
+{
+  "_setup": [
+    "Azure portal > Microsoft Entra ID > App registrations > New registration.",
+    "Redirect URI: Single-page application, http://localhost:3000/callback.",
+    "Use the v2.0 issuer. The v1 endpoints behave differently and are not covered here.",
+    "Entra templates the tenant into the published issuer, so the discovery document's",
+    "issuer can differ from the configured one. That is why the verifier takes a list."
+  ],
+  "issuer": "https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0",
+  "client": {
+    "clientId": "YOUR_APP_ID",
+    "redirectUri": "http://localhost:3000/callback",
+    "scopes": ["openid", "profile", "email", "offline_access"]
+  },
+  "service": {
+    "clientId": "YOUR_APP_ID",
+    "clientSecret": "YOUR_CLIENT_SECRET",
+    "scopes": ["https://graph.microsoft.com/.default"]
+  }
+}
