@@ -232,6 +232,74 @@ describe('the user', () => {
   });
 });
 
+describe('the userinfo endpoint', () => {
+  /** A JWT with the given subject. Unsigned: only the payload is ever read. */
+  const idTokenFor = (sub: string) =>
+    `x.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.y`;
+
+  async function signedInAs(sub: string, userinfo: unknown, init: ResponseInit = {}) {
+    const fetcher = (async (input: RequestInfo | URL) => {
+      if (String(input).includes('oauth-token')) {
+        return new Response(
+          JSON.stringify({ access_token: 'at', id_token: idTokenFor(sub) }),
+        );
+      }
+      return new Response(JSON.stringify(userinfo), init);
+    }) as unknown as typeof fetch;
+
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+    return client;
+  }
+
+  it('returns the claims when the subject matches the id token', async () => {
+    const client = await signedInAs('u1', { sub: 'u1', email: 'a@b.c' });
+    expect(await client.fetchUser()).toEqual({ sub: 'u1', email: 'a@b.c' });
+  });
+
+  it('discards a response whose subject is not the one signed in', async () => {
+    const client = await signedInAs('u1', { sub: 'someone-else', email: 'x@y.z' });
+    // OIDC requires this: without it, a response obtained for one subject could be read
+    // as another.
+    await expect(client.fetchUser()).rejects.toThrow(/does not match the id token/);
+  });
+
+  it('accepts a provider that returns no id token to compare against', async () => {
+    const fetcher = (async (input: RequestInfo | URL) =>
+      String(input).includes('oauth-token')
+        ? new Response(JSON.stringify({ access_token: 'at' }))
+        : new Response(JSON.stringify({ sub: 'u1' }))) as unknown as typeof fetch;
+
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+    // A plain OAuth2 provider has no id token, so there is nothing to check against.
+    expect(await client.fetchUser()).toEqual({ sub: 'u1' });
+  });
+
+  it('says so for a signed response rather than failing in a JSON parse', async () => {
+    const client = await signedInAs('u1', 'a.signed.jwt', {
+      headers: { 'content-type': 'application/jwt' },
+    });
+    await expect(client.fetchUser()).rejects.toThrow(/signed userinfo response/);
+  });
+
+  it('reports the reason the provider gave for refusing the token', async () => {
+    const client = await signedInAs('u1', { error: 'nope' }, {
+      status: 401,
+      headers: { 'www-authenticate': 'Bearer error="invalid_token"' },
+    });
+    await expect(client.fetchUser()).rejects.toThrow(/invalid_token/);
+  });
+});
+
 describe('logging out', () => {
   it('clears the stored token and visits the end-session endpoint', async () => {
     const { fetcher } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });

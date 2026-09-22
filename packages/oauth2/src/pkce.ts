@@ -75,6 +75,25 @@ export function expiryFrom(expiresIn: unknown, now = Date.now()): number | undef
 }
 
 /**
+ * A JWT's payload, without verifying the signature.
+ *
+ * Legitimate for a token this client fetched itself: the code exchange is a direct TLS
+ * call to the token endpoint, so the response is authentic by transport, which is what
+ * OIDC allows a confidential exchange to rely on. Never use this on a token that arrived
+ * from somewhere else.
+ */
+export function claimsOf(token: string): Record<string, unknown> | null {
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The `exp` of a JWT, in epoch milliseconds.
  *
  * Reads the payload without verifying the signature, which is correct for this use: the

@@ -11,6 +11,7 @@
  * life of the page rather than the life of the session.
  */
 import {
+  claimsOf,
   createPkcePair,
   createStateValue,
   expiryFrom,
@@ -247,12 +248,45 @@ export function createBrowserClient(
       if (!bearer) throw new OAuthError('No access token to call userinfo with.', 'no_access_token');
 
       const response = await fetcher(userinfo, {
-        headers: { authorization: `Bearer ${bearer}` },
+        headers: { authorization: `Bearer ${bearer}`, accept: 'application/json' },
       });
       if (!response.ok) {
-        throw new OAuthError(`userinfo failed: ${response.status}`, 'userinfo_failed');
+        // The reason is in WWW-Authenticate, not the body: `invalid_token` when the
+        // access token expired, which is worth telling apart from the endpoint being down.
+        const reason = response.headers
+          .get('www-authenticate')
+          ?.match(/error="([^"]+)"/)?.[1];
+        throw new OAuthError(
+          `userinfo refused the token: ${reason ?? response.status}`,
+          reason ?? 'userinfo_failed',
+        );
       }
-      return (await response.json()) as U;
+
+      // A provider configured with `userinfo_signed_response_alg` answers with a signed
+      // JWT instead. Verifying it needs the provider's JWKS, which this client does not
+      // fetch, so say that rather than failing inside a JSON parse.
+      const type = response.headers.get('content-type') ?? '';
+      if (type.includes('application/jwt')) {
+        throw new OAuthError(
+          'This provider returns a signed userinfo response, which needs its own verification. Give the service its own `fetchUser`.',
+          'userinfo_signed',
+        );
+      }
+
+      const claims = (await response.json()) as Record<string, unknown>;
+
+      // OIDC requires this: a userinfo `sub` that does not match the id token's must not
+      // be used. Without the check, a response obtained for one subject could be read as
+      // another, which is the token substitution this rule exists to stop.
+      const expected = access?.idToken ? claimsOf(access.idToken)?.sub : undefined;
+      if (expected !== undefined && claims.sub !== expected) {
+        throw new OAuthError(
+          'The userinfo subject does not match the id token. The response was discarded.',
+          'sub_mismatch',
+        );
+      }
+
+      return claims as U;
     },
 
     async logout(options: { returnTo?: string } = {}): Promise<void> {
