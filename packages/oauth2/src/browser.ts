@@ -237,19 +237,35 @@ export function createBrowserClient(
     },
 
     async fetchUser<U = unknown>(accessToken?: string): Promise<U> {
-      const { userinfo } = await resolveEndpoints();
-      if (!userinfo) {
-        throw new OAuthError(
-          'The provider published no userinfo endpoint. Give the service its own `fetchUser`.',
-          'no_userinfo',
-        );
-      }
+      const custom = config.userInfo;
       const bearer = accessToken ?? access?.accessToken;
       if (!bearer) throw new OAuthError('No access token to call userinfo with.', 'no_access_token');
 
-      const response = await fetcher(userinfo, {
-        headers: { authorization: `Bearer ${bearer}`, accept: 'application/json' },
+      // A configured URL wins over discovery. That is the app saying its own API is the
+      // authority on who this is, which it usually is: the provider does not know what
+      // someone is allowed to do here.
+      let endpoint = custom?.url;
+      if (!endpoint) {
+        const { userinfo } = await resolveEndpoints();
+        if (!userinfo) {
+          throw new OAuthError(
+            'The provider published no userinfo endpoint. Give `userInfo.url`, or the service its own `fetchUser`.',
+            'no_userinfo',
+          );
+        }
+        endpoint = userinfo;
+      }
+
+      const response = await fetcher(endpoint, {
+        method: custom?.method ?? 'GET',
+        headers: {
+          authorization: `Bearer ${bearer}`,
+          accept: 'application/json',
+          ...custom?.headers,
+        },
+        ...(custom?.credentials ? { credentials: custom.credentials } : {}),
       });
+
       if (!response.ok) {
         // The reason is in WWW-Authenticate, not the body: `invalid_token` when the
         // access token expired, which is worth telling apart from the endpoint being down.
@@ -257,7 +273,7 @@ export function createBrowserClient(
           .get('www-authenticate')
           ?.match(/error="([^"]+)"/)?.[1];
         throw new OAuthError(
-          `userinfo refused the token: ${reason ?? response.status}`,
+          `The user endpoint refused the token: ${reason ?? response.status}`,
           reason ?? 'userinfo_failed',
         );
       }
@@ -273,20 +289,23 @@ export function createBrowserClient(
         );
       }
 
-      const claims = (await response.json()) as Record<string, unknown>;
+      const raw = (await response.json()) as Record<string, unknown>;
 
-      // OIDC requires this: a userinfo `sub` that does not match the id token's must not
-      // be used. Without the check, a response obtained for one subject could be read as
-      // another, which is the token substitution this rule exists to stop.
-      const expected = access?.idToken ? claimsOf(access.idToken)?.sub : undefined;
-      if (expected !== undefined && claims.sub !== expected) {
-        throw new OAuthError(
-          'The userinfo subject does not match the id token. The response was discarded.',
-          'sub_mismatch',
-        );
+      // Only for the provider's own userinfo. OIDC requires that a `sub` which does not
+      // match the id token be discarded, because a response obtained for one subject
+      // must not be read as another. An app's own endpoint answers in its own shape and
+      // has no such claim to check.
+      if (!custom?.url) {
+        const expected = access?.idToken ? claimsOf(access.idToken)?.sub : undefined;
+        if (expected !== undefined && raw.sub !== expected) {
+          throw new OAuthError(
+            'The userinfo subject does not match the id token. The response was discarded.',
+            'sub_mismatch',
+          );
+        }
       }
 
-      return claims as U;
+      return custom?.map ? ((await custom.map(raw, bearer)) as U) : (raw as U);
     },
 
     async logout(options: { returnTo?: string } = {}): Promise<void> {

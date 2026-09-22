@@ -73,11 +73,23 @@ export function createServerClient(
     },
 
     async fetchUser<U = unknown>(): Promise<U> {
-      const response = await call('/me');
+      const custom = config.userInfo;
+      // A URL here points at the app's own API rather than the session route. The cookie
+      // still authenticates it, which is why `credentials` stays on either way.
+      const response = custom?.url
+        ? await fetcher(custom.url, {
+            method: custom.method ?? 'GET',
+            credentials: custom.credentials ?? 'same-origin',
+            headers: { accept: 'application/json', ...custom.headers },
+          })
+        : await call('/me');
+
       if (!response.ok) {
-        throw new OAuthError(`The server refused /me: ${response.status}`, 'me_failed');
+        throw new OAuthError(`The server refused the user request: ${response.status}`, 'me_failed');
       }
-      return (await response.json()) as U;
+
+      const raw = (await response.json()) as Record<string, unknown>;
+      return custom?.map ? ((await custom.map(raw, COOKIE_SESSION)) as U) : (raw as U);
     },
 
     async logout(options: { returnTo?: string } = {}): Promise<void> {

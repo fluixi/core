@@ -99,6 +99,43 @@ export interface Endpoints {
   issuer?: string;
 }
 
+/**
+ * Where the user comes from, when it is not the provider's OIDC userinfo.
+ *
+ * The default needs none of this: discovery finds `userinfo_endpoint` and the claims are
+ * returned as they arrive. This is for the common real case, an app whose own API knows
+ * things the identity provider does not, like the roles this user has here.
+ *
+ * Between the default and writing `fetchUser` yourself, which is still there for anything
+ * this does not cover.
+ */
+export interface UserInfoOptions<U = unknown> {
+  /**
+   * The endpoint, when it is not the discovered one. Absolute, or relative to the page.
+   *
+   * Given this, the OIDC subject check is skipped: it compares against the id token and
+   * only means something for the provider's own userinfo. An app's `/me` answers in its
+   * own shape and is trusted because it is the app's own server.
+   */
+  url?: string;
+  /**
+   * Turn the response into the shape the app wants.
+   *
+   * The place to unwrap an envelope: `(raw) => raw.data`, or a full mapping onto the
+   * app's user type. Receives the parsed body and the access token that fetched it.
+   */
+  map?: (raw: any, accessToken: string) => U | Promise<U>;
+  /** Added to the request, for an API that wants an api key or a tenant header. */
+  headers?: Record<string, string>;
+  /**
+   * Sent with the request. `include` for an API that answers from a cookie rather than
+   * the bearer token.
+   */
+  credentials?: RequestCredentials;
+  /** `GET` unless the API insists otherwise. */
+  method?: string;
+}
+
 /** Shared by both client implementations. */
 export interface BaseConfig {
   /** Where the callback lands. Must match what the authorization server was told. */
@@ -109,6 +146,8 @@ export interface BaseConfig {
   postLogoutRedirectUri?: string;
   /** Extra parameters on every authorization request. */
   extraParams?: Record<string, string>;
+  /** Where the user comes from, when it is not the provider's OIDC userinfo. */
+  userInfo?: UserInfoOptions;
 }
 
 /**

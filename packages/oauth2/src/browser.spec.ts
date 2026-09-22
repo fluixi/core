@@ -300,6 +300,99 @@ describe('the userinfo endpoint', () => {
   });
 });
 
+describe('a user endpoint that is not the provider', () => {
+  const idTokenFor = (sub: string) =>
+    `x.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.y`;
+
+  /** Records the user request so a test can assert what was sent. */
+  function appApi(body: unknown) {
+    const seen: { url: string; init?: RequestInit }[] = [];
+    const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      seen.push({ url, init });
+      if (url.includes('oauth-token')) {
+        return new Response(JSON.stringify({ access_token: 'at', id_token: idTokenFor('u1') }));
+      }
+      return new Response(JSON.stringify(body));
+    }) as unknown as typeof fetch;
+    return { fetcher, seen };
+  }
+
+  async function signedIn(over: Partial<BrowserConfig>, body: unknown) {
+    const { fetcher, seen } = appApi(body);
+    const client = createBrowserClient(config(over), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+    return { client, seen };
+  }
+
+  it('calls the configured url instead of the discovered one', async () => {
+    const { client, seen } = await signedIn(
+      { userInfo: { url: 'https://api.test/me' } },
+      { id: 'u1' },
+    );
+    await client.fetchUser();
+    expect(seen.at(-1)!.url).toBe('https://api.test/me');
+  });
+
+  it('unwraps an envelope through `map`', async () => {
+    const { client } = await signedIn(
+      {
+        userInfo: {
+          url: 'https://api.test/me',
+          map: (raw: { data: { uid: string; role: string } }) => ({
+            id: raw.data.uid,
+            role: raw.data.role,
+          }),
+        },
+      },
+      { data: { uid: 'u9', role: 'support' } },
+    );
+    expect(await client.fetchUser()).toEqual({ id: 'u9', role: 'support' });
+  });
+
+  it('maps the provider response too, without a url', async () => {
+    const { client } = await signedIn(
+      { userInfo: { map: (raw: { sub: string }) => ({ id: raw.sub }) } },
+      { sub: 'u1' },
+    );
+    expect(await client.fetchUser()).toEqual({ id: 'u1' });
+  });
+
+  it('sends the extra headers an api asks for', async () => {
+    const { client, seen } = await signedIn(
+      { userInfo: { url: 'https://api.test/me', headers: { 'x-tenant': 'adafri' } } },
+      { id: 'u1' },
+    );
+    await client.fetchUser();
+    const headers = seen.at(-1)!.init!.headers as Record<string, string>;
+    expect(headers['x-tenant']).toBe('adafri');
+    // The bearer token still goes: a custom endpoint is still authenticated by it.
+    expect(headers.authorization).toBe('Bearer at');
+  });
+
+  it('skips the subject check for an endpoint that is not the provider', async () => {
+    // The app's own `/me` answers in its own shape and has no OIDC `sub` to compare.
+    // Applying the check here would reject every custom endpoint.
+    const { client } = await signedIn(
+      { userInfo: { url: 'https://api.test/me' } },
+      { id: 'u9', email: 'a@b.c' },
+    );
+    expect(await client.fetchUser()).toEqual({ id: 'u9', email: 'a@b.c' });
+  });
+
+  it('still checks the subject when the provider answers', async () => {
+    const { client } = await signedIn(
+      { userInfo: { headers: { 'x-a': '1' } } },
+      { sub: 'someone-else' },
+    );
+    await expect(client.fetchUser()).rejects.toThrow(/does not match the id token/);
+  });
+});
+
 describe('logging out', () => {
   it('clears the stored token and visits the end-session endpoint', async () => {
     const { fetcher } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });
