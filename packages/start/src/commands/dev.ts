@@ -1,6 +1,7 @@
 import { createServer as createHttp } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
@@ -144,6 +145,10 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     // the app gets the "did not replace it" stub instead of its route tree. A workspace
     // app hides this by resolving the package to source.
     ssr: { noExternal: ['@fluixi/core', ...cfg.ssrNoExternal] },
+    // The app's tsconfig paths, so an import the type checker accepts is one the
+    // bundler can resolve. Without this the two disagree and the build fails on an
+    // alias that typechecked cleanly.
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
   });
 
   http.listen(cfg.port, () => devReady({ port: cfg.port, startedAt }));

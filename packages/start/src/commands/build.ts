@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import { mkdir, writeFile, rm, copyFile, readFile } from 'node:fs/promises';
 import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
@@ -54,6 +55,7 @@ export async function build(
   step('client bundle');
   await viteBuild({
     root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
     plugins,
     logLevel: 'warn',
     build: { outDir: 'dist/client', ssrManifest: true, emptyOutDir: true },
@@ -66,6 +68,7 @@ export async function build(
     step(`server bundle${bundleNote(cfg)}`);
     await viteBuild({
       root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
       plugins,
       ssr,
       build: {
@@ -83,6 +86,7 @@ export async function build(
     step('middleware');
     await viteBuild({
       root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
       plugins,
       logLevel: 'warn',
       ssr,
@@ -198,6 +202,7 @@ async function bundleEntry(
   try {
     await viteBuild({
       root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
       plugins: plugins as never,
       logLevel: 'warn',
       // Nothing may be left to resolve: these run as an uploaded file, not an install.
