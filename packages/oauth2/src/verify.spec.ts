@@ -418,3 +418,30 @@ describe('introspection, for a token this service cannot read', () => {
     ).toThrow(/audience/);
   });
 });
+
+describe('providers that name the client in client_id', () => {
+  it('accepts a token carrying client_id instead of azp', async () => {
+    // Cognito access tokens carry neither `aud` nor `azp`, only `client_id`. Reading
+    // only `azp` rejected every one of them.
+    const token = await new SignJWT({ client_id: 'orders-api' })
+      .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
+      .setIssuer(ISSUER)
+      .setSubject('u1')
+      .setExpirationTime('5m')
+      .sign(priv);
+
+    const verify = verifier({ audience: false, authorizedParty: 'orders-api' });
+    expect((await verify(token)).sub).toBe('u1');
+  });
+
+  it('still refuses one issued to another client', async () => {
+    const token = await new SignJWT({ client_id: 'another-app' })
+      .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
+      .setIssuer(ISSUER)
+      .setExpirationTime('5m')
+      .sign(priv);
+
+    const verify = verifier({ audience: false, authorizedParty: 'orders-api' });
+    await expect(verify(token)).rejects.toThrow(/different client/);
+  });
+})

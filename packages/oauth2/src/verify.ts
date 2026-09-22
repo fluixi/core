@@ -48,6 +48,9 @@ export type TokenClaims = Record<string, unknown> & {
   sub?: string;
   iss?: string;
   aud?: string | string[];
+  /** The client a token was issued to. `azp` in OIDC, `client_id` on some providers. */
+  azp?: string;
+  client_id?: string;
   exp?: number;
   iat?: number;
   scope?: string;
@@ -72,10 +75,10 @@ export interface VerifierOptions {
   /**
    * The client the token was issued to, checked against `azp`.
    *
-   * Some providers put no `aud` on an access token at all and name the client in `azp`
-   * instead. Keycloak does that until an audience mapper is configured, so a service in
-   * front of it wants `audience: false` with this set, rather than no check of who the
-   * token was for.
+   * Some providers put no `aud` on an access token at all and name the client elsewhere:
+   * `azp` for Keycloak until an audience mapper is configured, `client_id` for Cognito.
+   * Both are read, so a service in front of either wants `audience: false` with this set,
+   * rather than no check of who the token was for.
    *
    * Configuring an audience mapper at the provider and using `audience` is the better
    * end state. This is for the common case where you do not control that.
@@ -226,7 +229,10 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
       const allowed = Array.isArray(options.authorizedParty)
         ? options.authorizedParty
         : [options.authorizedParty];
-      if (typeof payload.azp !== 'string' || !allowed.includes(payload.azp)) {
+      // `azp` is the OIDC claim; `client_id` is what some providers put on an access
+      // token instead, Cognito among them, and reading only `azp` rejected all of them.
+      const issuedTo = (payload.azp ?? payload.client_id) as string | undefined;
+      if (typeof issuedTo !== 'string' || !allowed.includes(issuedTo)) {
         throw new TokenError('The token was issued to a different client.', 'invalid_azp');
       }
     }
