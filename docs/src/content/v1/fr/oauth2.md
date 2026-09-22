@@ -20,13 +20,13 @@ export const auth = createAuthService<User>({
 });
 ```
 
-Une seule URL d'émetteur constitue toute la configuration. La découverte lit les points
-d'entrée d'autorisation, de jeton, de userinfo et de fin de session depuis
+Une seule URL d'émetteur constitue toute la configuration. La discovery lit les points
+d'entrée d'autorisation, de token, de userinfo et de fin de session depuis
 `/.well-known/openid-configuration`.
 
 ## Les deux moitiés
 
-`AuthClient` est le protocole : démarrer une connexion, transformer un rappel en jetons,
+`AuthClient` est le protocole : démarrer une connexion, transformer un callback en tokens,
 rafraîchir, terminer la session. Il ne détient aucun état applicatif.
 
 `AuthService` est l'application : qui est connecté, si la session tient, quand rafraîchir,
@@ -34,12 +34,12 @@ quoi afficher. Il est bâti sur [`@fluixi/session`](/v1/fr/session), donc tout c
 cette page s'applique ici aussi.
 
 Le service dépend d'un client et jamais duquel, et c'est ce qui permet au même code
-applicatif de tourner que les jetons vivent dans le navigateur ou sur un serveur.
+applicatif de tourner que les tokens vivent dans le navigateur ou sur un serveur.
 
 ## Le branchement
 
-Trois morceaux : une page de connexion qui démarre le flux, une route de rappel qui le
-termine, et une garde.
+Trois morceaux : une page de connexion qui démarre le flux, une route de callback qui le
+termine, et un guard.
 
 ```tsx
 // routes/login.tsx
@@ -70,7 +70,7 @@ export default function Callback() {
 allait quand la connexion a commencé, c'est-à-dire ce que `signIn({ returnTo })` a
 enregistré avant la redirection.
 
-Les gardes reviennent du service lui-même, donc pas de second fichier :
+Les guards reviennent du service lui-même, donc pas de second fichier :
 
 ```tsx
 export const { protectedRoute, Can, useUser } = auth;
@@ -82,10 +82,10 @@ export default protectedRoute(Dashboard);
 
 ### `mode: 'browser'`
 
-Un client public avec PKCE, qui détient ses propres jetons. Aucun serveur requis, donc un
+Un client public avec PKCE, qui détient ses propres tokens. Aucun serveur requis, donc un
 déploiement statique en page unique suffit.
 
-Le jeton d'accès reste en mémoire seule ; le jeton de rafraîchissement va dans
+Le token d'accès reste en mémoire seule ; le token de rafraîchissement va dans
 `sessionStorage` par défaut, ou dans `localStorage` avec `storage: 'local'` si une session
 doit survivre à la fermeture d'un onglet. Dans les deux cas il est atteignable par
 n'importe quel script de la page. C'est le prix de ne pas faire tourner de serveur, et
@@ -96,7 +96,7 @@ PKCE est ce qui le remplace, et il n'est pas optionnel ici.
 
 ### `mode: 'server'`
 
-Les jetons restent sur votre serveur et le navigateur reçoit un cookie httpOnly qu'il ne
+Les tokens restent sur votre serveur et le navigateur reçoit un cookie httpOnly qu'il ne
 peut pas lire : un script sur la page n'a donc rien à voler. Cela demande les routes :
 
 ```ts
@@ -117,7 +117,7 @@ export default defineMiddleware([oauthRoutes(config), sessionLocals(config)]);
 
 `oauthRoutes` sert `/auth/login`, `/callback`, `/refresh`, `/me` et `/logout`.
 `sessionLocals` place l'utilisateur connecté dans les locals de la requête, là où les
-crochets d'authentification regardent pendant un rendu serveur : `useUser()` répond donc
+hooks d'authentification regardent pendant un rendu serveur : `useUser()` répond donc
 pendant le SSR au lieu de se remplir après l'hydratation. Montez-le après `oauthRoutes`.
 
 Il réutilise une réponse userinfo pendant `userCacheMs` (30 secondes par défaut) au lieu
@@ -126,13 +126,13 @@ est la fraîcheur : une session terminée chez le fournisseur continue de s'affi
 connectée jusqu'à l'expiration de l'entrée.
 
 Il n'existe pas d'équivalent de `sessionLocals` en mode navigateur, et ce n'est pas un
-oubli. Dans ce mode le jeton ne quitte jamais le navigateur et n'est pas envoyé sur une
-requête de document : le serveur n'a donc aucun justificatif à résoudre. Une application
-construite ainsi rend la coquille déconnectée et la remplit côté client.
+oubli. Dans ce mode le token ne quitte jamais le navigateur et n'est pas envoyé sur une
+requête de document : le serveur n'a donc aucun identifiant à résoudre. Une application
+construite ainsi rend le squelette déconnecté et le remplit côté client.
 
 ## D'où vient l'utilisateur
 
-Par défaut, du point d'entrée userinfo OIDC du fournisseur. La plupart des applications
+Par défaut, du endpoint userinfo OIDC du fournisseur. La plupart des applications
 veulent le leur, car le fournisseur sait qui est la personne mais pas qu'elle est agent de
 support ici.
 
@@ -153,9 +153,9 @@ createAuthService<User>({
 });
 ```
 
-`map` reçoit le corps analysé et le jeton d'accès, et peut être asynchrone. Utilisez-le
-seul, sans `url`, pour remodeler les informations du fournisseur. Le jeton porteur est
-toujours envoyé à un point d'entrée personnalisé : c'est votre API, mais elle reste
+`map` reçoit le corps analysé et le token d'accès, et peut être asynchrone. Utilisez-le
+seul, sans `url`, pour remodeler les claims du fournisseur. Le token Bearer est
+toujours envoyé à un endpoint personnalisé : c'est votre API, mais elle reste
 authentifiée.
 
 Pour ce que cela n'atteint pas, remplacez `fetchUser` entièrement :
@@ -166,7 +166,7 @@ createAuthService<User>({ config, fetchUser: async (accessToken) => { /* ... */ 
 
 ## Les fournisseurs qui ne sont pas de l'OIDC standard
 
-**Pas de document de découverte.** Donnez les points d'entrée directement :
+**Pas de document de discovery.** Donnez les endpoints directement :
 
 ```ts
 config: {
@@ -181,10 +181,10 @@ config: {
 }
 ```
 
-**Aucun point d'entrée userinfo,** comme chez les fournisseurs OAuth2 simples tels que
+**Aucun endpoint userinfo,** comme chez les fournisseurs OAuth2 simples tels que
 GitHub. Renseignez `userInfo.url` ou `fetchUser`.
 
-**Identifiants dans un en-tête.** Certains points d'entrée de jeton n'acceptent que HTTP
+**Identifiants dans un en-tête.** Certains token endpoints n'acceptent que HTTP
 Basic :
 
 ```ts
@@ -213,15 +213,15 @@ createAuthService<User, Permissions>({
 });
 ```
 
-L'endroit où se trouvent les rôles dépend du fournisseur. Keycloak place les rôles de
-royaume dans `realm_access.roles` sur le jeton d'accès, pas dans userinfo : une application
-qui les veut configure donc un mappeur ou les lit côté serveur. Voir
-[Vérification des jetons](/v1/fr/token-verification).
+L'endroit où se trouvent les rôles dépend du fournisseur. Keycloak place les realm roles
+dans `realm_access.roles` sur l'access token, pas dans userinfo : une application qui les
+veut configure donc un mapper ou les lit côté serveur. Voir
+[Vérification des tokens](/v1/fr/token-verification).
 
 ## Injection de dépendances
 
 Le service est le plus souvent importé directement, ce qui marche partout, y compris hors
-d'un composant. Les jetons existent pour les cas qui veulent une prise, par exemple un
+d'un composant. Les tokens existent pour les cas qui veulent une prise, par exemple un
 test qui fournit un double :
 
 ```ts
@@ -238,24 +238,24 @@ export function provideAuth(): void {
 
 Appelez-la depuis l'entrée client, et depuis l'entrée serveur aussi si une route injecte
 pendant un rendu serveur. Voir [Injection de dépendances](/v1/fr/dependency-injection)
-pour comprendre pourquoi la portée racine est la bonne ici.
+pour comprendre pourquoi le scope racine est la bonne ici.
 
 ## Ce que le paquet vérifie, et ce qu'il ne vérifie pas
 
-**Vérifié.** Le `state` d'un rappel doit correspondre à celui que ce client a envoyé,
-c'est le contrôle CSRF. Le vérificateur PKCE est à usage unique, donc un rappel rejoué
-échoue. Un `sub` de userinfo qui ne correspond pas au jeton d'identité est rejeté, comme
-OIDC l'exige. Un rafraîchissement refusé efface le jeton mort au lieu de le rejouer
+**Vérifié.** Le `state` d'un callback doit correspondre à celui que ce client a envoyé,
+c'est le contrôle CSRF. Le vérificateur PKCE est à usage unique, donc un callback rejoué
+échoue. Un `sub` de userinfo qui ne correspond pas au token d'identité est rejeté, comme
+OIDC l'exige. Un rafraîchissement refusé efface le token mort au lieu de le rejouer
 indéfiniment.
 
-**Non vérifié, délibérément.** Le client ne vérifie pas les signatures des jetons. Ils
-arrivent par un appel TLS direct que ce client fait au point d'entrée de jeton, en
+**Non vérifié, délibérément.** Le client ne vérifie pas les signatures des tokens. Ils
+arrivent par un appel TLS direct que ce client fait au endpoint de token, en
 échangeant un code obtenu avec un vérificateur PKCE que lui seul détient, et OIDC autorise
 un client en flux de code à s'appuyer là-dessus. L'identité vient d'un aller-retour
-userinfo plutôt que du décodage d'un jeton, ce qui est de toute façon la source la plus
+userinfo plutôt que du décodage d'un token, ce qui est de toute façon la source la plus
 sûre.
 
-La vérification de signature appartient à l'API qui reçoit le jeton. C'est
-[Vérification des jetons](/v1/fr/token-verification), et elle n'est pas optionnelle.
+La vérification de signature appartient à l'API qui reçoit le token. C'est
+[Vérification des tokens](/v1/fr/token-verification), et elle n'est pas optionnelle.
 
-Suite : **[Vérification des jetons](/v1/fr/token-verification)**.
+Suite : **[Better Auth](/v1/fr/better-auth)**.

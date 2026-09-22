@@ -2,7 +2,7 @@
 
 `@fluixi/session` s'adresse à une application qui a sa propre page de connexion et son
 propre stockage d'utilisateurs. Vous fournissez une fonction qui transforme des
-identifiants en jeton ; le paquet possède tout ce qui vient après.
+identifiants en token ; le paquet possède tout ce qui vient après.
 
 ```ts
 import { createSession } from '@fluixi/session';
@@ -32,7 +32,7 @@ C'est tout le côté client. Ce que vous obtenez sans l'écrire :
 - l'hydratation au premier chargement, depuis le stockage
 - le rafraîchissement automatique avant expiration, dès que vous fournissez `refresh`
 - les rôles et permissions, dès que vous fournissez `access`
-- une garde qui réagit à un 401 venant de votre propre API
+- un guard qui réagit à un 401 venant de votre propre API
 
 ## L'adaptateur
 
@@ -40,18 +40,18 @@ Seuls `login` et `fetchUser` sont obligatoires. Le reste ajoute des comportement
 
 ```ts
 createSession<User, Credentials>({
-  login: (creds) => /* -> une chaîne jeton, ou { token, expiresAt } */,
+  login: (creds) => /* -> une chaîne token, ou { token, expiresAt } */,
   fetchUser: (token) => /* -> l'utilisateur */,
 
   logout: () => fetch('/api/logout', { method: 'POST' }),
-  register: (data) => /* -> un jeton pour connecter aussitôt, ou rien */,
-  refresh: (token) => /* -> un jeton frais, active le rafraîchissement automatique */,
-  getExpiry: (token) => /* -> epoch ms, quand le jeton ne le dit pas */,
+  register: (data) => /* -> un token pour connecter aussitôt, ou rien */,
+  refresh: (token) => /* -> un token frais, active le rafraîchissement automatique */,
+  getExpiry: (token) => /* -> epoch ms, quand le token ne le dit pas */,
 });
 ```
 
-`refresh` est ce qui arme le minuteur. Sans lui une session expire, simplement.
-`getExpiry` ne sert que si votre jeton est opaque et que la réponse de connexion ne porte
+`refresh` est ce qui arme le timer. Sans lui une session expire, simplement.
+`getExpiry` ne sert que si votre token est opaque et que la réponse de connexion ne porte
 pas d'`expires_in`.
 
 ## Le statut, et pourquoi il a plus de deux valeurs
@@ -61,7 +61,7 @@ auth.status();  // 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'e
 ```
 
 Deux états vous obligeraient à rendre une page déconnectée pendant que la première
-hydratation est encore en vol, ce qui est le clignotement que toutes les applications
+hydratation est encore en cours, ce qui est le flash que toutes les applications
 contournent ensuite. `loading` existe pour ne rien rendre tant que la réponse est
 inconnue.
 
@@ -159,7 +159,7 @@ d'authentification, donc ceci reste à vous :
   ne comparez jamais en clair.
 - **La table des utilisateurs** et sa lecture.
 - **Les routes de connexion, déconnexion et inscription.**
-- **La limitation de débit sur la connexion,** pour que le point d'entrée ne soit pas un
+- **Le rate limiting sur la connexion,** pour que l'endpoint ne soit pas un
   oracle à mots de passe.
 
 Si cette liste dépasse ce que vous voulez porter, [OAuth2](/v1/fr/oauth2) la supprime en

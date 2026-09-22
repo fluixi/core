@@ -4,9 +4,9 @@ Trois façons de connecter quelqu'un, et elles partagent presque tout. Se trompe
 coûte une seule fonction, pas l'application.
 
 ```
-        comment des identifiants deviennent un jeton   <- seul ceci change
+        comment des identifiants deviennent un token   <- seul ceci change
                         |
-        @fluixi/session      jeton, utilisateur, statut, rafraîchissement, rôles, garde 401
+        @fluixi/session      token, utilisateur, statut, rafraîchissement, rôles, garde 401
                         |
         @fluixi/auth/client  useUser, protectedRoute, Can
                         |
@@ -14,7 +14,7 @@ coûte une seule fonction, pas l'application.
 ```
 
 `@fluixi/session` possède la machine à états de la session. `@fluixi/auth/client` possède
-les gardes et les lectures. Ni l'un ni l'autre ne sait comment vous vous êtes
+les guards et les lectures. Ni l'un ni l'autre ne sait comment vous vous êtes
 authentifié, et c'est pour cela que la couche du dessus reste identique quel que soit le
 chemin choisi.
 
@@ -26,12 +26,12 @@ La question qui tranche : qui détient les comptes utilisateurs.
 | --- | --- | --- |
 | Votre propre page de connexion et votre base | `@fluixi/session` | [Sessions](/v1/fr/session) |
 | La page de connexion d'un fournisseur : Keycloak, Auth0, Okta, Curity | `@fluixi/oauth2` | [OAuth2 et OIDC](/v1/fr/oauth2) |
-| Une application qui *est* le système d'identité | `better-auth` avec `@fluixi/auth` | plus bas |
+| Une application qui *est* le système d'identité | `better-auth` avec `@fluixi/auth` | [Better Auth](/v1/fr/better-auth) |
 
 ## Ce que chacun coûte
 
 **`@fluixi/session`.** Vous écrivez la vérification du mot de passe, la table des
-utilisateurs, les routes de connexion et leur limitation de débit. En échange vous gardez
+utilisateurs, les routes de connexion et leur rate limiting. En échange vous gardez
 votre schéma et ne prenez aucune dépendance au-delà du framework.
 `@fluixi/session/server` fournit le cookie de session, donc vous n'écrivez pas de
 cryptographie.
@@ -47,7 +47,7 @@ données et un serveur, car cette bibliothèque crée ses propres comptes et ses
 sessions même quand la connexion est déléguée à un fournisseur.
 
 Une précision sur ce dernier point, facile à mal lire : Better Auth sait déléguer la
-connexion à Keycloak via son greffon OAuth générique, mais la session qu'il émet reste la
+connexion à Keycloak via son plugin OAuth générique, mais la session qu'il émet reste la
 sienne, stockée dans sa base. Si le fournisseur doit être le seul système d'identité,
 `@fluixi/oauth2` est la réponse plus légère.
 
@@ -81,13 +81,13 @@ const user = useUser();
 ```
 
 `createAuthHooks` accepte n'importe quel objet exposant un accesseur `user()`, donc les
-trois chemins l'alimentent. `@fluixi/oauth2` va plus loin et renvoie les gardes depuis le
+trois chemins l'alimentent. `@fluixi/oauth2` va plus loin et renvoie les guards depuis le
 service lui-même : une application qui l'utilise déclare son authentification dans un seul
 fichier.
 
 ## Protect, protectedRoute et Can
 
-Trois gardes qui se ressemblent et qui ne font pas la même chose.
+Trois guards qui se ressemblent et qui ne font pas la même chose.
 
 | | `Can` | `Protect` | `protectedRoute` |
 | --- | --- | --- | --- |
@@ -108,6 +108,6 @@ Un client peut revendiquer n'importe quel rôle, puisque c'est du code sur la ma
 quelqu'un d'autre. Lisez `can(...)` comme « faut-il montrer ce bouton », jamais comme
 « cette personne a-t-elle le droit ». Le serveur revérifie à chaque requête, et c'est cette
 vérification qui protège réellement. Voir
-[Vérification des jetons](/v1/fr/token-verification) pour l'autre côté.
+[Vérification des tokens](/v1/fr/token-verification) pour l'autre côté.
 
 Suite : **[Sessions](/v1/fr/session)**.

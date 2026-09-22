@@ -247,4 +247,4 @@ the safer source anyway.
 Signature verification belongs at the API receiving the token. That is
 [Token verification](/v1/en/token-verification), and it is not optional.
 
-Next: **[Token verification](/v1/en/token-verification)**.
+Next: **[Better Auth](/v1/en/better-auth)**.

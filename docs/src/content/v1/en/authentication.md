@@ -25,7 +25,7 @@ The deciding question is who holds the user records.
 | --- | --- | --- |
 | Your own login page and your own database | `@fluixi/session` | [Sessions](/v1/en/session) |
 | A provider's login page: Keycloak, Auth0, Okta, Curity | `@fluixi/oauth2` | [OAuth2 and OIDC](/v1/en/oauth2) |
-| An app that *is* the identity system | `better-auth` with `@fluixi/auth` | below |
+| An app that *is* the identity system | `better-auth` with `@fluixi/auth` | [Better Auth](/v1/en/better-auth) |
 
 ## What each one costs
 
