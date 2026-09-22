@@ -27,6 +27,12 @@
         "import": "./dist/server.mjs",
         "require": "./dist/server.cjs",
         "default": "./dist/server.js"
+      },
+      "./verify": {
+        "types": "./dist/verify.d.ts",
+        "import": "./dist/verify.mjs",
+        "require": "./dist/verify.cjs",
+        "default": "./dist/verify.js"
       }
     }
   },
@@ -57,6 +63,13 @@
       "import": "./dist/server.mjs",
       "require": "./dist/server.cjs",
       "default": "./dist/server.js"
+    },
+    "./verify": {
+      "development": "./src/verify.ts",
+      "types": "./dist/verify.d.ts",
+      "import": "./dist/verify.mjs",
+      "require": "./dist/verify.cjs",
+      "default": "./dist/verify.js"
     }
   },
   "dependencies": {},
@@ -65,7 +78,8 @@
     "@fluixi/session": "workspace:*",
     "@fluixi/start": "workspace:*",
     "@fluixi/server": "workspace:*",
-    "@fluixi/auth": "workspace:*"
+    "@fluixi/auth": "workspace:*",
+    "jose": ">=5"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
@@ -74,13 +88,17 @@
     "cross-env": "^7.0.3",
     "@fluixi/start": "workspace:*",
     "@fluixi/server": "workspace:*",
-    "@fluixi/auth": "workspace:*"
+    "@fluixi/auth": "workspace:*",
+    "jose": "^5.9.6"
   },
   "peerDependenciesMeta": {
     "@fluixi/start": {
       "optional": true
     },
     "@fluixi/server": {
+      "optional": true
+    },
+    "jose": {
       "optional": true
     }
   }
