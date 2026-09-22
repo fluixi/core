@@ -9,6 +9,34 @@ node conformance/run.mjs --all
 
 Build the package first: the suite imports `dist`, which is what an app would.
 
+## What three providers actually do
+
+Run against Keycloak 26, Dex 2.41 and an Auth0 tenant. None of them needed a code change,
+which is the result worth having: the differences below are configuration, not forks.
+
+| | Keycloak | Dex | Auth0 |
+| --- | --- | --- | --- |
+| Discovery | yes | yes | yes |
+| Authorization code with PKCE | yes | yes | yes (login page is not scriptable) |
+| `client_credentials` | yes | **no** | yes |
+| userinfo | yes | yes | yes |
+| Introspection endpoint | yes | yes | **no** |
+| Revocation endpoint | yes | **no** | yes |
+| End session endpoint | yes | **no** | yes |
+| Access token carries `aud` | not until an audience mapper | yes | yes |
+| Names the calling client | `azp` | **neither** | `azp` |
+
+Three consequences for anyone configuring this package:
+
+- **Keycloak** needs `audience: false` with `authorizedParty`, or an audience mapper on
+  the client. It also refuses to introspect a token whose audience excludes the asking
+  client, and says only `active: false` about it.
+- **Dex** puts neither `azp` nor `client_id` on an access token, so `authorizedParty` has
+  nothing to check and `aud` is the only handle.
+- **Auth0** needs an API registered and `audience` sent, or it returns an opaque token.
+  Its issuer carries a **trailing slash** that the `iss` claim includes. It publishes no
+  introspection endpoint at all, so `createTokenIntrospector` does not apply there.
+
 ## What it reports
 
 Three kinds of row, and the distinction matters.
