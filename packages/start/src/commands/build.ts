@@ -65,6 +65,14 @@ export async function build(
   // functions / middleware: so build it when the entry exists; a pure static SPA skips it.
   const serverEntrySrc = resolve(cfg.root, cfg.serverEntry);
   if (cfg.ssr || existsSync(serverEntrySrc)) {
+    // Before the bundle, so the message names the file to edit rather than arriving as a
+    // 200 on a route that was supposed to refuse the request.
+    const { assertApiRoutesReachable } = await import('../api.js');
+    assertApiRoutesReachable({
+      root: cfg.root,
+      apiDir: cfg.apiDir,
+      serverEntry: cfg.serverEntry,
+    });
     step(`server bundle${bundleNote(cfg)}`);
     await viteBuild({
       root: cfg.root,

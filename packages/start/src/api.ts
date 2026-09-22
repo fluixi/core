@@ -2,7 +2,7 @@
 // (GET/POST/PUT/PATCH/DELETE) that take (request, { params }) and return a Web Response. They map
 // to `/api/<path>` ([id] → param, [...rest] → catch-all). A scan plugin emits `virtual:fluixi-api`
 // (isApiRequest + handleApiRequest); dev auto-wires it, prod gets it via the entry-server re-export.
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath, join } from 'node:path';
 
 const API_VMOD = 'virtual:fluixi-api';
@@ -137,3 +137,62 @@ export function apiRoutesVitePlugin(opts: { dir: string; prefix?: string }): any
 }
 
 export const API_VIRTUAL_MODULE = API_VMOD;
+
+/**
+ * Fail a build whose API routes would never be reached.
+ *
+ * A production server dispatches to them only when the server entry re-exports the
+ * handlers; without that every `/api/*` request falls through to the page renderer and
+ * comes back as a rendered page with a 200. For a route that guards something, that is a
+ * 200 where a 401 belongs, and nothing says so at runtime.
+ *
+ * The dev server wires this itself, so the gap only appears once an app is built, which
+ * is the worst moment to discover it. Checked here instead.
+ */
+export function assertApiRoutesReachable(options: {
+  root: string;
+  apiDir: string;
+  serverEntry: string;
+}): void {
+  const dir = resolvePath(options.root, options.apiDir);
+  if (!collectRoutes(dir).length) return;
+
+  const entry = resolvePath(options.root, options.serverEntry);
+  let source: string;
+  try {
+    source = readFileSync(entry, 'utf8');
+  } catch {
+    // No server entry at all is a different problem, reported elsewhere.
+    return;
+  }
+
+  if (source.includes('@fluixi/start/api-routes')) return;
+
+  throw new Error(
+    `[fluixi] ${options.apiDir} has API routes, but ${options.serverEntry} does not re-export them, ` +
+      `so a built server would answer every /api request with a rendered page instead.
+
+` +
+      `  Add to ${options.serverEntry}:
+` +
+      `    export { isApiRequest, handleApiRequest } from '@fluixi/start/api-routes';
+`,
+  );
+}
+
+/** Route files under `dir`, without loading them. */
+function collectRoutes(dir: string): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return [];
+  }
+  const found: string[] = [];
+  for (const name of entries) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) found.push(...collectRoutes(full));
+    else if (/\.[jt]sx?$/.test(name) && !/\.(spec|test)\./.test(name)) found.push(full);
+  }
+  return found;
+}
