@@ -37,6 +37,35 @@
  * const auth = inject(AuthServiceToken);
  * ```
  *
+ * ## Where trust comes from
+ *
+ * This client does not verify token signatures, and that is deliberate rather than
+ * missing. Three things follow from it, and they are worth knowing before changing any
+ * of them.
+ *
+ * **The tokens are authentic by transport.** They arrive over a direct TLS call this
+ * client makes to the token endpoint, exchanging a code obtained with a PKCE verifier
+ * only this client holds. OIDC allows a client using the code flow to rely on that in
+ * place of checking the id token signature.
+ *
+ * **Identity comes from userinfo, not from reading a token.** The user is a round trip
+ * to the provider with the access token, so it is the provider's answer rather than a
+ * claim decoded here. Trusting a decoded id token for identity is the usual mistake, and
+ * it is why the userinfo subject is checked against the id token instead.
+ *
+ * **Verification belongs at the resource server.** An access token is a bearer credential
+ * for an API, opaque to the client by design. The API must check the signature, issuer,
+ * audience and expiry on every request, with the provider's JWKS. Discovery exposes
+ * `jwks_uri` on `Endpoints` for that, and an audited library such as `jose` should do the
+ * checking: algorithm confusion and `alg: none` are the standard ways a hand-written
+ * verifier becomes worse than none at all.
+ *
+ * A signature check added here would buy little: an attacker able to forge a token in
+ * this client's memory already controls the page, and a locally valid token says nothing
+ * about whether the session was revoked a minute ago.
+ *
+ * ## Hooks
+ *
  * The hooks from `@fluixi/auth/client` take the service directly, because it satisfies
  * the session shape they expect:
  *

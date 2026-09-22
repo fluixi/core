@@ -52,6 +52,17 @@ export interface OAuthRoutesConfig {
   defaultReturnTo?: string;
   /** `basic` sends the credentials in an Authorization header. Default `body`. */
   tokenAuthMethod?: 'body' | 'basic';
+  /**
+   * How long `sessionLocals` may reuse a userinfo response, in milliseconds.
+   *
+   * Without this every server render calls the provider, which is a round trip per page
+   * and makes the provider being up a condition of rendering at all.
+   *
+   * The cost is freshness: a session disabled at the provider keeps rendering as signed
+   * in until the entry expires. Short by default for that reason, and worth leaving
+   * short. `0` disables it and asks every time.
+   */
+  userCacheMs?: number;
   /** Map the provider's userinfo onto the app's own shape. */
   mapUser?: (claims: Record<string, unknown>, accessToken: string) => unknown;
 }
@@ -303,6 +314,28 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     secure: config.secureCookie,
   });
 
+  const ttl = config.userCacheMs ?? 30_000;
+  /**
+   * Keyed by the access token, which this process already holds in the cookie it just
+   * opened, so nothing new is exposed by keeping it here.
+   *
+   * Deliberately not a verifier. The provider still decides who this is; the cache only
+   * says how recently it was asked.
+   */
+  const cache = new Map<string, { user: unknown; until: number }>();
+
+  /** Bounded, so a long-running server does not hold every token it has ever seen. */
+  const remember = (token: string, user: unknown): void => {
+    if (ttl <= 0) return;
+    if (cache.size > 500) {
+      const now = Date.now();
+      for (const [key, entry] of cache) if (entry.until <= now) cache.delete(key);
+      // Still full of live entries: drop the oldest rather than grow without limit.
+      if (cache.size > 500) cache.delete(cache.keys().next().value as string);
+    }
+    cache.set(token, { user, until: Date.now() + ttl });
+  };
+
   return async function middleware(
     request: Request,
     next: () => Promise<Response>,
@@ -319,6 +352,12 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       return next();
     }
 
+    const cached = cache.get(session.accessToken);
+    if (cached && cached.until > Date.now()) {
+      locals.auth = { user: cached.user, session: { expiresAt: session.expiresAt } };
+      return next();
+    }
+
     let user: unknown = null;
     try {
       const endpoints = config.endpoints ?? (config.issuer ? await discover(config.issuer) : null);
@@ -329,6 +368,9 @@ export function sessionLocals(config: OAuthRoutesConfig) {
         if (response.ok) {
           const claims = (await response.json()) as Record<string, unknown>;
           user = config.mapUser ? config.mapUser(claims, session.accessToken) : claims;
+          // Only a successful answer. Caching a refusal would keep someone signed out
+          // after the provider came back.
+          remember(session.accessToken, user);
         }
       }
     } catch {
