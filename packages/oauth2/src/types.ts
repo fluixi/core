@@ -96,6 +96,8 @@ export interface Endpoints {
   userinfo?: string;
   endSession?: string;
   jwks?: string;
+  /** RFC 7662. Present when the provider lets a service ask about an opaque token. */
+  introspection?: string;
   issuer?: string;
 }
 

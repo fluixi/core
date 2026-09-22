@@ -9,7 +9,7 @@
  */
 import { describe, expect, it, beforeAll, afterEach, vi } from 'vitest';
 import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
-import { createTokenVerifier } from './verify.js';
+import { createTokenVerifier, createTokenIntrospector } from './verify.js';
 import { clearDiscoveryCache } from './discovery.js';
 
 const ISSUER = 'https://idp.test/realms/app';
@@ -269,5 +269,152 @@ describe('where the keys come from', () => {
     vi.stubGlobal('fetch', fetcher);
     expect((await verifier()(await mint())).sub).toBe('u1');
     expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe('introspection, for a token this service cannot read', () => {
+  const ENDPOINT = 'https://idp.test/realms/app/introspect';
+
+  /** A provider answering RFC 7662, recording what it was asked. */
+  function idp(answer: Record<string, unknown>, status = 200) {
+    const calls: { url: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, init: init ?? {} });
+      if (url.includes('openid-configuration')) {
+        return new Response(JSON.stringify({
+          issuer: ISSUER,
+          authorization_endpoint: `${ISSUER}/auth`,
+          token_endpoint: `${ISSUER}/token`,
+          introspection_endpoint: ENDPOINT,
+        }));
+      }
+      return new Response(JSON.stringify(answer), { status });
+    }));
+    return calls;
+  }
+
+  const introspector = (over = {}) =>
+    createTokenIntrospector({
+      issuer: ISSUER,
+      clientId: 'orders-api',
+      clientSecret: 'shh',
+      audience: 'orders-api',
+      introspectionEndpoint: ENDPOINT,
+      ...over,
+    });
+
+  it('accepts a token the provider reports as active', async () => {
+    idp({ active: true, sub: 'u1', scope: 'orders:read', aud: 'orders-api' });
+    const claims = await introspector()('opaque-reference-token');
+    expect(claims.sub).toBe('u1');
+    expect(claims.scope).toBe('orders:read');
+  });
+
+  it('refuses a token the provider reports as inactive', async () => {
+    // The one normative answer in RFC 7662, and the reason to introspect at all: this is
+    // how a revoked token stops working at once.
+    idp({ active: false });
+    await expect(introspector()('revoked')).rejects.toThrow(/not active/);
+  });
+
+  it('refuses a response with no `active` field at all', async () => {
+    idp({ sub: 'u1' });
+    await expect(introspector()('odd')).rejects.toThrow(/not active/);
+  });
+
+  it('authenticates itself with Basic by default', async () => {
+    const calls = idp({ active: true, sub: 'u1' });
+    await introspector()('t');
+
+    const headers = calls.at(-1)!.init.headers as Record<string, string>;
+    // An unauthenticated introspection endpoint would let anyone test a stolen token.
+    expect(atob(headers.authorization.slice(6))).toBe('orders-api:shh');
+    expect(String(calls.at(-1)!.init.body)).not.toContain('client_secret');
+  });
+
+  it('can send its credentials in the body instead', async () => {
+    const calls = idp({ active: true, sub: 'u1' });
+    await introspector({ clientAuthMethod: 'body' })('t');
+
+    const body = new URLSearchParams(String(calls.at(-1)!.init.body));
+    expect(body.get('client_secret')).toBe('shh');
+    expect(body.get('token_type_hint')).toBe('access_token');
+  });
+
+  it('checks the audience when the response carries one', async () => {
+    idp({ active: true, sub: 'u1', aud: 'some-other-api' });
+    await expect(introspector()('t')).rejects.toThrow(/different audience/);
+  });
+
+  it('checks the issuer when the response carries one', async () => {
+    idp({ active: true, sub: 'u1', iss: 'https://evil.test' });
+    await expect(introspector()('t')).rejects.toThrow(/different issuer/);
+  });
+
+  it('checks which client the token was issued to', async () => {
+    idp({ active: true, sub: 'u1', client_id: 'another-app' });
+    await expect(
+      introspector({ audience: false, authorizedParty: 'orders-api' })('t'),
+    ).rejects.toThrow(/different client/);
+  });
+
+  it('asks the provider every time by default', async () => {
+    const calls = idp({ active: true, sub: 'u1' });
+    const verify = introspector();
+    await verify('t');
+    await verify('t');
+    // Caching would trade away the reason to introspect, so it is off unless asked for.
+    expect(calls.filter((c) => c.url === ENDPOINT)).toHaveLength(2);
+  });
+
+  it('reuses an active answer when cacheMs says so', async () => {
+    const calls = idp({ active: true, sub: 'u1' });
+    const verify = introspector({ cacheMs: 10_000 });
+    await verify('t');
+    await verify('t');
+    expect(calls.filter((c) => c.url === ENDPOINT)).toHaveLength(1);
+  });
+
+  it('never caches a refusal', async () => {
+    const calls = idp({ active: false });
+    const verify = introspector({ cacheMs: 10_000 });
+    await verify('t').catch(() => {});
+    await verify('t').catch(() => {});
+    // Caching one would keep a reinstated token out for the life of the entry.
+    expect(calls.filter((c) => c.url === ENDPOINT)).toHaveLength(2);
+  });
+
+  it('finds the endpoint through discovery', async () => {
+    idp({ active: true, sub: 'u1' });
+    const verify = createTokenIntrospector({
+      issuer: ISSUER, clientId: 'orders-api', clientSecret: 'shh', audience: false,
+    });
+    expect((await verify('t')).sub).toBe('u1');
+  });
+
+  it('says so when the service credentials are refused', async () => {
+    idp({ error: 'invalid_client' }, 401);
+    await expect(introspector()('t')).rejects.toThrow(/refused this service/);
+  });
+
+  it('reads the token off a request', async () => {
+    idp({ active: true, sub: 'u1' });
+    const request = new Request('https://api.test/orders', {
+      headers: { authorization: 'Bearer opaque' },
+    });
+    expect((await introspector().fromRequest(request)).sub).toBe('u1');
+  });
+
+  it('refuses to be built without client credentials', () => {
+    expect(() =>
+      createTokenIntrospector({ issuer: ISSUER, clientId: '', clientSecret: '', audience: false }),
+    ).toThrow(/client credentials/);
+  });
+
+  it('refuses to be built without an audience decision', () => {
+    expect(() =>
+      createTokenIntrospector({ issuer: ISSUER, clientId: 'a', clientSecret: 'b' } as never),
+    ).toThrow(/audience/);
   });
 });

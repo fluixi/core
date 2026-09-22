@@ -123,6 +123,14 @@ export class TokenError extends OAuthError {
   }
 }
 
+/** The bearer token on a request, or null. Case-insensitive, as the HTTP scheme is. */
+function bearerOf(request: Request): string | null {
+  const header = request.headers.get('authorization');
+  if (!header) return null;
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : null;
+}
+
 /** `jose`, loaded only when something actually verifies. */
 async function loadJose(): Promise<typeof import('jose')> {
   try {
@@ -237,14 +245,7 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
   };
 
   const verifier = verify as TokenVerifier;
-
-  verifier.bearerOf = (request: Request): string | null => {
-    const header = request.headers.get('authorization');
-    if (!header) return null;
-    // Case-insensitive: the scheme is, per the HTTP spec, and providers differ.
-    const match = header.match(/^Bearer\s+(.+)$/i);
-    return match ? match[1].trim() : null;
-  };
+  verifier.bearerOf = bearerOf;
 
   verifier.fromRequest = async (request: Request): Promise<TokenClaims> => {
     const token = verifier.bearerOf(request);
@@ -254,5 +255,200 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
     return verify(token);
   };
 
+  return verifier;
+}
+
+// ─── Introspection (RFC 7662) ─────────────────────────────────────────────────
+
+/**
+ * For a token this service cannot read on its own.
+ *
+ * A provider may issue an opaque reference token rather than a JWT, and some are
+ * configured that way on purpose: the token carries nothing, so it leaks nothing, and the
+ * provider stays the only thing that knows what it means. Verifying one locally is not
+ * possible, so the service asks instead.
+ *
+ * The exchange is worth understanding before choosing it. Introspection is a network call
+ * on the path of every request, and it reaches the provider rather than a cached key. What
+ * you get for that is the property a signature cannot give: a revoked token stops working
+ * at once, because `active` is answered live.
+ */
+export interface IntrospectorOptions {
+  /** The issuer, used to find the endpoint and checked against the response. */
+  issuer: string;
+  /**
+   * This service's own credentials at the provider.
+   *
+   * The introspection endpoint is authenticated, and that is not incidental: an open one
+   * would let anyone test whether a stolen token is live. A service without credentials
+   * cannot use it.
+   */
+  clientId: string;
+  clientSecret: string;
+  /** The endpoint, when discovery should not be used to find it. */
+  introspectionEndpoint?: string;
+  /** Checked against `aud` when the response carries one. `false` to skip. */
+  audience?: string | string[] | false;
+  /** Checked against `client_id` on the response, for a token issued to one client. */
+  authorizedParty?: string | string[];
+  /**
+   * How long an `active` answer may be reused, in milliseconds. Default 0, meaning never.
+   *
+   * Caching trades away the reason to introspect. A revoked token keeps working until the
+   * entry expires, so a value here should be small and deliberate. The default asks every
+   * time.
+   */
+  cacheMs?: number;
+  /** `basic` sends the credentials in an Authorization header. Default `basic`. */
+  clientAuthMethod?: 'basic' | 'body';
+  /** Extra checks once the token is active. */
+  require?: (claims: TokenClaims) => boolean | string;
+}
+
+/** What RFC 7662 defines, plus whatever else the provider chose to include. */
+interface IntrospectionResponse extends TokenClaims {
+  active?: boolean;
+  client_id?: string;
+  token_type?: string;
+  username?: string;
+}
+
+export function createTokenIntrospector(options: IntrospectorOptions): TokenVerifier {
+  if (!options.issuer) {
+    throw new Error('[fluixi/oauth2] createTokenIntrospector needs an issuer.');
+  }
+  if (!options.clientId || !options.clientSecret) {
+    throw new Error(
+      '[fluixi/oauth2] createTokenIntrospector needs client credentials: the introspection endpoint is authenticated, and an open one would let anyone test a stolen token.',
+    );
+  }
+  if (options.audience === undefined) {
+    throw new Error(
+      '[fluixi/oauth2] createTokenIntrospector needs an audience, or `audience: false` to say this service accepts a token minted for any client of the issuer.',
+    );
+  }
+
+  const ttl = options.cacheMs ?? 0;
+  /** Only positive answers, and only while `cacheMs` says so. */
+  const cache = new Map<string, { claims: TokenClaims; until: number }>();
+
+  let endpoint: string | null = options.introspectionEndpoint ?? null;
+  async function resolveEndpoint(): Promise<string> {
+    if (endpoint) return endpoint;
+    const endpoints = await discover(options.issuer);
+    if (!endpoints.introspection) {
+      throw new OAuthError(
+        `${options.issuer} published no introspection_endpoint. Give the introspector one directly, or verify JWTs with createTokenVerifier.`,
+        'no_introspection',
+      );
+    }
+    endpoint = endpoints.introspection;
+    return endpoint;
+  }
+
+  const introspect = async (token: string): Promise<TokenClaims> => {
+    if (!token) throw new TokenError('No token to verify.', 'no_token');
+
+    const cached = cache.get(token);
+    if (cached && cached.until > Date.now()) return cached.claims;
+
+    const url = await resolveEndpoint();
+    const headers: Record<string, string> = {
+      'content-type': 'application/x-www-form-urlencoded',
+      accept: 'application/json',
+    };
+    // `token_type_hint` lets the provider look in the right table first. It is a hint and
+    // a provider is free to ignore it.
+    const form = new URLSearchParams({ token, token_type_hint: 'access_token' });
+
+    if ((options.clientAuthMethod ?? 'basic') === 'basic') {
+      const pair = `${encodeURIComponent(options.clientId)}:${encodeURIComponent(options.clientSecret)}`;
+      headers.authorization = `Basic ${btoa(pair)}`;
+    } else {
+      form.set('client_id', options.clientId);
+      form.set('client_secret', options.clientSecret);
+    }
+
+    const response = await fetch(url, { method: 'POST', headers, body: form.toString() });
+    if (!response.ok) {
+      // A provider that refuses the service's own credentials is a configuration problem
+      // here, not a bad token, and saying so saves a long hunt.
+      throw new OAuthError(
+        `The introspection endpoint refused this service: ${response.status}. Check clientId and clientSecret.`,
+        'introspection_failed',
+      );
+    }
+
+    const body = (await response.json()) as IntrospectionResponse;
+
+    // The one normative answer: anything but `active: true` means no.
+    //
+    // A provider says only that much, so a genuine refusal and a misconfiguration look
+    // identical here. The hint names the usual cause: several providers, Keycloak among
+    // them, refuse to introspect a token whose audience does not include the asking
+    // client, and answer `active: false` rather than explaining.
+    if (body.active !== true) {
+      throw new TokenError(
+        'The provider reports this token is not active. If it was just issued, check that this client is in the token audience: some providers refuse to introspect a token minted for someone else and say only this.',
+        'inactive_token',
+      );
+    }
+
+    // The response carries these only sometimes, so they are checked when present rather
+    // than required. A provider that omits `iss` has already told us the token is live at
+    // the issuer we asked.
+    if (typeof body.iss === 'string' && body.iss !== options.issuer) {
+      throw new TokenError('The token was issued by a different issuer.', 'invalid_issuer');
+    }
+
+    if (options.audience !== false && body.aud !== undefined) {
+      const wanted = Array.isArray(options.audience) ? options.audience : [options.audience];
+      const got = Array.isArray(body.aud) ? body.aud : [body.aud];
+      if (!got.some((a) => wanted.includes(a as string))) {
+        throw new TokenError('The token was minted for a different audience.', 'invalid_audience');
+      }
+    }
+
+    if (options.authorizedParty !== undefined) {
+      const allowed = Array.isArray(options.authorizedParty)
+        ? options.authorizedParty
+        : [options.authorizedParty];
+      // `client_id` is what RFC 7662 names; `azp` is what an OIDC provider may add.
+      const issuedTo = (body.client_id ?? body.azp) as string | undefined;
+      if (!issuedTo || !allowed.includes(issuedTo)) {
+        throw new TokenError('The token was issued to a different client.', 'invalid_azp');
+      }
+    }
+
+    if (options.require) {
+      const verdict = options.require(body);
+      if (verdict !== true) {
+        throw new TokenError(
+          typeof verdict === 'string' ? verdict : "The token did not meet this service's requirements.",
+          'insufficient_claims',
+        );
+      }
+    }
+
+    if (ttl > 0) {
+      // Bounded, and never a refusal: caching one would keep a reinstated token out.
+      if (cache.size > 500) {
+        const now = Date.now();
+        for (const [key, entry] of cache) if (entry.until <= now) cache.delete(key);
+        if (cache.size > 500) cache.delete(cache.keys().next().value as string);
+      }
+      cache.set(token, { claims: body, until: Date.now() + ttl });
+    }
+
+    return body;
+  };
+
+  const verifier = introspect as TokenVerifier;
+  verifier.bearerOf = bearerOf;
+  verifier.fromRequest = async (request: Request): Promise<TokenClaims> => {
+    const token = bearerOf(request);
+    if (!token) throw new TokenError('The request carried no bearer token.', 'no_token');
+    return introspect(token);
+  };
   return verifier;
 }

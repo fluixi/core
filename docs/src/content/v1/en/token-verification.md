@@ -140,6 +140,76 @@ const verify = createTokenVerifier({
 });
 ```
 
+## Opaque tokens, and introspection
+
+Not every provider issues a JWT. An opaque reference token carries nothing and means
+nothing outside the provider, which is the point: it leaks nothing if it is intercepted,
+and the provider stays the only thing that can say what it stands for.
+
+There is no way to verify one locally. The service asks instead, over RFC 7662:
+
+```ts
+import { createTokenIntrospector } from '@fluixi/oauth2/verify';
+
+const verify = createTokenIntrospector({
+  issuer: process.env.OIDC_ISSUER!,
+  clientId: 'orders-api',
+  clientSecret: process.env.ORDERS_API_SECRET!,
+  audience: 'orders-api',
+});
+
+const claims = await verify.fromRequest(request);   // same shape as the JWT verifier
+```
+
+It returns the same `TokenVerifier`, so `guard` above works unchanged. Swapping one for
+the other is a one-line change.
+
+### What it costs and what it buys
+
+Introspection is a network call to the provider on the path of every request, where JWT
+verification is local arithmetic against a cached key.
+
+What you get for that is the property a signature cannot give. A signature says a token
+was genuine when it was minted; introspection says it is good **now**. A token revoked
+five minutes ago still verifies locally and is refused here at once.
+
+`cacheMs` reuses an `active` answer for a window, and defaults to `0`, meaning ask every
+time. Anything above zero trades away exactly the property you came for, so keep it small
+and deliberate. A refusal is never cached, because that would keep a reinstated token out.
+
+### Client credentials are required
+
+The introspection endpoint is authenticated, and that is not incidental: an open one would
+let anyone test whether a stolen token is still live. A service needs its own `clientId`
+and `clientSecret` at the provider, so this is a server-side tool. Never ship these to a
+browser.
+
+Credentials go in an `Authorization: Basic` header by default. `clientAuthMethod: 'body'`
+puts them in the form for a provider that wants them there.
+
+### The `active: false` that means something else
+
+A provider answers `{ "active": false }` and nothing more, so a genuinely dead token and a
+misconfiguration look identical.
+
+The usual cause of the second is that the asking client is not in the token's audience.
+Keycloak refuses to introspect a token minted for someone else and says only `active:
+false` about it. The fix is an audience mapper on the client so its tokens carry
+`aud: <client>`, after which introspection answers normally.
+
+### Which to use
+
+| | `createTokenVerifier` | `createTokenIntrospector` |
+| --- | --- | --- |
+| Token | a JWT | opaque, or a JWT |
+| Cost | local, one cached key fetch | a request to the provider, per call |
+| Revocation | not seen until expiry | immediate |
+| Needs client credentials | no | yes |
+
+Use the verifier where tokens are JWTs and short-lived. Use the introspector where tokens
+are opaque, or where a revoked session must stop working at once and you will pay a round
+trip for it.
+
 ## Verified and informative are different
 
 A token can verify perfectly and tell you almost nothing. Keycloak's lightweight access
