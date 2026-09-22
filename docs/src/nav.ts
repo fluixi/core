@@ -18,6 +18,10 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
     slugs: ['html-templates', 'directives'],
   },
   {
+    group: { en: 'Authentication', fr: 'Authentification' },
+    slugs: ['authentication', 'session', 'oauth2', 'token-verification'],
+  },
+  {
     group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },
     slugs: ['routing', 'server-functions', 'api-routes', 'middleware', 'seo', 'images', 'static-generation', 'deployment', 'dependency-injection', 'i18n', 'compiler'],
   },
