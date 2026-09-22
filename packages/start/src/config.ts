@@ -36,8 +36,15 @@ export interface FluixiConfig {
   apiDir?: string;
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;
-  /** SSR deps Vite must bundle (no-external), e.g. ESM packages without file extensions. */
-  ssrNoExternal?: string[];
+  /**
+   * SSR deps Vite must bundle rather than let node import, e.g. ESM packages without
+   * file extensions.
+   *
+   * A RegExp covers a family at once, which is what a workspace link needs: a package
+   * resolved to source pulls in its siblings, and naming them one at a time only finds
+   * the next one on the next run. `[/^@acme\//]` bundles the whole scope.
+   */
+  ssrNoExternal?: (string | RegExp)[];
   /**
    * Where a capitalised tag with no import in scope comes from.
    *
@@ -121,7 +128,7 @@ export interface ResolvedPrerender {
 export type ResolvedConfig = Required<
   Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents'>
 > & {
-  ssrNoExternal: string[];
+  ssrNoExternal: (string | RegExp)[];
   i18n: ResolvedI18n | false;
   prerender: ResolvedPrerender | false;
   /** Stays optional: an app that publishes no elements declares none. */

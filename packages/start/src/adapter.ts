@@ -176,7 +176,7 @@ const GENERATED_SUBPATHS = new Set(['./routes', './server-fns', './api-routes'])
  * `ssrNoExternal` always wins: it is the app saying "this one must be bundled".
  */
 export function ssrBuildOptions(cfg: ResolvedConfig): {
-  noExternal?: string[] | true;
+  noExternal?: (string | RegExp)[] | true;
   external?: string[];
 } {
   // Always bundled, for the reason in commands/dev.ts: the routes module is a plugin
@@ -187,8 +187,13 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   if (mode === 'inline') return { noExternal: true };
   if (mode !== 'external') return { noExternal };
 
+  // A name the app asked to bundle must not also be externalized, whether it was named
+  // outright or matched by a pattern.
+  const bundled = (name: string) =>
+    cfg.ssrNoExternal.some((rule) => (rule instanceof RegExp ? rule.test(name) : rule === name));
+
   const external = frameworkDeps(cfg.root)
-    .filter((name) => !cfg.ssrNoExternal.includes(name))
+    .filter((name) => !bundled(name))
     .flatMap((name) => withSubpaths(cfg.root, name));
 
   if (!external.length) {
