@@ -13,6 +13,7 @@
  * else lines up directly: `fetchUser`, `refresh`, `logout` and `getExpiry`.
  */
 import { createSession, type AccessControl, type Session } from '@fluixi/session';
+import { createAuthHooks } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
 import { createBrowserClient } from './browser.js';
 import { createServerClient, COOKIE_SESSION } from './server-client.js';
@@ -47,6 +48,22 @@ export interface AuthServiceOptions<U, P = unknown, Q = (p: P) => boolean> {
   onLogout?: () => void;
   onExpired?: () => void;
   onError?: (error: unknown, op: string) => void;
+
+  /**
+   * How a guard sends someone somewhere else.
+   *
+   * A factory rather than a function, because `useNavigate` has to run inside the
+   * component being rendered. Give it `{ handler: useNavigate }` and a guard performs a
+   * client-side navigation; leave it out and it assigns `location`, which reloads the
+   * document and discards the reactive tree.
+   */
+  navigate?: { handler: () => (to: string, options?: unknown) => void };
+  /** Where a signed-out visitor is sent. Default `/login`. */
+  loginPath?: string;
+  /** Where a signed-in visitor is sent from a guest-only page. Default `/`. */
+  homePath?: string;
+  /** Where someone lacking a role is sent. Default `/403`. */
+  forbiddenPath?: string;
 }
 
 /**
@@ -56,7 +73,11 @@ export interface AuthServiceOptions<U, P = unknown, Q = (p: P) => boolean> {
  * the three things a redirect flow adds.
  */
 export interface AuthService<U, P = unknown, Q = (p: P) => boolean>
-  extends Session<U, AuthCredentials, unknown, P, Q> {
+  extends Session<U, AuthCredentials, unknown, P, Q>,
+    Pick<
+      ReturnType<typeof createAuthHooks<U, P, Q>>,
+      'protectedRoute' | 'Can' | 'Protect' | 'useAuth' | 'useUser' | 'useCan'
+    > {
   /** Send the visitor to the authorization server. Does not return in the browser. */
   signIn(options?: LoginOptions): Promise<void>;
   /**
@@ -134,8 +155,24 @@ export function createAuthService<U, P = unknown, Q = (p: P) => boolean>(
     onError: options.onError,
   });
 
+  // The hooks read the session they are given, so they are part of the same object
+  // rather than a second file an app has to wire up and keep in step.
+  const hooks = createAuthHooks<U, P, Q>({
+    session: session as never,
+    navigate: options.navigate as never,
+    loginPath: options.loginPath ?? '/login',
+    homePath: options.homePath ?? '/',
+    forbiddenPath: options.forbiddenPath ?? '/403',
+  });
+
   return Object.assign(session, {
     client,
+    protectedRoute: hooks.protectedRoute,
+    Can: hooks.Can,
+    Protect: hooks.Protect,
+    useAuth: hooks.useAuth,
+    useUser: hooks.useUser,
+    useCan: hooks.useCan,
 
     signIn(loginOptions: LoginOptions = {}) {
       return client.login(loginOptions);

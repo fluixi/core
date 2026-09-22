@@ -66,7 +66,8 @@
     "@fluixi/reactive": "workspace:*",
     "@fluixi/session": "workspace:*",
     "@fluixi/start": "workspace:*",
-    "@fluixi/server": "workspace:*"
+    "@fluixi/server": "workspace:*",
+    "@fluixi/auth": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
@@ -74,7 +75,8 @@
     "@fluixi/session": "workspace:*",
     "cross-env": "^7.0.3",
     "@fluixi/start": "workspace:*",
-    "@fluixi/server": "workspace:*"
+    "@fluixi/server": "workspace:*",
+    "@fluixi/auth": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@fluixi/start": {
