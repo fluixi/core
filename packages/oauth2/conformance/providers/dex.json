@@ -3,7 +3,12 @@
   "client": {
     "clientId": "adafri-admin",
     "redirectUri": "http://localhost:3000/callback",
-    "scopes": ["openid", "profile", "email", "offline_access"]
+    "scopes": [
+      "openid",
+      "profile",
+      "email",
+      "offline_access"
+    ]
   },
   "user": {
     "username": "admin@adafri.test",
@@ -15,5 +20,9 @@
       "extraFields": {}
     }
   },
-  "notes": "No client_credentials grant and no revocation endpoint, so those checks do not apply."
+  "notes": "No client_credentials grant and no revocation endpoint. It does publish introspection, which needs only client credentials.",
+  "introspect": {
+    "clientId": "orders-api",
+    "clientSecret": "orders-api-secret"
+  }
 }

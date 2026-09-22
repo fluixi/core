@@ -195,6 +195,7 @@ async function runProvider(name, cfg) {
 
   // ── the user flow ───────────────────────────────────────────────────────────
   let userTokens = null;
+  let spentCode = null;
   if (cfg.user?.passwordGrant) {
     // The direct grant is not how an app should sign anyone in, and it is the only way
     // to get a user token here without driving a login form.
@@ -291,8 +292,10 @@ async function runProvider(name, cfg) {
       });
       userTokens = { access_token: userTokens.accessToken, refresh_token: userTokens.refreshToken,
                      id_token: userTokens.idToken };
+      spentCode = { code: params.searchParams.get('code'), redirectUri: cfg.client.redirectUri };
       return '';
     });
+
   }
 
   if (userTokens?.access_token) {
@@ -352,16 +355,21 @@ async function runProvider(name, cfg) {
   }
 
   // ── introspection ───────────────────────────────────────────────────────────
-  // The service token, not the user's: several providers refuse to introspect a token
-  // whose audience does not include the asking client, and the service client is always
-  // in its own.
+  // Introspecting needs credentials to authenticate the *caller*, which is not the same
+  // as supporting the client_credentials *grant*. Gating this on `service` skipped every
+  // provider that offers one without the other, Dex among them.
+  const asker = cfg.introspect ?? cfg.service;
+
+  // The service token where there is one: several providers refuse to introspect a token
+  // whose audience does not include the asking client, and a service client is always in
+  // its own.
   const introspectable = serviceToken ?? subject;
-  if (doc.introspection_endpoint && cfg.service && introspectable) {
+  if (doc.introspection_endpoint && asker && introspectable) {
     await capability('introspect', 'reports a live token as active', async () => {
       const verify = createTokenIntrospector({
         issuer: cfg.issuer,
-        clientId: cfg.service.clientId,
-        clientSecret: cfg.service.clientSecret,
+        clientId: asker.clientId,
+        clientSecret: asker.clientSecret,
         audience: false,
       });
       const claims = await verify(introspectable);
@@ -401,6 +409,26 @@ async function runProvider(name, cfg) {
 
       if (await refresh()) throw new Error('still worked after revocation');
       return '';
+    });
+  }
+
+  // Last, deliberately. Keycloak revokes the whole session when a code is replayed,
+  // which RFC 6749 recommends and which destroys anything this suite still needed.
+  if (spentCode) {
+    await must('user flow', 'a replayed authorization code is refused', async () => {
+      const response = await fetch(doc.token_endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: spentCode.code,
+          redirect_uri: spentCode.redirectUri,
+          client_id: cfg.client.clientId,
+          ...(cfg.client.clientSecret ? { client_secret: cfg.client.clientSecret } : {}),
+        }),
+      });
+      if (response.ok) throw new Error('the provider accepted a code it had already spent');
+      return `refused with ${response.status}`;
     });
   }
 

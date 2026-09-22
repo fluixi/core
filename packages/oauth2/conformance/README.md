@@ -27,7 +27,8 @@ Drop a JSON file in `providers/`. The shape is in `keycloak.json`, and the
 {
   "issuer": "https://...",
   "client":  { "clientId": "...", "redirectUri": "...", "scopes": [...] },
-  "service": { "clientId": "...", "clientSecret": "..." },   // omit without client_credentials
+  "service":   { "clientId": "...", "clientSecret": "..." }, // omit without client_credentials
+  "introspect":{ "clientId": "...", "clientSecret": "..." }, // defaults to `service`
   "user": {
     "username": "...", "password": "...",
     // Either drive the login form, or use the password grant where one is enabled.
@@ -39,6 +40,13 @@ Drop a JSON file in `providers/`. The shape is in `keycloak.json`, and the
 
 Omitting a section skips its checks rather than failing them. A provider with no
 `service` block is not reported as broken, only as untested for that grant.
+
+## Ordering
+
+The replayed-code check runs last. Keycloak revokes the whole session when a code is
+presented twice, which is what RFC 6749 recommends, and running the check earlier
+destroyed the session everything after it needed. A provider that behaves correctly here
+is hostile to a test suite that assumes otherwise.
 
 ## Tiers
 
