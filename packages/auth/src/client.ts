@@ -167,12 +167,41 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
     return true;
   };
 
-  /** Render `children` only when `perform` clears the access matcher (reactive). */
+  /**
+   * Show something only when the access matcher allows it.
+   *
+   * Asks a permission question, which is the finer of the two: `Protect` asks who
+   * someone is, this asks what they may do. Reactive, so it follows a role change
+   * without a reload.
+   *
+   * @example
+   * ```tsx
+   * <Can perform={(p) => p.invoices.refund} fallback={<Tooltip>Ask an admin</Tooltip>}>
+   *   <button onClick={refund}>Refund</button>
+   * </Can>
+   * ```
+   */
   function Can(props: { perform: Q; fallback?: unknown; children: unknown }) {
     return () => (can(props.perform) ? props.children : props.fallback ?? null);
   }
 
-  /** Declarative section guard: render `children` when the user clears role/permission. */
+  /**
+   * Show a section of a page to some people and not others.
+   *
+   * Renders `fallback` for a signed-out visitor, and for a signed-in one who lacks the
+   * role. Nothing navigates: the rest of the page stays exactly as it is, which is the
+   * difference from `protectedRoute`.
+   *
+   * Reach for it inside a page. Reach for `protectedRoute` when the whole page should
+   * not have been reachable.
+   *
+   * @example
+   * ```tsx
+   * <Protect roles={['admin', 'support']} fallback={null}>
+   *   <DangerZone />
+   * </Protect>
+   * ```
+   */
   function Protect(props: {
     role?: string;
     roles?: string[];
@@ -186,6 +215,26 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
     };
   }
 
+  /**
+   * Wrap a page so the wrong visitor never reaches it.
+   *
+   * Unlike `Protect`, this **navigates**: a signed-out visitor goes to `loginPath`, one
+   * lacking the role goes to `forbiddenPath`, and with `guestOnly` a signed-in visitor
+   * goes to `homePath`. The component never runs, so a page that loads data on mount
+   * does not load it for someone who should not see it.
+   *
+   * This is a client-side guard and a rendering decision. It is not authorization: the
+   * server has to refuse the request as well, because a client can be made to skip this.
+   *
+   * @example
+   * ```tsx
+   * // the whole page, behind a role
+   * export default protectedRoute(AdminPage, { role: 'admin' });
+   *
+   * // a login page, which a signed-in visitor has no use for
+   * export default protectedRoute(LoginPage, { guestOnly: true });
+   * ```
+   */
   function protectedRoute<Props>(Comp: (props: Props) => unknown, opts?: ProtectedRouteOptions<Q>) {
     return (props: Props) => {
       const user = store.fields.user();
@@ -200,8 +249,34 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
   }
 
   return {
+    /**
+     * The signed-in user, or null.
+     *
+     * Returns the accessor rather than the value, so a component reads it where it
+     * renders and re-renders when it changes.
+     *
+     * @example
+     * ```tsx
+     * const user = useUser();
+     * <span>{() => user()?.email ?? 'Signed out'}</span>
+     * ```
+     */
     useUser: () => store.fields.user,
+
+    /**
+     * The session record beside the user: when it expires, and whatever else the
+     * backend attached. Null when signed out.
+     */
     useSession: () => store.fields.session,
+
+    /**
+     * Everything at once, for a component that needs more than one of them.
+     *
+     * @example
+     * ```tsx
+     * const { user, isAuthenticated, can, signOut } = useAuth();
+     * ```
+     */
     useAuth: () => ({
       user: store.fields.user,
       session: store.fields.session,
@@ -211,16 +286,80 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
       signIn,
       signOut,
     }),
+
+    /**
+     * Start a sign-in.
+     *
+     * What it takes depends on what the hooks were given: credentials for a Better Auth
+     * client, and for a redirect flow whatever that session's `login` expects.
+     *
+     * @example
+     * ```tsx
+     * const signIn = useSignIn();
+     * <button onClick={() => signIn({ email, password })}>Sign in</button>
+     * ```
+     */
     useSignIn: () => signIn,
+
+    /**
+     * End the session.
+     *
+     * @example
+     * ```tsx
+     * const signOut = useSignOut();
+     * <button onClick={() => signOut()}>Sign out</button>
+     * ```
+     */
     useSignOut: () => signOut,
-    /** Reactive accessor for the active permission set (UI affordance only). */
+
+    /**
+     * The permission set for the current roles, reactively.
+     *
+     * A rendering hint and nothing more: a client can claim any permission, so the
+     * server decides what is allowed on every request.
+     */
     usePermissions: () => permissions,
-    /** Returns `can(check)`: `false` unless the session provides RBAC. */
+
+    /**
+     * Ask whether the current user may do something.
+     *
+     * `false` when the session supplies no RBAC, so a missing `access` config hides a
+     * control rather than revealing it.
+     *
+     * @example
+     * ```tsx
+     * const can = useCan();
+     * <button disabled={() => !can((p) => p.users.delete)}>Delete</button>
+     * ```
+     */
     useCan: () => can,
+
     Can,
     Protect,
+
+    /**
+     * Re-read the session from the backend.
+     *
+     * For after something changed outside this tab: a role granted elsewhere, or a
+     * return from a flow that altered the account.
+     *
+     * @example
+     * ```ts
+     * await refresh();
+     * ```
+     */
     refresh,
+
     protectedRoute,
+
+    /**
+     * The underlying isomorphic store.
+     *
+     * Escape hatch. It is here for a test that wants to seed a user, and for the rare
+     * caller that needs to write what the hooks read. Prefer the accessors above:
+     * writing to the store directly puts the interface out of step with the session
+     * that owns it.
+     */
     store,
   };
 }
