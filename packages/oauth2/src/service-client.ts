@@ -193,8 +193,12 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
     if (!response.ok) {
+      // The description carries the reason; the code alone rarely does. Both in the
+      // message, because a caller logging `error.message` should not have to know to
+      // reach for `error.description` as well.
+      const reason = [payload.error, payload.error_description].filter(Boolean).join(': ');
       throw new OAuthError(
-        `The token endpoint refused this service: ${String(payload.error ?? response.status)}`,
+        `The token endpoint refused this service: ${reason || response.status}`,
         String(payload.error ?? 'client_credentials_failed'),
         typeof payload.error_description === 'string' ? payload.error_description : undefined,
       );
