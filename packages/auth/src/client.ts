@@ -12,7 +12,7 @@
  * Client-only deps: fluixi + @fluixi/dom's pure `getLocals`, never @fluixi/server.
  */
 import { createIsomorphicStore, createEffect, createRoot, env } from '@fluixi/core';
-import { getLocals } from '@fluixi/dom';
+import { getLocals, type ComponentChild } from '@fluixi/dom';
 import {
   AUTH_LOCALS_KEY,
   type AuthUser,
@@ -181,8 +181,12 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
    * </Can>
    * ```
    */
-  function Can(props: { perform: Q; fallback?: unknown; children: unknown }) {
-    return () => (can(props.perform) ? props.children : props.fallback ?? null);
+  function Can(props: {
+    perform: Q;
+    fallback?: ComponentChild;
+    children: ComponentChild;
+  }): () => ComponentChild {
+    return () => (can(props.perform) ? props.children : (props.fallback ?? null));
   }
 
   /**
@@ -206,12 +210,12 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
     role?: string;
     roles?: string[];
     permission?: Q;
-    fallback?: unknown;
-    children: unknown;
-  }) {
+    fallback?: ComponentChild;
+    children: ComponentChild;
+  }): () => ComponentChild {
     return () => {
       if (!store.fields.user()) return props.fallback ?? null;
-      return passesRole(props) ? props.children : props.fallback ?? null;
+      return passesRole(props) ? props.children : (props.fallback ?? null);
     };
   }
 
