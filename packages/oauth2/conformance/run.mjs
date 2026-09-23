@@ -193,10 +193,12 @@ async function runProvider(name, cfg) {
       return '';
     });
 
-    await capability('service', 'the token is a JWT', () => {
-      if (!claimsOf(serviceToken)) throw new Error('opaque');
-      return '';
-    });
+    if (serviceToken) {
+      await capability('service', 'the token is a JWT', () => {
+        if (!claimsOf(serviceToken)) throw new Error('opaque');
+        return '';
+      });
+    }
   }
 
   // ── what a token carries ────────────────────────────────────────────────────
@@ -217,6 +219,7 @@ async function runProvider(name, cfg) {
   };
 
   if (serviceToken) shapeOf(serviceToken, 'service token');
+
 
   // ── the user flow ───────────────────────────────────────────────────────────
   let userTokens = null;
