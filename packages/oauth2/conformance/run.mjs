@@ -173,25 +173,26 @@ async function runProvider(name, cfg) {
   // ── the service grant ───────────────────────────────────────────────────────
   let serviceToken = null;
   if (cfg.service) {
-    const svc = createServiceClient({
-      issuer: cfg.issuer,
-      clientId: cfg.service.clientId,
-      clientSecret: cfg.service.clientSecret,
-      scopes: cfg.service.scopes,
-      audience: cfg.service.audience,
-      clientAuthMethod: cfg.service.clientAuthMethod,
+    // Spread, rather than naming each field: enumerating them dropped `privateKey` when
+    // it was added, and the next option would have gone the same way.
+    let svc = null;
+    await must('service', 'builds a service client', () => {
+      svc = createServiceClient({ issuer: cfg.issuer, ...cfg.service });
+      return cfg.service.clientAuthMethod ?? 'basic';
     });
 
-    await must('service', 'client_credentials grant', async () => {
-      serviceToken = await svc.token();
-      return serviceToken.slice(0, 12) + '…';
-    });
+    if (svc) {
+      await must('service', 'client_credentials grant', async () => {
+        serviceToken = await svc.token();
+        return serviceToken.slice(0, 12) + '…';
+      });
 
-    await must('service', 'reuses a token that is still good', async () => {
-      const again = await svc.token();
-      if (again !== serviceToken) throw new Error('fetched a second time');
-      return '';
-    });
+      await must('service', 'reuses a token that is still good', async () => {
+        const again = await svc.token();
+        if (again !== serviceToken) throw new Error('fetched a second time');
+        return '';
+      });
+    }
 
     if (serviceToken) {
       await capability('service', 'the token is a JWT', () => {
@@ -442,12 +443,7 @@ async function runProvider(name, cfg) {
   const introspectable = serviceToken ?? subject;
   if (doc.introspection_endpoint && asker && introspectable) {
     await capability('introspect', 'reports a live token as active', async () => {
-      const verify = createTokenIntrospector({
-        issuer: cfg.issuer,
-        clientId: asker.clientId,
-        clientSecret: asker.clientSecret,
-        audience: false,
-      });
+      const verify = createTokenIntrospector({ issuer: cfg.issuer, audience: false, ...asker });
       const claims = await verify(introspectable);
       return Object.keys(claims).slice(0, 5).join(', ');
     });
