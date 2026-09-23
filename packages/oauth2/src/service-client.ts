@@ -30,7 +30,8 @@ export interface ServiceClientOptions {
   issuer?: string;
   tokenEndpoint?: string;
   clientId: string;
-  clientSecret: string;
+  /** Not needed with `private_key_jwt`. */
+  clientSecret?: string;
   /** What the service is asking to do. Provider-specific. */
   scopes?: string[];
   /**
@@ -38,8 +39,33 @@ export interface ServiceClientOptions {
    * issues an opaque token instead of a JWT without it.
    */
   audience?: string;
-  /** `basic` sends the credentials in an Authorization header. Default `basic`. */
-  clientAuthMethod?: 'basic' | 'body';
+  /**
+   * How this service proves who it is.
+   *
+   * `basic` puts the secret in an Authorization header, `body` in the form. `private_key_jwt`
+   * sends a short-lived assertion signed with a key the provider knows the public half of,
+   * and no secret travels at all.
+   *
+   * Not merely a preference everywhere. Okta's org authorization server refuses client
+   * credentials with anything but `private_key_jwt`, and FAPI requires it.
+   */
+  clientAuthMethod?: 'basic' | 'body' | 'private_key_jwt';
+  /**
+   * The signing key for `private_key_jwt`, as a JWK.
+   *
+   * The provider holds the public half. Nothing derived from it leaves this process
+   * except a signature, which is the point: there is no shared secret to leak.
+   */
+  privateKey?: Record<string, unknown>;
+  /**
+   * The `kid` to name in the assertion header.
+   *
+   * Needed when the provider holds more than one key for this client, so it knows which
+   * to verify against. Taken from the key itself when the key carries one.
+   */
+  keyId?: string;
+  /** Signing algorithm for the assertion. Default `RS256`. */
+  assertionAlgorithm?: string;
   /** Extra parameters on the token request, for anything a provider adds. */
   extraParams?: Record<string, string>;
   /**
@@ -61,9 +87,19 @@ export interface ServiceClient {
 }
 
 export function createServiceClient(options: ServiceClientOptions): ServiceClient {
-  if (!options.clientId || !options.clientSecret) {
+  const usesKey = options.clientAuthMethod === 'private_key_jwt';
+
+  if (!options.clientId) {
+    throw new Error('[fluixi/oauth2] createServiceClient needs a clientId.');
+  }
+  if (usesKey && !options.privateKey) {
     throw new Error(
-      '[fluixi/oauth2] createServiceClient needs client credentials. This grant is the secret, so it belongs on a server and never in a browser.',
+      '[fluixi/oauth2] private_key_jwt needs `privateKey`, the JWK whose public half the provider holds.',
+    );
+  }
+  if (!usesKey && !options.clientSecret) {
+    throw new Error(
+      '[fluixi/oauth2] createServiceClient needs a clientSecret, or `clientAuthMethod: "private_key_jwt"` with a key. Either way this grant belongs on a server and never in a browser.',
     );
   }
   if (!options.issuer && !options.tokenEndpoint) {
@@ -92,6 +128,39 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
     return endpoint;
   }
 
+  /**
+   * A client assertion, per RFC 7523.
+   *
+   * Short lived and single use: `aud` is the token endpoint so it cannot be replayed
+   * elsewhere, `jti` so it cannot be replayed there, and a minute of life so a captured
+   * one is worth almost nothing.
+   */
+  async function signAssertion(tokenEndpoint: string): Promise<string> {
+    let jose: typeof import('jose');
+    try {
+      jose = await import('jose');
+    } catch {
+      throw new OAuthError(
+        'private_key_jwt needs `jose`. Install it: npm i jose. It is an optional peer so a service using a client secret does not carry it.',
+        'jose_missing',
+      );
+    }
+
+    const alg = options.assertionAlgorithm ?? 'RS256';
+    const key = await jose.importJWK(options.privateKey as never, alg);
+    const kid = options.keyId ?? (options.privateKey!.kid as string | undefined);
+
+    return new jose.SignJWT({})
+      .setProtectedHeader(kid ? { alg, kid } : { alg })
+      .setIssuer(options.clientId)
+      .setSubject(options.clientId)
+      .setAudience(tokenEndpoint)
+      .setJti(crypto.randomUUID())
+      .setIssuedAt()
+      .setExpirationTime('1m')
+      .sign(key);
+  }
+
   const stillGood = (): boolean =>
     cached !== null && (cached.expiresAt === undefined || cached.expiresAt - skew > Date.now());
 
@@ -105,12 +174,19 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
     if (options.scopes?.length) form.set('scope', options.scopes.join(' '));
     if (options.audience) form.set('audience', options.audience);
 
-    if ((options.clientAuthMethod ?? 'basic') === 'basic') {
-      const pair = `${encodeURIComponent(options.clientId)}:${encodeURIComponent(options.clientSecret)}`;
+    if (usesKey) {
+      form.set('client_id', options.clientId);
+      form.set(
+        'client_assertion_type',
+        'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      );
+      form.set('client_assertion', await signAssertion(url));
+    } else if ((options.clientAuthMethod ?? 'basic') === 'basic') {
+      const pair = `${encodeURIComponent(options.clientId)}:${encodeURIComponent(options.clientSecret!)}`;
       headers.authorization = `Basic ${btoa(pair)}`;
     } else {
       form.set('client_id', options.clientId);
-      form.set('client_secret', options.clientSecret);
+      form.set('client_secret', options.clientSecret!);
     }
 
     const response = await fetch(url, { method: 'POST', headers, body: form.toString() });

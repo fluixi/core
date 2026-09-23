@@ -155,15 +155,98 @@ describe('caching', () => {
 });
 
 describe('what it refuses to be built with', () => {
-  it('no credentials', () => {
+  it('no client id', () => {
     expect(() =>
-      createServiceClient({ issuer: ISSUER, clientId: '', clientSecret: '' }),
-    ).toThrow(/client credentials/);
+      createServiceClient({ issuer: ISSUER, clientId: '', clientSecret: 'b' }),
+    ).toThrow(/needs a clientId/);
+  });
+
+  it('no secret and no key', () => {
+    expect(() => createServiceClient({ issuer: ISSUER, clientId: 'a' })).toThrow(
+      /clientSecret, or `clientAuthMethod: "private_key_jwt"`/,
+    );
   });
 
   it('no issuer and no token endpoint', () => {
     expect(() => createServiceClient({ clientId: 'a', clientSecret: 'b' })).toThrow(
       /issuer or a tokenEndpoint/,
+    );
+  });
+});
+
+describe('private_key_jwt, for a provider that refuses a shared secret', () => {
+  it('sends a signed assertion instead of a secret', async () => {
+    const { generateKeyPair, exportJWK, jwtVerify, importJWK } = await import('jose');
+    const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
+    const jwk = await exportJWK(privateKey);
+
+    const { tokenCalls } = idp();
+    const c = createServiceClient({
+      tokenEndpoint: TOKEN_URL,
+      clientId: 'reports-job',
+      clientAuthMethod: 'private_key_jwt',
+      privateKey: { ...jwk, kid: 'k1' },
+    });
+    await c.token();
+
+    const body = new URLSearchParams(String(tokenCalls()[0].init.body));
+    expect(body.get('client_assertion_type')).toBe(
+      'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+    );
+    // Nothing secret travels: only a signature over public claims.
+    expect(body.get('client_secret')).toBeNull();
+    expect((tokenCalls()[0].init.headers as Record<string, string>).authorization).toBeUndefined();
+
+    const { payload, protectedHeader } = await jwtVerify(
+      body.get('client_assertion')!,
+      await importJWK(await exportJWK(publicKey), 'RS256'),
+      { issuer: 'reports-job', audience: TOKEN_URL },
+    );
+    expect(payload.sub).toBe('reports-job');
+    expect(payload.jti).toBeTruthy();
+    // Audience is the endpoint, so the assertion cannot be replayed at another one.
+    expect(payload.aud).toBe(TOKEN_URL);
+    // Short lived, so a captured one is worth almost nothing.
+    expect(payload.exp! - payload.iat!).toBeLessThanOrEqual(60);
+    expect(protectedHeader.kid).toBe('k1');
+  });
+
+  it('names a different jti each time, so one cannot be replayed', async () => {
+    const { generateKeyPair, exportJWK } = await import('jose');
+    const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+
+    const { tokenCalls } = idp({ expires_in: 1 });
+    const c = createServiceClient({
+      tokenEndpoint: TOKEN_URL,
+      clientId: 'reports-job',
+      clientAuthMethod: 'private_key_jwt',
+      privateKey: await exportJWK(privateKey),
+      refreshSkewMs: 10_000,
+    });
+    await c.token();
+    await c.token();
+
+    const jti = tokenCalls().map((call) => {
+      const assertion = new URLSearchParams(String(call.init.body)).get('client_assertion')!;
+      return JSON.parse(Buffer.from(assertion.split('.')[1], 'base64url').toString()).jti;
+    });
+    expect(jti).toHaveLength(2);
+    expect(jti[0]).not.toBe(jti[1]);
+  });
+
+  it('refuses to be built without a key', () => {
+    expect(() =>
+      createServiceClient({
+        tokenEndpoint: TOKEN_URL,
+        clientId: 'a',
+        clientAuthMethod: 'private_key_jwt',
+      }),
+    ).toThrow(/needs `privateKey`/);
+  });
+
+  it('still requires a secret for the other methods', () => {
+    expect(() => createServiceClient({ tokenEndpoint: TOKEN_URL, clientId: 'a' })).toThrow(
+      /clientSecret/,
     );
   });
 });
