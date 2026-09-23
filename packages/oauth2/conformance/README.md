@@ -9,37 +9,42 @@ node conformance/run.mjs --all
 
 Build the package first: the suite imports `dist`, which is what an app would.
 
-## What three providers actually do
+## What four providers actually do
 
-Run against Keycloak 26, Dex 2.41 and an Auth0 tenant. None of them needed a code change,
-which is the result worth having: the differences below are configuration, not forks.
+Keycloak 26, Dex 2.41, an Auth0 tenant and an Okta org. None of them needed a code change
+to the flows; Okta needed one capability built, `private_key_jwt`, which it refuses to work
+without.
 
-| | Keycloak | Dex | Auth0 |
-| --- | --- | --- | --- |
-| Discovery | yes | yes | yes |
-| Authorization code with PKCE | yes | yes | yes, login page not scriptable |
-| `client_credentials` | yes | **no** | yes |
-| userinfo | yes | yes | yes, works with an opaque token |
-| Introspection endpoint | yes | yes | **no** |
-| Revocation endpoint | yes | **no** | yes, with the grant enabled on the client |
-| End session endpoint | yes | **no** | yes |
-| Access token is a JWT | yes | yes | only when an API is named |
-| Access token carries `aud` | not until an audience mapper | yes | yes, the API identifier |
-| Names the calling client | `azp` | **neither** | `azp` |
-| Issuer has a trailing slash | no | no | **yes**, and `iss` includes it |
+| | Keycloak | Dex | Auth0 | Okta |
+| --- | --- | --- | --- | --- |
+| Discovery | yes | yes | yes | yes, two servers |
+| Authorization code with PKCE | yes | yes | yes, login not scriptable | yes |
+| `client_credentials` | yes | **no** | yes | org server only |
+| Client auth for it | secret | n/a | secret | **private_key_jwt only** |
+| userinfo | yes | yes | yes, opaque token works | yes |
+| Introspection endpoint | yes | yes | **no** | yes |
+| Revocation endpoint | yes | **no** | yes, grant needed | yes |
+| End session endpoint | yes | **no** | yes | yes |
+| Access token is a JWT | yes | yes | only with an API named | yes |
+| Carries `aud` | not until a mapper | yes | the API identifier | the issuer |
+| Names the calling client | `azp` | **neither** | `azp` | **neither** |
+| Requires DPoP by default | no | no | no | **yes, for API Services apps** |
 
 What that means when configuring this package:
 
 - **Keycloak** needs `audience: false` with `authorizedParty`, or an audience mapper on the
   client. It refuses to introspect a token whose audience excludes the asking client and
-  says only `active: false` about it. It also revokes the whole session when an
-  authorization code is replayed, which RFC 6749 recommends.
+  says only `active: false` about it. It revokes the whole session when an authorization
+  code is replayed, which RFC 6749 recommends.
 - **Dex** puts neither `azp` nor `client_id` on an access token, so `authorizedParty` has
-  nothing to check and `aud` is the only handle. No client credentials grant, no
-  revocation, no end session.
-- **Auth0** needs an API registered and `audience` sent, or the access token is opaque.
-  Its issuer carries a trailing slash that `iss` includes. It publishes no introspection
-  endpoint, so `createTokenIntrospector` does not apply.
+  nothing to check and `aud` is the only handle. No client credentials, no revocation, no
+  end session.
+- **Auth0** needs an API registered and `audience` sent, or the access token is opaque. Its
+  issuer carries a trailing slash that `iss` includes. No introspection endpoint at all.
+- **Okta** has two authorization servers and they are not interchangeable: the custom one
+  at `/oauth2/default` for an application's own scopes, the org one at the bare domain for
+  Okta's management API. Client credentials work only on the org server and only with
+  `private_key_jwt`. Its access tokens name no client, so `aud` is the handle.
 
 ### Auth0 treats every grant as a separate authorization
 
