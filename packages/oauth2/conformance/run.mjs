@@ -218,6 +218,8 @@ async function runProvider(name, cfg) {
   // ── the user flow ───────────────────────────────────────────────────────────
   let userTokens = null;
   let spentCode = null;
+  /** Which client the user token belongs to, which is what may refresh or revoke it. */
+  let tokenClient = { clientId: cfg.client.clientId, clientSecret: cfg.client.clientSecret };
   if (cfg.user?.passwordGrant) {
     // The direct grant is not how an app should sign anyone in, and it is the only way
     // to get a user token here without driving a login form.
@@ -255,6 +257,7 @@ async function runProvider(name, cfg) {
         return { ok: response.ok, status: response.status, text: await response.text() };
       };
 
+      tokenClient = grantClient;
       let attempt = await ask(body);
 
       // Naming an API can be refused for this grant even when the same client may use it
@@ -407,8 +410,8 @@ async function runProvider(name, cfg) {
     await must('verify', 'a tampered signature is refused', async () => {
       const verify = createTokenVerifier({
         issuer: [cfg.issuer, doc.issuer].filter(Boolean),
-        audience: false,
-        authorizedParty: claims.azp ?? claims.client_id,
+        audience: claims.aud ? (Array.isArray(claims.aud) ? claims.aud[0] : claims.aud) : false,
+        authorizedParty: claims.aud ? undefined : (claims.azp ?? claims.client_id),
       });
       const [h, p] = subject.split('.');
       await verify(`${h}.${p}.AAAA`).then(
@@ -454,8 +457,8 @@ async function runProvider(name, cfg) {
           body: new URLSearchParams({
             grant_type: 'refresh_token',
             refresh_token: userTokens.refresh_token,
-            client_id: cfg.client.clientId,
-            ...(cfg.client.clientSecret ? { client_secret: cfg.client.clientSecret } : {}),
+            client_id: tokenClient.clientId,
+            ...(tokenClient.clientSecret ? { client_secret: tokenClient.clientSecret } : {}),
           }),
         });
         return response.ok;
@@ -469,8 +472,8 @@ async function runProvider(name, cfg) {
         body: new URLSearchParams({
           token: userTokens.refresh_token,
           token_type_hint: 'refresh_token',
-          client_id: cfg.client.clientId,
-          ...(cfg.client.clientSecret ? { client_secret: cfg.client.clientSecret } : {}),
+          client_id: tokenClient.clientId,
+          ...(tokenClient.clientSecret ? { client_secret: tokenClient.clientSecret } : {}),
         }),
       });
 
