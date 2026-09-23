@@ -230,15 +230,25 @@ async function runProvider(name, cfg) {
         scope: (cfg.client.scopes ?? ['openid', 'profile', 'email']).join(' '),
       });
       if (cfg.client.clientSecret) body.set('client_secret', cfg.client.clientSecret);
+      // Auth0 answers with an opaque token unless an API is named, and then there is no
+      // JWT for the verification checks below to look at.
+      if (cfg.client.audience) body.set('audience', cfg.client.audience);
+      // Auth0's own realm variant, for a tenant that has not set a default directory.
+      if (cfg.user.realm) {
+        body.set('grant_type', 'http://auth0.com/oauth/grant-type/password-realm');
+        body.set('realm', cfg.user.realm);
+      }
 
       const response = await fetch(doc.token_endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body,
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status} ${(await response.text()).slice(0, 80)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${(await response.text()).slice(0, 120)}`);
+      }
       userTokens = await response.json();
-      return '';
+      return 'via the password grant, which is a test mechanism and not a login';
     });
   }
 

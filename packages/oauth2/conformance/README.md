@@ -100,8 +100,17 @@ JWKS verification, introspection, revocation. Those are the checks a cloud provi
 answer with nothing but credentials in a config file.
 
 The user flow needs a person, so it runs only where the config says how to obtain one
-without a browser. Providers that require a real browser, Google among them, run the
-unattended tier alone.
+without a browser. Two ways:
+
+- `user.form` drives the provider's own login page, which works where that page is plain
+  HTML. Keycloak and Dex are.
+- `user.passwordGrant` asks the token endpoint directly. The grant is deprecated in OAuth
+  2.1 and no application should sign anyone in with it, which is beside the point here:
+  it is the only way to obtain a user token unattended from a provider whose login page
+  is JavaScript. Auth0 is one, and it needs the grant enabled on the application plus a
+  default directory, or `user.realm` to use its own variant.
+
+A provider offering neither runs the unattended tier alone. Google is one.
 
 ## Standing up the local ones
 

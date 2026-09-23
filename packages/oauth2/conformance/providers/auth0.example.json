@@ -1,27 +1,44 @@
 {
   "_setup": [
-    "1. Applications > Create Application > Single Page Web Applications.",
+    "1. Applications > APIs > Create API. Identifier: https://api.example.com",
+    "   Without an API, Auth0 returns an opaque token and there is no JWT to verify.",
+    "2. Applications > Create Application > Single Page Web Applications.",
     "   Settings > Allowed Callback URLs: http://localhost:3000/callback. Save.",
-    "   Copy the Domain and the Client ID.",
-    "2. Applications > APIs > Create API. Identifier: https://api.example.com",
-    "   That identifier is the `audience` below. Without an API, Auth0 returns an opaque",
-    "   token rather than a JWT and JWKS verification has nothing to verify.",
-    "3. Applications > Create Application > Machine to Machine. Authorise it for that API.",
-    "   Copy its Client ID, and export the secret rather than writing it here.",
-    "4. The user flow is skipped: Auth0's Universal Login is a JavaScript page, not a form",
-    "   this can post to. Everything else runs unattended.",
+    "3. Applications > Create Application > Machine to Machine. Authorise it for the API.",
     "",
-    "Then: export AUTH0_M2M_SECRET=... && node conformance/run.mjs auth0"
+    "For the user flow, which needs a token without a browser:",
+    "4. User Management > Users > Create User, connection Username-Password-Authentication.",
+    "5. The SPA > Settings > Advanced Settings > Grant Types: tick Password.",
+    "6. Settings > General > API Authorization Settings > Default Directory:",
+    "   Username-Password-Authentication. Without it the plain password grant is refused,",
+    "   and the `realm` field below uses Auth0's own variant instead.",
+    "",
+    "The issuer keeps its trailing slash: Auth0 puts one in the `iss` claim.",
+    "Auth0 publishes no introspection endpoint, so that check reports `no`.",
+    "",
+    "Then: export AUTH0_M2M_SECRET=... AUTH0_TEST_PASSWORD=... \\",
+    "        && node conformance/run.mjs auth0"
   ],
   "issuer": "https://YOUR_TENANT.us.auth0.com/",
   "client": {
     "clientId": "YOUR_SPA_CLIENT_ID",
     "redirectUri": "http://localhost:3000/callback",
-    "scopes": ["openid", "profile", "email"]
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "audience": "https://api.example.com"
   },
   "service": {
     "clientId": "YOUR_M2M_CLIENT_ID",
     "clientSecret": "env:AUTH0_M2M_SECRET",
     "audience": "https://api.example.com"
+  },
+  "user": {
+    "passwordGrant": true,
+    "username": "test@example.com",
+    "password": "env:AUTH0_TEST_PASSWORD",
+    "realm": "Username-Password-Authentication"
   }
 }
