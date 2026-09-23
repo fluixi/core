@@ -21,7 +21,7 @@ which is the result worth having: the differences below are configuration, not f
 | `client_credentials` | yes | **no** | yes |
 | userinfo | yes | yes | yes, works with an opaque token |
 | Introspection endpoint | yes | yes | **no** |
-| Revocation endpoint | yes | **no** | yes |
+| Revocation endpoint | yes | **no** | yes, with the grant enabled on the client |
 | End session endpoint | yes | **no** | yes |
 | Access token is a JWT | yes | yes | only when an API is named |
 | Access token carries `aud` | not until an audience mapper | yes | yes, the API identifier |
