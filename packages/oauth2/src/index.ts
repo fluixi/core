@@ -92,6 +92,9 @@ export {
   expiryFromJwt,
 } from './pkce.js';
 
+export { safeReturnTo } from './return-to.js';
+export type { ReturnToOptions } from './return-to.js';
+
 export { OAuthError } from './types.js';
 export type {
   AuthClient,

@@ -20,6 +20,7 @@ import {
 } from './pkce.js';
 import { applyClientAuth } from './client-auth.js';
 import { discover } from './discovery.js';
+import { safeReturnTo } from './return-to.js';
 import { OAuthError } from './types.js';
 import type {
   AuthClient,
@@ -149,9 +150,16 @@ export function createBrowserClient(
       storage?.setItem(KEY.state, state);
       // Where to land afterwards. Recorded here because the redirect discards everything
       // this module is holding.
+      //
+      // Checked even though the caller supplied it: an app that passes a value from its
+      // own query string, which is the ordinary way a login remembers a destination, would
+      // otherwise carry an attacker's choice straight through.
       storage?.setItem(
         KEY.returnTo,
-        options.returnTo ?? `${location.pathname}${location.search}`,
+        safeReturnTo(options.returnTo ?? `${location.pathname}${location.search}`, {
+          fallback: '/',
+          allowedOrigins: config.allowedReturnOrigins,
+        }),
       );
 
       const url = new URL(authorization);
@@ -348,7 +356,13 @@ export function createBrowserClient(
       durable()?.removeItem(KEY.refresh);
 
       const { endSession } = await resolveEndpoints().catch(() => ({ endSession: undefined }));
-      const target = options.returnTo ?? config.postLogoutRedirectUri;
+      // `postLogoutRedirectUri` is configuration and trusted; `options.returnTo` is not.
+      const target = options.returnTo
+        ? safeReturnTo(options.returnTo, {
+            fallback: config.postLogoutRedirectUri ?? '/',
+            allowedOrigins: config.allowedReturnOrigins,
+          })
+        : config.postLogoutRedirectUri;
 
       // Without an end-session endpoint the provider's own cookie survives, and the next
       // login is silent rather than a prompt. Clearing locally is all this can do.
@@ -380,7 +394,12 @@ export function createBrowserClient(
       const storage = flow();
       const value = storage?.getItem(KEY.returnTo) ?? null;
       storage?.removeItem(KEY.returnTo);
-      return value;
+      // Again on the way out: storage is readable and writable by any script on the page,
+      // so what went in is not proof of what comes back.
+      return value === null ? null : safeReturnTo(value, {
+        fallback: '/',
+        allowedOrigins: config.allowedReturnOrigins,
+      });
     },
   };
 }

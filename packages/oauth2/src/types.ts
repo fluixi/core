@@ -162,6 +162,14 @@ export interface BaseConfig {
   extraParams?: Record<string, string>;
   /** Where the user comes from, when it is not the provider's OIDC userinfo. */
   userInfo?: UserInfoOptions;
+  /**
+   * Origins a login may return to besides this one.
+   *
+   * A destination reaches a login flow from outside, so anything that is not a path on
+   * this origin is refused unless named here. An origin here is a place an authenticated
+   * visitor can be sent, so name only ones you control.
+   */
+  allowedReturnOrigins?: string[];
 }
 
 /**

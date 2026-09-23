@@ -15,6 +15,7 @@
 import { createSession, type AccessControl, type Session } from '@fluixi/session';
 import { createAuthHooks } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
+import { safeReturnTo } from './return-to.js';
 import { createBrowserClient } from './browser.js';
 import { createServerClient, COOKIE_SESSION } from './server-client.js';
 import { OAuthError } from './types.js';
@@ -189,6 +190,12 @@ export function createAuthService<U, P = unknown, Q = (p: P) => boolean>(
       return client.login(loginOptions);
     },
 
+    /**
+     * Finish a login and say where to go.
+     *
+     * The destination is checked before it is handed back, so an app that navigates to it
+     * without looking cannot be turned into an open redirect by a poisoned login link.
+     */
     async complete(params?: CallbackParams): Promise<string> {
       const callback = params ?? paramsFromUrl();
       if (!callback.code && !callback.error) {
@@ -198,7 +205,12 @@ export function createAuthService<U, P = unknown, Q = (p: P) => boolean>(
         );
       }
       await session.login(callback);
-      return client.consumeReturnTo?.() ?? '/';
+      return safeReturnTo(client.consumeReturnTo?.(), {
+        fallback: '/',
+        allowedOrigins: 'allowedReturnOrigins' in options.config
+          ? options.config.allowedReturnOrigins
+          : undefined,
+      });
     },
   }) as AuthService<U, P, Q>;
 }

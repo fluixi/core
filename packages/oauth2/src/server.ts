@@ -29,6 +29,7 @@
  * goes in it.
  */
 import { createSessionCookie } from '@fluixi/session/server';
+import { safeReturnTo } from './return-to.js';
 import {
   applyClientAuth,
   type ClientAuth,
@@ -55,6 +56,15 @@ export interface OAuthRoutesConfig {
   secureCookie?: boolean;
   /** Where to send the browser after a login with no recorded destination. */
   defaultReturnTo?: string;
+  /**
+   * Origins a login may return to besides this server's own.
+   *
+   * A destination arrives on the query string, so it is attacker controlled. Anything
+   * that is not a path on this origin is refused unless it is named here. Adding an
+   * origin here makes it a valid landing place for an authenticated visitor, so add only
+   * ones you control.
+   */
+  allowedReturnOrigins?: string[];
   /**
    * How this server authenticates to the token endpoint.
    *
@@ -185,7 +195,17 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const pendingCookie = await cookie.write(
         {
           accessToken: '',
-          pending: { verifier, state, returnTo: url.searchParams.get('returnTo') ?? undefined },
+          pending: {
+            verifier,
+            state,
+            // Checked here rather than only at the callback, so a refused destination
+            // never reaches the cookie and cannot be read back out of it later.
+            returnTo: safeReturnTo(url.searchParams.get('returnTo'), {
+              fallback: '',
+              origin: url.origin,
+              allowedOrigins: config.allowedReturnOrigins,
+            }) || undefined,
+          },
         },
         // Ten minutes: long enough to sign in, short enough that an abandoned attempt
         // does not sit in the browser.
@@ -232,7 +252,14 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       return new Response(null, {
         status: 302,
         headers: {
-          location: pending.returnTo ?? config.defaultReturnTo ?? '/',
+          // Checked again on the way out. The cookie cannot be forged, but a value that
+          // was acceptable when the flow started should still be one when it finishes,
+          // and this is the line that actually performs the redirect.
+          location: safeReturnTo(pending.returnTo ?? config.defaultReturnTo, {
+            fallback: '/',
+            origin: url.origin,
+            allowedOrigins: config.allowedReturnOrigins,
+          }),
           'set-cookie': signedIn,
         },
       });

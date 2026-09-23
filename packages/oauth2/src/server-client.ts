@@ -9,6 +9,7 @@
  * The shape is the same `AuthClient` the browser implementation satisfies, so the
  * service above does not know which one it has.
  */
+import { safeReturnTo } from './return-to.js';
 import { OAuthError } from './types.js';
 import type { AuthClient, CallbackParams, LoginOptions, ServerConfig, Tokens } from './types.js';
 
@@ -94,7 +95,12 @@ export function createServerClient(
 
     async logout(options: { returnTo?: string } = {}): Promise<void> {
       await call('/logout', { method: 'POST' }).catch(() => undefined);
-      const target = options.returnTo ?? config.postLogoutRedirectUri ?? '/';
+      const target = options.returnTo
+        ? safeReturnTo(options.returnTo, {
+            fallback: config.postLogoutRedirectUri ?? '/',
+            allowedOrigins: config.allowedReturnOrigins,
+          })
+        : (config.postLogoutRedirectUri ?? '/');
       if (typeof location !== 'undefined') location.assign(target);
     },
 
