@@ -64,6 +64,23 @@ Three kinds of row, and the distinction matters.
   endpoint; that is a fact to document, not a bug.
 - **note**: an observation with no pass or fail, such as whether tokens are JWTs.
 
+## These are test tenants, and they are configured as such
+
+Some of what makes a provider testable here weakens it. That is acceptable in a tenant
+that exists for this and nowhere else, and it must not be copied into a deployment.
+
+| Setting | Why it is on here | What a real deployment does |
+| --- | --- | --- |
+| **DPoP off** (Okta) | this package has no DPoP support yet, and Okta requires it by default on API Services apps | leave it **on**, and do not use this package for that client until DPoP lands |
+| **Password grant on** (Auth0, Okta) | the only way to obtain a user token without a browser, so the user-flow checks can run | leave it **off**. The grant is deprecated in OAuth 2.1, the application sees the password, and no application should sign anyone in with it |
+| **`private_key_jwt`** (Okta) | required by the org authorization server | keep it. It is the stronger option and Okta's own default: no shared secret exists to leak |
+| **Refresh Token grant on** (Auth0) | so revocation has something to revoke | keep it if the app needs long-lived sessions, off if it does not |
+| **A broad management scope** such as `okta.users.read` | something the client credentials grant can ask for | grant only what the service actually calls |
+| **A test user with a known password** | the password grant needs one | no such account exists |
+
+The first two are the ones that matter. If one of these tenants ever becomes real, turn
+DPoP back on and the password grant back off before anything else.
+
 ## Secrets
 
 A client secret does not belong in a file that sits in a repository. Name the variable
