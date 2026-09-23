@@ -21,6 +21,13 @@
  * });
  * ```
  */
+import {
+  applyClientAuth,
+  assertUsable,
+  resolveMethod,
+  type ClientAuth,
+  type ClientAuthMethodInput,
+} from './client-auth.js';
 import { discover } from './discovery.js';
 import { expiryFrom } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
@@ -49,7 +56,7 @@ export interface ServiceClientOptions {
    * Not merely a preference everywhere. Okta's org authorization server refuses client
    * credentials with anything but `private_key_jwt`, and FAPI requires it.
    */
-  clientAuthMethod?: 'basic' | 'body' | 'private_key_jwt';
+  clientAuthMethod?: ClientAuthMethodInput;
   /**
    * The signing key for `private_key_jwt`, as a JWK.
    *
@@ -87,21 +94,22 @@ export interface ServiceClient {
 }
 
 export function createServiceClient(options: ServiceClientOptions): ServiceClient {
-  const usesKey = options.clientAuthMethod === 'private_key_jwt';
-
-  if (!options.clientId) {
-    throw new Error('[fluixi/oauth2] createServiceClient needs a clientId.');
-  }
-  if (usesKey && !options.privateKey) {
+  const auth: ClientAuth = {
+    clientId: options.clientId,
+    method: options.clientAuthMethod,
+    clientSecret: options.clientSecret,
+    privateKey: options.privateKey,
+    keyId: options.keyId,
+    assertionAlgorithm: options.assertionAlgorithm,
+  };
+  // This grant *is* the credential, so a client with nothing to prove cannot use it. That
+  // also keeps it off a browser, which can hold neither a secret nor a key.
+  if (resolveMethod(auth) === 'none') {
     throw new Error(
-      '[fluixi/oauth2] private_key_jwt needs `privateKey`, the JWK whose public half the provider holds.',
+      '[fluixi/oauth2] createServiceClient needs credentials: a clientSecret, or private_key_jwt with a key. This grant is the credential, so it belongs on a server and never in a browser.',
     );
   }
-  if (!usesKey && !options.clientSecret) {
-    throw new Error(
-      '[fluixi/oauth2] createServiceClient needs a clientSecret, or `clientAuthMethod: "private_key_jwt"` with a key. Either way this grant belongs on a server and never in a browser.',
-    );
-  }
+  assertUsable(auth, 'createServiceClient');
   if (!options.issuer && !options.tokenEndpoint) {
     throw new Error('[fluixi/oauth2] createServiceClient needs an issuer or a tokenEndpoint.');
   }
@@ -128,39 +136,6 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
     return endpoint;
   }
 
-  /**
-   * A client assertion, per RFC 7523.
-   *
-   * Short lived and single use: `aud` is the token endpoint so it cannot be replayed
-   * elsewhere, `jti` so it cannot be replayed there, and a minute of life so a captured
-   * one is worth almost nothing.
-   */
-  async function signAssertion(tokenEndpoint: string): Promise<string> {
-    let jose: typeof import('jose');
-    try {
-      jose = await import('jose');
-    } catch {
-      throw new OAuthError(
-        'private_key_jwt needs `jose`. Install it: npm i jose. It is an optional peer so a service using a client secret does not carry it.',
-        'jose_missing',
-      );
-    }
-
-    const alg = options.assertionAlgorithm ?? 'RS256';
-    const key = await jose.importJWK(options.privateKey as never, alg);
-    const kid = options.keyId ?? (options.privateKey!.kid as string | undefined);
-
-    return new jose.SignJWT({})
-      .setProtectedHeader(kid ? { alg, kid } : { alg })
-      .setIssuer(options.clientId)
-      .setSubject(options.clientId)
-      .setAudience(tokenEndpoint)
-      .setJti(crypto.randomUUID())
-      .setIssuedAt()
-      .setExpirationTime('1m')
-      .sign(key);
-  }
-
   const stillGood = (): boolean =>
     cached !== null && (cached.expiresAt === undefined || cached.expiresAt - skew > Date.now());
 
@@ -174,20 +149,7 @@ export function createServiceClient(options: ServiceClientOptions): ServiceClien
     if (options.scopes?.length) form.set('scope', options.scopes.join(' '));
     if (options.audience) form.set('audience', options.audience);
 
-    if (usesKey) {
-      form.set('client_id', options.clientId);
-      form.set(
-        'client_assertion_type',
-        'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-      );
-      form.set('client_assertion', await signAssertion(url));
-    } else if ((options.clientAuthMethod ?? 'basic') === 'basic') {
-      const pair = `${encodeURIComponent(options.clientId)}:${encodeURIComponent(options.clientSecret!)}`;
-      headers.authorization = `Basic ${btoa(pair)}`;
-    } else {
-      form.set('client_id', options.clientId);
-      form.set('client_secret', options.clientSecret!);
-    }
+    await applyClientAuth(auth, url, headers, form);
 
     const response = await fetch(url, { method: 'POST', headers, body: form.toString() });
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;

@@ -163,7 +163,7 @@ describe('what it refuses to be built with', () => {
 
   it('no secret and no key', () => {
     expect(() => createServiceClient({ issuer: ISSUER, clientId: 'a' })).toThrow(
-      /clientSecret, or `clientAuthMethod: "private_key_jwt"`/,
+      /needs credentials/,
     );
   });
 
@@ -244,9 +244,10 @@ describe('private_key_jwt, for a provider that refuses a shared secret', () => {
     ).toThrow(/needs `privateKey`/);
   });
 
-  it('still requires a secret for the other methods', () => {
+  it('still requires something to prove for the other methods', () => {
+    // A public client cannot use this grant at all: the grant is the credential.
     expect(() => createServiceClient({ tokenEndpoint: TOKEN_URL, clientId: 'a' })).toThrow(
-      /clientSecret/,
+      /needs credentials/,
     );
   });
 });

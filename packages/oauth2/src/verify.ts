@@ -40,6 +40,13 @@
  * Not `audience: false` on its own: that accepts a token minted for any client of the
  * issuer, which is the check being skipped rather than moved.
  */
+import {
+  applyClientAuth,
+  assertUsable,
+  resolveMethod,
+  type ClientAuth,
+  type ClientAuthMethodInput,
+} from './client-auth.js';
 import { discover } from './discovery.js';
 import { OAuthError } from './types.js';
 
@@ -326,7 +333,7 @@ export interface IntrospectorOptions {
    * `private_key_jwt` signs a short-lived assertion instead of sending a secret, which
    * some providers require. It needs `privateKey`.
    */
-  clientAuthMethod?: 'basic' | 'body' | 'private_key_jwt';
+  clientAuthMethod?: ClientAuthMethodInput;
   /** The signing key for `private_key_jwt`, as a JWK. */
   privateKey?: Record<string, unknown>;
   /** The `kid` to name in the assertion, when the provider holds several keys. */
@@ -351,15 +358,22 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
     throw new Error('[fluixi/oauth2] createTokenIntrospector needs an issuer.');
   }
   const discoveryIssuer = issuers[0];
-  const usesKey = options.clientAuthMethod === 'private_key_jwt';
-  if (!options.clientId || (!options.clientSecret && !usesKey)) {
+  const auth: ClientAuth = {
+    clientId: options.clientId,
+    method: options.clientAuthMethod,
+    clientSecret: options.clientSecret,
+    privateKey: options.privateKey,
+    keyId: options.keyId,
+    assertionAlgorithm: options.assertionAlgorithm,
+  };
+  // The introspection endpoint is authenticated, and an open one would let anyone test a
+  // stolen token, so a client with nothing to prove is refused rather than tried.
+  if (resolveMethod(auth) === 'none') {
     throw new Error(
-      '[fluixi/oauth2] createTokenIntrospector needs client credentials: the introspection endpoint is authenticated, and an open one would let anyone test a stolen token.',
+      '[fluixi/oauth2] createTokenIntrospector needs credentials: a secret, or private_key_jwt with a key.',
     );
   }
-  if (usesKey && !options.privateKey) {
-    throw new Error('[fluixi/oauth2] private_key_jwt needs `privateKey`.');
-  }
+  assertUsable(auth, 'createTokenIntrospector');
   if (options.audience === undefined) {
     throw new Error(
       '[fluixi/oauth2] createTokenIntrospector needs an audience, or `audience: false` to say this service accepts a token minted for any client of the issuer.',
@@ -399,33 +413,7 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
     // a provider is free to ignore it.
     const form = new URLSearchParams({ token, token_type_hint: 'access_token' });
 
-    if (usesKey) {
-      const jose = await loadJose();
-      const alg = options.assertionAlgorithm ?? 'RS256';
-      const key = await jose.importJWK(options.privateKey as never, alg);
-      const kid = options.keyId ?? (options.privateKey!.kid as string | undefined);
-      // Audience is the endpoint being called, so an assertion cannot be replayed at a
-      // different one.
-      const assertion = await new jose.SignJWT({})
-        .setProtectedHeader(kid ? { alg, kid } : { alg })
-        .setIssuer(options.clientId)
-        .setSubject(options.clientId)
-        .setAudience(url)
-        .setJti(crypto.randomUUID())
-        .setIssuedAt()
-        .setExpirationTime('1m')
-        .sign(key);
-
-      form.set('client_id', options.clientId);
-      form.set('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
-      form.set('client_assertion', assertion);
-    } else if ((options.clientAuthMethod ?? 'basic') === 'basic') {
-      const pair = `${encodeURIComponent(options.clientId)}:${encodeURIComponent(options.clientSecret!)}`;
-      headers.authorization = `Basic ${btoa(pair)}`;
-    } else {
-      form.set('client_id', options.clientId);
-      form.set('client_secret', options.clientSecret!);
-    }
+    await applyClientAuth(auth, url, headers, form);
 
     const response = await fetch(url, { method: 'POST', headers, body: form.toString() });
     if (!response.ok) {

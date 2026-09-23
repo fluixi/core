@@ -18,6 +18,7 @@ import {
   expiryFromJwt,
   timingSafeEqual,
 } from './pkce.js';
+import { applyClientAuth } from './client-auth.js';
 import { discover } from './discovery.js';
 import { OAuthError } from './types.js';
 import type {
@@ -93,20 +94,18 @@ export function createBrowserClient(
       'content-type': 'application/x-www-form-urlencoded',
     };
 
-    const form = { ...body };
-    if (config.tokenAuthMethod === 'basic') {
-      // A public client has no secret, so the password half is empty. Providers that
-      // require Basic still accept that, and it is what the spec describes for a client
-      // with no secret.
-      headers.authorization = `Basic ${btoa(`${encodeURIComponent(config.clientId)}:`)}`;
-      delete form.client_id;
-    }
-
-    const response = await fetcher(token, {
-      method: 'POST',
+    const form = new URLSearchParams(body);
+    form.delete('client_id');
+    // A public client: `none` names itself and proves nothing, which is what PKCE covers.
+    // `basic` sends an empty password, which some providers insist on even so.
+    await applyClientAuth(
+      { clientId: config.clientId, method: config.tokenAuthMethod ?? 'none', clientSecret: '' },
+      token,
       headers,
-      body: new URLSearchParams(form).toString(),
-    });
+      form,
+    );
+
+    const response = await fetcher(token, { method: 'POST', headers, body: form.toString() });
 
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {

@@ -408,8 +408,8 @@ describe('introspection, for a token this service cannot read', () => {
 
   it('refuses to be built without client credentials', () => {
     expect(() =>
-      createTokenIntrospector({ issuer: ISSUER, clientId: '', clientSecret: '', audience: false }),
-    ).toThrow(/client credentials/);
+      createTokenIntrospector({ issuer: ISSUER, clientId: 'a', audience: false }),
+    ).toThrow(/needs credentials/);
   });
 
   it('refuses to be built without an audience decision', () => {

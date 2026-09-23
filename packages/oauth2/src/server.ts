@@ -29,6 +29,11 @@
  * goes in it.
  */
 import { createSessionCookie } from '@fluixi/session/server';
+import {
+  applyClientAuth,
+  type ClientAuth,
+  type ClientAuthMethodInput,
+} from './client-auth.js';
 import { discover } from './discovery.js';
 import { createPkcePair, createStateValue, expiryFrom, timingSafeEqual } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
@@ -50,8 +55,19 @@ export interface OAuthRoutesConfig {
   secureCookie?: boolean;
   /** Where to send the browser after a login with no recorded destination. */
   defaultReturnTo?: string;
-  /** `basic` sends the credentials in an Authorization header. Default `body`. */
-  tokenAuthMethod?: 'body' | 'basic';
+  /**
+   * How this server authenticates to the token endpoint.
+   *
+   * `private_key_jwt` needs `privateKey` and sends no secret at all, which some providers
+   * require: Okta's org authorization server refuses anything else.
+   */
+  tokenAuthMethod?: ClientAuthMethodInput;
+  /** The signing key for `private_key_jwt`, as a JWK. */
+  privateKey?: Record<string, unknown>;
+  /** Names which key, for a provider holding more than one. */
+  keyId?: string;
+  /** Default `RS256`. */
+  assertionAlgorithm?: string;
   /**
    * How long `sessionLocals` may reuse a userinfo response, in milliseconds.
    *
@@ -108,22 +124,24 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       headers: { 'content-type': 'application/json', ...headers },
     });
 
+  const clientAuth: ClientAuth = {
+    clientId: config.clientId,
+    // `client_secret_post` by default here, which is what this half has always sent, so
+    // an existing deployment keeps working.
+    method: config.tokenAuthMethod ?? (config.clientSecret ? 'body' : 'none'),
+    clientSecret: config.clientSecret,
+    privateKey: config.privateKey,
+    keyId: config.keyId,
+    assertionAlgorithm: config.assertionAlgorithm,
+  };
+
   async function tokenRequest(body: Record<string, string>) {
     const { token } = await resolve();
     const headers: Record<string, string> = {
       'content-type': 'application/x-www-form-urlencoded',
     };
     const form = new URLSearchParams(body);
-
-    if (config.tokenAuthMethod === 'basic' && config.clientSecret) {
-      // Some providers accept only Basic on the token endpoint. The values are
-      // form-encoded before base64, which is what the spec asks for.
-      const pair = `${encodeURIComponent(config.clientId)}:${encodeURIComponent(config.clientSecret)}`;
-      headers.authorization = `Basic ${btoa(pair)}`;
-    } else {
-      form.set('client_id', config.clientId);
-      if (config.clientSecret) form.set('client_secret', config.clientSecret);
-    }
+    await applyClientAuth(clientAuth, token, headers, form);
 
     const response = await fetch(token, { method: 'POST', headers, body: form.toString() });
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
