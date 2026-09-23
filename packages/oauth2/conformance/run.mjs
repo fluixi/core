@@ -54,7 +54,10 @@ async function capability(area, name, fn) {
     const detail = await fn();
     record(area, name, 'yes', typeof detail === 'string' ? detail : '');
   } catch (error) {
-    record(area, name, 'no', error?.message?.slice(0, 100) ?? String(error));
+    // Not truncated, for the reason in `must`: a capability that is absent because of a
+    // setting reads exactly like one the provider does not have, and only the provider's
+    // own words tell them apart.
+    record(area, name, 'no', error?.message ?? String(error));
   }
 }
 
