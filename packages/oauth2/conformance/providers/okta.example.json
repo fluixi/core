@@ -1,11 +1,33 @@
 {
   "_setup": [
-    "Create a free developer account at developer.okta.com.",
-    "Applications > Create App Integration > OIDC > Single-Page Application.",
-    "Sign-in redirect URI http://localhost:3000/callback.",
-    "For `service`, create a second app as API Services, which enables client_credentials.",
-    "The issuer is usually https://YOUR_DOMAIN/oauth2/default, not the bare domain.",
-    "Then: export OKTA_CLIENT_SECRET=... && node conformance/run.mjs okta"
+    "Free developer account at developer.okta.com. Your domain is the one in the URL,",
+    "usually dev-NNNNNN.okta.com or integrator-NNNNN.okta.com.",
+    "",
+    "THE ISSUER IS THE DECISION THAT MATTERS. Okta has two kinds of authorization server:",
+    "  https://YOUR_DOMAIN                  the org server, for Okta's own management API",
+    "  https://YOUR_DOMAIN/oauth2/default   a custom server, for your applications",
+    "They issue different tokens and support different grants. Use the second unless you",
+    "know you want the first.",
+    "",
+    "1. Applications > Create App Integration > OIDC > Single-Page Application.",
+    "   Sign-in redirect URI: http://localhost:3000/callback. Note the Client ID.",
+    "2. Applications > Create App Integration > API Services. That app type is what carries",
+    "   the client_credentials grant. Note its Client ID and keep the secret for the shell.",
+    "3. Security > API > default > Access Policies. A free org ships a policy allowing every",
+    "   client; if yours does not, add one for the API Services app or client_credentials is",
+    "   refused with access_denied.",
+    "",
+    "For the user flow, which needs a token without a browser:",
+    "4. Directory > People > Add person, with a password you set rather than an activation",
+    "   email, and no forced password change on first sign in.",
+    "5. The user flow needs an app carrying the Resource Owner Password grant. A",
+    "   Single-Page Application cannot: it is public, and that grant has no PKCE to stand in.",
+    "   Create Applications > Create App Integration > OIDC > Web Application, tick",
+    "   Resource Owner Password alongside Authorization Code, and use its credentials in",
+    "   `user` below. Leave `user` out to run the unattended tier alone.",
+    "",
+    "Then: export OKTA_SERVICE_SECRET=... OKTA_WEB_SECRET=... OKTA_TEST_PASSWORD=... \\",
+    "        && node conformance/run.mjs okta"
   ],
   "issuer": "https://YOUR_DOMAIN.okta.com/oauth2/default",
   "client": {
@@ -20,9 +42,16 @@
   },
   "service": {
     "clientId": "YOUR_API_SERVICES_CLIENT_ID",
-    "clientSecret": "env:OKTA_CLIENT_SECRET",
+    "clientSecret": "env:OKTA_SERVICE_SECRET",
     "scopes": [
       "okta.users.read"
     ]
+  },
+  "user": {
+    "passwordGrant": true,
+    "username": "test@example.com",
+    "password": "env:OKTA_TEST_PASSWORD",
+    "clientId": "YOUR_WEB_APP_CLIENT_ID",
+    "clientSecret": "env:OKTA_WEB_SECRET"
   }
 }
