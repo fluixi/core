@@ -11,7 +11,7 @@ Build the package first: the suite imports `dist`, which is what an app would.
 
 ## What four providers actually do
 
-Keycloak 26, Dex 2.41, an Auth0 tenant and an Okta org. None of them needed a code change
+Keycloak 26, Dex 2.41, an Auth0 tenant, an Okta org, and Google's public discovery. None of them needed a code change
 to the flows; Okta needed one capability built, `private_key_jwt`, which it refuses to work
 without.
 
@@ -29,6 +29,7 @@ without.
 | Carries `aud` | not until a mapper | yes | the API identifier | the issuer |
 | Names the calling client | `azp` | **neither** | `azp` | **neither** |
 | Requires DPoP by default | no | no | no | **yes, for API Services apps** |
+| Accepts a public client at the token endpoint | yes | yes | yes | yes |
 
 What that means when configuring this package:
 
@@ -41,6 +42,13 @@ What that means when configuring this package:
   end session.
 - **Auth0** needs an API registered and `audience` sent, or the access token is opaque. Its
   issuer carries a trailing slash that `iss` includes. No introspection endpoint at all.
+- **Google** refuses a public client outright. A Web application client id sent without a
+  secret gets `client_secret is missing.`, checked before PKCE, so `mode: 'browser'` cannot
+  complete the exchange. `mode: 'server'` works: Google advertises `client_secret_post`,
+  which is what that half sends. The authorization request our browser client builds is
+  accepted, so only the exchange is affected. Google publishes no end session or
+  introspection endpoint, and no `client_credentials`: server-to-server there is the JWT
+  bearer grant, which this package does not implement.
 - **Okta** has two authorization servers and they are not interchangeable: the custom one
   at `/oauth2/default` for an application's own scopes, the org one at the bare domain for
   Okta's management API. Client credentials work only on the org server and only with

@@ -1,0 +1,22 @@
+{
+  "_notes": [
+    "Discovery needs no credentials, so the first tier runs anywhere.",
+    "",
+    "FINDING: Google refuses a public client for the code exchange. A Web application client",
+    "id sent without a secret gets `invalid_request: client_secret is missing.`, and the check",
+    "happens before PKCE, so no verifier makes up for it. Google advertises only",
+    "client_secret_post and client_secret_basic, and it means it.",
+    "",
+    "So `mode: 'browser'` cannot sign in with Google using a Web application client. Use",
+    "`mode: 'server'`, which sends client_secret_post and is what Google expects. Google's own",
+    "answer for a page with no backend is Google Identity Services, a different thing from the",
+    "raw code flow.",
+    "",
+    "The authorization request itself is accepted: Google served its sign-in page for the URL",
+    "the browser client builds, with S256 PKCE and the scopes.",
+    "",
+    "No user tier: the login page has bot detection. A service account would need the JWT",
+    "bearer authorization grant, which this package does not implement."
+  ],
+  "issuer": "https://accounts.google.com"
+}

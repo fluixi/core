@@ -240,9 +240,18 @@ async function runProvider(name, cfg) {
   // ── the user flow ───────────────────────────────────────────────────────────
   let userTokens = null;
   let spentCode = null;
-  /** Which client the user token belongs to, which is what may refresh or revoke it. */
-  let tokenClient = { clientId: cfg.client.clientId, clientSecret: cfg.client.clientSecret };
-  if (cfg.user?.passwordGrant) {
+  /**
+   * Which client the user token belongs to, which is what may refresh or revoke it.
+   *
+   * A config may have no client at all: a provider whose discovery is public and whose
+   * flows need credentials we do not have is still worth the discovery tier, and the
+   * tiering is only real if every section is genuinely optional.
+   */
+  let tokenClient = {
+    clientId: cfg.client?.clientId,
+    clientSecret: cfg.client?.clientSecret,
+  };
+  if (cfg.user?.passwordGrant && cfg.client) {
     // The direct grant is not how an app should sign anyone in, and it is the only way
     // to get a user token here without driving a login form.
     await must('user flow', 'obtains a user token for the checks below', async () => {
@@ -306,7 +315,7 @@ async function runProvider(name, cfg) {
     });
   }
 
-  if (cfg.user?.form) {
+  if (cfg.user?.form && cfg.client) {
     await must('user flow', 'authorization code with PKCE, through the login form', async () => {
       const browser = fakeBrowser();
       const client = createBrowserClient({
@@ -507,7 +516,7 @@ async function runProvider(name, cfg) {
 
   // Last, deliberately. Keycloak revokes the whole session when a code is replayed,
   // which RFC 6749 recommends and which destroys anything this suite still needed.
-  if (spentCode) {
+  if (spentCode && cfg.client) {
     await must('user flow', 'a replayed authorization code is refused', async () => {
       const response = await fetch(doc.token_endpoint, {
         method: 'POST',
