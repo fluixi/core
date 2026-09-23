@@ -246,17 +246,38 @@ async function runProvider(name, cfg) {
         body.set('realm', cfg.user.realm);
       }
 
-      const response = await fetch(doc.token_endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body,
-      });
-      if (!response.ok) {
-        // The whole body: a provider explains a refusal here and nowhere else.
-        throw new Error(`HTTP ${response.status} ${await response.text()}`);
+      const ask = async (params) => {
+        const response = await fetch(doc.token_endpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: params,
+        });
+        return { ok: response.ok, status: response.status, text: await response.text() };
+      };
+
+      let attempt = await ask(body);
+
+      // Naming an API can be refused for this grant even when the same client may use it
+      // with client_credentials, which is what Auth0 does. Dropping the audience gets a
+      // token that is opaque rather than a JWT, so userinfo and the id token can still be
+      // checked while the JWT rows below simply do not apply.
+      let degraded = '';
+      if (!attempt.ok && body.has('audience')) {
+        const withoutAudience = new URLSearchParams(body);
+        withoutAudience.delete('audience');
+        const second = await ask(withoutAudience);
+        if (second.ok) {
+          attempt = second;
+          degraded = ', without an audience, so the access token is opaque';
+        }
       }
-      userTokens = await response.json();
-      return 'via the password grant, which is a test mechanism and not a login';
+
+      if (!attempt.ok) {
+        // The whole body: a provider explains a refusal here and nowhere else.
+        throw new Error(`HTTP ${attempt.status} ${attempt.text}`);
+      }
+      userTokens = JSON.parse(attempt.text);
+      return `via the password grant, which is a test mechanism and not a login${degraded}`;
     });
   }
 
