@@ -461,10 +461,15 @@ async function runProvider(name, cfg) {
             ...(tokenClient.clientSecret ? { client_secret: tokenClient.clientSecret } : {}),
           }),
         });
-        return response.ok;
+        return { ok: response.ok, why: response.ok ? '' : await response.text() };
       };
 
-      if (!(await refresh())) throw new Error('the refresh token did not work to begin with');
+      const first = await refresh();
+      if (!first.ok) {
+        // Saying only that it failed sends the reader to the provider's logs for
+        // something the provider already explained.
+        throw new Error(`the refresh token did not work to begin with: ${first.why}`);
+      }
 
       await fetch(doc.revocation_endpoint, {
         method: 'POST',
@@ -477,7 +482,8 @@ async function runProvider(name, cfg) {
         }),
       });
 
-      if (await refresh()) throw new Error('still worked after revocation');
+      const second = await refresh();
+      if (second.ok) throw new Error('still worked after revocation');
       return '';
     });
   }
