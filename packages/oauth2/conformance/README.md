@@ -17,25 +17,43 @@ which is the result worth having: the differences below are configuration, not f
 | | Keycloak | Dex | Auth0 |
 | --- | --- | --- | --- |
 | Discovery | yes | yes | yes |
-| Authorization code with PKCE | yes | yes | yes (login page is not scriptable) |
+| Authorization code with PKCE | yes | yes | yes, login page not scriptable |
 | `client_credentials` | yes | **no** | yes |
-| userinfo | yes | yes | yes |
+| userinfo | yes | yes | yes, works with an opaque token |
 | Introspection endpoint | yes | yes | **no** |
 | Revocation endpoint | yes | **no** | yes |
 | End session endpoint | yes | **no** | yes |
-| Access token carries `aud` | not until an audience mapper | yes | yes |
+| Access token is a JWT | yes | yes | only when an API is named |
+| Access token carries `aud` | not until an audience mapper | yes | yes, the API identifier |
 | Names the calling client | `azp` | **neither** | `azp` |
+| Issuer has a trailing slash | no | no | **yes**, and `iss` includes it |
 
-Three consequences for anyone configuring this package:
+What that means when configuring this package:
 
-- **Keycloak** needs `audience: false` with `authorizedParty`, or an audience mapper on
-  the client. It also refuses to introspect a token whose audience excludes the asking
-  client, and says only `active: false` about it.
+- **Keycloak** needs `audience: false` with `authorizedParty`, or an audience mapper on the
+  client. It refuses to introspect a token whose audience excludes the asking client and
+  says only `active: false` about it. It also revokes the whole session when an
+  authorization code is replayed, which RFC 6749 recommends.
 - **Dex** puts neither `azp` nor `client_id` on an access token, so `authorizedParty` has
-  nothing to check and `aud` is the only handle.
-- **Auth0** needs an API registered and `audience` sent, or it returns an opaque token.
-  Its issuer carries a **trailing slash** that the `iss` claim includes. It publishes no
-  introspection endpoint at all, so `createTokenIntrospector` does not apply there.
+  nothing to check and `aud` is the only handle. No client credentials grant, no
+  revocation, no end session.
+- **Auth0** needs an API registered and `audience` sent, or the access token is opaque.
+  Its issuer carries a trailing slash that `iss` includes. It publishes no introspection
+  endpoint, so `createTokenIntrospector` does not apply.
+
+### Auth0 treats every grant as a separate authorization
+
+Worth stating on its own, because none of these imply each other and each produced a
+failure that read like something else:
+
+- authorized for an API via `client_credentials` is not authorized via the password grant,
+  and the refusal blames the resource server rather than the grant
+- issuing a refresh token is not accepting one back: `offline_access` in the scope and the
+  `refresh_token` grant on the client are separate settings
+- the password grant is refused outright to a single page application, since a public
+  client cannot authenticate itself and that grant has no PKCE to stand in
+
+Keycloak enables these together. An app moving from one to the other meets all three.
 
 ## What it reports
 
