@@ -39,7 +39,7 @@ async function must(area, name, fn) {
     const detail = await fn();
     record(area, name, 'pass', typeof detail === 'string' ? detail : '');
   } catch (error) {
-    record(area, name, 'fail', error?.message?.slice(0, 120) ?? String(error));
+    record(area, name, 'fail', error?.message ?? String(error));
   }
 }
 
@@ -222,14 +222,21 @@ async function runProvider(name, cfg) {
     // The direct grant is not how an app should sign anyone in, and it is the only way
     // to get a user token here without driving a login form.
     await must('user flow', 'obtains a user token for the checks below', async () => {
+      // Auth0 refuses this grant to a single page application, because a public client
+      // cannot authenticate itself. The config can name a confidential one for the grant
+      // while the redirect flow keeps using the SPA.
+      const grantClient = {
+        clientId: cfg.user.clientId ?? cfg.client.clientId,
+        clientSecret: cfg.user.clientSecret ?? cfg.client.clientSecret,
+      };
       const body = new URLSearchParams({
         grant_type: 'password',
-        client_id: cfg.client.clientId,
+        client_id: grantClient.clientId,
         username: cfg.user.username,
         password: cfg.user.password,
         scope: (cfg.client.scopes ?? ['openid', 'profile', 'email']).join(' '),
       });
-      if (cfg.client.clientSecret) body.set('client_secret', cfg.client.clientSecret);
+      if (grantClient.clientSecret) body.set('client_secret', grantClient.clientSecret);
       // Auth0 answers with an opaque token unless an API is named, and then there is no
       // JWT for the verification checks below to look at.
       if (cfg.client.audience) body.set('audience', cfg.client.audience);
@@ -245,7 +252,8 @@ async function runProvider(name, cfg) {
         body,
       });
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${(await response.text()).slice(0, 120)}`);
+        // The whole body: a provider explains a refusal here and nowhere else.
+        throw new Error(`HTTP ${response.status} ${await response.text()}`);
       }
       userTokens = await response.json();
       return 'via the password grant, which is a test mechanism and not a login';

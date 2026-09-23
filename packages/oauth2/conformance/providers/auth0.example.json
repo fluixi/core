@@ -8,7 +8,9 @@
     "",
     "For the user flow, which needs a token without a browser:",
     "4. User Management > Users > Create User, connection Username-Password-Authentication.",
-    "5. The SPA > Settings > Advanced Settings > Grant Types: tick Password.",
+    "5. The MACHINE TO MACHINE app > Settings > Advanced > Grant Types: tick Password.",
+    "   Auth0 refuses this grant to a single page application, since a public client",
+    "   cannot authenticate itself, so the confidential app runs it instead.",
     "6. Settings > General > API Authorization Settings > Default Directory:",
     "   Username-Password-Authentication. Without it the plain password grant is refused,",
     "   and the `realm` field below uses Auth0's own variant instead.",
@@ -39,6 +41,8 @@
     "passwordGrant": true,
     "username": "test@example.com",
     "password": "env:AUTH0_TEST_PASSWORD",
-    "realm": "Username-Password-Authentication"
+    "realm": "Username-Password-Authentication",
+    "clientId": "YOUR_M2M_CLIENT_ID",
+    "clientSecret": "env:AUTH0_M2M_SECRET"
   }
 }
