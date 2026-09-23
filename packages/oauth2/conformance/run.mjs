@@ -385,9 +385,15 @@ async function runProvider(name, cfg) {
   }
 
   // ── verification ────────────────────────────────────────────────────────────
-  const subject = userTokens?.access_token ?? serviceToken;
-  if (subject && claimsOf(subject)) {
+  // Whichever token is a JWT. Preferring the user's unconditionally skipped these checks
+  // for a provider that hands back an opaque one, losing coverage that was there.
+  const subject = [userTokens?.access_token, userTokens?.id_token, serviceToken].find(
+    (t) => t && claimsOf(t),
+  );
+  if (subject) {
     const claims = claimsOf(subject);
+    record('verify', 'verifying', 'note',
+      subject === serviceToken ? 'the service token, the user one being opaque' : 'a user token');
     await must('verify', 'JWKS verification accepts a genuine token', async () => {
       const verify = createTokenVerifier({
         issuer: [cfg.issuer, doc.issuer].filter(Boolean),
