@@ -17,6 +17,7 @@
  * needs a user, so it runs only where the config says how to get one without a browser.
  */
 import { readFileSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -98,19 +99,33 @@ function claimsOf(token) {
 }
 
 /**
- * Resolve `env:NAME` to the environment, anything else to itself.
+ * Resolve `env:NAME` from the environment and `file:PATH` from disk, anything else to
+ * itself.
  *
- * A real tenant's client secret does not belong in a file that sits in a repository, so
- * a config names the variable and the value stays outside. Local throwaway providers can
- * still write the value inline.
+ * A real tenant's credentials do not belong in a file that sits in a repository, so a
+ * config names where the value lives and the value stays outside. A secret suits `env:`;
+ * a signing key is too long for a shell and suits `file:`, which parses JSON so a JWK
+ * arrives as an object. `~` is expanded.
  */
 function resolveSecrets(value) {
   if (typeof value === 'string') {
-    if (!value.startsWith('env:')) return value;
-    const name = value.slice(4);
-    const found = process.env[name];
-    if (!found) throw new Error(`${value} is referenced by the config but ${name} is not set`);
-    return found;
+    if (value.startsWith('env:')) {
+      const name = value.slice(4);
+      const found = process.env[name];
+      if (!found) throw new Error(`${value} is referenced by the config but ${name} is not set`);
+      return found;
+    }
+    if (value.startsWith('file:')) {
+      const raw = value.slice(5).replace(/^~(?=$|\/)/, homedir());
+      let text;
+      try {
+        text = readFileSync(raw, 'utf8');
+      } catch {
+        throw new Error(`${value} is referenced by the config but ${raw} cannot be read`);
+      }
+      return raw.endsWith('.json') ? JSON.parse(text) : text.trim();
+    }
+    return value;
   }
   if (Array.isArray(value)) return value.map(resolveSecrets);
   if (value && typeof value === 'object') {

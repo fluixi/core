@@ -78,8 +78,37 @@ export AUTH0_M2M_SECRET=...
 node conformance/run.mjs auth0
 ```
 
-A missing variable is reported by name rather than failing somewhere deeper. Configs
-matching `*.local.json` are ignored by git, for a tenant you would rather not name at all.
+A signing key is too long to keep in a shell, so it goes in a file instead:
+
+```jsonc
+"service": {
+  "clientId": "abc123",
+  "clientAuthMethod": "private_key_jwt",
+  "privateKey": "file:~/.config/fluixi/conformance/okta-private.jwk.json"
+}
+```
+
+`file:` reads the path, expands `~`, and parses JSON so a JWK arrives as an object. Keep
+such a file outside any repository and readable only by you.
+
+A missing variable or unreadable file is reported by name rather than failing somewhere
+deeper. Configs matching `*.local.json` are ignored by git, for a tenant you would rather
+not name at all.
+
+Generating a key pair for a provider that wants one:
+
+```
+node --input-type=module -e "
+import { generateKeyPair, exportJWK } from 'jose';
+const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
+const kid = 'conformance';
+console.log('private:', JSON.stringify({ ...(await exportJWK(privateKey)), kid, alg: 'RS256' }));
+console.log('public :', JSON.stringify({ ...(await exportJWK(publicKey)),  kid, alg: 'RS256' }));
+"
+```
+
+The provider takes the public half. A mismatched `kid` is one of the few ways a correctly
+signed assertion still comes back `invalid_client`.
 
 ## Adding a provider
 
