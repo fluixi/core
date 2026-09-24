@@ -91,7 +91,17 @@ export function select(next: Partial<Selection>): void {
  */
 const services = new Map<string, AuthService<Record<string, unknown>>>();
 
-export function serviceFor(sel: Selection = selection()): AuthService<Record<string, unknown>> {
+/**
+ * The service for a selection, defaulting to what is stored.
+ *
+ * Storage is the one source of truth: `select` writes there first, and a redirect unloads
+ * the page anyway. The signal exists for rendering and starts at its default until a page
+ * restores it, so defaulting to the signal here built a service for the wrong provider
+ * whenever a page had not restored yet, which surfaced as a state mismatch.
+ */
+export function serviceFor(
+  sel: Selection = typeof window === 'undefined' ? selection() : readSelection(),
+): AuthService<Record<string, unknown>> {
   const key = `${sel.provider}:${sel.mode}`;
   const existing = services.get(key);
   if (existing) return existing;

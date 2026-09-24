@@ -22,7 +22,7 @@ import { signal } from '@fluixi/reactive/signal';
 import { onMount, Show } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { PROVIDERS } from '../../lib/providers.js';
-import { currentService, readSelection } from '../../lib/session.js';
+import { readSelection, serviceFor } from '../../lib/session.js';
 
 export default function Callback() {
   seo({ title: 'Completing sign in', robots: 'noindex' });
@@ -65,7 +65,10 @@ export default function Callback() {
     }
 
     stage.set(`exchanging the code with ${provider.label}`);
-    void currentService()
+    // Built from the selection just read, not from the reactive one: that signal starts at
+    // its default until a page restores it, and a service for the wrong provider looks for
+    // a state this flow never stored, which reads as a state mismatch.
+    void serviceFor(selection)
       .complete()
       .then((destination) => {
         stage.set(`signed in, going to ${destination}`);
