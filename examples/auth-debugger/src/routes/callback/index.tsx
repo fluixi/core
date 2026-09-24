@@ -7,6 +7,11 @@
  *
  * Everything the callback carried is reported, whether the exchange worked or not.
  *
+ * There is no router hook here on purpose: `useNavigate` resolves the router while
+ * rendering, and a route that throws there fails to hydrate, leaving the server's markup
+ * in place and the page responding to nothing. A callback needs one navigation, and
+ * `location.replace` does it without a hook.
+ *
  * All of it is read in `onMount` rather than in the component body. `location` and the
  * stored selection exist only in a browser, so reading them while rendering makes the
  * server produce different markup from the client, hydration finds a mismatch, and the
@@ -14,15 +19,13 @@
  * and the parameters read as absent.
  */
 import { signal } from '@fluixi/reactive/signal';
-import { onMount, Show, useNavigate } from '@fluixi/core';
+import { onMount, Show } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { PROVIDERS } from '../../lib/providers.js';
 import { currentService, readSelection } from '../../lib/session.js';
 
 export default function Callback() {
   seo({ title: 'Completing sign in', robots: 'noindex' });
-
-  const navigate = useNavigate();
 
   // Server-safe initial values, so the first render matches on both sides.
   const providerLabel = signal('reading');
@@ -66,7 +69,10 @@ export default function Callback() {
       .complete()
       .then((destination) => {
         stage.set(`signed in, going to ${destination}`);
-        navigate(destination, { replace: true });
+        // A document navigation rather than a client one. This page exists for a single
+        // transition and a fresh load is the simplest way to arrive with the session
+        // already established, with no router hook to resolve.
+        location.replace(destination);
       })
       .catch((cause) => {
         error.set(cause instanceof Error ? cause.message : String(cause));
