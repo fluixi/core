@@ -84,16 +84,19 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
     label: 'Dex',
     issuer: 'http://localhost:5556/dex',
     clientId: 'adafri-admin',
-    modes: ['browser', 'server'],
+    // Server only. Dex sends no CORS headers on its token endpoint either, so a page
+    // cannot complete the exchange whatever it knows about the endpoints.
+    modes: ['server'],
+    serverClientId: 'orders-api',
     scopes: ['openid', 'profile', 'email', 'offline_access'],
-    // Dex sends no CORS headers on its discovery document, so a page cannot read it.
+    // Given directly because Dex publishes no CORS on its discovery document either.
     endpoints: {
       authorization: 'http://localhost:5556/dex/auth',
       token: 'http://localhost:5556/dex/token',
       userinfo: 'http://localhost:5556/dex/userinfo',
     },
     notes: [
-      { kind: 'caution', text: 'Sends no CORS headers on its discovery document, so browser mode needs its endpoints given directly.' },
+      { kind: 'caution', text: 'Sends no CORS headers on its discovery document or its token endpoint, so a browser-held session is impossible: server mode only.' },
       { kind: 'expected', text: 'Names no client on an access token: neither `azp` nor `client_id`, so `aud` is the only handle.' },
       { kind: 'expected', text: 'No revocation endpoint and no end session endpoint, so logout can only clear what is held here.' },
       { kind: 'expected', text: 'No client credentials grant at all.' },
@@ -107,10 +110,13 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
     clientId: 'YOUR_AUTH0_SPA_CLIENT_ID',
     modes: ['browser', 'server'],
     scopes: ['openid', 'profile', 'email', 'offline_access'],
-    audience: 'https://api.example.com',
+    // Set VITE_AUTH0_AUDIENCE to an API this client is authorized for. Without it Auth0
+    // returns an opaque access token; with one it is not authorized for, it refuses the
+    // request before showing a login page.
+    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
     notes: [
       { kind: 'caution', text: 'The issuer keeps its trailing slash, and `iss` includes it. Dropping it looks like a signature failure.' },
-      { kind: 'expected', text: 'Returns an opaque access token unless an API is named as the audience.' },
+      { kind: 'expected', text: 'Returns an opaque access token unless VITE_AUTH0_AUDIENCE names an API this client is authorized for.' },
       { kind: 'expected', text: 'Publishes no introspection endpoint, so that button does nothing here.' },
       { kind: 'caution', text: 'Every grant is a separate authorization: issuing a refresh token and accepting one back are different settings.' },
     ],

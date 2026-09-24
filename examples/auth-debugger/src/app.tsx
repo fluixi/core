@@ -21,11 +21,10 @@ function Shell() {
 
 export const appRoutes = [{ path: '/', component: Shell, children: routes }];
 
-export default function App() {
-  return (
-    <Router
-      routes={appRoutes}
-      history={typeof window === 'undefined' ? createMemoryHistory() : undefined}
-    />
-  );
+export default function App(props?: { url?: string }) {
+  // The request URL has to reach the memory history, or every server render matches `/`
+  // and the page returned for any route is the index. The client uses browser history.
+  const history =
+    typeof window === 'undefined' ? createMemoryHistory(props?.url ?? '/') : undefined;
+  return <Router routes={appRoutes} history={history as never} />;
 }

@@ -98,6 +98,22 @@ without checking a signature, deliberately, so a token this application would re
 still visible. Verification belongs at the service receiving a token, through
 `@fluixi/oauth2/verify`.
 
+## A browser-held session needs the provider to allow CORS
+
+The exchange is a cross-origin POST to the token endpoint, so the provider has to permit
+it. Measured from `http://localhost:3100`:
+
+| | discovery document | token endpoint |
+| --- | --- | --- |
+| Keycloak | yes, once the origin is in the client's web origins | yes |
+| Okta | no | yes |
+| Auth0 | no | yes, `*` |
+| Dex | **no** | **no** |
+| Google | no | refuses a public client anyway |
+
+Where discovery is refused, endpoints can be given directly. Where the **token endpoint** is
+refused there is nothing to work around, which is why Dex is server mode only.
+
 ## Registering redirect URIs
 
 Each mode uses a different path, and a provider accepts only what is registered with it.
@@ -111,6 +127,10 @@ http://localhost:3100/auth/<provider>/callback      server mode, per provider
 So Keycloak's client needs `http://localhost:3100/auth/keycloak/callback` before server
 mode can complete, and a missing entry shows as `redirect_uri is invalid` from the
 provider rather than as anything this app can report.
+
+Server mode may use a different client from browser mode, since it authenticates with a
+secret and a public client has none. `serverClientId` names it, and that client needs the
+callback registered too: Dex refused `/auth/dex/callback` until `orders-api` carried it.
 
 ## Reading the environment
 
