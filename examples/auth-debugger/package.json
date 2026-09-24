@@ -1,0 +1,31 @@
+{
+  "name": "@fluixi/example-auth-debugger",
+  "version": "0.0.1-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "One app against five OAuth2 providers, showing what each hands back: tokens decoded, the user, and what refresh, introspection, revocation and logout actually do.",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluixi/cli": "workspace:*",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/jsx": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
+    "@fluixi/session": "workspace:*",
+    "@fluixi/start": "workspace:*",
+    "@fluixi/auth": "workspace:*",
+    "@fluixi/oauth2": "workspace:*",
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^3.2.4"
+  }
+}

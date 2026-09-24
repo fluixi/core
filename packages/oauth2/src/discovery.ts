@@ -35,7 +35,20 @@ export async function discover(issuer: string, fetcher: typeof fetch = fetch): P
   if (cached) return cached;
 
   const pending = (async (): Promise<Endpoints> => {
-    const response = await fetcher(documentUrl(issuer));
+    let response: Response;
+    try {
+      response = await fetcher(documentUrl(issuer));
+    } catch (cause) {
+      // In a browser a blocked cross-origin read throws before any status exists, and
+      // `fetch` reports only "Failed to fetch". Not every provider allows a page to read
+      // its discovery document: Keycloak does once an origin is configured, Dex and
+      // Google do not. Naming the cause saves a long hunt for a network fault.
+      throw new OAuthError(
+        `Could not read the discovery document at ${documentUrl(issuer)}. In a browser this is usually the provider refusing a cross-origin read: give \`endpoints\` directly, or resolve them on a server. (${cause instanceof Error ? cause.message : String(cause)})`,
+        'discovery_unreachable',
+      );
+    }
+
     if (!response.ok) {
       throw new OAuthError(
         `Discovery failed for ${issuer}: ${response.status}`,
