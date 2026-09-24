@@ -73,7 +73,8 @@ const dispatch: Middleware = async (request, next) => {
   }
 
   // Compose the chain around `next`, so an unmatched request falls through untouched.
-  const run = (index: number): Promise<Response> =>
+  // `async` because a middleware may answer synchronously, and the signature promises one.
+  const run = async (index: number): Promise<Response> =>
     index >= chain!.length ? next() : chain![index](request, () => run(index + 1));
 
   return run(0);

@@ -45,6 +45,11 @@ export async function build(
     return;
   }
   await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
+
+  // Before anything is written. A client-prefixed secret is published by the bundle
+  // itself, so a warning after the fact is read too late.
+  const { assertNoExposedSecrets } = await import('../env-guard.js');
+  assertNoExposedSecrets(cfg.root);
   const { build: viteBuild } = await import('vite');
   const plugins = await fluixiPlugins(cfg);
   // The deploy target decides whether the framework is bundled in or imported at runtime.

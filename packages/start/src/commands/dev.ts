@@ -63,6 +63,14 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   installCrashGuards();
   await loadServerEnv(cfg.root, 'development'); // .env → process.env (server-only secrets)
 
+  // Said here too, so the mistake is caught while writing rather than at a deploy.
+  const { findExposedSecrets } = await import('../env-guard.js');
+  for (const { name, file } of findExposedSecrets(cfg.root)) {
+    console.warn(
+      `[fluixi] ${name} in ${file} carries the VITE_ prefix, so its value is inlined into the browser bundle. Drop the prefix and read it from process.env in server code.`,
+    );
+  }
+
   const { createServer } = await import('vite');
   const template = readFileSync(resolve(cfg.root, cfg.template), 'utf-8');
 

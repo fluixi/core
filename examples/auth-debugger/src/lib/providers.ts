@@ -157,11 +157,14 @@ export function resolveClientId(provider: Provider): string {
   const clientId = import.meta.env[`VITE_${provider.id.toUpperCase()}_CLIENT_ID`] ?? provider.clientId;
   return clientId;
 }
-export function resolveClientSecret(provider: Provider): string {
-  const secretName = `${provider.id.toUpperCase()}_CLIENT_SECRET`;
-  const clientSecret = import.meta.env[secretName]
-  return clientSecret;
-}
+/**
+ * Deliberately absent.
+ *
+ * A client secret cannot be resolved here. `import.meta.env` carries only `VITE_` names
+ * and those are inlined into the browser bundle, so reading one would ship the secret to
+ * every visitor. The server reads `<PROVIDER>_CLIENT_SECRET` from `process.env` in
+ * `src/middleware.ts`, where it stays.
+ */
 
 export function resolveClientTenant(provider: Provider): string {
   const tenantName = `VITE_${provider.id.toUpperCase()}_TENANT`;
@@ -170,27 +173,21 @@ export function resolveClientTenant(provider: Provider): string {
   return clientTenant;
 }
 
-export function resolveClientDomain(provider: Provider): string {
-  const domainName = `${provider.id.toUpperCase()}_DOMAIN`;
-  const clientDomain = import.meta.env[domainName]
-  return clientDomain;
-}
 
-export function resolveBaseConfig(provider: Provider): {issuer: string, clientId: string, clientSecret: string, tenant?: string, domain?: string} {
-  const clientId = resolveClientId(provider);
-  const clientSecret = resolveClientSecret(provider);
-  const issuer = resolveClientTenant(provider);
-  const domain = resolveClientDomain(provider);
-  return { issuer, clientId, clientSecret, domain };
+/**
+ * The public half of a provider's configuration, from the environment where it is set.
+ *
+ * Only values safe to ship: an issuer and a client id. Both are visible in a browser
+ * anyway, since the authorization request carries them.
+ */
+export function resolveBaseConfig(provider: Provider): { issuer: string; clientId: string } {
+  return { issuer: resolveClientTenant(provider), clientId: resolveClientId(provider) };
 }
 
 export function getProviders(): Record<ProviderId, Provider> {
   const providers: Record<ProviderId, Provider> = { ..._PROVIDERS };
   return Object.values(providers).map((p) => {
-    const config = resolveBaseConfig(p);
-    console.log('config is', config)
-    return { ...p, ...config };
-
+    return { ...p, ...resolveBaseConfig(p) };
   }).reduce((acc, p) => {
     acc[p.id] = p;
     return acc;
@@ -215,13 +212,11 @@ export function configFor(
     };
   }
 
-  const clientId = resolveClientId(provider);
-  console.log('client is', clientId)
   return {
     mode: 'browser',
     // Endpoints win over the issuer where a provider will not let a page read discovery.
     ...(provider.endpoints ? { endpoints: provider.endpoints } : { issuer: provider.issuer }),
-    clientId,
+    clientId: resolveClientId(provider),
     redirectUri: `${appUrl}/callback`,
     postLogoutRedirectUri: `${appUrl}/?provider=${provider.id}`,
     scopes: provider.scopes,
