@@ -121,6 +121,7 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
       { kind: 'expected', text: 'Returns an opaque access token unless VITE_AUTH0_AUDIENCE names an API this client is authorized for.' },
       { kind: 'expected', text: 'Publishes no introspection endpoint, so that button does nothing here.' },
       { kind: 'caution', text: 'Every grant is a separate authorization: issuing a refresh token and accepting one back are different settings.' },
+      { kind: 'caution', text: 'A refresh token needs three things together: `offline_access` in the scopes, VITE_AUTH0_AUDIENCE naming an API with Allow Offline Access on, and Refresh Token Rotation enabled on the application. Any one missing and the scope is ignored silently.' },
     ],
   },
 

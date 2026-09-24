@@ -91,6 +91,20 @@ SESSION_SECRET=at-least-32-characters
 The routes are mounted per provider at `/auth/<provider>`, so more than one can be
 configured at once.
 
+## Auth0 and refresh tokens
+
+`offline_access` in the scopes is not enough on its own. Auth0 wants three things together,
+and a missing one is ignored rather than reported:
+
+- `offline_access` among the requested scopes
+- an `audience` naming an API with **Allow Offline Access** turned on, which is
+  `VITE_AUTH0_AUDIENCE` here
+- **Refresh Token Rotation** enabled on the application, which Auth0 requires of a public
+  client before it will issue one at all
+
+Without a refresh token there is nothing to revoke and nothing to refresh, which the log
+says in those words rather than failing quietly.
+
 ## Reading the browser without breaking hydration
 
 `location` and the stored selection exist only in a browser. Reading either while
