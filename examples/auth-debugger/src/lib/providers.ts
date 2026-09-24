@@ -48,6 +48,8 @@ export interface Provider {
   };
   /** Refuses a token whose audience excludes the asking client, or names none at all. */
   authorizedParty?: string;
+  /** Bind tokens to a key this client holds, per RFC 9449. Required by some providers. */
+  dpop?: boolean;
   /** The confidential client a server-held session uses, when it differs. */
   serverClientId?: string;
   /** What the run is expected to show, so a surprise stands out from a known limit. */
@@ -128,11 +130,12 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
     issuer: 'https://YOUR_DOMAIN.okta.com/oauth2/default',
     clientId: 'YOUR_OKTA_SPA_CLIENT_ID',
     modes: ['browser', 'server'],
+    dpop: true,
     scopes: ['openid', 'profile', 'email', 'offline_access'],
     notes: [
       { kind: 'caution', text: 'Two authorization servers: `/oauth2/default` for an application, the bare domain for Okta’s own API. They are not interchangeable.' },
       { kind: 'expected', text: 'Names no client on an access token, so `aud` is the handle.' },
-      { kind: 'caution', text: 'Turns DPoP on by default for new applications, including a single page one. Untick "Require Demonstrating Proof of Possession" on the client, since this package does not implement it.' },
+      { kind: 'caution', text: 'Turns DPoP on by default for new applications, and an integrator org will not let you untick it. Tokens are bound to a key this client holds, which is why `dpop` is on below.' },
     ],
   },
 
@@ -229,6 +232,7 @@ export function configFor(
     // Each provider gets its own storage, so switching between them mid-flow does not
     // have one overwrite another's verifier.
     storageKey: provider.id,
+    ...(provider.dpop ? { dpop: true } : {}),
     ...(provider.audience ? { extraParams: { audience: provider.audience } } : {}),
     ...(provider.extraParams ? { extraParams: provider.extraParams } : {}),
   };

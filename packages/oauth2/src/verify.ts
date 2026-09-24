@@ -118,6 +118,19 @@ export interface VerifierOptions {
   clockToleranceSec?: number;
   /** Extra checks once the token holds: scope, a tenant claim, whatever the app needs. */
   require?: (claims: TokenClaims) => boolean | string;
+  /**
+   * Require the token to be bound to a key the caller proves it holds, per RFC 9449.
+   *
+   * `true` refuses a token with no `cnf.jkt`, and refuses a bound one whose accompanying
+   * proof does not match. Without this a bound token is accepted as though it were a
+   * bearer token, which is the state a client sending proofs to an unchecking service is
+   * already in: protected in appearance only.
+   *
+   * Needs the request, so use `fromRequest`. Verifying a bare string cannot check a proof.
+   */
+  dpop?: boolean;
+  /** Seconds of clock skew allowed on a proof's `iat`. Default 10. */
+  dpopProofAgeSec?: number;
 }
 
 export interface TokenVerifier {
@@ -141,7 +154,9 @@ export class TokenError extends OAuthError {
 function bearerOf(request: Request): string | null {
   const header = request.headers.get('authorization');
   if (!header) return null;
-  const match = header.match(/^Bearer\s+(.+)$/i);
+  // `DPoP` as well as `Bearer`: a token bound to a key is presented under that scheme, and
+  // reading only Bearer would refuse every bound token before looking at it.
+  const match = header.match(/^(?:Bearer|DPoP)\s+(.+)$/i);
   return match ? match[1].trim() : null;
 }
 
@@ -217,7 +232,86 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
     return keys;
   }
 
-  const verify = async (token: string): Promise<TokenClaims> => {
+  /**
+   * Check that a proof belongs to the token and to this request.
+   *
+   * The proof carries its own public key, so it verifies itself; what makes it meaningful
+   * is that the key's thumbprint matches the token's `cnf.jkt`. Anyone can sign a proof
+   * with a key they made up, and only the key the provider bound the token to counts.
+   */
+  const checkProof = async (
+    claims: TokenClaims,
+    token: string,
+    request: Request,
+  ): Promise<void> => {
+    const jose = await loadJose();
+    const { boundKeyOf, thumbprintOf } = await import('./dpop.js');
+
+    const bound = boundKeyOf(claims);
+    if (!bound) {
+      throw new TokenError(
+        'This token is not bound to a key, and this service requires binding.',
+        'token_not_bound',
+      );
+    }
+
+    const proof = request.headers.get('dpop');
+    if (!proof) throw new TokenError('The request carried no DPoP proof.', 'missing_dpop_proof');
+
+    let payload: Record<string, unknown>;
+    let header: Record<string, unknown>;
+    try {
+      // `embeddedJWK` verifies the proof against the key inside its own header, which is
+      // what makes the thumbprint comparison below the thing that matters.
+      const result = await jose.jwtVerify(proof, jose.EmbeddedJWK, { typ: 'dpop+jwt' });
+      payload = result.payload as Record<string, unknown>;
+      header = result.protectedHeader as unknown as Record<string, unknown>;
+    } catch (cause) {
+      throw new TokenError(
+        `The DPoP proof did not verify: ${cause instanceof Error ? cause.message : String(cause)}`,
+        'invalid_dpop_proof',
+      );
+    }
+
+    const presented = await thumbprintOf(header.jwk as Record<string, unknown>);
+    if (presented !== bound) {
+      throw new TokenError(
+        'The DPoP proof was signed with a different key from the one this token is bound to.',
+        'dpop_key_mismatch',
+      );
+    }
+
+    // Bound to this request, so a proof captured from one cannot be replayed against
+    // another endpoint or method.
+    const url = new URL(request.url);
+    url.search = '';
+    url.hash = '';
+    if (payload.htm !== request.method.toUpperCase()) {
+      throw new TokenError('The DPoP proof was made for a different method.', 'invalid_dpop_proof');
+    }
+    if (payload.htu !== url.toString()) {
+      throw new TokenError('The DPoP proof was made for a different URL.', 'invalid_dpop_proof');
+    }
+
+    // And to this token, so one captured beside a different token is useless.
+    if (typeof payload.ath === 'string') {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+      let binary = '';
+      for (const byte of new Uint8Array(digest)) binary += String.fromCharCode(byte);
+      const expected = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      if (payload.ath !== expected) {
+        throw new TokenError('The DPoP proof was made for a different token.', 'invalid_dpop_proof');
+      }
+    }
+
+    // Fresh, so a captured proof is worth only the skew allowance.
+    const age = Math.abs(Date.now() / 1000 - (payload.iat as number));
+    if (!Number.isFinite(age) || age > (options.dpopProofAgeSec ?? 10)) {
+      throw new TokenError('The DPoP proof is too old to accept.', 'invalid_dpop_proof');
+    }
+  };
+
+  const verify = async (token: string, request?: Request): Promise<TokenClaims> => {
     if (!token) throw new TokenError('No token to verify.', 'no_token');
 
     const jose = await loadJose();
@@ -253,6 +347,15 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
       }
     }
 
+    if (options.dpop) {
+      if (!request) {
+        throw new Error(
+          '[fluixi/oauth2] `dpop: true` needs the request to read its proof. Use `verify.fromRequest(request)` rather than verifying a bare token.',
+        );
+      }
+      await checkProof(payload, token, request);
+    }
+
     if (options.require) {
       const verdict = options.require(payload);
       if (verdict !== true) {
@@ -274,7 +377,9 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
     if (!token) {
       throw new TokenError('The request carried no bearer token.', 'no_token');
     }
-    return verify(token);
+    // The request goes through: a DPoP proof lives in its headers, and checking binding
+    // without it is not possible.
+    return verify(token, request);
   };
 
   return verifier;

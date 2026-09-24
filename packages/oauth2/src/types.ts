@@ -97,6 +97,15 @@ export interface AuthClient {
 
   /** Where a login should return to, recorded when the flow started. */
   consumeReturnTo?(): string | null;
+
+  /**
+   * A DPoP proof for a request this client's token will be sent with, or null when the
+   * client does not bind its tokens.
+   *
+   * A caller sending the token itself needs this: the token alone is refused by a service
+   * that checks binding, and only the client holds the key.
+   */
+  dpopProof?(method: string, url: string): Promise<string | null>;
 }
 
 /** Endpoints, either given directly or discovered. */
@@ -199,6 +208,22 @@ export interface BrowserConfig extends BaseConfig {
    * logins do not overwrite each other.
    */
   storageKey?: string;
+  /**
+   * Bind tokens to a key this client holds, per RFC 9449.
+   *
+   * A bearer token is usable by anyone holding a copy. A bound one is not: the provider
+   * records the key's thumbprint in the token and a service checks each request's proof
+   * against it. Some providers require this, and Okta turns it on by default for a new
+   * client.
+   *
+   * The key is generated per client and its private half never leaves the process. It is
+   * not stored, so a reload makes a new one and the session is rebuilt from the refresh
+   * token: a page cannot keep a private key safely, and pretending otherwise would be
+   * worse than paying that cost.
+   */
+  dpop?: boolean;
+  /** Signing algorithm for DPoP proofs. Default `ES256`, which every provider lists. */
+  dpopAlgorithm?: string;
   /**
    * How the token endpoint is told which client is calling.
    *

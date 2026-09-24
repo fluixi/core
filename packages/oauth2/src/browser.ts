@@ -19,6 +19,12 @@ import {
   timingSafeEqual,
 } from './pkce.js';
 import { applyClientAuth } from './client-auth.js';
+import {
+  createDpopKey,
+  nonceFrom,
+  proofFor,
+  type DpopKey,
+} from './dpop.js';
 import { discover } from './discovery.js';
 import { safeReturnTo } from './return-to.js';
 import { OAuthError } from './types.js';
@@ -74,6 +80,23 @@ export function createBrowserClient(
 
   /** In memory only. A reload restores from the refresh token instead. */
   let access: Tokens | null = null;
+
+  /**
+   * The key this client binds its tokens to, built once on first use.
+   *
+   * Never stored. A reload makes a new key, which means the old token is no longer usable
+   * and the session is rebuilt from the refresh token, itself bound to the new key by the
+   * refresh. That is the cost of holding a key a page cannot persist safely.
+   */
+  let dpopKey: DpopKey | null = null;
+  /** The nonce a provider last demanded, reused until it asks for another. */
+  let dpopNonce: string | null = null;
+
+  const keyForDpop = async (): Promise<DpopKey | null> => {
+    if (!config.dpop) return null;
+    dpopKey ??= await createDpopKey(config.dpopAlgorithm);
+    return dpopKey;
+  };
   let endpoints: Endpoints | null = config.endpoints ?? null;
 
   async function resolveEndpoints(): Promise<Endpoints> {
@@ -91,6 +114,8 @@ export function createBrowserClient(
   /** The token endpoint speaks form encoding, not JSON. */
   async function exchange(body: Record<string, string>): Promise<Tokens> {
     const { token } = await resolveEndpoints();
+    const key = await keyForDpop();
+
     const headers: Record<string, string> = {
       'content-type': 'application/x-www-form-urlencoded',
     };
@@ -106,7 +131,32 @@ export function createBrowserClient(
       form,
     );
 
-    const response = await fetcher(token, { method: 'POST', headers, body: form.toString() });
+    const send = async (): Promise<Response> => {
+      if (key) {
+        // A fresh proof per attempt: `jti` and `iat` make one single use, so a retry
+        // cannot reuse the last.
+        headers.dpop = await proofFor(key, {
+          method: 'POST',
+          url: token,
+          nonce: dpopNonce ?? undefined,
+        });
+      }
+      return fetcher(token, { method: 'POST', headers, body: form.toString() });
+    };
+
+    let response = await send();
+
+    // A provider may refuse the first proof and supply a nonce to include in the next.
+    // Once, deliberately: a second refusal is a real one, and retrying forever on a
+    // provider that always asks would be a loop.
+    if (key && !response.ok) {
+      const offered = nonceFrom(response);
+      if (offered && offered !== dpopNonce) {
+        dpopNonce = offered;
+        response = await send();
+      }
+    }
+    if (key) dpopNonce = nonceFrom(response) ?? dpopNonce;
 
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
@@ -117,9 +167,11 @@ export function createBrowserClient(
       // A provider asking for proof of possession says so in a word that means nothing on
       // its own. Okta turns it on by default for new applications, so this is met before
       // anything else is wrong.
+      // A provider asking for proof of possession says so in a word that means nothing on
+      // its own, and the answer is a setting rather than a fix.
       const hint =
-        code === 'invalid_dpop_proof' || code === 'use_dpop_nonce'
-          ? ' This provider requires DPoP (RFC 9449), which binds a token to a key the client holds and proves possession on every request. It is not implemented here: turn the requirement off for this client, or use a provider that does not demand it.'
+        (code === 'invalid_dpop_proof' || code === 'use_dpop_nonce') && !config.dpop
+          ? ' This provider requires DPoP (RFC 9449), which binds a token to a key this client holds. Set `dpop: true` on the config.'
           : '';
 
       throw new OAuthError(
@@ -275,13 +327,28 @@ export function createBrowserClient(
         endpoint = userinfo;
       }
 
+      const key = await keyForDpop();
+      const headers: Record<string, string> = {
+        // A bound token is presented with the DPoP scheme, not Bearer: a service checking
+        // binding refuses `Bearer` outright, since that is the word for an unbound token.
+        authorization: `${key ? 'DPoP' : 'Bearer'} ${bearer}`,
+        accept: 'application/json',
+        ...custom?.headers,
+      };
+      if (key) {
+        headers.dpop = await proofFor(key, {
+          method: custom?.method ?? 'GET',
+          url: endpoint,
+          // `ath` binds the proof to this token, so one captured beside it cannot be
+          // reused with another.
+          accessToken: bearer,
+          nonce: dpopNonce ?? undefined,
+        });
+      }
+
       const response = await fetcher(endpoint, {
         method: custom?.method ?? 'GET',
-        headers: {
-          authorization: `Bearer ${bearer}`,
-          accept: 'application/json',
-          ...custom?.headers,
-        },
+        headers,
         ...(custom?.credentials ? { credentials: custom.credentials } : {}),
       });
 
@@ -400,6 +467,23 @@ export function createBrowserClient(
       } catch {
         return null;
       }
+    },
+
+    /**
+     * A proof for a request a caller will send with this client's token.
+     *
+     * Null when the client does not bind its tokens, so a caller can send `Bearer`
+     * unchanged. Only this client holds the key, so nothing else can produce one.
+     */
+    async dpopProof(method: string, url: string): Promise<string | null> {
+      const key = await keyForDpop();
+      if (!key) return null;
+      return proofFor(key, {
+        method,
+        url,
+        accessToken: access?.accessToken,
+        nonce: dpopNonce ?? undefined,
+      });
     },
 
     consumeReturnTo(): string | null {

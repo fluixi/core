@@ -37,6 +37,17 @@
  * const auth = inject(AuthServiceToken);
  * ```
  *
+ * ## Binding a token to a key
+ *
+ * `dpop: true` stops a token being usable by whoever holds a copy. The provider records
+ * the key's thumbprint in the token, this client signs a proof for every request, and a
+ * service checks the two match. Okta turns the requirement on by default for a new client,
+ * so this is sometimes not optional.
+ *
+ * Both halves matter. A service that receives bound tokens must set `dpop: true` on its
+ * verifier as well, or it accepts them as though they were bearer tokens and the binding
+ * protects nothing.
+ *
  * ## Where trust comes from
  *
  * This client does not verify token signatures, and that is deliberate rather than
@@ -91,6 +102,9 @@ export {
   createStateValue,
   expiryFromJwt,
 } from './pkce.js';
+
+export { createDpopKey, proofFor, thumbprintOf, boundKeyOf } from './dpop.js';
+export type { DpopKey, ProofOptions } from './dpop.js';
 
 export { safeReturnTo } from './return-to.js';
 export type { ReturnToOptions } from './return-to.js';
