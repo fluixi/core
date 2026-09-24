@@ -48,6 +48,8 @@ export interface Provider {
   };
   /** Refuses a token whose audience excludes the asking client, or names none at all. */
   authorizedParty?: string;
+  /** The confidential client a server-held session uses, when it differs. */
+  serverClientId?: string;
   /** What the run is expected to show, so a surprise stands out from a known limit. */
   notes: ProviderNote[];
 }
@@ -58,12 +60,15 @@ export interface Provider {
  * A placeholder is shown in the interface rather than followed, so the app says what is
  * missing instead of handing the browser to a provider that will refuse it.
  */
-export const PROVIDERS: Record<ProviderId, Provider> = {
+export const _PROVIDERS: Record<ProviderId, Provider> = {
   keycloak: {
     id: 'keycloak',
     label: 'Keycloak',
     issuer: 'http://localhost:8080/realms/adafri',
     clientId: 'adafri-admin',
+    // A server-held session authenticates with a secret, which a public client has none
+    // of, so that mode uses the confidential client registered alongside it.
+    serverClientId: 'adafri-admin-server',
     modes: ['browser', 'server'],
     scopes: ['openid', 'profile', 'email'],
     authorizedParty: 'adafri-admin',
@@ -147,6 +152,53 @@ export function needsSetup(provider: Provider): boolean {
   return provider.issuer.includes('YOUR_') || provider.clientId.includes('YOUR_');
 }
 
+export function resolveClientId(provider: Provider): string {
+  if(!provider.clientId.includes('YOUR_')) return provider.clientId;
+  const clientId = import.meta.env[`VITE_${provider.id.toUpperCase()}_CLIENT_ID`] ?? provider.clientId;
+  return clientId;
+}
+export function resolveClientSecret(provider: Provider): string {
+  const secretName = `${provider.id.toUpperCase()}_CLIENT_SECRET`;
+  const clientSecret = import.meta.env[secretName]
+  return clientSecret;
+}
+
+export function resolveClientTenant(provider: Provider): string {
+  const tenantName = `VITE_${provider.id.toUpperCase()}_TENANT`;
+  const clientTenant = import.meta.env[tenantName]
+  if(!clientTenant) return provider.issuer;
+  return clientTenant;
+}
+
+export function resolveClientDomain(provider: Provider): string {
+  const domainName = `${provider.id.toUpperCase()}_DOMAIN`;
+  const clientDomain = import.meta.env[domainName]
+  return clientDomain;
+}
+
+export function resolveBaseConfig(provider: Provider): {issuer: string, clientId: string, clientSecret: string, tenant?: string, domain?: string} {
+  const clientId = resolveClientId(provider);
+  const clientSecret = resolveClientSecret(provider);
+  const issuer = resolveClientTenant(provider);
+  const domain = resolveClientDomain(provider);
+  return { issuer, clientId, clientSecret, domain };
+}
+
+export function getProviders(): Record<ProviderId, Provider> {
+  const providers: Record<ProviderId, Provider> = { ..._PROVIDERS };
+  return Object.values(providers).map((p) => {
+    const config = resolveBaseConfig(p);
+    console.log('config is', config)
+    return { ...p, ...config };
+
+  }).reduce((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {} as Record<ProviderId, Provider>);
+}
+
+export const PROVIDERS = getProviders();
+
 /** The client config for a provider in a mode, as `createAuthService` wants it. */
 export function configFor(
   provider: Provider,
@@ -163,11 +215,13 @@ export function configFor(
     };
   }
 
+  const clientId = resolveClientId(provider);
+  console.log('client is', clientId)
   return {
     mode: 'browser',
     // Endpoints win over the issuer where a provider will not let a page read discovery.
     ...(provider.endpoints ? { endpoints: provider.endpoints } : { issuer: provider.issuer }),
-    clientId: provider.clientId,
+    clientId,
     redirectUri: `${appUrl}/callback`,
     postLogoutRedirectUri: `${appUrl}/?provider=${provider.id}`,
     scopes: provider.scopes,

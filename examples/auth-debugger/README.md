@@ -97,3 +97,27 @@ It reports what a provider sent. It does not verify anything: the tokens shown a
 without checking a signature, deliberately, so a token this application would refuse is
 still visible. Verification belongs at the service receiving a token, through
 `@fluixi/oauth2/verify`.
+
+## Registering redirect URIs
+
+Each mode uses a different path, and a provider accepts only what is registered with it.
+For this app on port 3100:
+
+```
+http://localhost:3100/callback                      browser mode, all providers
+http://localhost:3100/auth/<provider>/callback      server mode, per provider
+```
+
+So Keycloak's client needs `http://localhost:3100/auth/keycloak/callback` before server
+mode can complete, and a missing entry shows as `redirect_uri is invalid` from the
+provider rather than as anything this app can report.
+
+## Reading the environment
+
+Server mode reads its secrets when the first request arrives rather than when the module
+loads: the framework copies `.env` into `process.env` as it starts, and a module-level read
+happens before that. A value present in the file would otherwise read as absent and
+nothing would mount.
+
+`/api/modes` reports which providers are mounted and why the others are not, so a missing
+variable is named instead of looking like a broken route.

@@ -30,6 +30,8 @@ export default function Debugger() {
 
   const log = signal<LogLine[]>([]);
   const capabilities = signal<Capabilities | null>(null);
+  /** Providers whose server-held session is actually mounted, which only the server knows. */
+  const serverReady = signal<string[] | null>(null);
   const capabilityError = signal<string | null>(null);
   /** Re-read every second so an expiry reads as a countdown rather than a timestamp. */
   const now = signal(Date.now());
@@ -42,6 +44,11 @@ export default function Debugger() {
 
   if (typeof window !== 'undefined') {
     setInterval(() => now.set(Date.now()), 1000);
+
+    void fetch('/api/modes')
+      .then((r) => r.json())
+      .then((body) => serverReady.set(body.server ?? []))
+      .catch(() => serverReady.set([]));
 
     // The document says what a provider can do, so the interface can offer only that.
     createEffect(() => {
@@ -108,15 +115,28 @@ export default function Debugger() {
         <h2>Where the tokens live</h2>
         <div class="row">
           <For each={() => provider().modes}>
-            {(m) => (
-              <button
-                type="button"
-                class={() => (selection().mode === m ? 'chip on' : 'chip')}
-                onClick={() => select({ mode: m })}
-              >
-                {m === 'browser' ? 'this browser' : "this app's server"}
-              </button>
-            )}
+            {(m) => {
+              const ready = () =>
+                m === 'browser' || (serverReady() ?? []).includes(provider().id);
+              return (
+                <button
+                  type="button"
+                  class={() => (selection().mode === m ? 'chip on' : 'chip')}
+                  disabled={() => !ready()}
+                  title={() =>
+                    ready()
+                      ? ''
+                      : `Set SESSION_SECRET and ${provider().id.toUpperCase()}_CLIENT_SECRET to enable this`
+                  }
+                  onClick={() => select({ mode: m })}
+                >
+                  {m === 'browser' ? 'this browser' : "this app's server"}
+                  <Show when={() => !ready()}>
+                    <span class="muted">{' '}not configured</span>
+                  </Show>
+                </button>
+              );
+            }}
           </For>
           <Show when={() => provider().modes.length === 1}>
             <small class="muted">
