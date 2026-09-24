@@ -17,13 +17,31 @@ import {
 import { needsSetup, PROVIDERS, type ProviderId } from '../lib/providers.js';
 import { currentService, restoreSelection, select, selection } from '../lib/session.js';
 
+/**
+ * How an attempt ended.
+ *
+ * Three states rather than two, because a refusal is neither. A provider declining for want
+ * of configuration did nothing wrong and did nothing at all, and colouring it as success
+ * says the opposite of what happened.
+ */
+type Outcome = 'ok' | 'refused' | 'failed';
+
 /** One line of what happened, so a failure is readable without the console. */
 interface LogLine {
   at: string;
   what: string;
   detail: string;
-  ok: boolean;
+  outcome: Outcome;
 }
+
+/** What an attempt may report instead of a bare message. */
+type Reported = string | { outcome: Outcome; detail: string };
+
+const CLASS_FOR: Record<Outcome, string> = {
+  ok: 'ok',
+  refused: 'warn',
+  failed: 'bad',
+};
 
 export default function Debugger() {
   seo({ title: 'Auth flow debugger', robots: 'noindex' });
@@ -36,9 +54,9 @@ export default function Debugger() {
   /** Re-read every second so an expiry reads as a countdown rather than a timestamp. */
   const now = signal(Date.now());
 
-  const note = (what: string, detail: string, ok = true) =>
+  const note = (what: string, detail: string, outcome: Outcome = 'ok') =>
     log.set([
-      { at: new Date().toLocaleTimeString(), what, detail, ok },
+      { at: new Date().toLocaleTimeString(), what, detail, outcome },
       ...log().slice(0, 29),
     ]);
 
@@ -78,12 +96,17 @@ export default function Debugger() {
   const provider = () => PROVIDERS[selection().provider];
   const service = () => currentService();
 
-  const act = async (what: string, run: () => Promise<unknown>) => {
+  const act = async (what: string, run: () => Promise<Reported | unknown>) => {
     try {
       const result = await run();
-      note(what, typeof result === 'string' ? result : 'done', true);
+      if (result && typeof result === 'object' && 'outcome' in result) {
+        const reported = result as { outcome: Outcome; detail: string };
+        note(what, reported.detail, reported.outcome);
+        return;
+      }
+      note(what, typeof result === 'string' ? result : 'done', 'ok');
     } catch (cause) {
-      note(what, cause instanceof Error ? cause.message : String(cause), false);
+      note(what, cause instanceof Error ? cause.message : String(cause), 'failed');
     }
   };
 
@@ -210,7 +233,13 @@ export default function Debugger() {
                       }),
                     });
                     const body = await response.json();
-                    return response.ok ? JSON.stringify(body).slice(0, 160) : `refused: ${JSON.stringify(body)}`;
+                    if (!response.ok) {
+                      // Not an exception: the route answered, and its answer is that it
+                      // could not ask. The reason is the provider's or this app's own, so
+                      // it passes through whole.
+                      return { outcome: 'refused' as const, detail: JSON.stringify(body) };
+                    }
+                    return JSON.stringify(body);
                   })
                 }
               >
@@ -240,8 +269,14 @@ export default function Debugger() {
                       .refresh()
                       .then(() => true)
                       .catch(() => false);
+                    // A revocation the provider accepted and did not act on is the one
+                    // outcome worth shouting about: the caller believes the token is dead.
                     return stillWorks
-                      ? 'the provider accepted the revocation but a refresh still worked'
+                      ? {
+                          outcome: 'failed' as const,
+                          detail:
+                            'the provider accepted the revocation but a refresh still worked, so the token is still live',
+                        }
                       : 'revoked, and a refresh is now refused';
                   })
                 }
@@ -388,7 +423,7 @@ export default function Debugger() {
           <ul>
             <For each={log}>
               {(line) => (
-                <li class={line.ok ? 'ok' : 'bad'}>
+                <li class={CLASS_FOR[line.outcome]}>
                   <span class="muted">{line.at}</span> <strong>{line.what}</strong>{' '}
                   <span>{line.detail}</span>
                 </li>
