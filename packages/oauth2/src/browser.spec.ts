@@ -536,7 +536,7 @@ describe('retiring a token at the provider', () => {
     expect(revocations()).toHaveLength(1);
   });
 
-  it('does nothing when the provider publishes no revocation endpoint', async () => {
+  it('says so when the provider publishes no revocation endpoint', async () => {
     const { fetcher, calls } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });
     const client = createBrowserClient(config(), fetcher);
     await client.login();
@@ -545,15 +545,60 @@ describe('retiring a token at the provider', () => {
       state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
     });
 
-    const before = calls.length;
-    await expect(client.revoke!()).resolves.toBeUndefined();
-    expect(calls.length).toBe(before);
+    // Returning quietly made a revocation that did nothing look like one that worked.
+    await expect(client.revoke!()).rejects.toThrow(/no revocation endpoint/);
   });
 
-  it('does nothing when there is no token to retire', async () => {
+  it('says so when there is no token to retire', async () => {
     const { client, revocations } = withRevocation();
-    await expect(client.revoke!()).resolves.toBeUndefined();
+    await expect(client.revoke!()).rejects.toThrow(/No refresh token to revoke/);
     expect(revocations()).toHaveLength(0);
+  });
+
+  it('reports a refusal rather than swallowing it', async () => {
+    const calls: string[] = [];
+    const fetcher = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('oauth-token')) {
+        return new Response(JSON.stringify({ access_token: 'at', refresh_token: 'rt' }));
+      }
+      return new Response(JSON.stringify({ error: 'invalid_token' }), { status: 400 });
+    }) as unknown as typeof fetch;
+
+    const client = createBrowserClient(
+      config({ endpoints: { ...ENDPOINTS, revocation: REVOKE } as never }),
+      fetcher,
+    );
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+
+    await expect(client.revoke!()).rejects.toThrow(/Revocation was refused: invalid_token/);
+  });
+
+  it('forgets the refresh token once it is revoked', async () => {
+    const { client } = await signedIn();
+    expect(sessionStorage.getItem('fx.oauth2.admin-spa.refresh')).toBe('rt');
+
+    await client.revoke!();
+    // Keeping a token the provider has retired would make every later refresh fail.
+    expect(sessionStorage.getItem('fx.oauth2.admin-spa.refresh')).toBeNull();
+  });
+
+  it('still signs out when revocation is impossible', async () => {
+    const { fetcher } = server({ 'oauth-token': { access_token: 'at', refresh_token: 'rt' } });
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    await client.handleCallback({
+      code: 'c',
+      state: sessionStorage.getItem('fx.oauth2.admin-spa.state')!,
+    });
+
+    // A provider that cannot revoke must not stop someone signing out.
+    await expect(client.logout()).resolves.toBeUndefined();
   });
 });
 

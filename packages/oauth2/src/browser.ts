@@ -408,29 +408,64 @@ export function createBrowserClient(
         (hint === 'refresh_token'
           ? (access?.refreshToken ?? durable()?.getItem(KEY.refresh) ?? undefined)
           : access?.accessToken);
-      if (!target) return;
 
-      const { revocation } = await resolveEndpoints().catch(() => ({ revocation: undefined }));
-      if (!revocation) return;
+      // Each of these used to return quietly, which made a revocation that did nothing
+      // indistinguishable from one that worked. A caller cannot act on silence.
+      if (!target) {
+        throw new OAuthError(
+          `No ${hint.replace('_', ' ')} to revoke. A refresh token is only issued when \`offline_access\` is among the scopes.`,
+          'nothing_to_revoke',
+        );
+      }
 
-      await fetcher(revocation, {
+      const { revocation } = await resolveEndpoints();
+      if (!revocation) {
+        throw new OAuthError(
+          'This provider publishes no revocation endpoint, so a token cannot be retired before it expires.',
+          'no_revocation_endpoint',
+        );
+      }
+
+      const headers: Record<string, string> = {
+        'content-type': 'application/x-www-form-urlencoded',
+      };
+      const form = new URLSearchParams({ token: target, token_type_hint: hint });
+      await applyClientAuth(
+        { clientId: config.clientId, method: config.tokenAuthMethod ?? 'none', clientSecret: '' },
+        revocation,
+        headers,
+        form,
+      );
+
+      const response = await fetcher(revocation, {
         method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          token: target,
-          token_type_hint: hint,
-          client_id: config.clientId,
-        }).toString(),
-        // RFC 7009 says a provider answers 200 whether or not it knew the token, so
-        // there is nothing to branch on and a failure here is not worth propagating.
-      }).catch(() => undefined);
+        headers,
+        body: form.toString(),
+      });
+
+      // RFC 7009 says a provider answers 200 whether or not it knew the token, so anything
+      // else is a refusal worth reporting rather than swallowing.
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+        throw new OAuthError(
+          `Revocation was refused: ${[payload.error, payload.error_description].filter(Boolean).join(': ') || response.status}`,
+          String(payload.error ?? 'revocation_failed'),
+        );
+      }
+
+      // Gone as far as this client is concerned, whatever it decides to do next.
+      if (hint === 'refresh_token') {
+        durable()?.removeItem(KEY.refresh);
+        if (access) access = { ...access, refreshToken: undefined };
+      }
     },
 
     async logout(options: { returnTo?: string } = {}): Promise<void> {
       const idToken = access?.idToken;
-      // Retire the refresh token before dropping it, or a copy stays usable for its
-      // whole lifetime while this browser believes it signed out.
-      await this.revoke?.();
+      // Retire the refresh token before dropping it, or a copy stays usable for its whole
+      // lifetime while this browser believes it signed out. A provider that cannot revoke
+      // must not stop someone signing out, so this failure is the one place it is ignored.
+      await this.revoke?.().catch(() => undefined);
       access = null;
       durable()?.removeItem(KEY.refresh);
 

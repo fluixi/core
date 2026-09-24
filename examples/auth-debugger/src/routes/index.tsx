@@ -231,9 +231,18 @@ export default function Debugger() {
                 onClick={() =>
                   void act('revoke the refresh token', async () => {
                     const client = service().client;
-                    if (!client.revoke) return 'this client cannot revoke';
+                    if (!client.revoke) {
+                      throw new Error('This client has no revoke: server mode serves it from /auth/<provider>/revoke.');
+                    }
                     await client.revoke();
-                    return 'revoked; a refresh should now fail';
+                    // Proved rather than asserted: a revoked token should now be refused.
+                    const stillWorks = await service()
+                      .refresh()
+                      .then(() => true)
+                      .catch(() => false);
+                    return stillWorks
+                      ? 'the provider accepted the revocation but a refresh still worked'
+                      : 'revoked, and a refresh is now refused';
                   })
                 }
               >
