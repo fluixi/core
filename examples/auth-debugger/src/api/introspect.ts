@@ -18,13 +18,18 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'give a known provider and a token' }, { status: 400 });
   }
 
-  const clientId = process.env[`${provider!.toUpperCase()}_INTROSPECT_CLIENT_ID`];
-  const clientSecret = process.env[`${provider!.toUpperCase()}_INTROSPECT_SECRET`];
+  const upper = provider!.toUpperCase();
+  // The provider's own client secret serves, since introspection only needs credentials
+  // that authenticate the caller. A separate pair is for a provider that wants a
+  // different client to ask.
+  const clientId = process.env[`${upper}_INTROSPECT_CLIENT_ID`] ?? found.serverClientId ?? found.clientId;
+  const clientSecret =
+    process.env[`${upper}_INTROSPECT_SECRET`] ?? process.env[`${upper}_CLIENT_SECRET`];
   if (!clientId || !clientSecret) {
     return Response.json(
       {
         error: 'not configured',
-        detail: `set ${provider!.toUpperCase()}_INTROSPECT_CLIENT_ID and _SECRET to introspect with ${found.label}`,
+        detail: `Introspection authenticates its caller, so ${found.label} needs a secret. Set ${upper}_CLIENT_SECRET, or ${upper}_INTROSPECT_CLIENT_ID and ${upper}_INTROSPECT_SECRET for a different client.`,
       },
       { status: 501 },
     );

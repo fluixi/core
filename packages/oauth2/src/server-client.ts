@@ -93,6 +93,17 @@ export function createServerClient(
       return custom?.map ? ((await custom.map(raw, COOKIE_SESSION)) as U) : (raw as U);
     },
 
+    /**
+     * Retire the session's tokens, which only the server can do here.
+     *
+     * The browser holds a cookie and no token, so it has nothing to send to a revocation
+     * endpoint. This asks the server's own route, which opens the cookie and revokes what
+     * is inside.
+     */
+    async revoke(_token?: string, hint: 'access_token' | 'refresh_token' = 'refresh_token'): Promise<void> {
+      await call(`/revoke?hint=${hint}`, { method: 'POST' }).catch(() => undefined);
+    },
+
     async logout(options: { returnTo?: string } = {}): Promise<void> {
       await call('/logout', { method: 'POST' }).catch(() => undefined);
       const target = options.returnTo

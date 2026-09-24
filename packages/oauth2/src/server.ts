@@ -303,9 +303,51 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       return json(config.mapUser ? config.mapUser(claims, current.accessToken) : claims);
     }
 
+    if (route === '/revoke') {
+      const current = await session();
+      const hint = url.searchParams.get('hint') === 'access_token' ? 'access_token' : 'refresh_token';
+      const target = hint === 'access_token' ? current?.accessToken : current?.refreshToken;
+      if (!target) return json({ error: 'no_session' }, 401);
+
+      const { revocation } = await resolve().catch(() => ({ revocation: undefined }));
+      // A provider with no revocation endpoint cannot do this, and saying so beats a
+      // silent success that leaves the token live.
+      if (!revocation) return json({ error: 'no_revocation_endpoint' }, 501);
+
+      const headers: Record<string, string> = {
+        'content-type': 'application/x-www-form-urlencoded',
+      };
+      const form = new URLSearchParams({ token: target, token_type_hint: hint });
+      await applyClientAuth(clientAuth, revocation, headers, form);
+
+      // RFC 7009 answers 200 whether or not the provider knew the token, so there is
+      // nothing to branch on.
+      await fetch(revocation, { method: 'POST', headers, body: form.toString() }).catch(
+        () => undefined,
+      );
+      return json({ ok: true, revoked: hint });
+    }
+
     if (route === '/logout') {
       const current = await session();
       const { endSession } = await resolve().catch(() => ({ endSession: undefined }));
+      // Retire the refresh token before dropping the cookie, or a copy stays usable for
+      // its whole lifetime while the browser believes it signed out.
+      const { revocation } = await resolve().catch(() => ({ revocation: undefined }));
+      if (revocation && current?.refreshToken) {
+        const headers: Record<string, string> = {
+          'content-type': 'application/x-www-form-urlencoded',
+        };
+        const form = new URLSearchParams({
+          token: current.refreshToken,
+          token_type_hint: 'refresh_token',
+        });
+        await applyClientAuth(clientAuth, revocation, headers, form);
+        await fetch(revocation, { method: 'POST', headers, body: form.toString() }).catch(
+          () => undefined,
+        );
+      }
+
       // Max-Age=0 is what removes it. Clearing the value alone leaves a cookie behind.
       const cleared = cookie.clear();
 

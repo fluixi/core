@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { createSessionCookie } from '@fluixi/session/server';
-import { sessionLocals, type OAuthRoutesConfig } from './server.js';
+import { oauthRoutes, sessionLocals, type OAuthRoutesConfig } from './server.js';
 import { clearDiscoveryCache } from './discovery.js';
 
 const SECRET = 'a'.repeat(32);
@@ -165,5 +165,105 @@ describe('how often the provider is asked', () => {
     // Caching the refusal would keep someone signed out after the provider recovered.
     expect(calls.count).toBe(2);
     expect(auth.user).toEqual({ sub: 'u1' });
+  });
+});
+
+describe('retiring a token from a server-held session', () => {
+  const REVOKE = 'https://idp.test/revoke';
+
+  /** A provider with a revocation endpoint, recording what it was sent. */
+  function idp(withRevocation = true) {
+    const calls: { url: string; body: string }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, body: String(init?.body ?? '') });
+      return new Response('{}', { status: 200 });
+    }));
+    return {
+      calls,
+      config: config({
+        endpoints: withRevocation ? { ...ENDPOINTS, revocation: REVOKE } : ENDPOINTS,
+        clientSecret: 'shh',
+      } as never),
+      revocations: () => calls.filter((c) => c.url === REVOKE),
+    };
+  }
+
+  const post = (path: string, cookie: string) =>
+    new Request(`https://app.test${path}`, {
+      method: 'POST',
+      headers: { cookie: cookie.split(';')[0] },
+    });
+
+  it('revokes the refresh token the cookie holds', async () => {
+    const { config: cfg, revocations } = idp();
+    const cookie = await createSessionCookie({ secret: SECRET }).write({
+      accessToken: 'at',
+      refreshToken: 'rt',
+    });
+
+    const response = await oauthRoutes(cfg)(post('/auth/revoke', cookie), async () =>
+      new Response(null, { status: 404 }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = new URLSearchParams(revocations()[0].body);
+    // The refresh token, not the access token: one expires on its own in minutes.
+    expect(body.get('token')).toBe('rt');
+    expect(body.get('token_type_hint')).toBe('refresh_token');
+  });
+
+  it('revokes the access token when asked for that one', async () => {
+    const { config: cfg, revocations } = idp();
+    const cookie = await createSessionCookie({ secret: SECRET }).write({
+      accessToken: 'at',
+      refreshToken: 'rt',
+    });
+
+    await oauthRoutes(cfg)(post('/auth/revoke?hint=access_token', cookie), async () =>
+      new Response(null, { status: 404 }),
+    );
+    expect(new URLSearchParams(revocations()[0].body).get('token')).toBe('at');
+  });
+
+  it('refuses without a session rather than reporting success', async () => {
+    const { config: cfg, revocations } = idp();
+    const response = await oauthRoutes(cfg)(
+      new Request('https://app.test/auth/revoke', { method: 'POST' }),
+      async () => new Response(null, { status: 404 }),
+    );
+    expect(response.status).toBe(401);
+    expect(revocations()).toHaveLength(0);
+  });
+
+  it('says so when the provider publishes no revocation endpoint', async () => {
+    const { config: cfg } = idp(false);
+    const cookie = await createSessionCookie({ secret: SECRET }).write({
+      accessToken: 'at',
+      refreshToken: 'rt',
+    });
+
+    const response = await oauthRoutes(cfg)(post('/auth/revoke', cookie), async () =>
+      new Response(null, { status: 404 }),
+    );
+    // A silent success would leave the token live while the caller believed otherwise.
+    expect(response.status).toBe(501);
+    expect((await response.json()).error).toBe('no_revocation_endpoint');
+  });
+
+  it('revokes on the way out of a logout', async () => {
+    const { config: cfg, revocations } = idp();
+    const cookie = await createSessionCookie({ secret: SECRET }).write({
+      accessToken: 'at',
+      refreshToken: 'rt',
+    });
+
+    const response = await oauthRoutes(cfg)(post('/auth/logout', cookie), async () =>
+      new Response(null, { status: 404 }),
+    );
+
+    // Dropping the cookie without revoking leaves a copy usable for its whole lifetime.
+    expect(revocations()).toHaveLength(1);
+    expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
   });
 });

@@ -187,7 +187,14 @@ export default function Debugger() {
               Refresh
             </button>
 
-            <Show when={() => !!capabilities()?.introspection}>
+            <Show
+              when={() => !!capabilities()?.introspection}
+              fallback={
+                <button type="button" disabled title="This provider publishes no introspection endpoint">
+                  Introspect <span class="muted">unavailable</span>
+                </button>
+              }
+            >
               <button
                 type="button"
                 onClick={() =>
@@ -211,10 +218,24 @@ export default function Debugger() {
               </button>
             </Show>
 
-            <Show when={() => !!capabilities()?.revocation}>
+            <Show
+              when={() => !!capabilities()?.revocation}
+              fallback={
+                <button type="button" disabled title="This provider publishes no revocation endpoint">
+                  Revoke <span class="muted">unavailable</span>
+                </button>
+              }
+            >
               <button
                 type="button"
-                onClick={() => void act('revoke the refresh token', () => service().client.revoke?.() ?? Promise.resolve())}
+                onClick={() =>
+                  void act('revoke the refresh token', async () => {
+                    const client = service().client;
+                    if (!client.revoke) return 'this client cannot revoke';
+                    await client.revoke();
+                    return 'revoked; a refresh should now fail';
+                  })
+                }
               >
                 Revoke
               </button>
