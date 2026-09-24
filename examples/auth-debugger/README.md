@@ -91,6 +91,17 @@ SESSION_SECRET=at-least-32-characters
 The routes are mounted per provider at `/auth/<provider>`, so more than one can be
 configured at once.
 
+## Reading the browser without breaking hydration
+
+`location` and the stored selection exist only in a browser. Reading either while
+rendering makes the server produce different markup from the client, hydration finds the
+mismatch and keeps the server's version, and the page then responds to nothing: the
+provider reads as the default and the callback parameters as absent.
+
+So both pages render server-safe placeholders and adopt the real values in `onMount`. The
+selection signal starts at its default rather than at what is stored, and
+`restoreSelection()` adopts the stored value once mounted.
+
 ## What this is not
 
 It reports what a provider sent. It does not verify anything: the tokens shown are decoded

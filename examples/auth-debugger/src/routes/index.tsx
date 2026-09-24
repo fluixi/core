@@ -15,7 +15,7 @@ import {
   type Capabilities,
 } from '../lib/inspect.js';
 import { needsSetup, PROVIDERS, type ProviderId } from '../lib/providers.js';
-import { currentService, select, selection } from '../lib/session.js';
+import { currentService, restoreSelection, select, selection } from '../lib/session.js';
 
 /** One line of what happened, so a failure is readable without the console. */
 interface LogLine {
@@ -43,6 +43,10 @@ export default function Debugger() {
     ]);
 
   if (typeof window !== 'undefined') {
+    // What was selected before a redirect, adopted now rather than while rendering: the
+    // store is a browser thing, and reading it during render makes the two sides disagree.
+    restoreSelection();
+
     setInterval(() => now.set(Date.now()), 1000);
 
     void fetch('/api/modes')

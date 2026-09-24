@@ -50,8 +50,25 @@ export function writeSelection(selection: Selection): void {
   store()?.setItem(SELECTION_KEY, JSON.stringify(selection));
 }
 
-/** The current selection, reactive, so the page follows a change without a reload. */
-export const selection = signal<Selection>(readSelection());
+/**
+ * The current selection, reactive, so the page follows a change without a reload.
+ *
+ * Starts at the default rather than at what is stored: storage exists only in a browser,
+ * so reading it here would make the server render one provider and the client another,
+ * and hydration would find a mismatch and keep the server's. `restoreSelection` is called
+ * once the page is mounted.
+ */
+export const selection = signal<Selection>({ provider: 'keycloak', mode: 'browser' });
+
+/** Adopt what was stored, after mount. */
+export function restoreSelection(): void {
+  const stored = readSelection();
+  const current = selection();
+  if (stored.provider !== current.provider || stored.mode !== current.mode) {
+    selection.set(stored);
+    services.clear();
+  }
+}
 
 export function select(next: Partial<Selection>): void {
   const merged = { ...selection(), ...next };

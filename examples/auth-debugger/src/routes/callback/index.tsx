@@ -5,58 +5,74 @@
  * the middleware exchanges the code and sets the cookie, and the browser lands on a page
  * already signed in.
  *
- * Everything the callback carried is reported, whether the exchange worked or not. A
- * callback that silently does nothing is the least debuggable thing this app could do.
+ * Everything the callback carried is reported, whether the exchange worked or not.
+ *
+ * All of it is read in `onMount` rather than in the component body. `location` and the
+ * stored selection exist only in a browser, so reading them while rendering makes the
+ * server produce different markup from the client, hydration finds a mismatch, and the
+ * page keeps the server's version: the selected provider stays whatever the default was
+ * and the parameters read as absent.
  */
 import { signal } from '@fluixi/reactive/signal';
-import { useNavigate } from '@fluixi/core';
-import { Show } from '@fluixi/core';
+import { onMount, Show, useNavigate } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import { PROVIDERS } from '../../lib/providers.js';
-import { currentService, selection } from '../../lib/session.js';
-
-/** What the provider put on the URL, read before anything can consume it. */
-function paramsOf(): Record<string, string> {
-  if (typeof location === 'undefined') return {};
-  return Object.fromEntries(new URL(location.href).searchParams.entries());
-}
+import { currentService, readSelection } from '../../lib/session.js';
 
 export default function Callback() {
   seo({ title: 'Completing sign in', robots: 'noindex' });
 
   const navigate = useNavigate();
+
+  // Server-safe initial values, so the first render matches on both sides.
+  const providerLabel = signal('reading');
+  const mode = signal('reading');
+  const stage = signal('waiting for the browser');
+  const params = signal<Array<[string, string]>>([]);
   const error = signal<string | null>(null);
-  const stage = signal('reading the callback URL');
-  const params = signal<Record<string, string>>(paramsOf());
 
-  if (typeof window !== 'undefined') {
-    const sel = selection();
-    const provider = PROVIDERS[sel.provider];
-    const seen = params();
+  onMount(() => {
+    const selection = readSelection();
+    const provider = PROVIDERS[selection.provider];
+    providerLabel.set(provider.label);
+    mode.set(selection.mode);
 
-    if (sel.mode !== 'browser') {
+    const seen = Object.fromEntries(new URL(location.href).searchParams.entries());
+    params.set(Object.entries(seen));
+
+    if (selection.mode !== 'browser') {
       error.set(
         `This is the browser-mode callback, but ${provider.label} is selected in server mode. Its callback is /auth/${provider.id}/callback, handled by the middleware.`,
       );
-    } else if (seen.error) {
+      stage.set('nothing to do here');
+      return;
+    }
+
+    if (seen.error) {
       // The provider refused before any code existed. Its own words are the whole story.
       error.set(`${seen.error}: ${seen.error_description ?? 'no description given'}`);
-    } else if (!seen.code) {
-      error.set('No authorization code on this URL, and no error either.');
-    } else {
-      stage.set(`exchanging the code with ${provider.label}`);
-      void currentService()
-        .complete()
-        .then((destination) => {
-          stage.set(`signed in, going to ${destination}`);
-          navigate(destination, { replace: true });
-        })
-        .catch((cause) => {
-          error.set(cause instanceof Error ? cause.message : String(cause));
-          stage.set('the exchange failed');
-        });
+      stage.set('the provider refused');
+      return;
     }
-  }
+
+    if (!seen.code) {
+      error.set('No authorization code on this URL, and no error either.');
+      stage.set('nothing to exchange');
+      return;
+    }
+
+    stage.set(`exchanging the code with ${provider.label}`);
+    void currentService()
+      .complete()
+      .then((destination) => {
+        stage.set(`signed in, going to ${destination}`);
+        navigate(destination, { replace: true });
+      })
+      .catch((cause) => {
+        error.set(cause instanceof Error ? cause.message : String(cause));
+        stage.set('the exchange failed');
+      });
+  });
 
   return (
     <main class="debugger">
@@ -66,8 +82,8 @@ export default function Callback() {
         <h2>Selection</h2>
         <table>
           <tbody>
-            <tr><th>Provider</th><td>{() => PROVIDERS[selection().provider].label}</td></tr>
-            <tr><th>Mode</th><td>{() => selection().mode}</td></tr>
+            <tr><th>Provider</th><td>{providerLabel}</td></tr>
+            <tr><th>Mode</th><td>{mode}</td></tr>
             <tr><th>Stage</th><td>{stage}</td></tr>
           </tbody>
         </table>
@@ -76,13 +92,13 @@ export default function Callback() {
       <section>
         <h2>What the provider sent back</h2>
         <Show
-          when={() => Object.keys(params()).length > 0}
-          fallback={<p class="muted">nothing on the URL at all</p>}
+          when={() => params().length > 0}
+          fallback={<p class="muted">nothing on the URL</p>}
         >
           <table>
             <tbody>
               {() =>
-                Object.entries(params()).map(([key, value]) => (
+                params().map(([key, value]) => (
                   <tr>
                     <th>{key}</th>
                     <td><code class="token">{value}</code></td>
