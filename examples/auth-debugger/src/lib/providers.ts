@@ -132,7 +132,7 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
     notes: [
       { kind: 'caution', text: 'Two authorization servers: `/oauth2/default` for an application, the bare domain for Okta’s own API. They are not interchangeable.' },
       { kind: 'expected', text: 'Names no client on an access token, so `aud` is the handle.' },
-      { kind: 'caution', text: 'Turns DPoP on by default for API Services apps, which this package does not implement.' },
+      { kind: 'caution', text: 'Turns DPoP on by default for new applications, including a single page one. Untick "Require Demonstrating Proof of Possession" on the client, since this package does not implement it.' },
     ],
   },
 

@@ -110,10 +110,22 @@ export function createBrowserClient(
 
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
+      const code = String(payload.error ?? 'token_request_failed');
+      const description =
+        typeof payload.error_description === 'string' ? payload.error_description : undefined;
+
+      // A provider asking for proof of possession says so in a word that means nothing on
+      // its own. Okta turns it on by default for new applications, so this is met before
+      // anything else is wrong.
+      const hint =
+        code === 'invalid_dpop_proof' || code === 'use_dpop_nonce'
+          ? ' This provider requires DPoP (RFC 9449), which binds a token to a key the client holds and proves possession on every request. It is not implemented here: turn the requirement off for this client, or use a provider that does not demand it.'
+          : '';
+
       throw new OAuthError(
-        `Token request failed: ${String(payload.error ?? response.status)}`,
-        String(payload.error ?? 'token_request_failed'),
-        typeof payload.error_description === 'string' ? payload.error_description : undefined,
+        `Token request failed: ${[code, description].filter(Boolean).join(': ')}${hint}`,
+        code,
+        description,
       );
     }
 

@@ -556,3 +556,44 @@ describe('retiring a token at the provider', () => {
     expect(revocations()).toHaveLength(0);
   });
 });
+
+describe('a provider that demands proof of possession', () => {
+  it('explains what DPoP is rather than passing the word through', async () => {
+    const { fetcher } = server({
+      'oauth-token': { error: 'invalid_dpop_proof', __status: 400 },
+    });
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
+
+    // Okta turns this on by default, so the word is met before anything is misconfigured.
+    await expect(client.handleCallback({ code: 'c', state })).rejects.toThrow(
+      /requires DPoP .RFC 9449./,
+    );
+  });
+
+  it('says the same for a nonce challenge, which is the other half of it', async () => {
+    const { fetcher } = server({ 'oauth-token': { error: 'use_dpop_nonce', __status: 400 } });
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
+    await expect(client.handleCallback({ code: 'c', state })).rejects.toThrow(/DPoP/);
+  });
+
+  it('leaves an ordinary refusal alone, with the provider description', async () => {
+    const { fetcher } = server({
+      'oauth-token': {
+        error: 'invalid_grant',
+        error_description: 'Code not valid',
+        __status: 400,
+      },
+    });
+    const client = createBrowserClient(config(), fetcher);
+    await client.login();
+    const state = sessionStorage.getItem('fx.oauth2.admin-spa.state')!;
+
+    const failure = await client.handleCallback({ code: 'c', state }).catch((e) => e);
+    expect(failure.message).toContain('Code not valid');
+    expect(failure.message).not.toContain('DPoP');
+  });
+});
