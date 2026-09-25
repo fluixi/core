@@ -2,7 +2,7 @@ import { createServer as createHttpServer, type IncomingMessage, type ServerResp
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
-import { join, extname } from 'node:path';
+import { extname, resolve, sep } from 'node:path';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -155,16 +155,79 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.map': 'application/json',
 };
 
+export interface StaticFilesOptions {
+  /**
+   * The directory the build writes hashed bundles to, relative to `dir`.
+   *
+   * A miss inside it is answered with a 404 rather than passed to the renderer, because no
+   * route can live there. Vite's default, and the reason for the option is apps that
+   * override `build.assetsDir`.
+   */
+  assetDir?: string;
+}
+
 /**
- * Wrap a handler to serve static files from `dir` first (for filesystem runtimes , 
+ * Wrap a handler to serve static files from `dir` first (for filesystem runtimes,
  * Node/Bun/Deno). Edge runtimes serve assets via the platform, so they use the bare
  * handler instead.
+ *
+ * Two things here are load bearing.
+ *
+ * Every candidate path is resolved and checked to be inside `dir`. A URL's pathname keeps
+ * percent-encoded separators (`new URL` decodes neither `%2e` nor `%2f`), so decoding one
+ * can reintroduce `../` after the URL parser has already had its say, and a plain join then
+ * points outside the served directory. Containment is checked on the resolved path rather
+ * than by pattern matching the request, which is the only form that holds for encodings not
+ * thought of here.
+ *
+ * A miss under the asset directory is a 404. Falling through means the renderer answers a
+ * request for a bundle with a document, and a browser reports the MIME type rather than the
+ * missing file, which hides the usual cause: a document naming a hash that is no longer on
+ * disk, after a rebuild under a running server.
  */
-export function withStaticFiles(handler: FetchHandler, dir: string): FetchHandler {
+export function withStaticFiles(
+  handler: FetchHandler,
+  dir: string,
+  options: StaticFilesOptions = {},
+): FetchHandler {
+  const root = resolve(dir);
+  const assetPrefix = `/${(options.assetDir ?? 'assets').replace(/^\/+|\/+$/g, '')}/`;
+
+  /** The file this request names, or null when it names something outside `dir`. */
+  const resolveWithin = (pathname: string): string | null => {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(pathname);
+    } catch {
+      // Malformed encoding. Nothing legitimate produces it.
+      return null;
+    }
+    const file = resolve(root, `.${decoded.startsWith('/') ? decoded : `/${decoded}`}`);
+    return file === root || file.startsWith(root + sep) ? file : null;
+  };
+
+  const missingAsset = (pathname: string) =>
+    new Response(
+      `Not found: ${pathname}\n\n` +
+        'Nothing here matches, and this path is build output, so no route can answer it. ' +
+        'A document is naming a bundle that is not on disk. The usual cause is a rebuild ' +
+        'while the server was running, or a cached document from an earlier build: rebuild, ' +
+        'restart, then reload without cache.\n',
+      { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } },
+    );
+
   return async (request) => {
     const { pathname } = new URL(request.url);
     if (pathname !== '/' && extname(pathname)) {
-      const file = join(dir, decodeURIComponent(pathname));
+      const file = resolveWithin(pathname);
+      if (file === null) {
+        // 404 rather than 403: a refusal that distinguishes "outside" from "absent" tells a
+        // caller which guesses are landing.
+        return new Response('Not found\n', {
+          status: 404,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        });
+      }
       try {
         const s = await stat(file);
         if (s.isFile()) {
@@ -177,6 +240,7 @@ export function withStaticFiles(handler: FetchHandler, dir: string): FetchHandle
           });
         }
       } catch { /* not a static file → fall through to SSR */ }
+      if (pathname.startsWith(assetPrefix)) return missingAsset(pathname);
     }
     return handler(request);
   };
