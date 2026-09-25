@@ -46,6 +46,32 @@ export interface FluixiConfig {
    */
   ssrNoExternal?: (string | RegExp)[];
   /**
+   * Which environment variables reach the browser.
+   *
+   * Declared rather than spelled. Vite's `VITE_` prefix puts that decision in a name, so moving
+   * a value between server and browser renames every reference, and a secret named
+   * `VITE_API_SECRET` is published whether anything reads it or not. Naming the public set
+   * instead means a secret can only ship by being listed here.
+   *
+   * ```ts
+   * env: { public: ['AUTH_ISSUER', 'AUTH_CLIENT_ID', 'API_URL'] }
+   * ```
+   *
+   * Read them with `publicEnv()` from `@fluixi/start/env`, which works in a browser and on a
+   * server. Everything not listed stays server-only, reachable through `serverEnv()`.
+   *
+   * `VITE_`-prefixed variables keep working and stay public, so this is additive.
+   */
+  env?: {
+    /**
+     * Variable names the browser may see.
+     *
+     * Written without a client prefix. A prefixed spelling in `.env` is accepted for the same
+     * name, so an app can migrate one variable at a time.
+     */
+    public?: string[];
+  };
+  /**
    * Where a capitalised tag with no import in scope comes from.
    *
    * An entry per component (`{ components: { Button: '/src/components/Button.tsx' } }`) or
@@ -157,6 +183,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
+    env: { public: config.env?.public ?? [] },
     resolve: config.resolve ?? [],
     vitePlugin: config.vitePlugin ?? {},
     plugins: config.plugins ?? [],

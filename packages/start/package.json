@@ -267,6 +267,13 @@
       "import": "./dist/image.mjs",
       "require": "./dist/image.cjs",
       "default": "./dist/image.js"
+    },
+    "./env": {
+      "development": "./src/env.ts",
+      "types": "./dist/env.d.ts",
+      "import": "./dist/env.mjs",
+      "require": "./dist/env.cjs",
+      "default": "./dist/env.js"
     }
   },
   "dependencies": {
