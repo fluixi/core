@@ -6,6 +6,7 @@
  */
 import { createTokenIntrospector } from '@fluixi/oauth2/verify';
 import { PROVIDERS, type ProviderId } from '../lib/providers.js';
+import { credentialsFor, howToConfigure, type Credentials } from '../lib/credentials.js';
 
 export async function POST(request: Request): Promise<Response> {
   const { provider, token } = (await request.json().catch(() => ({}))) as {
@@ -18,19 +19,20 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'give a known provider and a token' }, { status: 400 });
   }
 
-  const upper = provider!.toUpperCase();
-  // The provider's own client secret serves, since introspection only needs credentials
-  // that authenticate the caller. A separate pair is for a provider that wants a
-  // different client to ask.
-  const clientId = process.env[`${upper}_INTROSPECT_CLIENT_ID`] ?? found.serverClientId ?? found.clientId;
-  const clientSecret =
-    process.env[`${upper}_INTROSPECT_SECRET`] ?? process.env[`${upper}_CLIENT_SECRET`];
-  if (!clientId || !clientSecret) {
+  let credentials: Credentials | null;
+  try {
+    credentials = credentialsFor(provider!, found.serverClientId ?? found.clientId);
+  } catch (cause) {
+    // A key that is named but unreadable is a configuration mistake, not an absent one.
     return Response.json(
-      {
-        error: 'not configured',
-        detail: `Introspection authenticates its caller, so ${found.label} needs a secret. Set ${upper}_CLIENT_SECRET, or ${upper}_INTROSPECT_CLIENT_ID and ${upper}_INTROSPECT_SECRET for a different client.`,
-      },
+      { error: 'not configured', detail: cause instanceof Error ? cause.message : String(cause) },
+      { status: 501 },
+    );
+  }
+
+  if (!credentials) {
+    return Response.json(
+      { error: 'not configured', detail: howToConfigure(provider!, found.label) },
       { status: 501 },
     );
   }
@@ -38,8 +40,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const introspect = createTokenIntrospector({
       issuer: found.issuer,
-      clientId,
-      clientSecret,
+      ...credentials,
       // The debugger reports what the provider said rather than enforcing an audience of
       // its own, so the check that would refuse a token belongs to the caller.
       audience: false,

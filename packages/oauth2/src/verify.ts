@@ -523,9 +523,22 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
     const response = await fetch(url, { method: 'POST', headers, body: form.toString() });
     if (!response.ok) {
       // A provider that refuses the service's own credentials is a configuration problem
-      // here, not a bad token, and saying so saves a long hunt.
+      // here, not a bad token, and saying so saves a long hunt. What to check depends on how
+      // this client authenticates: naming a secret to someone using a key sends them looking
+      // for a field their client does not have.
+      const method = resolveMethod(auth);
+      const check =
+        method === 'private_key_jwt'
+          ? `Check clientId, and that the provider holds the public half of this key${
+              auth.keyId ? ` under kid ${auth.keyId}` : ''
+            }. A key registered to a different client than clientId is refused this way.`
+          : 'Check clientId and clientSecret.';
+      // The provider's own words, when it gave any: a 401 with a reason beats a 401.
+      const said = await response.text().catch(() => '');
       throw new OAuthError(
-        `The introspection endpoint refused this service: ${response.status}. Check clientId and clientSecret.`,
+        `The introspection endpoint refused this service: ${response.status}. ${check}${
+          said ? ` It said: ${said}` : ''
+        }`,
         'introspection_failed',
       );
     }

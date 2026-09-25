@@ -137,6 +137,7 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
       { kind: 'caution', text: 'Two authorization servers: `/oauth2/default` for an application, the bare domain for Okta’s own API. They are not interchangeable.' },
       { kind: 'expected', text: 'Names no client on an access token, so `aud` is the handle.' },
       { kind: 'caution', text: 'Turns DPoP on by default for new applications, and an integrator org will not let you untick it. Tokens are bound to a key this client holds, which is why `dpop` is on below.' },
+      { kind: 'caution', text: 'Introspection is authenticated, and this SPA has no secret to authenticate with: a public client set to "Public key / Private key" has no secret field at all. An API Services client asks instead, set OKTA_INTROSPECT_CLIENT_ID to it and OKTA_PRIVATE_KEY to the private half of the key registered on it. A key sent as a client id that does not own it comes back as `The client does not have a JWKSet configured`.' },
     ],
   },
 
