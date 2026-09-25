@@ -98,6 +98,13 @@
       "import": "./dist/presets.mjs",
       "require": "./dist/presets.cjs",
       "default": "./dist/presets.js"
+    },
+    "./env": {
+      "development": "./src/env-config.ts",
+      "types": "./dist/env-config.d.ts",
+      "import": "./dist/env-config.mjs",
+      "require": "./dist/env-config.cjs",
+      "default": "./dist/env-config.js"
     }
   },
   "dependencies": {},
