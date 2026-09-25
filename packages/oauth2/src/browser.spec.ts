@@ -2,9 +2,10 @@
 /**
  * The browser client, against a stand-in authorization server.
  *
- * The parts worth testing are the ones an attacker probes: that `state` is checked, that
- * the verifier is single-use, and that a refused refresh clears the dead token rather
- * than retrying it forever. The happy path is here to keep those honest.
+ * The parts worth testing are the ones an attacker probes: that `state` is checked, that the
+ * verifier is single-use, and that a refresh the provider refused as `invalid_grant` clears
+ * the dead token while every other kind of failure leaves it alone. The happy path is here to
+ * keep those honest.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBrowserClient } from './browser.js';
@@ -201,6 +202,58 @@ describe('refreshing', () => {
     await expect(createBrowserClient(config(), fetcher).refresh()).rejects.toThrow(
       /No refresh token/,
     );
+  });
+
+  /**
+   * `invalid_grant` is the only code that means the token is finished (RFC 6749 §5.2).
+   * Dropping on anything else turns one bad request into a sign out, and did: a wrong DPoP
+   * proof destroyed a live refresh token, which then could not be revoked because it was
+   * already gone.
+   */
+  describe('a failure that is not the token', () => {
+    // No `dpop: true` here: what decides whether the token is kept is the code the provider
+    // sent, and turning DPoP on would only drag proof signing into a jsdom realm that cannot
+    // do it. The DPoP tests live in `dpop.spec.ts`, which runs in node for that reason.
+    const kept = async (payload: Record<string, unknown>) => {
+      const { fetcher } = server({ 'oauth-token': { ...payload, __status: 400 } });
+      const client = createBrowserClient(config(), fetcher);
+      sessionStorage.setItem('fx.oauth2.admin-spa.refresh', 'live');
+
+      await expect(client.refresh()).rejects.toThrow(OAuthError);
+      return sessionStorage.getItem('fx.oauth2.admin-spa.refresh');
+    };
+
+    it('keeps the token when the proof was wrong', async () => {
+      expect(await kept({ error: 'invalid_dpop_proof' })).toBe('live');
+    });
+
+    it('keeps the token when the provider wants a nonce', async () => {
+      expect(await kept({ error: 'use_dpop_nonce' })).toBe('live');
+    });
+
+    it('keeps the token when the provider is unreachable', async () => {
+      const fetcher = vi.fn(async () => {
+        throw new TypeError('NetworkError');
+      }) as unknown as typeof fetch;
+      const client = createBrowserClient(config(), fetcher);
+      sessionStorage.setItem('fx.oauth2.admin-spa.refresh', 'live');
+
+      await expect(client.refresh()).rejects.toThrow();
+      // A dropped connection is not a provider decision about the token.
+      expect(sessionStorage.getItem('fx.oauth2.admin-spa.refresh')).toBe('live');
+    });
+  });
+});
+
+describe('what revoke says when it holds nothing', () => {
+  it('states the absence without naming a cause it cannot know', async () => {
+    const { fetcher } = server({});
+    const client = createBrowserClient(config(), fetcher);
+
+    // It used to blame a missing `offline_access` scope, which read as false to anyone whose
+    // introspection showed the scope present.
+    await expect(client.revoke?.()).rejects.toThrow(/nothing to revoke/);
+    await expect(client.revoke?.()).rejects.not.toThrow(/offline_access/);
   });
 });
 
@@ -551,7 +604,7 @@ describe('retiring a token at the provider', () => {
 
   it('says so when there is no token to retire', async () => {
     const { client, revocations } = withRevocation();
-    await expect(client.revoke!()).rejects.toThrow(/No refresh token to revoke/);
+    await expect(client.revoke!()).rejects.toThrow(/No refresh token held by this client/);
     expect(revocations()).toHaveLength(0);
   });
 

@@ -216,10 +216,10 @@ export interface BrowserConfig extends BaseConfig {
    * against it. Some providers require this, and Okta turns it on by default for a new
    * client.
    *
-   * The key is generated per client and its private half never leaves the process. It is
-   * not stored, so a reload makes a new one and the session is rebuilt from the refresh
-   * token: a page cannot keep a private key safely, and pretending otherwise would be
-   * worse than paying that cost.
+   * The key is generated per client and kept in IndexedDB, which stores the key itself
+   * rather than an exported copy: the private half is written and read by the browser and
+   * never becomes bytes a script can see. It has to persist, because a refresh token is
+   * bound to the key that obtained it and a new key means every refresh is refused.
    */
   dpop?: boolean;
   /** Signing algorithm for DPoP proofs. Default `ES256`, which every provider lists. */

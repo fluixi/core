@@ -20,11 +20,11 @@ import {
 } from './pkce.js';
 import { applyClientAuth } from './client-auth.js';
 import {
-  createDpopKey,
   nonceFrom,
   proofFor,
   type DpopKey,
 } from './dpop.js';
+import { forgetKey, keyFor } from './dpop-store.js';
 import { discover } from './discovery.js';
 import { safeReturnTo } from './return-to.js';
 import { OAuthError } from './types.js';
@@ -49,6 +49,8 @@ const keysFor = (id: string) => ({
   state: `fx.oauth2.${id}.state`,
   returnTo: `fx.oauth2.${id}.return`,
   refresh: `fx.oauth2.${id}.refresh`,
+  /** Names the record in IndexedDB, not a `Storage` entry: a key is never a string here. */
+  dpop: `fx.oauth2.${id}.dpop`,
 });
 
 const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
@@ -82,20 +84,30 @@ export function createBrowserClient(
   let access: Tokens | null = null;
 
   /**
-   * The key this client binds its tokens to, built once on first use.
+   * The key this client binds its tokens to.
    *
-   * Never stored. A reload makes a new key, which means the old token is no longer usable
-   * and the session is rebuilt from the refresh token, itself bound to the new key by the
-   * refresh. That is the cost of holding a key a page cannot persist safely.
+   * Persisted, because a refresh token is bound to the key that obtained it and browser mode
+   * reaches a new document on every sign in. See `dpop-store.ts` for why IndexedDB and not
+   * `localStorage`.
    */
   let dpopKey: DpopKey | null = null;
+  /** Resolved once, so concurrent callers share one key rather than racing to make two. */
+  let dpopPending: Promise<DpopKey> | null = null;
   /** The nonce a provider last demanded, reused until it asks for another. */
   let dpopNonce: string | null = null;
 
   const keyForDpop = async (): Promise<DpopKey | null> => {
     if (!config.dpop) return null;
-    dpopKey ??= await createDpopKey(config.dpopAlgorithm);
-    return dpopKey;
+    if (dpopKey) return dpopKey;
+    // Two requests in flight at startup would otherwise each make a key and store it, and
+    // the second would replace the first after tokens were already bound to it.
+    dpopPending ??= keyFor(KEY.dpop, config.dpopAlgorithm, (reason) => {
+      console.warn(`[fluixi/oauth2] ${reason}`);
+    }).then((key) => {
+      dpopKey = key;
+      return key;
+    });
+    return dpopPending;
   };
   let endpoints: Endpoints | null = config.endpoints ?? null;
 
@@ -165,10 +177,8 @@ export function createBrowserClient(
         typeof payload.error_description === 'string' ? payload.error_description : undefined;
 
       // A provider asking for proof of possession says so in a word that means nothing on
-      // its own. Okta turns it on by default for new applications, so this is met before
-      // anything else is wrong.
-      // A provider asking for proof of possession says so in a word that means nothing on
-      // its own, and the answer is a setting rather than a fix.
+      // its own, and the answer is a setting rather than a fix. Okta turns DPoP on by
+      // default for new applications, so this is met before anything else is wrong.
       const hint =
         (code === 'invalid_dpop_proof' || code === 'use_dpop_nonce') && !config.dpop
           ? ' This provider requires DPoP (RFC 9449), which binds a token to a key this client holds. Set `dpop: true` on the config.'
@@ -299,10 +309,16 @@ export function createBrowserClient(
           client_id: config.clientId,
         });
       } catch (error) {
-        // A refused refresh means the session is over. Holding the dead token would make
-        // every later attempt fail the same way.
-        durable()?.removeItem(KEY.refresh);
-        access = null;
+        // Only `invalid_grant` says the token itself is finished, which is what RFC 6749
+        // §5.2 reserves it for: expired, revoked, or never issued here. Everything else is
+        // about this attempt. A wrong DPoP proof, a nonce the provider wants, a network that
+        // dropped: discarding on those throws away a working session and turns one bad
+        // request into a sign out. It did, and the token was gone before anything could
+        // revoke it.
+        if (error instanceof OAuthError && error.code === 'invalid_grant') {
+          durable()?.removeItem(KEY.refresh);
+          access = null;
+        }
         throw error;
       }
     },
@@ -412,8 +428,12 @@ export function createBrowserClient(
       // Each of these used to return quietly, which made a revocation that did nothing
       // indistinguishable from one that worked. A caller cannot act on silence.
       if (!target) {
+        // States the absence and stops. Naming a cause was worse than saying nothing: it
+        // read `offline_access` was missing from the scopes to someone whose introspection
+        // showed it present, and the real reason was a failed refresh having dropped the
+        // token. A message that guesses sends people to the wrong dashboard.
         throw new OAuthError(
-          `No ${hint.replace('_', ' ')} to revoke. A refresh token is only issued when \`offline_access\` is among the scopes.`,
+          `No ${hint.replace('_', ' ')} held by this client, so there is nothing to revoke. One is stored when the provider issues it, and cleared when the provider rejects it.`,
           'nothing_to_revoke',
         );
       }
@@ -468,6 +488,11 @@ export function createBrowserClient(
       await this.revoke?.().catch(() => undefined);
       access = null;
       durable()?.removeItem(KEY.refresh);
+      // The key outlives the tokens otherwise, and the next sign in would prove to the
+      // provider that it is the same client as this one.
+      dpopKey = null;
+      dpopPending = null;
+      await forgetKey(KEY.dpop);
 
       const { endSession } = await resolveEndpoints().catch(() => ({ endSession: undefined }));
       // `postLogoutRedirectUri` is configuration and trusted; `options.returnTo` is not.
