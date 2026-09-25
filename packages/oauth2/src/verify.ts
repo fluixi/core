@@ -625,3 +625,14 @@ export {
   type EnvCredentials,
   type EnvCredentialsOptions,
 } from './env-credentials.js';
+
+// The guard that turns a verifier into a route wrapper, and the role shapes providers use.
+// Next door because a service configuring a verifier almost always wants both.
+export {
+  createApiGuard,
+  rolesFrom,
+  type ApiGuard,
+  type ApiGuardOptions,
+  type Requirements,
+  type Refusal,
+} from './api-guard.js';

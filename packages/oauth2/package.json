@@ -91,6 +91,13 @@
       "import": "./dist/callback.mjs",
       "require": "./dist/callback.cjs",
       "default": "./dist/callback.js"
+    },
+    "./presets": {
+      "development": "./src/presets.ts",
+      "types": "./dist/presets.d.ts",
+      "import": "./dist/presets.mjs",
+      "require": "./dist/presets.cjs",
+      "default": "./dist/presets.js"
     }
   },
   "dependencies": {},
