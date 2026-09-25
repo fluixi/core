@@ -84,10 +84,18 @@
       "import": "./dist/service-client.mjs",
       "require": "./dist/service-client.cjs",
       "default": "./dist/service-client.js"
+    },
+    "./callback": {
+      "development": "./src/callback.ts",
+      "types": "./dist/callback.d.ts",
+      "import": "./dist/callback.mjs",
+      "require": "./dist/callback.cjs",
+      "default": "./dist/callback.js"
     }
   },
   "dependencies": {},
   "peerDependencies": {
+    "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@fluixi/session": "workspace:*",
     "@fluixi/start": "workspace:*",
@@ -103,7 +111,10 @@
     "@fluixi/start": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/auth": "workspace:*",
-    "jose": "^5.9.6"
+    "jose": "^5.9.6",
+    "@fluixi/core": "workspace:*",
+    "@fluixi/testing": "workspace:*",
+    "@fluixi/dom": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@fluixi/start": {
@@ -113,6 +124,9 @@
       "optional": true
     },
     "jose": {
+      "optional": true
+    },
+    "@fluixi/core": {
       "optional": true
     }
   }

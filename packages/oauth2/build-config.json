@@ -29,6 +29,10 @@
         "src/verify.ts",
         "src/service-client.ts"
       ]
-    }
+    },
+    "externals": [
+      "node:fs",
+      "node:os"
+    ]
   }
 }

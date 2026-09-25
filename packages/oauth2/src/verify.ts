@@ -616,3 +616,12 @@ export function createTokenIntrospector(options: IntrospectorOptions): TokenVeri
   };
   return verifier;
 }
+
+// Reading credentials out of the environment lives next door. Re-exported here because a
+// caller configuring an introspector needs both and should not have to find two modules.
+export {
+  credentialsFromEnv,
+  explainCredentials,
+  type EnvCredentials,
+  type EnvCredentialsOptions,
+} from './env-credentials.js';
