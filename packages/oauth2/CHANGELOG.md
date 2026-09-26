@@ -1,5 +1,11 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.4
+
+### Minor Changes
+
+- 8532a1a: `oauthRoutes` and `sessionLocals` accept `dpop: true` and `dpopAlgorithm`. The session's DPoP key is stored in the encrypted session cookie. With `authFromEnv`, `AUTH_DPOP=true` turns it on.
+
 ## 1.0.0-alpha.3
 
 ### Minor Changes
