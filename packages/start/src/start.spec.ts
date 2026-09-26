@@ -215,6 +215,42 @@ describe('@fluixi/start middleware', () => {
 });
 
 describe('@fluixi/start streaming', () => {
+  const doc = '<html><head><title>Default</title></head><body><div id="root">';
+  const marker = encodeHeadMarker({ headHtml: '<title>Sign in</title>', htmlAttrs: { lang: 'fr' } });
+  const chunks = (...parts: (string | Uint8Array)[]) =>
+    new ReadableStream<Uint8Array>({
+      start(c) {
+        for (const p of parts) c.enqueue(typeof p === 'string' ? new TextEncoder().encode(p) : p);
+        c.close();
+      },
+    });
+  const text = (res: Response) => res.text();
+
+  it("puts seo()'s title in the streamed head, not the template's", async () => {
+    const html = await text(streamDocument(doc, chunks(marker + '<p>app</p>'), '</div></body></html>'));
+    expect(html).toContain('<head><title>Sign in</title></head>');
+    expect(html).toContain('<html lang="fr">');
+    expect(html).not.toContain('<!--fh:');
+    expect(html).toContain('<div id="root"><p>app</p></div>');
+  });
+
+  it('finds a marker split across chunks', async () => {
+    const cut = 12;
+    const html = await text(streamDocument(doc, chunks(marker.slice(0, 3), marker.slice(3, cut), marker.slice(cut) + 'x'), ''));
+    expect(html).toContain('<title>Sign in</title>');
+    expect(html.endsWith('<div id="root">x')).toBe(true);
+  });
+
+  it('leaves a body without a marker untouched, a split multibyte character included', async () => {
+    const e = new TextEncoder().encode('é'); // two bytes
+    const html = await text(streamDocument(doc, chunks('<p>caf', e.subarray(0, 1), e.subarray(1), '</p>'), ''));
+    expect(html).toBe(doc + '<p>café</p>');
+  });
+
+  it('still sends the document when the body is empty (a failed render)', async () => {
+    expect(await text(streamDocument(doc, chunks(), '</div>'))).toBe(doc + '</div>');
+  });
+
   it('splits at the mount div (head ends with open tag, tail starts with close)', () => {
     const { head, tail } = splitTemplate('<body><div id="root"></div><script src="/c.js"></script></body>');
     expect(head).toBe('<body><div id="root">');

@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { extname, resolve, sep } from 'node:path';
+import { liftHead } from './document.js';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -39,8 +40,14 @@ export function streamDocument(
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        controller.enqueue(enc.encode(head));
+        // The head waits for the body's opening marker: once flushed it cannot change, and
+        // the marker is where seo() puts the page's title and meta. Sent early, every
+        // streamed page went out with the template's title, which is what a crawler reads.
         const reader = body.getReader();
+        const { marker, rest } = await readHeadMarker(reader);
+        const lifted = marker ? liftHead(head, marker).html : head;
+        controller.enqueue(enc.encode(lifted));
+        if (rest?.length) controller.enqueue(rest);
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -57,6 +64,45 @@ export function streamDocument(
     status: 200,
     headers: { 'content-type': 'text/html; charset=utf-8' },
   });
+}
+
+const MARKER_OPEN = new TextEncoder().encode('<!--fh:');
+const MARKER_CLOSE = new TextEncoder().encode('-->');
+
+function indexOf(haystack: Uint8Array, needle: Uint8Array, from = 0): number {
+  outer: for (let i = from; i <= haystack.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (haystack[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+/**
+ * Read just enough of the body to know whether it opens with a head marker, and all of it
+ * when it does. Works on bytes: the marker is ASCII, and decoding the body to find it could
+ * split a multibyte character across two chunks.
+ */
+async function readHeadMarker(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<{ marker: string | null; rest: Uint8Array | null }> {
+  let buf = new Uint8Array(0);
+  for (;;) {
+    const opens = buf.length >= MARKER_OPEN.length && indexOf(buf.subarray(0, MARKER_OPEN.length), MARKER_OPEN) === 0;
+    if (buf.length >= MARKER_OPEN.length && !opens) return { marker: null, rest: buf };
+    if (opens) {
+      const close = indexOf(buf, MARKER_CLOSE, MARKER_OPEN.length);
+      if (close >= 0) {
+        const end = close + MARKER_CLOSE.length;
+        return { marker: new TextDecoder().decode(buf.subarray(0, end)), rest: buf.subarray(end) };
+      }
+    }
+    const { done, value } = await reader.read();
+    if (done) return { marker: null, rest: buf };
+    const next = new Uint8Array(buf.length + value.length);
+    next.set(buf);
+    next.set(value, buf.length);
+    buf = next;
+  }
 }
 
 /** Wrap a render function as a fetch handler (Node/Bun/Deno/edge-portable). */

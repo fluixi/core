@@ -97,8 +97,18 @@ function setHtmlAttr(html: string, name: string, value: string): string {
  * <title> is dropped so there's only one. No marker → identical to injectApp.
  */
 export function injectAppAndHead(template: string, rendered: string, mountId = 'root'): string {
+  const { html, body } = liftHead(template, rendered);
+  return injectApp(html, body, mountId);
+}
+
+/**
+ * Apply the head marker at the start of `rendered` to `html`, which holds `</head>` and the
+ * `<html>` tag: the whole template, or the part of it a stream flushes first. Returns the
+ * rest of `rendered`. Done on the template before the body goes in, so a `<title>` inside
+ * the body (an SVG's, say) is never mistaken for the document's.
+ */
+export function liftHead(html: string, rendered: string): { html: string; body: string } {
   const { head, body } = extractHeadMarker(rendered);
-  let html = injectApp(template, body, mountId);
   if (head) {
     if (head.headHtml) {
       if (/<title[\s>]/i.test(head.headHtml)) html = html.replace(/<title>[\s\S]*?<\/title>/i, '');
@@ -106,7 +116,7 @@ export function injectAppAndHead(template: string, rendered: string, mountId = '
     }
     for (const [k, v] of Object.entries(head.htmlAttrs)) html = setHtmlAttr(html, k, v);
   }
-  return html;
+  return { html, body };
 }
 
 /**
