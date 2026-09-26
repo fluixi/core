@@ -1,5 +1,14 @@
 # @fluixi/example-lit-counter
 
+## 0.0.1-alpha.32
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.88
+- @fluixi/dom@1.0.0-alpha.88
+- @fluixi/core@1.0.0-alpha.88
+- @fluixi/server@1.0.0-alpha.88
+
 ## 0.0.1-alpha.31
 
 ### Patch Changes

@@ -324,6 +324,7 @@
     "start-interceptors",
     "start-listen-exit",
     "start-middleware",
+    "start-public-env-runtime",
     "start-public-specifiers",
     "start-root-client-safe",
     "start-router-subpath",

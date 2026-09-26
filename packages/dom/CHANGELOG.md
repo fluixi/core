@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.88
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.88
+
 ## 1.0.0-alpha.87
 
 ### Patch Changes

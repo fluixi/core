@@ -1,5 +1,14 @@
 # @fluixi/example-load-imports
 
+## 0.0.1-alpha.11
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.88
+- @fluixi/dom@1.0.0-alpha.88
+- @fluixi/jsx@1.0.0-alpha.88
+- @fluixi/core@1.0.0-alpha.88
+
 ## 0.0.1-alpha.10
 
 ### Patch Changes
