@@ -3,6 +3,7 @@ import { loadConfig } from '@fluixi/start/config';
 import { dev, build, start } from '@fluixi/start/commands';
 import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
+import { startMismatch } from './start-copy.js';
 
 function usage(): string {
   const cmd = (name: string, desc: string) =>
@@ -38,6 +39,17 @@ async function main(): Promise<void> {
   }
 
   const config = await loadConfig();
+
+  const mismatch = startMismatch(process.cwd(), import.meta.url);
+  if (mismatch) {
+    const { app, cli } = mismatch;
+    console.warn(
+      `\n  ${c.yellow('!')} fluixi is running @fluixi/start ${cli.version} from ${cli.dir}\n` +
+        `    but this app resolves ${app.version} from ${app.dir}.\n` +
+        `    Changes to the app's copy will not take effect. With npm, add\n` +
+        `    "overrides": { "@fluixi/start": "$@fluixi/start" } to package.json and reinstall.\n`,
+    );
+  }
 
   switch (cmd) {
     case 'dev':
