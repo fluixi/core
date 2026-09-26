@@ -2,4 +2,4 @@
 "@fluixi/oauth2": minor
 ---
 
-`authModule(auth)` now registers the service and client tokens in `src/app.config.ts`, and `authServerModule(config)` now mounts oauthRoutes and sessionLocals in `src/app.config.server.ts`.
+`authModule(auth)` registers the service and client tokens from `src/app.config.ts`, and `authServerModule(config)` mounts `oauthRoutes` and `sessionLocals` from `src/app.config.server.ts`.
