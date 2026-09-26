@@ -1,5 +1,19 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.5
+
+### Patch Changes
+
+- 6855d6f: `BrowserConfig.tokenAuthMethod` now accepts RFC names as values, allowing presets or `authFromEnv` clients to spread into a browser config without a type error.
+- 7415caa: `navigate` now accepts the router `useNavigate` without a type error.
+- Updated dependencies [4ada5ee]
+  - @fluixi/start@0.1.0-alpha.79
+  - @fluixi/auth@1.0.0-alpha.89
+  - @fluixi/reactive@1.0.0-alpha.89
+  - @fluixi/core@1.0.0-alpha.89
+  - @fluixi/session@1.0.0-alpha.89
+  - @fluixi/server@1.0.0-alpha.89
+
 ## 1.0.0-alpha.4
 
 ### Minor Changes

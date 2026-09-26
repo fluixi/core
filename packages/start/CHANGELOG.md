@@ -1,5 +1,17 @@
 # @fluixi/start
 
+## 0.1.0-alpha.79
+
+### Patch Changes
+
+- 4ada5ee: A thrown 401 or 403 in a server function or API route now returns that status with `{ error, redirectTo }` instead of a 500.
+  - @fluixi/dom@1.0.0-alpha.89
+  - @fluixi/core@1.0.0-alpha.89
+  - @fluixi/compiler@1.0.0-alpha.89
+  - @fluixi/vite-plugin@1.0.0-alpha.89
+  - @fluixi/head@1.0.0-alpha.56
+  - @fluixi/server@1.0.0-alpha.89
+
 ## 0.1.0-alpha.78
 
 ### Patch Changes

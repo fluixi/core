@@ -1,5 +1,13 @@
 # @fluixi/template-runtime
 
+## 0.1.0-alpha.9
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.89
+- @fluixi/dom@1.0.0-alpha.89
+- @fluixi/compiler@1.0.0-alpha.89
+
 ## 0.1.0-alpha.8
 
 ### Patch Changes
