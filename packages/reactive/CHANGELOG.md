@@ -1,5 +1,7 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.89
+
 ## 1.0.0-alpha.88
 
 ## 1.0.0-alpha.87
