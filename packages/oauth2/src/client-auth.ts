@@ -3,7 +3,7 @@
  *
  * One implementation, used by every call that authenticates: the code exchange, the
  * refresh, the client credentials grant, introspection and revocation. It was four
- * implementations before, which is how `mode: 'server'` ended up unable to use
+ * implementations before, which is how `tokens: 'server'` ended up unable to use
  * `private_key_jwt` while two other paths could. Adding a method now happens here and
  * reaches all of them.
  *

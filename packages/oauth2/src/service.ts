@@ -116,7 +116,7 @@ export function paramsFromUrl(url?: string | URL): CallbackParams {
 /** Only `client` and `config` matter here, so the user type is irrelevant. */
 function clientFor(options: Pick<AuthServiceOptions<unknown>, 'client' | 'config'>): AuthClient {
   if (options.client) return options.client;
-  return options.config.mode === 'server'
+  return options.config.tokens === 'server'
     ? createServerClient(options.config)
     : createBrowserClient(options.config);
 }

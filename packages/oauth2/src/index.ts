@@ -9,11 +9,11 @@
  *
  * ## Choosing a mode
  *
- * `mode: 'browser'` is a public client with PKCE. No server is required, so it works for
+ * `tokens: 'browser'` is a public client with PKCE. No server is required, so it works for
  * a static single-page deployment. A refresh token in storage is readable by any script
  * on the page, which is the cost.
  *
- * `mode: 'server'` keeps the tokens on the application's own server and gives the browser
+ * `tokens: 'server'` keeps the tokens on the application's own server and gives the browser
  * an httpOnly cookie. A script on the page has nothing to steal. It needs the routes
  * from `@fluixi/oauth2/server`, so the app has to run a server.
  *
@@ -23,7 +23,7 @@
  * // services/auth.ts
  * export const auth = createAuthService<User>({
  *   config: {
- *     mode: 'browser',
+ *     tokens: 'browser',
  *     issuer: 'https://localhost:8443',
  *     clientId: 'admin-spa',
  *     redirectUri: `${location.origin}/callback`,

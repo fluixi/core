@@ -6,7 +6,7 @@
  * because a secret in a browser is not one, and PKCE is what replaces it.
  *
  * What this mode accepts: a refresh token in storage is reachable by any script on the
- * page. That is the cost of not running a server, and it is why `mode: 'server'` exists.
+ * page. That is the cost of not running a server, and it is why `tokens: 'server'` exists.
  * The access token is kept in memory alone, so the window where it is readable is the
  * life of the page rather than the life of the session.
  */

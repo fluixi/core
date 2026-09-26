@@ -10,7 +10,7 @@ import { useNavigate } from '@fluixi/start/router';
 
 export const auth = createAuthService<User>({
   config: {
-    mode: 'browser',
+    tokens: 'browser',
     issuer: 'https://localhost:8443/realms/app',
     clientId: 'admin-spa',
     redirectUri: `${location.origin}/callback`,
@@ -80,7 +80,7 @@ export default protectedRoute(Dashboard);
 
 ## Choisir un mode
 
-### `mode: 'browser'`
+### `tokens: 'browser'`
 
 Un client public avec PKCE, qui détient ses propres tokens. Aucun serveur requis, donc un
 déploiement statique en page unique suffit.
@@ -94,7 +94,7 @@ c'est la raison d'être de l'autre mode.
 Il n'y a pas de secret client, car ce qui est livré à un navigateur n'est pas un secret.
 PKCE est ce qui le remplace, et il n'est pas optionnel ici.
 
-### `mode: 'server'`
+### `tokens: 'server'`
 
 Les tokens restent sur votre serveur et le navigateur reçoit un cookie httpOnly qu'il ne
 peut pas lire : un script sur la page n'a donc rien à voler. Cela demande les routes :
@@ -162,7 +162,7 @@ support ici.
 ```ts
 createAuthService<User>({
   config: {
-    mode: 'browser',
+    tokens: 'browser',
     issuer,
     clientId,
     redirectUri,
@@ -193,7 +193,7 @@ createAuthService<User>({ config, fetchUser: async (accessToken) => { /* ... */ 
 
 ```ts
 config: {
-  mode: 'browser',
+  tokens: 'browser',
   clientId,
   redirectUri,
   endpoints: {

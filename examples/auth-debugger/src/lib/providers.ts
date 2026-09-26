@@ -211,12 +211,12 @@ export const PROVIDERS = getProviders();
 /** The client config for a provider in a mode, as `createAuthService` wants it. */
 export function configFor(
   provider: Provider,
-  mode: 'browser' | 'server',
+  tokens: 'browser' | 'server',
   appUrl: string,
 ): AuthConfig {
-  if (mode === 'server') {
+  if (tokens === 'server') {
     return {
-      mode: 'server',
+      tokens: 'server',
       // The server half owns the flow; the browser only ever calls these routes.
       basePath: `/auth/${provider.id}`,
       redirectUri: `${appUrl}/auth/${provider.id}/callback`,
@@ -225,7 +225,7 @@ export function configFor(
   }
 
   return {
-    mode: 'browser',
+    tokens: 'browser',
     // Endpoints win over the issuer where a provider will not let a page read discovery.
     ...(provider.endpoints ? { endpoints: provider.endpoints } : { issuer: provider.issuer }),
     clientId: resolveClientId(provider),

@@ -43,8 +43,8 @@ What that means when configuring this package:
 - **Auth0** needs an API registered and `audience` sent, or the access token is opaque. Its
   issuer carries a trailing slash that `iss` includes. No introspection endpoint at all.
 - **Google** refuses a public client outright. A Web application client id sent without a
-  secret gets `client_secret is missing.`, checked before PKCE, so `mode: 'browser'` cannot
-  complete the exchange. `mode: 'server'` works: Google advertises `client_secret_post`,
+  secret gets `client_secret is missing.`, checked before PKCE, so `tokens: 'browser'` cannot
+  complete the exchange. `tokens: 'server'` works: Google advertises `client_secret_post`,
   which is what that half sends. The authorization request our browser client builds is
   accepted, so only the exchange is affected. Google publishes no end session or
   introspection endpoint, and no `client_credentials`: server-to-server there is the JWT

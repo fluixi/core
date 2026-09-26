@@ -60,7 +60,7 @@ describe('the default, which is any OIDC provider', () => {
 
     expect(auth.providerName).toBe('oidc');
     expect(auth.clientId).toBe('web');
-    expect(auth.mode).toBe('browser');
+    expect(auth.tokens).toBe('browser');
     expect(auth.client.issuer).toBe('https://idp.test');
   });
 
@@ -69,12 +69,12 @@ describe('the default, which is any OIDC provider', () => {
       ...base,
       VITE_AUTH_ISSUER: 'https://idp.test',
       VITE_AUTH_REDIRECT_URI: 'https://app.test/callback',
-      VITE_AUTH_MODE: 'server',
+      VITE_AUTH_TOKENS: 'server',
     });
 
     expect(auth.client).toMatchObject({
       clientId: 'web',
-      mode: 'server',
+      tokens: 'server',
       redirectUri: 'https://app.test/callback',
       issuer: 'https://idp.test',
     });
@@ -168,7 +168,7 @@ describe('the named providers', () => {
 describe('one app, several providers', () => {
   it('prefers the specific prefix and falls back to the general one', () => {
     const source = {
-      VITE_AUTH_MODE: 'server',
+      VITE_AUTH_TOKENS: 'server',
       VITE_OKTA_CLIENT_ID: 'okta-spa',
       VITE_OKTA_PROVIDER: 'okta',
       VITE_OKTA_DOMAIN: 'd.okta.com',
@@ -177,7 +177,7 @@ describe('one app, several providers', () => {
 
     expect(auth.clientId).toBe('okta-spa');
     // Not set on the specific prefix, so the shared value applies.
-    expect(auth.mode).toBe('server');
+    expect(auth.tokens).toBe('server');
   });
 });
 
@@ -198,9 +198,9 @@ describe('what it refuses to guess', () => {
     expect(() => authFromEnv({ ...base, VITE_AUTH_PROVIDER: 'onelogin' })).toThrow(/keycloak/);
   });
 
-  it('refuses a mode that is neither', () => {
+  it('refuses a tokens value that is neither', () => {
     expect(() =>
-      authFromEnv({ ...base, VITE_AUTH_ISSUER: 'https://i.test', VITE_AUTH_MODE: 'cookie' }),
+      authFromEnv({ ...base, VITE_AUTH_ISSUER: 'https://i.test', VITE_AUTH_TOKENS: 'cookie' }),
     ).toThrow(/browser.*server/);
   });
 

@@ -3,7 +3,7 @@
  *
  * Two surfaces with opposite rules, and mixing them is how a secret ships:
  *
- *  - the **client** half is public by nature. An issuer, a client id, a mode, a redirect URI:
+ *  - the **client** half is public by nature. An issuer, a client id, where the tokens live, a redirect URI:
  *    all of it reaches the browser whatever you do, because a public client sends them to the
  *    provider in a URL. Prefixed `VITE_`, which is what makes Vite inline them.
  *  - the **server** half is a client secret, a signing key, a cookie secret. Never prefixed.
@@ -45,8 +45,8 @@ export interface AuthEnvOptions {
   clientPrefix?: string;
   /** Overrides `<PREFIX>_PROVIDER`, for an app that knows which provider it is. */
   provider?: PresetName;
-  /** Overrides `<PREFIX>_MODE`. */
-  mode?: 'browser' | 'server';
+  /** Overrides `<PREFIX>_TOKENS`. */
+  tokens?: 'browser' | 'server';
   /** Where this provider puts roles, when the preset's default is not right. */
   roles?: (claims: TokenClaims) => string[];
 }
@@ -59,7 +59,7 @@ export interface AuthEnv {
   providerName: PresetName;
   clientId: string;
   /** Where the tokens live. `browser` unless told otherwise. */
-  mode: 'browser' | 'server';
+  tokens: 'browser' | 'server';
   /** The redirect URI, or undefined when the app builds it from its own base URL. */
   redirectUri?: string;
   /** Scopes, when the environment overrode the preset's. */
@@ -67,7 +67,7 @@ export interface AuthEnv {
   /** Everything needed by `createBrowserClient`, ready to spread. */
   client: ProviderPreset['client'] & {
     clientId: string;
-    mode: 'browser' | 'server';
+    tokens: 'browser' | 'server';
     redirectUri?: string;
   };
 }
@@ -91,7 +91,7 @@ const flag = (value: string | undefined): boolean | undefined =>
  * | `_PROVIDER` | `oidc` (default), `keycloak`, `auth0`, `okta`, `google`, `dex`, `oauth2` |
  * | `_ISSUER` | the issuer, for `oidc` and `oauth2` |
  * | `_CLIENT_ID` | this client |
- * | `_MODE` | `browser` (default) or `server` |
+ * | `_TOKENS` | `browser` (default) or `server` |
  * | `_REDIRECT_URI` | where the provider sends the browser back |
  * | `_SCOPES` | space or comma separated, overriding the preset's |
  * | `_AUDIENCE` | an API identifier. Auth0 needs it for a JWT access token |
@@ -238,10 +238,10 @@ export function authFromEnv(
   if (dpop !== undefined) provider = { ...provider, client: { ...provider.client, dpop } };
   if (options.roles) provider = { ...provider, roles: options.roles };
 
-  const mode = options.mode ?? ((read('MODE') as 'browser' | 'server' | undefined) ?? 'browser');
-  if (mode !== 'browser' && mode !== 'server') {
+  const tokens = options.tokens ?? ((read('TOKENS') as 'browser' | 'server' | undefined) ?? 'browser');
+  if (tokens !== 'browser' && tokens !== 'server') {
     throw new Error(
-      `[fluixi/oauth2] ${specific}_MODE is "${mode}". It is \`browser\` or \`server\`.`,
+      `[fluixi/oauth2] ${specific}_TOKENS is "${tokens}". It is \`browser\` or \`server\`.`,
     );
   }
 
@@ -251,9 +251,9 @@ export function authFromEnv(
     provider,
     providerName: name,
     clientId,
-    mode,
+    tokens,
     redirectUri,
     scopes,
-    client: { ...provider.client, clientId, mode, ...(redirectUri ? { redirectUri } : {}) },
+    client: { ...provider.client, clientId, tokens, ...(redirectUri ? { redirectUri } : {}) },
   };
 }

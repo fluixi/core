@@ -20,7 +20,7 @@ const ENDPOINTS = {
 };
 
 const config = (over: Partial<BrowserConfig> = {}): BrowserConfig => ({
-  mode: 'browser',
+  tokens: 'browser',
   clientId: 'admin-spa',
   redirectUri: 'http://localhost:3000/callback',
   endpoints: ENDPOINTS,
@@ -524,7 +524,7 @@ describe('discovery', () => {
       },
     });
     const client = createBrowserClient(
-      { mode: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback', issuer: 'https://idp.test' },
+      { tokens: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback', issuer: 'https://idp.test' },
       fetcher,
     );
     await client.login();
@@ -534,7 +534,7 @@ describe('discovery', () => {
   it('says so when neither issuer nor endpoints were given', async () => {
     const { fetcher } = server({});
     const client = createBrowserClient(
-      { mode: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback' },
+      { tokens: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback' },
       fetcher,
     );
     await expect(client.login()).rejects.toThrow(/issuer/);

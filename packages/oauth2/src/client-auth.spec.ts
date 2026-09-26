@@ -2,7 +2,7 @@
  * Client authentication, which every authenticated call now shares.
  *
  * Worth its own tests because it used to be four implementations, and the one in
- * `mode: 'server'` silently lacked `private_key_jwt` while two others had it. A single
+ * `tokens: 'server'` silently lacked `private_key_jwt` while two others had it. A single
  * module is only an improvement if it is the one that is exercised.
  */
 import { describe, expect, it } from 'vitest';

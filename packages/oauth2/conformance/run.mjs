@@ -319,7 +319,7 @@ async function runProvider(name, cfg) {
     await must('user flow', 'authorization code with PKCE, through the login form', async () => {
       const browser = fakeBrowser();
       const client = createBrowserClient({
-        mode: 'browser',
+        tokens: 'browser',
         issuer: cfg.issuer,
         clientId: cfg.client.clientId,
         redirectUri: cfg.client.redirectUri,

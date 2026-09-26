@@ -32,7 +32,7 @@ function stubClient(over: Partial<AuthClient> = {}): AuthClient {
 
 const service = (client: AuthClient, over = {}) =>
   createAuthService<User>({
-    config: { mode: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback' },
+    config: { tokens: 'browser', clientId: 'x', redirectUri: 'http://localhost:3000/callback' },
     client,
     ...over,
   });

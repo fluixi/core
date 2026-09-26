@@ -188,7 +188,7 @@ export interface BaseConfig {
  * that safe, and it is not optional here.
  */
 export interface BrowserConfig extends BaseConfig {
-  mode: 'browser';
+  tokens: 'browser';
   clientId: string;
   /** The OIDC issuer, for discovery. Give `endpoints` instead to skip the request. */
   issuer?: string;
@@ -240,7 +240,7 @@ export interface BrowserConfig extends BaseConfig {
  * steal. Every method here is a call to a route this package's server half provides.
  */
 export interface ServerConfig extends BaseConfig {
-  mode: 'server';
+  tokens: 'server';
   /** Where the server routes are mounted. Default `/auth`. */
   basePath?: string;
 }

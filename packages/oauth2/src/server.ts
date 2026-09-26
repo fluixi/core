@@ -1,5 +1,5 @@
 /**
- * `@fluixi/oauth2/server`: the routes behind `mode: 'server'`.
+ * `@fluixi/oauth2/server`: the routes behind `tokens: 'server'`.
  *
  * The browser never sees a token here. The authorization code is exchanged on this side,
  * the tokens are sealed into an httpOnly cookie, and the page gets a cookie it cannot
@@ -372,7 +372,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 /**
  * Put the signed-in user on the request, so a server render knows who is looking.
  *
- * This is the piece that makes `mode: 'server'` able to render authenticated pages. The
+ * This is the piece that makes `tokens: 'server'` able to render authenticated pages. The
  * cookie is the credential and the server can read it, so the user is resolved before
  * the render and written where `@fluixi/auth`'s hooks already look: request locals,
  * under the key they read. `useUser()` then answers during SSR instead of returning null
