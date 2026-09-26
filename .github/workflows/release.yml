@@ -208,6 +208,10 @@ jobs:
       # the next push.
       - name: Advance prerelease dist-tag
         if: ${{ !cancelled() }}
+        env:
+          # The action's own answer to "did this run publish", rather than inferring it from
+          # which tags moved: a one-package release that npm is slow to show moves nothing.
+          PUBLISHED: ${{ steps.changesets.outputs.published }}
         run: |
           if [ ! -f .changeset/pre.json ]; then
             echo "Not in pre mode, latest is authoritative; nothing to do."; exit 0
@@ -270,11 +274,11 @@ jobs:
             fi
           done
 
-          # Some moved and some did not: this is a real publish, and the rest are most
-          # likely still propagating. `settled` stopped them being retried one by one, which
-          # left every package after the first slow one untagged on both releases of
-          # 2026-09-26. Give the stragglers longer, together, before calling it a failure.
-          if [ "$moved" -gt 0 ] && [ -n "$missing" ]; then
+          # A real publish with tags still unmoved: the rest are most likely propagating.
+          # `settled` stopped them being retried one by one, which left every package after
+          # the first slow one untagged on both releases of 2026-09-26, and a one-package
+          # release moved nothing at all. Give the stragglers longer, together.
+          if [ "$PUBLISHED" = "true" ] && [ -n "$missing" ]; then
             late="$missing"
             missing=""
             for delay in 30 60 90 120; do
@@ -296,7 +300,7 @@ jobs:
           # Nothing moved means nothing was published either, which is what a version-PR
           # push looks like. Having moved some and not others is the failure worth shouting
           # about: the release is on npm and part of it cannot be installed.
-          if [ "$moved" -gt 0 ] && [ -n "$missing" ]; then
+          if { [ "$moved" -gt 0 ] || [ "$PUBLISHED" = "true" ]; } && [ -n "$missing" ]; then
             echo "::error::dist-tag ${tag} was not advanced for:${missing}"
             exit 1
           fi
