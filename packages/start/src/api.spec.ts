@@ -45,6 +45,23 @@ describe('api routes', () => {
     expect(miss.status).toBe(404);
   });
 
+  it('answers a thrown 401 or 403 with that status, as requireUser throws them', async () => {
+    const refusal = (status: 401 | 403) => Object.assign(new Error('no'), { status, redirectTo: '/login' });
+    const routes = [
+      route('me', { GET: () => { throw refusal(401); } }),
+      route('admin', { GET: () => { throw refusal(403); } }),
+    ];
+    const me = await handleApi(routes, new Request('http://x/api/me'));
+    expect(me.status).toBe(401);
+    expect(await me.json()).toEqual({ error: 'unauthorized', redirectTo: '/login' });
+    expect((await handleApi(routes, new Request('http://x/api/admin'))).status).toBe(403);
+  });
+
+  it('still throws anything else', async () => {
+    const routes = [route('boom', { GET: () => { throw new Error('boom'); } })];
+    await expect(handleApi(routes, new Request('http://x/api/boom'))).rejects.toThrow('boom');
+  });
+
   it('wraps a non-Response return value as JSON', async () => {
     const routes = [route('data', { GET: () => ({ ok: true }) })];
     const res = await handleApi(routes, new Request('http://x/api/data'));

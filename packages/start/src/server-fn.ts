@@ -4,6 +4,7 @@
  * are dead code and the stub `fetch()`es the RPC endpoint; on the server the bodies are
  * registered and `handleServerFn` dispatches them.
  */
+import { refusalResponse } from './refusal.js';
 
 /** The RPC endpoint server functions POST to. */
 export const SERVER_FN_ENDPOINT = '/_server';
@@ -108,6 +109,6 @@ export async function handleServerFn(request: Request): Promise<Response> {
     }
     return new Response(JSON.stringify(result ?? null), { status: 200, headers });
   } catch (e: any) {
-    return new Response(String(e?.message || e), { status: 500 });
+    return refusalResponse(e) ?? new Response(String(e?.message || e), { status: 500 });
   }
 }

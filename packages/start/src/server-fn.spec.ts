@@ -37,6 +37,15 @@ describe('@fluixi/start server functions', () => {
     expect((await handleServerFn(rpc('nope:9', []))).status).toBe(404);
   });
 
+  it('answers a thrown 401 or 403 with that status, not a 500', async () => {
+    $$registerServerFn('secret:0', () => {
+      throw Object.assign(new Error('Unauthorized'), { status: 401, redirectTo: '/login' });
+    });
+    const res = await handleServerFn(rpc('secret:0', []));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: 'unauthorized', redirectTo: '/login' });
+  });
+
   it('500 when the function throws', async () => {
     $$registerServerFn('boom:0', () => { throw new Error('nope'); });
     expect((await handleServerFn(rpc('boom:0', []))).status).toBe(500);

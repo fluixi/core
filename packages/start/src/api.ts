@@ -4,6 +4,7 @@
 // (isApiRequest + handleApiRequest); dev auto-wires it, prod gets it via the entry-server re-export.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath, join } from 'node:path';
+import { refusalResponse } from './refusal.js';
 
 const API_VMOD = 'virtual:fluixi-api';
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
@@ -70,7 +71,14 @@ export async function handleApi(routes: ApiRoute[], request: Request, prefix = '
     const allow = METHODS.filter((m) => typeof match.mod[m] === 'function').join(', ');
     return new Response('Method Not Allowed', { status: 405, headers: allow ? { allow } : undefined });
   }
-  const out = await (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params });
+  let out: unknown;
+  try {
+    out = await (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params });
+  } catch (error) {
+    const refused = refusalResponse(error);
+    if (refused) return refused;
+    throw error;
+  }
   if (out instanceof Response) return out;
   return new Response(JSON.stringify(out ?? null), { headers: { 'content-type': 'application/json; charset=utf-8' } });
 }
