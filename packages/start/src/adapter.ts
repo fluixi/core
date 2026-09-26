@@ -192,16 +192,19 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   const bundled = (name: string) =>
     cfg.ssrNoExternal.some((rule) => (rule instanceof RegExp ? rule.test(name) : rule === name));
 
-  const external = frameworkDeps(cfg.root)
-    .filter((name) => !bundled(name))
-    .flatMap((name) => withSubpaths(cfg.root, name));
+  const declared = frameworkDeps(cfg.root);
+  const external = declared.filter((name) => !bundled(name)).flatMap((name) => withSubpaths(cfg.root, name));
 
   if (!external.length) {
     // Silently building an inlined bundle here would look identical to a working one
-    // until someone measures it, so say why nothing was externalized.
+    // until someone measures it, so say why nothing was externalized. The two causes want
+    // different fixes, and naming the wrong one sends people looking at package.json.
     console.warn(
-      `  fluixi: adapter "${cfg.adapter?.name}" builds an externalized server, but no ` +
-        `fluixi or @fluixi/* dependency was found in ${join(cfg.root, 'package.json')}, bundling everything.`,
+      declared.length
+        ? `  fluixi: adapter "${cfg.adapter?.name}" builds an externalized server, but ssrNoExternal ` +
+            `bundles all ${declared.length} @fluixi/* dependencies, so everything is bundled.`
+        : `  fluixi: adapter "${cfg.adapter?.name}" builds an externalized server, but no ` +
+            `fluixi or @fluixi/* dependency was found in ${join(cfg.root, 'package.json')}, bundling everything.`,
     );
   }
   return { noExternal, external: external.length ? external : undefined };

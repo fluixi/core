@@ -127,6 +127,16 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     warn.mockRestore();
   });
 
+  it('names ssrNoExternal when it is what bundles every framework dependency', () => {
+    // A linked workspace app sets `ssrNoExternal: [/^@fluixi\//]`; blaming package.json there
+    // sent the reader looking for dependencies that were declared all along.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cfg = resolveConfig({ root: root(), adapter: nodeAdapter, ssrNoExternal: [/^@fluixi\//] });
+    expect(ssrBuildOptions(cfg).external).toBeUndefined();
+    expect(warn.mock.calls[0][0]).toContain('ssrNoExternal bundles all 2 @fluixi/* dependencies');
+    warn.mockRestore();
+  });
+
   it('a custom adapter picks either mode', () => {
     const edge: Adapter = { name: 'my-edge', bundle: 'inline', serve: ({ handler }) => ({ fetch: handler }) };
     expect(ssrBuildOptions(resolveConfig({ root: root(), adapter: edge }))).toEqual({ noExternal: true });
