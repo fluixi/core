@@ -1,5 +1,11 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.3
+
+### Minor Changes
+
+- 61435a3: `authModule(auth)` registers the service and client tokens from `src/app.config.ts`, and `authServerModule(config)` mounts `oauthRoutes` and `sessionLocals` from `src/app.config.server.ts`.
+
 ## 1.0.0-alpha.2
 
 ### Patch Changes

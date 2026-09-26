@@ -1,5 +1,12 @@
 # @fluixi/example-auth-debugger
 
+## 0.0.1-alpha.3
+
+### Patch Changes
+
+- Updated dependencies [61435a3]
+  - @fluixi/oauth2@1.0.0-alpha.3
+
 ## 0.0.1-alpha.2
 
 ### Patch Changes
