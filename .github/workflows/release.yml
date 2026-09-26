@@ -270,6 +270,29 @@ jobs:
             fi
           done
 
+          # Some moved and some did not: this is a real publish, and the rest are most
+          # likely still propagating. `settled` stopped them being retried one by one, which
+          # left every package after the first slow one untagged on both releases of
+          # 2026-09-26. Give the stragglers longer, together, before calling it a failure.
+          if [ "$moved" -gt 0 ] && [ -n "$missing" ]; then
+            late="$missing"
+            missing=""
+            for delay in 30 60 90 120; do
+              [ -z "$late" ] && break
+              sleep "$delay"
+              still=""
+              for spec in $late; do
+                if npm view "$spec" version >/dev/null 2>&1 && npm dist-tag add "$spec" "$tag"; then
+                  moved=$((moved + 1))
+                else
+                  still="${still} ${spec}"
+                fi
+              done
+              late="$still"
+            done
+            missing="$late"
+          fi
+
           # Nothing moved means nothing was published either, which is what a version-PR
           # push looks like. Having moved some and not others is the failure worth shouting
           # about: the release is on npm and part of it cannot be installed.
