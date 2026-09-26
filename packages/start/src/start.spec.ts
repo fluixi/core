@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 import { defineConfig, resolveConfig, loadConfig } from './config.js';
@@ -20,7 +20,11 @@ const streamOf = (s: string) =>
 
 // Temp config dirs live INSIDE the package: vitest's vite-node only loads files
 // under the project root, and `loadConfig` import()s the config by absolute path.
-const baseDir = dirname(fileURLToPath(import.meta.url));
+// Inside the package, where the test runner will import from, but outside src/: a folder
+// there is part of the typecheck, and tsc run in parallel with these tests failed on one it
+// listed and then found deleted. `tmp/` is gitignored.
+const baseDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'tmp');
+mkdirSync(baseDir, { recursive: true });
 
 describe('@fluixi/start config', () => {
   it('defineConfig is identity', () => {

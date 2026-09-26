@@ -69,6 +69,7 @@
     },
     "typecheck": {
       "dependsOn": [
+        "build",
         "^build"
       ],
       "inputs": [
