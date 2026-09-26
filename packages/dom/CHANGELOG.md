@@ -1,5 +1,13 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.87
+
+### Patch Changes
+
+- 807fb8a: A binding on a custom element sets the property even when the element has not upgraded yet. `key in element` is false until `customElements.define` runs, so a page rendered before its element registered sent every value to an attribute and an object arrived as `[object Object]`, with nothing assigning the property once the element upgraded. The global attributes (`id`, `class`, `slot`, `title`, `aria-*`, `data-*` and the rest) still go to attributes. The compiler marks a dash tag while compiling, so the runtime is told rather than reading the tag back off the node.
+- 9dc9e3c: Event delegation keeps its registry on `globalThis`, so a page carrying more than one build of the runtime has one document listener per event rather than one per copy. Two standalone custom elements is the ordinary way a page ends up with two copies, and a single click was running every handler twice.
+  - @fluixi/reactive@1.0.0-alpha.87
+
 ## 1.0.0-alpha.86
 
 ### Patch Changes

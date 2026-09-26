@@ -1,5 +1,46 @@
 # @fluixi/start
 
+## 0.1.0-alpha.77
+
+### Minor Changes
+
+- 655c5d2: `env.public` in `fluixi.config` now declares which variables are exposed to the browser and `publicEnv`/`serverEnv` read it accordingly.
+- 79bd79f: A build refuses to publish a secret. Vite inlines every variable carrying the client prefix into `import.meta.env`, and it does so whether any code reads it or not, so naming one `VITE_API_SECRET` puts the value in the bundle for every visitor. Nothing in an application can undo that and nothing in it looks wrong, which is why this is checked rather than documented.
+
+  Names containing `SECRET`, `PASSWORD`, `PRIVATE_KEY` or `CREDENTIALS` fail the build, across every env file an app may carry, with the unprefixed form to use instead. `TOKEN` is deliberately not one of them: `VITE_TOKEN_ENDPOINT` is a URL. `fluixi dev` warns rather than stopping, so the mistake is caught while writing. `FLUIXI_ALLOW_PUBLIC_SECRETS=true` allows a name that only reads like a secret.
+
+- 7bc3e64: `ssrNoExternal` accepts a RegExp as well as a name, so `[/^@acme\//]` bundles a whole scope. A linked package resolves to source and pulls its siblings in with it, so naming them one at a time only ever finds the next one on the next run. A pattern also keeps its matches out of the externals list when an adapter builds an external server bundle.
+- f388d49: The new `@fluixi/start/app` exports `defineModule` and `defineApp`; start registers `src/app.config.ts` on both client and server and `src/app.config.server.ts` on the server, and replaces `provideRoot` calls in the entries.
+- 6f26bee: Client builds now fail when app code imports a `*.server.*` file, unless the file starts with `"use server"`.
+- d7d4089: Import aliases declared in `compilerOptions.paths` now resolve in the bundler as well as the type checker. TypeScript's `paths` only tells the type checker where a specifier lives, so an app that added `"@/*": ["./src/*"]` got a clean typecheck and a build that failed to resolve the import. The dev server and every build step read the same file, following `extends` and honouring `baseUrl`, with the longest prefix winning so a short alias cannot swallow a longer one.
+- d6c8562: `fluixi build --format=web-component` emits each component named in a `webComponents` config block as a self-contained file: a page loads it with a `<script type="module">` and needs no Fluixi package installed. `--format=fluixi` emits the same elements with the runtime left as imports, so an app running several of them shares one copy. An app that declares `webComponents` also gets the files beside its own bundles on a normal build.
+
+### Patch Changes
+
+- 54b8466: A build now refuses an app whose API routes could never be reached, naming the line to add. A built server dispatches to `src/api` only when the server entry re-exports the handlers; without it every `/api` request fell through to the page renderer and came back as a rendered page with a 200, so a route written to refuse a request appeared to accept it. The dev server wires this itself, so the gap only showed up once an app was built.
+
+  The generated SSR entry carries the re-export, so a new app is never in that state.
+
+- 5a7e92a: The externalized-server warning now names `ssrNoExternal` when that option bundles every @fluixi dependency.
+- 337a424: `@fluixi/start/env` is now listed in `publishConfig.exports`, so it can be imported from the package.
+- 18d3696: `fluixi dev` and `fluixi start` now exit with an error naming the port when it cannot be listened on, and serveNode now accepts an `onListenError` callback.
+- a6cac6f: The `*.server.*` guard now also catches a file reached through an alias and the development error shows the real importer.
+- 52388aa: Streamed pages now carry `seo()` title, meta and html attributes in the served head, with the head sent with the first body chunk.
+- 29a639b: A missing file under the build asset directory now returns a 404 response with `text/plain`.
+- 29a639b: `withStaticFiles` now rejects requests whose path resolves outside the served directory.
+- Updated dependencies [190493a]
+- Updated dependencies [190493a]
+- Updated dependencies [807fb8a]
+- Updated dependencies [734d7e0]
+- Updated dependencies [734d7e0]
+- Updated dependencies [9dc9e3c]
+  - @fluixi/compiler@1.0.0-alpha.87
+  - @fluixi/core@1.0.0-alpha.87
+  - @fluixi/dom@1.0.0-alpha.87
+  - @fluixi/head@1.0.0-alpha.54
+  - @fluixi/server@1.0.0-alpha.87
+  - @fluixi/vite-plugin@1.0.0-alpha.87
+
 ## 0.1.0-alpha.76
 
 ### Patch Changes

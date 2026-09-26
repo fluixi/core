@@ -1,5 +1,19 @@
 # @fluixi/session
 
+## 1.0.0-alpha.87
+
+### Minor Changes
+
+- 73bf352: `@fluixi/session/server` holds a session the browser cannot read: `createSessionCookie` seals a value into an httpOnly cookie with AES-GCM through Web Crypto, and reads it back. It is not an auth system and does not know what a user is, which is what lets an app with its own database seal a user id, and `@fluixi/oauth2` seal tokens, over the same piece.
+
+  `@fluixi/oauth2/server` now uses it rather than carrying its own copy of the cookie and crypto handling.
+
+### Patch Changes
+
+- Updated dependencies [190493a]
+  - @fluixi/core@1.0.0-alpha.87
+  - @fluixi/reactive@1.0.0-alpha.87
+
 ## 1.0.0-alpha.86
 
 ### Patch Changes

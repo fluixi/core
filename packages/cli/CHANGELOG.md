@@ -1,5 +1,31 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.78
+
+### Minor Changes
+
+- d6c8562: `fluixi build --format=web-component` emits each component named in a `webComponents` config block as a self-contained file: a page loads it with a `<script type="module">` and needs no Fluixi package installed. `--format=fluixi` emits the same elements with the runtime left as imports, so an app running several of them shares one copy. An app that declares `webComponents` also gets the files beside its own bundles on a normal build.
+
+### Patch Changes
+
+- 9fc671c: The CLI now warns when it runs a different `@fluixi/start` than the one the app resolves.
+- Updated dependencies [54b8466]
+- Updated dependencies [655c5d2]
+- Updated dependencies [79bd79f]
+- Updated dependencies [7bc3e64]
+- Updated dependencies [5a7e92a]
+- Updated dependencies [f388d49]
+- Updated dependencies [337a424]
+- Updated dependencies [18d3696]
+- Updated dependencies [a6cac6f]
+- Updated dependencies [6f26bee]
+- Updated dependencies [52388aa]
+- Updated dependencies [29a639b]
+- Updated dependencies [29a639b]
+- Updated dependencies [d7d4089]
+- Updated dependencies [d6c8562]
+  - @fluixi/start@0.1.0-alpha.77
+
 ## 0.1.0-alpha.77
 
 ### Patch Changes
