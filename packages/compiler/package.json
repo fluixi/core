@@ -36,6 +36,39 @@
         "import": "./dist/integrations.mjs",
         "require": "./dist/integrations.cjs",
         "default": "./dist/integrations.js"
+      },
+      "./builtins": {
+        "import": {
+          "types": "./dist/resolve/builtins.d.ts",
+          "default": "./dist/resolve/builtins.mjs"
+        },
+        "require": {
+          "types": "./dist/resolve/builtins.d.cts",
+          "default": "./dist/resolve/builtins.cjs"
+        },
+        "default": "./dist/resolve/builtins.js"
+      },
+      "./transform": {
+        "import": {
+          "types": "./dist/transform/index.d.ts",
+          "default": "./dist/transform/index.mjs"
+        },
+        "require": {
+          "types": "./dist/transform/index.d.cts",
+          "default": "./dist/transform/index.cjs"
+        },
+        "default": "./dist/transform/index.js"
+      },
+      "./analyze": {
+        "import": {
+          "types": "./dist/analyze/static-graph.d.ts",
+          "default": "./dist/analyze/static-graph.mjs"
+        },
+        "require": {
+          "types": "./dist/analyze/static-graph.d.cts",
+          "default": "./dist/analyze/static-graph.cjs"
+        },
+        "default": "./dist/analyze/static-graph.js"
       }
     }
   },

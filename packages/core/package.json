@@ -66,7 +66,13 @@
         "require": "./dist/src/lib/plugins/index.cjs",
         "default": "./dist/src/lib/plugins/index.js"
       },
-      "./lib/*": "./src/lib/*"
+      "./lib/*": "./src/lib/*",
+      "./utils": {
+        "types": "./dist/src/utils.d.ts",
+        "import": "./dist/src/utils.mjs",
+        "require": "./dist/src/utils.cjs",
+        "default": "./dist/src/utils.js"
+      }
     }
   },
   "type": "module",

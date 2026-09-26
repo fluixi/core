@@ -91,16 +91,19 @@ jobs:
         env:
           NODE_ENV: production
 
+      # publishConfig.exports replaces exports in the tarball; a subpath in one and not the
+      # other passes every workspace test and is missing from npm.
+      - name: Check published exports
+        if: steps.scope.outputs.code == 'true'
+        run: node scripts/check-exports.mjs
+
       # Run tests via pnpm (NOT `nx run-many`) scoped to the publishable
       # `./packages/*`. nx loads the whole workspace project graph, which chokes
       # on a nested scaffolding template (packages/create/template-spa/vite.config.ts);
       # pnpm only runs each package's `test` script and never touches that config.
-      #
-      # Exclusion: @fluixi/cli has a `test` script but no test files, so
-      # `vitest run` exits 1 ("no test files"). Re-include once it has tests.
       - name: Test
         if: steps.scope.outputs.code == 'true'
-        run: pnpm -r --filter "./packages/*" --filter "!@fluixi/cli" test
+        run: pnpm -r --filter "./packages/*" test
 
   release:
     name: Version or publish
