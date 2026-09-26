@@ -4,6 +4,24 @@
   "include": [],
   "references": [
     {
+      "path": "../dom"
+    },
+    {
+      "path": "../testing"
+    },
+    {
+      "path": "../auth"
+    },
+    {
+      "path": "../server"
+    },
+    {
+      "path": "../start"
+    },
+    {
+      "path": "../session"
+    },
+    {
       "path": "../reactive"
     },
     {

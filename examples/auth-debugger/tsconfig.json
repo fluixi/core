@@ -8,10 +8,7 @@
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": [
-      "node",
-      "vite/client"
-    ]
+    "types": ["node", "vite/client"]
   },
   "include": [
     "src",
@@ -22,25 +19,31 @@
   ],
   "references": [
     {
-      "path": "../../packages/jsx"
+      "path": "../../packages/oauth2"
+    },
+    {
+      "path": "../../packages/auth"
+    },
+    {
+      "path": "../../packages/session"
     },
     {
       "path": "../../packages/server"
     },
     {
-      "path": "../../packages/dom"
+      "path": "../../packages/jsx"
+    },
+    {
+      "path": "../../packages/cli"
     },
     {
       "path": "../../packages/reactive"
     },
     {
+      "path": "../../packages/dom"
+    },
+    {
       "path": "../../packages/core"
-    },
-    {
-      "path": "../../packages/head"
-    },
-    {
-      "path": "../../packages/cli"
     },
     {
       "path": "../../packages/start"

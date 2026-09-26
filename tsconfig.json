@@ -65,6 +65,9 @@
     },
     {
       "path": "./packages/web-components"
+    },
+    {
+      "path": "./packages/oauth2"
     }
   ]
 }

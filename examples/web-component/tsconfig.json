@@ -6,19 +6,28 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "lib": [
-      "ES2021",
-      "DOM"
-    ],
-    "types": [
-      "node",
-      "vite/client"
-    ]
+    "lib": ["ES2021", "DOM"],
+    "types": ["node", "vite/client"]
   },
-  "include": [
-    "src",
-    "tests",
-    "fluixi.config.ts",
-    "fluixi.d.ts"
+  "include": ["src", "tests", "fluixi.config.ts", "fluixi.d.ts"],
+  "references": [
+    {
+      "path": "../../packages/web-components"
+    },
+    {
+      "path": "../../packages/jsx"
+    },
+    {
+      "path": "../../packages/cli"
+    },
+    {
+      "path": "../../packages/reactive"
+    },
+    {
+      "path": "../../packages/dom"
+    },
+    {
+      "path": "../../packages/start"
+    }
   ]
 }
