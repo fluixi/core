@@ -146,6 +146,9 @@ that request. `Secure` in production, and forced whenever `sameSite: 'none'`, be
 value is ignored without it. AES-GCM authenticates as well as encrypts, so an altered
 cookie fails to open rather than decrypting to something else.
 
+`readCookie(request, name)`, from the same module, returns a single raw cookie value, for a
+cookie this helper did not write.
+
 ## What you still write yourself
 
 `@fluixi/session` is the client session and the cookie. It is not an auth server, so these
@@ -188,5 +191,26 @@ and gives you no seam. Prefer `guardedFetch` where you have the choice.
 
 `auth.expired()` is set when this fires, so the login page can say why someone is back
 there rather than showing a bare form.
+
+### Without a session
+
+The rule is exported on its own, for a data layer that does not sit behind `createSession`:
+
+```ts
+import { createFetchGuard } from '@fluixi/session';
+
+export const api = createFetchGuard({
+  status: 401,
+  shouldHandle: (url) => url.startsWith('/api/') && !url.endsWith('/login'),
+  onUnauthorized: () => location.assign('/login?reason=expired'),
+});
+
+const orders = await api('/api/orders');
+```
+
+It returns a new `fetch` and changes nothing global. `onUnauthorized` fires once until
+`api.reset()`, so ten requests failing together report one expired session, not ten.
+`installGlobalFetchGuard(options)` applies the same rule to the global `fetch`. It does nothing
+on the server and returns a function that puts the original back.
 
 Next: **[OAuth2 and OIDC](/v1/en/oauth2)**.

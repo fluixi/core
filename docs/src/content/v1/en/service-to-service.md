@@ -81,6 +81,22 @@ keeps the secret out of the request body. Some providers want them in the form i
 createServiceClient({ issuer, clientId, clientSecret, clientAuthMethod: 'body' });
 ```
 
+**A key instead of a secret.** A client registered with a public key authenticates with
+`private_key_jwt`: pass `privateKey` (a JWK) and `keyId`, and no secret travels at all. Okta's
+org authorization server accepts nothing else for client credentials.
+`credentialsFromEnv` reads either setup from the environment and spreads straight in; see
+[Token verification](/v1/en/token-verification#credentials-from-the-environment).
+
+```ts
+import { createServiceClient } from '@fluixi/oauth2/service';
+import { credentialsFromEnv } from '@fluixi/oauth2/verify';
+
+const credentials = await credentialsFromEnv({ prefix: 'orders' });
+if (!credentials) throw new Error('Set ORDERS_CLIENT_SECRET, or ORDERS_PRIVATE_KEY and ORDERS_KEY_ID.');
+
+export const orders = createServiceClient({ issuer, ...credentials });
+```
+
 **No discovery document.** Give the token endpoint directly with `tokenEndpoint`.
 
 **Anything else** goes through `extraParams`, which is merged into the token request.

@@ -87,6 +87,23 @@ attendent dans le formulaire :
 createServiceClient({ issuer, clientId, clientSecret, clientAuthMethod: 'body' });
 ```
 
+**Une clé plutôt qu'un secret.** Un client enregistré avec une clé publique s'authentifie par
+`private_key_jwt` : passez `privateKey` (un JWK) et `keyId`, et aucun secret ne circule. Le
+serveur d'autorisation de l'org Okta n'accepte rien d'autre pour les client credentials.
+`credentialsFromEnv` lit l'une ou l'autre configuration depuis l'environnement et s'étale
+directement ; voir
+[Vérification des tokens](/v1/fr/token-verification#les-credentials-depuis-lenvironnement).
+
+```ts
+import { createServiceClient } from '@fluixi/oauth2/service';
+import { credentialsFromEnv } from '@fluixi/oauth2/verify';
+
+const credentials = await credentialsFromEnv({ prefix: 'orders' });
+if (!credentials) throw new Error('Set ORDERS_CLIENT_SECRET, or ORDERS_PRIVATE_KEY and ORDERS_KEY_ID.');
+
+export const orders = createServiceClient({ issuer, ...credentials });
+```
+
 **Pas de document de discovery.** Donnez le token endpoint directement avec
 `tokenEndpoint`.
 

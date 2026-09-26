@@ -47,41 +47,72 @@ L'en-tête `WWW-Authenticate` mérite d'être envoyé. C'est ainsi qu'un client 
 token expiré d'un endpoint cassé, et c'est ce que lit le client de `@fluixi/oauth2`
 pour décider qu'il doit rafraîchir.
 
-En faire un wrapper vaut généralement la peine :
+### Le garde d'API
+
+Répéter cela dans chaque route, c'est ainsi que l'une d'elles finit sans l'en-tête.
+`createApiGuard` enveloppe plutôt un handler, et il est livré avec le paquet : le format de
+l'en-tête et le client qui le lit viennent du même endroit.
 
 ```ts
-export function guard(
-  handler: (request: Request, claims: TokenClaims) => Response | Promise<Response>,
-  options: { role?: string } = {},
-) {
-  return async (request: Request): Promise<Response> => {
-    let claims: TokenClaims;
-    try {
-      claims = await verify.fromRequest(request);
-    } catch (cause) {
-      const code = cause instanceof TokenError ? cause.code : 'invalid_token';
-      return new Response(JSON.stringify({ error: code }), {
-        status: 401,
-        headers: { 'www-authenticate': `Bearer error="${code}"` },
-      });
-    }
+// src/services/verify.server.ts
+import { createTokenVerifier, createApiGuard } from '@fluixi/oauth2/verify';
+import { rolesFrom } from '@fluixi/oauth2/roles';
+import { auth } from '../config/env.js';
 
-    // L'autorisation est une question distincte de l'authentification : le token est
-    // authentique, et ceci décide s'il suffit pour cette route.
-    const roles = (claims.realm_access as { roles?: string[] })?.roles ?? [];
-    if (options.role && !roles.includes(options.role)) {
-      return new Response(JSON.stringify({ error: 'insufficient_role' }), { status: 403 });
-    }
+// The preset knows what this provider's tokens look like: issuer spelling, audience policy.
+export const verify = createTokenVerifier(auth.provider.verifier(auth.clientId));
 
-    return handler(request, claims);
-  };
-}
+export const guard = createApiGuard({ verify, roles: rolesFrom.keycloakRealm });
 ```
 
 ```ts
-export const GET = guard(async (request, claims) => Response.json({ id: claims.sub }));
-export const DELETE = guard(handler, { role: 'superadmin' });
+// src/api/orders.ts
+import { guard } from '../services/verify.server.js';
+
+export const GET = guard(async (_request, claims) => Response.json(await listOrdersFor(String(claims.sub))));
+export const DELETE = guard(deleteOrder, { role: 'admin' });
+export const POST = guard(deleteOrder, {
+  scope: 'orders:write',
+  require: (claims) => claims.tenant === 'acme' || 'wrong tenant',
+});
 ```
+
+Un token qui échoue reçoit un 401 avec `WWW-Authenticate: Bearer error="<code>"`. Un token
+authentique qui ne suffit pas pour la route reçoit un 403. Gardez les deux séparés : un client
+qui voit un 401 pour un rôle manquant rafraîchit un token parfaitement bon et redemande, sans
+fin. Le 401 porte le code d'erreur et jamais le message, car un refus qui explique pourquoi un
+token a échoué dit à un attaquant quelles tentatives s'approchent.
+
+`auth.provider.verifier(auth.clientId)` construit les options du vérificateur à partir du
+preset qu'`authFromEnv` a choisi (voir [OAuth2](/v1/fr/oauth2)), donc l'écriture de l'émetteur
+et la politique d'audience correspondent au fournisseur.
+
+Le second argument dit ce que la route exige au-delà d'un token valide :
+
+| Exigence | Passe quand |
+| --- | --- |
+| `role` | le token porte l'un des rôles |
+| `allRoles` | il les porte tous |
+| `scope` | son claim `scope` contient l'un d'eux |
+| `require(claims, request)` | la fonction renvoie `true` ; une chaîne refuse et dit pourquoi |
+
+Les fournisseurs rangent les rôles à des endroits différents, il n'y a donc pas de valeur par
+défaut. Une exigence `role` sur un garde construit sans `roles` lève une erreur, plutôt que de
+répondre 403 à tout le monde et de ressembler à un problème de permissions. `rolesFrom` couvre
+les formes en usage :
+
+| `rolesFrom.` | Lit |
+| --- | --- |
+| `keycloakRealm` | `realm_access.roles` |
+| `keycloakClient(clientId)` | `resource_access[clientId].roles` |
+| `groups` | `groups`, tel qu'Okta l'envoie quand un claim de groupes est configuré |
+| `cognito` | `cognito:groups` |
+| `namespaced(claim)` | un claim personnalisé, tel qu'une action Auth0 l'ajoute |
+| `scope` | le claim `scope`, pour un fournisseur qui n'émet pas de rôles |
+
+`onRefused(refusal, request)` répond dans la forme d'erreur de l'application. Un 401 reçoit
+quand même l'en-tête `WWW-Authenticate` sauf si la réponse en porte déjà un, car sans lui le
+client ne distingue pas un token expiré d'un endpoint mort.
 
 ## Pourquoi les options ont cette forme
 
@@ -159,6 +190,35 @@ const verify = createTokenVerifier({
 });
 ```
 
+## Tokens liés par DPoP
+
+Un token lié par DPoP porte `cnf.jkt`, l'empreinte de la clé du client, et chaque requête porte
+dans l'en-tête `DPoP` une preuve signée avec cette clé. Sans `dpop: true`, le vérificateur
+accepte un token lié comme s'il s'agissait d'un bearer token, et la liaison ne protège rien.
+
+```ts
+import { createTokenVerifier } from '@fluixi/oauth2/verify';
+
+export const verify = createTokenVerifier({
+  issuer: 'https://example.okta.com/oauth2/default',
+  audience: 'api://orders',
+  dpop: true,
+});
+
+export async function claimsOf(request: Request) {
+  // `fromRequest`, not `verify(token)`: the proof is a header on the request.
+  return verify.fromRequest(request);
+}
+```
+
+Avec lui, un token sans `cnf.jkt` est refusé, tout comme un token lié dont la preuve ne
+correspond pas : la clé de la preuve doit avoir l'empreinte du token, `htm` et `htu` doivent
+correspondre à la méthode et à l'URL de cette requête, `ath` doit être le hash de ce token, et
+`iat` doit tenir dans `dpopProofAgeSec` (10 secondes sauf indication contraire). Une preuve
+absente donne `missing_dpop_proof` et toute différence `invalid_dpop_proof` ; `createApiGuard`
+renvoie l'un ou l'autre comme code du 401. Le côté client, dans les deux modes de tokens, est
+sur la page [OAuth2](/v1/fr/oauth2).
+
 ## Tokens opaques et introspection
 
 Tous les fournisseurs n'émettent pas des JWT. Un token opaque ne porte rien et ne signifie
@@ -208,6 +268,48 @@ serveur. Ne les livrez jamais à un navigateur.
 Les credentials partent dans un en-tête `Authorization: Basic` par défaut.
 `clientAuthMethod: 'body'` les place dans le formulaire pour un fournisseur qui les attend
 là.
+
+### Les credentials depuis l'environnement
+
+La façon dont un client s'authentifie auprès de l'introspection est le choix du fournisseur,
+fait dans sa console : un secret partagé, ou `private_key_jwt`, une signature par une clé dont
+le fournisseur détient la moitié publique. Les deux s'excluent, et un code qui suppose un
+secret n'a rien à lire pour un client Okta réglé en clé publique/privée. `credentialsFromEnv`
+lit celle qui est configurée :
+
+```ts
+// src/api/introspect.ts
+import { createTokenIntrospector, credentialsFromEnv, explainCredentials } from '@fluixi/oauth2/verify';
+
+export async function POST(request: Request) {
+  const credentials = await credentialsFromEnv({ prefix: 'okta' });
+  if (!credentials) {
+    return Response.json({ error: explainCredentials({ prefix: 'okta' }) }, { status: 501 });
+  }
+  const introspect = createTokenIntrospector({
+    issuer: 'https://example.okta.com/oauth2/default',
+    ...credentials,
+    audience: false,
+  });
+  return Response.json(await introspect.fromRequest(request));
+}
+```
+
+| Variable | Signification |
+| --- | --- |
+| `OKTA_CLIENT_ID` | le client qui demande ; sinon `clientId` dans les options |
+| `OKTA_CLIENT_SECRET` ou `OKTA_SECRET` | un secret partagé |
+| `OKTA_PRIVATE_KEY` | chemin du JWK privé ; `~` est développé |
+| `OKTA_KEY_ID` | le `kid` sous lequel le fournisseur connaît la clé |
+| `OKTA_ASSERTION_ALG` | l'algorithme de l'assertion, quand ce n'est pas celui par défaut |
+
+Le préfixe est le vôtre ; `okta` ci-dessus. `<PREFIX>_INTROSPECT_*` est essayé d'abord, pour un
+fournisseur qui veut qu'un autre client pose la question que celui avec lequel on se connecte :
+une SPA publique chez Okta ne peut pas introspecter, un client API Services le fait donc. Une
+clé l'emporte sur un secret. Un fichier de clé nommé mais illisible lève une erreur, car c'est
+une configuration cassée et non une configuration absente, et `null` veut dire que rien n'est
+configuré. `explainCredentials` nomme les deux façons de le régler, ce que le 501 ci-dessus dit
+à un opérateur. Serveur uniquement : le fichier de clé est lu avec Node.
 
 ### Le `active: false` qui veut dire autre chose
 

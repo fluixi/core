@@ -150,6 +150,9 @@ précisément sur cette requête. `Secure` en production, et forcé dès que
 qu'il chiffre, donc un cookie modifié échoue à s'ouvrir au lieu de se déchiffrer en autre
 chose.
 
+`readCookie(request, name)`, du même module, renvoie la valeur brute d'un seul cookie, pour un
+cookie que ce helper n'a pas écrit.
+
 ## Ce que vous écrivez encore vous-même
 
 `@fluixi/session` est la session client et le cookie. Ce n'est pas un serveur
@@ -194,5 +197,26 @@ toujours sans vous laisser de prise. Préférez `guardedFetch` quand vous avez l
 
 `auth.expired()` est positionné quand cela se déclenche, donc la page de connexion peut
 dire pourquoi la personne s'y retrouve au lieu d'afficher un formulaire nu.
+
+### Sans session
+
+La règle est exportée seule, pour une couche de données qui ne passe pas par `createSession` :
+
+```ts
+import { createFetchGuard } from '@fluixi/session';
+
+export const api = createFetchGuard({
+  status: 401,
+  shouldHandle: (url) => url.startsWith('/api/') && !url.endsWith('/login'),
+  onUnauthorized: () => location.assign('/login?reason=expired'),
+});
+
+const orders = await api('/api/orders');
+```
+
+Elle renvoie un nouveau `fetch` et ne change rien de global. `onUnauthorized` se déclenche une
+seule fois jusqu'à `api.reset()` : dix requêtes qui échouent ensemble signalent une session
+expirée, pas dix. `installGlobalFetchGuard(options)` applique la même règle au `fetch` global.
+Il ne fait rien côté serveur et renvoie une fonction qui remet l'original.
 
 Suite : **[OAuth2 et OIDC](/v1/fr/oauth2)**.

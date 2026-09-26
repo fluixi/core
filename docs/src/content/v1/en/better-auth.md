@@ -205,6 +205,9 @@ export async function GET(request: Request) {
 When `authMiddleware` has already run, the same session is on request locals, so a render
 reads it without a second lookup.
 
+To refuse rather than read, `requireUser`, `requireRole` and `requirePermission` answer with
+401 or 403 for you; see [Authentication](/v1/en/authentication#on-the-server).
+
 ## Choosing between this and the others
 
 | | Better Auth | `@fluixi/oauth2` | `@fluixi/session` |

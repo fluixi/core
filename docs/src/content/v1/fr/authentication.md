@@ -99,6 +99,60 @@ La conséquence à retenir : avec `protectedRoute` le composant ne s'exécute ja
 page qui charge des données au montage ne les charge pas pour quelqu'un qui ne doit pas les
 voir. `Protect` laisse le reste de la page intact et remplace une seule zone.
 
+## Tout ce que renvoient les hooks
+
+| Hook | Ce qu'il donne |
+| --- | --- |
+| `useUser()` | l'utilisateur connecté, ou `null`, en signal |
+| `useSession()` | l'enregistrement de session à côté de l'utilisateur : son expiration, et ce que le backend a envoyé d'autre |
+| `useAuth()` | `user`, `session`, `isAuthenticated`, `roles`, `can`, `signIn`, `signOut` en un objet |
+| `useSignIn()` | démarre une connexion ; des credentials pour Better Auth, sinon ce que prend le `login` de la session |
+| `useSignOut()` | termine la session |
+| `usePermissions()` | l'ensemble des permissions des rôles courants |
+| `useCan()` | `can(query)` : l'utilisateur courant peut-il faire ceci. `false` quand aucun rôle n'est configuré, donc une configuration manquante cache un contrôle au lieu de le montrer |
+| `refresh()` | relit la session, pour un changement fait hors de cet onglet |
+| `store` | le store sous-jacent, pour un test qui injecte un utilisateur |
+
+`usePermissions` et `useCan` décident de ce qui s'affiche et de rien d'autre. Un client peut
+revendiquer n'importe quelle permission : c'est le serveur qui décide de ce qui est permis, à
+chaque requête.
+
+```tsx
+const can = useCan();
+
+<button disabled={() => !can((p) => p.users.delete)}>Delete</button>
+```
+
+## Côté serveur
+
+Une fonction serveur ou une route d'API interroge la requête, pas les hooks :
+
+```ts
+import { requireUser, requireRole, requirePermission, optionalUser } from '@fluixi/auth/server';
+
+export async function deleteUser(id: string) {
+  "use server";
+  const admin = await requireRole('admin');
+  // ...
+}
+```
+
+| Helper | Renvoie | Refuse avec |
+| --- | --- | --- |
+| `optionalUser()` | l'utilisateur, ou `null` | jamais |
+| `requireUser({ redirectTo? })` | l'utilisateur | 401, `redirectTo` valant `/login` par défaut |
+| `requireRole(role, { redirectTo? })` | l'utilisateur | 401 si déconnecté, 403 si le rôle diffère |
+| `requirePermission(check, { redirectTo? })` | rien | 401 si déconnecté, 403 quand `check` (un booléen ou une fonction) est faux |
+
+Ils lèvent une `AuthError` qui porte le statut, et une fonction serveur ou une route d'API y
+répond avec ce statut et `{ error, redirectTo }` en corps, pas avec un 500.
+
+Ils lisent l'utilisateur dans les locals de la requête, il faut donc que quelque chose l'y ait
+mis. Avec Better Auth, c'est `authMiddleware` ; avec OAuth2 en mode serveur, c'est
+`sessionLocals`, que monte `authServerModule`. En mode navigateur d'OAuth2, le serveur n'a pas
+de session à lire : vérifiez plutôt l'access token, avec
+[Vérification des tokens](/v1/fr/token-verification).
+
 ## La limite qui n'est pas optionnelle
 
 Tout ce qui précède décide de ce qu'il faut **afficher**. Rien de tout cela ne décide de ce

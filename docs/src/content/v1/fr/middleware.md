@@ -87,4 +87,4 @@ se propager.
 intercepteur est installé sous condition. Le RPC des fonctions serveur passe automatiquement
 par le pipeline dès qu'un intercepteur existe.
 
-Ensuite : **[SEO et en-tête de document](/v1/fr/seo)**.
+Ensuite : **[Modules d'application](/v1/fr/app-modules)**.

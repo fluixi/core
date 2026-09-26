@@ -47,41 +47,71 @@ The `WWW-Authenticate` header is worth sending. It is how a client tells an expi
 from a broken endpoint, and what `@fluixi/oauth2`'s own client reads to decide it should
 refresh.
 
-Wrapping that up is usually worth it:
+### The API guard
+
+Repeating that in every route is how one of them ends up without the header.
+`createApiGuard` wraps a handler instead, and it ships with the package, so the header format
+and the client that reads it come from the same place:
 
 ```ts
-export function guard(
-  handler: (request: Request, claims: TokenClaims) => Response | Promise<Response>,
-  options: { role?: string } = {},
-) {
-  return async (request: Request): Promise<Response> => {
-    let claims: TokenClaims;
-    try {
-      claims = await verify.fromRequest(request);
-    } catch (cause) {
-      const code = cause instanceof TokenError ? cause.code : 'invalid_token';
-      return new Response(JSON.stringify({ error: code }), {
-        status: 401,
-        headers: { 'www-authenticate': `Bearer error="${code}"` },
-      });
-    }
+// src/services/verify.server.ts
+import { createTokenVerifier, createApiGuard } from '@fluixi/oauth2/verify';
+import { rolesFrom } from '@fluixi/oauth2/roles';
+import { auth } from '../config/env.js';
 
-    // Authorization is a separate question from authentication: the token is genuine,
-    // and this decides whether it is enough for this route.
-    const roles = (claims.realm_access as { roles?: string[] })?.roles ?? [];
-    if (options.role && !roles.includes(options.role)) {
-      return new Response(JSON.stringify({ error: 'insufficient_role' }), { status: 403 });
-    }
+// The preset knows what this provider's tokens look like: issuer spelling, audience policy.
+export const verify = createTokenVerifier(auth.provider.verifier(auth.clientId));
 
-    return handler(request, claims);
-  };
-}
+export const guard = createApiGuard({ verify, roles: rolesFrom.keycloakRealm });
 ```
 
 ```ts
-export const GET = guard(async (request, claims) => Response.json({ id: claims.sub }));
-export const DELETE = guard(handler, { role: 'superadmin' });
+// src/api/orders.ts
+import { guard } from '../services/verify.server.js';
+
+export const GET = guard(async (_request, claims) => Response.json(await listOrdersFor(String(claims.sub))));
+export const DELETE = guard(deleteOrder, { role: 'admin' });
+export const POST = guard(deleteOrder, {
+  scope: 'orders:write',
+  require: (claims) => claims.tenant === 'acme' || 'wrong tenant',
+});
 ```
+
+A token that fails gets a 401 with `WWW-Authenticate: Bearer error="<code>"`. A genuine token
+that is not enough for the route gets a 403. Keep the two apart: a client that sees 401 for a
+missing role refreshes a perfectly good token and asks again, forever. The 401 carries the error
+code and never the message, because a refusal that explains why a token failed tells an
+attacker which guesses are close.
+
+`auth.provider.verifier(auth.clientId)` builds the verifier options from the preset
+`authFromEnv` chose (see [OAuth2](/v1/en/oauth2)), so the issuer spelling and audience policy
+match the provider.
+
+The second argument is what the route demands beyond a valid token:
+
+| Requirement | Passes when |
+| --- | --- |
+| `role` | the token holds any one of the roles |
+| `allRoles` | it holds every one |
+| `scope` | its `scope` claim holds any one of them |
+| `require(claims, request)` | the function returns `true`; a string refuses and says why |
+
+Providers keep roles in different places, so there is no default. A `role` requirement on a
+guard built without `roles` throws, rather than answering 403 to everyone and looking like a
+permissions problem. `rolesFrom` covers the shapes in use:
+
+| `rolesFrom.` | Reads |
+| --- | --- |
+| `keycloakRealm` | `realm_access.roles` |
+| `keycloakClient(clientId)` | `resource_access[clientId].roles` |
+| `groups` | `groups`, as Okta sends it when a groups claim is configured |
+| `cognito` | `cognito:groups` |
+| `namespaced(claim)` | a custom claim, as an Auth0 action adds it |
+| `scope` | the `scope` claim, for a provider that issues no roles |
+
+`onRefused(refusal, request)` answers in the app's own error shape. A 401 still gets the
+`WWW-Authenticate` header unless the response already carries one, because without it the
+client cannot tell an expired token from a dead endpoint.
 
 ## Why the options are shaped this way
 
@@ -156,6 +186,34 @@ const verify = createTokenVerifier({
 });
 ```
 
+## DPoP-bound tokens
+
+A token bound with DPoP carries `cnf.jkt`, the thumbprint of the client's key, and each request
+carries a proof signed with that key in the `DPoP` header. Without `dpop: true` the verifier
+accepts a bound token as though it were a bearer token, and the binding protects nothing.
+
+```ts
+import { createTokenVerifier } from '@fluixi/oauth2/verify';
+
+export const verify = createTokenVerifier({
+  issuer: 'https://example.okta.com/oauth2/default',
+  audience: 'api://orders',
+  dpop: true,
+});
+
+export async function claimsOf(request: Request) {
+  // `fromRequest`, not `verify(token)`: the proof is a header on the request.
+  return verify.fromRequest(request);
+}
+```
+
+With it, a token without `cnf.jkt` is refused, and so is a bound one whose proof does not match:
+the proof's key must have the token's thumbprint, `htm` and `htu` must match this request's
+method and URL, `ath` must be this token's hash, and `iat` must be within `dpopProofAgeSec`
+(10 seconds unless set). A missing proof is `missing_dpop_proof` and any mismatch
+`invalid_dpop_proof`; `createApiGuard` returns either as the 401 code. The client side, in both
+token modes, is on the [OAuth2](/v1/en/oauth2) page.
+
 ## Opaque tokens, and introspection
 
 Not every provider issues a JWT. An opaque reference token carries nothing and means
@@ -202,6 +260,46 @@ browser.
 
 Credentials go in an `Authorization: Basic` header by default. `clientAuthMethod: 'body'`
 puts them in the form for a provider that wants them there.
+
+### Credentials from the environment
+
+How a client authenticates to introspection is the provider's choice, made in its console: a
+shared secret, or `private_key_jwt`, a signature from a key whose public half the provider
+holds. The two are exclusive, and code that assumes a secret has nothing to read for an Okta
+client set to public/private key. `credentialsFromEnv` reads whichever is configured:
+
+```ts
+// src/api/introspect.ts
+import { createTokenIntrospector, credentialsFromEnv, explainCredentials } from '@fluixi/oauth2/verify';
+
+export async function POST(request: Request) {
+  const credentials = await credentialsFromEnv({ prefix: 'okta' });
+  if (!credentials) {
+    return Response.json({ error: explainCredentials({ prefix: 'okta' }) }, { status: 501 });
+  }
+  const introspect = createTokenIntrospector({
+    issuer: 'https://example.okta.com/oauth2/default',
+    ...credentials,
+    audience: false,
+  });
+  return Response.json(await introspect.fromRequest(request));
+}
+```
+
+| Variable | Meaning |
+| --- | --- |
+| `OKTA_CLIENT_ID` | the client that asks; `clientId` in the options otherwise |
+| `OKTA_CLIENT_SECRET` or `OKTA_SECRET` | a shared secret |
+| `OKTA_PRIVATE_KEY` | path to the private JWK; `~` is expanded |
+| `OKTA_KEY_ID` | the `kid` the provider knows the key by |
+| `OKTA_ASSERTION_ALG` | the assertion algorithm, when not the default |
+
+The prefix is yours; `okta` above. `<PREFIX>_INTROSPECT_*` is tried first, for a provider that
+wants a different client to ask than the one people sign in with: a public SPA at Okta cannot
+introspect, so an API Services client does it. A key wins over a secret. A key file that is
+named but unreadable throws, because that is a broken configuration rather than a missing one,
+and `null` means nothing is configured. `explainCredentials` names both ways to set it up, which
+is what the 501 above tells an operator. Server only: the key file is read with Node.
 
 ### The `active: false` that means something else
 

@@ -85,4 +85,4 @@ makes refresh-and-retry a few lines; returning nothing lets the failure propagat
 conditionally. Server-function RPC routes through the pipeline automatically once any
 interceptor exists.
 
-Next: **[SEO and the document head](/v1/en/seo)**.
+Next: **[App modules](/v1/en/app-modules)**.

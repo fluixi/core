@@ -35,48 +35,194 @@ on that page applies here too.
 The service depends on a client and never on which one, which is what lets the same app
 code run whether the tokens live in the browser or on a server.
 
+## Configuration from the environment
+
+Which provider, which issuer, which client and where the tokens live are deployment facts, so
+they belong in the environment. `authFromEnv` reads them and returns a preset for the provider
+plus a client config ready to spread:
+
+```ts
+// src/config/env.ts
+import { publicEnv } from '@fluixi/start/env';
+import { authFromEnv } from '@fluixi/oauth2/env';
+import { rolesFrom } from '@fluixi/oauth2/roles';
+
+export const auth = authFromEnv(publicEnv(), {
+  clientPrefix: '',
+  roles: rolesFrom.keycloakRealm,
+});
+```
+
+It returns `provider`, `providerName`, `clientId`, `tokens`, `redirectUri`, `scopes` and
+`client`. Moving to another provider is then a change to `.env`, not to code.
+
+| Variable | Meaning |
+| --- | --- |
+| `AUTH_PROVIDER` | `oidc` (default), `keycloak`, `auth0`, `okta`, `google`, `dex`, `oauth2` |
+| `AUTH_ISSUER` | the issuer, for `oidc` and `oauth2` |
+| `AUTH_CLIENT_ID` | this client |
+| `AUTH_TOKENS` | `browser` (default) or `server` |
+| `AUTH_REDIRECT_URI` | where the provider sends the browser back |
+| `AUTH_SCOPES` | space or comma separated, replacing the preset's |
+| `AUTH_AUDIENCE` | an API identifier. Auth0 needs it to issue a JWT access token |
+| `AUTH_DPOP` | `true` or `false`, overriding the preset |
+| `AUTH_DOMAIN` | the tenant, for `auth0` and `okta` |
+| `AUTH_BASE_URL` | for `keycloak` and `dex` |
+| `AUTH_REALM` | for `keycloak` |
+| `AUTH_AUTH_SERVER` | for `okta`: `default` unless set, `org` for the org server |
+| `AUTH_ROLES_CLAIM` | the namespaced claim an Auth0 action adds |
+
+The names above carry `clientPrefix`, `VITE_` by default. With `publicEnv()` pass
+`clientPrefix: ''`: the app declares which variables the browser may see in `env.public`, so
+the names need no prefix to say it (see [Environment variables](/v1/en/environment)). A
+client secret is never one of them; the server reads it with `serverEnv`.
+
+`prefix: 'GOOGLE'` reads `GOOGLE_*` before `AUTH_*`, so one app can carry several providers.
+`provider`, `tokens` and `roles` in the options override what the environment says. A missing
+variable throws with its name, and a `TOKENS` value other than `browser` or `server` throws
+naming both.
+
+### Provider presets
+
+A preset holds what each provider turned out to need when it was tested live: how it spells
+its issuer, where it keeps roles, what a verifier should check. `authFromEnv` picks one from
+`AUTH_PROVIDER`; `presets` from `@fluixi/oauth2/presets` can also be called directly.
+
+| Preset | `AUTH_PROVIDER` | Needs |
+| --- | --- | --- |
+| Any OIDC provider | `oidc` | `_ISSUER` |
+| Plain OAuth2 | `oauth2` | `_ISSUER`, plus `endpoints` in code |
+| Keycloak | `keycloak` | `_BASE_URL`, `_REALM` |
+| Auth0 | `auth0` | `_DOMAIN`; `_AUDIENCE` and `_ROLES_CLAIM` optional |
+| Okta | `okta` | `_DOMAIN`; `_AUTH_SERVER` optional |
+| Google | `google` | nothing; a hosted domain optional |
+| Dex | `dex` | `_BASE_URL` |
+
+Each preset also records the constraints that cost a live run to find:
+
+**Plain OAuth2**
+
+- Publishes no discovery document, so every endpoint is configured by hand.
+
+**Keycloak**
+
+- Puts no `aud` on an access token until a dedicated audience mapper is configured. Configure one and switch the verifier to `audience: clientId`.
+- Revokes the whole session when an authorization code is replayed, so a replay test has to run last.
+
+**Auth0**
+
+- Issues an opaque access token unless `audience` names an API, so token verification needs it.
+- A refresh token needs three things together: `offline_access` in the scopes, an audience whose API has Allow Offline Access on, and Refresh Token Rotation enabled on the application. Any one missing and the scope is ignored silently.
+- Has no roles claim of its own. An action must add a namespaced one, and Auth0 drops a custom claim that is not a URI.
+- The issuer carries a trailing slash. A verifier pinned without it rejects every token.
+
+**Okta**
+
+- Two authorization servers: /oauth2/<name> for an application, the bare domain for the management API. They are not interchangeable.
+- Turns DPoP on by default for a new application, and an integrator org will not let you untick it.
+- Binds the refresh token to the DPoP key as well as the access token, so a refresh must be proved with the key that obtained it.
+- A public SPA cannot introspect at all. An API Services client with `private_key_jwt` has to ask instead.
+- Client credentials against the org server must use `private_key_jwt`, whatever the application is set to.
+
+**Google**
+
+- Refuses a public client: the token endpoint reports `client_secret is missing` before checking PKCE, so browser mode cannot work.
+- Publishes its issuer both with and without a scheme, so a verifier needs both spellings.
+- Issues a refresh token only on the first consent unless `prompt=consent` and `access_type=offline` are sent.
+
+**Dex**
+
+- Sends no CORS headers on discovery or the token endpoint, so browser mode cannot work. Naming the endpoints explicitly only moves the failure to the token request.
+- Has no admin interface. Users are static entries in its config file, and a password is a bcrypt hash.
+- Publishes no revocation endpoint.
 ## Wiring it up
 
-Three pieces: a login page that starts the flow, a callback route that finishes it, and a
-guard.
+Three files: the service, the app config that registers it, and the callback route.
+
+```ts
+// src/services/auth.ts
+import { createAuthService, authModule } from '@fluixi/oauth2';
+import { auth as authEnv } from '../config/env.js';
+
+interface User {
+  sub: string;
+  email?: string;
+  role?: string;
+}
+
+export const auth = createAuthService<User>({
+  config: {
+    ...authEnv.client,
+    tokens: 'browser',
+    redirectUri: `${location.origin}/callback`,
+    postLogoutRedirectUri: `${location.origin}/login`,
+  },
+});
+
+export const AuthModule = authModule(auth);
+export const { protectedRoute, Protect, Can, useUser } = auth;
+```
+
+`tokens` is set again after the spread so TypeScript knows which half of the config this is.
+
+```ts
+// src/app.config.ts
+import { defineApp } from '@fluixi/start/app';
+import { AuthModule } from './services/auth.js';
+
+export default defineApp({ imports: [AuthModule] });
+```
+
+`@fluixi/start` registers `src/app.config.ts` before either entry runs, so neither
+`entry-client` nor `entry-server` mentions auth. See [App modules](/v1/en/app-modules).
 
 ```tsx
-// routes/login.tsx
+// src/routes/callback.tsx
+import { OAuthCallback } from '@fluixi/oauth2/callback';
+import { auth } from '../config/env.js';
+
+export default OAuthCallback({
+  enabled: () => auth.tokens === 'browser',
+  pending: () => <p>Signing you in</p>,
+  failed: (reason) => (
+    <>
+      <p>{reason}</p>
+      <a href="/login">Try again</a>
+    </>
+  ),
+});
+```
+
+`OAuthCallback` is the whole redirect-URI route. It exchanges the code, checks the `state`,
+and sends the visitor to the destination `signIn({ returnTo })` recorded before the redirect.
+It gets the service from `AuthServiceToken`, which `authModule` registered; pass `service` to
+skip injection.
+
+Give `failed` a way back to the login: a visitor stuck on this page has nothing else to do.
+`enabled` returns false when the app runs with `tokens: 'server'`, where the provider
+redirects to the server's own `/auth/callback` and there is nothing to exchange here.
+
+It leaves with `location.replace` by default, since the page exists for one transition. Pass
+`onSignedIn(destination)` to stay in the client router instead. `useOAuthCallback` is the hook
+underneath, with `stage`, `error`, `destination` and `params` as signals, for a page that wants
+to show the steps.
+
+The login page and the guards:
+
+```tsx
+// src/routes/login.tsx
+import { auth } from '../services/auth.js';
+
 export default function Login() {
   return <button onClick={() => auth.signIn({ returnTo: '/dashboard' })}>Sign in</button>;
 }
 ```
 
 ```tsx
-// routes/callback.tsx
-export default function Callback() {
-  const navigate = useNavigate();
-  const error = signal<string | null>(null);
-
-  // Browser only. The authorization code is on this URL and the PKCE verifier is in this
-  // browser's storage, so the exchange cannot happen anywhere else.
-  if (typeof window !== 'undefined') {
-    void auth.complete()
-      .then((destination) => navigate(destination, { replace: true }))
-      .catch((cause) => error.set(String(cause)));
-  }
-
-  return <p>{() => error() ?? 'Signing you in'}</p>;
-}
-```
-
-`complete()` exchanges the code, loads the user, and returns where the visitor was heading
-when the login started, which is what `signIn({ returnTo })` recorded before the redirect.
-
-The guards come back from the service itself, so there is no second file:
-
-```tsx
-export const { protectedRoute, Can, useUser } = auth;
-
 export default protectedRoute(Dashboard);
 ```
 
-## Choosing a mode
+## Where the tokens live
 
 ### `tokens: 'browser'`
 
@@ -94,28 +240,53 @@ what replaces it, and it is not optional here.
 ### `tokens: 'server'`
 
 The tokens stay on your server and the browser gets an httpOnly cookie it cannot read, so
-a script on the page has nothing to steal. It needs the routes:
+a script on the page has nothing to steal. The server half is a module:
 
 ```ts
-// src/middleware.ts
-import { defineMiddleware } from '@fluixi/start';
-import { oauthRoutes, sessionLocals } from '@fluixi/oauth2/server';
+// src/services/auth.server.ts
+import { authServerModule } from '@fluixi/oauth2/server';
+import { publicEnv, serverEnv } from '@fluixi/start/env';
+import { auth } from '../config/env.js';
 
-const config = {
-  issuer: process.env.OIDC_ISSUER!,
-  clientId: process.env.OIDC_CLIENT_ID!,
-  clientSecret: process.env.OIDC_CLIENT_SECRET!,
-  redirectUri: 'http://localhost:3000/auth/callback',
-  cookieSecret: process.env.SESSION_SECRET!,
-};
-
-export default defineMiddleware([oauthRoutes(config), sessionLocals(config)]);
+export function authServer() {
+  const appUrl = publicEnv().APP_URL ?? 'http://localhost:3000';
+  return authServerModule({
+    ...auth.client,
+    clientSecret: serverEnv('OIDC_CLIENT_SECRET', { required: true }),
+    cookieSecret: serverEnv('SESSION_SECRET', { required: true }),
+    redirectUri: `${appUrl}/auth/callback`,
+    defaultReturnTo: '/dashboard',
+    secureCookie: appUrl.startsWith('https://'),
+  });
+}
 ```
 
-`oauthRoutes` serves `/auth/login`, `/callback`, `/refresh`, `/me` and `/logout`.
+```ts
+// src/app.config.server.ts
+import { defineApp } from '@fluixi/start/app';
+import { auth } from './config/env.js';
+import { authServer } from './services/auth.server.js';
+
+export default defineApp({
+  imports: auth.tokens === 'server' ? [authServer()] : [],
+});
+```
+
+Only the server build imports `src/app.config.server.ts`, so the client secret and the cookie
+key never reach the browser bundle. `authServer` is a function because `serverEnv` with
+`required` throws when a variable is unset, and in browser mode these are.
+
+`authServerModule` mounts `oauthRoutes` and then `sessionLocals`. The routes live under
+`basePath`, `/auth` by default: `/login`, `/callback`, `/refresh`, `/me`, `/revoke` and
+`/logout`. Register `<appUrl>/auth/callback` as the redirect URI at the provider. The cookie is
+encrypted with a key derived from `cookieSecret`, which must be at least 32 bytes.
+
+This is also the mode for a provider that refuses a public client: Google answers a token
+request without a secret with `client_secret is missing`.
+
 `sessionLocals` puts the signed-in user on request locals, which is where the auth hooks
 look during a server render, so `useUser()` answers during SSR instead of filling in after
-hydration. Mount it after `oauthRoutes`.
+hydration.
 
 It reuses a userinfo response for `userCacheMs` (30 seconds by default) rather than asking
 the provider on every render. Set `0` to always ask. The tradeoff is freshness: a session
@@ -125,6 +296,54 @@ There is no browser-mode equivalent of `sessionLocals`, and that is not an omiss
 that mode the token never leaves the browser and is not sent on a document request, so the
 server has no credential to resolve. An app built that way renders the signed-out shell
 and fills it in on the client.
+
+## DPoP
+
+A bearer token works for whoever holds a copy. DPoP (RFC 9449) binds the token to a key the
+client holds: the provider records the key's thumbprint in the token as `cnf.jkt`, and every
+request carries a fresh proof signed with that key. A copied token is useless without the key.
+
+Turn it on with `dpop: true`, or `AUTH_DPOP=true` through `authFromEnv`. Proofs are signed with
+`dpopAlgorithm`, `ES256` unless set, and need the `jose` package, an optional peer. Some
+providers leave no choice: Okta turns DPoP on for a new application, and an integrator org will
+not let you turn it off.
+
+A provider that wants a server-chosen nonce refuses the request with `use_dpop_nonce` and a
+`DPoP-Nonce` header. The client repeats the request once with that nonce in the proof, in both
+modes.
+
+### In the browser
+
+```ts
+import { createAuthService } from '@fluixi/oauth2';
+
+export const auth = createAuthService({
+  config: {
+    tokens: 'browser',
+    issuer: 'https://example.okta.com/oauth2/default',
+    clientId: 'spa',
+    redirectUri: `${location.origin}/callback`,
+    dpop: true,
+  },
+});
+```
+
+The key is made per client, non-extractable, and kept in IndexedDB. IndexedDB stores the key
+object itself, so the private half is never bytes a script could read or send anywhere. It
+persists across reloads on purpose: a refresh token is bound to the key that obtained it, and
+a refresh proved with any other key is refused.
+
+### On the server
+
+Set `dpop: true` on the `authServerModule` config. Each session gets its own key at the code
+exchange, kept as a JWK inside the encrypted session cookie. Refreshes are signed with that
+same key, and the userinfo calls behind `/auth/me` and `sessionLocals` use the `DPoP` scheme
+with a proof carrying the token's hash (`ath`).
+
+### At the API
+
+Binding protects nothing unless the API checks the proof. `createTokenVerifier({ dpop: true })`
+does; see [Token verification](/v1/en/token-verification).
 
 ## Signing out, and what it leaves behind
 
@@ -233,31 +452,28 @@ reads them server-side. See [Token verification](/v1/en/token-verification).
 
 ## Dependency injection
 
-The service is usually imported directly, which works anywhere including outside a
-component. Tokens exist for the cases that want a seam, such as a test providing a fake:
+App code usually imports the service, which is simpler and works outside a component. The
+tokens are for code that cannot import your app: `OAuthCallback` injects `AuthServiceToken`
+when it is given no `service`, and a test can provide a fake.
 
-```ts
-import { AuthServiceToken, AuthClientToken } from '@fluixi/oauth2';
-import { provideRoot } from '@fluixi/start/di';
-
-export function provideAuth(): void {
-  provideRoot([
-    { provide: AuthServiceToken, useValue: auth },
-    { provide: AuthClientToken, useValue: auth.client },
-  ]);
-}
-```
-
-Call it from the client entry, and from the server entry too if any route injects during a
-server render. See [Dependency injection](/v1/en/dependency-injection) for why the root
-scope is the right one here.
+`authModule(auth)` in `src/app.config.ts` registers `AuthServiceToken` and `AuthClientToken`.
+On the server the same instance serves every request. That is safe because it holds nothing
+about the visitor: the signed-in user comes from request locals, which `sessionLocals` fills per
+request. See [App modules](/v1/en/app-modules) and
+[Dependency injection](/v1/en/dependency-injection).
 
 ## What the package checks, and what it does not
 
 **Checked.** The `state` on a callback must match the one this client sent, which is the
 CSRF check. The PKCE verifier is single use, so a replayed callback fails. A userinfo `sub`
-that does not match the id token is discarded, which OIDC requires. A refused refresh
-clears the dead token rather than retrying it forever.
+that does not match the id token is discarded, which OIDC requires. A refresh refused
+with `invalid_grant` clears the stored refresh token, since RFC 6749 says it is finished;
+any other failure (a wrong proof, a nonce request, a dropped connection) is about the attempt
+and keeps it.
+
+A `returnTo` arrives on the query string, so it is attacker controlled. Anything that is not a
+path on this origin is refused unless its origin is in `allowedReturnOrigins`. Server mode
+checks it when the flow starts and again when it redirects.
 
 **Not checked, deliberately.** The client does not verify token signatures. The tokens
 arrive over a direct TLS call this client makes to the token endpoint, exchanging a code
@@ -267,5 +483,21 @@ the safer source anyway.
 
 Signature verification belongs at the API receiving the token. That is
 [Token verification](/v1/en/token-verification), and it is not optional.
+
+## Lower-level pieces
+
+The service is built from these, exported for anything it does not cover.
+
+| Export | From | What it is |
+| --- | --- | --- |
+| `createBrowserClient` | `@fluixi/oauth2` | the protocol client for `tokens: 'browser'`: PKCE, storage, refresh, DPoP |
+| `createServerClient` | `@fluixi/oauth2` | the browser half of `tokens: 'server'`; calls `/auth/*` and never sees a token |
+| `discover`, `clearDiscoveryCache` | `@fluixi/oauth2` | reads and caches `/.well-known/openid-configuration` |
+| `createPkcePair`, `createVerifier`, `createChallenge`, `createStateValue` | `@fluixi/oauth2` | PKCE (S256) and `state` values |
+| `safeReturnTo` | `@fluixi/oauth2` | the check applied to a post-login destination |
+| `expiryFromJwt` | `@fluixi/oauth2` | reads `exp` from a JWT without verifying it |
+| `createDpopKey`, `proofFor`, `thumbprintOf`, `boundKeyOf` | `@fluixi/oauth2` | DPoP keys, proofs, RFC 7638 thumbprints, a token's `cnf.jkt` |
+| `presets` | `@fluixi/oauth2/presets` | the provider presets above |
+| `rolesFrom` | `@fluixi/oauth2/roles` | where each provider keeps roles; safe in a browser bundle |
 
 Next: **[Better Auth](/v1/en/better-auth)**.

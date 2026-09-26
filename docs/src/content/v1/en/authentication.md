@@ -96,6 +96,58 @@ The consequence worth knowing: `protectedRoute` means the component never runs, 
 that fetches on mount does not fetch for someone who should not see it. `Protect` leaves
 the rest of the page intact and swaps one region.
 
+## Everything the hooks return
+
+| Hook | What it gives |
+| --- | --- |
+| `useUser()` | the signed-in user, or `null`, as a signal |
+| `useSession()` | the session record beside the user: when it expires, and what else the backend sent |
+| `useAuth()` | `user`, `session`, `isAuthenticated`, `roles`, `can`, `signIn`, `signOut` in one object |
+| `useSignIn()` | starts a sign-in; credentials for Better Auth, whatever the session's `login` takes otherwise |
+| `useSignOut()` | ends the session |
+| `usePermissions()` | the permission set for the current roles |
+| `useCan()` | `can(query)`: may the current user do this. `false` when no roles are configured, so a missing config hides a control rather than showing it |
+| `refresh()` | re-reads the session, for a change made outside this tab |
+| `store` | the underlying store, for a test that seeds a user |
+
+`usePermissions` and `useCan` decide what to render and nothing else. A client can claim any
+permission, so the server decides what is allowed on every request.
+
+```tsx
+const can = useCan();
+
+<button disabled={() => !can((p) => p.users.delete)}>Delete</button>
+```
+
+## On the server
+
+A server function or an API route asks the request, not the hooks:
+
+```ts
+import { requireUser, requireRole, requirePermission, optionalUser } from '@fluixi/auth/server';
+
+export async function deleteUser(id: string) {
+  "use server";
+  const admin = await requireRole('admin');
+  // ...
+}
+```
+
+| Helper | Returns | Refuses with |
+| --- | --- | --- |
+| `optionalUser()` | the user, or `null` | never |
+| `requireUser({ redirectTo? })` | the user | 401, `redirectTo` defaulting to `/login` |
+| `requireRole(role, { redirectTo? })` | the user | 401 when signed out, 403 when the role differs |
+| `requirePermission(check, { redirectTo? })` | nothing | 401 when signed out, 403 when `check` (a boolean or a function) is false |
+
+They throw an `AuthError` carrying the status, and a server function or API route answers it
+with that status and `{ error, redirectTo }` as the body, not a 500.
+
+They read the user from request locals, so something has to put it there first. With Better
+Auth that is `authMiddleware`; with OAuth2 in server mode it is `sessionLocals`, which
+`authServerModule` mounts. In OAuth2's browser mode the server has no session to read: verify
+the access token instead, with [Token verification](/v1/en/token-verification).
+
 ## The boundary that is not optional
 
 Everything above decides what to **render**. None of it decides what is **allowed**.
