@@ -13,7 +13,7 @@
  * else lines up directly: `fetchUser`, `refresh`, `logout` and `getExpiry`.
  */
 import { createSession, type AccessControl, type Session } from '@fluixi/session';
-import { createAuthHooks } from '@fluixi/auth/client';
+import { createAuthHooks, type AuthHooksOptions } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
 import { safeReturnTo } from './return-to.js';
 import { createBrowserClient } from './browser.js';
@@ -59,7 +59,7 @@ export interface AuthServiceOptions<U, P = unknown, Q = (p: P) => boolean> {
    * client-side navigation; leave it out and it assigns `location`, which reloads the
    * document and discards the reactive tree.
    */
-  navigate?: { handler: () => (to: string, options?: unknown) => void };
+  navigate?: AuthHooksOptions['navigate'];
   /** Where a signed-out visitor is sent. Default `/login`. */
   loginPath?: string;
   /** Where a signed-in visitor is sent from a guest-only page. Default `/`. */
