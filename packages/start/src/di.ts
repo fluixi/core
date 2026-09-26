@@ -81,8 +81,8 @@ export class Injector {
     // per-request singleton on the server, an app singleton on the client).
     if (token.factory) return rootOf(this).#fromFactory(token);
     throw new Error(
-      `[fluixi/di] No provider for "${token.name}". Register it with provide()/provideRoot(), ` +
-        `or give the token a { factory } to self-provide.`,
+      `[fluixi/di] No provider for "${token.name}". List it in a module in src/app.config.ts, ` +
+        `register it with provide()/provideRoot(), or give the token a { factory } to self-provide.`,
     );
   }
 

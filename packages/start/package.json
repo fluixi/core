@@ -69,6 +69,12 @@
         "require": "./dist/di.cjs",
         "default": "./dist/di.js"
       },
+      "./app": {
+        "types": "./dist/app.d.ts",
+        "import": "./dist/app.mjs",
+        "require": "./dist/app.cjs",
+        "default": "./dist/app.js"
+      },
       "./server-fns": {
         "types": "./dist/generated-server-fns.d.ts",
         "import": "./dist/generated-server-fns.mjs",
@@ -210,6 +216,13 @@
       "import": "./dist/di.mjs",
       "require": "./dist/di.cjs",
       "default": "./dist/di.js"
+    },
+    "./app": {
+      "development": "./src/app.ts",
+      "types": "./dist/app.d.ts",
+      "import": "./dist/app.mjs",
+      "require": "./dist/app.cjs",
+      "default": "./dist/app.js"
     },
     "./server-fns": {
       "development": "./src/generated-server-fns.ts",

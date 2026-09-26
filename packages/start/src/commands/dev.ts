@@ -9,6 +9,7 @@ import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js'
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
+import { APP_VMOD, findAppConfig, hasAppConfig } from '../app-plugin.js';
 
 const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
 
@@ -129,13 +130,21 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
 
   // Optional request middleware. Loaded per request via ssrLoadModule so edits hot-
   // reload (no server restart); guardHandler turns a middleware throw into a 500.
+  //
+  // The app config loads first on every request, not only through the server entry: an
+  // API route or server function never imports that entry here, so without this the first
+  // `/api` call after a restart would find no providers.
   const hasMiddleware = existsSync(resolve(cfg.root, cfg.middleware));
-  const handler: FetchHandler = hasMiddleware
-    ? guardHandler(async (request) => {
-        const mwMod = await vite.ssrLoadModule('/' + cfg.middleware);
-        return composeMiddleware(normalizeMiddleware(mwMod), renderHandler)(request);
-      }, (e) => vite.ssrFixStacktrace?.(e))
-    : renderHandler;
+  const hasApp = hasAppConfig(findAppConfig(cfg.root));
+  const handler: FetchHandler =
+    hasMiddleware || hasApp
+      ? guardHandler(async (request) => {
+          const app = hasApp ? await vite.ssrLoadModule(APP_VMOD) : null;
+          const mwMod = hasMiddleware ? await vite.ssrLoadModule('/' + cfg.middleware) : null;
+          const chain = [...normalizeMiddleware(app?.middleware), ...normalizeMiddleware(mwMod)];
+          return composeMiddleware(chain, renderHandler)(request);
+        }, (e) => vite.ssrFixStacktrace?.(e))
+      : renderHandler;
   const nodeHandler = toNodeHandler(handler);
   const http = createHttp((req, res) => {
     // Vite middleware first (static assets + HMR), then our handler for app routes.

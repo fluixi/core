@@ -25,6 +25,8 @@ export interface ServerModule {
   handleServerFn?: (request: Request) => Response | Promise<Response>;
   isApiRequest?: (request: Request) => boolean;
   handleApiRequest?: (request: Request) => Response | Promise<Response>;
+  /** Middleware from `app.config.ts` modules, re-exported into the entry by the start plugin. */
+  __fluixiAppMiddleware?: unknown;
 }
 
 export interface HandlerParts {
@@ -91,6 +93,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
       mod.isApiRequest!(request) ? mod.handleApiRequest!(request) : next(request);
   }
 
-  if (!middleware) return guardHandler(core);
-  return guardHandler(composeMiddleware(normalizeMiddleware(middleware as never), core));
+  // Modules first, in `imports` order, then the app's own `src/middleware.ts`.
+  const chain = [...normalizeMiddleware(mod.__fluixiAppMiddleware), ...normalizeMiddleware(middleware as never)];
+  return guardHandler(composeMiddleware(chain, core));
 }
