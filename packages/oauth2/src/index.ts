@@ -123,6 +123,7 @@ export type {
 } from './types.js';
 
 export { AuthServiceToken, AuthClientToken } from './tokens.js';
+export { authModule } from './module.js';
 
 // Token verification lives on `@fluixi/oauth2/verify`, so a browser bundle never pulls in
 // `jose` just because the package was imported.

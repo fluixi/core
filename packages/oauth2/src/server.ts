@@ -38,6 +38,7 @@ import {
 import { discover } from './discovery.js';
 import { createPkcePair, createStateValue, expiryFrom, timingSafeEqual } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
+import { defineModule, type AppModule } from '@fluixi/start/app';
 
 export interface OAuthRoutesConfig {
   issuer?: string;
@@ -468,4 +469,15 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     locals.auth = { user, session: user ? { expiresAt: session.expiresAt } : null };
     return next();
   };
+}
+
+/**
+ * The server half of `authModule`, listed in `src/app.config.server.ts`: the routes and the
+ * session middleware that `tokens: 'server'` needs, in the order they have to run.
+ *
+ * `oauthRoutes` first, so a request to the login route is answered rather than having its
+ * session resolved on the way past.
+ */
+export function authServerModule(config: OAuthRoutesConfig): AppModule {
+  return defineModule({ name: 'oauth2-server', middleware: [oauthRoutes(config), sessionLocals(config)] });
 }
