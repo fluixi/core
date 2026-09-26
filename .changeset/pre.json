@@ -229,6 +229,7 @@
     "oauth2-package",
     "oauth2-provider-agnostic",
     "oauth2-roles",
+    "oauth2-server-dpop",
     "oauth2-ssr-callback",
     "one-client-auth",
     "one-is-server",
