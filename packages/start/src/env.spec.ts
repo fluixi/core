@@ -104,6 +104,27 @@ describe('reading the public set on a server', () => {
     process.env.SOMETHING = 'here';
     expect(publicEnv().SOMETHING).toBe('here');
   });
+
+  it('finds a declared name under its VITE_ spelling, as the build did', () => {
+    process.env.VITE_AUTH_CLIENT_ID = 'admin-app';
+    setDeclaredPublicKeys(['AUTH_CLIENT_ID']);
+    expect(publicEnv().AUTH_CLIENT_ID).toBe('admin-app');
+  });
+
+  it('answers the bare name at run time, where no build declared a set', () => {
+    // A published @fluixi/start is imported from node_modules on the server, so the defined
+    // literal never reaches it and the declared list was set in another process. An app whose
+    // .env still says VITE_AUTH_CLIENT_ID must read AUTH_CLIENT_ID all the same.
+    process.env.VITE_AUTH_CLIENT_ID = 'admin-app';
+    delete process.env.AUTH_CLIENT_ID;
+    expect(publicEnv().AUTH_CLIENT_ID).toBe('admin-app');
+  });
+
+  it('prefers the bare name when both are set', () => {
+    process.env.AUTH_CLIENT_ID = 'bare';
+    process.env.VITE_AUTH_CLIENT_ID = 'prefixed';
+    expect(publicEnv().AUTH_CLIENT_ID).toBe('bare');
+  });
 });
 
 describe('a server-only variable', () => {

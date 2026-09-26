@@ -68,16 +68,15 @@ export function publicEnv(): Readonly<Record<string, string>> {
   if (defined) return Object.freeze({ ...defined });
 
   if (typeof process !== 'undefined' && process.env) {
-    // A server, or a test. `declaredPublicKeys` is set by the plugin during a build; without it
-    // every variable is returned, which is correct on a server and impossible in a browser.
-    const keys = declaredPublicKeys;
+    // A server, or a test. The defined literal never reaches a server that imports this package
+    // from node_modules rather than bundling it, which is the default for a published install,
+    // so this path has to answer the same way `selectPublic` did at build time: a declared name
+    // is found under its bare or its `VITE_` spelling. Without the declared list (set by the
+    // plugin during a build) every variable is returned, which is correct on a server and
+    // impossible in a browser, with the bare name added for each prefixed one.
     const source = process.env as Record<string, string | undefined>;
-    const out: Record<string, string> = {};
-    for (const key of keys ?? Object.keys(source)) {
-      const value = source[key];
-      if (value !== undefined) out[key] = value;
-    }
-    return Object.freeze(out);
+    const keys = declaredPublicKeys ?? bareNames(source);
+    return Object.freeze(selectPublic(source, keys));
   }
 
   if (inBrowser() && !warned) {
@@ -88,6 +87,13 @@ export function publicEnv(): Readonly<Record<string, string>> {
     );
   }
   return Object.freeze({});
+}
+
+/** Every name in `source`, plus the bare form of each `VITE_` one. */
+function bareNames(source: Record<string, string | undefined>): string[] {
+  const names = new Set(Object.keys(source));
+  for (const key of names) if (key.startsWith('VITE_')) names.add(key.slice('VITE_'.length));
+  return [...names];
 }
 
 /**
