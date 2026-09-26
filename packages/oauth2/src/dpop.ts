@@ -56,9 +56,14 @@ async function loadJose(): Promise<typeof import('jose')> {
  * attacker who can run script can use the key while they are there, and cannot take it
  * away to use later.
  */
-export async function createDpopKey(alg = 'ES256'): Promise<DpopKey> {
+export async function createDpopKey(
+  alg = 'ES256',
+  options: { extractable?: boolean } = {},
+): Promise<DpopKey> {
   const jose = await loadJose();
-  const { privateKey, publicKey } = await jose.generateKeyPair(alg, { extractable: false });
+  const { privateKey, publicKey } = await jose.generateKeyPair(alg, {
+    extractable: options.extractable ?? false,
+  });
 
   const publicJwk = { ...(await jose.exportJWK(publicKey)) } as Record<string, unknown>;
   return {
@@ -66,6 +71,40 @@ export async function createDpopKey(alg = 'ES256'): Promise<DpopKey> {
     publicJwk,
     thumbprint: await jose.calculateJwkThumbprint(publicJwk as never, 'sha256'),
     alg,
+  };
+}
+
+/**
+ * A key as a server session stores it: the private JWK and its algorithm.
+ *
+ * Only for a key held by a server, inside an encrypted httpOnly cookie. There it is bytes
+ * no page can read, and the session has nowhere else to keep it between requests. A
+ * browser key stays non-extractable in IndexedDB instead.
+ */
+export interface StoredDpopKey {
+  jwk: Record<string, unknown>;
+  alg: string;
+}
+
+/** Export a key made with `extractable: true`, for a server session to store. */
+export async function exportDpopKey(key: DpopKey): Promise<StoredDpopKey> {
+  const jose = await loadJose();
+  return { jwk: { ...(await jose.exportJWK(key.privateKey as never)) }, alg: key.alg };
+}
+
+const PRIVATE_MEMBERS = new Set(['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth']);
+
+/** Rebuild a key a server session stored. The thumbprint comes out the same, which is the point. */
+export async function importDpopKey(stored: StoredDpopKey): Promise<DpopKey> {
+  const jose = await loadJose();
+  const privateKey = (await jose.importJWK(stored.jwk as never, stored.alg)) as CryptoKey;
+  // The public half is the private JWK without its private members (RFC 7518 §6.2.2, §6.3.2).
+  const publicJwk = Object.fromEntries(Object.entries(stored.jwk).filter(([k]) => !PRIVATE_MEMBERS.has(k)));
+  return {
+    privateKey,
+    publicJwk,
+    thumbprint: await jose.calculateJwkThumbprint(publicJwk as never, 'sha256'),
+    alg: stored.alg,
   };
 }
 

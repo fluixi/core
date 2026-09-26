@@ -38,6 +38,7 @@ import {
 import { discover } from './discovery.js';
 import { createPkcePair, createStateValue, expiryFrom, timingSafeEqual } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
+import { createDpopKey, exportDpopKey, importDpopKey, nonceFrom, proofFor, type DpopKey, type StoredDpopKey } from './dpop.js';
 import { defineModule, type AppModule } from '@fluixi/start/app';
 
 export interface OAuthRoutesConfig {
@@ -92,6 +93,63 @@ export interface OAuthRoutesConfig {
   userCacheMs?: number;
   /** Map the provider's userinfo onto the app's own shape. */
   mapUser?: (claims: Record<string, unknown>, accessToken: string) => unknown;
+  /**
+   * Bind tokens to a key with DPoP (RFC 9449), which a provider may require: an Okta org
+   * that mandates it refuses a server-mode client without it.
+   *
+   * The key is made per session at the code exchange and kept in the encrypted session
+   * cookie, since a refresh token is bound to the key that obtained it and a refresh with
+   * another key is refused. Needs `jose`.
+   */
+  dpop?: boolean;
+  /** Default `ES256`. Must be in the provider's `dpop_signing_alg_values_supported`. */
+  dpopAlgorithm?: string;
+}
+
+/**
+ * Nonces providers asked for, per origin, shared by the routes and `sessionLocals`. A nonce
+ * is the server's to set (RFC 9449 §8, §9), so the latest one it sent is the one to use.
+ */
+const dpopNonces = new Map<string, string>();
+
+/** Put a proof for this request on `headers`, with the nonce this origin last asked for. */
+async function prove(
+  headers: Record<string, string>,
+  key: DpopKey,
+  method: string,
+  url: string,
+  accessToken?: string,
+): Promise<void> {
+  headers.dpop = await proofFor(key, { method, url, accessToken, nonce: dpopNonces.get(new URL(url).origin) });
+}
+
+/** Record a nonce the server sent. True when it refused the request with one not seen before. */
+function learnNonce(url: string, response: Response): boolean {
+  const offered = nonceFrom(response);
+  if (!offered) return false;
+  const origin = new URL(url).origin;
+  const fresh = offered !== dpopNonces.get(origin);
+  dpopNonces.set(origin, offered);
+  return fresh && !response.ok;
+}
+
+/**
+ * A request carrying the session's access token: the `DPoP` scheme and a proof bound to the
+ * token when the provider bound it, `Bearer` otherwise.
+ */
+async function withToken(url: string, session: SessionPayload): Promise<Response> {
+  const key =
+    session.dpop && session.tokenType?.toLowerCase() === 'dpop' ? await importDpopKey(session.dpop) : null;
+  const send = async () => {
+    const headers: Record<string, string> = {
+      authorization: `${key ? 'DPoP' : 'Bearer'} ${session.accessToken}`,
+    };
+    if (key) await prove(headers, key, 'GET', url, session.accessToken);
+    return fetch(url, { headers });
+  };
+  let response = await send();
+  if (key && learnNonce(url, response)) response = await send();
+  return response;
 }
 
 /** What the cookie carries. Never leaves this side. */
@@ -100,6 +158,10 @@ interface SessionPayload {
   refreshToken?: string;
   idToken?: string;
   expiresAt?: number;
+  /** `DPoP` when the provider bound the token to `dpop`, else `Bearer`. */
+  tokenType?: string;
+  /** This session's DPoP key. Never sent: only proofs signed with it are. */
+  dpop?: StoredDpopKey;
   /** The flow's temporary values, kept only between the redirect and the callback. */
   pending?: { verifier: string; state: string; returnTo?: string };
 }
@@ -146,15 +208,22 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     assertionAlgorithm: config.assertionAlgorithm,
   };
 
-  async function tokenRequest(body: Record<string, string>) {
+  async function tokenRequest(body: Record<string, string>, key: DpopKey | null = null) {
     const { token } = await resolve();
-    const headers: Record<string, string> = {
-      'content-type': 'application/x-www-form-urlencoded',
+    // Built afresh for a retry: a `private_key_jwt` assertion carries a `jti`, and sending
+    // the same one twice can be refused as a replay.
+    const attempt = async () => {
+      const headers: Record<string, string> = {
+        'content-type': 'application/x-www-form-urlencoded',
+      };
+      const form = new URLSearchParams(body);
+      await applyClientAuth(clientAuth, token, headers, form);
+      if (key) await prove(headers, key, 'POST', token);
+      return fetch(token, { method: 'POST', headers, body: form.toString() });
     };
-    const form = new URLSearchParams(body);
-    await applyClientAuth(clientAuth, token, headers, form);
 
-    const response = await fetch(token, { method: 'POST', headers, body: form.toString() });
+    let response = await attempt();
+    if (key && learnNonce(token, response)) response = await attempt();
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
       throw new OAuthError(
@@ -235,12 +304,19 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         return json({ error: 'state_mismatch' }, 400);
       }
 
-      const payload = await tokenRequest({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: config.redirectUri,
-        code_verifier: pending.verifier,
-      });
+      // The token is bound here, at the exchange, so this is where the session's key is made.
+      const key = config.dpop
+        ? await createDpopKey(config.dpopAlgorithm, { extractable: true })
+        : null;
+      const payload = await tokenRequest(
+        {
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: config.redirectUri,
+          code_verifier: pending.verifier,
+        },
+        key,
+      );
 
       const signedIn = await cookie.write({
         accessToken: String(payload.access_token ?? ''),
@@ -248,6 +324,8 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
           typeof payload.refresh_token === 'string' ? payload.refresh_token : undefined,
         idToken: typeof payload.id_token === 'string' ? payload.id_token : undefined,
         expiresAt: expiryFrom(payload.expires_in),
+        tokenType: typeof payload.token_type === 'string' ? payload.token_type : undefined,
+        dpop: key ? await exportDpopKey(key) : undefined,
       });
 
       return new Response(null, {
@@ -270,10 +348,12 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const current = await session();
       if (!current?.refreshToken) return json({ error: 'no_session' }, 401);
 
-      const payload = await tokenRequest({
-        grant_type: 'refresh_token',
-        refresh_token: current.refreshToken,
-      });
+      // The key that obtained the refresh token, or the provider refuses the refresh.
+      const key = current.dpop ? await importDpopKey(current.dpop) : null;
+      const payload = await tokenRequest(
+        { grant_type: 'refresh_token', refresh_token: current.refreshToken },
+        key,
+      );
       const refreshed = await cookie.write({
         accessToken: String(payload.access_token ?? ''),
         // A provider that rotates refresh tokens sends a new one; one that does not
@@ -284,6 +364,8 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
             : current.refreshToken,
         idToken: current.idToken,
         expiresAt: expiryFrom(payload.expires_in),
+        tokenType: typeof payload.token_type === 'string' ? payload.token_type : current.tokenType,
+        dpop: current.dpop,
       });
       return json({ ok: true }, 200, { 'set-cookie': refreshed });
     }
@@ -295,9 +377,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const { userinfo } = await resolve();
       if (!userinfo) return json({ error: 'no_userinfo' }, 501);
 
-      const response = await fetch(userinfo, {
-        headers: { authorization: `Bearer ${current.accessToken}` },
-      });
+      const response = await withToken(userinfo, current);
       if (!response.ok) return json({ error: 'userinfo_failed' }, response.status);
 
       const claims = (await response.json()) as Record<string, unknown>;
@@ -450,9 +530,7 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     try {
       const endpoints = config.endpoints ?? (config.issuer ? await discover(config.issuer) : null);
       if (endpoints?.userinfo) {
-        const response = await fetch(endpoints.userinfo, {
-          headers: { authorization: `Bearer ${session.accessToken}` },
-        });
+        const response = await withToken(endpoints.userinfo, session);
         if (response.ok) {
           const claims = (await response.json()) as Record<string, unknown>;
           user = config.mapUser ? config.mapUser(claims, session.accessToken) : claims;
