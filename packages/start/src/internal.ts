@@ -189,10 +189,12 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   // server registration) per-build via the ssr flag.
   const { envVitePlugin } = await import('./env-plugin.js');
   const { appConfigVitePlugin } = await import('./app-plugin.js');
+  const { serverOnlyVitePlugin } = await import('./server-only-plugin.js');
   const plugins: any[] = [
     // First: a value it defines has to be visible to everything after it.
     envVitePlugin(cfg),
     appConfigVitePlugin(cfg),
+    serverOnlyVitePlugin(),
     serverFunctionsVitePlugin(),
     fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }),
     // The app's component-resolution rules reach the compiler here; without this an SSR
