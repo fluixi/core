@@ -32,7 +32,7 @@ import {
   type RequestContext,
   type RequestEvent,
 } from '@fluixi/dom';
-import { createHead, setActiveHead, renderHead, encodeHeadMarker } from '@fluixi/head';
+import { createHead, setHeadScope, renderHead, encodeHeadMarker, type HeadRegistry } from '@fluixi/head';
 
 // Request-scoped isolation for concurrent async renders. Acquire AsyncLocalStorage SYNCHRONOUSLY
 // (the async drain reads the request context across awaits, so it must be set before the first
@@ -200,22 +200,25 @@ export function renderRequestAsync(
 ): Promise<string> {
   // Collect @fluixi/head metadata registered via seo()/useHead during the render, and prepend it
   // as an (inert) marker the adapter/prerender lifts into <head>. No seo() → no marker, no change.
-  // NB: active head is a module global here: fine for sequential prerender/SSG; concurrent live
-  // SSR scoping rides on the request context (a later pass).
+  // The registry is keyed by this request's context, which AsyncLocalStorage carries across the
+  // awaits of a lazy route, so a concurrent render can neither clear it nor write into it.
   const head = createHead();
-  setActiveHead(head);
-  return renderToStringAsync(() => app({ url: event.url ?? '/' }), { event, preload: preloadServerState }).then(
-    (body) => {
-      const marker = encodeHeadMarker(renderHead(head));
-      setActiveHead(null);
-      return marker + body;
+  return renderToStringAsync(() => app({ url: event.url ?? '/' }), {
+    event,
+    preload: (e) => {
+      const ctx = getRequestContext();
+      if (ctx) requestHeads.set(ctx, head);
+      return preloadServerState(e);
     },
-    (err) => {
-      setActiveHead(null);
-      throw err;
-    },
-  );
+  }).then((body) => encodeHeadMarker(renderHead(head)) + body);
 }
+
+// Not in `ctx.data`: that map is serialized to the client as the hydration seed.
+const requestHeads = new WeakMap<object, HeadRegistry>();
+setHeadScope(() => {
+  const ctx = getRequestContext();
+  return ctx ? requestHeads.get(ctx) : undefined;
+});
 
 /** Render a full HTML document for a request. */
 export function renderRequestToPage(

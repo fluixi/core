@@ -119,6 +119,34 @@ describe('@fluixi/server', () => {
     expect(body).toContain('body');
   });
 
+  it('keeps each request its own head when renders overlap and seo() runs after an await', async () => {
+    // A lazy route calls seo() once its chunk resolves, after the render began. Two requests
+    // in flight used to share one module-global registry: the first to finish cleared it and
+    // the other lost its title, or wrote it into the wrong response.
+    const Late = ({ url }: { url: string }) => {
+      const [page] = createResource(() => delay(url === '/slow' ? 30 : 5).then(() => url));
+      const div = createNativeElement('div') as any;
+      insert(
+        div,
+        () => {
+          const v = page();
+          if (v) seo({ title: 'T' + v });
+          return v ?? '';
+        },
+        null,
+      );
+      return div;
+    };
+    const [slow, fast] = await Promise.all([
+      renderRequestAsync(Late, { url: '/slow' }),
+      renderRequestAsync(Late, { url: '/fast' }),
+    ]);
+    expect(extractHeadMarker(slow).head?.headHtml).toContain('T/slow');
+    expect(extractHeadMarker(slow).head?.headHtml).not.toContain('T/fast');
+    expect(extractHeadMarker(fast).head?.headHtml).toContain('T/fast');
+    expect(extractHeadMarker(fast).head?.headHtml).not.toContain('T/slow');
+  });
+
   it('renderToString with an explicit event', () => {
     const html = renderToString(() => App({ url: '/z' }), { event: { url: '/z' } });
     expect(html).toBe('<div id="app">url=/z|prop=/z</div>');

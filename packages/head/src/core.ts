@@ -62,23 +62,44 @@ export function createHead(): HeadRegistry {
   };
 }
 
-// The "active" registry. The server integration sets this per request (around the render);
-// on the client there is a single registry for the document. Kept tiny and synchronous.
-let active: HeadRegistry | null = null;
+// The "active" registry. On the client there is one for the document. On the server a
+// request scope, when the host registers one, wins over the plain slot: a module global
+// cannot survive two async renders at once, since one would clear it or collect into it
+// while the other is still rendering.
+//
+// Both live on globalThis rather than in module scope so that two copies of this package
+// agree. A workspace link next to a published install gives one copy to the server that
+// sets the registry and another to the `seo()` the app calls, and every call was dropped.
+interface HeadSlot {
+  active: HeadRegistry | null;
+  scope: (() => HeadRegistry | null | undefined) | null;
+}
+const slot: HeadSlot = ((globalThis as Record<symbol, HeadSlot | undefined>)[Symbol.for('fluixi.head')] ??= {
+  active: null,
+  scope: null,
+});
+
 export function setActiveHead(h: HeadRegistry | null): void {
-  active = h;
+  slot.active = h;
 }
 export function getActiveHead(): HeadRegistry | null {
-  return active;
+  return slot.scope?.() ?? slot.active;
 }
 export function runWithHead<T>(h: HeadRegistry, fn: () => T): T {
-  const prev = active;
-  active = h;
+  const prev = slot.active;
+  slot.active = h;
   try {
     return fn();
   } finally {
-    active = prev;
+    slot.active = prev;
   }
+}
+/**
+ * Resolve the active registry from a host's own request scope, e.g. its AsyncLocalStorage.
+ * Returning nothing falls back to `setActiveHead`. `null` removes the scope.
+ */
+export function setHeadScope(scope: (() => HeadRegistry | null | undefined) | null): void {
+  slot.scope = scope;
 }
 
 /**

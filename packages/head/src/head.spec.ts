@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createRoot } from '@fluixi/reactive/signal';
-import { createHead, resolveHead, renderHead, runWithHead, seo } from './index.js';
+import { createHead, resolveHead, renderHead, runWithHead, seo, setActiveHead, getActiveHead, setHeadScope } from './index.js';
 import { jsonld } from './jsonld.js';
 import { generateRobots, generateSitemap, generateSitemapIndex } from './sitemap.js';
 import { encodeHeadMarker, extractHeadMarker } from './transport.js';
@@ -138,5 +138,34 @@ describe('head transport (SSR marker)', () => {
   it('emits nothing when no head was used', () => {
     expect(encodeHeadMarker(renderHead(createHead()))).toBe('');
     expect(extractHeadMarker('<div>plain</div>')).toEqual({ head: null, body: '<div>plain</div>' });
+  });
+});
+
+describe('active registry', () => {
+  it('prefers the host scope and falls back to setActiveHead', () => {
+    const plain = createHead();
+    const scoped = createHead();
+    setActiveHead(plain);
+    try {
+      setHeadScope(() => scoped);
+      expect(getActiveHead()).toBe(scoped);
+      setHeadScope(() => undefined);
+      expect(getActiveHead()).toBe(plain);
+    } finally {
+      setHeadScope(null);
+      setActiveHead(null);
+    }
+  });
+
+  it('lives on globalThis, so a second copy of the package sees the same registry', () => {
+    // What a second copy would do: read the slot by its registered symbol.
+    const slot = (globalThis as any)[Symbol.for('fluixi.head')];
+    const h = createHead();
+    slot.active = h;
+    try {
+      expect(getActiveHead()).toBe(h);
+    } finally {
+      slot.active = null;
+    }
   });
 });

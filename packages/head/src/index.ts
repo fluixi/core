@@ -28,6 +28,7 @@ export {
   createHead,
   setActiveHead,
   getActiveHead,
+  setHeadScope,
   runWithHead,
   useHead,
   seo,
