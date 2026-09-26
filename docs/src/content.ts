@@ -34,6 +34,37 @@ marked.use(
   }),
 );
 
+// Heading ids, so a link like `/v1/en/session#roles-and-permissions` lands on its section.
+// GitHub's shape: lower case, punctuation dropped, spaces to hyphens, letters of any script
+// kept, so a French `Côté serveur` is `#côté-serveur`. A repeated heading on one page gets
+// `-1`, `-2` like GitHub's, and the count starts over for each page.
+const seen = new Map<string, number>();
+const slugOf = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/<[^>]+>/g, '')
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .trim()
+    .replace(/\s/g, '-');
+
+marked.use({
+  hooks: {
+    preprocess(md: string) {
+      seen.clear();
+      return md;
+    },
+  },
+  renderer: {
+    heading({ tokens, depth, text }) {
+      const base = slugOf(text);
+      const n = seen.get(base) ?? 0;
+      seen.set(base, n + 1);
+      const id = n ? `${base}-${n}` : base;
+      return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
+    },
+  },
+});
+
 const raw = import.meta.glob('./content/**/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
 export interface DocPage {

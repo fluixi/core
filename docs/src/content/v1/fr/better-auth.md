@@ -183,7 +183,7 @@ useAuth().roles();   // ['admin'], depuis user.role
 
 Pour un modèle de permissions plus riche, donnez à `createAuthHooks` une session dont vous
 contrôlez le `can`, ou dérivez les permissions dans votre propre code. Les aides RBAC de
-[Sessions](/v1/fr/session#roles-et-permissions) en décrivent la forme.
+[Sessions](/v1/fr/session#rôles-et-permissions) en décrivent la forme.
 
 Comme partout, un rôle côté client décide de ce qu'il faut afficher. Ce sont les contrôles
 serveur de Better Auth qui décident de ce qui est autorisé.
@@ -206,6 +206,9 @@ export async function GET(request: Request) {
 
 Quand `authMiddleware` s'est déjà exécuté, la même session est dans les locals de la
 requête, donc un rendu la lit sans seconde recherche.
+
+Pour refuser plutôt que lire, `requireUser`, `requireRole` et `requirePermission` répondent
+401 ou 403 à votre place ; voir [Authentification](/v1/fr/authentication#côté-serveur).
 
 ## Choisir entre celle-ci et les autres
 
