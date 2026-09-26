@@ -5,7 +5,7 @@ import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
-import { toNodeHandler, streamDocument, type FetchHandler } from '../handler.js';
+import { toNodeHandler, streamDocument, exitOnListenError, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
@@ -168,5 +168,6 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     resolve: { alias: aliasesFromTsconfig(cfg.root) },
   });
 
+  exitOnListenError(http, cfg.port);
   http.listen(cfg.port, () => devReady({ port: cfg.port, startedAt }));
 }

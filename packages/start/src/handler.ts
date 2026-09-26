@@ -130,6 +130,28 @@ export function toNodeHandler(handler: FetchHandler) {
 export interface ServeNodeOptions {
   port?: number;
   onListen?: (port: number) => void;
+  /** A failure to listen. Default: say why and exit non-zero. */
+  onListenError?: (error: NodeJS.ErrnoException) => void;
+}
+
+/**
+ * Make a failure to listen fatal and say why.
+ *
+ * Left alone, the error reaches the crash guard's `uncaughtException` handler, which only
+ * logs it, so the process stays alive with nothing listening: a port that looks served
+ * and is not, or is served by something else entirely.
+ */
+export function exitOnListenError(server: Server, port: number): void {
+  server.once('error', (error: NodeJS.ErrnoException) => {
+    const reason =
+      error.code === 'EADDRINUSE'
+        ? `port ${port} is already in use. Stop whatever holds it (lsof -i :${port}) or set another port.`
+        : error.code === 'EACCES'
+          ? `no permission to listen on port ${port}.`
+          : `could not listen on port ${port}: ${error.message}`;
+    console.error(`  fluixi: ${reason}`);
+    process.exit(1);
+  });
 }
 
 /** The reference **Node adapter**: serve a `FetchHandler` over `node:http`. */
@@ -142,6 +164,8 @@ export function serveNode(handler: FetchHandler, opts: ServeNodeOptions = {}): S
       res.end(String((e as any)?.stack || e));
     });
   });
+  if (opts.onListenError) server.once('error', opts.onListenError);
+  else exitOnListenError(server, port);
   server.listen(port, () =>
     opts.onListen ? opts.onListen(port) : console.log(`  fluixi → http://localhost:${port}`),
   );
