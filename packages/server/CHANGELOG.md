@@ -1,5 +1,17 @@
 # @fluixi/server
 
+## 1.0.0-alpha.87
+
+### Patch Changes
+
+- 734d7e0: `seo()` now adds its tags to the head of its own request when rendered concurrently.
+- Updated dependencies [807fb8a]
+- Updated dependencies [734d7e0]
+- Updated dependencies [9dc9e3c]
+  - @fluixi/dom@1.0.0-alpha.87
+  - @fluixi/head@1.0.0-alpha.54
+  - @fluixi/reactive@1.0.0-alpha.87
+
 ## 1.0.0-alpha.86
 
 ### Patch Changes

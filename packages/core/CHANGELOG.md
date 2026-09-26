@@ -1,5 +1,25 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.87
+
+### Patch Changes
+
+- 190493a: `./utils` is now included in the published package.
+- Updated dependencies [190493a]
+- Updated dependencies [807fb8a]
+- Updated dependencies [734d7e0]
+- Updated dependencies [734d7e0]
+- Updated dependencies [9dc9e3c]
+- Updated dependencies [aafffb1]
+  - @fluixi/compiler@1.0.0-alpha.87
+  - @fluixi/dom@1.0.0-alpha.87
+  - @fluixi/head@1.0.0-alpha.54
+  - @fluixi/server@1.0.0-alpha.87
+  - @fluixi/jsx@1.0.0-alpha.87
+  - @fluixi/vite-plugin@1.0.0-alpha.87
+  - @fluixi/utils@1.0.0-alpha.87
+  - @fluixi/reactive@1.0.0-alpha.87
+
 ## 1.0.0-alpha.86
 
 ### Patch Changes

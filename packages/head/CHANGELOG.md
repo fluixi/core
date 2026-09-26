@@ -1,5 +1,12 @@
 # @fluixi/head
 
+## 1.0.0-alpha.54
+
+### Patch Changes
+
+- 734d7e0: Adds `setHeadScope`, and the active registry is now shared across copies of the package.
+  - @fluixi/reactive@1.0.0-alpha.87
+
 ## 1.0.0-alpha.53
 
 ### Patch Changes
