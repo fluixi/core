@@ -17,7 +17,7 @@
  * field. That is the intended use as much as taking it whole.
  */
 import type { TokenClaims } from './verify.js';
-import { rolesFrom } from './api-guard.js';
+import { rolesFrom } from './roles.js';
 import type { Endpoints } from './types.js';
 
 /** Verifier options that follow from the provider, given the client this app is. */

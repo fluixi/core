@@ -39,6 +39,12 @@
         "import": "./dist/service-client.mjs",
         "require": "./dist/service-client.cjs",
         "default": "./dist/service-client.js"
+      },
+      "./roles": {
+        "types": "./dist/roles.d.ts",
+        "import": "./dist/roles.mjs",
+        "require": "./dist/roles.cjs",
+        "default": "./dist/roles.js"
       }
     }
   },
@@ -98,6 +104,13 @@
       "import": "./dist/presets.mjs",
       "require": "./dist/presets.cjs",
       "default": "./dist/presets.js"
+    },
+    "./roles": {
+      "development": "./src/roles.ts",
+      "types": "./dist/roles.d.ts",
+      "import": "./dist/roles.mjs",
+      "require": "./dist/roles.cjs",
+      "default": "./dist/roles.js"
     },
     "./env": {
       "development": "./src/env-config.ts",
