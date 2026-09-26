@@ -7,7 +7,10 @@
  * an externalized `node:` module, or nothing at all when the code needs no builtin.
  *
  * Checked when an import is resolved, so a lazy `import()` counts: Vite would still emit
- * the file as a chunk in `dist/client`, published whether it ever runs or not.
+ * the file as a chunk in `dist/client`, published whether it ever runs or not. That check
+ * only looks at specifiers containing `.server`, which is what keeps it cheap, so loading
+ * is checked too: an alias naming the file something else is caught there, with the
+ * importer as far as the bundler knows it.
  *
  * One exception: a file whose first statement is `"use server"`. The server-function
  * transform replaces every export with an RPC stub, so the browser gets the stub and the
@@ -17,7 +20,7 @@
  * App code only. Dependencies are left alone: `.server` is this convention, not theirs.
  */
 import { readFileSync, realpathSync } from 'node:fs';
-import { relative } from 'node:path';
+import { join, relative } from 'node:path';
 
 const SERVER_FILE = /\.server\.[cm]?[jt]sx?$/;
 // Cheap prefilter on the import specifier, before paying for a resolve.
@@ -35,6 +38,20 @@ export function isServerOnlyFile(file: string): boolean {
   const path = file.replace(/\?.*$/, '');
   return SERVER_FILE.test(path) && !/[\\/]node_modules[\\/]/.test(path);
 }
+
+/** A `.server` file the browser may still import: one that is all server functions. */
+function allowed(file: string): boolean {
+  try {
+    return startsWithUseServer(readFileSync(file.replace(/\?.*$/, ''), 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+const refusal = (importer: string, file: string) =>
+  `${importer} imports ${file} into the browser bundle. ` +
+  'A *.server.* file runs on the server only: import it from an API route, middleware, ' +
+  'src/app.config.server.ts or a "use server" function instead.';
 
 export function serverOnlyVitePlugin(): any {
   let roots = [process.cwd()];
@@ -58,24 +75,31 @@ export function serverOnlyVitePlugin(): any {
       }
       roots = [root, real];
     },
-    async resolveId(this: any, source: string, importer: string | undefined, options?: { ssr?: boolean }) {
-      if (options?.ssr || !importer || !MAYBE_SERVER.test(source)) return null;
+    async resolveId(
+      this: any,
+      source: string,
+      importer: string | undefined,
+      options?: { ssr?: boolean; scan?: boolean },
+    ) {
+      // Two callers pass no real importer. The dependency scanner starts at index.html, and
+      // Vite's module graph re-resolves an already resolved `/src/...` path with index.html
+      // filled in as the default. Both would blame index.html; `load` below catches the same
+      // file with the importer the graph actually recorded.
+      if (options?.ssr || options?.scan || !importer || !MAYBE_SERVER.test(source)) return null;
+      if (source.startsWith('/') && roots.some((r) => importer === join(r, 'index.html'))) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (!resolved || resolved.external || !isServerOnlyFile(resolved.id)) return null;
 
-      let code = '';
-      try {
-        code = readFileSync(resolved.id.replace(/\?.*$/, ''), 'utf8');
-      } catch {
-        /* unreadable: treat as server-only */
-      }
-      if (startsWithUseServer(code)) return resolved;
-
-      this.error(
-        `${show(importer)} imports ${show(resolved.id)} into the browser bundle. ` +
-          'A *.server.* file runs on the server only: import it from an API route, middleware, ' +
-          'src/app.config.server.ts or a "use server" function instead.',
-      );
+      if (allowed(resolved.id)) return resolved;
+      this.error(refusal(show(importer), show(resolved.id)));
+      return null;
+    },
+    load(this: any, id: string, options?: { ssr?: boolean }) {
+      if (options?.ssr || !isServerOnlyFile(id) || allowed(id)) return null;
+      const info = this.getModuleInfo?.(id);
+      const importer = info?.importers?.[0] ?? info?.dynamicImporters?.[0];
+      this.error(refusal(importer ? show(importer) : 'A browser module', show(id)));
+      return null;
     },
   };
 }

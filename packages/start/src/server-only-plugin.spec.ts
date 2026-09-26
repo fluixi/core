@@ -17,11 +17,12 @@ function app(files: Record<string, string>): string {
   return root;
 }
 
-const bundle = (entry: string, ssr = false) =>
+const bundle = (entry: string, ssr = false, alias: Record<string, string> = {}) =>
   build({
     root,
     logLevel: 'silent',
     configFile: false,
+    resolve: { alias: Object.fromEntries(Object.entries(alias).map(([k, v]) => [k, join(root, v)])) },
     plugins: [serverOnlyVitePlugin()],
     build: { write: false, ssr: ssr ? entry : undefined, rollupOptions: ssr ? undefined : { input: join(root, entry) } },
   });
@@ -46,6 +47,13 @@ describe('client build', () => {
       'src/main.ts': "import * as a from './auth/index';\nconsole.log(a);",
     });
     await expect(bundle('src/main.ts')).rejects.toThrow(/src\/auth\/index\.ts imports src\/auth\.server\.ts/);
+  });
+
+  it('refuses one reached through an alias that hides the suffix', async () => {
+    app({ ...secret, 'src/main.ts': "import { secret } from '@/secret';\nconsole.log(secret);" });
+    await expect(bundle('src/main.ts', false, { '@/secret': 'src/auth.server.ts' })).rejects.toThrow(
+      /src\/main\.ts imports src\/auth\.server\.ts into the browser bundle/,
+    );
   });
 
   it('allows a file whose first statement is "use server"', async () => {
