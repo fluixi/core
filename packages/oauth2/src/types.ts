@@ -10,6 +10,7 @@
  * user, the status and the refresh schedule. It depends on an `AuthClient` and never on
  * a particular flow.
  */
+import type { ClientAuthMethodInput } from './client-auth.js';
 
 /** Tokens as the authorization server returns them, normalised. */
 export interface Tokens {
@@ -228,9 +229,10 @@ export interface BrowserConfig extends BaseConfig {
    * How the token endpoint is told which client is calling.
    *
    * `body` puts the credentials in the form, which most providers accept. `basic` sends
-   * an `Authorization: Basic` header, which some require. Default `body`.
+   * an `Authorization: Basic` header, which some require. Default `body`. The RFC 7591 names
+   * are accepted too, which is what a preset carries, so its `client` spreads in unchanged.
    */
-  tokenAuthMethod?: 'body' | 'basic';
+  tokenAuthMethod?: ClientAuthMethodInput;
 }
 
 /**
