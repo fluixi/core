@@ -1,5 +1,17 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.2
+
+### Patch Changes
+
+- Updated dependencies [d5ebde7]
+  - @fluixi/start@0.1.0-alpha.78
+  - @fluixi/auth@1.0.0-alpha.88
+  - @fluixi/reactive@1.0.0-alpha.88
+  - @fluixi/core@1.0.0-alpha.88
+  - @fluixi/session@1.0.0-alpha.88
+  - @fluixi/server@1.0.0-alpha.88
+
 ## 1.0.0-alpha.1
 
 ### Minor Changes

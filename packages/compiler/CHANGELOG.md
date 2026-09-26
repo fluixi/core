@@ -1,5 +1,7 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.88
+
 ## 1.0.0-alpha.87
 
 ### Patch Changes

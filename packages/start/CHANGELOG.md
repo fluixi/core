@@ -1,5 +1,17 @@
 # @fluixi/start
 
+## 0.1.0-alpha.78
+
+### Patch Changes
+
+- d5ebde7: `publicEnv()` now finds a declared name under its `VITE_` spelling when @fluixi/start is imported from node_modules on a server.
+  - @fluixi/dom@1.0.0-alpha.88
+  - @fluixi/core@1.0.0-alpha.88
+  - @fluixi/compiler@1.0.0-alpha.88
+  - @fluixi/vite-plugin@1.0.0-alpha.88
+  - @fluixi/head@1.0.0-alpha.55
+  - @fluixi/server@1.0.0-alpha.88
+
 ## 0.1.0-alpha.77
 
 ### Minor Changes
