@@ -40,11 +40,29 @@
         "require": "./dist/service-client.cjs",
         "default": "./dist/service-client.js"
       },
+      "./callback": {
+        "types": "./dist/callback.d.ts",
+        "import": "./dist/callback.mjs",
+        "require": "./dist/callback.cjs",
+        "default": "./dist/callback.js"
+      },
+      "./presets": {
+        "types": "./dist/presets.d.ts",
+        "import": "./dist/presets.mjs",
+        "require": "./dist/presets.cjs",
+        "default": "./dist/presets.js"
+      },
       "./roles": {
         "types": "./dist/roles.d.ts",
         "import": "./dist/roles.mjs",
         "require": "./dist/roles.cjs",
         "default": "./dist/roles.js"
+      },
+      "./env": {
+        "types": "./dist/env-config.d.ts",
+        "import": "./dist/env-config.mjs",
+        "require": "./dist/env-config.cjs",
+        "default": "./dist/env-config.js"
       }
     }
   },
