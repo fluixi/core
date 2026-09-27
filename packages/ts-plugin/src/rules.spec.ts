@@ -75,8 +75,15 @@ describe('env rules', () => {
       findings(`import { env } from '@fluixi/start/env';
         export async function save() { 'use server'; return env('SESSION_SECRET'); }
         export const b = import.meta.env.SSR ? env('SESSION_SECRET') : undefined;
-        export const c = typeof window === 'undefined' ? env('SESSION_SECRET') : undefined;`),
+        export const c = typeof window === 'undefined' ? env('SESSION_SECRET') : undefined;
+`),
     ).toEqual([]);
+    // Only the branch a browser takes is judged.
+    const branches = findings(`import { env } from '@fluixi/start/env';
+      export let d: string | undefined;
+      if (import.meta.env.SSR) d = env('SESSION_SECRET'); else d = env('BROWSER_SECRET');
+      if (typeof window !== 'undefined') d = env('WINDOW_SECRET'); else d = env('SESSION_SECRET');`);
+    expect(branches.map((f) => f.at)).toEqual(["'BROWSER_SECRET'", "'WINDOW_SECRET'"]);
   });
 
   it('warns on serverEnv and process.env in browser code', () => {

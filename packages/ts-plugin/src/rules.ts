@@ -114,7 +114,7 @@ function inServerContext(ts: typeof TS, node: TS.Node, sf: TS.SourceFile): boole
       return true;
     }
     if (ts.isIfStatement(parent) || ts.isConditionalExpression(parent)) {
-      const side = sideOf(ts, parent.condition);
+      const side = sideOf(ts, ts.isIfStatement(parent) ? parent.expression : parent.condition);
       const whenTrue = ts.isIfStatement(parent) ? parent.thenStatement : parent.whenTrue;
       const whenFalse = ts.isIfStatement(parent) ? parent.elseStatement : parent.whenFalse;
       if (side === 'server' && child === whenTrue) return true;
