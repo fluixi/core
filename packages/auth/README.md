@@ -23,7 +23,7 @@ import { authMiddleware } from '@fluixi/auth/server';
 export default defineMiddleware([ authMiddleware() ]);
 ```
 ```ts
-// routes/api/auth/[...all].ts — mount Better Auth
+// src/api/auth/[...all].ts — mount Better Auth
 import { mountAuthRoutes } from '@fluixi/auth/server';
 export const ALL = mountAuthRoutes(); // (request) => auth.handler(request)
 ```

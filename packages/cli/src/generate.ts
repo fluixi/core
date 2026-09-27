@@ -4,19 +4,32 @@
  *   fluixi g route about             → src/routes/about.tsx  (a file route)
  *   fluixi g route blog/[id]         → src/routes/blog/[id].tsx
  *   fluixi g middleware              → src/middleware.ts
+ *   fluixi g service Orders          → src/services/orders.ts, listed in src/app.config.ts
+ *   fluixi g auth oauth2             → env config, auth service, callback and login routes
  */
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, relative, basename } from 'node:path';
 import { c } from '@fluixi/start/ui';
+import { addEnvExample, addEnvPublic, addImport, envPublicNames, register } from './edit.js';
+import * as t from './templates.js';
 
-const GEN_USAGE = `Usage: fluixi generate <kind> <name>
+const GEN_USAGE = `Usage: fluixi generate <kind> [name] [options]
 
 Kinds:
-  component <Name>      a reusable component        → src/components/<Name>.{tsx,ts}
-  route <path>          a file-based route page     → src/routes/<path>.{tsx,ts}
-  middleware            the request middleware file → src/middleware.ts
-  auth                  @fluixi/auth wiring         → auth.config + auth.client + middleware + /api/auth route
+  component <Name>            a reusable component         → src/components/<Name>.{tsx,ts}
+  route <path>                a file-based route page      → src/routes/<path>.{tsx,ts}
+  middleware                  the request middleware file  → src/middleware.ts
+  env                         typed config from env.public → src/config/env.ts
+  module <name>               an app module                → src/services/<name>/<name>.module.ts
+  service <Name> [--server]   a service, token and module  → src/services/<name>.ts (.server.ts)
+  api <path> [--role <role>]  an API route, guarded by role → src/api/<path>.ts
+  server-fn <name>            a "use server" function      → src/server/<name>.ts
+  auth oauth2 [--provider <p>] [--tokens browser|server]
+                              @fluixi/oauth2 wiring: env config, service, routes, .env.example
+  auth better-auth            @fluixi/auth wiring          → auth.config + auth.client + middleware + /api/auth
 
+Modules and services are listed in src/app.config.ts, or app.config.server.ts for --server,
+which is created when missing. Providers: ${t.PROVIDERS.join(', ')}.
 Component/route syntax follows the project (JSX → .tsx, html\`\` → .ts); override with --jsx / --html.
 `;
 
@@ -76,6 +89,45 @@ function resolveHint(Name: string, ext: string): void {
   );
   console.log(`    ${c.gray(`resolve: [{ match: /^([A-Z]\\w+)$/, module: '/src/components/$1.${ext}' }]`)}`);
   console.log(`  ${c.gray('one pattern covers the whole folder. Importing it works too — including with')} ${c.cyan('load:')}`);
+}
+
+/** The value of `--name value` or `--name=value`. */
+function option(name: string): string | undefined {
+  const args = process.argv;
+  const i = args.indexOf(`--${name}`);
+  if (i !== -1 && args[i + 1] && !args[i + 1].startsWith('--')) return args[i + 1];
+  return args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+}
+
+const kebab = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+/** A path for an import between two files under src, with the .js extension ESM needs. */
+function importPath(from: string, to: string): string {
+  const p = relative(dirname(from), to).replace(/\\/g, '/').replace(/\.tsx?$/, '.js');
+  return p.startsWith('.') ? p : `./${p}`;
+}
+
+/** Write a file the app may already have, keeping theirs. Returns whether it wrote. */
+function writeOnce(file: string, content: string): boolean {
+  if (existsSync(file)) {
+    console.log(`  ${c.gray('-')} ${c.cyan(relative(process.cwd(), file))} ${c.gray('exists, kept')}`);
+    return false;
+  }
+  write(file, content);
+  return true;
+}
+
+const APP_CONFIG = 'src/app.config.ts';
+const APP_CONFIG_SERVER = 'src/app.config.server.ts';
+const APP_HEADER = '// Registered by @fluixi/start ahead of both entries.\n';
+const APP_SERVER_HEADER = '// Only the server build imports this file, so what it lists never reaches the browser.\n';
+
+function registerIn(server: boolean, file: string, name: string, entry = name): void {
+  const config = resolve(server ? APP_CONFIG_SERVER : APP_CONFIG);
+  register(config, server ? APP_SERVER_HEADER : APP_HEADER, {
+    importLine: `import { ${name} } from '${importPath(config, file)}';`,
+    entry,
+  });
 }
 
 function write(file: string, content: string): void {
@@ -191,7 +243,7 @@ export default defineMiddleware([authMiddleware()]);
 
 const authRoute = () =>
   `import { mountAuthRoutes } from '@fluixi/auth/server';
-import '../../../auth.config.js';
+import '../../auth.config.js';
 
 const handler = mountAuthRoutes();
 export const GET = handler;
@@ -223,17 +275,109 @@ export function generate(kind: string | undefined, name: string | undefined): vo
     case 'm':
       write(resolve('src/middleware.ts'), middleware());
       break;
+    case 'env': {
+      const names = (envPublicNames(resolve('fluixi.config.ts')) ?? []).filter((n) => !n.startsWith('AUTH_'));
+      write(resolve('src/config/env.ts'), t.envConfig(names));
+      break;
+    }
+    case 'module': {
+      if (!name) return fail('module name required, e.g. `fluixi g module billing`');
+      const slug = kebab(name);
+      const file = resolve('src/services', slug, `${slug}.module.ts`);
+      write(file, t.moduleFile(pascal(name), slug));
+      registerIn(false, file, `${pascal(name)}Module`);
+      break;
+    }
+    case 'service':
+    case 's': {
+      if (!name) return fail('service name required, e.g. `fluixi g service Orders`');
+      const Name = pascal(name).replace(/Service$/, '') || 'App';
+      const server = process.argv.includes('--server');
+      const file = resolve('src/services', `${kebab(Name)}${server ? '.server' : ''}.ts`);
+      write(file, t.serviceFile(Name, kebab(Name), server));
+      registerIn(server, file, `${Name}Module`);
+      break;
+    }
+    case 'api': {
+      if (!name) return fail('api path required, e.g. `fluixi g api users/[id]`');
+      const file = resolve('src/api', `${name.replace(/\.ts$/, '')}.ts`);
+      const role = option('role');
+      if (!role) {
+        write(file, t.apiRoute());
+        break;
+      }
+      const verify = resolve('src/services/verify.server.ts');
+      write(file, t.guardedApiRoute(importPath(file, verify), role));
+      writeOnce(verify, t.verifyServer());
+      ensureAuthEnv();
+      break;
+    }
+    case 'server-fn': {
+      if (!name) return fail('function name required, e.g. `fluixi g server-fn getUser`');
+      const fn = name.replace(/[^a-zA-Z0-9]+(.)/g, (_, ch: string) => ch.toUpperCase());
+      write(resolve('src/server', `${fn}.ts`), t.serverFn(fn));
+      break;
+    }
     case 'auth':
+      if (name === 'oauth2') return oauth2();
+      if (name && name !== 'better-auth') return fail(`unknown auth kind ${name}: oauth2 or better-auth`);
       write(resolve('src/auth.config.ts'), authConfig());
       write(resolve('src/auth.client.ts'), authClient());
       write(resolve('src/middleware.ts'), authMiddleware());
-      write(resolve('src/routes/api/auth/[...all].ts'), authRoute());
+      write(resolve('src/api/auth/[...all].ts'), authRoute());
       console.log(`  ${c.gray('next: install')} ${c.cyan('better-auth')}${c.gray(', set your DB adapter in auth.config.ts, and forward `request` in entry-server')}`);
       break;
     default:
       console.error(GEN_USAGE);
       process.exit(1);
   }
+}
+
+/** `src/config/env.ts` with the `auth` reader: created when missing, appended when not there. */
+function ensureAuthEnv(): void {
+  const file = resolve('src/config/env.ts');
+  if (writeOnce(file, t.authEnvConfig())) return;
+  let text = readFileSync(file, 'utf8');
+  if (/export\s+const\s+auth\b/.test(text)) return;
+  if (!/\bpublicEnv\b/.test(text)) text = addImport(text, `import { publicEnv } from '@fluixi/start/env';`);
+  text = addImport(text, `import { authFromEnv } from '@fluixi/oauth2/env';`);
+  writeFileSync(file, `${text.replace(/\n*$/, '\n')}\n${t.AUTH_READER}`);
+  console.log(`  ${c.green('✓')} ${c.gray('updated')} ${c.cyan('src/config/env.ts')}${c.gray(': auth')}`);
+}
+
+function oauth2(): void {
+  const provider = (option('provider') ?? 'oidc') as t.ProviderName;
+  if (!t.PROVIDERS.includes(provider)) return fail(`unknown provider ${provider}: ${t.PROVIDERS.join(', ')}`);
+  let tokens = option('tokens') as 'browser' | 'server' | undefined;
+  if (tokens && tokens !== 'browser' && tokens !== 'server') return fail('--tokens is browser or server');
+  const refusal = t.SERVER_ONLY[provider];
+  if (refusal && tokens === 'browser') return fail(`${provider} needs --tokens server: ${refusal}`);
+  if (refusal && !tokens) console.log(`  ${c.gray(`${provider} refuses a public client, so the tokens stay on the server`)}`);
+  tokens ??= refusal ? 'server' : 'browser';
+  const html = detectFormat() === 'html';
+  const ext = html ? 'ts' : 'tsx';
+
+  ensureAuthEnv();
+  const service = resolve('src/services/auth.ts');
+  if (writeOnce(service, t.authServiceFile(tokens))) registerIn(false, service, 'AuthModule');
+  if (tokens === 'browser') writeOnce(resolve('src/routes', `callback.${ext}`), t.callbackRoute(html));
+  writeOnce(resolve('src/routes', `login.${ext}`), t.loginRoute(html));
+  if (tokens === 'server') {
+    const server = resolve('src/services/auth.server.ts');
+    if (writeOnce(server, t.authServerFile())) registerIn(true, server, 'authServer', 'authServer()');
+  }
+
+  const vars = { AUTH_PROVIDER: provider, AUTH_CLIENT_ID: 'my-app', AUTH_TOKENS: tokens, ...t.PROVIDER_VARS[provider], APP_URL: 'http://localhost:3000' };
+  addEnvPublic(resolve('fluixi.config.ts'), Object.keys(vars));
+  addEnvExample(resolve('.env.example'), `@fluixi/oauth2 (${provider}). Listed in env.public: the browser sees them.`, vars);
+  if (tokens === 'server') {
+    addEnvExample(resolve('.env.example'), 'Server only, never in env.public. SESSION_SECRET: 32 bytes or more.', {
+      OIDC_CLIENT_SECRET: '',
+      SESSION_SECRET: '',
+    });
+  }
+  const redirect = tokens === 'browser' ? '/callback' : '/auth/callback';
+  console.log(`  ${c.gray('next: install')} ${c.cyan('@fluixi/oauth2')}${c.gray(`, copy .env.example to .env, and register <APP_URL>${redirect} as the redirect URI`)}`);
 }
 
 function fail(msg: string): void {
