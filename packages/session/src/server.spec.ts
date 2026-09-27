@@ -51,7 +51,10 @@ describe('what the cookie does not give away', () => {
 
     const [name, value] = header.split(';')[0].split('=');
     const [iv, data] = decodeURIComponent(value).split('.');
-    const tampered = `${name}=${encodeURIComponent(`${iv}.${data.slice(0, -2)}XY`)}`;
+    // The first character: its six bits all belong to the first byte. The last one can be
+    // partly padding, or already be the replacement, and then nothing changes.
+    const altered = (data[0] === 'A' ? 'B' : 'A') + data.slice(1);
+    const tampered = `${name}=${encodeURIComponent(`${iv}.${altered}`)}`;
 
     const request = new Request('https://app.test/', { headers: { cookie: tampered } });
     // AES-GCM authenticates as well as encrypts, so a changed byte fails rather than
