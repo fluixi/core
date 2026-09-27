@@ -50,4 +50,36 @@ describe('request locals seam', () => {
     expect(getRequestLocals(a).v).toBe(1);
     expect(getRequestLocals(b).v).toBe(2);
   });
+
+  describe('the request start is answering', () => {
+    const KEY = Symbol.for('fluixi.platformRequest');
+    const registry = globalThis as Record<symbol, unknown>;
+    const withAmbient = (request: object | undefined, fn: () => void) => {
+      const saved = registry[KEY];
+      registry[KEY] = { getStore: () => request };
+      try {
+        fn();
+      } finally {
+        registry[KEY] = saved;
+      }
+    };
+
+    it('is adopted when the entry did not forward one, so middleware locals reach the render', () => {
+      const request = {};
+      getRequestLocals(request).auth = { user: 'ada' };
+      withAmbient(request, () => {
+        const ctx = createRequestContext({ url: '/dashboard' });
+        expect(ctx.event.request).toBe(request);
+        expect(ctx.event.locals).toEqual({ auth: { user: 'ada' } });
+      });
+    });
+
+    it('does not replace one the entry forwarded', () => {
+      const forwarded = {};
+      getRequestLocals(forwarded).auth = { user: 'grace' };
+      withAmbient({}, () => {
+        expect(createRequestContext({ url: '/', request: forwarded }).event.locals).toEqual({ auth: { user: 'grace' } });
+      });
+    });
+  });
 });

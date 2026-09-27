@@ -10,6 +10,7 @@ import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
 import { APP_VMOD, findAppConfig, hasAppConfig } from '../app-plugin.js';
+import { withPlatformRequest } from '../platform-request.js';
 
 const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
 
@@ -112,10 +113,10 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
         injectStyles(template, await renderedStyles(vite, cfg.serverEntry)),
       );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
-      return streamDocument(head, await mod.renderStream(path, request), tail);
+      return streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail);
     }
     const render = mod.render ?? mod.default;
-    const appHtml = await render(path, request); // sync or async; request enables the locals bridge
+    const appHtml = await withPlatformRequest(request, () => render(path, request)); // sync or async; request enables the locals bridge
     // injectAppAndHead (not injectApp): lift the @fluixi/head marker renderRequestAsync prepends to
     // the body into <head> + <html>, exactly like the prod adapter/prerender. Plain injectApp left
     // the `<!--fh:…-->` marker as the mount root's first child, which stranded the hydration cursor

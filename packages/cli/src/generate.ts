@@ -325,7 +325,7 @@ export function generate(kind: string | undefined, name: string | undefined): vo
       write(resolve('src/auth.client.ts'), authClient());
       write(resolve('src/middleware.ts'), authMiddleware());
       write(resolve('src/api/auth/[...all].ts'), authRoute());
-      console.log(`  ${c.gray('next: install')} ${c.cyan('better-auth')}${c.gray(', set your DB adapter in auth.config.ts, and forward `request` in entry-server')}`);
+      console.log(`  ${c.gray('next: install')} ${c.cyan('better-auth')}${c.gray(' and set your DB adapter in auth.config.ts')}`);
       break;
     default:
       console.error(GEN_USAGE);

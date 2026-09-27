@@ -100,6 +100,13 @@ export function setRequestStore(store: RequestStore | null): void {
  * empty.
  */
 export function createRequestContext(event: RequestEvent = {}): RequestContext {
+  // An entry written `renderRequestAsync(App, { url })` never forwarded the request, so
+  // nothing middleware put on locals reached the render: a signed-in visitor rendered
+  // signed out. The request @fluixi/start is answering is used instead.
+  if (event.request === undefined) {
+    const ambient = platformRequest();
+    if (ambient) event.request = ambient;
+  }
   // Seed the locals bag, if the event carries the platform request, ADOPT the bag that
   // middleware wrote via getRequestLocals(request) (the middleware -> render bridge); else
   // start a fresh empty one. Either way the render's getLocals() sees the right object.
@@ -183,15 +190,32 @@ export function getLocals(): RequestLocals {
 // ─── middleware -> render bridge ─────────────────────────────────────────────────
 // Middleware runs on the raw platform request, OUTSIDE the render's request context.
 // This WeakMap associates a per-request locals bag with that request object; the render
-// adopts it in createRequestContext when the app forwards `request` on the event. Keyed
+// adopts it in createRequestContext from the event's `request`, or from the one @fluixi/start
+// is answering when the entry did not forward it. Keyed
 // by the request, so concurrent requests stay isolated and entries GC with the request.
-const _requestLocals = new WeakMap<object, RequestLocals>();
+//
+// Held in the global registry: a server bundle carrying its own copy of this module must
+// still read what middleware wrote through another.
+const _requestLocals: WeakMap<object, RequestLocals> = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.requestLocals')
+] ??= new WeakMap<object, RequestLocals>()) as WeakMap<object, RequestLocals>;
+
+/**
+ * The platform request @fluixi/start is answering, when it runs the entry inside
+ * `withPlatformRequest`. Read through the global registry for the same reason as above.
+ */
+function platformRequest(): object | undefined {
+  const store = (globalThis as Record<symbol, { getStore(): object | undefined } | undefined>)[
+    Symbol.for('fluixi.platformRequest')
+  ];
+  return store?.getStore();
+}
 
 /**
  * The mutable `locals` bag for a platform request object (created on first access).
  * Middleware writes here (e.g. `getRequestLocals(request).auth = ...`) before calling
- * `next()`; the render then reads the same object via `getLocals()`. Pairs with the app
- * entry forwarding `request` on the render event (`renderRequestAsync(App, { url, request })`).
+ * `next()`; the render then reads the same object via `getLocals()`, finding the request on
+ * the render event or, under @fluixi/start, from the request being answered.
  */
 export function getRequestLocals(request: object): RequestLocals {
   let bag = _requestLocals.get(request);

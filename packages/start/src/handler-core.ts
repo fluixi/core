@@ -15,6 +15,7 @@ import type { ResolvedConfig } from './config.js';
 import { injectAppAndHead, injectPreload, splitTemplate, guardHandler } from './document.js';
 import { createRequestHandler, streamDocument, type FetchHandler } from './handler.js';
 import { composeMiddleware, normalizeMiddleware } from './middleware.js';
+import { withPlatformRequest } from './platform-request.js';
 
 /** The shape a built `entry-server.js` exposes. Every field is optional. */
 export interface ServerModule {
@@ -66,7 +67,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
       // reason streaming wants them, since the browser can start fetching the route's
       // chunk while the server is still awaiting data for it.
       const { head, tail } = splitTemplate(withPreload(template, url.pathname), cfg.mountId);
-      const body = await mod.renderStream!(url.pathname + url.search, request);
+      const body = await withPlatformRequest(request, () => mod.renderStream!(url.pathname + url.search, request));
       return streamDocument(head, body as never, tail);
     };
   } else {

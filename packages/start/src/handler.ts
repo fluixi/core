@@ -4,6 +4,7 @@ import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { extname, resolve, sep } from 'node:path';
 import { liftHead } from './document.js';
+import { withPlatformRequest } from './platform-request.js';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -110,7 +111,7 @@ export function createRequestHandler(render: RenderFn): FetchHandler {
   return async (request) => {
     const url = new URL(request.url);
     try {
-      const html = await render(url.pathname + url.search, request);
+      const html = await withPlatformRequest(request, () => render(url.pathname + url.search, request));
       return new Response(html, {
         status: 200,
         headers: { 'content-type': 'text/html; charset=utf-8' },
