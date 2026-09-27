@@ -52,7 +52,7 @@ export default function TicketDetail() {
       <Show when={ticket} fallback={<p>No such ticket.</p>}>
         <h1>{() => ticket()!.subject}</h1>
         <p>
-          <code>{() => ticket()!.id}</code> <StatusPill status={() => ticket()!.status} />{' '}
+          <code>{() => ticket()!.id}</code> <StatusPill status={ticket()!.status} />{' '}
           opened by {() => ticket()!.author}
         </p>
         <p>{() => ticket()!.body}</p>

@@ -22,9 +22,9 @@ function Admin() {
         stopped by the middleware with a 403; an in-app navigation is stopped here.
       </p>
       <RequestFacts
-        viewer={() => desk.latest?.viewer ?? '…'}
-        requestId={() => desk.latest?.requestId ?? '…'}
-        servedBy={() => desk.latest?.servedBy ?? '…'}
+        viewer={desk.latest?.viewer ?? '…'}
+        requestId={desk.latest?.requestId ?? '…'}
+        servedBy={desk.latest?.servedBy ?? '…'}
       />
       <h2>All tickets, with internal notes</h2>
       <ul>

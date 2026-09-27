@@ -15,9 +15,9 @@ export function StatusPill(props: { status: TicketStatus }) {
       style={{
         color: TONE[props.status] ?? '#475467',
         border: `1px solid currentColor`,
-        'border-radius': '999px',
+        borderRadius: '999px',
         padding: '0 .5em',
-        'font-size': '.85em',
+        fontSize: '.85em',
       }}
     >
       {props.status}
