@@ -1,5 +1,18 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.91
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.91
+- @fluixi/reactive@1.0.0-alpha.91
+- @fluixi/dom@1.0.0-alpha.91
+- @fluixi/jsx@1.0.0-alpha.91
+- @fluixi/compiler@1.0.0-alpha.91
+- @fluixi/vite-plugin@1.0.0-alpha.91
+- @fluixi/head@1.0.0-alpha.58
+- @fluixi/server@1.0.0-alpha.91
+
 ## 1.0.0-alpha.90
 
 ### Patch Changes

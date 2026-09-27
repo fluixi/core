@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/oauth2",
-  "version": "1.0.0-alpha.6",
+  "version": "1.0.0-alpha.7",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "OAuth2 / OIDC for Fluixi apps: an AuthClient that drives the flow, and an AuthService built on @fluixi/session. Browser PKCE or a server-held session, chosen by config.",

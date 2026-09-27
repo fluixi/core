@@ -1,5 +1,13 @@
 # @fluixi/example-lit-showcase
 
+## 0.0.1-alpha.35
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.91
+- @fluixi/dom@1.0.0-alpha.91
+- @fluixi/core@1.0.0-alpha.91
+
 ## 0.0.1-alpha.34
 
 ### Patch Changes
