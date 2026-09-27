@@ -187,8 +187,8 @@ export function envTypes(publicNames: readonly string[], serverNames: readonly s
   );
 }
 
-/** Write it when there is anything to declare; remove one this wrote when there is not. */
-function writeEnvTypes(root: string, publicNames: readonly string[]): void {
+/** Write it when there is anything to declare; remove one this wrote when there is not. Returns the file written. */
+export function writeEnvTypes(root: string, publicNames: readonly string[]): string | null {
   const file = resolvePath(root, ENV_TYPES);
   const old = resolvePath(root, OLD_ENV_TYPES);
   try {
@@ -196,12 +196,14 @@ function writeEnvTypes(root: string, publicNames: readonly string[]): void {
     const serverNames = envFileNames(root);
     if (!publicNames.length && !serverNames.length) {
       if (existsSync(file) && readFileSync(file, 'utf8').startsWith(ENV_TYPES_HEADER)) unlinkSync(file);
-      return;
+      return null;
     }
     const content = envTypes(publicNames, serverNames);
     if (!existsSync(file) || readFileSync(file, 'utf8') !== content) writeFileSync(file, content);
+    return file;
   } catch {
     /* read-only fs (some CI): types are a convenience, the build still works */
+    return null;
   }
 }
 

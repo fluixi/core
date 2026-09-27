@@ -18,6 +18,9 @@
   "references": [
     {
       "path": "../start/tsconfig.lib.json"
+    },
+    {
+      "path": "../ts-plugin/tsconfig.lib.json"
     }
   ],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist"]

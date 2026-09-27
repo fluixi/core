@@ -6,7 +6,14 @@
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
-    "access": "public"
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./dist/index.js",
+      "./rules": {
+        "default": "./dist/rules.js"
+      }
+    }
   },
   "description": "gives html`` templates the editor support JSX already gets; a component used only as a tag is no longer reported as unused",
   "type": "commonjs",
@@ -16,8 +23,16 @@
     "LICENSE"
   ],
   "main": "./dist/index.js",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./dist/index.js",
+    "./rules": {
+      "development": "./src/rules.ts",
+      "default": "./dist/rules.js"
+    }
+  },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --external:typescript --outfile=dist/index.js",
+    "build": "esbuild src/index.ts src/rules.ts --bundle --platform=node --format=cjs --external:typescript --outdir=dist",
     "test": "vitest run"
   },
   "dependencies": {

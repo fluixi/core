@@ -13,3 +13,7 @@ export { start } from './start.js';
 export { prerender } from './prerender.js';
 export { buildWebComponents } from './web-component.js';
 export type { WebComponentOptions, WebComponentMode } from './web-component.js';
+export { env, envReport } from './env.js';
+export type { EnvReport } from './env.js';
+export { info, appInfo } from './info.js';
+export type { AppInfo, ApiRoute } from './info.js';

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { loadConfig } from '@fluixi/start/config';
-import { dev, build, start } from '@fluixi/start/commands';
+import { dev, build, start, env, envReport, info } from '@fluixi/start/commands';
 import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
 import { startMismatch } from './start-copy.js';
+import { check } from './check.js';
+import { diagnose, resolvedVersions } from './doctor.js';
 
 function usage(): string {
   const cmd = (name: string, desc: string) =>
@@ -18,7 +20,11 @@ function usage(): string {
     cmd('build', 'build the client + server bundles for production'),
     cmd('build --format=web-component', 'build custom elements as portable files'),
     cmd('start', 'run the production SSR server (after build)'),
-    cmd('generate <kind> <name>', 'scaffold a component / route / middleware / auth  ' + c.dim('(alias: g)')),
+    cmd('generate <kind> <name>', 'scaffold code, see fluixi g --help  ' + c.dim('(alias: g)')),
+    cmd('check [--strict]', 'env and auth rules over the project, for CI'),
+    cmd('env', 'declared and set variables, secrets that would ship, env types'),
+    cmd('doctor', 'duplicate packages, editor plugin, env problems'),
+    cmd('info', 'versions, adapter, modules, page and API routes'),
     '',
     `  ${c.gray('New project:')}  ${c.cyan('npm create fluixi')} ${c.gray('<dir>')}`,
     '',
@@ -35,6 +41,12 @@ async function main(): Promise<void> {
   // generate works on the local files and doesn't need the app config.
   if (cmd === 'generate' || cmd === 'g') {
     generate(process.argv[3], process.argv[4]);
+    return;
+  }
+
+  // check reads tsconfig and the sources, never the app config.
+  if (cmd === 'check') {
+    process.exitCode = check(process.cwd(), process.argv.includes('--strict'));
     return;
   }
 
@@ -70,11 +82,33 @@ async function main(): Promise<void> {
     case 'start':
       await start(config);
       break;
+    case 'env':
+      process.exitCode = await env(config);
+      break;
+    case 'info':
+      await info(config, resolvedVersions(config.root ?? process.cwd()));
+      break;
+    case 'doctor':
+      process.exitCode = await doctor(config);
+      break;
     default:
       console.error(`\n  ${c.red('✗')} Unknown command: ${c.bold(cmd)}`);
       console.log(usage());
       process.exit(1);
   }
+}
+
+async function doctor(config: Awaited<ReturnType<typeof loadConfig>>): Promise<number> {
+  const problems = diagnose(config.root ?? process.cwd());
+  const r = await envReport(config);
+  for (const n of r.secretPublic) problems.push({ severity: 'error', message: `${n} is in env.public and reads like a secret` });
+  for (const e of r.exposed) problems.push({ severity: 'error', message: `${e.name} in ${e.file} carries the client prefix, so Vite ships it` });
+  for (const p of r.public.filter((p) => !p.set)) problems.push({ severity: 'warning', message: `${p.name} is in env.public and not set` });
+  for (const n of r.missing) problems.push({ severity: 'warning', message: `${n} is in .env.example and not set locally` });
+
+  const lines = problems.map((p) => `  ${p.severity === 'error' ? c.red('✗') : c.yellow('!')} ${p.message}`);
+  console.log(['', ...(lines.length ? lines : [`  ${c.green('✓')} nothing to report`]), ''].join('\n'));
+  return problems.some((p) => p.severity === 'error') ? 1 : 0;
 }
 
 main().catch((e) => {

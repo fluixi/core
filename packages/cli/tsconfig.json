@@ -7,6 +7,9 @@
       "path": "../start"
     },
     {
+      "path": "../ts-plugin"
+    },
+    {
       "path": "./tsconfig.lib.json"
     }
   ]
