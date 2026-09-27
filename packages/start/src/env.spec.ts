@@ -9,7 +9,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  asBoolean,
+  asList,
+  asNumber,
+  asUrl,
   env,
+  pickEnv,
   publicEnv,
   serverEnv,
   selectPublic,
@@ -185,6 +190,14 @@ describe('env(), one reader for both sides', () => {
     expect(env('SESSION_SECRET')).toBe('shh');
   });
 
+  it('finds a name under its VITE_ spelling on the server, as publicEnv() does', () => {
+    delete process.env.API_URL;
+    process.env.VITE_API_URL = 'https://api.test';
+    expect(env('API_URL')).toBe('https://api.test');
+    process.env.API_URL = 'https://bare.test';
+    expect(env('API_URL')).toBe('https://bare.test');
+  });
+
   it('throws when required and unset, naming it, and treats empty as unset', () => {
     process.env.EMPTY = '';
     expect(env('EMPTY')).toBeUndefined();
@@ -204,5 +217,46 @@ describe('env(), one reader for both sides', () => {
       const key = ['SESSION', 'SECRET'].join('_'); // computed, as the build could not see it
       expect(() => env(key)).toThrow(/env\("SESSION_SECRET"\) ran in the browser, where only env.public exists/);
     });
+  });
+});
+
+describe('pickEnv', () => {
+  it('builds a frozen object from bare keys, defaults, optionals and parsers', () => {
+    Object.assign(process.env, { API_URL: 'https://api.test/', PAGE_SIZE: '50', FLAGS: 'a, b c', DEBUG: 'yes' });
+    delete process.env.AUTH_SERVICE_URL;
+    delete process.env.SENTRY_DSN;
+    const config = pickEnv({
+      apiUrl: { key: 'API_URL', parse: asUrl },
+      authServiceUrl: { key: 'AUTH_SERVICE_URL', default: '' },
+      pageSize: { key: 'PAGE_SIZE', default: 20, parse: asNumber },
+      flags: { key: 'FLAGS', parse: asList },
+      debug: { key: 'DEBUG', parse: asBoolean },
+      sentryDsn: { key: 'SENTRY_DSN', optional: true },
+    });
+    expect(config).toEqual({
+      apiUrl: 'https://api.test',
+      authServiceUrl: '',
+      pageSize: 50,
+      flags: ['a', 'b', 'c'],
+      debug: true,
+      sentryDsn: undefined,
+    });
+    expect(Object.isFrozen(config)).toBe(true);
+  });
+
+  it('reports every missing and invalid variable in one error', () => {
+    delete process.env.MISSING_A;
+    delete process.env.MISSING_B;
+    process.env.BAD_NUMBER = 'twelve';
+    expect(() =>
+      pickEnv({ a: 'MISSING_A', b: 'MISSING_B', n: { key: 'BAD_NUMBER', parse: asNumber } }),
+    ).toThrow(/not set: MISSING_A, MISSING_B\n {2}invalid: BAD_NUMBER \("twelve" is not a number\)/);
+  });
+
+  it('parsers refuse what they cannot read', () => {
+    expect(() => asNumber('')).toThrow();
+    expect(() => asBoolean('maybe')).toThrow();
+    expect(() => asUrl('/relative')).toThrow();
+    expect(asBoolean('OFF')).toBe(false);
   });
 });

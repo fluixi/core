@@ -158,13 +158,123 @@ export function env(key: string, options: { required?: boolean } = {}): string |
     }
     value = (readPublicEnv() as Record<string, string | undefined>)[key];
   } else {
-    value = typeof process === 'undefined' ? undefined : process.env?.[key];
+    // The bare name, then its `VITE_` spelling: the same rule `publicEnv()` applies, so a `.env`
+    // still mid-migration reads the same through either.
+    const source = typeof process === 'undefined' ? undefined : process.env;
+    value = source?.[key] || (key.startsWith('VITE_') ? undefined : source?.[`VITE_${key}`]);
   }
   if (value === '') value = undefined;
   if (options.required && value === undefined) {
     throw new Error(`[fluixi/env] ${key} is not set.`);
   }
   return value;
+}
+
+/** How `pickEnv` reads one field: a bare key is a required string. */
+export type EnvField =
+  | EnvKey
+  | {
+      key: EnvKey;
+      /** Unset reads as `undefined` instead of being reported missing. */
+      optional?: boolean;
+      /** Used when unset. Also makes the field never `undefined`. */
+      default?: unknown;
+      /** Turns the raw string into the field's value. Throwing marks the value invalid. */
+      parse?: (raw: string) => unknown;
+    };
+
+type FieldValue<F> = F extends string
+  ? string
+  : F extends { parse: (raw: string) => infer R }
+    ? F extends { default: infer D }
+      ? R | D
+      : F extends { optional: true }
+        ? R | undefined
+        : R
+    : F extends { default: infer D }
+      ? string | D
+      : F extends { optional: true }
+        ? string | undefined
+        : string;
+
+/** The object `pickEnv` returns for a given spec. */
+export type PickedEnv<S extends Record<string, EnvField>> = { readonly [K in keyof S]: FieldValue<S[K]> };
+
+/**
+ * Build a config object from environment variables in one declaration.
+ *
+ * Every field is read through `env()`, so the same rules hold on both sides, and the browser build
+ * checks the keys like any other read. Every missing or invalid variable is reported in one
+ * error rather than the first alone, which is what a fresh checkout or a new deployment needs.
+ * The result is frozen: it describes the deployment, not state.
+ *
+ * @example
+ * ```ts
+ * export const config = pickEnv({
+ *   apiUrl: 'API_URL',
+ *   authServiceUrl: { key: 'AUTH_SERVICE_URL', default: '' },
+ *   pageSize: { key: 'PAGE_SIZE', default: 20, parse: asNumber },
+ * });
+ * ```
+ */
+export function pickEnv<const S extends Record<string, EnvField>>(spec: S): PickedEnv<S> {
+  const out: Record<string, unknown> = {};
+  const missing: string[] = [];
+  const invalid: string[] = [];
+
+  for (const [field, entry] of Object.entries(spec)) {
+    const def = typeof entry === 'string' ? { key: entry } : entry;
+    const raw = env(def.key);
+    if (raw === undefined) {
+      if ('default' in def) out[field] = def.default;
+      else if (def.optional) out[field] = undefined;
+      else missing.push(def.key);
+      continue;
+    }
+    try {
+      out[field] = def.parse ? def.parse(raw) : raw;
+    } catch (cause) {
+      invalid.push(`${def.key} (${cause instanceof Error ? cause.message : String(cause)})`);
+    }
+  }
+
+  if (missing.length || invalid.length) {
+    const lines = [
+      missing.length ? `  not set: ${missing.join(', ')}` : '',
+      invalid.length ? `  invalid: ${invalid.join('; ')}` : '',
+    ].filter(Boolean);
+    throw new Error(`[fluixi/env] The environment is incomplete:\n${lines.join('\n')}`);
+  }
+  return Object.freeze(out) as PickedEnv<S>;
+}
+
+/** A number, refusing anything that does not read as one. */
+export function asNumber(raw: string): number {
+  const n = Number(raw.trim());
+  if (raw.trim() === '' || Number.isNaN(n)) throw new Error(`"${raw}" is not a number`);
+  return n;
+}
+
+/** `true`, `1`, `yes`, `on` and their opposites, any case. Anything else is refused. */
+export function asBoolean(raw: string): boolean {
+  const v = raw.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(v)) return true;
+  if (['false', '0', 'no', 'off'].includes(v)) return false;
+  throw new Error(`"${raw}" is not a boolean`);
+}
+
+/** A list separated by commas or spaces, empty entries dropped. */
+export function asList(raw: string): string[] {
+  return raw.split(/[\s,]+/).filter(Boolean);
+}
+
+/** An absolute URL, without a trailing slash so a path can be appended. */
+export function asUrl(raw: string): string {
+  try {
+    return new URL(raw.trim()).toString().replace(/\/$/, '');
+  } catch {
+    throw new Error(`"${raw}" is not an absolute URL`);
+  }
 }
 
 /** Every name in `source`, plus the bare form of each `VITE_` one. */

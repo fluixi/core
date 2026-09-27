@@ -113,3 +113,18 @@ describe('env()', () => {
     await expect(bundle(['API_URL'])).rejects.toThrow(/reads SESSION_SECRET/);
   });
 });
+
+describe('pickEnv', () => {
+  it('checks every key in the spec, bare or in an object', async () => {
+    app(
+      "import { pickEnv } from '@fluixi/start/env';\n" +
+        "export const c = pickEnv({ api: 'API_URL', size: { key: 'PAGE_SIZE', default: 1 }, s: { key: 'SESSION_SECRET' } });\n",
+    );
+    await expect(bundle(['API_URL', 'PAGE_SIZE'])).rejects.toThrow(/reads SESSION_SECRET/);
+  });
+
+  it('passes a spec of public keys', async () => {
+    app("import { pickEnv } from '@fluixi/start/env';\nexport const c = pickEnv({ api: 'API_URL', size: { key: 'PAGE_SIZE' } });\n");
+    await expect(bundle(['API_URL', 'PAGE_SIZE'])).resolves.toBeDefined();
+  });
+});

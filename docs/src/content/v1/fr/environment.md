@@ -59,6 +59,30 @@ fonction `"use server"` ou un fichier `.server`, dont le code n'atteint jamais l
 `publicEnv()` et `serverEnv()` restent pour le code qui veut afficher son intention : qui relit
 `serverEnv('STRIPE_KEY')` sait que c'est un secret sans rien chercher.
 
+## Un objet de configuration en une déclaration
+
+```ts
+// src/config/env.ts
+import { pickEnv, asNumber } from '@fluixi/start/env';
+
+export const config = pickEnv({
+  apiUrl: 'API_URL',                                            // string, required
+  authServiceUrl: { key: 'AUTH_SERVICE_URL', default: '' },     // string
+  pageSize: { key: 'PAGE_SIZE', default: 20, parse: asNumber }, // number
+  sentryDsn: { key: 'SENTRY_DSN', optional: true },             // string | undefined
+});
+```
+
+Une clé seule est une chaîne obligatoire. `default` s'applique quand la variable n'est pas
+définie, `optional` l'autorise à valoir `undefined`, et `parse` décide du type ; le type de chaque
+champ découle de son entrée. Toutes les variables manquantes ou invalides sont signalées dans une
+seule erreur : un nouveau déploiement apprend sa liste entière d'un coup, pas un redémarrage à la
+fois. Le résultat est figé.
+
+`asNumber`, `asBoolean`, `asList` et `asUrl` refusent ce qu'ils ne savent pas lire :
+`PAGE_SIZE=twelve` échoue au démarrage au lieu de devenir `NaN` dans une requête. Chaque champ est
+lu par `env()`, donc le build navigateur contrôle ces clés comme toute autre lecture.
+
 ### Clés typées
 
 `@fluixi/start` écrit les noms déclarés dans `src/fluixi-env-vars.d.ts`, avec à côté les noms des

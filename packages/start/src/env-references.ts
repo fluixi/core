@@ -91,6 +91,7 @@ function walkBrowserSide(node: any, visit: (n: Node) => void): void {
 export function publicEnvReads(ast: Node): EnvRead[] {
   const objectCallees = new Set<string>();
   const keyCallees = new Set<string>();
+  const specCallees = new Set<string>();
   const bound = new Set<string>();
   const reads: EnvRead[] = [];
 
@@ -101,9 +102,10 @@ export function publicEnvReads(ast: Node): EnvRead[] {
       const imported = spec.imported?.name ?? spec.imported?.value;
       if (imported === 'publicEnv') objectCallees.add(spec.local.name);
       if (imported === 'env') keyCallees.add(spec.local.name);
+      if (imported === 'pickEnv') specCallees.add(spec.local.name);
     }
   }
-  if (!objectCallees.size && !keyCallees.size) return reads;
+  if (!objectCallees.size && !keyCallees.size && !specCallees.size) return reads;
 
   const callTo = (n: Node | null | undefined, names: Set<string>): boolean =>
     !!n && n.type === 'CallExpression' && n.callee?.type === 'Identifier' && names.has(n.callee.name);
@@ -139,6 +141,21 @@ export function publicEnvReads(ast: Node): EnvRead[] {
       const first = n.arguments?.[0];
       if (first?.type === 'Literal' && typeof first.value === 'string') reads.push({ name: first.value, offset: first.start });
     }
+    // `pickEnv({ field: 'KEY', other: { key: 'KEY' } })`: each key in the spec is a read.
+    if (callTo(n, specCallees) && n.arguments?.[0]?.type === 'ObjectExpression') {
+      for (const prop of n.arguments[0].properties) {
+        const value = prop.type === 'Property' ? prop.value : null;
+        const literal =
+          value?.type === 'Literal'
+            ? value
+            : value?.type === 'ObjectExpression'
+              ? value.properties.find((p: Node) => p.type === 'Property' && keyOf(p.key, p.computed) === 'key')?.value
+              : null;
+        if (literal?.type === 'Literal' && typeof literal.value === 'string') {
+          reads.push({ name: literal.value, offset: literal.start });
+        }
+      }
+    }
   });
 
   return reads;
@@ -170,7 +187,7 @@ export function envReferencesVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'env'
     transform(this: any, code: string, id: string, options?: { ssr?: boolean }) {
       if (!declared.size || options?.ssr) return null;
       const file = id.replace(/\?.*$/, '');
-      if (!SOURCE.test(file) || /[\\/]node_modules[\\/]/.test(file) || !/publicEnv|\benv\b|__fx_env/.test(code)) return null;
+      if (!SOURCE.test(file) || /[\\/]node_modules[\\/]/.test(file) || !/publicEnv|pickEnv|\benv\b|__fx_env/.test(code)) return null;
 
       let ast: Node;
       try {

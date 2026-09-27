@@ -58,6 +58,29 @@ browser.
 `publicEnv()` and `serverEnv()` stay for code that wants its intent on the page: a reviewer
 reading `serverEnv('STRIPE_KEY')` knows it is a secret without looking anything up.
 
+## A config object in one declaration
+
+```ts
+// src/config/env.ts
+import { pickEnv, asNumber } from '@fluixi/start/env';
+
+export const config = pickEnv({
+  apiUrl: 'API_URL',                                            // string, required
+  authServiceUrl: { key: 'AUTH_SERVICE_URL', default: '' },     // string
+  pageSize: { key: 'PAGE_SIZE', default: 20, parse: asNumber }, // number
+  sentryDsn: { key: 'SENTRY_DSN', optional: true },             // string | undefined
+});
+```
+
+A bare key is a required string. `default` fills in when the variable is unset, `optional` lets
+it be `undefined`, and `parse` decides the type; each field's type follows from its entry. Every
+missing or invalid variable is reported in one error, so a new deployment learns its whole list
+at once rather than one restart at a time. The result is frozen.
+
+`asNumber`, `asBoolean`, `asList` and `asUrl` refuse what they cannot read: `PAGE_SIZE=twelve`
+fails at startup instead of becoming `NaN` in a query. Each field is read through `env()`, so
+the browser build checks these keys like any other read.
+
 ### Typed keys
 
 `@fluixi/start` writes the declared names into `src/fluixi-env-vars.d.ts`, with the server
