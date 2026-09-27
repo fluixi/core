@@ -176,7 +176,15 @@ export function componentGlobals(
   // '$signal'" for code that compiles. tsc doesn't load language-service plugins, so an
   // ambient declaration is the only thing that answers for both the editor and the
   // command line.
-  const intrinsicModules = intrinsics ? [...new Set(Object.values(INTRINSICS).map((i) => i.module))] : [];
+  // Only the intrinsics whose package the project has: `$env` comes from `@fluixi/start`, and
+  // an app without it would otherwise get a declaration that fails to resolve.
+  const usableIntrinsics = intrinsics
+    ? Object.entries(INTRINSICS).filter(([, i]) => {
+        const pkg = packageOf(i.module);
+        return !available || !pkg || available.has(pkg);
+      })
+    : [];
+  const intrinsicModules = [...new Set(usableIntrinsics.map(([, i]) => i.module))];
   const modules = [
     ...new Set([...declared.map((name) => resolved.get(name)!.module), ...intrinsicModules]),
   ].sort();
@@ -215,12 +223,9 @@ export function componentGlobals(
   // `typeof ns.signal` rather than an alias: the intrinsic is a global that stands for
   // the runtime call, so it takes the runtime's signature without claiming to be that
   // symbol: go-to-definition on `$signal` should land on what it compiles to.
-  const intrinsicLines = intrinsics
-    ? Object.entries(INTRINSICS).map(
-        ([name, intrinsic]) =>
-          `  const ${name}: typeof ${namespaceAlias(intrinsic.module)}.${intrinsic.export};`,
-      )
-    : [];
+  const intrinsicLines = usableIntrinsics.map(
+    ([name, intrinsic]) => `  const ${name}: typeof ${namespaceAlias(intrinsic.module)}.${intrinsic.export};`,
+  );
 
   const patternRules = rules.filter((rule) => 'match' in rule).length;
   const patternNote =

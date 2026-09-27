@@ -24,7 +24,7 @@ import { createComponentResolver } from '../resolve/component-resolver.js';
 import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
-import { collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
+import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { collectSourceEdits, mayHaveReactiveCall } from './source-locations.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
@@ -468,6 +468,7 @@ export function transformTemplates(
     options.intrinsics === false
       ? { edits: [], diagnostics: [], imports: new Map<string, Set<string>>() }
       : collectIntrinsicEdits(ast.program);
+  if (intrinsics.edits.length) avoidBindingClashes(ast.program, intrinsics, moduleBindings(ast.program));
 
   // Where each reactive primitive was created, for the devtools graph. Off unless asked
   // for: it is development tooling, and production should carry none of it.

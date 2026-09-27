@@ -40,6 +40,8 @@ export interface IntrinsicsResult {
   diagnostics: IntrinsicDiagnostic[];
   /** Runtime exports the rewritten code needs, by module. */
   imports: Map<string, Set<string>>;
+  /** Runtime exports imported under another name, because the module binds theirs. */
+  aliases?: Map<string, string>;
 }
 
 function walk(root: Node | null | undefined, visit: (node: Node) => void): void {
@@ -95,11 +97,49 @@ export function collectIntrinsicEdits(program: unknown): IntrinsicsResult {
   return { edits, diagnostics, imports };
 }
 
+/**
+ * Point a rewritten call past a local binding of the same name.
+ *
+ * `$env('X')` becomes `env('X')`, and the import of `env` used to be skipped when the module
+ * already bound `env`, on the assumption that it was the same import. A config module with its
+ * own `const env = {…}` is common, and there the call reached the app's object instead. Such a
+ * name is now imported under a private alias. A module that imports that very export from that
+ * very module keeps the old behaviour: the binding is the runtime already.
+ */
+export function avoidBindingClashes(program: unknown, result: IntrinsicsResult, bound: Set<string>): void {
+  const importedAsIs = new Set<string>();
+  for (const stmt of ((program as Node).body as Node[]) ?? []) {
+    if (stmt.type !== 'ImportDeclaration') continue;
+    const module = (stmt.source as Node).value as string;
+    for (const spec of (stmt.specifiers as Node[]) ?? []) {
+      if (spec.type !== 'ImportSpecifier') continue;
+      const imported = ((spec.imported as Node).name ?? (spec.imported as Node).value) as string;
+      if (imported === (spec.local as Node).name && result.imports.get(module)?.has(imported)) {
+        importedAsIs.add(imported);
+      }
+    }
+  }
+
+  const aliases = new Map<string, string>();
+  for (const names of result.imports.values()) {
+    for (const name of names) if (bound.has(name) && !importedAsIs.has(name)) aliases.set(name, `__fx_${name}`);
+  }
+  if (!aliases.size) return;
+  for (const edit of result.edits) {
+    const alias = aliases.get(edit.code);
+    if (alias) edit.code = alias;
+  }
+  result.aliases = aliases;
+}
+
 /** The import statements a result needs, minus anything the module already binds. */
 export function intrinsicImports(result: IntrinsicsResult, bound: Set<string>): string {
   const lines: string[] = [];
   for (const [module, names] of [...result.imports].sort(([a], [b]) => a.localeCompare(b))) {
-    const wanted = [...names].filter((name) => !bound.has(name)).sort();
+    const wanted = [...names]
+      .filter((name) => result.aliases?.has(name) || !bound.has(name))
+      .sort()
+      .map((name) => (result.aliases?.has(name) ? `${name} as ${result.aliases.get(name)}` : name));
     if (wanted.length) lines.push(`import { ${wanted.join(', ')} } from ${JSON.stringify(module)};`);
   }
   return lines.length ? `${lines.join('\n')}\n` : '';

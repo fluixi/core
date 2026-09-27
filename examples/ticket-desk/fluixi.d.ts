@@ -12,6 +12,7 @@ import * as __fluixi_core_router from '@fluixi/core/router';
 import * as __fluixi_dom from '@fluixi/dom';
 import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
 import * as __fluixi_reactive_store from '@fluixi/reactive/store';
+import * as __fluixi_start_env from '@fluixi/start/env';
 
 declare global {
   export import Await = __fluixi_core.Await;
@@ -38,4 +39,5 @@ declare global {
   const $deferred: typeof __fluixi_reactive_signal.createDeferred;
   const $untrack: typeof __fluixi_reactive_signal.untrack;
   const $untrackStore: typeof __fluixi_reactive_store.untrackStore;
+  const $env: typeof __fluixi_start_env.env;
 }

@@ -79,6 +79,9 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   // dependency analysis must not guess at.
   $untrack: { export: 'untrack', module: REACTIVE_MODULE, returns: 'plain' },
   $untrackStore: { export: 'untrackStore', module: '@fluixi/reactive/store', returns: 'plain' },
+
+  // An environment variable, public or server-only; the browser build refuses a secret.
+  $env: { export: 'env', module: '@fluixi/start/env', returns: 'plain' },
 };
 
 /**

@@ -191,3 +191,25 @@ describe('the tracking operations', () => {
     expect(kinds.get('a')).toBe('plain');
   });
 });
+
+describe('$env', () => {
+  it('compiles to env from @fluixi/start/env', () => {
+    const code = compile("export const url = $env('API_URL');");
+    expect(code).toContain("env('API_URL')");
+    expect(code).toContain('import { env } from "@fluixi/start/env"');
+  });
+
+  it("goes past the module's own `env` binding instead of calling it", () => {
+    // A config module with its own `env` object is common; the call must still reach the runtime.
+    const code = compile("export const env = { apiUrl: $env('API_URL') };");
+    expect(code).toContain("__fx_env('API_URL')");
+    expect(code).toContain('import { env as __fx_env } from "@fluixi/start/env"');
+    expect(code).toContain('export const env = {');
+  });
+
+  it('reuses an import of the same runtime export rather than adding a second', () => {
+    const code = compile("import { env } from '@fluixi/start/env';\nexport const url = $env('API_URL');");
+    expect(code).toContain("env('API_URL')");
+    expect(code).not.toContain('__fx_env');
+  });
+});

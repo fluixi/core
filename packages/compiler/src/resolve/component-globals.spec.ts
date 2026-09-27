@@ -107,3 +107,15 @@ describe('the $ intrinsics', () => {
     expect(source).not.toContain('$signal');
   });
 });
+
+describe('intrinsics a project cannot resolve', () => {
+  it('declares $env only when @fluixi/start is a dependency', () => {
+    const without = componentGlobals([], { available: ['@fluixi/core', '@fluixi/reactive'] }).source;
+    expect(without).toContain('const $signal');
+    expect(without).not.toContain('$env');
+    expect(without).not.toContain('@fluixi/start/env');
+
+    const withStart = componentGlobals([], { available: ['@fluixi/core', '@fluixi/reactive', '@fluixi/start'] }).source;
+    expect(withStart).toContain('const $env');
+  });
+});
