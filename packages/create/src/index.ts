@@ -3,16 +3,27 @@
  * `npm create fluixi <dir>`: scaffold a new Fluixi app. Prompts for a name, a mode
  * (SSR via @fluixi/start, or SPA via vite + @fluixi/vite-plugin), and a template syntax
  * (JSX or html``), unless given on the command line: `create-fluixi my-app --spa --html`
- * (`--ssr`/`--spa`, `--jsx`/`--html`). The html`` variant is JSX-free, plain `.ts`
+ * (`--ssr`/`--spa`, `--jsx`/`--html`, `--auth=oauth2 --provider=keycloak --tokens=server`).
+ * The html`` variant is JSX-free, plain `.ts`
  * sources, no `jsx` in tsconfig. Zero runtime deps, the styled prompts (gradient
  * wordmark, gutter, arrow-key select) are hand-rolled ANSI.
  */
 import { cpSync, renameSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline/promises';
-import { emitKeypressEvents } from 'node:readline';
-import { stdin as input, stdout as output, argv, exit, env } from 'node:process';
+import {
+  askSelect,
+  askText,
+  PROVIDERS,
+  SERVER_ONLY,
+  ScaffoldError,
+  setupBetterAuth,
+  setupOAuth2,
+  type AuthResult,
+  type ProviderName,
+  type Tokens,
+} from '@fluixi/cli/scaffold';
+import { stdin as input, stdout as output, stderr, argv, exit, env } from 'node:process';
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
@@ -39,73 +50,6 @@ const gradient = (text: string) => {
   }).join('');
 };
 const BAR = c.gray('│');
-
-// ── interactive prompt primitives (clack-style gutter) ──────────────────────
-async function askText(label: string, fallback: string): Promise<string> {
-  output.write(`${c.green('◇')}  ${c.bold(label)} ${c.gray(`(${fallback})`)}\n`);
-  const rl = createInterface({ input, output });
-  const answer = (await rl.question(`${BAR}  `)).trim();
-  rl.close();
-  output.write(`${BAR}\n`);
-  return answer || fallback;
-}
-
-interface Choice { value: string; label: string; hint: string; }
-function askSelect(label: string, choices: Choice[]): Promise<string> {
-  return new Promise((done) => {
-    let idx = 0;
-    output.write(`${c.green('◆')}  ${c.bold(label)}\n`);
-    const draw = (first: boolean) => {
-      if (!first) output.write(`\x1b[${choices.length}A`);
-      for (let i = 0; i < choices.length; i++) {
-        const on = i === idx;
-        const dot = on ? c.green('●') : c.gray('○');
-        const name = on ? c.cyan(c.bold(choices[i].label)) : choices[i].label;
-        output.write(`\x1b[2K${BAR}  ${dot} ${name}  ${c.gray(choices[i].hint)}\n`);
-      }
-    };
-    draw(true);
-    emitKeypressEvents(input);
-    if (input.isTTY) input.setRawMode(true);
-    const onKey = (_s: string, k: { name?: string; ctrl?: boolean }) => {
-      if (k.name === 'up' || k.name === 'k') { idx = (idx - 1 + choices.length) % choices.length; draw(false); }
-      else if (k.name === 'down' || k.name === 'j') { idx = (idx + 1) % choices.length; draw(false); }
-      // Both names. A terminal sends `\r` and readline calls that `return`; a pty or a
-      // piped answer sends `\n`, which it calls `enter`. Accepting only the first left
-      // the prompt waiting for a key that never came.
-      else if (k.name === 'return' || k.name === 'enter') { finish(); done(choices[idx].value); }
-      else if (k.name === 'c' && k.ctrl) { finish(); output.write('\n'); exit(1); }
-    };
-    // Enter on a closed stream still means "take what is highlighted". Without this a
-    // piped answer (`printf 'app\n\n\n' | create-fluixi`) drew the list and stopped.
-    const onEnd = () => { finish(); done(choices[idx].value); };
-    const finish = () => {
-      input.off('keypress', onKey);
-      input.off('end', onEnd);
-      input.off('close', onEnd);
-      if (input.isTTY) input.setRawMode(false);
-      // Pause it again or the live stdin handle keeps the event loop alive and the CLI
-      // never exits.
-      input.pause();
-      output.write(`${BAR}\n`);
-    };
-    // Already at EOF, so no event is coming: a fully buffered answer
-    // (`printf 'app\n\n\n' | create-fluixi`) is consumed by the name prompt and the
-    // stream ends before this one is set up. Take the highlighted value now.
-    if (input.readableEnded) { finish(); done(choices[idx].value); return; }
-
-    input.on('keypress', onKey);
-    input.on('end', onEnd);
-    input.on('close', onEnd);
-    // The reason this prompt used to go nowhere. `askText` closes its readline
-    // interface, which leaves stdin paused, and `emitKeypressEvents` only wires the
-    // stream up the first time it is called. Attaching a listener to a paused stream
-    // reads nothing, so no key ever arrived: the list drew with the first option
-    // highlighted, the event loop drained, and the process exited 0 having created
-    // nothing.
-    input.resume();
-  });
-}
 
 /**
  * What every @fluixi-ui app needs, and nothing more.
@@ -178,6 +122,24 @@ const LAYERS_CSS = `/* Cascade-layer order. Imported before any component CSS, b
 
 type Ui = 'none' | 'fluixi-ui';
 type Css = 'none' | 'tailwind' | 'fluixi-css';
+type Auth = 'none' | 'oauth2' | 'better-auth';
+
+/** `--name=value` or `--name value`. */
+const option = (args: string[], name: string): string | undefined => {
+  const i = args.indexOf(`--${name}`);
+  if (i !== -1 && args[i + 1] && !args[i + 1].startsWith('-')) return args[i + 1];
+  return args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+};
+
+const PROVIDER_HINTS: Record<ProviderName, string> = {
+  oidc: 'any provider with a discovery document',
+  keycloak: 'realm on a Keycloak server',
+  auth0: 'tenant domain',
+  okta: 'org domain',
+  google: 'server tokens only',
+  dex: 'server tokens only',
+  oauth2: 'no discovery · endpoints by hand',
+};
 
 /** Add to a package.json section without dropping what the template already had. */
 function addDeps(pkg: Record<string, any>, section: string, deps: Record<string, string>): void {
@@ -312,7 +274,20 @@ async function main(): Promise<void> {
     : args.includes('--no-css') ? 'none'
     : undefined;
 
-  const interactive = input.isTTY && (!dir || !mode || !format || !ui || !css);
+  let auth = (args.includes('--no-auth') ? 'none' : option(args, 'auth')) as Auth | undefined;
+  let provider = option(args, 'provider') as ProviderName | undefined;
+  let tokens = option(args, 'tokens') as Tokens | undefined;
+  const refuse = (message: string) => {
+    stderr.write(`${c.red('✗')} ${message}\n`);
+    exit(1);
+  };
+  if (auth && !['none', 'oauth2', 'better-auth'].includes(auth)) refuse(`--auth is oauth2, better-auth or none`);
+  if (provider && !PROVIDERS.includes(provider)) refuse(`--provider is one of ${PROVIDERS.join(', ')}`);
+  if (tokens && tokens !== 'browser' && tokens !== 'server') refuse(`--tokens is browser or server`);
+  // Auth is wired through @fluixi/start: its env layer, app modules and server. An SPA has none.
+  if (mode === 'spa' && auth && auth !== 'none') refuse(`authentication needs an SSR app: drop --spa or --auth`);
+
+  const interactive = input.isTTY && (!dir || !mode || !format || !ui || !css || (mode !== 'spa' && !auth));
   if (interactive) {
     output.write(`\n${c.gray('┌')}  ${gradient('◆')} ${c.bold(gradient('create-fluixi'))}\n${BAR}\n`);
     if (!dir) dir = await askText('Project name', 'fluixi-app');
@@ -341,12 +316,32 @@ async function main(): Promise<void> {
         { value: 'fluixi-css', label: '@fluixi-css', hint: 'the Fluixi stylesheet' },
       ])) as Css;
     }
+    if (mode === 'ssr' && !auth) {
+      auth = (await askSelect('Authentication', [
+        { value: 'none', label: 'None', hint: 'add it later with fluixi add auth' },
+        { value: 'oauth2', label: 'OAuth2 / OIDC', hint: '@fluixi/oauth2 · Keycloak, Auth0, Okta, Google…' },
+        { value: 'better-auth', label: 'Better Auth', hint: '@fluixi/auth · your own user table' },
+      ])) as Auth;
+    }
+    if (auth === 'oauth2' && !provider) {
+      provider = (await askSelect(
+        'Identity provider',
+        PROVIDERS.map((p) => ({ value: p, label: p, hint: PROVIDER_HINTS[p] })),
+      )) as ProviderName;
+    }
+    if (auth === 'oauth2' && !tokens && !SERVER_ONLY[provider ?? 'oidc']) {
+      tokens = (await askSelect('Where the tokens live', [
+        { value: 'browser', label: 'Browser', hint: 'public client · PKCE' },
+        { value: 'server', label: 'Server', hint: 'httpOnly cookie · client secret' },
+      ])) as Tokens;
+    }
   }
   dir = dir ?? 'fluixi-app';
   mode = mode ?? 'ssr';
   format = format ?? 'jsx';
   ui = ui ?? 'none';
   css = css ?? 'none';
+  auth = mode === 'spa' ? 'none' : (auth ?? 'none');
 
   const target = resolve(dir);
   const name = basename(target);
@@ -412,17 +407,33 @@ async function main(): Promise<void> {
     importStyles(target, mode, ui, css);
   }
 
+  // The same wiring `fluixi add auth` writes into an existing app.
+  let authResult: AuthResult | undefined;
+  try {
+    if (auth === 'oauth2') authResult = setupOAuth2(target, { provider, tokens, format });
+    else if (auth === 'better-auth') authResult = setupBetterAuth(target);
+  } catch (error) {
+    if (error instanceof ScaffoldError) refuse(error.message);
+    throw error;
+  }
+  if (authResult) addDeps(pkg, 'dependencies', authResult.dependencies);
+
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
   // Outro + next steps. The leading gutter only makes sense after the intro/prompts.
-  const tag = `${c.cyan(mode.toUpperCase())} ${c.gray('·')} ${c.cyan(format === 'html' ? 'html``' : 'JSX')}`;
+  const authTag = auth === 'oauth2' ? `OAuth2 ${provider ?? 'oidc'}` : auth === 'better-auth' ? 'Better Auth' : '';
+  const tag =
+    `${c.cyan(mode.toUpperCase())} ${c.gray('·')} ${c.cyan(format === 'html' ? 'html``' : 'JSX')}` +
+    (authTag ? ` ${c.gray('·')} ${c.cyan(authTag)}` : '');
   if (interactive) output.write(`${BAR}\n`);
   else output.write('\n');
   output.write(`${c.green('◇')}  ${c.green('Created')} ${c.bold(name)} ${c.gray('·')} ${tag}\n${c.gray('└')}\n\n`);
   output.write(`  ${c.bold('Next')}\n`);
   output.write(`    ${c.gray('›')} cd ${dir}\n`);
   output.write(`    ${c.gray('›')} ${c.cyan('pnpm install')} ${c.gray('# or npm / yarn')}\n`);
+  for (const step of authResult?.next ?? []) output.write(`    ${c.gray('›')} ${step}\n`);
   output.write(`    ${c.gray('›')} ${c.cyan('pnpm dev')}\n\n`);
+  for (const note of authResult?.notes ?? []) output.write(`  ${c.gray(note)}\n\n`);
 }
 
 main();

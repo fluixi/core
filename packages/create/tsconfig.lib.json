@@ -1,8 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "ES2021",
@@ -10,7 +8,7 @@
     "declarationMap": false,
     "emitDeclarationOnly": false,
     "composite": false,
-    "noEmit": false,
+    "noEmit": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
