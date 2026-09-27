@@ -3,6 +3,7 @@ import { loadConfig } from '@fluixi/start/config';
 import { dev, build, start, env, envReport, info } from '@fluixi/start/commands';
 import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
+import { add } from './add.js';
 import { startMismatch } from './start-copy.js';
 import { check } from './check.js';
 import { diagnose, resolvedVersions } from './doctor.js';
@@ -21,6 +22,7 @@ function usage(): string {
     cmd('build --format=web-component', 'build custom elements as portable files'),
     cmd('start', 'run the production SSR server (after build)'),
     cmd('generate <kind> <name>', 'scaffold code, see fluixi g --help  ' + c.dim('(alias: g)')),
+    cmd('add auth', 'set up authentication: asks, writes, installs'),
     cmd('check [--strict]', 'env and auth rules over the project, for CI'),
     cmd('env', 'declared and set variables, secrets that would ship, env types'),
     cmd('doctor', 'duplicate packages, editor plugin, env problems'),
@@ -41,6 +43,12 @@ async function main(): Promise<void> {
   // generate works on the local files and doesn't need the app config.
   if (cmd === 'generate' || cmd === 'g') {
     generate(process.argv[3], process.argv[4]);
+    return;
+  }
+
+  // add works on the local files, like generate.
+  if (cmd === 'add') {
+    await add(process.argv[3], process.argv.slice(3));
     return;
   }
 

@@ -201,3 +201,51 @@ export default function Login() {
   return <button onClick={() => auth.signIn({ returnTo: '/' })}>Sign in</button>;
 }
 `;
+
+// ── better-auth ─────────────────────────────────────────────────────────────
+
+export const betterAuthConfig = () =>
+  `import { betterAuth } from 'better-auth';
+import { defineAuth } from '@fluixi/auth/server';
+
+export type AppUser = { id: string; email: string; name?: string; role?: string };
+
+// Better Auth owns the audited primitives; defineAuth registers it with @fluixi/auth.
+export const auth = defineAuth<AppUser>(
+  betterAuth({
+    // database: <your adapter>,
+    emailAndPassword: { enabled: true },
+    // socialProviders: { google: { … }, github: { … } },
+  } as Parameters<typeof betterAuth>[0]),
+);
+`;
+
+export const betterAuthClient = () =>
+  `import { createAuthClient } from 'better-auth/client';
+import { createAuthHooks } from '@fluixi/auth/client';
+import type { AppUser } from './auth.config.js';
+
+const client = createAuthClient({ baseURL: '/api/auth' });
+
+// Or, to reuse an existing reactive session: createAuthHooks({ session: yourSessionStore }).
+export const { useUser, useSession, useAuth, useSignIn, useSignOut, protectedRoute } =
+  createAuthHooks<AppUser>({ client, loginPath: '/login' });
+`;
+
+export const betterAuthMiddleware = () =>
+  `import { defineMiddleware } from '@fluixi/start';
+import { authMiddleware } from '@fluixi/auth/server';
+import './auth.config.js';
+
+export default defineMiddleware([authMiddleware()]);
+`;
+
+export const betterAuthRoute = () =>
+  `import { mountAuthRoutes } from '@fluixi/auth/server';
+import '../../auth.config.js';
+
+const handler = mountAuthRoutes();
+export const GET = handler;
+export const POST = handler;
+export default handler;
+`;

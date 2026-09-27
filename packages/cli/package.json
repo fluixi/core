@@ -20,6 +20,12 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
+      },
+      "./scaffold": {
+        "types": "./dist/scaffold/index.d.ts",
+        "import": "./dist/scaffold/index.mjs",
+        "require": "./dist/scaffold/index.cjs",
+        "default": "./dist/scaffold/index.js"
       }
     }
   },
@@ -48,6 +54,13 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
+    },
+    "./scaffold": {
+      "development": "./src/scaffold/index.ts",
+      "types": "./dist/scaffold/index.d.ts",
+      "import": "./dist/scaffold/index.mjs",
+      "require": "./dist/scaffold/index.cjs",
+      "default": "./dist/scaffold/index.js"
     }
   },
   "dependencies": {

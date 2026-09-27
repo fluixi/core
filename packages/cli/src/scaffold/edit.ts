@@ -3,19 +3,18 @@
  *
  * Text insertions at known shapes, never a parse and reprint: `app.config.ts` and
  * `fluixi.config.ts` are the author's code, and reprinting them loses their formatting. When a
- * file does not have the shape looked for, the line to add is printed instead.
+ * file does not have the shape looked for, the lines to add are returned instead.
+ *
+ * Nothing here prints or depends on a package: `fluixi g`, `fluixi add` and create-fluixi all
+ * run this code and each reports the steps its own way.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, relative } from 'node:path';
-import { c } from '@fluixi/start/ui';
+import { dirname } from 'node:path';
 
-const rel = (file: string) => relative(process.cwd(), file);
-const said = (verb: string, file: string, what?: string) =>
-  console.log(`  ${c.green('✓')} ${c.gray(verb)} ${c.cyan(rel(file))}${what ? c.gray(`: ${what}`) : ''}`);
-const hint = (file: string, lines: string[]) => {
-  console.log(`  ${c.yellow('!')} ${c.gray('add to')} ${c.cyan(rel(file))}${c.gray(':')}`);
-  for (const l of lines) console.log(`    ${l}`);
-};
+/** One thing done to a file, or the lines the author has to add themselves. */
+export type Step =
+  | { kind: 'created' | 'updated' | 'kept' | 'listed'; file: string; detail?: string }
+  | { kind: 'hint'; file: string; lines: string[] };
 
 /** Index just past the bracket matching the one at `open`, skipping strings and comments. */
 function closing(text: string, open: number): number {
@@ -71,9 +70,9 @@ export interface Registration {
 
 /**
  * List a module in `src/app.config.ts` or `app.config.server.ts`, creating the file when the
- * app has none. Returns false when it printed a hint instead of editing.
+ * app has none. Returns false when it could only hint.
  */
-export function register(file: string, header: string, r: Registration): boolean {
+export function register(log: Step[], file: string, header: string, r: Registration): boolean {
   const imports = [...(r.extraImports ?? []), r.importLine];
   if (!existsSync(file)) {
     mkdirSync(dirname(file), { recursive: true });
@@ -81,23 +80,23 @@ export function register(file: string, header: string, r: Registration): boolean
       file,
       `${header}import { defineApp } from '@fluixi/start/app';\n${imports.join('\n')}\n\nexport default defineApp({ imports: [${r.entry}] });\n`,
     );
-    said('created', file);
+    log.push({ kind: 'created', file });
     return true;
   }
   let text = readFileSync(file, 'utf8');
   if (text.includes(r.importLine)) {
-    console.log(`  ${c.gray('-')} ${c.cyan(rel(file))} ${c.gray('already lists it')}`);
+    log.push({ kind: 'listed', file, detail: r.entry });
     return true;
   }
   const m = text.match(/\bimports\s*:\s*\[/);
   if (!m) {
-    hint(file, [...imports, `imports: [${r.entry}]`]);
+    log.push({ kind: 'hint', file, lines: [...imports, `imports: [${r.entry}]`] });
     return false;
   }
   text = appendToArray(text, m.index! + m[0].length - 1, [r.entry]);
   for (const line of imports) text = addImport(text, line);
   writeFileSync(file, text);
-  said('updated', file, `imports ${r.entry}`);
+  log.push({ kind: 'updated', file, detail: `imports ${r.entry}` });
   return true;
 }
 
@@ -112,28 +111,40 @@ export function envPublicNames(configFile: string): string[] | null {
   return [...list.matchAll(/['"]([A-Za-z_][A-Za-z0-9_]*)['"]/g)].map((x) => x[1]);
 }
 
-/** Add names to `env.public`, skipping those already there. */
-export function addEnvPublic(configFile: string, names: string[]): void {
+/**
+ * Add names to `env.public`, skipping those already there. A `defineConfig({ ... })` with no
+ * `env` block gets one, as the first property.
+ */
+export function addEnvPublic(log: Step[], configFile: string, names: string[]): void {
+  const list = (indent: string) => `${indent}public: [\n${names.map((n) => `${indent}  '${n}',\n`).join('')}${indent}],\n`;
   const have = envPublicNames(configFile);
   if (have === null) {
-    if (!existsSync(configFile)) return hint(configFile, ['export default defineConfig({', `  env: { public: [${names.map((n) => `'${n}'`).join(', ')}] },`, '});']);
-    return hint(configFile, [`env: { public: [${names.map((n) => `'${n}'`).join(', ')}] },`]);
+    const text = existsSync(configFile) ? readFileSync(configFile, 'utf8') : '';
+    const call = text.match(/defineConfig\(\{\n/);
+    if (call && !/\benv\s*:/.test(text)) {
+      const at = call.index! + call[0].length;
+      writeFileSync(configFile, text.slice(0, at) + `  env: {\n${list('    ')}  },\n` + text.slice(at));
+      log.push({ kind: 'updated', file: configFile, detail: `env.public ${names.join(', ')}` });
+      return;
+    }
+    log.push({ kind: 'hint', file: configFile, lines: [`env: { public: [${names.map((n) => `'${n}'`).join(', ')}] },`] });
+    return;
   }
   const missing = names.filter((n) => !have.includes(n));
   if (!missing.length) return;
   const text = readFileSync(configFile, 'utf8');
   const m = text.match(/\bpublic\s*:\s*\[/)!;
   writeFileSync(configFile, appendToArray(text, m.index! + m[0].length - 1, missing.map((n) => `'${n}'`)));
-  said('updated', configFile, `env.public + ${missing.join(', ')}`);
+  log.push({ kind: 'updated', file: configFile, detail: `env.public + ${missing.join(', ')}` });
 }
 
 /** Append variables `.env.example` does not list yet, under a comment. */
-export function addEnvExample(file: string, comment: string, vars: Record<string, string>): void {
+export function addEnvExample(log: Step[], file: string, comment: string, vars: Record<string, string>): void {
   const text = existsSync(file) ? readFileSync(file, 'utf8') : '';
   const have = new Set([...text.matchAll(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/gm)].map((m) => m[1]));
   const add = Object.entries(vars).filter(([k]) => !have.has(k) && !have.has(`VITE_${k}`));
   if (!add.length) return;
   const block = `${comment.split('\n').map((l) => `# ${l}`).join('\n')}\n${add.map(([k, v]) => `${k}=${v}`).join('\n')}\n`;
   writeFileSync(file, text ? `${text.replace(/\n*$/, '\n')}\n${block}` : block);
-  said(text ? 'updated' : 'created', file, add.map(([k]) => k).join(', '));
+  log.push({ kind: text ? 'updated' : 'created', file, detail: add.map(([k]) => k).join(', ') });
 }
