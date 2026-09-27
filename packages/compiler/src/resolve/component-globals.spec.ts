@@ -79,6 +79,18 @@ describe('componentGlobals', () => {
     expect(source).toContain('1 pattern rule cannot be declared');
   });
 
+  it('declares the candidates a pattern answers, and only those', () => {
+    const rules = [{ match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' }];
+    const { declared, source } = componentGlobals(rules, {
+      builtins: false,
+      intrinsics: false,
+      candidates: ['StatusPill', 'helpers', 'Card.spec'],
+    });
+    expect(declared).toEqual(['StatusPill']);
+    expect(source).toContain('export import StatusPill = __src_components_StatusPill_tsx.StatusPill;');
+    expect(source).toContain('declared for the files the module path');
+  });
+
   it('emits a valid empty body when nothing resolves', () => {
     const { source, declared } = componentGlobals([], { builtins: false });
     expect(declared).toEqual([]);

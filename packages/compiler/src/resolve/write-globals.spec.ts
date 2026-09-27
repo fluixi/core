@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { writeComponentGlobals } from './write-globals.js';
+import { patternCandidates, writeComponentGlobals } from './write-globals.js';
 
 const rules = [{ components: { Button: '@ui/button' } }];
 
@@ -100,5 +100,28 @@ describe('writeComponentGlobals', () => {
   it('treats a missing include as covering everything', () => {
     writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }));
     expect(writeComponentGlobals({ resolve: rules }, root).warning).toBeUndefined();
+  });
+});
+
+describe('patternCandidates', () => {
+  it('offers the file names a pattern module path points at', () => {
+    mkdirSync(join(root, 'src/components'), { recursive: true });
+    for (const f of ['StatusPill.tsx', 'RequestFacts.tsx', 'styles.css']) writeFileSync(join(root, 'src/components', f), '');
+    const rules = [
+      { match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' },
+      // Not a project path, and a group in the directory: neither can be listed.
+      { match: /^Icon(.+)$/, module: '@/icons/$1' },
+      { match: /^(\w+)Page$/, module: '/src/$1/page.tsx' },
+    ];
+    expect(patternCandidates(rules, root).sort()).toEqual(['RequestFacts', 'StatusPill']);
+  });
+
+  it('declares them in the written file', () => {
+    mkdirSync(join(root, 'src/components'), { recursive: true });
+    writeFileSync(join(root, 'src/components/StatusPill.tsx'), '');
+    writeComponentGlobals({ resolve: [{ match: /^([A-Z]\w+)$/, module: '/src/components/$1.tsx' }] }, root);
+    expect(readFileSync(join(root, 'fluixi.d.ts'), 'utf8')).toContain(
+      "export import StatusPill = __src_components_StatusPill_tsx.StatusPill;",
+    );
   });
 });

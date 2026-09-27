@@ -12,8 +12,8 @@
  *  - **Only declare what the project can resolve.** Dependencies come from its manifest,
  *    so a component from an uninstalled package is skipped rather than degraded to `any`.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, relative, sep, resolve as resolvePath } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, dirname, relative, sep, resolve as resolvePath } from 'node:path';
 import { componentGlobals } from './component-globals.js';
 import type { ComponentResolverRule } from './component-resolver.js';
 
@@ -115,6 +115,36 @@ function projectDependencies(root: string): string[] | undefined {
   }
 }
 
+/**
+ * Names from the files a pattern rule points at: `/src/components/$1.tsx` lists
+ * `src/components` and offers each `X` for `X.tsx`. Only a project path with the group in
+ * the file name; the resolver still decides whether a name matches.
+ */
+export function patternCandidates(rules: readonly ComponentResolverRule[], root: string): string[] {
+  const out: string[] = [];
+  for (const rule of rules) {
+    if (!('match' in rule) || !rule.module.startsWith('/')) continue;
+    const dir = dirname(rule.module);
+    const file = basename(rule.module);
+    const group = file.match(/\$\d+/);
+    if (dir.includes('$') || !group || file.indexOf('$', group.index! + 1) !== -1) continue;
+    const before = file.slice(0, group.index);
+    const after = file.slice(group.index! + group[0].length);
+    let entries: string[];
+    try {
+      entries = readdirSync(resolvePath(root, dir.slice(1)));
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.length > before.length + after.length && entry.startsWith(before) && entry.endsWith(after)) {
+        out.push(entry.slice(before.length, entry.length - after.length));
+      }
+    }
+  }
+  return out;
+}
+
 /** Generate and write the declarations for `root`, returning what was done. */
 export function writeComponentGlobals(
   options: WriteGlobalsOptions,
@@ -138,6 +168,7 @@ export function writeComponentGlobals(
 
   const { source, declared } = componentGlobals(rules, {
     available: projectDependencies(root),
+    candidates: patternCandidates(rules, root),
     specifier: (module) => forTypeScript(module, dirname(target), root),
   });
 

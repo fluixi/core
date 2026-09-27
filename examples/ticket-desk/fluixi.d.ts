@@ -3,10 +3,11 @@
 // The components `resolve` supplies without an import. This describes what the
 // compiler already does; it does not enable it.
 //
-// 1 pattern rule cannot be declared:
-// a pattern matches unboundedly many names, so there is no list to emit. Those
-// tags still resolve at build time; declare them by hand if the editor needs them.
+// 1 pattern rule: declared for the files the module path
+// points at. A name with no such file still resolves at build time; declare it by hand.
 
+import * as __src_components_RequestFacts_tsx from './src/components/RequestFacts.js';
+import * as __src_components_StatusPill_tsx from './src/components/StatusPill.js';
 import * as __fluixi_core from '@fluixi/core';
 import * as __fluixi_core_router from '@fluixi/core/router';
 import * as __fluixi_dom from '@fluixi/dom';
@@ -25,8 +26,10 @@ declare global {
   export import Outlet = __fluixi_core_router.Outlet;
   export import Portal = __fluixi_dom.Portal;
   export import Redirect = __fluixi_core_router.Redirect;
+  export import RequestFacts = __src_components_RequestFacts_tsx.RequestFacts;
   export import Router = __fluixi_core_router.Router;
   export import Show = __fluixi_dom.Show;
+  export import StatusPill = __src_components_StatusPill_tsx.StatusPill;
   export import Suspense = __fluixi_core.Suspense;
   export import SuspenseList = __fluixi_core.SuspenseList;
   export import Switch = __fluixi_dom.Switch;
