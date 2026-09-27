@@ -1,5 +1,19 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.26
+
+### Minor Changes
+
+- 39a3db5: The editor now reports env and auth mistakes such as secret env names read in browser code, secrets in browser clients, unchecked audiences, weak algorithms, DPoP verifiers given bare tokens, role checks without roles, and weak session cookies.
+
+### Patch Changes
+
+- f4dc50c: Template diagnostics are now retained when an `env/auth` rule throws, and the failure is logged to the TypeScript server.
+- 7864fb6: `@fluixi/ts-plugin/rules` exports `envAuthDiagnostics`, now usable outside tsserver.
+- Updated dependencies [ae69e32]
+- Updated dependencies [4933804]
+  - @fluixi/compiler@1.0.0-alpha.92
+
 ## 0.1.0-alpha.25
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/head",
-  "version": "1.0.0-alpha.58",
+  "version": "1.0.0-alpha.59",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi — title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
