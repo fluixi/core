@@ -1,5 +1,34 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.83
+
+### Minor Changes
+
+- 9ebcd7b: fluixi add auth now asks for a provider and token mode, writes the wiring, and installs the package (use `--no-install` to skip); `@fluixi/cli/scaffold` exposes the generators' code with no dependencies and a `fluixi.config` without an env block receives one.
+- 7864fb6: - `fluixi check` now validates editor env/auth rules in CI and exits with code 1 on error, with `--strict` treating warnings as errors.
+  - `fluixi env` reports which `env.public` names are set, detects .env.example drift, warns about secrets that would ship, and writes environment types.
+  - `fluixi doctor` now reports when the same @fluixi package is installed twice, when ts-plugin is missing from tsconfig, and other environment problems.
+  - `fluixi info` now displays versions, adapter, modules, pages, and API routes.
+- b6a7a54: - The `g env` generator now picks environment variables from `env.public` using `pickEnv`.
+  - The `g module` generator now registers modules in `src/app.config.ts` (or `.server.ts`) and creates the file if it does not exist.
+  - The `g service` generator now creates a class, a token, and a module.
+  - The `g api --role` generator now creates a route guarded by `createApiGuard`.
+  - The `g server-fn` generator now creates a server function file.
+  - The `g auth oauth2` generator now sets up environment configuration, a service, callback and login routes, a server module, and required environment variables.
+  - The auth better-auth route now resides in `src/api/auth` instead of `src/routes/api/auth`.
+
+### Patch Changes
+
+- Updated dependencies [7864fb6]
+- Updated dependencies [9eb3e98]
+- Updated dependencies [7a516d3]
+- Updated dependencies [82c72c0]
+- Updated dependencies [f4dc50c]
+- Updated dependencies [7864fb6]
+- Updated dependencies [39a3db5]
+  - @fluixi/start@0.1.0-alpha.82
+  - @fluixi/ts-plugin@0.1.0-alpha.26
+
 ## 0.1.0-alpha.82
 
 ### Patch Changes

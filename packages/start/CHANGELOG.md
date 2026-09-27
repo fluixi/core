@@ -1,5 +1,29 @@
 # @fluixi/start
 
+## 0.1.0-alpha.82
+
+### Minor Changes
+
+- 7864fb6: - `fluixi check` now validates editor env/auth rules in CI and exits with code 1 on error, with `--strict` treating warnings as errors.
+  - `fluixi env` reports which `env.public` names are set, detects .env.example drift, warns about secrets that would ship, and writes environment types.
+  - `fluixi doctor` now reports when the same @fluixi package is installed twice, when ts-plugin is missing from tsconfig, and other environment problems.
+  - `fluixi info` now displays versions, adapter, modules, pages, and API routes.
+- 7a516d3: `env(key)` now reads variables from both public and private environments, and in the browser build non-public names are rejected while runtime-computed keys cause a throw, with keys typed from `env.public` and `.env` and generated into `src/fluixi-env-vars.d.ts`.
+- 82c72c0: `pickEnv` now builds a typed, frozen config object from environment variables with defaults, optional fields and parsers, reporting all missing or invalid variables at once, and `env()` on the server also reads the `VITE_` spelling.
+
+### Patch Changes
+
+- 9eb3e98: `@fluixi/start` now supplies the request it is answering, ensuring middleware locals are available during server-side rendering.
+- Updated dependencies [ae69e32]
+- Updated dependencies [4933804]
+- Updated dependencies [9eb3e98]
+  - @fluixi/compiler@1.0.0-alpha.92
+  - @fluixi/dom@1.0.0-alpha.92
+  - @fluixi/core@1.0.0-alpha.92
+  - @fluixi/vite-plugin@1.0.0-alpha.92
+  - @fluixi/server@1.0.0-alpha.92
+  - @fluixi/head@1.0.0-alpha.59
+
 ## 0.1.0-alpha.81
 
 ### Minor Changes

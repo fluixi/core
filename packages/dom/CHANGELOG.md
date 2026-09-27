@@ -1,5 +1,12 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.92
+
+### Patch Changes
+
+- 9eb3e98: `@fluixi/start` now supplies the request it is answering, ensuring middleware locals are available during server-side rendering.
+  - @fluixi/reactive@1.0.0-alpha.92
+
 ## 1.0.0-alpha.91
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fluixi/create
 
+## 0.1.0-alpha.13
+
+### Minor Changes
+
+- 5796529: `create-fluixi` now allows SSR apps to start with authentication using `--auth=oauth2|better-auth|none` together with `--provider` and `--tokens`, and new apps include TypeScript so `fluixi check` runs.
+
 ## 0.1.0-alpha.12
 
 ### Patch Changes
