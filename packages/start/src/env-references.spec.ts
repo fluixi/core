@@ -33,7 +33,7 @@ const header = "import { publicEnv } from '@fluixi/start/env';\n";
 describe('a read the browser cannot satisfy', () => {
   it('refuses publicEnv().X, naming the file, the line and the variable', async () => {
     app(header + '\nexport const url = publicEnv().API_URL;\nexport const key = publicEnv().SESSION_KEY;\n');
-    await expect(bundle(['API_URL'])).rejects.toThrow(/main\.ts: line 4 reads SESSION_KEY from publicEnv\(\)/);
+    await expect(bundle(['API_URL'])).rejects.toThrow(/main\.ts: line 4 reads SESSION_KEY in code the browser runs/);
   });
 
   it("refuses publicEnv()['X']", async () => {
@@ -81,5 +81,35 @@ describe('what it leaves alone', () => {
   it('ignores a publicEnv that is not the framework one', async () => {
     app('const publicEnv = () => ({ X: 1 });\nexport const x = publicEnv().X;\n');
     await expect(bundle(['API_URL'])).resolves.toBeDefined();
+  });
+});
+
+describe('env()', () => {
+  const envHeader = "import { env } from '@fluixi/start/env';\n";
+
+  it("refuses env('SECRET') in browser code and passes a declared name", async () => {
+    app(envHeader + "export const a = env('API_URL');\nexport const b = env('SESSION_SECRET');\n");
+    await expect(bundle(['API_URL'])).rejects.toThrow(/reads SESSION_SECRET in code the browser runs/);
+  });
+
+  it('checks $env as the compiler leaves it, aliased past a local env', async () => {
+    app("import { env as __fx_env } from '@fluixi/start/env';\nexport const env = { key: __fx_env('SESSION_SECRET') };\n");
+    await expect(bundle(['API_URL'])).rejects.toThrow(/reads SESSION_SECRET/);
+  });
+
+  it('leaves out what only the server runs', async () => {
+    app(
+      envHeader +
+        "export const a = import.meta.env.SSR ? env('SESSION_SECRET') : undefined;\n" +
+        "export function b() { if (typeof window === 'undefined') return env('SESSION_SECRET'); return env('API_URL'); }\n" +
+        "export function c() { if (typeof window !== 'undefined') { return env('API_URL'); } else { return env('SESSION_SECRET'); } }\n" +
+        "export const d = import.meta.env.SSR && env('SESSION_SECRET');\n",
+    );
+    await expect(bundle(['API_URL'])).resolves.toBeDefined();
+  });
+
+  it('still refuses the browser half of the same check', async () => {
+    app(envHeader + "export function c() { if (typeof window !== 'undefined') return env('SESSION_SECRET'); }\n");
+    await expect(bundle(['API_URL'])).rejects.toThrow(/reads SESSION_SECRET/);
   });
 });

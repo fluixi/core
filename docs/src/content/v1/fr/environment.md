@@ -41,11 +41,30 @@ au lieu de renvoyer `undefined`, car un secret lu comme `undefined` devient une 
 sans credentials, et l'échec pointe alors vers la requête au lieu de la lecture.
 `{ required: true }` lève aussi une erreur quand la variable n'est pas définie, en la nommant.
 
+## Un seul lecteur pour les deux côtés
+
+```ts
+const api = $env('API_URL');                                // string | undefined
+const secret = $env('SESSION_SECRET', { required: true });  // string
+```
+
+`$env` se compile en `env` de `@fluixi/start/env`, sans import à écrire ; importez `env`
+vous-même, sous le nom de votre choix, si vous préférez. Côté serveur il lit n'importe quelle
+variable. Dans le navigateur seul l'ensemble public existe : le build navigateur refuse un secret
+à la ligne qui le lit, et un nom que le build ne pouvait pas voir, calculé à l'exécution, lève
+une erreur quand il s'exécute. Une branche que seul le serveur prend, derrière
+`import.meta.env.SSR` ou `typeof window === 'undefined'`, n'est pas contrôlée, pas plus qu'une
+fonction `"use server"` ou un fichier `.server`, dont le code n'atteint jamais le navigateur.
+
+`publicEnv()` et `serverEnv()` restent pour le code qui veut afficher son intention : qui relit
+`serverEnv('STRIPE_KEY')` sait que c'est un secret sans rien chercher.
+
 ### Clés typées
 
-`@fluixi/start` écrit les noms déclarés dans `src/fluixi-public-env.d.ts` : `publicEnv().` les
-complète dans l'éditeur, et un nom non déclaré est une erreur de type avant d'être une erreur de
-build. Chaque clé vaut `string | undefined`, puisqu'une variable déclarée peut ne pas être
+`@fluixi/start` écrit les noms déclarés dans `src/fluixi-env-vars.d.ts`, avec à côté les noms des
+variables serveur de vos fichiers `.env`, les noms seulement. `publicEnv().` et `$env('` les
+complètent alors dans l'éditeur, et un nom non déclaré est une erreur de type avant d'être une
+erreur de build. Chaque clé vaut `string | undefined`, puisqu'une variable déclarée peut ne pas être
 définie. Sans rien de déclaré, `publicEnv()` reste un simple enregistrement.
 
 Une clé connue seulement à l'exécution a besoin de son type :

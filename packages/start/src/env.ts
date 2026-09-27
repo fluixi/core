@@ -38,9 +38,12 @@
  * hands back an object, and code is free to index it with a computed key.
  */
 declare const __FLUIXI_PUBLIC_ENV__: Record<string, string> | undefined;
+declare const __FLUIXI_PUBLIC_KEYS__: string[] | undefined;
 
 /** The name the plugin defines, exported so the plugin and this module cannot disagree. */
 export const PUBLIC_ENV_DEFINE = '__FLUIXI_PUBLIC_ENV__';
+/** The declared names, set or not: what `env()` in a browser checks a name against. */
+export const PUBLIC_KEYS_DEFINE = '__FLUIXI_PUBLIC_KEYS__';
 
 /** Whether this is running where a bundle would be. */
 const inBrowser = (): boolean => typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -110,6 +113,58 @@ function readPublicEnv(): Readonly<Record<string, string>> {
  */
 export function publicEnv(): PublicEnvValues {
   return readPublicEnv() as PublicEnvValues;
+}
+
+/**
+ * Server variable names found in the app's `.env` files, filled in by the same generated file
+ * as `PublicEnv`. Names only, never values: they complete `env('…')` in the editor.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ServerEnv {}
+
+type KnownEnvKey = keyof PublicEnv | keyof ServerEnv;
+
+/** A name `env()` accepts: any known one plus `VITE_*`, or any string until some are known. */
+export type EnvKey = [KnownEnvKey] extends [never] ? string : KnownEnvKey | `VITE_${string}`;
+
+/**
+ * One environment variable, public or server-only, from wherever the code runs.
+ *
+ * On the server it reads any variable. In the browser only the public set exists, so a name
+ * that `env.public` does not declare throws, naming it: the build refuses it where the name is
+ * written, and this catches a key the build could not see, such as one computed at run time.
+ * `publicEnv()` and `serverEnv()` remain for code that wants to say which side it means.
+ *
+ * `$env('KEY')` compiles to this without an import.
+ *
+ * @example
+ * ```ts
+ * const api = env('API_URL');                                // string | undefined
+ * const secret = env('SESSION_SECRET', { required: true });  // string, server only
+ * ```
+ */
+export function env(key: EnvKey, options?: { required?: false }): string | undefined;
+export function env(key: EnvKey, options: { required: true }): string;
+export function env(key: string, options: { required?: boolean } = {}): string | undefined {
+  let value: string | undefined;
+  if (inBrowser()) {
+    const declared = typeof __FLUIXI_PUBLIC_KEYS__ === 'undefined' ? undefined : __FLUIXI_PUBLIC_KEYS__;
+    if (declared && !declared.includes(key) && !key.startsWith('VITE_')) {
+      throw new Error(
+        `[fluixi/env] env(${JSON.stringify(key)}) ran in the browser, where only env.public exists. ` +
+          `If ${key} is public, add it to env.public in fluixi.config.ts. If it is a secret, read it on the ` +
+          'server (middleware, an API route, a "use server" function) and pass the page what it needs.',
+      );
+    }
+    value = (readPublicEnv() as Record<string, string | undefined>)[key];
+  } else {
+    value = typeof process === 'undefined' ? undefined : process.env?.[key];
+  }
+  if (value === '') value = undefined;
+  if (options.required && value === undefined) {
+    throw new Error(`[fluixi/env] ${key} is not set.`);
+  }
+  return value;
 }
 
 /** Every name in `source`, plus the bare form of each `VITE_` one. */

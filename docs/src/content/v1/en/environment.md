@@ -40,10 +40,29 @@ breaks in production only.
 and the failure then points at the request instead of at the read. `{ required: true }` also
 throws when the variable is unset, naming it.
 
+## One reader for both sides
+
+```ts
+const api = $env('API_URL');                                // string | undefined
+const secret = $env('SESSION_SECRET', { required: true });  // string
+```
+
+`$env` compiles to `env` from `@fluixi/start/env`, with no import to write; import `env`
+yourself, under any name, if you prefer. On the server it reads any variable. In the browser
+only the public set exists, so the browser build refuses a secret at the line that reads it,
+and a name the build could not see, one computed at run time, throws when it runs. A branch
+only the server takes, behind `import.meta.env.SSR` or `typeof window === 'undefined'`, is left
+alone, and so is a `"use server"` function or a `.server` file, whose code never reaches the
+browser.
+
+`publicEnv()` and `serverEnv()` stay for code that wants its intent on the page: a reviewer
+reading `serverEnv('STRIPE_KEY')` knows it is a secret without looking anything up.
+
 ### Typed keys
 
-`@fluixi/start` writes the declared names into `src/fluixi-public-env.d.ts`, so `publicEnv().`
-completes them in the editor and an undeclared name is a type error before it is a build error.
+`@fluixi/start` writes the declared names into `src/fluixi-env-vars.d.ts`, with the server
+variable names from your `.env` files beside them, names only. `publicEnv().` and `$env('` then
+complete them in the editor, and an undeclared name is a type error before it is a build error.
 Each key is `string | undefined`, since a declared variable can still be unset. With nothing
 declared, `publicEnv()` stays a plain record.
 

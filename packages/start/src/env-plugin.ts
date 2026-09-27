@@ -11,7 +11,7 @@
  * browser is how a page renders one thing and hydrates into another.
  */
 import type { ResolvedConfig } from './config.js';
-import { PUBLIC_ENV_DEFINE, selectPublic, suspectPublicNames } from './env.js';
+import { PUBLIC_ENV_DEFINE, PUBLIC_KEYS_DEFINE, selectPublic, suspectPublicNames } from './env.js';
 
 /**
  * Defines the declared-public variables for both builds.
@@ -46,6 +46,8 @@ export function envVitePlugin(cfg: ResolvedConfig): unknown {
           // Serialized whole. `JSON.stringify` of the object, so the identifier becomes a
           // literal and a computed lookup against it works.
           [PUBLIC_ENV_DEFINE]: JSON.stringify(publicFor(cfg, mode)),
+          // Names, set or not, so `env()` in a browser can tell "declared, empty" from "secret".
+          [PUBLIC_KEYS_DEFINE]: JSON.stringify(declared),
         },
       };
     },

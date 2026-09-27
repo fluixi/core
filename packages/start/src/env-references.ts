@@ -28,24 +28,86 @@ export interface EnvRead {
   offset: number;
 }
 
-/** Every statically named read of `publicEnv()` in a parsed module. */
+/** A test that is true only on the server, or only in the browser, as far as the build can tell. */
+function sideOf(test: Node | null | undefined): 'server' | 'browser' | null {
+  if (!test) return null;
+  if (test.type === 'UnaryExpression' && test.operator === '!') {
+    const inner = sideOf(test.argument);
+    return inner === 'server' ? 'browser' : inner === 'browser' ? 'server' : null;
+  }
+  // `import.meta.env.SSR`, or the `false` a build may already have replaced it with.
+  if (
+    test.type === 'MemberExpression' &&
+    test.property?.name === 'SSR' &&
+    test.object?.type === 'MemberExpression' &&
+    test.object.property?.name === 'env' &&
+    test.object.object?.type === 'MetaProperty'
+  ) {
+    return 'server';
+  }
+  if (test.type === 'Literal' && test.value === false) return 'server';
+  // `typeof window === 'undefined'` and its `!==` form, and the same for `document`.
+  if (test.type === 'BinaryExpression' && ['===', '==', '!==', '!='].includes(test.operator)) {
+    const [left, right] = [test.left, test.right];
+    const typeofGlobal = (n: Node) =>
+      n?.type === 'UnaryExpression' && n.operator === 'typeof' && ['window', 'document'].includes(n.argument?.name);
+    const undef = (n: Node) => n?.type === 'Literal' && n.value === 'undefined';
+    if ((typeofGlobal(left) && undef(right)) || (typeofGlobal(right) && undef(left))) {
+      return test.operator.startsWith('=') ? 'server' : 'browser';
+    }
+  }
+  return null;
+}
+
+/**
+ * Walk, leaving out what only the server runs.
+ *
+ * A module shared by both sides may read a secret behind `import.meta.env.SSR` or a
+ * `typeof window` check. The browser never runs that branch, so it is not a read to refuse.
+ */
+function walkBrowserSide(node: any, visit: (n: Node) => void): void {
+  if (!node || typeof node.type !== 'string') return;
+  if (node.type === 'IfStatement' || node.type === 'ConditionalExpression') {
+    const side = sideOf(node.test);
+    walkBrowserSide(node.test, visit);
+    if (side !== 'server') walkBrowserSide(node.consequent, visit);
+    if (side !== 'browser') walkBrowserSide(node.alternate, visit);
+    return;
+  }
+  if (node.type === 'LogicalExpression' && node.operator === '&&' && sideOf(node.left) === 'server') {
+    walkBrowserSide(node.left, visit);
+    return;
+  }
+  visit(node);
+  for (const key in node) {
+    const value = node[key];
+    if (key === 'parent' || !value || typeof value !== 'object') continue;
+    if (Array.isArray(value)) for (const child of value) walkBrowserSide(child, visit);
+    else walkBrowserSide(value, visit);
+  }
+}
+
+/** Every statically named read of `publicEnv()` or `env()` the browser would run. */
 export function publicEnvReads(ast: Node): EnvRead[] {
-  const callees = new Set<string>();
+  const objectCallees = new Set<string>();
+  const keyCallees = new Set<string>();
   const bound = new Set<string>();
   const reads: EnvRead[] = [];
 
   for (const stmt of ast.body ?? []) {
     if (stmt.type !== 'ImportDeclaration' || stmt.source?.value !== '@fluixi/start/env') continue;
     for (const spec of stmt.specifiers ?? []) {
-      if (spec.type === 'ImportSpecifier' && (spec.imported?.name ?? spec.imported?.value) === 'publicEnv') {
-        callees.add(spec.local.name);
-      }
+      if (spec.type !== 'ImportSpecifier') continue;
+      const imported = spec.imported?.name ?? spec.imported?.value;
+      if (imported === 'publicEnv') objectCallees.add(spec.local.name);
+      if (imported === 'env') keyCallees.add(spec.local.name);
     }
   }
-  if (!callees.size) return reads;
+  if (!objectCallees.size && !keyCallees.size) return reads;
 
-  const isCall = (n: Node | null | undefined): boolean =>
-    !!n && n.type === 'CallExpression' && n.callee?.type === 'Identifier' && callees.has(n.callee.name);
+  const callTo = (n: Node | null | undefined, names: Set<string>): boolean =>
+    !!n && n.type === 'CallExpression' && n.callee?.type === 'Identifier' && names.has(n.callee.name);
+  const isCall = (n: Node | null | undefined) => callTo(n, objectCallees);
   const keyOf = (n: Node, computed: boolean): string | null => {
     if (!computed && n.type === 'Identifier') return n.name;
     if (n.type === 'Literal' && typeof n.value === 'string') return n.value;
@@ -53,18 +115,7 @@ export function publicEnvReads(ast: Node): EnvRead[] {
   };
 
   // Two passes: bindings first, so a read above the declaration that hoists still counts.
-  const walk = (node: any, visit: (n: Node) => void): void => {
-    if (!node || typeof node.type !== 'string') return;
-    visit(node);
-    for (const key in node) {
-      const value = node[key];
-      if (key === 'parent' || !value || typeof value !== 'object') continue;
-      if (Array.isArray(value)) for (const child of value) walk(child, visit);
-      else walk(value, visit);
-    }
-  };
-
-  walk(ast, (n) => {
+  walkBrowserSide(ast, (n) => {
     if (n.type !== 'VariableDeclarator' || !isCall(n.init)) return;
     if (n.id.type === 'Identifier') bound.add(n.id.name);
     if (n.id.type === 'ObjectPattern') {
@@ -76,12 +127,18 @@ export function publicEnvReads(ast: Node): EnvRead[] {
     }
   });
 
-  walk(ast, (n) => {
-    if (n.type !== 'MemberExpression') return;
-    const target = n.object;
-    if (!(isCall(target) || (target.type === 'Identifier' && bound.has(target.name)))) return;
-    const name = keyOf(n.property, n.computed);
-    if (name) reads.push({ name, offset: n.property.start });
+  walkBrowserSide(ast, (n) => {
+    if (n.type === 'MemberExpression') {
+      const target = n.object;
+      if (!(isCall(target) || (target.type === 'Identifier' && bound.has(target.name)))) return;
+      const name = keyOf(n.property, n.computed);
+      if (name) reads.push({ name, offset: n.property.start });
+    }
+    // `env('KEY')`, and `$env('KEY')` once the compiler has rewritten it to an import.
+    if (callTo(n, keyCallees)) {
+      const first = n.arguments?.[0];
+      if (first?.type === 'Literal' && typeof first.value === 'string') reads.push({ name: first.value, offset: first.start });
+    }
   });
 
   return reads;
@@ -113,7 +170,7 @@ export function envReferencesVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'env'
     transform(this: any, code: string, id: string, options?: { ssr?: boolean }) {
       if (!declared.size || options?.ssr) return null;
       const file = id.replace(/\?.*$/, '');
-      if (!SOURCE.test(file) || /[\\/]node_modules[\\/]/.test(file) || !code.includes('publicEnv')) return null;
+      if (!SOURCE.test(file) || /[\\/]node_modules[\\/]/.test(file) || !/publicEnv|\benv\b|__fx_env/.test(code)) return null;
 
       let ast: Node;
       try {
@@ -127,8 +184,9 @@ export function envReferencesVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'env'
         // Rollup already names the file in front of the message; the line is what it lacks.
         const where = `line ${sourceLine(file, read.name, code, read.offset)}`;
         this.error(
-          `${where} reads ${read.name} from publicEnv(), which is not in env.public, so in the browser it is undefined. ` +
-            `If it is public, add it to env.public in fluixi.config.ts. If it is not, read it on the server with serverEnv().`,
+          `${where} reads ${read.name} in code the browser runs, and ${read.name} is not in env.public: the browser has no value for it. ` +
+            `If it is public, add it to env.public in fluixi.config.ts. If it is a secret, read it on the server (an API route, middleware, ` +
+            `a "use server" function, a .server file) and pass the page what it needs.`,
         );
       }
       return null;

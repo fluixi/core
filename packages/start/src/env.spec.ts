@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  env,
   publicEnv,
   serverEnv,
   selectPublic,
@@ -165,5 +166,43 @@ describe('a name that reads like a secret', () => {
   it('leaves a token endpoint alone, which is a URL', () => {
     // A list that cries wolf gets suppressed wholesale, so `TOKEN` is not one of the words.
     expect(suspectPublicNames(['TOKEN_ENDPOINT', 'AUTH_ISSUER'])).toEqual([]);
+  });
+});
+
+describe('env(), one reader for both sides', () => {
+  const g = globalThis as Record<string, unknown>;
+  const inBrowser = (publicValues: Record<string, string>, declared: string[], run: () => void) => {
+    Object.assign(g, { window: {}, document: {}, __FLUIXI_PUBLIC_ENV__: publicValues, __FLUIXI_PUBLIC_KEYS__: declared });
+    try {
+      run();
+    } finally {
+      for (const k of ['window', 'document', '__FLUIXI_PUBLIC_ENV__', '__FLUIXI_PUBLIC_KEYS__']) delete g[k];
+    }
+  };
+
+  it('reads any variable on the server, secrets included', () => {
+    process.env.SESSION_SECRET = 'shh';
+    expect(env('SESSION_SECRET')).toBe('shh');
+  });
+
+  it('throws when required and unset, naming it, and treats empty as unset', () => {
+    process.env.EMPTY = '';
+    expect(env('EMPTY')).toBeUndefined();
+    expect(() => env('MISSING_ONE', { required: true })).toThrow(/MISSING_ONE is not set/);
+  });
+
+  it('reads a declared name in the browser, set or not', () => {
+    inBrowser({ API_URL: 'https://api.test' }, ['API_URL', 'APP_URL'], () => {
+      expect(env('API_URL')).toBe('https://api.test');
+      expect(env('APP_URL')).toBeUndefined();
+      expect(env('VITE_LEGACY')).toBeUndefined();
+    });
+  });
+
+  it('throws in the browser for a name that is not public, which is the check the build cannot always make', () => {
+    inBrowser({ API_URL: 'https://api.test' }, ['API_URL'], () => {
+      const key = ['SESSION', 'SECRET'].join('_'); // computed, as the build could not see it
+      expect(() => env(key)).toThrow(/env\("SESSION_SECRET"\) ran in the browser, where only env.public exists/);
+    });
   });
 });
