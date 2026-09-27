@@ -23,6 +23,10 @@ fluixi dev                    # SSR dev server (Vite middleware + HMR)
 fluixi build                  # client + server bundles → dist/client, dist/server
 fluixi start                  # production SSR server (after build)
 fluixi generate <kind> <name> # scaffold into the current app (alias: g)
+fluixi check [--strict]       # env and auth rules over the project; exit 1 on an error
+fluixi env                    # env.public set or not, .env.example drift, secrets that would ship
+fluixi doctor                 # duplicate @fluixi/* copies, ts-plugin missing from tsconfig
+fluixi info                   # versions, adapter, modules, pages, API routes
 ```
 
 ## 📦 Installation
@@ -38,11 +42,25 @@ fluixi g component Button       # → src/components/Button.tsx
 fluixi g route about            # → src/routes/about.tsx        (file route)
 fluixi g route "blog/[id]"      # → src/routes/blog/[id].tsx    (dynamic segment)
 fluixi g middleware             # → src/middleware.ts
-fluixi g auth                   # → auth.config + auth.client + middleware + /api/auth route
+fluixi g env                    # → src/config/env.ts           (pickEnv over env.public)
+fluixi g module billing         # → src/services/billing/billing.module.ts, listed in src/app.config.ts
+fluixi g service Orders         # → src/services/orders.ts       (class, token, module)
+fluixi g service Mailer --server  # → src/services/mailer.server.ts, listed in src/app.config.server.ts
+fluixi g api "users/[id]"       # → src/api/users/[id].ts
+fluixi g api admin/stats --role admin  # → guarded route + src/services/verify.server.ts
+fluixi g server-fn getUser      # → src/server/getUser.ts        ("use server")
+fluixi g auth oauth2 --provider keycloak --tokens server
+                                # → config/env.ts, services/auth.ts, login route, auth.server.ts,
+                                #   env.public and .env.example entries
+fluixi g auth better-auth       # → auth.config + auth.client + middleware + src/api/auth route
 ```
 
-It only ever creates files. Nothing existing is edited, and a name that already exists
-stops with an error instead of overwriting.
+New files are written unless a file with the same name already exists, in which case the
+process stops with an error. Edits are limited to `app.config.ts`, `app.config.server.ts`
+(adding an import and entry), `env.public` in `fluixi.config.ts`, and appending to
+`.env.example`; the original layout of each file is preserved, and when imports are not a
+plain list the command prints the lines for manual pasting. Multi-file OAuth2 generation
+keeps any existing files unchanged.
 
 ### JSX or html``
 
