@@ -323,6 +323,7 @@
     "start-di-and-spa",
     "start-env-and-serverfn-autowire",
     "start-env-export",
+    "start-env-references",
     "start-html-export",
     "start-image-optimization",
     "start-interceptors",

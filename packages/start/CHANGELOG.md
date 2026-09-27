@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 0.1.0-alpha.80
+
+### Minor Changes
+
+- 9d334dc: The browser build now fails and reports the line and variable name when app code reads a name from `publicEnv()` that is not declared in `env.public`.
+
+### Patch Changes
+
+- @fluixi/dom@1.0.0-alpha.90
+- @fluixi/core@1.0.0-alpha.90
+- @fluixi/compiler@1.0.0-alpha.90
+- @fluixi/vite-plugin@1.0.0-alpha.90
+- @fluixi/head@1.0.0-alpha.57
+- @fluixi/server@1.0.0-alpha.90
+
 ## 0.1.0-alpha.79
 
 ### Patch Changes
