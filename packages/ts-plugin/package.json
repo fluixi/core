@@ -11,6 +11,7 @@
       "./package.json": "./package.json",
       ".": "./dist/index.js",
       "./rules": {
+        "types": "./dist/rules.d.ts",
         "default": "./dist/rules.js"
       }
     }
@@ -27,12 +28,13 @@
     "./package.json": "./package.json",
     ".": "./dist/index.js",
     "./rules": {
+      "types": "./dist/rules.d.ts",
       "development": "./src/rules.ts",
       "default": "./dist/rules.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.lib.json --noEmit && esbuild src/index.ts src/rules.ts --bundle --platform=node --format=cjs --external:typescript --outdir=dist",
+    "build": "tsc -p tsconfig.lib.json --emitDeclarationOnly && esbuild src/index.ts src/rules.ts --bundle --platform=node --format=cjs --external:typescript --outdir=dist",
     "test": "vitest run"
   },
   "dependencies": {
