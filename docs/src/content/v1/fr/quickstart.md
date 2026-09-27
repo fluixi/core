@@ -7,10 +7,13 @@ npm create fluixi@latest mon-app
 # ou : pnpm create fluixi mon-app · yarn create fluixi mon-app
 ```
 
-Il pose deux questions :
+Il pose ces questions, dans l'ordre :
 
-- **Mode d'application**, **SSR** (rendu serveur via `@fluixi/start`) ou **SPA** (côté client via Vite).
-- **Syntaxe des templates**, **JSX** (par défaut) ou **html``** (sans JSX, fichiers `.ts` simples).
+- **Mode d'application**, SSR (rendu serveur via `@fluixi/start`) ou SPA (côté client via Vite)
+- **Syntaxe des templates**, JSX (par défaut) ou html`` (sans JSX, fichiers `.ts` simples)
+- **Bibliothèque de composants**, aucune ou `@fluixi-ui` (kit et tokens ; composants installés au besoin)
+- **Styles**, CSS simple, Tailwind CSS v4, ou `@fluixi-css`
+- **Authentification, apps SSR seulement**, aucune, OAuth2/OIDC (fournisseur d'identité, puis tokens dans le navigateur ou sur le serveur), ou Better Auth
 
 Ensuite :
 
@@ -24,7 +27,14 @@ Vous pouvez aussi ignorer les questions :
 
 ```bash
 npm create fluixi@latest mon-app -- --ssr --jsx    # ou --spa / --html
+npm create fluixi@latest mon-app -- --ssr --auth=oauth2 --provider=keycloak --tokens=server
 ```
+
+Chaque question possède son option. Une question réglée en ligne de commande n'est pas posée. Les
+options d'authentification sont : `--auth=oauth2`, `--auth=better-auth` ou `--no-auth`. Avec
+`oauth2`, les options `--provider` et `--tokens` sont facultatives. Google et Dex conservent les
+tokens sur le serveur ; l'usage de `--tokens=browser` avec eux est refusé. L'authentification
+nécessite une application SSR ; l'option `--spa` combinée à `--auth` est refusée.
 
 ## JSX ou html`` ?
 
@@ -66,6 +76,24 @@ projet :
 npx fluixi generate component Button    # → src/components/Button.tsx (ou .ts pour html``)
 npx fluixi generate route about         # → src/routes/about.tsx
 ```
+
+## Ajouter l'authentification
+
+```bash
+npx fluixi add auth                                              # pose les questions
+npx fluixi add auth oauth2 --provider keycloak --tokens server
+npx fluixi add auth better-auth --no-install
+```
+
+La commande `fluixi add auth` pose les questions nécessaires, écrit le branchement
+d'authentification et installe le paquet requis. Elle demande si vous utilisez OAuth2/OIDC ou Better
+Auth, puis, pour OAuth2, le fournisseur et l'emplacement des tokens, à moins que les options
+fournies ne répondent déjà à ces besoins. Elle crée les mêmes fichiers que `create-fluixi` pour une
+nouvelle application, conserve les fichiers existants et affiche les lignes de configuration à
+ajouter lorsqu'elle ne peut pas les modifier. Le paquet est installé avec le gestionnaire de paquets
+du projet, sauf si l'option `--no-install` est utilisée. Ensuite, il vous suffit de copier
+`.env.example` en `.env` et d'enregistrer l'URI de redirection chez le fournisseur ; les liens
+utiles sont [OAuth2](/v1/fr/oauth2) et [Better Auth](/v1/fr/better-auth).
 
 ## Partir de zéro
 

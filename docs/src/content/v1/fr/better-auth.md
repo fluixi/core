@@ -21,6 +21,10 @@ vous contrôlez. Si un fournisseur doit être le seul système d'identité,
 npm i @fluixi/auth better-auth
 ```
 
+`fluixi add auth better-auth` installe les deux paquets et crée les fichiers `src/auth.config.ts`,
+`src/auth.client.ts`, `src/middleware.ts` et `src/api/auth/[...all].ts`. Si un fichier
+`src/middleware.ts` existe déjà, il est conservé et la ligne à y ajouter est affichée.
+
 Elle demande une base de données. Suivez la documentation de Better Auth pour l'adaptateur
 et le schéma ; cette page ne couvre que le côté Fluixi.
 

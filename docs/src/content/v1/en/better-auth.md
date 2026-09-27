@@ -21,6 +21,10 @@ still.
 npm i @fluixi/auth better-auth
 ```
 
+Running `fluixi add auth better-auth` installs both packages and creates `src/auth.config.ts`,
+`src/auth.client.ts`, `src/middleware.ts`, and `src/api/auth/[...all].ts`. If a `src/middleware.ts`
+file already exists, it is preserved and the command prints the line that should be added to it.
+
 It needs a database. Follow Better Auth's own setup for the adapter and schema; this page
 covers only the Fluixi side.
 

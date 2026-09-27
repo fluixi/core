@@ -7,10 +7,13 @@ npm create fluixi@latest my-app
 # or: pnpm create fluixi my-app · yarn create fluixi my-app
 ```
 
-It asks two questions:
+The scaffolder asks the following questions in order:
 
-- **App mode**, **SSR** (server-rendered via `@fluixi/start`) or **SPA** (client-only via Vite).
-- **Template syntax**, **JSX** (default) or **html``** (no JSX, plain `.ts` files).
+- **App mode**, **SSR** (server-rendered via `@fluixi/start`) or **SPA** (client-only via Vite)
+- **Template syntax**, **JSX** (default) or **html``** (plain `.ts` files, no JSX)
+- **Component library**, **none** or **`@fluixi-ui`** (kit and tokens; components installed as needed)
+- **Styling**, **plain CSS**, **Tailwind CSS v4**, or **`@fluixi-css`**
+- **Authentication**, **none**, **OAuth2/OIDC** (identity provider, tokens in browser or on server), or **Better Auth** (SSR apps only)
 
 Then:
 
@@ -24,7 +27,14 @@ You can also skip the prompts:
 
 ```bash
 npm create fluixi@latest my-app -- --ssr --jsx    # or --spa / --html
+npm create fluixi@latest my-app -- --ssr --auth=oauth2 --provider=keycloak --tokens=server
 ```
+
+Each question is represented by a flag, so any question answered on the command line is not asked
+again. Authentication flags include `--auth=oauth2`, `--auth=better-auth`, or `--no-auth`; when
+using `oauth2` you can also give `--provider` and `--tokens`. Google and Dex store tokens on the
+server, therefore `--tokens=browser` is refused with those providers, and an SSR app is required for
+authentication, so `--spa` combined with `--auth` is refused.
 
 ## JSX or html``?
 
@@ -64,6 +74,22 @@ The CLI scaffolds pieces into an existing app, matching your project's syntax au
 npx fluixi generate component Button    # → src/components/Button.tsx (or .ts for html``)
 npx fluixi generate route about         # → src/routes/about.tsx
 ```
+
+## Add authentication
+
+```bash
+npx fluixi add auth                                              # asks
+npx fluixi add auth oauth2 --provider keycloak --tokens server
+npx fluixi add auth better-auth --no-install
+```
+
+The command asks whether you want OAuth2/OIDC or Better Auth, then prompts for the OAuth2 provider
+and token location unless flags answer them, with the same flags as `create-fluixi`. It writes the
+same files that `create-fluixi` creates for a new app, preserving any existing files and printing
+lines to add to uneditable configs. The package is installed with the project's package manager,
+unless `--no-install` is used. Then copy `.env.example` to `.env` and register the redirect URI with
+the provider. See the documentation for [OAuth2](/v1/en/oauth2) and [Better
+Auth](/v1/en/better-auth).
 
 ## Starting from scratch
 

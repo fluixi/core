@@ -141,6 +141,10 @@ Each preset also records the constraints that cost a live run to find:
 - Publishes no revocation endpoint.
 ## Wiring it up
 
+`fluixi add auth oauth2` (or `create-fluixi` with `--auth=oauth2`) writes these files, registers the
+module, and adds the `AUTH_*` names to `env.public` and to `.env.example`. This section shows what
+it writes, for reading or for wiring by hand.
+
 Three files: the service, the app config that registers it, and the callback route.
 
 ```ts

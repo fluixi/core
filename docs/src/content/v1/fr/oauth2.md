@@ -145,6 +145,11 @@ citées telles que le paquet les porte :
 - Publishes no revocation endpoint.
 ## Le branchement
 
+`fluixi add auth oauth2` (ou `create-fluixi` avec `--auth=oauth2`) écrit les fichiers nécessaires,
+enregistre le module et ajoute les variables `AUTH_*` à `env.public` ainsi qu'à `.env.example`.
+Cette section montre exactement ce qui est généré, afin que vous puissiez le lire ou le reproduire
+manuellement.
+
 Trois fichiers : le service, la configuration d'application qui l'enregistre, et la route de
 callback.
 
