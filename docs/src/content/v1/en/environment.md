@@ -40,6 +40,21 @@ breaks in production only.
 and the failure then points at the request instead of at the read. `{ required: true }` also
 throws when the variable is unset, naming it.
 
+### Typed keys
+
+`@fluixi/start` writes the declared names into `src/fluixi-public-env.d.ts`, so `publicEnv().`
+completes them in the editor and an undeclared name is a type error before it is a build error.
+Each key is `string | undefined`, since a declared variable can still be unset. With nothing
+declared, `publicEnv()` stays a plain record.
+
+A key known only at run time needs its type:
+
+```ts
+import { publicEnv, type PublicEnv } from '@fluixi/start/env';
+
+const read = (key: keyof PublicEnv) => publicEnv()[key];
+```
+
 ## Where the values come from
 
 `fluixi dev` and `fluixi start` load `.env`, `.env.local`, `.env.<mode>` and

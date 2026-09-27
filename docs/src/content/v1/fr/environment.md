@@ -41,6 +41,21 @@ au lieu de renvoyer `undefined`, car un secret lu comme `undefined` devient une 
 sans credentials, et l'échec pointe alors vers la requête au lieu de la lecture.
 `{ required: true }` lève aussi une erreur quand la variable n'est pas définie, en la nommant.
 
+### Clés typées
+
+`@fluixi/start` écrit les noms déclarés dans `src/fluixi-public-env.d.ts` : `publicEnv().` les
+complète dans l'éditeur, et un nom non déclaré est une erreur de type avant d'être une erreur de
+build. Chaque clé vaut `string | undefined`, puisqu'une variable déclarée peut ne pas être
+définie. Sans rien de déclaré, `publicEnv()` reste un simple enregistrement.
+
+Une clé connue seulement à l'exécution a besoin de son type :
+
+```ts
+import { publicEnv, type PublicEnv } from '@fluixi/start/env';
+
+const read = (key: keyof PublicEnv) => publicEnv()[key];
+```
+
 ## D'où viennent les valeurs
 
 `fluixi dev` et `fluixi start` chargent `.env`, `.env.local`, `.env.<mode>` et

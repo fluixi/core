@@ -48,20 +48,25 @@ const inBrowser = (): boolean => typeof window !== 'undefined' && typeof documen
 let warned = false;
 
 /**
- * The variables this app declared public.
+ * The keys an app declared in `env.public`.
  *
- * Frozen, because it describes a build rather than a mutable state. Safe to call anywhere: in a
- * component, a loader, middleware, an API route, a `"use server"` function.
- *
- * @example
- * ```ts
- * import { publicEnv } from '@fluixi/start/env';
- * import { authFromEnv } from '@fluixi/oauth2/env';
- *
- * export const auth = authFromEnv(publicEnv());
- * ```
+ * Empty in the package. `@fluixi/start` writes the app's own list into
+ * `src/fluixi-public-env.d.ts`, which fills this in, so `publicEnv().` completes the declared
+ * names and an undeclared one is a type error as well as a build error.
  */
-export function publicEnv(): Readonly<Record<string, string>> {
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface PublicEnv {}
+
+/**
+ * What `publicEnv()` returns: each declared key as an optional string, since a declared variable
+ * can still be unset, plus any `VITE_` name, which is public by its prefix. An app that has not
+ * declared any gets the plain record it always had.
+ */
+export type PublicEnvValues = keyof PublicEnv extends never
+  ? Readonly<Record<string, string>>
+  : Readonly<{ [K in keyof PublicEnv]?: string } & { [K in `VITE_${string}`]?: string }>;
+
+function readPublicEnv(): Readonly<Record<string, string>> {
   // The defined literal first, which is what exists in a client bundle. `typeof` rather than a
   // bare reference: an undeclared identifier is a ReferenceError, not undefined.
   const defined = typeof __FLUIXI_PUBLIC_ENV__ === 'undefined' ? undefined : __FLUIXI_PUBLIC_ENV__;
@@ -87,6 +92,24 @@ export function publicEnv(): Readonly<Record<string, string>> {
     );
   }
   return Object.freeze({});
+}
+
+/**
+ * The variables this app declared public.
+ *
+ * Frozen, because it describes a build rather than a mutable state. Safe to call anywhere: in a
+ * component, a loader, middleware, an API route, a `"use server"` function.
+ *
+ * @example
+ * ```ts
+ * import { publicEnv } from '@fluixi/start/env';
+ * import { authFromEnv } from '@fluixi/oauth2/env';
+ *
+ * export const auth = authFromEnv(publicEnv());
+ * ```
+ */
+export function publicEnv(): PublicEnvValues {
+  return readPublicEnv() as PublicEnvValues;
 }
 
 /** Every name in `source`, plus the bare form of each `VITE_` one. */
