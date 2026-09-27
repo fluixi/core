@@ -57,12 +57,13 @@ reste public, comme toujours.
 
 ## Ce qui empêche un secret de partir
 
-La liste est la protection. Trois contrôles rattrapent la ligne écrite trop vite :
+La liste est la protection. Quatre contrôles rattrapent la ligne écrite trop vite :
 
 | Contrôle | Quand | Ce qui se passe |
 | --- | --- | --- |
 | un nom de `env.public` ressemble à un secret (`SECRET`, `PASSWORD`, `PRIVATE_KEY`, `CREDENTIALS`) | build | refusé, en le nommant |
 | une variable `VITE_` d'un fichier `.env` ressemble à un secret | `fluixi build` | refusé ; `fluixi dev` avertit |
+| `publicEnv().X` dans du code navigateur, `X` non déclaré (une faute de frappe, ou une valeur serveur) | build | refusé, en nommant le fichier, la ligne et la variable |
 | `serverEnv()` appelé dans le navigateur | exécution | lève une erreur |
 
 Pour un nom qui ne fait que ressembler à un secret, `FLUIXI_ALLOW_PUBLIC_SECRETS=true` laisse

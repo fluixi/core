@@ -211,6 +211,10 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   ];
   // The app's own, after the framework's: a plugin that transforms css or assets runs
   // on what the framework produced rather than racing it.
+  // Normal order, after the framework's own, so it reads code with the types and JSX already
+  // compiled away and Rollup's parser can take it.
+  const { envReferencesVitePlugin } = await import('./env-references.js');
+  plugins.push(envReferencesVitePlugin(cfg));
   if (cfg.plugins?.length) plugins.push(...cfg.plugins);
   // Auto-discover translations (src/i18n/<locale>.json → virtual:fluixi-i18n) unless disabled.
   if (cfg.i18n) plugins.push(i18nVitePlugin(cfg.i18n));
