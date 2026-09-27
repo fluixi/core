@@ -36,6 +36,7 @@ import { tagAt, templateDefinition, templateReferences, templateRenameLocations 
 interface PluginCreateInfo {
   languageService: ts.LanguageService;
   languageServiceHost: ts.LanguageServiceHost;
+  project?: { projectService?: { logger?: { info(message: string): void } } };
 }
 interface PluginModule {
   create(info: PluginCreateInfo): ts.LanguageService;
@@ -52,6 +53,27 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
       // The host doubles as a module-resolution host, which element support needs
       // to locate @fluixi/dom/attributes from the file being edited.
       const host = info.languageServiceHost as unknown as ts.ModuleResolutionHost;
+      // A failing extra check must not take the editor's own diagnostics with it, but it must
+      // not vanish either: a swallowed throw once hid every env finding in any file with an
+      // `if`. Each distinct failure goes to the tsserver log once.
+      const logged = new Set<string>();
+      const report = (what: string, error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        // Keyed without the stack, which differs by call path for the same fault.
+        if (logged.has(`${what}: ${message}`)) return;
+        logged.add(`${what}: ${message}`);
+        const text = error instanceof Error ? (error.stack ?? message) : message;
+        info.project?.projectService?.logger?.info(`[fluixi] ${what} failed: ${text}`);
+      };
+      /** `run()`, or nothing when it throws, reported. */
+      const guarded = <T>(what: string, run: () => T[]): T[] => {
+        try {
+          return run();
+        } catch (error) {
+          report(what, error);
+          return [];
+        }
+      };
 
       const proxy: Record<string, unknown> = Object.create(null);
       for (const key of Object.keys(ls) as Array<keyof ts.LanguageService>) {
@@ -104,22 +126,18 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
 
       proxy.getSemanticDiagnostics = (fileName: string) => {
         const base = reliableFilter(fileName, ls.getSemanticDiagnostics(fileName));
-        try {
-          // Additive, and computed on the main checker at real source positions,
-          // so a failure here can only cost the extra errors, never the real ones.
-          return base.concat(templateDiagnostics(ts, ls, fileName) as never[], rulesFor(fileName, false) as never[]);
-        } catch {
-          return base;
-        }
+        // Additive, and computed on the main checker at real source positions, so a failure
+        // can only cost its own findings: the template checks and the env rules are guarded
+        // separately, and neither can take the real errors with it.
+        return base.concat(
+          guarded('template diagnostics', () => templateDiagnostics(ts, ls, fileName)) as never[],
+          guarded('env and auth rules', () => rulesFor(fileName, false)) as never[],
+        );
       };
-      proxy.getSuggestionDiagnostics = (fileName: string) => {
-        const base = reliableFilter(fileName, ls.getSuggestionDiagnostics(fileName));
-        try {
-          return base.concat(rulesFor(fileName, true) as never[]);
-        } catch {
-          return base;
-        }
-      };
+      proxy.getSuggestionDiagnostics = (fileName: string) =>
+        reliableFilter(fileName, ls.getSuggestionDiagnostics(fileName)).concat(
+          guarded('env and auth rules', () => rulesFor(fileName, true)) as never[],
+        );
 
       /** Env and auth findings: errors and warnings as semantic diagnostics, the rest as suggestions. */
       const rulesFor = (fileName: string, suggestions: boolean) => {
