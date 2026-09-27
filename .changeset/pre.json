@@ -340,6 +340,7 @@
     "start-stream-head",
     "start-streaming-ssr",
     "start-ts-config",
+    "start-typed-public-env",
     "static-asset-404",
     "static-attrs-direct",
     "static-traversal",

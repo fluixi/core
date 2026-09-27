@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 0.1.0-alpha.81
+
+### Minor Changes
+
+- 6e98608: `publicEnv()` now returns a type derived from `env.public`, so keys are completed in the editor and undeclared keys cause a type error.
+
+### Patch Changes
+
+- @fluixi/dom@1.0.0-alpha.91
+- @fluixi/core@1.0.0-alpha.91
+- @fluixi/compiler@1.0.0-alpha.91
+- @fluixi/vite-plugin@1.0.0-alpha.91
+- @fluixi/head@1.0.0-alpha.58
+- @fluixi/server@1.0.0-alpha.91
+
 ## 0.1.0-alpha.80
 
 ### Minor Changes
