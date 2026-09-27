@@ -30,6 +30,7 @@ import { elementAttributeCompletions, elementAttributeHover } from './elements.j
 import { templateDiagnostics } from './diagnostics.js';
 import { ACCESSOR_NOT_CALLED } from './diagnostics.js';
 import { templateCodeFixes, templateFixAll } from './fixes.js';
+import { envAuthDiagnostics, envPublicFix, RULE } from './rules.js';
 import { tagAt, templateDefinition, templateReferences, templateRenameLocations } from './navigation.js';
 
 interface PluginCreateInfo {
@@ -106,13 +107,28 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
         try {
           // Additive, and computed on the main checker at real source positions,
           // so a failure here can only cost the extra errors, never the real ones.
-          return base.concat(templateDiagnostics(ts, ls, fileName) as never[]);
+          return base.concat(templateDiagnostics(ts, ls, fileName) as never[], rulesFor(fileName, false) as never[]);
         } catch {
           return base;
         }
       };
-      proxy.getSuggestionDiagnostics = (fileName: string) =>
-        reliableFilter(fileName, ls.getSuggestionDiagnostics(fileName));
+      proxy.getSuggestionDiagnostics = (fileName: string) => {
+        const base = reliableFilter(fileName, ls.getSuggestionDiagnostics(fileName));
+        try {
+          return base.concat(rulesFor(fileName, true) as never[]);
+        } catch {
+          return base;
+        }
+      };
+
+      /** Env and auth findings: errors and warnings as semantic diagnostics, the rest as suggestions. */
+      const rulesFor = (fileName: string, suggestions: boolean) => {
+        const program = ls.getProgram();
+        if (!program) return [];
+        return envAuthDiagnostics(ts, program, fileName, host).filter(
+          (d) => (d.category === ts.DiagnosticCategory.Suggestion) === suggestions,
+        );
+      };
 
 
       // Hover (all computed on the main checker, so it always works): a component
@@ -220,6 +236,11 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
         );
         try {
           const own = templateCodeFixes(ts, ls, fileName, start, end, errorCodes);
+          const program = ls.getProgram();
+          if (program && errorCodes.includes(RULE.envNotPublic)) {
+            const fix = envPublicFix(ts, program, fileName, start, host);
+            if (fix) own.push(fix as never);
+          }
           return own.length ? [...base, ...own] : base;
         } catch {
           return base;
