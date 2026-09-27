@@ -7,13 +7,17 @@ construisez pas la page de connexion et vous ne détenez aucun compte utilisateu
 ```ts
 import { createAuthService } from '@fluixi/oauth2';
 import { useNavigate } from '@fluixi/start/router';
+import { env } from '@fluixi/start/env';
+
+// Pas location.origin : app.config.ts charge aussi ce module sur le serveur, qui n'a pas de location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 export const auth = createAuthService<User>({
   config: {
     tokens: 'browser',
     issuer: 'https://localhost:8443/realms/app',
     clientId: 'admin-spa',
-    redirectUri: `${location.origin}/callback`,
+    redirectUri: `${appUrl}/callback`,
   },
   navigate: { handler: useNavigate },
   loginPath: '/login',
@@ -147,7 +151,11 @@ callback.
 ```ts
 // src/services/auth.ts
 import { createAuthService, authModule } from '@fluixi/oauth2';
+import { env } from '@fluixi/start/env';
 import { auth as authEnv } from '../config/env.js';
+
+// Pas location.origin : app.config.ts charge aussi ce module sur le serveur, qui n'a pas de location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 interface User {
   sub: string;
@@ -159,8 +167,8 @@ export const auth = createAuthService<User>({
   config: {
     ...authEnv.client,
     tokens: 'browser',
-    redirectUri: `${location.origin}/callback`,
-    postLogoutRedirectUri: `${location.origin}/login`,
+    redirectUri: `${appUrl}/callback`,
+    postLogoutRedirectUri: `${appUrl}/login`,
   },
 });
 
@@ -327,13 +335,17 @@ dans les deux modes.
 
 ```ts
 import { createAuthService } from '@fluixi/oauth2';
+import { env } from '@fluixi/start/env';
+
+// Pas location.origin : app.config.ts charge aussi ce module sur le serveur, qui n'a pas de location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 export const auth = createAuthService({
   config: {
     tokens: 'browser',
     issuer: 'https://example.okta.com/oauth2/default',
     clientId: 'spa',
-    redirectUri: `${location.origin}/callback`,
+    redirectUri: `${appUrl}/callback`,
     dpop: true,
   },
 });

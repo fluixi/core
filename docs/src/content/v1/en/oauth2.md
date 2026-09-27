@@ -7,13 +7,17 @@ you hold no user records.
 ```ts
 import { createAuthService } from '@fluixi/oauth2';
 import { useNavigate } from '@fluixi/start/router';
+import { env } from '@fluixi/start/env';
+
+// Not location.origin: app.config.ts loads this module on the server too, which has no location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 export const auth = createAuthService<User>({
   config: {
     tokens: 'browser',
     issuer: 'https://localhost:8443/realms/app',
     clientId: 'admin-spa',
-    redirectUri: `${location.origin}/callback`,
+    redirectUri: `${appUrl}/callback`,
   },
   navigate: { handler: useNavigate },
   loginPath: '/login',
@@ -142,7 +146,11 @@ Three files: the service, the app config that registers it, and the callback rou
 ```ts
 // src/services/auth.ts
 import { createAuthService, authModule } from '@fluixi/oauth2';
+import { env } from '@fluixi/start/env';
 import { auth as authEnv } from '../config/env.js';
+
+// Not location.origin: app.config.ts loads this module on the server too, which has no location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 interface User {
   sub: string;
@@ -154,8 +162,8 @@ export const auth = createAuthService<User>({
   config: {
     ...authEnv.client,
     tokens: 'browser',
-    redirectUri: `${location.origin}/callback`,
-    postLogoutRedirectUri: `${location.origin}/login`,
+    redirectUri: `${appUrl}/callback`,
+    postLogoutRedirectUri: `${appUrl}/login`,
   },
 });
 
@@ -316,13 +324,17 @@ modes.
 
 ```ts
 import { createAuthService } from '@fluixi/oauth2';
+import { env } from '@fluixi/start/env';
+
+// Not location.origin: app.config.ts loads this module on the server too, which has no location.
+const appUrl = env('APP_URL') ?? 'http://localhost:3000';
 
 export const auth = createAuthService({
   config: {
     tokens: 'browser',
     issuer: 'https://example.okta.com/oauth2/default',
     clientId: 'spa',
-    redirectUri: `${location.origin}/callback`,
+    redirectUri: `${appUrl}/callback`,
     dpop: true,
   },
 });
