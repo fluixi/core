@@ -38,7 +38,16 @@ import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
 import type { PropValues } from './types.js';
 
-export type ShadowOption = boolean | 'open' | 'closed';
+/**
+ * `true`, `'open'` or `'closed'` for a plain shadow root, or the options `attachShadow` takes:
+ * `{ mode: 'open', delegatesFocus: true }` makes focusing the host focus the first focusable
+ * thing inside, which is what a custom input wants.
+ */
+export type ShadowOption =
+  | boolean
+  | 'open'
+  | 'closed'
+  | { mode?: 'open' | 'closed'; delegatesFocus?: boolean; slotAssignment?: 'named' | 'manual' };
 
 type Schema = Record<string, PropDeclaration<unknown>>;
 
@@ -78,6 +87,12 @@ interface Lifecycle {
 }
 
 const prepared = new WeakSet<object>();
+
+function shadowInit(shadow: Exclude<ShadowOption, false>): ShadowRootInit {
+  if (shadow === true) return { mode: 'open' };
+  if (typeof shadow === 'string') return { mode: shadow };
+  return { mode: 'open', ...shadow };
+}
 
 /**
  * Every `static props` from the class up to this base, nearest last so a subclass can
@@ -127,8 +142,8 @@ export class HTMLReactiveElement extends BaseElement {
   /** The declared properties, and the attributes that mirror them. Inherited and merged. */
   static props?: Schema;
   /**
-   * `false` (the default) renders into the element itself. `'open'`, `'closed'` or `true`
-   * attach a shadow root, which is what native `<slot>` needs. Light DOM is the default: a
+   * `false` (the default) renders into the element itself. `'open'`, `'closed'`, `true` or an
+   * options object attach a shadow root, which is what native `<slot>` needs. Light DOM is the default: a
    * component that inherits the page's styles is usually what an app wants, and it is the
    * mode that survives a server render without declarative shadow DOM.
    */
@@ -316,7 +331,7 @@ export class HTMLReactiveElement extends BaseElement {
 
     if (shadow !== undefined && shadow !== false) {
       // A declarative shadow root may already be attached from a server render.
-      this.#root = this.shadowRoot ?? this.attachShadow({ mode: shadow === true ? 'open' : shadow });
+      this.#root = this.shadowRoot ?? this.attachShadow(shadowInit(shadow));
       applyStyles(this.#root, constructor, constructor.styles);
     } else {
       // Light DOM: the author's children are the content. Take them out before anything

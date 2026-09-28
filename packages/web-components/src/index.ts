@@ -35,6 +35,10 @@ export type { Dispatch, DispatchInit } from './events.js';
 
 export { createTargets } from './targets.js';
 export type { ElementStyles } from './styles.js';
+
+export { FormAssociated } from './form.js';
+export { rovingFocus, trapFocus, tabbables, deepActiveElement } from './focus.js';
+export type { RovingFocusOptions, FocusTrapOptions } from './focus.js';
 export type { Targets } from './targets.js';
 
 // Typing an element for its consumers: HTMLElementTagNameMap and the JSX tag.
