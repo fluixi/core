@@ -205,16 +205,25 @@ function delegatedEventHandler(e: Event): void {
   const key = `$$${e.type}`;
   // Walk up from the actual target (handles shadow DOM via composedPath)
   let node: any = (e.composedPath && e.composedPath()[0]) || e.target;
-  while (node) {
-    const handler = node[key];
-    if (handler && !node.disabled) {
-      handler(e);
-      if (e.cancelBubble) return; // stopPropagation was called
+  // A handler reads `event.currentTarget` as the element it is attached to, as it would with
+  // addEventListener. The browser reports the document, where the one real listener sits, so
+  // `new FormData(event.currentTarget)` in an onSubmit threw. Reported per step, then the
+  // native getter is put back.
+  Object.defineProperty(e, 'currentTarget', { configurable: true, get: () => node ?? document });
+  try {
+    while (node) {
+      const handler = node[key];
+      if (handler && !node.disabled) {
+        handler(e);
+        if (e.cancelBubble) return; // stopPropagation was called
+      }
+      // Shadow DOM: step through to host if needed
+      node = node.host && node.host !== node && node.host instanceof Element
+        ? node.host
+        : node.parentNode;
     }
-    // Shadow DOM: step through to host if needed
-    node = node.host && node.host !== node && node.host instanceof Element
-      ? node.host
-      : node.parentNode;
+  } finally {
+    delete (e as { currentTarget?: unknown }).currentTarget;
   }
 }
 

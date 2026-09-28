@@ -63,3 +63,29 @@ describe('the delegation registry is shared', () => {
     host.remove();
   });
 });
+
+describe('what a delegated handler sees', () => {
+  it('reads currentTarget as the element it is attached to, at each step', () => {
+    document.body.innerHTML = '<form id="f"><div id="d"><button id="b">x</button></div></form>';
+    const form = document.getElementById('f')!;
+    const div = document.getElementById('d')!;
+    const seen: Array<EventTarget | null> = [];
+    addDelegatedEventListener(div, 'click', (e) => seen.push(e.currentTarget));
+    addDelegatedEventListener(form, 'click', (e) => seen.push(e.currentTarget));
+
+    document.getElementById('b')!.click();
+    expect(seen).toEqual([div, form]);
+  });
+
+  it('lets an onSubmit build FormData from currentTarget', () => {
+    document.body.innerHTML = '<form id="s"><input name="q" value="hi" /><button>go</button></form>';
+    const form = document.getElementById('s') as HTMLFormElement;
+    let data: Record<string, unknown> | undefined;
+    addDelegatedEventListener(form, 'submit', (e) => {
+      e.preventDefault();
+      data = Object.fromEntries(new FormData(e.currentTarget as HTMLFormElement));
+    });
+    form.requestSubmit();
+    expect(data).toEqual({ q: 'hi' });
+  });
+});
