@@ -7,7 +7,8 @@
   "scripts": {
     "build": "fluixi build --format=web-component",
     "build:shared": "fluixi build --format=fluixi",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fluixi/cli": "workspace:*",
@@ -18,6 +19,23 @@
     "@fluixi/web-components": "workspace:*"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "jsdom": "^25.0.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "svelte": "^5.57.1",
+    "vite": "^5.0.0",
+    "vitest": "^1.6.1",
+    "vue": "^3.5.43"
+  },
+  "nx": {
+    "targets": {
+      "test": {
+        "dependsOn": [
+          "build"
+        ]
+      }
+    }
   }
 }
