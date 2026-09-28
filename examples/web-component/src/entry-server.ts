@@ -1,6 +1,7 @@
-// SSR entry. The custom elements are not imported here: a server has no `customElements`,
-// and the tags render as plain HTML that the browser upgrades once the client entry has
-// registered them.
+// SSR entry. app.tsx imports the custom elements here too. On a server they register
+// nothing (@fluixi/web-components puts a stand-in `customElements` there), and the tags render
+// as plain HTML, with their string, number and boolean props as attributes, until the browser
+// upgrades them.
 import App from './app.js';
 import { renderRequestAsync, renderToBodyStream } from '@fluixi/server';
 

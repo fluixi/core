@@ -49,4 +49,4 @@ h('fx-counter', { step: 2, onChange: (e) => (value.value = e.detail.value) })
 
 ## Inside a Fluixi app
 
-In the app the server renders the tags as plain HTML with their primitive props as attributes. The client entry registers the elements after hydration. Props are set as properties (e.g., `step={2}` is a number). Events arrive in JSX handlers typed from each element's `JSXCustomElements` entry. In development the devtools graph shows each element as a custom element group holding its props.
+In the app the server renders the tags as plain HTML with their primitive props as attributes. The app imports element files in app.tsx and uses them directly without a registration step in the client entry; on the server it imports harmlessly, and in the browser tags upgrade once defined, before or after hydration. Props are set as properties (e.g., `step={2}` is a number). Events arrive in JSX handlers typed from each element's `JSXCustomElements` entry. In development the devtools graph shows each element as a custom element group holding its props.

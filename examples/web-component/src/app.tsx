@@ -6,6 +6,11 @@
  * the devtools graph shows each element as a `custom-element` group holding its props.
  */
 import { signal } from '@fluixi/reactive/signal';
+// Imported where they are used, like any component. Each file registers its element.
+import './elements/counter.js';
+import './elements/bounded-counter.js';
+import './elements/rating.js';
+import './elements/disclosure.js';
 
 export default function App() {
   const lastChange = signal<number | null>(null);

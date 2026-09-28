@@ -1,17 +1,7 @@
-// Client entry: hydrate the server-rendered page, then register the custom elements.
-//
-// Registering after hydration is deliberate. The server renders `<fx-counter step="2">`
-// as a plain tag with nothing inside; hydration adopts that tag and sets its props as
-// properties, and only then does the element upgrade and render its own content. Registered
-// first, the elements would render into tags hydration still expects to find empty.
+// Client entry: hydrate the server-rendered page. The custom elements are registered by the
+// imports in app.tsx, before hydration, which is fine: hydration adopts an element that has
+// already upgraded and rendered its own content.
 import { startClient } from '@fluixi/core/client';
 import App from './app.js';
 
 startClient(App, { root: '#root' });
-
-void Promise.all([
-  import('./elements/counter.js'),
-  import('./elements/bounded-counter.js'),
-  import('./elements/rating.js'),
-  import('./elements/disclosure.js'),
-]);

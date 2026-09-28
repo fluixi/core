@@ -6,7 +6,7 @@
  * effect keeps the form value and the validity in step with it. `required` makes an empty
  * rating block submission, the way `<input required>` does.
  *
- * Keyboard: the arrow keys move the rating.
+ * Keyboard: the arrow keys move the rating. A disabled `<fieldset>` around it disables it.
  */
 import { defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
@@ -45,7 +45,8 @@ export class FxRating extends FormField(typedElement(ratingProps)) {
               type="button"
               role="radio"
               aria-checked=${() => String(this.value === n)}
-              aria-label=${`${n} of ${this.max}`}
+              aria-label=${() => `${n} of ${this.max}`}
+              ?disabled=${() => this.formDisabled}
               @click=${() => this.select(n)}
             >${() => (n <= this.value ? '★' : '☆')}</button>`;
           })}
@@ -53,14 +54,19 @@ export class FxRating extends FormField(typedElement(ratingProps)) {
     `;
   }
 
-  /** Set the rating, within 0..max, and tell the page. */
+  /** Set the rating, within 0..max, and tell the page. Ignored while the form disables it. */
   select(value: number): void {
+    if (this.formDisabled) return;
     this.value = Math.max(0, Math.min(this.max, value));
     this.emit('change', { value: this.value });
   }
 
   protected override resetValue(): void {
     this.value = this.#initial;
+  }
+
+  protected override restoreValue(state: string | null): void {
+    this.value = Number(state) || 0;
   }
 
   #key(event: KeyboardEvent): void {
