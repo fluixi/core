@@ -113,6 +113,9 @@ function isExport(node: Node): boolean {
   return node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration';
 }
 
+/** Where a class holds a per-instance initializer: the value of a field. */
+const CLASS_FIELDS = new Set(['PropertyDefinition', 'ClassProperty', 'ClassPrivateProperty', 'AccessorProperty']);
+
 function isStatement(node: Node): boolean {
   return node.type.endsWith('Statement') || node.type === 'VariableDeclaration';
 }
@@ -140,6 +143,15 @@ function walk(node: Node | null | undefined, visit: (n: Node, stack: Node[]) => 
  */
 function nameFor(stack: Node[]): string | undefined {
   const declarator = stack[stack.length - 1];
+  // `#count = signal(0)` and `count = signal(0)`: the field's name, without the `#`.
+  if (declarator && CLASS_FIELDS.has(declarator.type)) {
+    const key = declarator.key as Node | undefined;
+    if (key?.type === 'Identifier' || key?.type === 'PrivateIdentifier' || key?.type === 'PrivateName') {
+      const name = (key.name ?? (key.id as Node | undefined)?.name) as string | undefined;
+      return name;
+    }
+    return undefined;
+  }
   if (declarator?.type !== 'VariableDeclarator') return undefined;
   const id = declarator.id as Node;
   if (id?.type === 'Identifier') return id.name as string;
@@ -224,6 +236,28 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
 
     const position = node.loc?.start;
     if (!position) return;
+
+    // A class field (`#count = signal(0)`) runs once per instance, and the class body has no
+    // statement to put the mark in front of. Hoisting it before the class runs it once, at
+    // definition, and the next node created anywhere took its name and line; inside a function
+    // (a mixin) the nearest statement was the function's body block, and the mark landed in
+    // front of the `{`. The call itself carries the mark instead, so it runs right before the
+    // node it describes.
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const up = stack[i]!;
+      if (isStatement(up)) break;
+      if (CLASS_FIELDS.has(up.type)) {
+        if (claimed.has(node.start)) return;
+        claimed.add(node.start);
+        const label = nameFor(stack);
+        const args = [JSON.stringify(filename), String(position.line), String(position.column), label ? JSON.stringify(label) : undefined]
+          .filter((a) => a !== undefined)
+          .join(',');
+        edits.push({ start: node.start, end: node.start, code: `(globalThis.${SOURCE_MARKER}?.(${args}),` });
+        edits.push({ start: node.end, end: node.end, code: ')' });
+        return;
+      }
+    }
 
     // The mark goes in front of the statement, clear of any span another pass rewrites.
     let statement: Node | undefined;

@@ -180,3 +180,25 @@ export default signal(0);`);
     expect(out).toMatch(/__fx_source\?\.\("src\/App\.ts",2,15\);export default/);
   });
 });
+
+describe('a class field', () => {
+  it('marks the call inline, so a field inside a function still compiles', () => {
+    const out = run(`import { signal } from '@fluixi/reactive/signal';
+export function Mixin(Base) {
+  return class extends Base {
+    #disabled = signal(false);
+  };
+}`);
+    expect(out).toContain('#disabled = (globalThis.__fx_source?.("src/App.ts",4,16,"disabled"),signal(false))');
+    expect(out).not.toMatch(/__fx_source\?\.[^;]*;\s*\{/);
+  });
+
+  it('marks a top-level class field inline instead of before the class', () => {
+    const out = run(`import { signal } from '@fluixi/reactive/signal';
+class Counter {
+  count = signal(0);
+}`);
+    expect(out).toContain('count = (globalThis.__fx_source?.("src/App.ts",3,10,"count"),signal(0))');
+    expect(out).not.toMatch(/__fx_source[^\n]*\nclass Counter|__fx_source\?\.\([^)]*\);class/);
+  });
+});
