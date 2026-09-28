@@ -150,8 +150,13 @@ export function memo<T>(fn: (prev?: T) => T, value?: T, options?: SignalOptions<
  *
  * @returns Its disposer, for an effect created outside a root.
  */
-export function effect<T>(fn: (prev?: T) => T | (() => void), value?: T): () => void {
-  return createEffect(fn, value);
+export function effect<T>(
+  fn: (prev?: T) => T | (() => void),
+  value?: T,
+  /** `name` is what a devtools graph calls it, as for `signal` and `memo`. */
+  options?: { name?: string },
+): () => void {
+  return createEffect(fn, value, options);
 }
 
 /**

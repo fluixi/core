@@ -92,7 +92,7 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
   if (sess) {
     const apply = (): void => store.set({ user: sess.user(), session: null });
     apply(); // immediate, so a first protectedRoute read isn't stale
-    createRoot(() => createEffect(apply));
+    createRoot(() => createEffect(apply, undefined, { name: 'auth ← session' }));
   }
 
   const refresh = async (): Promise<void> => {

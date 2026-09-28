@@ -149,6 +149,7 @@ export function createMemo<T>(
 export function createEffect<T>(
   fn: (prev?: T) => T | (() => void),
   value?: T,
+  options?: { name?: string },
 ): () => void {
   let prev = value;
   return l1effect(() => {
@@ -157,7 +158,7 @@ export function createEffect<T>(
     // never returns one, in which case onCleanup is the cleanup path. We keep the
     // legacy carry-the-value behaviour; cleanups use onCleanup.
     prev = r as T;
-  }, true);
+  }, true, options?.name);
 }
 
 /**

@@ -149,3 +149,11 @@ describe('scopes', () => {
     expect(withReactiveScope(scope, () => 42)).toBe(42);
   });
 });
+
+describe('naming an effect', () => {
+  it('reports the name given at creation, as for a signal', () => {
+    const seen = collect();
+    createRoot(() => createEffect(() => {}, undefined, { name: 'sync form' }));
+    expect(seen.created.find((r) => r.kind === 'effect')?.name).toBe('sync form');
+  });
+});

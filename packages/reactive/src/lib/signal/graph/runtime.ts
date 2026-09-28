@@ -304,7 +304,7 @@ class EffectNode {
   queued = false;
   disposed = false;
 
-  constructor(fn: () => void | (() => void), report = false) {
+  constructor(fn: () => void | (() => void), report = false, name?: string) {
     this.owner = makeOwner(G.owner);
     // Tie disposal to the creating scope, when the parent owner tears down it must
     // fully dispose this effect (unwatch + body cleanups), not just run the body
@@ -326,7 +326,7 @@ class EffectNode {
     // Before the first run, so a watcher counts that run like every later one. A render
     // effect is reported too, marked as plumbing: it is not worth drawing, but a node made
     // inside one has to be able to find its way back to the component that caused it.
-    reportReactiveNode({ kind: 'effect', node: this.computed, handle: this, internal: !report });
+    reportReactiveNode({ kind: 'effect', node: this.computed, handle: this, internal: !report, ...(name ? { name } : {}) });
 
     // The watcher only schedules; the recompute happens on flush.
     this.watcher = new Watcher(() => enqueue(this));
@@ -363,9 +363,9 @@ class EffectNode {
 }
 
 /** A re-running side effect. Runs once now, then again (G.scheduled) when deps change. */
-export function effect(fn: () => void | (() => void), report = false): () => void {
+export function effect(fn: () => void | (() => void), report = false, name?: string): () => void {
   // Reported only when the caller says so. Every DOM binding is a render effect through this
   // same factory, and a graph holding one node per text node is not a graph anyone reads.
-  const node = new EffectNode(fn, report);
+  const node = new EffectNode(fn, report, name);
   return () => node.dispose();
 }
