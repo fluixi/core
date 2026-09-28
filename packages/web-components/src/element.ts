@@ -244,7 +244,13 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   #reactiveScope(): object {
-    return (this.#scope ??= openReactiveScope({ kind: 'element', name: `<${this.localName}>`, target: this }));
+    return (this.#scope ??= openReactiveScope({
+      kind: 'element',
+      name: `<${this.localName}>`,
+      target: this,
+      // The class, since the line that opened the scope is this package's, not the app's.
+      detail: this.constructor.name,
+    }));
   }
 
   #adoptOwnProps(warn = false): void {
@@ -306,7 +312,7 @@ export class HTMLReactiveElement extends BaseElement {
         } finally {
           this.#reflecting.delete(attribute);
         }
-      });
+      }, undefined, { name: `reflect ${attribute}` });
     }
   }
 
@@ -330,14 +336,19 @@ export class HTMLReactiveElement extends BaseElement {
  * `class Counter extends typedElement(props)` gives `this.step` its type. Static props alone
  * work at runtime; this is only the type.
  */
-export function typedElement<S extends Schema>(
-  props: S,
-): abstract new () => HTMLReactiveElement & PropValues<S> {
+export function typedElement<S extends Schema>(props: S): TypedElementClass<S> {
   abstract class Typed extends HTMLReactiveElement {
     static override props = props;
   }
-  return Typed as unknown as abstract new () => HTMLReactiveElement & PropValues<S>;
+  return Typed as unknown as TypedElementClass<S>;
 }
+
+/**
+ * What `typedElement` returns: the base class, with the props typed on the instance and on
+ * the static side, so a subclass can write `static props = { ...Parent.props, extra }`.
+ */
+export type TypedElementClass<S extends Schema> = (abstract new () => HTMLReactiveElement & PropValues<S>) &
+  Omit<typeof HTMLReactiveElement, 'prototype' | 'props'> & { props: S };
 
 // ── The function form, as a subclass ────────────────────────────────────────
 
@@ -429,6 +440,10 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
  */
 export function defineElement<S extends Schema>(name: string, setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
   const constructor = createElementClass(setup, options);
+  // `fx-disclosure` → `FxDisclosure`, rather than the generated `SetupElement`: what a stack
+  // trace and the devtools graph show for this element.
+  const className = name.replace(/(^|-)([a-z0-9])/g, (_, _dash: string, ch: string) => ch.toUpperCase());
+  Object.defineProperty(constructor, 'name', { value: className, configurable: true });
   if (isServer()) return constructor;
   return defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
 }

@@ -663,8 +663,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         lastPulse: 0,
         ...(info.detail ? { value: info.detail, detail: info.detail } : {}),
         ...(parentId !== undefined ? { scope: parentId, createdIn: parentId } : {}),
+        // Only the app's own line: a package's is where the package opened the scope for it,
+        // which says nothing about this element, module or service.
         ...(site && !site.external ? { usedAt: mapped(site.location) } : {}),
-        ...(site && site.external ? { source: mapped(site.location) } : {}),
       };
       scopeIds.set(scope, id);
       const target = info.target as Element | undefined;

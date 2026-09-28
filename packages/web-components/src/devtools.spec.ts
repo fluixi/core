@@ -39,4 +39,10 @@ describe('an element under devtools', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(ended).toEqual([scopes[0].scope]);
   });
+
+  it('names a function-form element class after its tag', async () => {
+    const { customElement } = await import('./index.js');
+    const ctor = customElement('fx-tag-named', () => null);
+    expect(ctor.name).toBe('FxTagNamed');
+  });
 });

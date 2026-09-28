@@ -71,6 +71,12 @@ describe('the class form', () => {
       }
     }
     expectTypeOf<Counter['label']>().toEqualTypeOf<string>();
+    // The static side too, for a subclass that extends the parent's props.
+    class Bounded extends Counter {
+      static override props = { ...Counter.props, max: prop.number(10) };
+      declare max: number;
+    }
+    expectTypeOf(Bounded.props.step).toEqualTypeOf(Counter.props.step);
   });
 
   it('keeps render, emit, targets and internals out of the public surface', () => {
@@ -86,5 +92,15 @@ describe('the class form', () => {
     // The platform calls these, so they stay public.
     expectTypeOf(el.connectedCallback).toBeFunction();
     expectTypeOf(el.attributeChangedCallback).toBeFunction();
+  });
+});
+
+describe('event maps', () => {
+  it('accept an interface, not only a type literal', () => {
+    interface Events {
+      change: { value: number };
+    }
+    type Attrs = ElementAttributes<typeof schema, Events>;
+    expectTypeOf<Attrs['onChange']>().toEqualTypeOf<((event: CustomEvent<{ value: number }>) => void) | undefined>();
   });
 });

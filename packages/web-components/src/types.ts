@@ -39,11 +39,12 @@ export type PropValues<S extends Record<string, PropDeclaration<unknown>>> = {
  */
 export type ElementOf<
   S extends Record<string, PropDeclaration<unknown>>,
-  _Events extends Record<string, unknown> = Record<string, never>,
+  _Events extends object = Record<string, never>,
 > = HTMLElement & PropValues<S>;
 
 /** `{ change: Detail }` becomes `{ onChange?: (event: CustomEvent<Detail>) => void }`. */
-type EventHandlers<E extends Record<string, unknown>> = {
+/** An `interface` works as well as a type literal: `object`, not a record, is the constraint. */
+type EventHandlers<E extends object> = {
   [K in keyof E & string as `on${Capitalize<K>}`]?: (event: CustomEvent<E[K]>) => void;
 };
 
@@ -56,7 +57,7 @@ type EventHandlers<E extends Record<string, unknown>> = {
  */
 export type ElementAttributes<
   S extends Record<string, PropDeclaration<unknown>>,
-  E extends Record<string, unknown> = Record<string, never>,
+  E extends object = Record<string, never>,
 > = Partial<PropValues<S>> &
   EventHandlers<E> & {
     children?: unknown;
@@ -76,8 +77,8 @@ export type ElementAttributes<
  * spelled out. The event map still works, and so do the global attributes.
  */
 export type ForeignElementAttributes<
-  P extends Record<string, unknown> = Record<string, never>,
-  E extends Record<string, unknown> = Record<string, never>,
+  P extends object = Record<string, never>,
+  E extends object = Record<string, never>,
 > = Partial<P> &
   EventHandlers<E> & {
     children?: unknown;
