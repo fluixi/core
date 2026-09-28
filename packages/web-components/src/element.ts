@@ -50,6 +50,24 @@ type Schema = Record<string, PropDeclaration<unknown>>;
 const BaseElement: typeof HTMLElement =
   typeof HTMLElement === 'undefined' ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
 
+/**
+ * On a server there is no `customElements` either, and an element file that registers the
+ * standard way (`customElements.define('x-y', X)` at the top) is still imported by code that
+ * renders there. A stand-in that accepts and ignores definitions keeps that import from
+ * throwing, as Lit's server shim does. Only installed where neither DOM global exists.
+ */
+if (typeof HTMLElement === 'undefined' && typeof (globalThis as { customElements?: unknown }).customElements === 'undefined') {
+  const defined = new Map<string, CustomElementConstructor>();
+  (globalThis as { customElements?: unknown }).customElements = {
+    define: (name: string, constructor: CustomElementConstructor) => void defined.set(name, constructor),
+    get: (name: string) => defined.get(name),
+    getName: (constructor: CustomElementConstructor) => [...defined].find(([, c]) => c === constructor)?.[0] ?? null,
+    upgrade: () => {},
+    // Never resolves: nothing is ever upgraded on a server.
+    whenDefined: () => new Promise<never>(() => {}),
+  };
+}
+
 /** The platform callbacks, looked up on whatever sits above this class in the chain. */
 interface Lifecycle {
   connectedCallback?(): void;
@@ -76,6 +94,17 @@ function schemaOf(constructor: Function): Schema {
 function prepare(constructor: Function): void {
   if (prepared.has(constructor)) return;
   prepared.add(constructor);
+  // A mixin that assigns `static observedAttributes = [...]` replaces this class's getter,
+  // and the browser then never reports the props' attributes: `step="5"` stops reaching
+  // `step`. Nothing fails; say which ones went missing.
+  const observed = (constructor as { observedAttributes?: string[] }).observedAttributes ?? [];
+  const missing = observedFrom(schemaOf(constructor)).filter((a) => !observed.includes(a));
+  if (missing.length) {
+    console.warn(
+      `[fluixi] ${constructor.name}.observedAttributes leaves out ${missing.join(', ')}, so those props no longer ` +
+        `follow their attributes. A class or mixin that adds its own should return [...super.observedAttributes, ...].`,
+    );
+  }
   for (const name of Object.keys(schemaOf(constructor))) {
     Object.defineProperty(constructor.prototype, name, {
       configurable: true,
@@ -124,6 +153,8 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   #statesCache: Record<string, PropState<unknown>> | null = null;
+  /** Prop values kept across a real removal, for the signals the next scope re-creates. */
+  #carried: Record<string, unknown> | null = null;
   #dispose: (() => void) | null = null;
   #root: ShadowRoot | HTMLElement = this;
   #authored: ChildNode[] = [];
@@ -238,9 +269,13 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   #states(): Record<string, PropState<unknown>> {
-    return (this.#statesCache ??= withReactiveScope(this.#reactiveScope(), () =>
-      createPropStates(schemaOf(this.constructor)),
-    ));
+    if (this.#statesCache) return this.#statesCache;
+    const states = withReactiveScope(this.#reactiveScope(), () => createPropStates(schemaOf(this.constructor)));
+    if (this.#carried) {
+      for (const [name, value] of Object.entries(this.#carried)) states[name]?.write(value);
+      this.#carried = null;
+    }
+    return (this.#statesCache = states);
   }
 
   #reactiveScope(): object {
@@ -297,6 +332,16 @@ export class HTMLReactiveElement extends BaseElement {
         insert(this.#root as unknown as Element, this.render() as never);
       }),
     );
+
+    // In light DOM the element decides where the children written between its tags go. One
+    // that places none of them hides them, which is silent unless said.
+    const shown = (node: ChildNode) => node.nodeType === 1 || (node.nodeType === 3 && node.textContent?.trim());
+    if (this.#root === this && this.#authored.some((node) => shown(node) && !node.isConnected)) {
+      console.warn(
+        `[fluixi] <${this.localName}> has children between its tags that its render() does not place, so they ` +
+          `are not shown. Place this.authoredChildren in render(), or use shadow DOM with a <slot>.`,
+      );
+    }
   }
 
   #startReflecting(): void {
@@ -322,6 +367,12 @@ export class HTMLReactiveElement extends BaseElement {
     this.#built = false;
     if (this.#scope) closeReactiveScope(this.#scope);
     this.#scope = null;
+    // The props outlive the scope: their values move to new signals made inside the next one,
+    // so an element added back shows its props under the scope it reports then.
+    if (this.#statesCache) {
+      this.#carried = Object.fromEntries(Object.entries(this.#statesCache).map(([name, state]) => [name, state.read()]));
+      this.#statesCache = null;
+    }
     // The rendered content goes with the scope. Light children were taken out at build time
     // and are put back, so the element reads as it was authored.
     if (this.#root === this) {
