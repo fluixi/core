@@ -19,8 +19,10 @@
 import {
   closeReactiveScope,
   effect,
+  getOwner,
   openReactiveScope,
   root,
+  runWithOwner,
   withReactiveScope,
   type Accessor,
 } from '@fluixi/reactive/signal';
@@ -36,6 +38,7 @@ import { defineCustomElement, type DefineOptions } from './registry.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
+import { consumeContext, provideContext, type ConsumeOptions, type ElementContext } from './context.js';
 import type { PropValues } from './types.js';
 
 /**
@@ -197,6 +200,8 @@ export class HTMLReactiveElement extends BaseElement {
   #scope: object | null = null;
   #targets: Targets | null = null;
   #dispatch: Dispatch | null = null;
+  /** The owner the element was created under, for context: a Fluixi template, or none. */
+  #creator = getOwner();
 
   constructor() {
     super();
@@ -255,6 +260,22 @@ export class HTMLReactiveElement extends BaseElement {
    */
   protected render(): unknown {
     return undefined;
+  }
+
+  /**
+   * Give `context` to the elements inside this one, and to `useContext` in the components it
+   * renders. A value or an accessor; subscribed consumers follow the accessor. Call in `render()`.
+   */
+  protected provide<T>(context: ElementContext<T>, value: T | Accessor<T>): void {
+    provideContext(this, context, value);
+  }
+
+  /**
+   * The nearest value of `context` above this element, as an accessor: an element providing
+   * it, else the Fluixi app the element was rendered in, else the default. Call in `render()`.
+   */
+  protected consume<T>(context: ElementContext<T>, options?: ConsumeOptions): Accessor<T> {
+    return consumeContext(this, context, options);
   }
 
   /** Dispatch a `CustomEvent`, bubbling and composed by default. False when cancelled. */
@@ -341,14 +362,19 @@ export class HTMLReactiveElement extends BaseElement {
       this.#root = this;
     }
 
-    withReactiveScope(this.#reactiveScope(), () =>
+    // Detached: the element lives as long as it is connected, not as long as whatever created
+    // it. Linked to that creator for context only, so an app's providers reach `render()`.
+    const creator = this.#creator ?? getOwner();
+    runWithOwner(null, () => withReactiveScope(this.#reactiveScope(), () =>
       root((dispose) => {
+        const own = getOwner();
+        if (own && creator) own.parent = creator;
         this.#dispose = dispose;
         // Reflects live in the same scope as the content, so they stop when it does.
         this.#startReflecting();
         insert(this.#root as unknown as Element, this.render() as never);
       }),
-    );
+    ));
 
     // In light DOM the element decides where the children written between its tags go. One
     // that places none of them hides them, which is silent unless said.
@@ -482,6 +508,10 @@ export interface Host<S extends Schema> {
   readonly targets: Targets;
   /** The children the author wrote between the tags, in light DOM. Empty under shadow DOM. */
   children(): ChildNode[];
+  /** See `HTMLReactiveElement.provide`. */
+  provide<T>(context: ElementContext<T>, value: T | Accessor<T>): void;
+  /** See `HTMLReactiveElement.consume`. */
+  consume<T>(context: ElementContext<T>, options?: ConsumeOptions): Accessor<T>;
 }
 
 export type Setup<S extends Schema> = (host: Host<S>) => unknown;
@@ -510,6 +540,8 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
         dispatch: (type, detail, init) => this.emit(type, detail, init),
         targets: this.targets,
         children: () => [...this.authoredChildren],
+        provide: (context, value) => this.provide(context, value),
+        consume: (context, options) => this.consume(context, options),
       });
     }
   }

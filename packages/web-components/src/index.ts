@@ -37,6 +37,8 @@ export { createTargets } from './targets.js';
 export type { ElementStyles } from './styles.js';
 
 export { FormAssociated } from './form.js';
+export { provideContext, consumeContext, ContextRequestEvent, ContextProviderEvent } from './context.js';
+export type { ElementContext, ConsumeOptions } from './context.js';
 export { rovingFocus, trapFocus, tabbables, deepActiveElement } from './focus.js';
 export type { RovingFocusOptions, FocusTrapOptions } from './focus.js';
 export type { Targets } from './targets.js';
