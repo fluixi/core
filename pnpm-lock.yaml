@@ -542,6 +542,9 @@ importers:
       '@fluixi/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../../packages/dom
@@ -551,6 +554,9 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@fluixi/start':
         specifier: workspace:*
         version: link:../../packages/start

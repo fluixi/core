@@ -8,7 +8,7 @@
  * `open` reflects, so the page can style `fx-disclosure[open]` and devtools shows the
  * current state.
  */
-import { attribute, customElement, property } from '@fluixi/web-components';
+import { attribute, customElement, property, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 
 export interface DisclosureEvents {
@@ -48,5 +48,11 @@ export const FxDisclosure = customElement('fx-disclosure', {
 declare global {
   interface HTMLElementTagNameMap {
     'fx-disclosure': InstanceType<typeof FxDisclosure>;
+  }
+  interface JSXCustomElements {
+    'fx-disclosure': ElementAttributes<
+      { open: ReturnType<typeof attribute.boolean>; summary: ReturnType<typeof property.string> },
+      DisclosureEvents
+    >;
   }
 }

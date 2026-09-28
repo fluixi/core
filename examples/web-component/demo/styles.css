@@ -1,0 +1,15 @@
+/* Shared by the plain page (demo/index.html) and the Fluixi app (index.html). */
+body { font: 15px/1.5 system-ui, sans-serif; margin: 0; color: #1f2430; background: #f7f7f9; }
+.demo { max-width: 44rem; margin: 2rem auto; padding: 0 1rem; }
+section { background: #fff; border: 1px solid #e3e5ea; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1rem; margin: 0 0 .5rem; }
+.counter { display: flex; align-items: center; gap: .5rem; }
+.counter output { min-width: 2ch; font-weight: 600; font-variant-numeric: tabular-nums; }
+button { font: inherit; padding: .2rem .6rem; border: 1px solid #c9ccd4; border-radius: 6px; background: #fff; cursor: pointer; }
+fx-rating button { border: 0; background: none; font-size: 1.4rem; padding: 0 .1rem; color: #e0a100; }
+fx-rating:focus-within { outline: 2px solid #2563eb33; border-radius: 6px; }
+form { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+input { font: inherit; padding: .2rem .5rem; border: 1px solid #c9ccd4; border-radius: 6px; }
+pre { background: #f1f2f5; padding: .5rem .75rem; border-radius: 6px; white-space: pre-wrap; }
+code { font-size: .9em; }

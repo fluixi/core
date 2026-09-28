@@ -16,9 +16,12 @@ const output = (el: Element) => el.querySelector('output')!.textContent;
 const plus = (el: Element) => el.querySelector('button')! as HTMLButtonElement;
 
 beforeAll(async () => {
-  // Two files, two copies of the runtime on one page: the ordinary way a page gets them.
+  // Four files, four copies of the runtime on one page: the ordinary way a page gets them.
+  // bounded-counter.js carries the counter class again, so it must not re-register it.
   // By path: the built files are plain JS with no declarations of their own.
-  for (const file of ['counter.js', 'disclosure.js']) await import(/* @vite-ignore */ join(here, '../dist/elements', file));
+  for (const file of ['counter.js', 'bounded-counter.js', 'rating.js', 'disclosure.js']) {
+    await import(/* @vite-ignore */ join(here, '../dist/elements', file));
+  }
 });
 
 afterEach(() => {
@@ -63,6 +66,38 @@ describe('vanilla', () => {
     (el.shadowRoot!.querySelector('.summary') as HTMLElement).click();
     expect(el.hasAttribute('open')).toBe(true);
     expect(seen).toEqual([{ open: true }]);
+  });
+});
+
+describe('a subclass and a form control', () => {
+  it('stops the subclass at max, with its own event', () => {
+    document.body.innerHTML = '<fx-bounded-counter max="3"></fx-bounded-counter>';
+    const el = document.querySelector('fx-bounded-counter') as Counter;
+    const limits: unknown[] = [];
+    el.addEventListener('limit', (e: Event) => limits.push((e as CustomEvent).detail));
+    for (let i = 0; i < 5; i++) plus(el).click();
+    expect(output(el)).toBe('3');
+    expect(limits).toEqual([{ max: 3 }, { max: 3 }]);
+  });
+
+  // jsdom's ElementInternals has no form association (no setFormValue); every current browser
+  // does. Run where it exists; checked in Chrome through demo/index.html and the app.
+  const formAssociated = typeof (globalThis as { ElementInternals?: { prototype: object } }).ElementInternals?.prototype === 'object' &&
+    'setFormValue' in (globalThis as unknown as { ElementInternals: { prototype: object } }).ElementInternals.prototype;
+  it.runIf(formAssociated)('submits the rating with its form, blocks it while required and empty, and resets', () => {
+    document.body.innerHTML = '<form><fx-rating name="score" required></fx-rating></form>';
+    const form = document.querySelector('form')!;
+    const rating = document.querySelector('fx-rating') as HTMLElement & { value: number };
+    expect(form.checkValidity()).toBe(false);
+
+    (rating.querySelectorAll('button')[3] as HTMLButtonElement).click();
+    expect(rating.value).toBe(4);
+    expect(rating.getAttribute('value')).toBe('4');
+    expect(form.checkValidity()).toBe(true);
+    expect(Object.fromEntries(new FormData(form))).toEqual({ score: '4' });
+
+    form.reset();
+    expect(rating.value).toBe(0);
   });
 });
 

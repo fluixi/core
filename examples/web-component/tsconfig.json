@@ -6,7 +6,9 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "lib": ["ES2021", "DOM"],
+    "jsx": "preserve",
+    "jsxImportSource": "@fluixi/jsx",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"]
   },
   "include": ["src", "tests", "fluixi.config.ts", "fluixi.d.ts"],
@@ -15,7 +17,13 @@
       "path": "../../packages/web-components"
     },
     {
+      "path": "../../packages/server"
+    },
+    {
       "path": "../../packages/jsx"
+    },
+    {
+      "path": "../../packages/core"
     },
     {
       "path": "../../packages/cli"

@@ -3,19 +3,28 @@
 // The components `resolve` supplies without an import. This describes what the
 // compiler already does; it does not enable it.
 
+import * as __fluixi_core from '@fluixi/core';
+import * as __fluixi_core_router from '@fluixi/core/router';
 import * as __fluixi_dom from '@fluixi/dom';
 import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
 import * as __fluixi_reactive_store from '@fluixi/reactive/store';
 import * as __fluixi_start_env from '@fluixi/start/env';
 
 declare global {
+  export import Await = __fluixi_core.Await;
   export import Dynamic = __fluixi_dom.Dynamic;
   export import ErrorBoundary = __fluixi_dom.ErrorBoundary;
   export import For = __fluixi_dom.For;
   export import Index = __fluixi_dom.Index;
+  export import Link = __fluixi_core_router.Link;
   export import Match = __fluixi_dom.Match;
+  export import Outlet = __fluixi_core_router.Outlet;
   export import Portal = __fluixi_dom.Portal;
+  export import Redirect = __fluixi_core_router.Redirect;
+  export import Router = __fluixi_core_router.Router;
   export import Show = __fluixi_dom.Show;
+  export import Suspense = __fluixi_core.Suspense;
+  export import SuspenseList = __fluixi_core.SuspenseList;
   export import Switch = __fluixi_dom.Switch;
   const $signal: typeof __fluixi_reactive_signal.signal;
   const $memo: typeof __fluixi_reactive_signal.memo;

@@ -3,18 +3,22 @@
   "version": "0.0.2-alpha.5",
   "private": true,
   "type": "module",
-  "description": "Two custom elements built with @fluixi/web-components, shipped as portable files.",
+  "description": "Custom elements built with @fluixi/web-components: portable files for any page, and the same elements inside a Fluixi app.",
   "scripts": {
+    "dev": "fluixi dev",
     "build": "fluixi build --format=web-component",
     "build:shared": "fluixi build --format=fluixi",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "demo": "vite --open /demo/",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fluixi/cli": "workspace:*",
+    "@fluixi/core": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/jsx": "workspace:*",
     "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
     "@fluixi/start": "workspace:*",
     "@fluixi/web-components": "workspace:*"
   },

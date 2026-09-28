@@ -1,6 +1,6 @@
 /**
- * A counter, as a custom element authored the standard way: a class, registered with
- * `customElements.define`.
+ * A counter, as a custom element authored the standard way: a class, registered in the
+ * browser's custom element registry.
  *
  * Every piece of the boundary is here: declared properties the page sets as attributes or
  * as JS properties, a `CustomEvent` the page listens to, and public methods any framework
@@ -9,7 +9,7 @@
  * `render` runs once. The bindings in it (`() => this.step`) update the one text node they
  * belong to when a prop or the count changes; nothing re-renders.
  */
-import { prop, typedElement } from '@fluixi/web-components';
+import { defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { signal } from '@fluixi/reactive/signal';
 
@@ -18,14 +18,14 @@ export interface CounterEvents {
   change: { value: number };
 }
 
-const props = {
+export const counterProps = {
   /** Added on each click. Settable as `step="5"` or as `el.step = 5`. */
   step: prop.number(1),
   /** Shown before the number. */
   label: prop.string('Count'),
 };
 
-export class FxCounter extends typedElement(props) {
+export class FxCounter extends typedElement(counterProps) {
   #count = signal(0);
 
   protected override render(): unknown {
@@ -37,6 +37,11 @@ export class FxCounter extends typedElement(props) {
         <button @click=${() => this.reset()}>reset</button>
       </div>
     `;
+  }
+
+  /** The current count. Read-only from outside: it changes through the methods. */
+  get count(): number {
+    return this.#count();
   }
 
   /** Add `step`, and tell the page. */
@@ -51,10 +56,16 @@ export class FxCounter extends typedElement(props) {
   }
 }
 
-customElements.define('fx-counter', FxCounter);
+// The standard registry, through a helper that skips a name already defined. Standalone
+// builds bundle a parent class into each file that extends it, so a page loading two of them
+// runs this twice; `customElements.define` would throw the second time.
+defineCustomElement('fx-counter', FxCounter);
 
 declare global {
   interface HTMLElementTagNameMap {
     'fx-counter': FxCounter;
+  }
+  interface JSXCustomElements {
+    'fx-counter': ElementAttributes<typeof counterProps, CounterEvents>;
   }
 }

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fluixi custom elements, on a plain page</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <!-- The built files, and nothing else: no framework, no bundler. Each carries its own
+         copy of the runtime; they share one reactive graph on the page. -->
+    <script type="module" src="../dist/elements/counter.js"></script>
+    <script type="module" src="../dist/elements/bounded-counter.js"></script>
+    <script type="module" src="../dist/elements/rating.js"></script>
+    <script type="module" src="../dist/elements/disclosure.js"></script>
+  </head>
+  <body>
+    <main class="demo">
+      <h1>Custom elements on a plain page</h1>
+
+      <section>
+        <h2>A class element</h2>
+        <fx-counter id="counter" step="2" label="Clicks"></fx-counter>
+        <p>Last <code>change</code> event: <span id="last">none yet</span></p>
+        <button id="reset-from-page">Call <code>counter.reset()</code> from the page</button>
+      </section>
+
+      <section>
+        <h2>A subclass</h2>
+        <fx-bounded-counter id="bounded" max="5" label="Up to 5"></fx-bounded-counter>
+        <p id="limit"></p>
+      </section>
+
+      <section>
+        <h2>A form control</h2>
+        <form id="form">
+          <fx-rating name="score" required label="How was it?"></fx-rating>
+          <input name="comment" placeholder="A comment" />
+          <button type="submit">Send</button>
+          <button type="reset">Reset</button>
+        </form>
+        <pre id="sent">Submit the form to see what it sends.</pre>
+      </section>
+
+      <section>
+        <h2>Shadow DOM and slots</h2>
+        <fx-disclosure>
+          <span slot="summary">What is on this page?</span>
+          <p>Four custom elements from four standalone files, used with plain HTML and a few lines of script.</p>
+        </fx-disclosure>
+      </section>
+    </main>
+
+    <script type="module">
+      const counter = document.getElementById('counter');
+      counter.addEventListener('change', (e) => (document.getElementById('last').textContent = e.detail.value));
+      document.getElementById('reset-from-page').addEventListener('click', () => counter.reset());
+
+      document.getElementById('bounded').addEventListener('limit', (e) => {
+        document.getElementById('limit').textContent = `stopped at ${e.detail.max}`;
+      });
+
+      document.getElementById('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.currentTarget));
+        document.getElementById('sent').textContent = JSON.stringify(data);
+      });
+    </script>
+  </body>
+</html>
