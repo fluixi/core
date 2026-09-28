@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.spec.ts'],
+    exclude: ['src/**/*.browser.spec.ts'],
   },
   resolve: {
     conditions: ['development', 'import', 'default'],

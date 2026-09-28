@@ -24,6 +24,7 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production mix-builder",
     "test": "vitest run",
+    "test-browser": "vitest run -c vitest.browser.config.ts",
     "build:typings": "tsc -p tsconfig.lib.json",
     "dev": "tsc -w -p tsconfig.lib.json"
   },
@@ -45,9 +46,12 @@
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
-    "@bambiste/mix-builder": "^0.4.0",
-    "cross-env": "^7.0.3"
+    "@vitest/browser": "3.2.7",
+    "cross-env": "^7.0.3",
+    "playwright": "^1.63.0",
+    "vitest": "3.2.7"
   }
 }
