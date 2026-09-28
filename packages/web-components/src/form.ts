@@ -8,9 +8,9 @@
  * half: `setFormValue`, `setValidity`, and hooks for reset and restore.
  */
 import { signal } from '@fluixi/reactive/signal';
-import type { HTMLReactiveElement } from './element.js';
+import type { ElementBase } from './element.js';
 
-type Base = abstract new (...args: any[]) => HTMLReactiveElement;
+type Base = ElementBase;
 
 interface FormCallbacks {
   formAssociatedCallback?(form: HTMLFormElement | null): void;

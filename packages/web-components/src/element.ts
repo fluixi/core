@@ -420,8 +420,24 @@ export type TypedElementClass<S extends Schema> = (abstract new () => HTMLReacti
 
 // ── The function form, as a subclass ────────────────────────────────────────
 
-/** A class-to-class mixin, applied over `HTMLReactiveElement` in the function form. */
-export type ElementMixin = (base: typeof HTMLReactiveElement) => typeof HTMLReactiveElement;
+/**
+ * What a mixin extends: an element class, instance and statics. Constrain a mixin's base to it,
+ * `function Toggle<B extends ElementBase>(Base: B)`, and `super.observedAttributes` is typed.
+ */
+export type ElementBase = (abstract new (...args: any[]) => HTMLReactiveElement) & {
+  readonly observedAttributes: string[];
+  props?: Schema;
+  shadow?: ShadowOption;
+  styles?: ElementStyles;
+};
+
+/**
+ * A class-to-class mixin, applied over `HTMLReactiveElement` in the function form. Generic over
+ * `ElementBase`, or written against `HTMLReactiveElement` itself.
+ */
+export type ElementMixin =
+  | ((base: ElementBase) => ElementBase)
+  | ((base: typeof HTMLReactiveElement) => typeof HTMLReactiveElement);
 
 export interface ElementOptions<S extends Schema> {
   /** Declared properties and the attributes that mirror them. */
@@ -471,8 +487,9 @@ export interface Host<S extends Schema> {
 export type Setup<S extends Schema> = (host: Host<S>) => unknown;
 
 export function createElementClass<S extends Schema>(setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
-  let Base = HTMLReactiveElement;
-  for (const mixin of options.mixins ?? []) Base = mixin(Base);
+  let Base: ElementBase = HTMLReactiveElement;
+  // Either shape takes what the previous one returned: the runtime class is the same.
+  for (const mixin of options.mixins ?? []) Base = (mixin as (base: ElementBase) => ElementBase)(Base);
 
   class SetupElement extends Base {
     static override props = options.props ?? {};

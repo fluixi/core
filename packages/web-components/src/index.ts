@@ -22,7 +22,7 @@
  * ```
  */
 export { HTMLReactiveElement, typedElement, defineElement, createElementClass } from './element.js';
-export type { ElementOptions, ElementMixin, ElementConstructor, Host, Setup, ShadowOption, TypedElementClass } from './element.js';
+export type { ElementOptions, ElementBase, ElementMixin, ElementConstructor, Host, Setup, ShadowOption, TypedElementClass } from './element.js';
 
 export { prop } from './props.js';
 export type { PropDeclaration, PropOptions, PropAccessors } from './props.js';
