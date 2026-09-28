@@ -1,16 +1,15 @@
 /**
- * A counter, as a custom element.
+ * A counter, as a custom element authored the standard way: a class, registered with
+ * `customElements.define`.
  *
- * Every piece of the boundary is here: a declared property the page sets as an attribute
- * or as a JS property, a `CustomEvent` the page listens to, and a target for reading a
- * node back without a `querySelector` call. `targets` comes from the host, already scoped
- * to this element.
+ * Every piece of the boundary is here: declared properties the page sets as attributes or
+ * as JS properties, a `CustomEvent` the page listens to, and public methods any framework
+ * can call through a ref. The count is `#private`; `render` and `emit` are protected.
  *
- * Nothing about the body is web-component specific. `signal` and `html` are the same
- * ones an ordinary Fluixi component uses, and the binding updates the one text node it
- * belongs to rather than re-rendering.
+ * `render` runs once. The bindings in it (`() => this.step`) update the one text node they
+ * belong to when a prop or the count changes; nothing re-renders.
  */
-import { customElement, property } from '@fluixi/web-components';
+import { prop, typedElement } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { signal } from '@fluixi/reactive/signal';
 
@@ -19,41 +18,43 @@ export interface CounterEvents {
   change: { value: number };
 }
 
-export const FxCounter = customElement('fx-counter', {
-  props: {
-    /** Added on each click. Settable as `step="5"` or as `el.step = 5`. */
-    step: property.number(1),
-    /** Shown before the number. */
-    label: property.string('Count'),
-  },
-  setup: ({ props, dispatch, targets }) => {
-    const count = signal(0);
+const props = {
+  /** Added on each click. Settable as `step="5"` or as `el.step = 5`. */
+  step: prop.number(1),
+  /** Shown before the number. */
+  label: prop.string('Count'),
+};
 
-    const bump = () => {
-      count.set(count() + props.step());
-      dispatch('change', { value: count() });
-    };
+export class FxCounter extends typedElement(props) {
+  #count = signal(0);
 
+  protected override render(): unknown {
     return html`
       <div class="counter">
-        <span data-target="label">${() => props.label()}</span>
-        <output data-target="value">${() => count()}</output>
-        <button @click=${bump}>+${() => props.step()}</button>
-        <button @click=${() => {
-          // Reading a node through the target rather than querying the document.
-          // Disposal is the owner's job, so nothing here has to be unregistered.
-          const output = targets.get('value');
-          if (output) output.textContent = '0';
-          count.set(0);
-        }}>reset</button>
+        <span>${() => this.label}</span>
+        <output>${() => this.#count()}</output>
+        <button @click=${() => this.increment()}>+${() => this.step}</button>
+        <button @click=${() => this.reset()}>reset</button>
       </div>
     `;
-  },
-});
+  }
+
+  /** Add `step`, and tell the page. */
+  increment(): void {
+    this.#count.set(this.#count() + this.step);
+    this.emit('change', { value: this.#count() });
+  }
+
+  /** Back to zero. Public, so page code and other frameworks can call it. */
+  reset(): void {
+    this.#count.set(0);
+  }
+}
+
+customElements.define('fx-counter', FxCounter);
 
 declare global {
   interface HTMLElementTagNameMap {
-    // The constructor carries the properties, so the list is not repeated here.
-    'fx-counter': InstanceType<typeof FxCounter>;
+    'fx-counter': FxCounter;
   }
 }

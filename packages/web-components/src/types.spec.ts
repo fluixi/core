@@ -6,6 +6,7 @@
  */
 import { describe, expectTypeOf, it } from 'vitest';
 import { prop } from './props.js';
+import { HTMLReactiveElement, typedElement } from './element.js';
 import type { ElementAttributes, ElementOf, PropValues } from './types.js';
 
 const schema = {
@@ -58,5 +59,32 @@ describe('ElementAttributes, for the JSX tag', () => {
   it('accepts data- and aria- names', () => {
     const attrs: Attrs = { 'data-id': '4', 'aria-label': 'Close' };
     expectTypeOf(attrs).toMatchTypeOf<Attrs>();
+  });
+});
+
+describe('the class form', () => {
+  it('types declared props on the instance through typedElement', () => {
+    class Counter extends typedElement({ step: prop.number(1), label: prop.string('') }) {
+      read(): number {
+        expectTypeOf(this.step).toEqualTypeOf<number>();
+        return this.step;
+      }
+    }
+    expectTypeOf<Counter['label']>().toEqualTypeOf<string>();
+  });
+
+  it('keeps render, emit, targets and internals out of the public surface', () => {
+    const el = {} as HTMLReactiveElement;
+    // @ts-expect-error protected: for the element's own code
+    void el.render;
+    // @ts-expect-error protected
+    void el.emit;
+    // @ts-expect-error protected
+    void el.targets;
+    // @ts-expect-error protected
+    void el.internals;
+    // The platform calls these, so they stay public.
+    expectTypeOf(el.connectedCallback).toBeFunction();
+    expectTypeOf(el.attributeChangedCallback).toBeFunction();
   });
 });

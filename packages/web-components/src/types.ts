@@ -18,7 +18,7 @@
  *   interface HTMLElementTagNameMap {
  *     'my-counter': ElementOf<typeof schema, { change: { value: number } }>;
  *   }
- *   interface HTMLReactiveElement {
+ *   interface JSXCustomElements {
  *     'my-counter': ElementAttributes<typeof schema, { change: { value: number } }>;
  *   }
  * }

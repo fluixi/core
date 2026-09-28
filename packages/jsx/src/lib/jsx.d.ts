@@ -104,32 +104,19 @@ export namespace JSX {
  * @example
  * ```ts
  * declare global {
- *   interface HTMLReactiveElement {
- *     'my-counter': ElementAttributes<typeof schema, { change: { value: number } }>;
+ *   interface JSXCustomElements {
+ *     'my-counter': ElementAttributes<typeof props, { change: { value: number } }>;
  *   }
  * }
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface HTMLReactiveElement {}
+export interface JSXCustomElements {}
 
-/**
- * @deprecated Use {@link HTMLReactiveElement}. Kept so an app that already augments this
- * name keeps compiling; both are merged into `JSX.IntrinsicElements`.
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FluixiElements {}
-
-// declare global {
-//   // eslint-disable-next-line @typescript-eslint/no-empty-interface
-//   interface FluixiElements {}
-// }
 declare global {
   // Declared globally so an app augments it without importing anything.
   // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface HTMLReactiveElement {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface FluixiElements {}
+  interface JSXCustomElements {}
 
   // Each name declared once, off the element types themselves.
   //
@@ -144,10 +131,7 @@ declare global {
   // the error every nested element produced.
   namespace JSX {
     type Element = A.FxElement;
-    interface IntrinsicElements
-      extends A.IntrinsicElements,
-        HTMLReactiveElement,
-        FluixiElements {}
+    interface IntrinsicElements extends A.IntrinsicElements, JSXCustomElements {}
     interface ElementChildrenAttribute {
       children: {};
     }

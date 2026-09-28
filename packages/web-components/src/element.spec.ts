@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { onCleanup, signal } from '@fluixi/reactive/signal';
-import { defineElement, prop } from './index.js';
+import { HTMLReactiveElement, defineElement, prop } from './index.js';
 import { resetRegistryTracking } from './registry.js';
 
 /**
@@ -326,28 +326,28 @@ describe('registration', () => {
 });
 
 describe('mixins', () => {
-  it('extends a supplied base and runs its callbacks first', () => {
+  it('applies mixins over the base, runs their callbacks first, and keeps their attributes', () => {
     const order: string[] = [];
-    class Base extends HTMLElement {
-      static observedAttributes = ['from-base'];
-      connectedCallback(): void {
-        order.push('base');
-      }
-    }
+    const Tracked = (Base: typeof HTMLReactiveElement) =>
+      class extends Base {
+        static override get observedAttributes(): string[] {
+          return [...super.observedAttributes, 'from-mixin'];
+        }
+        override connectedCallback(): void {
+          order.push('mixin');
+          super.connectedCallback();
+        }
+      };
 
     const tag = uniqueTag('mixed');
     const ctor = defineElement(tag, () => {
       order.push('setup');
       return document.createElement('span');
-    }, { base: Base, props: { own: prop.string('') } });
+    }, { mixins: [Tracked], props: { own: prop.string('') } });
 
     document.body.innerHTML = `<${tag}></${tag}>`;
-    expect(order).toEqual(['base', 'setup']);
-    expect(document.querySelector(tag)).toBeInstanceOf(Base);
-
-    // The base's observed attributes are kept alongside the schema's.
-    const observed = (ctor as unknown as { observedAttributes: string[] }).observedAttributes;
-    expect(observed).toContain('from-base');
-    expect(observed).toContain('own');
+    expect(order).toEqual(['mixin', 'setup']);
+    expect(document.querySelector(tag)).toBeInstanceOf(HTMLReactiveElement);
+    expect(ctor.observedAttributes).toEqual(expect.arrayContaining(['own', 'from-mixin']));
   });
 });

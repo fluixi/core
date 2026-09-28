@@ -21,8 +21,8 @@
  * }, { props: { step: prop.number(1) } });
  * ```
  */
-export { defineElement, createElementClass } from './element.js';
-export type { ElementOptions, Host, Setup, ShadowOption } from './element.js';
+export { HTMLReactiveElement, typedElement, defineElement, createElementClass } from './element.js';
+export type { ElementOptions, ElementMixin, ElementConstructor, Host, Setup, ShadowOption } from './element.js';
 
 export { prop } from './props.js';
 export type { PropDeclaration, PropOptions, PropAccessors } from './props.js';

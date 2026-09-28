@@ -1459,7 +1459,7 @@ export interface IntrinsicElements {
   use: SVGAttributes<SVGUseElement>;
   view: SVGAttributes<SVGViewElement>;
 
-  // Custom elements: picks up FluixiElements augmentations automatically.
+  // Custom elements: typed ones come in through the JSXCustomElements augmentation.
   // (There was a second, identical index signature here: legal only because
   // skipLibCheck never type-checked the .d.ts this came from.)
   [elemName: string]: any;

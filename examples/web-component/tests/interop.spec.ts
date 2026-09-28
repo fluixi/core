@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-type Counter = HTMLElement & { step: number; label: string };
+type Counter = HTMLElement & { step: number; label: string; reset(): void };
 
 // jsdom gives `import.meta.url` a non-file scheme; vitest provides __dirname.
 const here = __dirname;
@@ -38,6 +38,10 @@ describe('vanilla', () => {
 
     el.step = 3;
     expect(plus(el).textContent).toBe('+3');
+
+    // A public method, called by page code.
+    el.reset();
+    expect(output(el)).toBe('0');
   });
 
   it('runs a handler once per click with two runtime copies on the page', () => {

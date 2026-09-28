@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/vitest",
+    "types": ["vitest/globals", "vitest/importMeta", "node", "vitest"],
+    "lib": ["dom", "DOM.Iterable", "es2022"],
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.spec.ts"],
+  "references": [{ "path": "./tsconfig.lib.json" }]
+}
