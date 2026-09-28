@@ -25,7 +25,7 @@ import { imperativeBackend } from '../codegen/backends/imperative.js';
 import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
-import { collectSourceEdits, mayHaveReactiveCall } from './source-locations.js';
+import { collectSourceEdits, mayHaveSourceMarks } from './source-locations.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -438,7 +438,7 @@ export function transformTemplates(
   const wantsIntrinsics = options.intrinsics !== false && mayHaveIntrinsic(code);
   // A module can be nothing but reactive calls and still need marking, so the skip check
   // has to look for those too when source locations are wanted.
-  const wantsSources = options.sourceLocations === true && mayHaveReactiveCall(code);
+  const wantsSources = options.sourceLocations === true && mayHaveSourceMarks(code);
   // What a mark calls this file. The declaration marks and the usage marks are read back by
   // name, so both passes have to spell it the same way.
   const sourceName = relativeToRoot(id, options.sourceRoot);

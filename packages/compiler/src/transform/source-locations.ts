@@ -46,6 +46,12 @@ export const SOURCE_MARKER = '__fx_source';
 export const COMPONENT_MARKER = '__fx_component';
 
 /**
+ * Where a class that extends another was declared, keyed by the class itself: a custom
+ * element's definition, which the runtime can only reach through `element.constructor`.
+ */
+export const CLASS_MARKER = '__fx_class';
+
+/**
  * Where one reactive hole was written. This one wraps: the position has to travel with the
  * accessor to wherever the dom wires it up. A template is emitted as one overwrite, so the
  * source map has a single entry for the root and every hole traces back to it.
@@ -90,12 +96,14 @@ const RUNTIME_PRIMITIVES = new Set([
   'createSignal', 'createMemo', 'createEffect', 'createStore', 'createResource',
 ]);
 
-/** Cheap enough to run before parsing. */
-export function mayHaveReactiveCall(code: string): boolean {
+/** Whether a module has anything to mark: a primitive call or a subclass. Cheap enough to run before parsing. */
+export function mayHaveSourceMarks(code: string): boolean {
   for (const name of RUNTIME_PRIMITIVES) {
     if (code.includes(name)) return true;
   }
-  return code.includes('$signal') || code.includes('$memo') || code.includes('$effect') || code.includes('$store');
+  if (code.includes('$signal') || code.includes('$memo') || code.includes('$effect') || code.includes('$store')) return true;
+  // A subclass gets a declaration mark, so an element with no signal of its own is still found.
+  return /\bclass\b[^{;]*\bextends\b/.test(code);
 }
 
 /** Positions where the grammar allows exactly one statement, so a second one changes it. */
@@ -221,6 +229,21 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
       }
     }
 
+    // A static block at the top of the body runs once, when the class is defined, with `this`
+    // bound to the class. Only a subclass: that covers every custom element and keeps the mark
+    // off plain classes. An ambient `declare class` has no body to run.
+    if ((node.type === 'ClassDeclaration' || node.type === 'ClassExpression') && node.superClass && !node.declare) {
+      const at = node.loc?.start;
+      const body = node.body as Node | undefined;
+      if (at && body) {
+        edits.push({
+          start: body.start + 1,
+          end: body.start + 1,
+          code: `static{globalThis.${CLASS_MARKER}?.(this,${JSON.stringify(filename)},${at.line},${at.column});}`,
+        });
+      }
+    }
+
     if (node.type !== 'CallExpression') return;
     const callee = node.callee as Node;
     if (callee?.type !== 'Identifier') return;
@@ -250,7 +273,16 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
         if (claimed.has(node.start)) return;
         claimed.add(node.start);
         const label = nameFor(stack);
-        const args = [JSON.stringify(filename), String(position.line), String(position.column), label ? JSON.stringify(label) : undefined]
+        // An instance field also hands over `this`: the constructor runs before a custom
+        // element opens its scope, and the instance is what ties the node to it later.
+        const own = !(up as { static?: boolean }).static;
+        const args = [
+          JSON.stringify(filename),
+          String(position.line),
+          String(position.column),
+          label ? JSON.stringify(label) : own ? 'undefined' : undefined,
+          own ? 'this' : undefined,
+        ]
           .filter((a) => a !== undefined)
           .join(',');
         edits.push({ start: node.start, end: node.start, code: `(globalThis.${SOURCE_MARKER}?.(${args}),` });

@@ -189,7 +189,7 @@ export function Mixin(Base) {
     #disabled = signal(false);
   };
 }`);
-    expect(out).toContain('#disabled = (globalThis.__fx_source?.("src/App.ts",4,16,"disabled"),signal(false))');
+    expect(out).toContain('#disabled = (globalThis.__fx_source?.("src/App.ts",4,16,"disabled",this),signal(false))');
     expect(out).not.toMatch(/__fx_source\?\.[^;]*;\s*\{/);
   });
 
@@ -198,7 +198,24 @@ export function Mixin(Base) {
 class Counter {
   count = signal(0);
 }`);
-    expect(out).toContain('count = (globalThis.__fx_source?.("src/App.ts",3,10,"count"),signal(0))');
+    expect(out).toContain('count = (globalThis.__fx_source?.("src/App.ts",3,10,"count",this),signal(0))');
     expect(out).not.toMatch(/__fx_source[^\n]*\nclass Counter|__fx_source\?\.\([^)]*\);class/);
+  });
+
+  it('hands over no instance for a static field', () => {
+    const out = run(`import { signal } from '@fluixi/reactive/signal';
+class Store {
+  static shared = signal(0);
+}`);
+    expect(out).toContain('shared = (globalThis.__fx_source?.("src/App.ts",3,18,"shared"),signal(0))');
+  });
+
+  it('marks where a subclass is declared, from a static block, and leaves plain classes alone', () => {
+    const out = run(`export class FxCounter extends HTMLElement {
+  x = 1;
+}
+class Plain {}`);
+    expect(out).toContain('class FxCounter extends HTMLElement {static{globalThis.__fx_class?.(this,"src/App.ts",1,7);}');
+    expect(out).toContain('class Plain {}');
   });
 });
