@@ -6,7 +6,13 @@ import {
   createEffect,
   createRenderEffect,
 } from './compat.js';
-import { observeReactiveNodes, type ReactiveNodeReport } from './observe.js';
+import {
+  observeReactiveNodes,
+  openReactiveScope,
+  withReactiveScope,
+  closeReactiveScope,
+  type ReactiveNodeReport,
+} from './observe.js';
 
 const HOOK = '__FLUIXI_DEVTOOLS_HOOK__';
 const host = globalThis as Record<string, unknown>;
@@ -106,5 +112,40 @@ describe('observeReactiveNodes', () => {
     };
     vi.resetModules();
     await expect(import('./observe.js')).resolves.toBeTruthy();
+  });
+});
+
+describe('scopes', () => {
+  it('tags what is created inside a scope, nests scopes, and reports the end', () => {
+    const created: ReactiveNodeReport[] = [];
+    const opened: Array<{ scope: object; name: string; parent?: object }> = [];
+    const ended: object[] = [];
+    stop = observeReactiveNodes({
+      created: (r) => created.push(r),
+      scope: (scope, info, parent) => opened.push({ scope, name: info.name, parent }),
+      scopeEnded: (scope) => ended.push(scope),
+    });
+
+    const module = openReactiveScope({ kind: 'module', name: 'AuthModule' });
+    let service: object | undefined;
+    withReactiveScope(module, () => {
+      service = openReactiveScope({ kind: 'service', name: 'AuthService', detail: 'AuthServiceToken' });
+      withReactiveScope(service, () => createRoot(() => createSignal(null, { name: 'user' })));
+    });
+    createRoot(() => createSignal(0, { name: 'outside' }));
+    closeReactiveScope(service!);
+
+    expect(opened).toEqual([
+      { scope: module, name: 'AuthModule', parent: undefined },
+      { scope: service, name: 'AuthService', parent: module },
+    ]);
+    expect(created.find((r) => r.name === 'user')?.scope).toBe(service);
+    expect(created.find((r) => r.name === 'outside')?.scope).toBeUndefined();
+    expect(ended).toEqual([service]);
+  });
+
+  it('costs nothing unwatched: fn runs, nothing is kept', () => {
+    const scope = openReactiveScope({ kind: 'element', name: '<fx-counter>' });
+    expect(withReactiveScope(scope, () => 42)).toBe(42);
   });
 });

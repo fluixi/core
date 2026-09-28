@@ -29,6 +29,9 @@ export const KIND_COLOR: Record<ColouredKind, string> = {
   setter: '#fb7185',
   group: '#8a90a2',
   element: '#8a90a2',
+  'custom-element': '#2dd4bf',
+  module: '#facc15',
+  service: '#60a5fa',
 };
 
 /** The variable a host can set to override one, per kind. */

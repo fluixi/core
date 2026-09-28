@@ -53,6 +53,24 @@ export interface ReactiveNodeReport {
    * Live and reused: read it during the call, do not keep it.
    */
   parents?: readonly unknown[];
+  /**
+   * The scope open when this node was made: the custom element, module or service it
+   * belongs to. See `openReactiveScope`.
+   */
+  scope?: object;
+}
+
+/** What a scope stands for. The graph draws each kind as its own group. */
+export type ReactiveScopeKind = 'element' | 'module' | 'service';
+
+export interface ReactiveScopeInfo {
+  kind: ReactiveScopeKind;
+  /** What the author calls it: `<fx-counter>`, `AuthModule`, `AuthService`. */
+  name: string;
+  /** Something on the page it stands for, such as the element itself, for highlighting. */
+  target?: unknown;
+  /** One short line of extra detail, such as the token a service was provided for. */
+  detail?: string;
 }
 
 export interface ReactiveObserver {
@@ -116,6 +134,19 @@ export interface ReactiveObserver {
    * showing. The watcher reads its own stack for that.
    */
   contextCreated?(id: symbol): void;
+  /**
+   * A scope was opened: a custom element connected, a module registered, a service built.
+   * Nothing in the graph says so otherwise; its signals would be loose nodes with no owner
+   * a reader recognises. `parent` is the scope open around this one.
+   */
+  scope?(scope: object, info: ReactiveScopeInfo, parent?: object): void;
+  /** A scope ended: the element was removed, the service disposed. */
+  scopeEnded?(scope: object): void;
+  /**
+   * A scope now sits inside another: a service built at import time, later registered by the
+   * module that provides it.
+   */
+  scopeAdopted?(scope: object, parent: object): void;
 }
 
 /**
@@ -149,6 +180,59 @@ export function withReactiveOrigin<T>(owner: unknown, fn: () => T): T {
   }
 }
 
+/** The scope nodes created right now belong to. */
+let currentScope: object | undefined;
+
+/**
+ * Announce a scope and get its identity back. Cheap when nobody is watching: an empty
+ * object, reported to no one.
+ */
+export function openReactiveScope(info: ReactiveScopeInfo): object {
+  const scope = {};
+  (G.observer as ReactiveObserver | null)?.scope?.(scope, info, currentScope);
+  return scope;
+}
+
+/** Run `fn` with `scope` open, so every node it creates belongs to it. Free when unwatched. */
+export function withReactiveScope<T>(scope: object, fn: () => T): T {
+  if (!G.observer) return fn();
+  const previous = currentScope;
+  currentScope = scope;
+  try {
+    return fn();
+  } finally {
+    currentScope = previous;
+  }
+}
+
+/** The scope has ended. */
+export function closeReactiveScope(scope: object): void {
+  (G.observer as ReactiveObserver | null)?.scopeEnded?.(scope);
+}
+
+/** Put an existing scope inside another. */
+export function adoptReactiveScope(scope: object, parent: object): void {
+  (G.observer as ReactiveObserver | null)?.scopeAdopted?.(scope, parent);
+}
+
+/**
+ * Where a package leaves the scope it opened for a value it built, so whoever registers the
+ * value later (a module providing it) can place it. Shared by key, across copies.
+ */
+const SCOPE_OF = Symbol.for('fluixi.reactiveScope');
+
+/** Remember `scope` on `value`. Not enumerable, so it never shows up in a spread or a log. */
+export function markReactiveScope(value: object, scope: object): void {
+  Object.defineProperty(value, SCOPE_OF, { value: scope, configurable: true, enumerable: false });
+}
+
+/** The scope a package marked on `value`, if any. */
+export function reactiveScopeOf(value: unknown): object | undefined {
+  return value !== null && (typeof value === 'object' || typeof value === 'function')
+    ? ((value as Record<symbol, object | undefined>)[SCOPE_OF] ?? undefined)
+    : undefined;
+}
+
 /** Called by the primitives. Not part of the public surface. */
 export function reportReactiveNode(report: ReactiveNodeReport): void {
   const observer = G.observer as ReactiveObserver | null;
@@ -156,7 +240,9 @@ export function reportReactiveNode(report: ReactiveNodeReport): void {
   // costs nothing to build when nobody is watching.
   if (observer) {
     observer.created(
-      report.parents === undefined ? { ...report, parents: running, origin: report.origin ?? origin } : report,
+      report.parents === undefined
+        ? { ...report, parents: running, origin: report.origin ?? origin, scope: report.scope ?? currentScope }
+        : { ...report, scope: report.scope ?? currentScope },
     );
   }
 }

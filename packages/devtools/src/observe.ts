@@ -182,6 +182,10 @@ const PREFIX: Record<NodeKind, string> = {
   directive: 'd',
   context: 'ctx',
   provider: 'p',
+  // Scopes are always named by what opened them.
+  'custom-element': 'el',
+  module: 'mod',
+  service: 'svc',
 };
 
 /**
@@ -277,6 +281,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const drivenBy = new WeakMap<Element, number>();
   /** Per node, the elements it drives. Rebuilt each sample, like the descriptions are. */
   let reaches = new Map<number, WeakRef<Element>[]>();
+  /** The kinds a scope node can be. */
+  const SCOPE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>(['custom-element', 'module', 'service']);
+  /** Each open scope's node, by the identity the runtime handed over. */
+  const scopeIds = new WeakMap<object, number>();
   /** Cleared on each sample: the page has moved on. */
   let described: Map<number, DomNode[]> | null = null;
   /**
@@ -452,6 +460,21 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         node.createdIn = originId;
         if (from.source) node.source = from.source;
       }
+      // Made inside an element, module or service: it belongs to that scope, and hangs off it
+      // unless what created it already sits inside the same scope, which keeps the nesting.
+      const scopeId = report.scope ? scopeIds.get(report.scope as object) : undefined;
+      if (scopeId !== undefined) {
+        node.scope = scopeId;
+        const creator = node.createdIn !== undefined ? graph.get(node.createdIn) : undefined;
+        const insideAlready = node.createdIn === scopeId || creator?.scope === scopeId;
+        if (!insideAlready) node.createdIn = scopeId;
+      } else if (node.createdIn !== undefined) {
+        // Made after the scope closed, by something inside it: a memo read lazily, an effect
+        // re-running, a row a list adds. It belongs where its creator belongs.
+        const creator = graph.get(node.createdIn);
+        const inherited = creator && SCOPE_KINDS.has(creator.kind) ? creator.id : creator?.scope;
+        if (inherited !== undefined) node.scope = inherited;
+      }
       // An effect returns nothing worth showing, so it has no reader and pulses on its runs.
       if (kind !== 'effect' && typeof handle === 'function') {
         // Not read here: a memo is lazy, and forcing it from inside its own creation would
@@ -617,6 +640,56 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       internals.delete(target as CoreNode);
       const id = ids.get(target as object);
       if (id === undefined) return;
+      forget(id);
+    },
+    scope(scope, info, parent) {
+      const id = seq++;
+      const kind: NodeKind = info.kind === 'element' ? 'custom-element' : info.kind;
+      const parentId = parent ? scopeIds.get(parent) : undefined;
+      // Where it was opened: the line that defined the module, built the service, or, for
+      // an element, the one that put it on the page. A bundler's virtual module (the
+      // generated app config, `\0virtual:…`) is nowhere a reader can go, so it is left out.
+      const found = currentCallSite(origin);
+      const site = found && !/\0|__x00__|^virtual:/.test(found.location.file ?? '') ? found : undefined;
+      const node: RNode = {
+        id,
+        label: info.name,
+        kind,
+        // The author named the element, the module and the service; none of them is plumbing.
+        authored: true,
+        deps: new Set(),
+        writes: new Set(),
+        runs: 0,
+        lastPulse: 0,
+        ...(info.detail ? { value: info.detail, detail: info.detail } : {}),
+        ...(parentId !== undefined ? { scope: parentId, createdIn: parentId } : {}),
+        ...(site && !site.external ? { usedAt: mapped(site.location) } : {}),
+        ...(site && site.external ? { source: mapped(site.location) } : {}),
+      };
+      scopeIds.set(scope, id);
+      const target = info.target as Element | undefined;
+      if (target && typeof target === 'object' && (target as Node).nodeType === 1) {
+        rendered.set(id, [new WeakRef(target)]);
+      }
+      graph.set(id, node);
+      history.created(id, node.createdIn, node.label);
+    },
+    scopeEnded(scope) {
+      const id = scopeIds.get(scope);
+      if (id !== undefined) forget(id);
+    },
+    scopeAdopted(scope, parent) {
+      const node = graph.get(scopeIds.get(scope) ?? -1);
+      const parentId = scopeIds.get(parent);
+      if (!node || parentId === undefined || parentId === node.id) return;
+      node.scope = parentId;
+      node.createdIn = parentId;
+      revs.set(node.id, ++revision);
+    },
+  });
+
+  /** Drop a node everywhere it is kept, and log it for a consumer catching up. */
+  function forget(id: number): void {
       removed.push({ id, rev: ++revision });
       revs.delete(id);
       if (removed.length > REMOVED_LOG) removed.splice(0, removed.length - REMOVED_LOG);
@@ -630,8 +703,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       setters.delete(id);
       runsAtLastSample.delete(id);
       unnamed.delete(id);
-    },
-  });
+  }
 
   /** What this node read on its last run, as ids: the edges the core already holds. */
   const edges = (id: number, node: RNode): void => {

@@ -11,7 +11,8 @@
 export * from './graph/signal-next.js';
 
 // Watching nodes as they are made: what @fluixi/devtools attaches to.
-export { observeReactiveNodes, reportReactiveBinding, reportReactiveProps, reportReactiveDirective, reportReactiveContext, reportReactiveContextCreated } from './graph/observe.js';
+export { observeReactiveNodes, reportReactiveBinding, reportReactiveProps, reportReactiveDirective, reportReactiveContext, reportReactiveContextCreated, openReactiveScope, withReactiveScope, closeReactiveScope, adoptReactiveScope, markReactiveScope, reactiveScopeOf } from './graph/observe.js';
+export type { ReactiveScopeInfo, ReactiveScopeKind } from './graph/observe.js';
 // Which builds reached the shared graph. @fluixi/dom reports on it; a standalone web
 // component is the case where two of them can genuinely meet.
 export { joinedVersions } from './graph/state.js';

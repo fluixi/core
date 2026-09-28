@@ -63,8 +63,8 @@ const ABSOLUTE_MAX_ZOOM = 4000;
 /** Past this the pointer was panning, not clicking. */
 const DRAG_SLOP = 4;
 
-const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter', directive: 'n-directive', context: 'n-context', provider: 'n-provider' };
-const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets', directive: '⌘ directive', context: '◈ context', provider: '◈ provider' };
+const KIND_CLASS: Record<NodeKind, string> = { state: 'n-state', memo: 'n-memo', effect: 'n-effect', store: 'n-store', resource: 'n-resource', component: 'n-component', control: 'n-control', router: 'n-router', handler: 'n-handler', group: 'n-group', binding: 'n-binding', setter: 'n-setter', directive: 'n-directive', context: 'n-context', provider: 'n-provider', 'custom-element': 'n-custom-element', module: 'n-module', service: 'n-service' };
+const KIND_GLYPH: Record<NodeKind, string> = { state: '◆ state', memo: 'ƒ memo', effect: '⚡ effect', store: '▤ store', resource: '⟳ resource', component: '◧ component', control: '⑂ control flow', router: '⤳ router', handler: '⇄ route', group: '▤ framework', binding: '⇥ dom', setter: '✎ sets', directive: '⌘ directive', context: '◈ context', provider: '◈ provider', 'custom-element': '⬡ custom element', module: '▦ module', service: '⚙ service' };
 
 /** The card that stands for everything a dependency made and the application never touched. */
 const GROUP_ID = -1;
@@ -533,6 +533,9 @@ export function createGraphView(svg: SVGSVGElement, options: GraphViewOptions = 
 
   const machinery = (n: RNode): boolean => {
     if (n.authored !== false) return false;
+    // Inside an element, module or service the app declared: what it holds is the point of
+    // showing it, even when a package named the signal rather than the app.
+    if (n.scope !== undefined) return false;
     if (n.kind === 'state' || n.kind === 'memo' || n.kind === 'effect' || n.kind === 'context') {
       return true;
     }
@@ -1054,6 +1057,11 @@ ${kindRules((k) => `.fx-node.n-${k}`, '--glow')}
 .fx-node.n-binding { opacity: .72; }
 .fx-node.n-setter { opacity: .72; }
 .fx-node.n-binding .fx-box, .fx-node.n-setter .fx-box { stroke-dasharray: 3 3; }
+/* An element, module or service: a group its signals and memos belong to, so it reads as one. */
+.fx-node.n-custom-element .fx-box, .fx-node.n-module .fx-box, .fx-node.n-service .fx-box {
+  stroke-width: 2.2;
+  fill: color-mix(in oklab, var(--glow, #5eead4) 14%, var(--fx-node-bg, #131722));
+}
 .fx-node.n-external { opacity: .55; }
 .fx-node.n-external .fx-box { stroke-dasharray: 3 2; }
 .fx-box { fill: var(--fx-node-bg, #131722); stroke: var(--glow, #5eead4); stroke-width: 1.4; stroke-opacity: calc(.5 + var(--pulse,0) * .5); }

@@ -745,3 +745,20 @@ describe('which tags count as machinery', () => {
     expect(drawn).toContain('framework');
   });
 });
+
+describe('what an element, module or service holds', () => {
+  it('stays drawn, though a package named it rather than the app', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'service', label: 'AuthService', authored: true })],
+      // Named by the session package: without a scope this is machinery.
+      [1, node(1, { kind: 'state', label: 'user', authored: false, scope: 0, createdIn: 0 })],
+      [2, node(2, { kind: 'state', label: 'loose', authored: false })],
+    ]);
+    const view = createGraphView(svg);
+    view.update(graph);
+    const drawn = labels();
+    expect(drawn).toContain('AuthService');
+    expect(drawn).toContain('user');
+    expect(drawn).not.toContain('loose');
+  });
+});

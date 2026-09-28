@@ -24,6 +24,10 @@ export const TREE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
   // A component a plugin recognised as providing a context. Still a tag the author wrote,
   // so leaving it out took it and everything it rendered out of the tree.
   'provider',
+  // Scopes the runtime reported: what their signals and memos belong to.
+  'custom-element',
+  'module',
+  'service',
 ]);
 
 export interface TreeNode {

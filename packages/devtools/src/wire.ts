@@ -55,6 +55,8 @@ export interface WireNode {
   readonly usedAt?: ReactiveSourceLocation;
   /** The node whose run created this one. */
   readonly createdIn?: number;
+  /** The element, module or service scope this node belongs to. */
+  readonly scope?: number;
   /** How many dom bindings read it. */
   readonly bindings?: number;
   /** What those bindings write: the text of an `li`, the `class` of a `div`. */
@@ -140,6 +142,7 @@ export function serializeGraph(
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
       createdIn: node.createdIn,
+      scope: node.scope,
       bindings: node.bindings,
       targets: node.targets,
       setAt: node.setAt,
@@ -181,6 +184,7 @@ export function snapshotToRenderMap(snapshot: GraphSnapshot): Map<number, RNode>
       declaredAt: node.declaredAt,
       usedAt: node.usedAt,
       createdIn: node.createdIn,
+      scope: node.scope,
       bindings: node.bindings,
       targets: node.targets,
       setAt: node.setAt,

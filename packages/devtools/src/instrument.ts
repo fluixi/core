@@ -50,7 +50,16 @@ export type NodeKind =
   /** A component whose job is providing a context. */
   | 'provider'
   /** Not a node: a place in the code that sets a signal. */
-  | 'setter';
+  | 'setter'
+  /**
+   * A custom element instance: its props and everything its render made. Not `element`,
+   * which the component tree already uses for the DOM element rows it lists.
+   */
+  | 'custom-element'
+  /** An app module registered with `defineModule` / `defineApp`. */
+  | 'module'
+  /** A service a DI provider built, such as the auth service: its own signals and memos. */
+  | 'service';
 export type NodeState = 'clean' | 'check' | 'dirty';
 
 /**
@@ -106,6 +115,12 @@ export interface RNode {
   lastPulse: number;
   /** Live core node, when reachable. Gives the real version and state. */
   core?: { version?: number; state?: number } | null;
+  /**
+   * The element, module or service this node belongs to: the id of that scope's node. Set
+   * for what was created while the scope was open, and for the scope nodes themselves when
+   * they sit inside another (a service built by a module).
+   */
+  scope?: number;
   /** Where the author created this node, when the compiler said so. Always optional. */
   source?: ReactiveSourceLocation;
   /**

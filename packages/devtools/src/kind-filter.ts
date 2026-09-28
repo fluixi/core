@@ -12,11 +12,11 @@ import type { NodeKind } from './instrument.js';
 /** Every kind a graph can hold, in the order they are offered. */
 export const FILTERABLE_KINDS: readonly NodeKind[] = [
   'state', 'memo', 'effect', 'store', 'resource', 'component', 'provider', 'control', 'router', 'handler',
-  'context', 'directive',
+  'context', 'directive', 'custom-element', 'module', 'service',
 ];
 
-/** Only `handler` needs renaming; the other kinds read fine as they are. */
-const LABEL: Partial<Record<NodeKind, string>> = { handler: 'route' };
+/** Kinds whose name does not read as it is. */
+const LABEL: Partial<Record<NodeKind, string>> = { handler: 'route', 'custom-element': 'custom element' };
 
 export interface KindFilterOptions {
   /** Offered, in this order. Defaults to every kind a graph can hold. */
