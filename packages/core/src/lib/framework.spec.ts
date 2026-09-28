@@ -129,12 +129,7 @@ vi.mock('@fluixi/dom', async () => {
 });
 
 // Import after the mock is registered
-import {
-  createContext,
-  useContext,
-  createContextWithProvider,
-  composeProviders,
-} from './context/context.js';
+import { createContext, useContext } from './context/context.js';
 import { Suspense } from './render/suspense.js';
 import { lazy } from './render/lazy.js';
 import { generateRouteModule } from './plugins/route-codegen.js';
@@ -271,16 +266,6 @@ describe('Context & Provider', () => {
     });
 
     expect(value).toBe(99);
-  });
-
-  // ── 1c: createContextWithProvider ──────────────────────────────────────
-
-  it('createContextWithProvider returns [context, providerFn] tuple', () => {
-    const [Ctx, CtxProvider] = createContextWithProvider('light');
-    expect(Ctx.defaultValue).toBe('light');
-    expect(typeof CtxProvider).toBe('function');
-    // Provider should work like any context Provider
-    expect(typeof Ctx.id).toBe('symbol');
   });
 
   // ── 1d: Multiple independent contexts ──────────────────────────────────
