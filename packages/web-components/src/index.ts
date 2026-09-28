@@ -34,6 +34,7 @@ export { createDispatch } from './events.js';
 export type { Dispatch, DispatchInit } from './events.js';
 
 export { createTargets } from './targets.js';
+export type { ElementStyles } from './styles.js';
 export type { Targets } from './targets.js';
 
 // Typing an element for its consumers: HTMLElementTagNameMap and the JSX tag.

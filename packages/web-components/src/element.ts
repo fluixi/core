@@ -35,6 +35,7 @@ import {
 import { defineCustomElement, type DefineOptions } from './registry.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
+import { applyStyles, type ElementStyles } from './styles.js';
 import type { PropValues } from './types.js';
 
 export type ShadowOption = boolean | 'open' | 'closed';
@@ -132,8 +133,13 @@ export class HTMLReactiveElement extends BaseElement {
    * mode that survives a server render without declarative shadow DOM.
    */
   static shadow?: ShadowOption;
-  /** Added to the shadow root. Ignored in light DOM, which has no scope to add to. */
-  static styles?: string;
+  /**
+   * Adopted by the shadow root, one parsed sheet shared by every instance. CSS text, a
+   * `CSSStyleSheet`, or a list: `[super.styles, '…']` keeps the parent's. A class meant to be
+   * extended declares it as `static styles: ElementStyles = …`, since a bare string narrows
+   * the type and a subclass's list no longer fits. Ignored in light DOM, which has no scope.
+   */
+  static styles?: ElementStyles;
 
   /**
    * The attributes of every declared prop. A mixin in between that observes its own
@@ -311,11 +317,7 @@ export class HTMLReactiveElement extends BaseElement {
     if (shadow !== undefined && shadow !== false) {
       // A declarative shadow root may already be attached from a server render.
       this.#root = this.shadowRoot ?? this.attachShadow({ mode: shadow === true ? 'open' : shadow });
-      if (constructor.styles) {
-        const style = document.createElement('style');
-        style.textContent = constructor.styles;
-        this.#root.appendChild(style);
-      }
+      applyStyles(this.#root, constructor, constructor.styles);
     } else {
       // Light DOM: the author's children are the content. Take them out before anything
       // renders, so they survive and the component can place them.
@@ -411,8 +413,8 @@ export interface ElementOptions<S extends Schema> {
   props?: S;
   /** See `HTMLReactiveElement.shadow`. */
   shadow?: ShadowOption;
-  /** Added to the shadow root. Ignored in light DOM. */
-  styles?: string;
+  /** See `HTMLReactiveElement.styles`. */
+  styles?: ElementStyles;
   /** Passed through to `customElements.define`. */
   define?: DefineOptions;
   /**

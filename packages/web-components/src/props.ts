@@ -75,7 +75,12 @@ export const prop = {
   number: (initial = 0, options: PropOptions<number> = {}) =>
     declare<number>(
       initial,
-      (v) => (v === null || v.trim() === '' ? initial : Number(v)),
+      (v) => {
+        // Unparseable text keeps the initial value, as `object` does: NaN would pass every
+        // type check and then poison arithmetic downstream.
+        const n = v === null || v.trim() === '' ? NaN : Number(v);
+        return Number.isNaN(n) ? initial : n;
+      },
       (v) => String(v),
       options,
     ),
@@ -102,6 +107,33 @@ export const prop = {
         }
       },
       (v) => (v === undefined ? null : JSON.stringify(v)),
+      options,
+    ),
+
+  /**
+   * Your own conversion, for a type the built-ins don't cover: a date, a list, a unit.
+   *
+   * `fromAttribute` only sees a present attribute; removing it goes back to `initial`, so a
+   * converter never has to handle `null`. It may return `initial` for text it can't read.
+   * `toAttribute` is needed only to reflect, and returning `null` removes the attribute.
+   *
+   * @example
+   * ```ts
+   * due: prop.custom(new Date(0), {
+   *   fromAttribute: (v) => new Date(v),
+   *   toAttribute: (d) => d.toISOString(),
+   * }, { equals: (a, b) => a.getTime() === b.getTime() }),
+   * ```
+   */
+  custom: <T>(
+    initial: T,
+    converter: { fromAttribute: (value: string) => T; toAttribute?: (value: T) => string | null },
+    options: PropOptions<T> = {},
+  ) =>
+    declare<T>(
+      initial,
+      (v) => (v === null ? initial : converter.fromAttribute(v)),
+      converter.toAttribute ?? ((v) => (v == null ? null : String(v))),
       options,
     ),
 
