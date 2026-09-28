@@ -86,7 +86,9 @@ export namespace JSX {
   // Intrinsic Elements
   // ============================================================================
 
-  export interface IntrinsicElements extends A.IntrinsicElements {}
+  // The namespace an app actually compiles against, through `jsxImportSource`. Without the
+  // custom-element map here a declared element's props and events were never typed.
+  export interface IntrinsicElements extends A.IntrinsicElements, JSXCustomElements {}
 
   export interface ElementChildrenAttribute {
     children: {};
@@ -110,11 +112,10 @@ export namespace JSX {
  * }
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface JSXCustomElements {}
-
 declare global {
-  // Declared globally so an app augments it without importing anything.
+  // Declared globally so an app augments it without importing anything. Not also exported
+  // from this module: inside it, a local interface of the same name would shadow the global
+  // one, and the exported JSX namespace below would read the empty local copy.
   // eslint-disable-next-line @typescript-eslint/no-empty-interface
   interface JSXCustomElements {}
 

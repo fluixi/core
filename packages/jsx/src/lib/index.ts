@@ -205,7 +205,6 @@ export function hydrate(element: JSX.Element, container: Element): () => void {
 // ============================================================================
 
 export type {JSX} from './jsx.d.js';
-export type {JSXCustomElements} from './jsx.d.js';
 
 // ============================================================================
 // Default Export
