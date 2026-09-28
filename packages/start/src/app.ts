@@ -20,7 +20,8 @@
  * injector: a singleton in the browser, one per request on the server. Scoping below the
  * root is what `provide()` in a component is for.
  */
-import type { Provider } from './di.js';
+import { setModuleScope, type Provider } from './di.js';
+import { adoptReactiveScope, openReactiveScope, reactiveScopeOf, withReactiveScope } from '@fluixi/reactive/signal';
 import type { Middleware } from './middleware.js';
 
 const MODULE = Symbol.for('fluixi.module');
@@ -85,10 +86,23 @@ export function collectApp(configs: ReadonlyArray<unknown>): CollectedApp {
       throw new Error(`[fluixi/app] module import cycle: ${cycle}`);
     }
     path.push(mod);
-    for (const dep of mod.imports ?? []) visit(dep, `module "${mod.name}"`);
+    // Opened before its imports are visited, so a module a devtools graph draws holds the
+    // modules it imports. A module imported twice sits under the first that reached it.
+    const scope = openReactiveScope({ kind: 'module', name: mod.name });
+    withReactiveScope(scope, () => {
+      for (const dep of mod.imports ?? []) visit(dep, `module "${mod.name}"`);
+    });
     path.pop();
     done.add(mod);
     out.modules.push(mod.name);
+    for (const provider of mod.providers ?? []) {
+      setModuleScope(provider, scope);
+      // A value built elsewhere, often at import time, whose package opened a scope for it
+      // and marked it. Placed at registration: an app that imports the instance directly
+      // never asks the injector for it.
+      const own = 'useValue' in provider ? reactiveScopeOf(provider.useValue) : undefined;
+      if (own) adoptReactiveScope(own, scope);
+    }
     out.providers.push(...(mod.providers ?? []));
     if (mod.middleware?.length) {
       out.middleware.push(...mod.middleware);

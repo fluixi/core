@@ -16,7 +16,14 @@
  * out (@fluixi/dom runtime.ts), which for a light-DOM element would delete the author's own
  * children before the component ever saw them.
  */
-import { effect, root, type Accessor } from '@fluixi/reactive/signal';
+import {
+  closeReactiveScope,
+  effect,
+  openReactiveScope,
+  root,
+  withReactiveScope,
+  type Accessor,
+} from '@fluixi/reactive/signal';
 import { insert, isServer } from '@fluixi/dom';
 import {
   createPropStates,
@@ -131,6 +138,11 @@ export class HTMLReactiveElement extends BaseElement {
   /** Suppresses the attribute callback a reflect triggers, so it does not loop. */
   #reflecting = new Set<string>();
   #internals: ElementInternals | null = null;
+  /**
+   * What the devtools graph groups this element's signals under. Opened when the element
+   * first needs one, closed when it is really removed.
+   */
+  #scope: object | null = null;
   #targets: Targets | null = null;
   #dispatch: Dispatch | null = null;
 
@@ -226,7 +238,13 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   #states(): Record<string, PropState<unknown>> {
-    return (this.#statesCache ??= createPropStates(schemaOf(this.constructor)));
+    return (this.#statesCache ??= withReactiveScope(this.#reactiveScope(), () =>
+      createPropStates(schemaOf(this.constructor)),
+    ));
+  }
+
+  #reactiveScope(): object {
+    return (this.#scope ??= openReactiveScope({ kind: 'element', name: `<${this.localName}>`, target: this }));
   }
 
   #adoptOwnProps(warn = false): void {
@@ -265,12 +283,14 @@ export class HTMLReactiveElement extends BaseElement {
       this.#root = this;
     }
 
-    root((dispose) => {
-      this.#dispose = dispose;
-      // Reflects live in the same scope as the content, so they stop when it does.
-      this.#startReflecting();
-      insert(this.#root as unknown as Element, this.render() as never);
-    });
+    withReactiveScope(this.#reactiveScope(), () =>
+      root((dispose) => {
+        this.#dispose = dispose;
+        // Reflects live in the same scope as the content, so they stop when it does.
+        this.#startReflecting();
+        insert(this.#root as unknown as Element, this.render() as never);
+      }),
+    );
   }
 
   #startReflecting(): void {
@@ -294,6 +314,8 @@ export class HTMLReactiveElement extends BaseElement {
     this.#dispose?.();
     this.#dispose = null;
     this.#built = false;
+    if (this.#scope) closeReactiveScope(this.#scope);
+    this.#scope = null;
     // The rendered content goes with the scope. Light children were taken out at build time
     // and are put back, so the element reads as it was authored.
     if (this.#root === this) {

@@ -12,6 +12,7 @@
  * exchange and the redirect itself is a separate call that never returns. Everything
  * else lines up directly: `fetchUser`, `refresh`, `logout` and `getExpiry`.
  */
+import { markReactiveScope, openReactiveScope, withReactiveScope } from '@fluixi/reactive/signal';
 import { createSession, type AccessControl, type Session } from '@fluixi/session';
 import { createAuthHooks, type AuthHooksOptions } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
@@ -124,6 +125,17 @@ function clientFor(options: Pick<AuthServiceOptions<unknown>, 'client' | 'config
 export function createAuthService<U, P = unknown, Q = (p: P) => boolean>(
   options: AuthServiceOptions<U, P, Q>,
 ): AuthService<U, P, Q> {
+  // One group in the devtools graph for everything the service holds: the session's `user`,
+  // `token`, `status` and the rest. Marked on the instance, so `authModule(auth)` places the
+  // group under the module that provides it.
+  const tokens = (options.config as { tokens?: string }).tokens;
+  const scope = openReactiveScope({ kind: 'service', name: 'AuthService', ...(tokens ? { detail: `tokens: ${tokens}` } : {}) });
+  const service = withReactiveScope(scope, () => buildAuthService(options));
+  markReactiveScope(service, scope);
+  return service;
+}
+
+function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthService<U, P, Q> {
   const client = clientFor(options);
   // Held so `getExpiry` can answer for a token the session hands back, and so a
   // server-mode session has something to report when the token is a cookie.

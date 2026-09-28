@@ -86,7 +86,7 @@ export function createIsomorphicState<T>(
         ? options.client()
         : options.fallback;
 
-  const [value, set] = createSignal<T | undefined>(initial);
+  const [value, set] = createSignal<T | undefined>(initial, { name: key });
   registry().set(key, { server: options.server, set: set as (v: any) => void });
 
   return { value, set: set as (v: T | undefined) => void, key };
@@ -188,7 +188,8 @@ export function createIsomorphicStore<T extends Record<string, any>>(
 
   const fields = {} as { [K in keyof T]: Accessor<T[K]> };
   for (const k of Object.keys(options.fallback) as (keyof T)[]) {
-    fields[k] = createMemo(() => value()[k]);
+    // Named for the devtools graph: `auth.user` rather than an anonymous memo.
+    fields[k] = createMemo(() => value()[k], undefined, { name: `${key}.${String(k)}` });
   }
 
   let initPromise: Promise<void> | null = null;

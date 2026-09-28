@@ -124,7 +124,8 @@ export function createPropStates(
 ): Record<string, PropState<unknown>> {
   const states: Record<string, PropState<unknown>> = {};
   for (const [name, declaration] of Object.entries(schema)) {
-    const value = signal(declaration.initial, { equals: declaration.equals });
+    // Named, so the devtools graph shows `step` rather than an anonymous signal.
+    const value = signal(declaration.initial, { equals: declaration.equals, name });
     states[name] = {
       read: value,
       // `.set` reads a function argument as an updater and calls it. A property holding

@@ -1009,6 +1009,9 @@ importers:
       '@fluixi/head':
         specifier: workspace:*
         version: link:../head
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@fluixi/server':
         specifier: workspace:*
         version: link:../server

@@ -234,18 +234,18 @@ export function createSession<
     }
   };
 
-  const [user, setUser] = createSignal<U | null>(readUser());
-  const [token, setTokenSig] = createSignal<string | null>(storage.getItem(TOKEN_KEY));
-  const [isLoading, setLoading] = createSignal(false);
-  const [error, setError] = createSignal<unknown | null>(null);
-  const [expired, setExpired] = createSignal(false);
+  const [user, setUser] = createSignal<U | null>(readUser(), { name: 'user' });
+  const [token, setTokenSig] = createSignal<string | null>(storage.getItem(TOKEN_KEY), { name: 'token' });
+  const [isLoading, setLoading] = createSignal(false, { name: 'isLoading' });
+  const [error, setError] = createSignal<unknown | null>(null, { name: 'error' });
+  const [expired, setExpired] = createSignal(false, { name: 'expired' });
 
   // ── Derived access control ──────────────────────────────────────────────────
   const roles = createMemo<Role[]>(() => {
     const r = access?.getRole?.(user());
     if (r == null) return [];
     return Array.isArray(r) ? r : [r];
-  });
+  }, undefined, { name: 'roles' });
   const permissions = createMemo<P | undefined>(() => {
     if (!access) return undefined;
     const rs = roles();
@@ -257,7 +257,7 @@ export function createSession<
     if (sets.length === 0) return access.guest;
     if (sets.length === 1) return sets[0];
     return access.merge ? access.merge(sets) : sets[sets.length - 1];
-  });
+  }, undefined, { name: 'permissions' });
   // Default matcher: the query IS a predicate. A custom `match` swaps in declarative queries.
   const matcher =
     access?.match ??
@@ -272,7 +272,7 @@ export function createSession<
     if (expired()) return 'expired';
     if (error()) return 'error';
     return token() ? 'authenticated' : 'idle';
-  });
+  }, undefined, { name: 'status' });
 
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 

@@ -3,6 +3,7 @@
   "files": [],
   "include": [],
   "references": [
+    { "path": "../reactive" },
     {
       "path": "../vite-plugin"
     },

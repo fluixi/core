@@ -28,6 +28,7 @@
  */
 import { getOwner, onCleanup } from '@fluixi/core';
 import { getRequestContext } from '@fluixi/dom';
+import { openReactiveScope, withReactiveScope } from '@fluixi/reactive/signal';
 
 // ── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,17 @@ interface Rec {
   built: boolean;
   building: boolean;
   value: unknown;
+}
+
+/**
+ * The module each provider was declared by, for the devtools graph. Filled by `collectApp`;
+ * a provider handed to `provide()` directly has none.
+ */
+const moduleScopes = new WeakMap<object, object>();
+
+/** Record which module scope `provider` came from. */
+export function setModuleScope(provider: Provider, scope: object): void {
+  moduleScopes.set(provider as object, scope);
 }
 
 export class Injector {
@@ -88,6 +100,13 @@ export class Injector {
 
   #build<T>(token: Token<T>, rec: Rec): T {
     if (rec.built) return rec.value as T;
+    const module = moduleScopes.get(rec.provider as object);
+    // In the devtools graph a service groups what it created, under the module providing it.
+    return module ? withReactiveScope(module, () => this.#buildIn(token, rec)) : this.#buildIn(token, rec);
+  }
+
+  #buildIn<T>(token: Token<T>, rec: Rec): T {
+    if (rec.built) return rec.value as T;
     if (rec.building) throw new Error(`[fluixi/di] Circular dependency while resolving "${token.name}".`);
     rec.building = true;
     const p = rec.provider as any;
@@ -96,7 +115,8 @@ export class Injector {
       else if ('useExisting' in p) rec.value = this.get(p.useExisting);
       else {
         const deps = (p.deps ?? []).map((d: Token<any>) => this.get(d)); // deps resolve from where the provider lives
-        rec.value = 'useClass' in p ? new p.useClass(...deps) : p.useFactory(...deps);
+        const scope = openReactiveScope({ kind: 'service', name: token.name, detail: 'useClass' in p ? 'useClass' : 'useFactory' });
+        rec.value = withReactiveScope(scope, () => ('useClass' in p ? new p.useClass(...deps) : p.useFactory(...deps)));
       }
     } finally {
       rec.building = false;
