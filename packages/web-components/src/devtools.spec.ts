@@ -41,8 +41,8 @@ describe('an element under devtools', () => {
   });
 
   it('names a function-form element class after its tag', async () => {
-    const { customElement } = await import('./index.js');
-    const ctor = customElement('fx-tag-named', () => null);
+    const { defineElement } = await import('./index.js');
+    const ctor = defineElement('fx-tag-named', () => null);
     expect(ctor.name).toBe('FxTagNamed');
   });
 });

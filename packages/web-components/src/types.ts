@@ -12,7 +12,7 @@
  * @example
  * ```ts
  * const schema = { step: prop.number(1) };
- * export const MyCounter = customElement('my-counter', setup, { props: schema });
+ * export const MyCounter = defineElement('my-counter', setup, { props: schema });
  *
  * declare global {
  *   interface HTMLElementTagNameMap {
