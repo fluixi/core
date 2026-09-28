@@ -361,7 +361,7 @@ export function createInspector(host: HTMLElement, options: InspectorOptions = {
         // A component is created where its tag is written; where it is declared is somewhere
         // else, and only worth a line when it is.
         (node.declaredAt && at(node.declaredAt, root) !== at(node.source, root)
-          ? `<div class="ins-source">◧ declared ${place(at(node.declaredAt, root), node.declaredAt, reveals)}</div>`
+          ? `<div class="ins-source">◧ ${node.kind === 'custom-element' ? 'defined at' : 'declared'} ${place(at(node.declaredAt, root), node.declaredAt, reveals)}</div>`
           : '') +
         // A node a package made on the application's behalf: the package's line is where it
         // was created, and this is the line that asked for it.

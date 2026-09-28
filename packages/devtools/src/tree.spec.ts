@@ -87,6 +87,16 @@ describe('the tree the nodes make', () => {
     expect(idsIn(componentTree(graph, { values: true }))).toContain(7);
   });
 
+  it('lists the state a scope holds with values on, though the framework made it', () => {
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'custom-element', label: '<fx-counter>' })],
+      [1, node(1, { kind: 'state', label: 'step', createdIn: 0, scope: 0, authored: false })],
+      [2, node(2, { kind: 'effect', label: 'reflect step', createdIn: 0, scope: 0, authored: false })],
+    ]);
+    const [root] = componentTree(graph, { values: true });
+    expect(root?.children.map((c) => c.label)).toEqual(['step']);
+  });
+
   it('leaves machinery out even with values on', () => {
     // m2 is the memo the compiler wrapped Counter in, which nobody wrote.
     const graph = app();
@@ -269,6 +279,27 @@ describe('the dom a tag rendered', () => {
       '<small />',
       '<Another />',
     ]);
+  });
+
+  it('draws a custom element once: its scope row stands for the element', () => {
+    const el = document.createElement('fx-counter');
+    el.innerHTML = '<div class="counter"><output>0</output><button>+</button></div>';
+    const section = document.createElement('section');
+    section.append(el);
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App' })],
+      [1, node(1, { kind: 'custom-element', label: '<fx-counter>', createdIn: 0, scope: undefined })],
+    ]);
+    tree = createComponentTree(host, {
+      domFor: domOf({ 0: [section], 1: [el] }, graph),
+      onHover: (_id, element) => hovered.push(element),
+    });
+    tree.render(graph);
+    expect(labels()).toEqual(['<App>', '<section>', '<fx-counter>', '<div.counter>', '<output />', '<button />']);
+
+    const row = host.querySelector('.fx-tree-row[data-id="1"]')!;
+    row.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    expect(hovered).toContain(el);
   });
 
   it('draws tags only when the host cannot reach the page', () => {

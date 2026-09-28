@@ -232,6 +232,26 @@ describe('opening a location', () => {
     expect(files).toEqual(['src/App.tsx', 'src/Row.tsx', 'src/main.tsx']);
   });
 
+  it('says where a custom element is defined and where its tag is used', () => {
+    withReveal().show(
+      new Map([
+        [
+          0,
+          node(0, {
+            kind: 'custom-element',
+            label: '<fx-counter>',
+            declaredAt: { file: 'src/elements/counter.ts', line: 28, column: 7 },
+            usedAt: { file: 'src/app.tsx', line: 32, column: 8 },
+          }),
+        ],
+      ]),
+      0,
+    );
+    const lines = [...host.querySelectorAll('.ins-source')].map((l) => l.textContent ?? '');
+    expect(lines[0]).toMatch(/^◧ defined at src\/elements\/counter\.ts:28/);
+    expect(lines[1]).toMatch(/^↗ used at src\/app\.tsx:32/);
+  });
+
   it('offers where a value reaches the document', () => {
     withReveal().show(
       new Map([

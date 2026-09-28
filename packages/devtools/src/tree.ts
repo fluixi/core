@@ -150,8 +150,12 @@ function badgeOf(node: RNode): string | undefined {
 }
 
 export function componentTree(graph: Map<number, RNode>, options: TreeOptions = {}): TreeNode[] {
+  // A scope's state counts as the author's even though the framework made it: an element's
+  // `step` is the prop the author declared, which is what the values list is for.
+  const held = (node: RNode): boolean =>
+    node.scope !== undefined && (node.kind === 'state' || node.kind === 'memo' || node.kind === 'store');
   const wanted = (node: RNode): boolean =>
-    TREE_KINDS.has(node.kind) || (options.values === true && node.authored !== false);
+    TREE_KINDS.has(node.kind) || (options.values === true && (node.authored !== false || held(node)));
 
   const tagged = inPageOrder([...graph.values()].filter(wanted).sort((a, b) => a.id - b.id));
 
@@ -478,7 +482,8 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
 
       const row: Row = {
         key: String(node.id),
-        label: node.label,
+        // `<fx-counter>` in the graph, where nothing else draws brackets. Here the row adds them.
+        label: node.kind === 'custom-element' ? node.label.replace(/^<(.*)>$/, '$1') : node.label,
         kind: node.kind,
         id: node.id,
         children: [...props, ...node.children.map(build)],
@@ -639,6 +644,15 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       const rendered = dom
         .map((node, i) => walk(node, `${row.id}:${i}`))
         .filter((node): node is Row => node !== undefined);
+      // A custom element's scope and the element are the same thing: the scope's dom is the
+      // element itself. Drawn as given, that is `<fx-counter>` holding `<fx-counter>`, so the
+      // scope row takes the element's place and its children.
+      const self = rendered[0];
+      if (row.kind === 'custom-element' && rendered.length === 1 && self?.kind === 'element') {
+        rendered.splice(0, 1, ...self.children);
+        if (self.element) row.element = self.element;
+        if (self.at) row.at = self.at;
+      }
       // Anything the dom did not account for: a portal, or a value read across a tag
       // boundary rather than written into an element here.
       //

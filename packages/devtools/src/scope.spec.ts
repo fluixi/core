@@ -13,6 +13,7 @@ import {
   closeReactiveScope,
 } from '@fluixi/reactive/signal';
 import { observeGraph, type ObservedGraph } from './observe.js';
+import { markClassSource, markReactiveSource } from './source.js';
 import { serializeGraph, snapshotToRenderMap } from './wire.js';
 
 let observed: ObservedGraph | undefined;
@@ -88,6 +89,8 @@ describe('scopes in the graph', () => {
 
     closeReactiveScope(scope);
     expect(byLabel(observed, 'Mailer')).toBeUndefined();
+    // Its signal had no owner to dispose it; it goes with the scope rather than floating.
+    expect(byLabel(observed, 'queued')).toBeUndefined();
   });
 
   it('gives no source for a scope opened from a bundler virtual module', async () => {
@@ -103,5 +106,46 @@ describe('scopes in the graph', () => {
     const mod = byLabel(observed, 'app')!;
     expect(mod.usedAt).toBeUndefined();
     expect(mod.source).toBeUndefined();
+  });
+
+  it('puts a class field signal in its element scope once the scope opens', () => {
+    observed = observeGraph();
+    const el = document.body.appendChild(document.createElement('fx-field'));
+    // What the compiler emits for `#count = signal(0)`: the mark carries the instance.
+    markReactiveSource('src/field.ts', 3, 11, 'count', el);
+    createSignal(0);
+    const scope = openReactiveScope({ kind: 'element', name: '<fx-field>', target: el });
+    withReactiveScope(scope, () => createSignal(1, { name: 'step' }));
+    observed.sample();
+
+    const element = byLabel(observed, '<fx-field>')!;
+    const count = byLabel(observed, 'count')!;
+    const step = byLabel(observed, 'step')!;
+    expect(count.scope).toBe(element.id);
+    expect(count.createdIn).toBe(element.id);
+    expect(count.source).toMatchObject({ file: 'src/field.ts', line: 3 });
+    // The prop made inside the scope does not claim the field's line.
+    expect(step.scope).toBe(element.id);
+    expect(step.source).toBeUndefined();
+  });
+
+  it('says where an element class is declared and, separately, where its tag is written', () => {
+    observed = observeGraph();
+    class FxWhere extends HTMLElement {}
+    // What the compiler emits in the class's static block.
+    markClassSource(FxWhere, 'src/elements/where.ts', 4, 0);
+    customElements.define('fx-where-' + Math.random().toString(36).slice(2), FxWhere);
+    const el = document.body.appendChild(new FxWhere());
+    const scope = openReactiveScope({ kind: 'element', name: '<fx-where>', target: el });
+    observed.sample();
+    expect(byLabel(observed, '<fx-where>')!.declaredAt).toEqual({ file: 'src/elements/where.ts', line: 4, column: 0 });
+    // Nothing has written the tag yet.
+    expect(byLabel(observed, '<fx-where>')!.usedAt).toBeUndefined();
+
+    // What the runtime stamps when a template makes or hydrates the element.
+    (el as unknown as { __fx_loc: unknown }).__fx_loc = { file: 'src/app.tsx', line: 32, column: 8 };
+    observed.sample();
+    expect(byLabel(observed, '<fx-where>')!.usedAt).toEqual({ file: 'src/app.tsx', line: 32, column: 8 });
+    closeReactiveScope(scope);
   });
 });

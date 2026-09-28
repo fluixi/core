@@ -14,7 +14,7 @@ import {
   type ReactiveNodeReport,
   type ReactiveObserver,
 } from '@fluixi/reactive/signal';
-import { componentSource, holeLocation, installSourceMarker, propsLocations, takeReactiveSource } from './source.js';
+import { classSource, componentSource, dropReactiveSource, holeLocation, installSourceMarker, propsLocations, takeReactiveSource } from './source.js';
 import { currentCallSite } from './callsite.js';
 import { KIND_OF_BUILTIN, type DomTarget, type NodeKind, type PropReport, type RNode } from './instrument.js';
 import type { ReactiveSourceLocation } from './source.js';
@@ -285,6 +285,10 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const SCOPE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>(['custom-element', 'module', 'service']);
   /** Each open scope's node, by the identity the runtime handed over. */
   const scopeIds = new WeakMap<object, number>();
+  /** The open scope standing for an object, an element, by that object. */
+  const scopeOfTarget = new WeakMap<object, number>();
+  /** Nodes a class field made, by the instance: they join its scope when it opens. */
+  const fieldsOf = new WeakMap<object, number[]>();
   /** Cleared on each sample: the page has moved on. */
   let described: Map<number, DomNode[]> | null = null;
   /**
@@ -447,7 +451,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         // Mapped, unlike `mark`: these two came off a stack, so they are positions in the
         // compiled file until a host translates them.
         ...(site && !site.external ? { usedAt: mapped(site.location) } : {}),
-        ...(site && site.external && !mark?.location ? { source: mapped(site.location) } : {}),
+        // Not inside a scope: an element's prop is made by the package for the element, and
+        // the package's line says less than the scope it sits in already does.
+        ...(site && site.external && !mark?.location && !report.scope ? { source: mapped(site.location) } : {}),
       };
       const owner = ancestor(report.parents);
       if (owner !== undefined) node.createdIn = owner;
@@ -474,6 +480,19 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         const creator = graph.get(node.createdIn);
         const inherited = creator && SCOPE_KINDS.has(creator.kind) ? creator.id : creator?.scope;
         if (inherited !== undefined) node.scope = inherited;
+      }
+      // A class field: made in the constructor, before the element opened its scope. It belongs
+      // to the instance, so it goes in that scope now if it is open, or when it opens.
+      const self = mark?.self;
+      if (self) {
+        const list = fieldsOf.get(self);
+        if (list) list.push(id);
+        else fieldsOf.set(self, [id]);
+        const open = scopeOfTarget.get(self);
+        if (open !== undefined && graph.has(open)) {
+          node.scope = open;
+          node.createdIn = open;
+        }
       }
       // An effect returns nothing worth showing, so it has no reader and pulses on its runs.
       if (kind !== 'effect' && typeof handle === 'function') {
@@ -643,6 +662,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       forget(id);
     },
     scope(scope, info, parent) {
+      // Whatever mark is pending was left by the code around this scope, not by what it makes.
+      dropReactiveSource();
       const id = seq++;
       const kind: NodeKind = info.kind === 'element' ? 'custom-element' : info.kind;
       const parentId = parent ? scopeIds.get(parent) : undefined;
@@ -663,21 +684,52 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         lastPulse: 0,
         ...(info.detail ? { value: info.detail, detail: info.detail } : {}),
         ...(parentId !== undefined ? { scope: parentId, createdIn: parentId } : {}),
-        // Only the app's own line: a package's is where the package opened the scope for it,
-        // which says nothing about this element, module or service.
-        ...(site && !site.external ? { usedAt: mapped(site.location) } : {}),
       };
-      scopeIds.set(scope, id);
       const target = info.target as Element | undefined;
+      if (kind === 'custom-element') {
+        // The stack here is whatever connected it, often the `define` that upgraded it, so it
+        // says nothing about where the tag is written: that comes off the element at sample.
+        // Where it is defined is the class declaration, which the compiler marked.
+        const defined = target ? classSource(target.constructor) : undefined;
+        if (defined) node.declaredAt = defined;
+      } else if (site && !site.external) {
+        // Only the app's own line: a package's is where the package opened the scope for it,
+        // which says nothing about this module or service.
+        node.usedAt = mapped(site.location);
+      }
+      scopeIds.set(scope, id);
       if (target && typeof target === 'object' && (target as Node).nodeType === 1) {
         rendered.set(id, [new WeakRef(target)]);
       }
       graph.set(id, node);
       history.created(id, node.createdIn, node.label);
+      if (target && typeof target === 'object') {
+        scopeOfTarget.set(target, id);
+        for (const field of fieldsOf.get(target) ?? []) {
+          const made = graph.get(field);
+          if (!made) continue;
+          made.scope = id;
+          made.createdIn = id;
+          revs.set(field, ++revision);
+        }
+      }
     },
     scopeEnded(scope) {
       const id = scopeIds.get(scope);
-      if (id !== undefined) forget(id);
+      if (id === undefined) return;
+      // What it made goes with it. An element's prop signals have no owner to dispose them,
+      // so they outlived the element as cards pointing at a scope that no longer existed.
+      const ended = new Set<number>([id]);
+      for (let grew = true; grew; ) {
+        grew = false;
+        for (const [other, node] of graph) {
+          if (!ended.has(other) && node.scope !== undefined && ended.has(node.scope)) {
+            ended.add(other);
+            grew = true;
+          }
+        }
+      }
+      for (const gone of ended) forget(gone);
     },
     scopeAdopted(scope, parent) {
       const node = graph.get(scopeIds.get(scope) ?? -1);
@@ -728,6 +780,19 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
         revs.set(id, ++revision);
       };
       const now = Date.now();
+
+      // Where each custom element's tag is written. Stamped by the runtime when the template
+      // makes or hydrates it, which can be after its scope opened: an element the server
+      // rendered upgrades on import, before hydration gets to it.
+      for (const [id, node] of graph) {
+        if (node.kind !== 'custom-element' || node.usedAt) continue;
+        const element = rendered.get(id)?.[0]?.deref();
+        const written = element ? (element as unknown as Record<string, ReactiveSourceLocation | undefined>).__fx_loc : undefined;
+        if (!written?.file) continue;
+        node.usedAt = { file: written.file, line: written.line, column: written.column };
+        // A new revision without counting as a change: nothing ran, so nothing should pulse.
+        revs.set(id, ++revision);
+      }
 
       // What the dom reads, per node. Recounted rather than kept: a binding's sources change
       // with every run, and a stale count is worse than none.

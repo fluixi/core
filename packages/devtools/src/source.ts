@@ -36,11 +36,17 @@ export interface ReactiveSourceLocation {
 export interface ReactiveSourceMetadata {
   name?: string;
   location?: ReactiveSourceLocation;
+  /**
+   * The instance a class field belongs to. A field initializer runs in the constructor, before
+   * a custom element has opened its scope, so this is what ties `#count = signal(0)` to it.
+   */
+  self?: object;
 }
 
 /** Kept in step with SOURCE_MARKER and COMPONENT_MARKER in the compiler. */
 const MARKER = '__fx_source';
 const COMPONENT_MARKER = '__fx_component';
+const CLASS_MARKER = '__fx_class';
 const HOLE_MARKER = '__fx_hole';
 const PROPS_MARKER = '__fx_props';
 
@@ -57,6 +63,8 @@ interface SharedMarks {
   pending: ReactiveSourceMetadata | null;
   expiring: boolean;
   components: Map<string, ReactiveSourceLocation | null>;
+  /** Where each subclass was declared, by the class. Absent in a copy older than it. */
+  classes?: WeakMap<object, ReactiveSourceLocation>;
 }
 
 const MARKS = '__FLUIXI_DEVTOOLS_MARKS__';
@@ -67,6 +75,7 @@ const shared: SharedMarks = (host[MARKS] as SharedMarks | undefined) ?? {
   components: new Map(),
 };
 host[MARKS] = shared;
+shared.classes ??= new WeakMap();
 
 /**
  * Where each component was declared, by name.
@@ -82,14 +91,23 @@ host[MARKS] = shared;
  * Record where the next node is about to be created. The compiler calls this; call it
  * yourself only for a node the compiler cannot see, immediately before the primitive.
  */
-export function markReactiveSource(file?: string, line?: number, column?: number, name?: string): void {
+export function markReactiveSource(file?: string, line?: number, column?: number, name?: string, self?: object): void {
   const location = locate(file, line, column);
   // With dependencies marked, `signal()` in the framework marks its own `createSignal` line
   // in between the application's mark and the node it asked for. The call site is the useful
   // location, so a dependency never takes a mark the project has already left unclaimed.
   if (shared.pending && location.external && !shared.pending.location?.external) return;
-  shared.pending = { name, location };
+  shared.pending = self && typeof self === 'object' ? { name, location, self } : { name, location };
   shared.expiring = false;
+}
+
+/**
+ * Forget the mark. A scope opening is the end of whatever statement left it: an element's
+ * props are made in its own scope, and without this they claimed the line of the last class
+ * field or effect the same turn happened to run.
+ */
+export function dropReactiveSource(): void {
+  shared.pending = null;
 }
 
 /**
@@ -113,6 +131,16 @@ export function markComponentSource(name: string, file?: string, line?: number, 
   if (!seen || seen.file !== file || seen.line !== line) shared.components.set(name, null);
 }
 
+/** Record where a class was declared. The compiler calls this from the class's static block. */
+export function markClassSource(constructor: unknown, file?: string, line?: number, column?: number): void {
+  if (typeof constructor === 'function') shared.classes!.set(constructor, locate(file, line, column));
+}
+
+/** Where a class was declared, when the compiler marked it: a custom element's definition. */
+export function classSource(constructor: unknown): ReactiveSourceLocation | undefined {
+  return typeof constructor === 'function' ? shared.classes!.get(constructor) : undefined;
+}
+
 /** Where a component of this name was declared, when exactly one was. */
 export function componentSource(name: string): ReactiveSourceLocation | undefined {
   return shared.components.get(name) ?? undefined;
@@ -131,7 +159,8 @@ export function takeReactiveSource(): ReactiveSourceMetadata | null {
   if (mark) {
     // The variable name belongs to the node the author was declaring, not to the ones the
     // framework built underneath it: `cart`, then two unnamed signals at the same line.
-    if (mark.name !== undefined) shared.pending = { location: mark.location };
+    // The instance goes with the name: it says whose field this one node is.
+    if (mark.name !== undefined || mark.self) shared.pending = { location: mark.location };
     if (!shared.expiring) {
       shared.expiring = true;
       queueMicrotask(() => {
@@ -201,6 +230,7 @@ export function holeLocation(accessor: unknown): ReactiveSourceLocation | undefi
 export function installSourceMarker(): void {
   if (typeof host[MARKER] !== 'function') host[MARKER] = markReactiveSource;
   if (typeof host[COMPONENT_MARKER] !== 'function') host[COMPONENT_MARKER] = markComponentSource;
+  if (typeof host[CLASS_MARKER] !== 'function') host[CLASS_MARKER] = markClassSource;
   if (typeof host[HOLE_MARKER] !== 'function') host[HOLE_MARKER] = markHole;
   if (typeof host[PROPS_MARKER] !== 'function') host[PROPS_MARKER] = markProps;
 }
