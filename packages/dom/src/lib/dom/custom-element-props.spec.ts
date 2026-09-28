@@ -106,3 +106,24 @@ describe('a plain element is unaffected', () => {
     expect(el.value).toBe('typed');
   });
 });
+
+describe('a custom element rendered on the server', () => {
+  it('keeps primitive props as attributes, and leaves the rest for the client', async () => {
+    const { renderToString } = await import('./server/render.js');
+    const { createNativeElement: create, spread: apply } = await import('./runtime.js');
+    const user = { name: 'ada' };
+    const html = renderToString(() => {
+      const el = create('fx-server-counter');
+      apply({ element: el, props: { step: 2, label: 'Clicks', open: true, hidden: false, user, count: () => 5 } });
+      return el;
+    });
+    expect(html).toContain('step="2"');
+    expect(html).toContain('label="Clicks"');
+    expect(html).toContain('count="5"');
+    expect(html).toMatch(/\sopen(=""|\s|>)/);
+    expect(html).not.toContain('hidden');
+    // An object has no attribute form: hydration assigns it as a property.
+    expect(html).not.toContain('user');
+    expect(html).not.toContain('[object Object]');
+  });
+});

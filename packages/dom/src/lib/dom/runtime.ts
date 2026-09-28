@@ -15,7 +15,7 @@
 import  {
   isSignal,
 } from '@fluixi/reactive/signal';
-import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, SVG_NAMESPACE } from './utils.js';
+import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, serverCustomElementProp, SVG_NAMESPACE } from './utils.js';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
@@ -1555,6 +1555,17 @@ export function spread(options: SpreadOptions): () => void {
       JSX_PROPERTIES.has(key) ||
       (!elementIsSVG && key in element) ||
       (custom && !elementIsSVG && !isAttributeOnlyName(key));
+    if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
+      // No element object on a server: see serverCustomElementProp.
+      disposers.push(
+        createRenderEffect(() => {
+          let v = typeof value === 'function' ? (value as () => unknown)() : props[key];
+          while (typeof v === 'function' && (v as () => unknown).length === 0) v = (v as () => unknown)();
+          serverCustomElementProp(element, key, v);
+        }),
+      );
+      continue;
+    }
     if (typeof value === 'function') {
       // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
       disposers.push(

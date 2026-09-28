@@ -1,3 +1,4 @@
+import { isServer } from './server/host.js';
 /**
  * @module @fluixi/core/dom
  *
@@ -174,11 +175,30 @@ export function applyElementProp(
 
   // }
   if (isCustomElement(element)) {
+    if (isServer()) {
+      serverCustomElementProp(element, name, value);
+      return;
+    }
     // if ((element as any)[name]!==value)
       (element as any)[name] = value;
     return;
   }
   setAttribute(element, name, value, isSVG);
+}
+
+/**
+ * A custom element's prop during a server render.
+ *
+ * On the client a dashed tag takes its props as properties. On a server there is no element
+ * object to hold one, and the markup is all that is sent, so a property assignment vanished
+ * from the page: `<fx-counter step={2}>` rendered as `<fx-counter>`. A string or number goes
+ * out as an attribute instead, a boolean as a present or absent one the way `disabled` does,
+ * and anything else waits for the client, which assigns it as a property while hydrating.
+ */
+export function serverCustomElementProp(element: Element, name: string, value: unknown): void {
+  if (value == null || value === false) element.removeAttribute(name);
+  else if (value === true) element.setAttribute(name, '');
+  else if (typeof value === 'string' || typeof value === 'number') element.setAttribute(name, String(value));
 }
 
 // Properties that should be set as properties, not attributes
