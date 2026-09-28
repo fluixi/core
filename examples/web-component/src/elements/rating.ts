@@ -1,17 +1,16 @@
 /**
  * A form control: a star rating that submits with its `<form>`.
  *
- * Built from the `FormField` mixin over the typed base, so it is a class like the counter
+ * Built from the `FormAssociated` mixin over the typed base, so it is a class like the counter
  * with one extra layer. `value` reflects, so `fx-rating[value="0"]` can be styled, and an
  * effect keeps the form value and the validity in step with it. `required` makes an empty
  * rating block submission, the way `<input required>` does.
  *
  * Keyboard: the arrow keys move the rating. A disabled `<fieldset>` around it disables it.
  */
-import { defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
+import { defineCustomElement, FormAssociated, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { effect } from '@fluixi/reactive/signal';
-import { FormField } from './form-field.js';
 
 export interface RatingEvents {
   change: { value: number };
@@ -24,14 +23,17 @@ const ratingProps = {
   label: prop.string('Rating'),
 };
 
-export class FxRating extends FormField(typedElement(ratingProps)) {
+export class FxRating extends FormAssociated(typedElement(ratingProps)) {
   /** What `reset` returns to: the value the page wrote. */
   #initial = 0;
 
   protected override render(): unknown {
     this.#initial = this.value;
     effect(
-      () => this.commit(this.value ? String(this.value) : null, this.required && !this.value ? 'Pick a rating' : null),
+      () => {
+        this.setFormValue(this.value ? String(this.value) : null);
+        this.setValidity(this.required && !this.value ? { valueMissing: true } : {}, 'Pick a rating');
+      },
       undefined,
       { name: 'form value' },
     );
@@ -65,8 +67,8 @@ export class FxRating extends FormField(typedElement(ratingProps)) {
     this.value = this.#initial;
   }
 
-  protected override restoreValue(state: string | null): void {
-    this.value = Number(state) || 0;
+  protected override restoreValue(state: string | File | FormData | null): void {
+    this.value = typeof state === 'string' ? Number(state) || 0 : 0;
   }
 
   #key(event: KeyboardEvent): void {

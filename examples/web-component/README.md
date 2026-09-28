@@ -8,7 +8,6 @@ Four custom elements written with @fluixi/web-components, built as standalone fi
 |------|-------|
 | `src/elements/counter.ts` | class form: props, a change event, public increment() and reset(), #private state |
 | `src/elements/bounded-counter.ts` | inheritance: extends the counter, adds max, fires limit |
-| `src/elements/form-field.ts` | a mixin: makes an element a form control through ElementInternals |
 | `src/elements/rating.ts` | a form control built with the mixin: submits with its form, required, reset, arrow keys |
 | `src/elements/disclosure.ts` | function form: shadow DOM, named slots, a reflected open attribute |
 | `demo/index.html` | the built files on a plain page |
