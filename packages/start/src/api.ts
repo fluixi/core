@@ -18,6 +18,16 @@ export interface ApiRoute {
   mod: Record<string, unknown>;
   /** Higher = more specific (static beats dynamic beats catch-all). */
   rank: number;
+  /** The route as a path template, `/api/v1/projects/{id}`: what an API description names it by. */
+  path?: string;
+}
+
+/** A file path relative to the api dir, as a path template: `projects/[id]` is `/api/projects/{id}`. */
+export function pathTemplate(rel: string, prefix = '/api'): string {
+  const segs = rel.split('/').filter(Boolean);
+  if (segs[segs.length - 1] === 'index') segs.pop();
+  const parts = segs.map((seg) => seg.replace(/^\[\.\.\.(.+)\]$/, '{$1}').replace(/^\[(.+)\]$/, '{$1}'));
+  return [prefix.replace(/\/$/, ''), ...parts].join('/') || '/';
 }
 
 /** Derive a route pattern from a file path relative to the api dir (no extension). */
@@ -131,14 +141,18 @@ export function apiRoutesVitePlugin(opts: { dir: string; prefix?: string }): any
         const rel = relativePath(dir, file).replace(/\.(ts|tsx|js|mjs)$/, '').split(/[\\/]/).join('/');
         const { source: src, keys, rank } = derivePattern(rel, prefix);
         imports.push(`import * as _${i} from ${JSON.stringify(file)};`);
-        entries.push(`{ source: ${JSON.stringify(src)}, keys: ${JSON.stringify(keys)}, rank: ${rank}, mod: _${i} }`);
+        entries.push(
+          `{ source: ${JSON.stringify(src)}, keys: ${JSON.stringify(keys)}, rank: ${rank}, path: ${JSON.stringify(pathTemplate(rel, prefix))}, mod: _${i} }`,
+        );
       });
       return (
         `import { isApiPath, handleApi } from '@fluixi/start/api';\n` +
         `${imports.join('\n')}\n` +
         `const routes = [${entries.join(',')}];\n` +
         `export const isApiRequest = (request) => isApiPath(new URL(request.url).pathname, ${JSON.stringify(prefix)});\n` +
-        `export const handleApiRequest = (request) => handleApi(routes, request, ${JSON.stringify(prefix)});\n`
+        `export const handleApiRequest = (request) => handleApi(routes, request, ${JSON.stringify(prefix)});\n` +
+        // The table itself, for whatever describes the API: an OpenAPI document, a client.
+        `export const apiRoutes = routes;\n`
       );
     },
   };

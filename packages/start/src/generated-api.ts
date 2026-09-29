@@ -28,3 +28,18 @@ export function isApiRequest(_request: Request): boolean {
 export function handleApiRequest(_request: Request): Promise<Response> {
   missingPlugin();
 }
+
+/** One API route, as the scan found it: its path template and the file's method exports. */
+export interface ApiRouteInfo {
+  path?: string;
+  keys: string[];
+  mod: Record<string, unknown>;
+}
+
+/**
+ * Every API route, for what describes the API: an OpenAPI document, a client. Read it lazily
+ * (inside a handler or a thunk): the route that serves a description is itself in the table.
+ * Empty in this stand-in; the scan plugin supplies the real one.
+ */
+export const apiRoutes: readonly ApiRouteInfo[] = [];
+

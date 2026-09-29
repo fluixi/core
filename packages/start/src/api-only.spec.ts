@@ -44,3 +44,14 @@ describe('an API-only app', () => {
     expect(seen).toEqual(['/api/v1/ping', '/nowhere']);
   });
 });
+
+describe('API route path templates', () => {
+  it('turns file paths into the path templates an API description uses', async () => {
+    const { pathTemplate } = await import('./api.js');
+    expect(pathTemplate('v1/projects/index')).toBe('/api/v1/projects');
+    expect(pathTemplate('v1/projects/[id]')).toBe('/api/v1/projects/{id}');
+    expect(pathTemplate('files/[...path]')).toBe('/api/files/{path}');
+    expect(pathTemplate('openapi.json')).toBe('/api/openapi.json');
+    expect(pathTemplate('index')).toBe('/api');
+  });
+});
