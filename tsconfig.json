@@ -68,6 +68,9 @@
     },
     {
       "path": "./packages/oauth2"
+    },
+    {
+      "path": "./packages/api"
     }
   ]
 }

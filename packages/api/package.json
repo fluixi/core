@@ -1,0 +1,42 @@
+{
+  "name": "@fluixi/api",
+  "version": "0.1.0-alpha.0",
+  "license": "MIT",
+  "author": "Ibrahima Touré",
+  "private": true,
+  "description": "Schema-first API routes for Fluixi: contracts validated before the handler runs, typed handlers, one error model, on top of @fluixi/start's API routes.",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "test": "vitest run",
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "dev": "tsc -w -p tsconfig.lib.json"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/start": "workspace:*",
+    "cross-env": "^7.0.3",
+    "valibot": "^1.5.0",
+    "zod": "^4.6.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/api"
+  }
+}
