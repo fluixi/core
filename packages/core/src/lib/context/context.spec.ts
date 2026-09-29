@@ -4,7 +4,7 @@
 // These check that what they write is what a watcher sees.
 import { describe, it, expect, afterEach } from 'vitest';
 import { createRoot, createMemo, observeReactiveNodes } from '@fluixi/reactive/signal';
-import { createContext, useContext } from './context.js';
+import { composeProviders, createContext, requireContext, useContext } from './context.js';
 
 let stop: (() => void) | undefined;
 afterEach(() => {
@@ -83,3 +83,39 @@ describe('the context a user writes', () => {
     expect(seen[0]!.name).toBe('context');
   });
 });
+
+describe('composeProviders', () => {
+  it('nests the Providers outermost first, reading accessors, with children lazy', () => {
+    const A = createContext('a0', 'a');
+    const B = createContext('b0', 'b');
+    let reads = 0;
+    const seen = createRoot(() =>
+      composeProviders([[A, 'outer'], [B, () => 'from accessor'], [A, 'inner']], {
+        get children() {
+          reads++;
+          return [useContext(A), useContext(B)];
+        },
+      }),
+    );
+    expect(seen).toEqual(['inner', 'from accessor']);
+    expect(reads).toBe(1);
+  });
+
+  it('hands the children straight back with no Providers', () => {
+    expect(createRoot(() => composeProviders([], { children: 'plain' }))).toBe('plain');
+  });
+});
+
+describe('requireContext', () => {
+  const Tabs = createContext<string | null>(null, 'tabs');
+
+  it('throws with no Provider above, naming the context', () => {
+    expect(() => createRoot(() => requireContext(Tabs))).toThrow(/No Provider for tabs/);
+  });
+
+  it('returns the provided value, even when it equals the default', () => {
+    const value = createRoot(() => Tabs.Provider({ value: null, get children() { return requireContext(Tabs); } }));
+    expect(value).toBeNull();
+  });
+});
+

@@ -9,6 +9,7 @@
 import { asProvider, type ComponentChild } from '@fluixi/dom';
 import {
   createContext as createReactiveContext,
+  getOwner,
   useContext as useReactiveContext,
   type Accessor,
   type Context,
@@ -78,6 +79,43 @@ export function createProvider<T>(
       return props.children;
     },
   });
+}
+
+/**
+ * Several Providers as one, outermost first, for an app shell that would otherwise nest a
+ * Provider per context. Values may be accessors, as in `createProvider`; children stay lazy.
+ *
+ * @example
+ * ```ts
+ * const AppProviders = (props) =>
+ *   composeProviders([[Theme, 'dark'], [Locale, () => locale()], [Session, session]], props);
+ * ```
+ */
+export function composeProviders(
+  providers: ReadonlyArray<readonly [Context<any>, unknown]>,
+  props: { children?: any },
+): ComponentChild {
+  const outermost = providers.reduceRight<{ children?: any }>(
+    (inner, [context, value]) => ({
+      get children() {
+        return createProvider(context, value, inner);
+      },
+    }),
+    props,
+  );
+  return outermost.children;
+}
+
+/**
+ * `useContext` for a value that has to come from a Provider: throws when none is above,
+ * instead of handing back the default. For parts that only work inside their parent, a tab
+ * outside its tabs.
+ */
+export function requireContext<T>(context: { id: symbol; defaultValue?: T; [key: string]: any }, message?: string): T {
+  for (let owner = getOwner(); owner; owner = owner.parent) {
+    if (owner.contexts?.has(context.id)) return useContext(context as { id: symbol; defaultValue: T });
+  }
+  throw new Error(message ?? `[fluixi] No Provider for ${context.id.description ?? 'this context'} above this component.`);
 }
 
 export type { Context };
