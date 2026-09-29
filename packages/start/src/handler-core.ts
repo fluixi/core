@@ -15,6 +15,9 @@ import type { ResolvedConfig } from './config.js';
 import { injectAppAndHead, injectPreload, splitTemplate, guardHandler } from './document.js';
 import { createRequestHandler, streamDocument, type FetchHandler } from './handler.js';
 import { composeMiddleware, normalizeMiddleware } from './middleware.js';
+
+// The platform entries import only this module; they record the client address with it.
+export { setClientAddress } from './client-address.js';
 import { withPlatformRequest } from './platform-request.js';
 
 /** The shape a built `entry-server.js` exposes. Every field is optional. */

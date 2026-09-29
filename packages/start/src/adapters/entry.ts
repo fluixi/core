@@ -29,7 +29,7 @@ export interface EntrySource {
 /** Imports and the handler, shared by every platform entry. */
 function preamble({ serverEntry, middleware, template, ssr, mountId, routeAssets }: EntrySource): string {
   return [
-    `import { createHandlerFrom } from '@fluixi/start/handler-core';`,
+    `import { createHandlerFrom, setClientAddress } from '@fluixi/start/handler-core';`,
     `import { createPreloader } from '@fluixi/start/preload';`,
     `import * as server from ${JSON.stringify(serverEntry)};`,
     middleware ? `import * as middleware from ${JSON.stringify(middleware)};` : '',
@@ -72,7 +72,7 @@ export default {
       const asset = await env.ASSETS.fetch(request.clone());
       if (asset.status !== 404) return asset;
     }
-    return handler(request, { env, ctx });
+    return handler(setClientAddress(request, request.headers.get('cf-connecting-ip')), { env, ctx });
   },
 };
 `;
@@ -86,7 +86,7 @@ export default {
 export function netlifyEntry(source: EntrySource): string {
   return `${preamble(source)}
 
-export default async (request, context) => handler(request, { context });
+export default async (request, context) => handler(setClientAddress(request, context && context.ip), { context });
 
 export const config = { path: '/*', preferStatic: true };
 `;
@@ -123,8 +123,13 @@ export default async (req, res) => {
     if (chunks.length) body = new Blob(chunks);
   }
 
+  // Vercel overwrites x-forwarded-for with the client's address, so it can be trusted here.
+  const address = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
   const response = await handler(
-    new Request(new URL(req.url, \`\${proto}://\${host}\`), { method: req.method, headers, body }),
+    setClientAddress(
+      new Request(new URL(req.url, \`\${proto}://\${host}\`), { method: req.method, headers, body }),
+      address || req.socket?.remoteAddress,
+    ),
   );
 
   res.statusCode = response.status;

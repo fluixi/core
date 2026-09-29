@@ -5,6 +5,7 @@ import { Readable } from 'node:stream';
 import { extname, resolve, sep } from 'node:path';
 import { liftHead } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
+import { setClientAddress } from './client-address.js';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -142,7 +143,7 @@ export function nodeToRequest(req: IncomingMessage): Request {
     init.body = req as any; // Node readable: fine for undici/Node fetch
     (init as any).duplex = 'half';
   }
-  return new Request(url, init);
+  return setClientAddress(new Request(url, init), req.socket?.remoteAddress);
 }
 
 /** Write a Web `Response` (string or streamed body) to a Node `ServerResponse`. */

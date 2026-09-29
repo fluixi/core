@@ -44,6 +44,7 @@ export type { HandlerParts, ServerModule } from './handler-core.js';
 
 // Request middleware: a `(request, next) => Response` chain run before render.
 export { defineMiddleware, composeMiddleware, normalizeMiddleware } from './middleware.js';
+export { clientAddress } from './client-address.js';
 export type { Middleware, MiddlewareNext } from './middleware.js';
 
 // HTTP interceptors: request/response/error pipeline around fetch (server-fn RPC + app
