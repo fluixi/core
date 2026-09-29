@@ -21,7 +21,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // not in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, onCleanup, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, getOwner, onCleanup, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -148,6 +148,32 @@ function located<T extends Element>(element: T, at?: { file: string; line: numbe
   if (at) (element as unknown as Record<string, unknown>)[LOC_TAG] = at;
   return element;
 }
+
+/**
+ * Where hydration leaves the owner a custom element was rendered under.
+ *
+ * On the client that owner is current when the template makes the element, so the element
+ * reads it in its constructor. A server-rendered element is different: it upgrades when its
+ * definition is imported, before hydration reaches it, with no owner around. Hydration hands
+ * it over here instead. An element that has upgraded takes it through a setter on this key; one
+ * that has not finds it as an own property when it does. Nothing else reads it.
+ */
+const OWNER_KEY = Symbol.for('fluixi.owner');
+
+function handOwner(element: Element): void {
+  const owner = getOwner();
+  if (owner) (element as unknown as Record<symbol, unknown>)[OWNER_KEY] = owner;
+}
+
+/** Every custom element in an adopted subtree, the root included. */
+function handOwnerToCustomElements(root: Node): void {
+  if (!(root instanceof Element)) return;
+  if (root.localName.includes('-')) handOwner(root);
+  for (const element of root.querySelectorAll('*')) if (element.localName.includes('-')) handOwner(element);
+}
+
+/** A template's markup names a custom element: a tag with a dash. Checked before walking. */
+const CUSTOM_TAG = /<[a-z][\w.]*-/i;
 
 // Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
@@ -324,7 +350,10 @@ export function createNativeElement(
   if (isServer()) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
   if (hydration.active) {
     const node = getHydrationWalker()?.hydrateElement(tag);
-    if (node) return at ? located(node, at) : node;
+    if (node) {
+      if (tag.includes('-')) handOwner(node);
+      return at ? located(node, at) : node;
+    }
   }
   return located(
     isSVG ? document.createElementNS(SVG_NAMESPACE, tag) : document.createElement(tag),
@@ -381,7 +410,10 @@ export function templateNode(
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag);
-    if (node) return stampPositions(node, at);
+    if (node) {
+      if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(node);
+      return stampPositions(node, at);
+    }
   }
   return stampPositions(cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node, at);
 }
