@@ -26,4 +26,7 @@ export type { ApiErrorBody, ValidationIssue } from './errors.js';
 
 export { readJson, readQuery, DEFAULT_BODY_LIMIT } from './input.js';
 
+export { createOpenApiDocument, openApiRoute, setJsonSchemaConverter } from './openapi.js';
+export type { OpenApiInfo, DescribedRoute, JsonSchemaConverter } from './openapi.js';
+
 export type { StandardSchemaV1 } from './standard-schema.js';

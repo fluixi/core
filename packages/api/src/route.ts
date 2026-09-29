@@ -47,6 +47,10 @@ export interface RouteContract<
   summary?: string;
   description?: string;
   tags?: string[];
+  /** A stable name for the operation in the API description. Derived from method and path otherwise. */
+  operationId?: string;
+  /** Marked deprecated in the API description. */
+  deprecated?: boolean;
   handler(input: RouteInput<P, Q, B>): Input<R, unknown> | Response | Promise<Input<R, unknown> | Response>;
 }
 

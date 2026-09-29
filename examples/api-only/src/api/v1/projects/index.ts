@@ -3,12 +3,14 @@ import { z } from 'zod';
 import { NewProject, Project, createProject, listProjects } from '../../../projects.js';
 
 export const GET = route({
+  summary: 'List projects',
   query: z.object({ status: Project.shape.status.optional() }),
   response: z.array(Project),
   handler: ({ query }) => listProjects().filter((p) => !query.status || p.status === query.status),
 });
 
 export const POST = route({
+  summary: 'Create a project',
   body: NewProject,
   // `createdBy` stays on the server: the response schema has no such field.
   response: Project,
