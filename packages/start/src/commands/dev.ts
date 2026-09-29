@@ -158,7 +158,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   vite = await createServer({
     root: cfg.root,
     plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (fluixi)
-    server: { middlewareMode: true, hmr: { server: http } },
+    // An API answers its own preflights (`apiSecurity` in @fluixi/api). Vite's would reach them
+    // first and allow no credentials; with no assets to serve, it has nothing else to do here.
+    server: { middlewareMode: true, hmr: { server: http }, ...(cfg.apiOnly ? { cors: false } : {}) },
     appType: 'custom',
     // No browser code to pre-bundle in an API: without this Vite searches for an entry and warns.
     ...(cfg.apiOnly ? { optimizeDeps: { noDiscovery: true, include: [] } } : {}),
