@@ -1,0 +1,24 @@
+{
+  "name": "@fluixi/example-api-only",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An API service on @fluixi/start with @fluixi/api contracts: no pages, only src/api.",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluixi/api": "workspace:*",
+    "@fluixi/cli": "workspace:*",
+    "@fluixi/start": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^6.4.3"
+  }
+}
