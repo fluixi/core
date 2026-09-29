@@ -151,6 +151,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       : renderHandler;
   const nodeHandler = toNodeHandler(handler, { trustProxy: cfg.trustProxy });
   const http = createHttp((req, res) => {
+    // API calls go straight to the handler: Vite has nothing to serve under /api, and its CORS
+    // would answer their preflights before the app's middleware sees them.
+    if (isApiPath((req.url ?? '/').split('?')[0]!)) return void nodeHandler(req, res);
     // Vite middleware first (static assets + HMR), then our handler for app routes.
     vite.middlewares(req, res, () => nodeHandler(req, res));
   });
@@ -158,9 +161,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   vite = await createServer({
     root: cfg.root,
     plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (fluixi)
-    // An API answers its own preflights (`apiSecurity` in @fluixi/api). Vite's would reach them
-    // first and allow no credentials; with no assets to serve, it has nothing else to do here.
-    server: { middlewareMode: true, hmr: { server: http }, ...(cfg.apiOnly ? { cors: false } : {}) },
+    server: { middlewareMode: true, hmr: { server: http } },
     appType: 'custom',
     // No browser code to pre-bundle in an API: without this Vite searches for an entry and warns.
     ...(cfg.apiOnly ? { optimizeDeps: { noDiscovery: true, include: [] } } : {}),
