@@ -13,3 +13,7 @@ form { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
 input { font: inherit; padding: .2rem .5rem; border: 1px solid #c9ccd4; border-radius: 6px; }
 pre { background: #f1f2f5; padding: .5rem .75rem; border-radius: 6px; white-space: pre-wrap; }
 code { font-size: .9em; }
+fx-counter, fx-bounded-counter { display: block; border-left: 3px solid var(--accent, #c9ccd4); padding-left: .6rem; }
+fx-counter[data-theme=dark] .counter, fx-bounded-counter[data-theme=dark] .counter { background: #1f2430; color: #f1f2f5; padding: .4rem .6rem; border-radius: 6px; }
+fx-tabs[data-theme=dark] { background: #1f2430; color: #f1f2f5; border-radius: 6px; padding: .25rem .6rem .6rem; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }

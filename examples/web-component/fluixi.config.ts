@@ -8,6 +8,7 @@ export default defineConfig({
       'src/elements/bounded-counter.ts',
       'src/elements/rating.ts',
       'src/elements/disclosure.ts',
+      'src/elements/tabs.ts',
     ],
   },
 });

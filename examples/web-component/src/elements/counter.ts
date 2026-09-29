@@ -11,7 +11,8 @@
  */
 import { defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
-import { signal } from '@fluixi/reactive/signal';
+import { effect, signal } from '@fluixi/reactive/signal';
+import { Accent, Theme } from '../context.js';
 
 /** What the element dispatches, for the consumer's handler types. */
 export interface CounterEvents {
@@ -29,6 +30,18 @@ export class FxCounter extends typedElement(counterProps) {
   #count = signal(0);
 
   protected override render(): unknown {
+    // From the app, through context. `data-theme` and `--accent` are what the page CSS reads.
+    const theme = this.consume(Theme);
+    const accent = this.consume(Accent);
+    effect(
+      () => {
+        this.dataset.theme = theme()();
+        this.style.setProperty('--accent', accent()());
+      },
+      undefined,
+      { name: 'theme' },
+    );
+
     return html`
       <div class="counter">
         <span>${() => this.label}</span>
