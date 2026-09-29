@@ -4,6 +4,7 @@
 // (isApiRequest + handleApiRequest); dev auto-wires it, prod gets it via the entry-server re-export.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath, join } from 'node:path';
+import { createRequestContext, runWithRequestContext } from '@fluixi/server';
 import { refusalResponse } from './refusal.js';
 
 const API_VMOD = 'virtual:fluixi-api';
@@ -83,7 +84,13 @@ export async function handleApi(routes: ApiRoute[], request: Request, prefix = '
   }
   let out: unknown;
   try {
-    out = await (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params });
+    // Inside a request context, as server functions are: `getLocals()` then finds what
+    // middleware wrote for this request (the session, the tenant), so `requireUser()` works in
+    // an API route. Without it every guard read an empty bag and answered 401.
+    const context = createRequestContext({ request, url: pathname, responseHeaders: {} });
+    out = await runWithRequestContext(context, () =>
+      (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params }),
+    );
   } catch (error) {
     const refused = refusalResponse(error);
     if (refused) return refused;

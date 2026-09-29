@@ -55,3 +55,18 @@ describe('API route path templates', () => {
     expect(pathTemplate('index')).toBe('/api');
   });
 });
+
+describe('an API route', () => {
+  it('runs inside a request context, so it reads what middleware put on the request', async () => {
+    const { handleApi, derivePattern } = await import('./api.js');
+    const { getLocals, getRequestLocals } = await import('@fluixi/server');
+    const GET = () => ({ user: (getLocals() as { user?: string }).user ?? null });
+    const routes = [{ ...derivePattern('me'), mod: { GET } }];
+    const request = new Request('http://localhost/api/me');
+    // What an auth middleware does before calling next().
+    (getRequestLocals(request) as { user?: string }).user = 'ada';
+    expect(await (await handleApi(routes, request)).json()).toEqual({ user: 'ada' });
+    // Another request sees its own bag, not ada's.
+    expect(await (await handleApi(routes, new Request('http://localhost/api/me'))).json()).toEqual({ user: null });
+  });
+});
