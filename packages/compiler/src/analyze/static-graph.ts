@@ -775,11 +775,13 @@ export function analyzeReactiveGraph(
               // `if=`/`each=` are `<Show>`/`<For>` once lowered, so they are nodes here too.
               const ifDir = child.attributes.find((a) => a.kind === 'IfDirective');
               const eachDir = child.attributes.find((a) => a.kind === 'EachDirective');
+              // Both can sit on one element: the condition around it, the list inside it.
               let inner = owner;
-              if (ifDir?.kind === 'IfDirective') inner = addControl('Show', child.loc?.start, ifDir.hole, owner) ?? owner;
-              else if (eachDir?.kind === 'EachDirective') inner = addControl('For', child.loc?.start, eachDir.hole, owner) ?? owner;
+              if (ifDir?.kind === 'IfDirective') inner = addControl('Show', child.loc?.start, ifDir.hole, inner) ?? inner;
+              if (eachDir?.kind === 'EachDirective') inner = addControl('For', child.loc?.start, eachDir.hole, inner) ?? inner;
               elementTargets(child);
-              visit(child.children, inner, describeTemplateElement(child));
+              // A <container> renders only its content, so what is inside it belongs to the parent's element.
+              visit(child.children, inner, child.tag === 'container' ? holder : describeTemplateElement(child));
               break;
             }
             case 'Component': {

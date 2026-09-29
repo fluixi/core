@@ -59,6 +59,9 @@ function escapeTemplate(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 }
 
+/** The tag that carries directives and renders only its content. Never a custom element: no dash. */
+const CONTAINER = 'container';
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -128,10 +131,6 @@ class Lowerer {
           if (hasElse) i = elseIdx;
           continue;
         }
-        if (child.attributes.some((a) => a.kind === 'EachDirective')) {
-          out.push(this.lowerEach(child));
-          continue;
-        }
       }
 
       const node = this.lowerNode(child);
@@ -179,13 +178,18 @@ class Lowerer {
       node.props.unshift({ name: 'component', kind: 'attr', expr: `() => ${paren(this.hole(isAttr.value.hole).code, 'arrowBody')}` });
       return node;
     }
+    // `each` repeats the element's content, never the element: `<ul each>` is one list.
+    const each = this.lowerEach(el);
+    const children = each ? [each] : this.lowerChildren(el.children);
+    // A `<container>` is only what it holds. It carries the directives and is never rendered.
+    if (el.tag === CONTAINER) return children.length === 1 ? children[0] : { kind: 'fragment', children };
     const at = this.tagAt(el);
     return {
       kind: 'element',
       tag: el.tag,
       svg: el.namespace === 'svg',
       props: this.lowerAttributes(el.attributes),
-      children: this.lowerChildren(el.children),
+      children,
       static: false,
       ...(at ? { at } : {}),
     };
@@ -285,10 +289,14 @@ class Lowerer {
     return { kind: 'component', name: 'Show', props, children: [child], ...(at ? { at } : {}), ...(cond.at ? { bindAt: cond.at } : {}) };
   }
 
-  /** `<el each=${items} key?>${item => …}</el>` → `<For each>{item => <el>…</el>}</For>`. */
-  private lowerEach(el: ElementNode | ComponentNode): IRNode {
+  /**
+   * `<el each=${items} key?>${item => …}</el>` → `<el><For each>{item => …}</For></el>`: the
+   * content is repeated per item. Content that is not a `${item => …}` arrow is repeated as
+   * it is. Null when the element has no `each`.
+   */
+  private lowerEach(el: ElementNode): IRNode | null {
     const eachDir = el.attributes.find((a) => a.kind === 'EachDirective');
-    if (!eachDir || eachDir.kind !== 'EachDirective') return this.lowerNode(el)!;
+    if (!eachDir || eachDir.kind !== 'EachDirective') return null;
     const each = this.hole(eachDir.hole);
 
     const props: IRProp[] = [{ name: 'each', kind: 'attr', expr: each.code, reactive: each.reactive, ...(each.at ? { at: each.at } : {}) }];
@@ -301,16 +309,17 @@ class Lowerer {
       props.push({ name: 'by', kind: 'attr', expr: by });
     }
 
-    // The element minus its each/key, repeated per item.
     const arrow = this.itemArrow(el);
     let childrenCode: string;
     if (arrow) {
-      const bodyIR: IRNode = { kind: 'expr', code: arrow.body, reactive: arrow.bodyReactive };
-      const repeated = this.rebuildWithChildren(el, [bodyIR]);
-      childrenCode = `(${arrow.params.join(', ')}) => ${paren(this.emit(repeated), 'arrowBody')}`;
+      // A body that reads signals, `${(it) => it.label + count()}`, stays live: it is handed
+      // back as an accessor for the runtime to bind, as it was inside the repeated element.
+      const body = arrow.bodyReactive ? `() => ${paren(arrow.body, 'arrowBody')}` : paren(arrow.body, 'arrowBody');
+      childrenCode = `(${arrow.params.join(', ')}) => ${body}`;
     } else {
-      const repeated = this.stripAndLower(el, (a) => a.kind === 'EachDirective');
-      childrenCode = `() => ${paren(this.emit(repeated), 'arrowBody')}`;
+      const content = this.lowerChildren(el.children);
+      const ir: IRNode = content.length === 1 ? content[0]! : { kind: 'fragment', children: content };
+      childrenCode = `() => ${paren(this.emit(ir), 'arrowBody')}`;
     }
     const children: IRNode[] = [{ kind: 'expr', code: childrenCode, reactive: false }];
     const at = this.tagAt(el);
@@ -328,26 +337,6 @@ class Lowerer {
   private stripAndLower(el: ElementNode | ComponentNode, drop: (a: AttributeLikeNode) => boolean): IRNode {
     const clone = { ...el, attributes: el.attributes.filter((a) => !drop(a)) } as ElementNode | ComponentNode;
     return clone.kind === 'Element' ? this.lowerElement(clone) : this.lowerComponent(clone);
-  }
-
-  /** Same element (minus each/key) but with explicit IR children. */
-  private rebuildWithChildren(el: ElementNode | ComponentNode, children: IRNode[]): IRNode {
-    const props = this.lowerAttributes(
-      el.attributes.filter((a) => a.kind !== 'EachDirective'),
-    );
-    if (el.kind === 'Element') {
-      const at = this.tagAt(el);
-      return {
-        kind: 'element',
-        tag: el.tag,
-        svg: el.namespace === 'svg',
-        props,
-        children,
-        static: false,
-        ...(at ? { at } : {}),
-      };
-    }
-    return { kind: 'component', name: el.tag, props, children };
   }
 
   // --- attributes ---------------------------------------------------------

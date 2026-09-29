@@ -46,6 +46,15 @@ describe('html`` callback param inference', () => {
     expect(h).toContain('label');
   });
 
+  it('infers the each item type on a <container>', () => {
+    const text =
+      'const rows = [{ a: 1, b: "x" }];\n' +
+      'const t = html`<tr><container each=${rows}>${(r) => r‸.b}</container></tr>`;';
+    const h = hover(text);
+    expect(h).toContain('r:');
+    expect(h).toContain('b: string');
+  });
+
   it('infers the DOM event type for @click', () => {
     const text = 'const t = html`<button @click=${(e‸) => e.preventDefault()}>x</button>`;';
     const h = hover(text);

@@ -13,6 +13,7 @@ import { shapeOf } from '../analyze/expr-shape.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { cleanTemplateText } from './text.js';
 import { paren } from '../analyze/paren.js';
+import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 
 interface Node {
   type: string;
@@ -40,6 +41,30 @@ const DELEGATED = new Set([
 ]);
 
 const isReactive = (node: Node): boolean => isReactiveShape(shapeOf(node as never));
+
+/** The tag that carries directives and renders only its content. Never a custom element: no dash. */
+const CONTAINER = 'container';
+
+/** An intrinsic element's `if`, `else`, `each` or `key` attribute, as written. */
+function directive(node: Node, name: 'if' | 'else' | 'each' | 'key'): Node | undefined {
+  if (node.type !== 'JSXElement') return undefined;
+  const opening = node.openingElement;
+  if (opening.name.type !== 'JSXIdentifier' || opening.name.name[0] !== opening.name.name[0].toLowerCase()) return undefined;
+  return opening.attributes.find((a: Node) => a.type === 'JSXAttribute' && a.name.type === 'JSXIdentifier' && a.name.name === name);
+}
+
+/** The expression a directive holds: `if={cond}`. */
+function directiveExpr(attr: Node): Node | undefined {
+  const v = attr.value;
+  return v?.type === 'JSXExpressionContainer' && v.expression?.type !== 'JSXEmptyExpression' ? v.expression : undefined;
+}
+
+/** A nested subtree as code, for `Show`'s fallback and `For`'s render function. */
+function emitIR(ir: IRNode, ctx: JsxContext): string {
+  const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
+  for (const s of imports) ctx.used.add(s);
+  return inlineTemplates(code, templates);
+}
 
 /** Only when the host asked for source locations, the flag that records usage sites too. */
 const posOf = (node: Node, ctx: JsxContext): { line: number; column: number } | undefined => {
@@ -175,7 +200,17 @@ function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
 
 function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
   const out: IRNode[] = [];
-  for (const child of children) {
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i]!;
+    if (directive(child, 'if')) {
+      // The next element, past whitespace, is the fallback when it says `else`.
+      let next = i + 1;
+      while (next < children.length && children[next]!.type === 'JSXText' && !cleanTemplateText(children[next]!.value)) next++;
+      const fallback = directive(children[next] as Node, 'else') ? (children[next] as Node) : null;
+      out.push(buildIf(child, fallback, ctx));
+      if (fallback) i = next;
+      continue;
+    }
     if (child.type === 'JSXText') {
       // Drop whitespace-only text spanning a newline so a lone child stays lone , 
       // an array insert will not reactively bind a memo/component inside it.
@@ -217,22 +252,94 @@ function readLoad(attrs: Node[]): IRLoadStrategy | undefined {
   return undefined;
 }
 
+/** `<el if={cond}>` and an optional `<el else>` after it → `<Show when fallback>`. */
+function buildIf(node: Node, fallback: Node | null, ctx: JsxContext): IRNode {
+  const cond = directiveExpr(directive(node, 'if')!);
+  const props: IRProp[] = [
+    cond
+      ? { name: 'when', kind: 'attr', expr: ctx.code(cond), reactive: isReactive(cond), at: posOf(cond, ctx) }
+      : { name: 'when', kind: 'attr', literal: true },
+  ];
+  if (fallback) {
+    props.push({ name: 'fallback', kind: 'attr', expr: emitIR(buildElement(fallback, ctx, ['else']), ctx), jsxElement: true });
+  }
+  return { kind: 'component', name: 'Show', props, children: [buildElement(node, ctx, ['if'])] };
+}
+
+/**
+ * `<el each={items} key?>{(item) => …}</el>` → `<el><For each by>{…}</For></el>`: the
+ * content repeats, the element does not. Null when there is no `each`.
+ */
+function buildEach(node: Node, ctx: JsxContext): IRNode | null {
+  const attr = directive(node, 'each');
+  if (!attr) return null;
+  const list = directiveExpr(attr);
+  const props: IRProp[] = [
+    list
+      ? { name: 'each', kind: 'attr', expr: ctx.code(list), reactive: isReactive(list), at: posOf(list, ctx) }
+      : { name: 'each', kind: 'attr', expr: '[]' },
+  ];
+  const key = directive(node, 'key');
+  if (key) {
+    const keyExpr = directiveExpr(key);
+    const by = isString(key.value)
+      ? `(item) => item[${JSON.stringify(literalOf(key.value))}]`
+      : keyExpr
+        ? ctx.code(keyExpr)
+        : undefined;
+    if (by) props.push({ name: 'by', kind: 'attr', expr: by });
+  }
+
+  const content = node.children.filter((c: Node) => !(c.type === 'JSXText' && !cleanTemplateText(c.value)));
+  const only = content.length === 1 && content[0].type === 'JSXExpressionContainer' ? content[0].expression : null;
+  let render: string;
+  if (only && (only.type === 'ArrowFunctionExpression' || only.type === 'FunctionExpression')) {
+    const fn = ctx.code(only);
+    // A body that reads signals, `{(it) => it.label + count()}`, is handed back as an
+    // accessor so the runtime binds it; a body that builds elements needs nothing.
+    const live = only.type === 'ArrowFunctionExpression' && only.body.type !== 'BlockStatement' && isReactive(only.body);
+    render = live ? `(...args) => () => (${fn})(...args)` : fn;
+  } else {
+    const built = buildChildren(node.children, ctx);
+    const ir: IRNode = built.length === 1 ? built[0]! : { kind: 'fragment', children: built };
+    render = `() => ${paren(emitIR(ir, ctx), 'arrowBody')}`;
+  }
+  return { kind: 'component', name: 'For', props, children: [{ kind: 'expr', code: render, reactive: false }] };
+}
+
+/** An element, with the directives already handled by the caller left out. */
+function buildElement(node: Node, ctx: JsxContext, handled: string[]): IRNode {
+  const skip = new Set(handled);
+  // `key` is only a directive beside `each`; anywhere else it is an ordinary attribute.
+  const directives = new Set(['if', 'else', 'each', ...(directive(node, 'each') ? ['key'] : [])]);
+  const attributes = node.openingElement.attributes.filter(
+    (a: Node) => !(a.type === 'JSXAttribute' && a.name.type === 'JSXIdentifier' && (skip.has(a.name.name) || directives.has(a.name.name))),
+  );
+  const { tag } = tagInfo(node.openingElement.name, ctx);
+  const each = buildEach(node, ctx);
+  const children = each ? [each] : buildChildren(node.children, ctx);
+  if (tag === CONTAINER) return children.length === 1 ? children[0]! : { kind: 'fragment', children };
+  const at = ctx.sourceFile && node.loc?.start
+    ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
+    : undefined;
+  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props: buildProps(attributes, ctx), children, static: false, ...(at ? { at } : {}) };
+}
+
 function buildNode(node: Node, ctx: JsxContext): IRNode {
   if (node.type === 'JSXFragment') {
     return { kind: 'fragment', children: buildChildren(node.children, ctx) };
   }
+  if (directive(node, 'if')) return buildIf(node, null, ctx);
   const { tag, component } = tagInfo(node.openingElement.name, ctx);
+  if (!component) return buildElement(node, ctx, []);
   const props = buildProps(node.openingElement.attributes, ctx);
   const children = buildChildren(node.children, ctx);
   const at = ctx.sourceFile && node.loc?.start
     ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
     : undefined;
 
-  if (component) {
-    const load = readLoad(node.openingElement.attributes);
-    return { kind: 'component', name: tag, props, children, ...(load ? { load } : {}), ...(at ? { at } : {}) };
-  }
-  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false, ...(at ? { at } : {}) };
+  const load = readLoad(node.openingElement.attributes);
+  return { kind: 'component', name: tag, props, children, ...(load ? { load } : {}), ...(at ? { at } : {}) };
 }
 
 /** Build IR from a JSXElement or JSXFragment. */

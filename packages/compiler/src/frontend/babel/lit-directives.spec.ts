@@ -154,14 +154,42 @@ describe('lit directives — each', () => {
     expect(code).toMatch(/import \{[^}]*\bFor\b[^}]*\} from "@fluixi\/dom"/);
   });
 
-  it('renders one element per item at runtime', () => {
-    const mod = load('export const render = (items) => html`<li each=${items()}>${(x) => x}</li>`;');
-    const host = document.createElement('ul');
-    DOM.insert(host, mod.render(() => ['a', 'b', 'c']));
-    expect(host.querySelectorAll('li')).toHaveLength(3);
-    expect(host.textContent).toBe('abc');
+  it('renders the element once and its content per item', () => {
+    const mod = load(
+      'export const render = (colors) => html`<div class="row" each=${colors()}>${(c) => html`<span style="color: ${c}">${c}</span>`}</div>`;',
+    );
+    const host = document.createElement('section');
+    DOM.insert(host, mod.render(() => ['red', 'green', 'blue']));
+    expect(host.querySelectorAll('.row')).toHaveLength(1);
+    expect(Array.from(host.querySelectorAll('.row > span'), (s) => (s as HTMLElement).style.color)).toEqual(['red', 'green', 'blue']);
   });
 
+  it('makes one list of <ul each>', () => {
+    const mod = load('export const render = (items) => html`<ul each=${items()}>${(x) => html`<li>${x}</li>`}</ul>`;');
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(() => ['a', 'b', 'c']));
+    expect(host.querySelectorAll('ul')).toHaveLength(1);
+    expect(host.querySelector('ul')!.textContent).toBe('abc');
+  });
+
+  it('keeps a text body that reads a signal live', () => {
+    const mod = load('export const render = (items, suffix) => html`<p each=${items()}>${(x) => x + suffix()}</p>`;');
+    const [suffix, setSuffix] = S.createSignal('!');
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(() => ['a', 'b'], suffix));
+    expect(host.textContent).toBe('a!b!');
+    setSuffix('?');
+    S.flush();
+    expect(host.textContent).toBe('a?b?');
+  });
+
+  it('repeats content that is not an item arrow as it is', () => {
+    const mod = load('export const render = (items) => html`<p each=${items()}><b>x</b></p>`;');
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(() => [1, 2, 3]));
+    expect(host.querySelectorAll('p')).toHaveLength(1);
+    expect(host.querySelectorAll('p > b')).toHaveLength(3);
+  });
   it('each folds a static key into a `by` prop', () => {
     const code = compileEsm('export const r = (rows) => html`<li each=${rows()} key="id">${(r) => r.id}</li>`;');
     expect(flat(code)).toContain('get by() { return (item) => item["id"]; }');
@@ -439,3 +467,43 @@ describe('named slots', () => {
     expect((out.match(/get header\(\)/g) ?? []).length).toBe(1);
   });
 });
+
+describe('lit directives: container', () => {
+  it('repeats its content with no element of its own, two cells per row', () => {
+    const mod = load(
+      'export const render = (rows) => html`<tr><container each=${rows()}>${(r) => html`<td>${r.a}</td><td>${r.b}</td>`}</container></tr>`;',
+    );
+    const table = document.createElement('table');
+    const body = table.appendChild(document.createElement('tbody'));
+    DOM.insert(body, mod.render(() => [{ a: 1, b: 2 }, { a: 3, b: 4 }]));
+    expect(table.querySelectorAll('container')).toHaveLength(0);
+    expect(Array.from(table.querySelectorAll('td'), (td) => td.textContent)).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('switches between if and else, rendering neither container', () => {
+    const mod = load(
+      'export const render = (user) => html`<container if=${user()}><b>hi</b> there</container><container else><a>sign in</a></container>`;',
+    );
+    const [user, setUser] = S.createSignal<string | null>(null);
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(user));
+    expect(host.querySelector('a')?.textContent).toBe('sign in');
+    setUser('ada');
+    S.flush();
+    expect(host.querySelector('a')).toBeNull();
+    expect(host.textContent).toContain('hi there');
+    expect(host.querySelectorAll('container')).toHaveLength(0);
+  });
+
+  it('takes if and each together on one element', () => {
+    const mod = load('export const render = (on, items) => html`<ul if=${on()} each=${items()}>${(x) => html`<li>${x}</li>`}</ul>`;');
+    const [on, setOn] = S.createSignal(true);
+    const host = document.createElement('div');
+    DOM.insert(host, mod.render(on, () => ['a', 'b']));
+    expect(host.querySelectorAll('li')).toHaveLength(2);
+    setOn(false);
+    S.flush();
+    expect(host.querySelector('ul')).toBeNull();
+  });
+});
+

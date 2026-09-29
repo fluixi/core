@@ -122,8 +122,9 @@ describe('a list that grows', () => {
   it('keeps the nodes it already rendered', () => {
     const items = signal(['a', 'b']);
     const el = mount(
-      () => html`<ul><li each=${items}>${(i: string) => html`<span>${i}</span>`}</li></ul>`,
+      () => html`<ul each=${items}>${(i: string) => html`<li>${i}</li>`}</ul>`,
     );
+    expect(el.querySelectorAll('ul')).toHaveLength(1);
     const before = [...el.querySelectorAll('li')];
     expect(before).toHaveLength(2);
 
