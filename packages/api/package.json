@@ -38,5 +38,8 @@
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/api"
+  },
+  "dependencies": {
+    "rate-limiter-flexible": "^11.2.1"
   }
 }
