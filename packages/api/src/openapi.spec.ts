@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { z } from 'zod';
 import * as v from 'valibot';
-import { createOpenApiDocument, openApiRoute, route, setJsonSchemaConverter } from './index.js';
+import { createOpenApiDocument, describedBy, openApiRoute, route, setJsonSchemaConverter } from './index.js';
 
 const Project = z.object({ id: z.string().uuid(), name: z.string().min(1), status: z.enum(['active', 'archived']) });
 
@@ -104,5 +104,74 @@ describe('the route that serves it', () => {
     const doc = await res.json();
     expect(doc.paths['/api/openapi.json']).toBeUndefined();
     expect(doc.paths['/api/v1/projects']).toBeDefined();
+  });
+});
+
+describe('a route a library describes', () => {
+  const library = {
+    openapi: '3.1.1',
+    info: { title: 'Auth', version: '1' },
+    servers: [{ url: 'http://localhost:3301/api/auth' }],
+    tags: [{ name: 'Default' }],
+    paths: {
+      '/sign-in/email': {
+        post: {
+          tags: ['Default'],
+          operationId: 'signInEmail',
+          description: 'Sign in with email and password.',
+          requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          responses: { 200: { description: 'ok', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } } },
+        },
+      },
+    },
+    components: {
+      schemas: {
+        User: { type: 'object', properties: { image: { type: 'string', nullable: true }, team: { $ref: '#/components/schemas/Error', nullable: true } } },
+        Error: { type: 'string' },
+      },
+      securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } },
+    },
+  };
+
+  it('replaces the route with the library paths under its mount, served once for all methods', async () => {
+    let calls = 0;
+    const handler = describedBy(() => (calls++, library), () => new Response('ok'));
+    const table = [...routes, { path: '/api/auth/{all}', mod: { GET: handler, POST: handler } }];
+    const GET = openApiRoute(() => table, info);
+    const doc = await (await GET()).json();
+
+    expect(calls).toBe(1);
+    expect(doc.paths['/api/auth/{all}']).toBeUndefined();
+    const op = doc.paths['/api/auth/sign-in/email'].post;
+    expect(op.summary).toBe('Sign in with email and password');
+    expect(doc.tags).toEqual([{ name: 'Default' }]);
+    expect(doc.components.securitySchemes.bearerAuth.scheme).toBe('bearer');
+    expect(doc.components.schemas.User.properties.image).toEqual({ type: ['string', 'null'] });
+    expect(doc.paths['/api/v1/projects']).toBeDefined();
+  });
+
+  it('renames a component whose name is taken, references included', async () => {
+    const handler = describedBy(async () => library, () => new Response('ok'));
+    const GET = openApiRoute(() => [{ path: '/api/auth/{all}', mod: { POST: handler } }], info);
+    const doc = await (await GET()).json();
+
+    expect(doc.components.schemas.Error.required).toEqual(['error']);
+    expect(doc.components.schemas.AuthError).toEqual({ type: 'string' });
+    const op = doc.paths['/api/auth/sign-in/email'].post;
+    expect(op.requestBody.content['application/json'].schema.$ref).toBe('#/components/schemas/AuthError');
+    expect(op.responses[200].content['application/json'].schema.$ref).toBe('#/components/schemas/User');
+    expect(doc.components.schemas.User.properties.team).toEqual({ anyOf: [{ $ref: '#/components/schemas/AuthError' }, { type: 'null' }] });
+  });
+
+  it('tries again on the next request when the library fails', async () => {
+    let fail = true;
+    const handler = describedBy(() => {
+      if (fail) throw new Error('not ready');
+      return library;
+    }, () => new Response('ok'));
+    const GET = openApiRoute(() => [{ path: '/api/auth/{all}', mod: { POST: handler } }], info);
+    await expect(GET()).rejects.toThrow('not ready');
+    fail = false;
+    expect((await GET()).status).toBe(200);
   });
 });
