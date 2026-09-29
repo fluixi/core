@@ -301,7 +301,27 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
 // HTML Attributes (Base)
 // ============================================================================
 
-export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
+/**
+ * Control flow written on an element and compiled away: `if`, `else`, `each` (with `key`).
+ * `<container>` takes them and renders only its content.
+ */
+export interface ControlDirectives {
+  /** Render this element only while truthy. An `else` element right after it is the fallback. */
+  if?: unknown;
+  /** The fallback of the `if` element just before it. */
+  else?: boolean;
+  /**
+   * Render this element once and its content per item: the content is `(item, index) => …`.
+   * JSX cannot infer `item` on a lowercase tag; annotate it, or use `<For>` where the type
+   * should be inferred.
+   */
+  each?: ReadonlyArray<unknown> | (() => ReadonlyArray<unknown> | null | undefined) | null | undefined | false;
+}
+
+/** What an element's content may be: renderable, or with `each`, a function of the item. */
+export type DirectiveChildren = ComponentChild | ((item: any, index: () => number) => ComponentChild);
+
+export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, ControlDirectives {
   // Standard HTML attributes
   accessKey?: string;
   accesskey?: string;
@@ -384,10 +404,10 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T> {
 
   // Ref (bivariant callback + base-element object form: see RefCallback)
   ref?: RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
-  key?: string | number;
+  key?: string | number | ((item: any) => unknown);
 
   // Children
-  children?: ComponentChild;
+  children?: DirectiveChildren;
 
   // innerHTML / textContent (a static value or a reactive accessor)
   innerHTML?: string | (() => string);
@@ -949,7 +969,7 @@ export interface AudioHTMLAttributes<T = HTMLAudioElement> extends MediaHTMLAttr
 // SVG Attributes
 // ============================================================================
 
-export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
+export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, ControlDirectives {
   // Core SVG attributes. Reactive like the HTML ones, the presentation
   // attributes below already were, so an SVG that could animate its `fill` still
   // couldn't compute its `id` or `style`.
@@ -958,8 +978,8 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T> {
   className?: Reactive<string>;
   style?: Reactive<string | CSSProperties>;
   ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
-  key?: string | number;
-  children?: ComponentChild;
+  key?: string | number | ((item: any) => unknown);
+  children?: DirectiveChildren;
   tabIndex?: Reactive<number>;
   tabindex?: Reactive<number>;
   lang?: Reactive<string>;
@@ -1279,6 +1299,8 @@ export type FxElement = ComponentChild;
  * `<div class=...>` inside a template, that has nothing to do with JSX.
  */
 export interface IntrinsicElements {
+  /** Carries `if`, `else` or `each` and renders only its content. Never in the DOM. */
+  container: ControlDirectives & { key?: string | ((item: any) => unknown); children?: DirectiveChildren };
   // HTML
   a: AnchorHTMLAttributes;
   abbr: HTMLAttributes;
