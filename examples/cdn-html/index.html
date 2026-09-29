@@ -44,9 +44,7 @@
               <label>name <input class="name" bind:value=${name} /></label>
               <span class="greeting">hello ${name}</span>
             </div>
-            <ul class="items">
-              <li each=${items}>${(item) => html`<span class="item">${item}</span>`}</li>
-            </ul>
+            <ul class="items" each=${items}>${(item) => html`<li><span class="item">${item}</span></li>`}</ul>
             <button class="add" @click=${() => items.set((prev)=>[...prev, 'more'])}>add item</button>
           </div>
         `;

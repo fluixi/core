@@ -119,11 +119,24 @@ export const App: Component<{ name?: string}> = (props) => {
           <button @click=${(e) => setShown(Math.max(0, shown() - 1))}>fewer</button>
           <button @click=${() => setShown(Math.min(ALL.length, shown() + 1))}>more</button>
         </div>
-        <ul>
-          <li each=${items()}>${(it) => it.label}</li>
-        </ul>
-        <!-- keyed variant: <li each=${items()} key="id"> — then the render fn
-             receives an ACCESSOR: ${(it) => it().label} -->
+        <ul each=${items()}>${(it) => html`<li>${it.label}</li>`}</ul>
+        <!-- keyed variant: <ul each=${items()} key="id">, then the render fn
+             receives an accessor: ${(it) => html`<li>${it().label}</li>`} -->
+        <div class="row" each=${items()}>
+          ${(it) => html`<span class="tag" style="background: hsl(${it.id * 40} 70% 85%); color: #111">${it.label}</span>`}
+        </div>
+      </section>
+
+      <!-- container: carries if/else/each, never rendered -->
+      <section>
+        <h2>container</h2>
+        <container if=${on()}><span class="tag active">on</span> two nodes, no wrapper</container>
+        <container else><span class="tag">off</span></container>
+        <table>
+          <tbody>
+            <tr><container each=${items()}>${(it) => html`<td>${it.id}</td><td>${it.label}</td>`}</container></tr>
+          </tbody>
+        </table>
       </section>
   
       <!-- control flow components -->
