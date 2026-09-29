@@ -128,10 +128,21 @@ export function createRequestHandler(render: RenderFn): FetchHandler {
 
 // ─── Node bridge (the built-in "node adapter") ──────────────────────────────
 
+export interface NodeRequestOptions {
+  /** Reverse proxies whose forwarded headers are believed; see `FluixiConfig.trustProxy`. */
+  trustProxy?: number | boolean;
+}
+
 /** Build a Web `Request` from a Node `IncomingMessage`. */
-export function nodeToRequest(req: IncomingMessage): Request {
-  const host = req.headers.host ?? 'localhost';
-  const url = `http://${host}${req.url ?? '/'}`;
+export function nodeToRequest(req: IncomingMessage, options: NodeRequestOptions = {}): Request {
+  const hops = options.trustProxy === true ? Infinity : Number(options.trustProxy || 0);
+  const forwarded = (name: string) => {
+    const value = req.headers[name];
+    return hops > 0 && typeof value === 'string' ? value.split(',')[0]!.trim() || undefined : undefined;
+  };
+  const host = forwarded('x-forwarded-host') ?? req.headers.host ?? 'localhost';
+  const proto = forwarded('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const url = `${proto}://${host}${req.url ?? '/'}`;
   const headers = new Headers();
   for (const [k, v] of Object.entries(req.headers)) {
     if (Array.isArray(v)) v.forEach((x) => headers.append(k, x));
@@ -143,7 +154,24 @@ export function nodeToRequest(req: IncomingMessage): Request {
     init.body = req as any; // Node readable: fine for undici/Node fetch
     (init as any).duplex = 'half';
   }
-  return setClientAddress(new Request(url, init), req.socket?.remoteAddress);
+  return setClientAddress(new Request(url, init), addressOf(req, hops));
+}
+
+/**
+ * Each proxy appends the peer it saw to `x-forwarded-for`, so reading from the right, the
+ * socket's peer and then one entry per trusted proxy; what lies further left is the client's
+ * to write, and not believed.
+ */
+function addressOf(req: IncomingMessage, hops: number): string | undefined {
+  const peer = req.socket?.remoteAddress;
+  if (hops <= 0) return peer;
+  const header = req.headers['x-forwarded-for'];
+  const listed = (Array.isArray(header) ? header.join(',') : (header ?? ''))
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const chain = peer ? [...listed, peer] : listed;
+  return chain[Math.max(0, chain.length - 1 - hops)];
 }
 
 /** Write a Web `Response` (string or streamed body) to a Node `ServerResponse`. */
@@ -173,14 +201,14 @@ export async function sendResponse(res: ServerResponse, response: Response): Pro
 }
 
 /** Adapt a `FetchHandler` to a Node `(req, res)` handler. */
-export function toNodeHandler(handler: FetchHandler) {
+export function toNodeHandler(handler: FetchHandler, options: NodeRequestOptions = {}) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    const response = await handler(nodeToRequest(req));
+    const response = await handler(nodeToRequest(req, options));
     await sendResponse(res, response);
   };
 }
 
-export interface ServeNodeOptions {
+export interface ServeNodeOptions extends NodeRequestOptions {
   port?: number;
   onListen?: (port: number) => void;
   /** A failure to listen. Default: say why and exit non-zero. */
@@ -210,7 +238,7 @@ export function exitOnListenError(server: Server, port: number): void {
 /** The reference **Node adapter**: serve a `FetchHandler` over `node:http`. */
 export function serveNode(handler: FetchHandler, opts: ServeNodeOptions = {}): Server {
   const port = opts.port ?? 3000;
-  const node = toNodeHandler(handler);
+  const node = toNodeHandler(handler, { trustProxy: opts.trustProxy });
   const server = createHttpServer((req, res) => {
     node(req, res).catch((e) => {
       res.statusCode = 500;

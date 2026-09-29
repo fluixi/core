@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createServer } from 'node:http';
-import { toNodeHandler } from './handler.js';
+import { nodeToRequest, toNodeHandler } from './handler.js';
+import type { IncomingMessage } from 'node:http';
 import { clientAddress, setClientAddress } from './client-address.js';
 import { cloudflareEntry, netlifyEntry, vercelEntry, type EntrySource } from './adapters/entry.js';
 
@@ -21,6 +22,33 @@ describe('clientAddress', () => {
     } finally {
       server.close();
     }
+  });
+
+  describe('behind reverse proxies', () => {
+    const incoming = (headers: Record<string, string>, peer = '10.0.0.2') =>
+      ({ url: '/api/x', method: 'GET', headers: { host: 'internal:3000', ...headers }, socket: { remoteAddress: peer } }) as unknown as IncomingMessage;
+    const forwarded = { 'x-forwarded-for': '198.51.100.1, 203.0.113.5, 10.0.0.1', 'x-forwarded-proto': 'https', 'x-forwarded-host': 'api.example.test' };
+
+    it('believes no forwarded header by default', () => {
+      const request = nodeToRequest(incoming(forwarded));
+      expect(clientAddress(request)).toBe('10.0.0.2');
+      expect(request.url).toBe('http://internal:3000/api/x');
+    });
+
+    it('reads one entry back per trusted hop', () => {
+      expect(clientAddress(nodeToRequest(incoming(forwarded), { trustProxy: 1 }))).toBe('10.0.0.1');
+      expect(clientAddress(nodeToRequest(incoming(forwarded), { trustProxy: 2 }))).toBe('203.0.113.5');
+    });
+
+    it('never goes further back than the header reaches', () => {
+      expect(clientAddress(nodeToRequest(incoming(forwarded), { trustProxy: true }))).toBe('198.51.100.1');
+      expect(clientAddress(nodeToRequest(incoming(forwarded), { trustProxy: 9 }))).toBe('198.51.100.1');
+      expect(clientAddress(nodeToRequest(incoming({}), { trustProxy: 1 }))).toBe('10.0.0.2');
+    });
+
+    it('takes the scheme and host the client used', () => {
+      expect(nodeToRequest(incoming(forwarded), { trustProxy: 1 }).url).toBe('https://api.example.test/api/x');
+    });
   });
 
   it('is undefined for a request no entry recorded', () => {

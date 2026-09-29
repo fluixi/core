@@ -28,6 +28,14 @@ export interface FluixiConfig {
   apiOnly?: boolean;
   /** Dev/prod server port. Default: 3000. */
   port?: number;
+  /**
+   * Reverse proxies in front of the Node server (a load balancer, a platform router), as a count.
+   * Their `x-forwarded-for`, `-proto` and `-host` are then believed: `clientAddress()` is the
+   * address that many hops back, and the request URL has the scheme and host the client used.
+   * `true` believes every hop, which only holds when nothing reaches the server except through
+   * the proxy. Default: 0, the socket's peer, since anyone can send those headers.
+   */
+  trustProxy?: number | boolean;
   /** Server entry exporting `render(url): string | Promise<string>`. Default: src/entry-server.ts */
   serverEntry?: string;
   /** Client hydration entry. Default: src/entry-client.ts */
@@ -182,6 +190,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     ssr: config.ssr ?? true,
     apiOnly: config.apiOnly ?? false,
     port: config.port ?? 3000,
+    trustProxy: config.trustProxy ?? 0,
     serverEntry: config.serverEntry ?? 'src/entry-server.ts',
     clientEntry: config.clientEntry ?? 'src/entry-client.ts',
     template: config.template ?? 'index.html',

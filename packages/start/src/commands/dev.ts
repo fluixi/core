@@ -149,7 +149,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
           return composeMiddleware(chain, renderHandler)(request);
         }, (e) => vite.ssrFixStacktrace?.(e))
       : renderHandler;
-  const nodeHandler = toNodeHandler(handler);
+  const nodeHandler = toNodeHandler(handler, { trustProxy: cfg.trustProxy });
   const http = createHttp((req, res) => {
     // Vite middleware first (static assets + HMR), then our handler for app routes.
     vite.middlewares(req, res, () => nodeHandler(req, res));

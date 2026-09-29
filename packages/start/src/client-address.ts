@@ -4,8 +4,8 @@
  * which each platform sets itself. A Web `Request` has no field for it, so the entry records
  * it here when it builds the request.
  *
- * Behind a reverse proxy on Node the socket's peer is the proxy. Rate limits keyed on this
- * then count every client as one; pass your own key until the proxy is configured.
+ * Behind a reverse proxy on Node the socket's peer is the proxy, and every client would look
+ * like one: set `trustProxy` in the config to the number of proxies in front.
  *
  * The registry sits in the global registry, keyed by symbol, so `@fluixi/api` reads it
  * without importing this package, and a bundle with its own copy of it still finds it.

@@ -133,6 +133,7 @@ export const nodeAdapter: Adapter = {
   async serve({ handler, cfg, clientDir }) {
     serveNode(withStaticFiles(handler, clientDir), {
       port: cfg.port,
+      trustProxy: cfg.trustProxy,
       onListen: (p) => console.log(`  fluixi start (node) → http://localhost:${p}`),
     });
   },
