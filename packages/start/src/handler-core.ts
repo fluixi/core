@@ -35,7 +35,7 @@ export interface HandlerParts {
   template: string;
   /** The imported server entry. `{}` for an SPA that ships none. */
   mod: ServerModule;
-  cfg: Pick<ResolvedConfig, 'ssr' | 'mountId'>;
+  cfg: Pick<ResolvedConfig, 'ssr' | 'mountId'> & { apiOnly?: boolean };
   /** The imported `middleware.js`, if the app has one. */
   middleware?: unknown;
   /**
@@ -52,7 +52,10 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
   // Streaming when the entry exports `renderStream` (a body stream): flush the split
   // template head first, pipe the body, then the tail. Else inject the string render.
   let core: FetchHandler;
-  if (!cfg.ssr) {
+  if (cfg.apiOnly) {
+    // Nothing to render: whatever the API routes below do not claim is simply not here.
+    core = async (request) => notFoundJson(request);
+  } else if (!cfg.ssr) {
     // SPA: the page is the static shell; the client entry renders it. Server functions +
     // middleware still run through this handler: there's just no SSR render pass. The
     // path is still known, though, and the route it names still loads its own chunk, so
@@ -98,3 +101,17 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
   const chain = [...normalizeMiddleware(mod.__fluixiAppMiddleware), ...normalizeMiddleware(middleware as never)];
   return guardHandler(composeMiddleware(chain, core));
 }
+
+/**
+ * The answer of an API-only app for a path no route claims: JSON, in the shape `@fluixi/api`
+ * errors take, so a client sees one format whether the route or the server refused.
+ */
+export function notFoundJson(request: Request): Response {
+  const { pathname } = new URL(request.url);
+  const body = { error: { code: 'not_found', message: `No route for ${request.method} ${pathname}.` } };
+  return new Response(JSON.stringify(body), {
+    status: 404,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+  });
+}
+

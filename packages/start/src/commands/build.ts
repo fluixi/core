@@ -51,11 +51,19 @@ export async function build(
   const { assertNoExposedSecrets } = await import('../env-guard.js');
   assertNoExposedSecrets(cfg.root);
   const { build: viteBuild } = await import('vite');
-  const plugins = await fluixiPlugins(cfg);
   // The deploy target decides whether the framework is bundled in or imported at runtime.
   const ssr = ssrBuildOptions(cfg);
 
   process.stdout.write(`\n  ${wordmark()}  ${c.gray('building for production')}\n\n`);
+
+  if (cfg.apiOnly) {
+    await buildApi(cfg, ssr);
+    const ms = Date.now() - startedAt;
+    process.stdout.write('\n');
+    done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/server')}\n`);
+    return;
+  }
+  const plugins = await fluixiPlugins(cfg);
 
   step('client bundle');
   await viteBuild({
@@ -237,6 +245,66 @@ async function bundleEntry(
     });
   } finally {
     await rm(temp, { force: true });
+  }
+}
+
+/**
+ * An API-only app: no client bundle, and a server entry the build writes itself.
+ *
+ * The entry only re-exports the API routes; the app config's providers and middleware are
+ * injected into it the way they are into any server entry, because `serverEntry` names it.
+ * It lives in `.fluixi/`, next to nothing the app owns, and is bundled as
+ * `dist/server/entry-server.js`, where `fluixi start` and the adapters already look.
+ */
+async function buildApi(cfg: ResolvedConfig, ssr: unknown): Promise<void> {
+  const { build: viteBuild } = await import('vite');
+  const entry = resolve(cfg.root, '.fluixi', 'api-entry.ts');
+  await mkdir(dirname(entry), { recursive: true });
+  await writeFile(
+    entry,
+    '// Written by `fluixi build` for an API-only app. Not to be edited: it is rewritten on every build.\n' +
+      "export { isApiRequest, handleApiRequest } from '@fluixi/start/api-routes';\n",
+  );
+  const apiCfg = { ...cfg, serverEntry: '.fluixi/api-entry.ts' };
+  const apiPlugins = await fluixiPlugins(apiCfg);
+
+  step(`api server bundle${bundleNote(cfg)}`);
+  await viteBuild({
+    root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
+    plugins: apiPlugins,
+    logLevel: 'warn',
+    ssr: ssr as never,
+    build: {
+      outDir: 'dist/server',
+      ssr: entry,
+      emptyOutDir: true,
+      rollupOptions: { output: { entryFileNames: 'entry-server.js' } },
+    },
+  });
+
+  const middlewareSrc = resolve(cfg.root, cfg.middleware);
+  if (existsSync(middlewareSrc)) {
+    step('middleware');
+    await viteBuild({
+      root: cfg.root,
+      resolve: { alias: aliasesFromTsconfig(cfg.root) },
+      plugins: apiPlugins as never,
+      logLevel: 'warn',
+      ssr: ssr as never,
+      build: { outDir: 'dist/server', ssr: middlewareSrc, emptyOutDir: false },
+    });
+  }
+  if (cfg.adapter?.build) {
+    step(`${cfg.adapter.name} output`);
+    await cfg.adapter.build({
+      cfg,
+      root: cfg.root,
+      clientDir: resolve(cfg.root, 'dist/client'),
+      serverDir: resolve(cfg.root, 'dist/server'),
+      hasServer: true,
+      bundleEntry: (source, outFile) => bundleEntry(cfg, apiPlugins, source, outFile),
+    });
   }
 }
 

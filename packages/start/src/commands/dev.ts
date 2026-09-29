@@ -11,6 +11,7 @@ import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
 import { APP_VMOD, findAppConfig, hasAppConfig } from '../app-plugin.js';
 import { withPlatformRequest } from '../platform-request.js';
+import { notFoundJson } from '../handler-core.js';
 
 const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
 
@@ -74,7 +75,8 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   }
 
   const { createServer } = await import('vite');
-  const template = readFileSync(resolve(cfg.root, cfg.template), 'utf-8');
+  // An API-only app has no page and so no template.
+  const template = cfg.apiOnly ? '' : readFileSync(resolve(cfg.root, cfg.template), 'utf-8');
 
   // Create the HTTP server FIRST so Vite's HMR WebSocket attaches to it instead of
   // opening its own port (which, if held by a zombie, loops "[vite] server
@@ -100,6 +102,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       const api = await vite.ssrLoadModule(API_VIRTUAL_MODULE);
       if (api.isApiRequest(request)) return api.handleApiRequest(request);
     }
+    if (cfg.apiOnly) return notFoundJson(request);
     // SPA mode: serve the static shell; the client entry renders. The server still ran
     // (server functions above + middleware below), there's just no SSR render pass.
     if (!cfg.ssr) {
@@ -157,6 +160,8 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     plugins: await fluixiPlugins(cfg), // file routing + JSX/SSR transform (fluixi)
     server: { middlewareMode: true, hmr: { server: http } },
     appType: 'custom',
+    // No browser code to pre-bundle in an API: without this Vite searches for an entry and warns.
+    ...(cfg.apiOnly ? { optimizeDeps: { noDiscovery: true, include: [] } } : {}),
     // `@fluixi/core` always goes through vite rather than being externalized.
     // `@fluixi/core/routes` is served by fluixiRoutesPlugin, and an externalized
     // dependency is imported by node directly, so no plugin ever sees the specifier and

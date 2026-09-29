@@ -20,6 +20,12 @@ export interface FluixiConfig {
    * The same app code runs either way; flip this to choose where the first paint happens.
    */
   ssr?: boolean;
+  /**
+   * An API service: only `src/api` routes (plus the app config's providers and middleware), no
+   * pages. No `index.html`, no entries to write; `fluixi build` generates the server entry and
+   * `fluixi dev` and `fluixi start` answer anything outside the API with a JSON 404.
+   */
+  apiOnly?: boolean;
   /** Dev/prod server port. Default: 3000. */
   port?: number;
   /** Server entry exporting `render(url): string | Promise<string>`. Default: src/entry-server.ts */
@@ -174,6 +180,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
   return {
     root,
     ssr: config.ssr ?? true,
+    apiOnly: config.apiOnly ?? false,
     port: config.port ?? 3000,
     serverEntry: config.serverEntry ?? 'src/entry-server.ts',
     clientEntry: config.clientEntry ?? 'src/entry-client.ts',

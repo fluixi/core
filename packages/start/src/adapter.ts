@@ -18,7 +18,8 @@ import { createPreloader, type RouteAssets } from './preload.js';
 export async function createProdHandler(config: FluixiConfig = {}): Promise<FetchHandler> {
   const cfg = resolveConfig(config);
   const clientDir = resolve(cfg.root, 'dist/client');
-  const template = await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
+  // An API has no page, so no shell to read.
+  const template = cfg.apiOnly ? '' : await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
   // SPA apps may ship no server entry (or one only for server functions), import if present.
   const mod = existsSync(serverEntry)

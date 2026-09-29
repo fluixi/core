@@ -271,7 +271,12 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
     // own because it is the one most apps set. A start app never writes
     // `fluixi()` itself, so without this passthrough the plugin's other options
     // (propsDestructure and the rest) had nowhere to be declared.
-    fluixi({ ...(cfg.vitePlugin ?? {}), ...(cfg.resolve ? { resolve: cfg.resolve } : {}) }),
+    // An API resolves no components, so no ambient types for them; an app can still ask.
+    fluixi({
+      ...(cfg.apiOnly ? { globals: false as const } : {}),
+      ...(cfg.vitePlugin ?? {}),
+      ...(cfg.resolve ? { resolve: cfg.resolve } : {}),
+    }),
   ];
   // The app's own, after the framework's: a plugin that transforms css or assets runs
   // on what the framework produced rather than racing it.
