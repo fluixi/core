@@ -19,7 +19,7 @@
  * ```
  */
 export { route, contractOf, setErrorReporter, CONTRACT } from './route.js';
-export type { RouteContract, RouteHandler, RouteInput } from './route.js';
+export type { Guard, RouteContract, RouteHandler, RouteInput } from './route.js';
 
 export { ApiError, badRequest, unauthorized, forbidden, notFound, conflict, errorResponse, toApiError } from './errors.js';
 export type { ApiErrorBody, ValidationIssue } from './errors.js';

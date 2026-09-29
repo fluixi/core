@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { z } from 'zod';
 import * as v from 'valibot';
-import { createOpenApiDocument, describedBy, openApiRoute, route, setJsonSchemaConverter } from './index.js';
+import { createOpenApiDocument, describedBy, openApiRoute, route, setJsonSchemaConverter, type Guard } from './index.js';
 
 const Project = z.object({ id: z.string().uuid(), name: z.string().min(1), status: z.enum(['active', 'archived']) });
 
@@ -163,6 +163,15 @@ describe('a route a library describes', () => {
     expect(doc.components.schemas.User.properties.team).toEqual({ anyOf: [{ $ref: '#/components/schemas/AuthError' }, { type: 'null' }] });
   });
 
+  it('renames an included operation id that clashes with one of ours', async () => {
+    const clashing = { paths: { '/projects': { get: { operationId: 'getProjects', responses: {} } } } };
+    const handler = describedBy(() => clashing, () => new Response('ok'));
+    const GET = openApiRoute(() => [...routes, { path: '/api/auth/{all}', mod: { GET: handler } }], info);
+    const doc = await (await GET()).json();
+    expect(doc.paths['/api/v1/projects'].get.operationId).toBe('getProjects');
+    expect(doc.paths['/api/auth/projects'].get.operationId).toBe('authGetProjects');
+  });
+
   it('tries again on the next request when the library fails', async () => {
     let fail = true;
     const handler = describedBy(() => {
@@ -173,5 +182,54 @@ describe('a route a library describes', () => {
     await expect(GET()).rejects.toThrow('not ready');
     fail = false;
     expect((await GET()).status).toBe(200);
+  });
+});
+
+describe('guarded routes', () => {
+  const cookie = { type: 'apiKey', in: 'cookie', name: 'sid' };
+  const signedIn: Guard = { check: () => ({}), security: { name: 'session', scheme: cookie } };
+  const admin: Guard = { check: () => ({}), security: { name: 'session', scheme: cookie }, refuses: [401, 403] };
+  const doc = createOpenApiDocument(
+    [
+      { path: '/api/v1/me', mod: { GET: route({ guard: signedIn, handler: () => undefined }) } },
+      { path: '/api/v1/members', mod: { DELETE: route({ guard: admin, handler: () => undefined }) } },
+      { path: '/api/v1/health', mod: { GET: route({ handler: () => undefined }) } },
+      { path: '/api/v1/legacy', mod: { GET: () => new Response('ok') } },
+    ],
+    info,
+  ) as any;
+
+  it('state the scheme they need, declared once, and the refusals they answer with', () => {
+    expect(doc.components.securitySchemes).toEqual({ session: cookie });
+    const me = doc.paths['/api/v1/me'].get;
+    expect(me.security).toEqual([{ session: [] }]);
+    expect(Object.keys(me.responses)).toEqual(expect.arrayContaining(['401']));
+    expect(me.responses['403']).toBeUndefined();
+    expect(doc.paths['/api/v1/members'].delete.responses['403']).toBeDefined();
+  });
+
+  it('mark a contracted route without a guard as public, and say nothing of one without a contract', () => {
+    expect(doc.paths['/api/v1/health'].get.security).toEqual([]);
+    expect(doc.paths['/api/v1/health'].get.responses['401']).toBeUndefined();
+    expect(doc.paths['/api/v1/legacy'].get.security).toBeUndefined();
+  });
+
+  it('follow a scheme an included document had to rename', async () => {
+    const library = {
+      paths: { '/sign-out': { post: { security: [{ session: [] }], responses: {} } } },
+      components: { securitySchemes: { session: { type: 'http', scheme: 'bearer' } } },
+    };
+    const handler = describedBy(() => library, () => new Response('ok'));
+    const GET = openApiRoute(
+      () => [
+        { path: '/api/v1/me', mod: { GET: route({ guard: signedIn, handler: () => undefined }) } },
+        { path: '/api/auth/{all}', mod: { POST: handler } },
+      ],
+      info,
+    );
+    const merged = await (await GET()).json();
+    expect(merged.components.securitySchemes.AuthSession).toEqual({ type: 'http', scheme: 'bearer' });
+    expect(merged.paths['/api/auth/sign-out'].post.security).toEqual([{ AuthSession: [] }]);
+    expect(merged.paths['/api/v1/me'].get.security).toEqual([{ session: [] }]);
   });
 });

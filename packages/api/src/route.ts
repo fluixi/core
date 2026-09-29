@@ -12,14 +12,34 @@ import { ApiError, errorResponse, toApiError, type ValidationIssue } from './err
 import { readJson, readQuery } from './input.js';
 
 type AnySchema = Schema | undefined;
+type AnyGuard = Guard<any> | undefined;
+type GuardOutput<G extends AnyGuard> = G extends Guard<infer A> ? A : undefined;
+
+/**
+ * Decides who may call a route. It runs before anything is read from the request, so a caller
+ * who may not call it learns nothing about what it accepts. What `check` returns reaches the
+ * handler as `auth`; a refusal is thrown, with a 401 or 403 `status`.
+ *
+ * Auth packages provide them (`signedIn()`, `member()` in `@fluixi/auth/server`), matched by
+ * shape, so this package depends on none of them.
+ */
+export interface Guard<A = unknown> {
+  check(request: Request): A | Promise<A>;
+  /** For the API description: the security scheme a caller satisfies, under a stable name. */
+  security?: { name: string; scheme: Record<string, unknown>; scopes?: string[] };
+  /** The refusals it answers with, for the API description. `[401]` when not given. */
+  refuses?: readonly (401 | 403)[];
+}
 type Output<S extends AnySchema, Fallback> = S extends Schema ? Schema.InferOutput<S> : Fallback;
 type Input<S extends AnySchema, Fallback> = S extends Schema ? Schema.InferInput<S> : Fallback;
 
 /** What a handler receives: the validated input, and the request for anything else. */
-export interface RouteInput<P extends AnySchema, Q extends AnySchema, B extends AnySchema> {
+export interface RouteInput<P extends AnySchema, Q extends AnySchema, B extends AnySchema, G extends AnyGuard = undefined> {
   params: Output<P, Record<string, string>>;
   query: Output<Q, Record<string, string | string[]>>;
   body: Output<B, undefined>;
+  /** What the guard resolved: the user, their membership. `undefined` without a guard. */
+  auth: GuardOutput<G>;
   request: Request;
 }
 
@@ -28,7 +48,10 @@ export interface RouteContract<
   Q extends AnySchema = undefined,
   B extends AnySchema = undefined,
   R extends AnySchema = undefined,
+  G extends AnyGuard = undefined,
 > {
+  /** Who may call it. Without one, anyone. */
+  guard?: G;
   /** Path parameters, from the file name: `[id].ts` gives `{ id }`. */
   params?: P;
   /** The query string, with repeated keys as arrays. */
@@ -51,7 +74,7 @@ export interface RouteContract<
   operationId?: string;
   /** Marked deprecated in the API description. */
   deprecated?: boolean;
-  handler(input: RouteInput<P, Q, B>): Input<R, unknown> | Response | Promise<Input<R, unknown> | Response>;
+  handler(input: RouteInput<P, Q, B, G>): Input<R, unknown> | Response | Promise<Input<R, unknown> | Response>;
 }
 
 /** Where a route's contract is kept on its handler, for the API description and the client. */
@@ -63,9 +86,10 @@ export interface RouteHandler<
   Q extends AnySchema = AnySchema,
   B extends AnySchema = AnySchema,
   R extends AnySchema = AnySchema,
+  G extends AnyGuard = AnyGuard,
 > {
   (request: Request, context?: { params?: Record<string, string> }): Promise<Response>;
-  readonly [CONTRACT]: RouteContract<P, Q, B, R>;
+  readonly [CONTRACT]: RouteContract<P, Q, B, R, G>;
 }
 
 /** Where a failure no one meant to report goes: logged, never sent. `console.error` by default. */
@@ -83,9 +107,11 @@ export function route<
   Q extends AnySchema = undefined,
   B extends AnySchema = undefined,
   R extends AnySchema = undefined,
->(contract: RouteContract<P, Q, B, R>): RouteHandler<P, Q, B, R> {
+  G extends AnyGuard = undefined,
+>(contract: RouteContract<P, Q, B, R, G>): RouteHandler<P, Q, B, R, G> {
   const handle = async (request: Request, context: { params?: Record<string, string> } = {}): Promise<Response> => {
     try {
+      const auth = contract.guard ? await contract.guard.check(request) : undefined;
       const issues: ValidationIssue[] = [];
       const params = await check(contract.params, context.params ?? {}, 'params', issues);
       const query = await check(contract.query, readQuery(new URL(request.url)), 'query', issues);
@@ -94,7 +120,7 @@ export function route<
         : undefined;
       if (issues.length) throw new ApiError(400, 'validation_failed', 'The request is not valid.', issues);
 
-      const out = await contract.handler({ params, query, body, request } as RouteInput<P, Q, B>);
+      const out = await contract.handler({ params, query, body, auth, request } as RouteInput<P, Q, B, G>);
       if (out instanceof Response) return out;
       if (out === undefined && !contract.response) return new Response(null, { status: contract.status ?? 204 });
 
@@ -120,11 +146,11 @@ export function route<
     }
   };
   Object.defineProperty(handle, CONTRACT, { value: contract });
-  return handle as RouteHandler<P, Q, B, R>;
+  return handle as RouteHandler<P, Q, B, R, G>;
 }
 
 /** The contract a route was declared with, or undefined for a plain handler. */
-export function contractOf(handler: unknown): RouteContract<AnySchema, AnySchema, AnySchema, AnySchema> | undefined {
+export function contractOf(handler: unknown): RouteContract<AnySchema, AnySchema, AnySchema, AnySchema, AnyGuard> | undefined {
   return typeof handler === 'function' ? (handler as Partial<RouteHandler>)[CONTRACT] : undefined;
 }
 

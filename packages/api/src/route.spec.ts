@@ -6,7 +6,7 @@ import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest';
 import { z } from 'zod';
 import * as v from 'valibot';
 import { derivePattern, handleApi } from '@fluixi/start/api';
-import { ApiError, contractOf, notFound, route, setErrorReporter, type ApiErrorBody } from './index.js';
+import { ApiError, contractOf, notFound, route, setErrorReporter, type ApiErrorBody, type Guard } from './index.js';
 
 const url = (path: string) => `http://localhost${path}`;
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -191,5 +191,55 @@ describe('inside @fluixi/start', () => {
     const bad = await handleApi(routes, new Request(url('/api/projects/abc')));
     expect(bad.status).toBe(400);
     expect((await handleApi(routes, new Request(url('/api/projects/42'), { method: 'DELETE' }))).status).toBe(405);
+  });
+});
+
+describe('a guard', () => {
+  // Signed in when the request carries `x-user`; refuses the rest the way @fluixi/auth does.
+  const signedIn: Guard<{ user: { id: string } }> = {
+    check(request) {
+      const id = request.headers.get('x-user');
+      if (!id) throw Object.assign(new Error('no user'), { status: 401 });
+      return { user: { id } };
+    },
+  };
+
+  const rename = route({
+    guard: signedIn,
+    body: z.object({ name: z.string().min(1) }),
+    handler({ auth, body }) {
+      expectTypeOf(auth.user.id).toEqualTypeOf<string>();
+      return { by: auth.user.id, name: body.name };
+    },
+  });
+
+  it('hands the handler what it resolved, typed', async () => {
+    const res = await rename(post('/api/x', { name: 'a' }, { 'x-user': 'u1' }));
+    expect(await json(res)).toEqual({ by: 'u1', name: 'a' });
+  });
+
+  it('refuses before the input is read, so an invalid body gets 401 and no details', async () => {
+    const res = await rename(post('/api/x', { name: '' }));
+    expect(res.status).toBe(401);
+    expect((await json(res)).error).toEqual({ code: 'unauthorized', message: 'Sign in to continue.' });
+  });
+
+  it('keeps the code and message of a refusal that names itself', async () => {
+    const noOrganization: Guard = {
+      check() {
+        throw Object.assign(new Error('Choose an organisation first.'), { status: 403, code: 'no_active_organization' });
+      },
+    };
+    const res = await route({ guard: noOrganization, handler: () => undefined })(new Request(url('/api/x')));
+    expect(res.status).toBe(403);
+    expect((await json(res)).error).toEqual({ code: 'no_active_organization', message: 'Choose an organisation first.' });
+  });
+
+  it('leaves auth undefined without one', () => {
+    route({
+      handler({ auth }) {
+        expectTypeOf(auth).toEqualTypeOf<undefined>();
+      },
+    });
   });
 });

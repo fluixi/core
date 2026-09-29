@@ -11,7 +11,7 @@
  * marked `x-fluixi-unconverted`, so the gap shows in the document instead of breaking it.
  */
 import type { StandardSchemaV1 } from './standard-schema.js';
-import { contractOf, type RouteContract } from './route.js';
+import { contractOf, type Guard, type RouteContract } from './route.js';
 
 type JsonSchema = Record<string, unknown>;
 type Io = 'input' | 'output';
@@ -83,6 +83,7 @@ const ERROR_SCHEMA: JsonSchema = {
 
 export function createOpenApiDocument(routes: readonly DescribedRoute[], info: OpenApiInfo): Record<string, unknown> {
   const paths: Record<string, Record<string, unknown>> = {};
+  const securitySchemes: Record<string, unknown> = {};
   for (const route of routes) {
     if (!route.path) continue;
     for (const method of METHODS) {
@@ -90,7 +91,7 @@ export function createOpenApiDocument(routes: readonly DescribedRoute[], info: O
       if (typeof handler !== 'function') continue;
       const marks = handler as unknown as Record<symbol, unknown>;
       if (marks[DESCRIBES] || marks[DESCRIBED_BY]) continue;
-      (paths[route.path] ??= {})[method] = operation(method, route.path, contractOf(handler));
+      (paths[route.path] ??= {})[method] = operation(method, route.path, contractOf(handler), securitySchemes);
     }
   }
   const { servers, ...rest } = info;
@@ -99,7 +100,7 @@ export function createOpenApiDocument(routes: readonly DescribedRoute[], info: O
     info: rest,
     ...(servers?.length ? { servers } : {}),
     paths,
-    components: { schemas: { Error: ERROR_SCHEMA } },
+    components: { schemas: { Error: ERROR_SCHEMA }, ...(Object.keys(securitySchemes).length ? { securitySchemes } : {}) },
   };
 }
 
@@ -138,17 +139,18 @@ async function describe(routes: readonly DescribedRoute[], info: OpenApiInfo): P
 /**
  * Adds another document's paths under `mount`, its tags, and its components. A component whose
  * name is taken by a different one is renamed after the mount (`/api/auth` gives `AuthUser`),
- * with its references.
+ * with its references, and so is a clashing operation id (`authGetOrganization`).
  */
 export function includeDocument(target: Record<string, unknown>, source: Record<string, unknown>, mount: string): void {
   const prefix = pascal(mount.split('/').filter(Boolean).pop() ?? 'included');
   const components = (target.components ??= {}) as Record<string, Record<string, unknown>>;
+  const prefixed = (name: string) => prefix + name[0]!.toUpperCase() + name.slice(1);
   const renames = new Map<string, string>();
   for (const [section, entries] of Object.entries((source.components ?? {}) as Record<string, Record<string, unknown>>)) {
     for (const [name, value] of Object.entries(entries)) {
       const existing = components[section]?.[name];
       if (existing !== undefined && JSON.stringify(existing) !== JSON.stringify(value)) {
-        renames.set(`#/components/${section}/${name}`, `#/components/${section}/${prefix}${name}`);
+        renames.set(`#/components/${section}/${name}`, `#/components/${section}/${prefixed(name)}`);
       }
     }
   }
@@ -164,17 +166,35 @@ export function includeDocument(target: Record<string, unknown>, source: Record<
   for (const [section, entries] of Object.entries((source.components ?? {}) as Record<string, Record<string, unknown>>)) {
     const into = (components[section] ??= {});
     for (const [name, value] of Object.entries(entries)) {
-      const renamed = renames.has(`#/components/${section}/${name}`) ? `${prefix}${name}` : name;
+      const renamed = renames.has(`#/components/${section}/${name}`) ? prefixed(name) : name;
       into[renamed] = rewrite(value);
     }
   }
 
-  const paths = (target.paths ??= {}) as Record<string, unknown>;
+  const paths = (target.paths ??= {}) as Record<string, Record<string, Record<string, unknown>>>;
+  // Operation ids must be unique across the document; ours are kept, an included one that clashes
+  // is renamed after the mount like a component.
+  const ids = new Set(Object.values(paths).flatMap((item) => Object.values(item).map((op) => op?.operationId)));
   for (const [path, item] of Object.entries((source.paths ?? {}) as Record<string, Record<string, unknown>>)) {
     const described = rewrite(item) as Record<string, Record<string, unknown>>;
     for (const [method, op] of Object.entries(described)) {
+      // Requirements name a scheme instead of referencing it, so a renamed one is followed here.
+      if (Array.isArray(op.security)) {
+        op.security = (op.security as Record<string, string[]>[]).map((requirement) =>
+          Object.fromEntries(
+            Object.entries(requirement).map(([name, scopes]) => [
+              renames.has(`#/components/securitySchemes/${name}`) ? prefixed(name) : name,
+              scopes,
+            ]),
+          ),
+        );
+      }
       // Tools name requests after the summary; a library often gives only a description.
       if (METHODS.includes(method as never) && !op.summary) op.summary = summaryOf(op, method, mount + path);
+      if (typeof op.operationId === 'string' && ids.has(op.operationId)) {
+        op.operationId = prefix[0]!.toLowerCase() + prefix.slice(1) + op.operationId[0]!.toUpperCase() + op.operationId.slice(1);
+      }
+      if (typeof op.operationId === 'string') ids.add(op.operationId);
     }
     paths[mount + path] = described;
   }
@@ -211,7 +231,12 @@ function pascal(word: string): string {
     .join('');
 }
 
-function operation(method: string, path: string, contract: RouteContract<any, any, any, any> | undefined): Record<string, unknown> {
+function operation(
+  method: string,
+  path: string,
+  contract: RouteContract<any, any, any, any, any> | undefined,
+  schemes: Record<string, unknown>,
+): Record<string, unknown> {
   const operationId = contract?.operationId ?? idFor(method, path);
   if (!contract) {
     return {
@@ -240,6 +265,12 @@ function operation(method: string, path: string, contract: RouteContract<any, an
     responses[413] = error('The body is over the limit.');
     responses[415] = error('The body is not JSON.');
   }
+  const guard = contract.guard as Guard | undefined;
+  if (guard) {
+    const refuses = guard.refuses ?? [401];
+    if (refuses.includes(401)) responses[401] = error('Not signed in: `unauthorized`.');
+    if (refuses.includes(403)) responses[403] = error('Signed in, not allowed: `forbidden`, or a more precise code.');
+  }
   if (pathNames(path).length) responses[404] = error('Nothing at this path.');
   responses[500] = error('A fault on the server. Its detail is logged, never sent.');
 
@@ -250,12 +281,21 @@ function operation(method: string, path: string, contract: RouteContract<any, an
     summary: contract.summary ?? summaryFor(method, path),
     ...(contract.description ? { description: contract.description } : {}),
     ...(contract.deprecated ? { deprecated: true } : {}),
+    // Stated on every contracted route, so a public one reads as public rather than unknown.
+    security: security(guard, schemes),
     ...(parameters.length ? { parameters } : {}),
     ...(contract.body
       ? { requestBody: { required: true, content: { 'application/json': { schema: schemaFor(contract.body, 'input') } } } }
       : {}),
     responses,
   };
+}
+
+function security(guard: Guard | undefined, schemes: Record<string, unknown>): Record<string, string[]>[] {
+  if (!guard?.security) return [];
+  const { name, scheme, scopes } = guard.security;
+  schemes[name] = scheme;
+  return [{ [name]: scopes ?? [] }];
 }
 
 /** Path or query parameters, one per property of the object schema. */

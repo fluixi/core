@@ -43,14 +43,18 @@ export const conflict = (message: string, details?: unknown) => new ApiError(409
 /**
  * Anything thrown by a handler, as the `ApiError` the caller sees.
  *
- * Auth refusals from `@fluixi/auth` (`requireUser` and its siblings) carry a 401 or 403 and are
- * matched by shape, the way `@fluixi/start` matches them, so neither package depends on the other.
+ * Auth refusals from `@fluixi/auth` (`requireUser`, the guards) carry a 401 or 403, and a
+ * `code` when they have a more precise one, and are matched by shape, the way `@fluixi/start` matches them, so neither package depends on the other.
  */
 export function toApiError(error: unknown): { error: ApiError; internal: boolean } {
   if (error instanceof ApiError) return { error, internal: false };
-  const status = (error as { status?: unknown } | null)?.status;
-  if (status === 401) return { error: unauthorized(), internal: false };
-  if (status === 403) return { error: forbidden(), internal: false };
+  const { status, code, message } = (error ?? {}) as { status?: unknown; code?: unknown; message?: unknown };
+  if (status === 401 || status === 403) {
+    // A refusal that names itself (`no_active_organization`) keeps its code and message, so a
+    // client can tell "pick an organisation" from "not allowed".
+    if (typeof code === 'string' && typeof message === 'string') return { error: new ApiError(status, code, message), internal: false };
+    return { error: status === 401 ? unauthorized() : forbidden(), internal: false };
+  }
   return { error: new ApiError(500, 'internal', 'Something went wrong on our side.'), internal: true };
 }
 
