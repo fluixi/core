@@ -21,6 +21,8 @@ export interface AuthUser {
 export interface AuthSession {
   id?: string;
   expiresAt?: string | number | Date;
+  /** The organisation the session works in, with Better Auth's `organization()` plugin. */
+  activeOrganizationId?: string | null;
   [key: string]: unknown;
 }
 
