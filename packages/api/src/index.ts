@@ -31,8 +31,8 @@ export type { OpenApiInfo, DescribedRoute, JsonSchemaConverter } from './openapi
 
 export { apiSecurity, securityHeaders, cors, originCheck, DEFAULT_SECURITY_HEADERS } from './security.js';
 export type { ApiSecurityOptions, CorsOptions, Origins, SecurityHeadersOptions } from './security.js';
-export { rateLimit, memoryRateLimitStore } from './rate-limit.js';
-export type { RateLimitOptions, RateLimitStore } from './rate-limit.js';
+export { rateLimit, memoryRateLimitStore, postgresRateLimitStore } from './rate-limit.js';
+export type { RateLimitOptions, RateLimitStore, PostgresRateLimitOptions, SqlClient } from './rate-limit.js';
 export type { Middleware } from './middleware.js';
 
 export type { StandardSchemaV1 } from './standard-schema.js';

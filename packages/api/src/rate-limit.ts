@@ -2,7 +2,7 @@
  * Rate limits: `rate-limiter-flexible` counts, behind a store interface so a shared backend
  * (Postgres, Redis) replaces the in-memory one without touching the middleware.
  */
-import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+import { RateLimiterMemory, RateLimiterPostgres, RateLimiterRes } from 'rate-limiter-flexible';
 import { ApiError, errorResponse } from './errors.js';
 import { withHeaders, type Middleware } from './middleware.js';
 
@@ -14,12 +14,82 @@ export interface RateLimitStore {
 
 /** Counts in this process. Enough for one instance; several need a shared store. */
 export function memoryRateLimitStore(): RateLimitStore {
-  const limiters = new Map<string, RateLimiterMemory>();
+  return storeOf(async (limit, windowSeconds) => new RateLimiterMemory({ points: limit, duration: windowSeconds }));
+}
+
+/**
+ * Anything that runs a parameterised query and returns rows: a node-postgres `Pool` or
+ * `Client`, PGlite. No driver is imported here; the app passes the connection it has.
+ */
+export interface SqlClient {
+  query(text: string, values?: unknown[]): Promise<{ rows: any[] }>;
+}
+
+export interface PostgresRateLimitOptions {
+  /** `rate_limits` by default. */
+  table?: string;
+  schema?: string;
+  /**
+   * Create the table on first use (`key varchar(255) primary key, points integer not null
+   * default 0, expire bigint`). Off when a migration already made it.
+   */
+  createTable?: boolean;
+}
+
+/**
+ * Counts in Postgres, so every instance of the API shares them. If the database fails, hits are
+ * counted in memory until it is back rather than refusing or letting everyone through.
+ *
+ * Expired rows are cleared now and then on a hit rather than by a timer, so an idle database
+ * that scales to zero is left asleep.
+ */
+export function postgresRateLimitStore(client: SqlClient, options: PostgresRateLimitOptions = {}): RateLimitStore {
+  const { table = 'rate_limits', schema, createTable = true } = options;
+  // The limiter sends node-postgres query objects; this takes any client with query(text, values).
+  const storeClient = { query: (q: { text: string; values?: unknown[] }) => client.query(q.text, q.values) };
+  let hits = 0;
+  return storeOf(
+    (limit, windowSeconds) =>
+      new Promise<RateLimiterPostgres>((resolve, reject) => {
+        const limiter: RateLimiterPostgres = new RateLimiterPostgres(
+          {
+            storeClient,
+            storeType: 'pool',
+            tableName: table,
+            schemaName: schema,
+            tableCreated: !createTable,
+            clearExpiredByTimeout: false,
+            points: limit,
+            duration: windowSeconds,
+            insuranceLimiter: new RateLimiterMemory({ points: limit, duration: windowSeconds }),
+          },
+          // Called inside the constructor when the table exists already: resolve once it returned.
+          (error?: unknown) => (error ? reject(error) : queueMicrotask(() => resolve(limiter))),
+        );
+      }),
+    (limiter) => {
+      // Public in the library, missing from its type declarations.
+      const sweep = limiter as unknown as { clearExpired(before: number): Promise<unknown> };
+      if (++hits % 1000 === 0) void sweep.clearExpired(Date.now() - 3_600_000).catch(() => {});
+    },
+  );
+}
+
+type Limiter = RateLimiterMemory | RateLimiterPostgres;
+
+/** One limiter per limit and window, made on first use; counting and refusal read the same way. */
+function storeOf<L extends Limiter>(make: (limit: number, windowSeconds: number) => Promise<L>, onHit?: (limiter: L) => void): RateLimitStore {
+  const limiters = new Map<string, Promise<L>>();
   return {
     async hit(key, limit, windowSeconds) {
       const id = `${limit}/${windowSeconds}`;
-      let limiter = limiters.get(id);
-      if (!limiter) limiters.set(id, (limiter = new RateLimiterMemory({ points: limit, duration: windowSeconds })));
+      let pending = limiters.get(id);
+      if (!pending) {
+        limiters.set(id, (pending = make(limit, windowSeconds)));
+        pending.catch(() => limiters.delete(id));
+      }
+      const limiter = await pending;
+      onHit?.(limiter);
       try {
         const res = await limiter.consume(key);
         return { allowed: true, remaining: res.remainingPoints, resetMs: res.msBeforeNext };

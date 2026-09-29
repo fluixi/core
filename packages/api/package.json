@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
+    "@electric-sql/pglite": "^0.5.8",
     "@fluixi/start": "workspace:*",
     "cross-env": "^7.0.3",
     "valibot": "^1.5.0",
