@@ -191,10 +191,10 @@ Le spread s'applique dans l'ordre d'écriture : une prop placée après l'emport
 placée avant peut être écrasée. Passez un getter ou un store quand l'ensemble des props
 change lui-même.
 
-## Contrôle de flux (html`` uniquement)
+## Contrôle de flux
 
-Ces formes compilent vers les composants `<Show>` / `<For>`, du sucre pour les cas
-courants. En JSX, utilisez directement les composants.
+`if`, `else` et `each` compilent vers `<Show>` et `<For>`. Ils fonctionnent dans les
+templates html`` et en JSX, sur n'importe quel élément et sur `<container>`.
 
 ### if / else
 
@@ -205,9 +205,13 @@ html`
 `;
 ```
 
-`if` compile en `<Show when>` ; un **frère immédiatement suivant** portant `else` devient
-le fallback. Tout ce qui s'intercale, même un nœud texte, casse l'appariement : gardez-les
-adjacents.
+```tsx
+<p if={user()}>Bienvenue, {user()!.name}</p>
+<a else href="/login">Se connecter</a>
+```
+
+`if` compile en `<Show when>`. Le frère suivant devient le fallback s'il porte `else`. Des
+espaces entre les deux ne gênent pas ; tout autre texte ou élément casse l'appariement.
 
 La branche est créée et détruite, pas masquée : la quitter déclenche le nettoyage, y
 revenir la reconstruit.
@@ -215,23 +219,67 @@ revenir la reconstruit.
 ### each / key
 
 ```ts
-html`<li each=${items()}>${(item) => item.label}</li>`;
+html`<ul each=${items()}>${(item) => html`<li>${item.label}</li>`}</ul>`;
 ```
 
-`each` compile en `<For each>` ; l'enfant `${item => ...}` est la fonction de rendu, et elle
-reçoit **l'élément lui-même**, pas un accesseur. L'élément qui porte `each` est celui qui
-est répété.
+`each` compile en un `<For each>` à l'intérieur de l'élément. L'élément est rendu une seule
+fois et son contenu une fois par item. L'enfant `${(item) => ...}` est la fonction de rendu
+et reçoit l'item lui-même. Un contenu qui n'est pas une fonction est répété tel quel.
 
-Ajoutez `key="id"` pour indexer la liste par un champ, afin que les lignes soient
-réutilisées par identité plutôt que par position :
+Placez `each` sur la liste, pas sur l'item :
 
 ```ts
-html`<li each=${rows()} key="id">${(row) => row.name}</li>`;
+html`<div class="swatches" each=${colors()}>
+  ${(color) => html`<span style="background: ${color}">${color}</span>`}
+</div>`;
+```
+
+Une fonction de rendu qui renvoie du texte reste réactive : `${(item) => item.label +
+suffix()}` se met à jour quand `suffix` change.
+
+Ajoutez `key` pour indexer la liste par un champ, ou passez une fonction qui renvoie la
+clé, afin que les lignes soient réutilisées par identité plutôt que par position. Avec une
+clé, la fonction de rendu reçoit un accesseur :
+
+```ts
+html`<ul each=${rows()} key="id">${(row) => html`<li>${row().name}</li>`}</ul>`;
 ```
 
 Sans clé, le DOM d'une ligne est lié à son indice, insérer en tête reconstruit tout ce qui
 suit. Avec une clé, seul ce qui a réellement bougé est touché. Indexez toute liste dont les
 éléments sont insérés, retirés ou réordonnés.
+
+`if` et `each` peuvent être sur le même élément. La condition décide si l'élément existe,
+et la liste le remplit.
+
+JSX accepte les mêmes attributs :
+
+```tsx
+<ul each={rows()} key="id">{(row: Accessor<Row>) => <li>{row().name}</li>}</ul>
+```
+
+TypeScript ne peut pas inférer `row` sur une balise en minuscules : annotez le paramètre, ou
+utilisez `<For>` là où vous voulez l'inférence. Dans les templates html``, le plugin
+TypeScript de Fluixi l'infère.
+
+### container
+
+`<container>` porte `if`, `else` ou `each` sans ajouter d'élément. Le compilateur le
+retire et ne rend que son contenu, ce qui compte là où un conteneur casserait le balisage :
+
+```ts
+html`<tr>
+  <container each=${rows()}>${(r) => html`<td>${r.name}</td><td>${r.total}</td>`}</container>
+</tr>`;
+
+html`
+  <container if=${user()}><Avatar /> ${user()!.name}</container>
+  <container else><a href="/login">Se connecter</a></container>
+`;
+```
+
+Il fonctionne de la même façon en JSX. Ses autres attributs sont ignorés. Le nom n'a pas de
+tiret, il ne peut donc jamais entrer en conflit avec un custom element.
 
 ### bind: liaison bidirectionnelle
 
@@ -262,4 +310,5 @@ liaison lit `event.target` : elle fonctionne donc sur tout élément portant `va
 | `oncapture:event` | ✓ |, |
 | `.prop`, `?attr` |, | ✓ |
 | `class:name`, `style:prop` |, | ✓ |
-| `if` / `else`, `each` / `key`, `bind:` |, (utilisez `<Show>`/`<For>`) | ✓ |
+| `if` / `else`, `each` / `key`, `<container>` | ✓ | ✓ |
+| `bind:` |, | ✓ |

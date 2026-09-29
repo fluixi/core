@@ -185,10 +185,10 @@ html`<div ...${attrs}></div>`;
 Spread is applied in written order, so a prop after the spread wins and a prop before it
 can be overwritten. Pass a getter or a store when the set of props itself changes.
 
-## Control flow (html`` only)
+## Control flow
 
-These compile to the `<Show>` / `<For>` components, sugar for common cases. In JSX, use
-the components directly.
+`if`, `else` and `each` compile to `<Show>` and `<For>`. They work in html`` templates and
+in JSX, on any element and on `<container>`.
 
 ### if / else
 
@@ -199,9 +199,13 @@ html`
 `;
 ```
 
-`if` compiles to `<Show when>`; an **immediately following sibling** with `else` becomes
-the fallback. Anything between them, even a text node, breaks the pairing, so keep them
-adjacent.
+```tsx
+<p if={user()}>Welcome, {user()!.name}</p>
+<a else href="/login">Sign in</a>
+```
+
+`if` compiles to `<Show when>`. The next sibling becomes the fallback when it carries
+`else`. Whitespace between the two is fine; any other text or element breaks the pairing.
 
 The branch is created and destroyed, not hidden: leaving it runs cleanup, and returning
 builds it fresh.
@@ -209,23 +213,67 @@ builds it fresh.
 ### each / key
 
 ```ts
-html`<li each=${items()}>${(item) => item.label}</li>`;
+html`<ul each=${items()}>${(item) => html`<li>${item.label}</li>`}</ul>`;
 ```
 
-`each` compiles to `<For each>`; the `${item => ...}` child is the render function, and it
-receives **the item itself**, not an accessor. The element carrying `each` is the one
-repeated.
+`each` compiles to a `<For each>` inside the element. The element is rendered once and its
+content once per item. The `${(item) => ...}` child is the render function and receives
+the item itself. Content that is not a function is repeated as written.
 
-Add `key="id"` to key the list by a field, so rows are reused by identity rather than by
-position:
+Put `each` on the list, not on the item:
 
 ```ts
-html`<li each=${rows()} key="id">${(row) => row.name}</li>`;
+html`<div class="swatches" each=${colors()}>
+  ${(color) => html`<span style="background: ${color}">${color}</span>`}
+</div>`;
+```
+
+A render function that returns text stays reactive: `${(item) => item.label + suffix()}`
+updates when `suffix` changes.
+
+Add `key` to key the list by a field, or pass a function that returns the key, so rows are
+reused by identity rather than by position. With a key, the render function receives an
+accessor:
+
+```ts
+html`<ul each=${rows()} key="id">${(row) => html`<li>${row().name}</li>`}</ul>`;
 ```
 
 Without a key, a row's DOM is tied to its index: inserting at the front rebuilds
 everything after it. With one, only what actually moved is touched. Key any list whose
 items are inserted, removed or reordered.
+
+`if` and `each` can sit on the same element. The condition decides whether the element
+exists, and the list fills it.
+
+JSX takes the same attributes:
+
+```tsx
+<ul each={rows()} key="id">{(row: Accessor<Row>) => <li>{row().name}</li>}</ul>
+```
+
+TypeScript cannot infer `row` on a lowercase tag, so annotate the parameter, or use `<For>`
+where you want it inferred. In html`` templates the Fluixi TypeScript plugin infers it.
+
+### container
+
+`<container>` carries `if`, `else` or `each` without adding an element. The compiler
+removes it and renders only its content, which matters where a wrapper would break the
+markup:
+
+```ts
+html`<tr>
+  <container each=${rows()}>${(r) => html`<td>${r.name}</td><td>${r.total}</td>`}</container>
+</tr>`;
+
+html`
+  <container if=${user()}><Avatar /> ${user()!.name}</container>
+  <container else><a href="/login">Sign in</a></container>
+`;
+```
+
+It works the same way in JSX. Other attributes on it are ignored. The name has no dash, so
+it can never clash with a custom element.
 
 ### bind: two-way binding
 
@@ -256,4 +304,5 @@ write the two halves yourself; `bind:` is deliberately only the common case.
 | `oncapture:event` | ✓ |, |
 | `.prop`, `?attr` |, | ✓ |
 | `class:name`, `style:prop` |, | ✓ |
-| `if` / `else`, `each` / `key`, `bind:` |, (use `<Show>`/`<For>`) | ✓ |
+| `if` / `else`, `each` / `key`, `<container>` | ✓ | ✓ |
+| `bind:` |, | ✓ |
