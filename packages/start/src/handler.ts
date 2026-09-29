@@ -148,7 +148,12 @@ export function nodeToRequest(req: IncomingMessage): Request {
 /** Write a Web `Response` (string or streamed body) to a Node `ServerResponse`. */
 export async function sendResponse(res: ServerResponse, response: Response): Promise<void> {
   res.statusCode = response.status;
-  response.headers.forEach((value, key) => res.setHeader(key, value));
+  // `forEach` yields each set-cookie on its own, and `setHeader` would keep only the last.
+  response.headers.forEach((value, key) => {
+    if (key !== 'set-cookie') res.setHeader(key, value);
+  });
+  const cookies = response.headers.getSetCookie();
+  if (cookies.length) res.setHeader('set-cookie', cookies);
   const body = response.body;
   if (!body) {
     res.end(await response.text().catch(() => ''));

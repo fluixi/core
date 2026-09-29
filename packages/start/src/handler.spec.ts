@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createServer } from 'node:http';
-import { createRequestHandler, serveNode } from './handler.js';
+import { createRequestHandler, serveNode, toNodeHandler } from './handler.js';
 
 describe('@fluixi/start fetch handler', () => {
   it('renders a Request into an HTML Response (url = pathname+search)', async () => {
@@ -59,6 +59,24 @@ describe('listening on a port that is taken', () => {
         serveNode(async () => new Response('x'), { port, onListen: () => undefined, onListenError }),
       );
       expect(seen.code).toBe('EADDRINUSE');
+    } finally {
+      server.close();
+    }
+  });
+});
+
+describe('the Node bridge', () => {
+  it('sends every set-cookie header', async () => {
+    const headers = new Headers({ 'content-type': 'text/plain' });
+    headers.append('set-cookie', 'session=a; HttpOnly');
+    headers.append('set-cookie', 'session_data=b; HttpOnly');
+    const server = createServer(toNodeHandler(() => new Response('ok', { headers })));
+    await new Promise<void>((done) => server.listen(0, done));
+    try {
+      const { port } = server.address() as { port: number };
+      const res = await fetch(`http://localhost:${port}/`);
+      expect(res.headers.getSetCookie()).toEqual(['session=a; HttpOnly', 'session_data=b; HttpOnly']);
+      expect(res.headers.get('content-type')).toBe('text/plain');
     } finally {
       server.close();
     }
