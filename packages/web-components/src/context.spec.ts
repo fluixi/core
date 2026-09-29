@@ -3,7 +3,7 @@
  * and with Lit's own implementation of the protocol.
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { createContext, createRoot, signal, useContext } from '@fluixi/reactive/signal';
+import { createContext, createRoot, getOwner, signal, useContext } from '@fluixi/reactive/signal';
 import { LitElement } from 'lit';
 import { ContextConsumer, ContextProvider, type Context as LitContext } from '@lit/context';
 import { ContextRequestEvent, HTMLReactiveElement, type ElementContext } from './index.js';
@@ -154,6 +154,58 @@ describe('with a Fluixi app', () => {
     });
     document.body.append(document.createElement(host));
     expect(inComponent).toBe('element');
+  });
+});
+
+describe('after hydration', () => {
+  const OWNER = Symbol.for('fluixi.owner');
+  /** An owner under `<Theme.Provider value>`, the way a hydrating template would have one. */
+  const ownerProviding = (value: string) =>
+    createRoot(() =>
+      Theme.Provider({
+        value,
+        get children() {
+          return getOwner();
+        },
+      }),
+    );
+
+  it('re-reads the app when hydration hands an upgraded element its owner', () => {
+    const host = tag('fx-hydrated');
+    customElements.define(host, class extends HTMLReactiveElement {
+      static override shadow = true;
+      protected override render(): unknown {
+        return document.createElement(READER);
+      }
+    });
+    // Server-rendered and upgraded on import: rendered with no app around it.
+    document.body.innerHTML = `<${host}><${READER}></${READER}></${host}>`;
+    const el = document.querySelector(host)!;
+    const outer = document.querySelector(READER) as ThemeReader;
+    const inner = el.shadowRoot!.querySelector(READER) as ThemeReader;
+    expect([outer.text, inner.text]).toEqual(['light', 'light']);
+
+    // What @fluixi/dom does as hydration adopts each element.
+    (el as unknown as Record<symbol, unknown>)[OWNER] = ownerProviding('hydrated');
+    (outer as unknown as Record<symbol, unknown>)[OWNER] = ownerProviding('hydrated');
+    expect(inner.text).toBe('hydrated');
+    expect(outer.text).toBe('hydrated');
+  });
+
+  it('picks up an owner hydration left before the element upgraded', () => {
+    const lateReader = tag('fx-late-reader');
+    document.body.innerHTML = `<${lateReader}></${lateReader}>`;
+    const el = document.querySelector(lateReader)!;
+    (el as unknown as Record<symbol, unknown>)[OWNER] = ownerProviding('before upgrade');
+    customElements.define(lateReader, class extends ThemeReader {});
+    expect((el as ThemeReader).text).toBe('before upgrade');
+  });
+
+  it('keeps a DOM provider ahead of the app', () => {
+    document.body.innerHTML = `<${ROOT}><${READER}></${READER}></${ROOT}>`;
+    const reader = document.querySelector(READER) as ThemeReader;
+    (reader as unknown as Record<symbol, unknown>)[OWNER] = ownerProviding('app');
+    expect(reader.text).toBe('dark');
   });
 });
 

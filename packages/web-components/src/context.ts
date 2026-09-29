@@ -13,7 +13,7 @@
  * owner tree it was created in, and what an element provides is visible to `useContext` in the
  * components it renders.
  */
-import { effect, getOwner, onCleanup, signal, untrack, useContext, type Accessor } from '@fluixi/reactive/signal';
+import { effect, getOwner, onCleanup, runWithOwner, signal, untrack, useContext, type Accessor } from '@fluixi/reactive/signal';
 
 /** A context key. `createContext` in `@fluixi/core` and `@fluixi/reactive` both return one. */
 export interface ElementContext<T> {
@@ -43,6 +43,22 @@ export class ContextProviderEvent extends Event {
   ) {
     super('context-provider', { bubbles: true, composed: true });
   }
+}
+
+/**
+ * An element has just been linked to the app it was rendered in: hydration reached it after it
+ * had rendered. Consumers inside it that found no provider read the owner tree again. Fluixi's
+ * own, not part of the protocol.
+ */
+class ContextOwnerEvent extends Event {
+  constructor(readonly element: Element) {
+    super('fluixi-context-owner');
+  }
+}
+
+/** Tell consumers under `element` that the owner tree above them changed. */
+export function announceOwner(element: Element): void {
+  element.ownerDocument.dispatchEvent(new ContextOwnerEvent(element));
 }
 
 declare global {
@@ -139,8 +155,10 @@ export interface ConsumeOptions {
  */
 export function consumeContext<T>(host: HTMLElement, context: ElementContext<T>, options: ConsumeOptions = {}): Accessor<T> {
   const subscribe = options.subscribe ?? true;
-  const fallback = useContext(context as { id: symbol; defaultValue?: T }) as T;
-  const value = signal<T>(fallback, { name: describe(context) });
+  // The owner tree as it stands now, and again if hydration links this element up later.
+  const owner = getOwner();
+  const fromTree = (): T => runWithOwner(owner, () => useContext(context as { id: symbol; defaultValue?: T }) as T);
+  const value = signal<T>(fromTree(), { name: describe(context) });
   let answered = false;
   let unsubscribe: (() => void) | undefined;
 
@@ -167,12 +185,22 @@ export function consumeContext<T>(host: HTMLElement, context: ElementContext<T>,
     if (containsComposed(announced.contextTarget, host)) ask();
   };
 
+  const onOwner = (event: Event): void => {
+    if (answered || !containsComposed((event as ContextOwnerEvent).element, host)) return;
+    const next = fromTree();
+    value.set(() => next);
+  };
+
   ask();
-  if (!answered) doc.addEventListener('context-provider', onProvider);
+  if (!answered) {
+    doc.addEventListener('context-provider', onProvider);
+    doc.addEventListener('fluixi-context-owner', onOwner);
+  }
 
   onCleanup(() => {
     unsubscribe?.();
     doc.removeEventListener('context-provider', onProvider);
+    doc.removeEventListener('fluixi-context-owner', onOwner);
   });
   return () => value();
 }

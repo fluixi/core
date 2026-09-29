@@ -25,6 +25,7 @@ import {
   runWithOwner,
   withReactiveScope,
   type Accessor,
+  type Owner,
 } from '@fluixi/reactive/signal';
 import { insert, isServer } from '@fluixi/dom';
 import {
@@ -38,7 +39,10 @@ import { defineCustomElement, type DefineOptions } from './registry.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
-import { consumeContext, provideContext, type ConsumeOptions, type ElementContext } from './context.js';
+import { announceOwner, consumeContext, provideContext, type ConsumeOptions, type ElementContext } from './context.js';
+
+/** Where `@fluixi/dom`'s hydration hands a server-rendered element its owner. Kept in step. */
+const OWNER_KEY = Symbol.for('fluixi.owner');
 import type { PropValues } from './types.js';
 
 /**
@@ -169,6 +173,16 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   static {
+    // Not a member in the type: it is a handshake with the runtime, not API.
+    Object.defineProperty(HTMLReactiveElement.prototype, OWNER_KEY, {
+      configurable: true,
+      get(this: HTMLReactiveElement) {
+        return this.#creator;
+      },
+      set(this: HTMLReactiveElement, owner: Owner | null) {
+        this.#adoptOwner(owner);
+      },
+    });
     stateOf = (element, name) => {
       const state = element.#states()[name];
       if (!state) throw new Error(`[fluixi] ${name} is not a declared prop of <${element.localName}>`);
@@ -201,11 +215,19 @@ export class HTMLReactiveElement extends BaseElement {
   #targets: Targets | null = null;
   #dispatch: Dispatch | null = null;
   /** The owner the element was created under, for context: a Fluixi template, or none. */
-  #creator = getOwner();
+  #creator: Owner | null = getOwner();
+  /** The owner `render()` runs under, while built. Its parent is the creator. */
+  #rootOwner: Owner | null = null;
 
   constructor() {
     super();
     prepare(new.target);
+    // Hydration reached this element before its definition did, and left the owner behind.
+    const handed = Object.getOwnPropertyDescriptor(this, OWNER_KEY);
+    if (handed) {
+      delete (this as unknown as Record<symbol, unknown>)[OWNER_KEY];
+      this.#creator = (handed.value as Owner | null) ?? this.#creator;
+    }
     // A property assigned before upgrade sits as an own property and shadows the prototype
     // accessor. Take it off and replay it through the signal.
     this.#adoptOwnProps();
@@ -368,6 +390,7 @@ export class HTMLReactiveElement extends BaseElement {
     runWithOwner(null, () => withReactiveScope(this.#reactiveScope(), () =>
       root((dispose) => {
         const own = getOwner();
+        this.#rootOwner = own;
         if (own && creator) own.parent = creator;
         this.#dispose = dispose;
         // Reflects live in the same scope as the content, so they stop when it does.
@@ -404,9 +427,23 @@ export class HTMLReactiveElement extends BaseElement {
     }
   }
 
+  /**
+   * Hydration found this element after it had already rendered, as a server-rendered one does:
+   * link the render to the app now, so what it provides reaches the element. Consumers that
+   * found nothing are told to look again.
+   */
+  #adoptOwner(owner: Owner | null): void {
+    if (!owner || this.#creator) return;
+    this.#creator = owner;
+    if (!this.#rootOwner) return;
+    this.#rootOwner.parent = owner;
+    announceOwner(this);
+  }
+
   #teardown(): void {
     this.#dispose?.();
     this.#dispose = null;
+    this.#rootOwner = null;
     this.#built = false;
     if (this.#scope) closeReactiveScope(this.#scope);
     this.#scope = null;
