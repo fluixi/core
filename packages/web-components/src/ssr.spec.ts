@@ -1,0 +1,51 @@
+// @vitest-environment node
+/**
+ * A light DOM element rendered on the server: its content goes out inside its tag, with the
+ * props that have no attribute form carried for the client.
+ */
+import { describe, it, expect } from 'vitest';
+
+describe('an element rendered on the server', () => {
+  it('renders its content inside its tag, from attributes and object props', async () => {
+    const { typedElement, prop, defineCustomElement } = await import('./index.js');
+    const { createNativeElement, insert, spread } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+    // What compiled JSX does: create the element, then insert its (reactive) children.
+    const h = (tag: string, children: unknown) => {
+      const node = createNativeElement(tag);
+      insert(node, children as never);
+      return node;
+    };
+
+    class Deals extends typedElement({ heading: prop.string(''), items: prop.object<string[]>([]) }) {
+      protected override render(): unknown {
+        return [h('h2', () => this.heading), h('ul', () => this.items.map((item) => h('li', item)))];
+      }
+    }
+    defineCustomElement('fx-ssr-deals', Deals);
+
+    const out = renderToString(() => {
+      const section = createNativeElement('section');
+      const deals = createNativeElement('fx-ssr-deals');
+      spread({ element: deals, props: { heading: 'Pipeline', items: ['Maison Ndiaye', 'Keur Tech'] } });
+      section.appendChild(deals);
+      return section;
+    });
+
+    expect(out).toContain('<h2>Pipeline</h2>');
+    expect(out).toContain('<li>Maison Ndiaye</li><li>Keur Tech</li>');
+    expect(out).toContain('data-fx-ssr');
+    expect(out).toMatch(/data-fx-props="\{&quot;items&quot;:\[&quot;Maison Ndiaye&quot;,&quot;Keur Tech&quot;\]\}"/);
+  });
+
+  it('leaves a tag no element is defined for as it is', async () => {
+    const { createNativeElement } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+    const out = renderToString(() => {
+      const section = createNativeElement('section');
+      section.appendChild(createNativeElement('fx-ssr-unknown'));
+      return section;
+    });
+    expect(out).toBe('<section><fx-ssr-unknown></fx-ssr-unknown></section>');
+  });
+});

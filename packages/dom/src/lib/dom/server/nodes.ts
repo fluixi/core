@@ -23,6 +23,25 @@ export const NODE_COMMENT = 8;
 // ---------------------------------------------------------------------------
 // Base node, the linked-tree mechanics insert() relies on.
 // ---------------------------------------------------------------------------
+/**
+ * A custom element's content on the server. @fluixi/web-components registers a renderer under
+ * this key; a server node with a dashed tag is handed to it once, when it is attached to its
+ * parent (its props and children are complete by then) or, failing that, when serialized.
+ */
+const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
+const RENDERED = Symbol.for('fluixi.serverElementRendered');
+
+export function renderServerElement(node: ServerNode): void {
+  if (node.nodeType !== NODE_ELEMENT) return;
+  const element = node as unknown as ServerElement & Record<symbol, unknown>;
+  // Some element-like nodes (a portal target, a fragment stand-in) carry no tag name.
+  if (typeof element.localName !== 'string' || !element.localName.includes('-') || element[RENDERED]) return;
+  const renderer = (globalThis as Record<symbol, unknown>)[ELEMENT_RENDERER] as ((node: ServerElement) => void) | undefined;
+  if (!renderer) return;
+  element[RENDERED] = true;
+  renderer(element);
+}
+
 export abstract class ServerNode {
   // Brand the host.ts guards check for (lets them skip an instanceof on these classes).
   readonly [SERVER_NODE] = true;
@@ -56,6 +75,7 @@ export abstract class ServerNode {
     if (child.parentNode) child.parentNode.removeChild(child);
     child.parentNode = this as unknown as ServerElement;
     this.childNodes.push(child);
+    renderServerElement(child);
     return child;
   }
 
@@ -66,6 +86,7 @@ export abstract class ServerNode {
     child.parentNode = this as unknown as ServerElement;
     if (i < 0) this.childNodes.push(child);
     else this.childNodes.splice(i, 0, child);
+    renderServerElement(child);
     return child;
   }
 
@@ -83,6 +104,7 @@ export abstract class ServerNode {
       next.parentNode = this as unknown as ServerElement;
       this.childNodes[i] = next;
       old.parentNode = null;
+      renderServerElement(next);
     }
     return old;
   }

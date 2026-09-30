@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { insert, isServer } from '@fluixi/dom';
+import { hydrateChildren, insert, isServer } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -43,6 +43,21 @@ import { announceOwner, consumeContext, provideContext, type ConsumeOptions, typ
 
 /** Where `@fluixi/dom`'s hydration hands a server-rendered element its owner. Kept in step. */
 const OWNER_KEY = Symbol.for('fluixi.owner');
+/** Where @fluixi/dom keeps a server node's props, and where it looks for the element renderer. */
+const SERVER_PROPS = Symbol.for('fluixi.serverProps');
+const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
+/** Marks content an element rendered on the server, and carries the props that have no attribute. */
+const SSR_ATTRIBUTE = 'data-fx-ssr';
+const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
+
+/** The part of a @fluixi/dom server node the renderer uses. */
+interface ServerNodeLike {
+  localName: string;
+  childNodes: unknown[];
+  getAttribute(name: string): string | null;
+  setAttribute(name: string, value: string): void;
+  removeChild(child: unknown): unknown;
+}
 import type { PropValues } from './types.js';
 
 /**
@@ -183,6 +198,11 @@ export class HTMLReactiveElement extends BaseElement {
         this.#adoptOwner(owner);
       },
     });
+    // On a server, @fluixi/dom hands each attached custom element node to this renderer.
+    if (typeof HTMLElement === 'undefined') {
+      (globalThis as Record<symbol, unknown>)[ELEMENT_RENDERER] ??= (node: ServerNodeLike) =>
+        HTMLReactiveElement.#renderOnServer(node);
+    }
     stateOf = (element, name) => {
       const state = element.#states()[name];
       if (!state) throw new Error(`[fluixi] ${name} is not a declared prop of <${element.localName}>`);
@@ -197,6 +217,8 @@ export class HTMLReactiveElement extends BaseElement {
   #root: ShadowRoot | HTMLElement = this;
   #authored: ChildNode[] = [];
   #built = false;
+  /** The first build adopts content the server rendered. */
+  #hydrating = false;
   /**
    * Disposal is deferred because `disconnectedCallback` cannot tell a removal from a move.
    * Appending an already-parented node fires disconnect then connect in the same task, and
@@ -367,6 +389,48 @@ export class HTMLReactiveElement extends BaseElement {
     }
   }
 
+  /**
+   * Render a light DOM element's content into its server node, under the page's owner so its
+   * context and resources are the page's. Props come from what @fluixi/dom recorded on the
+   * node; the ones with no attribute form ride along as JSON for the client. Shadow DOM
+   * elements are left to the client until declarative shadow roots are emitted.
+   */
+  static #renderOnServer(node: ServerNodeLike): void {
+    const registry = (globalThis as { customElements?: { get(name: string): unknown } }).customElements;
+    const constructor = registry?.get(node.localName) as (typeof HTMLReactiveElement & (new () => HTMLReactiveElement)) | undefined;
+    if (!constructor || !(constructor.prototype instanceof HTMLReactiveElement)) return;
+    if (constructor.shadow !== undefined && constructor.shadow !== false) return;
+
+    const element = new constructor();
+    const recorded = (node as unknown as Record<symbol, Record<string, unknown> | undefined>)[SERVER_PROPS] ?? {};
+    const carried: Record<string, unknown> = {};
+    for (const [name, state] of Object.entries(element.#states())) {
+      if (name in recorded) {
+        const value = recorded[name];
+        state.write(value);
+        if (value !== null && typeof value === 'object') carried[name] = value;
+      } else if (state.attribute !== false) {
+        const attribute = node.getAttribute(state.attribute);
+        if (attribute !== null) state.write(state.declaration.fromAttribute(attribute));
+      }
+    }
+
+    element.#authored = [...node.childNodes] as ChildNode[];
+    for (const child of element.#authored) node.removeChild(child);
+    element.#root = node as unknown as HTMLElement;
+    element.#built = true;
+    insert(node as unknown as Element, element.render() as never);
+
+    node.setAttribute(SSR_ATTRIBUTE, '');
+    if (Object.keys(carried).length) {
+      try {
+        node.setAttribute(SSR_PROPS_ATTRIBUTE, JSON.stringify(carried));
+      } catch {
+        // Not JSON (a class instance, a cycle): the client waits for hydration to assign it.
+      }
+    }
+  }
+
   #build(): void {
     this.#built = true;
     const constructor = this.constructor as typeof HTMLReactiveElement;
@@ -376,6 +440,22 @@ export class HTMLReactiveElement extends BaseElement {
       // A declarative shadow root may already be attached from a server render.
       this.#root = this.shadowRoot ?? this.attachShadow(shadowInit(shadow));
       applyStyles(this.#root, constructor, constructor.styles);
+    } else if (this.hasAttribute(SSR_ATTRIBUTE)) {
+      // Rendered on the server: its children are render()'s output, adopted below, and the
+      // props with no attribute form come back from the JSON the server wrote.
+      this.#hydrating = true;
+      const json = this.getAttribute(SSR_PROPS_ATTRIBUTE);
+      if (json) {
+        try {
+          const states = this.#states();
+          for (const [name, value] of Object.entries(JSON.parse(json) as Record<string, unknown>)) states[name]?.write(value);
+        } catch {
+          // Malformed: hydration assigns them as properties.
+        }
+      }
+      this.removeAttribute(SSR_ATTRIBUTE);
+      this.removeAttribute(SSR_PROPS_ATTRIBUTE);
+      this.#root = this;
     } else {
       // Light DOM: the author's children are the content. Take them out before anything
       // renders, so they survive and the component can place them.
@@ -395,7 +475,9 @@ export class HTMLReactiveElement extends BaseElement {
         this.#dispose = dispose;
         // Reflects live in the same scope as the content, so they stop when it does.
         this.#startReflecting();
-        insert(this.#root as unknown as Element, this.render() as never);
+        if (this.#hydrating) hydrateChildren(this, () => this.render());
+        else insert(this.#root as unknown as Element, this.render() as never);
+        this.#hydrating = false;
       }),
     ));
 

@@ -10,7 +10,7 @@
  * This matches the depth-first nested order the imperative codegen emits (each
  * element is fully built before the next sibling is created).
  */
-import { render } from './runtime.js';
+import { insert, render } from './runtime.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
 import { hydration, registerHydrationWalker } from './hydration-state.js';
@@ -181,5 +181,25 @@ export function hydrate<T>(
     hydration.active = false;
     hydration.cursor = null;
     hydration.parents = [];
+  }
+}
+
+/**
+ * Adopt the markup already inside `container` for what `build` returns, under the current
+ * owner: a custom element taking over the content the server rendered for it. Re-entrant,
+ * since an element can upgrade while the page around it is still hydrating.
+ */
+export function hydrateChildren(container: Element, build: () => unknown): void {
+  ensureWalker();
+  const previous = { active: hydration.active, cursor: hydration.cursor, parents: hydration.parents };
+  hydration.active = true;
+  hydration.cursor = container.firstChild;
+  hydration.parents = [];
+  try {
+    insert(container, build() as never);
+  } finally {
+    hydration.active = previous.active;
+    hydration.cursor = previous.cursor;
+    hydration.parents = previous.parents;
   }
 }

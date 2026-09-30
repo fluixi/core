@@ -38,7 +38,9 @@ export function defineCustomElement(
   constructor: CustomElementConstructor,
   options: DefineOptions = {},
 ): CustomElementConstructor {
-  if (isServer()) return constructor;
+  // A server render in a browser-like realm (a jsdom test) must not define for real. On Node
+  // the stand-in registry takes it, so the server renderer can find the element by its tag.
+  if (isServer() && typeof HTMLElement !== 'undefined') return constructor;
 
   const registered = defined.get(name);
   if (registered) return registered;

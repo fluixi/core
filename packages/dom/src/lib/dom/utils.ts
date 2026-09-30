@@ -186,6 +186,9 @@ export function applyElementProp(
   setAttribute(element, name, value, isSVG);
 }
 
+/** Where a server node keeps the props its custom element was given. Read by @fluixi/web-components. */
+export const SERVER_PROPS = Symbol.for('fluixi.serverProps');
+
 /**
  * A custom element's prop during a server render.
  *
@@ -196,6 +199,9 @@ export function applyElementProp(
  * and anything else waits for the client, which assigns it as a property while hydrating.
  */
 export function serverCustomElementProp(element: Element, name: string, value: unknown): void {
+  // Every value, objects included, for the element's own server render to read back.
+  const recorded = ((element as unknown as Record<symbol, Record<string, unknown>>)[SERVER_PROPS] ??= {});
+  recorded[name] = value;
   if (value == null || value === false) element.removeAttribute(name);
   else if (value === true) element.setAttribute(name, '');
   else if (typeof value === 'string' || typeof value === 'number') element.setAttribute(name, String(value));

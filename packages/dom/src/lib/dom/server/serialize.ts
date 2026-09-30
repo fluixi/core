@@ -3,7 +3,7 @@
  * text/attributes are escaped, style is emitted from cssText + camelCase props,
  * innerHTML is passed through verbatim.
  */
-import { ServerStyle, NODE_ELEMENT, NODE_TEXT, NODE_COMMENT } from './nodes.js';
+import { ServerStyle, NODE_ELEMENT, NODE_TEXT, NODE_COMMENT, renderServerElement } from './nodes.js';
 
 const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -87,6 +87,8 @@ export function serializeNode(node: any): string {
     case NODE_COMMENT:
       return `<!--${node.data ?? ''}-->`;
     case NODE_ELEMENT: {
+      // An element returned as the root was never attached to anything.
+      renderServerElement(node);
       const tag = node.localName;
       const open = `<${tag}${serializeAttrs(node)}>`;
       if (VOID_ELEMENTS.has(tag)) return open;

@@ -102,7 +102,9 @@ export function provideContext<T>(host: HTMLElement, context: ElementContext<T>,
     subscribers.set(request.callback, unsubscribe);
     request.callback(untrack(read), unsubscribe);
   };
-  host.addEventListener('context-request', onRequest);
+  // A server render has no DOM events: the owner tree below carries the value there.
+  const dom = typeof host.addEventListener === 'function';
+  if (dom) host.addEventListener('context-request', onRequest);
 
   // Fluixi components the element renders read it with `useContext`, from the owner `render()`
   // runs under.
@@ -124,15 +126,17 @@ export function provideContext<T>(host: HTMLElement, context: ElementContext<T>,
 
   // After the render that called this has placed its content: a light DOM provider takes its
   // children out while it renders, so a consumer among them is not inside it yet.
-  queueMicrotask(() => {
-    if (!stopped) host.dispatchEvent(new ContextProviderEvent(context, host));
-  });
+  if (dom) {
+    queueMicrotask(() => {
+      if (!stopped) host.dispatchEvent(new ContextProviderEvent(context, host));
+    });
+  }
 
   let stopped = false;
   const stop = (): void => {
     if (stopped) return;
     stopped = true;
-    host.removeEventListener('context-request', onRequest);
+    if (dom) host.removeEventListener('context-request', onRequest);
     stopTracking();
     subscribers.clear();
   };
@@ -159,6 +163,8 @@ export function consumeContext<T>(host: HTMLElement, context: ElementContext<T>,
   const owner = getOwner();
   const fromTree = (): T => runWithOwner(owner, () => useContext(context as { id: symbol; defaultValue?: T }) as T);
   const value = signal<T>(fromTree(), { name: describe(context) });
+  // A server render: no DOM to ask, the owner tree is the answer.
+  if (typeof host.dispatchEvent !== 'function') return () => value();
   let answered = false;
   let unsubscribe: (() => void) | undefined;
 
