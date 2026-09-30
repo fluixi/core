@@ -127,3 +127,34 @@ describe('a custom element rendered on the server', () => {
     expect(html).not.toContain('[object Object]');
   });
 });
+
+describe('a function-valued property', () => {
+  it('is assigned, not called, when the compiler lists the accessors', () => {
+    const name = tag();
+    define(name);
+    const el = createNativeElement(name) as HTMLElement & { count?: unknown; user?: unknown };
+    let calls = 0;
+    const action = () => void calls++;
+
+    spread({ element: el, props: { user: action, count: () => 3 }, isCustomElement: true, accessors: ['count'] });
+
+    expect(el.user).toBe(action);
+    expect(el.count).toBe(3);
+    expect(calls).toBe(0);
+  });
+
+  it('is not called during a server render', async () => {
+    const { renderToString } = await import('./server/render.js');
+    const { createNativeElement: create, spread: apply } = await import('./runtime.js');
+    let calls = 0;
+    const action = () => void calls++;
+    const html = renderToString(() => {
+      const el = create('fx-server-action');
+      apply({ element: el, props: { action, step: () => 2 }, isCustomElement: true, accessors: ['step'] });
+      return el;
+    });
+    expect(calls).toBe(0);
+    expect(html).toContain('step="2"');
+    expect(html).not.toContain(' action=');
+  });
+});

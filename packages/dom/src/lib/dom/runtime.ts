@@ -116,6 +116,14 @@ export interface SpreadOptions {
    * builds props by hand can leave it out and the tag is read off the element instead.
    */
   isCustomElement?: boolean;
+  /**
+   * The props the compiler wrapped as accessors. A custom element's property can hold a
+   * function (an action, a formatter), and a thunk the compiler made looks the same, so
+   * without this list `action={signIn}` was called as an accessor: on a server render that
+   * ran the action. With it, any other function is the value itself. A hand-built call that
+   * leaves it out keeps treating every function as an accessor.
+   */
+  accessors?: readonly string[];
 }
 
 export type PropertyValue = any;
@@ -1515,6 +1523,7 @@ export function spread(options: SpreadOptions): () => void {
     isSVG = false,
     skipChildren = false,
     isCustomElement,
+    accessors,
   } = options;
 
   if (!element || !isDomElement(element)) {
@@ -1644,6 +1653,13 @@ export function spread(options: SpreadOptions): () => void {
       JSX_PROPERTIES.has(key) ||
       (!elementIsSVG && key in element) ||
       (custom && !elementIsSVG && !isAttributeOnlyName(key));
+    const functionValue =
+      custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
+    if (functionValue) {
+      if (isServer()) serverCustomElementProp(element, key, value);
+      else setProperty(element, key, value);
+      continue;
+    }
     if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
       // No element object on a server: see serverCustomElementProp.
       disposers.push(

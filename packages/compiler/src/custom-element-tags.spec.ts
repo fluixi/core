@@ -34,3 +34,10 @@ describe('isCustomElement in the emitted spread', () => {
     expect(out).not.toContain('isCustomElement');
   });
 });
+
+describe('accessors in the emitted spread', () => {
+  it('names the props wrapped as accessors and leaves a plain function out', () => {
+    const out = compile('const v = <my-form action={submit} labels={labels()} />;');
+    expect(out).toContain('accessors: ["labels"]');
+  });
+});

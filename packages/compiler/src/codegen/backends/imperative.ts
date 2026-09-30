@@ -306,7 +306,12 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           // here, so the runtime does not have to read it back off the node. It falls
           // back to that check when the flag is absent, which is how a hand-written
           // `spread` call still behaves.
-          const customFlag = node.tag.includes('-') ? ', isCustomElement: true' : '';
+          // For a custom element it also names the props wrapped as accessors: any other
+          // function is a property value (an action, a callback) and must not be called.
+          const accessors = node.props
+            .filter((p) => p.kind !== 'spread' && p.expr !== undefined && p.reactive && p.name !== 'ref')
+            .map((p) => p.name);
+          const customFlag = node.tag.includes('-') ? `, isCustomElement: true, accessors: ${JSON.stringify(accessors)}` : '';
           parts.push(
             `spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag}${customFlag} });`,
           );
