@@ -3,7 +3,7 @@
  * A light DOM element rendered on the server: its content goes out inside its tag, with the
  * props that have no attribute form carried for the client.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('an element rendered on the server', () => {
   it('renders its content inside its tag, from attributes and object props', async () => {
@@ -36,6 +36,32 @@ describe('an element rendered on the server', () => {
     expect(out).toContain('<li>Maison Ndiaye</li><li>Keur Tech</li>');
     expect(out).toContain('data-fx-ssr');
     expect(out).toMatch(/data-fx-props="\{&quot;items&quot;:\[&quot;Maison Ndiaye&quot;,&quot;Keur Tech&quot;\]\}"/);
+  });
+
+  it('renders an element from a second copy of the package (a dev reload), with the renderer of the first copy', async () => {
+    await import('./index.js'); // the first copy registers the renderer
+    vi.resetModules();
+    const second = await import('./index.js');
+    const { createNativeElement, insert, spread } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+
+    class Badge extends second.typedElement({ label: second.prop.string('') }) {
+      protected override render(): unknown {
+        const node = createNativeElement('span');
+        insert(node, () => this.label);
+        return node;
+      }
+    }
+    second.defineCustomElement('fx-ssr-badge', Badge);
+
+    const out = renderToString(() => {
+      const wrap = createNativeElement('div');
+      const badge = createNativeElement('fx-ssr-badge');
+      spread({ element: badge, props: { label: 'Nouveau' } });
+      wrap.appendChild(badge);
+      return wrap;
+    });
+    expect(out).toContain('<span>Nouveau</span>');
   });
 
   it('leaves a tag no element is defined for as it is', async () => {

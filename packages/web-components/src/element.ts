@@ -46,6 +46,8 @@ const OWNER_KEY = Symbol.for('fluixi.owner');
 /** Where @fluixi/dom keeps a server node's props, and where it looks for the element renderer. */
 const SERVER_PROPS = Symbol.for('fluixi.serverProps');
 const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
+/** Each element class's own server render, so the copy of this package that defined it does the work. */
+const RENDER_ON_SERVER = Symbol.for('fluixi.renderOnServer');
 /** Marks content an element rendered on the server, and carries the props that have no attribute. */
 const SSR_ATTRIBUTE = 'data-fx-ssr';
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
@@ -198,10 +200,15 @@ export class HTMLReactiveElement extends BaseElement {
         this.#adoptOwner(owner);
       },
     });
-    // On a server, @fluixi/dom hands each attached custom element node to this renderer.
+    // On a server, @fluixi/dom hands each attached custom element node to this renderer. It
+    // defers to the element's class: after a dev reload, or with two bundles of this package,
+    // the renderer registered first belongs to another copy whose classes are not this one's.
     if (typeof HTMLElement === 'undefined') {
-      (globalThis as Record<symbol, unknown>)[ELEMENT_RENDERER] ??= (node: ServerNodeLike) =>
-        HTMLReactiveElement.#renderOnServer(node);
+      (globalThis as Record<symbol, unknown>)[ELEMENT_RENDERER] ??= (node: ServerNodeLike) => {
+        const registry = (globalThis as { customElements?: { get(name: string): unknown } }).customElements;
+        const constructor = registry?.get(node.localName) as Record<symbol, ((node: ServerNodeLike) => void) | undefined> | undefined;
+        constructor?.[RENDER_ON_SERVER]?.(node);
+      };
     }
     stateOf = (element, name) => {
       const state = element.#states()[name];
@@ -395,10 +402,11 @@ export class HTMLReactiveElement extends BaseElement {
    * node; the ones with no attribute form ride along as JSON for the client. Shadow DOM
    * elements are left to the client until declarative shadow roots are emitted.
    */
-  static #renderOnServer(node: ServerNodeLike): void {
-    const registry = (globalThis as { customElements?: { get(name: string): unknown } }).customElements;
-    const constructor = registry?.get(node.localName) as (typeof HTMLReactiveElement & (new () => HTMLReactiveElement)) | undefined;
-    if (!constructor || !(constructor.prototype instanceof HTMLReactiveElement)) return;
+  static [RENDER_ON_SERVER](this: typeof HTMLReactiveElement, node: ServerNodeLike): void {
+    HTMLReactiveElement.#renderOnServer(this as typeof HTMLReactiveElement & (new () => HTMLReactiveElement), node);
+  }
+
+  static #renderOnServer(constructor: typeof HTMLReactiveElement & (new () => HTMLReactiveElement), node: ServerNodeLike): void {
     if (constructor.shadow !== undefined && constructor.shadow !== false) return;
 
     const element = new constructor();
