@@ -124,17 +124,25 @@ function emitComponent(
   // on every change (a <Portal> then piles up). As getters the component is built ONCE and
   // reactivity flows through the getter into its own effects. Static props as getters are
   // harmless (they return the same value). Matches lazyProps() in the inline codegen.
-  const entries = normal.map(
-    (p) => `get ${propKey(p.name)}() { return ${componentPropValue(p)}; }`,
-  );
+  // Each body emitted once: emitting children registers their templates.
+  const bodies: [string, string][] = normal.map((p) => [p.name, componentPropValue(p)]);
   if (children.length > 0) {
     // Children are a LAZY getter: evaluated inside the component's execution, so
     // child components are created in the component's owner scope (preserves owner
     // nesting for context/Suspense), after the component runs (correct provider
     // ordering), and lazily (ErrorBoundary can still catch a throwing child).
-    entries.push(`get children() { return ${emitChildren(children, used, templates)}; }`);
+    bodies.push(['children', emitChildren(children, used, templates)]);
   }
-  let obj = `{ ${entries.join(', ')} }`;
+  let obj = `{ ${bodies.map(([name, body]) => `get ${propKey(name)}() { return ${body}; }`).join(', ')} }`;
+  // A getter is a method: `this` inside it is the props object. Written in a class method
+  // (a custom element's render), `title={() => this.name}` then read the props, not the
+  // element. Arrows keep the enclosing `this`, so those props go out as arrow thunks and the
+  // getters call them. Only when some prop mentions `this`; everything else is unchanged.
+  if (bodies.some(([, body]) => /\bthis\b/.test(body))) {
+    const thunks = bodies.map(([name, body]) => `${JSON.stringify(name)}: () => ${body}`);
+    const getters = bodies.map(([name]) => `get ${propKey(name)}() { return _$t[${JSON.stringify(name)}](); }`);
+    obj = `((_$t) => ({ ${getters.join(', ')} }))({ ${thunks.join(', ')} })`;
+  }
   if (spreads.length > 0) {
     used.add('mergeProps');
     obj = `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;

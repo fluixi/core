@@ -153,6 +153,23 @@ describe('imperative backend codegen', () => {
       expect(node.textContent).toBe('hi');
     });
   });
+
+  it('keeps the enclosing `this` in component props written in a method', () => {
+    const mod = load(`export class Host {
+      name = 'Ada';
+      render(Label) { return <Label text={this.name} title={() => this.name + '!'}>{this.name}</Label>; }
+    }`);
+    const seen: string[] = [];
+    const Label = (p: any) => {
+      seen.push(p.text, p.title(), typeof p.children === 'function' ? p.children() : p.children);
+      return DOM.createNativeElement('span');
+    };
+    S.createRoot(() => {
+      const acc = new mod.Host().render(Label);
+      if (typeof acc === 'function') acc();
+    });
+    expect(seen).toEqual(['Ada', 'Ada!', 'Ada']);
+  });
 });
 
 // Regression: a reactive/component child that is NOT the only child must still be
