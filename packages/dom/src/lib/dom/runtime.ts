@@ -472,9 +472,16 @@ export function holeScope<T>(start: Node, produce: () => T): T {
   // hydration is over, later updates must render normally rather than re-enter it.
   if (typeof value === 'function') {
     const accessor = value as unknown as (...args: unknown[]) => unknown;
+    // A memo can return another (a component that returns its own memo): read the whole chain
+    // here, with the cursor placed, not after this returns. insert() unwraps functions the same
+    // way, so the value it ends up with is unchanged.
     const wrapped = (...args: unknown[]) =>
       hydration.active
-        ? runHydrationAt(start.nextSibling, () => accessor(...args))
+        ? runHydrationAt(start.nextSibling, () => {
+            let value = accessor(...args);
+            while (typeof value === 'function') value = (value as () => unknown)();
+            return value;
+          })
         : accessor(...args);
     return carryHoleTag(accessor, wrapped) as unknown as T;
   }
@@ -868,9 +875,20 @@ export function insertExpression(
 
     // Collect reactive members so each gets its own fine-grained insert effect instead of being
     // read inline in this (enclosing) render effect.
-    const reactiveSlots: Array<{ marker: Node; sig: any }> = [];
-    flattenArray(value, array, parent, marker, true, componentCache, reactiveSlots);
-    const reconciled = reconcileArrays(parent, currentArray, array, marker);
+    const reactiveSlots: Array<{ marker: Node; sig: any; wired?: boolean }> = [];
+    // Nodes a slot adopted while hydrating: they are the slot's, not the array's to reconcile.
+    const adopted = new Set<Node>();
+    // Hydrating a hole: its server nodes are `current`, so the items (resolved here, after the
+    // hole's accessor returned and its cursor was restored) claim from the first of them.
+    const flatten = () => flattenArray(value as any[], array, parent, marker, true, componentCache, reactiveSlots, adopted);
+    if (hydration.active && currentArray.length) runHydrationAt(currentArray[0] as Node, flatten);
+    else flatten();
+    const reconciled = reconcileArrays(
+      parent,
+      adopted.size ? currentArray.filter((node) => !adopted.has(node)) : currentArray,
+      array,
+      marker,
+    );
     // Markers are now in the DOM: wire a per-slot reactive insert. insert() sets up a nested
     // render effect that re-inserts the member's content before its marker on change, so a bare
     // control-flow component return (<Show>/<Switch>/<For>) updates in place.
@@ -882,6 +900,7 @@ export function insertExpression(
     // only fires when the enclosing effect re-runs (the array itself changed); an in-place update
     // (e.g. <Show> toggling) never re-runs this effect, so it keeps updating in place.
     for (const slot of reactiveSlots) {
+      if (slot.wired) continue;
       const disposeSlot = insert(parent, slot.sig, slot.marker) as () => Node | Node[] | null;
       onCleanup(() => {
         cleanChildren(parent, disposeSlot());
@@ -921,7 +940,9 @@ function flattenArray(
   // marker and records itself here; the array caller wires a fine-grained insert() per slot
   // after the markers are placed. This is what makes a bare control-flow component return
   // (a memo, e.g. <Show>) update in place, like an element child does.
-  reactiveSlots?: Array<{ marker: Node; sig: any }>
+  reactiveSlots?: Array<{ marker: Node; sig: any; wired?: boolean }>,
+  // Filled while hydrating: nodes a reactive slot adopted in place (see below).
+  adopted?: Set<Node>
 ): void {
   for (let i = 0; i < arr.length; i++) {
     let item = arr[i];
@@ -985,6 +1006,25 @@ function flattenArray(
           if (reactiveSlots) {
             const slot = createTextNode('', true);
             result.push(slot);
+            if (hydration.active && adopted) {
+              // Hydrating: the slot has to claim the server's nodes now, in document order.
+              // Deferred, a plain sibling later in this array would claim them first (a lazy
+              // <Show> label taken by the input after it). The marker goes in at the cursor so
+              // new content has somewhere to go, then moves past what was adopted, where it
+              // sits in a normal render: after its content.
+              const here = () => (hydration.cursor && hydration.cursor.parentNode === parent ? hydration.cursor : null);
+              parent.insertBefore(slot, here());
+              const disposeSlot = insert(parent, resolved, slot) as () => Node | Node[] | null;
+              const nodes = disposeSlot();
+              for (const node of Array.isArray(nodes) ? nodes : nodes ? [nodes] : []) adopted.add(node);
+              parent.insertBefore(slot, here());
+              onCleanup(() => {
+                cleanChildren(parent, disposeSlot());
+                if (slot.parentNode === parent) parent.removeChild(slot);
+              });
+              reactiveSlots.push({ marker: slot, sig: resolved, wired: true });
+              continue;
+            }
             reactiveSlots.push({ marker: slot, sig: resolved });
             continue;
           }
@@ -1004,8 +1044,8 @@ function flattenArray(
       }
 
       // resolved is not a function
-      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, track, componentCache, reactiveSlots);
-      else flattenArray([resolved], result, parent, marker, track, componentCache, reactiveSlots);
+      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, track, componentCache, reactiveSlots, adopted);
+      else flattenArray([resolved], result, parent, marker, track, componentCache, reactiveSlots, adopted);
       continue;
     }
 
@@ -1030,7 +1070,7 @@ function flattenArray(
     }
 
     if (Array.isArray(item)) {
-      flattenArray(item, result, parent, marker, track, componentCache, reactiveSlots);
+      flattenArray(item, result, parent, marker, track, componentCache, reactiveSlots, adopted);
       continue;
     }
 
