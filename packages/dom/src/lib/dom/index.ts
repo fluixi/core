@@ -20,5 +20,9 @@ export {
   runHydrationAt,
   runWithoutHydration,
   hydrateAdvancePast,
+  beginAppHydration,
+  endAppHydration,
+  isAppHydrationPending,
+  whenAppHydrated,
 } from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'

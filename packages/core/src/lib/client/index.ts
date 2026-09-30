@@ -8,6 +8,8 @@
 import {
   render as domRender,
   hydrate as domHydrate,
+  beginAppHydration,
+  endAppHydration,
 } from '@fluixi/dom';
 // Registers core's version with the DOM runtime, which does the stamping. This entry is a
 // separate subpath, so it does not otherwise load core's render, and without this the
@@ -137,24 +139,31 @@ export async function startClient(
   stripHeadMarker(container as Element);
 
   if (shouldHydrate) {
-    // Preload the lazy chunk(s) for the current route so they resolve synchronously during the
-    // hydration render, the lazy boundary then adopts the server DOM in place instead of
-    // resolving a tick later and rebuilding a duplicate. Dynamic import keeps the router out of
-    // client-only bundles that never pass `routes`.
-    if (options.routes && options.routes.length) {
-      const { preloadRoutes } = await import('../router/index.js');
-      await preloadRoutes(options.routes, window.location.pathname);
+    // Before the first await: custom elements the server rendered upgrade while the route
+    // chunks load, and wait for this hydration to hand them their owner.
+    beginAppHydration();
+    try {
+      // Preload the lazy chunk(s) for the current route so they resolve synchronously during the
+      // hydration render, the lazy boundary then adopts the server DOM in place instead of
+      // resolving a tick later and rebuilding a duplicate. Dynamic import keeps the router out of
+      // client-only bundles that never pass `routes`.
+      if (options.routes && options.routes.length) {
+        const { preloadRoutes } = await import('../router/index.js');
+        await preloadRoutes(options.routes, window.location.pathname);
+      }
+      deserializeHydrationData();
+      setHydrating(true);
+      // A memo around createComponent, which is what compiled JSX emits for every other
+      // component. Called directly, the root is the one component the runtime never hears
+      // about: nothing holds its return value, so no node is made and a graph of the
+      // application starts at whatever the root happened to render.
+      domHydrate(rootOf(App), container as HTMLElement);
+      // Handlers are now wired (delegated $$listeners attach during the hydration
+      // render): replay any events the user fired before hydration.
+      replayEvents();
+    } finally {
+      endAppHydration();
     }
-    deserializeHydrationData();
-    setHydrating(true);
-    // A memo around createComponent, which is what compiled JSX emits for every other
-    // component. Called directly, the root is the one component the runtime never hears
-    // about: nothing holds its return value, so no node is made and a graph of the
-    // application starts at whatever the root happened to render.
-    domHydrate(rootOf(App), container as HTMLElement);
-    // Handlers are now wired (delegated $$listeners attach during the hydration
-    // render): replay any events the user fired before hydration.
-    replayEvents();
     setTimeout(() => {
       setHydrating(false);
       cleanupHydration();

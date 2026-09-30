@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { hydrateChildren, insert, isServer } from '@fluixi/dom';
+import { hydrateChildren, insert, isAppHydrationPending, isServer, whenAppHydrated } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -253,6 +253,15 @@ export class HTMLReactiveElement extends BaseElement {
   #root: ShadowRoot | HTMLElement = this;
   #authored: ChildNode[] = [];
   #built = false;
+  /** Server-rendered and waiting for the app to hand over an owner; cancels the wait. */
+  #waiting: (() => void) | null = null;
+  /** The wait ran once; whatever it found, the next build goes ahead. */
+  #waited = false;
+  /**
+   * A template or hydration handed the owner over. An upgrade reads whatever owner happens to be
+   * current (a module evaluating inside a route preload), which is not this element's host.
+   */
+  #handed = false;
   /** The first build adopts content the server rendered. */
   #hydrating = false;
   /**
@@ -285,6 +294,7 @@ export class HTMLReactiveElement extends BaseElement {
     if (handed) {
       delete (this as unknown as Record<symbol, unknown>)[OWNER_KEY];
       this.#creator = (handed.value as Owner | null) ?? this.#creator;
+      this.#handed = handed.value != null;
     }
     // A property assigned before upgrade sits as an own property and shadows the prototype
     // accessor. Take it off and replay it through the signal.
@@ -301,7 +311,7 @@ export class HTMLReactiveElement extends BaseElement {
     }
     // A class field named like a prop lands after the constructor and hides the accessor.
     this.#adoptOwnProps(true);
-    if (!this.#built) this.#build();
+    if (!this.#built && !this.#waiting) this.#build();
   }
 
   disconnectedCallback(): void {
@@ -469,6 +479,7 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   #build(): void {
+    if (this.#shouldWaitForHost()) return this.#waitForHost();
     this.#built = true;
     const constructor = this.constructor as typeof HTMLReactiveElement;
     const shadow = constructor.shadow;
@@ -552,9 +563,51 @@ export class HTMLReactiveElement extends BaseElement {
    * link the render to the app now, so what it provides reaches the element. Consumers that
    * found nothing are told to look again.
    */
+  /**
+   * Rendered by the server inside an app, and upgraded before that app hydrated: nothing
+   * above it yet, so a context read in its first render would find nothing. Light DOM only;
+   * a shadow root is built by the client.
+   */
+  #shouldWaitForHost(): boolean {
+    const shadow = (this.constructor as typeof HTMLReactiveElement).shadow;
+    return !this.#waited && !this.#handed && (shadow === undefined || shadow === false) && this.hasAttribute(SSR_ATTRIBUTE);
+  }
+
+  /**
+   * Wait a microtask, so an entry module that imported this element has called `startClient`.
+   * Then build when the app hands over an owner, or when its hydration ends without reaching
+   * this element. No app hydrating (a static page, another framework): build now.
+   */
+  #waitForHost(): void {
+    let cancelled = false;
+    let stop: () => void = () => {};
+    this.#waiting = () => {
+      cancelled = true;
+      stop();
+    };
+    const resume = () => {
+      if (cancelled) return;
+      this.#waiting = null;
+      this.#waited = true;
+      if (!this.#built && this.isConnected) this.#build();
+    };
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (isAppHydrationPending()) stop = whenAppHydrated(resume);
+      else resume();
+    });
+  }
+
   #adoptOwner(owner: Owner | null): void {
-    if (!owner || this.#creator) return;
+    if (!owner || this.#handed) return;
+    this.#handed = true;
     this.#creator = owner;
+    if (this.#waiting) {
+      this.#waiting();
+      this.#waiting = null;
+      if (this.isConnected) this.#build();
+      return;
+    }
     if (!this.#rootOwner) return;
     this.#rootOwner.parent = owner;
     announceOwner(this);

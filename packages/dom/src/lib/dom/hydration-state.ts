@@ -105,3 +105,48 @@ export function hydrateAdvancePast(rendered: unknown): void {
     ascendPast(last as Node);
   }
 }
+
+/**
+ * An application hydrating this document, announced before its first `await`.
+ *
+ * A custom element the server rendered inside the app upgrades when its module loads, which
+ * is before the app hydrates. Built then, it has no owner above it, so every context read in
+ * its first render is missing: a `Link` found no router and swallowed its click. Such an
+ * element waits for the app to hand it an owner, or for this to end if the app never reaches
+ * it. On `globalThis`, because a page can load more than one copy of this module.
+ */
+interface AppHydration {
+  pending: number;
+  waiting: Set<() => void>;
+}
+
+function appHydration(): AppHydration {
+  const g = globalThis as Record<symbol, AppHydration | undefined>;
+  return (g[Symbol.for('fluixi.appHydration')] ??= { pending: 0, waiting: new Set() });
+}
+
+/** An app is about to hydrate: server-rendered custom elements wait for their owner. */
+export function beginAppHydration(): void {
+  appHydration().pending++;
+}
+
+/** The app's hydration pass is over; elements it did not reach build on their own. */
+export function endAppHydration(): void {
+  const state = appHydration();
+  if (state.pending > 0) state.pending--;
+  if (state.pending > 0) return;
+  const waiting = [...state.waiting];
+  state.waiting.clear();
+  for (const resume of waiting) resume();
+}
+
+export function isAppHydrationPending(): boolean {
+  return appHydration().pending > 0;
+}
+
+/** Runs `fn` once the pending app hydration ends. Returns a function that cancels it. */
+export function whenAppHydrated(fn: () => void): () => void {
+  const state = appHydration();
+  state.waiting.add(fn);
+  return () => state.waiting.delete(fn);
+}
