@@ -48,6 +48,8 @@ const SERVER_PROPS = Symbol.for('fluixi.serverProps');
 const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
 /** Each element class's own server render, so the copy of this package that defined it does the work. */
 const RENDER_ON_SERVER = Symbol.for('fluixi.renderOnServer');
+/** Tells @fluixi/dom's page hydration that this element's children are its own, adopted already. */
+const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
 /** Marks content an element rendered on the server, and carries the props that have no attribute. */
 const SSR_ATTRIBUTE = 'data-fx-ssr';
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
@@ -463,6 +465,7 @@ export class HTMLReactiveElement extends BaseElement {
       }
       this.removeAttribute(SSR_ATTRIBUTE);
       this.removeAttribute(SSR_PROPS_ATTRIBUTE);
+      (this as unknown as Record<symbol, unknown>)[OWNS_CONTENT] = true;
       this.#root = this;
     } else {
       // Light DOM: the author's children are the content. Take them out before anything

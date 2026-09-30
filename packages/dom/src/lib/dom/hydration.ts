@@ -64,11 +64,22 @@ function warnMismatch(expected: string, found: Node): void {
 }
 
 /** Reuse the matched element at the cursor and descend into its children. */
+/**
+ * A custom element that rendered its own content on the server: its children are its own,
+ * adopted by the element, not the page's. `data-fx-ssr` while it has not upgraded yet; the
+ * owner mark (set by @fluixi/web-components) once it has.
+ */
+const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
+function ownsServerContent(el: Element): boolean {
+  if (!el.localName.includes('-')) return false;
+  return el.hasAttribute('data-fx-ssr') || (el as unknown as Record<symbol, unknown>)[OWNS_CONTENT] === true;
+}
+
 function hydrateElement(tag: string): Element | null {
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
-    if (VOID_ELEMENTS.has(tag.toLowerCase())) {
+    if (VOID_ELEMENTS.has(tag.toLowerCase()) || ownsServerContent(c as Element)) {
       hydration.cursor = c.nextSibling;
     } else {
       hydration.parents.push(c);
