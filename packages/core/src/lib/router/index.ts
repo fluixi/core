@@ -726,7 +726,7 @@ export function Link(props: LinkProps) {
 
 
   const navigate = () =>
-    ctx?.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
+    ctx!.router.navigate(read(props.href) ?? '', { replace: read(props.replace) });
 
   // createNativeElement branches on isServer() -> a real ServerNode <a> (serialized as a true
   // element, not an escaped string) on the server, a real DOM <a> on the client.
@@ -770,6 +770,9 @@ export function Link(props: LinkProps) {
   if (typeof a.addEventListener === 'function') {
     a.addEventListener('click', (e: MouseEvent) => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      // No router above this link: let the browser follow it rather than cancel the click
+      // and go nowhere.
+      if (!ctx) return;
       e.preventDefault();
       navigate();
     });

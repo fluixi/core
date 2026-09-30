@@ -39,4 +39,14 @@ describe('<Link> attributes', () => {
     expect(a.hasAttribute('aria-current')).toBe(false);
     expect(clicked).toBe(false);
   });
+
+  it('leaves the click to the browser when no router is above it', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    render(() => Link({ href: '/organisations', children: 'Switch' } as never), container);
+
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    container.querySelector('a')!.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+  });
 });
