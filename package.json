@@ -10,7 +10,7 @@
     "test": "nx affected -t test",
     "publish:packages": "nx run-many -t publish --parallel=false",
     "changeset": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && node scripts/gen-versions.mjs",
     "release": "pnpm run build && changeset publish"
   },
   "devDependencies": {

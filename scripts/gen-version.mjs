@@ -3,11 +3,11 @@
 // resolvers handle inconsistently, and which would drag the whole manifest into the
 // bundle).
 //
-// Run from a package directory: `node ../../scripts/gen-version.mjs`
+// Run from a package directory: `node ../../scripts/gen-version.mjs`, or pass the directory.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const dir = process.cwd();
+const dir = process.argv[2] ?? process.cwd();
 const { name, version } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
 const out = join(dir, 'src', 'version.generated.ts');
 
