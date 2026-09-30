@@ -69,6 +69,12 @@
           "default": "./dist/analyze/static-graph.cjs"
         },
         "default": "./dist/analyze/static-graph.js"
+      },
+      "./intrinsics": {
+        "types": "./dist/analyze/intrinsics.d.ts",
+        "import": "./dist/analyze/intrinsics.mjs",
+        "require": "./dist/analyze/intrinsics.cjs",
+        "default": "./dist/analyze/intrinsics.js"
       }
     }
   },
@@ -167,6 +173,18 @@
         "default": "./dist/lower/compile-template.cjs"
       },
       "default": "./dist/lower/compile-template.js"
+    },
+    "./intrinsics": {
+      "development": "./src/analyze/intrinsics.ts",
+      "import": {
+        "types": "./dist/analyze/intrinsics.d.ts",
+        "default": "./dist/analyze/intrinsics.mjs"
+      },
+      "require": {
+        "types": "./dist/analyze/intrinsics.d.cts",
+        "default": "./dist/analyze/intrinsics.cjs"
+      },
+      "default": "./dist/analyze/intrinsics.js"
     }
   },
   "scripts": {
