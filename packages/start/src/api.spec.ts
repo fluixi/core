@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { derivePattern, isApiPath, matchApiRoutes, handleApi, type ApiRoute } from './api.js';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { derivePattern, isApiPath, matchApiRoutes, handleApi, writeApiTypes, type ApiRoute } from './api.js';
 
 const route = (rel: string, mod: Record<string, unknown>): ApiRoute => {
   const { source, keys, rank } = derivePattern(rel);
@@ -67,5 +70,31 @@ describe('api routes', () => {
     const res = await handleApi(routes, new Request('http://x/api/data'));
     expect(res.headers.get('content-type')).toContain('application/json');
     expect(await res.json()).toEqual({ ok: true });
+  });
+});
+
+describe('the API route map', () => {
+  it('names every route by its path template, sorted, with a relative import', () => {
+    const root = mkdtempSync(join(tmpdir(), 'fx-api-types-'));
+    mkdirSync(join(root, 'src/api/v1/projects'), { recursive: true });
+    mkdirSync(join(root, 'src/api/auth'), { recursive: true });
+    writeFileSync(join(root, 'src/api/v1/projects/[id].ts'), 'export const GET = () => new Response();');
+    writeFileSync(join(root, 'src/api/v1/projects/index.ts'), 'export const GET = () => new Response();');
+    writeFileSync(join(root, 'src/api/auth/[...all].ts'), 'export const GET = () => new Response();');
+    writeFileSync(join(root, 'src/api/v1/projects/list.spec.ts'), '');
+
+    expect(writeApiTypes(root, 'src/api')).toBe(join(root, 'src/api.gen.ts'));
+    const source = readFileSync(join(root, 'src/api.gen.ts'), 'utf8');
+    expect(source).toContain('export interface ApiRoutes {\n');
+    expect(source.split('\n').filter((line) => line.startsWith('  '))).toEqual([
+      `  "/api/auth/{all}": typeof import("./api/auth/[...all].js");`,
+      `  "/api/v1/projects": typeof import("./api/v1/projects/index.js");`,
+      `  "/api/v1/projects/{id}": typeof import("./api/v1/projects/[id].js");`,
+    ]);
+
+    // Nothing left to map: the file this wrote goes.
+    for (const f of ['v1/projects/[id].ts', 'v1/projects/index.ts', 'auth/[...all].ts']) unlinkSync(join(root, 'src/api', f));
+    expect(writeApiTypes(root, 'src/api')).toBeNull();
+    expect(existsSync(join(root, 'src/api.gen.ts'))).toBe(false);
   });
 });
