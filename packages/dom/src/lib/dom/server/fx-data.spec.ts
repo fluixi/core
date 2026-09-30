@@ -35,6 +35,18 @@ describe('__FX_DATA__ transport (escaping + reader)', () => {
     expect(getServerData()).toEqual({ fromGlobal: true });
   });
 
+  it('reads the script when the global is the script element itself (named access on window)', () => {
+    const payload = { '__i18n:locale': 'en' };
+    const el = document.createElement('script');
+    el.type = 'application/json';
+    el.id = FX_DATA_ID;
+    el.textContent = escapeFxJson(JSON.stringify(payload));
+    document.body.appendChild(el);
+    // What a browser does for an element with an id: window.__FX_DATA__ is the element.
+    (globalThis as any).__FX_DATA__ = el;
+    expect(getServerData()).toEqual(payload);
+  });
+
   it('returns null when the page was not server-rendered', () => {
     expect(getServerData()).toBeNull();
   });

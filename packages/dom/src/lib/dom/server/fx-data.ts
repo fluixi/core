@@ -45,7 +45,9 @@ export function resetServerDataCache(): void {
 export function getServerData(): Record<string, unknown> | null {
   // Global wins and is never cached, so it reflects the current value (tests set/delete it).
   const g = (globalThis as { __FX_DATA__?: Record<string, unknown> }).__FX_DATA__;
-  if (g) return g;
+  // A browser names every element with an id on `window`, so the transport <script> itself
+  // shows up here: that is the element, not the data, and it has to be parsed below.
+  if (g && typeof (g as { nodeType?: unknown }).nodeType !== 'number') return g;
   if (_scriptCache !== undefined) return _scriptCache; // script content is static for the page
   let parsed: Record<string, unknown> | null = null;
   if (typeof document !== 'undefined') {
