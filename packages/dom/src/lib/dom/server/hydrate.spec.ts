@@ -46,7 +46,7 @@ describe('SSR -> client handoff', () => {
   // HTML (render() clears + rebuilds). Correct interactivity, at the cost of a
   // re-render (no DOM reuse). Valid for SSR-for-first-paint/SEO + CSR.
   it('client render over server HTML wires events + reactivity', async () => {
-    const html = renderToString(() => App());
+    const html = renderToString(() => App(), { hydrationKeys: false });
     expect(html).toBe('<div id="app"><span>count:0</span><button>inc</button></div>');
 
     const container = document.createElement('div');
@@ -68,7 +68,7 @@ describe('SSR -> client handoff', () => {
   // cursor descend/ascend rework of insert's hydration path. Documented; fix
   // is its own focused pass.
   it('hydrate reuses server DOM (no recreation) and wires events/reactivity', async () => {
-    const html = renderToString(() => App());
+    const html = renderToString(() => App(), { hydrationKeys: false });
     const container = document.createElement('div');
     document.body.appendChild(container);
     container.innerHTML = html;
@@ -110,7 +110,7 @@ describe('static innerHTML prop', () => {
 
   it('survives hydration over matching server HTML', () => {
     const markup = '<h1>Intro</h1><p>body</p>';
-    const html = renderToString(() => HtmlApp(markup));
+    const html = renderToString(() => HtmlApp(markup), { hydrationKeys: false });
     expect(html).toContain('<h1>Intro</h1>');
 
     const container = document.createElement('div');

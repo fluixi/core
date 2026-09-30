@@ -22,7 +22,7 @@ describe('request context: basic access', () => {
         insert(div, () => getRequestEvent()?.url ?? '', null);
         return div;
       },
-      { event: { url: '/dashboard' } },
+      { hydrationKeys: false, event: { url: '/dashboard' } },
     );
     expect(html).toBe('<div>/dashboard</div>');
   });
@@ -31,13 +31,13 @@ describe('request context: basic access', () => {
     renderToString(() => {
       getRequestContext()!.routeData.set('hit', 1);
       return createNativeElement('div');
-    });
+    }, { hydrationKeys: false });
     // a second render must not see the first render's routeData
     let leaked: unknown;
     renderToString(() => {
       leaked = getRequestContext()!.routeData.get('hit');
       return createNativeElement('div');
-    });
+    }, { hydrationKeys: false });
     expect(leaked).toBeUndefined();
   });
 
@@ -45,11 +45,11 @@ describe('request context: basic access', () => {
     const ids1 = renderToString(() => {
       const c = getRequestContext()!;
       return createTextHolder(`${c.nextId()},${c.nextId()}`);
-    });
+    }, { hydrationKeys: false });
     const ids2 = renderToString(() => {
       const c = getRequestContext()!;
       return createTextHolder(`${c.nextId()}`);
-    });
+    }, { hydrationKeys: false });
     expect(ids1).toBe('<i>s0,s1</i>');
     expect(ids2).toBe('<i>s0</i>'); // counter reset for the new request
   });

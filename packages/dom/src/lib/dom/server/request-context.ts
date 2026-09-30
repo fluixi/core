@@ -38,6 +38,8 @@ export interface RequestEvent {
 
 export interface RequestContext {
   event: RequestEvent;
+  /** Stamp hydration keys (`data-hk`) on elements. Off for markup nothing will hydrate. */
+  hydrationKeys?: boolean;
   /** loader/resource data resolved during this request (was sharedConfig.routeData) */
   routeData: Map<unknown, unknown>;
   /** the route match tree for this request (was sharedConfig.matchedRoute) */

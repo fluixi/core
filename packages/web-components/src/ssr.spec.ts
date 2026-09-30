@@ -30,7 +30,7 @@ describe('an element rendered on the server', () => {
       spread({ element: deals, props: { heading: 'Pipeline', items: ['Maison Ndiaye', 'Keur Tech'] } });
       section.appendChild(deals);
       return section;
-    });
+    }, { hydrationKeys: false });
 
     expect(out).toContain('<h2>Pipeline</h2>');
     expect(out).toContain('<li>Maison Ndiaye</li><li>Keur Tech</li>');
@@ -60,7 +60,7 @@ describe('an element rendered on the server', () => {
       spread({ element: badge, props: { label: 'Nouveau' } });
       wrap.appendChild(badge);
       return wrap;
-    });
+    }, { hydrationKeys: false });
     expect(out).toContain('<span>Nouveau</span>');
   });
 
@@ -71,7 +71,7 @@ describe('an element rendered on the server', () => {
       const section = createNativeElement('section');
       section.appendChild(createNativeElement('fx-ssr-unknown'));
       return section;
-    });
+    }, { hydrationKeys: false });
     expect(out).toBe('<section><fx-ssr-unknown></fx-ssr-unknown></section>');
   });
 
@@ -95,7 +95,7 @@ describe('an element rendered on the server', () => {
       const form = createNativeElement('fx-ssr-schema-form');
       spread({ element: form, props: { schema: new Schema(), options: [{ value: 'fr' }] } });
       return form;
-    });
+    }, { hydrationKeys: false });
 
     expect(out).toContain('data-fx-props="{&quot;options&quot;:[{&quot;value&quot;:&quot;fr&quot;}]}"');
     expect(out).not.toContain('&quot;schema&quot;');

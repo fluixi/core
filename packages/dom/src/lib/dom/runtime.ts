@@ -35,6 +35,9 @@ import {
   isAdopted,
   runHydrationAt,
   ascendPast,
+  nextHydrationKey,
+  claimKeyed,
+  HYDRATION_KEY,
 } from './hydration-state.js';
 
 
@@ -355,8 +358,19 @@ export function createNativeElement(
   isSVG = false,
   at?: { file: string; line: number; column: number },
 ): Element {
-  if (isServer()) return getServerNodes().createElement(tag, isSVG) as unknown as Element;
+  const key = nextHydrationKey();
+  if (isServer()) {
+    const node = getServerNodes().createElement(tag, isSVG) as unknown as Element;
+    if (key) node.setAttribute(HYDRATION_KEY, key);
+    return node;
+  }
   if (hydration.active) {
+    const claimed = claimKeyed(key, tag);
+    if (claimed) {
+      getHydrationWalker()?.enterElement(claimed);
+      if (tag.includes('-')) handOwner(claimed);
+      return at ? located(claimed, at) : claimed;
+    }
     const node = getHydrationWalker()?.hydrateElement(tag);
     if (node) {
       if (tag.includes('-')) handOwner(node);
@@ -408,13 +422,26 @@ export function templateNode(
   isSVG = false,
   at?: TemplatePositions,
 ): Node {
+  const key = nextHydrationKey();
   if (isServer()) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
     const nodes = getServerNodes();
-    return (holes ? nodes.parseTemplate(html, isSVG) : nodes.createRaw(html)) as unknown as Node;
+    if (holes) {
+      const node = nodes.parseTemplate(html, isSVG);
+      if (key) node.setAttribute(HYDRATION_KEY, key);
+      return node as unknown as Node;
+    }
+    return nodes.createRaw(key ? withKey(html, key) : html) as unknown as Node;
   }
   if (hydration.active) {
+    const claimed = claimKeyed(key, tag);
+    if (claimed) {
+      // Adopted whole, as a static template is: the generated walk reaches the holes.
+      hydration.cursor = claimed.nextSibling;
+      if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(claimed);
+      return stampPositions(claimed, at);
+    }
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag);
@@ -424,6 +451,11 @@ export function templateNode(
     }
   }
   return stampPositions(cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node, at);
+}
+
+/** The template's root tag with its hydration key: `<div class` to `<div data-hk="3" class`. */
+function withKey(html: string, key: string): string {
+  return html.replace(/^(\s*<[^\s/>]+)/, `$1 ${HYDRATION_KEY}="${key}"`);
 }
 
 /** Line and column per element of a template, flattened, in document order. */

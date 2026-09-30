@@ -15,6 +15,9 @@ import {
   createRequestContext,
 } from './index.js';
 
+/** The markup without hydration keys: these specs are about the document, not the keys. */
+const plain = (html: string) => html.replace(/ data-hk="[^"]*"/g, '');
+
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function collectStream(stream: ReadableStream<Uint8Array>): Promise<string[]> {
@@ -47,7 +50,7 @@ describe('@fluixi/server renderToStream', () => {
     expect(chunks[0]).not.toContain('d:/p'); // content not in the shell
 
     const full = chunks.join('');
-    expect(full).toContain('<div>d:/p</div>'); // awaited data resolved
+    expect(plain(full)).toContain('<div>d:/p</div>'); // awaited data resolved
     expect(full).toContain('/client.js'); // close chunk scripts
     expect(full.trimEnd().endsWith('</html>')).toBe(true);
     expect(chunks.length).toBeGreaterThanOrEqual(2); // shell flushed separately
@@ -58,12 +61,12 @@ describe('@fluixi/server renderToStream', () => {
     const s = stream('/x');
     expect(s).toBeInstanceOf(ReadableStream);
     const full = (await collectStream(s)).join('');
-    expect(full).toContain('<div>d:/x</div>');
+    expect(plain(full)).toContain('<div>d:/x</div>');
   });
 
   it('renderToBodyStream streams the app body only — no document shell', async () => {
     const full = (await collectStream(renderToBodyStream(DataApp, { url: '/p' }))).join('');
-    expect(full).toContain('<div>d:/p</div>'); // awaited data resolved
+    expect(plain(full)).toContain('<div>d:/p</div>'); // awaited data resolved
     expect(full).not.toContain('<!DOCTYPE'); // host owns the document
     expect(full).not.toContain('<body');
     expect(full).not.toContain('<title>');
@@ -73,7 +76,7 @@ describe('@fluixi/server renderToStream', () => {
     const { bodyStream } = startServer(DataApp);
     const s = bodyStream('/y');
     expect(s).toBeInstanceOf(ReadableStream);
-    expect((await collectStream(s)).join('')).toContain('<div>d:/y</div>');
+    expect(plain((await collectStream(s)).join(''))).toContain('<div>d:/y</div>');
   });
 });
 
@@ -86,16 +89,16 @@ const App = ({ url }: { url: string }) => {
 
 describe('@fluixi/server', () => {
   it('renders a request and exposes the event', () => {
-    expect(renderRequest(App, { url: '/x' })).toBe('<div id="app">url=/x|prop=/x</div>');
+    expect(plain(renderRequest(App, { url: '/x' }))).toBe('<div id="app">url=/x|prop=/x</div>');
   });
 
   it('startServer.render / .page', () => {
     const { render, page } = startServer(App);
-    expect(render('/a')).toBe('<div id="app">url=/a|prop=/a</div>');
+    expect(plain(render('/a'))).toBe('<div id="app">url=/a|prop=/a</div>');
     const html = page('/b', { title: 'T' });
     expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
     expect(html).toContain('<title>T</title>');
-    expect(html).toContain('<div id="app">url=/b|prop=/b</div>');
+    expect(plain(html)).toContain('<div id="app">url=/b|prop=/b</div>');
   });
 
   it('createHtmlDocument wraps content', () => {
@@ -149,7 +152,7 @@ describe('@fluixi/server', () => {
 
   it('renderToString with an explicit event', () => {
     const html = renderToString(() => App({ url: '/z' }), { event: { url: '/z' } });
-    expect(html).toBe('<div id="app">url=/z|prop=/z</div>');
+    expect(plain(html)).toBe('<div id="app">url=/z|prop=/z</div>');
   });
 
   it('renderRequestAsync awaits a data loader (ALS auto-injected on import)', async () => {
@@ -160,7 +163,7 @@ describe('@fluixi/server', () => {
       return div;
     };
     const html = await renderRequestAsync(DataApp, { url: '/p' });
-    expect(html).toContain('<div>data:/p</div>');
+    expect(plain(html)).toContain('<div>data:/p</div>');
     expect(html).toContain('<script type="application/json" id="__FX_DATA__">'); // serialized for hydration
   });
 

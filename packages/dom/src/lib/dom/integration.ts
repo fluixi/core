@@ -5,6 +5,7 @@
 
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
 import { asComponent } from '../component/modifiers.js';
+import { openKeyScope } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
 
 type CreateComponentFn = (fn: () => any, props?: any) => any;
@@ -34,6 +35,8 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   Comp: T,
   props?: U | undefined,
 ): CreateComponentReturnType<T, U> {
+  // Before anything the component builds, now or in a memo later: its hydration keys.
+  openKeyScope();
   if (_slot.fn) return _slot.fn(Comp, props);
 
   // Before the call, so the computation this is created inside is still the running one.

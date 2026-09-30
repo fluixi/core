@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { hydrateChildren, insert, isAppHydrationPending, isServer, whenAppHydrated } from '@fluixi/dom';
+import { HYDRATION_KEY, hydrateChildren, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -466,7 +466,13 @@ export class HTMLReactiveElement extends BaseElement {
     for (const child of element.#authored) node.removeChild(child);
     element.#root = node as unknown as HTMLElement;
     element.#built = true;
-    insert(node as unknown as Element, element.render() as never);
+    // Its own key scope, named after its own key: the client renders this content in the
+    // element's root, not in the page's, and must number it the same way.
+    const scope = `${node.getAttribute(HYDRATION_KEY) ?? ''}~`;
+    root(() => {
+      setKeyScope(scope);
+      insert(node as unknown as Element, element.render() as never);
+    });
 
     node.setAttribute(SSR_ATTRIBUTE, '');
     if (Object.keys(carried).length) {
@@ -524,7 +530,11 @@ export class HTMLReactiveElement extends BaseElement {
         this.#dispose = dispose;
         // Reflects live in the same scope as the content, so they stop when it does.
         this.#startReflecting();
-        if (this.#hydrating) hydrateChildren(this, () => this.render());
+        if (this.#hydrating) {
+          // The scope the server rendered this content in (see renderOnServer).
+          setKeyScope(`${this.getAttribute(HYDRATION_KEY) ?? ''}~`);
+          hydrateChildren(this, () => this.render());
+        }
         else insert(this.#root as unknown as Element, this.render() as never);
         this.#hydrating = false;
       }),

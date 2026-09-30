@@ -53,6 +53,11 @@ export interface RenderOptions {
    * passes `preloadServerState` here to drive `createIsomorphicState`.
    */
   preload?: (event?: RequestEvent) => void | Promise<void>;
+  /**
+   * Stamp hydration keys (`data-hk`) on elements, so the client adopts them by identity.
+   * Default true. Turn off for markup no client will hydrate: an email, a static export.
+   */
+  hydrationKeys?: boolean;
 }
 
 /**
@@ -68,6 +73,7 @@ export function renderToString(app: () => any, options: RenderOptions = {}): str
   ensureServerNodes();
   setServerMode(true);
   const ctx = createRequestContext(options.event);
+  ctx.hydrationKeys = options.hydrationKeys !== false;
   try {
     return runWithRequestContext(ctx, () =>
       createRoot((dispose) => {
@@ -182,6 +188,7 @@ export async function renderToStringAsync(
   setServerMode(true);
   ensureResourceHooks();
   const ctx = createRequestContext(options.event);
+  ctx.hydrationKeys = options.hydrationKeys !== false;
   try {
     return await runWithRequestContext(ctx, async () => {
       // Resolve request-scoped state (region/locale/session) before the app renders,

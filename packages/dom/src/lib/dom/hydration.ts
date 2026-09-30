@@ -13,7 +13,12 @@
 import { insert, render } from './runtime.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
-import { hydration, registerHydrationWalker } from './hydration-state.js';
+import {
+  clearHydrationKeys,
+  hydration,
+  indexHydrationKeys,
+  registerHydrationWalker,
+} from './hydration-state.js';
 
 /**
  * Re-sync the cursor onto the next adoptable server node. Two things can leave it off-target
@@ -91,6 +96,16 @@ function hydrateElement(tag: string): Element | null {
   return null;
 }
 
+/** An element claimed by key: descend into it, or step past it when it has nothing to adopt. */
+function enterElement(el: Element): void {
+  if (VOID_ELEMENTS.has(el.localName) || ownsServerContent(el)) {
+    hydration.cursor = el.nextSibling;
+  } else {
+    hydration.parents.push(el);
+    hydration.cursor = el.firstChild;
+  }
+}
+
 /**
  * Adopt a whole static subtree at the cursor without descending into it.
  *
@@ -156,7 +171,7 @@ let _walkerRegistered = false;
 function ensureWalker(): void {
   if (_walkerRegistered) return;
   _walkerRegistered = true;
-  registerHydrationWalker({ hydrateElement, hydrateText, hydrateMarker, hydrateStatic });
+  registerHydrationWalker({ hydrateElement, hydrateText, hydrateMarker, hydrateStatic, enterElement });
 }
 
 /**
@@ -174,6 +189,8 @@ export function hydrate<T>(
   hydration.active = true;
   hydration.cursor = container.firstChild;
   hydration.parents = [];
+  clearHydrationKeys();
+  indexHydrationKeys(container);
 
   // Seed resources from server-serialized data (__FX_DATA__) so they don't refetch: ids
   // match by creation order. hydrate() is synchronous, so setting these module-globals is safe.
@@ -202,6 +219,7 @@ export function hydrate<T>(
  */
 export function hydrateChildren(container: Element, build: () => unknown): void {
   ensureWalker();
+  indexHydrationKeys(container);
   const previous = { active: hydration.active, cursor: hydration.cursor, parents: hydration.parents };
   hydration.active = true;
   hydration.cursor = container.firstChild;

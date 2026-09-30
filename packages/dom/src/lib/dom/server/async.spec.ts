@@ -19,7 +19,7 @@ describe('renderToStringAsync: resources', () => {
       insert(div, () => data() ?? 'loading...', null);
       return div;
     };
-    const html = await renderToStringAsync(() => App());
+    const html = await renderToStringAsync(() => App(), { hydrationKeys: false });
     expect(html).toContain('<div>LOADED</div>');
     // resolved data is also serialized for client hydration, as a non-executable JSON block
     expect(html).toContain('<script type="application/json" id="__FX_DATA__">');
@@ -34,7 +34,7 @@ describe('renderToStringAsync: resources', () => {
       insert(div, () => b() ?? '...', null);
       return div;
     };
-    expect(await renderToStringAsync(() => App())).toContain('<div>AB</div>');
+    expect(await renderToStringAsync(() => App(), { hydrationKeys: false })).toContain('<div>AB</div>');
   });
 
   it('renders loader-free content too (no pending -> resolves immediately)', async () => {
@@ -43,6 +43,6 @@ describe('renderToStringAsync: resources', () => {
       insert(div, 'static', null);
       return div;
     };
-    expect(await renderToStringAsync(() => App())).toBe('<div>static</div>');
+    expect(await renderToStringAsync(() => App(), { hydrationKeys: false })).toBe('<div>static</div>');
   });
 });

@@ -24,5 +24,7 @@ export {
   endAppHydration,
   isAppHydrationPending,
   whenAppHydrated,
+  setKeyScope,
+  HYDRATION_KEY,
 } from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'

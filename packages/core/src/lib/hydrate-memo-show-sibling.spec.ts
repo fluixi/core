@@ -118,6 +118,85 @@ describe('hydration: a memoised <Show> before a sibling', () => {
     }).toEqual({ labels: 1, inputs: 1, buttons: 1 });
     expect(container.querySelector('input')).toBe(serverInput);
   });
+
+  it('adopts a mapped list that mixes a component item with element items', async () => {
+    const src = `
+      function Nav(props) { return <a href={props.href} class="module">{props.children}</a>; }
+      const modules = [
+        { id: 'a', label: 'One' },
+        { id: 'b', label: 'Two', soon: true },
+        { id: 'c', label: 'Three', soon: true },
+      ];
+      export function App() {
+        return (
+          <nav>
+            <h2>{() => 'Home'}</h2>
+            {() =>
+              modules.map((m) =>
+                m.soon ? (
+                  <span class="module">{m.label}<span class="soon">{() => 'Soon'}</span></span>
+                ) : (
+                  <Nav href={'/' + m.id}>{m.label}</Nav>
+                ),
+              )
+            }
+          </nav>
+        );
+      }
+    `;
+    const { App } = compile(src);
+
+    setServerMode(true);
+    const html = await renderToStringAsync(() => App());
+    setServerMode(false);
+
+    document.body.innerHTML = `<div id="app">${html}</div>`;
+    const container = document.getElementById('app')!;
+    const serverNodes = [...container.querySelectorAll('*')];
+    DOM.hydrate(() => App(), container);
+    await tick();
+    expect([...container.querySelectorAll('.module')].map((n) => n.firstChild?.textContent)).toEqual(['One', 'Two', 'Three']);
+    expect([...container.querySelectorAll('*')].every((node) => serverNodes.includes(node))).toBe(true);
+  });
+
+  it('adopts a form whose children open with an empty reactive slot', async () => {
+    const src = `
+      import { createSignal } from '@fluixi/reactive/signal';
+      // Reads the children getter twice, as @fluixi-ui/form's Form does.
+      function Form(props) {
+        const content = () => (typeof props.children === 'function' ? props.children() : props.children);
+        return <form>{content}</form>;
+      }
+      function Field(props) { return <div data-field="">{props.label}</div>; }
+      function Button(props) { return <button type="submit">{props.children}</button>; }
+      export function App() {
+        const [error] = createSignal(null);
+        const [pending] = createSignal(false);
+        return (
+          <Form>
+            {() => (error() ? <p role="alert">{error()}</p> : null)}
+            <Field label="Email" />
+            <Field label="Password" />
+            <Button>{() => (pending() ? 'Wait' : 'Go')}</Button>
+          </Form>
+        );
+      }
+    `;
+    const { App } = compile(src);
+
+    setServerMode(true);
+    const html = await renderToStringAsync(() => App());
+    setServerMode(false);
+
+    document.body.innerHTML = `<div id="app">${html}</div>`;
+    const container = document.getElementById('app')!;
+    const serverNodes = [...container.querySelectorAll('*')];
+    DOM.hydrate(() => App(), container);
+    await tick();
+    expect(container.querySelectorAll('button').length).toBe(1);
+    expect(container.querySelectorAll('[data-field]').length).toBe(2);
+    expect([...container.querySelectorAll('*')].every((node) => serverNodes.includes(node))).toBe(true);
+  });
 });
 
 function compile(src: string): any {
