@@ -100,6 +100,11 @@ export async function handleApi(routes: ApiRoute[], request: Request, prefix = '
   return new Response(JSON.stringify(out ?? null), { headers: { 'content-type': 'application/json; charset=utf-8' } });
 }
 
+/** A route module: source, not a spec or test beside it. */
+function isRouteFile(name: string): boolean {
+  return /\.(ts|tsx|js|mjs)$/.test(name) && !/\.(spec|test)\./.test(name);
+}
+
 function scanFiles(dir: string, base = dir): string[] {
   let out: string[] = [];
   let entries: string[] = [];
@@ -111,7 +116,7 @@ function scanFiles(dir: string, base = dir): string[] {
   for (const name of entries) {
     const full = join(dir, name);
     if (statSync(full).isDirectory()) out = out.concat(scanFiles(full, base));
-    else if (/\.(ts|tsx|js|mjs)$/.test(name) && !/\.(spec|test)\./.test(name)) out.push(full);
+    else if (isRouteFile(name)) out.push(full);
   }
   return out;
 }
@@ -132,6 +137,24 @@ export function apiRoutesVitePlugin(opts: { dir: string; prefix?: string }): any
     enforce: 'pre' as const,
     configResolved(config: { root?: string }) {
       root = config.root || root;
+    },
+    // The table is built once, when first loaded. A route file added or removed while the dev
+    // server runs changes it: drop the cached table and rewrite the route map, or the new
+    // route answers 404 and the client's types miss it until a restart.
+    configureServer(server: {
+      watcher: { add(path: string): void; on(event: 'add' | 'unlink', fn: (file: string) => void): void };
+      moduleGraph: { getModuleById(id: string): unknown; invalidateModule(mod: never): void };
+    }) {
+      const dir = resolvePath(root, opts.dir);
+      const onChange = (file: string) => {
+        if (!resolvePath(file).startsWith(dir) || !isRouteFile(file)) return;
+        const mod = server.moduleGraph.getModuleById(id);
+        if (mod) server.moduleGraph.invalidateModule(mod as never);
+        writeApiTypes(root, opts.dir, prefix);
+      };
+      server.watcher.add(dir);
+      server.watcher.on('add', onChange);
+      server.watcher.on('unlink', onChange);
     },
     resolveId(source: string) {
       // The public specifier is a real module so its types ship with the package; both
