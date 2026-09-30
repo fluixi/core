@@ -54,6 +54,33 @@ const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
 const SSR_ATTRIBUTE = 'data-fx-ssr';
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
 
+/**
+ * Whether a value comes back from JSON as it went in: primitives, arrays, and objects with no
+ * prototype but Object's. A class instance serialises without its methods and getters, so a
+ * Zod schema carried this way reached the client as an object with no `shape`, and the element
+ * read that until hydration assigned the real one. Such values wait for hydration instead.
+ */
+function isPlainData(value: unknown, seen = new Set<object>()): boolean {
+  if (value === null) return true;
+  switch (typeof value) {
+    case 'string':
+    case 'number':
+    case 'boolean':
+      return true;
+    case 'object':
+      break;
+    default:
+      return false;
+  }
+  const object = value as object;
+  if (seen.has(object)) return false;
+  seen.add(object);
+  const proto = Object.getPrototypeOf(object);
+  if (Array.isArray(object)) return object.every((item) => isPlainData(item, seen));
+  if (proto !== Object.prototype && proto !== null) return false;
+  return Object.values(object).every((item) => isPlainData(item, seen));
+}
+
 /** The part of a @fluixi/dom server node the renderer uses. */
 interface ServerNodeLike {
   localName: string;
@@ -418,7 +445,7 @@ export class HTMLReactiveElement extends BaseElement {
       if (name in recorded) {
         const value = recorded[name];
         state.write(value);
-        if (value !== null && typeof value === 'object') carried[name] = value;
+        if (value !== null && typeof value === 'object' && isPlainData(value)) carried[name] = value;
       } else if (state.attribute !== false) {
         const attribute = node.getAttribute(state.attribute);
         if (attribute !== null) state.write(state.declaration.fromAttribute(attribute));
@@ -436,7 +463,7 @@ export class HTMLReactiveElement extends BaseElement {
       try {
         node.setAttribute(SSR_PROPS_ATTRIBUTE, JSON.stringify(carried));
       } catch {
-        // Not JSON (a class instance, a cycle): the client waits for hydration to assign it.
+        // A cycle: the client waits for hydration to assign it.
       }
     }
   }

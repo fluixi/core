@@ -74,4 +74,30 @@ describe('an element rendered on the server', () => {
     });
     expect(out).toBe('<section><fx-ssr-unknown></fx-ssr-unknown></section>');
   });
+
+  it('carries only props that survive JSON, and leaves class instances to hydration', async () => {
+    const { typedElement, prop, defineCustomElement } = await import('./index.js');
+    const { createNativeElement, spread } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+    class Schema {
+      get shape() {
+        return { email: true };
+      }
+    }
+    class Form extends typedElement({ schema: prop.any<unknown>(undefined), options: prop.object<{ value: string }[]>([]) }) {
+      protected override render(): unknown {
+        return null;
+      }
+    }
+    defineCustomElement('fx-ssr-schema-form', Form);
+
+    const out = renderToString(() => {
+      const form = createNativeElement('fx-ssr-schema-form');
+      spread({ element: form, props: { schema: new Schema(), options: [{ value: 'fr' }] } });
+      return form;
+    });
+
+    expect(out).toContain('data-fx-props="{&quot;options&quot;:[{&quot;value&quot;:&quot;fr&quot;}]}"');
+    expect(out).not.toContain('&quot;schema&quot;');
+  });
 });
