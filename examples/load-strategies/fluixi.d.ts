@@ -42,4 +42,10 @@ declare global {
   const $deferred: typeof __fluixi_reactive_signal.createDeferred;
   const $untrack: typeof __fluixi_reactive_signal.untrack;
   const $untrackStore: typeof __fluixi_reactive_store.untrackStore;
+  const $batch: typeof __fluixi_reactive_signal.batch;
+  const $cleanup: typeof __fluixi_reactive_signal.onCleanup;
+  const $root: typeof __fluixi_reactive_signal.root;
+  const $context: typeof __fluixi_reactive_signal.context;
+  const $renderEffect: typeof __fluixi_reactive_signal.renderEffect;
+  const $computed: typeof __fluixi_reactive_signal.computed;
 }
