@@ -80,6 +80,15 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $untrack: { export: 'untrack', module: REACTIVE_MODULE, returns: 'plain' },
   $untrackStore: { export: 'untrackStore', module: '@fluixi/reactive/store', returns: 'plain' },
 
+  // Scopes, scheduling and lifecycle: no value to classify, but the same authoring promise,
+  // no import to write. `$cleanup` registers a callback on the current owner (`onCleanup`).
+  $batch: { export: 'batch', module: REACTIVE_MODULE, returns: 'plain' },
+  $cleanup: { export: 'onCleanup', module: REACTIVE_MODULE, returns: 'plain' },
+  $root: { export: 'root', module: REACTIVE_MODULE, returns: 'plain' },
+  $context: { export: 'context', module: REACTIVE_MODULE, returns: 'plain' },
+  $renderEffect: { export: 'renderEffect', module: REACTIVE_MODULE, returns: 'effect' },
+  $computed: { export: 'computed', module: REACTIVE_MODULE, returns: 'effect' },
+
   // An environment variable, public or server-only; the browser build refuses a secret.
   $env: { export: 'env', module: '@fluixi/start/env', returns: 'plain' },
 };
@@ -98,6 +107,8 @@ export const RUNTIME_PRIMITIVES: Readonly<Record<string, Intrinsic['returns']>> 
   createMemo: 'memo-accessor',
   createEffect: 'effect',
   createRenderEffect: 'effect',
+  renderEffect: 'effect',
+  computed: 'effect',
   createStore: 'reactive-object',
   resource: 'resource-handle',
   createResource: 'reactive-object',

@@ -34,6 +34,22 @@ describe('the intrinsics compile to the runtime', () => {
     expect(code).toContain('import { store } from "@fluixi/reactive/store"');
   });
 
+  it('rewrites the scope and lifecycle intrinsics, $cleanup to onCleanup', () => {
+    const code = compile(`
+      $batch(() => {});
+      $cleanup(() => {});
+      $root((dispose) => dispose);
+      const Theme = $context('light');
+      $renderEffect(() => {});
+      $computed(() => {});
+    `);
+    expect(code).toContain('onCleanup(() => {})');
+    expect(code).not.toContain('$cleanup');
+    expect(code).toContain(
+      'import { batch, computed, context, onCleanup, renderEffect, root } from "@fluixi/reactive/signal"',
+    );
+  });
+
   it('imports only what the module used', () => {
     const code = compile('const a = $signal(0);');
     expect(code).toContain('import { signal }');
