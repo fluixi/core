@@ -609,7 +609,24 @@ function _createInsertEffect(
 ): () => void {
   let current = initialCurrent;
   const componentCache = new Map<Function, any>();
+  let adopted = false;
   return createRenderEffect(() => {
+    // Only the first run adopts server nodes. A later run is an update, even when it happens
+    // while the page around it is still hydrating (a custom element that adopted its content,
+    // then got a new prop from the page): with the page's cursor it would claim nodes that
+    // are already its own, or someone else's.
+    const update = adopted && hydration.active;
+    adopted = true;
+    if (!update) return runInsert();
+    hydration.active = false;
+    try {
+      return runInsert();
+    } finally {
+      hydration.active = true;
+    }
+  });
+
+  function runInsert() {
     // The accessor, never its result: it carries the compiler's hole position, and calling it
     // again here builds the dom twice, during hydration, a duplicated subtree.
     //
@@ -675,7 +692,7 @@ function _createInsertEffect(
     } finally {
       _insertDepth--;
     }
-  });
+  }
 }
 
 // ============================================================================
