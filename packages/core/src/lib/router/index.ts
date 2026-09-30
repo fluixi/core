@@ -748,7 +748,21 @@ export function Link(props: LinkProps) {
   for (const k of Object.keys(props)) {
     if (LINK_OWN_PROPS.has(k)) continue;
     const v = (props as Record<string, unknown>)[k];
-    if (v != null && typeof v !== 'function') setAttribute(a, k, String(v));
+    if (typeof v === 'function') {
+      // An accessor (`title={() => t('…')}`, `aria-current={() => …}`): followed on the client,
+      // read once for the server's markup. Event handlers are not attributes.
+      if (/^on[A-Z]/.test(k)) continue;
+      const read = v as () => unknown;
+      const apply = () => {
+        const value = read();
+        if (value == null || value === false) a.removeAttribute?.(k);
+        else setAttribute(a, k, String(value));
+      };
+      if (typeof a.addEventListener === 'function') createEffect(apply);
+      else apply();
+      continue;
+    }
+    if (v != null) setAttribute(a, k, String(v));
   }
 
   // Client only (ServerNode has no addEventListener). Direct listener (not delegated) so
