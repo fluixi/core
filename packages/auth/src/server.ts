@@ -240,4 +240,6 @@ export {
   type CookieOptions,
 } from './cookies.js';
 
+export { remoteAuth, type RemoteAuthOptions } from './remote.js';
+
 export type { SessionData, AuthSession, AuthUser, BetterAuthServer } from './types.js';
