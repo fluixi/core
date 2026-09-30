@@ -16,8 +16,10 @@ import {
   createMemo,
   createResource,
   createEffect,
+  createRoot,
   getOwner,
   onCleanup,
+  runWithOwner,
   untrack,
   flush,
 } from '@fluixi/reactive/signal';
@@ -58,6 +60,10 @@ interface RouterCtxValue {
   router: CoreRouter<any>;
   location: () => RouterLocation;
   params: () => Record<string, string>;
+  /** True from a navigation's start until the route it lands on has its modules and data. */
+  isRouting: () => boolean;
+  /** Counts a layer's data load toward `isRouting` until the promise settles. */
+  trackLoad: <T>(result: T) => T;
 }
 const RouterContext = createContext<RouterCtxValue>(undefined, 'router');
 
@@ -82,12 +88,18 @@ interface RouteDataArgsLocal {
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
+/** A rendered layer, and whether its route data has arrived. */
+interface Layer {
+  view: any;
+  ready: () => boolean;
+}
+
 /** Render one matched layer: load its data, stamp its contexts, run its component. */
 function renderLayer(
   m: MatchedRoute<any>,
   depth: number,
   base: Omit<OutletCtxValue, 'depth'>
-): any {
+): Layer {
   // Load this layer's data once. createResource integrates with the nearest
   // Suspense; it is owned by the enclosing memo, so it is recreated only when this
   // layer's route changes (not on deeper navigation).
@@ -101,9 +113,11 @@ function renderLayer(
       cancelled = true;
     });
     const owner = getOwner();
-    const [resource] = createResource(() =>
-      loader({ params: base.params, location: base.location }, owner, () => cancelled)
-    );
+    const router = useContext(RouterContext);
+    const [resource] = createResource(() => {
+      const result = loader({ params: base.params, location: base.location }, owner, () => cancelled);
+      return router ? router.trackLoad(result) : result;
+    });
     data = resource as () => any;
   }
 
@@ -125,7 +139,7 @@ function renderLayer(
       },
     });
 
-  if (!data) return buildPage();
+  if (!data) return { view: buildPage(), ready: () => true };
 
   // Gate on the data being resolved, like the old router, so the page reads
   // ready data (rd() returns the value, not a thrown promise) and works without a
@@ -137,7 +151,7 @@ function renderLayer(
   // resource state (that would re-run renderLayer and recreate the resource, a loop).
   const [ready, setReady] = createSignal(untrack(() => !isLoading()));
   createEffect(() => setReady(!isLoading()));
-  return createMemo(() => (ready() ? buildPage() : null));
+  return { view: createMemo(() => (ready() ? buildPage() : null)), ready };
 }
 
 /**
@@ -154,8 +168,8 @@ function renderChild(ctx: OutletCtxValue): any {
   // every navigation and re-render the child. A signal only notifies when its value
   // actually changes, so the render memo below re-runs only when the route at this
   // depth changes: sibling navigation reuses the layout, deeper navigation leaves
-  // this level untouched. The child is rendered INLINE (no detached createRoot), so
-  // it stays connected to the Suspense / context owner chain.
+  // this level untouched. Each child renders in a root attached to this owner (below),
+  // so it stays connected to the Suspense / context owner chain.
   const [childComp, setChildComp] = createSignal<any>(
     untrack(() => ctx.matched()[childIdx]?.component)
   );
@@ -167,20 +181,54 @@ function renderChild(ctx: OutletCtxValue): any {
     if (untrack(childComp) !== c) setChildComp(() => c);
   });
 
-  return createMemo(() => {
+  // Each layer lives in its own root under this Outlet's owner: attached, so context and
+  // Suspense reach it, but not owned by the memo below, so a newer layer does not dispose it.
+  // That is what lets the page on screen stay there while the next one loads its data.
+  const owner = getOwner();
+  type Mounted = Layer & { dispose: () => void };
+  let shown: Mounted | null = null;
+  let pending: Mounted | null = null;
+  const drop = (layer: Mounted | null) => layer?.dispose();
+  onCleanup(() => {
+    drop(shown);
+    drop(pending);
+    shown = pending = null;
+  });
+
+  const incoming = createMemo((): Mounted | null => {
     const component = childComp();
-    if (!component) {
+    if (!component) return null;
+    const m = untrack(() => ctx.matched())[childIdx];
+    return runWithOwner(owner, () =>
+      createRoot((dispose) => ({
+        ...renderLayer(m, childIdx, { matched: ctx.matched, params: ctx.params, location: ctx.location }),
+        dispose,
+      })),
+    );
+  });
+
+  return createMemo(() => {
+    const next = incoming();
+    if (!next) {
+      drop(shown);
+      drop(pending);
+      shown = pending = null;
       // No route at this depth. At the root (the only ctx carrying `notFound`) that means the
       // URL matched nothing: render the not-found fallback instead of a blank page. Nested
       // Outlets have no `notFound`, so they stay null (a missing child is just an empty Outlet).
       return ctx.notFound ? ctx.notFound() : null;
     }
-    const m = untrack(() => ctx.matched())[childIdx];
-    return renderLayer(m, childIdx, {
-      matched: ctx.matched,
-      params: ctx.params,
-      location: ctx.location,
-    });
+    if (next === shown) return shown.view;
+    // A newer navigation superseded the one still loading.
+    if (pending && pending !== next) drop(pending);
+    pending = next;
+    // Keep the current page until the next one has its data. Nothing on screen yet (first
+    // render, hydration): show the next one straight away, its own gate handles loading.
+    if (shown && !next.ready()) return shown.view;
+    drop(shown);
+    shown = next;
+    pending = null;
+    return shown.view;
   });
 }
 
@@ -270,6 +318,10 @@ export function Router<C = any>(props: RouterProps<C>) {
   });
 
   const [state, setState] = createSignal(router.state());
+  // A navigation in flight, and the layer data loads it started: together they are
+  // `useIsRouting()`, what a progress bar reads.
+  const [navigating, setNavigating] = createSignal(false);
+  const [loads, setLoads] = createSignal(0);
 
   /**
    * Which navigation is allowed to commit.
@@ -301,6 +353,7 @@ export function Router<C = any>(props: RouterProps<C>) {
   const unsub = router.subscribe((next) => {
     const id = ++navigationId;
     const mode = takeMode();
+    setNavigating(true);
 
     // Load the modules the next route needs before anything is torn down, so a lazy
     // route renders straight through instead of suspending into a fallback with the
@@ -312,8 +365,11 @@ export function Router<C = any>(props: RouterProps<C>) {
     const commit = () => {
       setState(next);
       // The write only queues; effects are scheduled. Flushing here is what lets the
-      // browser snapshot a settled DOM rather than a half-built one.
-      return flush();
+      // browser snapshot a settled DOM rather than a half-built one. The layers built by
+      // the flush have registered their data loads, so `isRouting` stays true through them.
+      const flushed = flush();
+      if (id === navigationId) setNavigating(false);
+      return flushed;
     };
 
     if (!prepared) {
@@ -347,6 +403,16 @@ export function Router<C = any>(props: RouterProps<C>) {
     router: router as CoreRouter<any>,
     location: createMemo(() => state().location),
     params: createMemo(() => state().match?.params ?? {}),
+    isRouting: () => navigating() || loads() > 0,
+    // Counted by the promise, not by an owner: a load a newer navigation superseded still
+    // settles and uncounts itself, and a resource seeded from the server never calls it.
+    trackLoad(result) {
+      if (result && typeof (result as { finally?: unknown }).finally === 'function') {
+        setLoads((n) => n + 1);
+        void (result as unknown as Promise<unknown>).finally(() => setLoads((n) => n - 1)).catch(() => {});
+      }
+      return result;
+    },
   };
 
   // Render depth 0 (a virtual parent at depth -1 so the root reuses the same path).
@@ -381,6 +447,35 @@ export function Outlet() {
   return renderChild(ctx);
 }
 
+/**
+ * Whether a navigation is in progress: from the moment it starts until the route it lands on
+ * has loaded its modules and its route data. For a progress bar or a busy cursor.
+ *
+ * `delay` holds the `true` back until the navigation has lasted that many milliseconds, so a
+ * navigation that settles at once shows nothing. It still turns `false` the moment it ends.
+ *
+ * @example
+ * ```tsx
+ * const routing = useIsRouting({ delay: 120 });
+ * <div class="progress" data-active={() => (routing() ? '' : undefined)} />
+ * ```
+ */
+export function useIsRouting(options: { delay?: number } = {}): () => boolean {
+  const routing = useContext(RouterContext)?.isRouting ?? (() => false);
+  const delay = options.delay ?? 0;
+  if (delay <= 0) return routing;
+  const [late, setLate] = createSignal(false);
+  createEffect(() => {
+    if (!routing()) {
+      setLate(false);
+      return;
+    }
+    const timer = setTimeout(() => setLate(true), delay);
+    onCleanup(() => clearTimeout(timer));
+  });
+  return () => routing() && late();
+}
+
 /** Navigate to `to` on mount (replace by default). Renders nothing. */
 export function Redirect(props: { to: string; replace?: boolean }) {
   const ctx = useContext(RouterContext);
@@ -412,6 +507,8 @@ const _ssrRouterStub: RouterCtxValue = {
   location: () =>
     ({ pathname: '', search: '', hash: '', query: {} }) as unknown as RouterLocation,
   params: () => ({}),
+  isRouting: () => false,
+  trackLoad: (result) => result,
 };
 
 /**
