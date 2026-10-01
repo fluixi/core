@@ -224,3 +224,19 @@ describe('types', () => {
     createStorage<Schema>().set('theme', 'x', { encrypt: true });
   });
 });
+
+describe('copyStorage with an async storage', () => {
+  it('copies plain items into an encrypted storage and back', async () => {
+    const { copyStorage } = await import('../index.js');
+    const plain = createStorage<Schema>();
+    plain.set('theme', 'dark');
+    const sealed = createStorage<Schema>({ encryption: { keyProvider: staticKeyProvider(key) } });
+    await sealed.set('session', session, { encrypt: true });
+    expect(await copyStorage(plain, sealed)).toBe(1);
+    expect(await sealed.get('theme')).toBe('dark');
+    const target = createAsyncStorage<Schema>({ encryption: { keyProvider: staticKeyProvider(key) } });
+    expect(await copyStorage(sealed, target, { keys: ['session'] })).toBe(1);
+    expect((await target.getEntry('session'))?.encrypted).toBe(true);
+    expectTypeOf(copyStorage(plain, createStorage<Schema>())).toEqualTypeOf<number>();
+  });
+});

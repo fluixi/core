@@ -47,6 +47,17 @@ describe('cookieStorage', () => {
     expect(headers.getSetCookie()).toHaveLength(1);
   });
 
+  it('makes the cookie expire with the entry', () => {
+    const headers = new Headers();
+    const store = createStorage<{ k: string }>({ adapter: cookieStorage({ response: headers, maxAge: 60 }), now: () => Date.UTC(2030, 0, 1) });
+    store.set('k', 'v', { ttl: 3_600_000 });
+    store.set('k', 'w');
+    const [withTtl, without] = headers.getSetCookie();
+    expect(withTtl).toContain('Expires=Tue, 01 Jan 2030 01:00:00 GMT');
+    expect(withTtl).not.toContain('Max-Age');
+    expect(without).toContain('Max-Age=60');
+  });
+
   it('refuses a cookie over the size limit', () => {
     const adapter = cookieStorage({ response: new Headers(), maxSize: 16 });
     expect(() => adapter.set('k', 'x'.repeat(32))).toThrow(StorageQuotaError);

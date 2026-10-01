@@ -39,12 +39,18 @@ export interface AdapterChange {
  * A synchronous backend. It stores strings; serialization, namespaces and expiry belong to the
  * storage around it, so an adapter stays small and every adapter gets them.
  */
+/** What the storage tells an adapter about a write, for backends that can act on it. */
+export interface AdapterWriteOptions {
+  /** Epoch milliseconds when the entry expires. A cookie adapter makes the cookie last as long. */
+  expiresAt?: number;
+}
+
 export interface StorageAdapter {
   readonly name: string;
   readonly scope: StorageScope;
   readonly capabilities: StorageCapabilities;
   get(key: string): string | null;
-  set(key: string, value: string): void;
+  set(key: string, value: string, options?: AdapterWriteOptions): void;
   remove(key: string): void;
   has(key: string): boolean;
   keys(): string[];
@@ -194,7 +200,7 @@ export interface AsyncStorageAdapter {
   readonly scope: StorageScope;
   readonly capabilities: StorageCapabilities;
   get(key: string): MaybePromise<string | null>;
-  set(key: string, value: string): MaybePromise<void>;
+  set(key: string, value: string, options?: AdapterWriteOptions): MaybePromise<void>;
   remove(key: string): MaybePromise<void>;
   has(key: string): MaybePromise<boolean>;
   keys(): MaybePromise<string[]>;

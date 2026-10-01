@@ -65,7 +65,7 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
     } else {
       envelope.value = value;
     }
-    await adapter.set(prefix + key, serializeOrThrow(serializer, key, envelope));
+    await adapter.set(prefix + key, serializeOrThrow(serializer, key, envelope), { expiresAt: meta.expiresAt });
   };
 
   const write = async (key: string, value: unknown, meta: Meta, encrypt: boolean) => {

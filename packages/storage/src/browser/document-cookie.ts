@@ -1,7 +1,7 @@
 import { parseCookies, serializeCookie, type CookieOptions } from '@fluixi/utils/cookie';
 import { StorageQuotaError, StorageUnavailableError } from '../core/errors.js';
 import type { StorageAdapter } from '../core/types.js';
-import { cookiePairSize, decodeCookieName, encodeCookieName } from '../utils/cookie-names.js';
+import { cookiePairSize, decodeCookieName, encodeCookieName, withEntryExpiry } from '../utils/cookie-names.js';
 
 export interface DocumentCookieOptions extends Omit<CookieOptions, 'httpOnly'> {
   /** Largest `name=value` in bytes. Browsers keep about 4096. */
@@ -40,8 +40,8 @@ export function documentCookieAdapter(options: DocumentCookieOptions = {}): Stor
       transactions: false,
     },
     get: (key) => all().get(key) ?? null,
-    set(key, value) {
-      const header = serializeCookie(encodeCookieName(key), value, { ...cookie, httpOnly: false });
+    set(key, value, writeOptions) {
+      const header = serializeCookie(encodeCookieName(key), value, { ...withEntryExpiry(cookie, writeOptions?.expiresAt), httpOnly: false });
       const size = cookiePairSize(header);
       if (size > maxSize) throw new StorageQuotaError(`Cookie ${key} is ${size} bytes, over the ${maxSize} limit.`, { key });
       write(key, header);

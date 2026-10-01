@@ -1,7 +1,7 @@
 import { parseCookies, serializeCookie, type CookieOptions } from '@fluixi/utils/cookie';
 import { StorageQuotaError, StorageUnavailableError } from '../core/errors.js';
 import type { StorageAdapter } from '../core/types.js';
-import { cookiePairSize, decodeCookieName as decodeName, encodeCookieName as encodeName } from '../utils/cookie-names.js';
+import { cookiePairSize, decodeCookieName as decodeName, encodeCookieName as encodeName, withEntryExpiry } from '../utils/cookie-names.js';
 import { toStorageRequest, toStorageResponse, type RequestLike, type ResponseLike } from './contracts.js';
 
 export interface CookieStorageOptions extends CookieOptions {
@@ -19,7 +19,7 @@ export interface CookieStorageOptions extends CookieOptions {
  *
  * Every cookie the request carries is visible, so give the storage a namespace: `clear()` on a
  * storage without one deletes the session cookie too. Expiry set through the storage lives in the
- * value; the cookie itself lasts as long as `maxAge`/`expires` say.
+ * value and also sets the cookie's Expires; without one the cookie lasts as `maxAge`/`expires` say.
  */
 export function cookieStorage(options: CookieStorageOptions = {}): StorageAdapter {
   const { request, response, maxSize = 4096, ...cookie } = options;
@@ -64,8 +64,8 @@ export function cookieStorage(options: CookieStorageOptions = {}): StorageAdapte
       transactions: false,
     },
     get,
-    set(key, value) {
-      const header = serializeCookie(encodeName(key), value, cookie);
+    set(key, value, writeOptions) {
+      const header = serializeCookie(encodeName(key), value, withEntryExpiry(cookie, writeOptions?.expiresAt));
       const size = cookiePairSize(header);
       if (size > maxSize) throw new StorageQuotaError(`Cookie ${key} is ${size} bytes, over the ${maxSize} limit.`, { key });
       emit(key, header);

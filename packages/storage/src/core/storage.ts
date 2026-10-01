@@ -123,7 +123,7 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
     const migrated = migrate(migrations[key], envelope.version, envelope.value);
     if (!migrated) return envelope;
     const next = { ...envelope, ...migrated };
-    adapter.set(prefix + key, encode(key, next));
+    adapter.set(prefix + key, encode(key, next), { expiresAt: next.expiresAt });
     return next;
   };
 
@@ -159,7 +159,7 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
   };
 
   const write = (key: string, value: unknown, meta: Omit<Envelope, 'v' | 'value' | 'enc'>) => {
-    adapter.set(prefix + key, encode(key, { v: 1, value, ...meta }));
+    adapter.set(prefix + key, encode(key, { v: 1, value, ...meta }), { expiresAt: meta.expiresAt });
     emit({ type: 'set', key: key as StorageKey<S>, value, external: false });
   };
 
@@ -238,7 +238,8 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
       if (!current) return false;
       // The expiry of an encrypted entry is authenticated, so only the async storage can move it.
       valueOf(key, current);
-      adapter.set(prefix + key, encode(key, { ...current, expiresAt: now() + ttl }));
+      const expiresAt = now() + ttl;
+      adapter.set(prefix + key, encode(key, { ...current, expiresAt }), { expiresAt });
       return true;
     },
 
