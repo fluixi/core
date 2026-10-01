@@ -224,3 +224,5 @@ export function hydrateStorage<S extends StorageSchema>(storage: TypedStorage<S>
   }
   storage.restore(fresh as never, { overwrite: true });
 }
+
+export { persisted, type Persisted, type AsyncPersisted, type PersistedOptions } from './persisted.js';
