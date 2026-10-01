@@ -6,9 +6,12 @@
 import { appendResponseHeader, getRequestContext, getServerData, type RequestContext } from '@fluixi/dom';
 import { createContext, useContext } from '@fluixi/reactive/signal';
 import {
+  createAsyncStorage,
   createSyncStorage,
   memoryStorage,
   StorageUnavailableError,
+  type AsyncTypedStorage,
+  type EncryptionOptions,
   type StorageAdapter,
   type StorageEntry,
   type StorageKey,
@@ -46,19 +49,29 @@ export interface UseStorageOptions<S extends StorageSchema = StorageSchema> exte
   cookie?: UseStorageCookieOptions;
 }
 
+export interface UseAsyncStorageOptions<S extends StorageSchema = StorageSchema> extends UseStorageOptions<S> {
+  /** Per-item encryption: `set(key, value, { encrypt: true })`, reads decrypt on their own. */
+  encryption?: EncryptionOptions;
+}
+
 const StorageContext = createContext<TypedStorage<any> | undefined>(undefined, 'storage');
+const AsyncStorageContext = createContext<AsyncTypedStorage<any> | undefined>(undefined, 'asyncStorage');
+
+const isAsyncStorage = (storage: TypedStorage<any> | AsyncTypedStorage<any>): storage is AsyncTypedStorage<any> => 'encryption' in storage;
 
 /**
- * Hands `storage` to every `useStorage()` below that asks for `scope: 'auto'` (the default):
- * a test's memory storage, an encrypted or app-specific one.
+ * Hands `storage` to every `useStorage()` below that asks for `scope: 'auto'` (the default), or
+ * to every `useAsyncStorage()` when it is an asynchronous one: a test's memory storage, an
+ * encrypted or app-specific one.
  *
  * @example
  * <StorageProvider storage={createStorage({ adapter: memoryStorage() })}>
  *   <Settings />
  * </StorageProvider>
  */
-export function StorageProvider(props: { storage: TypedStorage<any>; children?: unknown }): any {
-  return StorageContext.Provider({
+export function StorageProvider(props: { storage: TypedStorage<any> | AsyncTypedStorage<any>; children?: unknown }): any {
+  const context = isAsyncStorage(props.storage) ? AsyncStorageContext : StorageContext;
+  return (context.Provider as (p: { value: unknown; children?: unknown }) => any)({
     value: props.storage,
     get children() {
       return props.children;
@@ -106,14 +119,16 @@ function adapterFor(scope: Exclude<UseStorageScope, 'auto'>, cookie: UseStorageC
       }
       if (!ctx) requestRequired(scope);
       const raw = ctx.event.request as RequestLike | undefined;
+      // Bound now: an async write resumes after awaits, where the ambient request may be gone.
+      const target = (raw && typeof raw === 'object' ? raw : undefined) as object | undefined;
       return cached(perRequest.get(ctx) ?? perRequest.set(ctx, new Map()).get(ctx)!, id, () =>
         cookieStorage({
           ...options,
           request: raw && typeof raw === 'object' && ('headers' in raw || 'getHeader' in raw) ? toStorageRequest(raw) : undefined,
           response: {
             appendHeader(name, value) {
-              if (!appendResponseHeader(name, value)) {
-                throw new StorageUnavailableError('The response headers were already sent, so this cookie cannot reach the browser. Write it before the page streams: in middleware, a loader or a server function.');
+              if (!appendResponseHeader(name, value, target)) {
+                throw new StorageUnavailableError('The response headers were already sent, so this cookie cannot reach the browser. Write it before the page head goes out: in middleware, a loader, a server function or the render before its first chunk.');
               }
             },
           },
@@ -140,11 +155,33 @@ export function useStorage<S extends StorageSchema = StorageSchema>(options: Use
   if (scope === 'auto') {
     const provided = useContext(StorageContext) as TypedStorage<any> | undefined;
     if (provided) return (options.namespace ? provided.namespace(options.namespace) : provided) as TypedStorage<S>;
-    if (isBrowser()) return createSyncStorage({ ...storageOptions, adapter: adapterFor('local') });
-    if (!getRequestContext()) requestRequired(scope);
-    return createSyncStorage({ ...storageOptions, adapter: adapterFor('request') });
   }
-  return createSyncStorage({ ...storageOptions, adapter: adapterFor(scope, cookie) });
+  return createSyncStorage({ ...storageOptions, adapter: resolveAdapter(scope, cookie) });
+}
+
+/**
+ * `useStorage` with every operation awaited, and the one that can encrypt. Same scopes, same
+ * per-request isolation; with `scope: 'auto'` it takes an asynchronous storage from
+ * `<StorageProvider>` first.
+ *
+ * @example
+ * const vault = useAsyncStorage<{ token: string }>({ namespace: 'auth', encryption: { keyProvider } });
+ * await vault.set('token', token, { encrypt: true });
+ */
+export function useAsyncStorage<S extends StorageSchema = StorageSchema>(options: UseAsyncStorageOptions<S> = {}): AsyncTypedStorage<S> {
+  const { scope = 'auto', cookie, ...storageOptions } = options;
+  if (scope === 'auto') {
+    const provided = useContext(AsyncStorageContext) as AsyncTypedStorage<any> | undefined;
+    if (provided) return (options.namespace ? provided.namespace(options.namespace) : provided) as AsyncTypedStorage<S>;
+  }
+  return createAsyncStorage({ ...storageOptions, adapter: resolveAdapter(scope, cookie) });
+}
+
+function resolveAdapter(scope: UseStorageScope, cookie?: UseStorageCookieOptions): StorageAdapter {
+  if (scope !== 'auto') return adapterFor(scope, cookie);
+  if (isBrowser()) return adapterFor('local');
+  if (!getRequestContext()) requestRequired(scope);
+  return adapterFor('request');
 }
 
 const SLOT = '__storage:';

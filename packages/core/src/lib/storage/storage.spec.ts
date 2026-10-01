@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createRequestContext, runWithRequestContext, takeResponseHeaders } from '@fluixi/dom';
 import { createRoot } from '@fluixi/reactive/signal';
 import { createStorage, memoryStorage, StorageUnavailableError } from '@fluixi/storage';
-import { StorageProvider, hydrateStorage, useStorage } from './index.js';
+import { StorageProvider, hydrateStorage, useAsyncStorage, useStorage } from './index.js';
 
 const inRequest = <T>(fn: () => T, cookie = '') => {
   const request = new Request('http://x.test/', { headers: cookie ? { cookie } : {} });
@@ -75,5 +75,45 @@ describe('useStorage on the server', () => {
     expect(Object.keys(slot)).toEqual(['a']);
     expect(slot.a).toMatchObject({ value: 1 });
     expect(slot.a.expiresAt).toBeTypeOf('number');
+  });
+});
+
+describe('useAsyncStorage', () => {
+  it('encrypts per item in a request cookie and reads it back', async () => {
+    const { generateEncryptionKey, staticKeyProvider } = await import('@fluixi/storage');
+    const keyProvider = staticKeyProvider(generateEncryptionKey());
+    const request = new Request('http://x.test/');
+    const ctx = createRequestContext({ request });
+    await runWithRequestContext(ctx, async () => {
+      const vault = useAsyncStorage<{ token: string }>({ scope: 'cookie', namespace: 'auth', encryption: { keyProvider } });
+      await vault.set('token', 'secret', { encrypt: true });
+      expect(await vault.get('token')).toBe('secret');
+    });
+    const [cookie] = takeResponseHeaders(request)!.getSetCookie();
+    expect(cookie).toMatch(/^auth%3Atoken=/);
+    expect(cookie).not.toContain('secret');
+  });
+
+  it('takes an async storage from the provider, and useStorage ignores it', () => {
+    const provided = createStorage({ encryption: { keyProvider: { getKey: () => Promise.reject(new Error('unused')) } } });
+    let asyncSeen: unknown;
+    let syncThrew = false;
+    createRoot((dispose) => {
+      StorageProvider({
+        storage: provided,
+        get children() {
+          asyncSeen = useAsyncStorage();
+          try {
+            useStorage();
+          } catch {
+            syncThrew = true;
+          }
+          return null;
+        },
+      });
+      dispose();
+    });
+    expect(asyncSeen).toBe(provided);
+    expect(syncThrew).toBe(true);
   });
 });
