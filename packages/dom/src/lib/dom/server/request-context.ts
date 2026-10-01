@@ -254,9 +254,11 @@ function currentRequest(): object | undefined {
  *
  * Returns false when there is no request, or when its headers have already gone out (a
  * streamed page flushes them before the body renders): the write could not be delivered.
+ *
+ * `request` names the request explicitly, for code that resumes after an `await` where the
+ * ambient one may be gone.
  */
-export function appendResponseHeader(name: string, value: string): boolean {
-  const request = currentRequest();
+export function appendResponseHeader(name: string, value: string, request: object | undefined = currentRequest()): boolean {
   if (!request) return false;
   let bag = _responseHeaders.get(request);
   if (!bag) {

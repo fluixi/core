@@ -118,7 +118,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
         injectStyles(template, await renderedStyles(vite, cfg.serverEntry)),
       );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
-      return streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail);
+      return await streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail);
     }
     const render = mod.render ?? mod.default;
     const appHtml = await withPlatformRequest(request, () => render(path, request)); // sync or async; request enables the locals bridge

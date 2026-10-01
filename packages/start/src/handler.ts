@@ -28,27 +28,29 @@ export type StreamRenderFn = (
 ) => ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>>;
 
 /**
- * Compose a streamed HTML Response: flush `head` immediately (browser starts fetching
- * assets while the server awaits data), then pipe the app `body` stream into the mount
- * point, then `tail` (client script + closing tags). A render error after the head is
- * flushed can only error the stream (status is already 200), truncated HTML; callers
- * should guard the pre-flush path for a real 500.
+ * Compose a streamed HTML Response: `head` once the body's head marker is known, then the app
+ * `body` stream into the mount point, then `tail` (client script + closing tags).
+ *
+ * Resolves only when the head can go out. Nothing is flushed before that anyway, so waiting
+ * costs nothing, and it leaves the response headers open until then: a cookie set while the
+ * shell rendered still reaches them. A body that fails before that rejects, which the caller
+ * turns into a real 500; a failure after it can only cut the stream short.
  */
-export function streamDocument(
+export async function streamDocument(
   head: string,
   body: ReadableStream<Uint8Array>,
   tail: string,
-): Response {
+): Promise<Response> {
   const enc = new TextEncoder();
+  // The head waits for the body's opening marker: once flushed it cannot change, and
+  // the marker is where seo() puts the page's title and meta. Sent early, every
+  // streamed page went out with the template's title, which is what a crawler reads.
+  const reader = body.getReader();
+  const { marker, rest } = await readHeadMarker(reader);
+  const lifted = marker ? liftHead(head, marker).html : head;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        // The head waits for the body's opening marker: once flushed it cannot change, and
-        // the marker is where seo() puts the page's title and meta. Sent early, every
-        // streamed page went out with the template's title, which is what a crawler reads.
-        const reader = body.getReader();
-        const { marker, rest } = await readHeadMarker(reader);
-        const lifted = marker ? liftHead(head, marker).html : head;
         controller.enqueue(enc.encode(lifted));
         if (rest?.length) controller.enqueue(rest);
         for (;;) {

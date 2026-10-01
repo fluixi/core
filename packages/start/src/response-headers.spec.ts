@@ -27,6 +27,24 @@ describe('headers set while answering a request', () => {
     expect(seen).toHaveLength(2);
   });
 
+  it('reach a streamed page when set before the head goes out', async () => {
+    const mod = {
+      renderStream: (_url: string, request: Request) =>
+        new ReadableStream<Uint8Array>({
+          async start(controller) {
+            await Promise.resolve();
+            runWithRequestContext(createRequestContext({ request }), () => appendResponseHeader('set-cookie', 'shell=1'));
+            controller.enqueue(new TextEncoder().encode('<p>shell</p>'));
+            controller.close();
+          },
+        }),
+    };
+    const handler = createHandlerFrom({ template, mod: mod as never, cfg: { ssr: true, mountId: 'root' } });
+    const response = await handler(new Request('http://localhost/'));
+    expect(response.headers.getSetCookie()).toEqual(['shell=1']);
+    expect(await response.text()).toContain('<p>shell</p>');
+  });
+
   it('reach a response whose headers are immutable', async () => {
     const mod = {
       isApiRequest: () => true,

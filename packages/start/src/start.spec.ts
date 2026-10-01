@@ -227,7 +227,7 @@ describe('@fluixi/start streaming', () => {
   const text = (res: Response) => res.text();
 
   it("puts seo()'s title in the streamed head, not the template's", async () => {
-    const html = await text(streamDocument(doc, chunks(marker + '<p>app</p>'), '</div></body></html>'));
+    const html = await text(await streamDocument(doc, chunks(marker + '<p>app</p>'), '</div></body></html>'));
     expect(html).toContain('<head><title>Sign in</title></head>');
     expect(html).toContain('<html lang="fr">');
     expect(html).not.toContain('<!--fh:');
@@ -236,19 +236,19 @@ describe('@fluixi/start streaming', () => {
 
   it('finds a marker split across chunks', async () => {
     const cut = 12;
-    const html = await text(streamDocument(doc, chunks(marker.slice(0, 3), marker.slice(3, cut), marker.slice(cut) + 'x'), ''));
+    const html = await text(await streamDocument(doc, chunks(marker.slice(0, 3), marker.slice(3, cut), marker.slice(cut) + 'x'), ''));
     expect(html).toContain('<title>Sign in</title>');
     expect(html.endsWith('<div id="root">x')).toBe(true);
   });
 
   it('leaves a body without a marker untouched, a split multibyte character included', async () => {
     const e = new TextEncoder().encode('é'); // two bytes
-    const html = await text(streamDocument(doc, chunks('<p>caf', e.subarray(0, 1), e.subarray(1), '</p>'), ''));
+    const html = await text(await streamDocument(doc, chunks('<p>caf', e.subarray(0, 1), e.subarray(1), '</p>'), ''));
     expect(html).toBe(doc + '<p>café</p>');
   });
 
   it('still sends the document when the body is empty (a failed render)', async () => {
-    expect(await text(streamDocument(doc, chunks(), '</div>'))).toBe(doc + '</div>');
+    expect(await text(await streamDocument(doc, chunks(), '</div>'))).toBe(doc + '</div>');
   });
 
   it('splits at the mount div (head ends with open tag, tail starts with close)', () => {
@@ -282,15 +282,25 @@ describe('@fluixi/start streaming', () => {
   });
 
   it('streamDocument flushes head, pipes body, then tail (200, text/html)', async () => {
-    const res = streamDocument('<head></head><div id="root">', streamOf('BODY'), '</div></body>');
+    const res = await streamDocument('<head></head><div id="root">', streamOf('BODY'), '</div></body>');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(await res.text()).toBe('<head></head><div id="root">BODY</div></body>');
   });
 
-  it('streamDocument errors the stream if the body errors', async () => {
+  it('streamDocument rejects when the body fails before the head goes out', async () => {
     const bad = new ReadableStream<Uint8Array>({ start(c) { c.error(new Error('boom')); } });
-    const res = streamDocument('<head>', bad, '</body>');
+    await expect(streamDocument('<head>', bad, '</body>')).rejects.toThrow('boom');
+  });
+
+  it('streamDocument errors the stream when the body fails after the head', async () => {
+    const late = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode('<p>first</p>'));
+        setTimeout(() => c.error(new Error('late')), 0);
+      },
+    });
+    const res = await streamDocument('<head>', late, '</body>');
     await expect(res.text()).rejects.toThrow();
   });
 });
