@@ -36,6 +36,7 @@ import {
   runHydrationAt,
   ascendPast,
   nextHydrationKey,
+  templateSalt,
   claimKeyed,
   HYDRATION_KEY,
 } from './hydration-state.js';
@@ -422,7 +423,8 @@ export function templateNode(
   isSVG = false,
   at?: TemplatePositions,
 ): Node {
-  const key = nextHydrationKey();
+  const salt = templateSalt(html);
+  const key = nextHydrationKey(salt);
   if (isServer()) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
@@ -444,7 +446,7 @@ export function templateNode(
     }
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
-    const node = getHydrationWalker()?.hydrateStatic(tag);
+    const node = getHydrationWalker()?.hydrateStatic(tag, salt);
     if (node) {
       if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(node);
       return stampPositions(node, at);

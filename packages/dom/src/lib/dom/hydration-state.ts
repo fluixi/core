@@ -23,8 +23,8 @@ export interface HydrationWalker {
   hydrateElement(tag: string): Element | null;
   hydrateText(value: string): Text | null;
   hydrateMarker(value: string): Comment | null;
-  /** Adopt a static subtree whole, without descending into it. */
-  hydrateStatic(tag: string): Element | null;
+  /** Adopt a static subtree whole, without descending into it. `salt` is the template's identity. */
+  hydrateStatic(tag: string, salt?: string): Element | null;
   /** An element claimed by key: move the cursor into it, as `hydrateElement` would. */
   enterElement(el: Element): void;
 }
@@ -219,11 +219,37 @@ export function hashKey(path: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-/** The next key in the current scope, or null when no key is needed. */
-export function nextHydrationKey(): string | null {
+/**
+ * The next key in the current scope, or null when no key is needed. `salt` names what is built
+ * there (a template): if the server built something else at this position, the keys differ, and
+ * the client builds its own instead of adopting the server's and patching one into the other.
+ */
+export function nextHydrationKey(salt?: string): string | null {
   if (!keyed()) return null;
   const scope = scopeOf(getOwner());
-  return hashKey(scope.id + (scope.next++).toString(36));
+  const path = scope.id + (scope.next++).toString(36);
+  return salt ? `${hashKey(path)}-${salt}` : hashKey(path);
+}
+
+/** A template's identity for its keys: hashed once per template string. */
+const templateSalts = new Map<string, string>();
+export function templateSalt(html: string): string {
+  let salt = templateSalts.get(html);
+  if (salt === undefined) templateSalts.set(html, (salt = hashKey(html).slice(0, 6)));
+  return salt;
+}
+
+/** The template part of a key (`<position>-<template>`), empty for an element's key. */
+export function keySalt(el: Element): string {
+  const key = el.getAttribute(HYDRATION_KEY) ?? '';
+  const dash = key.indexOf('-');
+  return dash < 0 ? '' : key.slice(dash + 1);
+}
+
+/** An element adopted by the cursor: it is in use, so the sweep must not take it. */
+export function releaseKeyed(el: Element): void {
+  const key = el.getAttribute(HYDRATION_KEY);
+  if (key && keyed_nodes?.get(key) === el) keyed_nodes.delete(key);
 }
 
 /** A component starts: the elements it builds, now or later, number within its own scope. */
@@ -258,6 +284,31 @@ export function indexHydrationKeys(container: ParentNode): void {
 /** Drop the index: hydration of the page is over. */
 export function clearHydrationKeys(): void {
   keyed_nodes = null;
+}
+
+
+/**
+ * Remove the keyed server elements nothing claimed: markup the server rendered and the client
+ * did not, or rendered differently. Left in place they show as a stale or duplicate copy.
+ * Content of a custom element that has not built yet is kept for it; the element cleans its own
+ * subtree once it has hydrated. `within` limits the sweep to one subtree.
+ */
+export function removeUnclaimedKeyed(within?: Node): number {
+  if (!keyed_nodes) return 0;
+  let removed = 0;
+  for (const [key, el] of keyed_nodes) {
+    if (!el.isConnected) {
+      keyed_nodes.delete(key);
+      continue;
+    }
+    if (within && !within.contains(el)) continue;
+    // Inside an element still waiting to build: its content is its own to adopt.
+    if (el.parentElement?.closest('[data-fx-ssr]')) continue;
+    keyed_nodes.delete(key);
+    el.remove();
+    removed++;
+  }
+  return removed;
 }
 
 /**

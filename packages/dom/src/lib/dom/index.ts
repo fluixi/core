@@ -26,5 +26,7 @@ export {
   whenAppHydrated,
   setKeyScope,
   HYDRATION_KEY,
+  removeUnclaimedKeyed,
+  clearHydrationKeys,
 } from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'

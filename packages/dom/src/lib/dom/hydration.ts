@@ -17,7 +17,10 @@ import {
   clearHydrationKeys,
   hydration,
   indexHydrationKeys,
+  keySalt,
+  releaseKeyed,
   registerHydrationWalker,
+  removeUnclaimedKeyed,
 } from './hydration-state.js';
 
 /**
@@ -84,6 +87,7 @@ function hydrateElement(tag: string): Element | null {
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
+    releaseKeyed(c as Element);
     if (VOID_ELEMENTS.has(tag.toLowerCase()) || ownsServerContent(c as Element)) {
       hydration.cursor = c.nextSibling;
     } else {
@@ -114,10 +118,18 @@ function enterElement(el: Element): void {
  * exactly the template. There is nothing in there to hydrate, and stepping through it
  * element by element would only give the cursor more chances to desynchronise.
  */
-function hydrateStatic(tag: string): Element | null {
+function hydrateStatic(tag: string, salt?: string): Element | null {
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
+    // The server built another template here (a sun where the client builds a moon): adopting
+    // it would patch one into the other. Build the client's; the sweep removes the server's.
+    const server = keySalt(c as Element);
+    if (salt && server && server !== salt) {
+      if (DEV) warnMismatch(`<${tag}> (another template)`, c);
+      return null;
+    }
+    releaseKeyed(c as Element);
     hydration.cursor = c.nextSibling;
     return c as Element;
   }
@@ -226,6 +238,8 @@ export function hydrateChildren(container: Element, build: () => unknown): void 
   hydration.parents = [];
   try {
     insert(container, build() as never);
+    // The element's content is all built now: what it did not claim is stale.
+    removeUnclaimedKeyed(container);
   } finally {
     hydration.active = previous.active;
     hydration.cursor = previous.cursor;

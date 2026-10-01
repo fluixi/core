@@ -10,6 +10,8 @@ import {
   hydrate as domHydrate,
   beginAppHydration,
   endAppHydration,
+  removeUnclaimedKeyed,
+  clearHydrationKeys,
 } from '@fluixi/dom';
 // Registers core's version with the DOM runtime, which does the stamping. This entry is a
 // separate subpath, so it does not otherwise load core's render, and without this the
@@ -166,6 +168,13 @@ export async function startClient(
     }
     setTimeout(() => {
       setHydrating(false);
+      // Late route chunks have had their chance to claim their markup: what nothing claimed
+      // is server output the client did not render, or rendered differently.
+      const removed = removeUnclaimedKeyed(container as Element);
+      if (removed && typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+        console.warn(`[fluixi] hydration: removed ${removed} server element(s) the client did not render. Check for markup that depends on client-only state.`);
+      }
+      clearHydrationKeys();
       cleanupHydration();
     }, 100);
   } else {
