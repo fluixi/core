@@ -44,11 +44,13 @@ describe('create-fluixi --auth', () => {
     expect(existsSync(join(cwd, 'app'))).toBe(false);
   });
 
-  it('declares every reactive intrinsic the compiler knows in the new app\'s fluixi.d.ts', () => {
+  it('declares every reactive and storage intrinsic the compiler knows in the new app\'s fluixi.d.ts', () => {
     create();
     const dts = read('fluixi.d.ts');
-    const reactive = Object.entries(INTRINSICS).filter(([, i]) => i.module.startsWith('@fluixi/reactive/'));
-    for (const [name, i] of reactive) expect(dts).toContain(`const ${name}: typeof `);
+    const reactive = Object.entries(INTRINSICS).filter(([, i]) => /^@fluixi\/(reactive|core)\//.test(i.module));
+    for (const [name] of reactive) expect(dts).toContain(`const ${name}: typeof `);
     expect(dts).toContain('const $cleanup: typeof __fluixi_reactive_signal.onCleanup;');
+    expect(dts).toContain('const $persisted: typeof __fluixi_core_storage.persisted;');
+    expect(dts).toContain("import * as __fluixi_core_storage from '@fluixi/core/storage';");
   });
 });

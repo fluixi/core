@@ -89,6 +89,12 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $renderEffect: { export: 'renderEffect', module: REACTIVE_MODULE, returns: 'effect' },
   $computed: { export: 'computed', module: REACTIVE_MODULE, returns: 'effect' },
 
+  // Storage for where the code runs, and a signal kept in it. `$persisted` is a signal
+  // handle as far as reads go: the same accessor with `set` on it.
+  $storage: { export: 'useStorage', module: '@fluixi/core/storage', returns: 'plain' },
+  $asyncStorage: { export: 'useAsyncStorage', module: '@fluixi/core/storage', returns: 'plain' },
+  $persisted: { export: 'persisted', module: '@fluixi/core/storage', returns: 'signal-handle' },
+
   // An environment variable, public or server-only; the browser build refuses a secret.
   $env: { export: 'env', module: '@fluixi/start/env', returns: 'plain' },
 };

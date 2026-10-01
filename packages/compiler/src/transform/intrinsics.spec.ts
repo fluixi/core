@@ -50,6 +50,21 @@ describe('the intrinsics compile to the runtime', () => {
     );
   });
 
+  it('rewrites the storage intrinsics to @fluixi/core/storage', () => {
+    const code = compile(`
+      const prefs = $storage({ scope: 'cookie', namespace: 'ui' });
+      const vault = $asyncStorage({ namespace: 'auth' });
+      const theme = $persisted(prefs, 'theme', { fallback: 'light' });
+    `);
+    expect(code).not.toMatch(/\$(storage|asyncStorage|persisted)\(/);
+    expect(code).toContain('import { persisted, useAsyncStorage, useStorage } from "@fluixi/core/storage"');
+  });
+
+  it('treats $persisted as a signal handle', () => {
+    const { kinds } = bindings("const theme = $persisted($storage(), 'theme');");
+    expect(kinds.get('theme')).toBe('signal-handle');
+  });
+
   it('imports only what the module used', () => {
     const code = compile('const a = $signal(0);');
     expect(code).toContain('import { signal }');
