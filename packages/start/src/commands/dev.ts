@@ -5,7 +5,7 @@ import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
-import { toNodeHandler, streamDocument, exitOnListenError, type FetchHandler } from '../handler.js';
+import { toNodeHandler, streamDocument, exitOnListenError, withResponseHeaders, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
@@ -87,7 +87,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   // If the entry exports `renderStream`, stream: transform+split the template, flush
   // the head, pipe the body stream, then the tail. guardHandler maps pre-flush errors
   // (a streaming error after the head is out can only truncate the response).
-  const renderHandler: FetchHandler = guardHandler(async (request) => {
+  // Cookies the render set (appendResponseHeader) join whatever Response comes back.
+  const withHeaders = (fn: FetchHandler): FetchHandler => async (request) => withResponseHeaders(request, await fn(request));
+  const renderHandler: FetchHandler = guardHandler(withHeaders(async (request) => {
     const url = new URL(request.url);
     const path = url.pathname + url.search;
     // Server-function RPC: auto-wired. Load the registry vmod (registers every "use server"
@@ -130,7 +132,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     );
     const html = await vite.transformIndexHtml(path, styled);
     return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
-  }, (e) => vite.ssrFixStacktrace?.(e));
+  }), (e) => vite.ssrFixStacktrace?.(e));
 
   // Optional request middleware. Loaded per request via ssrLoadModule so edits hot-
   // reload (no server restart); guardHandler turns a middleware throw into a 500.

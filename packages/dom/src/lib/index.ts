@@ -51,6 +51,8 @@ export {
   getRequestEvent,
   getLocals,
   getRequestLocals,
+  appendResponseHeader,
+  takeResponseHeaders,
   type RenderOptions,
   type RequestStore,
   type RequestContext,

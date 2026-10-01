@@ -35,6 +35,8 @@ export {
   getRequestEvent,
   getLocals,
   getRequestLocals,
+  appendResponseHeader,
+  takeResponseHeaders,
   type RequestStore,
   type RequestContext,
   type RequestEvent,

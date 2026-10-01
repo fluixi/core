@@ -227,3 +227,58 @@ export function getRequestLocals(request: object): RequestLocals {
   }
   return bag;
 }
+
+// ─── render -> response bridge ───────────────────────────────────────────────────
+// The mirror of locals: headers code inside a render (a cookie write) wants on the response.
+// Keyed by the platform request, which the host holds when it builds the Response.
+
+interface ResponseHeaderBag {
+  headers: Headers;
+  /** Set once the host has copied the headers out; later writes cannot reach the client. */
+  sent: boolean;
+}
+
+const _responseHeaders: WeakMap<object, ResponseHeaderBag> = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.responseHeaders')
+] ??= new WeakMap<object, ResponseHeaderBag>()) as WeakMap<object, ResponseHeaderBag>;
+
+function currentRequest(): object | undefined {
+  const request = getRequestEvent()?.request;
+  return request && typeof request === 'object' ? request : platformRequest();
+}
+
+/**
+ * Adds a header to the response of the request being answered: a `Set-Cookie` from a
+ * loader, a server function or the render itself. Values append, so several cookies each
+ * keep their own header.
+ *
+ * Returns false when there is no request, or when its headers have already gone out (a
+ * streamed page flushes them before the body renders): the write could not be delivered.
+ */
+export function appendResponseHeader(name: string, value: string): boolean {
+  const request = currentRequest();
+  if (!request) return false;
+  let bag = _responseHeaders.get(request);
+  if (!bag) {
+    bag = { headers: new Headers(), sent: false };
+    _responseHeaders.set(request, bag);
+  }
+  if (bag.sent) return false;
+  bag.headers.append(name, value);
+  return true;
+}
+
+/**
+ * For the host: the headers collected for `request`, which it merges into its Response.
+ * Marks them sent, so a later `appendResponseHeader` reports that it came too late.
+ */
+export function takeResponseHeaders(request: object): Headers | undefined {
+  let bag = _responseHeaders.get(request);
+  if (!bag) {
+    bag = { headers: new Headers(), sent: true };
+    _responseHeaders.set(request, bag);
+    return undefined;
+  }
+  bag.sent = true;
+  return bag.headers;
+}

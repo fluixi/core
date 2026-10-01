@@ -6,6 +6,7 @@ import { extname, resolve, sep } from 'node:path';
 import { liftHead } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
 import { setClientAddress } from './client-address.js';
+import { takeResponseHeaders } from '@fluixi/dom';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -104,6 +105,34 @@ async function readHeadMarker(
     next.set(buf);
     next.set(value, buf.length);
     buf = next;
+  }
+}
+
+/**
+ * Merges the headers code wrote with `appendResponseHeader` while answering `request` (a
+ * cookie set during the render) into `response`. `Set-Cookie` appends; any other header the
+ * response already has is left alone.
+ */
+export function withResponseHeaders(request: Request, response: Response): Response {
+  const extra = takeResponseHeaders(request);
+  if (!extra) return response;
+  let empty = true;
+  extra.forEach(() => (empty = false));
+  if (empty) return response;
+  const merge = (headers: Headers) => {
+    for (const cookie of extra.getSetCookie()) headers.append('set-cookie', cookie);
+    extra.forEach((value, name) => {
+      if (name !== 'set-cookie' && !headers.has(name)) headers.set(name, value);
+    });
+  };
+  try {
+    merge(response.headers);
+    return response;
+  } catch {
+    // A fetched or redirect Response has immutable headers: copy it.
+    const headers = new Headers(response.headers);
+    merge(headers);
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   }
 }
 
