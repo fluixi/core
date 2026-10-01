@@ -1016,6 +1016,7 @@ export {
   revalidate,
   createAsync,
   useSubmission,
+  useSubmissions,
   useAction,
 } from './data.js';
 export type {

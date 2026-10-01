@@ -175,6 +175,18 @@ function getSubmissionSignal<T, Args extends any[]>(url: string) {
 }
 
 /**
+ * Every call of an action, by action name: the ones in flight and the ones that failed.
+ * `submissionState` above keeps only the latest call, so two calls at once overwrote each
+ * other; this list is what an optimistic UI renders from.
+ */
+const submissionsState = new Map<string, [Accessor<Submission<any, any>[]>, Setter<Submission<any, any>[]>]>();
+
+function getSubmissionsSignal<T, Args extends any[]>(url: string) {
+  if (!submissionsState.has(url)) submissionsState.set(url, createSignal<Submission<any, any>[]>([]));
+  return submissionsState.get(url)! as unknown as [Accessor<Submission<T, Args>[]>, Setter<Submission<T, Args>[]>];
+}
+
+/**
  * Create a server action
  */
 export function action<T, Args extends any[]>(
@@ -185,17 +197,34 @@ export function action<T, Args extends any[]>(
 
   const submit = async (input: FormData | Args[0]): Promise<T> => {
     const [, setSubmission] = getSubmissionSignal<T, Args>(actionUrl);
+    const [, setSubmissions] = getSubmissionsSignal<T, Args>(actionUrl);
+
+    // This call's entry in the list: replaced, never mutated, so readers see each change.
+    let entry: Submission<T, Args>;
+    const drop = () => setSubmissions((list) => list.filter((s) => s !== entry));
+    const settle = (next: Submission<T, Args>) => {
+      setSubmissions((list) => list.map((s) => (s === entry ? next : s)));
+      entry = next;
+    };
 
     // Reset state
-    const clear = () => setSubmission(undefined);
-    const retry = () => submit(input);
+    const clear = () => {
+      setSubmission(undefined);
+      drop();
+    };
+    const retry = () => {
+      drop();
+      return submit(input);
+    };
 
-    setSubmission({
+    entry = {
       input: input as Args, // Approximate type for tracking
       pending: true,
       clear,
       retry,
-    });
+    };
+    setSubmission(entry);
+    setSubmissions((list) => [...list, entry]);
 
     try {
       // Cast to any to handle potential argument mismatch in generic types
@@ -209,16 +238,21 @@ export function action<T, Args extends any[]>(
         clear,
         retry,
       });
+      // Done: the result is in whatever the page reads now, so the call leaves the list.
+      drop();
 
       return result;
     } catch (error) {
-      setSubmission({
+      const failed: Submission<T, Args> = {
         input: input as Args,
         error,
         pending: false,
         clear,
         retry,
-      });
+      };
+      setSubmission(failed);
+      // Failed: it stays, with its error, until retried or cleared.
+      settle(failed);
       throw error;
     }
   };
@@ -238,6 +272,29 @@ export function useSubmission<T, Args extends any[]>(
 ): Accessor<Submission<T, Args> | undefined> {
   const [submission] = getSubmissionSignal<T, Args>(actionFn.url!);
   return submission;
+}
+
+/**
+ * Every call of `actionFn` still in flight, and the ones that failed, oldest first. One entry
+ * per call, so concurrent calls do not overwrite each other. A call that succeeds leaves the
+ * list; one that fails stays with its `error` until `retry()` or `clear()`.
+ *
+ * The optimistic pattern: render the server's rows, then the pending entries mapped to the
+ * same shape. When a call succeeds its entry goes and the server row takes its place; when it
+ * fails it stops being pending, so it leaves the optimistic rows by itself.
+ *
+ * @example
+ * ```tsx
+ * const moves = useSubmissions(moveDeal);
+ * const rows = $memo(() => [
+ *   ...deals(),
+ *   ...moves().filter((s) => s.pending).map((s) => ({ ...s.input, pending: true })),
+ * ]);
+ * ```
+ */
+export function useSubmissions<T, Args extends any[]>(actionFn: Action<T, Args>): Accessor<Submission<T, Args>[]> {
+  const [submissions] = getSubmissionsSignal<T, Args>(actionFn.url!);
+  return submissions;
 }
 
 /**
