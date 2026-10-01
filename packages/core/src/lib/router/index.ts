@@ -105,7 +105,12 @@ function renderLayer(
   // layer's route changes (not on deeper navigation).
   let data: (() => any) | undefined;
   const loader = (m.route as RouteDefinition<any>).data as
-    | ((args: RouteDataArgsLocal, owner: unknown, isCancelled: () => boolean) => any)
+    | ((
+        args: RouteDataArgsLocal,
+        owner: unknown,
+        isCancelled: () => boolean,
+        trackDeps: (deps: () => unknown) => void
+      ) => any)
     | undefined;
   if (typeof loader === 'function') {
     let cancelled = false;
@@ -114,8 +119,22 @@ function renderLayer(
     });
     const owner = getOwner();
     const router = useContext(RouterContext);
+    // The route's `routeDeps`, once its module has loaded: a change loads the layer again.
+    let watching = false;
+    const trackDeps = (deps: () => unknown) => {
+      if (watching || cancelled) return;
+      watching = true;
+      runWithOwner(owner as never, () => {
+        let first = true;
+        createEffect(() => {
+          deps();
+          if (first) first = false;
+          else untrack(() => void refetch());
+        });
+      });
+    };
     const [resource, { refetch }] = createResource(() => {
-      const result = loader({ params: base.params, location: base.location }, owner, () => cancelled);
+      const result = loader({ params: base.params, location: base.location }, owner, () => cancelled, trackDeps);
       return router ? router.trackLoad(result) : result;
     });
     // A revalidated cache entry: load again. The page stays on screen with its current data.

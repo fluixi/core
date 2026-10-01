@@ -2,7 +2,7 @@
 /** Cached route data: freshness, sharing, revalidation, and actions that invalidate. */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createComponent, createNativeElement, insert, render } from '@fluixi/dom';
-import { createMemo, createRoot, createResourceCache } from '@fluixi/reactive/signal';
+import { createMemo, createRoot, createResourceCache, createSignal } from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
 import { Router, action, cache, createMemoryHistory, revalidate, useRouteData } from './index.js';
 
@@ -94,5 +94,37 @@ describe('route data and revalidation', () => {
     finish!(['acme', 'globex']);
     await tick();
     expect(container.textContent).toBe('acme,globex');
+  });
+});
+
+describe('routeDeps', () => {
+  it('loads the layer again when a dependency changes, keeping the page meanwhile', async () => {
+    const [user, setUser] = createSignal('ann');
+    const loads: unknown[] = [];
+    const Orgs = () => {
+      const data = useRouteData<string>();
+      return text('p', () => data());
+    };
+    // What the generated loader does once the route module is in.
+    const data = (args: { deps?: unknown }, _owner: unknown, _cancelled: () => boolean, track: (d: () => unknown) => void) => {
+      const routeDeps = () => [user()];
+      track(routeDeps);
+      const deps = routeDeps();
+      loads.push(deps);
+      return Promise.resolve(`orgs of ${(deps as string[])[0]}`);
+    };
+    const container = document.createElement('div');
+    createRoot(() => {
+      const view = createMemo(() =>
+        createComponent(Router, { routes: [{ path: '/', component: Orgs, data }], history: createMemoryHistory('/') } as never),
+      );
+      render(view, container);
+    });
+    await tick();
+    expect(container.textContent).toBe('orgs of ann');
+    setUser('bob');
+    await tick();
+    expect(container.textContent).toBe('orgs of bob');
+    expect(loads).toEqual([['ann'], ['bob']]);
   });
 });

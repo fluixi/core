@@ -639,6 +639,9 @@ describe('generateRouteModule', () => {
     expect(output).toContain('data:');
     expect(output).toContain('m.routeData(args)');
     expect(output).toContain('__isCancelled');
+    // routeDeps: handed to the router, and its values passed to routeData.
+    expect(output).toContain('__deps(m.routeDeps)');
+    expect(output).toContain('deps: m.routeDeps()');
   });
 
   it('generates children array for nested routes', () => {

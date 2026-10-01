@@ -337,6 +337,11 @@ export interface RouteDataArgs {
   location:
     | { pathname: string; search: string }
     | (() => { pathname: string; search: string });
+  /**
+   * What the route's `routeDeps` export returned when this load started: app-wide values the
+   * data depends on, such as the signed-in user. Key a `cache()` call by them.
+   */
+  deps?: unknown;
 }
 
 export type RouteLoadFunc = (

@@ -77,9 +77,9 @@ function generateRouteObject(
   // levels that have no data, which kept the router's if (d.data) check clean.
   if (route.hasRouteData) {
     props.push(
-      `${indent}  data: (args, __owner, __isCancelled) => import(${JSON.stringify(
+      `${indent}  data: (args, __owner, __isCancelled, __deps) => import(${JSON.stringify(
         importPath
-      )}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; return __owner ?  m.routeData(args) : m.routeData(args); })`
+      )}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; if (typeof m.routeDeps === 'function') { if (typeof __deps === 'function') __deps(m.routeDeps); args = { ...args, deps: m.routeDeps() }; } return m.routeData(args); })`
     );
     // props.push(`${indent}  data: (args) => import(${JSON.stringify(importPath)}).then(m => m.routeData ? m.routeData(args) : undefined)`);
   }
