@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEffect, createSignal, flush } from './graph/compat.js';
 import { createRoot } from './graph/runtime.js';
-import {
-  clearAllCachedResources,
-  createCachedResource,
-} from './cached-resource.js';
+import { cachedResource, clearCachedResources } from './cached-resource.js';
 
 /**
  * A cached resource has to be readable from the default entry, which is the thing it
@@ -19,12 +16,12 @@ const settled = (): Promise<void> => new Promise((resolve) => setTimeout(resolve
 
 describe('a cached resource on the live graph', () => {
   it('re-runs a live effect when the fetch resolves', async () => {
-    clearAllCachedResources();
+    clearCachedResources();
     const runs = vi.fn();
     let latest: string | undefined;
 
     const dispose = createRoot((d) => {
-      const [data] = createCachedResource(async () => 'loaded', { name: 'wiring-1' });
+      const data = cachedResource(async () => 'loaded', { name: 'wiring-1' });
       createEffect(() => {
         runs();
         latest = data.latest as string | undefined;
@@ -45,12 +42,12 @@ describe('a cached resource on the live graph', () => {
   });
 
   it('re-fetches when a live source signal changes', async () => {
-    clearAllCachedResources();
+    clearCachedResources();
     const [id, setId] = createSignal('a');
     const seen: string[] = [];
 
     const dispose = createRoot((d) => {
-      const [data] = createCachedResource(
+      const data = cachedResource(
         () => id(),
         async (key: string) => `value-${key}`,
         { name: 'wiring-2' },
@@ -77,11 +74,11 @@ describe('a cached resource on the live graph', () => {
   });
 
   it('reports loading through the live graph', async () => {
-    clearAllCachedResources();
+    clearCachedResources();
     const states: boolean[] = [];
 
     const dispose = createRoot((d) => {
-      const [data] = createCachedResource(async () => 1, { name: 'wiring-3' });
+      const data = cachedResource(async () => 1, { name: 'wiring-3' });
       createEffect(() => states.push(data.loading));
       return d;
     });

@@ -10,6 +10,9 @@ import {
   setResourceTracker,
   setResourceIdSource,
   setResourceDataSink,
+  setResourceCacheScope,
+  createResourceCache,
+  type ResourceCache,
   getOwner,
   runWithOwner,
   flush,
@@ -95,6 +98,7 @@ export function renderToString(app: () => any, options: RenderOptions = {}): str
 // AsyncLocalStorage store injected) instead of a per-call setter clobbering a
 // sibling render's sink.
 let _hooksInstalled = false;
+const requestCaches = new WeakMap<RequestContext, ResourceCache>();
 function ensureResourceHooks(): void {
   if (_hooksInstalled) return;
   _hooksInstalled = true;
@@ -106,6 +110,14 @@ function ensureResourceHooks(): void {
   // Resolved values are collected for serialization into the page.
   setResourceDataSink((id, value) => {
     if (id) getRequestContext()?.data.set(id, value);
+  });
+  // Cached resources keep entries per request: one visitor never reads another's.
+  setResourceCacheScope(() => {
+    const ctx = getRequestContext();
+    if (!ctx) return undefined;
+    let cache = requestCaches.get(ctx);
+    if (!cache) requestCaches.set(ctx, (cache = createResourceCache()));
+    return cache;
   });
 }
 

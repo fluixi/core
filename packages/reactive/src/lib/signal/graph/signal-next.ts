@@ -63,6 +63,11 @@ export {
   nextResourceId,
   setResourceDataSink,
   reportResourceData,
+  setResourceCacheScope,
+  currentResourceCache,
+  createResourceCache,
+  type ResourceCache,
+  type ResourceCacheEntry,
 } from './ssr-hooks.js';
 
 // Derived utilities on the TC39 graph.

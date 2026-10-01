@@ -44,3 +44,58 @@ export function setResourceDataSink(fn: ((id: string, value: any) => void) | nul
 export function reportResourceData(id: string, value: any): void {
   if (_resourceDataSink) _resourceDataSink(id, value);
 }
+
+/** Where cached resources keep their entries and in-flight fetches. */
+export interface ResourceCacheEntry {
+  value: unknown;
+  /** Date.now() when it was fetched. */
+  timestamp: number;
+}
+
+export interface ResourceCache {
+  get(key: string): ResourceCacheEntry | undefined;
+  set(key: string, entry: ResourceCacheEntry): void;
+  delete(key: string): void;
+  keys(): Iterable<string>;
+  clear(): void;
+  /** Fetches running now, by key, so two readers share one request. Same scope as the entries. */
+  readonly inflight: Map<string, Promise<unknown>>;
+}
+
+/** A cache held in memory, values kept as they are (Dates, class instances). */
+export function createResourceCache(): ResourceCache {
+  const entries = new Map<string, ResourceCacheEntry>();
+  const inflight = new Map<string, Promise<unknown>>();
+  return {
+    get: (key) => entries.get(key),
+    set: (key, entry) => void entries.set(key, entry),
+    delete: (key) => void entries.delete(key),
+    keys: () => entries.keys(),
+    clear: () => {
+      entries.clear();
+      inflight.clear();
+    },
+    inflight,
+  };
+}
+
+let _cacheScope: (() => ResourceCache | undefined) | null = null;
+/**
+ * Inject the cache for the current scope. The server sets one per request, so two visitors
+ * never share an entry or an in-flight fetch.
+ */
+export function setResourceCacheScope(fn: (() => ResourceCache | undefined) | null): void {
+  _cacheScope = fn;
+}
+
+// The browser serves one user, so the page is the scope there.
+let _pageCache: ResourceCache | undefined;
+
+/** The cache for where this runs: the injected scope, else the page in a browser, else a private one. */
+export function currentResourceCache(): ResourceCache {
+  const scoped = _cacheScope?.();
+  if (scoped) return scoped;
+  // A server with no scope injected: nothing safe to share, so nothing is shared.
+  if (typeof window === 'undefined') return createResourceCache();
+  return (_pageCache ??= createResourceCache());
+}

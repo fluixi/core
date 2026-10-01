@@ -1,52 +1,27 @@
 /**
- * createCachedResource: a reactive resource with TTL-based caching.
+ * `cachedResource`: a resource whose results are kept, by key, for a TTL.
  *
- * Fetches once and returns the cached result for subsequent reads within the
- * TTL window. After the TTL expires the next read triggers a re-fetch.
+ * Fetches once and serves the cached result to later reads within the TTL; after it, the
+ * next read fetches again, showing the stale value meanwhile unless `staleWhileRevalidate`
+ * is off. Readers of the same key share one request in flight.
  *
- * It runs on the live graph, as of this change. It used to build on `./signal.js`,
- * which tracks its current consumer in a module-level `Listener` while everything on
- * the default entry tracks through `G.consumer`. The two never saw each other, so
- * `createEffect(() => data())` subscribed to nothing and a binding kept whatever it
- * first rendered, which on an initial load is the loading state. `cross-graph.spec.ts`
- * holds the general shape of that hazard; this file is no longer an instance of it.
+ *   const workspace = cachedResource(workspaceId, (id) => api.get(`/workspaces/${id}`), {
+ *     name: 'workspace',
+ *     ttl: 5 * 60_000,
+ *   });
+ *   workspace();            // the value; suspends under <Suspense> on the first load
+ *   workspace.stale;        // true while a background refetch runs
+ *   workspace.invalidate(); // drop the entry and fetch again
  *
- * Suspense needs no bookkeeping here. The accessor throws the pending promise and the
- * runtime's suspend handler finds the nearest boundary from the effect that was
- * reading, which is what `graph/resource.ts` relies on too. The manual increment and
- * decrement against a lazily-resolved context went with the port.
+ * Where entries live is the cache's business (`ResourceCache`). By default: one cache per
+ * request on the server, so visitors never share an entry or an in-flight fetch; the page in
+ * a browser. Pass `cache` to keep them elsewhere, for instance a storage that survives a reload.
  *
- * Two forms (mirrors createResource):
+ * A value fetched during the server render travels to the browser with the page, like a
+ * plain resource's, and seeds the first read there instead of a second fetch.
  *
- *   // 1. no reactive source
- *   const [data, { refetch, invalidate }] = createCachedResource(
- *     () => apiClient.get('/data'),
- *     { ttl: 5 * 60_000, name: 'my-data' }
- *   );
- *
- *   // 2. reactive source (re-fetches when source value changes)
- *   const [data, { refetch, invalidate }] = createCachedResource(
- *     () => workspaceId(),
- *     (id) => apiClient.get(`/workspaces/${id}`),
- *     { ttl: 5 * 60_000, name: 'workspace' }
- *   );
- *
- * Options:
- *   ttl: cache lifetime in ms. Default: Infinity (manual invalidate only)
- *   name: cache namespace. If omitted, each call-site gets its own isolated cache.
- *   staleWhileRevalidate, when true (default), show stale data while background-fetching.
- *                          When false, show a loading state during revalidation.
- *
- * Resource shape (same as createResource):
- *   data(): current value (throws pending promise during initial load for Suspense)
- *   data.loading: true during initial load
- *   data.latest: value without throwing
- *   data.error: last error
- *   data.stale: true when showing stale data during background revalidation
- *
- * Actions:
- *   refetch(): force re-fetch regardless of TTL, keeps showing current value while loading
- *   invalidate(): delete cache entry and re-fetch (shows loading on next read)
+ * It runs on the live graph. Suspense needs no bookkeeping here: the accessor throws the
+ * pending promise and the runtime finds the nearest boundary from the reading effect.
  */
 
 import {
@@ -57,20 +32,17 @@ import {
   untrack,
 } from './graph/compat.js';
 // Graph-agnostic SSR hooks, the same ones graph/resource.ts uses.
-import { trackResourcePromise } from './graph/ssr-hooks.js';
+import {
+  currentResourceCache,
+  getServerData,
+  nextResourceId,
+  reportResourceData,
+  trackResourcePromise,
+  type ResourceCache,
+} from './graph/ssr-hooks.js';
 // Types only. The archive contributes no runtime here, which is the point.
 import type { Setter, Resource, ResourceState } from './signal.js';
 
-// ── Module-level TTL cache ────────────────────────────────────────────────────
-// Shared across instances that use the same `name + key` combination.
-
-interface TtlEntry<T> {
-  value: T;
-  timestamp: number; // Date.now() when cached
-}
-
-const ttlCache = new Map<string, TtlEntry<any>>();
-const inflight = new Map<string, Promise<any>>();
 let _autoId = 0;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -83,7 +55,7 @@ export interface CachedResourceOptions {
   ttl?: number;
   /**
    * Cache namespace. Two calls that share the same `name` share their cache
-   * entries. When omitted, each `createCachedResource` call-site gets a
+   * entries. When omitted, each `cachedResource` call gets a
    * private cache isolated from all others.
    */
   name?: string;
@@ -96,6 +68,10 @@ export interface CachedResourceOptions {
    * `state='refreshing'` (data is still visible but `loading=true`).
    */
   staleWhileRevalidate?: boolean;
+  /** Where entries live. Defaults to the request's cache on the server and the page's in a browser. */
+  cache?: ResourceCache;
+  /** Carry the server-fetched value to the browser with the page. Default true. */
+  transport?: boolean;
 }
 
 export type CachedResource<T> = Resource<T> & {
@@ -103,16 +79,16 @@ export type CachedResource<T> = Resource<T> & {
   stale: boolean;
 };
 
-export type CachedResourceReturn<T> = [
-  CachedResource<T>,
-  {
-    mutate: Setter<T | undefined>;
-    /** Force re-fetch, bypassing TTL. Current value stays visible. */
-    refetch: () => void;
-    /** Delete the cache entry for the current key and trigger a fresh fetch. */
-    invalidate: () => void;
-  },
-];
+export interface CachedResourceActions<T> {
+  mutate: Setter<T | undefined>;
+  /** Fetch again now, whatever the TTL. The current value stays visible. */
+  refetch: () => void;
+  /** Drop the entry for the current key and fetch again. */
+  invalidate: () => void;
+}
+
+/** One binding: the accessor, with the actions on it. */
+export type CachedResourceHandle<T> = CachedResource<T> & CachedResourceActions<T>;
 
 // ── Brand symbols ─────────────────────────────────────────────────────────────
 // Registry symbols, so every copy of every graph agrees on them without importing
@@ -122,29 +98,27 @@ const $RESOURCE = Symbol.for('resource');
 
 // ── Implementation ─────────────────────────────────────────────────────────────
 
-/**
- * No-source overload: fetch is not keyed by any reactive value.
- */
-export function createCachedResource<T>(
+/** Not keyed by a reactive value. */
+export function cachedResource<T>(
   fetcher: () => Promise<T> | T,
   options?: CachedResourceOptions,
-): CachedResourceReturn<T>;
+): CachedResourceHandle<T>;
 
 /**
- * With-source overload: fetch re-runs whenever the source accessor returns a
- * new value (falsy source suspends the fetch, same as `createResource`).
+ * Keyed by `source`: a new key reads its own entry, or fetches. A falsy source holds the
+ * fetch, as for `resource`.
  */
-export function createCachedResource<T, S>(
+export function cachedResource<T, S>(
   source: () => S | false | null | undefined,
   fetcher: (key: S) => Promise<T> | T,
   options?: CachedResourceOptions,
-): CachedResourceReturn<T>;
+): CachedResourceHandle<T>;
 
-export function createCachedResource<T, S = true>(
+export function cachedResource<T, S = true>(
   sourceOrFetcher: (() => S | false | null | undefined) | (() => Promise<T> | T),
   fetcherOrOptions?: ((key: S) => Promise<T> | T) | CachedResourceOptions,
   opts: CachedResourceOptions = {},
-): CachedResourceReturn<T> {
+): CachedResourceHandle<T> {
   // ── Normalise overloads ──────────────────────────────────────────────────
   let sourceFn: () => S | false | null | undefined;
   let fetchFn: (key: S) => Promise<T> | T;
@@ -168,10 +142,15 @@ export function createCachedResource<T, S = true>(
   } = options;
 
   const ns = name;
+  const cache = options.cache ?? currentResourceCache();
+  const inflight = cache.inflight;
+  // The same transport as a plain resource: an id in creation order, matched on both sides.
+  const ssrId = options.transport === false ? undefined : nextResourceId();
+  const seed = ssrId !== undefined ? getServerData(ssrId) : undefined;
 
   const buildKey = (key: S): string => `${ns}:${JSON.stringify(key)}`;
 
-  const isFresh = (entry: TtlEntry<any>): boolean =>
+  const isFresh = (entry: { timestamp: number }): boolean =>
     ttl === Infinity || Date.now() - entry.timestamp <= ttl;
 
   // ── Reactive state ────────────────────────────────────────────────────────
@@ -195,18 +174,22 @@ export function createCachedResource<T, S = true>(
     isCancelled: () => boolean,
   ): void {
     // Attach to an in-flight request for the same key (dedup).
-    if (inflight.has(ck)) {
-      inflight.get(ck)!.then(
+    const running = inflight.get(ck) as Promise<T> | undefined;
+    if (running) {
+      running.then(
         (v) => { if (!isCancelled()) settle(v, background); },
         (e) => { if (!isCancelled() && !background) fail(e); },
       );
-      if (!background) setPendingP(inflight.get(ck));
+      if (!background) {
+        trackResourcePromise(running);
+        setPendingP(running);
+      }
       return;
     }
 
     const promise: Promise<T> = Promise.resolve(fetchFn(key)).then(
       (v) => {
-        ttlCache.set(ck, { value: v, timestamp: Date.now() });
+        cache.set(ck, { value: v, timestamp: Date.now() });
         inflight.delete(ck);
         return v;
       },
@@ -231,7 +214,8 @@ export function createCachedResource<T, S = true>(
     );
   }
 
-  function settle(v: T, background: boolean): void {
+  function settle(v: T, _background: boolean): void {
+    if (ssrId !== undefined) reportResourceData(ssrId, v); // serialize for hydration
     batch(() => {
       setValue(() => v);
       setResourceState('ready');
@@ -272,8 +256,11 @@ export function createCachedResource<T, S = true>(
 
     const ck = buildKey(key as S);
 
+    // A value the server fetched for this page: the first read takes it as fresh.
+    if (seed && prevKey === UNSET && !cache.get(ck)) cache.set(ck, { value: seed.value, timestamp: Date.now() });
+
     // Clear cache on explicit invalidate
-    if (doInvalidate) ttlCache.delete(ck);
+    if (doInvalidate) cache.delete(ck);
 
     const keyChanged = prevKey === UNSET || (key as unknown) !== prevKey;
     prevKey = key as S;
@@ -281,11 +268,12 @@ export function createCachedResource<T, S = true>(
     let cancelled = false;
     onCleanup(() => { cancelled = true; });
 
-    const cached = ttlCache.get(ck);
+    const cached = cache.get(ck) as { value: T; timestamp: number } | undefined;
 
     // ── Cache HIT (fresh) ─────────────────────────────────────────────────
     if (cached && isFresh(cached) && !doRefetch && !doInvalidate) {
       // Serve synchronously, no loading state, no fetch.
+      if (ssrId !== undefined) reportResourceData(ssrId, cached.value);
       const cur = untrack(resourceState);
       if (cur !== 'ready' || untrack(value) !== cached.value) {
         batch(() => {
@@ -359,32 +347,25 @@ export function createCachedResource<T, S = true>(
   const invalidate = (): void => {
     const key = untrack(sourceFn);
     if (key !== null && key !== undefined && key !== false) {
-      ttlCache.delete(buildKey(key as S));
+      cache.delete(buildKey(key as S));
     }
     flagInvalidate = true;
     setTick(v => v + 1);
   };
 
-  return [resource, { mutate: setValue, refetch, invalidate }];
+  return Object.assign(resource, { mutate: setValue, refetch, invalidate }) as CachedResourceHandle<T>;
 }
 
 // ── Cache utilities ────────────────────────────────────────────────────────────
 
 /**
- * Clear all TTL cache entries for a given namespace (name).
- * Useful to invalidate a whole category of data at once.
+ * Drops cached entries in the current scope: those of one `name`, or all of them. On a
+ * logout or a workspace switch, so nothing fetched for the previous one is served.
  */
-export function clearCachedResourceNamespace(name: string): void {
+export function clearCachedResources(name?: string, cache: ResourceCache = currentResourceCache()): void {
+  if (name === undefined) return cache.clear();
   const prefix = `${name}:`;
-  for (const key of ttlCache.keys()) {
-    if (key.startsWith(prefix)) ttlCache.delete(key);
-  }
+  for (const key of [...cache.keys()]) if (key.startsWith(prefix)) cache.delete(key);
 }
 
-/**
- * Clear the entire TTL cache. Useful on logout / workspace switch.
- */
-export function clearAllCachedResources(): void {
-  ttlCache.clear();
-  inflight.clear();
-}
+export { createResourceCache, type ResourceCache, type ResourceCacheEntry } from './graph/ssr-hooks.js';
