@@ -2,7 +2,7 @@
  * @fluixi/storage: a universal storage abstraction. One typed API across browser, SSR, server
  * and custom environments; where the data actually lives is the adapter's to say.
  */
-export { createStorage } from './core/storage.js';
+export { createStorage, createSyncStorage } from './core/storage.js';
 export {
   StorageError,
   StorageSerializationError,

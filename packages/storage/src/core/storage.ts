@@ -22,8 +22,47 @@ import type {
   TypedStorage,
 } from './types.js';
 
-/** With `encryption`, the storage is asynchronous: encrypting never blocks the main thread. */
+/**
+ * A typed storage with per-item encryption. Every operation returns a promise, since Web Crypto
+ * is asynchronous and encrypting must not block the main thread.
+ *
+ * Items are stored in clear unless written with `{ encrypt: true }`; reads detect encrypted
+ * items and decrypt them, so one storage holds both kinds.
+ *
+ * @param options `encryption.keyProvider` supplies the AES-256-GCM key; the rest is as for the
+ *   synchronous overload, and `adapter` may also be asynchronous.
+ * @returns The same storage as `createAsyncStorage(options)`.
+ * @throws {StorageEncryptionError} From reads and writes, never from this call: a missing or
+ *   unusable key, a payload that fails authentication, an unknown format.
+ *
+ * @example
+ * const storage = createStorage<{ theme: string; session: Session }>({
+ *   adapter: localStorageAdapter(),
+ *   encryption: { keyProvider: staticKeyProvider(generateEncryptionKey()) },
+ * });
+ * await storage.set('theme', 'dark');
+ * await storage.set('session', session, { encrypt: true });
+ * const current = await storage.get('session');
+ */
 export function createStorage<S extends StorageSchema = StorageSchema>(options: AsyncStorageOptions<S> & { encryption: EncryptionOptions }): AsyncTypedStorage<S>;
+/**
+ * A typed, synchronous storage over any adapter, in memory by default.
+ *
+ * Each value is kept in an envelope with its write time, expiry and schema version, so `ttl`,
+ * migrations and search behave the same on every backend. Type it with a schema and the value
+ * type follows the key.
+ *
+ * Pass `encryption` to get the asynchronous storage instead (the other overload).
+ *
+ * @param options `adapter` (default `memoryStorage()`), `namespace` (a key prefix such as
+ *   `app:`), `serializer` (default the strict JSON one), `migrations` per key, and `now` for tests.
+ * @returns The same storage as `createSyncStorage(options)`.
+ *
+ * @example
+ * const prefs = createStorage<{ theme: 'light' | 'dark' }>({ adapter: localStorageAdapter(), namespace: 'app' });
+ * prefs.set('theme', 'dark', { ttl: 86_400_000 });
+ * prefs.get('theme'); // 'dark' | null
+ */
 export function createStorage<S extends StorageSchema = StorageSchema>(options?: StorageOptions<S>): TypedStorage<S>;
 export function createStorage<S extends StorageSchema = StorageSchema>(
   options: StorageOptions<S> | (AsyncStorageOptions<S> & { encryption: EncryptionOptions }) = {},
@@ -32,7 +71,22 @@ export function createStorage<S extends StorageSchema = StorageSchema>(
   return createSyncStorage(options as StorageOptions<S>);
 }
 
-function createSyncStorage<S extends StorageSchema>(options: StorageOptions<S>): TypedStorage<S> {
+/**
+ * The synchronous storage, by name: what `createStorage` returns without `encryption`. Use it
+ * when the code relies on reads returning at once and should not compile if someone adds
+ * encryption later.
+ *
+ * It needs a synchronous adapter. It can list, check, expire and remove encrypted items
+ * written by the asynchronous storage, but reading their value throws
+ * `StorageEncryptionUnavailableError`.
+ *
+ * @param options See `createStorage`.
+ *
+ * @example
+ * const cache = createSyncStorage<{ draft: string }>({ namespace: 'editor' });
+ * cache.set('draft', text);
+ */
+export function createSyncStorage<S extends StorageSchema = StorageSchema>(options: StorageOptions<S> = {}): TypedStorage<S> {
   const adapter: StorageAdapter = options.adapter ?? memoryStorage();
   const serializer = options.serializer ?? jsonSerializer;
   const now = options.now ?? Date.now;

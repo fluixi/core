@@ -25,6 +25,20 @@ import type { AsyncStorageAdapter, AsyncStorageOptions, AsyncTypedStorage, Stora
 
 type Meta = Omit<Envelope, 'v' | 'value' | 'enc'>;
 
+/**
+ * A typed storage whose operations all return promises. It works over a synchronous adapter or
+ * an asynchronous one (IndexedDB, a remote store), and it is the storage that can encrypt.
+ *
+ * It reads and writes the same envelope as the synchronous storage, so the two can share an
+ * adapter. Without `encryption`, writing with `{ encrypt: true }` or reading an encrypted item
+ * throws `StorageEncryptionKeyError`.
+ *
+ * @param options As for `createStorage`, plus `encryption` and an asynchronous `adapter`.
+ *
+ * @example
+ * const storage = createAsyncStorage<{ token: string }>({ encryption: { keyProvider } });
+ * await storage.set('token', token, { encrypt: true, ttl: 3_600_000 });
+ */
 export function createAsyncStorage<S extends StorageSchema = StorageSchema>(options: AsyncStorageOptions<S> = {}): AsyncTypedStorage<S> {
   const adapter: AsyncStorageAdapter = options.adapter ?? memoryStorage();
   const serializer = options.serializer ?? jsonSerializer;
