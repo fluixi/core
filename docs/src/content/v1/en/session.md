@@ -53,6 +53,17 @@ createSession<User, Credentials>({
 `getExpiry` is only needed when your token is opaque and your login response carries no
 `expires_in`.
 
+## Where it is kept
+
+The token, the user and the expiry are kept in localStorage in the browser, through
+[`@fluixi/storage`](/v1/en/storage), and nowhere on the server: one session object there would
+be shared by every visitor. Pass `storage` for somewhere else, or `null` to keep them in memory
+only.
+
+```ts
+createSession({ ...adapter, storage: createStorage({ adapter: sessionStorageAdapter() }) });
+```
+
 ## Status, and why it has more than two values
 
 ```ts

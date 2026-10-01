@@ -99,6 +99,14 @@ seo({
 });
 ```
 
+Les attributs de `<html>` autres que `lang` passent par `htmlAttrs`. Le serveur les rend avec
+la page et le client les tient à jour : c'est ainsi qu'un thème atteint le document avant
+l'affichage.
+
+```tsx
+seo({ htmlAttrs: { 'data-theme': () => theme() } });
+```
+
 ## Composants
 
 Pour du code en forme de balisage, des composants couvrent le même terrain, `Title`,

@@ -98,6 +98,14 @@ seo({
 });
 ```
 
+Attributes on `<html>` other than `lang` go in `htmlAttrs`. The server renders them with the
+page and the client keeps them current, which is how a theme reaches the document before
+paint:
+
+```tsx
+seo({ htmlAttrs: { 'data-theme': () => theme() } });
+```
+
 ## Components
 
 For markup-shaped code there are components covering the same ground, `Title`, `Meta`,

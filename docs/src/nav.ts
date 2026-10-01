@@ -18,6 +18,10 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
     slugs: ['html-templates', 'directives'],
   },
   {
+    group: { en: 'Data', fr: 'Données' },
+    slugs: ['caching', 'storage', 'app-storage'],
+  },
+  {
     group: { en: 'Authentication', fr: 'Authentification' },
     slugs: ['authentication', 'session', 'oauth2', 'better-auth', 'service-to-service', 'token-verification'],
   },
