@@ -3,13 +3,17 @@
  * metadata, so expiry, versions and migrations work the same on every backend.
  */
 import { memoryStorage } from '../adapters/memory.js';
+import type { EncryptionOptions } from '../encryption/types.js';
 import { jsonSerializer } from '../serialization/json.js';
 import { joinNamespace, namespacePrefix } from '../utils/keys.js';
-import { StorageDeserializationError, StorageError, StorageSerializationError } from './errors.js';
+import { createAsyncStorage } from './async-storage.js';
+import { decodeEnvelope, isExpired, latestVersion, metaFor, migrate, selectItems, serializeOrThrow, toEntry, type Envelope, type Migrations } from './envelope.js';
+import { StorageEncryptionUnavailableError } from './errors.js';
 import type {
+  AsyncStorageOptions,
+  AsyncTypedStorage,
   SetOptions,
   StorageAdapter,
-  StorageEntry,
   StorageEvent,
   StorageKey,
   StorageOptions,
@@ -18,31 +22,21 @@ import type {
   TypedStorage,
 } from './types.js';
 
-/** The stored form. `v` is the envelope format, so a later format can read this one. */
-interface Envelope {
-  v: 1;
-  value: unknown;
-  createdAt: number;
-  expiresAt?: number;
-  version?: number;
+/** With `encryption`, the storage is asynchronous: encrypting never blocks the main thread. */
+export function createStorage<S extends StorageSchema = StorageSchema>(options: AsyncStorageOptions<S> & { encryption: EncryptionOptions }): AsyncTypedStorage<S>;
+export function createStorage<S extends StorageSchema = StorageSchema>(options?: StorageOptions<S>): TypedStorage<S>;
+export function createStorage<S extends StorageSchema = StorageSchema>(
+  options: StorageOptions<S> | (AsyncStorageOptions<S> & { encryption: EncryptionOptions }) = {},
+): TypedStorage<S> | AsyncTypedStorage<S> {
+  if ('encryption' in options && options.encryption) return createAsyncStorage(options);
+  return createSyncStorage(options as StorageOptions<S>);
 }
 
-function isEnvelope(x: unknown): x is Envelope {
-  return !!x && typeof x === 'object' && (x as Envelope).v === 1 && 'value' in x && typeof (x as Envelope).createdAt === 'number';
-}
-
-/** The newest version a key's migrations reach, or undefined without migrations. */
-function latestVersion(steps: Record<number, unknown> | undefined): number | undefined {
-  if (!steps) return undefined;
-  const versions = Object.keys(steps).map(Number).filter(Number.isFinite);
-  return versions.length ? Math.max(...versions) : undefined;
-}
-
-export function createStorage<S extends StorageSchema = StorageSchema>(options: StorageOptions<S> = {}): TypedStorage<S> {
+function createSyncStorage<S extends StorageSchema>(options: StorageOptions<S>): TypedStorage<S> {
   const adapter: StorageAdapter = options.adapter ?? memoryStorage();
   const serializer = options.serializer ?? jsonSerializer;
   const now = options.now ?? Date.now;
-  const migrations = (options.migrations ?? {}) as Record<string, Record<number, (value: unknown) => unknown> | undefined>;
+  const migrations = (options.migrations ?? {}) as Migrations;
   const prefix = namespacePrefix(options.namespace);
   const listeners = new Set<{ key?: string; fn: (event: StorageEvent<S>) => void }>();
 
@@ -50,47 +44,33 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     for (const { key, fn } of listeners) if (key === undefined || event.key === null || key === event.key) fn(event);
   };
 
-  const encode = (key: string, envelope: Envelope): string => {
-    try {
-      return serializer.serialize(envelope);
-    } catch (error) {
-      if (error instanceof StorageError) throw Object.assign(error, { key });
-      throw new StorageSerializationError(`The value of ${key} could not be serialized.`, { key, cause: error });
-    }
-  };
+  const encode = (key: string, envelope: Envelope) => serializeOrThrow(serializer, key, envelope);
 
-  const decode = (key: string, text: string): Envelope => {
-    let parsed: unknown;
-    try {
-      parsed = serializer.deserialize(text);
-    } catch (error) {
-      throw new StorageDeserializationError(`The stored value of ${key} could not be read.`, { key, cause: error });
+  /** The plaintext value. An encrypted one needs the async storage, which can decrypt. */
+  const valueOf = (key: string, envelope: Envelope) => {
+    if (envelope.enc) {
+      throw new StorageEncryptionUnavailableError(`${key} is encrypted; read it through createStorage({ encryption }), which is asynchronous.`, { key });
     }
-    // Written by something else, without metadata: the value as it is.
-    return isEnvelope(parsed) ? parsed : { v: 1, value: parsed, createdAt: 0 };
+    return envelope.value;
   };
 
   /** The live entry, expiry applied and migrations run, or null. */
   const read = (key: string): Envelope | null => {
     const text = adapter.get(prefix + key);
     if (text === null) return null;
-    let envelope = decode(key, text);
-    if (envelope.expiresAt !== undefined && envelope.expiresAt <= now()) {
+    const envelope = decodeEnvelope(serializer, key, text);
+    if (isExpired(envelope, now())) {
       adapter.remove(prefix + key);
       emit({ type: 'expire', key: key as StorageKey<S>, external: false });
       return null;
     }
-    const steps = migrations[key];
-    const latest = latestVersion(steps);
-    if (steps && latest !== undefined && (envelope.version ?? 0) < latest) {
-      let value = envelope.value;
-      for (const version of Object.keys(steps).map(Number).sort((a, b) => a - b)) {
-        if (version > (envelope.version ?? 0)) value = steps[version]!(value);
-      }
-      envelope = { ...envelope, value, version: latest };
-      adapter.set(prefix + key, encode(key, envelope));
-    }
-    return envelope;
+    // An encrypted value is migrated when the async storage reads it.
+    if (envelope.enc) return envelope;
+    const migrated = migrate(migrations[key], envelope.version, envelope.value);
+    if (!migrated) return envelope;
+    const next = { ...envelope, ...migrated };
+    adapter.set(prefix + key, encode(key, next));
+    return next;
   };
 
   const ownKeys = (): string[] =>
@@ -106,35 +86,27 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     const key = change.key.slice(prefix.length) as StorageKey<S>;
     if (change.value === null) return emit({ type: 'remove', key, external: true });
     try {
-      emit({ type: 'set', key, value: decode(key, change.value).value, external: true });
+      const envelope = decodeEnvelope(serializer, key, change.value);
+      emit({ type: 'set', key, value: envelope.enc ? undefined : envelope.value, external: true });
     } catch {
       // Unreadable text from another writer: reported when it is read, not here.
     }
   });
 
-  /** `draft:*` style: `*` any run, `?` one character, everything else literal. */
-  const globToRegExp = (glob: string) =>
-    new RegExp(`^${glob.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
-
-  const toEntry = (envelope: Envelope): StorageEntry<unknown> => {
-    const entry: StorageEntry<unknown> = { value: envelope.value, createdAt: envelope.createdAt };
-    if (envelope.expiresAt !== undefined) entry.expiresAt = envelope.expiresAt;
-    if (envelope.version !== undefined) entry.version = envelope.version;
-    return entry;
-  };
-
   const liveItems = (): StoredItem<S>[] => {
     const items: StoredItem<S>[] = [];
     for (const key of ownKeys().sort()) {
       const envelope = read(key);
-      if (envelope) items.push({ key: key as StorageKey<S>, value: envelope.value as never, entry: toEntry(envelope) as never });
+      if (!envelope) continue;
+      const value = valueOf(key, envelope);
+      items.push({ key: key as StorageKey<S>, value: value as never, entry: toEntry(envelope, value) as never });
     }
     return items;
   };
 
-  const write = (key: string, envelope: Envelope) => {
-    adapter.set(prefix + key, encode(key, envelope));
-    emit({ type: 'set', key: key as StorageKey<S>, value: envelope.value, external: false });
+  const write = (key: string, value: unknown, meta: Omit<Envelope, 'v' | 'value' | 'enc'>) => {
+    adapter.set(prefix + key, encode(key, { v: 1, value, ...meta }));
+    emit({ type: 'set', key: key as StorageKey<S>, value, external: false });
   };
 
   const storage: TypedStorage<S> = {
@@ -143,21 +115,17 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     capabilities: { ...adapter.capabilities, expiration: true },
 
     get(key) {
-      return (read(key)?.value ?? null) as never;
+      const envelope = read(key);
+      return (envelope ? valueOf(key, envelope) ?? null : null) as never;
     },
 
     getEntry(key) {
       const envelope = read(key);
-      return envelope ? (toEntry(envelope) as never) : null;
+      return envelope ? (toEntry(envelope, valueOf(key, envelope)) as never) : null;
     },
 
     set(key, value, setOptions: SetOptions = {}) {
-      const createdAt = now();
-      const envelope: Envelope = { v: 1, value, createdAt };
-      if (setOptions.ttl !== undefined) envelope.expiresAt = createdAt + setOptions.ttl;
-      const version = setOptions.version ?? latestVersion(migrations[key]);
-      if (version !== undefined) envelope.version = version;
-      write(key, envelope);
+      write(key, value, metaFor(now(), setOptions.ttl, setOptions.version ?? latestVersion(migrations[key])));
     },
 
     entries() {
@@ -165,20 +133,11 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     },
 
     search(query) {
-      const pattern = typeof query.match === 'string' ? globToRegExp(query.match) : query.match;
-      const out: StoredItem<S>[] = [];
-      for (const item of liveItems()) {
-        if (query.prefix !== undefined && !item.key.startsWith(query.prefix)) continue;
-        if (pattern && !pattern.test(item.key)) continue;
-        if (query.where && !query.where(item)) continue;
-        out.push(item);
-        if (query.limit !== undefined && out.length >= query.limit) break;
-      }
-      return out;
+      return selectItems(liveItems(), query);
     },
 
     size() {
-      return liveItems().length;
+      return ownKeys().filter((key) => read(key) !== null).length;
     },
 
     prune() {
@@ -186,8 +145,7 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
       for (const key of ownKeys()) {
         const text = adapter.get(prefix + key);
         if (text === null) continue;
-        const envelope = decode(key, text);
-        if (envelope.expiresAt !== undefined && envelope.expiresAt <= now()) {
+        if (isExpired(decodeEnvelope(serializer, key, text), now())) {
           adapter.remove(prefix + key);
           emit({ type: 'expire', key: key as StorageKey<S>, external: false });
           removed++;
@@ -205,18 +163,16 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
 
     update(key, fn) {
       const current = read(key);
-      const value = fn((current?.value ?? null) as never);
-      const envelope: Envelope = { v: 1, value, createdAt: now() };
-      if (current?.expiresAt !== undefined) envelope.expiresAt = current.expiresAt;
-      const version = current?.version ?? latestVersion(migrations[key]);
-      if (version !== undefined) envelope.version = version;
-      write(key, envelope);
+      const value = fn((current ? valueOf(key, current) : null) as never);
+      const meta = metaFor(now(), undefined, current?.version ?? latestVersion(migrations[key]));
+      if (current?.expiresAt !== undefined) meta.expiresAt = current.expiresAt;
+      write(key, value, meta);
       return value;
     },
 
     getOrSet(key, factory, setOptions) {
       const current = read(key);
-      if (current) return current.value as never;
+      if (current) return valueOf(key, current) as never;
       const value = factory();
       storage.set(key, value, setOptions);
       return value;
@@ -225,26 +181,31 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     touch(key, ttl) {
       const current = read(key);
       if (!current) return false;
+      // The expiry of an encrypted entry is authenticated, so only the async storage can move it.
+      valueOf(key, current);
       adapter.set(prefix + key, encode(key, { ...current, expiresAt: now() + ttl }));
       return true;
     },
 
     snapshot() {
-      const out: Record<string, StorageEntry<unknown>> = {};
-      for (const item of liveItems()) out[item.key] = item.entry as StorageEntry<unknown>;
+      const out: Record<string, unknown> = {};
+      for (const item of liveItems()) out[item.key] = item.entry;
       return out as never;
     },
 
     restore(snapshot, restoreOptions = {}) {
       let written = 0;
-      for (const [key, entry] of Object.entries(snapshot as Record<string, StorageEntry<unknown> | undefined>)) {
+      for (const [key, entry] of Object.entries(snapshot as Record<string, StoredItem<S>['entry'] | undefined>)) {
         if (!entry) continue;
+        if (entry.encrypted) {
+          throw new StorageEncryptionUnavailableError(`${key} was encrypted; restore it through createStorage({ encryption }).`, { key });
+        }
         if (!restoreOptions.overwrite && read(key)) continue;
         if (entry.expiresAt !== undefined && entry.expiresAt <= now()) continue;
-        const envelope: Envelope = { v: 1, value: entry.value, createdAt: entry.createdAt };
-        if (entry.expiresAt !== undefined) envelope.expiresAt = entry.expiresAt;
-        if (entry.version !== undefined) envelope.version = entry.version;
-        write(key, envelope);
+        const meta: Omit<Envelope, 'v' | 'value' | 'enc'> = { createdAt: entry.createdAt };
+        if (entry.expiresAt !== undefined) meta.expiresAt = entry.expiresAt;
+        if (entry.version !== undefined) meta.version = entry.version;
+        write(key, entry.value, meta);
         written++;
       }
       return written;
@@ -270,7 +231,7 @@ export function createStorage<S extends StorageSchema = StorageSchema>(options: 
     },
 
     namespace(name) {
-      return createStorage({ adapter, serializer, now, namespace: joinNamespace(options.namespace, name) });
+      return createSyncStorage({ adapter, serializer, now, namespace: joinNamespace(options.namespace, name) });
     },
 
     subscribe(keyOrListener: unknown, maybeListener?: unknown) {

@@ -1,3 +1,5 @@
+import type { EncryptionOptions } from '../encryption/types.js';
+
 /** The value types a typed storage holds, by key. */
 export type StorageSchema = Record<string, unknown>;
 
@@ -60,6 +62,8 @@ export interface StorageEntry<T> {
   expiresAt?: number;
   /** The value's schema version, for migrations. */
   version?: number;
+  /** Present when the value is stored encrypted. */
+  encrypted?: true;
 }
 
 export interface SetOptions {
@@ -178,4 +182,63 @@ export interface TypedStorage<S extends StorageSchema = StorageSchema> {
   subscribe(key: StorageKey<S>, listener: Listener<S>): () => void;
   readonly capabilities: StorageCapabilities;
   readonly scope: StorageScope;
+}
+
+type MaybePromise<T> = T | Promise<T>;
+
+/** An adapter whose backend may answer later: IndexedDB, a remote store. Every sync adapter is one. */
+export interface AsyncStorageAdapter {
+  readonly name: string;
+  readonly scope: StorageScope;
+  readonly capabilities: StorageCapabilities;
+  get(key: string): MaybePromise<string | null>;
+  set(key: string, value: string): MaybePromise<void>;
+  remove(key: string): MaybePromise<void>;
+  has(key: string): MaybePromise<boolean>;
+  keys(): MaybePromise<string[]>;
+  clear(): MaybePromise<void>;
+  subscribe?(listener: (change: AdapterChange) => void): () => void;
+}
+
+export interface AsyncSetOptions extends SetOptions {
+  /** Store this value encrypted. Needs `encryption` on the storage. Reads detect it on their own. */
+  encrypt?: boolean;
+}
+
+export interface AsyncStorageOptions<S extends StorageSchema = StorageSchema> extends Omit<StorageOptions<S>, 'adapter'> {
+  adapter?: StorageAdapter | AsyncStorageAdapter;
+  encryption?: EncryptionOptions;
+}
+
+/** The storage API with every operation awaited. Encryption lives here. */
+export interface AsyncTypedStorage<S extends StorageSchema = StorageSchema> {
+  get<T = never, K extends StorageKey<S> = StorageKey<S>>(key: K): Promise<([T] extends [never] ? S[K] : T) | null>;
+  getEntry<T = never, K extends StorageKey<S> = StorageKey<S>>(key: K): Promise<StorageEntry<[T] extends [never] ? S[K] : T> | null>;
+  set<K extends StorageKey<S>>(key: K, value: S[K], options?: AsyncSetOptions): Promise<void>;
+  remove(key: StorageKey<S>): Promise<void>;
+  has(key: StorageKey<S>): Promise<boolean>;
+  keys(): Promise<StorageKey<S>[]>;
+  clear(): Promise<void>;
+  /** Every live item, decrypted, in key order. */
+  entries(): Promise<StoredItem<S>[]>;
+  search(query: StorageQuery<S>): Promise<StoredItem<S>[]>;
+  size(): Promise<number>;
+  /** Removes expired items without decrypting anything. */
+  prune(): Promise<number>;
+  usage(): Promise<StorageUsage>;
+  /** Keeps the expiry and the encryption state unless `options.encrypt` says otherwise. */
+  update<K extends StorageKey<S>>(key: K, fn: (current: S[K] | null) => MaybePromise<S[K]>, options?: { encrypt?: boolean }): Promise<S[K]>;
+  getOrSet<K extends StorageKey<S>>(key: K, factory: () => MaybePromise<S[K]>, options?: AsyncSetOptions): Promise<S[K]>;
+  touch(key: StorageKey<S>, ttl: number): Promise<boolean>;
+  /** Decrypted values, each marked `encrypted` so `restore` encrypts it again. */
+  snapshot(): Promise<StorageSnapshot<S>>;
+  restore(snapshot: StorageSnapshot<S>, options?: { overwrite?: boolean }): Promise<number>;
+  namespace<S2 extends StorageSchema = StorageSchema>(name: string): AsyncTypedStorage<S2>;
+  /** An external change to an encrypted entry arrives without `value`: decrypting is async. */
+  subscribe(listener: Listener<S>): () => void;
+  subscribe(key: StorageKey<S>, listener: Listener<S>): () => void;
+  readonly capabilities: StorageCapabilities;
+  readonly scope: StorageScope;
+  /** True when this storage can encrypt: `encryption` was configured. */
+  readonly encryption: boolean;
 }

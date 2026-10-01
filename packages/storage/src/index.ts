@@ -11,7 +11,26 @@ export {
   StorageQuotaError,
   StorageSecurityError,
   StorageAdapterError,
+  StorageEncryptionError,
+  StorageEncryptionKeyError,
+  StorageEncryptionMetadataError,
+  StorageEncryptionVersionError,
+  StorageEncryptionAlgorithmError,
+  StorageDecryptionError,
+  StorageEncryptedPayloadError,
+  StorageEncryptionUnavailableError,
 } from './core/errors.js';
+export { createAsyncStorage } from './core/async-storage.js';
+export { webCryptoProvider } from './encryption/web-crypto.js';
+export { generateEncryptionKey, importEncryptionKey, staticKeyProvider } from './encryption/keys.js';
+export type {
+  CryptoProvider,
+  EncryptedData,
+  EncryptionContext,
+  EncryptionKey,
+  EncryptionKeyProvider,
+  EncryptionOptions,
+} from './encryption/types.js';
 export type {
   StorageSchema,
   StorageKey,
@@ -31,6 +50,10 @@ export type {
   StorageQuery,
   StorageUsage,
   StorageSnapshot,
+  AsyncStorageAdapter,
+  AsyncSetOptions,
+  AsyncStorageOptions,
+  AsyncTypedStorage,
 } from './core/types.js';
 export { memoryStorage } from './adapters/memory.js';
 export { jsonSerializer } from './serialization/json.js';
