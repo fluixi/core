@@ -46,13 +46,44 @@ async function renderedStyles(vite: any, entry: string): Promise<string[]> {
   return found;
 }
 
-/** Put the stylesheets in <head>, before anything the render already put there. */
-function injectStyles(html: string, urls: readonly string[]): string {
+/**
+ * One stylesheet as the client will apply it: the CSS out of the module Vite serves the browser
+ * for a plain import, and the id Vite's client keys its style tags by.
+ *
+ * Not `?direct`: plugins that transform CSS (`@fluixi-css/vite` among them) skip query imports, so
+ * that URL served the raw source. The browser dropped what it could not read (`@theme`, `@source`),
+ * and the first paint showed the library defaults until the client's processed copy replaced
+ * them: a flash of the wrong colours on every dev load.
+ */
+async function clientStyle(vite: any, url: string): Promise<{ id: string; css: string } | null> {
+  try {
+    const result = await vite.transformRequest(url);
+    const code: string = result?.code ?? '';
+    const id = /const __vite__id = ("(?:[^"\\]|\\.)*")/.exec(code)?.[1];
+    const css = /const __vite__css = ("(?:[^"\\]|\\.)*")/.exec(code)?.[1];
+    return id && css ? { id: JSON.parse(id), css: JSON.parse(css) } : null;
+  } catch {
+    return null;
+  }
+}
+
+const escapeAttr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+/**
+ * Put the stylesheets in <head>, before anything the render already put there. Each goes in a
+ * `<style data-vite-dev-id>` with the processed CSS; Vite's client adopts tags with its ids, so
+ * the page keeps one copy and hot updates still land. One it cannot read falls back to a link.
+ */
+async function injectStyles(vite: any, html: string, urls: readonly string[]): Promise<string> {
   if (urls.length === 0) return html;
-  const links = urls
-    .map((url) => `<link rel="stylesheet" href="${url}${url.includes('?') ? '&' : '?'}direct">`)
-    .join('\n    ');
-  return html.includes('</head>') ? html.replace('</head>', `  ${links}\n  </head>`) : html;
+  const tags = await Promise.all(
+    urls.map(async (url) => {
+      const style = await clientStyle(vite, url);
+      if (style) return `<style type="text/css" data-vite-dev-id="${escapeAttr(style.id)}">${style.css.replace(/<\/style/gi, '<\\/style')}</style>`;
+      return `<link rel="stylesheet" href="${url}${url.includes('?') ? '&' : '?'}direct">`;
+    }),
+  );
+  return html.includes('</head>') ? html.replace('</head>', `  ${tags.join('\n    ')}\n  </head>`) : html;
 }
 
 /**
@@ -115,7 +146,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     if (typeof mod.renderStream === 'function') {
       const shell = await vite.transformIndexHtml(
         path,
-        injectStyles(template, await renderedStyles(vite, cfg.serverEntry)),
+        await injectStyles(vite, template, await renderedStyles(vite, cfg.serverEntry)),
       );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
       return await streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail);
@@ -126,7 +157,8 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     // the body into <head> + <html>, exactly like the prod adapter/prerender. Plain injectApp left
     // the `<!--fh:…-->` marker as the mount root's first child, which stranded the hydration cursor
     // (whole tree rebuilt → duplicated) AND skipped dev SEO. No marker → identical to injectApp.
-    const styled = injectStyles(
+    const styled = await injectStyles(
+      vite,
       injectAppAndHead(template, appHtml, cfg.mountId),
       await renderedStyles(vite, cfg.serverEntry),
     );
