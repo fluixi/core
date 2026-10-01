@@ -10,12 +10,7 @@ import {
   Resource
 } from '@fluixi/reactive/signal';
 
-import {
-  getHydrationData,
-  setHydrationData,
-  isServerEnvironment,
-  isHydrating,
-} from '../server/hydration.js';
+import { currentResourceCache, type ResourceCache } from '@fluixi/reactive/signal';
 
 import { useContext, createContext } from '../context/context.js';
 
@@ -47,90 +42,93 @@ export interface Submission<T, Args extends any[]> {
 // CACHE (QUERY) SYSTEM
 // ============================================================================
 
-const globalCache = new Map<string, any>();
-const inflightRequests = new Map<string, Promise<any>>();
+export interface CacheOptions {
+  /** Milliseconds a value stays fresh. Default: until revalidated. */
+  ttl?: number;
+  /**
+   * Once stale, return the old value at once and refresh in the background; the routes on
+   * screen then load again and pick up the new one. Default true.
+   */
+  staleWhileRevalidate?: boolean;
+  /** Where entries live. Defaults to the request's cache on the server and the page's in a browser. */
+  cache?: ResourceCache;
+}
+
+// Mounted route layers: each refetches its data when something is revalidated.
+const revalidationListeners = new Set<() => void>();
+
+/** @internal: the router registers each layer's refetch here. */
+export function onRevalidate(listener: () => void): () => void {
+  revalidationListeners.add(listener);
+  return () => void revalidationListeners.delete(listener);
+}
+
+const reloadMounted = () => {
+  for (const listener of [...revalidationListeners]) listener();
+};
 
 /**
- * Cache an async function for data fetching
+ * A function whose results are kept by name and arguments: route data that should not be
+ * fetched again on every visit.
  *
- * Supports:
- * - Deduplication
- * - Hydration (Server -> Client)
- * - Revalidation
+ * Readers of the same key share one request in flight. Entries live in the request's cache on
+ * the server, so visitors never share one, and in the page's cache in a browser.
+ *
+ * @example
+ * ```ts
+ * const organisations = cache(() => api.get('/api/v1/organizations'), 'orgs', { ttl: 30_000 });
+ * export const routeData = () => organisations();
+ * // after a change:
+ * revalidate('orgs');
+ * ```
  */
 export function cache<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T> | T,
-  name: string
+  name: string,
+  options: CacheOptions = {}
 ): (...args: Args) => Promise<T> {
-  return async (...args: Args): Promise<T> => {
+  const { ttl = Infinity, staleWhileRevalidate = true } = options;
+  return (...args: Args): Promise<T> => {
+    const store = options.cache ?? currentResourceCache();
     const key = name + ':' + JSON.stringify(args);
-
-    // 1. Check Hydration Data (Client-side hydration)
-    if (isHydrating() || typeof window !== 'undefined') {
-      const hydrated = getHydrationData(key);
-      if (hydrated !== undefined) {
-        return hydrated as T;
-      }
-    }
-
-    // 2. Check Memory Cache
-    if (globalCache.has(key)) {
-      return globalCache.get(key) as T;
-    }
-
-    // 3. Request Deduplication
-    if (inflightRequests.has(key)) {
-      return inflightRequests.get(key) as Promise<T>;
-    }
-
-    // 4. Execute
-    const promise = Promise.resolve(fn(...args)).then(
-      (val) => {
-        globalCache.set(key, val);
-        inflightRequests.delete(key);
-
-        // Save for hydration if on server
-        if (isServerEnvironment()) {
-          setHydrationData(key, val);
+    const fetchFresh = (): Promise<T> => {
+      const running = store.inflight.get(key) as Promise<T> | undefined;
+      if (running) return running;
+      const promise = Promise.resolve(fn(...args)).then(
+        (value) => {
+          store.set(key, { value, timestamp: Date.now() });
+          store.inflight.delete(key);
+          return value;
+        },
+        (error) => {
+          store.inflight.delete(key);
+          throw error;
         }
+      );
+      store.inflight.set(key, promise);
+      return promise;
+    };
 
-        return val;
-      },
-      (err) => {
-        inflightRequests.delete(key);
-        throw err;
-      }
-    );
-
-    inflightRequests.set(key, promise);
-    return promise;
+    const hit = store.get(key);
+    if (hit && (ttl === Infinity || Date.now() - hit.timestamp <= ttl)) return Promise.resolve(hit.value as T);
+    if (hit && staleWhileRevalidate) {
+      // The page gets the old value now; when the new one lands, the routes load again from it.
+      fetchFresh().then(reloadMounted, () => undefined);
+      return Promise.resolve(hit.value as T);
+    }
+    return fetchFresh();
   };
 }
 
 /**
- * Global revalidation signal. Tracked by createAsync so that
- * when a key is revalidated, matching resources re-fetch.
+ * Drops cached entries, by name (`'orgs'` matches every `orgs:` key) or by predicate, then
+ * loads the data of the routes on screen again. What is still cached is served from the
+ * cache, so only the dropped entries are fetched.
  */
-const [revalidationVersion, setRevalidationVersion] = createSignal(0);
-const revalidationKeys = new Set<string>();
-
-/**
- * Revalidate a cache key. Clears the memory cache and triggers
- * reactive invalidation so resources using createAsync re-fetch.
- */
-export function revalidate(key: string | ((key: string) => boolean)) {
-  const predicate =
-    typeof key === 'string' ? (k: string) => k.startsWith(key) : key;
-
-  for (const k of globalCache.keys()) {
-    if (predicate(k)) {
-      globalCache.delete(k);
-      revalidationKeys.add(k);
-    }
-  }
-
-  // Bump version to trigger reactive refresh in createAsync consumers
-  setRevalidationVersion((v: number) => v + 1);
+export function revalidate(key: string | ((key: string) => boolean), store: ResourceCache = currentResourceCache()): void {
+  const matches = typeof key === 'string' ? (k: string) => k === key || k.startsWith(key + ':') : key;
+  for (const k of [...store.keys()]) if (matches(k)) store.delete(k);
+  reloadMounted();
 }
 
 // ============================================================================
@@ -189,9 +187,18 @@ function getSubmissionsSignal<T, Args extends any[]>(url: string) {
 /**
  * Create a server action
  */
+export interface ActionOptions<T> {
+  /**
+   * Cache names this action changes (`['orgs']`), or a function of its result that returns
+   * them. They are revalidated when it succeeds, so the routes on screen show the change.
+   */
+  invalidates?: string[] | ((result: T) => string[]);
+}
+
 export function action<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T> | T,
-  name?: string
+  name?: string,
+  options: ActionOptions<T> = {}
 ): Action<T, Args> {
   const actionUrl = name || fn.name || 'action';
 
@@ -240,6 +247,8 @@ export function action<T, Args extends any[]>(
       });
       // Done: the result is in whatever the page reads now, so the call leaves the list.
       drop();
+      const stale = typeof options.invalidates === 'function' ? options.invalidates(result) : options.invalidates;
+      for (const key of stale ?? []) revalidate(key);
 
       return result;
     } catch (error) {
@@ -259,7 +268,7 @@ export function action<T, Args extends any[]>(
 
   (submit as any).url = actionUrl;
   (submit as any).with = (args: any) =>
-    action((...a: any[]) => (fn as any)(args, ...a), name);
+    action((...a: any[]) => (fn as any)(args, ...a), name, options);
 
   return submit as any as Action<T, Args>;
 }

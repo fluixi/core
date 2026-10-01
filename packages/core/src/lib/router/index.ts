@@ -114,10 +114,12 @@ function renderLayer(
     });
     const owner = getOwner();
     const router = useContext(RouterContext);
-    const [resource] = createResource(() => {
+    const [resource, { refetch }] = createResource(() => {
       const result = loader({ params: base.params, location: base.location }, owner, () => cancelled);
       return router ? router.trackLoad(result) : result;
     });
+    // A revalidated cache entry: load again. The page stays on screen with its current data.
+    onCleanup(onRevalidate(() => void refetch()));
     // A failed load throws where the page reads it, so the nearest ErrorBoundary shows it.
     // A resource reads as undefined once it has failed, which left the page empty and gave
     // nothing a chance to catch the error.
@@ -127,6 +129,7 @@ function renderLayer(
       return resource();
     };
     Object.defineProperty(data, 'loading', { get: () => (resource as unknown as { loading: boolean }).loading });
+    Object.defineProperty(data, 'state', { get: () => (resource as unknown as { state: string }).state });
   }
 
   const buildPage = () =>
@@ -154,7 +157,11 @@ function renderLayer(
   // Suspense boundary. Signal-gated (`ready` only flips when loading actually
   // changes) so navigation re-renders don't re-run this and rebuild the page.
   const res = data as () => any;
-  const isLoading = () => (res as any).loading as boolean;
+  // The first load only. A refetch after revalidate keeps the page, showing the old data until the new arrives.
+  const isLoading = () => {
+    const state = (res as unknown as { state?: string }).state;
+    return state === undefined ? ((res as any).loading as boolean) : state === 'pending' || state === 'unresolved';
+  };
   // untrack the initial read so the enclosing render memo doesn't subscribe to the
   // resource state (that would re-run renderLayer and recreate the resource, a loop).
   const [ready, setReady] = createSignal(untrack(() => !isLoading()));
@@ -910,6 +917,7 @@ export function Link(props: LinkProps) {
 export const A = Link;
 
 import type { Action } from './data.js';
+import { onRevalidate } from './data.js';
 
 export interface FormProps {
   /** The action to run on submit (typically wrapping a `"use server"` function). */
@@ -1031,6 +1039,8 @@ export type {
   RouteDataArgs,
   RouteLoadFunc,
   Action,
+  ActionOptions,
+  CacheOptions,
   Submission,
   CacheFn,
 } from './data.js';
