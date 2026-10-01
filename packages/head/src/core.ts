@@ -251,6 +251,10 @@ function expand(input: HeadInput, out: HeadTag[], ts: TitleState): void {
 
   const lang = val(input.lang);
   if (lang !== undefined) out.push({ tag: 'htmlAttr', key: 'html:lang', name: 'lang', value: lang });
+  for (const [name, raw] of Object.entries(input.htmlAttrs ?? {})) {
+    const value = val(raw);
+    if (value !== undefined) out.push({ tag: 'htmlAttr', key: `html:${name}`, name, value });
+  }
 
   if (input.charset !== undefined) meta('meta:charset', { charset: input.charset });
   if (input.viewport !== undefined) meta('meta:name:viewport', { name: 'viewport', content: input.viewport });

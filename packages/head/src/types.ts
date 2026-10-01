@@ -115,6 +115,11 @@ export interface HeadInput {
   canonical?: Reactive<string>;
   /** <html lang> */
   lang?: Reactive<string>;
+  /**
+   * Other attributes on <html>, rendered by the server and kept current on the client:
+   * `{ 'data-theme': () => theme() }`. A later source wins per attribute, as for `lang`.
+   */
+  htmlAttrs?: Record<string, Reactive<string>>;
   themeColor?: Reactive<string>;
   viewport?: string;
   charset?: string;
