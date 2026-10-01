@@ -1053,6 +1053,9 @@ importers:
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@fluixi/storage':
+        specifier: workspace:*
+        version: link:../storage
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3

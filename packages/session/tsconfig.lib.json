@@ -15,6 +15,9 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../storage/tsconfig.lib.json"
+    },
+    {
       "path": "../reactive/tsconfig.lib.json"
     },
     {

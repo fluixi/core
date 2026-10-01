@@ -60,12 +60,14 @@
     "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/core": "workspace:*",
     "@fluixi/reactive": "workspace:*",
+    "@fluixi/storage": "workspace:*",
     "cross-env": "^7.0.3",
     "inquirer": "^14.0.2"
   },
   "peerDependencies": {
     "@fluixi/core": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/storage": "workspace:*"
   },
   "repository": {
     "type": "git",

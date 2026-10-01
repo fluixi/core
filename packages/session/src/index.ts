@@ -2,8 +2,8 @@
  * @fluixi/session: the client session lifecycle + access control as reusable primitives.
  *
  * You provide a small backend ADAPTER (login / fetchUser / logout / optional refresh);
- * the framework owns token + user signals, a status state-machine, persistence (SSR-safe
- * via fluixi's universal `storage`), the hydrate-on-load flow, automatic refresh
+ * the framework owns token + user signals, a status state-machine, persistence (through
+ * `@fluixi/storage`, nothing kept on the server), the hydrate-on-load flow, automatic refresh
  * before expiry, role/permission derivation, and an unauthorized (session-expiry) guard.
  * Apps stop rewriting the same ~150 lines of session glue. (The server-first auth engine , 
  * OAuth / MFA / orgs / cookies: is @fluixi/auth.)
@@ -16,7 +16,9 @@
  * exists precisely because the server: not the client, is the authority.
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
-import { storage, isClient } from '@fluixi/core';
+import { isClient } from '@fluixi/core';
+import { createSyncStorage, type TypedStorage } from '@fluixi/storage';
+import { localStorageAdapter } from '@fluixi/storage/browser';
 
 /** A token plus, optionally, its expiry as an epoch-ms timestamp. */
 export interface TokenResult {
@@ -166,7 +168,13 @@ export interface UnauthorizedOptions {
 
 export interface SessionOptions<U, C, R = unknown, P = unknown, Q = (p: P) => boolean>
   extends SessionAdapter<U, C, R> {
-  /** localStorage keys (defaults: `fx_session_token` / `fx_session_user`). */
+  /**
+   * Where the token, user and expiry are kept. Defaults to localStorage in the browser and to
+   * nothing on the server, where one session object would otherwise be shared by every
+   * request. `null` keeps them in memory only.
+   */
+  storage?: TypedStorage<any> | null;
+  /** Keys in that storage (defaults: `fx_session_token` / `fx_session_user` / `fx_session_exp`). */
   storageKeys?: { token?: string; user?: string; expiry?: string };
   /** Refresh this many ms BEFORE expiry (default 60_000). */
   refreshSkewMs?: number;
@@ -226,16 +234,33 @@ export function createSession<
   const skew = options.refreshSkewMs ?? 60_000;
   const access = options.access;
 
-  const readUser = (): U | null => {
+  const store = options.storage === undefined ? (isClient() ? createSyncStorage({ adapter: localStorageAdapter() }) : null) : options.storage;
+  // Persistence is best effort: an unreadable or blocked entry reads as absent, a failed write is dropped.
+  const read = <T>(key: string): T | null => {
     try {
-      return JSON.parse(storage.getItem(USER_KEY) ?? 'null') as U | null;
+      return (store?.get(key) as T | null | undefined) ?? null;
     } catch {
       return null;
     }
   };
+  const write = (key: string, value: unknown): void => {
+    try {
+      store?.set(key, value);
+    } catch {
+      /* quota, private mode */
+    }
+  };
+  const drop = (key: string): void => {
+    try {
+      store?.remove(key);
+    } catch {
+      /* blocked storage */
+    }
+  };
+  const readUser = (): U | null => read<U>(USER_KEY);
 
   const [user, setUser] = createSignal<U | null>(readUser(), { name: 'user' });
-  const [token, setTokenSig] = createSignal<string | null>(storage.getItem(TOKEN_KEY), { name: 'token' });
+  const [token, setTokenSig] = createSignal<string | null>(read<string>(TOKEN_KEY), { name: 'token' });
   const [isLoading, setLoading] = createSignal(false, { name: 'isLoading' });
   const [error, setError] = createSignal<unknown | null>(null, { name: 'error' });
   const [expired, setExpired] = createSignal(false, { name: 'expired' });
@@ -294,16 +319,16 @@ export function createSession<
 
   const persistToken = (t: TokenResult): void => {
     setTokenSig(t.token);
-    storage.setItem(TOKEN_KEY, t.token);
+    write(TOKEN_KEY, t.token);
     const expiresAt = t.expiresAt ?? options.getExpiry?.(t.token) ?? undefined;
-    if (expiresAt) storage.setItem(EXP_KEY, String(expiresAt));
-    else storage.removeItem(EXP_KEY);
+    if (expiresAt) write(EXP_KEY, expiresAt);
+    else drop(EXP_KEY);
     scheduleRefresh(expiresAt);
   };
 
   const persistUser = (u: U): void => {
     setUser(() => u);
-    storage.setItem(USER_KEY, JSON.stringify(u));
+    write(USER_KEY, u);
   };
 
   const run = async <T>(op: SessionOp, fn: () => Promise<T>): Promise<T> => {
@@ -402,9 +427,9 @@ export function createSession<
         /* best-effort backend logout */
       }
       clearTimer();
-      storage.removeItem(TOKEN_KEY);
-      storage.removeItem(USER_KEY);
-      storage.removeItem(EXP_KEY);
+      drop(TOKEN_KEY);
+      drop(USER_KEY);
+      drop(EXP_KEY);
       setTokenSig(null);
       setUser(null);
       guard?.reset();
@@ -412,11 +437,10 @@ export function createSession<
     },
 
     async hydrate(): Promise<void> {
-      const stored = storage.getItem(TOKEN_KEY);
+      const stored = read<string>(TOKEN_KEY);
       if (!stored) return;
       if (!token()) setTokenSig(stored);
-      const expStr = storage.getItem(EXP_KEY);
-      scheduleRefresh(expStr ? Number(expStr) : options.getExpiry?.(stored) ?? undefined);
+      scheduleRefresh(read<number>(EXP_KEY) ?? options.getExpiry?.(stored) ?? undefined);
       if (user()) return;
       try {
         persistUser(await run('hydrate', () => options.fetchUser(stored)));

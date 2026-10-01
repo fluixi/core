@@ -2,6 +2,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createSession, createFetchGuard } from './index.js';
 
+// Values are stored in the @fluixi/storage envelope.
+const put = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify({ v: 1, value, createdAt: 1 }));
+const stored = (key: string) => JSON.parse(localStorage.getItem(key) ?? 'null')?.value ?? null;
+
 interface User {
   id: string;
   name: string;
@@ -33,12 +37,12 @@ describe('createSession', () => {
     expect(session.user()).toEqual({ id: 'u1', name: 'Ada' });
     expect(session.isAuthenticated()).toBe(true);
     expect(onLogin).toHaveBeenCalledWith({ id: 'u1', name: 'Ada' });
-    expect(localStorage.getItem('fx_session_token')).toBe('tok-1');
+    expect(stored('fx_session_token')).toBe('tok-1');
   });
 
   it('seeds token + user from storage at creation', async () => {
-    localStorage.setItem('fx_session_token', 'persisted');
-    localStorage.setItem('fx_session_user', JSON.stringify({ id: 'u9', name: 'Grace' }));
+    put('fx_session_token', 'persisted');
+    put('fx_session_user', { id: 'u9', name: 'Grace' });
     const session = createSession<User>(makeAdapter());
     expect(session.token()).toBe('persisted');
     expect(session.user()).toEqual({ id: 'u9', name: 'Grace' });
@@ -58,7 +62,7 @@ describe('createSession', () => {
   });
 
   it('hydrate restores the user from a stored token', async () => {
-    localStorage.setItem('fx_session_token', 'tok-h');
+    put('fx_session_token', 'tok-h');
     const fetchUser = vi.fn(async () => ({ id: 'uh', name: 'Hyd' }));
     const session = createSession<User>(makeAdapter({ fetchUser }));
 
@@ -69,7 +73,7 @@ describe('createSession', () => {
   });
 
   it('hydrate logs out when the stored token is invalid (fetchUser throws)', async () => {
-    localStorage.setItem('fx_session_token', 'bad');
+    put('fx_session_token', 'bad');
     const session = createSession<User>(
       makeAdapter({ fetchUser: vi.fn(async () => { throw new Error('401'); }) }),
     );
