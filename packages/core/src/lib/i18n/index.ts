@@ -70,6 +70,22 @@ export interface I18nConfig<L extends string, M extends Record<L, Messages> = Re
   persist?: (locale: L) => void;
 }
 
+export interface RelativeTimeOptions extends Intl.RelativeTimeFormatOptions {
+  /** The moment `value` is relative to. Defaults to the current time. */
+  now?: Date | number;
+}
+
+/** Largest first: the first unit the distance reaches is the one shown. */
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 365 * 24 * 3600],
+  ['month', 30 * 24 * 3600],
+  ['week', 7 * 24 * 3600],
+  ['day', 24 * 3600],
+  ['hour', 3600],
+  ['minute', 60],
+  ['second', 1],
+];
+
 export interface I18n<L extends string, K extends string = string> {
   /** Translate a key (autocompleted from your messages) with optional params; `count` pluralizes. */
   t: (key: K | (string & {}), params?: Record<string, unknown>) => string;
@@ -77,6 +93,12 @@ export interface I18n<L extends string, K extends string = string> {
   n: (value: number, options?: Intl.NumberFormatOptions) => string;
   /** Format a date for the active locale (`Intl.DateTimeFormat`). */
   d: (value: Date | number, options?: Intl.DateTimeFormatOptions) => string;
+  /**
+   * A date relative to now, for the active locale (`Intl.RelativeTimeFormat`): "yesterday",
+   * "3 days ago", "in 2 hours". The unit is the largest that fits. Pass `now` when the server
+   * and the client must agree, such as a time the server sent with the data.
+   */
+  rt: (value: Date | number, options?: RelativeTimeOptions) => string;
   /** The active locale: reactive on the client, per-request on the server. */
   locale: Accessor<L>;
   /** Switch the active locale (client: reactive + persisted; server: this request only). */
@@ -190,7 +212,14 @@ export function createI18n<L extends string, const M extends Record<L, Messages>
   const d = (value: Date | number, options?: Intl.DateTimeFormatOptions): string =>
     new Intl.DateTimeFormat(locale(), options).format(value);
 
-  return { t, n, d, locale, setLocale, locales: config.locales };
+  const rt = (value: Date | number, options: RelativeTimeOptions = {}): string => {
+    const { now = Date.now(), ...format } = options;
+    const seconds = (+value - +now) / 1000;
+    const [unit, size] = RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ?? ['second', 1];
+    return new Intl.RelativeTimeFormat(locale(), { numeric: 'auto', ...format }).format(Math.round(seconds / size), unit);
+  };
+
+  return { t, n, d, rt, locale, setLocale, locales: config.locales };
 }
 
 /** Pick the best supported locale from an `Accept-Language` header, else `undefined`. */

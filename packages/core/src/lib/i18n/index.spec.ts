@@ -98,3 +98,24 @@ describe('@fluixi/core/i18n', () => {
     expectTypeOf<'welcome'>().toMatchTypeOf<Parameters<typeof i.t>[0]>();
   });
 });
+
+describe('rt: relative time', () => {
+  const now = Date.UTC(2026, 8, 30, 12, 0, 0);
+  const at = (ms: number) => now + ms;
+  const day = 24 * 3600 * 1000;
+
+  it('picks the largest unit that fits, in the active locale', () => {
+    const fr = createI18n({ locale: 'fr', locales: ['fr', 'en'] as const, messages: { fr: {}, en: {} } });
+    expect(fr.rt(at(-day), { now })).toBe('hier');
+    expect(fr.rt(at(-3 * day), { now })).toBe('il y a 3 jours');
+    expect(fr.rt(at(2 * 3600 * 1000), { now })).toBe('dans 2 heures');
+    fr.setLocale('en');
+    expect(fr.rt(at(-14 * day), { now })).toBe('2 weeks ago');
+    expect(fr.rt(at(0), { now })).toBe('now');
+  });
+
+  it('takes Intl options, such as numeric always', () => {
+    const en = createI18n({ locale: 'en', locales: ['en'] as const, messages: { en: {} } });
+    expect(en.rt(at(-day), { now, numeric: 'always' })).toBe('1 day ago');
+  });
+});
