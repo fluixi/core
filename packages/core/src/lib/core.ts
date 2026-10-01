@@ -82,13 +82,11 @@ export {
   type IsomorphicStoreOptions,
 } from './isomorphic.js';
 
-// Universal env utilities: isomorphic storage + safe browser-global access, so app
-// modules import these instead of touching localStorage/window/document directly.
+// Universal env utilities: safe browser-global access, so app modules import these
+// instead of touching window/document directly. Storage is `@fluixi/core/storage`.
 export {
   isServer,
   isClient,
-  storage,
-  createMemoryStorage,
   env,
   clientOnly,
 } from './env/index.js';

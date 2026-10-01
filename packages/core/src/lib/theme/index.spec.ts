@@ -2,9 +2,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createTheme } from './index.js';
 
+const clearCookies = () => {
+  for (const part of document.cookie.split(';')) {
+    const name = part.split('=')[0]!.trim();
+    if (name) document.cookie = `${name}=; Max-Age=0; Path=/`;
+  }
+};
+const envelope = (value: string) => encodeURIComponent(JSON.stringify({ v: 1, value, createdAt: 1 }));
+
 beforeEach(() => {
+  clearCookies();
   localStorage.clear();
   document.documentElement.removeAttribute('data-theme');
+  document.documentElement.removeAttribute('data-mode');
 });
 
 describe('createTheme', () => {
@@ -14,17 +24,26 @@ describe('createTheme', () => {
     theme.set('dark');
     expect(theme.value()).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(localStorage.getItem('theme')).toBe('dark');
+    expect(document.cookie).toContain(`theme=${envelope('dark').slice(0, 20)}`);
   });
 
-  it('reads the stored theme over the default at creation', () => {
-    localStorage.setItem('mode', 'dark');
+  it('reads the stored theme over the default at creation, ignoring values not in the list', () => {
+    document.cookie = `mode=${envelope('dark')}; Path=/`;
     const theme = createTheme({
       themes: ['light', 'dark'] as const,
       default: 'light',
       storageKey: 'mode',
     });
     expect(theme.value()).toBe('dark');
+    document.cookie = `mode=${envelope('neon')}; Path=/`;
+    expect(createTheme({ themes: ['light', 'dark'] as const, default: 'light', storageKey: 'mode' }).value()).toBe('light');
+  });
+
+  it('keeps the choice in memory with storage: null', () => {
+    const theme = createTheme({ themes: ['light', 'dark'] as const, default: 'light', storage: null });
+    theme.set('dark');
+    expect(theme.value()).toBe('dark');
+    expect(document.cookie).not.toContain('theme=');
   });
 
   it('toggle cycles through the themes list', () => {
@@ -68,5 +87,13 @@ describe('createTheme', () => {
     expect(s).toContain('mode');
     expect(s).toContain('data-mode');
     expect(s).toContain('prefers-color-scheme: dark');
+  });
+
+  it('headScript applies the stored cookie before anything loads', () => {
+    document.cookie = `mode=${envelope('dark')}; Path=/`;
+    const s = createTheme({ themes: ['light', 'dark'] as const, default: 'light', storageKey: 'mode', attribute: 'data-mode' }).headScript();
+    document.documentElement.removeAttribute('data-mode');
+    new Function(s.replace(/^<script>|<\/script>$/g, ''))();
+    expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
   });
 });

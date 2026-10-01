@@ -19,6 +19,8 @@
  */
 import { createSignal, createMemo, type Accessor } from '@fluixi/reactive/signal';
 import { getServerData } from '@fluixi/dom';
+import { createSyncStorage, type TypedStorage } from '@fluixi/storage';
+import { localStorageAdapter } from '@fluixi/storage/browser';
 
 const REGISTRY_KEY = '__fluixi_iso_states__';
 const SEED_PREFIX = '__iso:';
@@ -103,7 +105,7 @@ export function createIsomorphicState<T>(
 //   - a built-in `ensureInit()`, memoised once + retry-on-failure, that runs the
 //     async `client` resolver exactly once on a pure-SPA cold load and is a no-op
 //     when the server already seeded the value (kills the duplicate cold-load fetch)
-//   - optional localStorage `persist` mirror on every write
+//   - optional `persist` mirror into storage on every write
 //
 // Server-resolve / serialize / client-seed all flow through createIsomorphicState, so
 // the @fluixi/server half (preloadServerState) needs no changes.
@@ -134,8 +136,11 @@ export interface IsomorphicStoreOptions<T> {
   client?: () => T | Promise<T>;
   /** Value before resolution / the per-field accessor key set. Required for a store. */
   fallback: T;
-  /** localStorage key to mirror the record into on every write (optional). */
-  persist?: string;
+  /**
+   * Mirror the record into storage on every write: a key in localStorage, or a key in a
+   * storage of your own (`useStorage({ scope: 'cookie' })` to have the server see it too).
+   */
+  persist?: string | { storage: TypedStorage<any>; key: string };
 }
 
 /**
@@ -170,9 +175,12 @@ export function createIsomorphicStore<T extends Record<string, any>>(
   const value: Accessor<T> = () => base.value() ?? options.fallback;
 
   const persistWrite = (v: T): void => {
-    if (!options.persist || typeof localStorage === 'undefined') return;
+    const target = options.persist;
+    if (!target) return;
+    if (typeof target === 'string' && typeof window === 'undefined') return;
     try {
-      localStorage.setItem(options.persist, JSON.stringify(v));
+      const { storage, key } = typeof target === 'string' ? { storage: createSyncStorage({ adapter: localStorageAdapter() }), key: target } : target;
+      storage.set(key, v);
     } catch {
       /* quota / private mode: persistence is best-effort */
     }

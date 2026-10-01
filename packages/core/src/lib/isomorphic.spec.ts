@@ -118,6 +118,6 @@ describe('createIsomorphicStore', () => {
       persist: 'store_persist_key',
     });
     store.setField('region', { id: 'p1' });
-    expect(JSON.parse(localStorage.getItem('store_persist_key')!).region).toEqual({ id: 'p1' });
+    expect(JSON.parse(localStorage.getItem('store_persist_key')!).value.region).toEqual({ id: 'p1' });
   });
 });

@@ -4,19 +4,29 @@
  * without rewriting it. Generic over an arbitrary theme list (not just light/dark),
  * with optional async theme loading and lifecycle hooks.
  *
- * Built on the universal `storage` + `env` utilities, so reading the stored theme at
- * module-eval and touching `document`/`matchMedia` are safe on the server.
+ * The choice lives in a cookie by default, so the server render reads it and sends
+ * `<html data-theme>` already set: no flash and no mismatch for a returning visitor.
  */
+import { getActiveHead, useHead } from '@fluixi/head';
 import { createSignal, type Accessor } from '@fluixi/reactive/signal';
-import { storage, env } from '../env/index.js';
+import { StorageUnavailableError, type TypedStorage } from '@fluixi/storage';
+import { env } from '../env/index.js';
+import { persisted } from '../storage/persisted.js';
+import { useStorage } from '../storage/index.js';
 
 export interface ThemeOptions<T extends string> {
   /** The full set of themes. `toggle()` cycles through them in order. */
   themes: readonly T[];
   /** Theme used when nothing is stored and system preference doesn't apply. */
   default: T;
-  /** localStorage key the choice is persisted under (default `"theme"`). */
+  /** Key the choice is stored under (default `"theme"`). */
   storageKey?: string;
+  /**
+   * Where the choice is kept. Defaults to a cookie for a year (`useStorage({ scope: 'cookie' })`),
+   * which the server render can read. `null` keeps it in memory only. Created outside a
+   * request on the server, there is no cookie to read, so the default falls back to memory.
+   */
+  storage?: TypedStorage<any> | null;
   /** Attribute set on `<html>` to drive CSS (default `"data-theme"`). */
   attribute?: string;
   /**
@@ -71,35 +81,65 @@ function systemMap<T extends string>(
  * theme.current();   // 'dark', and the document now carries data-theme="dark"
  * ```
  */
+const YEAR = 60 * 60 * 24 * 365;
+
+function defaultStorage(): TypedStorage<any> | null {
+  try {
+    return useStorage({ scope: 'cookie', cookie: { maxAge: YEAR, sameSite: 'lax' } });
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) return null;
+    throw error;
+  }
+}
+
+/** How the head script finds the stored choice before any module has loaded. */
+function storedLookup(storage: TypedStorage<any> | null, key: string): { from: 'cookie' | 'local'; name: string } | null {
+  if (!storage) return null;
+  const full = storage.keyPrefix + key;
+  if (storage.scope === 'cookie') {
+    return { from: 'cookie', name: encodeURIComponent(full).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`) };
+  }
+  if (storage.scope === 'local') return { from: 'local', name: full };
+  return null;
+}
+
 export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T> {
   const storageKey = options.storageKey ?? 'theme';
   const attribute = options.attribute ?? 'data-theme';
   const sys = systemMap(options.system);
+  const storage = options.storage === undefined ? defaultStorage() : options.storage;
+  const valid = (t: unknown): t is T => typeof t === 'string' && options.themes.includes(t as T);
 
-  const detectInitial = (): T => {
-    const stored = storage.getItem(storageKey) as T | null;
-    if (stored && options.themes.includes(stored)) return stored;
-    if (sys && env.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches) return sys.dark;
-    if (sys) return sys.light;
-    return options.default;
+  // Without a stored choice: the system preference where there is one to ask, else the default.
+  const fallback: T =
+    sys && env.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? sys.dark : sys ? sys.light : options.default;
+  const stored = storage ? persisted(storage, storageKey) : null;
+  // Holds a choice the storage refused (a cookie after the response went out), so the page still switches.
+  const [unsaved, setUnsaved] = createSignal<T | null>(null);
+  const value: Accessor<T> = () => {
+    const local = unsaved();
+    if (local !== null) return local;
+    const saved = stored?.();
+    return valid(saved) ? saved : fallback;
   };
-
-  const [value, setValue] = createSignal<T>(detectInitial());
   const [isLoading, setLoading] = createSignal(false);
+
+  // During a render the attribute goes out with the page; on the client the head keeps it current.
+  if (getActiveHead()) useHead({ htmlAttrs: { [attribute]: () => value() } });
 
   const apply = (t: T): void => {
     env.document?.documentElement.setAttribute(attribute, t);
-    try {
-      storage.setItem(storageKey, t);
-    } catch {
-      /* best-effort persistence */
-    }
   };
 
   const set = (t: T): void => {
     if (!options.themes.includes(t)) return;
     const prev = value();
-    setValue(() => t);
+    try {
+      stored?.set(t);
+      setUnsaved(stored ? null : t);
+    } catch {
+      setUnsaved(() => t);
+    }
     apply(t);
     options.onChange?.(t, prev);
     if (options.load) {
@@ -111,7 +151,6 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
       });
     }
   };
-
   const toggle = (): void => {
     const i = options.themes.indexOf(value());
     set(options.themes[(i + 1) % options.themes.length]);
@@ -120,16 +159,15 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
   const init = (): void => apply(value());
 
   const headScript = (): string => {
-    const cfg = JSON.stringify({
-      k: storageKey,
-      a: attribute,
-      d: options.default,
-      sys,
-    });
-    // Runs before paint: read stored choice (or system pref), set the attribute, so the
-    // server-rendered HTML never flashes the default theme before hydration.
+    const cfg = JSON.stringify({ s: storedLookup(storage, storageKey), a: attribute, d: options.default, sys, ts: options.themes }).replace(/</g, '\\u003c');
+    // Runs before paint: read the stored choice (or the system preference) and set the
+    // attribute, for pages the server did not render with it. Stored values are envelopes.
     return (
-      `<script>(function(){try{var c=${cfg},t=localStorage.getItem(c.k);` +
+      `<script>(function(){try{var c=${cfg},t=null,s=c.s,r=null;` +
+      `if(s&&s.from==='local')r=localStorage.getItem(s.name);` +
+      `if(s&&s.from==='cookie')document.cookie.split('; ').forEach(function(p){var i=p.indexOf('=');if(p.slice(0,i)===s.name)r=decodeURIComponent(p.slice(i+1));});` +
+      `if(r){var e=JSON.parse(r);t=e&&e.v===1?e.value:e;}` +
+      `if(c.ts.indexOf(t)<0)t=null;` +
       `if(!t&&c.sys)t=matchMedia('(prefers-color-scheme: dark)').matches?c.sys.dark:c.sys.light;` +
       `if(!t)t=c.d;document.documentElement.setAttribute(c.a,t);}catch(e){}})();</script>`
     );

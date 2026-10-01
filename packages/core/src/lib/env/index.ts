@@ -1,9 +1,7 @@
 /**
  * Universal environment utilities, the same imports work on the server and the
- * client, so app code never reaches for raw globals (`localStorage`, `window`,
- * `document`) that don't exist under SSR and crash at module-eval time. This
- * replaces hand-rolled `globalThis.localStorage = ...` shims and scattered
- * `typeof window === 'undefined'` guards.
+ * client, so app code never reaches for raw globals (`window`, `document`) that don't
+ * exist under SSR and crash at module-eval time. Storage is `@fluixi/core/storage`.
  */
 
 // One answer for the whole framework, from the renderer that decides it. The constant
@@ -16,31 +14,6 @@ import { isServer as onServer } from '@fluixi/dom';
 export function isClient(): boolean {
   return !onServer();
 }
-
-/** A Map-backed in-memory implementation of the Web Storage API (server/tests). */
-export function createMemoryStorage(): Storage {
-  const mem = new Map<string, string>();
-  return {
-    getItem: (k) => (mem.has(k) ? mem.get(k)! : null),
-    setItem: (k, v) => void mem.set(k, String(v)),
-    removeItem: (k) => void mem.delete(k),
-    clear: () => mem.clear(),
-    key: (i) => Array.from(mem.keys())[i] ?? null,
-    get length() {
-      return mem.size;
-    },
-  };
-}
-
-/**
- * Universal key/value storage with the exact `localStorage` API. On the client it
- * is `localStorage`; on the server (no DOM) it is an ephemeral in-memory store, so
- * a module that reads `storage.getItem(...)` at import time never crashes under SSR.
- * Server reads/writes do not persist across requests (a later pass can back them with
- * the request cookie for true per-user server state).
- */
-export const storage: Storage =
-  typeof localStorage !== 'undefined' ? localStorage : createMemoryStorage();
 
 /**
  * Lazy, typed accessors for the browser globals. They return the real object on the
