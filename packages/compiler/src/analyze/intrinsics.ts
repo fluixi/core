@@ -67,6 +67,7 @@ export const INTRINSICS: Readonly<Record<string, Intrinsic>> = {
   $store: { export: 'store', module: '@fluixi/reactive/store', returns: 'store-handle' },
 
   $resource: { export: 'resource', module: REACTIVE_MODULE, returns: 'resource-handle' },
+  $cachedResource: { export: 'cachedResource', module: '@fluixi/reactive/cached-resource', returns: 'resource-handle' },
 
   // No short runtime form for these yet, so the intrinsic stands for the `create*`
   // name. Still worth having: no import to write, and when a shorter form is
@@ -117,6 +118,7 @@ export const RUNTIME_PRIMITIVES: Readonly<Record<string, Intrinsic['returns']>> 
   computed: 'effect',
   createStore: 'reactive-object',
   resource: 'resource-handle',
+  cachedResource: 'resource-handle',
   createResource: 'reactive-object',
   createSelector: 'memo-accessor',
   createDeferred: 'memo-accessor',
@@ -127,6 +129,7 @@ export const PRIMITIVE_MODULES: readonly string[] = [
   '@fluixi/reactive',
   '@fluixi/reactive/signal',
   '@fluixi/reactive/store',
+  '@fluixi/reactive/cached-resource',
   '@fluixi/core',
 ];
 

@@ -60,6 +60,12 @@ describe('the intrinsics compile to the runtime', () => {
     expect(code).toContain('import { persisted, useAsyncStorage, useStorage } from "@fluixi/core/storage"');
   });
 
+  it('rewrites $cachedResource and treats it as a resource handle', () => {
+    const code = compile("const orgs = $cachedResource(() => load(), { name: 'orgs' });");
+    expect(code).toContain('import { cachedResource } from "@fluixi/reactive/cached-resource"');
+    expect(bindings("const orgs = $cachedResource(() => load());").kinds.get('orgs')).toBe('resource-handle');
+  });
+
   it('treats $persisted as a signal handle', () => {
     const { kinds } = bindings("const theme = $persisted($storage(), 'theme');");
     expect(kinds.get('theme')).toBe('signal-handle');
