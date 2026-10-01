@@ -53,6 +53,9 @@
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@fluixi/utils": "workspace:*"
+  },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
     "@fluixi/core": "workspace:*",

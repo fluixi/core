@@ -92,6 +92,12 @@
         "import": "./dist/lib/color/index.mjs",
         "require": "./dist/lib/color/index.cjs",
         "default": "./dist/lib/color/index.js"
+      },
+      "./cookie": {
+        "types": "./dist/lib/cookie/index.d.ts",
+        "import": "./dist/lib/cookie/index.mjs",
+        "require": "./dist/lib/cookie/index.cjs",
+        "default": "./dist/lib/cookie/index.js"
       }
     }
   },
@@ -197,6 +203,13 @@
       "import": "./dist/lib/color/index.mjs",
       "require": "./dist/lib/color/index.cjs",
       "default": "./dist/lib/color/index.js"
+    },
+    "./cookie": {
+      "development": "./src/lib/cookie/index.ts",
+      "types": "./dist/lib/cookie/index.d.ts",
+      "import": "./dist/lib/cookie/index.mjs",
+      "require": "./dist/lib/cookie/index.cjs",
+      "default": "./dist/lib/cookie/index.js"
     }
   },
   "scripts": {

@@ -28,6 +28,7 @@
         "src/lib/array/index.ts",
         "src/lib/color/index.ts",
         "src/lib/compare/index.ts",
+        "src/lib/cookie/index.ts",
         "src/lib/dom/index.ts",
         "src/lib/functions/index.ts",
         "src/lib/maths/constants.ts",

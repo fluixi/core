@@ -644,6 +644,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@fluixi/utils':
+        specifier: workspace:*
+        version: link:../utils
       better-auth:
         specifier: '>=1'
         version: 1.6.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.13)(svelte@5.57.1)(vitest@3.2.7)(vue@3.5.43(typescript@5.9.3))
@@ -1107,6 +1110,10 @@ importers:
         version: 7.0.3
 
   packages/storage:
+    dependencies:
+      '@fluixi/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@bambiste/mix-builder':
         specifier: ^0.4.0
