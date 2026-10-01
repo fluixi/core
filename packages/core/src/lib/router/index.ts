@@ -118,7 +118,15 @@ function renderLayer(
       const result = loader({ params: base.params, location: base.location }, owner, () => cancelled);
       return router ? router.trackLoad(result) : result;
     });
-    data = resource as () => any;
+    // A failed load throws where the page reads it, so the nearest ErrorBoundary shows it.
+    // A resource reads as undefined once it has failed, which left the page empty and gave
+    // nothing a chance to catch the error.
+    data = () => {
+      const error = (resource as unknown as { error?: unknown }).error;
+      if (error !== undefined && error !== null) throw error;
+      return resource();
+    };
+    Object.defineProperty(data, 'loading', { get: () => (resource as unknown as { loading: boolean }).loading });
   }
 
   const buildPage = () =>
