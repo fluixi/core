@@ -86,6 +86,21 @@ export interface ClientOptions {
   credentials?: RequestCredentials;
   /** `globalThis.fetch` by default. */
   fetch?: typeof fetch;
+  /**
+   * Called with the cached data names a successful response says it changed (`x-fx-revalidate`).
+   * By default, in a browser, the router revalidates them. `false` ignores the header.
+   */
+  onRevalidate?: ((names: string[]) => void) | false;
+}
+
+// The router registers itself here (`@fluixi/core`), so the client needs no import of it.
+const ROUTER_REVALIDATE = Symbol.for('fluixi.revalidate');
+
+function defaultRevalidate(names: string[]): void {
+  // A server render has no routes on screen to reload.
+  if (typeof window === 'undefined') return;
+  const revalidate = (globalThis as Record<symbol, ((names: string[]) => void) | undefined>)[ROUTER_REVALIDATE];
+  revalidate?.(names);
 }
 
 /** A refusal or failure, as the API's error model reports it. */
@@ -135,6 +150,11 @@ export function createClient<Routes extends ApiRouteMap>(options: ClientOptions 
         typeof error?.message === 'string' ? error.message : response.statusText || `HTTP ${response.status}`,
         error?.details,
       );
+    }
+    const stale = response.headers.get('x-fx-revalidate');
+    if (stale && options.onRevalidate !== false) {
+      const names = stale.split(',').map((name) => name.trim()).filter(Boolean);
+      if (names.length) (options.onRevalidate ?? defaultRevalidate)(names);
     }
     if (response.status === 204 || response.status === 205) return undefined;
     return json ? response.json() : response.text();

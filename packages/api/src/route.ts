@@ -74,6 +74,12 @@ export interface RouteContract<
   operationId?: string;
   /** Marked deprecated in the API description. */
   deprecated?: boolean;
+  /**
+   * Cached data a success changes, by name (`['orgs']`), or a function of the result and the
+   * input. Sent as `x-fx-revalidate`; `@fluixi/api/client` passes the names to the router, which
+   * drops those entries and reloads the routes on screen.
+   */
+  revalidates?: string[] | ((result: unknown, input: RouteInput<P, Q, B, G>) => string[]);
   handler(input: RouteInput<P, Q, B, G>): Input<R, unknown> | Response | Promise<Input<R, unknown> | Response>;
 }
 
@@ -120,9 +126,15 @@ export function route<
         : undefined;
       if (issues.length) throw new ApiError(400, 'validation_failed', 'The request is not valid.', issues);
 
-      const out = await contract.handler({ params, query, body, auth, request } as RouteInput<P, Q, B, G>);
-      if (out instanceof Response) return out;
-      if (out === undefined && !contract.response) return new Response(null, { status: contract.status ?? 204 });
+      const input = { params, query, body, auth, request } as RouteInput<P, Q, B, G>;
+      const out = await contract.handler(input);
+      const stale = !contract.revalidates
+        ? []
+        : typeof contract.revalidates === 'function'
+          ? contract.revalidates(out, input)
+          : contract.revalidates;
+      if (out instanceof Response) return withRevalidate(out, stale);
+      if (out === undefined && !contract.response) return withRevalidate(new Response(null, { status: contract.status ?? 204 }), stale);
 
       let value: unknown = out;
       if (contract.response && contract.validateResponse !== false) {
@@ -135,10 +147,13 @@ export function route<
         }
         value = result.value;
       }
-      return new Response(JSON.stringify(value ?? null), {
-        status: contract.status ?? 200,
-        headers: { 'content-type': 'application/json; charset=utf-8' },
-      });
+      return withRevalidate(
+        new Response(JSON.stringify(value ?? null), {
+          status: contract.status ?? 200,
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+        }),
+        stale,
+      );
     } catch (thrown) {
       const { error, internal } = toApiError(thrown);
       if (internal) report(thrown, request);
@@ -147,6 +162,24 @@ export function route<
   };
   Object.defineProperty(handle, CONTRACT, { value: contract });
   return handle as RouteHandler<P, Q, B, R, G>;
+}
+
+/** The header that names cached data a response made stale. */
+export const REVALIDATE_HEADER = 'x-fx-revalidate';
+
+/** Names the stale data on a successful response; a refused one changed nothing. */
+function withRevalidate(response: Response, names: string[]): Response {
+  if (!names.length || !response.ok) return response;
+  const value = names.join(', ');
+  try {
+    response.headers.append(REVALIDATE_HEADER, value);
+    return response;
+  } catch {
+    // Immutable headers (a fetched or redirect Response): copy it.
+    const headers = new Headers(response.headers);
+    headers.append(REVALIDATE_HEADER, value);
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
 }
 
 /** The contract a route was declared with, or undefined for a plain handler. */
