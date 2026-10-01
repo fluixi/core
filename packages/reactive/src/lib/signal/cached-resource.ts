@@ -72,6 +72,12 @@ export interface CachedResourceOptions {
   cache?: ResourceCache;
   /** Carry the server-fetched value to the browser with the page. Default true. */
   transport?: boolean;
+  /**
+   * Other values the data depends on: the signed-in user, the active organisation. Each
+   * combination is cached apart and a change reads (or fetches) its own entry. The fetcher
+   * still receives only the source's key.
+   */
+  deps?: ReadonlyArray<() => unknown>;
 }
 
 export type CachedResource<T> = Resource<T> & {
@@ -148,7 +154,11 @@ export function cachedResource<T, S = true>(
   const ssrId = options.transport === false ? undefined : nextResourceId();
   const seed = ssrId !== undefined ? getServerData(ssrId) : undefined;
 
-  const buildKey = (key: S): string => `${ns}:${JSON.stringify(key)}`;
+  const deps = options.deps ?? [];
+  // Tracked inside the effect, untracked from invalidate().
+  const depValues = () => deps.map((dep) => dep());
+  const buildKey = (key: S, values: unknown[] = untrack(depValues)): string =>
+    `${ns}:${JSON.stringify(key)}` + (deps.length ? `:${JSON.stringify(values)}` : '');
 
   const isFresh = (entry: { timestamp: number }): boolean =>
     ttl === Infinity || Date.now() - entry.timestamp <= ttl;
@@ -236,6 +246,7 @@ export function cachedResource<T, S = true>(
   // ── Main effect ───────────────────────────────────────────────────────────
   createEffect(() => {
     const key = sourceFn() as S | false | null | undefined;
+    const values = depValues();
     tick(); // track manual triggers
 
     // Suspend fetch when source is falsy (mirrors createResource)
@@ -254,7 +265,7 @@ export function cachedResource<T, S = true>(
     flagRefetch   = false;
     flagInvalidate = false;
 
-    const ck = buildKey(key as S);
+    const ck = buildKey(key as S, values);
 
     // A value the server fetched for this page: the first read takes it as fresh.
     if (seed && prevKey === UNSET && !cache.get(ck)) cache.set(ck, { value: seed.value, timestamp: Date.now() });

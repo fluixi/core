@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
-import { createEffect } from './graph/compat.js';
+import { createEffect, createSignal } from './graph/compat.js';
 import { createRoot } from './graph/runtime.js';
 import {
   createResourceCache,
@@ -79,6 +79,27 @@ describe('cachedResource scopes', () => {
     await settled();
     expect(fetched).toBe(false);
     client.dispose();
+  });
+
+  it('caches each combination of deps apart and follows their changes', async () => {
+    const cache = createResourceCache();
+    setResourceCacheScope(() => cache);
+    const [user, setUser] = createSignal('ann');
+    const fetched: string[] = [];
+    const r = read(() =>
+      cachedResource(async () => (fetched.push(user()), `orgs of ${user()}`), { name: 'orgs', deps: [user] }),
+    );
+    await settled();
+    expect(r.handle.latest).toBe('orgs of ann');
+    setUser('bob');
+    await settled();
+    expect(r.handle.latest).toBe('orgs of bob');
+    setUser('ann');
+    await settled();
+    expect(r.handle.latest).toBe('orgs of ann'); // from its own entry
+    expect(fetched).toEqual(['ann', 'bob']);
+    expect([...cache.keys()].sort()).toEqual(['orgs:true:["ann"]', 'orgs:true:["bob"]']);
+    r.dispose();
   });
 
   it('clears one name or the whole scope, and invalidates through the handle', async () => {
