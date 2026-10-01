@@ -128,3 +128,19 @@ describe('routeDeps', () => {
     expect(loads).toEqual([['ann'], ['bob']]);
   });
 });
+
+describe('revalidation across tabs', () => {
+  it('tells the other tabs through storage and drops what they send', async () => {
+    const orgs = cache(async () => 1, 'tab-orgs');
+    await orgs();
+    revalidate('tab-orgs');
+    expect(JSON.parse(localStorage.getItem('fluixi:revalidate')!).names).toEqual(['tab-orgs']);
+
+    let calls = 0;
+    const members = cache(async () => ++calls, 'tab-members');
+    await members();
+    // What a browser fires here when another tab revalidates.
+    window.dispatchEvent(new StorageEvent('storage', { key: 'fluixi:revalidate', newValue: JSON.stringify({ names: ['tab-members'], at: 1 }) }));
+    expect(await members()).toBe(2);
+  });
+});

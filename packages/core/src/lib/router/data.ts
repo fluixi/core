@@ -127,12 +127,44 @@ export function cache<T, Args extends any[]>(
  */
 export function revalidate(
   key: string | string[] | ((key: string) => boolean),
-  store: ResourceCache = currentResourceCache()
+  store?: ResourceCache
 ): void {
   const names = typeof key === 'string' ? [key] : Array.isArray(key) ? key : null;
-  const matches = names ? (k: string) => names.some((n) => k === n || k.startsWith(n + ':')) : (key as (k: string) => boolean);
+  drop(names ?? (key as (k: string) => boolean), store ?? currentResourceCache());
+  // The other tabs of this site cache the same data in their own pages. A predicate cannot
+  // travel, and a cache passed in by hand is not theirs, so only names on the page cache go.
+  if (names && !store) tellOtherTabs(names);
+}
+
+function drop(what: string[] | ((key: string) => boolean), store: ResourceCache): void {
+  const matches = Array.isArray(what) ? (k: string) => what.some((n) => k === n || k.startsWith(n + ':')) : what;
   for (const k of [...store.keys()]) if (matches(k)) store.delete(k);
   reloadMounted();
+}
+
+// Other tabs hear a write to this key through the `storage` event, which a browser fires in
+// every other tab of the origin and never in the one that wrote. The value changes each time
+// (`at`), or a repeat of the same names would not fire.
+const TABS_KEY = 'fluixi:revalidate';
+
+function tellOtherTabs(names: string[]): void {
+  try {
+    localStorage.setItem(TABS_KEY, JSON.stringify({ names, at: Date.now() + Math.random() }));
+  } catch {
+    /* no storage here (server, private mode): the other tabs refresh on their own schedule */
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event: StorageEvent) => {
+    if (event.key !== TABS_KEY || !event.newValue) return;
+    try {
+      const names = (JSON.parse(event.newValue) as { names?: unknown }).names;
+      if (Array.isArray(names) && names.every((n) => typeof n === 'string')) drop(names, currentResourceCache());
+    } catch {
+      /* not ours */
+    }
+  });
 }
 
 // `@fluixi/api/client` applies `x-fx-revalidate` through this, without importing the router.
