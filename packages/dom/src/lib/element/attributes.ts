@@ -319,7 +319,10 @@ export interface ControlDirectives {
 }
 
 /** What an element's content may be: renderable, or with `each`, a function of the item. */
-export type DirectiveChildren = ComponentChild | ((item: any, index: () => number) => ComponentChild);
+// A list of them too, as `ComponentChild` allows: a component whose props extend these
+// attributes passes its `children` on beside siblings (`<div>{props.children}<input /></div>`),
+// and JSX checks those siblings as one array.
+export type DirectiveChildren = ComponentChild | ((item: any, index: () => number) => ComponentChild) | DirectiveChildren[];
 
 export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, ControlDirectives {
   // Standard HTML attributes
