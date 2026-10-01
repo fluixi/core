@@ -226,3 +226,4 @@ export function hydrateStorage<S extends StorageSchema>(storage: TypedStorage<S>
 }
 
 export { persisted, type Persisted, type AsyncPersisted, type PersistedOptions } from './persisted.js';
+export { storageCache } from './cache.js';
