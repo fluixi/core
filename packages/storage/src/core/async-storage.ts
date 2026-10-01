@@ -20,8 +20,9 @@ import {
   type Envelope,
   type Migrations,
 } from './envelope.js';
+import { joinBus, publish } from './bus.js';
 import { StorageEncryptionKeyError } from './errors.js';
-import type { AsyncStorageAdapter, AsyncStorageOptions, AsyncTypedStorage, StorageEvent, StorageKey, StorageSchema, StoredItem } from './types.js';
+import type { AdapterChange, AsyncStorageAdapter, AsyncStorageOptions, AsyncTypedStorage, StorageEvent, StorageKey, StorageSchema, StoredItem } from './types.js';
 
 type Meta = Omit<Envelope, 'v' | 'value' | 'enc'>;
 
@@ -46,6 +47,7 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
   const migrations = (options.migrations ?? {}) as Migrations;
   const prefix = namespacePrefix(options.namespace);
   const listeners = new Set<{ key?: string; fn: (event: StorageEvent<S>) => void }>();
+  let leave: (() => void) | undefined;
   // Without `encryption` a provider is still there, so reading an encrypted entry says the key is missing.
   const sealer: Sealer = {
     keyProvider: options.encryption?.keyProvider,
@@ -53,9 +55,12 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
   };
   const context = (key: string) => (options.namespace ? { key, namespace: options.namespace } : { key });
 
-  const emit = (event: StorageEvent<S>) => {
-    for (const { key, fn } of listeners) if (key === undefined || event.key === null || key === event.key) fn(event);
+  const deliver = (event: StorageEvent<S>) => {
+    for (const { key, fn } of [...listeners]) if (key === undefined || event.key === null || key === event.key) fn(event);
   };
+  // Through the adapter's bus, so every storage over it hears the write, this one included.
+  const emit = (event: StorageEvent<S>) =>
+    publish(adapter, event.type, event.key === null ? null : prefix + event.key, prefix, event.value);
 
   const store = async (key: string, value: unknown, meta: Meta, encrypt: boolean) => {
     const envelope: Envelope = { v: 1, ...meta };
@@ -107,18 +112,18 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
   const ownKeys = async (): Promise<string[]> =>
     (await adapter.keys()).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
 
-  adapter.subscribe?.((change) => {
-    if (change.key === null) return emit({ type: 'clear', key: null, external: true });
+  const external = (change: AdapterChange) => {
+    if (change.key === null) return deliver({ type: 'clear', key: null, external: true });
     if (!change.key.startsWith(prefix)) return;
     const key = change.key.slice(prefix.length) as StorageKey<S>;
-    if (change.value === null) return emit({ type: 'remove', key, external: true });
+    if (change.value === null) return deliver({ type: 'remove', key, external: true });
     try {
       const envelope = decodeEnvelope(serializer, key, change.value);
-      emit({ type: 'set', key, value: envelope.enc ? undefined : envelope.value, external: true });
+      deliver({ type: 'set', key, value: envelope.enc ? undefined : envelope.value, external: true });
     } catch {
       // Unreadable text from another writer: reported when it is read, not here.
     }
-  });
+  };
 
   const liveItems = async (): Promise<StoredItem<S>[]> => {
     const items: StoredItem<S>[] = [];
@@ -264,7 +269,23 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
           ? { fn: keyOrListener as (event: StorageEvent<S>) => void }
           : { key: keyOrListener as string, fn: maybeListener as (event: StorageEvent<S>) => void };
       listeners.add(entry);
-      return () => void listeners.delete(entry);
+      if (listeners.size === 1) {
+        leave = joinBus(adapter, {
+          prefix,
+          external,
+          local(type, key, value) {
+            const event: StorageEvent<S> = { type, key: key === null ? null : (key.slice(prefix.length) as StorageKey<S>), external: false };
+            if (type === 'set') event.value = value;
+            deliver(event);
+          },
+        });
+      }
+      return () => {
+        if (listeners.delete(entry) && listeners.size === 0) {
+          leave?.();
+          leave = undefined;
+        }
+      };
     },
   };
   return storage;

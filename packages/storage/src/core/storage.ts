@@ -7,9 +7,11 @@ import type { EncryptionOptions } from '../encryption/types.js';
 import { jsonSerializer } from '../serialization/json.js';
 import { joinNamespace, namespacePrefix } from '../utils/keys.js';
 import { createAsyncStorage } from './async-storage.js';
+import { joinBus, publish } from './bus.js';
 import { decodeEnvelope, isExpired, latestVersion, metaFor, migrate, selectItems, serializeOrThrow, toEntry, type Envelope, type Migrations } from './envelope.js';
 import { StorageEncryptionUnavailableError } from './errors.js';
 import type {
+  AdapterChange,
   AsyncStorageOptions,
   AsyncTypedStorage,
   SetOptions,
@@ -93,10 +95,14 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
   const migrations = (options.migrations ?? {}) as Migrations;
   const prefix = namespacePrefix(options.namespace);
   const listeners = new Set<{ key?: string; fn: (event: StorageEvent<S>) => void }>();
+  let leave: (() => void) | undefined;
 
-  const emit = (event: StorageEvent<S>) => {
-    for (const { key, fn } of listeners) if (key === undefined || event.key === null || key === event.key) fn(event);
+  const deliver = (event: StorageEvent<S>) => {
+    for (const { key, fn } of [...listeners]) if (key === undefined || event.key === null || key === event.key) fn(event);
   };
+  // Through the adapter's bus, so every storage over it hears the write, this one included.
+  const emit = (event: StorageEvent<S>) =>
+    publish(adapter, event.type, event.key === null ? null : prefix + event.key, prefix, event.value);
 
   const encode = (key: string, envelope: Envelope) => serializeOrThrow(serializer, key, envelope);
 
@@ -134,18 +140,18 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
       .map((k) => k.slice(prefix.length));
 
   // Changes the adapter saw from elsewhere (another tab), in this namespace only.
-  adapter.subscribe?.((change) => {
-    if (change.key === null) return emit({ type: 'clear', key: null, external: true });
+  const external = (change: AdapterChange) => {
+    if (change.key === null) return deliver({ type: 'clear', key: null, external: true });
     if (!change.key.startsWith(prefix)) return;
     const key = change.key.slice(prefix.length) as StorageKey<S>;
-    if (change.value === null) return emit({ type: 'remove', key, external: true });
+    if (change.value === null) return deliver({ type: 'remove', key, external: true });
     try {
       const envelope = decodeEnvelope(serializer, key, change.value);
-      emit({ type: 'set', key, value: envelope.enc ? undefined : envelope.value, external: true });
+      deliver({ type: 'set', key, value: envelope.enc ? undefined : envelope.value, external: true });
     } catch {
       // Unreadable text from another writer: reported when it is read, not here.
     }
-  });
+  };
 
   const liveItems = (): StoredItem<S>[] => {
     const items: StoredItem<S>[] = [];
@@ -296,7 +302,23 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
           ? { fn: keyOrListener as (event: StorageEvent<S>) => void }
           : { key: keyOrListener as string, fn: maybeListener as (event: StorageEvent<S>) => void };
       listeners.add(entry);
-      return () => void listeners.delete(entry);
+      if (listeners.size === 1) {
+        leave = joinBus(adapter, {
+          prefix,
+          external,
+          local(type, key, value) {
+            const event: StorageEvent<S> = { type, key: key === null ? null : (key.slice(prefix.length) as StorageKey<S>), external: false };
+            if (type === 'set') event.value = value;
+            deliver(event);
+          },
+        });
+      }
+      return () => {
+        if (listeners.delete(entry) && listeners.size === 0) {
+          leave?.();
+          leave = undefined;
+        }
+      };
     },
   };
   return storage;
