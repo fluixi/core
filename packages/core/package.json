@@ -36,6 +36,12 @@
         "require": "./dist/src/lib/i18n/index.cjs",
         "default": "./dist/src/lib/i18n/index.js"
       },
+      "./storage": {
+        "types": "./dist/src/lib/storage/index.d.ts",
+        "import": "./dist/src/lib/storage/index.mjs",
+        "require": "./dist/src/lib/storage/index.cjs",
+        "default": "./dist/src/lib/storage/index.js"
+      },
       "./routes": {
         "types": "./dist/src/routes.d.ts",
         "import": "./dist/src/routes.mjs",
@@ -122,6 +128,13 @@
       "require": "./dist/src/lib/i18n/index.cjs",
       "default": "./dist/src/lib/i18n/index.js"
     },
+    "./storage": {
+      "development": "./src/lib/storage/index.ts",
+      "types": "./dist/src/lib/storage/index.d.ts",
+      "import": "./dist/src/lib/storage/index.mjs",
+      "require": "./dist/src/lib/storage/index.cjs",
+      "default": "./dist/src/lib/storage/index.js"
+    },
     "./routes": {
       "development": "./src/routes.ts",
       "types": "./dist/src/routes.d.ts",
@@ -183,6 +196,7 @@
     "@fluixi/reactive": "workspace:*",
     "@fluixi/router": "workspace:*",
     "@fluixi/server": "workspace:*",
+    "@fluixi/storage": "workspace:*",
     "@fluixi/utils": "workspace:*"
   },
   "devDependencies": {

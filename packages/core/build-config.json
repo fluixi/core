@@ -78,6 +78,7 @@
         "src/lib/plugins/index.ts",
         "src/lib/router/index.ts",
         "src/lib/server/index.ts",
+        "src/lib/storage/index.ts",
         "src/routes.ts",
         "src/utils.ts"
       ]

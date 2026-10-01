@@ -26,6 +26,9 @@
       "path": "../utils"
     },
     {
+      "path": "../storage"
+    },
+    {
       "path": "../server"
     },
     {
@@ -35,16 +38,16 @@
       "path": "../reactive"
     },
     {
-      "path": "../vite-plugin"
+      "path": "../jsx"
     },
     {
-      "path": "../jsx"
+      "path": "../head"
     },
     {
       "path": "../dom"
     },
     {
-      "path": "../head"
+      "path": "../vite-plugin"
     },
     {
       "path": "../compiler"

@@ -810,6 +810,9 @@ importers:
       '@fluixi/server':
         specifier: workspace:*
         version: link:../server
+      '@fluixi/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@fluixi/utils':
         specifier: workspace:*
         version: link:../utils
