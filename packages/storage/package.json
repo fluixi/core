@@ -14,6 +14,12 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
+      },
+      "./browser": {
+        "types": "./dist/browser/index.d.ts",
+        "import": "./dist/browser/index.mjs",
+        "require": "./dist/browser/index.cjs",
+        "default": "./dist/browser/index.js"
       }
     }
   },
@@ -36,6 +42,13 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
+    },
+    "./browser": {
+      "development": "./src/browser/index.ts",
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.mjs",
+      "require": "./dist/browser/index.cjs",
+      "default": "./dist/browser/index.js"
     }
   },
   "scripts": {
