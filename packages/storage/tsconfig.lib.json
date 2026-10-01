@@ -10,17 +10,14 @@
     "noUnusedParameters": false,
     "skipLibCheck": true,
     "types": [],
-    "lib": [
-      "dom",
-      "DOM.Iterable",
-      "es2021",
-      "es2015"
-    ]
+    "lib": ["dom", "DOM.Iterable", "es2021", "es2015"]
   },
-  "include": [
-    "src/**/*.ts"
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../utils/tsconfig.lib.json"
+    }
   ],
-  "references": [],
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",

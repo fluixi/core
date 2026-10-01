@@ -20,6 +20,12 @@
         "import": "./dist/browser/index.mjs",
         "require": "./dist/browser/index.cjs",
         "default": "./dist/browser/index.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.mjs",
+        "require": "./dist/server/index.cjs",
+        "default": "./dist/server/index.js"
       }
     }
   },
@@ -49,6 +55,13 @@
       "import": "./dist/browser/index.mjs",
       "require": "./dist/browser/index.cjs",
       "default": "./dist/browser/index.js"
+    },
+    "./server": {
+      "development": "./src/server/index.ts",
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.cjs",
+      "default": "./dist/server/index.js"
     }
   },
   "scripts": {
@@ -56,6 +69,9 @@
     "build": "cross-env NODE_ENV=production mix-builder",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@fluixi/utils": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
