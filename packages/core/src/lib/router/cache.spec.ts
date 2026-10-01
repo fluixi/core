@@ -52,6 +52,19 @@ describe('cache', () => {
   });
 });
 
+describe('revalidation from the API client', () => {
+  it('registers the router for x-fx-revalidate and drops every named entry', async () => {
+    const page = createResourceCache();
+    const a = cache(async () => 1, 'orgs', { cache: page });
+    const b = cache(async () => 2, 'members', { cache: page });
+    await a();
+    await b();
+    revalidate(['orgs', 'members'], page);
+    expect([...page.keys()]).toEqual([]);
+    expect(typeof (globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.revalidate')]).toBe('function');
+  });
+});
+
 describe('route data and revalidation', () => {
   it('loads the page again on revalidate, keeping it on screen meanwhile', async () => {
     let calls = 0;

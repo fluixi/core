@@ -121,15 +121,22 @@ export function cache<T, Args extends any[]>(
 }
 
 /**
- * Drops cached entries, by name (`'orgs'` matches every `orgs:` key) or by predicate, then
- * loads the data of the routes on screen again. What is still cached is served from the
- * cache, so only the dropped entries are fetched.
+ * Drops cached entries, by name (`'orgs'` matches every `orgs:` key), several names, or a
+ * predicate, then loads the data of the routes on screen again. What is still cached is
+ * served from the cache, so only the dropped entries are fetched.
  */
-export function revalidate(key: string | ((key: string) => boolean), store: ResourceCache = currentResourceCache()): void {
-  const matches = typeof key === 'string' ? (k: string) => k === key || k.startsWith(key + ':') : key;
+export function revalidate(
+  key: string | string[] | ((key: string) => boolean),
+  store: ResourceCache = currentResourceCache()
+): void {
+  const names = typeof key === 'string' ? [key] : Array.isArray(key) ? key : null;
+  const matches = names ? (k: string) => names.some((n) => k === n || k.startsWith(n + ':')) : (key as (k: string) => boolean);
   for (const k of [...store.keys()]) if (matches(k)) store.delete(k);
   reloadMounted();
 }
+
+// `@fluixi/api/client` applies `x-fx-revalidate` through this, without importing the router.
+(globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.revalidate')] = (names: string[]) => revalidate(names);
 
 // ============================================================================
 // ASYNC DATA PRIMITIVES
