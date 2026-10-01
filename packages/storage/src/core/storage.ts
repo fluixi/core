@@ -165,6 +165,7 @@ export function createSyncStorage<S extends StorageSchema = StorageSchema>(optio
 
   const storage: TypedStorage<S> = {
     scope: adapter.scope,
+    keyPrefix: prefix,
     // The storage expires entries itself, whatever the adapter can do.
     capabilities: { ...adapter.capabilities, expiration: true },
 

@@ -131,6 +131,7 @@ export function createAsyncStorage<S extends StorageSchema = StorageSchema>(opti
 
   const storage: AsyncTypedStorage<S> = {
     scope: adapter.scope,
+    keyPrefix: prefix,
     capabilities: { ...adapter.capabilities, expiration: true },
     encryption: !!sealer.keyProvider,
 

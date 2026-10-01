@@ -182,6 +182,8 @@ export interface TypedStorage<S extends StorageSchema = StorageSchema> {
   subscribe(key: StorageKey<S>, listener: Listener<S>): () => void;
   readonly capabilities: StorageCapabilities;
   readonly scope: StorageScope;
+  /** What this storage puts before every key in the adapter: `app:` for namespace `app`, else empty. */
+  readonly keyPrefix: string;
 }
 
 type MaybePromise<T> = T | Promise<T>;
@@ -239,6 +241,8 @@ export interface AsyncTypedStorage<S extends StorageSchema = StorageSchema> {
   subscribe(key: StorageKey<S>, listener: Listener<S>): () => void;
   readonly capabilities: StorageCapabilities;
   readonly scope: StorageScope;
+  /** What this storage puts before every key in the adapter: `app:` for namespace `app`, else empty. */
+  readonly keyPrefix: string;
   /** True when this storage can encrypt: `encryption` was configured. */
   readonly encryption: boolean;
 }

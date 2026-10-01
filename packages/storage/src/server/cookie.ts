@@ -1,6 +1,7 @@
 import { parseCookies, serializeCookie, type CookieOptions } from '@fluixi/utils/cookie';
 import { StorageQuotaError, StorageUnavailableError } from '../core/errors.js';
 import type { StorageAdapter } from '../core/types.js';
+import { cookiePairSize, decodeCookieName as decodeName, encodeCookieName as encodeName } from '../utils/cookie-names.js';
 import { toStorageRequest, toStorageResponse, type RequestLike, type ResponseLike } from './contracts.js';
 
 export interface CookieStorageOptions extends CookieOptions {
@@ -11,17 +12,6 @@ export interface CookieStorageOptions extends CookieOptions {
   /** Largest `name=value` in bytes. Browsers keep about 4096. */
   maxSize?: number;
 }
-
-// Storage keys carry `:` from namespaces, which a cookie name cannot hold. `(` and `)` pass
-// encodeURIComponent but are not token characters either.
-const encodeName = (key: string) => encodeURIComponent(key).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-const decodeName = (name: string) => {
-  try {
-    return decodeURIComponent(name);
-  } catch {
-    return name;
-  }
-};
 
 /**
  * Cookies of one request. Reads come from the request's `Cookie` header plus this adapter's own
@@ -76,8 +66,7 @@ export function cookieStorage(options: CookieStorageOptions = {}): StorageAdapte
     get,
     set(key, value) {
       const header = serializeCookie(encodeName(key), value, cookie);
-      const pair = header.slice(0, header.indexOf(';'));
-      const size = new TextEncoder().encode(pair).length;
+      const size = cookiePairSize(header);
       if (size > maxSize) throw new StorageQuotaError(`Cookie ${key} is ${size} bytes, over the ${maxSize} limit.`, { key });
       emit(key, header);
       written.set(key, value);
