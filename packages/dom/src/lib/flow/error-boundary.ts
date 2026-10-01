@@ -1,4 +1,4 @@
-import { Accessor, createMemo, createSignal, createRoot, onCleanup } from '@fluixi/reactive/signal';
+import { Accessor, createErrorBoundary, createMemo, provideErrorBoundary } from '@fluixi/reactive/signal';
 
 export interface ErrorBoundaryProps {
   /** Rendered when an error is caught. Receives the error as argument. */
@@ -8,16 +8,14 @@ export interface ErrorBoundaryProps {
 }
 
 /**
- * Catches synchronous errors thrown during child rendering.
+ * Catches errors thrown by the children: while they are built, and later, in any effect or
+ * memo they created, such as a route's data that failed to load.
  *
- * When a child throws, renders `fallback` instead.  `fallback` can be a
- * static value or a function `(err, reset) => UI`, calling `reset()` clears
- * the error state and retries rendering the children.
+ * When a child throws, renders `fallback` instead. `fallback` can be a static value or a
+ * function `(err, reset) => UI`; calling `reset()` clears the error and renders the children
+ * again. A thrown promise is not an error: it goes to the nearest Suspense.
  *
  * Returns a memo: works in both JSX and `html` templates.
- *
- * Note: Only catches errors thrown synchronously during the render phase
- * (memo evaluation).  Async errors inside effects are not caught here.
  *
  * @example JSX
  * <ErrorBoundary fallback={(err, reset) => (
@@ -33,29 +31,47 @@ export interface ErrorBoundaryProps {
  * })
  */
 export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
-  const [error, setError] = createSignal<unknown>(null);
+  // The reactive graph's boundary: an effect under it that throws reports here, through the
+  // owner chain, however long after the children were built.
+  const boundary = createErrorBoundary() as ReturnType<typeof createErrorBoundary> & { setError(e: unknown): void };
 
-  const reset = () => setError(null);
+  const isPromise = (e: unknown) => !!e && typeof (e as { then?: unknown }).then === 'function';
+  const showFallback = (err: unknown) =>
+    typeof props.fallback === 'function' ? props.fallback(err, boundary.reset) : props.fallback;
+  // Recorded after the current run: a write made while the boundary's own memo, or the insert
+  // reading it, is still running is not seen by that run, so nothing would re-render.
+  const report = (e: unknown) => {
+    if (isPromise(e)) throw e;
+    queueMicrotask(() => boundary.setError(e));
+    return null;
+  };
+
+  // A function among the children is evaluated by whoever inserts the boundary's output, so
+  // outside its scope: guard it here, so its error comes back to this boundary.
+  const guard = (content: unknown): unknown => {
+    if (Array.isArray(content)) return content.map(guard);
+    if (typeof content !== 'function') return content;
+    const fn = content as () => unknown;
+    return () => {
+      try {
+        return guard(fn());
+      } catch (e) {
+        return report(e);
+      }
+    };
+  };
 
   return createMemo(() => {
-    const err = error();
-
-    if (err !== null) {
-      return typeof props.fallback === 'function'
-        ? props.fallback(err, reset)
-        : props.fallback;
-    }
-
+    const err = boundary.error();
+    if (err !== undefined) return showFallback(err);
     try {
-      const content =
-        typeof props.children === 'function' ? props.children() : props.children;
-      return content;
+      return provideErrorBoundary(boundary, () =>
+        guard(typeof props.children === 'function' ? props.children() : props.children),
+      );
     } catch (e) {
-      // Caught a synchronous render error: switch to fallback.
-      setError(e);
-      return typeof props.fallback === 'function'
-        ? props.fallback(e, reset)
-        : props.fallback;
+      // Thrown while building: the fallback now, and the error kept for reset().
+      report(e);
+      return showFallback(e);
     }
   }, undefined, { name: 'ErrorBoundary' });
 }
