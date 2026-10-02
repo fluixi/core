@@ -170,6 +170,21 @@ describe('imperative backend codegen', () => {
     });
     expect(seen).toEqual(['Ada', 'Ada!', 'Ada']);
   });
+
+  it('keeps an object literal prop intact beside a prop that mentions `this`', () => {
+    // The text child mentions "this", which takes the thunk path; the object must survive it.
+    const mod = load(`export const render = (Box) => <Box fx={{ p: 3 }}>Click outside this box</Box>;`);
+    let seen: unknown;
+    const Box = (p: any) => {
+      seen = p.fx;
+      return DOM.createNativeElement('div');
+    };
+    S.createRoot(() => {
+      const acc = mod.render(Box);
+      if (typeof acc === 'function') acc();
+    });
+    expect(seen).toEqual({ p: 3 });
+  });
 });
 
 // Regression: a reactive/component child that is NOT the only child must still be

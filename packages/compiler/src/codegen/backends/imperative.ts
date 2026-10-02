@@ -139,7 +139,8 @@ function emitComponent(
   // element. Arrows keep the enclosing `this`, so those props go out as arrow thunks and the
   // getters call them. Only when some prop mentions `this`; everything else is unchanged.
   if (bodies.some(([, body]) => /\bthis\b/.test(body))) {
-    const thunks = bodies.map(([name, body]) => `${JSON.stringify(name)}: () => ${body}`);
+    // Parenthesised: an object literal body would otherwise parse as a block.
+    const thunks = bodies.map(([name, body]) => `${JSON.stringify(name)}: () => (${body})`);
     const getters = bodies.map(([name]) => `get ${propKey(name)}() { return _$t[${JSON.stringify(name)}](); }`);
     obj = `((_$t) => ({ ${getters.join(', ')} }))({ ${thunks.join(', ')} })`;
   }
