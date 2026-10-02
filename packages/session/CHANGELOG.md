@@ -1,5 +1,51 @@
 # @fluixi/session
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- c550b22: Session now persists using `@fluixi/storage` with `localStorage` in the browser and no storage on the server, adding a new `storage` option. Sessions created with earlier versions cannot be read, so users must sign in again.
+
+### Patch Changes
+
+- bf0907f: In the devtools graph, app modules and the services they provide appear as groups, and the auth service is shown under its module with its state named (user, token, status, roles and the rest) instead of anonymous signals.
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [df021bf]
+- Updated dependencies [8940d60]
+- Updated dependencies [cc2a6f8]
+- Updated dependencies [cced6d2]
+- Updated dependencies [9136d35]
+- Updated dependencies [de2135e]
+- Updated dependencies [eab30a6]
+- Updated dependencies [557896f]
+- Updated dependencies [d3701e1]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4bd61db]
+- Updated dependencies [b992f7e]
+- Updated dependencies [9ef2827]
+- Updated dependencies [fa72d27]
+- Updated dependencies [daae54a]
+- Updated dependencies [dde7a4e]
+- Updated dependencies [fb67321]
+- Updated dependencies [bf0907f]
+- Updated dependencies [d1268d1]
+- Updated dependencies [ae0e561]
+- Updated dependencies [b0ea788]
+- Updated dependencies [090e5c5]
+- Updated dependencies [bfa68aa]
+- Updated dependencies [ecde4a3]
+- Updated dependencies [6764f45]
+- Updated dependencies [420dd32]
+- Updated dependencies [1d16e9b]
+- Updated dependencies [f70df46]
+- Updated dependencies [b399027]
+- Updated dependencies [4778ba4]
+- Updated dependencies [ffc1b08]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/core@1.0.0-alpha.93
+  - @fluixi/storage@0.1.0-alpha.0
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes

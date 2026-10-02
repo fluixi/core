@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-todo",
-  "version": "0.0.5-alpha.92",
+  "version": "0.0.5-alpha.93",
   "private": true,
   "type": "module",
   "description": "Todo example (For, Show, input + events) proving the Fluixi stack in a real DOM.",

@@ -1,5 +1,16 @@
 # @fluixi/create
 
+## 0.1.0-alpha.14
+
+### Minor Changes
+
+- c278b4c: `$storage` stands for `useStorage`, `$asyncStorage` stands for `useAsyncStorage`, and `$persisted` stands for `persisted` from `@fluixi/core/storage`.
+
+### Patch Changes
+
+- cd49ddc: New apps now ignore the `.fluixi` folder that `fluixi build` generates.
+- 3a20e09: The new app's `fluixi.d.ts` now declares every reactive intrinsic from the compiler's table and the compiler exports them via `@fluixi/compiler/intrinsics`.
+
 ## 0.1.0-alpha.13
 
 ### Minor Changes

@@ -1,5 +1,20 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.27
+
+### Patch Changes
+
+- Updated dependencies [501e7e5]
+- Updated dependencies [1c2333c]
+- Updated dependencies [aaf6521]
+- Updated dependencies [36bf7d7]
+- Updated dependencies [3a20e09]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [1f60b01]
+- Updated dependencies [c278b4c]
+- Updated dependencies [330c257]
+  - @fluixi/compiler@1.0.0-alpha.93
+
 ## 0.1.0-alpha.26
 
 ### Minor Changes

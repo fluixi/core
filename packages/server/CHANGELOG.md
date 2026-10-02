@@ -1,5 +1,41 @@
 # @fluixi/server
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- de25d02: `appendResponseHeader(name, value)` now adds a header, such as Set-Cookie, to the current request's response (merged by @fluixi/start) and returns false if the headers have already been sent or it is called outside a request.
+
+### Patch Changes
+
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [fda2262]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [e325850]
+- Updated dependencies [964cf16]
+- Updated dependencies [bfe8aa2]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [de25d02]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [b2e1ff3]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+  - @fluixi/head@1.0.0-alpha.60
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes

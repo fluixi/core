@@ -1,5 +1,89 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- df021bf: The new `useAsyncStorage` supports awaited or encrypted storage with the same scopes as `useStorage`, and `StorageProvider` accepts an async storage.
+- 8940d60: The new `createColorScheme` supports system, light, and dark modes with `resolved` and `toggle`, and a `themeColor` for the browser bars. `ThemeProvider`, `ColorSchemeProvider`, `useTheme` and `useColorScheme` are new, and `createTheme` now sends its before-paint script with the page during a render.
+- cc2a6f8: `composeProviders` now nests multiple Providers in a single call and `requireContext` throws if no Provider is found instead of returning the default.
+- cced6d2: The library no longer includes `createConsumer`, `createContextWithProvider`, `composeProviders`, `useProvide` or the object form of `createProvider`. Use `Ctx.Provider`, `useContext`, or `createProvider(context, value, props)` instead.
+- 9136d35: `revalidate` now accepts a list of names and the router applies `x-fx-revalidate` from @fluixi/api/client responses.
+- de2135e: `useStorage` now supports auto, local, session, request, and cookie scopes, includes a `StorageProvider` and `hydrateStorage`, reads the same value during server render and in the browser, sets `Set-Cookie` on the response for cookie scope, and isolates request-scoped values between requests.
+- eab30a6: `createTheme` now stores the selected theme in a cookie and the server renders `<html data-theme>` from it, eliminating the flash, and `createIsomorphicStore.persist` can accept a storage option.
+
+  `useStorage` from `@fluixi/core/storage` now replaces the removed `storage` and `createMemoryStorage` exports. Import `useStorage` instead of the old names.
+
+- fb67321: The new `persisted` from `@fluixi/core/storage` follows changes from other storages and tabs, works over async and encrypted storage, and with cookie scope the server render and the browser agree.
+- d1268d1: Revalidating by name now reaches other open tabs of the site, which drop the same cached data and reload their routes.
+- b0ea788: The `routeDeps` export now provides app-wide values that `routeData` receives as `args.deps`, and a change to them reloads the route data while the page remains on screen.
+- 090e5c5: The router cache now isolates results per request on the server and supports cache options `ttl` and `staleWhileRevalidate`, where `revalidate` refreshes routes on screen without hiding the page and `action` takes an `invalidates` option.
+- 6764f45: The new `storageCache(storage, { ttl })` keeps a `cachedResource` in session or local storage so the data survives a reload.
+
+### Patch Changes
+
+- 4bd61db: A server-rendered custom element now waits for the hydrating app to provide its owner before building, ensuring that context such as the router reaches the element's first render and a `<Link>` inside it navigates after a full page load.
+- b992f7e: Hydration now builds the client's template when the server rendered a different one at that position and removes any server elements that were not claimed.
+- 9ef2827: `rt` now formats relative time in the active locale, e.g., "yesterday" or "3 days ago".
+- fa72d27: Link now updates title, aria-current and similar props reactively when given as functions.
+- daae54a: A `Link` without a router above it now lets the browser follow the link.
+- dde7a4e: `useIsRouting({ delay })` now reports navigation as pending until the new route's modules and data are loaded, keeping the current page visible.
+- bf0907f: In the devtools graph, app modules and the services they provide appear as groups, and the auth service is shown under its module with its state named (user, token, status, roles and the rest) instead of anonymous signals.
+- ae0e561: Reading route data whose load failed now throws its error, causing an ErrorBoundary in the route to show the failure instead of rendering an empty page.
+- ffc1b08: `useSubmissions(action)` now returns every call in flight and every failed call, one entry each, so concurrent calls no longer overwrite each other and an optimistic list can render the pending ones.
+- Updated dependencies [46bf253]
+- Updated dependencies [501e7e5]
+- Updated dependencies [b324fbc]
+- Updated dependencies [1c2333c]
+- Updated dependencies [aaf6521]
+- Updated dependencies [36bf7d7]
+- Updated dependencies [5dcdf9f]
+- Updated dependencies [3a20e09]
+- Updated dependencies [fda2262]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [d3701e1]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [e325850]
+- Updated dependencies [964cf16]
+- Updated dependencies [bfe8aa2]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [450fa9d]
+- Updated dependencies [8b6d66e]
+- Updated dependencies [1f60b01]
+- Updated dependencies [de25d02]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [bfa68aa]
+- Updated dependencies [ecde4a3]
+- Updated dependencies [420dd32]
+- Updated dependencies [1d16e9b]
+- Updated dependencies [f70df46]
+- Updated dependencies [b399027]
+- Updated dependencies [c278b4c]
+- Updated dependencies [4778ba4]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [330c257]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/compiler@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+  - @fluixi/utils@1.0.0-alpha.93
+  - @fluixi/storage@0.1.0-alpha.0
+  - @fluixi/head@1.0.0-alpha.60
+  - @fluixi/jsx@1.0.0-alpha.93
+  - @fluixi/server@1.0.0-alpha.93
+  - @fluixi/vite-plugin@1.0.0-alpha.93
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes

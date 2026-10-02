@@ -1,5 +1,61 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.9
+
+### Patch Changes
+
+- bf0907f: In the devtools graph, app modules and the services they provide appear as groups, and the auth service is shown under its module with its state named (user, token, status, roles and the rest) instead of anonymous signals.
+- Updated dependencies [2fb0e05]
+- Updated dependencies [722d8c8]
+- Updated dependencies [a8610c2]
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [407217b]
+- Updated dependencies [5dcdf9f]
+- Updated dependencies [df021bf]
+- Updated dependencies [8940d60]
+- Updated dependencies [cc2a6f8]
+- Updated dependencies [cced6d2]
+- Updated dependencies [9136d35]
+- Updated dependencies [de2135e]
+- Updated dependencies [eab30a6]
+- Updated dependencies [e77734a]
+- Updated dependencies [f2f2447]
+- Updated dependencies [55a57dd]
+- Updated dependencies [557896f]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4bd61db]
+- Updated dependencies [9a05eb9]
+- Updated dependencies [b992f7e]
+- Updated dependencies [9ef2827]
+- Updated dependencies [fa72d27]
+- Updated dependencies [daae54a]
+- Updated dependencies [dde7a4e]
+- Updated dependencies [b3ea476]
+- Updated dependencies [fb67321]
+- Updated dependencies [73665aa]
+- Updated dependencies [bf0907f]
+- Updated dependencies [de25d02]
+- Updated dependencies [d1268d1]
+- Updated dependencies [ae0e561]
+- Updated dependencies [b0ea788]
+- Updated dependencies [090e5c5]
+- Updated dependencies [c550b22]
+- Updated dependencies [cd49ddc]
+- Updated dependencies [948b2be]
+- Updated dependencies [92fe73b]
+- Updated dependencies [9295123]
+- Updated dependencies [6764f45]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [ceb7864]
+- Updated dependencies [ffc1b08]
+  - @fluixi/start@0.1.0-alpha.83
+  - @fluixi/auth@1.0.0-alpha.93
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/core@1.0.0-alpha.93
+  - @fluixi/session@1.0.0-alpha.93
+  - @fluixi/server@1.0.0-alpha.93
+
 ## 1.0.0-alpha.8
 
 ### Patch Changes

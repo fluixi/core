@@ -1,5 +1,20 @@
 # @fluixi/head
 
+## 1.0.0-alpha.60
+
+### Minor Changes
+
+- 964cf16: useHead({ htmlAttrs: { 'data-theme': () => theme() } }) now sets attributes on `<html>`, rendered by the server and kept current on the client.
+- bfe8aa2: `themeColor` now accepts a list of `{ color, media }` objects for light and dark browser bar colours, and `colorScheme` now accepts an accessor.
+
+### Patch Changes
+
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [557896f]
+- Updated dependencies [eabcfe0]
+  - @fluixi/reactive@1.0.0-alpha.93
+
 ## 1.0.0-alpha.59
 
 ### Patch Changes

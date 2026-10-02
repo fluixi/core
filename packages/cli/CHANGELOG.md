@@ -1,5 +1,28 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.84
+
+### Patch Changes
+
+- Updated dependencies [2fb0e05]
+- Updated dependencies [722d8c8]
+- Updated dependencies [407217b]
+- Updated dependencies [e77734a]
+- Updated dependencies [f2f2447]
+- Updated dependencies [55a57dd]
+- Updated dependencies [9a05eb9]
+- Updated dependencies [b3ea476]
+- Updated dependencies [bf0907f]
+- Updated dependencies [de25d02]
+- Updated dependencies [cd49ddc]
+- Updated dependencies [948b2be]
+- Updated dependencies [92fe73b]
+- Updated dependencies [9295123]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [ceb7864]
+  - @fluixi/start@0.1.0-alpha.83
+  - @fluixi/ts-plugin@0.1.0-alpha.27
+
 ## 0.1.0-alpha.83
 
 ### Minor Changes

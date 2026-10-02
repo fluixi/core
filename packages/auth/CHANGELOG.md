@@ -1,5 +1,78 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- a8610c2: The `signedIn()` and `member({ roles, permissions })` guards are now available in `@fluixi/auth/server` for protecting `@fluixi/api` routes, with `member()` providing `auth.member.organizationId` and returning 403 errors `no_active_organization` or `not_a_member`, and `AuthError` now includes an optional `code`.
+- 5dcdf9f: The cookie codec now resides at `@fluixi/utils/cookie` and `@fluixi/auth` re-exports it, so imports from `@fluixi/auth` continue to work. Update any code that writes cookies to avoid invalid names, paths, or domains containing `;` or whitespace (which now throw a `TypeError`). `SameSite=None` now always adds Secure, and `parseCookies` keeps a malformed escape as raw text instead of throwing.
+- eabcfe0: `effect` and `createEffect` now accept an optional `{ name }` third argument, which appears in the devtools graph like signals and memos.
+- 73665aa: New `remoteAuth({ url, basePath })` in `@fluixi/auth/server`, for `defineAuth` when Better Auth runs in another service, enabling authMiddleware, requireUser and client hooks to work in the web app with the session read from the API using the visitor cookie. Guards such as `member()` stay in the API.
+
+### Patch Changes
+
+- Updated dependencies [2fb0e05]
+- Updated dependencies [722d8c8]
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [407217b]
+- Updated dependencies [5dcdf9f]
+- Updated dependencies [df021bf]
+- Updated dependencies [8940d60]
+- Updated dependencies [cc2a6f8]
+- Updated dependencies [cced6d2]
+- Updated dependencies [9136d35]
+- Updated dependencies [de2135e]
+- Updated dependencies [eab30a6]
+- Updated dependencies [fda2262]
+- Updated dependencies [e77734a]
+- Updated dependencies [f2f2447]
+- Updated dependencies [55a57dd]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [9a05eb9]
+- Updated dependencies [e325850]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [9ef2827]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [fa72d27]
+- Updated dependencies [daae54a]
+- Updated dependencies [dde7a4e]
+- Updated dependencies [b3ea476]
+- Updated dependencies [fb67321]
+- Updated dependencies [bf0907f]
+- Updated dependencies [de25d02]
+- Updated dependencies [d1268d1]
+- Updated dependencies [ae0e561]
+- Updated dependencies [b0ea788]
+- Updated dependencies [090e5c5]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [cd49ddc]
+- Updated dependencies [948b2be]
+- Updated dependencies [92fe73b]
+- Updated dependencies [9295123]
+- Updated dependencies [6764f45]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [ceb7864]
+- Updated dependencies [ffc1b08]
+  - @fluixi/start@0.1.0-alpha.83
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+  - @fluixi/utils@1.0.0-alpha.93
+  - @fluixi/core@1.0.0-alpha.93
+  - @fluixi/server@1.0.0-alpha.93
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes
