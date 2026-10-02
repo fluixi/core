@@ -30,9 +30,8 @@ html`<div on:scroll=${onScroll}></div>`;
 <div on:scroll={onScroll} />;   // JSX, on: index signature
 ```
 
-Delegation is worth knowing about in one case: inside a delegated handler, `currentTarget`
-is the root, not your element. Use `event.target`, or reach for `on:` if you need the
-normal semantics.
+A delegated handler still sees `event.currentTarget` as the element it is attached to, as it
+would with `addEventListener`, so `new FormData(event.currentTarget)` works in an `onSubmit`.
 
 ### Modifiers
 

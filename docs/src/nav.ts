@@ -11,7 +11,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Components', fr: 'Composants' },
-    slugs: ['components', 'control-flow', 'lifecycle', 'component-resolution', 'load-strategies'],
+    slugs: ['components', 'control-flow', 'lifecycle', 'context', 'web-components', 'component-resolution', 'load-strategies'],
   },
   {
     group: { en: 'Templates', fr: 'Templates' },
@@ -27,7 +27,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },
-    slugs: ['routing', 'server-functions', 'api-routes', 'middleware', 'app-modules', 'environment', 'seo', 'images', 'static-generation', 'deployment', 'dependency-injection', 'i18n', 'compiler'],
+    slugs: ['routing', 'server-functions', 'api-routes', 'api-contracts', 'openapi', 'middleware', 'app-modules', 'environment', 'seo', 'images', 'static-generation', 'deployment', 'dependency-injection', 'i18n', 'compiler'],
   },
 ];
 

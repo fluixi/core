@@ -42,4 +42,20 @@ import { Switch, Match } from '@fluixi/core';
 </Switch>;
 ```
 
+## Sur un élément
+
+Les mêmes branches et listes peuvent se poser sur un élément en attributs, `if`, `else`, `each` et
+`key`, ou sur `<container>` quand aucun élément ne doit s'ajouter. Le compilateur les transforme en
+composants ci-dessus. Voir [le contrôle de flux dans les directives](/v1/fr/directives#contrôle-de-flux).
+
+```tsx
+<ul each={rows()}>{(row: Row) => <li>{row.name}</li>}</ul>
+<p if={user()}>Welcome back</p>
+<container else><a href="/login">Sign in</a></container>
+```
+
+Sur une balise en minuscules, TypeScript ne peut pas inférer l'élément : annotez-le, ou utilisez
+`<For>` là où le type doit être inféré. Dans une application construite par `@fluixi/start`,
+`Show`, `For`, `Index`, `Switch` et `Match` n'ont pas besoin d'import.
+
 Suivant : **[Le cycle de vie](/v1/fr/lifecycle)**.

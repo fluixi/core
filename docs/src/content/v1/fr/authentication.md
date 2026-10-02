@@ -153,6 +153,15 @@ mis. Avec Better Auth, c'est `authMiddleware` ; avec OAuth2 en mode serveur, c'e
 de session à lire : vérifiez plutôt l'access token, avec
 [Vérification des tokens](/v1/fr/token-verification).
 
+### Gardes sur les contrats d'API
+
+Une route déclarée avec [`route()`](/v1/fr/api-contracts#gardes) prend une garde au lieu
+d'appeler un helper : `signedIn()` ou `member({ roles, permissions })` de
+`@fluixi/auth/server`. La garde s'exécute avant la lecture de l'entrée, son résultat arrive au
+handler typé sous `auth`, et le document OpenAPI la mentionne. Une `AuthError` peut porter un
+`code` plus précis que son statut (`no_active_organization`, `not_a_member`), que le corps
+d'erreur de l'API conserve.
+
 ## La limite qui n'est pas optionnelle
 
 Tout ce qui précède décide de ce qu'il faut **afficher**. Rien de tout cela ne décide de ce

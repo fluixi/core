@@ -148,6 +148,14 @@ Auth that is `authMiddleware`; with OAuth2 in server mode it is `sessionLocals`,
 `authServerModule` mounts. In OAuth2's browser mode the server has no session to read: verify
 the access token instead, with [Token verification](/v1/en/token-verification).
 
+### Guards on API contracts
+
+A route declared with [`route()`](/v1/en/api-contracts#guards) takes a guard instead of calling a
+helper: `signedIn()` or `member({ roles, permissions })` from `@fluixi/auth/server`. The guard
+runs before the input is read, its result reaches the handler typed as `auth`, and the OpenAPI
+document states it. An `AuthError` may carry a `code` more precise than its status
+(`no_active_organization`, `not_a_member`), which the API's error body keeps.
+
 ## The boundary that is not optional
 
 Everything above decides what to **render**. None of it decides what is **allowed**.

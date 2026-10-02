@@ -192,6 +192,42 @@ contrôlez le `can`, ou dérivez les permissions dans votre propre code. Les aid
 Comme partout, un rôle côté client décide de ce qu'il faut afficher. Ce sont les contrôles
 serveur de Better Auth qui décident de ce qui est autorisé.
 
+## Organisations
+
+Avec le plugin `organization()` de Better Auth, la session porte l'organisation dans laquelle
+l'utilisateur travaille, sous `session.activeOrganizationId`. Sur une route d'API, la garde
+`member()` la vérifie :
+
+```ts
+import { route } from '@fluixi/api';
+import { member } from '@fluixi/auth/server';
+
+export const GET = route({
+  guard: member({ roles: ['owner', 'admin'] }),
+  handler: ({ auth }) => invoices.list(auth.member.organizationId),
+});
+```
+
+`auth.member.organizationId` est le locataire : chaque requête de la route s'y limite. Les refus
+disent pourquoi, pour que le client puisse agir : 403 `no_active_organization` (envoyer
+l'utilisateur en choisir une), 403 `not_a_member`, 403 `forbidden` pour un rôle ou une
+permission.
+
+## Décrire ses routes
+
+Better Auth répond à de nombreux chemins depuis une seule route attrape-tout, et publie son propre
+document OpenAPI par son plugin `openAPI()`. Mettez-le dans le document de votre API avec
+[`describedBy`](/v1/fr/openapi#routes-gérées-par-une-bibliothèque) :
+
+```ts
+// src/api/auth/[...all].ts
+export const GET = describedBy(() => auth.api.generateOpenAPISchema(), (request: Request) => auth.handler(request));
+export const POST = GET;
+```
+
+Ses routes apparaissent alors sous `/api/auth`, à côté des vôtres, dans Postman et tous les
+autres outils.
+
 ## Lectures côté serveur
 
 Dans une fonction serveur ou une route d'API, interrogez l'instance directement plutôt que

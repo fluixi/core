@@ -75,4 +75,26 @@ Elles se suivent mutuellement, se mélangent librement dans un module et se comp
 l'identique au rendu serveur comme à l'hydratation. Préférez `signal` ; gardez le couple quand
 vous voulez les deux moitiés séparées, et sachez que beaucoup de code existant l'utilise.
 
+## Intrinsèques
+
+Dans une application construite par `@fluixi/start`, les formes en `$` n'ont pas besoin d'import :
+le compilateur réécrit chacune en appel du runtime et ajoute l'import. Ce n'est pas un second
+système réactif, `$signal` se compile en `signal`. Une liaison locale du même nom l'emporte, et le
+compilateur le signale.
+
+| Intrinsèque | Correspond à | Importé de |
+| --- | --- | --- |
+| `$signal`, `$memo`, `$effect` | `signal`, `memo`, `effect` | `@fluixi/reactive/signal` |
+| `$resource` | `resource` | `@fluixi/reactive/signal` |
+| `$cachedResource` | `cachedResource` | `@fluixi/reactive/cached-resource` |
+| `$store`, `$untrackStore` | `store`, `untrackStore` | `@fluixi/reactive/store` |
+| `$untrack`, `$batch`, `$root`, `$context` | `untrack`, `batch`, `root`, `context` | `@fluixi/reactive/signal` |
+| `$cleanup` | `onCleanup` | `@fluixi/reactive/signal` |
+| `$renderEffect`, `$computed` | `renderEffect`, `computed` | `@fluixi/reactive/signal` |
+| `$selector`, `$deferred` | `createSelector`, `createDeferred` | `@fluixi/reactive/signal` |
+| `$storage`, `$asyncStorage`, `$persisted` | `useStorage`, `useAsyncStorage`, `persisted` | `@fluixi/core/storage` |
+| `$env` | `env` | `@fluixi/start/env` |
+
+Le code d'un paquet, que le compilateur de start ne traite pas, importe les noms du runtime.
+
 Suivant : **[Les valeurs dérivées](/v1/fr/derived-values)**.

@@ -75,4 +75,25 @@ they track each other, mix freely in a module, and behave identically through SS
 hydration. Prefer `signal`; reach for the tuple when you want the halves apart, and note that
 plenty of existing code and libraries are written against it.
 
+## Intrinsics
+
+In an app built by `@fluixi/start`, the `$` forms need no import: the compiler rewrites each to
+the runtime call and adds the import. They are not a second reactive system, `$signal` compiles
+to `signal`. A local binding of the same name wins, and the compiler says so.
+
+| Intrinsic | Stands for | Imported from |
+| --- | --- | --- |
+| `$signal`, `$memo`, `$effect` | `signal`, `memo`, `effect` | `@fluixi/reactive/signal` |
+| `$resource` | `resource` | `@fluixi/reactive/signal` |
+| `$cachedResource` | `cachedResource` | `@fluixi/reactive/cached-resource` |
+| `$store`, `$untrackStore` | `store`, `untrackStore` | `@fluixi/reactive/store` |
+| `$untrack`, `$batch`, `$root`, `$context` | `untrack`, `batch`, `root`, `context` | `@fluixi/reactive/signal` |
+| `$cleanup` | `onCleanup` | `@fluixi/reactive/signal` |
+| `$renderEffect`, `$computed` | `renderEffect`, `computed` | `@fluixi/reactive/signal` |
+| `$selector`, `$deferred` | `createSelector`, `createDeferred` | `@fluixi/reactive/signal` |
+| `$storage`, `$asyncStorage`, `$persisted` | `useStorage`, `useAsyncStorage`, `persisted` | `@fluixi/core/storage` |
+| `$env` | `env` | `@fluixi/start/env` |
+
+Package code, which the start compiler does not process, imports the runtime names.
+
 Next: **[Derived values](/v1/en/derived-values)**.

@@ -158,6 +158,19 @@ Un site entièrement prérendu n'a besoin que de `dist/client`. Avec un build `'
 `dist/server` ne suffit pas à lui seul : livrez aussi `package.json` et installez les
 dépendances là où il s'exécute.
 
+## Une API à côté d'une application web
+
+Une [application API seule](/v1/fr/api-routes#une-application-api-seule) se construit et se lance
+comme les autres : `fluixi build`, puis `fluixi start` (ou l'entrée de l'adaptateur). Elle n'a
+pas de `dist/client` à servir.
+
+Déployez les deux comme des services distincts et laissez l'application web transmettre `/api` à
+l'API avec `forward({ to: process.env.API_URL })`. Le navigateur parle alors à une seule origine :
+pas de CORS, et le cookie de session de l'API reste first-party. L'API fait confiance à un saut de
+`x-forwarded-for`, si bien que ses limites de débit comptent le visiteur, pas le serveur web. Si le
+navigateur appelle l'API directement, listez l'origine de l'application web dans
+`apiSecurity({ origins })`.
+
 ## Avant de déployer
 
 - **`prerender` exige `ssr: true`.** Le prérendu est du rendu serveur déplacé au moment du
@@ -169,5 +182,8 @@ dépendances là où il s'exécute.
   `fx-reactive`, et `window.Fluixi` rapporte la même chose. Si elles divergent dans une
   version déployée, l'installation a résolu deux copies, mieux vaut le voir avant que cela
   ne devienne un rapport de bug.
+  `@fluixi/start` résout les paquets du framework une seule fois, depuis la racine de
+  l'application : une bibliothèque qui installe sa propre copie tourne quand même sur celle de
+  l'application.
 
 Ensuite : **[Injection de dépendances](/v1/fr/dependency-injection)**.

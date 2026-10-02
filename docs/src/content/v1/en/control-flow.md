@@ -42,4 +42,20 @@ import { Switch, Match } from '@fluixi/core';
 </Switch>;
 ```
 
+## On an element
+
+The same branches and lists can sit on an element as attributes, `if`, `else`, `each` and `key`,
+or on `<container>` when no element should be added. The compiler turns them into the components
+above. See [Control flow in directives](/v1/en/directives#control-flow).
+
+```tsx
+<ul each={rows()}>{(row: Row) => <li>{row.name}</li>}</ul>
+<p if={user()}>Welcome back</p>
+<container else><a href="/login">Sign in</a></container>
+```
+
+On a lowercase tag TypeScript cannot infer the item, so annotate it, or use `<For>` where the type
+should be inferred. In an app built by `@fluixi/start`, `Show`, `For`, `Index`, `Switch` and
+`Match` need no import.
+
 Next: **[Lifecycle](/v1/en/lifecycle)**.

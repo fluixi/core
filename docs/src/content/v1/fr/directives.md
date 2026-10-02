@@ -31,9 +31,9 @@ html`<div on:scroll=${onScroll}></div>`;
 <div on:scroll={onScroll} />;   // JSX, signature d'index on:
 ```
 
-La délégation compte dans un cas : dans un gestionnaire délégué, `currentTarget` est la
-racine, pas votre élément. Utilisez `event.target`, ou passez à `on:` si vous avez besoin
-de la sémantique habituelle.
+Un gestionnaire délégué voit toujours `event.currentTarget` comme l'élément auquel il est
+attaché, comme avec `addEventListener` : `new FormData(event.currentTarget)` fonctionne dans un
+`onSubmit`.
 
 ### Modificateurs
 

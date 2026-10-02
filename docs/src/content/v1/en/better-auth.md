@@ -191,6 +191,40 @@ or derive permissions in your own code. The RBAC helpers on
 As everywhere, a role on the client decides what to render. Better Auth's server-side
 checks decide what is allowed.
 
+## Organisations
+
+With Better Auth's `organization()` plugin, the session carries the organisation the user is
+working in, as `session.activeOrganizationId`. On an API route, the `member()` guard checks
+it:
+
+```ts
+import { route } from '@fluixi/api';
+import { member } from '@fluixi/auth/server';
+
+export const GET = route({
+  guard: member({ roles: ['owner', 'admin'] }),
+  handler: ({ auth }) => invoices.list(auth.member.organizationId),
+});
+```
+
+`auth.member.organizationId` is the tenant: every query the route makes is scoped to it. The
+refusals say why, so the client can act on them: 403 `no_active_organization` (send the user to
+choose one), 403 `not_a_member`, 403 `forbidden` for a role or permission.
+
+## Describing its routes
+
+Better Auth answers many paths from one catch-all route, and publishes an OpenAPI document of its
+own through its `openAPI()` plugin. Put it in your API's document with
+[`describedBy`](/v1/en/openapi#routes-a-library-handles):
+
+```ts
+// src/api/auth/[...all].ts
+export const GET = describedBy(() => auth.api.generateOpenAPISchema(), (request: Request) => auth.handler(request));
+export const POST = GET;
+```
+
+Its routes then appear under `/api/auth`, next to yours, in Postman and every other tool.
+
 ## Server-side reads
 
 Inside a server function or an API route, ask the instance directly rather than the hooks:

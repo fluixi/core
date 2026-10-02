@@ -163,6 +163,17 @@ handler, same dispatch order, no filesystem.
 A fully prerendered site needs `dist/client` alone. With an `'external'` build, `dist/server`
 is not enough on its own, ship `package.json` and install dependencies where it runs.
 
+## An API next to a web app
+
+An [API-only app](/v1/en/api-routes#an-api-only-app) builds and starts like any other:
+`fluixi build`, then `fluixi start` (or the adapter's entry). It has no `dist/client` to serve.
+
+Deploy the two as separate services and let the web app forward `/api` to the API with
+`forward({ to: process.env.API_URL })`. The browser then talks to one origin: no CORS, and the
+API's session cookie stays first-party. The API trusts one hop of `x-forwarded-for`, so its rate
+limits count the visitor, not the web server. If the browser calls the API directly instead,
+list the web app's origin in `apiSecurity({ origins })`.
+
 ## Before you deploy
 
 - **`prerender` requires `ssr: true`.** Prerendering is server rendering moved to build
@@ -172,5 +183,7 @@ is not enough on its own, ship `package.json` and install dependencies where it 
 - **Check the version stamps.** The mount element carries `fluixi`, `fx-dom` and
   `fx-reactive`, and `window.Fluixi` reports the same. If they disagree in a deployed
   build, the install resolved two copies, worth catching before it becomes a bug report.
+  `@fluixi/start` resolves the framework packages once, from the app's root, so a library
+  that installs its own copy still runs on the app's.
 
 Next: **[Dependency injection](/v1/en/dependency-injection)**.

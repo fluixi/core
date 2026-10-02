@@ -44,6 +44,17 @@ effect((prev) => {
 });
 ```
 
+## Naming
+
+The third argument names the effect for the devtools graph, as signals and memos take a name:
+
+```ts
+effect(() => syncTitle(title()), undefined, { name: 'sync title' });
+```
+
+An unnamed effect shows as one of many; a named one says what it is for when you are tracking
+down why something re-ran.
+
 ## Batching
 
 Multiple writes inside `batch` notify dependents **once**, after the batch:

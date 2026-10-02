@@ -60,6 +60,53 @@ Tout le reste vient de la `Request` standard : la chaîne de requête via
 `new URL(request.url).searchParams`, le corps via `await request.json()` ou
 `await request.formData()`, les en-têtes via `request.headers`.
 
+## Contrats
+
+Pour tout ce qui dépasse un point d'entrée rapide, déclarez la route avec `route()` de
+`@fluixi/api` : l'entrée validée avant votre code, la réponse mise en forme à la sortie, des
+gardes pour qui peut l'appeler, un [document OpenAPI](/v1/fr/openapi) et un client typé en
+prime. Voir [Contrats d'API](/v1/fr/api-contracts).
+
+```ts
+export const GET = route({
+  params: z.object({ id: z.string().uuid() }),
+  response: Project,
+  handler: ({ params }) => findProject(params.id),
+});
+```
+
+## Dans la requête
+
+Une route d'API s'exécute dans le contexte de la requête, comme un rendu de page :
+`requireUser()`, `getLocals()` et ce que votre middleware y a mis fonctionnent dans un handler,
+tout comme `appendResponseHeader` et le stockage en cookies.
+
+## La table des routes
+
+`@fluixi/start/api-routes` exporte `apiRoutes`, toutes les routes de l'application avec leur
+modèle de chemin (`src/api/v1/projects/[id].ts` devient `/api/v1/projects/{id}`, un
+attrape-tout devient son paramètre) et leur module. La route OpenAPI et le client typé en sont
+construits.
+
+## Une application API seule
+
+Une API sans pages met `apiOnly: true` dans `fluixi.config.ts`. Pas d'`index.html`, pas de
+rendu : un chemin hors de l'API répond un 404 en JSON, de la même forme que les erreurs de
+l'API, et `fluixi build` et `fluixi start` produisent et lancent le serveur seul.
+
+Une application web à côté lui transmet `/api` : le navigateur parle à une seule origine et les
+cookies de l'API restent first-party.
+
+```ts
+// le src/middleware.ts de l'application web
+import { defineMiddleware, forward } from '@fluixi/start';
+
+export default defineMiddleware([forward({ to: process.env.API_URL! })]);
+```
+
+L'adresse de l'appelant part en `x-forwarded-for`, à la place de ce que le client a envoyé. Les
+upgrades WebSocket ne sont pas transmis.
+
 ## Les codes de statut offerts
 
 Une requête vers un chemin existant avec une méthode que vous n'avez pas exportée renvoie

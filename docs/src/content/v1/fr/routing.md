@@ -167,7 +167,7 @@ setParams({ page: '1' }, { replace: true });
 
 ## Charger des données
 
-Un fichier de route peut exporter `routeData` ; le plus proche est accessible via
+Un fichier de route peut exporter `routeData`, et le plus proche est disponible via
 `useRouteData` :
 
 ```tsx
@@ -181,10 +181,47 @@ export default function User() {
 }
 ```
 
-`useRouteData` renvoie un accesseur qui suspend sous `<Suspense>` pendant le chargement :
-une frontière au-dessus affiche donc son fallback plutôt qu'un état vide clignotant.
+Le routeur garde la page actuelle à l'écran jusqu'à l'arrivée des données de la route suivante,
+puis bascule : ni page vide ni flash de chargement entre deux routes. Les données d'un layout se
+chargent une fois et restent pendant que vous passez d'un enfant à l'autre.
 
-Pour des données non liées à une route, `createAsync` transforme un fetcher en ressource :
+### Progression
+
+`useIsRouting` vaut true du début d'une navigation jusqu'à ce que la route d'arrivée ait ses
+modules et ses données. `delay` retient le `true`, pour qu'une navigation rapide n'affiche rien :
+
+```tsx
+const routing = useIsRouting({ delay: 120 });
+
+<div class="progress" data-active={() => (routing() ? '' : undefined)} />
+```
+
+Placez une seule barre de progression dans le layout racine ; chaque navigation et chaque
+chargement de données s'y rapportent.
+
+### Échecs
+
+Une route dont les données échouent lève l'erreur là où la page les lit : le `ErrorBoundary` le
+plus proche affiche l'échec au lieu d'une page vide.
+
+```tsx
+<ErrorBoundary fallback={(error, reset) => <Failed error={error} onRetry={reset} />}>
+  <Outlet />
+</ErrorBoundary>
+```
+
+La limite attrape aussi les erreurs levées plus tard, par un effet bien après la construction de
+la page. `reset` rend de nouveau les enfants.
+
+### Cache et dépendances
+
+`cache` garde les résultats d'une fonction par nom et arguments, partage une seule requête entre
+les lecteurs, et `revalidate('user')` les retire et recharge les routes à l'écran. Une route peut
+aussi déclarer avec `routeDeps` les valeurs de toute l'application dont ses données dépendent. Les
+deux sont décrits dans [Mise en cache des données](/v1/fr/caching).
+
+Pour des données qui ne sont pas liées à une route, `createAsync` transforme un fetcher en
+ressource :
 
 ```tsx
 import { createAsync, cache } from '@fluixi/start/router';
@@ -194,20 +231,16 @@ const getUser = cache((id: string) => fetchUser(id), 'user');
 const user = createAsync(() => getUser(props.id));
 ```
 
-`cache` donne à la fonction une clé stable : les appels identiques sont dédupliqués, les
-résultats sont transférés du serveur au client à l'hydratation au lieu d'être récupérés
-deux fois, et `revalidate('user')` peut les invalider.
-
 ## Mutations
 
-`action` enveloppe une mutation pour rendre sa progression observable :
+`action` enveloppe une mutation pour que sa progression soit observable :
 
 ```tsx
 import { action, useSubmission, Form } from '@fluixi/start/router';
 
 const save = action(async (data: FormData) => {
   await updateProfile(data);
-}, 'save-profile');
+}, 'save-profile', { invalidates: ['profile'] });
 
 function Profile() {
   const submission = useSubmission(save);
@@ -215,7 +248,7 @@ function Profile() {
   return (
     <Form action={save}>
       <input name="name" />
-      <button disabled={!!submission()?.pending}>Enregistrer</button>
+      <button disabled={!!submission()?.pending}>Save</button>
     </Form>
   );
 }
@@ -223,11 +256,34 @@ function Profile() {
 
 Utilisez `<Form>`, pas un `<form action={save}>` simple : l'action est une fonction, et un
 attribut `action` doit être une URL. `<Form>` construit le `FormData`, appelle l'action sans
-navigation, et émet quand même `method="post"` avec la véritable URL de l'action dans le
-balisage, l'envoi fonctionne donc avant le chargement de JavaScript.
+navigation, et émet quand même `method="post"` avec la vraie URL de l'action dans le balisage,
+si bien qu'une soumission fonctionne avant le chargement du JavaScript.
 
-`useSubmission` rapporte l'état en cours, en attente, résultat, erreur, avec `retry` et
-`clear` : exactement ce qu'il faut à un formulaire pour désactiver son bouton et signaler un
-échec sans suivre cela à la main.
+Nommez chaque action : le nom sert à suivre ses soumissions, et deux actions sans nom les
+partageraient. `invalidates` liste les données en cache qu'un succès change, pour que les pages
+qui les affichent se rechargent.
+
+`useSubmission` rapporte le dernier appel, en cours, résultat, erreur, avec `retry` et `clear` :
+ce qu'il faut à un formulaire pour désactiver son bouton et afficher un échec sans le suivre à la
+main.
+
+### Mises à jour optimistes
+
+`useSubmissions` liste chaque appel encore en cours, et ceux qui ont échoué, une entrée par appel :
+des appels simultanés ne s'écrasent pas. Affichez les lignes du serveur, puis les appels en cours
+sous la même forme :
+
+```tsx
+const moves = useSubmissions(moveDeal);
+
+const rows = $memo(() => [
+  ...deals(),
+  ...moves().filter((s) => s.pending).map((s) => ({ ...s.input, pending: true })),
+]);
+```
+
+Un appel réussi quitte la liste et la ligne du serveur prend sa place. Un appel qui échoue cesse
+d'être en cours, il quitte donc de lui-même les lignes optimistes, et reste dans la liste avec son
+`error` jusqu'à `retry()` ou `clear()`.
 
 Ensuite : **[Fonctions serveur](/v1/fr/server-functions)**.

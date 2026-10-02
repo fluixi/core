@@ -44,6 +44,18 @@ effect((prev) => {
 });
 ```
 
+## Nommer
+
+Le troisième argument nomme l'effet pour le graphe des devtools, comme les signaux et les memos
+prennent un nom :
+
+```ts
+effect(() => syncTitle(title()), undefined, { name: 'sync title' });
+```
+
+Un effet sans nom apparaît comme un parmi d'autres ; un effet nommé dit à quoi il sert quand vous
+cherchez pourquoi quelque chose s'est relancé.
+
 ## Regroupement (batch)
 
 Plusieurs écritures dans `batch` ne notifient les dépendants qu'**une fois**, après le lot :

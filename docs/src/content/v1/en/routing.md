@@ -177,8 +177,43 @@ export default function User() {
 }
 ```
 
-`useRouteData` returns an accessor that suspends under `<Suspense>` while loading, so a
-boundary above it shows the fallback rather than a flash of empty state.
+The router keeps the current page on screen until the next route's data has arrived, then
+swaps: no blank page and no loading flash between two routes. A layout's data loads once and
+stays while you move between its children.
+
+### Progress
+
+`useIsRouting` is true from the moment a navigation starts until the route it lands on has its
+modules and its data. `delay` holds the `true` back, so a quick navigation shows nothing:
+
+```tsx
+const routing = useIsRouting({ delay: 120 });
+
+<div class="progress" data-active={() => (routing() ? '' : undefined)} />
+```
+
+Put one progress bar in the root layout; every navigation and every data load reports to it.
+
+### Failures
+
+A route whose data fails throws where the page reads it, so the nearest `ErrorBoundary` shows
+the failure instead of an empty page:
+
+```tsx
+<ErrorBoundary fallback={(error, reset) => <Failed error={error} onRetry={reset} />}>
+  <Outlet />
+</ErrorBoundary>
+```
+
+The boundary also catches errors thrown later, from an effect long after the page was built.
+`reset` renders the children again.
+
+### Caching and dependencies
+
+`cache` keeps a function's results by name and arguments, shares one request between readers,
+and `revalidate('user')` drops them and reloads the routes on screen. A route can also declare
+app-wide values its data depends on with `routeDeps`. Both are covered in
+[Caching data](/v1/en/caching).
 
 For data not tied to a route, `createAsync` wraps a fetcher into a resource:
 
@@ -190,10 +225,6 @@ const getUser = cache((id: string) => fetchUser(id), 'user');
 const user = createAsync(() => getUser(props.id));
 ```
 
-`cache` gives the function a stable key so identical calls deduplicate, results transfer
-from server to client during hydration instead of being fetched twice, and
-`revalidate('user')` can invalidate them.
-
 ## Mutations
 
 `action` wraps a mutation so its progress is observable:
@@ -203,7 +234,7 @@ import { action, useSubmission, Form } from '@fluixi/start/router';
 
 const save = action(async (data: FormData) => {
   await updateProfile(data);
-}, 'save-profile');
+}, 'save-profile', { invalidates: ['profile'] });
 
 function Profile() {
   const submission = useSubmission(save);
@@ -222,8 +253,31 @@ attribute has to be a URL. `<Form>` builds the `FormData`, calls the action with
 navigation, and still emits `method="post"` with the action's real URL in the markup, so a
 submit works before JavaScript loads.
 
-`useSubmission` reports the in-flight state, pending, result, error, along with `retry`
-and `clear`, which is what a form needs to disable its button and show a failure without
-tracking that by hand.
+Name every action: the name is how its submissions are tracked, and two unnamed actions would
+share them. `invalidates` lists the cached data a success changes, so the pages showing it
+reload.
+
+`useSubmission` reports the latest call, pending, result, error, along with `retry` and
+`clear`, which is what a form needs to disable its button and show a failure without tracking
+that by hand.
+
+### Optimistic updates
+
+`useSubmissions` lists every call still in flight, and those that failed, one entry per call,
+so concurrent calls do not overwrite each other. Render the server's rows, then the pending
+calls in the same shape:
+
+```tsx
+const moves = useSubmissions(moveDeal);
+
+const rows = $memo(() => [
+  ...deals(),
+  ...moves().filter((s) => s.pending).map((s) => ({ ...s.input, pending: true })),
+]);
+```
+
+A call that succeeds leaves the list and the server's row takes its place. One that fails stops
+being pending, so it leaves the optimistic rows by itself, and stays in the list with its
+`error` until `retry()` or `clear()`.
 
 Next: **[Server functions](/v1/en/server-functions)**.
