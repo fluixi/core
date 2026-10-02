@@ -4,7 +4,7 @@ import { VERSION } from '@fluixi/core';
 import type { Lang } from './content.js';
 
 export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
-  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'cdn'] },
+  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'cdn', 'migrating'] },
   {
     group: { en: 'Reactivity', fr: 'Réactivité' },
     slugs: ['signals', 'derived-values', 'effects', 'stores', 'async', 'tc39-signals'],

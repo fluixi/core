@@ -170,6 +170,9 @@ avec `getHeader(name)` et `appendHeader(name, value)`. Les cookies sont sûrs pa
 au-delà de `maxSize` (4096 octets) lève `StorageQuotaError` au lieu d'être ignorée par le
 navigateur. Sans réponse, l'adaptateur est en lecture seule.
 
+Les chaînes de cookie viennent de `@fluixi/utils/cookie` (`parseCookies`, `serializeCookie`,
+`deleteCookie`), utilisable directement pour un cookie hors de tout stockage.
+
 L'adaptateur voit tous les cookies de la requête : donnez toujours un espace de noms au
 stockage, sans quoi `clear()` supprimerait aussi le cookie de session.
 

@@ -166,6 +166,9 @@ Secure, SameSite=Lax, Path=/), each write is one `Set-Cookie`, and a value over 
 (4096 bytes) throws `StorageQuotaError` rather than being dropped by the browser. Without a
 response the adapter is read-only.
 
+The cookie strings come from `@fluixi/utils/cookie` (`parseCookies`, `serializeCookie`,
+`deleteCookie`), which you can use directly for a cookie outside any storage.
+
 Every cookie the request carries is visible to the adapter, so always give the storage a
 namespace: `clear()` without one would delete the session cookie too.
 
