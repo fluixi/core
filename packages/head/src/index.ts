@@ -10,6 +10,7 @@
  */
 export type {
   HeadInput,
+  ThemeColor,
   HeadTag,
   HeadSource,
   Reactive,

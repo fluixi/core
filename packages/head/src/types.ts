@@ -104,6 +104,12 @@ export interface ScriptTag {
 }
 
 /** The full, typed head/SEO input. Every field accepts a reactive accessor where it makes sense. */
+/** One `theme-color`, for the media it applies to (every media when absent). */
+export interface ThemeColor {
+  color: string;
+  media?: string;
+}
+
 export interface HeadInput {
   title?: Reactive<string>;
   /** e.g. "%s · Fluixi". Inherited from layouts; applied to the most specific title. */
@@ -120,13 +126,19 @@ export interface HeadInput {
    * `{ 'data-theme': () => theme() }`. A later source wins per attribute, as for `lang`.
    */
   htmlAttrs?: Record<string, Reactive<string>>;
-  themeColor?: Reactive<string>;
+  /**
+   * The browser's UI colour: Chrome's address and app bar on Android, Safari's bars on iOS. One
+   * colour, or one per media query: `[{ color: '#fff', media: '(prefers-color-scheme: light)' },
+   * { color: '#111', media: '(prefers-color-scheme: dark)' }]`.
+   */
+  themeColor?: Reactive<string | readonly ThemeColor[]>;
   viewport?: string;
   charset?: string;
   generator?: string;
   applicationName?: string;
   referrer?: string;
-  colorScheme?: string;
+  /** The schemes the page supports, for the browser's own UI: `light dark`, `dark`. */
+  colorScheme?: Reactive<string>;
   manifest?: string;
 
   og?: OpenGraph;

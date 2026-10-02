@@ -267,9 +267,16 @@ function expand(input: HeadInput, out: HeadTag[], ts: TitleState): void {
   if (input.generator !== undefined) meta('meta:name:generator', { name: 'generator', content: input.generator });
   if (input.applicationName !== undefined) meta('meta:name:application-name', { name: 'application-name', content: input.applicationName });
   if (input.referrer !== undefined) meta('meta:name:referrer', { name: 'referrer', content: input.referrer });
-  if (input.colorScheme !== undefined) meta('meta:name:color-scheme', { name: 'color-scheme', content: input.colorScheme });
+  const scheme = val(input.colorScheme);
+  if (scheme !== undefined) meta('meta:name:color-scheme', { name: 'color-scheme', content: scheme });
   const theme = val(input.themeColor);
-  if (theme !== undefined) meta('meta:name:theme-color', { name: 'theme-color', content: theme });
+  if (typeof theme === 'string') meta('meta:name:theme-color', { name: 'theme-color', content: theme });
+  // One tag per media query, keyed by it: a later source replaces the same media, not the others.
+  else if (theme) {
+    for (const { color, media } of theme) {
+      meta(`meta:name:theme-color${media ? `:${media}` : ''}`, media ? { name: 'theme-color', content: color, media } : { name: 'theme-color', content: color });
+    }
+  }
 
   const canonical = val(input.canonical);
   if (canonical !== undefined) out.push({ tag: 'link', key: 'link:rel:canonical', attrs: { rel: 'canonical', href: canonical } });

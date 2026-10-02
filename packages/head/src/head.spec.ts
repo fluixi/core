@@ -169,3 +169,24 @@ describe('active registry', () => {
     }
   });
 });
+
+describe('theme-color per media', () => {
+  it('renders one tag per media, and a plain colour as one tag', () => {
+    const head = createHead();
+    head.push({
+      themeColor: [
+        { color: '#ffffff', media: '(prefers-color-scheme: light)' },
+        { color: '#111111', media: '(prefers-color-scheme: dark)' },
+      ],
+      colorScheme: () => 'light dark',
+    });
+    const html = renderHead(head).headHtml;
+    expect(html).toContain('name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)"');
+    expect(html).toContain('name="theme-color" content="#111111" media="(prefers-color-scheme: dark)"');
+    expect(html).toContain('name="color-scheme" content="light dark"');
+
+    const single = createHead();
+    single.push({ themeColor: '#111111' });
+    expect(renderHead(single).headHtml.match(/name="theme-color"/g)).toHaveLength(1);
+  });
+});
