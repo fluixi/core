@@ -107,6 +107,21 @@ l'affichage.
 seo({ htmlAttrs: { 'data-theme': () => theme() } });
 ```
 
+`themeColor` prend une couleur, ou une par media query, pour les barres du navigateur sur Android
+et iOS. Une page qui suit le système envoie les deux :
+
+```tsx
+seo({
+  themeColor: [
+    { color: '#ffffff', media: '(prefers-color-scheme: light)' },
+    { color: '#0a0a0a', media: '(prefers-color-scheme: dark)' },
+  ],
+  colorScheme: 'light dark',
+});
+```
+
+[Thèmes](/v1/fr/theming) fait les deux pour vous, avec l'attribut.
+
 ## Composants
 
 Pour du code en forme de balisage, des composants couvrent le même terrain, `Title`,

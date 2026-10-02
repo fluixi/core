@@ -125,24 +125,9 @@ travel in clear.
 
 ## The theme
 
-`createTheme` keeps the visitor's choice in a cookie by default, so the server renders it:
-
-```ts
-const theme = createTheme({ themes: ['light', 'dark'], default: 'light', system: true });
-theme.set('dark'); // the cookie, the signal, and <html data-theme="dark">
-```
-
-During a render it sends the attribute with the page, `<html data-theme="dark">`, through
-the head. Create it during the render, in a component or provider at the app root, never at
-module scope: on the server only the render has the request and its cookie, so a theme
-created at import always renders the default.
-
-`storage` changes where the choice is kept (`null` keeps it in memory). `headScript()`
-returns a small inline script for one case the server cannot know: the operating system's
-preference, for a visitor who has not chosen yet.
-
-fluixi-ui's `ColorSchemeProvider`, `SkinProvider` and `createThemeAxis` are built on it and
-take the same `storage` option.
+A theme is the most common value both sides must agree on. `createColorScheme`, `createTheme` and
+their providers keep it in a cookie through this storage, send the attribute with the page and
+apply a stored choice before paint. See [Theming](/v1/en/theming).
 
 ## Intrinsics
 

@@ -320,13 +320,13 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           >
             ◐
           </button>
-          <a
+          <Link
             class="lang-toggle"
             href={`/${version()}/${other()}/${slug()}`}
             onClick={() => languageStorage().set('lang', other())}
           >
             {LANG_LABEL[other()]}
-          </a>
+          </Link>
           <a class="d-link" href="https://playground.fluixi.com">
             {ui().playground}
           </a>

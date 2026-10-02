@@ -106,6 +106,21 @@ paint:
 seo({ htmlAttrs: { 'data-theme': () => theme() } });
 ```
 
+`themeColor` takes one colour, or one per media query, for the browser's own bars on Android and
+iOS. A page that follows the OS sends both:
+
+```tsx
+seo({
+  themeColor: [
+    { color: '#ffffff', media: '(prefers-color-scheme: light)' },
+    { color: '#0a0a0a', media: '(prefers-color-scheme: dark)' },
+  ],
+  colorScheme: 'light dark',
+});
+```
+
+[Theming](/v1/en/theming) does both for you, along with the attribute.
+
 ## Components
 
 For markup-shaped code there are components covering the same ground, `Title`, `Meta`,

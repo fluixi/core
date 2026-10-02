@@ -127,24 +127,10 @@ valeur chiffrée lève une erreur ici plutôt que de voyager en clair.
 
 ## Le thème
 
-`createTheme` garde par défaut le choix du visiteur dans un cookie, pour que le serveur le rende :
-
-```ts
-const theme = createTheme({ themes: ['light', 'dark'], default: 'light', system: true });
-theme.set('dark'); // le cookie, le signal et <html data-theme="dark">
-```
-
-Pendant un rendu, il envoie l'attribut avec la page, `<html data-theme="dark">`, par la tête
-du document. Créez-le pendant le rendu, dans un composant ou un provider à la racine de
-l'application, jamais au niveau d'un module : sur le serveur, seul le rendu a la requête et son
-cookie, et un thème créé à l'import rend toujours la valeur par défaut.
-
-`storage` change l'endroit où le choix est gardé (`null` le garde en mémoire). `headScript()`
-renvoie un petit script en ligne pour le seul cas que le serveur ne peut pas connaître : la
-préférence du système, pour un visiteur qui n'a pas encore choisi.
-
-`ColorSchemeProvider`, `SkinProvider` et `createThemeAxis` de fluixi-ui reposent dessus et
-acceptent la même option `storage`.
+Un thème est la valeur la plus courante sur laquelle les deux côtés doivent s'accorder.
+`createColorScheme`, `createTheme` et leurs providers le gardent dans un cookie par ce stockage,
+envoient l'attribut avec la page et appliquent un choix stocké avant l'affichage. Voir
+[Thèmes](/v1/fr/theming).
 
 ## Intrinsèques
 
