@@ -18,11 +18,12 @@ const ThemesContext = createContext<Readonly<Record<string, unknown>> | undefine
  * <ThemeProvider themes={{ scheme, palette }}>{props.children}</ThemeProvider>
  * ```
  */
-export function ThemeProvider(props: { themes: Readonly<Record<string, unknown>>; children?: unknown }): any {
+// `object`, not a Record: an app's own interface of axes has no index signature to match one.
+export function ThemeProvider(props: { themes: object; children?: unknown }): any {
   const outer = useContext(ThemesContext);
   return ThemesContext.Provider({
     // A nested provider adds to the axes above it rather than hiding them.
-    value: outer ? { ...outer, ...props.themes } : props.themes,
+    value: (outer ? { ...outer, ...props.themes } : props.themes) as Readonly<Record<string, unknown>>,
     get children() {
       return props.children as any;
     },
