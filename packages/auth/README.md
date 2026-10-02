@@ -34,6 +34,18 @@ const admin = await requireRole('admin');     // throws AuthError(403)
 await requirePermission(() => can(user, 'edit', post));
 const maybe = await optionalUser();           // U | null
 ```
+```ts
+// API route contracts (@fluixi/api) take a guard instead: it runs before the input is read
+// and types `auth` in the handler.
+import { route } from '@fluixi/api';
+import { member, signedIn } from '@fluixi/auth/server';
+
+export const GET = route({ guard: signedIn(), handler: ({ auth }) => auth.user });
+export const DELETE = route({
+  guard: member({ roles: ['owner', 'admin'] }), // 403 no_active_organization, not_a_member, forbidden
+  handler: ({ auth }) => projects.remove(auth.member.organizationId),
+});
+```
 > The app entry must forward the request so middleware locals reach the render:
 > `export const render = (url, request) => renderRequestAsync(App, { url, request })`.
 

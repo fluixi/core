@@ -28,6 +28,7 @@
 | `@fluixi/utils/color` | Color parsing and conversion. |
 | `@fluixi/utils/dom` | Lightweight DOM helpers. |
 | `@fluixi/utils/functions` | Composition, debounce/throttle, memoization. |
+| `@fluixi/utils/cookie` | `parseCookies`, `serializeCookie` (HttpOnly, Secure, SameSite=Lax by default), `deleteCookie`, `isValidCookieName`. |
 | `@fluixi/utils/compare` | Deep equality and comparison utilities. |
 
 ## 📦 Installation
