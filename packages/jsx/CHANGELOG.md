@@ -1,5 +1,39 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.93
+
+### Major Changes
+
+- 450fa9d: The JSX custom element tags are now registered on the `JSXCustomElements` interface instead of `HTMLReactiveElement` or `FluixiElements`. Rename any augmentations that reference `HTMLReactiveElement` or `FluixiElements` to use `JSXCustomElements`.
+
+### Patch Changes
+
+- 8b6d66e: Custom elements declared in `JSXCustomElements` are now typed in JSX, providing typed props and event handlers.
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [fda2262]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [e325850]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [de25d02]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [b2e1ff3]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes

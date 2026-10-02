@@ -1,5 +1,87 @@
 # @fluixi/start
 
+## 0.1.0-alpha.83
+
+### Minor Changes
+
+- 2fb0e05: `fluixi dev` and `fluixi build` now write `src/api.gen.ts` with an `ApiRoutes` interface that maps each API path template to the type of its route file. Commit it: `createClient<ApiRoutes>()` from `@fluixi/api/client` types its calls from it.
+- 407217b: New `clientAddress(request)` returns the caller's address as seen by the platform, or `undefined` when unknown. Behind a reverse proxy on Node it returns the proxy's address.
+- 9a05eb9: `forward({ to, prefix })` middleware routes requests under a prefix (default `/api`) to another origin, streaming them and preserving all set-cookie headers. It answers 502 when the target is unreachable; WebSocket upgrades are not forwarded.
+- de25d02: `appendResponseHeader(name, value)` now adds a header, such as Set-Cookie, to the current request's response (merged by @fluixi/start) and returns false if the headers have already been sent or it is called outside a request.
+- cd49ddc: `apiOnly: true` now runs an app with only src/api routes and returns a JSON 404 for paths outside the API.
+- b2e1ff3: `streamDocument` now returns a `Promise<Response>` and cookies and other headers set while a streamed page renders its shell reach the response, a render failing before the head is sent answers 500, and `appendResponseHeader` takes an optional request.
+- ceb7864: New `trustProxy` config option: it gives the number of reverse proxies, and `clientAddress()` reads the X-Forwarded-For header that many hops back while request URLs use X-Forwarded-Proto and X-Forwarded-Host. Off by default, since any client can send these headers.
+
+### Patch Changes
+
+- 722d8c8: The dev server now picks up API route files added or removed while it runs, so a new route answers at once and `api.gen.ts` follows without a restart.
+- e77734a: fluixi dev now sends `/api` requests straight to the app, bypassing Vite's middleware, in every app, not only API-only ones.
+- f2f2447: In API-only mode, the dev server now answers preflight requests with the app's middleware instead of Vite's CORS handler.
+- 55a57dd: The dev server now inlines stylesheets processed by the app's CSS plugins instead of linking raw styles.
+- b3ea476: Node server now sends every `Set-Cookie` header of a response, not only the last.
+- bf0907f: In the devtools graph, app modules and the services they provide appear as groups, and the auth service is shown under its module with its state named (user, token, status, roles and the rest) instead of anonymous signals.
+- 948b2be: `apiRoutes` now exports each route with its path template for describing the API.
+- 92fe73b: The app now loads a single copy of the framework packages, even when a library installs its own, so the app and its libraries share one state.
+- 9295123: API routes now run inside the request context, so `requireUser()` and `getSession()` correctly recognize a valid session cookie.
+- Updated dependencies [46bf253]
+- Updated dependencies [501e7e5]
+- Updated dependencies [b324fbc]
+- Updated dependencies [1c2333c]
+- Updated dependencies [aaf6521]
+- Updated dependencies [36bf7d7]
+- Updated dependencies [df021bf]
+- Updated dependencies [8940d60]
+- Updated dependencies [cc2a6f8]
+- Updated dependencies [cced6d2]
+- Updated dependencies [9136d35]
+- Updated dependencies [de2135e]
+- Updated dependencies [eab30a6]
+- Updated dependencies [3a20e09]
+- Updated dependencies [fda2262]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [e325850]
+- Updated dependencies [964cf16]
+- Updated dependencies [bfe8aa2]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [9ef2827]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [fa72d27]
+- Updated dependencies [daae54a]
+- Updated dependencies [1f60b01]
+- Updated dependencies [dde7a4e]
+- Updated dependencies [fb67321]
+- Updated dependencies [bf0907f]
+- Updated dependencies [de25d02]
+- Updated dependencies [d1268d1]
+- Updated dependencies [ae0e561]
+- Updated dependencies [b0ea788]
+- Updated dependencies [090e5c5]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [6764f45]
+- Updated dependencies [c278b4c]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [330c257]
+- Updated dependencies [ffc1b08]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/compiler@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+  - @fluixi/core@1.0.0-alpha.93
+  - @fluixi/head@1.0.0-alpha.60
+  - @fluixi/server@1.0.0-alpha.93
+  - @fluixi/vite-plugin@1.0.0-alpha.93
+
 ## 0.1.0-alpha.82
 
 ### Minor Changes

@@ -1,5 +1,22 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- 501e7e5: The new `$cachedResource` intrinsic provides `cachedResource` without requiring an import.
+- aaf6521: Each on an element now renders the element once and its content per item, and `<container>` now renders only its content while supporting `if`, `else`, `each`, and `key` in JSX. You must move `each` to the parent element, converting `<li each>` to `<ul each>` with the `<li>` placed inside the render function.
+- c278b4c: `$storage` stands for `useStorage`, `$asyncStorage` stands for `useAsyncStorage`, and `$persisted` stands for `persisted` from `@fluixi/core/storage`.
+
+### Patch Changes
+
+- 1c2333c: A signal in a class field inside a function no longer breaks the dev build, and a class field signal shows its own line and field name in the devtools graph.
+- 36bf7d7: Development builds now record where each subclass is declared and which instance a class field signal belongs to for the devtools graph.
+- 3a20e09: The new app's `fluixi.d.ts` now declares every reactive intrinsic from the compiler's table and the compiler exports them via `@fluixi/compiler/intrinsics`.
+- 4ac7bba: Functions passed to a custom element property are now assigned instead of being called as an accessor, so actions and callbacks reach the element as functions, also on the server.
+- 1f60b01: The compiler now provides intrinsics `$batch`, `$cleanup`, `$root`, `$context`, `$renderEffect` and `$computed` that can be used without importing them in a start app.
+- 330c257: `this` in a component prop now keeps the enclosing method's value, allowing a custom element's render to pass `this.x` into a component prop.
+
 ## 1.0.0-alpha.92
 
 ### Minor Changes

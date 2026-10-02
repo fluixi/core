@@ -1,5 +1,14 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- 46bf253: The new `deps` option of `cachedResource` uses accessor values as cache keys, so each user or organisation gets its own entry and a change switches to it.
+- b324fbc: The new `cachedResource` handle supports `refetch`, `invalidate`, and `mutate`, accepts a `cache` option, and carries server values to the browser. Remove any use of `createCachedResource`, `clearCachedResourceNamespace`, or `clearAllCachedResources` and use `cachedResource` and `clearCachedResources(name?)` instead.
+- 557896f: The devtools graph now shows custom elements, app modules and services as their own kinds, holding the signals and memos they created, and new @fluixi/reactive functions `openReactiveScope`, `withReactiveScope`, `closeReactiveScope`, `adoptReactiveScope`, `markReactiveScope`, and `reactiveScopeOf` report such a scope.
+- eabcfe0: `effect` and `createEffect` now accept an optional `{ name }` third argument, which appears in the devtools graph like signals and memos.
+
 ## 1.0.0-alpha.92
 
 ## 1.0.0-alpha.91

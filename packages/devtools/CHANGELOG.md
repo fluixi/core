@@ -1,5 +1,16 @@
 # @fluixi/devtools
 
+## 0.2.0-alpha.6
+
+### Minor Changes
+
+- 557896f: The devtools graph now shows custom elements, app modules and services as their own kinds, holding the signals and memos they created, and new @fluixi/reactive functions `openReactiveScope`, `withReactiveScope`, `closeReactiveScope`, `adoptReactiveScope`, `markReactiveScope`, and `reactiveScopeOf` report such a scope.
+
+### Patch Changes
+
+- 6fa9431: A custom element now appears once in the component tree, showing its props and field signals, and its card displays where the class is defined and where the tag is used.
+- 6f71370: An element, module or service card in the graph no longer shows the package's own line as its source.
+
 ## 0.2.0-alpha.5
 
 ### Patch Changes

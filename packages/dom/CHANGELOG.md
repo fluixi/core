@@ -1,5 +1,37 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.93
+
+### Minor Changes
+
+- b324fbc: The new `cachedResource` handle supports `refetch`, `invalidate`, and `mutate`, accepts a `cache` option, and carries server values to the browser. Remove any use of `createCachedResource`, `clearCachedResourceNamespace`, or `clearAllCachedResources` and use `cachedResource` and `clearCachedResources(name?)` instead.
+- dd39ca3: Light DOM custom elements now render on the server and are adopted on upgrade, with object props passed as JSON in `data-fx-props`, and `hydrateChildren(container, build)` is exported from `@fluixi/dom`. Shadow DOM elements still render on the client, and content an element places from its authored children is not adopted.
+- de25d02: `appendResponseHeader(name, value)` now adds a header, such as Set-Cookie, to the current request's response (merged by @fluixi/start) and returns false if the headers have already been sent or it is called outside a request.
+- b2e1ff3: `streamDocument` now returns a `Promise<Response>` and cookies and other headers set while a streamed page renders its shell reach the response, a render failing before the head is sent answers 500, and `appendResponseHeader` takes an optional request.
+
+### Patch Changes
+
+- fda2262: `event.currentTarget` now refers to the element the handler is attached to, matching addEventListener behavior, so `new FormData(event.currentTarget)` works in onSubmit.
+- 66502b7: Components whose props extend `HTMLAttributes` now typecheck correctly when rendering `props.children` alongside other children.
+- bf42597: JSX now supports `if`, `else`, `each`, `key` and the `<container>` element types.
+- bbe4b8a: A custom element rendered on the server now receives context from the app when hydration reaches it.
+- 4ac7bba: Functions passed to a custom element property are now assigned instead of being called as an accessor, so actions and callbacks reach the element as functions, also on the server.
+- fcc75e2: Page hydration now steps over a custom element that rendered its own content on the server, so elements after it are adopted instead of being built a second time.
+- 4bd61db: A server-rendered custom element now waits for the hydrating app to provide its owner before building, ensuring that context such as the router reaches the element's first render and a `<Link>` inside it navigates after a full page load.
+- 23c5f2b: `ErrorBoundary` now catches errors thrown after the first render, including from accessors and effects, and shows the fallback when a child fails later.
+- e325850: Server data is now read from the `window.__FX_DATA__` script element in the browser, preventing refetches after hydration and preserving the SSR locale seed.
+- 167f094: Hydration now adopts server nodes in document order when a component's children mix a lazy memo (`<Show>`) with plain siblings, preventing duplicated or rebuilt inputs and buttons in hydrated forms.
+- 586c53a: Hydration now adopts server elements by their `data-hk` keys instead of creation order, and `renderToString` generates static markup with `hydrationKeys: false`.
+- b992f7e: Hydration now builds the client's template when the server rendered a different one at that position and removes any server elements that were not claimed.
+- 2f6a83a: During page hydration, only the first insert adopts server nodes and later updates build their own nodes, so a custom element given a new prop no longer takes over its own or its neighbours' nodes.
+- 3026d67: Custom element string, number and boolean props now appear as attributes in server-rendered HTML.
+- 705ff3a: Custom elements now read the surrounding app context during server rendering as they do in the browser.
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [557896f]
+- Updated dependencies [eabcfe0]
+  - @fluixi/reactive@1.0.0-alpha.93
+
 ## 1.0.0-alpha.92
 
 ### Patch Changes

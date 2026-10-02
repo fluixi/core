@@ -1,5 +1,57 @@
 # @fluixi/example-load-strategies
 
+## 0.0.1-alpha.24
+
+### Patch Changes
+
+- Updated dependencies [46bf253]
+- Updated dependencies [b324fbc]
+- Updated dependencies [df021bf]
+- Updated dependencies [8940d60]
+- Updated dependencies [cc2a6f8]
+- Updated dependencies [cced6d2]
+- Updated dependencies [9136d35]
+- Updated dependencies [de2135e]
+- Updated dependencies [eab30a6]
+- Updated dependencies [fda2262]
+- Updated dependencies [557896f]
+- Updated dependencies [66502b7]
+- Updated dependencies [bf42597]
+- Updated dependencies [bbe4b8a]
+- Updated dependencies [eabcfe0]
+- Updated dependencies [4ac7bba]
+- Updated dependencies [fcc75e2]
+- Updated dependencies [dd39ca3]
+- Updated dependencies [4bd61db]
+- Updated dependencies [23c5f2b]
+- Updated dependencies [e325850]
+- Updated dependencies [167f094]
+- Updated dependencies [586c53a]
+- Updated dependencies [b992f7e]
+- Updated dependencies [9ef2827]
+- Updated dependencies [2f6a83a]
+- Updated dependencies [450fa9d]
+- Updated dependencies [8b6d66e]
+- Updated dependencies [fa72d27]
+- Updated dependencies [daae54a]
+- Updated dependencies [dde7a4e]
+- Updated dependencies [fb67321]
+- Updated dependencies [bf0907f]
+- Updated dependencies [de25d02]
+- Updated dependencies [d1268d1]
+- Updated dependencies [ae0e561]
+- Updated dependencies [b0ea788]
+- Updated dependencies [090e5c5]
+- Updated dependencies [3026d67]
+- Updated dependencies [705ff3a]
+- Updated dependencies [6764f45]
+- Updated dependencies [b2e1ff3]
+- Updated dependencies [ffc1b08]
+  - @fluixi/reactive@1.0.0-alpha.93
+  - @fluixi/dom@1.0.0-alpha.93
+  - @fluixi/core@1.0.0-alpha.93
+  - @fluixi/jsx@1.0.0-alpha.93
+
 ## 0.0.1-alpha.23
 
 ### Patch Changes
