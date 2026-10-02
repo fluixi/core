@@ -1,5 +1,4 @@
 ---
-"@fluixi/web-components": minor
 "@fluixi/dom": minor
 ---
 

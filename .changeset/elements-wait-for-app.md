@@ -1,5 +1,4 @@
 ---
-"@fluixi/web-components": patch
 "@fluixi/dom": patch
 "@fluixi/core": patch
 ---
