@@ -469,10 +469,15 @@ export class HTMLReactiveElement extends BaseElement {
     // Its own key scope, named after its own key: the client renders this content in the
     // element's root, not in the page's, and must number it the same way.
     const scope = `${node.getAttribute(HYDRATION_KEY) ?? ''}~`;
-    root(() => {
-      setKeyScope(scope);
-      insert(node as unknown as Element, element.render() as never);
-    });
+    // Under the scope that created the node (recorded by @fluixi/dom), so the app's providers
+    // reach `useContext` here as they do in the browser.
+    const createdIn = (node as unknown as Record<symbol, Owner | undefined>)[OWNER_KEY] ?? null;
+    runWithOwner(createdIn, () =>
+      root(() => {
+        setKeyScope(scope);
+        insert(node as unknown as Element, element.render() as never);
+      }),
+    );
 
     node.setAttribute(SSR_ATTRIBUTE, '');
     if (Object.keys(carried).length) {

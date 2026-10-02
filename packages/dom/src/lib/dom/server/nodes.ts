@@ -14,7 +14,11 @@
  * style, classList, and no-op event listeners.
  */
 
+import { getOwner } from '@fluixi/reactive/signal';
 import { SERVER_NODE } from './host.js';
+
+// Where a custom element was created: the component, and the providers above it.
+const OWNER_KEY = Symbol.for('fluixi.owner');
 
 export const NODE_ELEMENT = 1;
 export const NODE_TEXT = 3;
@@ -250,6 +254,13 @@ export class ServerElement extends ServerNode {
     this.tagName = isSVG ? tag : tag.toUpperCase();
     this.isSVG = isSVG;
     this.namespaceURI = isSVG ? 'http://www.w3.org/2000/svg' : null;
+    // A custom element renders later, when attached or serialized, by which point the component
+    // that made it is no longer the current scope. It renders under this one, so it reads the
+    // app's context on the server as it does after hydration in the browser.
+    if (this.localName.includes('-')) {
+      const owner = getOwner();
+      if (owner) (this as unknown as Record<symbol, unknown>)[OWNER_KEY] = owner;
+    }
   }
 
   setAttribute(name: string, value: string): void {

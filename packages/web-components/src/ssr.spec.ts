@@ -38,6 +38,37 @@ describe('an element rendered on the server', () => {
     expect(out).toMatch(/data-fx-props="\{&quot;items&quot;:\[&quot;Maison Ndiaye&quot;,&quot;Keur Tech&quot;\]\}"/);
   });
 
+  it('reads a context the app provides around it', async () => {
+    const { typedElement, defineCustomElement } = await import('./index.js');
+    const { createNativeElement, insert } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+    const { createContext, useContext } = await import('@fluixi/reactive/signal');
+    const Accent = createContext('ink', 'accent');
+
+    class Badge extends typedElement({}) {
+      protected override render(): unknown {
+        return () => `accent: ${useContext(Accent)}`;
+      }
+    }
+    defineCustomElement('fx-ssr-accent', Badge);
+
+    const out = renderToString(
+      () =>
+        Accent.Provider({
+          value: 'saffron',
+          get children() {
+            // Created inside the provider, attached and rendered afterwards.
+            const section = createNativeElement('section');
+            const badge = createNativeElement('fx-ssr-accent');
+            insert(section, badge as never);
+            return section;
+          },
+        }),
+      { hydrationKeys: false },
+    );
+    expect(out).toContain('accent: saffron');
+  });
+
   it('renders an element from a second copy of the package (a dev reload), with the renderer of the first copy', async () => {
     await import('./index.js'); // the first copy registers the renderer
     vi.resetModules();
