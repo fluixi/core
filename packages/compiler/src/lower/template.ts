@@ -20,6 +20,7 @@ import type { HolePosition, IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
 import { parseLoadDirective } from '../resolve/load-directive.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 import { cleanTemplateText } from './text.js';
+import { decodeEntities } from './entities.js';
 import { paren } from '../analyze/paren.js';
 
 /**
@@ -147,7 +148,8 @@ class Lowerer {
     switch (node.kind) {
       case 'Text': {
         if (node.raw) return { kind: 'text', value: node.value };
-        const cleaned = cleanTemplateText(node.value);
+        // Decoded after cleaning, so an entity written as a space is kept as written.
+        const cleaned = decodeEntities(cleanTemplateText(node.value));
         return cleaned ? { kind: 'text', value: cleaned } : null;
       }
       case 'Comment':
@@ -538,7 +540,7 @@ class Lowerer {
       return base;
     }
     if (v.kind === 'static') {
-      base.literal = v.value;
+      base.literal = decodeEntities(v.value);
       return base;
     }
     if (v.kind === 'hole') {
@@ -553,7 +555,7 @@ class Lowerer {
     let at: HolePosition | undefined;
     const body = v.parts
       .map((p) => {
-        if ('text' in p) return escapeTemplate(p.text);
+        if ('text' in p) return escapeTemplate(decodeEntities(p.text));
         const h = this.hole(p.hole);
         reactive = reactive || h.reactive;
         at ??= h.at;

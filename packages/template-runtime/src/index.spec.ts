@@ -17,6 +17,17 @@ describe('html`` without a build step', () => {
     expect(el.querySelector('.out')?.textContent).toBe('hi');
   });
 
+  it('decodes character references in text and attributes, as JSX does', () => {
+    const el = mount(
+      () => html`<p title="Tom &amp; Jerry" data-mixed="${'A'}&nbsp;B">a&nbsp;b &copy; &#169; &#xA9; &lt;b&gt; &unknown; &constructor;</p>`,
+    );
+    const p = el.querySelector('p')!;
+    expect(p.textContent).toBe('a\u00a0b \u00a9 \u00a9 \u00a9 <b> &unknown; &constructor;');
+    expect(p.querySelector('b')).toBeNull();
+    expect(p.getAttribute('title')).toBe('Tom & Jerry');
+    expect(p.getAttribute('data-mixed')).toBe('A\u00a0B');
+  });
+
   it('inserts a plain value', () => {
     const el = mount(() => html`<p>${'hello'}</p>`);
     expect(el.textContent).toBe('hello');
