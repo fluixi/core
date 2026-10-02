@@ -93,6 +93,8 @@ export {
 
 // Theme store: detect -> persist -> apply -> toggle + no-flash head script.
 export { createTheme, type Theme, type ThemeOptions } from './theme/index.js';
+export { createColorScheme, type ColorScheme, type ColorSchemeChoice, type ColorSchemeOptions } from './theme/color-scheme.js';
+export { ThemeProvider, ColorSchemeProvider, useTheme, useColorScheme } from './theme/provider.js';
 
 // not re-exported from the main entry. `export * from '@fluixi/utils'` here put the
 // whole utility library in every app's graph: 56% of a counter's bundle, 74% of its

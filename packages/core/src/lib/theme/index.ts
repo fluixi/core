@@ -38,6 +38,12 @@ export interface ThemeOptions<T extends string> {
   load?: (theme: T) => void | Promise<void>;
   /** Fired after a theme is applied. */
   onChange?: (next: T, prev: T | undefined) => void;
+  /**
+   * Send the before-paint script with the page, through the head, during a render. It applies a
+   * stored choice the server could not read (a prerendered page) and the OS preference before a
+   * first choice. Default true; `headScript()` returns the same script for a page you write.
+   */
+  script?: boolean;
   /** Fired when an async `load` starts / finishes. */
   onLoading?: (theme: T) => void;
   onLoaded?: (theme: T) => void;
@@ -66,6 +72,30 @@ function systemMap<T extends string>(
   return system;
 }
 
+const YEAR = 60 * 60 * 24 * 365;
+
+/** @internal: a cookie for a year, or memory outside a request on the server. */
+export function defaultStorage(): TypedStorage<any> | null {
+  try {
+    return useStorage({ scope: 'cookie', cookie: { maxAge: YEAR, sameSite: 'lax' } });
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) return null;
+    throw error;
+  }
+}
+
+/** How the head script finds the stored choice before any module has loaded. */
+/** @internal */
+export function storedLookup(storage: TypedStorage<any> | null, key: string): { from: 'cookie' | 'local'; name: string } | null {
+  if (!storage) return null;
+  const full = storage.keyPrefix + key;
+  if (storage.scope === 'cookie') {
+    return { from: 'cookie', name: encodeURIComponent(full).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`) };
+  }
+  if (storage.scope === 'local') return { from: 'local', name: full };
+  return null;
+}
+
 /**
  * A theme controller: a reactive current theme, written to an attribute on the document.
  *
@@ -78,31 +108,9 @@ function systemMap<T extends string>(
  * ```ts
  * const theme = createTheme({ themes: ['light', 'dark'], system: { dark: 'dark' } });
  * theme.set('dark');
- * theme.current();   // 'dark', and the document now carries data-theme="dark"
+ * theme.value();     // 'dark', and the document now carries data-theme="dark"
  * ```
  */
-const YEAR = 60 * 60 * 24 * 365;
-
-function defaultStorage(): TypedStorage<any> | null {
-  try {
-    return useStorage({ scope: 'cookie', cookie: { maxAge: YEAR, sameSite: 'lax' } });
-  } catch (error) {
-    if (error instanceof StorageUnavailableError) return null;
-    throw error;
-  }
-}
-
-/** How the head script finds the stored choice before any module has loaded. */
-function storedLookup(storage: TypedStorage<any> | null, key: string): { from: 'cookie' | 'local'; name: string } | null {
-  if (!storage) return null;
-  const full = storage.keyPrefix + key;
-  if (storage.scope === 'cookie') {
-    return { from: 'cookie', name: encodeURIComponent(full).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`) };
-  }
-  if (storage.scope === 'local') return { from: 'local', name: full };
-  return null;
-}
-
 export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T> {
   const storageKey = options.storageKey ?? 'theme';
   const attribute = options.attribute ?? 'data-theme';
@@ -123,9 +131,6 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
     return valid(saved) ? saved : fallback;
   };
   const [isLoading, setLoading] = createSignal(false);
-
-  // During a render the attribute goes out with the page; on the client the head keeps it current.
-  if (getActiveHead()) useHead({ htmlAttrs: { [attribute]: () => value() } });
 
   const apply = (t: T): void => {
     env.document?.documentElement.setAttribute(attribute, t);
@@ -158,20 +163,31 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
 
   const init = (): void => apply(value());
 
-  const headScript = (): string => {
+  const scriptBody = (): string => {
     const cfg = JSON.stringify({ s: storedLookup(storage, storageKey), a: attribute, d: options.default, sys, ts: options.themes }).replace(/</g, '\\u003c');
     // Runs before paint: read the stored choice (or the system preference) and set the
     // attribute, for pages the server did not render with it. Stored values are envelopes.
     return (
-      `<script>(function(){try{var c=${cfg},t=null,s=c.s,r=null;` +
+      `(function(){try{var c=${cfg},t=null,s=c.s,r=null;` +
       `if(s&&s.from==='local')r=localStorage.getItem(s.name);` +
       `if(s&&s.from==='cookie')document.cookie.split('; ').forEach(function(p){var i=p.indexOf('=');if(p.slice(0,i)===s.name)r=decodeURIComponent(p.slice(i+1));});` +
       `if(r){var e=JSON.parse(r);t=e&&e.v===1?e.value:e;}` +
       `if(c.ts.indexOf(t)<0)t=null;` +
       `if(!t&&c.sys)t=matchMedia('(prefers-color-scheme: dark)').matches?c.sys.dark:c.sys.light;` +
-      `if(!t)t=c.d;document.documentElement.setAttribute(c.a,t);}catch(e){}})();</script>`
+      `if(!t)t=c.d;document.documentElement.setAttribute(c.a,t);}catch(e){}})();`
     );
   };
+  const headScript = (): string => `<script>${scriptBody()}</script>`;
+
+  // During a render the attribute goes out with the page; on the client the head keeps it current.
+  // A prerendered page, or a first visit before any choice, has nothing the server could know;
+  // the script settles it before paint, from the same configuration.
+  if (getActiveHead()) {
+    useHead({
+      htmlAttrs: { [attribute]: () => value() },
+      ...(options.script === false ? {} : { script: [{ children: scriptBody() }] }),
+    });
+  }
 
   return { value, isLoading, set, toggle, init, headScript };
 }
