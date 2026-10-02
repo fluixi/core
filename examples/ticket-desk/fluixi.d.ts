@@ -10,7 +10,9 @@ import * as __src_components_RequestFacts_tsx from './src/components/RequestFact
 import * as __src_components_StatusPill_tsx from './src/components/StatusPill.js';
 import * as __fluixi_core from '@fluixi/core';
 import * as __fluixi_core_router from '@fluixi/core/router';
+import * as __fluixi_core_storage from '@fluixi/core/storage';
 import * as __fluixi_dom from '@fluixi/dom';
+import * as __fluixi_reactive_cached_resource from '@fluixi/reactive/cached-resource';
 import * as __fluixi_reactive_signal from '@fluixi/reactive/signal';
 import * as __fluixi_reactive_store from '@fluixi/reactive/store';
 import * as __fluixi_start_env from '@fluixi/start/env';
@@ -38,6 +40,7 @@ declare global {
   const $effect: typeof __fluixi_reactive_signal.effect;
   const $store: typeof __fluixi_reactive_store.store;
   const $resource: typeof __fluixi_reactive_signal.resource;
+  const $cachedResource: typeof __fluixi_reactive_cached_resource.cachedResource;
   const $selector: typeof __fluixi_reactive_signal.createSelector;
   const $deferred: typeof __fluixi_reactive_signal.createDeferred;
   const $untrack: typeof __fluixi_reactive_signal.untrack;
@@ -48,5 +51,8 @@ declare global {
   const $context: typeof __fluixi_reactive_signal.context;
   const $renderEffect: typeof __fluixi_reactive_signal.renderEffect;
   const $computed: typeof __fluixi_reactive_signal.computed;
+  const $storage: typeof __fluixi_core_storage.useStorage;
+  const $asyncStorage: typeof __fluixi_core_storage.useAsyncStorage;
+  const $persisted: typeof __fluixi_core_storage.persisted;
   const $env: typeof __fluixi_start_env.env;
 }

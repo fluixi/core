@@ -21,7 +21,7 @@ describe('html`` app through SSR + resources', () => {
     // Interpolations are bracketed by `<!--fx-->` markers so the server's markup has the
     // same shape as the client's template: that is what lets hydration adopt the nodes
     // rather than rebuild them. Stripped here so the assertions read as the markup does.
-    const out = renderToString(() => SsrApp({ url: '/home' })).replace(/<!--fx\/?-->/g, '');
+    const out = renderToString(() => SsrApp({ url: '/home' }), { hydrationKeys: false }).replace(/<!--fx\/?-->/g, '');
     expect(out).toContain('<h1>Fluixi SSR</h1>');
     expect(out).toContain('/home');                     // props.url
     expect(out).toContain('<span class="value">3</span>'); // reactive signal
@@ -30,7 +30,7 @@ describe('html`` app through SSR + resources', () => {
   });
 
   it('async renderToStringAsync awaits the resources', async () => {
-    const out = await renderToStringAsync(() => SsrApp({ url: '/' }));
+    const out = await renderToStringAsync(() => SsrApp({ url: '/' }), { hydrationKeys: false });
     expect(out).toContain('User #7');
     expect(out).toContain('User #9');
     expect(out).not.toContain('loading…');
@@ -50,7 +50,7 @@ describe('html`` app through SSR + resources', () => {
 
   it('hydrates server markup without duplicating resource text', async () => {
     setRequestStore(new AsyncLocalStorage());
-    const body = await renderToStringAsync(() => SsrApp({ url: '/' }));
+    const body = await renderToStringAsync(() => SsrApp({ url: '/' }), { hydrationKeys: false });
 
     const root = document.createElement('div');
     document.body.appendChild(root);
