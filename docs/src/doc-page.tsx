@@ -1,8 +1,9 @@
-import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal } from '@fluixi/core';
+import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal, useColorScheme } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { getDoc, VERSIONS, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
+import { languageStorage } from './language.js';
 
 const SITE = 'https://docs.fluixi.com';
 
@@ -215,31 +216,6 @@ function Search(props: { lang: Lang; version: string; label: string }) {
   );
 }
 
-const THEME_KEY = 'fluixi-docs-theme';
-
-/**
- * Flip between light and dark, and remember it.
- *
- * The stored value pins `color-scheme`; with nothing stored the page follows the OS, so
- * the first visit matches whatever the reader already set system-wide. The inline script
- * in index.html re-applies the choice before first paint, doing it here would mean a
- * flash of the wrong theme on every prerendered page.
- */
-function toggleTheme(): void {
-  const root = document.documentElement;
-  const current =
-    root.dataset.theme ??
-    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const next = current === 'dark' ? 'light' : 'dark';
-
-  root.dataset.theme = next;
-  try {
-    localStorage.setItem(THEME_KEY, next);
-  } catch {
-    // Private mode or blocked storage, the theme still applies for this page.
-  }
-}
-
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/...)
 // so each version has its own route wrapper, the router merges the inner [lang]/[slug] params.
 export default function DocPage(props: { version: string; lang: Lang; slug: string }) {
@@ -248,6 +224,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   // forced the route to rebuild the whole page, header and sidebar included, to show a
   // different article.
   const version = () => props.version;
+  const scheme = useColorScheme();
   const lang = () => props.lang;
   const slug = () => props.slug;
 
@@ -339,11 +316,15 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             class="theme-toggle"
             aria-label={ui().theme}
             title={ui().theme}
-            onClick={toggleTheme}
+            onClick={() => scheme.toggle()}
           >
             ◐
           </button>
-          <a class="lang-toggle" href={`/${version()}/${other()}/${slug()}`}>
+          <a
+            class="lang-toggle"
+            href={`/${version()}/${other()}/${slug()}`}
+            onClick={() => languageStorage().set('lang', other())}
+          >
             {LANG_LABEL[other()]}
           </a>
           <a class="d-link" href="https://playground.fluixi.com">

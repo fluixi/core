@@ -11,20 +11,6 @@
     <link rel="icon" type="image/webp" sizes="512x512" href="/icons/android-chrome-512x512.webp" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.webp" />
     <title>Fluixi Docs</title>
-    <!--
-      Re-apply a stored theme before the first paint. Every page here is prerendered, so
-      the HTML ships with no theme pinned and follows the OS; without this, a reader who
-      chose the theme the OS does not use would see it flash on every navigation.
-      Deliberately inline and synchronous, a deferred script runs too late to help.
-    -->
-    <script>
-      try {
-        var stored = localStorage.getItem('fluixi-docs-theme');
-        if (stored) document.documentElement.dataset.theme = stored;
-      } catch (e) {
-        /* blocked storage, fall back to the OS preference */
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>

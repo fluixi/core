@@ -1,4 +1,4 @@
-import { signal } from '@fluixi/core';
+import { signal, useColorScheme } from '@fluixi/core';
 import { seo } from '@fluixi/start/head';
 import './landing.css';
 
@@ -31,29 +31,8 @@ const STATS: { value: string; label: string }[] = [
   { value: 'TC39', label: 'Signals, the standards-track proposal, as the reactive core.' },
 ];
 
-/**
- * Flip between light and dark, and remember it.
- *
- * With nothing stored the page follows the OS, so a first visit matches whatever the reader
- * already set system-wide. The inline script in index.html re-applies a stored choice before
- * first paint, doing it here would flash the wrong theme on a prerendered page.
- */
-function toggleTheme(): void {
-  const root = document.documentElement;
-  const current =
-    root.dataset.theme ??
-    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const next = current === 'dark' ? 'light' : 'dark';
-
-  root.dataset.theme = next;
-  try {
-    localStorage.setItem('fluixi-theme', next);
-  } catch {
-    // Private mode or blocked storage, the choice still applies to this page.
-  }
-}
-
 function Nav() {
+  const scheme = useColorScheme();
   return (
     <nav class="nav">
       <div class="nav-inner">
@@ -69,7 +48,7 @@ function Nav() {
             class="theme-toggle"
             aria-label="Switch theme"
             title="Switch theme"
-            onClick={toggleTheme}
+            onClick={() => scheme.toggle()}
           >
             ◐
           </button>

@@ -1,12 +1,18 @@
 import { Router, Outlet, createMemoryHistory } from '@fluixi/start/router';
-import { Suspense } from '@fluixi/core';
+import { ColorSchemeProvider, Suspense } from '@fluixi/core';
 import { routes } from '@fluixi/core/routes';
 
 function RootLayout() {
+  // Made per render: during prerender the head takes the scheme's attribute and its script.
+  // `system` pins nothing, so the shared theme.css follows the OS until the reader chooses; the
+  // pages are static, so the script applies a stored choice before paint. The bar colours are
+  // theme.css's --bg, for the address bar on Android and Safari's bars on iOS.
   return (
-    <Suspense fallback={<div />}>
-      <Outlet />
-    </Suspense>
+    <ColorSchemeProvider storageKey="fluixi-docs-theme" systemAs="system" themeColor={{ light: '#ffffff', dark: '#0a0a0a' }}>
+      <Suspense fallback={<div />}>
+        <Outlet />
+      </Suspense>
+    </ColorSchemeProvider>
   );
 }
 
