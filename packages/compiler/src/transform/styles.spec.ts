@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 import { transformTemplates } from './templates.js';
 import { hash, printStyle, scopeNodes, scopeSelector, type StyleNode } from './styles.js';
 
@@ -77,7 +78,7 @@ describe('transformTemplates with <style>', () => {
     const id = hash('src/Card.tsx:Card');
     expect(seen).toEqual(['.card { padding: 1rem }']);
     expect(result.styles).toEqual([
-      { id, scoped: true, component: 'Card', css: `.card[data-fx-s="${id}"]{padding:1rem;}`, line: 5, column: 12 },
+      expect.objectContaining({ id, scoped: true, component: 'Card', css: `.card[data-fx-s="${id}"]{padding:1rem;}`, line: 5, column: 12 }),
     ]);
     expect(result.code).not.toContain('<style');
     // Static attributes in the template itself: no runtime work, every render carries them.
@@ -223,3 +224,34 @@ describe('css`` literals', () => {
     expect(cycle.styleDiagnostics?.some((d) => d.message.includes('include each other'))).toBe(true);
   });
 });
+
+describe('style source maps', () => {
+  it('maps each rule and declaration of a block back to where it was written in the module', () => {
+    // As the engine reports positions: from the start of the CSS it was given.
+    const process = (): StyleNode[] => [
+      {
+        kind: 'rule',
+        selector: '.card',
+        loc: { source: 'src/Card.tsx', line: 2, column: 2 },
+        nodes: [{ kind: 'declaration', property: 'padding', value: '1rem', important: false, loc: { source: 'src/Card.tsx', line: 3, column: 4 } }],
+      },
+    ];
+    const code = [
+      'export function Card() {',
+      '  return <div><style scoped>{`',
+      '  .card {',
+      '    padding: 1rem;',
+      '  }`}</style></div>;',
+      '}',
+    ].join('\n');
+    const result = transformTemplates(code, '/app/src/Card.tsx', { sourceRoot: '/app', styles: { process } })!;
+    const style = result.styles![0]!;
+    expect(style.map?.sources).toEqual(['/app/src/Card.tsx']);
+    expect(style.map?.sourcesContent).toEqual([code]);
+    const trace = new TraceMap(style.map as never);
+    // Generated line 1 is the rule, line 2 the declaration (not minified).
+    expect(originalPositionFor(trace, { line: 1, column: 0 })).toMatchObject({ line: 3, column: 2 });
+    expect(originalPositionFor(trace, { line: 2, column: 2 })).toMatchObject({ line: 4, column: 4 });
+  });
+});
+

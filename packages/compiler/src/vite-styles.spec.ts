@@ -48,7 +48,7 @@ describe('component styles in Vite', () => {
     const out = await styles.compile(code, file, ctx);
     expect(out?.code).toContain(`import ${JSON.stringify(styleId(file, 0))};`);
     expect(styles.isStyle(styleId(file, 0))).toBe(true);
-    expect(await styles.load(styleId(file, 0), ctx)).toMatch(/^\.card\[data-fx-s="\w+"\]\{\}$/);
+    expect((await styles.load(styleId(file, 0), ctx))?.code).toMatch(/^\.card\[data-fx-s="\w+"\]\{\}$/);
   });
 
   it('compiles the file again when it changed before its style was asked for', async () => {
@@ -57,7 +57,7 @@ describe('component styles in Vite', () => {
     writeFileSync(file, 'export function Card() { return <div><style>{`.old { a: 1 }`}</style></div>; }');
     await styles.compile('export function Card() { return <div><style>{`.old { a: 1 }`}</style></div>; }', file, ctx);
     writeFileSync(file, 'export function Card() { return <div><style>{`.new { a: 1 }`}</style></div>; }');
-    expect(await styles.load(styleId(file, 0), ctx)).toBe('.new{}');
+    expect((await styles.load(styleId(file, 0), ctx))?.code).toBe('.new{}');
   });
 
   it('resolves a style value imported from another module through Vite', async () => {
@@ -67,7 +67,7 @@ describe('component styles in Vite', () => {
     const code = `import { base } from './base';\nexport function Card() { return <div><style scoped>{\`\${base} .card { a: 1 }\`}</style></div>; }`;
     writeFileSync(file, code);
     await styles.compile(code, file, ctx);
-    expect(await styles.load(styleId(file, 0), ctx)).toMatch(/^\.base\[data-fx-s="\w+"\]\{\}\.card\[data-fx-s="\w+"\]\{\}$/);
+    expect((await styles.load(styleId(file, 0), ctx))?.code).toMatch(/^\.base\[data-fx-s="\w+"\]\{\}\.card\[data-fx-s="\w+"\]\{\}$/);
   });
 
   it('reloads a block whose CSS changed', async () => {

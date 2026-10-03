@@ -496,7 +496,7 @@ export function transformTemplates(
 
   // `<style>` blocks, processed by the host's CSS engine and scoped. Only when the host asked:
   // without a processor a `<style>` stays an ordinary element.
-  const styles = wantsStyles ? collectStyles(ast.program as never, sourceName, options.styles, litTag) : undefined;
+  const styles = wantsStyles ? collectStyles(ast.program as never, sourceName, options.styles, litTag, { id, code }) : undefined;
 
   // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.

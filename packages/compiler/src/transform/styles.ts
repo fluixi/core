@@ -11,6 +11,7 @@
  * (part of the static template, so client renders, SSR and hydration all carry it) and adds
  * `[data-fx-s="<id>"]` to the last compound of each selector.
  */
+import { encode } from '@jridgewell/sourcemap-codec';
 /** A Babel AST node, as the rest of the compiler reads it: loosely. */
 interface Node {
   type: string;
@@ -21,11 +22,27 @@ interface Node {
 }
 
 /** The engine's AST: what `processCss` from @fluixi-css returns. */
+/** Where a node was written: line from 1, column from 0. */
+export interface StyleLoc {
+  source: string;
+  line: number;
+  column: number;
+}
+
 export type StyleNode =
-  | { kind: 'declaration'; property: string; value: string; important: boolean }
-  | { kind: 'rule'; selector: string; nodes: StyleNode[] }
-  | { kind: 'at-rule'; name: string; params: string; nodes: StyleNode[] }
-  | { kind: 'raw'; text: string };
+  | { kind: 'declaration'; property: string; value: string; important: boolean; loc?: StyleLoc }
+  | { kind: 'rule'; selector: string; nodes: StyleNode[]; loc?: StyleLoc }
+  | { kind: 'at-rule'; name: string; params: string; nodes: StyleNode[]; loc?: StyleLoc }
+  | { kind: 'raw'; text: string; loc?: StyleLoc };
+
+/** A V3 source map. */
+export interface StyleMap {
+  version: 3;
+  sources: string[];
+  sourcesContent: string[];
+  names: string[];
+  mappings: string;
+}
 
 export interface StyleOptions {
   /** CSS in, flattened engine AST out: `(css, from) => processCss(css, ctx, { from }).ast`. */
@@ -64,6 +81,8 @@ export interface CompiledStyle {
   /** The component the block belongs to, as named in the source. */
   component: string;
   css: string;
+  /** Back to the module, when the host gave its id and code. */
+  map?: StyleMap;
   line: number;
   column: number;
 }
@@ -94,7 +113,14 @@ export const SCOPE_ATTR = 'data-fx-s';
 const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod']);
 
 /** Finds the style blocks of a module and compiles them. Without `options`, nothing happens. */
-export function collectStyles(program: Node, sourceName: string, options: StyleOptions | undefined, litTag = 'html'): StylePlan {
+export function collectStyles(
+  program: Node,
+  sourceName: string,
+  options: StyleOptions | undefined,
+  litTag = 'html',
+  /** The module as the host knows it, for source maps that point into it. */
+  module?: { id: string; code: string },
+): StylePlan {
   const plan: StylePlan = {
     scopes: [], templateOwners: new Map(), drop: new Set(), styles: [], diagnostics: [], edits: [], literals: [], references: [],
   };
@@ -111,7 +137,9 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
       const text = (quasis[i]!.value.cooked ?? quasis[i]!.value.raw) as string;
       if (text.trim()) {
         try {
-          out.push(...options.process(text, sourceName));
+          // The engine's positions count from the piece; the piece starts where its quasi does.
+          const start = quasis[i]!.loc?.start as { line: number; column: number } | undefined;
+          out.push(...options.process(text, sourceName).map((n) => (start ? shiftLoc(n, sourceName, start) : n)));
         } catch (error) {
           plan.diagnostics.push({ ...at, message: `CSS could not be processed: ${(error as Error).message}` });
           return null;
@@ -138,7 +166,8 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
     const imported = literalsOf.imports.get(name);
     if (imported) {
       const nodes = options?.imported?.get(`${imported.source}#${imported.name}`);
-      if (nodes) return nodes;
+      // Their positions count from printed CSS, not from any source file.
+      if (nodes) return nodes.map(dropLoc);
       plan.references.push({ name: imported.name, source: imported.source, ...at });
       plan.diagnostics.push({ ...at, message: `${name} comes from ${imported.source}: style values from another module are resolved by the build.` });
       return null;
@@ -233,7 +262,8 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
       nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
     }
     plan.drop.add(node.start!);
-    plan.styles.push({ id, scoped, component, css: printStyle(nodes, options.minify), ...at });
+    const printed = module ? printStyleWithMap(nodes, options.minify, sourceName, module) : { css: printStyle(nodes, options.minify) };
+    plan.styles.push({ id, scoped, component, ...printed, ...at });
   };
 
   // One id per component: every block it has, scoped or not, JSX or template, shares it.
@@ -575,6 +605,65 @@ function splitTop(selector: string, separator: string): string[] {
 }
 
 // ─── Printing ────────────────────────────────────────────────────────────────
+
+function shiftLoc(node: StyleNode, source: string, start: { line: number; column: number }): StyleNode {
+  const loc = node.loc && node.loc.source === source
+    ? { source, line: start.line + node.loc.line - 1, column: node.loc.line === 1 ? start.column + node.loc.column : node.loc.column }
+    : node.loc;
+  if (node.kind === 'rule' || node.kind === 'at-rule') return { ...node, loc, nodes: node.nodes.map((n) => shiftLoc(n, source, start)) };
+  return { ...node, loc } as StyleNode;
+}
+
+function dropLoc(node: StyleNode): StyleNode {
+  const { loc: _loc, ...rest } = node;
+  if (rest.kind === 'rule' || rest.kind === 'at-rule') return { ...rest, nodes: rest.nodes.map(dropLoc) } as StyleNode;
+  return rest as StyleNode;
+}
+
+/**
+ * Prints like `printStyle`, with a map from each rule and declaration back to where it was
+ * written in the module: the browser's devtools then show the `.tsx` line, not the generated CSS.
+ */
+export function printStyleWithMap(
+  nodes: StyleNode[],
+  minify: boolean | undefined,
+  sourceName: string,
+  module: { id: string; code: string },
+): { css: string; map: StyleMap } {
+  const lines: [number, number, number, number][][] = [[]];
+  let css = '';
+  let column = 0;
+  const emit = (text: string) => {
+    for (const ch of text) {
+      css += ch;
+      if (ch === '\n') {
+        lines.push([]);
+        column = 0;
+      } else column++;
+    }
+  };
+  const mark = (loc: StyleLoc | undefined) => {
+    if (loc && loc.source === sourceName) lines[lines.length - 1]!.push([column, 0, loc.line - 1, loc.column]);
+  };
+  const write = (node: StyleNode, depth: number) => {
+    const pad = minify ? '' : '  '.repeat(depth);
+    const nl = minify ? '' : '\n';
+    const sp = minify ? '' : ' ';
+    emit(pad);
+    mark(node.loc);
+    if (node.kind === 'declaration') {
+      emit(`${node.property}:${sp}${node.value}${node.important ? `${sp}!important` : ''};${nl}`);
+    } else if (node.kind === 'raw') {
+      emit(`${node.text}${nl}`);
+    } else {
+      emit(`${node.kind === 'rule' ? node.selector : `@${node.name}${node.params ? ' ' + node.params : ''}`}${sp}{${nl}`);
+      for (const child of node.nodes) write(child, depth + 1);
+      emit(`${pad}}${nl}`);
+    }
+  };
+  for (const node of nodes) write(node, 0);
+  return { css, map: { version: 3, sources: [module.id], sourcesContent: [module.code], names: [], mappings: encode(lines) } };
+}
 
 export function printStyle(nodes: StyleNode[], minify = false): string {
   const out: string[] = [];

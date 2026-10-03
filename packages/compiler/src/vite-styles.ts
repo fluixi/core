@@ -19,7 +19,7 @@ interface CssApi {
 
 interface Compiled {
   code: string;
-  styles?: { css: string }[];
+  styles?: { css: string; map?: unknown }[];
   styleLiterals?: { name: string; css: string }[];
   styleReferences?: StyleReference[];
 }
@@ -50,7 +50,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
   const fileOf = (id: string) => (existsSync(id) ? id : join(root, id));
   // The CSS of each module's blocks, with the source it came from, for `load` and for telling
   // what changed.
-  const cache = new Map<string, { source: string; css: string[] }>();
+  const cache = new Map<string, { source: string; css: string[]; maps: unknown[] }>();
 
   const resolveReference = async (
     ref: StyleReference,
@@ -100,8 +100,9 @@ export function createComponentStyles(compile: CompileWithStyles) {
       if (imported.size) result = compile(code, file, { ...styles, imported });
     }
     const css = (result?.styles ?? []).map((s) => s.css);
+    const maps = (result?.styles ?? []).map((s) => s.map ?? null);
     const before = cache.get(file);
-    cache.set(file, { source: code, css });
+    cache.set(file, { source: code, css, maps });
     // A block whose CSS changed (its own edit, or a value it composes from another module) is
     // reloaded: its module id did not change, so nothing else would tell Vite.
     if (server && before) {
@@ -135,8 +136,11 @@ export function createComponentStyles(compile: CompileWithStyles) {
       return STYLE_ID.test(id);
     },
     compile: run,
-    /** A block's CSS, compiling its module again when the cache does not match the file. */
-    async load(id: string, ctx: ResolveContext): Promise<string | null> {
+    /**
+     * A block's CSS and its map back to the module, compiling the module again when the cache
+     * does not match the file.
+     */
+    async load(id: string, ctx: ResolveContext): Promise<{ code: string; map: unknown } | null> {
       const match = STYLE_ID.exec(id);
       if (!match || !api) return null;
       const file = id.slice(0, id.indexOf('?'));
@@ -147,7 +151,9 @@ export function createComponentStyles(compile: CompileWithStyles) {
         return null;
       }
       if (cache.get(fileOf(file))?.source !== source) await run(source, file, ctx);
-      return cache.get(fileOf(file))?.css[Number(match[1])] ?? '';
+      const entry = cache.get(fileOf(file));
+      const index = Number(match[1]);
+      return { code: entry?.css[index] ?? '', map: entry?.maps[index] ?? null };
     },
   };
 }
