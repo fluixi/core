@@ -121,4 +121,31 @@ describe('transformTemplates with <style>', () => {
     expect(result?.styles).toBeUndefined();
     expect(result?.code).toContain('style');
   });
+
+  it('compiles a scoped block in an html template the same way', () => {
+    const { result, seen } = run(`
+      export function Card() {
+        return html\`
+          <style scoped>.card { padding: 1rem }</style>
+          <section class="card"><h2>Title</h2></section>
+        \`;
+      }
+    `);
+    const id = hash('src/Card.tsx:Card');
+    expect(seen).toEqual(['.card { padding: 1rem }']);
+    expect(result.styles?.[0]).toMatchObject({ id, scoped: true, component: 'Card', css: `.card[data-fx-s="${id}"]{padding:1rem;}` });
+    expect(result.code).not.toContain('<style');
+    expect(result.code).toContain(`<section data-fx-s=\\"${id}\\" class=\\"card\\"><h2 data-fx-s=\\"${id}\\">Title</h2></section>`);
+  });
+
+  it('names a custom element class block after the class', () => {
+    const { result } = run(`
+      class FxCard extends HTMLElement {
+        render() {
+          return html\`<style scoped>.card { padding: 1rem }</style><article class="card"></article>\`;
+        }
+      }
+    `);
+    expect(result.styles?.[0]).toMatchObject({ component: 'FxCard', id: hash('src/Card.tsx:FxCard'), scoped: true });
+  });
 });

@@ -490,7 +490,7 @@ export function transformTemplates(
 
   // `<style>` blocks, processed by the host's CSS engine and scoped. Only when the host asked:
   // without a processor a `<style>` stays an ordinary element.
-  const styles = wantsJsx && code.includes('<style') ? collectStyles(ast.program as never, sourceName, options.styles) : undefined;
+  const styles = code.includes('<style') ? collectStyles(ast.program as never, sourceName, options.styles, litTag) : undefined;
 
   // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
@@ -531,8 +531,23 @@ export function transformTemplates(
     const holes = node.quasi.expressions.map((e: Node) =>
       bindHole(code, e, edits, options.sourceLocations === true),
     );
+    const scope = styles?.scopes.find((s) => node.start >= s.start && node.end <= s.end)?.value;
+    const owner = styles?.templateOwners.get(node.start);
+    const templateStyles =
+      options.styles && styles && (scope || owner)
+        ? {
+            options: options.styles,
+            ...(scope ? { scope } : {}),
+            ...(owner ? { owner } : {}),
+            line: node.loc?.start.line ?? 0,
+            column: node.loc?.start.column ?? 0,
+            styles: styles.styles,
+            diagnostics: styles.diagnostics,
+          }
+        : undefined;
     const result = compilePieces(toPieces(node), holes, {
       ...options,
+      ...(templateStyles ? { templateStyles } : {}),
       hoistTemplates: true,
       // A tag inside a template gets the same mark a JSX tag does. Without one, the nodes it
       // makes are the only ones in the module carrying no mark, and they take whichever was

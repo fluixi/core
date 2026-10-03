@@ -8,6 +8,7 @@
  * everything after that point is here. Passes run in the same order as
  * `emitLitViaIR`: compile-template.spec.ts compares the two.
  */
+import { applyTemplateStyles, type TemplateStyles } from '../transform/styles.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { collapseStrategies } from '../optimize/collapse-strategies.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
@@ -58,6 +59,8 @@ export interface CompileTemplateOptions {
    */
   sourceFile?: string;
   positionAt?: (offset: number) => { line: number; column: number };
+  /** `<style>` blocks and scope stamping for this template (see transform/styles.ts). */
+  templateStyles?: TemplateStyles;
 }
 
 export interface CompileTemplateResult {
@@ -124,6 +127,7 @@ export function compilePieces(
     ...(options.sourceFile ? { sourceFile: options.sourceFile } : {}),
     ...(options.positionAt ? { positionAt: options.positionAt } : {}),
   });
+  if (options.templateStyles) applyTemplateStyles(ir as never, options.templateStyles);
   analyzeStatic(ir);
 
   // Same order as the Babel front-end: decide where each component reference

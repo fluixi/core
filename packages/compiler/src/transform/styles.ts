@@ -53,6 +53,8 @@ export interface StyleDiagnostic {
 export interface StylePlan {
   /** Source ranges whose intrinsic elements get `data-fx-s`, with the value. */
   scopes: { start: number; end: number; value: string }[];
+  /** `` html`` `` templates holding a `<style>`, by start offset: whose block it is. */
+  templateOwners: Map<number, { id: string; component: string }>;
   /** Start offsets of the `<style>` elements to leave out of the template. */
   drop: Set<number>;
   styles: CompiledStyle[];
@@ -64,8 +66,8 @@ export const SCOPE_ATTR = 'data-fx-s';
 const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod']);
 
 /** Finds the style blocks of a module and compiles them. Without `options`, nothing happens. */
-export function collectStyles(program: Node, sourceName: string, options: StyleOptions | undefined): StylePlan {
-  const plan: StylePlan = { scopes: [], drop: new Set(), styles: [], diagnostics: [] };
+export function collectStyles(program: Node, sourceName: string, options: StyleOptions | undefined, litTag = 'html'): StylePlan {
+  const plan: StylePlan = { scopes: [], templateOwners: new Map(), drop: new Set(), styles: [], diagnostics: [] };
   if (!options) return plan;
   const scopeOf = new Map<Node, string>();
   const names = new Map<string, number>();
@@ -76,6 +78,25 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
     if (!node || typeof node !== 'object') return;
     if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init && FUNCTIONS.has(node.init.type)) {
       named.set(node.init, node.id.name);
+    }
+    // A custom element's `render()` belongs to the class: the element is the component.
+    if ((node.type === 'ClassDeclaration' || node.type === 'ClassExpression') && node.id) {
+      for (const member of node.body.body) if (member.type === 'ClassMethod') named.set(member, node.id.name);
+    }
+    if (node.type === 'TaggedTemplateExpression' && node.tag.type === 'Identifier' && node.tag.name === litTag) {
+      const text = node.quasi.quasis.map((q: Node) => q.value.raw).join('');
+      if (/<style[\s>]/.test(text)) {
+        const at = { line: node.loc?.start.line ?? 0, column: node.loc?.start.column ?? 0 };
+        const owner = owners[0];
+        if (!owner) plan.diagnostics.push({ ...at, message: '<style> has to be written inside a component.' });
+        else {
+          const id = idFor(owner);
+          plan.templateOwners.set(node.start!, { id, component: functionName(owner, named) });
+          if (/<style\b[^>]*\bscoped\b/.test(text) && !plan.scopes.some((s) => s.value === id)) {
+            plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
+          }
+        }
+      }
     }
     const inner = FUNCTIONS.has(node.type) ? [...owners, node] : owners;
     if (node.type === 'JSXElement' && isStyle(node)) {
@@ -110,13 +131,7 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
       return;
     }
     const component = functionName(owner, named);
-    let id = scopeOf.get(owner);
-    if (!id) {
-      const seen = names.get(component) ?? 0;
-      names.set(component, seen + 1);
-      id = hash(`${sourceName}:${component}${seen ? ':' + seen : ''}`);
-      scopeOf.set(owner, id);
-    }
+    const id = idFor(owner);
     const scoped = isScoped(node);
     let nodes: StyleNode[];
     try {
@@ -133,8 +148,88 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
     plan.styles.push({ id, scoped, component, css: printStyle(nodes, options.minify), ...at });
   };
 
+  // One id per component: every block it has, scoped or not, JSX or template, shares it.
+  function idFor(owner: Node): string {
+    let id = scopeOf.get(owner);
+    if (!id) {
+      const component = functionName(owner, named);
+      const seen = names.get(component) ?? 0;
+      names.set(component, seen + 1);
+      id = hash(`${sourceName}:${component}${seen ? ':' + seen : ''}`);
+      scopeOf.set(owner, id);
+    }
+    return id;
+  }
+
   visit(program, []);
   return plan;
+}
+
+// ─── `` html`` `` templates ──────────────────────────────────────────────────
+
+/** What a template's compile needs to know about styles, and where it reports them. */
+export interface TemplateStyles {
+  options: StyleOptions;
+  /** Stamp every element of the template with this scope. */
+  scope?: string;
+  /** Whose `<style>` blocks this template holds. */
+  owner?: { id: string; component: string };
+  line: number;
+  column: number;
+  styles: CompiledStyle[];
+  diagnostics: StyleDiagnostic[];
+}
+
+interface IRLike {
+  kind: string;
+  tag?: string;
+  props?: { name: string; kind: string; literal?: unknown }[];
+  children?: IRLike[];
+  value?: string;
+}
+
+/**
+ * The template form: after lowering, a `<style>` is an element with raw text. It is taken out,
+ * compiled like a JSX block, and the template's other elements get the scope.
+ */
+export function applyTemplateStyles(ir: IRLike, t: TemplateStyles): void {
+  const at = { line: t.line, column: t.column };
+  const walk = (node: IRLike) => {
+    const children = node.children;
+    if (children) {
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i]!;
+        if (child.kind === 'element' && child.tag === 'style' && t.owner) {
+          children.splice(i, 1);
+          compileTemplateBlock(child, t, at);
+        } else walk(child);
+      }
+    }
+    if (t.scope && node.kind === 'element' && node.tag !== 'style' && node.props && !node.props.some((p) => p.name === SCOPE_ATTR)) {
+      node.props.unshift({ name: SCOPE_ATTR, kind: 'attr', literal: t.scope });
+    }
+  };
+  walk(ir);
+}
+
+function compileTemplateBlock(node: IRLike, t: TemplateStyles, at: { line: number; column: number }): void {
+  const children = node.children ?? [];
+  if (!children.every((c) => c.kind === 'text')) {
+    t.diagnostics.push({ ...at, message: '<style> in a template needs static CSS: interpolation is not supported here yet.' });
+    return;
+  }
+  const css = children.map((c) => c.value ?? '').join('');
+  const scoped = (node.props ?? []).some((p) => p.name === 'scoped');
+  const owner = t.owner!;
+  let nodes: StyleNode[];
+  try {
+    nodes = t.options.process(css, '');
+  } catch (error) {
+    t.diagnostics.push({ ...at, message: `<style> could not be processed: ${(error as Error).message}` });
+    return;
+  }
+  if (scoped) nodes = scopeNodes(nodes, owner.id, (message) => t.diagnostics.push({ ...at, message }));
+  t.styles.push({ id: owner.id, scoped, component: owner.component, css: printStyle(nodes, t.options.minify), ...at });
 }
 
 function isStyle(node: Node): boolean {
