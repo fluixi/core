@@ -31,6 +31,24 @@ export interface StyleOptions {
   /** CSS in, flattened engine AST out: `(css, from) => processCss(css, ctx, { from }).ast`. */
   process(css: string, from: string): StyleNode[];
   minify?: boolean;
+  /** Modules whose `css` export is the portable literal. Default `['@fluixi-css/core']`. */
+  cssModules?: string[];
+}
+
+/** A `css`` value: portable, unscoped, emitted only where something uses it. */
+export interface StyleLiteral {
+  id: string;
+  /** The variable it is bound to. */
+  name: string;
+  css: string;
+}
+
+/** An interpolated style value from another module, for the build to resolve. */
+export interface StyleReference {
+  name: string;
+  source: string;
+  line: number;
+  column: number;
 }
 
 export interface CompiledStyle {
@@ -59,6 +77,10 @@ export interface StylePlan {
   drop: Set<number>;
   styles: CompiledStyle[];
   diagnostics: StyleDiagnostic[];
+  /** Source edits: each `css`` replaced by its handle, the `css` import taken out. */
+  edits: { start: number; end: number; code: string }[];
+  literals: StyleLiteral[];
+  references: StyleReference[];
 }
 
 export const SCOPE_ATTR = 'data-fx-s';
@@ -67,8 +89,71 @@ const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFu
 
 /** Finds the style blocks of a module and compiles them. Without `options`, nothing happens. */
 export function collectStyles(program: Node, sourceName: string, options: StyleOptions | undefined, litTag = 'html'): StylePlan {
-  const plan: StylePlan = { scopes: [], templateOwners: new Map(), drop: new Set(), styles: [], diagnostics: [] };
+  const plan: StylePlan = {
+    scopes: [], templateOwners: new Map(), drop: new Set(), styles: [], diagnostics: [], edits: [], literals: [], references: [],
+  };
   if (!options) return plan;
+  const literalsOf = findLiterals(program, options.cssModules ?? ['@fluixi-css/core'], plan);
+  const resolved = new Map<string, StyleNode[] | null>();
+
+  // A `css`` value's nodes: each static piece processed on its own, interpolated values put
+  // in between, in order. Composition happens on the AST, so the cascade is the written one,
+  // and interpolation can only stand between rules.
+  const piecesToNodes = (quasis: Node[], expressions: Node[], at: { line: number; column: number }, stack: string[]): StyleNode[] | null => {
+    const out: StyleNode[] = [];
+    for (let i = 0; i < quasis.length; i++) {
+      const text = (quasis[i]!.value.cooked ?? quasis[i]!.value.raw) as string;
+      if (text.trim()) {
+        try {
+          out.push(...options.process(text, sourceName));
+        } catch (error) {
+          plan.diagnostics.push({ ...at, message: `CSS could not be processed: ${(error as Error).message}` });
+          return null;
+        }
+      }
+      const expr = expressions[i];
+      if (!expr) continue;
+      const value = expr.type === 'Identifier' ? resolveLiteral(expr.name, at, stack) : undefined;
+      if (value === undefined) {
+        plan.diagnostics.push({
+          ...at,
+          message: 'Only css`` values can be interpolated into styles, and only by name: ${base}. Dynamic values go through custom properties (style:--x={...} and var(--x)).',
+        });
+        return null;
+      }
+      if (value === null) return null;
+      out.push(...value);
+    }
+    return out;
+  };
+
+  /** A literal's nodes; `undefined` when the name is not a style value at all. */
+  function resolveLiteral(name: string, at: { line: number; column: number }, stack: string[]): StyleNode[] | null | undefined {
+    const imported = literalsOf.imports.get(name);
+    if (imported) {
+      plan.references.push({ name, source: imported, ...at });
+      plan.diagnostics.push({ ...at, message: `${name} comes from ${imported}: style values from another module are resolved by the build.` });
+      return null;
+    }
+    const literal = literalsOf.literals.get(name);
+    if (!literal) return undefined;
+    if (stack.includes(name)) {
+      plan.diagnostics.push({ ...at, message: `css\`\` values include each other: ${[...stack, name].join(' → ')}.` });
+      return null;
+    }
+    if (!resolved.has(name)) {
+      resolved.set(name, piecesToNodes(literal.quasi.quasis, literal.quasi.expressions, at, [...stack, name]));
+    }
+    return resolved.get(name)!;
+  }
+
+  for (const [name, literal] of literalsOf.literals) {
+    const at = { line: literal.loc?.start.line ?? 0, column: literal.loc?.start.column ?? 0 };
+    const nodes = resolveLiteral(name, at, []);
+    const id = hash(`${sourceName}:css:${name}`);
+    plan.edits.push({ start: literal.start!, end: literal.end!, code: `({ $fxStyle: ${JSON.stringify(id)} })` });
+    if (nodes) plan.literals.push({ id, name, css: printStyle(nodes, options.minify) });
+  }
   const scopeOf = new Map<Node, string>();
   const names = new Map<string, number>();
   // `const Card = () => …`: the component's name is the variable's.
@@ -113,13 +198,11 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
 
   const handle = (node: Node, owners: Node[]) => {
     const at = { line: node.loc?.start.line ?? 0, column: node.loc?.start.column ?? 0 };
-    const css = staticCss(node);
-    if (css === null) {
+    const pieces = blockPieces(node);
+    if (pieces === null) {
       plan.diagnostics.push({
         ...at,
-        message:
-          '<style> needs its CSS as one static template literal, <style>{`...`}</style>: ' +
-          'JSX reads `{` as an expression, and interpolation is not supported here yet.',
+        message: '<style> needs its CSS as one template literal, <style>{`...`}</style>: JSX reads a bare `{` as an expression.',
       });
       return;
     }
@@ -133,13 +216,10 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
     const component = functionName(owner, named);
     const id = idFor(owner);
     const scoped = isScoped(node);
-    let nodes: StyleNode[];
-    try {
-      nodes = options.process(css, sourceName);
-    } catch (error) {
-      plan.diagnostics.push({ ...at, message: `<style> could not be processed: ${(error as Error).message}` });
-      return;
-    }
+    const processed = piecesToNodes(pieces.quasis, pieces.expressions, at, []);
+    if (!processed) return;
+    let nodes = processed;
+    // Everything in the block, composed values included, takes the one scope.
     if (scoped) {
       if (!plan.scopes.some((s) => s.value === id)) plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
       nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
@@ -241,17 +321,71 @@ function isScoped(node: Node): boolean {
   return node.openingElement.attributes.some((a: Node) => a.type === 'JSXAttribute' && a.name.type === 'JSXIdentifier' && a.name.name === 'scoped');
 }
 
-/** The block's CSS when it is one static template literal or string; `null` otherwise. */
-function staticCss(node: Node): string | null {
+/** The block's template pieces, a string counting as one piece; `null` when it is anything else. */
+function blockPieces(node: Node): { quasis: Node[]; expressions: Node[] } | null {
   const meaningful = node.children.filter((c: Node) => !(c.type === 'JSXText' && !c.value.trim()));
-  if (meaningful.length === 0) return '';
+  if (meaningful.length === 0) return { quasis: [], expressions: [] };
   if (meaningful.length !== 1) return null;
   const only = meaningful[0]!;
   if (only.type !== 'JSXExpressionContainer') return null;
   const expr = only.expression;
-  if (expr.type === 'StringLiteral') return expr.value;
-  if (expr.type === 'TemplateLiteral' && expr.expressions.length === 0) return expr.quasis.map((q: Node) => q.value.cooked ?? q.value.raw).join('');
+  if (expr.type === 'StringLiteral') return { quasis: [{ type: 'TemplateElement', value: { raw: expr.value, cooked: expr.value } }], expressions: [] };
+  if (expr.type === 'TemplateLiteral') return { quasis: expr.quasis, expressions: expr.expressions };
   return null;
+}
+
+/**
+ * The module's `css` binding and its `css`` declarations. The import is rewritten without
+ * `css`: every use is compiled away, and the engine has no business in a browser bundle.
+ */
+function findLiterals(program: Node, modules: string[], plan: StylePlan): { literals: Map<string, Node>; imports: Map<string, string> } {
+  const literals = new Map<string, Node>();
+  const imports = new Map<string, string>();
+  let tag: string | undefined;
+  for (const statement of program.body ?? []) {
+    if (statement.type !== 'ImportDeclaration') continue;
+    const source = statement.source.value as string;
+    const specifiers = statement.specifiers as Node[];
+    for (const sp of specifiers) imports.set(sp.local.name, source);
+    if (!modules.includes(source)) continue;
+    const css = specifiers.find((sp) => sp.type === 'ImportSpecifier' && (sp.imported.name ?? sp.imported.value) === 'css');
+    if (!css) continue;
+    const local = css.local.name as string;
+    tag = local;
+    imports.delete(local);
+    plan.edits.push({ start: statement.start!, end: statement.end!, code: importWithout(statement, css) });
+  }
+  if (!tag) return { literals, imports: new Map() };
+  const visit = (node: Node) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init?.type === 'TaggedTemplateExpression' && node.init.tag.type === 'Identifier' && node.init.tag.name === tag) {
+      literals.set(node.id.name, node.init);
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'loc') continue;
+      const value = (node as Record<string, unknown>)[key];
+      if (Array.isArray(value)) for (const v of value) visit(v as Node);
+      else if (value && typeof value === 'object' && 'type' in (value as object)) visit(value as Node);
+    }
+  };
+  visit(program);
+  // Only names that are style values elsewhere stay as references; any other import is not one.
+  for (const [name] of imports) if (!/^[A-Za-z_$][\w$]*$/.test(name)) imports.delete(name);
+  return { literals, imports };
+}
+
+function importWithout(statement: Node, removed: Node): string {
+  const rest = (statement.specifiers as Node[]).filter((sp) => sp !== removed);
+  const source = JSON.stringify(statement.source.value);
+  if (rest.length === 0) return '';
+  const def = rest.find((sp) => sp.type === 'ImportDefaultSpecifier');
+  const ns = rest.find((sp) => sp.type === 'ImportNamespaceSpecifier');
+  const named = rest.filter((sp) => sp.type === 'ImportSpecifier').map((sp) => {
+    const imported = sp.imported.name ?? JSON.stringify(sp.imported.value);
+    return imported === sp.local.name ? imported : `${imported} as ${sp.local.name}`;
+  });
+  const parts = [def?.local.name, ns ? `* as ${ns.local.name}` : undefined, named.length ? `{ ${named.join(', ')} }` : undefined].filter(Boolean);
+  return `import ${parts.join(', ')} from ${source};`;
 }
 
 function functionName(fn: Node, named: Map<Node, string>): string {

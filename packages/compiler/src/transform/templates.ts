@@ -26,7 +26,7 @@ import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { collectSourceEdits, mayHaveSourceMarks } from './source-locations.js';
-import { collectStyles, type CompiledStyle, type StyleDiagnostic, type StyleOptions, type StylePlan } from './styles.js';
+import { collectStyles, type CompiledStyle, type StyleDiagnostic, type StyleLiteral, type StyleOptions, type StylePlan, type StyleReference } from './styles.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -120,6 +120,10 @@ export interface TransformResult {
   /** `<style>` blocks taken out of the templates, processed and scoped, for the host to emit. */
   styles?: CompiledStyle[];
   styleDiagnostics?: StyleDiagnostic[];
+  /** `css`` values of the module, processed and unscoped, by handle id: emitted where used. */
+  styleLiterals?: StyleLiteral[];
+  /** Style values interpolated from other modules, for the build to resolve. */
+  styleReferences?: StyleReference[];
 }
 
 // Which builtin comes from which module is published by resolve/builtins.ts , 
@@ -451,7 +455,9 @@ export function transformTemplates(
   // What a mark calls this file. The declaration marks and the usage marks are read back by
   // name, so both passes have to spell it the same way.
   const sourceName = relativeToRoot(id, options.sourceRoot);
-  if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics && !wantsSources) return null;
+  // A module of nothing but css`` values still has literals to compile.
+  const wantsStyles = options.styles !== undefined && (code.includes('<style') || code.includes('css`'));
+  if (!mayHaveTemplate && !(wantsJsx && code.includes('<')) && !wantsIntrinsics && !wantsSources && !wantsStyles) return null;
 
   const ast = parse(code, {
     sourceType: 'module',
@@ -490,7 +496,7 @@ export function transformTemplates(
 
   // `<style>` blocks, processed by the host's CSS engine and scoped. Only when the host asked:
   // without a processor a `<style>` stays an ordinary element.
-  const styles = code.includes('<style') ? collectStyles(ast.program as never, sourceName, options.styles, litTag) : undefined;
+  const styles = wantsStyles ? collectStyles(ast.program as never, sourceName, options.styles, litTag) : undefined;
 
   // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
@@ -500,7 +506,9 @@ export function transformTemplates(
     sources.edits.length === 0 &&
     intrinsics.edits.length === 0 &&
     intrinsics.diagnostics.length === 0 &&
-    props.diagnostics.length === 0;
+    props.diagnostics.length === 0 &&
+    !styles?.edits.length &&
+    !styles?.diagnostics.length;
   if (silent) return null;
 
   // Innermost first, so a nested template is already compiled by the time the
@@ -516,7 +524,7 @@ export function transformTemplates(
     declared: declaredNames(ast.program),
   };
   const hoisted = new Map<string, string>();
-  const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits];
+  const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits, ...(styles?.edits ?? [])];
   for (const node of found) {
     // A root inside another root's hole is emitted without partial templates,
     // matching what the plugin does for nested emits. Marker layout has to agree
@@ -666,6 +674,8 @@ export function transformTemplates(
     ...(intrinsics.diagnostics.length ? { intrinsicDiagnostics: intrinsics.diagnostics } : {}),
     ...(styles?.styles.length ? { styles: styles.styles } : {}),
     ...(styles?.diagnostics.length ? { styleDiagnostics: styles.diagnostics } : {}),
+    ...(styles?.literals.length ? { styleLiterals: styles.literals } : {}),
+    ...(styles?.references.length ? { styleReferences: styles.references } : {}),
   };
 }
 

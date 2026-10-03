@@ -112,7 +112,7 @@ describe('transformTemplates with <style>', () => {
       }
     `);
     expect(result.styles).toBeUndefined();
-    expect(result.styleDiagnostics?.[0]?.message).toContain('one static template literal');
+    expect(result.styleDiagnostics?.[0]?.message).toContain('Only css`` values can be interpolated');
   });
 
   it('leaves <style> as an ordinary element without a processor', () => {
@@ -147,5 +147,62 @@ describe('transformTemplates with <style>', () => {
       }
     `);
     expect(result.styles?.[0]).toMatchObject({ component: 'FxCard', id: hash('src/Card.tsx:FxCard'), scoped: true });
+  });
+});
+
+describe('css`` literals', () => {
+  // Each piece of CSS the engine sees comes back as one rule named after it, so the order and
+  // the scoping of composed values can be read straight off the output.
+  const echo = (css: string): StyleNode[] => [{ kind: 'rule', selector: css.trim().split(/\s*\{/)[0]!, nodes: [] }];
+  const run = (code: string) =>
+    transformTemplates(code, '/app/src/card.styles.tsx', { sourceRoot: '/app', styles: { process: echo, minify: true } })!;
+
+  it('compiles a literal to a handle, takes the import away and keeps the CSS for the build', () => {
+    const result = run(`import { css, other } from '@fluixi-css/core';\nexport const base = css\`.base { color: red }\`;`);
+    const id = hash('src/card.styles.tsx:css:base');
+    expect(result.code).toContain(`export const base = ({ $fxStyle: "${id}" });`);
+    expect(result.code).toContain(`import { other } from "@fluixi-css/core";`);
+    expect(result.code).not.toMatch(/\bcss`/);
+    expect(result.styleLiterals).toEqual([{ id, name: 'base', css: '.base{}' }]);
+    expect(result.styles).toBeUndefined();
+  });
+
+  it('composes literals in the order written, on the AST', () => {
+    const result = run(`
+      import { css } from '@fluixi-css/core';
+      const base = css\`.base { a: 1 }\`;
+      const primary = css\`.primary { b: 1 }\`;
+      export const button = css\`\${base}\${primary}.button { c: 1 }\`;
+    `);
+    expect(result.styleLiterals?.find((l) => l.name === 'button')?.css).toBe('.base{}.primary{}.button{}');
+  });
+
+  it('scopes a value composed into <style scoped> with the component, as one block', () => {
+    const result = run(`
+      import { css } from '@fluixi-css/core';
+      const shared = css\`.card { a: 1 }\`;
+      export function Card() {
+        return <div><style scoped>{\`\${shared} .title { b: 1 }\`}</style></div>;
+      }
+    `);
+    const id = hash('src/card.styles.tsx:Card');
+    expect(result.styles).toEqual([
+      expect.objectContaining({ id, scoped: true, css: `.card[data-fx-s="${id}"]{}.title[data-fx-s="${id}"]{}` }),
+    ]);
+  });
+
+  it('reports a value from another module for the build, and a cycle', () => {
+    const imported = run(`
+      import { css } from '@fluixi-css/core';
+      import { base } from './base.styles';
+      export const card = css\`\${base} .card { a: 1 }\`;
+    `);
+    expect(imported.styleReferences).toEqual([expect.objectContaining({ name: 'base', source: './base.styles' })]);
+    const cycle = run(`
+      import { css } from '@fluixi-css/core';
+      const a = css\`\${b}\`;
+      const b = css\`\${a}\`;
+    `);
+    expect(cycle.styleDiagnostics?.some((d) => d.message.includes('include each other'))).toBe(true);
   });
 });
