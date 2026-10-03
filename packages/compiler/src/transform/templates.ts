@@ -26,6 +26,7 @@ import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { collectSourceEdits, mayHaveSourceMarks } from './source-locations.js';
+import { collectStyles, type CompiledStyle, type StyleDiagnostic, type StyleOptions, type StylePlan } from './styles.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -85,6 +86,11 @@ export interface TransformOptions extends CompileTemplateOptions {
    * @default true
    */
   intrinsics?: boolean;
+  /**
+   * Compile `<style>` / `<style scoped>` blocks with this CSS processor (the project's
+   * @fluixi-css context). Without it, `<style>` is an ordinary element.
+   */
+  styles?: StyleOptions;
 }
 
 export interface UnresolvedDiagnostic {
@@ -111,6 +117,9 @@ export interface TransformResult {
   loadDiagnostics?: LoadDiagnostic[];
   /** Capitalised tags nothing supplies: they compile to an undefined reference. */
   unresolvedDiagnostics?: UnresolvedDiagnostic[];
+  /** `<style>` blocks taken out of the templates, processed and scoped, for the host to emit. */
+  styles?: CompiledStyle[];
+  styleDiagnostics?: StyleDiagnostic[];
 }
 
 // Which builtin comes from which module is published by resolve/builtins.ts , 
@@ -479,6 +488,10 @@ export function transformTemplates(
       ? collectSourceEdits(ast.program, sourceName)
       : { edits: [], marked: 0 };
 
+  // `<style>` blocks, processed by the host's CSS engine and scoped. Only when the host asked:
+  // without a processor a `<style>` stays an ordinary element.
+  const styles = wantsJsx && code.includes('<style') ? collectStyles(ast.program as never, sourceName, options.styles) : undefined;
+
   // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
   const silent =
@@ -512,7 +525,7 @@ export function transformTemplates(
       (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
     );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName, styles) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) =>
@@ -636,6 +649,8 @@ export function transformTemplates(
     ...(unresolvedDiagnostics.length ? { unresolvedDiagnostics } : {}),
     ...(props.diagnostics.length ? { propsDiagnostics: props.diagnostics } : {}),
     ...(intrinsics.diagnostics.length ? { intrinsicDiagnostics: intrinsics.diagnostics } : {}),
+    ...(styles?.styles.length ? { styles: styles.styles } : {}),
+    ...(styles?.diagnostics.length ? { styleDiagnostics: styles.diagnostics } : {}),
   };
 }
 
@@ -654,10 +669,13 @@ function compileJsx(
   hoisted: Map<string, string>,
   options: TransformOptions,
   sourceFile?: string,
+  styles?: StylePlan,
 ): string {
   const ir = buildJsxIR(node as never, {
     code: (n) => slice(code, (n as Node).start, (n as Node).end, edits),
     used,
+    ...(styles?.scopes.length ? { scopes: styles.scopes } : {}),
+    ...(styles?.drop.size ? { dropStyles: styles.drop } : {}),
     ...(options.sourceLocations === true && sourceFile ? { sourceFile } : {}),
   });
   analyzeStatic(ir);

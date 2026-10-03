@@ -1,0 +1,354 @@
+/**
+ * `<style>` and `<style scoped>` in a component.
+ *
+ * The compiler owns which component a style belongs to and the scoping; what the CSS means
+ * (`@apply`, utilities, variants, theme values, nesting) is the CSS engine's, reached through
+ * the `process` function the host passes in, the same engine and context the project's own CSS
+ * goes through. The host gets the processed CSS back and decides where it goes; the element
+ * itself leaves the template.
+ *
+ * Scoping marks every element the component renders with `data-fx-s="<id>"` at compile time
+ * (part of the static template, so client renders, SSR and hydration all carry it) and adds
+ * `[data-fx-s="<id>"]` to the last compound of each selector.
+ */
+/** A Babel AST node, as the rest of the compiler reads it: loosely. */
+interface Node {
+  type: string;
+  start?: number | null;
+  end?: number | null;
+  loc?: { start: { line: number; column: number } } | null;
+  [key: string]: any;
+}
+
+/** The engine's AST: what `processCss` from @fluixi-css returns. */
+export type StyleNode =
+  | { kind: 'declaration'; property: string; value: string; important: boolean }
+  | { kind: 'rule'; selector: string; nodes: StyleNode[] }
+  | { kind: 'at-rule'; name: string; params: string; nodes: StyleNode[] }
+  | { kind: 'raw'; text: string };
+
+export interface StyleOptions {
+  /** CSS in, flattened engine AST out: `(css, from) => processCss(css, ctx, { from }).ast`. */
+  process(css: string, from: string): StyleNode[];
+  minify?: boolean;
+}
+
+export interface CompiledStyle {
+  /** The scope id for a scoped block, the component's for a global one. */
+  id: string;
+  scoped: boolean;
+  /** The component the block belongs to, as named in the source. */
+  component: string;
+  css: string;
+  line: number;
+  column: number;
+}
+
+export interface StyleDiagnostic {
+  line: number;
+  column: number;
+  message: string;
+}
+
+export interface StylePlan {
+  /** Source ranges whose intrinsic elements get `data-fx-s`, with the value. */
+  scopes: { start: number; end: number; value: string }[];
+  /** Start offsets of the `<style>` elements to leave out of the template. */
+  drop: Set<number>;
+  styles: CompiledStyle[];
+  diagnostics: StyleDiagnostic[];
+}
+
+export const SCOPE_ATTR = 'data-fx-s';
+
+const FUNCTIONS = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ObjectMethod', 'ClassMethod']);
+
+/** Finds the style blocks of a module and compiles them. Without `options`, nothing happens. */
+export function collectStyles(program: Node, sourceName: string, options: StyleOptions | undefined): StylePlan {
+  const plan: StylePlan = { scopes: [], drop: new Set(), styles: [], diagnostics: [] };
+  if (!options) return plan;
+  const scopeOf = new Map<Node, string>();
+  const names = new Map<string, number>();
+  // `const Card = () => …`: the component's name is the variable's.
+  const named = new Map<Node, string>();
+
+  const visit = (node: Node, owners: Node[]) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init && FUNCTIONS.has(node.init.type)) {
+      named.set(node.init, node.id.name);
+    }
+    const inner = FUNCTIONS.has(node.type) ? [...owners, node] : owners;
+    if (node.type === 'JSXElement' && isStyle(node)) {
+      handle(node, owners);
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'loc' || key === 'leadingComments' || key === 'trailingComments' || key === 'innerComments') continue;
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) for (const v of value) visit(v as Node, inner);
+      else if (value && typeof value === 'object' && 'type' in (value as object)) visit(value as Node, inner);
+    }
+  };
+
+  const handle = (node: Node, owners: Node[]) => {
+    const at = { line: node.loc?.start.line ?? 0, column: node.loc?.start.column ?? 0 };
+    const css = staticCss(node);
+    if (css === null) {
+      plan.diagnostics.push({
+        ...at,
+        message:
+          '<style> needs its CSS as one static template literal, <style>{`...`}</style>: ' +
+          'JSX reads `{` as an expression, and interpolation is not supported here yet.',
+      });
+      return;
+    }
+    // The component is the outermost function around the block: inner callbacks (a list's
+    // render function) render the same component's elements.
+    const owner = owners[0];
+    if (!owner) {
+      plan.diagnostics.push({ ...at, message: '<style> has to be written inside a component.' });
+      return;
+    }
+    const component = functionName(owner, named);
+    let id = scopeOf.get(owner);
+    if (!id) {
+      const seen = names.get(component) ?? 0;
+      names.set(component, seen + 1);
+      id = hash(`${sourceName}:${component}${seen ? ':' + seen : ''}`);
+      scopeOf.set(owner, id);
+    }
+    const scoped = isScoped(node);
+    let nodes: StyleNode[];
+    try {
+      nodes = options.process(css, sourceName);
+    } catch (error) {
+      plan.diagnostics.push({ ...at, message: `<style> could not be processed: ${(error as Error).message}` });
+      return;
+    }
+    if (scoped) {
+      if (!plan.scopes.some((s) => s.value === id)) plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
+      nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
+    }
+    plan.drop.add(node.start!);
+    plan.styles.push({ id, scoped, component, css: printStyle(nodes, options.minify), ...at });
+  };
+
+  visit(program, []);
+  return plan;
+}
+
+function isStyle(node: Node): boolean {
+  const name = node.openingElement.name;
+  return name.type === 'JSXIdentifier' && name.name === 'style';
+}
+
+function isScoped(node: Node): boolean {
+  return node.openingElement.attributes.some((a: Node) => a.type === 'JSXAttribute' && a.name.type === 'JSXIdentifier' && a.name.name === 'scoped');
+}
+
+/** The block's CSS when it is one static template literal or string; `null` otherwise. */
+function staticCss(node: Node): string | null {
+  const meaningful = node.children.filter((c: Node) => !(c.type === 'JSXText' && !c.value.trim()));
+  if (meaningful.length === 0) return '';
+  if (meaningful.length !== 1) return null;
+  const only = meaningful[0]!;
+  if (only.type !== 'JSXExpressionContainer') return null;
+  const expr = only.expression;
+  if (expr.type === 'StringLiteral') return expr.value;
+  if (expr.type === 'TemplateLiteral' && expr.expressions.length === 0) return expr.quasis.map((q: Node) => q.value.cooked ?? q.value.raw).join('');
+  return null;
+}
+
+function functionName(fn: Node, named: Map<Node, string>): string {
+  if ((fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression') && fn.id) return fn.id.name;
+  return named.get(fn) ?? 'anonymous';
+}
+
+/** FNV-1a, 32 bits, base 36: short, stable for the same file and component everywhere. */
+export function hash(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+// ─── Scoping ─────────────────────────────────────────────────────────────────
+
+// Selectors of these at-rules are not element selectors (`from`, `50%`) or there are none.
+const OPAQUE = /(^|-)keyframes$|^font-face$|^property$|^counter-style$|^page$|^font-feature-values$/;
+
+/** Adds the scope to every selector, through grouping at-rules; keyframes and the like are left. */
+export function scopeNodes(nodes: StyleNode[], id: string, warn: (message: string) => void = () => {}): StyleNode[] {
+  return nodes.map((node) => {
+    if (node.kind === 'rule') return { ...node, selector: scopeSelector(node.selector, id, warn) };
+    if (node.kind === 'at-rule' && !OPAQUE.test(node.name)) return { ...node, nodes: scopeNodes(node.nodes, id, warn) };
+    return node;
+  });
+}
+
+/** Scopes a selector list: each complex selector gets the scope on its last compound. */
+export function scopeSelector(selector: string, id: string, warn: (message: string) => void = () => {}): string {
+  return splitTop(selector, ',')
+    .map((complex) => scopeComplex(complex.trim(), `[${SCOPE_ATTR}="${id}"]`, warn))
+    .join(', ');
+}
+
+function scopeComplex(selector: string, attr: string, warn: (message: string) => void): string {
+  if (/:host\b|::slotted\(/.test(selector)) {
+    warn(`\`${selector}\` only means something in a shadow root; in a light-DOM component it is left as written.`);
+    return selector;
+  }
+  const parts = compounds(selector);
+  // `:deep(x)` scopes what comes before it and leaves `x` free; `:global(x)` is never scoped.
+  const deep = parts.findIndex((p) => p.text.startsWith(':deep('));
+  if (deep !== -1) {
+    const inner = unwrap(parts[deep]!.text, ':deep(');
+    const before = parts.slice(0, deep);
+    if (before.length === 0) return `${attr} ${inner}`;
+    const scopedBefore = scopeAt(before, before.length - 1, attr);
+    return `${join(scopedBefore)} ${inner}`;
+  }
+  let target = -1;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (!parts[i]!.text.startsWith(':global(')) {
+      target = i;
+      break;
+    }
+  }
+  const out = target === -1 ? parts : scopeAt(parts, target, attr);
+  return join(out.map((p) => (p.text.startsWith(':global(') ? { ...p, text: unwrap(p.text, ':global(') } : p)));
+}
+
+interface Compound {
+  /** The combinator before it (' ', '>', '+', '~'), empty for the first. */
+  combinator: string;
+  text: string;
+}
+
+function scopeAt(parts: Compound[], index: number, attr: string): Compound[] {
+  return parts.map((p, i) => (i === index ? { ...p, text: insertAttr(p.text, attr) } : p));
+}
+
+/** Puts the attribute before the compound's pseudo-elements and pseudo-classes: `a[s]:hover::before`. */
+function insertAttr(compound: string, attr: string): string {
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < compound.length; i++) {
+    const c = compound[i]!;
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '\\') {
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'") quote = c;
+    else if (c === '(' || c === '[') depth++;
+    else if (c === ')' || c === ']') depth--;
+    else if (c === ':' && depth === 0 && i > 0) return compound.slice(0, i) + attr + compound.slice(i);
+  }
+  return compound + attr;
+}
+
+function compounds(selector: string): Compound[] {
+  const out: Compound[] = [];
+  let depth = 0;
+  let quote = '';
+  let current = '';
+  let combinator = '';
+  const push = () => {
+    if (current.trim()) out.push({ combinator: out.length ? combinator || ' ' : '', text: current.trim() });
+    current = '';
+    combinator = '';
+  };
+  for (let i = 0; i < selector.length; i++) {
+    const c = selector[i]!;
+    if (quote) {
+      current += c;
+      if (c === '\\') current += selector[++i] ?? '';
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '\\') {
+      current += c + (selector[++i] ?? '');
+      continue;
+    }
+    if (c === '"' || c === "'") quote = c;
+    if (c === '(' || c === '[') depth++;
+    if (c === ')' || c === ']') depth--;
+    if (depth === 0 && (c === '>' || c === '+' || c === '~')) {
+      push();
+      combinator = c;
+      continue;
+    }
+    if (depth === 0 && /\s/.test(c)) {
+      if (current.trim()) {
+        const keep = combinator;
+        push();
+        combinator = keep;
+      }
+      continue;
+    }
+    current += c;
+  }
+  push();
+  return out;
+}
+
+function join(parts: Compound[]): string {
+  return parts.map((p, i) => (i === 0 ? p.text : p.combinator === ' ' ? ` ${p.text}` : ` ${p.combinator} ${p.text}`)).join('');
+}
+
+function unwrap(text: string, prefix: string): string {
+  return text.slice(prefix.length, text.lastIndexOf(')')).trim() + text.slice(text.lastIndexOf(')') + 1);
+}
+
+function splitTop(selector: string, separator: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quote = '';
+  let start = 0;
+  for (let i = 0; i < selector.length; i++) {
+    const c = selector[i]!;
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === '\\') i++;
+    else if (c === '(' || c === '[') depth++;
+    else if (c === ')' || c === ']') depth--;
+    else if (c === separator && depth === 0) {
+      parts.push(selector.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(selector.slice(start));
+  return parts.filter((p) => p.trim());
+}
+
+// ─── Printing ────────────────────────────────────────────────────────────────
+
+export function printStyle(nodes: StyleNode[], minify = false): string {
+  const out: string[] = [];
+  const write = (node: StyleNode, depth: number) => {
+    const pad = minify ? '' : '  '.repeat(depth);
+    const nl = minify ? '' : '\n';
+    const sp = minify ? '' : ' ';
+    if (node.kind === 'declaration') {
+      out.push(`${pad}${node.property}:${sp}${node.value}${node.important ? `${sp}!important` : ''};${nl}`);
+    } else if (node.kind === 'raw') {
+      out.push(`${pad}${node.text}${nl}`);
+    } else {
+      const header = node.kind === 'rule' ? node.selector : `@${node.name}${node.params ? ' ' + node.params : ''}`;
+      out.push(`${pad}${header}${sp}{${nl}`);
+      for (const child of node.nodes) write(child, depth + 1);
+      out.push(`${pad}}${nl}`);
+    }
+  };
+  for (const node of nodes) write(node, 0);
+  return out.join('');
+}

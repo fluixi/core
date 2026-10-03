@@ -27,6 +27,10 @@ export interface JsxContext {
   used: Set<string>;
   /** The file being compiled, when component usage sites are to be recorded. */
   sourceFile?: string;
+  /** Scoped styles: intrinsic elements inside a range get `data-fx-s` set to its value. */
+  scopes?: { start: number; end: number; value: string }[];
+  /** Start offsets of `<style>` elements the compiler took out of the template. */
+  dropStyles?: Set<number>;
 }
 
 export const SVG_TAGS = new Set([
@@ -228,6 +232,8 @@ function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
         });
       }
     } else if (child.type === 'JSXElement' || child.type === 'JSXFragment') {
+      // A `<style>` the compiler took out leaves no child behind, not even an empty insert.
+      if (ctx.dropStyles?.has(child.start)) continue;
       out.push(buildNode(child, ctx));
     } else if (child.type === 'JSXSpreadChild') {
       out.push({ kind: 'expr', code: ctx.code(child.expression as Node), reactive: false });
@@ -322,7 +328,12 @@ function buildElement(node: Node, ctx: JsxContext, handled: string[]): IRNode {
   const at = ctx.sourceFile && node.loc?.start
     ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
     : undefined;
-  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props: buildProps(attributes, ctx), children, static: false, ...(at ? { at } : {}) };
+  const props = buildProps(attributes, ctx);
+  // A scoped style's mark: a static attribute, so it is part of the template itself and
+  // every render carries it, on the client, from the server and through hydration.
+  const scope = ctx.scopes?.find((s) => node.start >= s.start && node.end <= s.end);
+  if (scope) props.unshift({ name: 'data-fx-s', kind: 'attr', literal: scope.value });
+  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false, ...(at ? { at } : {}) };
 }
 
 function buildNode(node: Node, ctx: JsxContext): IRNode {
@@ -330,6 +341,8 @@ function buildNode(node: Node, ctx: JsxContext): IRNode {
     return { kind: 'fragment', children: buildChildren(node.children, ctx) };
   }
   if (directive(node, 'if')) return buildIf(node, null, ctx);
+  // Its CSS went to the host; nothing of the element is rendered.
+  if (ctx.dropStyles?.has(node.start)) return { kind: 'fragment', children: [] };
   const { tag, component } = tagInfo(node.openingElement.name, ctx);
   if (!component) return buildElement(node, ctx, []);
   const props = buildProps(node.openingElement.attributes, ctx);
