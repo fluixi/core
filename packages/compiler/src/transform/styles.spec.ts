@@ -191,6 +191,23 @@ describe('css`` literals', () => {
     ]);
   });
 
+  it('uses a value from another module once the build has resolved it, by its export name', () => {
+    const result = transformTemplates(
+      `
+      import { css } from '@fluixi-css/core';
+      import { base as shared } from './base.styles';
+      export const card = css\`\${shared} .card { a: 1 }\`;
+    `,
+      '/app/src/card.styles.tsx',
+      {
+        sourceRoot: '/app',
+        styles: { process: echo, minify: true, imported: new Map([['./base.styles#base', echo('.base { a: 1 }')]]) },
+      },
+    )!;
+    expect(result.styleReferences).toBeUndefined();
+    expect(result.styleLiterals?.[0]?.css).toBe('.base{}.card{}');
+  });
+
   it('reports a value from another module for the build, and a cycle', () => {
     const imported = run(`
       import { css } from '@fluixi-css/core';

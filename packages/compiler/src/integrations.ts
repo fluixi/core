@@ -268,6 +268,16 @@ const RETIRED_SUBPATHS: Record<string, string> = {
  * Create a Vite plugin for JSX transformation
  */
 export function createVitePlugin<T>(options: CompilerOptions = {}): T {
+  // Component `<style>` blocks, when @fluixi-css/vite is in the build to process them.
+  let transformTemplates: typeof import('./transform/index.js')['transformTemplates'] | undefined;
+  let projectRoot = process.cwd();
+  const componentStyles = createComponentStyles((code, id, styles) => {
+    // Scope ids hash the path from the project root, marks or not: the same on every machine
+    // and for every id a module is reached by.
+    const result = transformTemplates!(code, id, { ...transformOptions(options, id), sourceRoot: projectRoot, styles });
+    reportDiagnostics(result, id);
+    return result;
+  });
   return {
     name: 'vite-fluixi-jsx',
 
@@ -284,15 +294,28 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 
     // Written once per build, and on dev-server start, rather than per transform: the
     // set of resolvable names comes from config, so nothing a file does can change it.
-    configResolved(config: { root?: string }) {
+    async configResolved(config: { root?: string; plugins?: readonly unknown[] }) {
       const outcome = writeComponentGlobals(options, config?.root ?? process.cwd());
       if (outcome.warning) console.warn(outcome.warning);
+      if (options.babel) return;
+      projectRoot = config?.root ?? projectRoot;
+      componentStyles.connect(config?.plugins, config?.root);
+      if (componentStyles.active) ({ transformTemplates } = await import('./transform/index.js'));
+    },
+
+    configureServer(server: Parameters<typeof componentStyles.setServer>[0]) {
+      componentStyles.setServer(server);
+    },
+
+    load(this: { resolve?(source: string, importer: string): Promise<{ id: string } | null> }, id: string) {
+      return componentStyles.isStyle(id) ? componentStyles.load(id, this) : null;
     },
 
     // A subpath we retired resolves to nothing, and the bundler reports that as
     // `Missing "./x" specifier`, which names neither the replacement nor the file
     // that asked. Answer it here, where the rename is known.
     resolveId(id: string, importer?: string) {
+      if (componentStyles.isStyle(id)) return id;
       const moved = RETIRED_SUBPATHS[id];
       if (!moved) return null;
       throw new Error(
@@ -306,6 +329,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         return null;
       }
 
+      if (!options.babel && componentStyles.active) return componentStyles.compile(code, id, this as never);
       if (!options.babel) return compileModule(code, id, options);
 
       const babelPlugin = await createBabelPlugin(options);
@@ -469,6 +493,7 @@ function reportDiagnostics(result: unknown, id: string): void {
     unresolvedDiagnostics?: { message: string }[];
     propsDiagnostics?: { name: string; message: string }[];
     intrinsicDiagnostics?: { name: string; message: string }[];
+    styleDiagnostics?: { line: number; column: number; message: string }[];
   } | null;
   const say = (message: string): void => {
     const key = `${id}\u0000${message}`;
@@ -480,6 +505,7 @@ function reportDiagnostics(result: unknown, id: string): void {
   for (const d of r?.unresolvedDiagnostics ?? []) say(d.message);
   for (const d of r?.loadDiagnostics ?? []) say(d.message);
   for (const d of r?.intrinsicDiagnostics ?? []) say(d.message);
+  for (const d of r?.styleDiagnostics ?? []) say(`${d.line}:${d.column + 1} ${d.message}`);
   for (const d of r?.propsDiagnostics ?? []) {
     say(`\`${d.name}\` was left destructured: ${d.message}. It reads once instead of tracking.`);
   }
@@ -600,6 +626,7 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
 export type { ServerFnTransformOptions } from './frontend/babel/server-functions.js';
 import type { ComponentResolverRule } from './resolve/component-resolver.js';
 import { writeComponentGlobals } from './resolve/write-globals.js';
+import { createComponentStyles } from './vite-styles.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join as _join } from 'node:path';
 

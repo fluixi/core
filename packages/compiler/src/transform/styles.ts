@@ -33,6 +33,11 @@ export interface StyleOptions {
   minify?: boolean;
   /** Modules whose `css` export is the portable literal. Default `['@fluixi-css/core']`. */
   cssModules?: string[];
+  /**
+   * Style values from other modules, resolved by the build, keyed `${source}#${exportName}` as
+   * the import names them. A reference not in here is reported in `styleReferences`.
+   */
+  imported?: Map<string, StyleNode[]>;
 }
 
 /** A `css`` value: portable, unscoped, emitted only where something uses it. */
@@ -45,6 +50,7 @@ export interface StyleLiteral {
 
 /** An interpolated style value from another module, for the build to resolve. */
 export interface StyleReference {
+  /** The export it is, in `source`. */
   name: string;
   source: string;
   line: number;
@@ -131,8 +137,10 @@ export function collectStyles(program: Node, sourceName: string, options: StyleO
   function resolveLiteral(name: string, at: { line: number; column: number }, stack: string[]): StyleNode[] | null | undefined {
     const imported = literalsOf.imports.get(name);
     if (imported) {
-      plan.references.push({ name, source: imported, ...at });
-      plan.diagnostics.push({ ...at, message: `${name} comes from ${imported}: style values from another module are resolved by the build.` });
+      const nodes = options?.imported?.get(`${imported.source}#${imported.name}`);
+      if (nodes) return nodes;
+      plan.references.push({ name: imported.name, source: imported.source, ...at });
+      plan.diagnostics.push({ ...at, message: `${name} comes from ${imported.source}: style values from another module are resolved by the build.` });
       return null;
     }
     const literal = literalsOf.literals.get(name);
@@ -338,15 +346,22 @@ function blockPieces(node: Node): { quasis: Node[]; expressions: Node[] } | null
  * The module's `css` binding and its `css`` declarations. The import is rewritten without
  * `css`: every use is compiled away, and the engine has no business in a browser bundle.
  */
-function findLiterals(program: Node, modules: string[], plan: StylePlan): { literals: Map<string, Node>; imports: Map<string, string> } {
+function findLiterals(
+  program: Node,
+  modules: string[],
+  plan: StylePlan,
+): { literals: Map<string, Node>; imports: Map<string, { source: string; name: string }> } {
   const literals = new Map<string, Node>();
-  const imports = new Map<string, string>();
+  // Local name → where it comes from and the export it is (`import { base as b }`: b → base).
+  const imports = new Map<string, { source: string; name: string }>();
   let tag: string | undefined;
   for (const statement of program.body ?? []) {
     if (statement.type !== 'ImportDeclaration') continue;
     const source = statement.source.value as string;
     const specifiers = statement.specifiers as Node[];
-    for (const sp of specifiers) imports.set(sp.local.name, source);
+    for (const sp of specifiers) {
+      if (sp.type === 'ImportSpecifier') imports.set(sp.local.name, { source, name: sp.imported.name ?? sp.imported.value });
+    }
     if (!modules.includes(source)) continue;
     const css = specifiers.find((sp) => sp.type === 'ImportSpecifier' && (sp.imported.name ?? sp.imported.value) === 'css');
     if (!css) continue;
@@ -355,7 +370,9 @@ function findLiterals(program: Node, modules: string[], plan: StylePlan): { lite
     imports.delete(local);
     plan.edits.push({ start: statement.start!, end: statement.end!, code: importWithout(statement, css) });
   }
-  if (!tag) return { literals, imports: new Map() };
+  // A component that only composes imported values has no `css` import of its own: its
+  // imports still name where those values come from.
+  if (!tag) return { literals, imports };
   const visit = (node: Node) => {
     if (!node || typeof node !== 'object') return;
     if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init?.type === 'TaggedTemplateExpression' && node.init.tag.type === 'Identifier' && node.init.tag.name === tag) {
@@ -369,8 +386,6 @@ function findLiterals(program: Node, modules: string[], plan: StylePlan): { lite
     }
   };
   visit(program);
-  // Only names that are style values elsewhere stay as references; any other import is not one.
-  for (const [name] of imports) if (!/^[A-Za-z_$][\w$]*$/.test(name)) imports.delete(name);
   return { literals, imports };
 }
 

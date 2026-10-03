@@ -139,6 +139,10 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
     | ((this: unknown, id: string, importer?: string) => unknown)
     | undefined;
   const baseTransformIndexHtml = base.transformIndexHtml as unknown;
+  // The compiler plugin serves component styles through these hooks: the channel's own
+  // handling comes on top, never instead.
+  const baseLoad = base.load as ((this: unknown, id: string) => unknown) | undefined;
+  const baseConfigureServer = base.configureServer as ((this: unknown, server: unknown) => unknown) | undefined;
 
   return {
     ...base,
@@ -149,7 +153,7 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
     },
 
     async load(this: ResolveContext, id: string) {
-      if (id !== RESOLVED) return null;
+      if (id !== RESOLVED) return (await baseLoad?.call(this, id)) ?? null;
       const from = join(root, 'fluixi-devtools-agent.js');
       // Only the framework comes from the application: the hook hands over that runtime's
       // own registration, and a second copy would report a graph nothing is using.
@@ -175,6 +179,7 @@ export function withGraphChannel(base: Plugin, enabled: () => boolean, start: ()
       middlewares: { use(path: string, handler: (req: unknown, res: ServerResponse) => void): void };
       config?: { root?: string; logger?: { info(message: string): void } };
     }) {
+      await baseConfigureServer?.call(this, server);
       if (!enabled()) return;
       root = server.config?.root ?? root;
       log = server.config?.logger?.info.bind(server.config.logger);
