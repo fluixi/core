@@ -52,4 +52,16 @@ describe('mergeProps', () => {
     const merged = mergeProps(null as any, { a: 1 }, undefined as any);
     expect(merged.a).toBe(1);
   });
+
+  it('reads a getter once per access: a children getter builds its nodes when read', () => {
+    let reads = 0;
+    const merged = mergeProps({ a: 1 }, {
+      get children() {
+        reads++;
+        return 'built';
+      },
+    });
+    expect(merged.children).toBe('built');
+    expect(reads).toBe(1);
+  });
 });

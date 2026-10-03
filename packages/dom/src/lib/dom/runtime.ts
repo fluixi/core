@@ -1954,11 +1954,14 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
  */
 export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
   // Last defined (non-undefined) value wins; scan sources from the end so a later `undefined`
-  // falls through to an earlier source. Reads `source[key]` live each call, no snapshot.
+  // falls through to an earlier source. Reads `source[key]` live each call, no snapshot, and
+  // once: a `children` getter builds its nodes when read, so a second read built them twice.
   const resolve = (key: string | symbol): any => {
     for (let i = sources.length - 1; i >= 0; i--) {
       const s = sources[i] as any;
-      if (s && key in s && s[key] !== undefined) return s[key];
+      if (!s || !(key in s)) continue;
+      const value = s[key];
+      if (value !== undefined) return value;
     }
     return undefined;
   };
