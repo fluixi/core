@@ -193,14 +193,18 @@ const PREFIX: Record<NodeKind, string> = {
  * app's modules load, which in practice means before the entry import.
  */
 /**
- * What a component was handed, read for display.
+ * What a component was handed, read for display, once per props object.
  *
  * Every prop is a getter over whatever the caller wrote, so reading one runs that
  * expression. Untracked, or the read would subscribe whatever is sampling to it and the
- * panel would drive the graph by looking at it. `children` is skipped: reading it builds
- * the subtree, which is a side effect nobody asked for by opening an inspector.
+ * panel would drive the graph by looking at it. And only once: JSX in a prop compiles to a
+ * getter that makes a new memo on each read, which the next sample pulls, building the
+ * component again, and any other prop can reach such a getter (`when={local.trailing != null}`).
+ * Read on every sample, each one added another copy of those components to the graph.
+ * `children` is skipped: reading it builds the subtree.
  */
 function readProps(props: object): PropReport[] | undefined {
+  if (readOnce.has(props)) return readOnce.get(props);
   const at = propsLocations(props);
   const out: PropReport[] = [];
   for (const name of Object.keys(props)) {
@@ -217,8 +221,13 @@ function readProps(props: object): PropReport[] | undefined {
     }
     out.push(report);
   }
-  return out.length ? out : undefined;
+  const reports = out.length ? out : undefined;
+  readOnce.set(props, reports);
+  return reports;
 }
+
+/** Each props object's reports, from its first read. */
+const readOnce = new WeakMap<object, PropReport[] | undefined>();
 
 export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   installSourceMarker();

@@ -7,6 +7,7 @@ import {
   createEffect,
   createRenderEffect,
   reportReactiveBinding,
+  reportReactiveProps,
 } from '@fluixi/reactive/signal';
 import { markReactiveSource } from './source.js';
 import { observeGraph, type ObservedGraph } from './observe.js';
@@ -671,5 +672,41 @@ describe('a builtin tag the runtime does not name', () => {
     observed.sample();
     // A signal is not a tag, whatever it is called.
     expect(byLabel(observed, 'Show')?.kind).toBe('state');
+  });
+
+  it('reads each prop once, however often it samples', () => {
+    observed = observeGraph();
+    let built = 0;
+    let titleReads = 0;
+    const [title, setTitle] = createSignal('One');
+    createRoot(() => {
+      createMemo(
+        () => {
+          reportReactiveProps({
+            get title() {
+              titleReads++;
+              return title();
+            },
+            // What the compiler writes for JSX in a prop: a fresh memo on every read.
+            get fallback() {
+              built++;
+              return () => 'built';
+            },
+          });
+          return { $name: 'Card' };
+        },
+        undefined,
+        { name: 'Card' },
+      )();
+    });
+    observed.sample();
+    observed.sample();
+    setTitle('Two');
+    observed.sample();
+    const card = [...observed.graph.values()].find((n) => n.kind === 'component');
+    // Any getter may reach one that builds, so none is read again: values are as handed.
+    expect({ built, titleReads }).toEqual({ built: 1, titleReads: 1 });
+    expect(card?.props?.map((p) => p.name)).toEqual(['title', 'fallback']);
+    expect(card?.props?.find((p) => p.name === 'title')?.value).toContain('One');
   });
 });
