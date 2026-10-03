@@ -765,10 +765,19 @@ export function insert(
     return () => null;
   }
 
+  // Hydrating, the parent already holds every server child, so an appended anchor would sit
+  // after later siblings and content that turns up later would land there. It goes where the
+  // cursor stands once this slot has claimed its own content: before the next unclaimed node.
+  const anchorAtCursor = marker !== undefined && !marker && hydration.active;
   if (marker !== undefined && !marker) {
     marker = createTextNode('', true);
-    parent.appendChild(marker);
+    if (!anchorAtCursor) parent.appendChild(marker);
   }
+  const placeAnchor = () => {
+    if (!anchorAtCursor || marker!.parentNode) return;
+    const next = hydration.cursor;
+    parent.insertBefore(marker!, next && next.parentNode === parent ? next : null);
+  };
 
   let current: Node | Node[] | null = init ?? null;
   const isReactiveArray = (element: any) => {
@@ -791,6 +800,7 @@ export function insert(
     } finally {
       _insertDepth--;
     }
+    placeAnchor();
     return () => current;
   }
 
@@ -801,6 +811,7 @@ export function insert(
     current,
     (v) => { current = v; }
   );
+  placeAnchor();
   return () => { dispose?.(); return current; };
 }
 
