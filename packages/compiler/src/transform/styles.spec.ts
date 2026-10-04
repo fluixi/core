@@ -308,3 +308,53 @@ describe('shadow-DOM elements', () => {
   });
 });
 
+
+describe('<style> in html`` templates', () => {
+  const echo = (css: string): StyleNode[] =>
+    css.trim() ? [{ kind: 'rule', selector: css.trim().split(/\s*\{/)[0]!, nodes: [] }] : [];
+  const run = (code: string) =>
+    transformTemplates(code, '/app/src/card.tsx', { sourceRoot: '/app', styles: { process: echo, minify: true } })!;
+
+  it('composes css`` values interpolated by name, in written order, and scopes them with the block', () => {
+    const result = run(`
+      import { css } from '@fluixi-css/core';
+      const base = css\`.base { a: 1 }\`;
+      export function Card() {
+        return html\`<style scoped>\${base} .card { b: 1 }</style><article class="card"></article>\`;
+      }
+    `);
+    const id = hash('src/card.tsx:Card');
+    expect(result.styleDiagnostics).toBeUndefined();
+    expect(result.styles).toEqual([
+      expect.objectContaining({ id, scoped: true, css: `.base[data-fx-s="${id}"]{}.card[data-fx-s="${id}"]{}` }),
+    ]);
+    expect(result.code).not.toContain('<style');
+    expect(result.code).toContain(`<article data-fx-s=\\"${id}\\" class=\\"card\\">`);
+  });
+
+  it('keeps blocks apart: an expression outside a <style> is the template\'s own', () => {
+    const result = run(`
+      export function Card(props) {
+        return html\`<style>.a { a: 1 }</style><p>\${() => props.text}</p><style>.b { b: 1 }</style>\`;
+      }
+    `);
+    expect(result.styleDiagnostics).toBeUndefined();
+    expect(result.styles?.map((s) => s.css)).toEqual(['.a{}', '.b{}']);
+  });
+
+  it('refuses a dynamic value in a block, as in JSX', () => {
+    const result = run(`
+      export function Card(props) {
+        return html\`<style>.a { color: \${props.color} }</style><p></p>\`;
+      }
+    `);
+    expect(result.styleDiagnostics?.[0]?.message).toContain('Only css`` values can be interpolated');
+  });
+
+  it('maps a block back to the template line it was written on', () => {
+    const code = ['export function Card() {', '  return html`', '    <style>', '      .card { a: 1 }', '    </style>`;', '}'].join('\n');
+    const result = transformTemplates(code, '/app/src/card.tsx', { sourceRoot: '/app', styles: { process: () => [{ kind: 'rule', selector: '.card', nodes: [], loc: { source: 'src/card.tsx', line: 2, column: 6 } }] } })!;
+    const trace = new TraceMap(result.styles![0]!.map as never);
+    expect(originalPositionFor(trace, { line: 1, column: 0 })).toMatchObject({ line: 4, column: 6 });
+  });
+});

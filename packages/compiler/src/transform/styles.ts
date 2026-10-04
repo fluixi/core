@@ -108,7 +108,7 @@ export interface StylePlan {
   /** Source ranges whose intrinsic elements get `data-fx-s`, with the value. */
   scopes: { start: number; end: number; value: string }[];
   /** `` html`` `` templates holding a `<style>`, by start offset: whose block it is. */
-  templateOwners: Map<number, { id: string; component: string; shadow?: number[] }>;
+  templateOwners: Map<number, { id: string; component: string }>;
   /** Start offsets of the `<style>` elements to leave out of the template. */
   drop: Set<number>;
   styles: CompiledStyle[];
@@ -243,11 +243,10 @@ export function collectStyles(
         else {
           const id = idFor(owner);
           const shadow = shadowOf(owner);
-          plan.templateOwners.set(node.start!, { id, component: functionName(owner, named), ...(shadow ? { shadow: shadow.indexes } : {}) });
-          // A shadow root isolates natively: nothing to stamp.
-          if (!shadow && /<style\b[^>]*\bscoped\b/.test(text) && !plan.scopes.some((s) => s.value === id)) {
-            plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
-          }
+          plan.templateOwners.set(node.start!, { id, component: functionName(owner, named) });
+          // The blocks are compiled here, from the template's own pieces, so `${base}` resolves
+          // as it does in JSX; the template compile only takes the elements out.
+          for (const block of templateBlocks(node.quasi)) compileBlock(block, block.scoped, owner, at);
         }
       }
     }
@@ -281,9 +280,18 @@ export function collectStyles(
       plan.diagnostics.push({ ...at, message: '<style> has to be written inside a component.' });
       return;
     }
+    compileBlock(pieces, isScoped(node), owner, at);
+    plan.drop.add(node.start!);
+  };
+
+  const compileBlock = (
+    pieces: { quasis: Node[]; expressions: Node[] },
+    scoped: boolean,
+    owner: Node,
+    at: { line: number; column: number },
+  ) => {
     const component = functionName(owner, named);
     const id = idFor(owner);
-    const scoped = isScoped(node);
     const processed = piecesToNodes(pieces.quasis, pieces.expressions, at, []);
     if (!processed) return;
     let nodes = processed;
@@ -294,7 +302,6 @@ export function collectStyles(
       if (!plan.scopes.some((s) => s.value === id)) plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
       nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
     }
-    plan.drop.add(node.start!);
     const printed = module ? printStyleWithMap(nodes, options.minify, sourceName, module) : { css: printStyle(nodes, options.minify) };
     plan.styles.push({ id, scoped: scoped && !shadow, component, ...printed, ...(shadow ? { shadow: true } : {}), ...at });
     if (shadow) shadow.indexes.push(plan.styles.length - 1);
@@ -324,8 +331,8 @@ export interface TemplateStyles {
   options: StyleOptions;
   /** Stamp every element of the template with this scope. */
   scope?: string;
-  /** Whose `<style>` blocks this template holds; `shadow` lists a shadow-DOM class's block indexes. */
-  owner?: { id: string; component: string; shadow?: number[] };
+  /** Whose `<style>` blocks this template holds: they were compiled with the module. */
+  owner?: { id: string; component: string };
   line: number;
   column: number;
   styles: CompiledStyle[];
@@ -345,16 +352,13 @@ interface IRLike {
  * compiled like a JSX block, and the template's other elements get the scope.
  */
 export function applyTemplateStyles(ir: IRLike, t: TemplateStyles): void {
-  const at = { line: t.line, column: t.column };
   const walk = (node: IRLike) => {
     const children = node.children;
     if (children) {
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i]!;
-        if (child.kind === 'element' && child.tag === 'style' && t.owner) {
-          children.splice(i, 1);
-          compileTemplateBlock(child, t, at);
-        } else walk(child);
+        if (child.kind === 'element' && child.tag === 'style' && t.owner) children.splice(i, 1);
+        else walk(child);
       }
     }
     if (t.scope && node.kind === 'element' && node.tag !== 'style' && node.props && !node.props.some((p) => p.name === SCOPE_ATTR)) {
@@ -362,28 +366,6 @@ export function applyTemplateStyles(ir: IRLike, t: TemplateStyles): void {
     }
   };
   walk(ir);
-}
-
-function compileTemplateBlock(node: IRLike, t: TemplateStyles, at: { line: number; column: number }): void {
-  const children = node.children ?? [];
-  if (!children.every((c) => c.kind === 'text')) {
-    t.diagnostics.push({ ...at, message: '<style> in a template needs static CSS: interpolation is not supported here yet.' });
-    return;
-  }
-  const css = children.map((c) => c.value ?? '').join('');
-  const scoped = (node.props ?? []).some((p) => p.name === 'scoped');
-  const owner = t.owner!;
-  let nodes: StyleNode[];
-  try {
-    nodes = t.options.process(css, '');
-  } catch (error) {
-    t.diagnostics.push({ ...at, message: `<style> could not be processed: ${(error as Error).message}` });
-    return;
-  }
-  const shadow = owner.shadow !== undefined;
-  if (scoped && !shadow) nodes = scopeNodes(nodes, owner.id, (message) => t.diagnostics.push({ ...at, message }));
-  t.styles.push({ id: owner.id, scoped: scoped && !shadow, component: owner.component, css: printStyle(nodes, t.options.minify), ...(shadow ? { shadow: true } : {}), ...at });
-  if (shadow) owner.shadow!.push(t.styles.length - 1);
 }
 
 function staticMember(cls: Node, name: string): Node | undefined {
@@ -462,6 +444,48 @@ function isScoped(node: Node): boolean {
 }
 
 /** The block's template pieces, a string counting as one piece; `null` when it is anything else. */
+/**
+ * The `<style>` blocks of an html`` template, as pieces of its quasis: the CSS between the
+ * tags, with the `${…}` that stand in it. Each piece keeps the position it starts at.
+ */
+function templateBlocks(quasi: Node): { quasis: Node[]; expressions: Node[]; scoped: boolean }[] {
+  const blocks: { quasis: Node[]; expressions: Node[]; scoped: boolean }[] = [];
+  let open: { quasis: Node[]; expressions: Node[]; scoped: boolean } | null = null;
+  quasi.quasis.forEach((q: Node, i: number) => {
+    const raw = q.value.raw as string;
+    let from = 0;
+    while (from <= raw.length) {
+      if (!open) {
+        const tag = /<style\b([^>]*)>/g;
+        tag.lastIndex = from;
+        const m = tag.exec(raw);
+        if (!m) break;
+        open = { quasis: [], expressions: [], scoped: /\bscoped\b/.test(m[1]!) };
+        from = m.index + m[0].length;
+      }
+      const close = raw.indexOf('</style', from);
+      open.quasis.push(slicePiece(q, raw, from, close === -1 ? raw.length : close));
+      if (close === -1) break;
+      blocks.push(open);
+      open = null;
+      from = close;
+    }
+    const expr = quasi.expressions[i];
+    if (open && expr) open.expressions.push(expr);
+  });
+  return blocks;
+}
+
+function slicePiece(q: Node, raw: string, from: number, to: number): Node {
+  const text = raw.slice(from, to);
+  const start = q.loc?.start as { line: number; column: number } | undefined;
+  if (!start) return { type: 'TemplateElement', value: { raw: text, cooked: text } } as Node;
+  const before = raw.slice(0, from).split('\n');
+  const line = start.line + before.length - 1;
+  const column = before.length > 1 ? before[before.length - 1]!.length : start.column + from;
+  return { type: 'TemplateElement', value: { raw: text, cooked: text }, loc: { start: { line, column } } } as Node;
+}
+
 function blockPieces(node: Node): { quasis: Node[]; expressions: Node[] } | null {
   const meaningful = node.children.filter((c: Node) => !(c.type === 'JSXText' && !c.value.trim()));
   if (meaningful.length === 0) return { quasis: [], expressions: [] };
