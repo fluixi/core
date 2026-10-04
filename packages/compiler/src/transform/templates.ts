@@ -26,7 +26,7 @@ import { moduleBindings } from './bindings.js';
 import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { collectSourceEdits, mayHaveSourceMarks } from './source-locations.js';
-import { collectStyles, type CompiledStyle, type StyleDiagnostic, type StyleLiteral, type StyleOptions, type StylePlan, type StyleReference } from './styles.js';
+import { collectStyles, finishShadowStyles, type CompiledStyle, type StyleDiagnostic, type StyleLiteral, type StyleOptions, type StylePlan, type StyleReference } from './styles.js';
 import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
@@ -572,6 +572,10 @@ export function transformTemplates(
     collectNeeds(result.ir, needs);
     edits.push({ start: node.start, end: node.end, code: adoptTemplates(result.code, result.templates, hoisted) });
   }
+
+  // A shadow-DOM element's blocks and css`` values go into its `static styles`, once every
+  // template has been compiled and its blocks numbered.
+  if (styles && options.styles) edits.push(...finishShadowStyles(styles, code, id));
 
   const out = new MagicString(code);
   // Same reason as in `slice`: a nested edit is already inside its parent's code.

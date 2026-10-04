@@ -19,7 +19,7 @@ interface CssApi {
 
 interface Compiled {
   code: string;
-  styles?: { css: string; map?: unknown }[];
+  styles?: { css: string; map?: unknown; shadow?: boolean }[];
   styleLiterals?: { name: string; css: string }[];
   styleReferences?: StyleReference[];
 }
@@ -36,7 +36,10 @@ interface DevServer {
   reloadModule(mod: never): Promise<void>;
 }
 
-const STYLE_ID = /\?fx-style&index=(\d+)&lang\.css$/;
+// A page stylesheet, or (`&inline`, Vite's own flag) a shadow root's CSS as a string; and a
+// css`` value's CSS for a shadow class's `static styles`.
+const STYLE_ID = /\?fx-style&index=(\d+)(?:&inline)?&lang\.css$/;
+const LITERAL_ID = /\?fx-literal=([\w$]+)&inline&lang\.css$/;
 
 /** The id a component's n-th style block is served under: a CSS request Vite treats as such. */
 export const styleId = (file: string, index: number) => `${file}?fx-style&index=${index}&lang.css`;
@@ -50,7 +53,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
   const fileOf = (id: string) => (existsSync(id) ? id : join(root, id));
   // The CSS of each module's blocks, with the source it came from, for `load` and for telling
   // what changed.
-  const cache = new Map<string, { source: string; css: string[]; maps: unknown[] }>();
+  const cache = new Map<string, { source: string; css: string[]; maps: unknown[]; literals: Map<string, string> }>();
 
   const resolveReference = async (
     ref: StyleReference,
@@ -101,8 +104,9 @@ export function createComponentStyles(compile: CompileWithStyles) {
     }
     const css = (result?.styles ?? []).map((s) => s.css);
     const maps = (result?.styles ?? []).map((s) => s.map ?? null);
+    const literals = new Map((result?.styleLiterals ?? []).map((l) => [l.name, l.css] as const));
     const before = cache.get(file);
-    cache.set(file, { source: code, css, maps });
+    cache.set(file, { source: code, css, maps, literals });
     // A block whose CSS changed (its own edit, or a value it composes from another module) is
     // reloaded: its module id did not change, so nothing else would tell Vite.
     if (server && before) {
@@ -112,8 +116,11 @@ export function createComponentStyles(compile: CompileWithStyles) {
         if (mod) void server.reloadModule(mod as never);
       }
     }
-    if (!result || css.length === 0) return result;
-    const imports = css.map((_, i) => `\nimport ${JSON.stringify(styleId(id, i))};`).join('');
+    // Page stylesheets are imported for their effect; a shadow element's blocks already reach
+    // its class through the `?inline` imports the compiler wrote.
+    const page = (result?.styles ?? []).flatMap((s, i) => (s.shadow ? [] : [i]));
+    if (!result || page.length === 0) return result;
+    const imports = page.map((i) => `\nimport ${JSON.stringify(styleId(id, i))};`).join('');
     return { ...result, code: result.code + imports };
   };
 
@@ -133,7 +140,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
       server = dev;
     },
     isStyle(id: string): boolean {
-      return STYLE_ID.test(id);
+      return STYLE_ID.test(id) || LITERAL_ID.test(id);
     },
     compile: run,
     /**
@@ -142,7 +149,8 @@ export function createComponentStyles(compile: CompileWithStyles) {
      */
     async load(id: string, ctx: ResolveContext): Promise<{ code: string; map: unknown } | null> {
       const match = STYLE_ID.exec(id);
-      if (!match || !api) return null;
+      const literal = LITERAL_ID.exec(id);
+      if ((!match && !literal) || !api) return null;
       const file = id.slice(0, id.indexOf('?'));
       let source: string;
       try {
@@ -152,7 +160,12 @@ export function createComponentStyles(compile: CompileWithStyles) {
       }
       if (cache.get(fileOf(file))?.source !== source) await run(source, file, ctx);
       const entry = cache.get(fileOf(file));
-      const index = Number(match[1]);
+      if (literal) {
+        const css = entry?.literals.get(literal[1]!);
+        if (css === undefined) throw new Error(`[fluixi] ${literal[1]} in ${file} is not a css\`\` value, so it cannot be a shadow root's styles.`);
+        return { code: css, map: null };
+      }
+      const index = Number(match![1]);
       return { code: entry?.css[index] ?? '', map: entry?.maps[index] ?? null };
     },
   };

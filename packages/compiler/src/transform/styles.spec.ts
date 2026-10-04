@@ -255,3 +255,56 @@ describe('style source maps', () => {
   });
 });
 
+describe('shadow-DOM elements', () => {
+  const echo = (css: string): StyleNode[] => [{ kind: 'rule', selector: css.trim().split(/\s*\{/)[0]!, nodes: [] }];
+  const run = (code: string) =>
+    transformTemplates(code, '/app/src/fx-card.tsx', { sourceRoot: '/app', styles: { process: echo, minify: true } })!;
+
+  it('sends a shadow element\'s block to its shadow root: no scope, no stamp, in static styles', () => {
+    const result = run(`
+      class FxCard extends HTMLReactiveElement {
+        static shadow = true;
+        render() {
+          return <article class="card"><style scoped>{\`.card { a: 1 }\`}</style><slot /></article>;
+        }
+      }
+    `);
+    expect(result.styles).toEqual([expect.objectContaining({ shadow: true, scoped: false, css: '.card{}' })]);
+    expect(result.code).not.toContain('data-fx-s');
+    expect(result.code).toContain('import __fxShadow0 from "/app/src/fx-card.tsx?fx-style&index=0&inline&lang.css";');
+    expect(result.code).toContain('static styles = [__fxShadow0];');
+  });
+
+  it('keeps what static styles had, with css`` values turned into their CSS', () => {
+    const result = run(`
+      import { css } from '@fluixi-css/core';
+      import { base } from './base.styles';
+      const local = css\`.local { a: 1 }\`;
+      class FxCard extends HTMLReactiveElement {
+        static shadow = 'open';
+        static styles = [base, local, ':host { display: block }'];
+        render() {
+          return html\`<style>.card { a: 1 }</style><article class="card"></article>\`;
+        }
+      }
+    `);
+    expect(result.code).toContain('?fx-style&index=0&inline&lang.css');
+    expect(result.code).toMatch(/import (__fxShadow\d+) from "\.\/base\.styles\?fx-literal=base&inline&lang\.css";/);
+    expect(result.code).toMatch(/import (__fxShadow\d+) from "\/app\/src\/fx-card\.tsx\?fx-literal=local&inline&lang\.css";/);
+    expect(result.code).toMatch(/static styles = \[\[__fxShadow\d+, __fxShadow\d+, ':host \{ display: block \}'\], __fxShadow\d+\];/);
+  });
+
+  it('scopes a light-DOM element as before', () => {
+    const result = run(`
+      class FxCard extends HTMLReactiveElement {
+        render() {
+          return <article class="card"><style scoped>{\`.card { a: 1 }\`}</style></article>;
+        }
+      }
+    `);
+    expect(result.styles?.[0]).toMatchObject({ scoped: true });
+    expect(result.code).toContain('data-fx-s');
+    expect(result.code).not.toContain('static styles');
+  });
+});
+

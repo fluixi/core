@@ -82,4 +82,26 @@ describe('component styles in Vite', () => {
     await styles.compile('export function Card() { return <div><style>{`.b { a: 1 }`}</style></div>; }', file, ctx);
     expect(reloaded).toEqual([mod]);
   });
+
+  it('serves a shadow element\'s block and a css`` value as inline CSS, and imports neither as a page sheet', async () => {
+    const { styles } = setup();
+    const file = join(dir, 'fx-card.tsx');
+    const code = [
+      "import { css } from '@fluixi-css/core';",
+      'export const extra = css`.extra { a: 1 }`;',
+      'class FxCard extends HTMLReactiveElement {',
+      '  static shadow = true;',
+      '  static styles = [extra];',
+      '  render() { return <article><style>{`.card { a: 1 }`}</style></article>; }',
+      '}',
+    ].join('\n');
+    writeFileSync(file, code);
+    const out = await styles.compile(code, file, ctx);
+    expect(out?.code).not.toContain(`import ${JSON.stringify(styleId(file, 0))};`);
+    expect(styles.isStyle(`${file}?fx-style&index=0&inline&lang.css`)).toBe(true);
+    expect((await styles.load(`${file}?fx-style&index=0&inline&lang.css`, ctx))?.code).toBe('.card{}');
+    expect((await styles.load(`${file}?fx-literal=extra&inline&lang.css`, ctx))?.code).toBe('.extra{}');
+    await expect(styles.load(`${file}?fx-literal=nope&inline&lang.css`, ctx)).rejects.toThrow(/not a css`` value/);
+  });
 });
+

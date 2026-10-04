@@ -83,8 +83,19 @@ export interface CompiledStyle {
   css: string;
   /** Back to the module, when the host gave its id and code. */
   map?: StyleMap;
+  /** For a shadow-DOM element: adopted by its shadow root (static styles), not a page stylesheet. */
+  shadow?: boolean;
   line: number;
   column: number;
+}
+
+/** A custom element class with a shadow root, and what its styles are made of. */
+interface ShadowClass {
+  node: Node;
+  /** Its `static styles = …`, when it has one. */
+  styles?: Node;
+  /** Indexes in `plan.styles` of the blocks its render holds. */
+  indexes: number[];
 }
 
 export interface StyleDiagnostic {
@@ -97,7 +108,7 @@ export interface StylePlan {
   /** Source ranges whose intrinsic elements get `data-fx-s`, with the value. */
   scopes: { start: number; end: number; value: string }[];
   /** `` html`` `` templates holding a `<style>`, by start offset: whose block it is. */
-  templateOwners: Map<number, { id: string; component: string }>;
+  templateOwners: Map<number, { id: string; component: string; shadow?: number[] }>;
   /** Start offsets of the `<style>` elements to leave out of the template. */
   drop: Set<number>;
   styles: CompiledStyle[];
@@ -106,6 +117,9 @@ export interface StylePlan {
   edits: { start: number; end: number; code: string }[];
   literals: StyleLiteral[];
   references: StyleReference[];
+  shadowClasses: Map<Node, ShadowClass>;
+  /** The module's `css`` names and imports, for rewriting a shadow class's `static styles`. */
+  names?: { literals: Map<string, Node>; imports: Map<string, { source: string; name: string }> };
 }
 
 export const SCOPE_ATTR = 'data-fx-s';
@@ -123,9 +137,17 @@ export function collectStyles(
 ): StylePlan {
   const plan: StylePlan = {
     scopes: [], templateOwners: new Map(), drop: new Set(), styles: [], diagnostics: [], edits: [], literals: [], references: [],
+    shadowClasses: new Map(),
   };
   if (!options) return plan;
   const literalsOf = findLiterals(program, options.cssModules ?? ['@fluixi-css/core'], plan);
+  plan.names = literalsOf;
+  // A class method's class, for telling whether a render belongs to a shadow-DOM element.
+  const classOf = new Map<Node, Node>();
+  const shadowOf = (owner: Node) => {
+    const cls = classOf.get(owner);
+    return cls ? plan.shadowClasses.get(cls) : undefined;
+  };
   const resolved = new Map<string, StyleNode[] | null>();
 
   // A `css`` value's nodes: each static piece processed on its own, interpolated values put
@@ -205,6 +227,13 @@ export function collectStyles(
     if ((node.type === 'ClassDeclaration' || node.type === 'ClassExpression') && node.id) {
       for (const member of node.body.body) if (member.type === 'ClassMethod') named.set(member, node.id.name);
     }
+    if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
+      for (const member of node.body.body) if (member.type === 'ClassMethod') classOf.set(member, node);
+      const shadow = staticMember(node, 'shadow');
+      if (shadow?.value && !(shadow.value.type === 'BooleanLiteral' && shadow.value.value === false)) {
+        plan.shadowClasses.set(node, { node, styles: staticMember(node, 'styles'), indexes: [] });
+      }
+    }
     if (node.type === 'TaggedTemplateExpression' && node.tag.type === 'Identifier' && node.tag.name === litTag) {
       const text = node.quasi.quasis.map((q: Node) => q.value.raw).join('');
       if (/<style[\s>]/.test(text)) {
@@ -213,8 +242,10 @@ export function collectStyles(
         if (!owner) plan.diagnostics.push({ ...at, message: '<style> has to be written inside a component.' });
         else {
           const id = idFor(owner);
-          plan.templateOwners.set(node.start!, { id, component: functionName(owner, named) });
-          if (/<style\b[^>]*\bscoped\b/.test(text) && !plan.scopes.some((s) => s.value === id)) {
+          const shadow = shadowOf(owner);
+          plan.templateOwners.set(node.start!, { id, component: functionName(owner, named), ...(shadow ? { shadow: shadow.indexes } : {}) });
+          // A shadow root isolates natively: nothing to stamp.
+          if (!shadow && /<style\b[^>]*\bscoped\b/.test(text) && !plan.scopes.some((s) => s.value === id)) {
             plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
           }
         }
@@ -256,14 +287,17 @@ export function collectStyles(
     const processed = piecesToNodes(pieces.quasis, pieces.expressions, at, []);
     if (!processed) return;
     let nodes = processed;
-    // Everything in the block, composed values included, takes the one scope.
-    if (scoped) {
+    const shadow = shadowOf(owner);
+    // Everything in the block, composed values included, takes the one scope. A shadow root
+    // needs none: its styles do not reach out, and the page's do not reach in.
+    if (scoped && !shadow) {
       if (!plan.scopes.some((s) => s.value === id)) plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
       nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
     }
     plan.drop.add(node.start!);
     const printed = module ? printStyleWithMap(nodes, options.minify, sourceName, module) : { css: printStyle(nodes, options.minify) };
-    plan.styles.push({ id, scoped, component, ...printed, ...at });
+    plan.styles.push({ id, scoped: scoped && !shadow, component, ...printed, ...(shadow ? { shadow: true } : {}), ...at });
+    if (shadow) shadow.indexes.push(plan.styles.length - 1);
   };
 
   // One id per component: every block it has, scoped or not, JSX or template, shares it.
@@ -290,8 +324,8 @@ export interface TemplateStyles {
   options: StyleOptions;
   /** Stamp every element of the template with this scope. */
   scope?: string;
-  /** Whose `<style>` blocks this template holds. */
-  owner?: { id: string; component: string };
+  /** Whose `<style>` blocks this template holds; `shadow` lists a shadow-DOM class's block indexes. */
+  owner?: { id: string; component: string; shadow?: number[] };
   line: number;
   column: number;
   styles: CompiledStyle[];
@@ -346,8 +380,76 @@ function compileTemplateBlock(node: IRLike, t: TemplateStyles, at: { line: numbe
     t.diagnostics.push({ ...at, message: `<style> could not be processed: ${(error as Error).message}` });
     return;
   }
-  if (scoped) nodes = scopeNodes(nodes, owner.id, (message) => t.diagnostics.push({ ...at, message }));
-  t.styles.push({ id: owner.id, scoped, component: owner.component, css: printStyle(nodes, t.options.minify), ...at });
+  const shadow = owner.shadow !== undefined;
+  if (scoped && !shadow) nodes = scopeNodes(nodes, owner.id, (message) => t.diagnostics.push({ ...at, message }));
+  t.styles.push({ id: owner.id, scoped: scoped && !shadow, component: owner.component, css: printStyle(nodes, t.options.minify), ...(shadow ? { shadow: true } : {}), ...at });
+  if (shadow) owner.shadow!.push(t.styles.length - 1);
+}
+
+function staticMember(cls: Node, name: string): Node | undefined {
+  return cls.body.body.find(
+    (m: Node) => m.type === 'ClassProperty' && m.static && ((m.key.type === 'Identifier' && m.key.name === name) || (m.key.type === 'StringLiteral' && m.key.value === name)),
+  );
+}
+
+/**
+ * A shadow-DOM element's styles: once every block is compiled, each class's blocks and the
+ * `css`` values named in its `static styles` become `?inline` imports of their processed CSS
+ * (the text `static styles` takes), and the class's `static styles` lists them.
+ */
+export function finishShadowStyles(plan: StylePlan, code: string, moduleId: string): { start: number; end: number; code: string }[] {
+  const edits: { start: number; end: number; code: string }[] = [];
+  const imports: string[] = [];
+  let next = 0;
+  const importOf = (specifier: string) => {
+    const local = `__fxShadow${next++}`;
+    imports.push(`import ${local} from ${JSON.stringify(specifier)};\n`);
+    return local;
+  };
+  for (const shadow of plan.shadowClasses.values()) {
+    const blocks = shadow.indexes.map((i) => importOf(`${moduleId}?fx-style&index=${i}&inline&lang.css`));
+    let value: string | undefined;
+    const prop = shadow.styles;
+    if (prop?.value) {
+      // `css`` values named in it become their CSS; anything else is left as written.
+      const start = prop.value.start as number;
+      let text = code.slice(start, prop.value.end as number);
+      const replacements: { at: number; length: number; with: string }[] = [];
+      walkIdentifiers(prop.value, (id) => {
+        const local = plan.names?.literals.has(id.name)
+          ? importOf(`${moduleId}?fx-literal=${id.name}&inline&lang.css`)
+          : plan.names?.imports.has(id.name) && !/\.css(\?|$)/.test(plan.names.imports.get(id.name)!.source)
+            ? importOf(`${plan.names.imports.get(id.name)!.source}?fx-literal=${plan.names.imports.get(id.name)!.name}&inline&lang.css`)
+            : undefined;
+        if (local) replacements.push({ at: (id.start as number) - start, length: id.name.length, with: local });
+      });
+      for (const r of replacements.sort((a, b) => b.at - a.at)) text = text.slice(0, r.at) + r.with + text.slice(r.at + r.length);
+      value = text;
+    }
+    if (!blocks.length && value === undefined) continue;
+    if (prop?.value) {
+      const merged = blocks.length ? `[${value}, ${blocks.join(', ')}]` : value!;
+      edits.push({ start: prop.value.start as number, end: prop.value.end as number, code: merged });
+    } else if (blocks.length) {
+      const open = (shadow.node.body.start as number) + 1;
+      edits.push({ start: open, end: open, code: ` static styles = [${blocks.join(', ')}];` });
+    }
+  }
+  if (imports.length) edits.push({ start: 0, end: 0, code: imports.join('') });
+  return edits;
+}
+
+function walkIdentifiers(node: Node, visit: (id: Node) => void): void {
+  if (!node || typeof node !== 'object') return;
+  if (node.type === 'Identifier') return visit(node);
+  if (node.type === 'MemberExpression') return walkIdentifiers(node.object, visit);
+  if (node.type === 'ObjectProperty') return walkIdentifiers(node.value, visit);
+  for (const key of Object.keys(node)) {
+    if (key === 'loc') continue;
+    const value = (node as Record<string, unknown>)[key];
+    if (Array.isArray(value)) for (const v of value) walkIdentifiers(v as Node, visit);
+    else if (value && typeof value === 'object' && 'type' in (value as object)) walkIdentifiers(value as Node, visit);
+  }
 }
 
 function isStyle(node: Node): boolean {
