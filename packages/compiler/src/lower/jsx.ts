@@ -13,6 +13,7 @@ import { shapeOf } from '../analyze/expr-shape.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { cleanTemplateText } from './text.js';
 import { paren } from '../analyze/paren.js';
+import { markHole } from '../transform/source-locations.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 
 interface Node {
@@ -166,9 +167,18 @@ function attrExprCode(attr: Node, ctx: JsxContext): string | null {
   return null;
 }
 
-function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
+/**
+ * `element`: the tag is a DOM element. Only there are class:/style: and a style object taken
+ * apart; a component gets its props as written.
+ */
+function buildProps(attrs: Node[], ctx: JsxContext, element = false): IRProp[] {
   const props: IRProp[] = [];
   const usePairs: string[] = []; // use:name directives collapse into one `use` prop
+  // class:x and style:x collapse into one classList / style object, as in templates; each
+  // value that moves is an accessor in it, so the runtime updates that one key.
+  const classEntries: string[] = [];
+  const styleEntries: string[] = [];
+  let styleAt: IRProp['at'];
   for (const a of attrs) {
     if (a.type === 'JSXSpreadAttribute') {
       props.push({ name: '', kind: 'spread', expr: ctx.code(a.argument as Node) });
@@ -188,6 +198,28 @@ function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
       usePairs.push(opts != null ? `[${dir}, () => ${paren(opts, 'arrowBody')}]` : `[${dir}]`);
       continue;
     }
+    if (element && (ns === 'class' || ns === 'style')) {
+      const key = JSON.stringify(a.name.name.name);
+      const v = a.value;
+      let value: string;
+      if (v == null) value = 'true';
+      else if (isString(v)) value = JSON.stringify(literalOf(v));
+      else if (v.type === 'JSXExpressionContainer' && v.expression?.type !== 'JSXEmptyExpression') {
+        value = keyValue(v.expression as Node, ctx);
+        if (ns === 'style') styleAt ??= posOf(v.expression as Node, ctx);
+      } else continue;
+      (ns === 'class' ? classEntries : styleEntries).push(`${key}: ${value}`);
+      continue;
+    }
+    // style={{ … }}: one entry per property, so `--gap` moving does not rewrite `margin`.
+    if (element && a.name.type === 'JSXIdentifier' && a.name.name === 'style' && a.value?.type === 'JSXExpressionContainer') {
+      const entries = objectEntries(a.value.expression as Node, ctx);
+      if (entries) {
+        styleEntries.unshift(...entries);
+        styleAt = posOf(a.value.expression as Node, ctx);
+        continue;
+      }
+    }
     // oncapture:name -> native on:name with { capture: true }
     if (ns === 'oncapture') {
       const evt = (a.name.name.name as string).toLowerCase();
@@ -198,8 +230,46 @@ function buildProps(attrs: Node[], ctx: JsxContext): IRProp[] {
 
     props.push(buildAttr(a, ctx));
   }
+  if (classEntries.length > 0) props.push({ name: 'classList', kind: 'attr', expr: `{ ${classEntries.join(', ')} }`, reactive: false });
+  if (styleEntries.length > 0) {
+    const entries = `{ ${styleEntries.join(', ')} }`;
+    // A style the object form could not take apart (a string, a variable) goes first, and
+    // the keys after it: the runtime applies an array in order.
+    const base = props.findIndex((p) => p.name === 'style' && p.kind === 'attr');
+    if (base === -1) props.push({ name: 'style', kind: 'attr', expr: entries, reactive: false, ...(styleAt ? { at: styleAt } : {}) });
+    else {
+      const prop = props[base]!;
+      const value = prop.literal !== undefined ? JSON.stringify(prop.literal) : prop.reactive ? `() => ${paren(prop.expr!, 'arrowBody')}` : prop.expr!;
+      props[base] = { name: 'style', kind: 'attr', expr: `[${value}, ${entries}]`, reactive: false, ...(prop.at ? { at: prop.at } : {}) };
+    }
+  }
   if (usePairs.length > 0) props.push({ name: 'use', kind: 'attr', expr: `[${usePairs.join(', ')}]` });
   return props;
+}
+
+/** A value inside a classList / style object: an accessor when it moves. */
+function keyValue(expr: Node, ctx: JsxContext): string {
+  const code = ctx.code(expr);
+  if (!isReactive(expr)) return code;
+  const accessor = `() => ${paren(code, 'arrowBody')}`;
+  const at = posOf(expr, ctx);
+  return at ? markHole(accessor, at.line, at.column) : accessor;
+}
+
+/** `{ a: x, '--b': y }` as object entries; null for anything with a spread or a method. */
+function objectEntries(expr: Node, ctx: JsxContext): string[] | null {
+  if (expr?.type !== 'ObjectExpression') return null;
+  const entries: string[] = [];
+  for (const p of expr.properties as Node[]) {
+    if (p.type !== 'ObjectProperty') return null;
+    const key = p.computed
+      ? `[${ctx.code(p.key)}]`
+      : p.key.type === 'Identifier'
+        ? JSON.stringify(p.key.name)
+        : JSON.stringify(String(p.key.value));
+    entries.push(`${key}: ${keyValue(p.value, ctx)}`);
+  }
+  return entries;
 }
 
 function buildChildren(children: Node[], ctx: JsxContext): IRNode[] {
@@ -328,7 +398,7 @@ function buildElement(node: Node, ctx: JsxContext, handled: string[]): IRNode {
   const at = ctx.sourceFile && node.loc?.start
     ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
     : undefined;
-  const props = buildProps(attributes, ctx);
+  const props = buildProps(attributes, ctx, true);
   // A scoped style's mark: a static attribute, so it is part of the template itself and
   // every render carries it, on the client, from the server and through hydration.
   const scope = ctx.scopes?.find((s) => node.start >= s.start && node.end <= s.end);

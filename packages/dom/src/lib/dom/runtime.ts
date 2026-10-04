@@ -1526,21 +1526,67 @@ export function setClassList(
   }
 }
 
-export function setStyle(element: any, _value: any): void {
-  let value = _value;
-  while(typeof value === 'function') value = value()
+/**
+ * One style property. A dashed name (`--gap`, `background-color`) goes through setProperty:
+ * assigning it as a property of `element.style` is silently ignored for custom properties.
+ * `null` and `undefined` clear it.
+ */
+function setStyleProperty(style: any, key: string, value: unknown): void {
+  if (key.includes('-')) {
+    if (value == null) style.removeProperty(key);
+    else style.setProperty(key, String(value));
+  } else style[key] = value == null ? '' : value;
+}
 
-  if (value == null) { element.removeAttribute('style'); return; }
+function unwrap(value: unknown): unknown {
+  while (typeof value === 'function') value = value();
+  return value;
+}
 
-  if (typeof value === 'string') { element.style.cssText = value; return; }
+// The keys an object style last set on an element, so the next object can clear the ones it
+// no longer has.
+const styleKeys = new WeakMap<object, Set<string>>();
 
-  if (typeof value === 'object') {
-    for (const key in value) {
-      const styleValue = value[key];
-      if (styleValue == null) (element.style as any)[key] = '';
-      else (element.style as any)[key] = styleValue;
-    }
+/**
+ * Apply a style: a string, an object of properties whose values may be accessors, or an array
+ * of those applied in order (`style="…"` with `style:x` after it). With `disposers`, each
+ * accessor gets its own render effect, so a change writes one property: `style:color=${c}`
+ * touches `color` only.
+ */
+export function setStyle(element: any, _value: any, disposers?: Array<() => void>): void {
+  const value = unwrap(_value);
+  const previous = styleKeys.get(element);
+  if (value == null) {
+    styleKeys.delete(element);
+    element.removeAttribute('style');
+    return;
   }
+  const keys = new Set<string>();
+  const apply = (item: unknown): void => {
+    if (typeof item === 'function' && disposers) {
+      // A part that moves as a whole (a reactive `style=` next to `style:` keys).
+      disposers.push(createRenderEffect(() => apply(unwrap(item))));
+      return;
+    }
+    item = unwrap(item);
+    if (item == null) return;
+    if (typeof item === 'string') element.style.cssText = item;
+    else if (Array.isArray(item)) for (const part of item) apply(part);
+    else if (typeof item === 'object') {
+      for (const key in item as Record<string, unknown>) {
+        keys.add(key);
+        const v = (item as Record<string, unknown>)[key];
+        if (typeof v === 'function' && disposers) {
+          disposers.push(createRenderEffect(() => setStyleProperty(element.style, key, unwrap(v))));
+        } else setStyleProperty(element.style, key, unwrap(v));
+      }
+    }
+  };
+  if (Array.isArray(value)) for (const part of value) apply(part);
+  else apply(value);
+  // What the last object set and this one does not is cleared, not left behind.
+  if (previous) for (const key of previous) if (!keys.has(key)) setStyleProperty(element.style, key, null);
+  styleKeys.set(element, keys);
 }
 
 // ============================================================================
@@ -1673,7 +1719,7 @@ export function spread(options: SpreadOptions): () => void {
           }),
         );
       } else {
-        setStyle(element as any, value);
+        setStyle(element as any, value, disposers);
       }
       continue;
     }
@@ -1812,7 +1858,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
           reportReactiveBinding(element, 'attribute', 'class', val);
           setClassList(element, val());
         });
-      else setClassList(element, val);
+      else setClassList(element, val, []);
       continue;
     }
     if (key === 'style') {
@@ -1826,7 +1872,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
           reportReactiveBinding(element, 'attribute', 'style', val);
           setStyle(element as HTMLElement, (val as () => unknown)());
         });
-      else setStyle(element as HTMLElement, val);
+      else setStyle(element as HTMLElement, val, []);
       continue;
     }
     if (key === 'innerHTML') {

@@ -22,6 +22,7 @@ import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperati
 import { cleanTemplateText } from './text.js';
 import { decodeEntities } from './entities.js';
 import { paren } from '../analyze/paren.js';
+import { markHole } from '../transform/source-locations.js';
 
 /**
  * One `${…}` slot, as the front-end describes it. Conclusions about the
@@ -190,7 +191,7 @@ class Lowerer {
       kind: 'element',
       tag: el.tag,
       svg: el.namespace === 'svg',
-      props: this.lowerAttributes(el.attributes),
+      props: this.lowerAttributes(el.attributes, true),
       children,
       static: false,
       ...(at ? { at } : {}),
@@ -343,13 +344,23 @@ class Lowerer {
 
   // --- attributes ---------------------------------------------------------
 
-  private lowerAttributes(attrs: AttributeLikeNode[]): IRProp[] {
+  /**
+   * `element`: a DOM element, where each class:/style: value that moves is its own accessor.
+   * A component gets the object as before, rebuilt whole when any value moves.
+   */
+  private lowerAttributes(attrs: AttributeLikeNode[], element = false): IRProp[] {
+    let anyReactive = false;
+    const entry = (name: string, h: { code: string; reactive: boolean; at?: HolePosition }) => {
+      anyReactive ||= h.reactive;
+      if (!element || !h.reactive) return `${JSON.stringify(name)}: ${h.code}`;
+      const accessor = `() => ${paren(h.code, 'arrowBody')}`;
+      // Marked like any other binding hole when positions are on.
+      return `${JSON.stringify(name)}: ${h.at ? markHole(accessor, h.at.line, h.at.column) : accessor}`;
+    };
     const props: IRProp[] = [];
     const classEntries: string[] = [];
-    let classReactive = false;
     let classAt: HolePosition | undefined;
     const styleEntries: string[] = [];
-    let styleReactive = false;
     let styleAt: HolePosition | undefined;
     const usePairs: string[] = [];
 
@@ -389,15 +400,13 @@ class Lowerer {
           break;
         case 'ClassDirective': {
           const h = this.hole(a.hole);
-          classEntries.push(`${JSON.stringify(a.name)}: ${h.code}`);
-          classReactive = classReactive || h.reactive;
+          classEntries.push(entry(a.name, h));
           classAt ??= h.at;
           break;
         }
         case 'StyleDirective': {
           const h = this.hole(a.hole);
-          styleEntries.push(`${JSON.stringify(a.name)}: ${h.code}`);
-          styleReactive = styleReactive || h.reactive;
+          styleEntries.push(entry(a.name, h));
           styleAt ??= h.at;
           break;
         }
@@ -426,18 +435,21 @@ class Lowerer {
         name: 'classList',
         kind: 'attr',
         expr: `{ ${classEntries.join(', ')} }`,
-        reactive: classReactive,
+        reactive: !element && anyReactive,
         ...(classAt ? { at: classAt } : {}),
       });
     }
+    // Each entry that moves is its own accessor, so the runtime updates that key alone.
     if (styleEntries.length > 0) {
-      props.push({
-        name: 'style',
-        kind: 'attr',
-        expr: `{ ${styleEntries.join(', ')} }`,
-        reactive: styleReactive,
-        ...(styleAt ? { at: styleAt } : {}),
-      });
+      const entries = `{ ${styleEntries.join(', ')} }`;
+      // `style=${…}` as well: it goes first, the keys after it, applied in order.
+      const base = props.findIndex((p) => p.name === 'style');
+      if (base === -1) props.push({ name: 'style', kind: 'attr', expr: entries, reactive: !element && anyReactive, ...(styleAt ? { at: styleAt } : {}) });
+      else {
+        const prop = props[base]!;
+        const value = prop.expr === undefined ? JSON.stringify(prop.literal) : prop.reactive ? `() => ${paren(prop.expr, 'arrowBody')}` : prop.expr;
+        props[base] = { name: 'style', kind: 'attr', expr: `[${value}, ${entries}]`, reactive: false, ...(prop.at ? { at: prop.at } : {}) };
+      }
     }
     // All use: directives normalize to one `use` prop = an array of [dir, accessor?] pairs.
     if (usePairs.length > 0) {

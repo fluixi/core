@@ -40,15 +40,78 @@ describe('lit directives — events & bindings', () => {
 });
 
 describe('lit directives — class: / style:', () => {
-  it('class: merges into a reactive classList map', () => {
-    const code = compileEsm('export const r = (on, big) => html`<div class:active=${on()} class:big=${big()}></div>`;');
-    expect(code).toContain('classList: () => ({');
-    expect(code).toContain('"active": on()');
-    expect(code).toContain('"big": big()');
+  it('style: updates one property per change, custom properties included', () => {
+    const mod = load('export const render = (c, gap) => html`<div style:color=${c()} style:--gap=${gap()}></div>`;');
+    const [c, setC] = S.createSignal('red');
+    const [g, setG] = S.createSignal('1rem');
+    let gapReads = 0;
+    const el = mod.render(c, () => (gapReads++, g())) as HTMLElement;
+    expect(el.style.color).toBe('red');
+    expect(el.style.getPropertyValue('--gap')).toBe('1rem');
+    const before = gapReads;
+    setC('blue');
+    S.flush();
+    expect(el.style.color).toBe('blue');
+    expect(gapReads).toBe(before);
+    setG('2rem');
+    S.flush();
+    expect(el.style.getPropertyValue('--gap')).toBe('2rem');
   });
 
-  it('style: merges into a reactive style object', () => {
-    expect(compileEsm('export const r = (c) => html`<div style:color=${c()}></div>`;')).toContain('style: () => ({');
+  it('style= and style: together apply in order, with no duplicate key', () => {
+    const code = compileEsm('export const r = (c) => html`<div style=${"margin: 0"} style:color=${c()}></div>`;');
+    expect(code.match(/\bstyle:/g)).toHaveLength(1);
+    const mod = load('export const render = (c) => html`<div style=${"margin: 0px"} style:color=${c()}></div>`;');
+    const el = mod.render(() => 'red') as HTMLElement;
+    expect(el.style.margin).toBe('0px');
+    expect(el.style.color).toBe('red');
+  });
+
+  it('JSX class: and style: lower like the template forms', () => {
+    const code = compileEsm('export const R = (p) => <div class:on={p.on()} style:color={p.c()} style={{ "--gap": p.gap() }} />;');
+    expect(code).toContain('classList: {');
+    expect(code).not.toContain('"class:on"');
+    expect(code).not.toContain('"style:color"');
+    const mod = load('export const R = (p) => <div class:on={p.on()} style:color={p.c()} style={{ "--gap": p.gap(), margin: "0px" }} />;');
+    const [on, setOn] = S.createSignal(false);
+    const [g, setG] = S.createSignal('1rem');
+    let colorReads = 0;
+    const el = mod.R({ on, c: () => (colorReads++, 'red'), gap: g }) as HTMLElement;
+    expect(el.classList.contains('on')).toBe(false);
+    expect(el.style.color).toBe('red');
+    expect(el.style.margin).toBe('0px');
+    const before = colorReads;
+    setOn(true);
+    setG('2rem');
+    S.flush();
+    expect(el.classList.contains('on')).toBe(true);
+    expect(el.style.getPropertyValue('--gap')).toBe('2rem');
+    expect(colorReads).toBe(before);
+  });
+
+  it('a reactive style object clears the keys it stops setting', () => {
+    const mod = load('export const R = (p) => <div style={p.s()} />;');
+    const [s, set] = S.createSignal<Record<string, string>>({ color: 'red', '--gap': '1rem' });
+    const el = mod.R({ s }) as HTMLElement;
+    expect(el.style.getPropertyValue('--gap')).toBe('1rem');
+    set({ color: 'blue' });
+    S.flush();
+    expect(el.style.color).toBe('blue');
+    expect(el.style.getPropertyValue('--gap')).toBe('');
+  });
+
+  it('class: merges into one classList map, an accessor per key that moves', () => {
+    const code = compileEsm('export const r = (on, big) => html`<div class:active=${on()} class:big=${big()}></div>`;');
+    expect(code).toContain('classList: {');
+    expect(code).toContain('"active": () => on()');
+    expect(code).toContain('"big": () => big()');
+  });
+
+  it('style: merges into one style object, an accessor per key that moves', () => {
+    const code = compileEsm('export const r = (c) => html`<div style:color=${c()} style:--gap=${"1rem"}></div>`;');
+    expect(code).toContain('style: {');
+    expect(code).toContain('"color": () => c()');
+    expect(code).toContain('"--gap": "1rem"');
   });
 
   it('class: toggles a class at runtime', () => {
