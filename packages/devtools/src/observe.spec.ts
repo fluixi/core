@@ -709,4 +709,34 @@ describe('a builtin tag the runtime does not name', () => {
     expect(card?.props?.map((p) => p.name)).toEqual(['title', 'fallback']);
     expect(card?.props?.find((p) => p.name === 'title')?.value).toContain('One');
   });
+
+  it('leaves nothing running from what a prop built when it was read', () => {
+    observed = observeGraph();
+    const [tick, setTick] = createSignal(0);
+    let runs = 0;
+    createRoot(() => {
+      createMemo(
+        () => {
+          reportReactiveProps({
+            // `Show`'s fallback: markup with effects of its own, built by the read.
+            get fallback() {
+              createEffect(() => {
+                tick();
+                runs++;
+              });
+              return 'built';
+            },
+          });
+          return { $name: 'Card' };
+        },
+        undefined,
+        { name: 'Card' },
+      )();
+    });
+    observed.sample();
+    const afterRead = runs;
+    setTick(1);
+    setTick(2);
+    expect(runs).toBe(afterRead);
+  });
 });

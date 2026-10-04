@@ -9,6 +9,7 @@
 // The graph it fills is the same Map<number, RNode> createGraphView already draws, so a
 // renderer does not care which of the two produced it.
 import {
+  createRoot,
   observeReactiveNodes,
   untrack,
   type ReactiveNodeReport,
@@ -202,6 +203,10 @@ const PREFIX: Record<NodeKind, string> = {
  * component again, and any other prop can reach such a getter (`when={local.trailing != null}`).
  * Read on every sample, each one added another copy of those components to the graph.
  * `children` is skipped: reading it builds the subtree.
+ *
+ * Any other getter can build one too (`Show`'s `fallback`), and what it builds is live: its
+ * effects run outside the component, so a context it reads is missing, and they keep running
+ * and throwing on every change. Each read happens in a root disposed as soon as it returns.
  */
 function readProps(props: object): PropReport[] | undefined {
   if (readOnce.has(props)) return readOnce.get(props);
@@ -215,7 +220,16 @@ function readProps(props: object): PropReport[] | undefined {
       ...(where ? { at: { line: where[0], column: where[1] } } : {}),
     };
     try {
-      report.value = formatValue(untrack(() => (props as Record<string, unknown>)[name]), 200);
+      report.value = formatValue(
+        createRoot((dispose) => {
+          try {
+            return untrack(() => (props as Record<string, unknown>)[name]);
+          } finally {
+            dispose();
+          }
+        }),
+        200,
+      );
     } catch {
       // A getter that throws is still a prop worth naming.
     }
