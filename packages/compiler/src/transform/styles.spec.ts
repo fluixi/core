@@ -159,10 +159,10 @@ describe('css`` literals', () => {
     transformTemplates(code, '/app/src/card.styles.tsx', { sourceRoot: '/app', styles: { process: echo, minify: true } })!;
 
   it('compiles a literal to a handle, takes the import away and keeps the CSS for the build', () => {
-    const result = run(`import { css, other } from '@fluixi-css/core';\nexport const base = css\`.base { color: red }\`;`);
+    const result = run(`import { css, other } from '@fluixi/core';\nexport const base = css\`.base { color: red }\`;`);
     const id = hash('src/card.styles.tsx:css:base');
     expect(result.code).toContain(`export const base = ({ $fxStyle: "${id}" });`);
-    expect(result.code).toContain(`import { other } from "@fluixi-css/core";`);
+    expect(result.code).toContain(`import { other } from "@fluixi/core";`);
     expect(result.code).not.toMatch(/\bcss`/);
     expect(result.styleLiterals).toEqual([{ id, name: 'base', css: '.base{}' }]);
     expect(result.styles).toBeUndefined();
@@ -170,7 +170,7 @@ describe('css`` literals', () => {
 
   it('composes literals in the order written, on the AST', () => {
     const result = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       const base = css\`.base { a: 1 }\`;
       const primary = css\`.primary { b: 1 }\`;
       export const button = css\`\${base}\${primary}.button { c: 1 }\`;
@@ -180,7 +180,7 @@ describe('css`` literals', () => {
 
   it('scopes a value composed into <style scoped> with the component, as one block', () => {
     const result = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       const shared = css\`.card { a: 1 }\`;
       export function Card() {
         return <div><style scoped>{\`\${shared} .title { b: 1 }\`}</style></div>;
@@ -195,7 +195,7 @@ describe('css`` literals', () => {
   it('uses a value from another module once the build has resolved it, by its export name', () => {
     const result = transformTemplates(
       `
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       import { base as shared } from './base.styles';
       export const card = css\`\${shared} .card { a: 1 }\`;
     `,
@@ -211,13 +211,13 @@ describe('css`` literals', () => {
 
   it('reports a value from another module for the build, and a cycle', () => {
     const imported = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       import { base } from './base.styles';
       export const card = css\`\${base} .card { a: 1 }\`;
     `);
     expect(imported.styleReferences).toEqual([expect.objectContaining({ name: 'base', source: './base.styles' })]);
     const cycle = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       const a = css\`\${b}\`;
       const b = css\`\${a}\`;
     `);
@@ -277,7 +277,7 @@ describe('shadow-DOM elements', () => {
 
   it('keeps what static styles had, with css`` values turned into their CSS', () => {
     const result = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       import { base } from './base.styles';
       const local = css\`.local { a: 1 }\`;
       class FxCard extends HTMLReactiveElement {
@@ -317,7 +317,7 @@ describe('<style> in html`` templates', () => {
 
   it('composes css`` values interpolated by name, in written order, and scopes them with the block', () => {
     const result = run(`
-      import { css } from '@fluixi-css/core';
+      import { css } from '@fluixi/core';
       const base = css\`.base { a: 1 }\`;
       export function Card() {
         return html\`<style scoped>\${base} .card { b: 1 }</style><article class="card"></article>\`;
@@ -356,5 +356,43 @@ describe('<style> in html`` templates', () => {
     const result = transformTemplates(code, '/app/src/card.tsx', { sourceRoot: '/app', styles: { process: () => [{ kind: 'rule', selector: '.card', nodes: [], loc: { source: 'src/card.tsx', line: 2, column: 6 } }] } })!;
     const trace = new TraceMap(result.styles![0]!.map as never);
     expect(originalPositionFor(trace, { line: 1, column: 0 })).toMatchObject({ line: 4, column: 6 });
+  });
+});
+
+describe('$html, $svg and $css in an app', () => {
+  const echo = (css: string): StyleNode[] => (css.trim() ? [{ kind: 'rule', selector: css.trim().split(/\s*\{/)[0]!, nodes: [] }] : []);
+  const run = (code: string, intrinsics?: boolean) =>
+    transformTemplates(code, '/app/src/card.tsx', { sourceRoot: '/app', styles: { process: echo, minify: true }, ...(intrinsics === false ? { intrinsics } : {}) })!;
+
+  it('compiles the tags with no import, as their markers', () => {
+    const result = run(`
+      const base = $css\`.base { a: 1 }\`;
+      export function Card() {
+        return $html\`<style scoped>\${base} .card { b: 1 }</style><article class="card">\${$svg\`<circle r="1"></circle>\`}</article>\`;
+      }
+    `);
+    const id = hash('src/card.tsx:Card');
+    expect(result.styleDiagnostics).toBeUndefined();
+    expect(result.styleLiterals?.[0]).toMatchObject({ name: 'base', css: '.base{}' });
+    expect(result.styles?.[0]?.css).toBe(`.base[data-fx-s="${id}"]{}.card[data-fx-s="${id}"]{}`);
+    expect(result.code).not.toMatch(/\$(html|svg|css)`/);
+    const svg = (tag: string) => transformTemplates(`export const c = () => ${tag}\`<circle r="1"></circle>\`;`, '/app/src/c.ts', {})!.code;
+    expect(svg('$svg')).toBe(svg('svg'));
+  });
+
+  it('leaves a module\'s own binding of the name alone, and the tags off when intrinsics are', () => {
+    const own = run(`
+      const $html = (s) => s.join('');
+      export const text = $html\`<p>x</p>\`;
+    `);
+    expect(own?.code ?? '').not.toContain('createNativeElement');
+    const off = transformTemplates('export const v = $css`.a { a: 1 }`;', '/app/src/v.ts', { styles: { process: echo }, intrinsics: false });
+    expect(off?.styleLiterals).toBeUndefined();
+  });
+
+  it('takes css from @fluixi/core', () => {
+    const result = run(`import { css, html } from '@fluixi/core';\nexport const base = css\`.base { a: 1 }\`;`);
+    expect(result.styleLiterals?.[0]?.css).toBe('.base{}');
+    expect(result.code).toContain('import { html } from "@fluixi/core";');
   });
 });

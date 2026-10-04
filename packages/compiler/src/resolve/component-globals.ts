@@ -22,7 +22,7 @@ import {
   type ResolvedComponent,
 } from './component-resolver.js';
 import { builtinComponentMap } from './builtins.js';
-import { INTRINSICS } from '../analyze/intrinsics.js';
+import { INTRINSICS, TAG_INTRINSICS } from '../analyze/intrinsics.js';
 
 /**
  * Names `lib.dom` already declares as globals.
@@ -188,7 +188,7 @@ export function componentGlobals(
   // Only the intrinsics whose package the project has: `$env` comes from `@fluixi/start`, and
   // an app without it would otherwise get a declaration that fails to resolve.
   const usableIntrinsics = intrinsics
-    ? Object.entries(INTRINSICS).filter(([, i]) => {
+    ? Object.entries<{ export: string; module: string }>({ ...INTRINSICS, ...TAG_INTRINSICS }).filter(([, i]) => {
         const pkg = packageOf(i.module);
         return !available || !pkg || available.has(pkg);
       })

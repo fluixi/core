@@ -48,7 +48,7 @@ export interface StyleOptions {
   /** CSS in, flattened engine AST out: `(css, from) => processCss(css, ctx, { from }).ast`. */
   process(css: string, from: string): StyleNode[];
   minify?: boolean;
-  /** Modules whose `css` export is the portable literal. Default `['@fluixi-css/core']`. */
+  /** Modules whose `css` export is the portable literal. Default `['@fluixi/core', '@fluixi/dom']`. */
   cssModules?: string[];
   /**
    * Style values from other modules, resolved by the build, keyed `${source}#${exportName}` as
@@ -131,7 +131,8 @@ export function collectStyles(
   program: Node,
   sourceName: string,
   options: StyleOptions | undefined,
-  litTag = 'html',
+  /** Template tags by name (`html`, `$html`), and the `css` tags a module may use unimported (`$css`). */
+  tags: { html: ReadonlyMap<string, string>; css?: string[] } = { html: new Map([['html', 'html']]) },
   /** The module as the host knows it, for source maps that point into it. */
   module?: { id: string; code: string },
 ): StylePlan {
@@ -140,7 +141,7 @@ export function collectStyles(
     shadowClasses: new Map(),
   };
   if (!options) return plan;
-  const literalsOf = findLiterals(program, options.cssModules ?? ['@fluixi-css/core'], plan);
+  const literalsOf = findLiterals(program, options.cssModules ?? ['@fluixi/core', '@fluixi/dom'], plan, tags.css ?? []);
   plan.names = literalsOf;
   // A class method's class, for telling whether a render belongs to a shadow-DOM element.
   const classOf = new Map<Node, Node>();
@@ -234,7 +235,7 @@ export function collectStyles(
         plan.shadowClasses.set(node, { node, styles: staticMember(node, 'styles'), indexes: [] });
       }
     }
-    if (node.type === 'TaggedTemplateExpression' && node.tag.type === 'Identifier' && node.tag.name === litTag) {
+    if (node.type === 'TaggedTemplateExpression' && node.tag.type === 'Identifier' && tags.html.get(node.tag.name) === 'html') {
       const text = node.quasi.quasis.map((q: Node) => q.value.raw).join('');
       if (/<style[\s>]/.test(text)) {
         const at = { line: node.loc?.start.line ?? 0, column: node.loc?.start.column ?? 0 };
@@ -506,11 +507,12 @@ function findLiterals(
   program: Node,
   modules: string[],
   plan: StylePlan,
+  intrinsic: string[],
 ): { literals: Map<string, Node>; imports: Map<string, { source: string; name: string }> } {
   const literals = new Map<string, Node>();
   // Local name → where it comes from and the export it is (`import { base as b }`: b → base).
   const imports = new Map<string, { source: string; name: string }>();
-  let tag: string | undefined;
+  const tags = new Set(intrinsic);
   for (const statement of program.body ?? []) {
     if (statement.type !== 'ImportDeclaration') continue;
     const source = statement.source.value as string;
@@ -522,16 +524,16 @@ function findLiterals(
     const css = specifiers.find((sp) => sp.type === 'ImportSpecifier' && (sp.imported.name ?? sp.imported.value) === 'css');
     if (!css) continue;
     const local = css.local.name as string;
-    tag = local;
+    tags.add(local);
     imports.delete(local);
     plan.edits.push({ start: statement.start!, end: statement.end!, code: importWithout(statement, css) });
   }
   // A component that only composes imported values has no `css` import of its own: its
   // imports still name where those values come from.
-  if (!tag) return { literals, imports };
+  if (tags.size === 0) return { literals, imports };
   const visit = (node: Node) => {
     if (!node || typeof node !== 'object') return;
-    if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init?.type === 'TaggedTemplateExpression' && node.init.tag.type === 'Identifier' && node.init.tag.name === tag) {
+    if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && node.init?.type === 'TaggedTemplateExpression' && node.init.tag.type === 'Identifier' && tags.has(node.init.tag.name)) {
       literals.set(node.id.name, node.init);
     }
     for (const key of Object.keys(node)) {

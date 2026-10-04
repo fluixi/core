@@ -37,3 +37,22 @@ export function html(_strings: TemplateStringsArray, ..._values: unknown[]): Tem
 export function svg(_strings: TemplateStringsArray, ..._values: unknown[]): TemplateResult {
   throw new Error("svg`` was not compiled, enable the lit format: fluixi({ format: 'lit' }).");
 }
+
+/** A compiled `` css`...` `` value: composable, attached where a component or element uses it. */
+export interface FluixiStyle {
+  readonly $fxStyle: string;
+}
+
+/**
+ * Portable CSS, processed by @fluixi-css like any project stylesheet (`@apply`, utilities,
+ * variants, theme) and scoped only where a component's `<style scoped>` takes it in.
+ * Compiled away: the build replaces each value with a handle and sends its CSS to Vite.
+ *
+ * ```ts
+ * const base = css`.card { @apply p-4 rounded-xl; }`;
+ * const card = css`${base} .card:hover { @apply shadow-md; }`;
+ * ```
+ */
+export function css(_strings: TemplateStringsArray, ..._values: FluixiStyle[]): FluixiStyle {
+  throw new Error('css`` was not compiled: component styles need @fluixi-css/vite next to the fluixi plugin.');
+}

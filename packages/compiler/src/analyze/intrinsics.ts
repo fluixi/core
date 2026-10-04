@@ -137,6 +137,23 @@ export const PRIMITIVE_MODULES: readonly string[] = [
  * Cheap text check for the file-skipping fast path: a module with no `$` call never
  * needs parsing. Non-global, so it has no lastIndex to carry between calls.
  */
+/**
+ * Template tags an app writes without importing them. Each compiles exactly like the marker
+ * it names; a module that binds the name itself keeps its own meaning.
+ */
+export const TAG_INTRINSICS: Readonly<Record<string, { export: 'html' | 'svg' | 'css'; module: string }>> = {
+  $html: { export: 'html', module: '@fluixi/core' },
+  $svg: { export: 'svg', module: '@fluixi/core' },
+  $css: { export: 'css', module: '@fluixi/core' },
+};
+
+/** The `$` tags this module can use: all of them, less the ones it binds. */
+export function tagIntrinsics(bound: Set<string>): Map<string, 'html' | 'svg' | 'css'> {
+  const tags = new Map<string, 'html' | 'svg' | 'css'>();
+  for (const [name, tag] of Object.entries(TAG_INTRINSICS)) if (!bound.has(name)) tags.set(name, tag.export);
+  return tags;
+}
+
 const INTRINSIC_CALL = new RegExp(`\\$(?:${Object.keys(INTRINSICS).map((n) => n.slice(1)).join('|')})\\s*\\(`);
 
 export function mayHaveIntrinsic(code: string): boolean {

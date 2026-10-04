@@ -111,8 +111,8 @@ import { ensureIntegration } from './render/component.js';
 // html`` / svg`` template markers, the no-JSX authoring surface. They live in
 // @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
 // `import { html } from '@fluixi/core'` works. Inert typed functions, no lit runtime.
-export { html, svg } from '@fluixi/dom';
-export type { TemplateResult, Reactive } from '@fluixi/dom';
+export { html, svg, css } from '@fluixi/dom';
+export type { TemplateResult, Reactive, FluixiStyle } from '@fluixi/dom';
 
 // createReactiveJSX (a deprecated legacy adapter) lived here but pulled the jsx-runtime
 // `.` entry into the core graph. It's gone: compiled JSX uses the jsx-runtime subpath

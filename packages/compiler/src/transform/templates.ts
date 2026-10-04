@@ -27,7 +27,7 @@ import { collectPropsEdits, type PropsDiagnostic } from './props.js';
 import { avoidBindingClashes, collectIntrinsicEdits, intrinsicImports, type IntrinsicDiagnostic } from './intrinsics.js';
 import { collectSourceEdits, mayHaveSourceMarks } from './source-locations.js';
 import { collectStyles, finishShadowStyles, type CompiledStyle, type StyleDiagnostic, type StyleLiteral, type StyleOptions, type StylePlan, type StyleReference } from './styles.js';
-import { mayHaveIntrinsic } from '../analyze/intrinsics.js';
+import { mayHaveIntrinsic, tagIntrinsics } from '../analyze/intrinsics.js';
 import { declaredNames } from '../analyze/reactive-bindings.js';
 import { DOM_CONTROL_FLOW, CORE_CONTROL_FLOW, ROUTER_COMPONENTS } from '../resolve/builtins.js';
 
@@ -173,12 +173,8 @@ function isJsxRoot(node: Node, parent: Node | null, key: string): boolean {
   return !(parent && isJsx(parent) && key === 'children');
 }
 
-function isTemplateTag(node: Node, litTag: string): boolean {
-  return (
-    node.type === 'TaggedTemplateExpression' &&
-    node.tag?.type === 'Identifier' &&
-    (node.tag.name === litTag || node.tag.name === 'svg')
-  );
+function isTemplateTag(node: Node, tags: ReadonlyMap<string, string>): boolean {
+  return node.type === 'TaggedTemplateExpression' && node.tag?.type === 'Identifier' && tags.has(node.tag.name);
 }
 
 /** The edits in `list` that no other edit in `list` contains. */
@@ -465,9 +461,15 @@ export function transformTemplates(
     errorRecovery: true,
   });
 
+  // `html`, `svg`, and in an app `$html`/`$svg`/`$css`, which need no import.
+  const intrinsicTags = options.intrinsics === false ? new Map<string, string>() : tagIntrinsics(moduleBindings(ast.program));
+  const templateTags = new Map<string, string>([[litTag, 'html'], ['svg', 'svg']]);
+  for (const [name, tag] of intrinsicTags) if (tag !== 'css') templateTags.set(name, tag);
+  const cssTags = [...intrinsicTags].filter(([, tag]) => tag === 'css').map(([name]) => name);
+
   const found: Node[] = [];
   walk(ast.program, (n, parent, key) => {
-    if (wantsLit && isTemplateTag(n, litTag)) found.push(n);
+    if (wantsLit && isTemplateTag(n, templateTags)) found.push(n);
     else if (wantsJsx && isJsxRoot(n, parent, key)) found.push(n);
   });
   // Props first: holes are sliced out of the function body, so the rewrite has to be
@@ -496,7 +498,7 @@ export function transformTemplates(
 
   // `<style>` blocks, processed by the host's CSS engine and scoped. Only when the host asked:
   // without a processor a `<style>` stays an ordinary element.
-  const styles = wantsStyles ? collectStyles(ast.program as never, sourceName, options.styles, litTag, { id, code }) : undefined;
+  const styles = wantsStyles ? collectStyles(ast.program as never, sourceName, options.styles, { html: templateTags, css: cssTags }, { id, code }) : undefined;
 
   // Nothing to emit still returns a result when there's something to say, a shadowed
   // intrinsic is a diagnostic even though the code comes back untouched.
@@ -566,7 +568,7 @@ export function transformTemplates(
       // Same defaults as the plugin, so moving a build over is not a rendering change.
       templateClone: options.templateClone ?? true,
       partialTemplates: nested ? false : options.partialTemplates ?? true,
-      svg: node.tag.name === 'svg',
+      svg: templateTags.get(node.tag.name) === 'svg',
     });
     for (const symbol of result.imports) used.add(symbol);
     collectNeeds(result.ir, needs);

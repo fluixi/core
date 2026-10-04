@@ -62,7 +62,7 @@ describe('component styles in Vite', () => {
 
   it('resolves a style value imported from another module through Vite', async () => {
     const { styles } = setup();
-    writeFileSync(join(dir, 'base.ts'), "import { css } from '@fluixi-css/core';\nexport const base = css`.base { a: 1 }`;");
+    writeFileSync(join(dir, 'base.ts'), "import { css } from '@fluixi/core';\nexport const base = css`.base { a: 1 }`;");
     const file = join(dir, 'Card.tsx');
     const code = `import { base } from './base';\nexport function Card() { return <div><style scoped>{\`\${base} .card { a: 1 }\`}</style></div>; }`;
     writeFileSync(file, code);
@@ -87,7 +87,7 @@ describe('component styles in Vite', () => {
     const { styles } = setup();
     const file = join(dir, 'fx-card.tsx');
     const code = [
-      "import { css } from '@fluixi-css/core';",
+      "import { css } from '@fluixi/core';",
       'export const extra = css`.extra { a: 1 }`;',
       'class FxCard extends HTMLReactiveElement {',
       '  static shadow = true;',

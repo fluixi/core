@@ -16,8 +16,8 @@ export * from './dom/index.js';
 
 // html`` / svg`` template markers (compiled away by `format: 'lit'`). These are
 // the no-JSX authoring surface; fluixi re-exports them for convenience.
-export { html, svg } from './html.js';
-export type { TemplateResult, Reactive } from './html.js';
+export { html, svg, css } from './html.js';
+export type { TemplateResult, Reactive, FluixiStyle } from './html.js';
 export * from './dom/integration.js';
 export * from './dom/dynamic-element.js';
 export * from './shared/types.js';
