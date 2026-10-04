@@ -192,7 +192,13 @@ export function collectStyles(
       // Their positions count from printed CSS, not from any source file.
       if (nodes) return nodes.map(dropLoc);
       plan.references.push({ name: imported.name, source: imported.source, ...at });
-      plan.diagnostics.push({ ...at, message: `${name} comes from ${imported.source}: style values from another module are resolved by the build.` });
+      // Without `imported` the host has not looked yet; with it, it looked and found nothing.
+      plan.diagnostics.push({
+        ...at,
+        message: options?.imported
+          ? `${name} from ${imported.source} is not a css\`\` value the build could find.`
+          : `${name} comes from ${imported.source}: style values from another module are resolved by the build.`,
+      });
       return null;
     }
     const literal = literalsOf.literals.get(name);

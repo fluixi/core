@@ -8,7 +8,7 @@
  * stylesheets @fluixi/start puts in server-rendered pages.
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, extname, join, relative } from 'node:path';
 import type { StyleNode, StyleOptions, StyleReference } from './transform/styles.js';
 
 /** What @fluixi-css/vite offers, as far as this file needs. */
@@ -44,10 +44,26 @@ const LITERAL_ID = /\?fx-literal=([\w$]+)&inline&lang\.css$/;
 /** The id a component's n-th style block is served under: a CSS request Vite treats as such. */
 export const styleId = (file: string, index: number) => `${file}?fx-style&index=${index}&lang.css`;
 
+// The same loader @fluixi-ui/tokens ships beside each slice: one <link>, added once.
+const loader = (name: string) =>
+  `const href = new URL(${JSON.stringify(`./${name}`)}, import.meta.url).href;
+if (typeof document !== 'undefined' && !document.querySelector(\`link[data-fx-css="\${href}"]\`)) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.dataset.fxCss = href;
+  document.head.appendChild(link);
+}
+`;
+
 export function createComponentStyles(compile: CompileWithStyles) {
   let api: CssApi | undefined;
   let server: DevServer | undefined;
   let root = process.cwd();
+  // A library build (`build.lib`): the directory its entry is in, which its output mirrors.
+  let library: string | undefined;
+  // What a library build writes: the file under the output directory, and its CSS.
+  const emitted = new Map<string, string>();
   // A module id is a file path, or, for modules a plugin imports by URL (`/src/routes/…`),
   // a path from the project root.
   const fileOf = (id: string) => (existsSync(id) ? id : join(root, id));
@@ -100,7 +116,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
     let result = compile(code, file, styles);
     if (result?.styleReferences?.length) {
       const imported = await resolveAll(result.styleReferences, id, ctx, new Set([file]));
-      if (imported.size) result = compile(code, file, { ...styles, imported });
+      result = compile(code, file, { ...styles, imported });
     }
     const css = (result?.styles ?? []).map((s) => s.css);
     const maps = (result?.styles ?? []).map((s) => s.map ?? null);
@@ -120,6 +136,20 @@ export function createComponentStyles(compile: CompileWithStyles) {
     // its class through the `?inline` imports the compiler wrote.
     const page = (result?.styles ?? []).flatMap((s, i) => (s.shadow ? [] : [i]));
     if (!result || page.length === 0) return result;
+    if (library) {
+      // A package ships a module's CSS as one file next to it, its blocks in source order,
+      // imported relatively: any bundler that takes a `.css` import takes it, and nothing in
+      // it needs this plugin. The `.css.js` beside it is for a page with no bundler: an import
+      // map points the stylesheet's url at it, and it adds the sheet as a <link>.
+      const name = `${basename(file, extname(file))}.css`;
+      if (existsSync(join(dirname(file), name))) {
+        throw new Error(`[fluixi] ${file} has <style> blocks, and ${name} next to it would be overwritten by their CSS. Rename one of them.`);
+      }
+      const out = join(relative(library, dirname(file)), name);
+      emitted.set(out, page.map((i) => css[i]!).join('\n'));
+      emitted.set(`${out}.js`, loader(name));
+      return { ...result, code: `${result.code}\nimport ${JSON.stringify(`./${name}`)};` };
+    }
     const imports = page.map((i) => `\nimport ${JSON.stringify(styleId(id, i))};`).join('');
     return { ...result, code: result.code + imports };
   };
@@ -132,6 +162,19 @@ export function createComponentStyles(compile: CompileWithStyles) {
         .map((p) => (p as { api?: { fluixiCss?: CssApi } } | null)?.api?.fluixiCss)
         .find((a): a is CssApi => Boolean(a));
       api?.useComponentStyles();
+    },
+    /** Turns on library output, from the directory of a `build.lib` entry. */
+    setLibrary(entryDir: string | undefined): void {
+      library = entryDir;
+    },
+    /** A library build's style import: left for the package's consumer to bundle. */
+    isLibraryImport(id: string, importer: string | undefined): boolean {
+      if (library === undefined || !importer || !id.startsWith('./') || !id.endsWith('.css')) return false;
+      return emitted.has(join(relative(library, dirname(fileOf(importer))), id));
+    },
+    /** The style files a library build writes, by path under the output directory. */
+    libraryFiles(): ReadonlyMap<string, string> {
+      return emitted;
     },
     get active(): boolean {
       return api !== undefined;

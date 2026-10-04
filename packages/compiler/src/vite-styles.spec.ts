@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { transformTemplates } from './transform/templates.js';
@@ -102,6 +102,33 @@ describe('component styles in Vite', () => {
     expect((await styles.load(`${file}?fx-style&index=0&inline&lang.css`, ctx))?.code).toBe('.card{}');
     expect((await styles.load(`${file}?fx-literal=extra&inline&lang.css`, ctx))?.code).toBe('.extra{}');
     await expect(styles.load(`${file}?fx-literal=nope&inline&lang.css`, ctx)).rejects.toThrow(/not a css`` value/);
+  });
+
+  it('in a library build, writes each block as a file next to the module and imports it relatively', async () => {
+    const { styles } = setup();
+    styles.setLibrary(dir);
+    const file = join(dir, 'parts', 'Card.tsx');
+    const code = 'export function Card() { return <div><style>{`.card { a: 1 }`}</style><style>{`.b { a: 1 }`}</style></div>; }';
+    mkdirSync(join(dir, 'parts'));
+    writeFileSync(file, code);
+    const out = await styles.compile(code, file, ctx);
+    expect(out?.code).toContain('import "./Card.css";');
+    expect(out?.code).not.toContain('?fx-style');
+    expect(styles.isLibraryImport('./Card.css', file)).toBe(true);
+    expect(styles.isLibraryImport('./Other.css', file)).toBe(false);
+    const files = styles.libraryFiles();
+    expect(files.get(join('parts', 'Card.css'))).toBe('.card{}\n.b{}');
+    expect(files.get(join('parts', 'Card.css.js'))).toContain('new URL("./Card.css", import.meta.url)');
+  });
+
+  it('refuses to overwrite a stylesheet already next to the module', async () => {
+    const { styles } = setup();
+    styles.setLibrary(dir);
+    const file = join(dir, 'Card.tsx');
+    const code = 'export function Card() { return <div><style>{`.card { a: 1 }`}</style></div>; }';
+    writeFileSync(file, code);
+    writeFileSync(join(dir, 'Card.css'), '.mine {}');
+    await expect(styles.compile(code, file, ctx)).rejects.toThrow(/would be overwritten/);
   });
 });
 

@@ -274,9 +274,9 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
   const componentStyles = createComponentStyles((code, id, styles) => {
     // Scope ids hash the path from the project root, marks or not: the same on every machine
     // and for every id a module is reached by.
-    const result = transformTemplates!(code, id, { ...transformOptions(options, id), sourceRoot: projectRoot, styles });
-    reportDiagnostics(result, id);
-    return result;
+    // Reported by `transform`, from the module's last pass: a first pass, or a compile of
+    // another module whose values this one uses, would report what the next pass resolves.
+    return transformTemplates!(code, id, { ...transformOptions(options, id), sourceRoot: projectRoot, styles });
   });
   return {
     name: 'vite-fluixi-jsx',
@@ -294,13 +294,20 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 
     // Written once per build, and on dev-server start, rather than per transform: the
     // set of resolvable names comes from config, so nothing a file does can change it.
-    async configResolved(config: { root?: string; plugins?: readonly unknown[] }) {
+    async configResolved(config: { root?: string; plugins?: readonly unknown[]; command?: string; build?: { lib?: false | { entry?: unknown } } }) {
       const outcome = writeComponentGlobals(options, config?.root ?? process.cwd());
       if (outcome.warning) console.warn(outcome.warning);
       if (options.babel) return;
       projectRoot = config?.root ?? projectRoot;
       componentStyles.connect(config?.plugins, config?.root);
+      const entry = config?.command === 'build' && config.build?.lib ? config.build.lib.entry : undefined;
+      const first = typeof entry === 'string' ? entry : Array.isArray(entry) ? entry[0] : entry && typeof entry === 'object' ? Object.values(entry)[0] : undefined;
+      if (typeof first === 'string') componentStyles.setLibrary(dirname(resolvePath(config.root ?? process.cwd(), first)));
       if (componentStyles.active) ({ transformTemplates } = await import('./transform/index.js'));
+    },
+
+    generateBundle(this: { emitFile(file: { type: 'asset'; fileName: string; source: string }): string }) {
+      for (const [fileName, source] of componentStyles.libraryFiles()) this.emitFile({ type: 'asset', fileName, source });
     },
 
     configureServer(server: Parameters<typeof componentStyles.setServer>[0]) {
@@ -316,6 +323,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     // that asked. Answer it here, where the rename is known.
     resolveId(id: string, importer?: string) {
       if (componentStyles.isStyle(id)) return id;
+      if (componentStyles.isLibraryImport(id, importer)) return { id, external: true };
       const moved = RETIRED_SUBPATHS[id];
       if (!moved) return null;
       throw new Error(
@@ -329,7 +337,11 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
         return null;
       }
 
-      if (!options.babel && componentStyles.active) return componentStyles.compile(code, id, this as never);
+      if (!options.babel && componentStyles.active) {
+        const result = await componentStyles.compile(code, id, this as never);
+        reportDiagnostics(result as never, id);
+        return result;
+      }
       if (!options.babel) return compileModule(code, id, options);
 
       const babelPlugin = await createBabelPlugin(options);
@@ -628,7 +640,7 @@ import type { ComponentResolverRule } from './resolve/component-resolver.js';
 import { writeComponentGlobals } from './resolve/write-globals.js';
 import { createComponentStyles } from './vite-styles.js';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join as _join } from 'node:path';
+import { dirname, join as _join, resolve as resolvePath } from 'node:path';
 
 const SERVER_FNS_VMOD = 'virtual:fluixi-server-fns';
 
