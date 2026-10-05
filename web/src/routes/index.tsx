@@ -35,6 +35,31 @@ function Nav() {
   const scheme = useColorScheme();
   return (
     <nav class="nav">
+      <style scoped>{`
+        .nav {
+          position: sticky; top: 0; z-index: 50;
+          border-bottom: 1px solid var(--line);
+          background: var(--bg-head); backdrop-filter: blur(12px);
+        }
+        .nav-inner {
+          display: flex; align-items: center; justify-content: space-between;
+          max-width: var(--maxw); margin: 0 auto; padding: 0 24px; height: 58px;
+        }
+        .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; letter-spacing: -.015em; }
+        .nav-links { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); }
+        .nav-links a { padding: 6px 10px; border-radius: var(--r-sm); }
+        .nav-links a:hover { color: var(--text); background: var(--hover); }
+        .theme-toggle {
+          display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+          margin-left: 4px; font-size: 14px; line-height: 1; cursor: pointer; color: var(--muted);
+          background: transparent; border: 1px solid var(--line); border-radius: var(--r-md);
+          transition: color .15s, border-color .15s;
+        }
+        .theme-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+        @media (max-width: 620px) {
+          .nav-links a { padding: 6px 7px; }
+        }
+      `}</style>
       <div class="nav-inner">
         <a class="brand" href="/">
           <img class="logo" src="/logos/mark.png" alt="" width="21" height="21" /> Fluixi
@@ -72,6 +97,22 @@ function InstallCommand(props: { cmd?: string }) {
   };
   return (
     <div class="install">
+      <style scoped>{`
+        .install {
+          display: inline-flex; align-items: center; gap: 10px;
+          background: var(--code-bg); border: 1px solid var(--code-line); border-radius: var(--r-md);
+          padding: 9px 10px 9px 14px; font-family: var(--mono); font-size: 13px;
+        }
+        .install .prompt { color: var(--muted); }
+        .install code { color: var(--code-text); }
+        .install .copy {
+          margin-left: 4px; background: transparent; border: 1px solid var(--code-line);
+          color: var(--muted); border-radius: var(--r-sm); padding: 3px 9px;
+          font-size: 11.5px; font-family: var(--mono); cursor: pointer;
+          transition: color .15s, border-color .15s;
+        }
+        .install .copy:hover { color: var(--text); border-color: var(--line-strong); }
+      `}</style>
       <span class="prompt">$</span>
       <code>{cmd}</code>
       <button class="copy" onClick={copy}>
@@ -206,6 +247,52 @@ function Hero() {
 
   return (
     <header class="hero">
+      <style scoped>{`
+        .hero {
+          max-width: var(--maxw); margin: 0 auto; padding: 76px 24px 64px;
+          display: grid; grid-template-columns: 1.02fr .98fr; gap: 52px; align-items: center;
+        }
+        /* A grid item's default min-width is auto, so the pre inside (white-space: pre, sized to its
+           longest line) refuses to shrink below its own content and forces the track, and the page,
+           wider than the viewport. */
+        .hero-code { min-width: 0; }
+        .eyebrow {
+          font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em;
+          text-transform: uppercase; color: var(--muted); margin-bottom: 20px;
+        }
+        /* Scales with the column, so "The compiler knows" stays on one line instead of
+           breaking after two words. */
+        .hero h1 { margin: 0; font-size: clamp(33px, 3.6vw, 47px); line-height: 1.08; letter-spacing: -.03em; font-weight: 700; }
+        .hero h1 .quiet { color: var(--muted); font-weight: 700; }
+        .lede { margin: 22px 0 28px; font-size: 17px; line-height: 1.65; color: var(--prose); max-width: 32em; }
+        /* The panels differ in length, 8, 9 and 17 lines, so switching tabs would resize the window
+           and shove the page around. Reserve the tallest once, in em so it tracks the font size
+           rather than a magic pixel number. */
+        .hero-code .code { min-height: calc(17 * 1.7em + 36px); }
+        .code-tab {
+          font-family: var(--mono); font-size: 11.5px; line-height: 1.6;
+          padding: 6px 11px; border-radius: var(--r-sm) var(--r-sm) 0 0; cursor: pointer;
+          color: var(--muted); background: transparent; border: 1px solid transparent;
+          transition: color .15s, background .15s, border-color .15s;
+        }
+        .code-tab:hover { color: var(--text); }
+        /* Weight and a border carry the selected state as well as colour. */
+        .code-tab.on {
+          color: var(--text); font-weight: 500;
+          background: var(--code-bg);
+          border-color: var(--code-line);
+          border-bottom-color: var(--code-bg);
+          margin-bottom: -1px;
+        }
+        .hero-note { margin: 12px 2px 0; font-size: 12px; color: var(--muted); font-family: var(--mono); line-height: 1.5; }
+        @media (max-width: 900px) {
+          .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 48px; }
+          .hero h1 { font-size: 40px; }
+        }
+        @media (max-width: 620px) {
+          .hero h1 { font-size: 33px; }
+        }
+      `}</style>
       <div class="hero-copy">
         <div class="eyebrow">compiler-native · reactive · full-stack · inspectable</div>
         <h1>
@@ -293,6 +380,25 @@ function Why() {
 function Stats() {
   return (
     <section class="stats" aria-label="At a glance">
+      <style scoped>{`
+        .stats {
+          border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+          background: var(--panel);
+        }
+        .stats-inner {
+          max-width: var(--maxw); margin: 0 auto; padding: 0 24px;
+          display: grid; grid-template-columns: repeat(3, 1fr);
+        }
+        .stat { padding: 26px 4px; border-left: 1px solid var(--line); padding-left: 26px; }
+        .stat:first-child { border-left: 0; padding-left: 4px; }
+        .stat b { display: block; font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-family: var(--mono); }
+        .stat span { display: block; margin-top: 5px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+        @media (max-width: 620px) {
+          .stats-inner { grid-template-columns: 1fr; }
+          .stat { border-left: 0; border-top: 1px solid var(--line); padding-left: 4px; }
+          .stat:first-child { border-top: 0; }
+        }
+      `}</style>
       <div class="stats-inner">
         {STATS.map((s) => (
           <div class="stat">
@@ -308,6 +414,27 @@ function Stats() {
 function Features() {
   return (
     <section class="section" id="features">
+      <style scoped>{`
+        .section-head { max-width: 34em; margin-bottom: 40px; }
+        .section-head h2 { margin: 0; font-size: 30px; letter-spacing: -.026em; font-weight: 700; line-height: 1.2; }
+        .section-head p { margin: 12px 0 0; color: var(--muted); font-size: 16px; line-height: 1.6; }
+        .kicker {
+          font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+          color: var(--muted); margin: 0 0 14px;
+        }
+        /* The capability list, hairline rows rather than a grid of tiles. */
+        .spec-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 48px; border-top: 1px solid var(--line); }
+        .spec { padding: 22px 0; border-bottom: 1px solid var(--line); }
+        .spec h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
+        .spec p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.62; }
+        .spec code {
+          font-family: var(--mono); font-size: .88em; color: var(--text);
+          background: var(--panel-2); border: 1px solid var(--line); padding: .1em .38em; border-radius: var(--r-sm);
+        }
+        @media (max-width: 900px) {
+          .spec-list { grid-template-columns: 1fr; }
+        }
+      `}</style>
       <div class="section-head">
         <p class="kicker">The rest of it</p>
         <h2>Everything a modern app needs</h2>
@@ -391,6 +518,19 @@ function GetStarted() {
 function PlaygroundCallout() {
   return (
     <section class="callout">
+      <style scoped>{`
+        .callout { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 92px; }
+        .callout-inner {
+          border: 1px solid var(--line); border-radius: var(--r-lg); padding: 48px 40px;
+          display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+          background: var(--panel);
+        }
+        .callout-inner h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -.022em; font-weight: 700; }
+        .callout-inner p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 44em; }
+        @media (max-width: 900px) {
+          .callout-inner { padding: 36px 26px; }
+        }
+      `}</style>
       <div class="callout-inner">
         <div>
           <h2>See your reactivity.</h2>
@@ -410,18 +550,36 @@ function PlaygroundCallout() {
 function Footer() {
   return (
     <footer class="footer">
+      <style scoped>{`
+        .footer { border-top: 1px solid var(--line); }
+        .footer-inner {
+          max-width: var(--maxw); margin: 0 auto; padding: 44px 24px;
+          display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: start;
+        }
+        .foot-brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; }
+        .foot-cols { display: flex; gap: 56px; }
+        .foot-cols h2 { margin: 0 0 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+        /* 24px tall, the minimum size for a touch target. */
+        .foot-cols a { display: block; color: var(--muted); font-size: 13.5px; padding: 4px 0; margin: 3px 0; }
+        .foot-cols a:hover { color: var(--text); }
+        .foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-family: var(--mono); }
+        @media (max-width: 620px) {
+          .footer-inner { grid-template-columns: 1fr; }
+          .foot-cols { gap: 36px; }
+        }
+      `}</style>
       <div class="footer-inner">
       <div class="foot-brand">
         <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> Fluixi
       </div>
       <div class="foot-cols">
         <div>
-          <h4>Product</h4>
+          <h2>Product</h2>
           <a href={DOCS_URL}>Documentation</a>
           <a href={PLAYGROUND_URL}>Playground</a>
         </div>
         <div>
-          <h4>Source</h4>
+          <h2>Source</h2>
           <a href={GITHUB_URL}>GitHub</a>
         </div>
       </div>
