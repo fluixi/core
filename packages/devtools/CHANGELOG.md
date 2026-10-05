@@ -1,5 +1,12 @@
 # @fluixi/devtools
 
+## 0.2.0-alpha.7
+
+### Patch Changes
+
+- bc7501c: Reading a component's props no longer leaves running what a prop getter built, so the Show fallback read by the panel no longer throws repeated context errors.
+- 5167627: Component props are now read once per props object for display instead of on every sample.
+
 ## 0.2.0-alpha.6
 
 ### Minor Changes

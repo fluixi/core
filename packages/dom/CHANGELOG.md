@@ -1,5 +1,18 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.94
+
+### Minor Changes
+
+- 8362b9a: `css` and the `FluixiStyle` type are now exported from `@fluixi/core` (and `@fluixi/dom`) alongside `html` and `svg`. In an app, `$html`, `$svg` and `$css` need no import and compile like the other tags. The compiler no longer reads `css` from `@fluixi-css/core`.
+- 20ef9f9: Custom properties in a style object (`--gap`) now apply, `style:x` and `class:x` update only their own property when its value changes, JSX `class:x` and `style:x` on DOM elements work as in html``templates (JSX cannot parse`style:--x`, use `style={{ '--x': ... }}`), `style={{ ... }}`on a DOM element updates per property and removes keys missing from the new object, and`style=`together with`style:x` in a template no longer produces a duplicate key.
+
+### Patch Changes
+
+- 4cb16a6: A dynamic child that hydrates empty now keeps its place among its siblings.
+- 82d75a7: `mergeProps` now reads each source value only once per access, preventing duplicate node creation when spreading getters.
+  - @fluixi/reactive@1.0.0-alpha.94
+
 ## 1.0.0-alpha.93
 
 ### Minor Changes

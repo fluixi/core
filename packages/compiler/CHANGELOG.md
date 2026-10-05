@@ -1,5 +1,26 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.94
+
+### Minor Changes
+
+- fc31dad: ` css`` literals from @fluixi-css/core are compiled away into style handles, the CSS import is removed, processed CSS is returned in  `styleLiterals`and emitted only where used, interpolations like`${value}` within `css`` or `<style>{\`${value} ...\`}</style>`merge processed nodes in order (scoped values respect the component's scope), and values imported from other modules appear in`styleReferences`while non-style interpolations and cycles are reported in`styleDiagnostics`.
+- 8362b9a: `css` and the `FluixiStyle` type are now exported from `@fluixi/core` (and `@fluixi/dom`) alongside `html` and `svg`. In an app, `$html`, `$svg` and `$css` need no import and compile like the other tags. The compiler no longer reads `css` from `@fluixi-css/core`.
+- 27a74db: In a library build (`build.lib`), component styles are emitted as `<name>.css` files alongside each module and imported relatively, with a matching `<name>.css.js` loader, and a build will error if it would overwrite an existing `<name>.css` file.
+- 3921c35: `transformTemplates` now extracts `<style>` and `<style scoped>` blocks from JSX, processes them with the host's CSS engine via `styles: { process(css, from) }`, and returns the resulting styles while adding a deterministic `data-fx-s` attribute to rendered elements for scoped styles and leaving unprocessable blocks in the output with diagnostics.
+- 232b766: Templates with `<style>` and `<style scoped>` now compile like the JSX form, extracted, processed by the host's CSS engine, scoped, and returned in `styles`, and each component now receives a single id shared across its JSX and template blocks, with a custom element's render() blocks belonging to the class name.
+- 43d46e2: An element with static shadow now gets its `<style>` blocks in its shadow root as CSS strings without a scoping attribute, css`` values in static styles are compiled to CSS strings, and light-DOM elements and components remain scoped and served as page stylesheets.
+- 20ef9f9: Custom properties in a style object (`--gap`) now apply, `style:x` and `class:x` update only their own property when its value changes, JSX `class:x` and `style:x` on DOM elements work as in html``templates (JSX cannot parse`style:--x`, use `style={{ '--x': ... }}`), `style={{ ... }}`on a DOM element updates per property and removes keys missing from the new object, and`style=`together with`style:x` in a template no longer produces a duplicate key.
+- 97fae85: Component styles now carry a source map back to the module, with each rule and declaration mapping to the line it was written on in the `.tsx`, and the Vite plugin serves the map, which Vite keeps under `css.devSourcemap` in development and `build.sourcemap` in builds.
+- 5de732d: `<style>` in an html`` template now accepts CSS values by name, `${base}`, locally defined or imported from another module, refuses other values with the same JSX error message, and html`` style blocks now receive source maps back to the template lines.
+- 3cef411: The Vite plugin now compiles component `<style>` blocks, resolves ` css``` values imported from other modules through Vite, hashes scope ids from the project root so elements and CSS always match, and its devtools channel calls the compiler plugin's own  `load`and`configureServer` instead of replacing them.
+
+### Patch Changes
+
+- f0b00eb: An edited `<style>` block now updates in the dev server, and a style requested before its component's imports were analyzed no longer keeps its old CSS until the dev server restarts.
+- 2daa24b: HTML templates now decode character references like `&nbsp;`, `&amp;`, `&copy;`, and numeric references in text and static attributes, the same set JSX accepts.
+- c5f2df6: Component props with an object literal value now compile even when a sibling prop or text child mentions `this`.
+
 ## 1.0.0-alpha.93
 
 ### Minor Changes

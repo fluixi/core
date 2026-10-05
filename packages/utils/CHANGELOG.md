@@ -1,5 +1,7 @@
 # @fluixi/utils
 
+## 1.0.0-alpha.94
+
 ## 1.0.0-alpha.93
 
 ### Minor Changes

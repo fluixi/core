@@ -1,5 +1,32 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.94
+
+### Minor Changes
+
+- 3cef411: The Vite plugin now compiles component `<style>` blocks, resolves ` css``` values imported from other modules through Vite, hashes scope ids from the project root so elements and CSS always match, and its devtools channel calls the compiler plugin's own  `load`and`configureServer` instead of replacing them.
+
+### Patch Changes
+
+- ab71317: Component styles no longer fail with "transformTemplates is not a function" when the first module is transformed right after startup, as in a build.
+- Updated dependencies [fc31dad]
+- Updated dependencies [8362b9a]
+- Updated dependencies [bc7501c]
+- Updated dependencies [5167627]
+- Updated dependencies [27a74db]
+- Updated dependencies [3921c35]
+- Updated dependencies [232b766]
+- Updated dependencies [43d46e2]
+- Updated dependencies [f0b00eb]
+- Updated dependencies [20ef9f9]
+- Updated dependencies [97fae85]
+- Updated dependencies [2daa24b]
+- Updated dependencies [5de732d]
+- Updated dependencies [c5f2df6]
+- Updated dependencies [3cef411]
+  - @fluixi/compiler@1.0.0-alpha.94
+  - @fluixi/devtools@0.2.0-alpha.7
+
 ## 1.0.0-alpha.93
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @fluixi/session
 
+## 1.0.0-alpha.94
+
+### Patch Changes
+
+- Updated dependencies [8362b9a]
+  - @fluixi/core@1.0.0-alpha.94
+  - @fluixi/reactive@1.0.0-alpha.94
+  - @fluixi/storage@0.1.0-alpha.1
+
 ## 1.0.0-alpha.93
 
 ### Minor Changes

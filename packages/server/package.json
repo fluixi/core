@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/server",
-  "version": "1.0.0-alpha.93",
+  "version": "1.0.0-alpha.94",
   "description": "Server-side rendering for Fluixi — request-scoped, streaming, framework-agnostic.",
   "license": "MIT",
   "author": "Ibrahima Touré",
