@@ -1,134 +1,30 @@
-// Build-time docs registry: every content/<version>/<lang>/<slug>.md is imported raw, parsed to
-// HTML with marked, and code is syntax-highlighted with highlight.js, all at build, so the
-// prerendered pages ship as static, highlighted HTML (no client-side markdown/highlight cost).
-import { marked } from 'marked';
-import { markedHighlight } from 'marked-highlight';
-// Core + only the languages the content actually fences. The default entry registers ~190
-// grammars and was the single largest thing in the client bundle; the docs use six.
-import hljs from 'highlight.js/lib/core';
-import typescript from 'highlight.js/lib/languages/typescript';
-import javascript from 'highlight.js/lib/languages/javascript';
-import xml from 'highlight.js/lib/languages/xml';
-import bash from 'highlight.js/lib/languages/bash';
-import json from 'highlight.js/lib/languages/json';
-import css from 'highlight.js/lib/languages/css';
+// The docs' pages, compiled from content/<version>/<lang>/<slug>.md by the plugin in
+// markdown.ts. Titles are bundled, a few bytes each, since every page's sidebar and pager name
+// other pages; a page's HTML is its own module, loaded by its route's `routeData`.
 
-hljs.registerLanguage('typescript', typescript);
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('xml', xml);          // ```html
-hljs.registerLanguage('bash', bash);
-hljs.registerLanguage('json', json);
-hljs.registerLanguage('css', css);
-hljs.registerAliases(['ts'], { languageName: 'typescript' });
-hljs.registerAliases(['tsx'], { languageName: 'typescript' });
-hljs.registerAliases(['js', 'jsx'], { languageName: 'javascript' });
-hljs.registerAliases(['html'], { languageName: 'xml' });
-
-marked.use(
-  markedHighlight({
-    langPrefix: 'hljs language-',
-    highlight(code, lang) {
-      const language = lang && hljs.getLanguage(lang) ? lang : 'typescript';
-      return hljs.highlight(code, { language }).value;
-    },
-  }),
-);
-
-// Heading ids, so a link like `/v1/en/session#roles-and-permissions` lands on its section.
-// GitHub's shape: lower case, punctuation dropped, spaces to hyphens, letters of any script
-// kept, so a French `Côté serveur` is `#côté-serveur`. A repeated heading on one page gets
-// `-1`, `-2` like GitHub's, and the count starts over for each page.
-const seen = new Map<string, number>();
-const slugOf = (text: string): string =>
-  text
-    .toLowerCase()
-    .replace(/<[^>]+>/g, '')
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
-    .trim()
-    .replace(/\s/g, '-');
-
-marked.use({
-  hooks: {
-    preprocess(md: string) {
-      seen.clear();
-      return md;
-    },
-  },
-  renderer: {
-    heading({ tokens, depth, text }) {
-      const base = slugOf(text);
-      const n = seen.get(base) ?? 0;
-      seen.set(base, n + 1);
-      const id = n ? `${base}-${n}` : base;
-      return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
-    },
-  },
-});
-
-const raw = import.meta.glob('./content/**/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
-
-export interface DocPage {
-  version: string;
-  lang: string;
-  slug: string;
+export interface Doc {
   title: string;
+  /** The first paragraph as plain text, for the meta description. */
+  description: string;
   html: string;
 }
 
-const registry = new Map<string, DocPage>();
-for (const [path, md] of Object.entries(raw)) {
-  const m = path.match(/\/content\/([^/]+)\/([^/]+)\/([^/]+)\.md$/);
-  if (!m) continue;
-  const [, version, lang, slug] = m;
-  const title = (md.match(/^#\s+(.+)$/m)?.[1] ?? slug).trim();
-  registry.set(`${version}/${lang}/${slug}`, {
-    version, lang, slug, title,
-    html: withCopyButtons(marked.parse(md) as string),
-  });
+const titles = import.meta.glob<string>('./content/**/*.md', { query: '?title', import: 'default', eager: true });
+const pages = import.meta.glob<Doc>('./content/**/*.md', { query: '?doc', import: 'default' });
+
+const path = (version: string, lang: string, slug: string) => `./content/${version}/${lang}/${slug}.md`;
+
+/** A page, or null for a slug that has none: route data has to be JSON. */
+export function loadDoc(version: string, lang: string, slug: string): Promise<Doc | null> {
+  const load = pages[path(version, lang, slug)];
+  return load ? load() : Promise.resolve(null);
 }
 
-/**
- * Wrap each code block so it can carry a copy button.
- *
- * Done here, at build time, so the button is in the prerendered HTML rather than being
- * grafted on after hydration, no layout shift, and it works on a page whose JS has not
- * arrived yet (the handler is delegated, so it starts working the moment it does).
- *
- * The language label comes from the class marked already emits, so it costs nothing.
- */
-function withCopyButtons(html: string): string {
-  // ONE paired match over the whole block, so the wrapper can never be unbalanced.
-  //
-  // This previously opened on `<pre><code class="hljs language-X">` but closed on every
-  // `</code></pre>`. A fence with no language, a file tree, a bare shell line, got a
-  // closing `</div>` with no opening one, which closed `<article class="prose">` early and
-  // spilled the rest of the page out of the layout.
-  //
-  // The language group is optional so unlanguaged blocks are wrapped too, and therefore get
-  // a copy button as well; they just carry no language label.
-  return html.replace(
-    /<pre><code(?: class="hljs language-([^"]+)")?>([\s\S]*?)<\/code><\/pre>/g,
-    (_match, lang: string | undefined, code: string) => {
-      const cls = lang ? ` class="hljs language-${lang}"` : '';
-      const attr = lang ? ` data-lang="${lang}"` : '';
-      return (
-        `<div class="code-block"${attr}>` +
-        `<button type="button" class="code-copy" data-copy aria-label="Copy code">Copy</button>` +
-        `<pre><code${cls}>${code}</code></pre>` +
-        `</div>`
-      );
-    },
-  );
+export function titleOf(version: string, lang: string, slug: string): string {
+  return titles[path(version, lang, slug)] ?? slug;
 }
 
-export const key = (version: string, lang: string, slug: string) => `${version}/${lang}/${slug}`;
-export function getDoc(version: string, lang: string, slug: string): DocPage | undefined {
-  return registry.get(key(version, lang, slug));
-}
-export function allDocs(): DocPage[] {
-  return [...registry.values()];
-}
 /** Newest version first. */
-export const VERSIONS = [...new Set(allDocs().map((d) => d.version))].sort().reverse();
+export const VERSIONS = [...new Set(Object.keys(titles).map((p) => p.split('/')[2]!))].sort().reverse();
 export const LANGS = ['en', 'fr'] as const;
 export type Lang = (typeof LANGS)[number];

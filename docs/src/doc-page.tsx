@@ -1,28 +1,11 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal, useColorScheme } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
-import { getDoc, VERSIONS, type Lang } from './content.js';
+import { titleOf as titleIn, VERSIONS, type Doc, type Lang } from './content.js';
 import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
 import { languageStorage } from './language.js';
 
 const SITE = 'https://docs.fluixi.com';
-
-// First paragraph of the doc as a plain-text meta description. The markdown is already HTML, so
-// strip tags AND decode entities (otherwise the head serializer re-escapes `&#39;` → `&amp;#39;`).
-function describe(html: string | undefined): string {
-  const p = html?.match(/<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? '';
-  const text = p
-    .replace(/<[^>]+>/g, '')
-    .replace(/&#3?9;|&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return (text || 'Fluixi documentation, reactivity, compiled.').slice(0, 155);
-}
 
 /**
  * One delegated listener for every copy button on the page.
@@ -273,7 +256,7 @@ function Search(props: { lang: Lang; version: string; label: string }) {
 
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/...)
 // so each version has its own route wrapper, the router merges the inner [lang]/[slug] params.
-export default function DocPage(props: { version: string; lang: Lang; slug: string }) {
+export default function DocPage(props: { version: string; lang: Lang; slug: string; doc: Doc | null | undefined }) {
   // Read through, never snapshot. Every doc is the same route, so navigating between two
   // of them changes these props on a page that stays mounted. Taking a copy here is what
   // forced the route to rebuild the whole page, header and sidebar included, to show a
@@ -283,10 +266,10 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   const lang = () => props.lang;
   const slug = () => props.slug;
 
-  const doc = createMemo(() => getDoc(version(), lang(), slug()));
+  const doc = () => props.doc;
   const ui = createMemo(() => UI[lang()]);
   const link = (s: string) => `/${version()}/${lang()}/${s}`;
-  const titleOf = (s: string) => getDoc(version(), lang(), s)?.title ?? s;
+  const titleOf = (s: string) => titleIn(version(), lang(), s);
   const other = createMemo<Lang>(() => (lang() === 'en' ? 'fr' : 'en'));
 
   // The prose is prerendered HTML, so its cross-links are raw anchors with no <Link> to
@@ -311,7 +294,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   // right trade: they exist for crawlers, and a crawler reads the prerendered page, where each
   // doc is its own render.
   const title = createMemo(() => `${doc()?.title ?? slug()} · ${ui().product}`);
-  const description = createMemo(() => describe(doc()?.html));
+  const description = createMemo(() => doc()?.description ?? 'Fluixi documentation, reactivity, compiled.');
   const canonical = createMemo(() => `${SITE}${link(slug())}`);
   seo({
     title,
