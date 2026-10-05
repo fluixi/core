@@ -386,6 +386,18 @@ function staticMember(cls: Node, name: string): Node | undefined {
  * `css`` values named in its `static styles` become `?inline` imports of their processed CSS
  * (the text `static styles` takes), and the class's `static styles` lists them.
  */
+/**
+ * Where a component's style blocks and css`` values are served: next to the component, a path
+ * ending in `.css`. Every CSS tool in the bundler then sees CSS, and none sees TSX: Vite 8
+ * matches its transforms on the path without the query, so `card.tsx?…` would read as a .tsx.
+ * `?inline` (Vite's own) asks for the CSS as a string, for a shadow root.
+ */
+export const styleIds = {
+  block: (owner: string, index: number) => `${owner}.fx-${index}.css`,
+  inline: (owner: string, index: number) => `${owner}.fx-${index}.css?inline`,
+  literal: (owner: string, name: string) => `${owner}.fx-literal-${name}.css?inline`,
+};
+
 export function finishShadowStyles(plan: StylePlan, code: string, moduleId: string): { start: number; end: number; code: string }[] {
   const edits: { start: number; end: number; code: string }[] = [];
   const imports: string[] = [];
@@ -396,7 +408,7 @@ export function finishShadowStyles(plan: StylePlan, code: string, moduleId: stri
     return local;
   };
   for (const shadow of plan.shadowClasses.values()) {
-    const blocks = shadow.indexes.map((i) => importOf(`${moduleId}?fx-style&index=${i}&inline&lang.css`));
+    const blocks = shadow.indexes.map((i) => importOf(styleIds.inline(moduleId, i)));
     let value: string | undefined;
     const prop = shadow.styles;
     if (prop?.value) {
@@ -406,9 +418,9 @@ export function finishShadowStyles(plan: StylePlan, code: string, moduleId: stri
       const replacements: { at: number; length: number; with: string }[] = [];
       walkIdentifiers(prop.value, (id) => {
         const local = plan.names?.literals.has(id.name)
-          ? importOf(`${moduleId}?fx-literal=${id.name}&inline&lang.css`)
+          ? importOf(styleIds.literal(moduleId, id.name))
           : plan.names?.imports.has(id.name) && !/\.css(\?|$)/.test(plan.names.imports.get(id.name)!.source)
-            ? importOf(`${plan.names.imports.get(id.name)!.source}?fx-literal=${plan.names.imports.get(id.name)!.name}&inline&lang.css`)
+            ? importOf(styleIds.literal(plan.names.imports.get(id.name)!.source, plan.names.imports.get(id.name)!.name))
             : undefined;
         if (local) replacements.push({ at: (id.start as number) - start, length: id.name.length, with: local });
       });

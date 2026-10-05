@@ -98,10 +98,10 @@ describe('component styles in Vite', () => {
     writeFileSync(file, code);
     const out = await styles.compile(code, file, ctx);
     expect(out?.code).not.toContain(`import ${JSON.stringify(styleId(file, 0))};`);
-    expect(styles.isStyle(`${file}?fx-style&index=0&inline&lang.css`)).toBe(true);
-    expect((await styles.load(`${file}?fx-style&index=0&inline&lang.css`, ctx))?.code).toBe('.card{}');
-    expect((await styles.load(`${file}?fx-literal=extra&inline&lang.css`, ctx))?.code).toBe('.extra{}');
-    await expect(styles.load(`${file}?fx-literal=nope&inline&lang.css`, ctx)).rejects.toThrow(/not a css`` value/);
+    expect(styles.isStyle(`${file}.fx-0.css?inline`)).toBe(true);
+    expect((await styles.load(`${file}.fx-0.css?inline`, ctx))?.code).toBe('.card{}');
+    expect((await styles.load(`${file}.fx-literal-extra.css?inline`, ctx))?.code).toBe('.extra{}');
+    await expect(styles.load(`${file}.fx-literal-nope.css?inline`, ctx)).rejects.toThrow(/not a css`` value/);
   });
 
   it('in a library build, writes each block as a file next to the module and imports it relatively', async () => {
@@ -113,7 +113,7 @@ describe('component styles in Vite', () => {
     writeFileSync(file, code);
     const out = await styles.compile(code, file, ctx);
     expect(out?.code).toContain('import "./Card.css";');
-    expect(out?.code).not.toContain('?fx-style');
+    expect(out?.code).not.toContain('.fx-0.css');
     expect(styles.isLibraryImport('./Card.css', file)).toBe(true);
     expect(styles.isLibraryImport('./Other.css', file)).toBe(false);
     const files = styles.libraryFiles();
@@ -131,12 +131,29 @@ describe('component styles in Vite', () => {
     await expect(styles.compile(code, file, ctx)).rejects.toThrow(/would be overwritten/);
   });
 
-  it('names a style module by its file, however it was requested, so an edit invalidates it', () => {
+  it('names a style module by its file, however it was requested, so an edit invalidates it', async () => {
     const { styles } = setup();
     styles.connect([cssPlugin([])], dir);
     writeFileSync(join(dir, 'Card.tsx'), '');
-    expect(styles.resolveId('/Card.tsx?fx-style&index=0&lang.css')).toBe(`${join(dir, 'Card.tsx')}?fx-style&index=0&lang.css`);
-    expect(styles.resolveId(`${join(dir, 'Card.tsx')}?fx-literal=base&inline&lang.css`)).toBe(`${join(dir, 'Card.tsx')}?fx-literal=base&inline&lang.css`);
+    const card = join(dir, 'Card.tsx');
+    expect(await styles.resolveId('/Card.tsx.fx-0.css', undefined, ctx)).toBe(`${card}.fx-0.css`);
+    expect(await styles.resolveId(`${card}.fx-literal-base.css?inline`, undefined, ctx)).toBe(`${card}.fx-literal-base.css?inline`);
+    // A value imported from another module names it relatively, as written.
+    expect(await styles.resolveId('./base.fx-literal-base.css?inline', card, ctx)).toBe(`${join(dir, 'base.ts')}.fx-literal-base.css?inline`);
+  });
+
+  it("names an edited component's style modules for the update, which Vite cannot connect to it", async () => {
+    const { styles } = setup();
+    const file = join(dir, 'Card.tsx');
+    const code = 'export function Card() { return <div><style>{`.a { a: 1 }`}</style><style>{`.b { a: 1 }`}</style></div>; }';
+    writeFileSync(file, code);
+    await styles.compile(code, file, ctx);
+    const graph = new Map<string, Set<string>>([
+      [`${file}.fx-0.css`, new Set(['block 0', 'block 0 inline'])],
+      [`${file}.fx-1.css`, new Set(['block 1'])],
+    ]);
+    expect(styles.hotModules(file, { getModulesByFile: (f) => graph.get(f) })).toEqual(['block 0', 'block 0 inline', 'block 1']);
+    expect(styles.hotModules(join(dir, 'Other.tsx'), { getModulesByFile: (f) => graph.get(f) })).toEqual([]);
   });
 });
 

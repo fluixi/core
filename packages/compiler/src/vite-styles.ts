@@ -9,7 +9,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, join, relative } from 'node:path';
-import type { StyleNode, StyleOptions, StyleReference } from './transform/styles.js';
+import { styleIds, type StyleNode, type StyleOptions, type StyleReference } from './transform/styles.js';
 
 /** What @fluixi-css/vite offers, as far as this file needs. */
 interface CssApi {
@@ -36,13 +36,17 @@ interface DevServer {
   reloadModule(mod: never): Promise<void>;
 }
 
-// A page stylesheet, or (`&inline`, Vite's own flag) a shadow root's CSS as a string; and a
-// css`` value's CSS for a shadow class's `static styles`.
-const STYLE_ID = /\?fx-style&index=(\d+)(?:&inline)?&lang\.css$/;
-const LITERAL_ID = /\?fx-literal=([\w$]+)&inline&lang\.css$/;
+// A page stylesheet, or (`?inline`, Vite's own flag) a shadow root's CSS as a string; and a
+// css`` value's CSS for a shadow class's `static styles`. The owner is what comes before.
+const STYLE_ID = /\.fx-(\d+)\.css(?:\?inline)?$/;
+const LITERAL_ID = /\.fx-literal-([\w$]+)\.css\?inline$/;
+const SUFFIX = /\.fx-(?:\d+|literal-[\w$]+)\.css(?:\?inline)?$/;
 
 /** The id a component's n-th style block is served under: a CSS request Vite treats as such. */
-export const styleId = (file: string, index: number) => `${file}?fx-style&index=${index}&lang.css`;
+export const styleId = styleIds.block;
+
+/** The component a style id belongs to, as written in the id. */
+const ownerOf = (id: string) => id.slice(0, id.search(SUFFIX));
 
 // The same loader @fluixi-ui/tokens ships beside each slice: one <link>, added once.
 const loader = (name: string) =>
@@ -128,7 +132,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
     if (server && before) {
       for (let i = 0; i < css.length; i++) {
         if (before.css[i] === css[i]) continue;
-        const mod = server.moduleGraph.getModuleById(styleId(id, i));
+        const mod = server.moduleGraph.getModuleById(styleId(file, i));
         if (mod) void server.reloadModule(mod as never);
       }
     }
@@ -150,7 +154,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
       emitted.set(`${out}.js`, loader(name));
       return { ...result, code: `${result.code}\nimport ${JSON.stringify(`./${name}`)};` };
     }
-    const imports = page.map((i) => `\nimport ${JSON.stringify(styleId(id, i))};`).join('');
+    const imports = page.map((i) => `\nimport ${JSON.stringify(styleId(file, i))};`).join('');
     return { ...result, code: result.code + imports };
   };
 
@@ -186,25 +190,41 @@ export function createComponentStyles(compile: CompileWithStyles) {
       return STYLE_ID.test(id) || LITERAL_ID.test(id);
     },
     /**
-     * A style request as the module id Vite should keep: the file's absolute path and the
-     * query. Vite invalidates a module when the file its id names changes, so a root-relative id
-     * (`/src/card.tsx?fx-style…`, which is how a request arrives before the component's imports
-     * were analysed) was never invalidated, and an edited block kept its old CSS until restart.
+     * A style request as the module id Vite keeps: its owner's absolute path, then the suffix.
+     * One id per block however it was asked for (`/src/card.tsx.fx-0.css` from a page, the
+     * absolute path from the component), or the reload after an edit misses the copy in use.
+     * A css`` value imported from another module names that module relatively, as written.
      */
-    resolveId(id: string): string {
-      const at = id.indexOf('?');
-      return fileOf(id.slice(0, at)) + id.slice(at);
+    async resolveId(id: string, importer: string | undefined, ctx: ResolveContext): Promise<string | null> {
+      const at = id.search(SUFFIX);
+      const owner = id.slice(0, at);
+      if (!owner.startsWith('.')) return fileOf(owner) + id.slice(at);
+      const resolved = importer ? await ctx.resolve?.(owner, importer) : null;
+      return resolved ? resolved.id.split('?')[0]! + id.slice(at) : null;
+    },
+    /**
+     * The style modules of a changed file, for the update Vite sends. Their ids do not name the
+     * file (they end in `.css`), so Vite would not find them itself.
+     */
+    hotModules(file: string, graph: { getModulesByFile(file: string): Set<unknown> | undefined }): unknown[] {
+      const entry = cache.get(file);
+      if (!entry) return [];
+      const paths = [
+        ...entry.css.map((_, i) => styleId(file, i)),
+        ...[...entry.literals.keys()].map((name) => styleIds.literal(file, name).replace(/\?inline$/, '')),
+      ];
+      return paths.flatMap((path) => [...(graph.getModulesByFile(path) ?? [])]);
     },
     compile: run,
     /**
      * A block's CSS and its map back to the module, compiling the module again when the cache
      * does not match the file.
      */
-    async load(id: string, ctx: ResolveContext): Promise<{ code: string; map: unknown } | null> {
+    async load(id: string, ctx: ResolveContext): Promise<{ code: string; map: unknown; moduleType: 'css' } | null> {
       const match = STYLE_ID.exec(id);
       const literal = LITERAL_ID.exec(id);
       if ((!match && !literal) || !api) return null;
-      const file = id.slice(0, id.indexOf('?'));
+      const file = ownerOf(id);
       let source: string;
       try {
         source = readFileSync(fileOf(file), 'utf8');
@@ -216,10 +236,10 @@ export function createComponentStyles(compile: CompileWithStyles) {
       if (literal) {
         const css = entry?.literals.get(literal[1]!);
         if (css === undefined) throw new Error(`[fluixi] ${literal[1]} in ${file} is not a css\`\` value, so it cannot be a shadow root's styles.`);
-        return { code: css, map: null };
+        return { code: css, map: null, moduleType: 'css' };
       }
       const index = Number(match![1]);
-      return { code: entry?.css[index] ?? '', map: entry?.maps[index] ?? null };
+      return { code: entry?.css[index] ?? '', map: entry?.maps[index] ?? null, moduleType: 'css' };
     },
   };
 }

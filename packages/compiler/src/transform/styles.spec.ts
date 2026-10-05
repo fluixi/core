@@ -271,7 +271,7 @@ describe('shadow-DOM elements', () => {
     `);
     expect(result.styles).toEqual([expect.objectContaining({ shadow: true, scoped: false, css: '.card{}' })]);
     expect(result.code).not.toContain('data-fx-s');
-    expect(result.code).toContain('import __fxShadow0 from "/app/src/fx-card.tsx?fx-style&index=0&inline&lang.css";');
+    expect(result.code).toContain('import __fxShadow0 from "/app/src/fx-card.tsx.fx-0.css?inline";');
     expect(result.code).toContain('static styles = [__fxShadow0];');
   });
 
@@ -288,9 +288,9 @@ describe('shadow-DOM elements', () => {
         }
       }
     `);
-    expect(result.code).toContain('?fx-style&index=0&inline&lang.css');
-    expect(result.code).toMatch(/import (__fxShadow\d+) from "\.\/base\.styles\?fx-literal=base&inline&lang\.css";/);
-    expect(result.code).toMatch(/import (__fxShadow\d+) from "\/app\/src\/fx-card\.tsx\?fx-literal=local&inline&lang\.css";/);
+    expect(result.code).toContain('fx-card.tsx.fx-0.css?inline');
+    expect(result.code).toMatch(/import (__fxShadow\d+) from "\.\/base\.styles\.fx-literal-base\.css\?inline";/);
+    expect(result.code).toMatch(/import (__fxShadow\d+) from "\/app\/src\/fx-card\.tsx\.fx-literal-local\.css\?inline";/);
     expect(result.code).toMatch(/static styles = \[\[__fxShadow\d+, __fxShadow\d+, ':host \{ display: block \}'\], __fxShadow\d+\];/);
   });
 

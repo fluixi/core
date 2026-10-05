@@ -310,6 +310,14 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       for (const [fileName, source] of componentStyles.libraryFiles()) this.emitFile({ type: 'asset', fileName, source });
     },
 
+    // An edited component's style modules go out with its update: their ids end in `.css`, so
+    // Vite does not connect them to the file.
+    handleHotUpdate(ctx: { file: string; modules: unknown[]; server: { moduleGraph: { getModulesByFile(file: string): Set<unknown> | undefined } } }) {
+      if (!componentStyles.active) return undefined;
+      const styles = componentStyles.hotModules(ctx.file, ctx.server.moduleGraph);
+      return styles.length ? [...ctx.modules, ...styles] : undefined;
+    },
+
     configureServer(server: Parameters<typeof componentStyles.setServer>[0]) {
       componentStyles.setServer(server);
     },
@@ -322,7 +330,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     // `Missing "./x" specifier`, which names neither the replacement nor the file
     // that asked. Answer it here, where the rename is known.
     resolveId(id: string, importer?: string) {
-      if (componentStyles.isStyle(id)) return componentStyles.resolveId(id);
+      if (componentStyles.isStyle(id)) return componentStyles.resolveId(id, importer, this as never);
       if (componentStyles.isLibraryImport(id, importer)) return { id, external: true };
       const moved = RETIRED_SUBPATHS[id];
       if (!moved) return null;
