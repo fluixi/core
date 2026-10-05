@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@fluixi/core';
 import { flush } from '@fluixi/reactive/signal';
 import App from './App';
@@ -11,8 +11,14 @@ describe('router example (providers -> Router -> Suspense -> lazy)', () => {
   it('renders the matched lazy route', async () => {
     const host = document.createElement('div');
     render(() => <App />, host);
-    await new Promise((r) => setTimeout(r, 80));
-    await flush();
-    expect(host.querySelector('.home')?.textContent).toBe('Home page');
+    // The route is a dynamic import: wait for it to arrive rather than for a fixed time, which a
+    // busy machine overruns.
+    await vi.waitFor(
+      async () => {
+        await flush();
+        expect(host.querySelector('.home')?.textContent).toBe('Home page');
+      },
+      { timeout: 2000 },
+    );
   });
 });

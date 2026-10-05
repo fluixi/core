@@ -283,13 +283,13 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 
     enforce: 'pre' as const,
 
-    config() {
-      return {
-        esbuild: {
-          jsx: 'automatic',
-          jsxImportSource: options.importSource || '@fluixi/jsx',
-        },
-      };
+    // JSX the compiler leaves alone goes to Vite's own transform: Oxc in Vite 8 (Rolldown),
+    // esbuild before, which Vite 8 warns about.
+    config(this: { meta?: { rolldownVersion?: string } } | void) {
+      const importSource = options.importSource || '@fluixi/jsx';
+      return this && this.meta?.rolldownVersion
+        ? { oxc: { jsx: { runtime: 'automatic' as const, importSource } } }
+        : { esbuild: { jsx: 'automatic' as const, jsxImportSource: importSource } };
     },
 
     // Written once per build, and on dev-server start, rather than per transform: the

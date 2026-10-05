@@ -17,6 +17,10 @@ describe('@fluixi/vite-plugin', () => {
     expect(typeof p.transform).toBe('function');
     // sets the automatic jsxImportSource for esbuild pre-pass
     expect(p.config().esbuild.jsx).toBe('automatic');
+    // Vite 8 bundles with Rolldown and transforms with Oxc: the same setting goes there.
+    const oxc = (p.config as (this: unknown) => any).call({ meta: { rolldownVersion: '1.2.12' } });
+    expect(oxc.oxc.jsx).toEqual({ runtime: 'automatic', importSource: '@fluixi/jsx' });
+    expect(oxc.esbuild).toBeUndefined();
   });
 
   it('compiles JSX to @fluixi/dom runtime calls', async () => {

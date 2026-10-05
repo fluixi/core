@@ -24,7 +24,7 @@
     "@fluixi/start": "workspace:*"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
-    "vitest": "^3.2.4"
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
   }
 }

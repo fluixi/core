@@ -13,6 +13,7 @@
  * Only an app that declares `env.public`, only the browser build, only its own files.
  */
 import { readFileSync } from 'node:fs';
+import { relative } from 'node:path';
 import type { ResolvedConfig } from './config.js';
 
 const SOURCE = /\.[cm]?[jt]sx?$/;
@@ -198,8 +199,10 @@ export function envReferencesVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'env'
 
       for (const read of publicEnvReads(ast)) {
         if (declared.has(read.name) || read.name.startsWith('VITE_')) continue;
-        // Rollup already names the file in front of the message; the line is what it lacks.
-        const where = `line ${sourceLine(file, read.name, code, read.offset)}`;
+        // Rollup names the file in front of a plugin's error, Rolldown (Vite 8) does not: there
+        // the file is ours to name, or the message says which line but not of what.
+        const named = this.meta?.rolldownVersion ? `${relative(cfg.root, file)}: ` : '';
+        const where = `${named}line ${sourceLine(file, read.name, code, read.offset)}`;
         this.error(
           `${where} reads ${read.name} in code the browser runs, and ${read.name} is not in env.public: the browser has no value for it. ` +
             `If it is public, add it to env.public in fluixi.config.ts. If it is a secret, read it on the server (an API route, middleware, ` +

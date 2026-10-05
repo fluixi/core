@@ -2,15 +2,14 @@
  * `fluixi check`: the editor's env and auth rules over the whole project, for CI.
  *
  * The rules are the ts-plugin's own, so the terminal and the editor never disagree. TypeScript
- * comes from the app: its version is the one the project compiles with, and the CLI does not
- * ship a second copy.
+ * comes from the app when it has the compiler API (see typescript.ts).
  */
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import type * as TS from 'typescript';
 import { envAuthDiagnostics } from '@fluixi/ts-plugin/rules';
 import { c } from '@fluixi/start/ui';
+import { typescriptApi } from './typescript.js';
 
 export interface Finding {
   file: string;
@@ -22,11 +21,7 @@ export interface Finding {
 }
 
 function loadTypeScript(root: string): typeof TS {
-  try {
-    return createRequire(join(root, 'package.json'))('typescript');
-  } catch {
-    throw new Error('fluixi check needs typescript in the app: npm install -D typescript');
-  }
+  return typescriptApi(root);
 }
 
 /** Source files a tsconfig names, following project references one level down. */

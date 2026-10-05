@@ -324,3 +324,12 @@ export function installCrashGuards(): void {
     console.warn('[fluixi] uncaught exception —', err?.message || err),
   );
 }
+
+/**
+ * The bundle output option for one file with no chunks. Rolldown (Vite 8) calls it
+ * `codeSplitting: false` and warns about the Rollup name, which Vite 7 and earlier still need.
+ */
+export async function singleFileOutput(): Promise<Record<string, boolean>> {
+  const { version } = await import('vite');
+  return Number(version.split('.')[0]) >= 8 ? { codeSplitting: false } : { inlineDynamicImports: true };
+}

@@ -32,6 +32,6 @@
     "@codingame/monaco-vscode-typescript-language-features-default-extension": "36.2.7",
     "@fluixi/vite-plugin": "workspace:*",
     "@types/babel__standalone": "^7.1.7",
-    "vite": "^5.0.0"
+    "vite": "^8.3.2"
   }
 }

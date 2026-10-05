@@ -4,7 +4,7 @@ import { mkdir, writeFile, rm, copyFile, readFile } from 'node:fs/promises';
 import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
-import { fluixiPlugins, loadServerEnv } from '../internal.js';
+import { fluixiPlugins, loadServerEnv, singleFileOutput } from '../internal.js';
 import { ssrBuildOptions } from '../adapter.js';
 import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
@@ -238,7 +238,7 @@ async function bundleEntry(
             // One file, no chunks. A lazy route would otherwise be split out beside
             // the entry: and for Cloudflare that directory is the published one, so
             // every server chunk would be a public download.
-            inlineDynamicImports: true,
+            ...(await singleFileOutput()),
           },
         },
       },

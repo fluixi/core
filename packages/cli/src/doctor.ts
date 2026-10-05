@@ -7,8 +7,8 @@
  * never run.
  */
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { typescriptApi } from './typescript.js';
 
 export interface Problem {
   severity: 'error' | 'warning';
@@ -72,7 +72,7 @@ function pluginConfigured(root: string): boolean | null {
   if (!existsSync(file)) return null;
   let config: any;
   try {
-    const ts = createRequire(join(root, 'package.json'))('typescript');
+    const ts = typescriptApi(root);
     config = ts.readConfigFile(file, ts.sys.readFile).config;
   } catch {
     try {

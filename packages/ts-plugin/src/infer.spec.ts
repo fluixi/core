@@ -86,7 +86,8 @@ describe('html`` callback param inference', () => {
 
   it('infers the narrowed value inside <Show when>', () => {
     const text =
-      'const user: { name: string } | null = null;\n' +
+      // Declared, not initialised to null: control flow would narrow that to null itself.
+      'declare const user: { name: string } | null;\n' +
       'const t = html`<Show when=${user}>${(u) => u‸.name}</Show>`;';
     const h = hover(text);
     expect(h).toContain('u:');

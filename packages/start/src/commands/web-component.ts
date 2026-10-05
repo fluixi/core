@@ -17,7 +17,7 @@
  */
 import { resolve, basename, extname } from 'node:path';
 import { resolveConfig } from '../config.js';
-import { fluixiPlugins } from '../internal.js';
+import { fluixiPlugins, singleFileOutput } from '../internal.js';
 import type { FluixiConfig } from '../config.js';
 
 /** Which runtime a built element carries. */
@@ -89,7 +89,7 @@ export async function buildWebComponents(
           external: mode === 'shared' ? RUNTIME : [],
           // Vite's lib mode warns about this; an element has no exports worth keeping,
           // its effect is the registration.
-          output: { inlineDynamicImports: true },
+          output: await singleFileOutput(),
         },
       },
     });
