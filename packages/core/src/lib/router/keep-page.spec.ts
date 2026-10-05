@@ -48,3 +48,74 @@ describe('a navigation to a route with data', () => {
     expect(container.textContent).toBe('Report ready');
   });
 });
+
+describe('a navigation that changes only the params', () => {
+  it('loads the route data again for the new params, on the page already mounted', async () => {
+    const pending = new Map<string, (value: string) => void>();
+    let go!: (to: string) => void;
+    let mounts = 0;
+    const Doc = () => {
+      mounts++;
+      go = useNavigate();
+      const data = useRouteData<string>();
+      return text('h1', () => `Doc ${data()}`);
+    };
+    const routes = [
+      {
+        path: '/doc/:slug',
+        component: Doc,
+        data: ({ params }: { params: () => Record<string, string> }) =>
+          new Promise<string>((resolve) => pending.set(params().slug!, resolve)),
+      },
+    ];
+    const container = document.createElement('div');
+    createRoot(() => {
+      const view = createMemo(() => createComponent(Router, { routes, history: createMemoryHistory('/doc/a') } as never));
+      render(view, container);
+    });
+    await tick();
+    pending.get('a')!('a');
+    await tick();
+    expect(container.textContent).toBe('Doc a');
+
+    go('/doc/b');
+    await tick();
+    // The page keeps its data until the new data arrives.
+    expect(container.textContent).toBe('Doc a');
+    pending.get('b')!('b');
+    await tick();
+    expect(container.textContent).toBe('Doc b');
+    expect(mounts).toBe(1);
+  });
+});
+
+describe('a navigation to another route', () => {
+  it('does not load the leaving page again with the next route\'s params', async () => {
+    const calls: string[] = [];
+    let go!: (to: string) => void;
+    let finish!: (value: string) => void;
+    const Doc = () => {
+      go = useNavigate();
+      const data = useRouteData<string>();
+      return text('h1', () => `Doc ${data()}`);
+    };
+    const User = () => text('h1', () => `User ${useRouteData<string>()()}`);
+    const routes = [
+      { path: '/doc/:slug', component: Doc, data: ({ params }: { params: () => Record<string, string> }) => (calls.push(`doc ${params().slug}`), Promise.resolve(params().slug!)) },
+      { path: '/user/:id', component: User, data: () => new Promise<string>((resolve) => (finish = resolve)) },
+    ];
+    const container = document.createElement('div');
+    createRoot(() => {
+      const view = createMemo(() => createComponent(Router, { routes, history: createMemoryHistory('/doc/a') } as never));
+      render(view, container);
+    });
+    await tick();
+    go('/user/7');
+    await tick();
+    expect(container.textContent).toBe('Doc a');
+    finish('7');
+    await tick();
+    expect(container.textContent).toBe('User 7');
+    expect(calls).toEqual(['doc a']);
+  });
+});

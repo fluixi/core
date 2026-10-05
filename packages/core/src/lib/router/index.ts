@@ -139,6 +139,19 @@ function renderLayer(
     });
     // A revalidated cache entry: load again. The page stays on screen with its current data.
     onCleanup(onRevalidate(() => void refetch()));
+    // A navigation that changes only this layer's params keeps the layer, so nothing else
+    // would load its data for them. Compared by value: `matched` is rebuilt on every navigation.
+    let loadedFor = untrack(() => JSON.stringify(base.matched()[depth]?.params ?? {}));
+    createEffect(() => {
+      const now = base.matched()[depth];
+      // Another route at this depth: this page is on its way out, kept only until the next
+      // one has its data, and the new params are not for it.
+      if (now?.route !== m.route) return;
+      const params = JSON.stringify(now.params ?? {});
+      if (params === loadedFor) return;
+      loadedFor = params;
+      untrack(() => void refetch());
+    });
     // A failed load throws where the page reads it, so the nearest ErrorBoundary shows it.
     // A resource reads as undefined once it has failed, which left the page empty and gave
     // nothing a chance to catch the error.
