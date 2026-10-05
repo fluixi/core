@@ -10,6 +10,7 @@ import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
 import type { ScannedRoute } from '@fluixi/core/plugins';
 import { wordmark, step, done, c } from '../ui.js';
+import { withImports, type ManifestChunk } from './route-imports.js';
 
 /**
  * Production build: a client bundle (browser, with an SSR manifest) and a server
@@ -71,7 +72,7 @@ export async function build(
     resolve: { alias: aliasesFromTsconfig(cfg.root) },
     plugins,
     logLevel: 'warn',
-    build: { outDir: 'dist/client', ssrManifest: true, emptyOutDir: true },
+    build: { outDir: 'dist/client', ssrManifest: true, manifest: true, emptyOutDir: true },
   });
 
   // SSR builds a server bundle that renders HTML. A SPA may still ship one, only for server
@@ -180,6 +181,9 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
   const routesDir = resolve(cfg.root, cfg.routesDir);
   if (existsSync(serverDir) && existsSync(routesDir)) {
     const manifest: Record<string, string[]> = JSON.parse(await readFile(manifestFile, 'utf-8'));
+    // The build manifest, for what each route's chunk imports (see route-imports.ts).
+    const chunksFile = join(clientDir, '.vite', 'manifest.json');
+    const chunks: Record<string, ManifestChunk> = existsSync(chunksFile) ? JSON.parse(await readFile(chunksFile, 'utf-8')) : {};
     const { scanRoutes } = await import('@fluixi/core/plugins');
     const base = cfg.routesDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
 
@@ -190,7 +194,7 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
       for (const route of routes) {
         // A match renders every layer, so layouts fold in here rather than being
         // unioned per request.
-        const files = [...new Set([...inherited, ...(manifest[`${base}/${route.filePath}`] ?? [])])];
+        const files = [...new Set([...inherited, ...withImports(manifest[`${base}/${route.filePath}`] ?? [], chunks)])];
         if (files.length) assets[route.urlPath] = [...new Set([...(assets[route.urlPath] ?? []), ...files])];
         walk(route.children, files);
       }
