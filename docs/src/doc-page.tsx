@@ -156,6 +156,61 @@ function Search(props: { lang: Lang; version: string; label: string }) {
 
   return (
     <>
+      <style scoped>{`
+        /* The trigger reads as a field rather than a button, because that is what it
+           opens; the shortcut is shown so it is discoverable without a tooltip. */
+        .search-open {
+          display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+          padding: 6px 8px 6px 12px; border-radius: var(--r-md); min-width: 200px;
+          font-family: var(--font); font-size: 13px; color: var(--muted);
+          background: var(--panel-2); border: 1px solid var(--line);
+          transition: border-color .15s, color .15s;
+        }
+        .search-open:hover { color: var(--text); border-color: var(--line-strong); }
+        .search-open kbd {
+          margin-left: auto;
+          font-family: var(--mono); font-size: 10.5px; padding: 2px 5px; border-radius: 4px;
+          color: var(--muted); background: var(--bg); border: 1px solid var(--line);
+        }
+
+        .search-scrim {
+          position: fixed; inset: 0; z-index: 200; background: var(--scrim);
+          display: flex; align-items: flex-start; justify-content: center; padding: 12vh 20px 20px;
+        }
+        .search-panel {
+          width: min(620px, 100%); max-height: 70vh; overflow: hidden;
+          display: flex; flex-direction: column;
+          background: var(--bg); border: 1px solid var(--line-strong);
+          border-radius: var(--r-lg); box-shadow: 0 24px 60px var(--shadow);
+        }
+        .search-input {
+          width: 100%; padding: 17px 18px; border: 0; border-bottom: 1px solid var(--line);
+          background: transparent; color: var(--text); font-family: var(--font); font-size: 15.5px;
+        }
+        .search-input:focus { outline: none; }
+        .search-input::placeholder { color: var(--muted); }
+
+        .search-hits { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+        .hit {
+          display: flex; flex-direction: column; gap: 2px;
+          padding: 9px 13px; border-radius: var(--r-md); border-left: 2px solid transparent;
+        }
+        .hit strong { font-size: 14px; font-weight: 500; color: var(--text); }
+        .hit span {
+          font-size: 12.5px; color: var(--muted); overflow: hidden;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        /* Active row is marked by border and background, so it does not rely on colour alone. */
+        .hit.on { background: var(--accent-soft); border-left-color: var(--accent); }
+        .search-empty { margin: 0; padding: 18px 20px; font-size: 13.5px; color: var(--muted); }
+
+        @media (max-width: 560px) {
+          .search-open { min-width: 0; padding: 6px 10px; }
+          .search-open span { display: none; }
+          .search-open kbd { display: none; }
+          .search-open::after { content: '⌕'; font-size: 16px; }
+        }
+      `}</style>
       <button type="button" class="search-open" onClick={() => void show()} aria-label={props.label}>
         <span>{props.label}</span>
         <kbd>⌘K</kbd>
@@ -282,6 +337,148 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
 
   return (
     <div class="docs">
+      <style scoped>{`
+        .docs { min-height: 100vh; }
+
+        /* header */
+        .d-head {
+          position: sticky; top: 0; z-index: 40;
+          display: flex; align-items: center; justify-content: space-between;
+          height: var(--head); padding: 0 20px; border-bottom: 1px solid var(--line);
+          background: var(--bg-head); backdrop-filter: blur(12px);
+        }
+        /* flex-shrink: 0, so the brand never loses the shrink race against .d-actions,
+           or its text overflows its own box and overlaps whatever sits to its right. */
+        .d-head-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .d-menu {
+          display: none; align-items: center; justify-content: center;
+          width: 34px; height: 34px; padding: 0; font-size: 17px; line-height: 1;
+          color: var(--muted); background: transparent;
+          border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
+        }
+        .d-menu:hover { color: var(--text); border-color: var(--line-strong); }
+        /* Link renders its own <a>, which this component's scope does not reach: :deep from a
+           scoped parent. The same for the language toggle, the nav items and the pager. */
+        .d-head-left :deep(.d-brand) { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+        .logo { width: 20px; height: 20px; flex: none; }
+        .d-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .ver { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+        .ver select {
+          background: transparent; color: var(--muted); border: 1px solid var(--line);
+          border-radius: var(--r-md); padding: 5px 8px; font-size: 12.5px;
+          font-family: var(--mono); cursor: pointer;
+        }
+        .ver select:hover { color: var(--text); border-color: var(--line-strong); }
+        .d-actions :deep(.lang-toggle), .theme-toggle {
+          display: inline-flex; align-items: center; justify-content: center;
+          height: 32px; padding: 0 11px; font-size: 12.5px; line-height: 1;
+          color: var(--muted); background: transparent;
+          border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
+        }
+        .theme-toggle { width: 32px; padding: 0; font-size: 14px; }
+        .d-actions :deep(.lang-toggle:hover), .theme-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+        .d-link { font-size: 13px; color: var(--muted); }
+        .d-link:hover { color: var(--text); }
+
+        /* body grid */
+        .d-body { display: grid; grid-template-columns: var(--sb) minmax(0, 1fr); max-width: 1200px; margin: 0 auto; }
+        .d-sidebar {
+          position: sticky; top: var(--head); align-self: start;
+          height: calc(100vh - var(--head)); overflow-y: auto;
+          padding: 28px 16px 60px; border-right: 1px solid var(--line);
+        }
+        .nav-group { margin-bottom: 26px; }
+        .nav-group-title {
+          font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+          color: var(--muted); margin: 0 10px 8px; font-weight: 600;
+        }
+        /* Marked by rule, weight and colour, so it does not depend on hue alone. */
+        .d-sidebar :deep(.nav-item) {
+          display: block; padding: 6px 10px; border-radius: var(--r-sm);
+          font-size: 13.5px; line-height: 1.5; color: var(--muted);
+          border-left: 2px solid transparent; margin-left: -2px;
+        }
+        .d-sidebar :deep(.nav-item:hover) { color: var(--text); background: var(--hover); }
+        /* Square left corners, or the radius clips the rule down to a stub. */
+        .d-sidebar :deep(.nav-item.on) {
+          color: var(--text); background: var(--accent-soft); border-left-color: var(--accent);
+          font-weight: 500; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+        }
+
+        /* mobile drawer backdrop, inert on desktop */
+        .d-backdrop { display: none; }
+
+        .d-main { padding: 56px 64px 120px; max-width: calc(var(--measure) + 128px); }
+
+        /* pager */
+        .d-pager { display: flex; justify-content: space-between; gap: 14px; margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); }
+        .d-pager :deep(.pager) {
+          display: flex; flex-direction: column; gap: 3px; padding: 13px 16px;
+          border: 1px solid var(--line); border-radius: var(--r-md); min-width: 0;
+          transition: border-color .15s;
+        }
+        .d-pager :deep(.pager.next) { text-align: right; margin-left: auto; }
+        .d-pager :deep(.pager:hover) { border-color: var(--line-strong); }
+        .d-pager :deep(.pager span) { font-size: 11.5px; color: var(--muted); }
+        .d-pager :deep(.pager b) { font-size: 14px; font-weight: 500; color: var(--text); }
+
+        @media (max-width: 980px) {
+          .d-body { grid-template-columns: 1fr; min-width: 0; }
+          .d-main { padding: 36px 24px 80px; min-width: 0; max-width: none; }
+
+          .d-menu { display: inline-flex; }
+
+          /* sidebar becomes a slide-in drawer */
+          .d-sidebar {
+            position: fixed;
+            top: var(--head);
+            left: 0;
+            z-index: 50;
+            width: 276px;
+            max-width: 84vw;
+            height: calc(100vh - var(--head));
+            background: var(--bg);
+            border-right: 1px solid var(--line);
+            transform: translateX(-100%);
+            transition: transform .22s ease;
+          }
+          .d-sidebar.open { transform: translateX(0); box-shadow: 0 0 40px var(--shadow); }
+
+          .d-backdrop {
+            display: block;
+            position: fixed;
+            inset: var(--head) 0 0;
+            z-index: 45;
+            background: var(--scrim);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s ease;
+          }
+          .d-backdrop.show { opacity: 1; pointer-events: auto; }
+        }
+
+        @media (max-width: 560px) {
+          .d-head { padding: 0 14px; gap: 8px; }
+          .d-head-left :deep(.d-brand) { font-size: 14.5px; }
+          .d-actions { gap: 6px; }
+          .ver > span { display: none; }        /* keep the select, drop the "Version" label */
+          /* The select and the language name are the two variable-width items in the row,
+             so they are the ones that give way, clipped rather than left to force the
+             header wider than the viewport. */
+          .ver select { max-width: 76px; }
+          .d-actions :deep(.lang-toggle) {
+            padding: 0 8px; max-width: 64px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          }
+          .d-main { padding: 28px 18px 64px; }
+        }
+
+        @media (max-width: 360px) {
+          /* Still does not fit clipped below this width. Dropping it loses the control;
+             leaving it risked overlap again, which is worse. */
+          .d-actions :deep(.lang-toggle) { display: none; }
+        }
+      `}</style>
       {/* First tab stop: the sidebar is ~25 links, so a keyboard or screen-reader user
           would otherwise traverse the whole nav on every page to reach the content. */}
       <a class="skip" href="#content">{ui().skip}</a>
@@ -303,7 +500,8 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           <Search lang={lang()} version={version()} label={ui().search} />
           <label class="ver">
             <span>{ui().version}</span>
-            <select onChange={(e: any) => (location.href = `/${e.target.value}/${lang()}/${slug()}`)}>
+            {/* Named on its own: the visible label is hidden on narrow screens. */}
+            <select aria-label={ui().version} onChange={(e: any) => (location.href = `/${e.target.value}/${lang()}/${slug()}`)}>
               {VERSIONS.map((v) => (
                 <option value={v} selected={v === version()}>
                   {versionLabel(v)}
