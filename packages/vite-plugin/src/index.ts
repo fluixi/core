@@ -39,7 +39,7 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
   const enabled = () => serving && settings.devtools !== false;
 
   const base = createVitePlugin<Plugin>(settings);
-  const inherited = base.configResolved as ((config: unknown) => void) | undefined;
+  const inherited = base.configResolved as ((config: unknown) => void | Promise<void>) | undefined;
 
   const start = () => {
     settings.sourceLocations = true;
@@ -51,8 +51,10 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
   return withGraphChannel(
     {
       ...base,
-      configResolved(config: { root?: string; command?: string }) {
-        inherited?.(config);
+      // Awaited: the compiler's own hook loads the transform it needs for component styles, and
+      // Vite starts transforming as soon as every configResolved has settled.
+      async configResolved(config: { root?: string; command?: string }) {
+        await inherited?.(config);
         // `serve` covers vitest as well as the dev server, and a test run has no page to
         // watch: the marks would only change what the compiler emits under test. The
         // channel turns them on from configureServer, which only a real server calls.
