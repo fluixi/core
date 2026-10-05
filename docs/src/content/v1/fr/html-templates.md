@@ -176,7 +176,8 @@ qui *commencent* en dessous de la racine, avec un `<circle>` ou un `<path>` sans
 ## Espaces et texte
 
 Les espaces sont conservés tels quels, comme en HTML, repliés par CSS au rendu, pas par le
-compilateur. `<pre>`, `<textarea>`, `<script>` et `<style>` gardent leur contenu verbatim.
+compilateur. `<pre>`, `<textarea>` et `<script>` gardent leur contenu verbatim. `<style>` aussi,
+sauf si les styles de composant sont activés : son CSS est alors compilé, voir [Styles](/v1/fr/styling).
 
 ## Prise en charge de l'éditeur
 

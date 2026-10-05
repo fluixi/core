@@ -149,15 +149,19 @@ l'élément et l'objet s'y ajoute : vous pouvez garder les classes de base dans 
 > `const o = { on: a() }; class=${o}` compile en `className = o` et affiche
 > `[object Object]`. Passez le littéral en ligne, ou utilisez `classList=` explicitement.
 
-`` html`` `` propose en plus des bascules par nom, qui évitent complètement le problème :
+Les bascules par nom évitent complètement le problème, dans les deux surfaces, et chacune ne met à
+jour que sa propre classe ou propriété :
 
 ```ts
 html`<div class:active=${on()} class:big=${large()}></div>`;
 html`<div style:color=${c()} style:--x=${px()}></div>`;
+<div class:active={on()} style:color={c()} />;
 ```
 
 Les propriétés personnalisées (`--x`) passent par `setProperty` : elles fonctionnent dans
-les deux formes.
+les deux formes. JSX ne sait pas lire `style:--x`, un nom ne pouvant pas commencer par `-` :
+mettez la propriété dans l'objet de style, `style={{ '--x': px() }}`. Sur un élément, un objet de
+style écrit en littéral se met lui aussi à jour propriété par propriété.
 
 ### html, innerHTML brut
 

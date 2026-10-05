@@ -145,14 +145,19 @@ and the object adds to it, so you can keep base classes in markup.
 > `const o = { on: a() }; class=${o}` compiles to `className = o` and renders
 > `[object Object]`. Pass the literal inline, or use `classList=` explicitly.
 
-`` html`` `` additionally offers per-name toggles, which sidestep that entirely:
+Per-name toggles sidestep that entirely, in both surfaces, and each one updates only its own class
+or property:
 
 ```ts
 html`<div class:active=${on()} class:big=${large()}></div>`;
 html`<div style:color=${c()} style:--x=${px()}></div>`;
+<div class:active={on()} style:color={c()} />;
 ```
 
-Custom properties (`--x`) are set through `setProperty`, so they work in both forms.
+Custom properties (`--x`) are set through `setProperty`, so they work in both forms. JSX cannot
+parse `style:--x`, since a name cannot start with `-`: put the property in the style object
+instead, `style={{ '--x': px() }}`. On an element, a style object written as a literal also
+updates property by property.
 
 ### html, raw innerHTML
 

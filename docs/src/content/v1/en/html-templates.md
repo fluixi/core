@@ -171,7 +171,8 @@ same template to give it away.
 ## Whitespace and text
 
 Whitespace is preserved as written, like HTML, collapsed by CSS at render time, not by
-the compiler. `<pre>`, `<textarea>`, `<script>` and `<style>` keep their content verbatim.
+the compiler. `<pre>`, `<textarea>` and `<script>` keep their content verbatim. So does `<style>`,
+unless component styles are on: then its CSS is compiled, see [Styling](/v1/en/styling).
 
 ## Editor support
 
