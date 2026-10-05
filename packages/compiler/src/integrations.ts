@@ -322,7 +322,7 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     // `Missing "./x" specifier`, which names neither the replacement nor the file
     // that asked. Answer it here, where the rename is known.
     resolveId(id: string, importer?: string) {
-      if (componentStyles.isStyle(id)) return id;
+      if (componentStyles.isStyle(id)) return componentStyles.resolveId(id);
       if (componentStyles.isLibraryImport(id, importer)) return { id, external: true };
       const moved = RETIRED_SUBPATHS[id];
       if (!moved) return null;

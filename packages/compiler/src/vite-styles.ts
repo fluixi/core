@@ -185,6 +185,16 @@ export function createComponentStyles(compile: CompileWithStyles) {
     isStyle(id: string): boolean {
       return STYLE_ID.test(id) || LITERAL_ID.test(id);
     },
+    /**
+     * A style request as the module id Vite should keep: the file's absolute path and the
+     * query. Vite invalidates a module when the file its id names changes, so a root-relative id
+     * (`/src/card.tsx?fx-style…`, which is how a request arrives before the component's imports
+     * were analysed) was never invalidated, and an edited block kept its old CSS until restart.
+     */
+    resolveId(id: string): string {
+      const at = id.indexOf('?');
+      return fileOf(id.slice(0, at)) + id.slice(at);
+    },
     compile: run,
     /**
      * A block's CSS and its map back to the module, compiling the module again when the cache

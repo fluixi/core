@@ -130,5 +130,13 @@ describe('component styles in Vite', () => {
     writeFileSync(join(dir, 'Card.css'), '.mine {}');
     await expect(styles.compile(code, file, ctx)).rejects.toThrow(/would be overwritten/);
   });
+
+  it('names a style module by its file, however it was requested, so an edit invalidates it', () => {
+    const { styles } = setup();
+    styles.connect([cssPlugin([])], dir);
+    writeFileSync(join(dir, 'Card.tsx'), '');
+    expect(styles.resolveId('/Card.tsx?fx-style&index=0&lang.css')).toBe(`${join(dir, 'Card.tsx')}?fx-style&index=0&lang.css`);
+    expect(styles.resolveId(`${join(dir, 'Card.tsx')}?fx-literal=base&inline&lang.css`)).toBe(`${join(dir, 'Card.tsx')}?fx-literal=base&inline&lang.css`);
+  });
 });
 
