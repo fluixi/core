@@ -46,4 +46,7 @@ declare global {
   const $storage: typeof __fluixi_core_storage.useStorage;
   const $asyncStorage: typeof __fluixi_core_storage.useAsyncStorage;
   const $persisted: typeof __fluixi_core_storage.persisted;
+  const $html: typeof __fluixi_core.html;
+  const $svg: typeof __fluixi_core.svg;
+  const $css: typeof __fluixi_core.css;
 }
