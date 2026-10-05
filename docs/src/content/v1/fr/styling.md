@@ -174,9 +174,19 @@ placez ses règles dans une couche :
 ## En développement
 
 Modifier un bloc de style parvient à la page par la mise à jour du serveur de dev, sans
-redémarrage. Dans les outils du navigateur, une règle renvoie à la ligne du composant où elle a été
-écrite quand Vite a `css.devSourcemap: true`. Les règles produites par `@apply` renvoient à la
-ligne du `@apply`.
+redémarrage.
+
+Dans les outils du navigateur, une règle renvoie à la ligne où elle a été écrite : dans le bloc de
+style, ou dans la valeur `css` d'où elle vient, dans ce module ou un autre. Les règles produites par
+`@apply` renvoient à la ligne du `@apply`. Le serveur de dev active pour cela les source maps CSS ;
+mettez `css.devSourcemap: false` dans votre config Vite pour les désactiver. Les styles d'un shadow
+root sont des feuilles de style construites, que les navigateurs affichent sans source.
+
+## Dans un build
+
+Le compilateur écrit le CSS des composants tel qu'il a été écrit, lisible. Vite le minifie avec le
+reste du CSS de l'app, avec Lightning CSS sauf si `build.cssMinify` en décide autrement. Un build de
+bibliothèque laisse ses fichiers `.css` tels quels, et l'app qui les regroupe les minifie.
 
 ## Bibliothèques de composants
 

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { transformTemplates } from './transform/templates.js';
 import type { StyleNode } from './transform/styles.js';
 import { createComponentStyles, styleId } from './vite-styles.js';
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 
 // The engine's part, faked as in the compiler specs: a piece of CSS comes back as one rule
 // named after its selector.
@@ -68,6 +69,31 @@ describe('component styles in Vite', () => {
     writeFileSync(file, code);
     await styles.compile(code, file, ctx);
     expect((await styles.load(styleId(file, 0), ctx))?.code).toMatch(/^\.base\[data-fx-s="\w+"\]\{\}\.card\[data-fx-s="\w+"\]\{\}$/);
+  });
+
+  it("maps a value composed from another module back to that module's line", async () => {
+    const styles = createComponentStyles((code, id, s) => transformTemplates(code, id, { sourceRoot: dir, styles: s }));
+    // Each piece comes back as one rule placed where it starts, as the engine would.
+    const located = (css: string, from: string): StyleNode[] => {
+      const before = css.slice(0, css.search(/\S/)).split('\n');
+      const loc = { source: from, line: before.length, column: before.at(-1)!.length };
+      return [{ kind: 'rule', selector: css.trim().split(/\s*\{/)[0]!, nodes: [], loc }];
+    };
+    styles.connect([{ name: 'fluixi', api: { fluixiCss: { styles: () => ({ process: located, minify: true }), useComponentStyles: () => {} } } }]);
+    const base = "import { css } from '@fluixi/core';\nexport const base = css`\n.base { a: 1 }`;";
+    writeFileSync(join(dir, 'base.ts'), base);
+    const file = join(dir, 'Card.tsx');
+    const code = `import { base } from './base';\nexport function Card() {\n  return <div><style scoped>{\`\${base}\n.card { a: 1 }\`}</style></div>;\n}`;
+    writeFileSync(file, code);
+    await styles.compile(code, file, ctx);
+    const loaded = await styles.load(styleId(file, 0), ctx);
+    const map = loaded?.map as { sources: string[]; sourcesContent: string[] };
+    expect(map.sources).toEqual([file, join(dir, 'base.ts')]);
+    expect(map.sourcesContent).toEqual([code, base]);
+    const trace = new TraceMap(map as never);
+    const at = (selector: string) => originalPositionFor(trace, { line: 1, column: loaded!.code.indexOf(selector) });
+    expect(at('.base')).toMatchObject({ source: join(dir, 'base.ts'), line: 3, column: 0 });
+    expect(at('.card')).toMatchObject({ source: file, line: 4, column: 0 });
   });
 
   it('reloads a block whose CSS changed', async () => {

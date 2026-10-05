@@ -23,6 +23,12 @@ describe('@fluixi/vite-plugin', () => {
     expect(oxc.esbuild).toBeUndefined();
   });
 
+  it('turns on dev CSS maps, unless the app set them', () => {
+    const p: any = fluixi();
+    expect(p.config({}).css).toEqual({ devSourcemap: true });
+    expect(p.config({ css: { devSourcemap: false } }).css).toBeUndefined();
+  });
+
   it('compiles JSX to @fluixi/dom runtime calls', async () => {
     const code = await runTransform(
       { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' },

@@ -168,9 +168,19 @@ sit under something layered, such as a `@fluixi-ui` skin, wrap its rules in a la
 
 ## In development
 
-Editing a style block reaches the page through the dev server's update, with no restart. In the browser's devtools, a rule points
-back to the line of the component it was written on when Vite has `css.devSourcemap: true`.
-Rules produced by `@apply` point to the `@apply` line.
+Editing a style block reaches the page through the dev server's update, with no restart.
+
+In the browser's devtools, a rule points back to the line it was written on: in the style block,
+or in the `css` value it came from, in this module or another. Rules produced by `@apply` point to
+the `@apply` line. The dev server has CSS source maps on for this; set `css.devSourcemap: false`
+in your Vite config to turn them off. A shadow root's styles are constructed stylesheets, which
+browsers show without a source.
+
+## In a build
+
+The compiler writes component CSS as it was written, readable. Vite minifies it with the rest of
+the app's CSS, with Lightning CSS unless `build.cssMinify` says otherwise. A library build leaves
+its `.css` files as they are, and the app that bundles them minifies them.
 
 ## Component libraries
 

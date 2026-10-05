@@ -55,6 +55,11 @@ export interface StyleOptions {
    * the import names them. A reference not in here is reported in `styleReferences`.
    */
   imported?: Map<string, StyleNode[]>;
+  /**
+   * The modules those values were written in, by the name their positions carry: with them, a
+   * composed value's rules map back to that module's lines. Without, they are left unmapped.
+   */
+  importedModules?: Map<string, { id: string; code: string }>;
 }
 
 /** A `css`` value: portable, unscoped, emitted only where something uses it. */
@@ -63,6 +68,8 @@ export interface StyleLiteral {
   /** The variable it is bound to. */
   name: string;
   css: string;
+  /** Its rules, positions in this module kept, for a module that composes it. */
+  nodes: StyleNode[];
 }
 
 /** An interpolated style value from another module, for the build to resolve. */
@@ -189,8 +196,8 @@ export function collectStyles(
     const imported = literalsOf.imports.get(name);
     if (imported) {
       const nodes = options?.imported?.get(`${imported.source}#${imported.name}`);
-      // Their positions count from printed CSS, not from any source file.
-      if (nodes) return nodes.map(dropLoc);
+      // Positions in a module the build named stay, for the map; any other is dropped.
+      if (nodes) return nodes.map((n) => keepLocIn(n, options?.importedModules));
       plan.references.push({ name: imported.name, source: imported.source, ...at });
       // Without `imported` the host has not looked yet; with it, it looked and found nothing.
       plan.diagnostics.push({
@@ -218,7 +225,7 @@ export function collectStyles(
     const nodes = resolveLiteral(name, at, []);
     const id = hash(`${sourceName}:css:${name}`);
     plan.edits.push({ start: literal.start!, end: literal.end!, code: `({ $fxStyle: ${JSON.stringify(id)} })` });
-    if (nodes) plan.literals.push({ id, name, css: printStyle(nodes, options.minify) });
+    if (nodes) plan.literals.push({ id, name, css: printStyle(nodes, options.minify), nodes });
   }
   const scopeOf = new Map<Node, string>();
   const names = new Map<string, number>();
@@ -309,7 +316,9 @@ export function collectStyles(
       if (!plan.scopes.some((s) => s.value === id)) plan.scopes.push({ start: owner.start!, end: owner.end!, value: id });
       nodes = scopeNodes(nodes, id, (message) => plan.diagnostics.push({ ...at, message }));
     }
-    const printed = module ? printStyleWithMap(nodes, options.minify, sourceName, module) : { css: printStyle(nodes, options.minify) };
+    const printed = module
+      ? printStyleWithMap(nodes, options.minify, sourceName, module, options.importedModules)
+      : { css: printStyle(nodes, options.minify) };
     plan.styles.push({ id, scoped: scoped && !shadow, component, ...printed, ...(shadow ? { shadow: true } : {}), ...at });
     if (shadow) shadow.indexes.push(plan.styles.length - 1);
   };
@@ -760,11 +769,14 @@ function shiftLoc(node: StyleNode, source: string, start: { line: number; column
   return { ...node, loc } as StyleNode;
 }
 
-function dropLoc(node: StyleNode): StyleNode {
-  const { loc: _loc, ...rest } = node;
-  if (rest.kind === 'rule' || rest.kind === 'at-rule') return { ...rest, nodes: rest.nodes.map(dropLoc) } as StyleNode;
-  return rest as StyleNode;
+function keepLocIn(node: StyleNode, modules: ReadonlyMap<string, unknown> | undefined): StyleNode {
+  const keep = node.loc !== undefined && modules?.has(node.loc.source) === true;
+  const { loc, ...rest } = node;
+  const kept = keep ? { ...rest, loc } : rest;
+  if (kept.kind === 'rule' || kept.kind === 'at-rule') return { ...kept, nodes: kept.nodes.map((n) => keepLocIn(n, modules)) } as StyleNode;
+  return kept as StyleNode;
 }
+
 
 /**
  * Prints like `printStyle`, with a map from each rule and declaration back to where it was
@@ -775,7 +787,18 @@ export function printStyleWithMap(
   minify: boolean | undefined,
   sourceName: string,
   module: { id: string; code: string },
+  /** Other modules rules came from (composed css`` values), by the name their positions carry. */
+  others?: ReadonlyMap<string, { id: string; code: string }>,
 ): { css: string; map: StyleMap } {
+  const sources = [module];
+  const index = new Map<string, number>([[sourceName, 0]]);
+  const sourceOf = (name: string): number | undefined => {
+    if (index.has(name)) return index.get(name);
+    const other = others?.get(name);
+    if (!other) return undefined;
+    index.set(name, sources.push(other) - 1);
+    return index.get(name);
+  };
   const lines: [number, number, number, number][][] = [[]];
   let css = '';
   let column = 0;
@@ -789,7 +812,8 @@ export function printStyleWithMap(
     }
   };
   const mark = (loc: StyleLoc | undefined) => {
-    if (loc && loc.source === sourceName) lines[lines.length - 1]!.push([column, 0, loc.line - 1, loc.column]);
+    const at = loc ? sourceOf(loc.source) : undefined;
+    if (loc && at !== undefined) lines[lines.length - 1]!.push([column, at, loc.line - 1, loc.column]);
   };
   const write = (node: StyleNode, depth: number) => {
     const pad = minify ? '' : '  '.repeat(depth);
@@ -808,7 +832,7 @@ export function printStyleWithMap(
     }
   };
   for (const node of nodes) write(node, 0);
-  return { css, map: { version: 3, sources: [module.id], sourcesContent: [module.code], names: [], mappings: encode(lines) } };
+  return { css, map: { version: 3, sources: sources.map((s) => s.id), sourcesContent: sources.map((s) => s.code), names: [], mappings: encode(lines) } };
 }
 
 export function printStyle(nodes: StyleNode[], minify = false): string {

@@ -20,7 +20,7 @@ interface CssApi {
 interface Compiled {
   code: string;
   styles?: { css: string; map?: unknown; shadow?: boolean }[];
-  styleLiterals?: { name: string; css: string }[];
+  styleLiterals?: { name: string; css: string; nodes?: StyleNode[] }[];
   styleReferences?: StyleReference[];
 }
 
@@ -44,6 +44,18 @@ const SUFFIX = /\.fx-(?:\d+|literal-[\w$]+)\.css(?:\?inline)?$/;
 
 /** The id a component's n-th style block is served under: a CSS request Vite treats as such. */
 export const styleId = styleIds.block;
+
+/** The source name the first positioned node carries: the module a value was written in. */
+function firstLoc(nodes: StyleNode[]): string | undefined {
+  for (const node of nodes) {
+    if (node.loc) return node.loc.source;
+    if ((node.kind === 'rule' || node.kind === 'at-rule') && node.nodes.length) {
+      const inner = firstLoc(node.nodes);
+      if (inner) return inner;
+    }
+  }
+  return undefined;
+}
 
 /** The component a style id belongs to, as written in the id. */
 const ownerOf = (id: string) => id.slice(0, id.search(SUFFIX));
@@ -75,11 +87,16 @@ export function createComponentStyles(compile: CompileWithStyles) {
   // what changed.
   const cache = new Map<string, { source: string; css: string[]; maps: unknown[]; literals: Map<string, string> }>();
 
+  // What the modules a block composes from look like to its map: the name their positions
+  // carry, and the file and source a browser shows.
+  type Modules = Map<string, { id: string; code: string }>;
+
   const resolveReference = async (
     ref: StyleReference,
     importer: string,
     ctx: ResolveContext,
     seen: Set<string>,
+    modules: Modules,
   ): Promise<StyleNode[] | null> => {
     const resolved = await ctx.resolve?.(ref.source, importer);
     if (!resolved) return null;
@@ -95,17 +112,22 @@ export function createComponentStyles(compile: CompileWithStyles) {
     let result = compile(code, file, styles);
     // A value that composes values from further away: those first.
     if (result?.styleReferences?.length) {
-      const imported = await resolveAll(result.styleReferences, file, ctx, new Set([...seen, file]));
-      result = compile(code, file, { ...styles, imported });
+      const imported = await resolveAll(result.styleReferences, file, ctx, new Set([...seen, file]), modules);
+      result = compile(code, file, { ...styles, imported, importedModules: modules });
     }
     const literal = result?.styleLiterals?.find((l) => l.name === ref.name);
-    return literal ? styles.process(literal.css, file) : null;
+    if (!literal) return null;
+    // Its rules as written, positions in its own module, which the composing block's map names.
+    const nodes = literal.nodes ?? styles.process(literal.css, file);
+    const named = firstLoc(nodes);
+    if (named) modules.set(named, { id: file, code });
+    return nodes;
   };
 
-  const resolveAll = async (refs: StyleReference[], importer: string, ctx: ResolveContext, seen: Set<string>) => {
+  const resolveAll = async (refs: StyleReference[], importer: string, ctx: ResolveContext, seen: Set<string>, modules: Modules) => {
     const imported = new Map<string, StyleNode[]>();
     for (const ref of refs) {
-      const nodes = await resolveReference(ref, importer, ctx, seen);
+      const nodes = await resolveReference(ref, importer, ctx, seen, modules);
       if (nodes) imported.set(`${ref.source}#${ref.name}`, nodes);
     }
     return imported;
@@ -119,8 +141,9 @@ export function createComponentStyles(compile: CompileWithStyles) {
     const styles = api!.styles(file);
     let result = compile(code, file, styles);
     if (result?.styleReferences?.length) {
-      const imported = await resolveAll(result.styleReferences, id, ctx, new Set([file]));
-      result = compile(code, file, { ...styles, imported });
+      const modules: Modules = new Map();
+      const imported = await resolveAll(result.styleReferences, id, ctx, new Set([file]), modules);
+      result = compile(code, file, { ...styles, imported, importedModules: modules });
     }
     const css = (result?.styles ?? []).map((s) => s.css);
     const maps = (result?.styles ?? []).map((s) => s.map ?? null);

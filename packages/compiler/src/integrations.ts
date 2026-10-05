@@ -285,11 +285,14 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
 
     // JSX the compiler leaves alone goes to Vite's own transform: Oxc in Vite 8 (Rolldown),
     // esbuild before, which Vite 8 warns about.
-    config(this: { meta?: { rolldownVersion?: string } } | void) {
+    // In dev, CSS maps are on unless the app says otherwise, so devtools show the line a
+    // component's rule was written on. Vite leaves them off by default; a build never has them.
+    config(this: { meta?: { rolldownVersion?: string } } | void, user?: { css?: { devSourcemap?: boolean } }) {
       const importSource = options.importSource || '@fluixi/jsx';
-      return this && this.meta?.rolldownVersion
+      const jsx = this && this.meta?.rolldownVersion
         ? { oxc: { jsx: { runtime: 'automatic' as const, importSource } } }
         : { esbuild: { jsx: 'automatic' as const, jsxImportSource: importSource } };
+      return user?.css?.devSourcemap === undefined ? { ...jsx, css: { devSourcemap: true } } : jsx;
     },
 
     // Written once per build, and on dev-server start, rather than per transform: the

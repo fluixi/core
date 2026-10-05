@@ -164,7 +164,7 @@ describe('css`` literals', () => {
     expect(result.code).toContain(`export const base = ({ $fxStyle: "${id}" });`);
     expect(result.code).toContain(`import { other } from "@fluixi/core";`);
     expect(result.code).not.toMatch(/\bcss`/);
-    expect(result.styleLiterals).toEqual([{ id, name: 'base', css: '.base{}' }]);
+    expect(result.styleLiterals).toEqual([{ id, name: 'base', css: '.base{}', nodes: expect.any(Array) }]);
     expect(result.styles).toBeUndefined();
   });
 
