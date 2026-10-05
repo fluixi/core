@@ -8,7 +8,7 @@ import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { INTRINSICS } from '@fluixi/compiler/intrinsics';
+import { INTRINSICS, TAG_INTRINSICS } from '@fluixi/compiler/intrinsics';
 
 const bin = fileURLToPath(new URL('../dist/index.js', import.meta.url));
 let cwd: string;
@@ -52,5 +52,26 @@ describe('create-fluixi --auth', () => {
     expect(dts).toContain('const $cleanup: typeof __fluixi_reactive_signal.onCleanup;');
     expect(dts).toContain('const $persisted: typeof __fluixi_core_storage.persisted;');
     expect(dts).toContain("import * as __fluixi_core_storage from '@fluixi/core/storage';");
+  });
+
+  it('declares the template intrinsics too: $html, $svg, $css', () => {
+    create();
+    const dts = read('fluixi.d.ts');
+    for (const [name, tag] of Object.entries(TAG_INTRINSICS)) expect(dts).toContain(`const ${name}: typeof __fluixi_core.${tag.export};`);
+    expect(dts).toContain("import * as __fluixi_core from '@fluixi/core';");
+  });
+
+  it('prints its usage for --help and creates nothing', () => {
+    for (const flag of ['--help', '-h']) {
+      const out = execFileSync('node', [bin, flag], { cwd, input: '', encoding: 'utf8' });
+      expect(out).toMatch(/^Usage: create-fluixi/);
+      expect(out).toContain('--auth=oauth2|better-auth');
+    }
+    expect(existsSync(join(cwd, 'fluixi-app'))).toBe(false);
+  });
+
+  it('refuses an option it does not know before creating anything', () => {
+    expect(() => create('--sap')).toThrow(/unknown option --sap/);
+    expect(existsSync(join(cwd, 'app'))).toBe(false);
   });
 });
