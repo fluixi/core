@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/reactive",
-  "version": "1.0.0-alpha.93",
+  "version": "1.0.0-alpha.94",
   "description": "implements TC39 Signals proposal with zero runtime dependencies; observable layer for RxJS interop with signals, memos, effects, stores",
   "license": "MIT",
   "author": "Ibrahima Touré",

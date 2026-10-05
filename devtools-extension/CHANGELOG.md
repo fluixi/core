@@ -1,5 +1,13 @@
 # @fluixi/devtools-extension
 
+## 0.0.1-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [bc7501c]
+- Updated dependencies [5167627]
+  - @fluixi/devtools@0.2.0-alpha.7
+
 ## 0.0.1-alpha.3
 
 ### Patch Changes
