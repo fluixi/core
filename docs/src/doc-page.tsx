@@ -6,6 +6,7 @@ import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
 import { languageStorage } from './language.js';
 
 const SITE = 'https://docs.fluixi.com';
+const LICENSE_URL = 'https://github.com/fluixi/core/blob/main/LICENSE';
 
 /**
  * One delegated listener for every copy button on the page.
@@ -405,6 +406,13 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         .d-pager :deep(.pager span) { font-size: 11.5px; color: var(--muted); }
         .d-pager :deep(.pager b) { font-size: 14px; font-weight: 500; color: var(--text); }
 
+        .d-foot { margin-top: 48px; padding-top: 22px; font-size: 12px; line-height: 1.6; color: var(--muted); display: flex; justify-content: center; gap: .5rem; }
+        .d-foot p { margin: 0; }
+        .d-foot a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); margin-left: .25rem; }
+        .d-foot a:hover { text-decoration-color: currentColor; }
+        @media (max-width: 400px) {
+          .d-foot { display: block; text-align: center; }
+        }
         @media (max-width: 980px) {
           .d-body { grid-template-columns: 1fr; min-width: 0; }
           .d-main { padding: 36px 24px 80px; min-width: 0; max-width: none; }
@@ -565,6 +573,12 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
               <span />
             ))}
           </nav>
+          <footer class="d-foot">
+            <p>
+              {ui().released} <a href={LICENSE_URL}>{ui().license}</a>.
+            </p>
+            <p>Copyright © 2026 Ibrahima Touré</p>
+          </footer>
         </main>
       </div>
     </div>

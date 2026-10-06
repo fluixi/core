@@ -6,6 +6,7 @@ const SITE = 'https://fluixi.com';
 const DOCS_URL = 'https://docs.fluixi.com';
 const PLAYGROUND_URL = 'https://playground.fluixi.com';
 const GITHUB_URL = 'https://github.com/fluixi/core';
+const LICENSE_URL = `${GITHUB_URL}/blob/main/LICENSE`;
 
 const TITLE = 'Fluixi, a compiler-native reactive framework';
 const DESC =
@@ -562,7 +563,10 @@ function Footer() {
         /* 24px tall, the minimum size for a touch target. */
         .foot-cols a { display: block; color: var(--muted); font-size: 13.5px; padding: 4px 0; margin: 3px 0; }
         .foot-cols a:hover { color: var(--text); }
-        .foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; font-family: var(--mono); }
+        .foot-note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+        .foot-note p { margin: 0; }
+        .foot-note a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+        .foot-note a:hover { text-decoration-color: currentColor; }
         @media (max-width: 620px) {
           .footer-inner { grid-template-columns: 1fr; }
           .foot-cols { gap: 36px; }
@@ -583,7 +587,12 @@ function Footer() {
           <a href={GITHUB_URL}>GitHub</a>
         </div>
       </div>
-      <div class="foot-note">Built with Fluixi · prerendered to static HTML</div>
+      <div class="foot-note">
+        <p>
+          Released under the <a href={LICENSE_URL}>MIT License</a>.
+        </p>
+        <p>Copyright © 2026 Ibrahima Touré</p>
+      </div>
       </div>
     </footer>
   );
