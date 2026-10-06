@@ -325,17 +325,25 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       for (const child of node.children) {
         used.add('insert');
         const childCode = emitNode(child, used, templates);
-        const isFn =
-          (child.kind === 'expr' && child.reactive) ||
+        // `null` asks insert for an anchor of its own, which holds the child's place among
+        // its siblings. Every child whose content can change needs one: an expression the
+        // classifier calls opaque (an arrow, a function passed by name) may still be one.
+        // Only a literal never changes, and it goes straight in.
+        const anchored =
+          (child.kind === 'expr' && (child.reactive || !isLiteralCode(child.code))) ||
           child.kind === 'component' ||
           child.kind === 'control';
-        parts.push(isFn ? `insert(${el}, ${childCode}, null);` : `insert(${el}, ${childCode});`);
+        parts.push(anchored ? `insert(${el}, ${childCode}, null);` : `insert(${el}, ${childCode});`);
       }
       parts.push(`return ${el};`);
       return `(() => { ${parts.join(' ')} })()`;
     }
   }
 }
+
+/** A string, number, boolean or nullish literal: an expression that never renders anything else. */
+const LITERAL = /^\s*(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`[^`$]*`|-?\d[\d_.eE+-]*|true|false|null|undefined)\s*$/;
+const isLiteralCode = (code: string): boolean => LITERAL.test(code);
 
 /**
  * Substitute template declarations into the code as inline `createTemplate` calls.

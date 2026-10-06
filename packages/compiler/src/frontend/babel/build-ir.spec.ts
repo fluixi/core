@@ -253,3 +253,43 @@ describe('template cloning produces the same DOM as building element by element'
     expect(compile('(<div class={cls()}>x</div>)').code).toContain('createNativeElement');
   });
 });
+
+describe('a child of an element built by hand keeps its place', () => {
+  // An element with a handler is built with createNativeElement + spread and its children
+  // inserted one by one. A child that is a function, written as an arrow or passed by name,
+  // is not reactive to the classifier, yet what it renders changes: without an anchor of
+  // its own it was appended after every later sibling the first time it had content.
+  const order = (el: Element) => [...el.children].map((c) => c.tagName.toLowerCase()).join(',');
+
+  for (const [label, child] of [
+    ['an arrow', '{() => (shown() ? <b>x</b> : null)}'],
+    ['a function by name', '{slot}'],
+  ] as const) {
+    it(`for ${label} that starts empty`, async () => {
+      await new Promise<void>((resolve, reject) => {
+        S.createRoot(() => {
+          const [shown, setShown] = S.createSignal(false);
+          const slot = () => (shown() ? (DOM as any).createNativeElement('b') : null);
+          const el = evalExpr(`(<form onSubmit={h}><p>a</p>${child}<i>y</i></form>)`, {
+            shown,
+            slot,
+            h: () => {},
+          }) as HTMLElement;
+          expect(order(el)).toBe('p,i');
+          setShown(true);
+          S.flush()
+            .then(() => {
+              expect(order(el)).toBe('p,b,i');
+              resolve();
+            })
+            .catch(reject);
+        });
+      });
+    });
+  }
+
+  it('leaves a literal child without an anchor', () => {
+    const { code } = compile('(<form onSubmit={h}><p>a</p>{"text"}</form>)');
+    expect(code).toMatch(/insert\(_el\$\d*, "text"\);/);
+  });
+});
