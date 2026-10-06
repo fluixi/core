@@ -1,8 +1,8 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal, useColorScheme } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
-import { titleOf as titleIn, VERSIONS, type Doc, type Lang } from './content.js';
-import { NAV, ORDER, UI, LANG_LABEL, versionLabel } from './nav.js';
+import { has, titleOf as titleIn, type Doc, type Lang } from './content.js';
+import { navOf, orderOf, versionTargets, RELEASES_URL, UI, LANG_LABEL, versionLabel } from './nav.js';
 import { languageStorage } from './language.js';
 
 const SITE = 'https://docs.fluixi.com';
@@ -255,6 +255,89 @@ function Search(props: { lang: Lang; version: string; label: string }) {
   );
 }
 
+/**
+ * The version picker: a button that opens a list of links, one per version, then the release
+ * notes. Links rather than a <select>, so each version is a page the prerender reaches and a
+ * reader can open in a new tab. A disclosure, not an ARIA menu: its items are plain links.
+ */
+function VersionMenu(props: { version: string; lang: Lang; slug: string; label: string; latest: string; notes: string }) {
+  const [open, setOpen] = createSignal(false);
+  let root: HTMLDivElement | undefined;
+
+  onMount(() => {
+    const onClick = (e: MouseEvent) => {
+      if (root && !root.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKey);
+    onCleanup(() => {
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey);
+    });
+  });
+
+  return (
+    <div class="vmenu" ref={(el: HTMLDivElement) => (root = el)}>
+      <style scoped>{`
+        .vmenu { position: relative; }
+        .vmenu-button {
+          display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px;
+          font-family: var(--mono); font-size: 12px; color: var(--muted); cursor: pointer;
+          background: transparent; border: 1px solid var(--line); border-radius: var(--r-md);
+        }
+        .vmenu-button:hover, .vmenu-button[aria-expanded="true"] { color: var(--text); border-color: var(--line-strong); }
+        .vmenu-list {
+          position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 220px;
+          margin: 0; padding: 6px; list-style: none;
+          background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+          box-shadow: 0 12px 32px var(--shadow);
+        }
+        .vmenu-list[hidden] { display: none; }
+        .vmenu-list :deep(a) {
+          display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px;
+          border-radius: var(--r-sm); font-size: 13px; color: var(--muted);
+        }
+        .vmenu-list :deep(a:hover) { color: var(--text); background: var(--hover); }
+        .vmenu-list :deep(a[aria-current="page"]) { color: var(--text); font-weight: 500; }
+        .vmenu-tag { font-size: 11px; color: var(--muted); font-weight: 400; }
+        .vmenu-sep { height: 1px; margin: 6px 4px; background: var(--line); }
+      `}</style>
+      <button
+        type="button"
+        class="vmenu-button"
+        aria-expanded={() => (open() ? 'true' : 'false')}
+        aria-controls="vmenu-list"
+        aria-label={() => `${props.label}: ${versionLabel(props.version)}`}
+        onClick={() => setOpen(!open())}
+      >
+        {() => versionLabel(props.version)} <span aria-hidden="true">▾</span>
+      </button>
+      <ul id="vmenu-list" class="vmenu-list" hidden={() => !open()}>
+        {() =>
+          versionTargets(props.lang, props.slug).map((t, i) => (
+            <li>
+              <Link href={t.href} aria-current={t.version === props.version ? 'page' : undefined} onClick={() => setOpen(false)}>
+                <span>{versionLabel(t.version)}</span>
+                {i === 0 ? <span class="vmenu-tag">{props.latest}</span> : null}
+              </Link>
+            </li>
+          ))
+        }
+        <li class="vmenu-sep" role="separator" />
+        <li>
+          <a href={RELEASES_URL} target="_blank" rel="noopener">
+            <span>{props.notes}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 // The docs page UI, parameterized by version/lang/slug. Version is a literal path segment (v1/, v2/...)
 // so each version has its own route wrapper, the router merges the inner [lang]/[slug] params.
 export default function DocPage(props: { version: string; lang: Lang; slug: string; doc: Doc | null | undefined }) {
@@ -272,6 +355,8 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   const link = (s: string) => `/${version()}/${lang()}/${s}`;
   const titleOf = (s: string) => titleIn(version(), lang(), s);
   const other = createMemo<Lang>(() => (lang() === 'en' ? 'fr' : 'en'));
+  // This page in another language, or that language's introduction when it has no such page.
+  const inLang = (l: Lang) => `/${version()}/${l}/${has(version(), l, slug()) ? slug() : 'introduction'}`;
 
   // The prose is prerendered HTML, so its cross-links are raw anchors with no <Link> to
   // render. One delegated handler makes them navigate client-side like the rest.
@@ -280,9 +365,23 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   // Mobile sidebar drawer (no effect on desktop, where the sidebar is a grid column).
   const [navOpen, setNavOpen] = createSignal(false);
 
-  const i = createMemo(() => ORDER.indexOf(slug()));
-  const prev = createMemo(() => (i() > 0 ? ORDER[i() - 1] : null));
-  const next = createMemo(() => (i() >= 0 && i() < ORDER.length - 1 ? ORDER[i() + 1] : null));
+  // The sidebar and the reading order of this version: a page another version added or dropped
+  // is not listed here.
+  const nav = createMemo(() => navOf(version(), lang()));
+  const order = createMemo(() => orderOf(version(), lang()));
+  const i = createMemo(() => order().indexOf(slug()));
+  const prev = createMemo(() => (i() > 0 ? order()[i() - 1]! : null));
+  const next = createMemo(() => (i() >= 0 && i() < order().length - 1 ? order()[i() + 1]! : null));
+
+  // The header's overflow panel on narrow screens, and the drawer, close on any navigation.
+  const [moreOpen, setMoreOpen] = createSignal(false);
+  createEffect(() => {
+    version();
+    lang();
+    slug();
+    setMoreOpen(false);
+    setNavOpen(false);
+  });
 
   // Per-doc document head, rendered into <head> at prerender (each page is static), so crawlers
   // get a unique title/description/canonical per doc, plus en/fr hreflang alternates.
@@ -322,7 +421,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
   return (
     <div class="docs">
       <style scoped>{`
-        .docs { min-height: 100vh; }
+        .docs { min-height: 100vh; --subhead: 44px; }
 
         /* header */
         .d-head {
@@ -334,35 +433,59 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         /* flex-shrink: 0, so the brand never loses the shrink race against .d-actions,
            or its text overflows its own box and overlaps whatever sits to its right. */
         .d-head-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-        .d-menu {
-          display: none; align-items: center; justify-content: center;
-          width: 34px; height: 34px; padding: 0; font-size: 17px; line-height: 1;
-          color: var(--muted); background: transparent;
-          border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
-        }
-        .d-menu:hover { color: var(--text); border-color: var(--line-strong); }
         /* Link renders its own <a>, which this component's scope does not reach: :deep from a
            scoped parent. The same for the language toggle, the nav items and the pager. */
         .d-head-left :deep(.d-brand) { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
         .logo { width: 20px; height: 20px; flex: none; }
         .d-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
-        .ver { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
-        .ver select {
-          background: transparent; color: var(--muted); border: 1px solid var(--line);
-          border-radius: var(--r-md); padding: 5px 8px; font-size: 12.5px;
-          font-family: var(--mono); cursor: pointer;
-        }
-        .ver select:hover { color: var(--text); border-color: var(--line-strong); }
-        .d-actions :deep(.lang-toggle), .theme-toggle {
+        .d-wide { display: flex; align-items: center; gap: 10px; }
+        .d-actions :deep(.lang-toggle), .theme-toggle, .d-more {
           display: inline-flex; align-items: center; justify-content: center;
           height: 32px; padding: 0 11px; font-size: 12.5px; line-height: 1;
           color: var(--muted); background: transparent;
           border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
         }
-        .theme-toggle { width: 32px; padding: 0; font-size: 14px; }
-        .d-actions :deep(.lang-toggle:hover), .theme-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+        .theme-toggle, .d-more { width: 32px; padding: 0; font-size: 14px; }
+        .d-actions :deep(.lang-toggle:hover), .theme-toggle:hover, .d-more:hover { color: var(--text); border-color: var(--line-strong); }
         .d-link { font-size: 13px; color: var(--muted); }
         .d-link:hover { color: var(--text); }
+
+        /* Narrow screens: the header keeps the brand, search and this button; the rest is in
+           the panel it opens, full width under the header. */
+        .d-more { display: none; font-size: 16px; }
+        .d-more-panel {
+          position: absolute; top: 100%; left: 0; right: 0; z-index: 45;
+          max-height: calc(100vh - var(--head)); overflow-y: auto;
+          padding: 4px 20px 18px; background: var(--bg);
+          border-bottom: 1px solid var(--line); box-shadow: 0 16px 32px var(--shadow);
+        }
+        .d-more-panel[hidden] { display: none; }
+        .d-more-panel section { padding: 14px 0; border-bottom: 1px solid var(--line); }
+        .d-more-panel h2 {
+          margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+          color: var(--muted); font-weight: 600;
+        }
+        .d-more-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+        .d-more-list :deep(a) {
+          display: inline-flex; align-items: center; gap: 4px; min-height: 34px; padding: 0 12px;
+          font-size: 13.5px; color: var(--muted);
+          border: 1px solid var(--line); border-radius: var(--r-md);
+        }
+        .d-more-list :deep(a[aria-current="page"]) { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+        .d-more-tag { color: var(--muted); }
+        .d-more-row { display: flex; align-items: center; justify-content: space-between; }
+        .d-more-row h2 { margin: 0; }
+        .d-more-playground { display: inline-flex; gap: 4px; padding-top: 16px; font-size: 14px; color: var(--text); }
+
+        /* The sub-header, shown with the drawer: it opens the sidebar. */
+        .d-subhead { display: none; }
+        .d-menu, .d-top {
+          display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0;
+          font-size: 13px; background: transparent; border: 0; cursor: pointer;
+        }
+        .d-menu { color: var(--text); font-weight: 500; }
+        .d-top { color: var(--muted); }
+        .d-top:hover { color: var(--text); }
 
         /* body grid */
         .d-body { display: grid; grid-template-columns: var(--sb) minmax(0, 1fr); max-width: 1200px; margin: 0 auto; }
@@ -417,17 +540,21 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           .d-body { grid-template-columns: 1fr; min-width: 0; }
           .d-main { padding: 36px 24px 80px; min-width: 0; max-width: none; }
 
-          .d-menu { display: inline-flex; }
+          .d-subhead {
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: var(--head); z-index: 39; height: var(--subhead); padding: 0 20px;
+            border-bottom: 1px solid var(--line); background: var(--bg-head); backdrop-filter: blur(12px);
+          }
 
-          /* sidebar becomes a slide-in drawer */
+          /* sidebar becomes a slide-in drawer, under the sub-header */
           .d-sidebar {
             position: fixed;
-            top: var(--head);
+            top: calc(var(--head) + var(--subhead));
             left: 0;
             z-index: 50;
             width: 276px;
             max-width: 84vw;
-            height: calc(100vh - var(--head));
+            height: calc(100vh - var(--head) - var(--subhead));
             background: var(--bg);
             border-right: 1px solid var(--line);
             transform: translateX(-100%);
@@ -438,7 +565,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           .d-backdrop {
             display: block;
             position: fixed;
-            inset: var(--head) 0 0;
+            inset: calc(var(--head) + var(--subhead)) 0 0;
             z-index: 45;
             background: var(--scrim);
             opacity: 0;
@@ -448,26 +575,18 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           .d-backdrop.show { opacity: 1; pointer-events: auto; }
         }
 
+        @media (max-width: 768px) {
+          .d-wide { display: none; }
+          .d-more { display: inline-flex; }
+        }
+
         @media (max-width: 560px) {
           .d-head { padding: 0 14px; gap: 8px; }
           .d-head-left :deep(.d-brand) { font-size: 14.5px; }
           .d-actions { gap: 6px; }
-          .ver > span { display: none; }        /* keep the select, drop the "Version" label */
-          /* The select and the language name are the two variable-width items in the row,
-             so they are the ones that give way, clipped rather than left to force the
-             header wider than the viewport. */
-          .ver select { max-width: 76px; }
-          .d-actions :deep(.lang-toggle) {
-            padding: 0 8px; max-width: 64px;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-          }
+          .d-subhead { padding: 0 14px; }
+          .d-more-panel { padding: 4px 14px 18px; }
           .d-main { padding: 28px 18px 64px; }
-        }
-
-        @media (max-width: 360px) {
-          /* Still does not fit clipped below this width. Dropping it loses the control;
-             leaving it risked overlap again, which is worse. */
-          .d-actions :deep(.lang-toggle) { display: none; }
         }
       `}</style>
       {/* First tab stop: the sidebar is ~25 links, so a keyboard or screen-reader user
@@ -475,52 +594,101 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
       <a class="skip" href="#content">{ui().skip}</a>
       <header class="d-head">
         <div class="d-head-left">
-          <button
-            class="d-menu"
-            aria-label="Toggle navigation"
-            aria-expanded={() => (navOpen() ? 'true' : 'false')}
-            onClick={() => setNavOpen(!navOpen())}
-          >
-            {() => (navOpen() ? '✕' : '☰')}
-          </button>
           <Link class="d-brand" href={link('introduction')}>
             <img class="logo" src="/logos/mark.png" alt="" width="22" height="22" /> {ui().product}
           </Link>
         </div>
         <div class="d-actions">
           <Search lang={lang()} version={version()} label={ui().search} />
-          <label class="ver">
-            <span>{ui().version}</span>
-            {/* Named on its own: the visible label is hidden on narrow screens. */}
-            <select aria-label={ui().version} onChange={(e: any) => (location.href = `/${e.target.value}/${lang()}/${slug()}`)}>
-              {VERSIONS.map((v) => (
-                <option value={v} selected={v === version()}>
-                  {versionLabel(v)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div class="d-wide">
+            <VersionMenu version={version()} lang={lang()} slug={slug()} label={ui().version} latest={ui().latest} notes={ui().releaseNotes} />
+            <button type="button" class="theme-toggle" aria-label={ui().theme} title={ui().theme} onClick={() => scheme.toggle()}>
+              ◐
+            </button>
+            <Link class="lang-toggle" href={inLang(other())} onClick={() => languageStorage().set('lang', other())}>
+              {LANG_LABEL[other()]}
+            </Link>
+            <a class="d-link" href="https://playground.fluixi.com">
+              {ui().playground}
+            </a>
+          </div>
           <button
             type="button"
-            class="theme-toggle"
-            aria-label={ui().theme}
-            title={ui().theme}
-            onClick={() => scheme.toggle()}
+            class="d-more"
+            aria-label={ui().more}
+            aria-expanded={() => (moreOpen() ? 'true' : 'false')}
+            aria-controls="d-more-panel"
+            onClick={() => setMoreOpen(!moreOpen())}
           >
-            ◐
+            <span aria-hidden="true">{() => (moreOpen() ? '✕' : '⋯')}</span>
           </button>
-          <Link
-            class="lang-toggle"
-            href={`/${version()}/${other()}/${slug()}`}
-            onClick={() => languageStorage().set('lang', other())}
-          >
-            {LANG_LABEL[other()]}
-          </Link>
-          <a class="d-link" href="https://playground.fluixi.com">
-            {ui().playground}
+        </div>
+        {/* Narrow screens: what the header has no room for, as a panel under it. */}
+        <div id="d-more-panel" class="d-more-panel" hidden={() => !moreOpen()}>
+          <section>
+            <h2>{ui().version}</h2>
+            <ul class="d-more-list">
+              {() =>
+                versionTargets(lang(), slug()).map((t, n) => (
+                  <li>
+                    <Link href={t.href} aria-current={t.version === version() ? 'page' : undefined}>
+                      {versionLabel(t.version)}
+                      {n === 0 ? <span class="d-more-tag"> · {ui().latest}</span> : null}
+                    </Link>
+                  </li>
+                ))
+              }
+              <li>
+                <a href={RELEASES_URL} target="_blank" rel="noopener">
+                  {ui().releaseNotes} <span aria-hidden="true">↗</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>{ui().language}</h2>
+            <ul class="d-more-list">
+              {() =>
+                (['en', 'fr'] as const).map((l) => (
+                  <li>
+                    <Link
+                      href={inLang(l)}
+                      aria-current={l === lang() ? 'page' : undefined}
+                      onClick={() => languageStorage().set('lang', l)}
+                    >
+                      {LANG_LABEL[l]}
+                    </Link>
+                  </li>
+                ))
+              }
+            </ul>
+          </section>
+          <section class="d-more-row">
+            <h2>{ui().appearance}</h2>
+            <button type="button" class="theme-toggle" aria-label={ui().theme} title={ui().theme} onClick={() => scheme.toggle()}>
+              ◐
+            </button>
+          </section>
+          <a class="d-more-playground" href="https://playground.fluixi.com">
+            {ui().playground} <span aria-hidden="true">↗</span>
           </a>
         </div>
       </header>
+
+      {/* Below the drawer breakpoint, the sidebar opens from here. */}
+      <div class="d-subhead">
+        <button
+          type="button"
+          class="d-menu"
+          aria-expanded={() => (navOpen() ? 'true' : 'false')}
+          onClick={() => setNavOpen(!navOpen())}
+        >
+          <span aria-hidden="true">{() => (navOpen() ? '✕' : '☰')}</span> {ui().menu}
+        </button>
+        <button type="button" class="d-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          {ui().top} <span aria-hidden="true">↑</span>
+        </button>
+      </div>
 
       <div class="d-body">
         <div
@@ -529,7 +697,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           onClick={() => setNavOpen(false)}
         />
         <aside class="d-sidebar" classList={{ open: navOpen() }}>
-          {NAV.map((section) => (
+          {() => nav().map((section) => (
             <div class="nav-group">
               <div class="nav-group-title">{section.group[lang()]}</div>
               {section.slugs.map((s) => (

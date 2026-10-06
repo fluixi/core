@@ -20,11 +20,18 @@ export function loadDoc(version: string, lang: string, slug: string): Promise<Do
   return load ? load() : Promise.resolve(null);
 }
 
+/** Whether a version has this page in this language. */
+export function has(version: string, lang: string, slug: string): boolean {
+  return path(version, lang, slug) in titles;
+}
+
 export function titleOf(version: string, lang: string, slug: string): string {
   return titles[path(version, lang, slug)] ?? slug;
 }
 
 /** Newest version first. */
-export const VERSIONS = [...new Set(Object.keys(titles).map((p) => p.split('/')[2]!))].sort().reverse();
+export const VERSIONS = [...new Set(Object.keys(titles).map((p) => p.split('/')[2]!))].sort(
+  (a, b) => b.localeCompare(a, undefined, { numeric: true }),
+);
 export const LANGS = ['en', 'fr'] as const;
 export type Lang = (typeof LANGS)[number];
