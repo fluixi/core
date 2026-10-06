@@ -1076,7 +1076,10 @@ function flattenArray(
           if (reactiveSlots) {
             const slot = createTextNode('', true);
             result.push(slot);
-            if (hydration.active && adopted) {
+            // Only where there is something to claim: the cursor inside this parent. A parent
+            // built fresh during hydration (a branch the server did not render) has no server
+            // nodes, and claiming early there put the slot's content ahead of its siblings.
+            if (hydration.active && adopted && hydration.cursor?.parentNode === parent) {
               // Hydrating: the slot has to claim the server's nodes now, in document order.
               // Deferred, a plain sibling later in this array would claim them first (a lazy
               // <Show> label taken by the input after it). The marker goes in at the cursor so
@@ -1145,6 +1148,9 @@ function flattenArray(
     }
 
     if (isDomNode(item)) {
+      // Hydrating: a member built before this walk (an element adopted by its key) stands where
+      // the cursor is. Step past it, or a later slot that claims nothing anchors in front of it.
+      if (hydration.active && hydration.cursor === item) hydration.cursor = (item as Node).nextSibling;
       result.push(item);
       continue;
     }
