@@ -304,6 +304,28 @@ It reuses a userinfo response for `userCacheMs` (30 seconds by default) rather t
 the provider on every render. Set `0` to always ask. The tradeoff is freshness: a session
 ended at the provider keeps rendering as signed in until the entry expires.
 
+### Calling your APIs as the user
+
+A signed-in request also carries a `fetch` on `locals.auth` that sends the session's access
+token, with a DPoP proof when the token is bound to the session's key. `requestAuth()` from
+`@fluixi/oauth2/server` reads it in a route's data loader, a server function or an API route:
+
+```ts
+import { requestAuth } from '@fluixi/oauth2/server';
+
+export async function projects() {
+  const { fetch } = await requestAuth();
+  if (!fetch) throw new Error('signed out');
+  const response = await fetch(`${apiUrl}/projects`);
+  return response.json();
+}
+```
+
+The token never reaches the browser and never passes through app code. A signed-out request has
+no `fetch`. It does not refresh: a call made after the token expired gets the API's 401, and the
+browser refreshes through `/auth/refresh` on its own schedule. A body is sent twice when the
+server asks for a DPoP nonce, so pass a string rather than a stream.
+
 There is no browser-mode equivalent of `sessionLocals`, and that is not an omission. In
 that mode the token never leaves the browser and is not sent on a document request, so the
 server has no credential to resolve. An app built that way renders the signed-out shell

@@ -315,6 +315,30 @@ d'interroger le fournisseur à chaque rendu. `0` interroge à chaque fois. La co
 est la fraîcheur : une session terminée chez le fournisseur continue de s'afficher comme
 connectée jusqu'à l'expiration de l'entrée.
 
+### Appeler vos API au nom de l'utilisateur
+
+Une requête connectée porte aussi un `fetch` sur `locals.auth`, qui envoie le jeton d'accès de
+la session, avec une preuve DPoP quand le jeton est lié à la clé de la session. `requestAuth()`,
+importé de `@fluixi/oauth2/server`, le lit dans le chargeur de données d'une route, une fonction
+serveur ou une route d'API :
+
+```ts
+import { requestAuth } from '@fluixi/oauth2/server';
+
+export async function projects() {
+  const { fetch } = await requestAuth();
+  if (!fetch) throw new Error('signed out');
+  const response = await fetch(`${apiUrl}/projects`);
+  return response.json();
+}
+```
+
+Le jeton n'atteint jamais le navigateur et ne passe jamais par le code de l'application. Une
+requête sans session n'a pas de `fetch`. Il ne rafraîchit pas : un appel fait après l'expiration
+du jeton reçoit le 401 de l'API, et le navigateur rafraîchit par `/auth/refresh` à son propre
+rythme. Un corps est envoyé deux fois quand le serveur demande un nonce DPoP : passez une
+chaîne plutôt qu'un flux.
+
 Il n'existe pas d'équivalent de `sessionLocals` en mode navigateur, et ce n'est pas un
 oubli. Dans ce mode le token ne quitte jamais le navigateur et n'est pas envoyé sur une
 requête de document : le serveur n'a donc aucun identifiant à résoudre. Une application

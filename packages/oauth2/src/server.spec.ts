@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { createSessionCookie } from '@fluixi/session/server';
-import { oauthRoutes, sessionLocals, type OAuthRoutesConfig } from './server.js';
+import { oauthRoutes, requestAuth, sessionLocals, type OAuthRoutesConfig } from './server.js';
 import { clearDiscoveryCache } from './discovery.js';
 
 const SECRET = 'a'.repeat(32);
@@ -265,5 +265,62 @@ describe('retiring a token from a server-held session', () => {
     // Dropping the cookie without revoking leaves a copy usable for its whole lifetime.
     expect(revocations()).toHaveLength(1);
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
+  });
+});
+
+describe('calling an API as the signed-in user', () => {
+  it('puts a fetch on locals that sends the session token', async () => {
+    const seen: { url: string; method: string; auth: string | null; body: unknown }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit = {}) => {
+        const headers = new Headers(init.headers);
+        if (url === ENDPOINTS.userinfo) return new Response(JSON.stringify({ sub: 'u1' }));
+        seen.push({ url, method: String(init.method), auth: headers.get('authorization'), body: init.body });
+        expect(headers.get('content-type')).toBe('application/json');
+        return new Response('{}', { status: 201 });
+      }),
+    );
+    const request = await signedInRequest({ accessToken: 'at' });
+    const auth = await localsFor(sessionLocals(config()), request);
+
+    const response = await auth.fetch('https://api.test/projects', {
+      method: 'post',
+      headers: { 'content-type': 'application/json' },
+      body: '{"name":"x"}',
+    });
+    expect(response.status).toBe(201);
+    expect(seen).toEqual([
+      { url: 'https://api.test/projects', method: 'POST', auth: 'Bearer at', body: '{"name":"x"}' },
+    ]);
+  });
+
+  it('has it from the cache too', async () => {
+    provider({ sub: 'u1' });
+    const mw = sessionLocals(config());
+    await localsFor(mw, await signedInRequest({ accessToken: 'at' }));
+    const auth = await localsFor(mw, await signedInRequest({ accessToken: 'at' }));
+    expect(typeof auth.fetch).toBe('function');
+  });
+
+  it('gives a signed-out request nothing to call with', async () => {
+    provider({ sub: 'u1' });
+    const auth = await localsFor(sessionLocals(config()), new Request('https://app.test/'));
+    expect(auth.fetch).toBeUndefined();
+  });
+});
+
+describe('requestAuth', () => {
+  it('reads what the middleware left on the request', async () => {
+    provider({ sub: 'u1' });
+    const request = await signedInRequest({ accessToken: 'at' });
+    await sessionLocals(config())(request, async () => new Response('ok'));
+    const auth = await requestAuth<{ sub: string }>(request);
+    expect(auth.user?.sub).toBe('u1');
+    expect(typeof auth.fetch).toBe('function');
+  });
+
+  it('answers signed out when the middleware never ran', async () => {
+    expect(await requestAuth(new Request('https://app.test/'))).toEqual({ user: null, session: null });
   });
 });

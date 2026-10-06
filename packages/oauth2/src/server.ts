@@ -137,20 +137,35 @@ function learnNonce(url: string, response: Response): boolean {
  * A request carrying the session's access token: the `DPoP` scheme and a proof bound to the
  * token when the provider bound it, `Bearer` otherwise.
  */
-async function withToken(url: string, session: SessionPayload): Promise<Response> {
+/** `fetch`, as the signed-in user. What `locals.auth.fetch` is. */
+export type AuthorizedFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Sends a request with the session's access token: as a bearer token, or with a DPoP proof
+ * for this method and URL when the token is bound to the session's key. A nonce the server
+ * asks for is learned and the request sent once more, so the body must be one that can be
+ * sent twice (a string, not a stream).
+ */
+async function sendAs(session: SessionPayload, input: string | URL, init: RequestInit = {}): Promise<Response> {
+  const url = String(input);
+  const method = (init.method ?? 'GET').toUpperCase();
   const key =
     session.dpop && session.tokenType?.toLowerCase() === 'dpop' ? await importDpopKey(session.dpop) : null;
   const send = async () => {
-    const headers: Record<string, string> = {
+    const credentials: Record<string, string> = {
       authorization: `${key ? 'DPoP' : 'Bearer'} ${session.accessToken}`,
     };
-    if (key) await prove(headers, key, 'GET', url, session.accessToken);
-    return fetch(url, { headers });
+    if (key) await prove(credentials, key, method, url, session.accessToken);
+    const headers = new Headers(init.headers);
+    for (const [name, value] of Object.entries(credentials)) headers.set(name, value);
+    return fetch(url, { ...init, method, headers });
   };
   let response = await send();
   if (key && learnNonce(url, response)) response = await send();
   return response;
 }
+
+const withToken = (url: string, session: SessionPayload): Promise<Response> => sendAs(session, url);
 
 /** What the cookie carries. Never leaves this side. */
 interface SessionPayload {
@@ -520,9 +535,12 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       return next();
     }
 
+    // Server code calls the app's APIs as this user with it; the token itself stays here.
+    const fetchAs: AuthorizedFetch = (input, init) => sendAs(session, input, init);
+
     const cached = cache.get(session.accessToken);
     if (cached && cached.until > Date.now()) {
-      locals.auth = { user: cached.user, session: { expiresAt: session.expiresAt } };
+      locals.auth = { user: cached.user, session: { expiresAt: session.expiresAt }, fetch: fetchAs };
       return next();
     }
 
@@ -544,9 +562,34 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       // proceeds as signed out, and the client retries on its own.
     }
 
-    locals.auth = { user, session: user ? { expiresAt: session.expiresAt } : null };
+    locals.auth = user
+      ? { user, session: { expiresAt: session.expiresAt }, fetch: fetchAs }
+      : { user: null, session: null };
     return next();
   };
+}
+
+/** What `sessionLocals` leaves on a request: the user, and a `fetch` that calls as them. */
+export interface ServerAuth<U = unknown> {
+  user: U | null;
+  session: { expiresAt?: number } | null;
+  /** Absent when nobody is signed in. */
+  fetch?: AuthorizedFetch;
+}
+
+/**
+ * The request's auth, for server code: a route's data loader, a server function, an API route.
+ * Reads the current request's locals, or `request`'s when one is given.
+ *
+ * ```ts
+ * const { fetch } = await requestAuth();
+ * const projects = await fetch?.(`${apiUrl}/projects`).then((r) => r.json());
+ * ```
+ */
+export async function requestAuth<U = unknown>(request?: Request): Promise<ServerAuth<U>> {
+  const { getLocals, getRequestLocals } = await import('@fluixi/server');
+  const locals = (request ? getRequestLocals(request) : getLocals()) as Record<string, unknown>;
+  return (locals.auth as ServerAuth<U> | undefined) ?? { user: null, session: null };
 }
 
 /**
