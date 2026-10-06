@@ -23,6 +23,8 @@ npm install
 npm run dev
 ```
 
+New apps start on Vite 8 and TypeScript 7. Vite 8 needs Node 20.19 or later, or 22.12 or later.
+
 You can also skip the prompts:
 
 ```bash
@@ -64,7 +66,8 @@ plain-TypeScript codebase). See **[html`` templates](/v1/en/html-templates)** fo
 
 Every scaffolded app includes **[@fluixi/ts-plugin](/v1/en/html-templates)**, which gives `` html`` ``
 templates real TypeScript support in your editor, hover, completion and type-checking inside the
-template.
+template. It runs in the editor's built-in TypeScript, also for a project on TypeScript 7: see
+[Editor support](/v1/en/html-templates#editor-support).
 
 ## Add a component or route
 

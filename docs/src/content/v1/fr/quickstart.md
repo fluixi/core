@@ -23,6 +23,9 @@ npm install
 npm run dev
 ```
 
+Les nouvelles applications démarrent sur Vite 8 et TypeScript 7. Vite 8 demande Node 20.19 ou
+plus, ou 22.12 ou plus.
+
 Vous pouvez aussi ignorer les questions :
 
 ```bash
@@ -65,7 +68,9 @@ pour la syntaxe complète.
 
 Chaque application générée inclut **[@fluixi/ts-plugin](/v1/fr/html-templates)**, qui apporte un vrai
 support TypeScript aux templates `` html`` `` dans votre éditeur, survol, complétion et
-vérification de types à l'intérieur du template.
+vérification de types à l'intérieur du template. Il tourne dans le TypeScript intégré à l'éditeur,
+y compris pour un projet en TypeScript 7 : voir
+[Prise en charge de l'éditeur](/v1/fr/html-templates#prise-en-charge-de-léditeur).
 
 ## Ajouter un composant ou une route
 

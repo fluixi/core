@@ -96,7 +96,7 @@ html`<Card title=${t()} />`;
 
 La forme statique a besoin de quelque chose pour signaler à TypeScript que le nom est
 utilisé, puisqu'il n'est que du texte dans une chaîne : soit
-[`@fluixi/ts-plugin`](#prise-en-charge-de-l-éditeur), soit une
+[`@fluixi/ts-plugin`](#prise-en-charge-de-léditeur), soit une
 [règle `resolve`](/v1/fr/component-resolution) qui fournit le composant sans import. Dans
 un projet TypeScript sans l'un ni l'autre, préférez `` <${Card}/> ``.
 
@@ -190,6 +190,14 @@ Référencez-le dans `tsconfig.json` :
 ```json
 { "compilerOptions": { "plugins": [{ "name": "@fluixi/ts-plugin" }] } }
 ```
+
+Le plugin tourne dans le service TypeScript de votre éditeur, jamais dans `tsc`. Un projet en
+TypeScript 7 le garde dans VS Code : le TypeScript intégré le charge toujours, et le paquet
+`typescript@7` n'a pas de service propre vers lequel basculer. L'extension TypeScript Native
+Preview ne charge pas les plugins. Avec elle, les templates html`` n'ont ni survol, ni complétion,
+ni paramètres de callback typés, et un composant utilisé seulement comme balise apparaît comme
+inutilisé. Le JSX garde tout cela, puisque TypeScript lit le JSX lui-même. `fluixi check` applique
+les règles d'env et d'auth en ligne de commande, quelle que soit la version.
 
 ## Quand choisir html``
 

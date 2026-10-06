@@ -185,6 +185,13 @@ the holes, the same experience JSX gets. Reference it in `tsconfig.json`:
 { "compilerOptions": { "plugins": [{ "name": "@fluixi/ts-plugin" }] } }
 ```
 
+The plugin runs in your editor's TypeScript service, never in `tsc`. A project on TypeScript 7
+keeps it in VS Code: the built-in TypeScript still loads it, and the `typescript@7` package has no
+service of its own to switch to. The TypeScript Native Preview extension does not load plugins.
+With it, html`` templates have no hover, completion or typed callback parameters, and a
+component used only as a tag shows as unused. JSX keeps all of it, since TypeScript reads JSX
+itself. `fluixi check` runs the env and auth rules from the command line on either version.
+
 ## When to reach for html``
 
 - You do not want `jsx`/`jsxImportSource` in your tsconfig (a library, a script, plain TS).

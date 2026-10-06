@@ -60,7 +60,8 @@ d'utilisateurs.
   l'expression qu'il contient : un point d'arrêt dans un trou atterrit donc sur le template
   qui l'a produit.
 - **TypeScript n'est pas le travail du compilateur.** Les types restent en place pour
-  qu'esbuild (ou ce qu'utilise votre bundler) les retire ensuite, c'est pourquoi
+  que la transformation de Vite (Oxc dans Vite 8, esbuild avant) ou celle de votre bundler les
+  retire ensuite, c'est pourquoi
   `@babel/preset-typescript` n'est pas nécessaire du tout sur le chemin par défaut.
 
 ## Coût

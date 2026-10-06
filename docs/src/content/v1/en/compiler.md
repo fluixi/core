@@ -55,8 +55,8 @@ not want it otherwise: it is slower, and it is the path with fewer users.
   original position. A template resolves to the position of the template itself rather than
   to the individual expression inside it, so a breakpoint in a hole lands on the template
   that produced it.
-- **TypeScript is not the compiler's job.** Types are left in place for esbuild (or whatever
-  your bundler uses) to strip afterwards, which is why `@babel/preset-typescript` is not
+- **TypeScript is not the compiler's job.** Types are left in place for Vite's own transform
+  (Oxc in Vite 8, esbuild before) or your bundler's to strip afterwards, which is why `@babel/preset-typescript` is not
   needed on the default path at all.
 
 ## Cost
