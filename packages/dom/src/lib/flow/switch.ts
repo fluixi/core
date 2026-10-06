@@ -1,5 +1,6 @@
 import { Accessor, createMemo, createChildOwner, disposeScope, getOwner, runWithOwner, type Owner } from '@fluixi/reactive/signal';
 import { resolveReactiveProp, isTruthy } from './utils.js';
+import type { ComponentChild } from '../shared/types.js';
 
 // Internal marker used by Switch to identify Match nodes.
 const MATCH_MARKER = Symbol('match');
@@ -31,7 +32,9 @@ export interface MatchNode<T = any> {
  *   <Match when={status() === 'ok'}><Content /></Match>
  * </Switch>
  */
-export function Match<T>(props: MatchProps<T>): MatchNode<T> {
+// Typed as a renderable so `<Match>` is valid JSX; what it returns is a MatchNode, which only
+// Switch reads, by its marker.
+export function Match<T>(props: MatchProps<T>): ComponentChild {
   return {
     [MATCH_MARKER]: true,
     // Lazy read through the prop getter. Switch calls `branch.when()` inside its memo,
@@ -44,7 +47,7 @@ export function Match<T>(props: MatchProps<T>): MatchNode<T> {
     get children() {
       return props.children;
     },
-  } as MatchNode<T>;
+  } as MatchNode<T> as unknown as ComponentChild;
 }
 
 export interface SwitchProps {
@@ -56,7 +59,7 @@ export interface SwitchProps {
    * JSX:    children are <Match> elements
    * lit:    children array of Match({...}) results
    */
-  children: MatchNode | MatchNode[];
+  children: ComponentChild;
 }
 
 /**
@@ -126,3 +129,12 @@ export function Switch(props: SwitchProps): Accessor<any> {
     return runWithOwner(branchScope, () => props.fallback ?? null);
   }, undefined, { name: 'Switch' });
 }
+
+/**
+ * Build-time guards: `<Switch><Match when={x}>...</Match></Switch>` must typecheck in JSX.
+ * TypeScript types every `<Match>` expression as `JSX.Element` (a ComponentChild) and requires
+ * a component's return type to be one, so both checks below have to hold.
+ */
+type Assert<T extends true> = T;
+export type MatchIsJsxElement = Assert<ReturnType<typeof Match> extends ComponentChild ? true : false>;
+export type SwitchTakesJsxChildren = Assert<ComponentChild extends SwitchProps['children'] ? true : false>;
