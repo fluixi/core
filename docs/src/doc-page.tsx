@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createEffect, onMount, onCleanup, Portal, useColorScheme } from '@fluixi/core';
+import { createSignal, createMemo, createEffect, onMount, onCleanup, For, Portal, useColorScheme } from '@fluixi/core';
 import { Link, useLinkNavigation } from '@fluixi/start/router';
 import { seo } from '@fluixi/start/head';
 import { has, titleOf as titleIn, type Doc, type Lang } from './content.js';
@@ -697,7 +697,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           onClick={() => setNavOpen(false)}
         />
         <aside class="d-sidebar" classList={{ open: navOpen() }}>
-          {() => nav().map((section) => (
+          <For each={nav()}>{(section) => (
             <div class="nav-group">
               <div class="nav-group-title">{section.group[lang()]}</div>
               {section.slugs.map((s) => (
@@ -710,7 +710,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
                 </Link>
               ))}
             </div>
-          ))}
+          )}</For>
         </aside>
 
         <main

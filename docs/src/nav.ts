@@ -34,9 +34,20 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
 /** Flat reading order across all groups (for prev/next). */
 export const ORDER: string[] = NAV.flatMap((s) => s.slugs);
 
-/** The sidebar of one version in one language: the pages it has, in NAV's order. */
+const navs = new Map<string, { group: Record<Lang, string>; slugs: string[] }[]>();
+
+/**
+ * The sidebar of one version in one language: the pages it has, in NAV's order. The same array
+ * every time, so a navigation within a version keeps the sidebar's elements, and its scroll.
+ */
 export function navOf(version: string, lang: Lang): { group: Record<Lang, string>; slugs: string[] }[] {
-  return NAV.map((g) => ({ ...g, slugs: g.slugs.filter((s) => has(version, lang, s)) })).filter((g) => g.slugs.length > 0);
+  const key = `${version}/${lang}`;
+  let nav = navs.get(key);
+  if (!nav) {
+    nav = NAV.map((g) => ({ ...g, slugs: g.slugs.filter((s) => has(version, lang, s)) })).filter((g) => g.slugs.length > 0);
+    navs.set(key, nav);
+  }
+  return nav;
 }
 
 /** The reading order of one version in one language, for prev and next. */
