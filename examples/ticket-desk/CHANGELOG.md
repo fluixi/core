@@ -1,5 +1,26 @@
 # @fluixi/example-ticket-desk
 
+## 0.0.2-alpha.10
+
+### Patch Changes
+
+- Updated dependencies [f2272f6]
+- Updated dependencies [d1eea79]
+- Updated dependencies [d9fb1c4]
+- Updated dependencies [e4cf090]
+- Updated dependencies [f4528b2]
+- Updated dependencies [06a5af9]
+  - @fluixi/dom@1.0.0-alpha.95
+  - @fluixi/core@1.0.0-alpha.95
+  - @fluixi/start@0.1.0-alpha.85
+  - @fluixi/cli@0.1.0-alpha.86
+  - @fluixi/auth@1.0.0-alpha.95
+  - @fluixi/jsx@1.0.0-alpha.95
+  - @fluixi/server@1.0.0-alpha.95
+  - @fluixi/session@1.0.0-alpha.95
+  - @fluixi/reactive@1.0.0-alpha.95
+  - @fluixi/head@1.0.0-alpha.62
+
 ## 0.0.2-alpha.9
 
 ### Patch Changes

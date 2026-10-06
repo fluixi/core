@@ -1,5 +1,18 @@
 # @fluixi/cli
 
+## 0.1.0-alpha.86
+
+### Minor Changes
+
+- 06a5af9: The compiler now sets JSX through oxc when Vite bundles with Rolldown and through esbuild otherwise, start now builds single-file bundles with the option each bundler expects, the env check now includes the file name in its error under Vite 8, and fluixi check and fluixi doctor now work in a TypeScript 7 app by falling back to the CLI's classic TypeScript.
+
+### Patch Changes
+
+- Updated dependencies [e4cf090]
+- Updated dependencies [06a5af9]
+  - @fluixi/start@0.1.0-alpha.85
+  - @fluixi/ts-plugin@0.1.0-alpha.29
+
 ## 0.1.0-alpha.85
 
 ### Patch Changes

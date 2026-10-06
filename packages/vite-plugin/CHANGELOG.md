@@ -1,5 +1,16 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.95
+
+### Patch Changes
+
+- 0b23d7d: In devtools, a rule from a `css` value imported from another module now points to the line it was written on in that module, and the dev server enables CSS source maps by default unless the app sets `css.devSourcemap`.
+- Updated dependencies [0b23d7d]
+- Updated dependencies [6919cbc]
+- Updated dependencies [06a5af9]
+  - @fluixi/compiler@1.0.0-alpha.95
+  - @fluixi/devtools@0.2.0-alpha.7
+
 ## 1.0.0-alpha.94
 
 ### Minor Changes

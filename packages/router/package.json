@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/router",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-alpha.5",
   "description": "Framework-agnostic router core for Fluixi — URL to a resolved match tree + navigation.",
   "license": "MIT",
   "author": "Ibrahima Touré",

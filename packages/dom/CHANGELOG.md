@@ -1,5 +1,12 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.95
+
+### Patch Changes
+
+- f2272f6: Hydration now keeps static text written next to an expression, as in `{label} <a>`, preserving the text after the expression instead of dropping or moving it.
+  - @fluixi/reactive@1.0.0-alpha.95
+
 ## 1.0.0-alpha.94
 
 ### Minor Changes
