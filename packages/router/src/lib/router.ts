@@ -62,6 +62,8 @@ export function createRouter<C = unknown>(
       hash: raw.hash,
       state: raw.state,
       query: parseQuery(raw.search),
+      ...(raw.key !== undefined ? { key: raw.key } : {}),
+      ...(raw.action !== undefined ? { action: raw.action } : {}),
     };
   };
 

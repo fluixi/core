@@ -53,7 +53,14 @@ export interface RouterLocation {
   hash: string;
   state: unknown;
   query: Record<string, string>;
+  /** Names this history entry, the same when back or forward returns to it. */
+  key?: string;
+  /** How this location was reached: a new entry, a replaced one, or back/forward. */
+  action?: HistoryAction;
 }
+
+/** How a history change happened. `pop` is back, forward, or the first load. */
+export type HistoryAction = 'push' | 'replace' | 'pop';
 
 /** Options for {@link Router.navigate}. */
 export interface NavigateOptions {
@@ -72,13 +79,15 @@ export interface RouterState<C = unknown> {
 /** Pluggable history backend. Memory for tests/SSR, browser for the DOM. */
 export interface HistoryAdapter {
   /** Read the current raw location. */
-  get(): { pathname: string; search: string; hash: string; state: unknown };
+  get(): { pathname: string; search: string; hash: string; state: unknown; key?: string; action?: HistoryAction };
   /** Push a new entry. `to` is a full path (may include search/hash). */
   push(to: string, state?: unknown): void;
   /** Replace the current entry. */
   replace(to: string, state?: unknown): void;
   /** Subscribe to external navigation (popstate). Returns an unsubscribe fn. */
   subscribe(onChange: () => void): () => void;
+  /** This history is the window's: the router keeps the window's scroll in step with it. */
+  readonly window?: boolean;
 }
 
 /** A router instance: a pure state machine over location + match. */

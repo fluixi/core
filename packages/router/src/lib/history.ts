@@ -5,7 +5,10 @@
  * runs identically in tests/SSR (memory) and the browser (History API).
  */
 
-import type { HistoryAdapter } from './types.js';
+import type { HistoryAction, HistoryAdapter } from './types.js';
+
+let keys = 0;
+const nextKey = () => `${Date.now().toString(36)}-${(keys++).toString(36)}`;
 
 /** Split a full path string into pathname / search / hash. */
 export function splitPath(to: string): {
@@ -33,27 +36,38 @@ export function splitPath(to: string): {
  * In-memory history: for tests and server-side rendering. Holds a stack of
  * entries; `push`/`replace` mutate it and notify subscribers synchronously.
  */
-export function createMemoryHistory(initial = '/'): HistoryAdapter {
-  let entries: Array<{ path: string; state: unknown }> = [
-    { path: initial, state: null },
+export function createMemoryHistory(initial = '/'): HistoryAdapter & { go(delta: number): void } {
+  let entries: Array<{ path: string; state: unknown; key: string }> = [
+    { path: initial, state: null, key: nextKey() },
   ];
   let index = 0;
+  let action: HistoryAction = 'pop';
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((l) => l());
 
   return {
     get() {
-      const { path, state } = entries[index];
-      return { ...splitPath(path), state };
+      const { path, state, key } = entries[index];
+      return { ...splitPath(path), state, key, action };
     },
     push(to, state = null) {
       entries = entries.slice(0, index + 1);
-      entries.push({ path: to, state });
+      entries.push({ path: to, state, key: nextKey() });
       index = entries.length - 1;
+      action = 'push';
       notify();
     },
     replace(to, state = null) {
-      entries[index] = { path: to, state };
+      entries[index] = { path: to, state, key: nextKey() };
+      action = 'replace';
+      notify();
+    },
+    /** Back (`-1`) or forward (`1`), as the browser's buttons would. */
+    go(delta: number) {
+      const next = index + delta;
+      if (next < 0 || next >= entries.length) return;
+      index = next;
+      action = 'pop';
       notify();
     },
     subscribe(onChange) {
@@ -72,21 +86,39 @@ export function createMemoryHistory(initial = '/'): HistoryAdapter {
 export function createBrowserHistory(): HistoryAdapter {
   const w = typeof window !== 'undefined' ? window : undefined;
   const listeners = new Set<() => void>();
+  let action: HistoryAction = 'pop';
   const notify = () => listeners.forEach((l) => l());
-  if (w) w.addEventListener('popstate', notify);
+  if (w) w.addEventListener('popstate', () => ((action = 'pop'), notify()));
+
+  // Each entry's state carries its key beside the app's own state, `{ fx, usr }`, so back
+  // and forward can tell which entry they returned to; `get` hands the app its state alone.
+  // An entry made outside the router (the first load) gets a key when it is first read.
+  const wrapped = (value: unknown): value is { fx: string; usr: unknown } =>
+    typeof value === 'object' && value !== null && typeof (value as { fx?: unknown }).fx === 'string';
+  const entry = () => {
+    const raw = w!.history.state;
+    if (wrapped(raw)) return raw;
+    const keyed = { fx: nextKey(), usr: raw ?? null };
+    w!.history.replaceState(keyed, '');
+    return keyed;
+  };
 
   return {
+    window: w !== undefined,
     get() {
       if (!w) return { pathname: '/', search: '', hash: '', state: null };
       const { pathname, search, hash } = w.location;
-      return { pathname, search, hash, state: w.history.state ?? null };
+      const { fx, usr } = entry();
+      return { pathname, search, hash, state: usr, key: fx, action };
     },
     push(to, state = null) {
-      w?.history.pushState(state, '', to);
+      w?.history.pushState({ fx: nextKey(), usr: state }, '', to);
+      action = 'push';
       notify();
     },
     replace(to, state = null) {
-      w?.history.replaceState(state, '', to);
+      w?.history.replaceState({ fx: nextKey(), usr: state }, '', to);
+      action = 'replace';
       notify();
     },
     subscribe(onChange) {

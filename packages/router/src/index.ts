@@ -11,6 +11,7 @@ export type {
   MatchedRoute,
   RouteMatch,
   RouterLocation,
+  HistoryAction,
   NavigateOptions,
   RouterState,
   HistoryAdapter,

@@ -41,6 +41,7 @@ import { get, type GetAtPath } from '@fluixi/utils/object';
 import type { IsUndefined } from '@fluixi/utils/primitive';
 import { deepEqual } from '@fluixi/utils/compare';
 
+import { keepScroll } from './scroll.js';
 import {
   createRouter as createCoreRouter,
   createBrowserHistory,
@@ -382,6 +383,13 @@ export function Router<C = any>(props: RouterProps<C>) {
    */
   let navigationId = 0;
 
+  // The window's scroll, for a browser history: where each navigation lands once its page is
+  // shown. `arrived` is the navigation whose page was last committed.
+  const scroll = history.window ? keepScroll(router.state().location) : undefined;
+  let arriving: { id: number; location: RouterLocation; from: RouterLocation | undefined } | null =
+    scroll ? { id: 0, location: router.state().location, from: undefined } : null;
+  const [arrived, setArrived] = createSignal(0);
+
   /**
    * How to present the next commit, set by `useNavigate` immediately before it calls
    * into the core router.
@@ -401,6 +409,10 @@ export function Router<C = any>(props: RouterProps<C>) {
     const id = ++navigationId;
     const mode = takeMode();
     setNavigating(true);
+    if (scroll) {
+      scroll.leave();
+      arriving = { id, location: next.location, from: untrack(state).location };
+    }
 
     // Load the modules the next route needs before anything is torn down, so a lazy
     // route renders straight through instead of suspending into a fallback with the
@@ -416,6 +428,7 @@ export function Router<C = any>(props: RouterProps<C>) {
       // the flush have registered their data loads, so `isRouting` stays true through them.
       const flushed = flush();
       if (id === navigationId) setNavigating(false);
+      if (scroll) setArrived(id);
       return flushed;
     };
 
@@ -434,6 +447,7 @@ export function Router<C = any>(props: RouterProps<C>) {
 
   onCleanup(() => {
     unsub();
+    scroll?.dispose();
     router.destroy();
     // Anything still preparing is now stale, so nothing can commit into a torn-down
     // router.
@@ -461,6 +475,25 @@ export function Router<C = any>(props: RouterProps<C>) {
       return result;
     },
   };
+
+  // Scroll once the page is on screen: after its modules and its data, which is when the
+  // router stops routing, and a frame later, before that frame is painted. The page's own
+  // effects fill it in after the router's (an article set through innerHTML), and a scroll
+  // into a page not yet filled is cut short to its height. A newer navigation takes over
+  // from one still loading.
+  if (scroll) {
+    const nextFrame = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn: () => void) => setTimeout(fn, 0);
+    createEffect(() => {
+      const id = arrived();
+      if (ctx.isRouting()) return;
+      const next = arriving;
+      if (!next || next.id !== id || id !== navigationId) return;
+      arriving = null;
+      nextFrame(() => {
+        if (id === navigationId) scroll.arrive(next.location, next.from);
+      });
+    });
+  }
 
   // Render depth 0 (a virtual parent at depth -1 so the root reuses the same path).
   const root: OutletCtxValue = {
