@@ -156,8 +156,16 @@ function hydrateText(value: string): Text | null {
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 3) {
+    const data = (c as Text).data;
+    // Text written next to an expression, `{lead} <a>`, reaches the browser as one text node
+    // with the expression's value: HTML has no boundary between the two. Keep this node's
+    // part and leave the rest, a node of its own, for the text that comes next.
+    if (data.length > value.length && data.startsWith(value)) {
+      hydration.cursor = (c as Text).splitText(value.length);
+      return c as Text;
+    }
     hydration.cursor = c.nextSibling;
-    if ((c as Text).nodeValue !== value) (c as Text).nodeValue = value;
+    if (data !== value) (c as Text).data = value;
     return c as Text;
   }
   if (DEV && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
