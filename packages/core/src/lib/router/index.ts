@@ -159,6 +159,11 @@ function renderLayer(
     data = () => {
       const error = (resource as unknown as { error?: unknown }).error;
       if (error !== undefined && error !== null) throw error;
+      // Loading again (new params, a revalidation): the page keeps its current data. Reading
+      // the resource itself would suspend, and a Suspense boundary above would take the page
+      // out of the document until the data arrives, losing what the reader had in it.
+      const r = resource as unknown as { state?: string; latest?: unknown };
+      if (r.state === 'refreshing') return r.latest;
       return resource();
     };
     Object.defineProperty(data, 'loading', { get: () => (resource as unknown as { loading: boolean }).loading });

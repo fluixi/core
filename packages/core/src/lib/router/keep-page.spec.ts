@@ -119,3 +119,57 @@ describe('a navigation to another route', () => {
     expect(calls).toEqual(['doc a']);
   });
 });
+
+describe('route data loading again under a Suspense boundary', () => {
+  it('keeps the page in the document, with its current data, until the new data arrives', async () => {
+    const { Suspense } = await import('../index.js');
+    const pending = new Map<string, (value: string) => void>();
+    let go!: (to: string) => void;
+    let page!: Element;
+    const Doc = () => {
+      go = useNavigate();
+      const data = useRouteData<string>();
+      page = text('h1', () => `Doc ${data()}`);
+      return page;
+    };
+    const routes = [
+      {
+        path: '/doc/:slug',
+        component: Doc,
+        data: ({ params }: { params: () => Record<string, string> }) =>
+          new Promise<string>((resolve) => pending.set(params().slug!, resolve)),
+      },
+    ];
+    const container = document.createElement('div');
+    createRoot(() => {
+      const view = createMemo(() =>
+        createComponent(Suspense as never, {
+          fallback: text('p', 'loading'),
+          get children() {
+            return createComponent(Router, { routes, history: createMemoryHistory('/doc/a') } as never);
+          },
+        } as never),
+      );
+      render(view, container);
+    });
+    await tick();
+    pending.get('a')!('a');
+    await tick();
+    const shown = page;
+    expect(container.textContent).toBe('Doc a');
+
+    // Detaching the page, even for a moment, loses what the reader had: scroll positions inside it.
+    const removed: Node[] = [];
+    const observer = new MutationObserver((records) => records.forEach((r) => removed.push(...r.removedNodes)));
+    observer.observe(container, { childList: true, subtree: true });
+    go('/doc/b');
+    await tick();
+    expect(container.textContent).toBe('Doc a');
+    pending.get('b')!('b');
+    await tick();
+    observer.disconnect();
+    expect(container.textContent).toBe('Doc b');
+    expect(page).toBe(shown);
+    expect(removed.includes(shown)).toBe(false);
+  });
+});
