@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/start",
-  "version": "0.1.0-alpha.84",
+  "version": "0.1.0-alpha.85",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",

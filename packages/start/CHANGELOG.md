@@ -1,5 +1,29 @@
 # @fluixi/start
 
+## 0.1.0-alpha.85
+
+### Minor Changes
+
+- 06a5af9: The compiler now sets JSX through oxc when Vite bundles with Rolldown and through esbuild otherwise, start now builds single-file bundles with the option each bundler expects, the env check now includes the file name in its error under Vite 8, and fluixi check and fluixi doctor now work in a TypeScript 7 app by falling back to the CLI's classic TypeScript.
+
+### Patch Changes
+
+- e4cf090: A server-rendered page now links the CSS of components its route shares with other routes and preloads those shared chunks, so the components are styled immediately.
+- Updated dependencies [0b23d7d]
+- Updated dependencies [6919cbc]
+- Updated dependencies [f2272f6]
+- Updated dependencies [d1eea79]
+- Updated dependencies [d9fb1c4]
+- Updated dependencies [f4528b2]
+- Updated dependencies [06a5af9]
+  - @fluixi/compiler@1.0.0-alpha.95
+  - @fluixi/vite-plugin@1.0.0-alpha.95
+  - @fluixi/dom@1.0.0-alpha.95
+  - @fluixi/core@1.0.0-alpha.95
+  - @fluixi/server@1.0.0-alpha.95
+  - @fluixi/reactive@1.0.0-alpha.95
+  - @fluixi/head@1.0.0-alpha.62
+
 ## 0.1.0-alpha.84
 
 ### Patch Changes

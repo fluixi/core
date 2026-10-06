@@ -1,5 +1,15 @@
 # @fluixi/create
 
+## 0.1.0-alpha.15
+
+### Minor Changes
+
+- 016edc5: New apps now start on TypeScript 7 and Vite 8, and the editor support from `@fluixi/ts-plugin` continues to work through VS Code's built-in TypeScript.
+
+### Patch Changes
+
+- daa1052: create-fluixi --help now prints its options instead of creating an app and refuses unknown options, and a new app's fluixi.d.ts now declares `$html`, `$svg` and `$css` from the start.
+
 ## 0.1.0-alpha.14
 
 ### Minor Changes

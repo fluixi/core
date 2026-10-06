@@ -1,5 +1,28 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.95
+
+### Patch Changes
+
+- d1eea79: Route data now reloads when navigating to a new URL that only changes the route's params, and the page stays mounted showing its current data until the new data arrives.
+- d9fb1c4: The page now stays in the document with its current data while route data reloads, and the Suspense fallback above the router no longer replaces it, preserving scroll positions.
+- f4528b2: Client navigation now opens the new page at the top or at its #hash, back and forward return you to your previous scroll position, reload preserves the position, replace on the same page leaves the scroll unchanged, and locations now include a key and action while browser history stores the key alongside the app's state.
+- Updated dependencies [0b23d7d]
+- Updated dependencies [6919cbc]
+- Updated dependencies [f2272f6]
+- Updated dependencies [f4528b2]
+- Updated dependencies [06a5af9]
+  - @fluixi/compiler@1.0.0-alpha.95
+  - @fluixi/vite-plugin@1.0.0-alpha.95
+  - @fluixi/dom@1.0.0-alpha.95
+  - @fluixi/router@0.1.2-alpha.5
+  - @fluixi/jsx@1.0.0-alpha.95
+  - @fluixi/server@1.0.0-alpha.95
+  - @fluixi/utils@1.0.0-alpha.95
+  - @fluixi/reactive@1.0.0-alpha.95
+  - @fluixi/storage@0.1.0-alpha.2
+  - @fluixi/head@1.0.0-alpha.62
+
 ## 1.0.0-alpha.94
 
 ### Minor Changes

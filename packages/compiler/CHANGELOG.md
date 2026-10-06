@@ -1,5 +1,16 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.95
+
+### Minor Changes
+
+- 6919cbc: Component styles now build and hot-reload on Vite 8, with each block served as `card.tsx.fx-0.css` and any edited style updating in the dev server without a restart.
+- 06a5af9: The compiler now sets JSX through oxc when Vite bundles with Rolldown and through esbuild otherwise, start now builds single-file bundles with the option each bundler expects, the env check now includes the file name in its error under Vite 8, and fluixi check and fluixi doctor now work in a TypeScript 7 app by falling back to the CLI's classic TypeScript.
+
+### Patch Changes
+
+- 0b23d7d: In devtools, a rule from a `css` value imported from another module now points to the line it was written on in that module, and the dev server enables CSS source maps by default unless the app sets `css.devSourcemap`.
+
 ## 1.0.0-alpha.94
 
 ### Minor Changes
