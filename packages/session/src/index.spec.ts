@@ -294,3 +294,27 @@ describe('createSession — unauthorized guard + status', () => {
     }
   });
 });
+
+describe('createSession: adopting a session made elsewhere', () => {
+  it('holds the token and fetches the user, without running onLogin', async () => {
+    const onLogin = vi.fn();
+    const adapter = makeAdapter();
+    const s = createSession<User>({ ...adapter, onLogin });
+    expect(s.status()).toBe('idle');
+    await s.adopt('cookie');
+    expect(s.token()).toBe('cookie');
+    expect(s.user()).toEqual({ id: 'u1', name: 'Ada' });
+    expect(s.status()).toBe('authenticated');
+    expect(adapter.fetchUser).toHaveBeenCalledWith('cookie');
+    expect(adapter.login).not.toHaveBeenCalled();
+    expect(onLogin).not.toHaveBeenCalled();
+  });
+
+  it('takes a user it is given instead of asking', async () => {
+    const adapter = makeAdapter();
+    const s = createSession<User>(adapter);
+    await s.adopt({ token: 't', expiresAt: Date.now() + 60_000 }, { id: 'u2', name: 'Bo' });
+    expect(s.user()).toEqual({ id: 'u2', name: 'Bo' });
+    expect(adapter.fetchUser).not.toHaveBeenCalled();
+  });
+});

@@ -152,3 +152,30 @@ describe('what the hooks need', () => {
     expect(auth.roles()).toEqual(['admin']);
   });
 });
+
+describe('a session the server holds', () => {
+  const serverService = (client: AuthClient) =>
+    createAuthService<User>({
+      config: { tokens: 'server', redirectUri: 'http://localhost:3000/auth/callback' },
+      client,
+    });
+
+  it('is picked up in the browser from the user the server answers with', async () => {
+    const client = stubClient();
+    const auth = serverService(client);
+    await vi.waitFor(() => expect(auth.user()).toEqual({ sub: 'u1', roles: ['admin'] }));
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(auth.useUser()()).toEqual({ sub: 'u1', roles: ['admin'] });
+    expect(client.fetchUser).toHaveBeenCalledTimes(1);
+    expect(client.handleCallback).not.toHaveBeenCalled();
+  });
+
+  it('stays signed out when the server no longer accepts the cookie', async () => {
+    const client = stubClient({ fetchUser: vi.fn(async () => Promise.reject(new OAuthError('no', 'me_failed'))) });
+    const auth = serverService(client);
+    await vi.waitFor(() => expect(client.fetchUser).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(auth.useUser()()).toBeNull();
+  });
+});

@@ -65,6 +65,11 @@ export interface AuthHooksOptions<U = AuthUser, P = unknown, Q = (p: P) => boole
   client?: BetterAuthClient;
   /** An existing reactive session: the framework syncs it into the hooks for you. */
   session?: SessionLike<U, P, Q>;
+  /**
+   * Whether `session` knows yet. Until it does, the hooks keep what they started from: in the
+   * browser, the user the server rendered with. Default: ready from the start.
+   */
+  ready?: () => boolean;
   /** Navigate for `protectedRoute` redirects (default: `window.location.assign`). */
   navigate?: ((to: string, opts?: NavigateOptions) => void) | Navigator;
   loginPath?: string;
@@ -90,7 +95,10 @@ export function createAuthHooks<U = AuthUser, P = unknown, Q = (p: P) => boolean
 
   // `{ session }` path: the framework owns the reactive bridge (no app-level effect).
   if (sess) {
-    const apply = (): void => store.set({ user: sess.user(), session: null });
+    const apply = (): void => {
+      if (options.ready && !options.ready()) return;
+      store.set({ user: sess.user(), session: null });
+    };
     apply(); // immediate, so a first protectedRoute read isn't stale
     createRoot(() => createEffect(apply, undefined, { name: 'auth ← session' }));
   }

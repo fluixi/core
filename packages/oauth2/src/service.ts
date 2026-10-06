@@ -12,7 +12,7 @@
  * exchange and the redirect itself is a separate call that never returns. Everything
  * else lines up directly: `fetchUser`, `refresh`, `logout` and `getExpiry`.
  */
-import { markReactiveScope, openReactiveScope, withReactiveScope } from '@fluixi/reactive/signal';
+import { createSignal, markReactiveScope, openReactiveScope, withReactiveScope } from '@fluixi/reactive/signal';
 import { createSession, type AccessControl, type Session } from '@fluixi/session';
 import { createAuthHooks, type AuthHooksOptions } from '@fluixi/auth/client';
 import { expiryFromJwt } from './pkce.js';
@@ -141,6 +141,16 @@ function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthSe
   // server-mode session has something to report when the token is a cookie.
   let latest: Tokens | null = null;
 
+  const fetchUserFor = async (token: string): Promise<U> => {
+    if (options.fetchUser) return options.fetchUser(token);
+    return client.fetchUser<U>(token === COOKIE_SESSION ? undefined : token);
+  };
+
+  // With the tokens on the server, the browser learns it is signed in by asking. Until it
+  // has, the hooks keep the user the server rendered with rather than showing nobody.
+  const resumesFromCookie = options.config.tokens === 'server' && typeof window !== 'undefined';
+  const [ready, setReady] = createSignal(!resumesFromCookie);
+
   const session = createSession<U, AuthCredentials, unknown, P, Q>({
     /** The credential is the callback, so this is the code exchange. */
     async login(params: AuthCredentials) {
@@ -148,10 +158,7 @@ function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthSe
       return { token: latest.accessToken, expiresAt: latest.expiresAt };
     },
 
-    async fetchUser(token: string) {
-      if (options.fetchUser) return options.fetchUser(token);
-      return client.fetchUser<U>(token === COOKIE_SESSION ? undefined : token);
-    },
+    fetchUser: fetchUserFor,
 
     async refresh() {
       latest = await client.refresh();
@@ -183,11 +190,25 @@ function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthSe
   // rather than a second file an app has to wire up and keep in step.
   const hooks = createAuthHooks<U, P, Q>({
     session: session as never,
+    ready,
     navigate: options.navigate as never,
     loginPath: options.loginPath ?? '/login',
     homePath: options.homePath ?? '/',
     forbiddenPath: options.forbiddenPath ?? '/403',
   });
+
+  if (resumesFromCookie) {
+    void (async () => {
+      try {
+        // The user first: a cookie the server no longer accepts adopts nothing.
+        await session.adopt(COOKIE_SESSION, await fetchUserFor(COOKIE_SESSION));
+      } catch {
+        // Signed out after all; the hooks drop the server's user once ready.
+      } finally {
+        setReady(true);
+      }
+    })();
+  }
 
   return Object.assign(session, {
     client,

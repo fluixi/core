@@ -64,6 +64,17 @@ only.
 createSession({ ...adapter, storage: createStorage({ adapter: sessionStorageAdapter() }) });
 ```
 
+### A session made elsewhere
+
+`adopt(token, user?)` takes on a session that did not start with this object's `login`: a
+cookie the server set after its own redirect, a token another tab obtained. It holds the token,
+fetches the user unless given one, schedules the refresh, and does not run `onLogin`. The
+OAuth2 service uses it in server mode, where the browser learns it is signed in by asking.
+
+```ts
+await session.adopt('cookie', await fetchMe());
+```
+
 ## Status, and why it has more than two values
 
 ```ts

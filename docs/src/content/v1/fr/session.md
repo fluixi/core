@@ -65,6 +65,18 @@ les garder en mémoire seulement.
 createSession({ ...adapter, storage: createStorage({ adapter: sessionStorageAdapter() }) });
 ```
 
+### Une session ouverte ailleurs
+
+`adopt(token, user?)` reprend une session qui n'a pas commencé par le `login` de cet objet : un
+cookie posé par le serveur après sa propre redirection, un jeton obtenu par un autre onglet. Il
+garde le jeton, va chercher l'utilisateur s'il n'est pas fourni, programme le rafraîchissement,
+et n'appelle pas `onLogin`. Le service OAuth2 s'en sert en mode serveur, où le navigateur
+apprend qu'il est connecté en le demandant.
+
+```ts
+await session.adopt('cookie', await fetchMe());
+```
+
 ## Le statut, et pourquoi il a plus de deux valeurs
 
 ```ts

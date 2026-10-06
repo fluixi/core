@@ -210,6 +210,12 @@ export interface Session<U, C, R = unknown, P = unknown, Q = (p: P) => boolean> 
   logout: () => Promise<void>;
   /** Restore a session from the stored token (call once on client load). */
   hydrate: () => Promise<void>;
+  /**
+   * Take on a session established elsewhere: a cookie the server set, a token another tab
+   * obtained. Holds the token, fetches the user unless given one, and schedules the refresh.
+   * Not a sign-in, so `onLogin` does not run.
+   */
+  adopt: (result: string | TokenResult, user?: U) => Promise<void>;
   /** Force a token refresh now (no-op without a `refresh` adapter). */
   refresh: () => Promise<void>;
   /** Update the cached user (e.g. after a profile edit). */
@@ -447,6 +453,15 @@ export function createSession<
       } catch {
         await session.logout(); // token invalid/expired → clear
       }
+    },
+
+    async adopt(result: string | TokenResult, known?: U): Promise<void> {
+      await run('hydrate', async () => {
+        persistToken(normalize(result));
+        persistUser(known ?? (await options.fetchUser(token()!)));
+        setExpired(false);
+        guard?.reset();
+      });
     },
 
     refresh: doRefresh,
