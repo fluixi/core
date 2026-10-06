@@ -241,7 +241,10 @@ export function action<T, Args extends any[]>(
 ): Action<T, Args> {
   const actionUrl = name || fn.name || 'action';
 
-  const submit = async (input: FormData | Args[0]): Promise<T> => {
+  const submit = async (...args: Args): Promise<T> => {
+    // What the submission shows as its input: the argument, or all of them when there are
+    // several. Every argument reaches `fn` either way.
+    const input = (args.length > 1 ? args : args[0]) as unknown as Args;
     const [, setSubmission] = getSubmissionSignal<T, Args>(actionUrl);
     const [, setSubmissions] = getSubmissionsSignal<T, Args>(actionUrl);
 
@@ -260,11 +263,11 @@ export function action<T, Args extends any[]>(
     };
     const retry = () => {
       drop();
-      return submit(input);
+      return submit(...args);
     };
 
     entry = {
-      input: input as Args, // Approximate type for tracking
+      input,
       pending: true,
       clear,
       retry,
@@ -273,12 +276,10 @@ export function action<T, Args extends any[]>(
     setSubmissions((list) => [...list, entry]);
 
     try {
-      // Cast to any to handle potential argument mismatch in generic types
-      // fn expects tuple Args, input is single value or FormData
-      const result = await (fn as any)(input);
+      const result = await fn(...args);
 
       setSubmission({
-        input: input as Args,
+        input,
         result,
         pending: false,
         clear,
@@ -292,7 +293,7 @@ export function action<T, Args extends any[]>(
       return result;
     } catch (error) {
       const failed: Submission<T, Args> = {
-        input: input as Args,
+        input,
         error,
         pending: false,
         clear,

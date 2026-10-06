@@ -55,3 +55,26 @@ describe('useSubmissions', () => {
     expect(list()).toEqual([]);
   });
 });
+
+describe('an action of several arguments', () => {
+  it('passes every argument, on the call and on a retry', async () => {
+    const seen: unknown[][] = [];
+    let fail = true;
+    const rename = action(async (id: string, patch: { name: string }) => {
+      seen.push([id, patch]);
+      if (fail) throw new Error('refused');
+      return `${id}:${patch.name}`;
+    }, 'spec.rename');
+    const latest = useSubmission(rename);
+
+    await rename('p1', { name: 'Shop' }).catch(() => undefined);
+    expect(seen).toEqual([['p1', { name: 'Shop' }]]);
+    // With several arguments, `input` is all of them; with one it stays that one.
+    expect(latest()?.input).toEqual(['p1', { name: 'Shop' }]);
+
+    fail = false;
+    await latest()?.retry();
+    expect(seen.at(-1)).toEqual(['p1', { name: 'Shop' }]);
+    expect(latest()?.result).toBe('p1:Shop');
+  });
+});
