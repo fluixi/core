@@ -98,9 +98,13 @@ function walk(value: unknown, depth: number, seen: Set<object>): string {
 
     const keys = Object.keys(object);
     const shown = keys.slice(0, MAX_ENTRIES).map((key) => {
-      // A getter can throw, and a proxy can refuse. Neither is worth losing the whole value.
+      // A getter is shown, never called: on a component's props it builds the content
+      // (a `children` getter makes fresh nodes per read) and reads signals, so printing it
+      // ran the component's work again on every sample. A proxy can still refuse.
       let read: string;
       try {
+        const descriptor = Object.getOwnPropertyDescriptor(object, key);
+        if (descriptor?.get) return `${key}: [getter]`;
         read = walk((object as Record<string, unknown>)[key], depth + 1, seen);
       } catch {
         read = '[unreadable]';

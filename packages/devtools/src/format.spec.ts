@@ -25,14 +25,27 @@ describe('formatValue', () => {
     expect(formatValue(loop)).toBe('{name: "x", self: [circular]}');
   });
 
-  it('survives a getter that throws', () => {
-    const bad = {
+  it('shows a getter without calling it', () => {
+    // A component's `children` getter builds its content on every read; printing props must
+    // not run that work, nor a getter that throws.
+    let reads = 0;
+    const props = {
+      get children(): string {
+        reads += 1;
+        return 'built';
+      },
       get boom(): number {
         throw new Error('no');
       },
       ok: 1,
     };
-    expect(formatValue(bad)).toBe('{boom: [unreadable], ok: 1}');
+    expect(formatValue(props)).toBe('{children: [getter], boom: [getter], ok: 1}');
+    expect(reads).toBe(0);
+  });
+
+  it('survives a proxy that refuses to be read', () => {
+    const refusing = new Proxy({ a: 1 }, { get() { throw new Error('no'); } });
+    expect(formatValue(refusing)).toBe('[unreadable]');
   });
 
   it('says what it cut rather than cutting silently', () => {
