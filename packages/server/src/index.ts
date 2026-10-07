@@ -16,6 +16,7 @@
  * SSR is a plain function you call from any server (Express/Hono/Nitro/worker).
  */
 import {
+  createComponent,
   renderToString,
   renderToStringAsync,
   serializeNode,
@@ -159,7 +160,8 @@ export function createHtmlDocument(content: string, options: DocumentOptions = {
 
 /** Render a request to an HTML string, exposing the event via getRequestEvent(). */
 export function renderRequest(app: (props: { url: string }) => any, event: RequestEvent): string {
-  return renderToString(() => app({ url: event.url ?? '/' }), { event });
+  // Entered as a component, as the client enters it, so both open the same hydration key scope.
+  return renderToString(() => createComponent(app, { url: event.url ?? '/' }), { event });
 }
 
 // Isomorphic request state (paired with fluixi's createIsomorphicState). The
@@ -205,7 +207,7 @@ export function renderRequestAsync(
   // The registry is keyed by this request's context, which AsyncLocalStorage carries across the
   // awaits of a lazy route, so a concurrent render can neither clear it nor write into it.
   const head = createHead();
-  return renderToStringAsync(() => app({ url: event.url ?? '/' }), {
+  return renderToStringAsync(() => createComponent(app, { url: event.url ?? '/' }), {
     event,
     preload: (e) => {
       const ctx = getRequestContext();

@@ -159,7 +159,10 @@ export async function startClient(
       // component. Called directly, the root is the one component the runtime never hears
       // about: nothing holds its return value, so no node is made and a graph of the
       // application starts at whatever the root happened to render.
-      domHydrate(rootOf(App), container as HTMLElement);
+      // Built inside hydrate, not as its argument: a memo runs when it is made, and made out
+      // here the root would render before hydration is on, without the key scope the server
+      // opened for it. Every key below would then be one level off and nothing adopted by key.
+      domHydrate(() => rootOf(App), container as HTMLElement);
       // Handlers are now wired (delegated $$listeners attach during the hydration
       // render): replay any events the user fired before hydration.
       replayEvents();
