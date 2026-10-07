@@ -197,7 +197,12 @@ function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthSe
     forbiddenPath: options.forbiddenPath ?? '/403',
   });
 
-  if (resumesFromCookie) {
+  // The page the server rendered already says whether anyone is signed in. When it said
+  // nobody, there is no session to resume: asking would only get a 401 on every anonymous
+  // page. A client-only load has no such answer and still asks.
+  const renderedSignedOut = hooks.store.seeded && hooks.store.value().user == null;
+  if (resumesFromCookie && renderedSignedOut) setReady(true);
+  else if (resumesFromCookie) {
     void (async () => {
       try {
         // The user first: a cookie the server no longer accepts adopts nothing.

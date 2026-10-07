@@ -127,6 +127,11 @@ export interface IsomorphicStore<T extends Record<string, any>> {
   ensureInit: () => Promise<void>;
   /** Stable serialization key. */
   key: string;
+  /**
+   * Whether the server rendered this value and sent it with the page. Tells "the server
+   * said nobody" apart from "no server said anything" (a client-only load).
+   */
+  readonly seeded: boolean;
 }
 
 export interface IsomorphicStoreOptions<T> {
@@ -216,5 +221,5 @@ export function createIsomorphicStore<T extends Record<string, any>>(
     return initPromise;
   };
 
-  return { value, fields, set, setField, ensureInit, key };
+  return { value, fields, set, setField, ensureInit, key, seeded };
 }

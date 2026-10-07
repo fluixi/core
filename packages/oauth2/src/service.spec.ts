@@ -170,6 +170,20 @@ describe('a session the server holds', () => {
     expect(client.handleCallback).not.toHaveBeenCalled();
   });
 
+  it('does not ask when the page the server rendered says nobody is signed in', async () => {
+    // What the server sends with a signed-out page: the auth store's seed, user null.
+    (globalThis as { __FX_DATA__?: unknown }).__FX_DATA__ = { '__iso:auth': { user: null, session: null } };
+    try {
+      const client = stubClient();
+      const auth = serverService(client);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(client.fetchUser).not.toHaveBeenCalled();
+      expect(auth.useUser()()).toBeNull();
+    } finally {
+      delete (globalThis as { __FX_DATA__?: unknown }).__FX_DATA__;
+    }
+  });
+
   it('stays signed out when the server no longer accepts the cookie', async () => {
     const client = stubClient({ fetchUser: vi.fn(async () => Promise.reject(new OAuthError('no', 'me_failed'))) });
     const auth = serverService(client);
