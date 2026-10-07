@@ -65,9 +65,11 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
     const err = boundary.error();
     if (err !== undefined) return showFallback(err);
     try {
-      return provideErrorBoundary(boundary, () =>
-        guard(typeof props.children === 'function' ? props.children() : props.children),
-      );
+      return provideErrorBoundary(boundary, () => {
+        // Read once: a children getter builds its content on every read.
+        const children = props.children;
+        return guard(typeof children === 'function' ? children() : children);
+      });
     } catch (e) {
       // Thrown while building: the fallback now, and the error kept for reset().
       report(e);

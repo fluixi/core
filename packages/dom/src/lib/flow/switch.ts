@@ -119,9 +119,13 @@ export function Switch(props: SwitchProps): Accessor<any> {
       const value = branch.when();
       if (isTruthy(value)) {
         enterBranch(i);
-        return runWithOwner(branchScope, () =>
-          typeof branch.children === 'function' ? branch.children(value) : branch.children,
-        );
+        return runWithOwner(branchScope, () => {
+          // Read once: `children` is a getter that builds the branch afresh on every read, so
+          // a second read made a second copy, and under hydration the first took the server's
+          // nodes while the second, the one shown, was built new beside them.
+          const children = branch.children;
+          return typeof children === 'function' ? children(value) : children;
+        });
       }
     }
     // The fallback is a branch too, so it gets a scope of its own.
