@@ -104,6 +104,68 @@ export interface OAuthRoutesConfig {
   dpop?: boolean;
   /** Default `ES256`. Must be in the provider's `dpop_signing_alg_values_supported`. */
   dpopAlgorithm?: string;
+  /**
+   * What a page request from a signed-out visitor does.
+   *
+   * - `manual` (default): the page renders signed out and offers a way to sign in.
+   * - `silent`: once per browser session the visitor is sent to the provider with
+   *   `prompt=none`. Someone already signed in there comes back signed in without a click;
+   *   anyone else comes straight back and the page renders signed out. Single sign-on
+   *   without forcing a sign-in on a public page.
+   * - `required`: the visitor is sent to sign in. For an app with nothing to show to a
+   *   stranger, an admin console say.
+   *
+   * Only page loads are redirected (a GET for a document), never an API or asset request.
+   */
+  signIn?: 'manual' | 'silent' | 'required';
+  /** Paths `silent` and `required` leave alone, besides the auth routes: `/health`, `/legal`. */
+  publicPaths?: string[];
+}
+
+const PROMPTS = new Set(['none', 'login', 'consent', 'select_account']);
+
+/** What a `prompt=none` request ends with when the provider would have to ask the visitor. */
+const SILENT_REFUSALS = new Set([
+  'login_required',
+  'consent_required',
+  'interaction_required',
+  'account_selection_required',
+]);
+
+/** The cookie saying the provider was already asked silently in this browser session. */
+function checkedCookie(config: OAuthRoutesConfig): { name: string; header: string } {
+  const name = `${config.cookieName ?? 'fx_session'}_checked`;
+  const secure = config.secureCookie ?? process.env.NODE_ENV === 'production';
+  // No Max-Age: it lasts as long as the browser session, so a new visit asks again.
+  return { name, header: `${name}=1; Path=/; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
+}
+
+/** A document load, as opposed to a fetch, an asset or a form post. */
+function isPageRequest(request: Request): boolean {
+  if (request.method !== 'GET') return false;
+  const dest = request.headers.get('sec-fetch-dest');
+  if (dest) return dest === 'document';
+  return (request.headers.get('accept') ?? '').includes('text/html');
+}
+
+function hasCookie(request: Request, name: string): boolean {
+  return (request.headers.get('cookie') ?? '').split(';').some((part) => part.trim().startsWith(`${name}=`));
+}
+
+/** Where `signIn` sends a signed-out visitor's page request, or null to render it as is. */
+function signInRedirect(request: Request, config: OAuthRoutesConfig): Response | null {
+  const mode = config.signIn ?? 'manual';
+  if (mode === 'manual' || !isPageRequest(request)) return null;
+  const url = new URL(request.url);
+  const base = (config.basePath ?? '/auth').replace(/\/$/, '');
+  const open = [base, ...(config.publicPaths ?? [])];
+  if (open.some((path) => url.pathname === path || url.pathname.startsWith(path.endsWith('/') ? path : `${path}/`))) {
+    return null;
+  }
+  if (mode === 'silent' && hasCookie(request, checkedCookie(config).name)) return null;
+  const login = new URLSearchParams({ returnTo: url.pathname + url.search });
+  if (mode === 'silent') login.set('prompt', 'none');
+  return new Response(null, { status: 302, headers: { location: `${base}/login?${login}` } });
 }
 
 /**
@@ -178,7 +240,7 @@ interface SessionPayload {
   /** This session's DPoP key. Never sent: only proofs signed with it are. */
   dpop?: StoredDpopKey;
   /** The flow's temporary values, kept only between the redirect and the callback. */
-  pending?: { verifier: string; state: string; returnTo?: string };
+  pending?: { verifier: string; state: string; returnTo?: string; silent?: boolean };
 }
 
 /**
@@ -274,6 +336,9 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       target.searchParams.set('state', state);
       target.searchParams.set('code_challenge', challenge);
       target.searchParams.set('code_challenge_method', 'S256');
+      // Only the values OpenID Connect defines; anything else from the query string is dropped.
+      const prompt = url.searchParams.get('prompt');
+      if (prompt && PROMPTS.has(prompt)) target.searchParams.set('prompt', prompt);
 
       // The verifier goes in the cookie, which is the only thing that survives the trip
       // and is not readable by the page.
@@ -290,6 +355,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
               origin: url.origin,
               allowedOrigins: config.allowedReturnOrigins,
             }) || undefined,
+            silent: prompt === 'none' || undefined,
           },
         },
         // Ten minutes: long enough to sign in, short enough that an abandoned attempt
@@ -310,7 +376,27 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const current = await session();
       const pending = current?.pending;
       const error = url.searchParams.get('error');
-      if (error) return json({ error }, 400);
+      if (error) {
+        // Back to the page the flow started from, never a JSON answer the visitor reads.
+        const ours = !!pending && timingSafeEqual(pending.state, url.searchParams.get('state') ?? '');
+        let location = safeReturnTo(ours ? pending.returnTo ?? config.defaultReturnTo : config.defaultReturnTo, {
+          fallback: '/',
+          origin: url.origin,
+          allowedOrigins: config.allowedReturnOrigins,
+        });
+        const headers = new Headers();
+        headers.append('set-cookie', cookie.clear());
+        if (ours && pending.silent && SILENT_REFUSALS.has(error)) {
+          // Nobody signed in at the provider: remember it was asked, and show the page as is.
+          headers.append('set-cookie', checkedCookie(config).header);
+        } else {
+          const target = new URL(location, url.origin);
+          target.searchParams.set('auth_error', error);
+          location = target.origin === url.origin ? target.pathname + target.search : target.toString();
+        }
+        headers.set('location', location);
+        return new Response(null, { status: 302, headers });
+      }
 
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
@@ -447,18 +533,21 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       // Max-Age=0 is what removes it. Clearing the value alone leaves a cookie behind.
       const cleared = cookie.clear();
 
+      // Signed out on purpose: `silent` must not sign them straight back in.
+      const headers = new Headers();
+      headers.append('set-cookie', cleared);
+      headers.append('set-cookie', checkedCookie(config).header);
       if (endSession && current?.idToken) {
         const target = new URL(endSession);
         target.searchParams.set('id_token_hint', current.idToken);
         if (config.defaultReturnTo) {
           target.searchParams.set('post_logout_redirect_uri', config.defaultReturnTo);
         }
-        return new Response(null, {
-          status: 302,
-          headers: { location: target.toString(), 'set-cookie': cleared },
-        });
+        headers.set('location', target.toString());
+        return new Response(null, { status: 302, headers });
       }
-      return json({ ok: true }, 200, { 'set-cookie': cleared });
+      headers.set('content-type', 'application/json');
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
     }
 
     return next();
@@ -531,6 +620,8 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     // Written either way. A route that reads locals should find "nobody" rather than
     // nothing, so the absent case and the signed-out case look the same to it.
     if (!session?.accessToken) {
+      const redirect = signInRedirect(request, config);
+      if (redirect) return redirect;
       locals.auth = { user: null, session: null };
       return next();
     }
