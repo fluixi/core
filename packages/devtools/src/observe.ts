@@ -314,6 +314,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const fieldsOf = new WeakMap<object, number[]>();
   /** Cleared on each sample: the page has moved on. */
   let described: Map<number, DomNode[]> | null = null;
+  /** Per sample, like `described`: what each node created, at any depth. */
+  let descendants: Map<number, number[]> | null = null;
   /**
    * What each tag rendered, weakly.
    *
@@ -796,6 +798,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     graph,
     sample() {
       described = null;
+      descendants = null;
       const changed: number[] = [];
       /** Recorded once here, so every consumer can be told about it at its own pace. */
       const moved = (id: number): void => {
@@ -970,17 +973,8 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       // A value drives the element its binding was recorded against. A tag that returned
       // nothing usable falls back to where the values inside it reach.
       if (!live.length) {
-        const inside = (node: RNode): boolean => {
-          const seen = new Set<number>();
-          let at = node.createdIn;
-          while (at !== undefined && !seen.has(at)) {
-            if (at === id) return true;
-            seen.add(at);
-            at = graph.get(at)?.createdIn;
-          }
-          return false;
-        };
-        for (const node of graph.values()) if (inside(node)) collect(node.id);
+        descendants ??= descendantsByCreator(graph);
+        for (const below of descendants.get(id) ?? []) collect(below);
       }
       return live;
     },
@@ -1109,4 +1103,26 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   }
 
   return api;
+}
+
+/**
+ * What every node created, at any depth, in graph order: the nodes whose `createdIn` chain
+ * passes through it. Built in one pass over the graph, so asking it for each tag of a page is
+ * linear; walking every node's chain once per tag made a sample quadratic, which on a page of a
+ * few thousand nodes took seconds on every keystroke.
+ */
+export function descendantsByCreator(graph: Map<number, RNode>): Map<number, number[]> {
+  const out = new Map<number, number[]>();
+  for (const node of graph.values()) {
+    const seen = new Set<number>();
+    let at = node.createdIn;
+    while (at !== undefined && !seen.has(at)) {
+      seen.add(at);
+      let list = out.get(at);
+      if (!list) out.set(at, (list = []));
+      list.push(node.id);
+      at = graph.get(at)?.createdIn;
+    }
+  }
+  return out;
 }
