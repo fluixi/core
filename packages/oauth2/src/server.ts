@@ -108,16 +108,22 @@ export interface OAuthRoutesConfig {
    * What a page request from a signed-out visitor does.
    *
    * - `manual` (default): the page renders signed out and offers a way to sign in.
-   * - `silent`: once per browser session the visitor is sent to the provider with
-   *   `prompt=none`. Someone already signed in there comes back signed in without a click;
-   *   anyone else comes straight back and the page renders signed out. Single sign-on
-   *   without forcing a sign-in on a public page.
+   * - `silent`: the visitor is sent to the provider with `prompt=none`. Someone already
+   *   signed in there comes back signed in without a click; anyone else comes straight back
+   *   and the page renders signed out, and is not asked again for `silentRecheck` seconds.
+   *   Single sign-on without forcing a sign-in on a public page.
    * - `required`: the visitor is sent to sign in. For an app with nothing to show to a
    *   stranger, an admin console say.
    *
    * Only page loads are redirected (a GET for a document), never an API or asset request.
    */
   signIn?: 'manual' | 'silent' | 'required';
+  /**
+   * How long `silent` takes a "nobody signed in" answer as current, in seconds. Default 60.
+   * Someone who signs in at the provider afterwards (in another app, another tab) is picked
+   * up on their first page load after it. Longer saves round trips for anonymous visitors.
+   */
+  silentRecheck?: number;
   /** Paths `silent` and `required` leave alone, besides the auth routes: `/health`, `/legal`. */
   publicPaths?: string[];
   /**
@@ -138,12 +144,15 @@ const SILENT_REFUSALS = new Set([
   'account_selection_required',
 ]);
 
-/** The cookie saying the provider was already asked silently in this browser session. */
+/**
+ * The cookie saying the provider was just asked silently and knew nobody. It expires soon on
+ * purpose: kept for the browser session, it hid a sign-in made at the provider afterwards.
+ */
 function checkedCookie(config: OAuthRoutesConfig): { name: string; header: string } {
   const name = `${config.cookieName ?? 'fx_session'}_checked`;
   const secure = config.secureCookie ?? process.env.NODE_ENV === 'production';
-  // No Max-Age: it lasts as long as the browser session, so a new visit asks again.
-  return { name, header: `${name}=1; Path=/; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
+  const maxAge = Math.max(0, Math.floor(config.silentRecheck ?? 60));
+  return { name, header: `${name}=1; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
 }
 
 /** A document load, as opposed to a fetch, an asset or a form post. */

@@ -91,7 +91,8 @@ describe('a refused authorization', () => {
     expect(back.status).toBe(302);
     expect(back.headers.get('location')).toBe('/docs');
     const cookies = back.headers.getSetCookie().join('\n');
-    expect(cookies).toContain('fx_session_checked=1');
+    // Only for a while: a sign-in at the provider afterwards must be picked up.
+    expect(cookies).toMatch(/fx_session_checked=1; Path=\/; Max-Age=60;/);
     expect(cookies).toMatch(/fx_session=;.*Max-Age=0/);
   });
 
@@ -112,6 +113,18 @@ describe('a refused authorization', () => {
       pass,
     );
     expect(back.headers.get('location')).toBe('/?auth_error=login_required');
+  });
+});
+
+describe('how long a silent answer holds', () => {
+  it('is configurable', async () => {
+    const cfg = config({ signIn: 'silent', silentRecheck: 300 });
+    const { cookie, state } = await startLogin(cfg, 'prompt=none');
+    const back = await oauthRoutes(cfg)(
+      new Request(`https://app.test/auth/callback?error=login_required&state=${state}`, { headers: { cookie } }),
+      pass,
+    );
+    expect(back.headers.getSetCookie().join('\n')).toContain('fx_session_checked=1; Path=/; Max-Age=300;');
   });
 });
 
