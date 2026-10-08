@@ -120,6 +120,8 @@ export interface Endpoints {
   introspection?: string;
   /** RFC 7009. Present when a token can be retired before it expires. */
   revocation?: string;
+  /** OpenID Connect Session Management: the page an app frames to notice session changes. */
+  checkSession?: string;
   issuer?: string;
 }
 
@@ -245,6 +247,12 @@ export interface ServerConfig extends BaseConfig {
   tokens: 'server';
   /** Where the server routes are mounted. Default `/auth`. */
   basePath?: string;
+  /**
+   * Notice a sign-in, sign-out or account switch made at the provider while a page is open,
+   * through its check-session page, and sign in again silently when it changes. Default true;
+   * a provider without OpenID Connect Session Management is simply not watched.
+   */
+  watchSession?: boolean;
 }
 
 export type AuthConfig = BrowserConfig | ServerConfig;

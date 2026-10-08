@@ -95,6 +95,8 @@ export { createBrowserClient } from './browser.js';
 export { createServerClient, COOKIE_SESSION } from './server-client.js';
 
 export { discover, clearDiscoveryCache } from './discovery.js';
+export { watchProviderSession } from './session-monitor.js';
+export type { SessionCheck, WatchOptions } from './session-monitor.js';
 export {
   createPkcePair,
   createVerifier,

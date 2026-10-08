@@ -19,6 +19,7 @@ import { expiryFromJwt } from './pkce.js';
 import { safeReturnTo } from './return-to.js';
 import { createBrowserClient } from './browser.js';
 import { createServerClient, COOKIE_SESSION } from './server-client.js';
+import { watchProviderSession } from './session-monitor.js';
 import { OAuthError } from './types.js';
 import type { AuthClient, AuthConfig, CallbackParams, LoginOptions, Tokens } from './types.js';
 
@@ -200,6 +201,12 @@ function buildAuthService<U, P, Q>(options: AuthServiceOptions<U, P, Q>): AuthSe
   // The page the server rendered already says whether anyone is signed in. When it said
   // nobody, there is no session to resume: asking would only get a 401 on every anonymous
   // page. A client-only load has no such answer and still asks.
+  // Signed in or not, a session that changes at the provider while the page is open is
+  // noticed here rather than at the next page load.
+  if (resumesFromCookie && options.config.tokens === 'server' && options.config.watchSession !== false) {
+    watchProviderSession({ basePath: options.config.basePath });
+  }
+
   const renderedSignedOut = hooks.store.seeded && hooks.store.value().user == null;
   if (resumesFromCookie && renderedSignedOut) setReady(true);
   else if (resumesFromCookie) {

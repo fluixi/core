@@ -145,14 +145,23 @@ const SILENT_REFUSALS = new Set([
 ]);
 
 /**
- * The cookie saying the provider was just asked silently and knew nobody. It expires soon on
- * purpose: kept for the browser session, it hid a sign-in made at the provider afterwards.
+ * The cookie saying the provider was just asked silently and knew nobody. It holds the
+ * `session_state` that answer carried, which the page watches for a later sign-in. It
+ * expires soon on purpose: kept for the browser session, it hid a sign-in made at the
+ * provider while no page was open to notice.
  */
-function checkedCookie(config: OAuthRoutesConfig): { name: string; header: string } {
+function checkedCookie(config: OAuthRoutesConfig, sessionState?: string | null): { name: string; header: string } {
   const name = `${config.cookieName ?? 'fx_session'}_checked`;
   const secure = config.secureCookie ?? process.env.NODE_ENV === 'production';
   const maxAge = Math.max(0, Math.floor(config.silentRecheck ?? 60));
-  return { name, header: `${name}=1; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
+  const value = sessionState ?? '1';
+  return { name, header: `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
+}
+
+/** A `session_state` as Session Management builds it, `<hash>.<salt>`; anything else is dropped. */
+function sessionStateFrom(url: URL): string | undefined {
+  const value = url.searchParams.get('session_state');
+  return value && /^[\w-]{1,128}\.[\w-]{1,64}$/.test(value) ? value : undefined;
 }
 
 /** A document load, as opposed to a fetch, an asset or a form post. */
@@ -163,16 +172,24 @@ function isPageRequest(request: Request): boolean {
   return (request.headers.get('accept') ?? '').includes('text/html');
 }
 
-function hasCookie(request: Request, name: string): boolean {
-  return (request.headers.get('cookie') ?? '').split(';').some((part) => part.trim().startsWith(`${name}=`));
+function cookieValue(request: Request, name: string): string | undefined {
+  for (const part of (request.headers.get('cookie') ?? '').split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) return rest.join('=');
+  }
+  return undefined;
 }
 
-/** Where `signIn` sends a signed-out visitor's page request, or null to render it as is. */
+function hasCookie(request: Request, name: string): boolean {
+  return cookieValue(request, name) !== undefined;
+}
+
 /** Whether `pathname` is `path` or below it. */
 function under(pathname: string, path: string): boolean {
   return pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
 }
 
+/** Where `signIn` sends a signed-out visitor's page request, or null to render it as is. */
 function signInRedirect(request: Request, config: OAuthRoutesConfig): Response | null {
   if (!isPageRequest(request)) return null;
   const url = new URL(request.url);
@@ -261,6 +278,8 @@ interface SessionPayload {
   tokenType?: string;
   /** This session's DPoP key. Never sent: only proofs signed with it are. */
   dpop?: StoredDpopKey;
+  /** What the provider's answer said about its browser session, for the page to watch. */
+  sessionState?: string;
   /** The flow's temporary values, kept only between the redirect and the callback. */
   pending?: { verifier: string; state: string; returnTo?: string; silent?: boolean };
 }
@@ -268,8 +287,8 @@ interface SessionPayload {
 /**
  * The middleware.
  *
- * Handles `<basePath>/login`, `/callback`, `/refresh`, `/me` and `/logout`, and passes
- * anything else along untouched.
+ * Handles `<basePath>/login`, `/callback`, `/refresh`, `/me`, `/session-check` and
+ * `/logout`, and passes anything else along untouched.
  */
 export function oauthRoutes(config: OAuthRoutesConfig) {
   const base = (config.basePath ?? '/auth').replace(/\/$/, '');
@@ -410,7 +429,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         headers.append('set-cookie', cookie.clear());
         if (ours && pending.silent && SILENT_REFUSALS.has(error)) {
           // Nobody signed in at the provider: remember it was asked, and show the page as is.
-          headers.append('set-cookie', checkedCookie(config).header);
+          headers.append('set-cookie', checkedCookie(config, sessionStateFrom(url)).header);
         } else {
           const target = new URL(location, url.origin);
           target.searchParams.set('auth_error', error);
@@ -449,6 +468,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         expiresAt: expiryFrom(payload.expires_in),
         tokenType: typeof payload.token_type === 'string' ? payload.token_type : undefined,
         dpop: key ? await exportDpopKey(key) : undefined,
+        sessionState: sessionStateFrom(url),
       });
 
       return new Response(null, {
@@ -489,6 +509,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         expiresAt: expiryFrom(payload.expires_in),
         tokenType: typeof payload.token_type === 'string' ? payload.token_type : current.tokenType,
         dpop: current.dpop,
+        sessionState: current.sessionState,
       });
       return json({ ok: true }, 200, { 'set-cookie': refreshed });
     }
@@ -505,6 +526,17 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 
       const claims = (await response.json()) as Record<string, unknown>;
       return json(config.mapUser ? config.mapUser(claims, current.accessToken) : claims);
+    }
+
+    if (route === '/session-check') {
+      // What the page needs to watch the provider's session: its check page, this client,
+      // and the last answer's session_state, signed in or not. Nothing secret: the state is
+      // a salted hash bound to this origin.
+      const { checkSession } = await resolve().catch(() => ({ checkSession: undefined }));
+      const current = await session();
+      const checked = cookieValue(request, checkedCookie(config).name);
+      const state = current?.accessToken ? current.sessionState : checked !== '1' ? checked : undefined;
+      return json({ frame: checkSession ?? null, clientId: config.clientId, state: state ?? null });
     }
 
     if (route === '/revoke') {

@@ -23,6 +23,7 @@ interface OpenIdConfiguration {
   jwks_uri?: string;
   introspection_endpoint?: string;
   revocation_endpoint?: string;
+  check_session_iframe?: string;
 }
 
 /** `https://host/` and `https://host` both give `https://host/.well-known/...`. */
@@ -70,6 +71,7 @@ export async function discover(issuer: string, fetcher: typeof fetch = fetch): P
       jwks: doc.jwks_uri,
       introspection: doc.introspection_endpoint,
       revocation: doc.revocation_endpoint,
+      checkSession: doc.check_session_iframe,
       issuer: doc.issuer ?? issuer,
     };
   })();
