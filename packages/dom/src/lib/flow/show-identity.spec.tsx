@@ -42,6 +42,24 @@ describe('Show with a new value in the same branch', () => {
     });
   });
 
+  it('keeps content passed as a function that takes no value', () => {
+    let builds = 0;
+    const [data, setData] = createSignal<{ name: string } | null>({ name: 'a' });
+    createRoot(() => {
+      const view = Show({
+        when: () => data(),
+        children: () => {
+          builds += 1;
+          return { node: builds };
+        },
+      });
+      const first = read(view);
+      setData({ name: 'b' });
+      expect(read(view)).toBe(first);
+      expect(builds).toBe(1);
+    });
+  });
+
   it('keeps JavaScript truthiness: 0 shows the fallback', () => {
     const [count, setCount] = createSignal(1);
     createRoot(() => {

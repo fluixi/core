@@ -88,9 +88,14 @@ export function Show<T>(props: ShowProps<T>): any {
           if (!evaluate) return props.fallback;
           const children = props.children;
           if (typeof children === 'function' && !isLitResult(children)) {
-            // Function children receive the value, so a new value renders them again.
+            // A callback that takes the value, `{(user) => ...}`, renders again for a new one.
+            // One that takes nothing is plain content the compiler wrapped: tracking the
+            // value for it rebuilt the subtree on every new truthy value (a page under
+            // <Show when={data()}> remounted on each refetch).
+            const fn = children as (item: T) => any;
+            if (fn.length === 0) return untrack(() => fn(untrack(value) as T));
             const current = value();
-            return untrack(() => (children as (item: T) => any)(current as T));
+            return untrack(() => fn(current as T));
           }
           return children;
         });
