@@ -261,6 +261,11 @@ export function flushSync(): void {
   if (G.flushing) return;
   G.flushing = true;
   let guard = 0;
+  // An effect that throws must not stop the rest: those queued after it would be dropped
+  // with their `queued` mark still set, so nothing could ever run them again. The first
+  // error is rethrown once the queue is drained.
+  let failed = false;
+  let first: unknown;
   try {
     while (G.queue.length) {
       if (++guard > 100000) throw new Error('[fluixi] effect flush did not settle (cycle?)');
@@ -268,12 +273,21 @@ export function flushSync(): void {
       G.queue = [];
       for (const e of batchOf) {
         e.queued = false;
-        if (!e.disposed) e.run();
+        if (e.disposed) continue;
+        try {
+          e.run();
+        } catch (error) {
+          if (!failed) {
+            failed = true;
+            first = error;
+          }
+        }
       }
     }
   } finally {
     G.flushing = false;
   }
+  if (failed) throw first;
 }
 
 /**
