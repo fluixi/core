@@ -56,7 +56,10 @@ export function Show<T>(props: ShowProps<T>): any {
   // Named for a watcher: three memos at one line, two of them anonymous, is what a graph of
   // a page with a few conditions turns into.
   const value = createMemo(when, undefined, { name: 'Show.when' });
-    const cond = createMemo(value, undefined, { name: 'Show.cond' });
+    // Which branch, not the value: a new object that is just as truthy (route data after a
+    // refetch) must not rebuild plain children, or everything under them is remounted and
+    // loses its state, focus and input.
+    const cond = createMemo(() => !!value(), undefined, { name: 'Show.cond' });
 
     // Each branch renders in its own scope so that leaving it tears down whatever
     // it registered, an event listener, an observer, a timer. Without this the
@@ -64,8 +67,8 @@ export function Show<T>(props: ShowProps<T>): any {
     // whole tree dies, so a closed <Show> kept listening and reacting.
     //
     // Keyed on which branch is showing, not on every re-run: the memo also re-runs
-    // when the value changes within the same branch, and disposing then would
-    // throw away DOM the runtime deliberately reuses.
+    // when function children get a new value or what the children read changes, and
+    // disposing then would throw away DOM the runtime deliberately reuses.
     const parentOwner = getOwner();
     let branchScope: Owner | null = null;
     let shown: 'when' | 'fallback' | null = null;
@@ -79,38 +82,22 @@ export function Show<T>(props: ShowProps<T>): any {
 
     return createMemo(
       () => {
-        // if (isResource(when)) {
-          //   if (when.loading) {
-            //     return props.fallback ?? null;
-            //   }
-            // }
-          const evaluate = cond()
-          enterBranch(evaluate ? 'when' : 'fallback');
-          return runWithOwner(branchScope, () => {
-          if(evaluate){
-            let children = props.children;
-
-              if (typeof children === 'function' && !isLitResult(children)) {
-              if (typeof value === 'function') {
-                // value = (value as any)() as any;
-                return untrack(()=>{
-                  if(!untrack(value)) return props.fallback
-                  return (children as (item: T) => any)((value as any)())
-                });
-              }
-              return (children as (item: T) => any)(value as T);
-            }
-            return children;
+        const evaluate = cond();
+        enterBranch(evaluate ? 'when' : 'fallback');
+        return runWithOwner(branchScope, () => {
+          if (!evaluate) return props.fallback;
+          const children = props.children;
+          if (typeof children === 'function' && !isLitResult(children)) {
+            // Function children receive the value, so a new value renders them again.
+            const current = value();
+            return untrack(() => (children as (item: T) => any)(current as T));
           }
-        return props.fallback
-          });
-      // if (isTruthy(value)) {
-      return props.fallback ?? null;
-    },
-    undefined,
+          return children;
+        });
+      },
+      undefined,
     // Not `Show`: the compiler already marks the memo it wraps the component in with that,
     // and two cards of the same name in one graph is worse than a longer one.
     { name: 'Show.result' }
   );
 }
-      // if (isTruthy(value)) {
