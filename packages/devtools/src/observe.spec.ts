@@ -36,6 +36,21 @@ describe('observeGraph', () => {
     expect(byLabel(observed, 'double')?.value).toBe('2');
   });
 
+  it('samples a memo that holds an error without throwing it into the page', () => {
+    // A route's data that failed: the memo rethrows its error on every read, and the
+    // dev server polls the graph every 100 ms.
+    observed = observeGraph();
+    createRoot(() => {
+      const [failed] = createSignal(true, { name: 'failed' });
+      createMemo(() => {
+        if (failed()) throw new Error('mfa_required');
+        return 1;
+      }, undefined, { name: 'data' });
+    });
+    for (let i = 0; i < 3; i++) expect(() => observed!.sample()).not.toThrow();
+    expect(byLabel(observed, 'data')).toBeDefined();
+  });
+
   it('reads dependency edges off the core node', () => {
     observed = observeGraph();
     createRoot(() => {

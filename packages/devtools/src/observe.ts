@@ -260,7 +260,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const claims = (node: RNode, value: unknown): boolean => {
     for (const dep of node.deps) {
       const other = graph.get(dep);
-      if (other?.read && other.read() === value) return false;
+      if (other?.read && readRaw(other) === value) return false;
     }
     return true;
   };
@@ -867,7 +867,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
           runsAtLastSample.set(node.id, node.runs);
           continue;
         }
-        const raw = node.read();
+        // Guarded: a memo holding an error rethrows it on every read, and this runs on a
+        // timer, so an unguarded read threw the page's error ten times a second.
+        const raw = readRaw(node);
         // For the next write to diff against; without it the first change has no entries.
         if (recording) raws.set(node.id, raw);
         // After the read: a memo that has never been pulled has no sources yet, and reading
