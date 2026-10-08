@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  $$createServerReference,
   $$registerServerFn,
+  ServerFunctionError,
+  setServerFnFetch,
   isServerFnRequest,
   handleServerFn,
   setServerFnContextRunner,
@@ -44,6 +47,32 @@ describe('@fluixi/start server functions', () => {
     const res = await handleServerFn(rpc('secret:0', []));
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: 'unauthorized', redirectTo: '/login' });
+  });
+
+  it('answers any thrown 4xx refusal with its status, code and details', async () => {
+    $$registerServerFn('member:0', () => {
+      throw Object.assign(new Error('no_such_account'), { status: 422, code: 'no_such_account', details: { email: 'x' } });
+    });
+    const res = await handleServerFn(rpc('member:0', []));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: 'refused', code: 'no_such_account', details: { email: 'x' } });
+  });
+
+  it('rejects in the browser with the refusal: status, code and details', async () => {
+    $$registerServerFn('member:1', () => {
+      throw Object.assign(new Error('no'), { status: 409, code: 'already_member', details: { email: 'a@b.c' } });
+    });
+    // The browser's fetch, answered by the server half.
+    setServerFnFetch(((_: RequestInfo, init?: RequestInit) =>
+      handleServerFn(rpc(String((init?.headers as Record<string, string>)['x-fluixi-server-fn']), JSON.parse(String(init?.body))))) as typeof fetch);
+    try {
+      const failure = await (($$createServerReference('member:1') as () => Promise<unknown>)()).catch((e: unknown) => e);
+      expect(failure).toBeInstanceOf(ServerFunctionError);
+      expect(failure).toMatchObject({ status: 409, code: 'already_member', details: { email: 'a@b.c' } });
+      expect((failure as Error).message).toBe('server function "member:1" failed: 409 already_member');
+    } finally {
+      setServerFnFetch((...a) => fetch(...a));
+    }
   });
 
   it('500 when the function throws', async () => {

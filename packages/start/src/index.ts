@@ -40,6 +40,7 @@ export { injectApp, injectAppAndHead, splitTemplate } from './document.js';
 
 // The handler's runtime-neutral core. The node/http half is behind `/handler`.
 export { createHandlerFrom } from './handler-core.js';
+export { ServerFunctionError } from './server-fn.js';
 export type { HandlerParts, ServerModule } from './handler-core.js';
 
 // Request middleware: a `(request, next) => Response` chain run before render.

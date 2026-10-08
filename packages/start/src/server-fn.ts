@@ -47,6 +47,23 @@ export function setServerFnFetch(f: typeof fetch): void {
   _fetch = f;
 }
 
+/**
+ * A server function that answered with a refusal (a 4xx) or failed. `code` is the refusal's own
+ * (`no_such_account`), else its kind (`forbidden`); `details` is what the server sent with it.
+ * The message keeps the form `server function "id" failed: <status> <code>`.
+ */
+export class ServerFunctionError extends Error {
+  constructor(
+    readonly id: string,
+    readonly status: number,
+    readonly code: string,
+    readonly details: Record<string, unknown> = {},
+  ) {
+    super(`server function "${id}" failed: ${status} ${code}`);
+    this.name = 'ServerFunctionError';
+  }
+}
+
 async function callServer(id: string, args: any[]): Promise<any> {
   const res = await _fetch(SERVER_FN_ENDPOINT, {
     method: 'POST',
@@ -54,7 +71,21 @@ async function callServer(id: string, args: any[]): Promise<any> {
     body: JSON.stringify(args),
   });
   if (!res.ok) {
-    throw new Error(`server function "${id}" failed: ${res.status} ${await res.text()}`);
+    const text = await res.text();
+    let refusal: { error?: unknown; code?: unknown; details?: unknown } | null = null;
+    if ((res.headers.get('content-type') || '').includes('application/json')) {
+      try {
+        refusal = JSON.parse(text);
+      } catch {
+        refusal = null;
+      }
+    }
+    if (refusal && typeof refusal.error === 'string') {
+      const code = typeof refusal.code === 'string' ? refusal.code : refusal.error;
+      const details = refusal.details && typeof refusal.details === 'object' ? (refusal.details as Record<string, unknown>) : {};
+      throw new ServerFunctionError(id, res.status, code, details);
+    }
+    throw new ServerFunctionError(id, res.status, text);
   }
   return (res.headers.get('content-type') || '').includes('application/json')
     ? res.json()
