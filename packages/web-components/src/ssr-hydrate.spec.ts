@@ -3,7 +3,7 @@
  * with the props the server carried, instead of rendering a second copy.
  */
 import { describe, it, expect } from 'vitest';
-import { beginAppHydration, createNativeElement, endAppHydration, hydrate, insert, spread } from '@fluixi/dom';
+import { beginAppHydration, createNativeElement, endAppHydration, For, hydrate, insert, spread } from '@fluixi/dom';
 import { createContext, createRoot, useContext } from '@fluixi/reactive/signal';
 
 // What compiled JSX does: create the element, then insert its (reactive) children.
@@ -87,6 +87,36 @@ describe('an element the server rendered', () => {
 
     expect([...host.children].map((a) => a.textContent)).toEqual(['org', 'home', 'crm']);
     expect(host.children[0]).toBe(org);
+  });
+
+  it('applies a prop the app writes while it hydrates once the hydration is done', async () => {
+    // The page hydrates in a batch whose effects run before hydration ends. An update made
+    // there built the element's new content while server nodes were still being claimed,
+    // and claimed the page's nodes for itself (the page frame moved into a sidebar).
+    class Side extends typedElement({ groups: prop.object<string[]>([]) }) {
+      protected override render(): unknown {
+        return h('nav', For({ each: () => this.groups, children: (group: string) => h('div', () => [h('span', group)]) }));
+      }
+    }
+    document.body.innerHTML =
+      '<fx-hydrate-side data-fx-ssr data-fx-props="{&quot;groups&quot;:[&quot;Decide&quot;]}"><nav><div><span>Decide</span></div></nav></fx-hydrate-side>';
+    const host = document.querySelector('fx-hydrate-side') as HTMLElement & { groups: string[] };
+    defineCustomElement('fx-hydrate-side', Side);
+    await Promise.resolve();
+    const adopted = host.querySelector('div');
+
+    beginAppHydration();
+    try {
+      host.groups = ['Decide', 'Manage'];
+      expect([...host.querySelectorAll('span')].map((span) => span.textContent)).toEqual(['Decide']);
+      expect(host.querySelector('div')).toBe(adopted);
+    } finally {
+      endAppHydration();
+    }
+    await Promise.resolve();
+
+    expect([...host.querySelectorAll('span')].map((span) => span.textContent)).toEqual(['Decide', 'Manage']);
+    expect(host.groups).toEqual(['Decide', 'Manage']);
   });
 
   it('lets the page adopt the elements after it', async () => {

@@ -182,7 +182,7 @@ function prepare(constructor: Function): void {
         return stateOf(this, name).read();
       },
       set(this: HTMLReactiveElement, value: unknown) {
-        stateOf(this, name).write(value);
+        writeFromOutside(this, name, value);
       },
     });
   }
@@ -190,6 +190,8 @@ function prepare(constructor: Function): void {
 
 /** Filled by the class's static block: the one way in to its private state. */
 let stateOf: (element: HTMLReactiveElement, name: string) => PropState<unknown>;
+/** Filled by the class's static block: a prop written from outside, by a page or a script. */
+let writeFromOutside: (element: HTMLReactiveElement, name: string, value: unknown) => void;
 
 export class HTMLReactiveElement extends BaseElement {
   /** The declared properties, and the attributes that mirror them. Inherited and merged. */
@@ -244,6 +246,32 @@ export class HTMLReactiveElement extends BaseElement {
       if (!state) throw new Error(`[fluixi] ${name} is not a declared prop of <${element.localName}>`);
       return state;
     };
+    writeFromOutside = (element, name, value) => element.#writeFromOutside(name, value);
+  }
+
+  /**
+   * Props written while the app hydrates around an element already built, applied once it is
+   * done. The page hydrates inside a batch whose effects run before hydration ends: an update
+   * run there builds the element's new content while server nodes are still being claimed,
+   * and its templates claimed the page's nodes as their own (the page's frame moved into the
+   * element). Until then the element shows what it adopted from the server.
+   */
+  #deferred: Map<string, () => void> | null = null;
+
+  #writeFromOutside(name: string, value: unknown, apply: () => void = () => stateOf(this, name).write(value)): void {
+    if (!this.#built || !isAppHydrationPending()) {
+      apply();
+      return;
+    }
+    if (!this.#deferred) {
+      this.#deferred = new Map();
+      whenAppHydrated(() => {
+        const pending = this.#deferred;
+        this.#deferred = null;
+        for (const write of pending?.values() ?? []) write();
+      });
+    }
+    this.#deferred.set(name, apply);
   }
 
   #statesCache: Record<string, PropState<unknown>> | null = null;
@@ -336,9 +364,9 @@ export class HTMLReactiveElement extends BaseElement {
       value,
     );
     if (this.#reflecting.has(name)) return;
-    for (const state of Object.values(this.#states())) {
+    for (const [prop, state] of Object.entries(this.#states())) {
       if (state.attribute !== name) continue;
-      state.write(state.declaration.fromAttribute(value));
+      this.#writeFromOutside(prop, value, () => state.write(state.declaration.fromAttribute(value)));
       return;
     }
   }
