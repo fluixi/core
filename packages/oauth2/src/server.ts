@@ -162,6 +162,9 @@ function signInRedirect(request: Request, config: OAuthRoutesConfig): Response |
   if (open.some((path) => url.pathname === path || url.pathname.startsWith(path.endsWith('/') ? path : `${path}/`))) {
     return null;
   }
+  // Back from a refused sign-in: show the page and its error, or a required sign-in would
+  // send the visitor straight back to the provider, which refuses again, in a loop.
+  if (url.searchParams.has('auth_error')) return null;
   if (mode === 'silent' && hasCookie(request, checkedCookie(config).name)) return null;
   const login = new URLSearchParams({ returnTo: url.pathname + url.search });
   if (mode === 'silent') login.set('prompt', 'none');

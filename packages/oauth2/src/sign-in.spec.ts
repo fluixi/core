@@ -58,6 +58,11 @@ describe('a signed-out page load', () => {
     expect(await after.text()).toBe('rendered');
   });
 
+  it('shows the page a refused sign-in came back to instead of asking again', async () => {
+    const answer = await sessionLocals(config({ signIn: 'required' }))(page('/?auth_error=access_denied'), pass);
+    expect(await answer.text()).toBe('rendered');
+  });
+
   it('leaves API calls, assets, auth routes and public paths alone', async () => {
     const mw = sessionLocals(config({ signIn: 'required', publicPaths: ['/legal'] }));
     const api = new Request('https://app.test/api/x', { headers: { 'sec-fetch-dest': 'empty', accept: 'application/json' } });
