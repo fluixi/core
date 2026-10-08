@@ -135,11 +135,24 @@ function renderLayer(
       });
     };
     const [resource, { refetch }] = createResource(() => {
-      const result = loader({ params: base.params, location: base.location }, owner, () => cancelled, trackDeps);
+      // The params and location this load is for, fixed now. Accessors read later would see
+      // the next navigation's: a lazy route reads them after its module resolves, and a
+      // reload a revalidation started just before a navigation then ran with the next page's
+      // params (an empty id).
+      const params = untrack(base.params);
+      const location = untrack(base.location);
+      const result = loader({ params: () => params, location: () => location }, owner, () => cancelled, trackDeps);
       return router ? router.trackLoad(result) : result;
     });
     // A revalidated cache entry: load again. The page stays on screen with its current data.
-    onCleanup(onRevalidate(() => void refetch()));
+    // Not a page on its way out (another route matched at this depth, kept until the next one
+    // has its data): its loader would run with the params of the page replacing it.
+    onCleanup(
+      onRevalidate(() => {
+        if (untrack(() => base.matched()[depth]?.route) !== m.route) return;
+        void refetch();
+      }),
+    );
     // A navigation that changes only this layer's params keeps the layer, so nothing else
     // would load its data for them. Compared by value: `matched` is rebuilt on every navigation.
     let loadedFor = untrack(() => JSON.stringify(base.matched()[depth]?.params ?? {}));
