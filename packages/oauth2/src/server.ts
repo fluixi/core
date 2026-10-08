@@ -120,6 +120,12 @@ export interface OAuthRoutesConfig {
   signIn?: 'manual' | 'silent' | 'required';
   /** Paths `silent` and `required` leave alone, besides the auth routes: `/health`, `/legal`. */
   publicPaths?: string[];
+  /**
+   * Paths that always need someone signed in, whatever `signIn` says for the rest: a public
+   * site with a private area (`/o` for a workspace) sends a signed-out page load there to
+   * sign in, and shows the other pages as `signIn` decides.
+   */
+  protectedPaths?: string[];
 }
 
 const PROMPTS = new Set(['none', 'login', 'consent', 'select_account']);
@@ -153,15 +159,19 @@ function hasCookie(request: Request, name: string): boolean {
 }
 
 /** Where `signIn` sends a signed-out visitor's page request, or null to render it as is. */
+/** Whether `pathname` is `path` or below it. */
+function under(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
+}
+
 function signInRedirect(request: Request, config: OAuthRoutesConfig): Response | null {
-  const mode = config.signIn ?? 'manual';
-  if (mode === 'manual' || !isPageRequest(request)) return null;
+  if (!isPageRequest(request)) return null;
   const url = new URL(request.url);
   const base = (config.basePath ?? '/auth').replace(/\/$/, '');
-  const open = [base, ...(config.publicPaths ?? [])];
-  if (open.some((path) => url.pathname === path || url.pathname.startsWith(path.endsWith('/') ? path : `${path}/`))) {
-    return null;
-  }
+  const guarded = (config.protectedPaths ?? []).some((path) => under(url.pathname, path));
+  const mode = guarded ? 'required' : (config.signIn ?? 'manual');
+  if (mode === 'manual') return null;
+  if ([base, ...(config.publicPaths ?? [])].some((path) => under(url.pathname, path))) return null;
   // Back from a refused sign-in: show the page and its error, or a required sign-in would
   // send the visitor straight back to the provider, which refuses again, in a loop.
   if (url.searchParams.has('auth_error')) return null;

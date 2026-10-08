@@ -58,6 +58,14 @@ describe('a signed-out page load', () => {
     expect(await after.text()).toBe('rendered');
   });
 
+  it('always sends a signed-out visitor to sign in under a protected path', async () => {
+    const mw = sessionLocals(config({ signIn: 'silent', protectedPaths: ['/o'] }));
+    const workspace = await mw(page('/o/acme', 'fx_session_checked=1'), pass);
+    expect(workspace.headers.get('location')).toBe('/auth/login?returnTo=%2Fo%2Facme');
+    expect(await (await mw(page('/organizations', 'fx_session_checked=1'), pass)).text()).toBe('rendered');
+    expect(await (await sessionLocals(config({ protectedPaths: ['/o'] }))(page('/'), pass)).text()).toBe('rendered');
+  });
+
   it('shows the page a refused sign-in came back to instead of asking again', async () => {
     const answer = await sessionLocals(config({ signIn: 'required' }))(page('/?auth_error=access_denied'), pass);
     expect(await answer.text()).toBe('rendered');
