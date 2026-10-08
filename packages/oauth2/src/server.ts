@@ -284,21 +284,8 @@ interface SessionPayload {
   pending?: { verifier: string; state: string; returnTo?: string; silent?: boolean };
 }
 
-/**
- * The middleware.
- *
- * Handles `<basePath>/login`, `/callback`, `/refresh`, `/me`, `/session-check` and
- * `/logout`, and passes anything else along untouched.
- */
-export function oauthRoutes(config: OAuthRoutesConfig) {
-  const base = (config.basePath ?? '/auth').replace(/\/$/, '');
-  const scopes = config.scopes ?? ['openid', 'profile', 'email'];
-  const cookie = createSessionCookie<SessionPayload>({
-    secret: config.cookieSecret,
-    name: config.cookieName,
-    secure: config.secureCookie,
-  });
-
+/** Endpoints, client authentication and the token request, for the routes and `sessionLocals`. */
+function tokenClient(config: OAuthRoutesConfig) {
   let endpoints: Endpoints | null = config.endpoints ?? null;
   const resolve = async (): Promise<Endpoints> => {
     if (endpoints) return endpoints;
@@ -308,12 +295,6 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     endpoints = await discover(config.issuer);
     return endpoints;
   };
-
-  const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { 'content-type': 'application/json', ...headers },
-    });
 
   const clientAuth: ClientAuth = {
     clientId: config.clientId,
@@ -351,6 +332,80 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     }
     return payload;
   }
+
+  return { resolve, tokenRequest, clientAuth };
+}
+
+/**
+ * Renewals in flight or just finished, by the refresh token they spent. The provider rotates
+ * refresh tokens and treats a second use of one as theft, revoking the whole family: requests
+ * that arrive together with the same expired cookie (a page and its server functions) must
+ * share one renewal, and one that arrives a moment later with the old cookie still gets its
+ * result. One process only; replicas need the provider to allow a short reuse window.
+ */
+const renewals = new Map<string, { until: number; result: Promise<SessionPayload | null> }>();
+const RENEWAL_REUSE_MS = 30_000;
+
+/** The session with fresh tokens, or null when the provider refuses to renew it. */
+function renew(
+  current: SessionPayload,
+  tokenRequest: ReturnType<typeof tokenClient>['tokenRequest'],
+): Promise<SessionPayload | null> {
+  const refreshToken = current.refreshToken!;
+  const now = Date.now();
+  for (const [key, entry] of renewals) if (entry.until <= now) renewals.delete(key);
+  const known = renewals.get(refreshToken);
+  if (known) return known.result;
+  const result = (async () => {
+    // The key that obtained the refresh token, or the provider refuses the refresh.
+    const key = current.dpop ? await importDpopKey(current.dpop) : null;
+    const payload = await tokenRequest({ grant_type: 'refresh_token', refresh_token: refreshToken }, key);
+    return {
+      accessToken: String(payload.access_token ?? ''),
+      // A provider that rotates refresh tokens sends a new one; one that does not
+      // expects the old one to keep working.
+      refreshToken: typeof payload.refresh_token === 'string' ? payload.refresh_token : refreshToken,
+      idToken: typeof payload.id_token === 'string' ? payload.id_token : current.idToken,
+      expiresAt: expiryFrom(payload.expires_in),
+      tokenType: typeof payload.token_type === 'string' ? payload.token_type : current.tokenType,
+      dpop: current.dpop,
+      sessionState: current.sessionState,
+    } satisfies SessionPayload;
+  })().catch((error: unknown) => {
+    // A refusal is an answer: the session is over. Anything else (the provider down) is not.
+    if (error instanceof OAuthError) return null;
+    renewals.delete(refreshToken);
+    throw error;
+  });
+  renewals.set(refreshToken, { until: now + RENEWAL_REUSE_MS, result });
+  return result;
+}
+
+/** Renewed a little before it runs out, so a request does not reach an API with a dying token. */
+const EXPIRY_SKEW_MS = 30_000;
+const expired = (session: SessionPayload) =>
+  session.expiresAt !== undefined && session.expiresAt - EXPIRY_SKEW_MS <= Date.now();
+
+/**
+ * The middleware.
+ *
+ * Handles `<basePath>/login`, `/callback`, `/refresh`, `/me`, `/session-check` and
+ * `/logout`, and passes anything else along untouched.
+ */
+export function oauthRoutes(config: OAuthRoutesConfig) {
+  const { resolve, tokenRequest, clientAuth } = tokenClient(config);
+  const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'content-type': 'application/json', ...headers },
+    });
+  const base = (config.basePath ?? '/auth').replace(/\/$/, '');
+  const scopes = config.scopes ?? ['openid', 'profile', 'email'];
+  const cookie = createSessionCookie<SessionPayload>({
+    secret: config.cookieSecret,
+    name: config.cookieName,
+    secure: config.secureCookie,
+  });
 
   return async function middleware(
     request: Request,
@@ -490,28 +545,9 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     if (route === '/refresh') {
       const current = await session();
       if (!current?.refreshToken) return json({ error: 'no_session' }, 401);
-
-      // The key that obtained the refresh token, or the provider refuses the refresh.
-      const key = current.dpop ? await importDpopKey(current.dpop) : null;
-      const payload = await tokenRequest(
-        { grant_type: 'refresh_token', refresh_token: current.refreshToken },
-        key,
-      );
-      const refreshed = await cookie.write({
-        accessToken: String(payload.access_token ?? ''),
-        // A provider that rotates refresh tokens sends a new one; one that does not
-        // expects the old one to keep working.
-        refreshToken:
-          typeof payload.refresh_token === 'string'
-            ? payload.refresh_token
-            : current.refreshToken,
-        idToken: current.idToken,
-        expiresAt: expiryFrom(payload.expires_in),
-        tokenType: typeof payload.token_type === 'string' ? payload.token_type : current.tokenType,
-        dpop: current.dpop,
-        sessionState: current.sessionState,
-      });
-      return json({ ok: true }, 200, { 'set-cookie': refreshed });
+      const renewed = await renew(current, tokenRequest);
+      if (!renewed) return json({ error: 'refresh_refused' }, 401, { 'set-cookie': cookie.clear() });
+      return json({ ok: true }, 200, { 'set-cookie': await cookie.write(renewed) });
     }
 
     if (route === '/me') {
@@ -640,6 +676,7 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     secure: config.secureCookie,
   });
 
+  const { tokenRequest } = tokenClient(config);
   const ttl = config.userCacheMs ?? 30_000;
   /**
    * Keyed by the access token, which this process already holds in the cookie it just
@@ -669,31 +706,63 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     const { getRequestLocals } = await import('@fluixi/server');
     const locals = getRequestLocals(request) as Record<string, unknown>;
 
-    const session = await cookie.read(request);
+    let session = await cookie.read(request);
+    // What the browser's cookie must become: renewed tokens, or nothing.
+    let setCookie: string | undefined;
+    const respond = async (response: Response): Promise<Response> => {
+      if (!setCookie) return response;
+      const copy = new Response(response.body, response);
+      copy.headers.append('set-cookie', setCookie);
+      return copy;
+    };
+    const renewOrDrop = async (current: SessionPayload): Promise<SessionPayload | null> => {
+      const renewed = current.refreshToken ? await renew(current, tokenRequest) : null;
+      setCookie = renewed ? await cookie.write(renewed) : cookie.clear();
+      return renewed;
+    };
+
+    // An access token lives minutes, the session days: renew it here, on the request that
+    // finds it expired, rather than rendering a signed-in visitor as nobody.
+    if (session?.accessToken && expired(session)) {
+      session = await renewOrDrop(session).catch(() => session);
+    }
 
     // Written either way. A route that reads locals should find "nobody" rather than
     // nothing, so the absent case and the signed-out case look the same to it.
-    if (!session?.accessToken) {
+    const signedOut = async (): Promise<Response> => {
       const redirect = signInRedirect(request, config);
-      if (redirect) return redirect;
+      if (redirect) return respond(redirect);
       locals.auth = { user: null, session: null };
-      return next();
-    }
+      return respond(await next());
+    };
+    if (!session?.accessToken) return signedOut();
 
     // Server code calls the app's APIs as this user with it; the token itself stays here.
-    const fetchAs: AuthorizedFetch = (input, init) => sendAs(session, input, init);
+    const live: SessionPayload = session;
+    const fetchAs: AuthorizedFetch = (input, init) => sendAs(live, input, init);
 
-    const cached = cache.get(session.accessToken);
+    const cached = cache.get(live.accessToken);
     if (cached && cached.until > Date.now()) {
-      locals.auth = { user: cached.user, session: { expiresAt: session.expiresAt }, fetch: fetchAs };
-      return next();
+      locals.auth = { user: cached.user, session: { expiresAt: live.expiresAt }, fetch: fetchAs };
+      return respond(await next());
     }
 
     let user: unknown = null;
     try {
       const endpoints = config.endpoints ?? (config.issuer ? await discover(config.issuer) : null);
       if (endpoints?.userinfo) {
-        const response = await withToken(endpoints.userinfo, session);
+        let response = await withToken(endpoints.userinfo, session);
+        // Refused before its time (revoked, a clock apart): renew once, and when that is
+        // refused too the session is over, so the visitor goes the signed-out way.
+        if (response.status === 401 && !setCookie) {
+          session = await renewOrDrop(session).catch(() => session);
+          if (!session) return signedOut();
+          response = await withToken(endpoints.userinfo, session);
+        }
+        if (response.status === 401) {
+          setCookie = cookie.clear();
+          return signedOut();
+        }
         if (response.ok) {
           const claims = (await response.json()) as Record<string, unknown>;
           user = config.mapUser ? config.mapUser(claims, session.accessToken) : claims;
@@ -707,10 +776,13 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       // proceeds as signed out, and the client retries on its own.
     }
 
+    if (!session) return signedOut();
+    const current = session;
+    const fetchCurrent: AuthorizedFetch = (input, init) => sendAs(current, input, init);
     locals.auth = user
-      ? { user, session: { expiresAt: session.expiresAt }, fetch: fetchAs }
+      ? { user, session: { expiresAt: current.expiresAt }, fetch: fetchCurrent }
       : { user: null, session: null };
-    return next();
+    return respond(await next());
   };
 }
 
