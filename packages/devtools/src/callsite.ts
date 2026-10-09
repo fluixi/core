@@ -106,5 +106,15 @@ export function callSite(
 export function currentCallSite(
   origin?: string,
 ): { location: ReactiveSourceLocation; external: boolean } | undefined {
-  return callSite(new Error().stack, origin);
+  // Deeper than the default ten frames: the reporting machinery and the framework's own calls
+  // can fill those, and the application's frame is the one past them.
+  // A V8 extension, absent from the DOM types; elsewhere it is an ignored property.
+  const errors = Error as ErrorConstructor & { stackTraceLimit?: number };
+  const limit = errors.stackTraceLimit;
+  errors.stackTraceLimit = 50;
+  try {
+    return callSite(new Error().stack, origin);
+  } finally {
+    errors.stackTraceLimit = limit;
+  }
 }

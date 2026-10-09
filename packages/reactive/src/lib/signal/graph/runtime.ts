@@ -18,7 +18,7 @@
  * watcher's notify only schedules, and the re-run, a tracked recompute, happens on
  * flush.
  */
-import { Computed, Watcher } from './core.js';
+import { Computed, Watcher, untrack } from './core.js';
 import { G } from './state.js';
 import {
   reportReactiveContext,
@@ -224,14 +224,17 @@ function disposeOwner(owner: Owner, final = true): void {
   if (final) owner.disposed = true;
 }
 
-/** Create a root reactive scope with explicit disposal (TC39 has no ownership). */
+/**
+ * Create a root reactive scope with explicit disposal (TC39 has no ownership). Untracked: what
+ * runs in it belongs to it, so the computation that created it does not depend on its reads.
+ */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
   const owner = makeOwner(G.owner);
   if (G.owner) (G.owner.owned ??= []).push(owner);
   const prev = G.owner;
   G.owner = owner;
   try {
-    return fn(() => disposeOwner(owner));
+    return untrack(() => fn(() => disposeOwner(owner)));
   } finally {
     G.owner = prev;
   }
