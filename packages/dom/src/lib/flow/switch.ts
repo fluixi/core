@@ -1,5 +1,5 @@
 import { Accessor, createMemo, createChildOwner, disposeScope, getOwner, runWithOwner, type Owner } from '@fluixi/reactive/signal';
-import { resolveReactiveProp, isTruthy } from './utils.js';
+import { resolveReactiveProp } from './utils.js';
 import type { ComponentChild } from '../shared/types.js';
 
 // Internal marker used by Switch to identify Match nodes.
@@ -117,7 +117,8 @@ export function Switch(props: SwitchProps): Accessor<any> {
         continue;
       }
       const value = branch.when();
-      if (isTruthy(value)) {
+      // Truthy as JavaScript and Show have it: an empty string or a zero is no match.
+      if (value) {
         enterBranch(i);
         return runWithOwner(branchScope, () => {
           // Read once: `children` is a getter that builds the branch afresh on every read, so
