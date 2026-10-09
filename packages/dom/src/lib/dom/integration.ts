@@ -4,6 +4,7 @@
 // who had not loaded core. The slot stays so a host can still override it.
 
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
+import { runWithOwner } from '@fluixi/reactive/signal';
 import { asComponent } from '../component/modifiers.js';
 import { openKeyScope } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
@@ -36,7 +37,12 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   props?: U | undefined,
 ): CreateComponentReturnType<T, U> {
   // Before anything the component builds, now or in a memo later: its hydration keys.
-  openKeyScope();
+  const scope = openKeyScope();
+  if (scope) return runWithOwner(scope, () => build(Comp, props));
+  return build(Comp, props);
+}
+
+function build<T extends (props?: any) => any, U = any>(Comp: T, props?: U): CreateComponentReturnType<T, U> {
   if (_slot.fn) return _slot.fn(Comp, props);
 
   // Before the call, so the computation this is created inside is still the running one.

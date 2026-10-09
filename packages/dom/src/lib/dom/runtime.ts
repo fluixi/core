@@ -969,13 +969,15 @@ export function insertExpression(
     // content. Register a cleanup that removes the slot's nodes when its effect is torn down. This
     // only fires when the enclosing effect re-runs (the array itself changed); an in-place update
     // (e.g. <Show> toggling) never re-runs this effect, so it keeps updating in place.
+    //
+    // The marker stays: it is in this array, so the next reconcile removes it, and until then it
+    // holds the position. The cleanup runs before the re-run, and removing the markers there left
+    // the reconcile only detached nodes to place against, so with no `marker` the new content
+    // went to the end of the parent, after the siblings that follow it.
     for (const slot of reactiveSlots) {
       if (slot.wired) continue;
       const disposeSlot = insert(parent, slot.sig, slot.marker) as () => Node | Node[] | null;
-      onCleanup(() => {
-        cleanChildren(parent, disposeSlot());
-        if (slot.marker.parentNode === parent) parent.removeChild(slot.marker);
-      });
+      onCleanup(() => cleanChildren(parent, disposeSlot()));
     }
     return reconciled;
   }
@@ -1091,10 +1093,8 @@ function flattenArray(
               const nodes = disposeSlot();
               for (const node of Array.isArray(nodes) ? nodes : nodes ? [nodes] : []) adopted.add(node);
               parent.insertBefore(slot, here());
-              onCleanup(() => {
-                cleanChildren(parent, disposeSlot());
-                if (slot.parentNode === parent) parent.removeChild(slot);
-              });
+              // The content only: the marker is in the array, see the note in insertExpression.
+              onCleanup(() => cleanChildren(parent, disposeSlot()));
               reactiveSlots.push({ marker: slot, sig: resolved, wired: true });
               continue;
             }
@@ -1149,8 +1149,12 @@ function flattenArray(
 
     if (isDomNode(item)) {
       // Hydrating: a member built before this walk (an element adopted by its key) stands where
-      // the cursor is. Step past it, or a later slot that claims nothing anchors in front of it.
-      if (hydration.active && hydration.cursor === item) hydration.cursor = (item as Node).nextSibling;
+      // the cursor is, or the cursor is still inside it after its children were adopted, as
+      // `createNativeElement` leaves it. Step past it either way, as the single-node path does,
+      // or every later slot in this parent anchors at its end.
+      if (hydration.active && (hydration.cursor === item || hydration.parents.includes(item as Node))) {
+        ascendPast(item as Node);
+      }
       result.push(item);
       continue;
     }

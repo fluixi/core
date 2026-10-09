@@ -8,7 +8,7 @@
 
 // `parents` is the stack of elements the cursor has descended into (via the walker's
 // hydrateElement). Lets the cursor auto-ascend when a sibling list is exhausted.
-import { getOwner, type Owner } from '@fluixi/reactive/signal';
+import { createChildOwner, getOwner, type Owner } from '@fluixi/reactive/signal';
 import { isServer } from './server/host.js';
 import { getRequestContext } from './server/request-context.js';
 
@@ -252,14 +252,22 @@ export function releaseKeyed(el: Element): void {
   if (key && keyed_nodes?.get(key) === el) keyed_nodes.delete(key);
 }
 
-/** A component starts: the elements it builds, now or later, number within its own scope. */
-export function openKeyScope(): void {
-  if (!keyed()) return;
+/**
+ * A component starts: the elements it builds, now or later, number within its own scope.
+ * Returns the owner to run the component under, or null when no key is needed. The scope goes
+ * on a child owner, never on the current one: a component created directly in its parent
+ * shares the parent's owner, and stamping there moved every later sibling into the
+ * component's scope, so a branch that rendered differently on the client shifted their keys.
+ */
+export function openKeyScope(): Owner | null {
+  if (!keyed()) return null;
   const owner = getOwner() as ScopedOwner | null;
-  if (!owner) return;
+  if (!owner) return null;
   const parent = scopeOf(owner);
   const scope: KeyScope = { id: parent.id + (parent.next++).toString(36) + '.', next: 0 };
-  (owner.contexts ??= new Map()).set(KEY_SCOPE, scope);
+  const child = createChildOwner(owner) as ScopedOwner;
+  (child.contexts = new Map()).set(KEY_SCOPE, scope);
+  return child;
 }
 
 /** Name the current owner's scope: an element rendering its own content in its own root. */
