@@ -14,11 +14,11 @@
  * One implementation, so the two paths can't drift the way `spread` and
  * `applyProps` did.
  */
-import { applyProps, insert, isSVGElement } from './runtime.js';
+import { applyProps, createNativeElement, holeContent, holeEnd, holeScope, insert, isSVGElement } from './runtime.js';
+import { hydration } from './hydration-state.js';
+import { getServerNodes, isServer } from './server/host.js';
 import { createComponent } from './integration.js';
-import { isServer, getServerNodes } from './server/host.js';
 import { readChildren } from '@fluixi/reactive/signal';
-import { SVG_NAMESPACE } from './utils.js';
 
 /** A tag name, or a component function. */
 export type DynamicType = string | ((props: any) => any);
@@ -89,11 +89,10 @@ export function createDynamicElement<T extends DynamicType>(
   if (typeof type !== 'string' || type.length === 0) return null as Result;
 
   const svgTag = isSVGElement(type);
-  if (isServer()) return getServerNodes().createElement(type, svgTag) as Result;
-
-  const element = svgTag
-    ? document.createElementNS(SVG_NAMESPACE, type)
-    : document.createElement(type);
+  // Through createNativeElement, like a tag the compiler sees: on the server it carries a
+  // hydration key, and during hydration the server's element is claimed rather than a new
+  // one built. The server branch used to return the bare element, without props or children.
+  const element = createNativeElement(type, svgTag);
 
   applyProps(element, props, svgTag);
   insertChildren(element, props);
@@ -101,20 +100,29 @@ export function createDynamicElement<T extends DynamicType>(
 }
 
 /**
- * Insert `props.children`, read through `readChildren` so a lazy `get children()`
- *, which is how the compiler emits component children, resolves here rather
- * than being materialised early.
+ * Insert `props.children` into a hole, the way the compiler fills a template's: between an
+ * `fx` and an `fx/` marker. The server writes the markers around the content, so hydration
+ * finds them inside the claimed element and adopts what lies between instead of appending
+ * a second copy. Children are read through `readChildren`, so a lazy `get children()`,
+ * which is how the compiler emits component children, resolves here with the cursor placed.
  */
 function insertChildren(element: Element, props: Record<string, any>): void {
   if (!props || props.children === undefined) return;
 
-  const children = readChildren(() => props.children);
-  const insertOne = (child: unknown): void => {
-    // A function child is reactive and needs an anchor to update in place;
-    // a static one is appended directly.
-    insert(element, child as never, (typeof child === 'function' ? null : undefined) as never);
-  };
+  let start = element.firstChild as Node | null;
+  let end: Node;
+  if (hydration.active && start?.nodeType === 8 && (start as Comment).data === 'fx') {
+    end = holeEnd(start);
+  } else {
+    start = marker('fx');
+    end = marker('fx/');
+    element.appendChild(start);
+    element.appendChild(end);
+  }
+  const hole = start;
+  insert(element, holeScope(hole, () => readChildren(() => props.children)) as never, end as never, holeContent(hole, end) as never);
+}
 
-  if (Array.isArray(children)) children.forEach(insertOne);
-  else insertOne(children);
+function marker(data: string): Comment {
+  return isServer() ? (getServerNodes().createComment(data) as unknown as Comment) : document.createComment(data);
 }
