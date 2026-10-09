@@ -134,6 +134,10 @@ function renderLayer(
         });
       });
     };
+    // Whether the loader looked at the location: only then does a change of query string,
+    // which keeps this layer, concern it. Unknown until it has run here: a page hydrated from
+    // the server got its data without running it.
+    let readsLocation: boolean | undefined;
     const [resource, { refetch }] = createResource(() => {
       // The params and location this load is for, fixed now. Accessors read later would see
       // the next navigation's: a lazy route reads them after its module resolves, and a
@@ -141,7 +145,19 @@ function renderLayer(
       // params (an empty id).
       const params = untrack(base.params);
       const location = untrack(base.location);
-      const result = loader({ params: () => params, location: () => location }, owner, () => cancelled, trackDeps);
+      readsLocation = false;
+      const result = loader(
+        {
+          params: () => params,
+          location: () => {
+            readsLocation = true;
+            return location;
+          },
+        },
+        owner,
+        () => cancelled,
+        trackDeps,
+      );
       return router ? router.trackLoad(result) : result;
     });
     // A revalidated cache entry: load again. The page stays on screen with its current data.
@@ -153,18 +169,24 @@ function renderLayer(
         void refetch();
       }),
     );
-    // A navigation that changes only this layer's params keeps the layer, so nothing else
-    // would load its data for them. Compared by value: `matched` is rebuilt on every navigation.
+    // A navigation that changes only this layer's params, or only the query string, keeps the
+    // layer, so nothing else would load its data for them. Params compared by value: `matched`
+    // is rebuilt on every navigation. The query counts only for a loader that read the
+    // location; the hash never does.
     let loadedFor = untrack(() => JSON.stringify(base.matched()[depth]?.params ?? {}));
+    let searchedFor = untrack(() => base.location().search);
     createEffect(() => {
       const now = base.matched()[depth];
+      const search = base.location().search;
       // Another route at this depth: this page is on its way out, kept only until the next
       // one has its data, and the new params are not for it.
       if (now?.route !== m.route) return;
       const params = JSON.stringify(now.params ?? {});
-      if (params === loadedFor) return;
+      const paramsMoved = params !== loadedFor;
+      const searchMoved = readsLocation !== false && search !== searchedFor;
       loadedFor = params;
-      untrack(() => void refetch());
+      searchedFor = search;
+      if (paramsMoved || searchMoved) untrack(() => void refetch());
     });
     // A failed load throws where the page reads it, so the nearest ErrorBoundary shows it.
     // A resource reads as undefined once it has failed, which left the page empty and gave
