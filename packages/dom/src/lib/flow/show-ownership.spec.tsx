@@ -221,7 +221,11 @@ describe('Dynamic component ownership', () => {
     const [comp, setComp] = createSignal<unknown>(A);
 
     createRoot(() => {
-      const view = Dynamic({ component: () => comp() } as never);
+      const view = Dynamic({
+        get component() {
+          return comp();
+        },
+      } as never);
       expect(read(view)).toBe('A');
       setComp(() => B);
       expect(read(view)).toBe('B');
@@ -243,7 +247,7 @@ describe('Dynamic component ownership', () => {
     };
 
     createRoot(() => {
-      const view = Dynamic({ component: () => Comp } as never);
+      const view = Dynamic({ component: Comp } as never);
       read(view);
       setLabel('two');
       read(view);
