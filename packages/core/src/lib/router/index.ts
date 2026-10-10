@@ -952,7 +952,7 @@ export function Link(props: LinkProps) {
   if (props.slot) setAttribute(a, 'slot', read(props.slot) as string);
 
   // Forward any other author attributes (data-*, aria-*, style, id, title, role, ...)
-  // onto the <a>, the way <Form> does. Without this a component composed via
+  // onto the <a>, the way <ActionForm> does. Without this a component composed via
   // `as={Link}` (polymorphic) silently loses its styling hooks: e.g. @fluixi-ui
   // parts carry `data-*` slots + inline styles that would otherwise be dropped, so
   // the element renders unstyled. Own-props handled elsewhere are skipped:
@@ -1024,7 +1024,7 @@ export const A = Link;
 import type { Action } from './data.js';
 import { onRevalidate } from './data.js';
 
-export interface FormProps {
+export interface ActionFormProps {
   /** The action to run on submit (typically wrapping a `"use server"` function). */
   action: Action<any, any>;
   /** Extra class on the <form>. */
@@ -1034,17 +1034,20 @@ export interface FormProps {
 }
 
 /**
- * A `<form>` wired to an action: on submit it builds `FormData` from the form and calls
+ * A `<form>` wired to a router action: on submit it builds `FormData` from the form and calls
  * `action(formData)` (which tracks submission state via `useSubmission`), without a full
  * page navigation. The markup carries `method="post"` + `action={action.url}` so it's
  * progressive-enhancement-ready.
  *
- *   <Form action={save}>
+ *   <ActionForm action={save}>
  *     <input name="title" />
  *     <button>Save</button>
- *   </Form>
+ *   </ActionForm>
+ *
+ * It sends what the fields hold and checks nothing. For a form whose fields are validated
+ * first, use `@fluixi-ui/form`'s `Form` with an `action`.
  */
-export function Form(props: FormProps) {
+export function ActionForm(props: ActionFormProps) {
   const action = props.action;
   const cls = (props.className ?? props.class) as string | undefined; // compiler passes class -> className
   const url = (action as any).url ?? '';

@@ -66,6 +66,6 @@ the client is meant to act on, and let everything else be a generic failure.
 
 `@fluixi/forms` turns a server function into a progressive-enhancement `<form action>`, so
 it works before JavaScript loads. For the router's own mutation flow, pending state, retry,
-see [`action` and `<Form>`](/v1/en/routing).
+see [`action` and `<ActionForm>`](/v1/en/routing).
 
 Next: **[API routes](/v1/en/api-routes)**.

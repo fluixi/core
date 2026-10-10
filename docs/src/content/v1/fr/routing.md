@@ -236,28 +236,47 @@ const user = createAsync(() => getUser(props.id));
 `action` enveloppe une mutation pour que sa progression soit observable :
 
 ```tsx
-import { action, useSubmission, Form } from '@fluixi/start/router';
+import { action, useSubmission, ActionForm } from '@fluixi/start/router';
 
-const save = action(async (data: FormData) => {
-  await updateProfile(data);
+const save = action(async (fields: { name: string }) => {
+  await updateProfile(fields);
 }, 'save-profile', { invalidates: ['profile'] });
 
 function Profile() {
   const submission = useSubmission(save);
 
   return (
-    <Form action={save}>
+    <ActionForm action={save}>
       <input name="name" />
       <button disabled={!!submission()?.pending}>Save</button>
-    </Form>
+    </ActionForm>
   );
 }
 ```
 
-Utilisez `<Form>`, pas un `<form action={save}>` simple : l'action est une fonction, et un
-attribut `action` doit être une URL. `<Form>` construit le `FormData`, appelle l'action sans
-navigation, et émet quand même `method="post"` avec la vraie URL de l'action dans le balisage,
-si bien qu'une soumission fonctionne avant le chargement du JavaScript.
+Utilisez `<ActionForm>`, pas un `<form action={save}>` simple : l'action est une fonction, et
+un attribut `action` doit être une URL. `<ActionForm>` rassemble les champs dans un objet,
+appelle l'action sans navigation, et émet quand même `method="post"` avec la vraie URL de
+l'action dans le balisage, si bien qu'une soumission fonctionne avant le chargement du
+JavaScript.
+
+`<ActionForm>` envoie les champs tels quels. Quand il faut les vérifier d'abord (obligatoire,
+une adresse e-mail, une longueur), utilisez `Form` de `@fluixi-ui/form` avec un formulaire
+`@fluixi/forms` et la même action : il valide, affiche chaque erreur sous son champ, et
+n'appelle l'action qu'avec des valeurs vérifiées. Il garde lui aussi `method="post"` et l'URL
+de l'action dans le balisage.
+
+```tsx
+import { createField, createForm, standardValidator } from '@fluixi/forms';
+import { Form, FormField } from '@fluixi-ui/form';
+
+const form = createForm({ name: createField('', { validators: [standardValidator(nameSchema)] }) });
+
+<Form form={form} action={save} novalidate>
+  <FormField control={form.get('name')} label="Nom" />
+  <button type="submit">Enregistrer</button>
+</Form>
+```
 
 Nommez chaque action : le nom sert à suivre ses soumissions, et deux actions sans nom les
 partageraient. `invalidates` liste les données en cache qu'un succès change, pour que les pages

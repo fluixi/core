@@ -230,28 +230,45 @@ const user = createAsync(() => getUser(props.id));
 `action` wraps a mutation so its progress is observable:
 
 ```tsx
-import { action, useSubmission, Form } from '@fluixi/start/router';
+import { action, useSubmission, ActionForm } from '@fluixi/start/router';
 
-const save = action(async (data: FormData) => {
-  await updateProfile(data);
+const save = action(async (fields: { name: string }) => {
+  await updateProfile(fields);
 }, 'save-profile', { invalidates: ['profile'] });
 
 function Profile() {
   const submission = useSubmission(save);
 
   return (
-    <Form action={save}>
+    <ActionForm action={save}>
       <input name="name" />
       <button disabled={!!submission()?.pending}>Save</button>
-    </Form>
+    </ActionForm>
   );
 }
 ```
 
-Use `<Form>`, not a plain `<form action={save}>`, the action is a function, and an `action`
-attribute has to be a URL. `<Form>` builds the `FormData`, calls the action without a page
-navigation, and still emits `method="post"` with the action's real URL in the markup, so a
-submit works before JavaScript loads.
+Use `<ActionForm>`, not a plain `<form action={save}>`: the action is a function, and an
+`action` attribute has to be a URL. `<ActionForm>` collects the fields into an object, calls the
+action without a page navigation, and still emits `method="post"` with the action's real URL in
+the markup, so a submit works before JavaScript loads.
+
+`<ActionForm>` sends the fields as they are. When they need checking first (required, an email,
+a length), use `Form` from `@fluixi-ui/form` with a `@fluixi/forms` form and the same action:
+it validates, shows each error under its field, and calls the action with the checked values
+only. It keeps `method="post"` and the action's URL in the markup too.
+
+```tsx
+import { createField, createForm, standardValidator } from '@fluixi/forms';
+import { Form, FormField } from '@fluixi-ui/form';
+
+const form = createForm({ name: createField('', { validators: [standardValidator(nameSchema)] }) });
+
+<Form form={form} action={save} novalidate>
+  <FormField control={form.get('name')} label="Name" />
+  <button type="submit">Save</button>
+</Form>
+```
 
 Name every action: the name is how its submissions are tracked, and two unnamed actions would
 share them. `invalidates` lists the cached data a success changes, so the pages showing it

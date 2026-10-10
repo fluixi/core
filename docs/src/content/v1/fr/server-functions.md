@@ -70,6 +70,6 @@ générique.
 
 `@fluixi/forms` transforme une fonction serveur en `<form action>` à amélioration
 progressive : elle fonctionne avant le chargement de JavaScript. Pour le flux de mutation
-du routeur, état en attente, réessai, voir [`action` et `<Form>`](/v1/fr/routing).
+du routeur, état en attente, réessai, voir [`action` et `<ActionForm>`](/v1/fr/routing).
 
 Ensuite : **[Routes d'API](/v1/fr/api-routes)**.

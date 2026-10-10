@@ -76,7 +76,7 @@ functions), the first paint just happens on the client. `i18n` and `apiDir` defa
   from the client over RPC (`/_server`, same-origin CSRF); `getRequestEvent()` works inside
   it.
 - **Routing** — `@fluixi/start/router` re-exports [`@fluixi/core/router`](../core):
-  `Router`, `Outlet`, `Link`, `Form`, the hooks, `createMemoryHistory`.
+  `Router`, `Outlet`, `Link`, `ActionForm`, the hooks, `createMemoryHistory`.
 - **Static generation** — `prerender: true` builds routes to static HTML in `dist/client`,
   crawling internal `<a href>` links; an object sets explicit `routes` for paths nothing
   links to. The pages still hydrate.
