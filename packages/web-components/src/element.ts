@@ -396,10 +396,15 @@ export class HTMLReactiveElement extends BaseElement {
     return consumeContext(this, context, options);
   }
 
-  /** Dispatch a `CustomEvent`, bubbling and composed by default. False when cancelled. */
+  /**
+   * Dispatch a `CustomEvent`, bubbling and composed by default. False when cancelled.
+   *
+   * The name goes out lowercased: a JSX handler listens for the name after `on`, lowercased,
+   * so `emit('signOut')` reaches `onSignOut`, and a listener added by hand uses `signout`.
+   */
   protected emit<T>(type: string, detail?: T, init?: DispatchInit): boolean {
     this.#dispatch ??= createDispatch(this);
-    return this.#dispatch(type, detail, init);
+    return this.#dispatch(type.toLowerCase(), detail, init);
   }
 
   /** Elements inside this one, by `data-target`, scoped to its render root. */
