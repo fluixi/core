@@ -116,6 +116,32 @@ describe('a refused authorization', () => {
   });
 });
 
+describe('an answer the browser has no flow for', () => {
+  const callback = (state: string, cookie = '') =>
+    new Request(`https://app.test/auth/callback?code=c&state=${state}`, { headers: { cookie } });
+
+  it('starts the sign-in again once, marking the new attempt', async () => {
+    // The pending cookie expired: a provider page refreshed long after the login began.
+    const back = await oauthRoutes(config())(callback('Zbu2_eZSsLQMm_Lea-UAIg'), pass);
+    expect(back.status).toBe(302);
+    expect(back.headers.get('location')).toBe('/auth/login?retry=1');
+    const { state } = await startLogin(config(), 'retry=1');
+    expect(state.endsWith('.retry')).toBe(true);
+  });
+
+  it('gives up on a page after the retry, never with JSON', async () => {
+    const back = await oauthRoutes(config({ defaultReturnTo: '/' }))(callback('abc.retry'), pass);
+    expect(back.status).toBe(302);
+    expect(back.headers.get('location')).toBe('/?auth_error=state_mismatch');
+  });
+
+  it('starts again when another tab began a newer sign-in', async () => {
+    const { cookie } = await startLogin(config(), '');
+    const back = await oauthRoutes(config())(callback('older', cookie), pass);
+    expect(back.headers.get('location')).toBe('/auth/login?retry=1');
+  });
+});
+
 describe('how long a silent answer holds', () => {
   it('is configurable', async () => {
     const cfg = config({ signIn: 'silent', silentRecheck: 300 });

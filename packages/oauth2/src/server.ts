@@ -134,6 +134,8 @@ export interface OAuthRoutesConfig {
   protectedPaths?: string[];
 }
 
+/** Ends the state of a sign-in started again after an answer the browser had no flow for. */
+const RETRY_MARK = '.retry';
 const PROMPTS = new Set(['none', 'login', 'consent', 'select_account']);
 
 /** What a `prompt=none` request ends with when the provider would have to ask the visitor. */
@@ -422,7 +424,10 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     if (route === '/login') {
       const { authorization } = await resolve();
       const { verifier, challenge } = await createPkcePair();
-      const state = createStateValue();
+      // A retry carries its mark in the state itself: the one place that survives the trip
+      // when the cookie does not, so a second failed attempt is told apart from the first.
+      const retry = url.searchParams.get('retry') === '1';
+      const state = createStateValue() + (retry ? RETRY_MARK : '');
 
       const target = new URL(authorization);
       target.searchParams.set('response_type', 'code');
@@ -498,7 +503,24 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const state = url.searchParams.get('state');
       if (!code) return json({ error: 'no_code' }, 400);
       if (!pending || !state || !timingSafeEqual(pending.state, state)) {
-        return json({ error: 'state_mismatch' }, 400);
+        // An answer this browser has no flow for: its cookie expired (a sign-in that took longer
+        // than ten minutes, a provider page refreshed long after), or another tab started a
+        // newer one. Already signed in, the answer is a leftover. Otherwise start again once,
+        // and only then give up, on a page rather than with JSON.
+        const home = safeReturnTo(config.defaultReturnTo, { fallback: '/', origin: url.origin, allowedOrigins: config.allowedReturnOrigins });
+        if (current?.accessToken) return new Response(null, { status: 302, headers: { location: home } });
+        if (!state?.endsWith(RETRY_MARK)) {
+          return new Response(null, { status: 302, headers: { location: `${base}/login?retry=1` } });
+        }
+        const target = new URL(home, url.origin);
+        target.searchParams.set('auth_error', 'state_mismatch');
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: target.origin === url.origin ? target.pathname + target.search : target.toString(),
+            'set-cookie': cookie.clear(),
+          },
+        });
       }
 
       // The token is bound here, at the exchange, so this is where the session's key is made.
