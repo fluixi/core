@@ -36,6 +36,7 @@ import {
   type ClientAuthMethodInput,
 } from './client-auth.js';
 import { discover } from './discovery.js';
+import { idTokenClaims, logoutTokenVerifier, memoryLogouts, type LogoutStore } from './backchannel.js';
 import { createPkcePair, createStateValue, expiryFrom, timingSafeEqual } from './pkce.js';
 import { OAuthError, type Endpoints } from './types.js';
 import { createDpopKey, exportDpopKey, importDpopKey, nonceFrom, proofFor, type DpopKey, type StoredDpopKey } from './dpop.js';
@@ -58,6 +59,12 @@ export interface OAuthRoutesConfig {
   secureCookie?: boolean;
   /** Where to send the browser after a login with no recorded destination. */
   defaultReturnTo?: string;
+  /**
+   * Where back-channel logouts are kept, between the route that hears them and the requests
+   * that end their sessions. Default: this process's memory, right for one instance; several
+   * instances share one (see `LogoutStore`).
+   */
+  logouts?: LogoutStore;
   /**
    * Origins a login may return to besides this server's own.
    *
@@ -394,6 +401,22 @@ const expired = (session: SessionPayload) =>
  * Handles `<basePath>/login`, `/callback`, `/refresh`, `/me`, `/session-check` and
  * `/logout`, and passes anything else along untouched.
  */
+// One default store per configuration, so the routes and sessionLocals built from it share it.
+const defaultLogouts = new WeakMap<OAuthRoutesConfig, LogoutStore>();
+function logoutsOf(config: OAuthRoutesConfig): LogoutStore {
+  if (config.logouts) return config.logouts;
+  let store = defaultLogouts.get(config);
+  if (!store) defaultLogouts.set(config, (store = memoryLogouts()));
+  return store;
+}
+
+/** Whether the provider has ended this session over the back channel. */
+async function endedAtProvider(config: OAuthRoutesConfig, session: SessionPayload): Promise<boolean> {
+  const id = idTokenClaims(session.idToken);
+  if (!id.sid && !id.sub) return false;
+  return logoutsOf(config).ended({ sid: id.sid, sub: id.sub, since: (id.iat ?? 0) * 1000 });
+}
+
 export function oauthRoutes(config: OAuthRoutesConfig) {
   const { resolve, tokenRequest, clientAuth } = tokenClient(config);
   const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -418,8 +441,31 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
 
     const route = url.pathname.slice(base.length);
     const session = async (): Promise<SessionPayload | null> => {
-      return cookie.read(request);
+      const current = await cookie.read(request);
+      return current && (await endedAtProvider(config, current)) ? null : current;
     };
+
+    if (route === '/backchannel-logout') {
+      // The provider, server to server: a session this app took part in has ended there.
+      const headers = { 'cache-control': 'no-store' };
+      if (request.method !== 'POST') return json({ error: 'invalid_request' }, 405, headers);
+      try {
+        const form = await request.formData();
+        const token = form.get('logout_token');
+        if (typeof token !== 'string' || !token) throw new Error('no logout_token');
+        const endpoints = await resolve();
+        const issuer = endpoints.issuer ?? config.issuer;
+        if (!issuer) throw new Error('no issuer');
+        if (!endpoints.jwks) throw new Error('no jwks_uri');
+        // Read fresh for each logout (they are rare), so a rotated key is always known.
+        const jwks = (await (await fetch(endpoints.jwks)).json()) as { keys: unknown[] };
+        const entry = await logoutTokenVerifier({ issuer, clientId: config.clientId, jwks })(token);
+        await logoutsOf(config).add(entry);
+        return new Response(null, { status: 200, headers });
+      } catch {
+        return json({ error: 'invalid_request' }, 400, headers);
+      }
+    }
 
     if (route === '/login') {
       let authorization: string;
@@ -774,6 +820,13 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     };
     if (!session?.accessToken) return signedOut();
 
+    // Ended at the provider (back-channel logout): this session is over too.
+    if (await endedAtProvider(config, session)) {
+      setCookie = cookie.clear();
+      session = null;
+      return signedOut();
+    }
+
     // Server code calls the app's APIs as this user with it; the token itself stays here.
     const live: SessionPayload = session;
     const fetchAs: AuthorizedFetch = (input, init) => sendAs(live, input, init);
@@ -864,3 +917,5 @@ export async function requestAuth<U = unknown>(request?: Request): Promise<Serve
 export function authServerModule(config: OAuthRoutesConfig): AppModule {
   return defineModule({ name: 'oauth2-server', middleware: [oauthRoutes(config), sessionLocals(config)] });
 }
+
+export { memoryLogouts, type LogoutEntry, type LogoutStore } from './backchannel.js';
