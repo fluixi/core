@@ -422,7 +422,22 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
     };
 
     if (route === '/login') {
-      const { authorization } = await resolve();
+      let authorization: string;
+      try {
+        ({ authorization } = await resolve());
+      } catch (error) {
+        if (!(error instanceof OAuthError) || error.code !== 'discovery_unreachable') throw error;
+        // The provider is down: back to the app, which can say so, rather than an error page.
+        const back = safeReturnTo(url.searchParams.get('returnTo'), {
+          fallback: config.defaultReturnTo ?? '/',
+          origin: url.origin,
+          allowedOrigins: config.allowedReturnOrigins,
+        });
+        const target = new URL(back, url.origin);
+        target.searchParams.set('auth_error', 'provider_unreachable');
+        const location = target.origin === url.origin ? target.pathname + target.search : target.toString();
+        return new Response(null, { status: 302, headers: { location } });
+      }
       const { verifier, challenge } = await createPkcePair();
       // A retry carries its mark in the state itself: the one place that survives the trip
       // when the cookie does not, so a second failed attempt is told apart from the first.
@@ -770,6 +785,7 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     }
 
     let user: unknown = null;
+    let unreachable = false;
     try {
       const endpoints = config.endpoints ?? (config.issuer ? await discover(config.issuer) : null);
       if (endpoints?.userinfo) {
@@ -795,7 +811,9 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       }
     } catch {
       // A provider that is unreachable should not take the page down with it. The render
-      // proceeds as signed out, and the client retries on its own.
+      // proceeds as signed out, and the client retries on its own; `unreachable` tells
+      // server code it is not the visitor who is signed out.
+      unreachable = true;
     }
 
     if (!session) return signedOut();
@@ -803,7 +821,7 @@ export function sessionLocals(config: OAuthRoutesConfig) {
     const fetchCurrent: AuthorizedFetch = (input, init) => sendAs(current, input, init);
     locals.auth = user
       ? { user, session: { expiresAt: current.expiresAt }, fetch: fetchCurrent }
-      : { user: null, session: null };
+      : { user: null, session: null, ...(unreachable ? { unreachable: true } : {}) };
     return respond(await next());
   };
 }
@@ -814,6 +832,11 @@ export interface ServerAuth<U = unknown> {
   session: { expiresAt?: number } | null;
   /** Absent when nobody is signed in. */
   fetch?: AuthorizedFetch;
+  /**
+   * The visitor has a session but the provider could not be reached to confirm it: tell them
+   * it is down, rather than asking them to sign in again.
+   */
+  unreachable?: boolean;
 }
 
 /**

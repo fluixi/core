@@ -44,8 +44,12 @@ export async function discover(issuer: string, fetcher: typeof fetch = fetch): P
       // `fetch` reports only "Failed to fetch". Not every provider allows a page to read
       // its discovery document: Keycloak does once an origin is configured, Dex and
       // Google do not. Naming the cause saves a long hunt for a network fault.
+      const why = cause instanceof Error ? cause.message : String(cause);
       throw new OAuthError(
-        `Could not read the discovery document at ${documentUrl(issuer)}. In a browser this is usually the provider refusing a cross-origin read: give \`endpoints\` directly, or resolve them on a server. (${cause instanceof Error ? cause.message : String(cause)})`,
+        typeof window === 'undefined'
+          ? // On a server nothing blocks the read: the provider is down, or the address is wrong.
+            `Could not reach the provider at ${documentUrl(issuer)}: is it running, and is the issuer right? (${why})`
+          : `Could not read the discovery document at ${documentUrl(issuer)}. In a browser this is usually the provider refusing a cross-origin read: give \`endpoints\` directly, or resolve them on a server. (${why})`,
         'discovery_unreachable',
       );
     }
