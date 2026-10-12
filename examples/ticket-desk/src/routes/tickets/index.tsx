@@ -3,7 +3,7 @@
 import { seo } from '@fluixi/start/head';
 import { createResource } from '@fluixi/reactive/signal';
 import { For, Show } from '@fluixi/core';
-import { action, Form } from '@fluixi/core/router';
+import { action, ActionForm } from '@fluixi/core/router';
 import { loadDesk, setTicketStatus, type DeskSnapshot } from '../../actions.js';
 
 export default function Tickets() {
@@ -56,7 +56,7 @@ export default function Tickets() {
                   <StatusPill status={t.status} />
                 </td>
                 <td>
-                  <Form action={move}>
+                  <ActionForm action={move}>
                     <input type="hidden" name="id" value={t.id} />
                     <select name="status">
                       <option value="open">open</option>
@@ -64,7 +64,7 @@ export default function Tickets() {
                       <option value="closed">closed</option>
                     </select>
                     <button type="submit">apply</button>
-                  </Form>
+                  </ActionForm>
                 </td>
               </tr>
             )}

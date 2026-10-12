@@ -2,7 +2,7 @@
 // redirects to /login) and behind protectedRoute (an in-app navigation does the same).
 import { seo } from '@fluixi/start/head';
 import { signal } from '@fluixi/reactive/signal';
-import { action, Form } from '@fluixi/core/router';
+import { action, ActionForm } from '@fluixi/core/router';
 import { protectedRoute } from '../../services/auth-hooks.js';
 import { openTicket } from '../../actions.js';
 
@@ -25,7 +25,7 @@ function NewTicket() {
   return (
     <section>
       <h1>Open a ticket</h1>
-      <Form action={submit}>
+      <ActionForm action={submit}>
         <p>
           <input name="subject" placeholder="Subject" size={48} />
         </p>
@@ -33,7 +33,7 @@ function NewTicket() {
           <textarea name="body" placeholder="What happened?" rows={4} cols={48} />
         </p>
         <button type="submit">Open</button>
-      </Form>
+      </ActionForm>
       <p style={{ color: '#b42318' }}>{() => error() ?? ''}</p>
     </section>
   );
