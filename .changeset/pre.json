@@ -57,6 +57,7 @@
     "api-guard-unavailable",
     "api-guard",
     "api-guards",
+    "api-intro",
     "api-revalidates",
     "api-route-map",
     "api-route-watch",
@@ -518,6 +519,7 @@
     "web-component-build",
     "web-component-types-element",
     "web-component-types",
+    "web-components-intro",
     "web-components"
   ]
 }

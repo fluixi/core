@@ -1,5 +1,20 @@
 # @fluixi/example-auth-debugger
 
+## 0.0.1-alpha.13
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.97
+- @fluixi/dom@1.0.0-alpha.97
+- @fluixi/jsx@1.0.0-alpha.97
+- @fluixi/core@1.0.0-alpha.97
+- @fluixi/session@1.0.0-alpha.97
+- @fluixi/auth@1.0.0-alpha.97
+- @fluixi/oauth2@1.0.0-alpha.13
+- @fluixi/server@1.0.0-alpha.97
+- @fluixi/start@0.1.0-alpha.87
+- @fluixi/cli@0.1.0-alpha.88
+
 ## 0.0.1-alpha.12
 
 ### Patch Changes
