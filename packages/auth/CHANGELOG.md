@@ -1,5 +1,18 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.96
+
+### Patch Changes
+
+- bc7e5f1: The `better-auth` peer range requires version 1.6.22 or later: earlier versions allow account takeover through magic-link sign-in.
+- Updated dependencies [a4e5272]
+  - @fluixi/core@1.0.0-alpha.96
+  - @fluixi/start@0.1.0-alpha.86
+  - @fluixi/utils@1.0.0-alpha.96
+  - @fluixi/reactive@1.0.0-alpha.96
+  - @fluixi/dom@1.0.0-alpha.96
+  - @fluixi/server@1.0.0-alpha.96
+
 ## 1.0.0-alpha.95
 
 ### Patch Changes

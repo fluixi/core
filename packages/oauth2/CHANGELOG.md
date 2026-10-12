@@ -1,5 +1,24 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.12
+
+### Minor Changes
+
+- 692e1ed: `oauthRoutes` answers POST `<basePath>/backchannel-logout`, the URL to register as the client's `backchannel_logout_uri`, allowing a valid logout token to end the matching session in `sessionLocals`, `/me` and `/refresh`, with logouts kept in memory by default and shared between instances by passing a `LogoutStore` as `logouts`.
+- 6237963: requestAuth() now reports `unreachable: true` when a session exists but the provider cannot be reached, and the login route now redirects back to the app with `?auth_error=provider_unreachable` when the provider is down, while server discovery errors indicate the provider was not reached.
+
+### Patch Changes
+
+- 8664703: A callback whose state matches no pending sign-in now restarts the sign-in once, or redirects home if already signed in, and a second mismatch redirects to the default page with `auth_error=state_mismatch`.
+- Updated dependencies [a4e5272]
+- Updated dependencies [bc7e5f1]
+  - @fluixi/core@1.0.0-alpha.96
+  - @fluixi/auth@1.0.0-alpha.96
+  - @fluixi/session@1.0.0-alpha.96
+  - @fluixi/start@0.1.0-alpha.86
+  - @fluixi/reactive@1.0.0-alpha.96
+  - @fluixi/server@1.0.0-alpha.96
+
 ## 1.0.0-alpha.11
 
 ### Patch Changes

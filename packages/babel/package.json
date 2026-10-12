@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/babel-plugin-jsx",
-  "version": "1.0.0-alpha.95",
+  "version": "1.0.0-alpha.96",
   "description": "Compiles JSX into fine-grained reactive DOM calls for Fluixi — no virtual DOM.",
   "license": "MIT",
   "author": "Ibrahima Touré",
