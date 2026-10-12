@@ -270,6 +270,7 @@ function operation(
     const refuses = guard.refuses ?? [401];
     if (refuses.includes(401)) responses[401] = error('Not signed in: `unauthorized`.');
     if (refuses.includes(403)) responses[403] = error('Signed in, not allowed: `forbidden`, or a more precise code.');
+    if (refuses.includes(503)) responses[503] = error('A service the check depends on cannot answer now; try again.');
   }
   if (pathNames(path).length) responses[404] = error('Nothing at this path.');
   responses[500] = error('A fault on the server. Its detail is logged, never sent.');

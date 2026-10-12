@@ -27,8 +27,11 @@ export interface Guard<A = unknown> {
   check(request: Request): A | Promise<A>;
   /** For the API description: the security scheme a caller satisfies, under a stable name. */
   security?: { name: string; scheme: Record<string, unknown>; scopes?: string[] };
-  /** The refusals it answers with, for the API description. `[401]` when not given. */
-  refuses?: readonly (401 | 403)[];
+  /**
+   * The refusals it answers with, for the API description. `[401]` when not given. 503 for a
+   * guard that asks another service (a token's issuer, say) and refuses while it cannot.
+   */
+  refuses?: readonly (401 | 403 | 503)[];
 }
 type Output<S extends AnySchema, Fallback> = S extends Schema ? Schema.InferOutput<S> : Fallback;
 type Input<S extends AnySchema, Fallback> = S extends Schema ? Schema.InferInput<S> : Fallback;

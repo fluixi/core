@@ -189,10 +189,13 @@ describe('guarded routes', () => {
   const cookie = { type: 'apiKey', in: 'cookie', name: 'sid' };
   const signedIn: Guard = { check: () => ({}), security: { name: 'session', scheme: cookie } };
   const admin: Guard = { check: () => ({}), security: { name: 'session', scheme: cookie }, refuses: [401, 403] };
+  // Asks another service (the token's issuer) before letting the call through.
+  const confirmed: Guard = { check: () => ({}), security: { name: 'session', scheme: cookie }, refuses: [401, 503] };
   const doc = createOpenApiDocument(
     [
       { path: '/api/v1/me', mod: { GET: route({ guard: signedIn, handler: () => undefined }) } },
       { path: '/api/v1/members', mod: { DELETE: route({ guard: admin, handler: () => undefined }) } },
+      { path: '/api/v1/projects', mod: { POST: route({ guard: confirmed, handler: () => undefined }) } },
       { path: '/api/v1/health', mod: { GET: route({ handler: () => undefined }) } },
       { path: '/api/v1/legacy', mod: { GET: () => new Response('ok') } },
     ],
@@ -206,6 +209,13 @@ describe('guarded routes', () => {
     expect(Object.keys(me.responses)).toEqual(expect.arrayContaining(['401']));
     expect(me.responses['403']).toBeUndefined();
     expect(doc.paths['/api/v1/members'].delete.responses['403']).toBeDefined();
+    expect(doc.paths['/api/v1/members'].delete.responses['503']).toBeUndefined();
+  });
+
+  it('document a refusal while a service the guard asks is unavailable', () => {
+    const projects = doc.paths['/api/v1/projects'].post;
+    expect(projects.responses['503']).toBeDefined();
+    expect(projects.responses['403']).toBeUndefined();
   });
 
   it('mark a contracted route without a guard as public, and say nothing of one without a contract', () => {
