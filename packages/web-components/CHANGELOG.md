@@ -1,0 +1,12 @@
+# @fluixi/web-components
+
+## 1.0.0-alpha.97
+
+### Minor Changes
+
+- b7faba4: First release: custom elements with reactive props, events, slots and styles, usable from plain HTML, React, Vue and Svelte. The package is versioned with `@fluixi/core` from this release on.
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.97
+- @fluixi/dom@1.0.0-alpha.97

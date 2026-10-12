@@ -1,5 +1,12 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.97
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.97
+- @fluixi/devtools@0.2.0-alpha.7
+
 ## 1.0.0-alpha.96
 
 ### Patch Changes

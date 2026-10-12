@@ -1,5 +1,11 @@
 # @fluixi/api
 
+## 0.1.0-alpha.3
+
+### Minor Changes
+
+- b7faba4: First release: typed routes with guards that refuse with 401, 403 or 503, rate limits, an OpenAPI document generated from the routes, and a typed client in `@fluixi/api/client`.
+
 ## 0.1.0-alpha.2
 
 ### Minor Changes
