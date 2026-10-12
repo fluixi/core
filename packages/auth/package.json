@@ -72,7 +72,7 @@
     "@fluixi/reactive": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/start": "workspace:*",
-    "better-auth": ">=1"
+    "better-auth": ">=1.6.22"
   },
   "peerDependenciesMeta": {
     "@fluixi/server": {
