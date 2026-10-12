@@ -1,5 +1,18 @@
 # @fluixi/start
 
+## 0.1.0-alpha.86
+
+### Patch Changes
+
+- Updated dependencies [a4e5272]
+  - @fluixi/core@1.0.0-alpha.96
+  - @fluixi/reactive@1.0.0-alpha.96
+  - @fluixi/dom@1.0.0-alpha.96
+  - @fluixi/compiler@1.0.0-alpha.96
+  - @fluixi/vite-plugin@1.0.0-alpha.96
+  - @fluixi/head@1.0.0-alpha.63
+  - @fluixi/server@1.0.0-alpha.96
+
 ## 0.1.0-alpha.85
 
 ### Minor Changes

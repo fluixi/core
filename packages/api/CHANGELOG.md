@@ -1,5 +1,11 @@
 # @fluixi/api
 
+## 0.1.0-alpha.2
+
+### Minor Changes
+
+- bb143e4: A guard can declare 503 in `refuses`, for a check that asks another service, and the OpenAPI document lists the 503 for its routes.
+
 ## 0.1.0-alpha.1
 
 ### Minor Changes

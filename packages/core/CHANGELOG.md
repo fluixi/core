@@ -1,5 +1,23 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.96
+
+### Minor Changes
+
+- a4e5272: The router's `Form` is now named `ActionForm` (its props are now `ActionFormProps`). Update imports and JSX to use `ActionForm` instead of `Form`.
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.96
+- @fluixi/reactive@1.0.0-alpha.96
+- @fluixi/dom@1.0.0-alpha.96
+- @fluixi/jsx@1.0.0-alpha.96
+- @fluixi/compiler@1.0.0-alpha.96
+- @fluixi/vite-plugin@1.0.0-alpha.96
+- @fluixi/storage@0.1.0-alpha.3
+- @fluixi/head@1.0.0-alpha.63
+- @fluixi/server@1.0.0-alpha.96
+
 ## 1.0.0-alpha.95
 
 ### Patch Changes
