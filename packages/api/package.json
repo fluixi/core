@@ -1,9 +1,11 @@
 {
   "name": "@fluixi/api",
   "version": "0.1.0-alpha.2",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "license": "MIT",
   "author": "Ibrahima Touré",
-  "private": true,
   "description": "Schema-first API routes for Fluixi: contracts validated before the handler runs, typed handlers, one error model, on top of @fluixi/start's API routes.",
   "type": "module",
   "exports": {
@@ -49,5 +51,24 @@
   },
   "dependencies": {
     "rate-limiter-flexible": "^11.2.1"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./client": {
+        "types": "./dist/client.d.ts",
+        "import": "./dist/client.mjs",
+        "require": "./dist/client.cjs",
+        "default": "./dist/client.js"
+      }
+    }
   }
 }
