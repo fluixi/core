@@ -4,10 +4,13 @@
   "include": [],
   "references": [
     {
+      "path": "../testing"
+    },
+    {
       "path": "../dom"
     },
     {
-      "path": "../testing"
+      "path": "../di"
     },
     {
       "path": "../auth"

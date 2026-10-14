@@ -23,7 +23,7 @@
  */
 import { onMount } from '@fluixi/core';
 import { signal, type SignalHandle } from '@fluixi/reactive/signal';
-import { inject } from '@fluixi/start/di';
+import { inject } from '@fluixi/di';
 import { AuthServiceToken } from './tokens.js';
 import { paramsFromUrl } from './service.js';
 import type { AuthService } from './service.js';

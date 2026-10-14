@@ -1,0 +1,75 @@
+{
+  "name": "@fluixi/di",
+  "version": "1.0.0-alpha.98",
+  "license": "MIT",
+  "author": "Ibrahima Tour\u00e9",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "import": "./dist/testing.mjs",
+        "require": "./dist/testing.cjs",
+        "default": "./dist/testing.js"
+      }
+    }
+  },
+  "description": "Dependency injection for Fluixi: typed tokens, hierarchical injectors on the reactive owner tree, request-scoped roots on the server, multi providers, resolution options, lifecycles and test overrides.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "development": "./src/testing.ts",
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.mjs",
+      "require": "./dist/testing.cjs",
+      "default": "./dist/testing.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "cross-env": "^7.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/di"
+  }
+}

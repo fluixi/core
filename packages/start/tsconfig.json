@@ -3,12 +3,14 @@
   "files": [],
   "include": [],
   "references": [
-    { "path": "../reactive" },
     {
       "path": "../vite-plugin"
     },
     {
-      "path": "../compiler"
+      "path": "../server"
+    },
+    {
+      "path": "../reactive"
     },
     {
       "path": "../head"
@@ -17,10 +19,13 @@
       "path": "../dom"
     },
     {
-      "path": "../server"
+      "path": "../di"
     },
     {
       "path": "../core"
+    },
+    {
+      "path": "../compiler"
     },
     {
       "path": "./tsconfig.lib.json"

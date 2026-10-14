@@ -2,8 +2,8 @@
   "name": "@fluixi/start",
   "version": "0.1.0-alpha.88",
   "license": "MIT",
-  "author": "Ibrahima Touré",
-  "description": "The Fluixi meta-framework — dev server, build, and production SSR server over @fluixi/server + Vite.",
+  "author": "Ibrahima Tour\u00e9",
+  "description": "The Fluixi meta-framework \u2014 dev server, build, and production SSR server over @fluixi/server + Vite.",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
@@ -298,6 +298,7 @@
   "dependencies": {
     "@fluixi/compiler": "workspace:*",
     "@fluixi/core": "workspace:*",
+    "@fluixi/di": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/head": "workspace:*",
     "@fluixi/reactive": "workspace:*",

@@ -911,6 +911,21 @@ importers:
         specifier: ^7.0.3
         version: 7.0.3
 
+  packages/di:
+    devDependencies:
+      '@bambiste/mix-builder':
+        specifier: ^0.4.0
+        version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
+
   packages/dom:
     dependencies:
       stream:
@@ -977,6 +992,9 @@ importers:
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
+      '@fluixi/di':
+        specifier: workspace:*
+        version: link:../di
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1083,6 +1101,9 @@ importers:
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
+      '@fluixi/di':
+        specifier: workspace:*
+        version: link:../di
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom

@@ -8,7 +8,7 @@
  * `@fluixi/dom`, so taking it is cheap, and an app that does not use dependency
  * injection never loads this module.
  */
-import { injectionToken } from '@fluixi/start/di';
+import { injectionToken } from '@fluixi/di';
 import type { AuthClient } from './types.js';
 import type { AuthService } from './service.js';
 

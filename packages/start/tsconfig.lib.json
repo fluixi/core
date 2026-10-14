@@ -16,12 +16,14 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../reactive/tsconfig.lib.json" },
     {
       "path": "../vite-plugin/tsconfig.lib.json"
     },
     {
-      "path": "../compiler/tsconfig.lib.json"
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
+      "path": "../reactive/tsconfig.lib.json"
     },
     {
       "path": "../head/tsconfig.lib.json"
@@ -30,10 +32,13 @@
       "path": "../dom/tsconfig.lib.json"
     },
     {
-      "path": "../server/tsconfig.lib.json"
+      "path": "../di/tsconfig.lib.json"
     },
     {
       "path": "../core/tsconfig.lib.json"
+    },
+    {
+      "path": "../compiler/tsconfig.lib.json"
     }
   ],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist"]

@@ -2,7 +2,7 @@
   "name": "@fluixi/oauth2",
   "version": "1.0.0-alpha.14",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "description": "OAuth2 / OIDC for Fluixi apps: an AuthClient that drives the flow, and an AuthService built on @fluixi/session. Browser PKCE or a server-held session, chosen by config.",
   "private": false,
   "type": "module",
@@ -146,20 +146,22 @@
     "@fluixi/start": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/auth": "workspace:*",
-    "jose": ">=5"
+    "jose": ">=5",
+    "@fluixi/di": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
-    "@fluixi/reactive": "workspace:*",
-    "@fluixi/session": "workspace:*",
-    "cross-env": "^7.0.3",
-    "@fluixi/start": "workspace:*",
-    "@fluixi/server": "workspace:*",
     "@fluixi/auth": "workspace:*",
-    "jose": "^5.9.6",
     "@fluixi/core": "workspace:*",
+    "@fluixi/di": "workspace:*",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
+    "@fluixi/server": "workspace:*",
+    "@fluixi/session": "workspace:*",
+    "@fluixi/start": "workspace:*",
     "@fluixi/testing": "workspace:*",
-    "@fluixi/dom": "workspace:*"
+    "cross-env": "^7.0.3",
+    "jose": "^5.9.6"
   },
   "peerDependenciesMeta": {
     "@fluixi/start": {
