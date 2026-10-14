@@ -80,3 +80,55 @@ function createTextHolder(s: string) {
   insert(el, s, null);
   return el;
 }
+
+describe('request context: one store across module copies', () => {
+  // A server bundle inlines its own copy of this module while packages loaded from
+  // node_modules (an auth library reading locals, say) use another. Both must see the
+  // context the request runs in, as they already see the same locals bag.
+  const twoCopies = async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const a = await import('./request-context.js');
+    vi.resetModules();
+    const b = await import('./request-context.js');
+    return { a, b };
+  };
+
+  it('a context entered through one copy is the current one in the other', async () => {
+    const { a, b } = await twoCopies();
+    a.setRequestStore(new AsyncLocalStorage());
+    const ctx = a.createRequestContext({ url: '/x' });
+    const seen = await a.runWithRequestContext(ctx, async () => {
+      await delay(1);
+      return b.getRequestContext();
+    });
+    expect(seen).toBe(ctx);
+    a.setRequestStore(null);
+  });
+
+  it('holds with the default synchronous store too', async () => {
+    const { a, b } = await twoCopies();
+    const ctx = a.createRequestContext({ url: '/y', locals: { auth: 'someone' } });
+    expect(a.runWithRequestContext(ctx, () => b.getLocals())).toEqual({ auth: 'someone' });
+  });
+});
+
+describe('request context: a second copy loading mid-request', () => {
+  it('keeps the store already installed, so the running request keeps its context', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const a = await import('./request-context.js');
+    a.setRequestStoreIfUnset(new AsyncLocalStorage());
+    const ctx = a.createRequestContext({ url: '/z' });
+    const seen = await a.runWithRequestContext(ctx, async () => {
+      // What @fluixi/server does when another copy of it is first imported.
+      vi.resetModules();
+      const b = await import('./request-context.js');
+      b.setRequestStoreIfUnset(new AsyncLocalStorage());
+      await delay(1);
+      return b.getRequestContext();
+    });
+    expect(seen).toBe(ctx);
+    a.setRequestStore(null);
+  });
+});

@@ -87,11 +87,26 @@ const syncStore: RequestStore = {
   },
 };
 
-let _store: RequestStore = syncStore;
+// Held in the global registry, as the locals bag below is: a server bundle inlines its own
+// copy of this module while packages loaded from node_modules use another, and a function
+// run in a request context through one copy must find it through the other.
+const _holder: { store: RequestStore; async: boolean } = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.requestStore')
+] ??= { store: syncStore, async: false }) as { store: RequestStore; async: boolean };
 
 /** Inject an AsyncLocalStorage-shaped store (Node @fluixi/server / tests). */
 export function setRequestStore(store: RequestStore | null): void {
-  _store = store ?? syncStore;
+  _holder.store = store ?? syncStore;
+  _holder.async = store !== null;
+}
+
+/**
+ * Inject `store` unless an async store is already in place. What a runtime calls when it
+ * loads: a second copy loading during a request would otherwise replace the store that
+ * request runs in, and the request would lose its context.
+ */
+export function setRequestStoreIfUnset(store: RequestStore): void {
+  if (!_holder.async) setRequestStore(store);
 }
 
 /**
@@ -160,11 +175,11 @@ export function createRequestContext(event: RequestEvent = {}): RequestContext {
  * hosts without it.
  */
 export function runWithRequestContext<T>(ctx: RequestContext, fn: () => T): T {
-  return _store.run(ctx, fn);
+  return _holder.store.run(ctx, fn);
 }
 
 export function getRequestContext(): RequestContext | undefined {
-  return _store.getStore();
+  return _holder.store.getStore();
 }
 
 /**

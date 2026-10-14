@@ -106,3 +106,26 @@ describe('@fluixi/start server functions', () => {
     setServerFnContextRunner(null); // reset for other tests
   });
 });
+
+describe('server functions: the context runner across module copies', () => {
+  // The server build inlines one copy of this module and `@fluixi/start/server-fn-setup`,
+  // loaded from node_modules, registers its runner on another. The dispatcher must still run
+  // every function inside the request context.
+  it('a runner set through one copy wraps the functions another copy dispatches', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const a = await import('./server-fn.js');
+    vi.resetModules();
+    const b = await import('./server-fn.js');
+    const wrapped: string[] = [];
+    a.setServerFnContextRunner((request, run) => {
+      wrapped.push(new URL(request.url).pathname);
+      return { result: Promise.resolve(run()) };
+    });
+    b.$$registerServerFn('copies:0', () => 'ran');
+    const res = await b.handleServerFn(rpc('copies:0', []));
+    expect(await res.json()).toBe('ran');
+    expect(wrapped).toEqual([SERVER_FN_ENDPOINT]);
+    a.setServerFnContextRunner(null);
+  });
+});

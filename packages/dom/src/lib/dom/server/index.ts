@@ -29,6 +29,7 @@ export {
 } from './render.js';
 export {
   setRequestStore,
+  setRequestStoreIfUnset,
   createRequestContext,
   runWithRequestContext,
   getRequestContext,

@@ -35,9 +35,13 @@ type ContextRunner = (
   request: Request,
   run: () => any,
 ) => { result: Promise<any>; responseHeaders?: Record<string, string> };
-let contextRunner: ContextRunner | null = null;
+// Held in the global registry: the server build inlines its own copy of this module, and
+// `server-fn-setup`, loaded from node_modules, sets the runner through another.
+const _runner: { current: ContextRunner | null } = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.serverFnContextRunner')
+] ??= { current: null }) as { current: ContextRunner | null };
 export function setServerFnContextRunner(runner: ContextRunner | null): void {
-  contextRunner = runner;
+  _runner.current = runner;
 }
 
 // The fetch the RPC client uses. Pluggable so interceptors (auth headers, 401 handling,
@@ -129,6 +133,7 @@ export async function handleServerFn(request: Request): Promise<Response> {
   try {
     const headers: Record<string, string> = { 'content-type': 'application/json' };
     let result: any;
+    const contextRunner = _runner.current;
     if (contextRunner) {
       // Run inside the request context so getRequestEvent() works in the fn; collect any
       // response headers (e.g. Set-Cookie) the fn set on the event.

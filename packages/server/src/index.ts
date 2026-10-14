@@ -29,6 +29,7 @@ import {
   runWithRequestContext,
   createRequestContext,
   setRequestStore,
+  setRequestStoreIfUnset,
   isServer,
   setServerMode,
   type RequestContext,
@@ -56,7 +57,8 @@ function resolveALS(): ALSCtor | undefined {
 }
 const ALS = resolveALS();
 if (ALS) {
-  setRequestStore(new ALS<RequestContext>());
+  // Once per process, whichever copy of this module loads first: see setRequestStoreIfUnset.
+  setRequestStoreIfUnset(new ALS<RequestContext>());
 } else if (!isBrowser()) {
   // Only where it is a real loss. A browser serves one request, its own page, so a
   // sync store is the correct implementation there, not a degraded one, and warning
@@ -85,6 +87,7 @@ export {
   runWithRequestContext,
   createRequestContext,
   setRequestStore,
+  setRequestStoreIfUnset,
   isServer,
   setServerMode,
 };

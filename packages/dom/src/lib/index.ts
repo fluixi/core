@@ -45,6 +45,7 @@ export {
   escapeFxJson,
   FX_DATA_ID,
   setRequestStore,
+  setRequestStoreIfUnset,
   createRequestContext,
   runWithRequestContext,
   getRequestContext,
