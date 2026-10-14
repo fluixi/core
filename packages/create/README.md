@@ -24,12 +24,15 @@ pnpm create fluixi my-app
 yarn create fluixi my-app
 ```
 
+npm keeps options for itself unless they follow `--`: `npm create fluixi@alpha -- my-app --spa`,
+or `npm create fluixi@alpha -- --help` for the list. pnpm and Yarn pass them through.
+
 It prompts for a project name, a **mode** and an **authoring format**, or takes them on the
 command line:
 
 ```bash
 create-fluixi my-app --ssr           # SSR app (@fluixi/start: file routing + SSR + hydration)
-create-fluixi my-app --spa           # SPA (vite + @fluixi/vite-plugin)
+create-fluixi my-app --spa           # SPA (@fluixi/start with ssr: false, rendered in the browser)
 
 create-fluixi my-app --spa --html    # same app, html`` templates instead of JSX
 ```
@@ -51,12 +54,13 @@ pnpm dev
 | Mode | Stack | Entry |
 | --- | --- | --- |
 | **SSR** | [`@fluixi/start`](../start) + [`@fluixi/cli`](../cli) | `src/entry-{server,client}`, `src/routes/`, `fluixi.config.ts` |
-| **SPA** | `vite` + [`@fluixi/vite-plugin`](../vite-plugin) | `src/main.tsx` → `render(() => <App/>)` |
+| **SPA** | [`@fluixi/start`](../start) + [`@fluixi/cli`](../cli), `ssr: false` | `src/entry-{server,client}`, `src/routes/`, `fluixi.config.ts` |
 
 Each comes in a JSX and an html`` variant (`template-ssr`, `template-ssr-html`, and the same
 two for SPA).
 
-Both pin `@fluixi/*` to the `next` dist-tag and set `jsxImportSource: "@fluixi/jsx"`.
+Both list `@fluixi/start` and every runtime package it shares with the app, on the `alpha`
+dist-tag, and set `jsxImportSource: "@fluixi/jsx"`.
 
 ## 🧱 Scaffolding pieces
 

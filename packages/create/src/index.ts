@@ -136,10 +136,13 @@ Scaffold a Fluixi app in dir. What is not given is asked for.
   --jsx | --html              template syntax
   --ui | --no-ui              @fluixi-ui components
   --fluixi-css | --tailwind | --no-css
-  --auth=oauth2|better-auth   SSR only; --no-auth for none
+  --auth=oauth2|better-auth   authentication; --no-auth for none
   --provider=<name>           with --auth=oauth2: ${PROVIDERS.join(', ')}
   --tokens=browser|server     with --auth=oauth2: where the tokens live
   -h, --help                  this help
+
+npm keeps options for itself unless they follow --:
+  npm create fluixi@alpha -- my-app --spa
 `;
 
 const FLAGS = new Set(['--ssr', '--spa', '--jsx', '--html', '--ui', '--no-ui', '--tailwind', '--fluixi-css', '--no-css', '--no-auth', '--help', '-h']);

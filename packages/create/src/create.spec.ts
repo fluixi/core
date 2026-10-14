@@ -21,6 +21,18 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(cwd, { recursive: true, force: true }));
 
+describe('create-fluixi --help', () => {
+  it('prints the usage and creates nothing, with the -- form npm needs', () => {
+    for (const flag of ['--help', '-h']) {
+      const out = execFileSync('node', [bin, flag], { cwd, input: '', encoding: 'utf8' });
+      expect(out).toContain('Usage: create-fluixi [dir] [options]');
+      expect(out).toContain('npm create fluixi@alpha -- my-app --spa');
+      expect(out).not.toContain('SSR only');
+    }
+    expect(existsSync(join(cwd, 'app'))).toBe(false);
+  });
+});
+
 describe('create-fluixi --auth', () => {
   it('wires oauth2 into an SSR app, with its dependency and variables', () => {
     const out = create('--ssr', '--auth=oauth2', '--provider=keycloak', '--tokens=server');
