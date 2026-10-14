@@ -1,5 +1,16 @@
 # @fluixi/template-runtime
 
+## 1.0.0-alpha.99
+
+### Minor Changes
+
+- 3ed276b: The runtime packages of `@fluixi/start`, `@fluixi/core`, `@fluixi/server` and `@fluixi/template-runtime` are peer dependencies, so an app that updates one package keeps a single runtime instance.
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.99
+- @fluixi/template-parser@1.0.0-alpha.99
+
 ## 0.1.0-alpha.18
 
 ### Patch Changes

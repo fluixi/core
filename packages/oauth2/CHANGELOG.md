@@ -1,5 +1,12 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.99
+
+### Patch Changes
+
+- 3ed276b: Fluixi peer dependencies are published as ^ ranges (^1.0.0-alpha.N) instead of exact versions.
+- 4ec5021: `@fluixi/start/di` re-exports `@fluixi/di` and server functions and API routes end the request context they create, releasing request services; `@fluixi/oauth2` imports `@fluixi/di` instead of `@fluixi/start/di`.
+
 ## 1.0.0-alpha.14
 
 ### Patch Changes

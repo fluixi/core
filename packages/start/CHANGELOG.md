@@ -1,5 +1,17 @@
 # @fluixi/start
 
+## 1.0.0-alpha.99
+
+### Minor Changes
+
+- 3ed276b: The runtime packages of `@fluixi/start`, `@fluixi/core`, `@fluixi/server` and `@fluixi/template-runtime` are peer dependencies, so an app that updates one package keeps a single runtime instance.
+
+### Patch Changes
+
+- 4ec5021: `@fluixi/start/di` re-exports `@fluixi/di` and server functions and API routes end the request context they create, releasing request services; `@fluixi/oauth2` imports `@fluixi/di` instead of `@fluixi/start/di`.
+  - @fluixi/compiler@1.0.0-alpha.99
+  - @fluixi/vite-plugin@1.0.0-alpha.99
+
 ## 0.1.0-alpha.88
 
 ### Patch Changes

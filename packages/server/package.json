@@ -1,9 +1,9 @@
 {
   "name": "@fluixi/server",
-  "version": "1.0.0-alpha.98",
-  "description": "Server-side rendering for Fluixi \u2014 request-scoped, streaming, framework-agnostic.",
+  "version": "1.0.0-alpha.99",
+  "description": "Server-side rendering for Fluixi — request-scoped, streaming, framework-agnostic.",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",

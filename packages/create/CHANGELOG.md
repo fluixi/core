@@ -1,5 +1,15 @@
 # @fluixi/create
 
+## 1.0.0-alpha.99
+
+### Minor Changes
+
+- 27a91e7: SPA templates are `@fluixi/start` apps with `ssr: false`, providing file routing, server functions, middleware, and fluixi dev/build/start instead of plain Vite, and the `--spa --auth` flag wires authentication like an SSR app, with each template listing `@fluixi/start` and the runtime packages.
+
+### Patch Changes
+
+- d39cb81: `--help` indicates that `--auth` works for both modes and displays the npm command `npm create fluixi@alpha -- my-app --spa`, and the README refers to SPA templates as `@fluixi/start` apps and the alpha dist-tag.
+
 ## 0.1.0-alpha.15
 
 ### Minor Changes

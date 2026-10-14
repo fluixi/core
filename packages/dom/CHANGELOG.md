@@ -1,5 +1,15 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.99
+
+### Minor Changes
+
+- f01adde: `onRequestEnd(fn)` registers work to run when the current request ends, `endRequestContext(ctx)` runs it once, latest first, `renderToString` and `renderToStringAsync` end the context they create, and `@fluixi/server` re-exports both.
+
+### Patch Changes
+
+- 3ed276b: Fluixi peer dependencies are published as ^ ranges (^1.0.0-alpha.N) instead of exact versions.
+
 ## 1.0.0-alpha.98
 
 ### Patch Changes

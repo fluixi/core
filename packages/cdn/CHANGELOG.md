@@ -1,5 +1,7 @@
 # @fluixi/cdn
 
+## 1.0.0-alpha.99
+
 ## 0.1.0-alpha.1
 
 ### Minor Changes
