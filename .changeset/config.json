@@ -4,18 +4,33 @@
   "commit": false,
   "fixed": [
     [
-      "@fluixi/utils",
-      "@fluixi/reactive",
-      "@fluixi/dom",
-      "@fluixi/di",
-      "@fluixi/web-components",
+      "@fluixi/api",
+      "@fluixi/auth",
       "@fluixi/babel-plugin-jsx",
-      "@fluixi/jsx",
-      "@fluixi/core",
+      "@fluixi/cdn",
+      "@fluixi/cli",
       "@fluixi/compiler",
-      "@fluixi/vite-plugin",
+      "@fluixi/core",
+      "@fluixi/devtools",
+      "@fluixi/di",
+      "@fluixi/dom",
+      "@fluixi/head",
+      "@fluixi/jsx",
+      "@fluixi/oauth2",
+      "@fluixi/reactive",
+      "@fluixi/router",
+      "@fluixi/server",
       "@fluixi/session",
-      "@fluixi/auth"
+      "@fluixi/start",
+      "@fluixi/storage",
+      "@fluixi/template-parser",
+      "@fluixi/template-runtime",
+      "@fluixi/testing",
+      "@fluixi/ts-plugin",
+      "@fluixi/utils",
+      "@fluixi/vite-plugin",
+      "@fluixi/web-components",
+      "create-fluixi"
     ]
   ],
   "linked": [],
@@ -24,5 +39,8 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@fluixi/core-test"
-  ]
+  ],
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  }
 }
