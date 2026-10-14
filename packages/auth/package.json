@@ -2,7 +2,7 @@
   "name": "@fluixi/auth",
   "version": "1.0.0-alpha.98",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -23,7 +23,7 @@
       }
     }
   },
-  "description": "Server-first auth for Fluixi — native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
+  "description": "Server-first auth for Fluixi \u2014 native bindings over Better Auth: authMiddleware, requireUser/Role/Permission (request-context, no token parsing), SSR-seeded useUser/useSession hooks, and protectedRoute.",
   "type": "module",
   "files": [
     "dist",
@@ -67,11 +67,11 @@
     "inquirer": "^14.0.2"
   },
   "peerDependencies": {
-    "@fluixi/core": "workspace:*",
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
-    "@fluixi/server": "workspace:*",
-    "@fluixi/start": "workspace:*",
+    "@fluixi/core": "workspace:^",
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/reactive": "workspace:^",
+    "@fluixi/server": "workspace:^",
+    "@fluixi/start": "workspace:^",
     "better-auth": ">=1.6.22"
   },
   "peerDependenciesMeta": {

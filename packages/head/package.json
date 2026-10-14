@@ -2,8 +2,8 @@
   "name": "@fluixi/head",
   "version": "1.0.0-alpha.65",
   "license": "MIT",
-  "author": "Ibrahima Touré",
-  "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi — title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
+  "author": "Ibrahima Tour\u00e9",
+  "description": "Built-in reactive, SSR-first SEO & document-head management for Fluixi \u2014 title, meta, Open Graph, Twitter, JSON-LD, canonical, hreflang, sitemap & robots.",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
@@ -40,7 +40,7 @@
     }
   },
   "peerDependencies": {
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/reactive": "workspace:^"
   },
   "devDependencies": {
     "@fluixi/reactive": "workspace:*",

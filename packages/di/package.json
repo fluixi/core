@@ -58,8 +58,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/reactive": "workspace:^"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",

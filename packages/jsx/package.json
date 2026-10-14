@@ -1,9 +1,9 @@
 {
   "name": "@fluixi/jsx",
   "version": "1.0.0-alpha.98",
-  "description": "JSX runtime types and factory for Fluixi — fine-grained, no virtual DOM.",
+  "description": "JSX runtime types and factory for Fluixi \u2014 fine-grained, no virtual DOM.",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -84,7 +84,7 @@
     "directory": "packages/jsx"
   },
   "peerDependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/reactive": "workspace:^"
   }
 }

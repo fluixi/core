@@ -2,7 +2,7 @@
   "name": "@fluixi/template-runtime",
   "version": "0.1.0-alpha.18",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -48,12 +48,12 @@
   },
   "dependencies": {
     "@fluixi/compiler": "workspace:*",
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
     "@fluixi/template-parser": "workspace:*"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3",
     "jsdom": "^25.0.0",
     "vitest": "^5.0.3"
@@ -62,5 +62,9 @@
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/template-runtime"
+  },
+  "peerDependencies": {
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/reactive": "workspace:^"
   }
 }

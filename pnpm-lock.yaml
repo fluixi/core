@@ -804,6 +804,16 @@ importers:
 
   packages/core:
     dependencies:
+      '@fluixi/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@bambiste/mix-builder':
+        specifier: ^0.4.0
+        version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
+      '@fluixi/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -825,16 +835,6 @@ importers:
       '@fluixi/storage':
         specifier: workspace:*
         version: link:../storage
-      '@fluixi/utils':
-        specifier: workspace:*
-        version: link:../utils
-    devDependencies:
-      '@bambiste/mix-builder':
-        specifier: ^0.4.0
-        version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
-      '@fluixi/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@fluixi/vite-plugin':
         specifier: workspace:*
         version: link:../vite-plugin
@@ -1054,10 +1054,6 @@ importers:
         version: 7.0.3
 
   packages/server:
-    dependencies:
-      '@fluixi/head':
-        specifier: workspace:*
-        version: link:../head
     devDependencies:
       '@bambiste/mix-builder':
         specifier: ^0.4.0
@@ -1065,6 +1061,9 @@ importers:
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
+      '@fluixi/head':
+        specifier: workspace:*
+        version: link:../head
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -1098,24 +1097,6 @@ importers:
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@fluixi/core':
-        specifier: workspace:*
-        version: link:../core
-      '@fluixi/di':
-        specifier: workspace:*
-        version: link:../di
-      '@fluixi/dom':
-        specifier: workspace:*
-        version: link:../dom
-      '@fluixi/head':
-        specifier: workspace:*
-        version: link:../head
-      '@fluixi/reactive':
-        specifier: workspace:*
-        version: link:../reactive
-      '@fluixi/server':
-        specifier: workspace:*
-        version: link:../server
       '@fluixi/vite-plugin':
         specifier: workspace:*
         version: link:../vite-plugin
@@ -1144,6 +1125,24 @@ importers:
       '@bambiste/mix-builder':
         specifier: ^0.4.0
         version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../core
+      '@fluixi/di':
+        specifier: workspace:*
+        version: link:../di
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../dom
+      '@fluixi/head':
+        specifier: workspace:*
+        version: link:../head
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@fluixi/server':
+        specifier: workspace:*
+        version: link:../server
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1181,12 +1180,6 @@ importers:
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@fluixi/dom':
-        specifier: workspace:*
-        version: link:../dom
-      '@fluixi/reactive':
-        specifier: workspace:*
-        version: link:../reactive
       '@fluixi/template-parser':
         specifier: workspace:*
         version: link:../template-parser
@@ -1194,6 +1187,12 @@ importers:
       '@bambiste/mix-builder':
         specifier: ^0.4.0
         version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../dom
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3

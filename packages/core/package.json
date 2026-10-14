@@ -2,7 +2,7 @@
   "name": "@fluixi/core",
   "version": "1.0.0-alpha.98",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "description": "framework to build apps with DOM runtime, reactive core, router, and JSX runtime; components run once, reactivity updates DOM",
   "private": false,
   "publishConfig": {
@@ -190,6 +190,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@fluixi/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/head": "workspace:*",
     "@fluixi/jsx": "workspace:*",
@@ -197,11 +202,6 @@
     "@fluixi/router": "workspace:*",
     "@fluixi/server": "workspace:*",
     "@fluixi/storage": "workspace:*",
-    "@fluixi/utils": "workspace:*"
-  },
-  "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.0",
-    "@fluixi/compiler": "workspace:*",
     "@fluixi/vite-plugin": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.9",
@@ -222,8 +222,15 @@
     "directory": "packages/core"
   },
   "peerDependencies": {
-    "@fluixi/compiler": "workspace:*",
-    "@fluixi/vite-plugin": "workspace:*",
+    "@fluixi/compiler": "workspace:^",
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/head": "workspace:^",
+    "@fluixi/jsx": "workspace:^",
+    "@fluixi/reactive": "workspace:^",
+    "@fluixi/router": "workspace:^",
+    "@fluixi/server": "workspace:^",
+    "@fluixi/storage": "workspace:^",
+    "@fluixi/vite-plugin": "workspace:^",
     "vite-plugin-node-polyfills": "^0.25.0"
   },
   "peerDependenciesMeta": {

@@ -2,7 +2,7 @@
   "name": "@fluixi/testing",
   "version": "1.0.0-alpha.46",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -17,7 +17,7 @@
       }
     }
   },
-  "description": "Minimal test helpers for Fluixi components — render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
+  "description": "Minimal test helpers for Fluixi components \u2014 render into jsdom, flush effects, fire events. Bring vitest + @testing-library/dom for the rest.",
   "type": "module",
   "files": [
     "dist",
@@ -51,8 +51,8 @@
     "inquirer": "^14.0.2"
   },
   "peerDependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/reactive": "workspace:^"
   },
   "repository": {
     "type": "git",

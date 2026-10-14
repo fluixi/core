@@ -140,14 +140,14 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@fluixi/core": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
-    "@fluixi/session": "workspace:*",
-    "@fluixi/start": "workspace:*",
-    "@fluixi/server": "workspace:*",
-    "@fluixi/auth": "workspace:*",
+    "@fluixi/core": "workspace:^",
+    "@fluixi/reactive": "workspace:^",
+    "@fluixi/session": "workspace:^",
+    "@fluixi/start": "workspace:^",
+    "@fluixi/server": "workspace:^",
+    "@fluixi/auth": "workspace:^",
     "jose": ">=5",
-    "@fluixi/di": "workspace:*"
+    "@fluixi/di": "workspace:^"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",

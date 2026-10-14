@@ -1,9 +1,9 @@
 {
   "name": "@fluixi/server",
   "version": "1.0.0-alpha.98",
-  "description": "Server-side rendering for Fluixi — request-scoped, streaming, framework-agnostic.",
+  "description": "Server-side rendering for Fluixi \u2014 request-scoped, streaming, framework-agnostic.",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
@@ -48,17 +48,16 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": {
-    "@fluixi/head": "workspace:*"
-  },
   "peerDependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*"
+    "@fluixi/dom": "workspace:^",
+    "@fluixi/head": "workspace:^",
+    "@fluixi/reactive": "workspace:^"
   },
   "devDependencies": {
-    "@fluixi/dom": "workspace:*",
-    "@fluixi/reactive": "workspace:*",
     "@bambiste/mix-builder": "^0.4.0",
+    "@fluixi/dom": "workspace:*",
+    "@fluixi/head": "workspace:*",
+    "@fluixi/reactive": "workspace:*",
     "cross-env": "^7.0.3"
   }
 }
