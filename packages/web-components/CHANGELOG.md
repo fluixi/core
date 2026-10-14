@@ -1,5 +1,11 @@
 # @fluixi/web-components
 
+## 1.0.0-alpha.99
+
+### Patch Changes
+
+- 3ed276b: Fluixi peer dependencies are published as ^ ranges (^1.0.0-alpha.N) instead of exact versions.
+
 ## 1.0.0-alpha.98
 
 ### Patch Changes

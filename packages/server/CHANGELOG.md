@@ -1,5 +1,12 @@
 # @fluixi/server
 
+## 1.0.0-alpha.99
+
+### Minor Changes
+
+- f01adde: `onRequestEnd(fn)` registers work to run when the current request ends, `endRequestContext(ctx)` runs it once, latest first, `renderToString` and `renderToStringAsync` end the context they create, and `@fluixi/server` re-exports both.
+- 3ed276b: The runtime packages of `@fluixi/start`, `@fluixi/core`, `@fluixi/server` and `@fluixi/template-runtime` are peer dependencies, so an app that updates one package keeps a single runtime instance.
+
 ## 1.0.0-alpha.98
 
 ### Patch Changes

@@ -1,11 +1,11 @@
 {
   "name": "@fluixi/web-components",
-  "version": "1.0.0-alpha.98",
+  "version": "1.0.0-alpha.99",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "description": "Publish a Fluixi component as a standard custom element, with fine-grained updates, native slots and no framework in the consumer.",
   "type": "module",
   "exports": {

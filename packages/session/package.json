@@ -1,8 +1,8 @@
 {
   "name": "@fluixi/session",
-  "version": "1.0.0-alpha.98",
+  "version": "1.0.0-alpha.99",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -23,7 +23,7 @@
       }
     }
   },
-  "description": "Client-side session lifecycle for Fluixi \u2014 createSession: bring a backend adapter, get token/user signals, isAuthenticated, persistence, hydrate and automatic token refresh. (The full server-first auth engine lives in @fluixi/auth.)",
+  "description": "Client-side session lifecycle for Fluixi — createSession: bring a backend adapter, get token/user signals, isAuthenticated, persistence, hydrate and automatic token refresh. (The full server-first auth engine lives in @fluixi/auth.)",
   "type": "module",
   "files": [
     "dist",

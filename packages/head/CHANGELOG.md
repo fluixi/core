@@ -1,5 +1,11 @@
 # @fluixi/head
 
+## 1.0.0-alpha.99
+
+### Patch Changes
+
+- 3ed276b: Fluixi peer dependencies are published as ^ ranges (^1.0.0-alpha.N) instead of exact versions.
+
 ## 1.0.0-alpha.65
 
 ### Patch Changes
