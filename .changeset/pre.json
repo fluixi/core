@@ -356,6 +356,7 @@
     "rename-kettlejs-to-core",
     "render-stream",
     "report-scopes",
+    "request-context-copies",
     "request-locals-seam",
     "resolve-rules-for-apps",
     "resource-data-transport",

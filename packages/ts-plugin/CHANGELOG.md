@@ -1,5 +1,11 @@
 # @fluixi/ts-plugin
 
+## 0.1.0-alpha.32
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.98
+
 ## 0.1.0-alpha.31
 
 ### Patch Changes

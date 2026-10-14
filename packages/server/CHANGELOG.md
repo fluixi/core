@@ -1,5 +1,15 @@
 # @fluixi/server
 
+## 1.0.0-alpha.98
+
+### Patch Changes
+
+- 86e38e1: The request store and server-function context runner are held in the global registry like the locals bag, and `@fluixi/server` installs its async store only when none is already present. In a built app, server functions ran outside the request context, so `getLocals()` was empty and an auth library saw every call as signed out.
+- Updated dependencies [86e38e1]
+  - @fluixi/dom@1.0.0-alpha.98
+  - @fluixi/reactive@1.0.0-alpha.98
+  - @fluixi/head@1.0.0-alpha.65
+
 ## 1.0.0-alpha.97
 
 ### Patch Changes
