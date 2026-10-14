@@ -132,7 +132,7 @@ const USAGE = `Usage: create-fluixi [dir] [options]
 
 Scaffold a Fluixi app in dir. What is not given is asked for.
 
-  --ssr | --spa               server-rendered with @fluixi/start, or client-only with vite
+  --ssr | --spa               rendered on the server or in the browser, both with @fluixi/start
   --jsx | --html              template syntax
   --ui | --no-ui              @fluixi-ui components
   --fluixi-css | --tailwind | --no-css
@@ -210,9 +210,8 @@ function styleSheet(ui: Ui, css: Css): string {
   return '';
 }
 
-/** Where the component resolver is configured, which differs by mode. */
-const configFor = (mode: 'ssr' | 'spa') =>
-  mode === 'ssr' ? 'fluixi.config.ts' : 'vite.config.ts';
+/** Where the component resolver and extra plugins are configured: both modes are @fluixi/start apps. */
+const CONFIG = 'fluixi.config.ts';
 
 /**
  * Let a capitalised tag resolve to a @fluixi-ui package.
@@ -221,8 +220,8 @@ const configFor = (mode: 'ssr' | 'spa') =>
  * `src/components/Card.tsx` still wins and only the names it does not define fall
  * through to the kit.
  */
-function addUiResolver(target: string, mode: 'ssr' | 'spa'): void {
-  const file = join(target, configFor(mode));
+function addUiResolver(target: string): void {
+  const file = join(target, CONFIG);
   if (!existsSync(file)) return;
   let src = readFileSync(file, 'utf8');
   src = `import { uiComponents } from '@fluixi-ui/resolver';\n` + src;
@@ -234,25 +233,15 @@ function addUiResolver(target: string, mode: 'ssr' | 'spa'): void {
 }
 
 /**
- * Put a plugin in the app's vite config.
- *
- * An SSR app has none by default, because @fluixi/start owns the build. It still reads
- * one when it is there, so a css engine that ships a vite plugin gets a file created for
- * it rather than having nowhere to go.
+ * Put a vite plugin in the app's config. A @fluixi/start app declares extra plugins in
+ * `fluixi.config.ts`; it has no vite config, and adding one just to hold a plugin would
+ * leave the project with two build configs that have to agree.
  */
-function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, call: string): void {
-  // A start app declares extra plugins in its own config; it has no vite config, and
-  // adding one just to hold a plugin would leave the project with two build configs
-  // that have to agree.
-  const file = join(target, configFor(mode));
+function addVitePlugin(target: string, importLine: string, call: string): void {
+  const file = join(target, CONFIG);
   if (!existsSync(file)) return;
-
-  let src = importLine + '\n' + readFileSync(file, 'utf8');
-  src =
-    mode === 'ssr'
-      ? src.replace('export default defineConfig({', `export default defineConfig({\n  plugins: [${call}],`)
-      : src.replace('plugins: [', `plugins: [\n    ${call},`);
-  writeFileSync(file, src);
+  const src = importLine + '\n' + readFileSync(file, 'utf8');
+  writeFileSync(file, src.replace('export default defineConfig({', `export default defineConfig({\n  plugins: [${call}],`));
 }
 
 /**
@@ -263,8 +252,8 @@ function addVitePlugin(target: string, mode: 'ssr' | 'spa', importLine: string, 
  * asked to resolve, and the components below need them defined before their own rules
  * land. `emitUiTokens` does not replace this, that bridge covers a subset.
  */
-function importStyles(target: string, mode: 'ssr' | 'spa', ui: Ui, css: Css): void {
-  const base = mode === 'ssr' ? 'entry-client' : 'main';
+function importStyles(target: string, ui: Ui, css: Css): void {
+  const base = 'entry-client';
   const file = ['tsx', 'ts']
     .map((ext) => join(target, 'src', `${base}.${ext}`))
     .find((p) => existsSync(p));
@@ -313,16 +302,15 @@ async function main(): Promise<void> {
   if (provider && !PROVIDERS.includes(provider)) refuse(`--provider is one of ${PROVIDERS.join(', ')}`);
   if (tokens && tokens !== 'browser' && tokens !== 'server') refuse(`--tokens is browser or server`);
   // Auth is wired through @fluixi/start: its env layer, app modules and server. An SPA has none.
-  if (mode === 'spa' && auth && auth !== 'none') refuse(`authentication needs an SSR app: drop --spa or --auth`);
 
-  const interactive = input.isTTY && (!dir || !mode || !format || !ui || !css || (mode !== 'spa' && !auth));
+  const interactive = input.isTTY && (!dir || !mode || !format || !ui || !css || !auth);
   if (interactive) {
     output.write(`\n${c.gray('┌')}  ${gradient('◆')} ${c.bold(gradient('create-fluixi'))}\n${BAR}\n`);
     if (!dir) dir = await askText('Project name', 'fluixi-app');
     if (!mode) {
       mode = (await askSelect('App mode', [
-        { value: 'ssr', label: 'SSR', hint: 'server-rendered · @fluixi/start' },
-        { value: 'spa', label: 'SPA', hint: 'client-only · vite' },
+        { value: 'ssr', label: 'SSR', hint: 'rendered on the server · @fluixi/start' },
+        { value: 'spa', label: 'SPA', hint: 'rendered in the browser · @fluixi/start' },
       ])) as 'ssr' | 'spa';
     }
     if (!format) {
@@ -344,7 +332,7 @@ async function main(): Promise<void> {
         { value: 'fluixi-css', label: '@fluixi-css', hint: 'the Fluixi stylesheet' },
       ])) as Css;
     }
-    if (mode === 'ssr' && !auth) {
+    if (!auth) {
       auth = (await askSelect('Authentication', [
         { value: 'none', label: 'None', hint: 'add it later with fluixi add auth' },
         { value: 'oauth2', label: 'OAuth2 / OIDC', hint: '@fluixi/oauth2 · Keycloak, Auth0, Okta, Google…' },
@@ -369,7 +357,7 @@ async function main(): Promise<void> {
   format = format ?? 'jsx';
   ui = ui ?? 'none';
   css = css ?? 'none';
-  auth = mode === 'spa' ? 'none' : (auth ?? 'none');
+  auth = auth ?? 'none';
 
   const target = resolve(dir);
   const name = basename(target);
@@ -400,12 +388,12 @@ async function main(): Promise<void> {
   if (ui === 'fluixi-ui') {
     addDeps(pkg, 'dependencies', UI_DEPS);
     addDeps(pkg, 'devDependencies', UI_DEV_DEPS);
-    addUiResolver(target, mode);
+    addUiResolver(target);
   }
 
   if (css === 'tailwind') {
     addDeps(pkg, 'devDependencies', { tailwindcss: '^4', '@tailwindcss/vite': '^4' });
-    addVitePlugin(target, mode, `import tailwindcss from '@tailwindcss/vite';`, 'tailwindcss()');
+    addVitePlugin(target, `import tailwindcss from '@tailwindcss/vite';`, 'tailwindcss()');
   }
 
   if (css === 'fluixi-css') {
@@ -413,7 +401,6 @@ async function main(): Promise<void> {
     addDeps(pkg, 'devDependencies', { '@fluixi-css/vite': 'next', lightningcss: '^1.29.3' });
     addVitePlugin(
       target,
-      mode,
       `import fluixiCss from '@fluixi-css/vite';`,
       // The bridge only matters with the component kit installed: it maps the theme
       // scales onto the `--flx-ui-*` custom properties those components read.
@@ -432,7 +419,7 @@ async function main(): Promise<void> {
     // An empty sheet still gets written: it is where an app puts its own css, and the
     // entry already imports it.
     writeFileSync(join(target, 'src', 'styles.css'), sheet);
-    importStyles(target, mode, ui, css);
+    importStyles(target, ui, css);
   }
 
   // The same wiring `fluixi add auth` writes into an existing app.

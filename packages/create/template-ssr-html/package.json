@@ -10,11 +10,16 @@
   },
   "dependencies": {
     "@fluixi/cli": "alpha",
-    "@fluixi/start": "alpha",
     "@fluixi/core": "alpha",
-    "@fluixi/server": "alpha",
+    "@fluixi/di": "alpha",
+    "@fluixi/dom": "alpha",
+    "@fluixi/head": "alpha",
+    "@fluixi/jsx": "alpha",
     "@fluixi/reactive": "alpha",
-    "@fluixi/dom": "alpha"
+    "@fluixi/router": "alpha",
+    "@fluixi/server": "alpha",
+    "@fluixi/start": "alpha",
+    "@fluixi/storage": "alpha"
   },
   "devDependencies": {
     "@fluixi/ts-plugin": "alpha",

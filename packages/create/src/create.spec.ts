@@ -39,9 +39,20 @@ describe('create-fluixi --auth', () => {
     expect(JSON.parse(read('package.json')).dependencies['@fluixi/oauth2']).toBeUndefined();
   });
 
-  it('refuses auth for an SPA, which has no server to hold it', () => {
-    expect(() => create('--spa', '--auth=oauth2')).toThrow(/needs an SSR app/);
-    expect(existsSync(join(cwd, 'app'))).toBe(false);
+  it('wires oauth2 into an SPA too: its server half runs on the @fluixi/start server', () => {
+    create('--spa', '--auth=oauth2', '--provider=keycloak', '--tokens=server');
+    expect(read('src/app.config.server.ts')).toContain('imports: [authServer()]');
+    expect(read('fluixi.config.ts')).toContain('ssr: false');
+  });
+
+  it('makes an SPA a @fluixi/start app rendered in the browser, listing every runtime package', () => {
+    create('--spa');
+    const deps = JSON.parse(read('package.json')).dependencies;
+    for (const name of ['start', 'core', 'di', 'dom', 'head', 'jsx', 'reactive', 'router', 'server', 'storage']) {
+      expect(deps[`@fluixi/${name}`], name).toBe('alpha');
+    }
+    expect(read('fluixi.config.ts')).toContain('ssr: false');
+    expect(existsSync(join(cwd, 'app/vite.config.ts'))).toBe(false);
   });
 
   it('declares every reactive and storage intrinsic the compiler knows in the new app\'s fluixi.d.ts', () => {

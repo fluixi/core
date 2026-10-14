@@ -1,0 +1,30 @@
+{
+  "name": "fluixi-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "fluixi dev",
+    "build": "fluixi build",
+    "start": "fluixi start"
+  },
+  "dependencies": {
+    "@fluixi/cli": "alpha",
+    "@fluixi/core": "alpha",
+    "@fluixi/di": "alpha",
+    "@fluixi/dom": "alpha",
+    "@fluixi/head": "alpha",
+    "@fluixi/jsx": "alpha",
+    "@fluixi/reactive": "alpha",
+    "@fluixi/router": "alpha",
+    "@fluixi/server": "alpha",
+    "@fluixi/start": "alpha",
+    "@fluixi/storage": "alpha"
+  },
+  "devDependencies": {
+    "@fluixi/ts-plugin": "alpha",
+    "@types/node": "^20.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2"
+  }
+}
