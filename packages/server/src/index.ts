@@ -30,6 +30,8 @@ import {
   createRequestContext,
   setRequestStore,
   setRequestStoreIfUnset,
+  onRequestEnd,
+  endRequestContext,
   isServer,
   setServerMode,
   type RequestContext,
@@ -88,6 +90,8 @@ export {
   createRequestContext,
   setRequestStore,
   setRequestStoreIfUnset,
+  onRequestEnd,
+  endRequestContext,
   isServer,
   setServerMode,
 };

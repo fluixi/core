@@ -30,6 +30,8 @@ export {
 export {
   setRequestStore,
   setRequestStoreIfUnset,
+  onRequestEnd,
+  endRequestContext,
   createRequestContext,
   runWithRequestContext,
   getRequestContext,

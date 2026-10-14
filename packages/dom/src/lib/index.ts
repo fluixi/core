@@ -46,6 +46,8 @@ export {
   FX_DATA_ID,
   setRequestStore,
   setRequestStoreIfUnset,
+  onRequestEnd,
+  endRequestContext,
   createRequestContext,
   runWithRequestContext,
   getRequestContext,

@@ -4,7 +4,7 @@
 // (isApiRequest + handleApiRequest); dev auto-wires it, prod gets it via the entry-server re-export.
 import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath, join, dirname } from 'node:path';
-import { createRequestContext, runWithRequestContext } from '@fluixi/server';
+import { createRequestContext, endRequestContext, runWithRequestContext } from '@fluixi/server';
 import { refusalResponse } from './refusal.js';
 
 const API_VMOD = 'virtual:fluixi-api';
@@ -88,9 +88,13 @@ export async function handleApi(routes: ApiRoute[], request: Request, prefix = '
     // middleware wrote for this request (the session, the tenant), so `requireUser()` works in
     // an API route. Without it every guard read an empty bag and answered 401.
     const context = createRequestContext({ request, url: pathname, responseHeaders: {} });
-    out = await runWithRequestContext(context, () =>
-      (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params }),
-    );
+    try {
+      out = await runWithRequestContext(context, () =>
+        (fn as (req: Request, ctx: { params: Record<string, string> }) => unknown)(request, { params: match.params }),
+      );
+    } finally {
+      endRequestContext(context);
+    }
   } catch (error) {
     const refused = refusalResponse(error);
     if (refused) return refused;

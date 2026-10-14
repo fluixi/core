@@ -3,14 +3,15 @@
  * dispatcher so `getRequestEvent()` works inside a `"use server"` function. Imported by
  * `virtual:fluixi-server-fns` (server build only), never by the client.
  */
-import { createRequestContext, runWithRequestContext, getRequestEvent } from '@fluixi/server';
+import { createRequestContext, endRequestContext, runWithRequestContext, getRequestEvent } from '@fluixi/server';
 import { setServerFnContextRunner } from './server-fn.js';
 
 setServerFnContextRunner((request, run) => {
   const responseHeaders: Record<string, string> = {};
   const event = { request, url: new URL(request.url).pathname, responseHeaders };
   const ctx = createRequestContext(event);
-  const result = Promise.resolve(runWithRequestContext(ctx, run));
+  // Ended once the function settles: what the request held (its services) is released then.
+  const result = Promise.resolve(runWithRequestContext(ctx, run)).finally(() => endRequestContext(ctx));
   return { result, responseHeaders };
 });
 

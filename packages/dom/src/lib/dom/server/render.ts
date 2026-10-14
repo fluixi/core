@@ -40,6 +40,7 @@ function ensureServerNodes(): void {
 import { escapeFxJson, FX_DATA_ID } from './fx-data.js';
 import {
   createRequestContext,
+  endRequestContext,
   runWithRequestContext,
   getRequestContext,
   type RequestContext,
@@ -89,6 +90,7 @@ export function renderToString(app: () => any, options: RenderOptions = {}): str
       }),
     );
   } finally {
+    endRequestContext(ctx);
     setServerMode(prev);
   }
 }
@@ -250,6 +252,7 @@ export async function renderToStringAsync(
       return html;
     });
   } finally {
+    endRequestContext(ctx);
     setServerMode(prev);
   }
 }

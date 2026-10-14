@@ -132,3 +132,30 @@ describe('request context: a second copy loading mid-request', () => {
     a.setRequestStore(null);
   });
 });
+
+describe('request context: the end of a request', () => {
+  it('runs the hooks registered during the request once, latest first, when it ends', async () => {
+    const { onRequestEnd, endRequestContext } = await import('./request-context.js');
+    const ran: string[] = [];
+    const ctx = createRequestContext({ url: '/end' });
+    runWithRequestContext(ctx, () => {
+      onRequestEnd(() => ran.push('first'));
+      onRequestEnd(() => ran.push('second'));
+    });
+    expect(ran).toEqual([]);
+    endRequestContext(ctx);
+    endRequestContext(ctx);
+    expect(ran).toEqual(['second', 'first']);
+    expect(onRequestEnd(() => ran.push('outside'))).toBe(false);
+  });
+
+  it('a render ends its own context', async () => {
+    const { onRequestEnd } = await import('./request-context.js');
+    const ran: string[] = [];
+    renderToString(() => {
+      onRequestEnd(() => ran.push('render ended'));
+      return null;
+    });
+    expect(ran).toEqual(['render ended']);
+  });
+});

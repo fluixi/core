@@ -174,6 +174,42 @@ export function createRequestContext(event: RequestEvent = {}): RequestContext {
  * concurrent renders from reading each other's request. A synchronous fallback covers
  * hosts without it.
  */
+// What runs when a request ends, per context (a WeakMap in the global registry, like the
+// store: a hook registered through one copy of this module runs from another).
+const _endHooks: WeakMap<object, Array<() => void>> = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.requestEndHooks')
+] ??= new WeakMap<object, Array<() => void>>()) as WeakMap<object, Array<() => void>>;
+
+/**
+ * Run `fn` when the current request ends (services releasing what they hold for the request,
+ * say). Returns false outside a request context, where there is no request to end.
+ */
+export function onRequestEnd(fn: () => void): boolean {
+  const ctx = getRequestContext();
+  if (!ctx) return false;
+  let hooks = _endHooks.get(ctx);
+  if (!hooks) _endHooks.set(ctx, (hooks = []));
+  hooks.push(fn);
+  return true;
+}
+
+/**
+ * End `ctx`: its `onRequestEnd` hooks run, latest first, each once. Called by whatever created
+ * the context (a render, a server function, an API route) when it is done with it.
+ */
+export function endRequestContext(ctx: RequestContext): void {
+  const hooks = _endHooks.get(ctx);
+  if (!hooks) return;
+  _endHooks.delete(ctx);
+  for (const hook of hooks.reverse()) {
+    try {
+      hook();
+    } catch (error) {
+      console.error('[fluixi] a request-end hook threw:', error);
+    }
+  }
+}
+
 export function runWithRequestContext<T>(ctx: RequestContext, fn: () => T): T {
   return _holder.store.run(ctx, fn);
 }
