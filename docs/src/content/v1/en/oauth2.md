@@ -304,6 +304,24 @@ It reuses a userinfo response for `userCacheMs` (30 seconds by default) rather t
 the provider on every render. Set `0` to always ask. The tradeoff is freshness: a session
 ended at the provider keeps rendering as signed in until the entry expires.
 
+### When a renewal fails
+
+An expired access token is renewed with the refresh token on the request that finds it. A
+provider that rotates refresh tokens treats a second use of one as theft and ends every session
+of that sign-in, so what happens next depends on whether the provider may have processed the
+request:
+
+| The renewal | Means | `sessionLocals` |
+|---|---|---|
+| answered with new tokens | renewed | keeps going with them |
+| refused (400, 401) | the session is over | clears the cookie |
+| 429, 5xx, or the connection never opened | not processed | keeps the session, renders signed out, asks again after `Retry-After` (5 seconds without one) |
+| timed out, connection dropped after sending, or a success without an access token | maybe processed, answer lost | clears the cookie and never sends that refresh token again |
+
+The last case costs a sign-in, which the provider's own session usually makes silent. Sending
+the token again could not get the new one back and would end the person's other sessions too.
+`tokenTimeoutMs` sets how long a token request may take (10 seconds by default).
+
 ### Calling your APIs as the user
 
 A signed-in request also carries a `fetch` on `locals.auth` that sends the session's access

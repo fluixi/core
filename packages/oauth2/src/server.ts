@@ -98,6 +98,13 @@ export interface OAuthRoutesConfig {
    * short. `0` disables it and asks every time.
    */
   userCacheMs?: number;
+  /**
+   * How long a token request may take, in milliseconds, before it is abandoned. Default
+   * 10 000. A renewal abandoned this way may have been processed, so its refresh token is not
+   * sent again and the session ends; the provider's own session usually signs the person back
+   * in without a prompt.
+   */
+  tokenTimeoutMs?: number;
   /** Map the provider's userinfo onto the app's own shape. */
   mapUser?: (claims: Record<string, unknown>, accessToken: string) => unknown;
   /**
@@ -293,8 +300,51 @@ interface SessionPayload {
   pending?: { verifier: string; state: string; returnTo?: string; silent?: boolean };
 }
 
+/**
+ * The provider did not process the token request: it answered 429 or 5xx, or the connection
+ * never opened. The same request may be sent again after `retryAfterMs`.
+ */
+class ProviderUnavailable extends OAuthError {
+  constructor(readonly retryAfterMs: number) {
+    super('The authorization server is unavailable.', 'temporarily_unavailable');
+  }
+}
+
+/**
+ * The request may have been processed, but its answer is unusable: it timed out, the
+ * connection broke after it was sent, or a success came back without an access token. A
+ * refresh token sent this way may already have been rotated.
+ */
+class AnswerLost extends OAuthError {
+  constructor(what: string) {
+    super(`The token request's answer was lost (${what}).`, 'answer_lost');
+  }
+}
+
+/** Connection failures that happen before the request is sent. */
+const NOT_SENT = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT']);
+const RETRY_DEFAULT_MS = 5_000;
+const RETRY_MAX_MS = 300_000;
+
+/** The pause a 429 or 5xx asks for (`Retry-After`, seconds or a date), within sane bounds. */
+function retryAfter(response: Response): number {
+  const header = response.headers.get('retry-after');
+  if (!header) return RETRY_DEFAULT_MS;
+  const seconds = Number(header);
+  const ms = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
+  return Number.isFinite(ms) ? Math.min(Math.max(ms, 1_000), RETRY_MAX_MS) : RETRY_DEFAULT_MS;
+}
+
+/** What a failed `fetch` means for the request: never sent, or possibly processed. */
+function unanswered(error: unknown): OAuthError {
+  const code = (error as { cause?: { code?: string } } | null)?.cause?.code;
+  if (code && NOT_SENT.has(code)) return new ProviderUnavailable(RETRY_DEFAULT_MS);
+  return new AnswerLost(code ?? (error instanceof Error ? error.name : 'no answer'));
+}
+
 /** Endpoints, client authentication and the token request, for the routes and `sessionLocals`. */
 function tokenClient(config: OAuthRoutesConfig) {
+  const timeoutMs = config.tokenTimeoutMs ?? 10_000;
   let endpoints: Endpoints | null = config.endpoints ?? null;
   const resolve = async (): Promise<Endpoints> => {
     if (endpoints) return endpoints;
@@ -327,17 +377,29 @@ function tokenClient(config: OAuthRoutesConfig) {
       const form = new URLSearchParams(body);
       await applyClientAuth(clientAuth, token, headers, form);
       if (key) await prove(headers, key, 'POST', token);
-      return fetch(token, { method: 'POST', headers, body: form.toString() });
+      return fetch(token, { method: 'POST', headers, body: form.toString(), signal: AbortSignal.timeout(timeoutMs) });
     };
 
-    let response = await attempt();
-    if (key && learnNonce(token, response)) response = await attempt();
-    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    let response: Response;
+    let payload: Record<string, unknown> | null = null;
+    try {
+      response = await attempt();
+      if (key && learnNonce(token, response)) response = await attempt();
+      if (response.status === 429 || response.status >= 500) throw new ProviderUnavailable(retryAfter(response));
+      payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    } catch (error) {
+      throw error instanceof OAuthError ? error : unanswered(error);
+    }
     if (!response.ok) {
       throw new OAuthError(
-        String(payload.error ?? 'token_request_failed'),
-        String(payload.error ?? 'token_request_failed'),
+        String(payload?.error ?? 'token_request_failed'),
+        String(payload?.error ?? 'token_request_failed'),
       );
+    }
+    // A token endpoint's success always carries one (RFC 6749 5.1). Anything else (a proxy's
+    // page, a truncated body) is not a session, and the provider may have rotated the token.
+    if (typeof payload?.access_token !== 'string' || !payload.access_token) {
+      throw new AnswerLost('a success without an access token');
     }
     return payload;
   }
@@ -354,6 +416,8 @@ function tokenClient(config: OAuthRoutesConfig) {
  */
 const renewals = new Map<string, { until: number; result: Promise<SessionPayload | null> }>();
 const RENEWAL_REUSE_MS = 30_000;
+/** How long a refused or possibly rotated refresh token stays recorded, so it is not sent again. */
+const SPENT_MS = 5 * 60_000;
 
 /** The session with fresh tokens, or null when the provider refuses to renew it. */
 function renew(
@@ -381,8 +445,18 @@ function renew(
       sessionState: current.sessionState,
     } satisfies SessionPayload;
   })().catch((error: unknown) => {
-    // A refusal is an answer: the session is over. Anything else (the provider down) is not.
-    if (error instanceof OAuthError) return null;
+    // Not processed (the provider down or busy): nothing was spent. Ask again after the pause.
+    if (error instanceof ProviderUnavailable) {
+      renewals.set(refreshToken, { until: Date.now() + error.retryAfterMs, result });
+      throw error;
+    }
+    // Refused, or answered in a way that was lost after the provider may have rotated the
+    // token: the session is over either way. Sending the token again would be a replay, which
+    // the provider answers by ending every session of this sign-in.
+    if (error instanceof OAuthError) {
+      renewals.set(refreshToken, { until: Date.now() + SPENT_MS, result });
+      return null;
+    }
     renewals.delete(refreshToken);
     throw error;
   });
@@ -806,8 +880,14 @@ export function sessionLocals(config: OAuthRoutesConfig) {
 
     // An access token lives minutes, the session days: renew it here, on the request that
     // finds it expired, rather than rendering a signed-in visitor as nobody.
+    // Set when the provider could not renew now: the session stays, it is retried later.
+    let paused = false;
+    const keep = (current: SessionPayload | null) => (error: unknown) => {
+      if (error instanceof ProviderUnavailable) paused = true;
+      return current;
+    };
     if (session?.accessToken && expired(session)) {
-      session = await renewOrDrop(session).catch(() => session);
+      session = await renewOrDrop(session).catch(keep(session));
     }
 
     // Written either way. A route that reads locals should find "nobody" rather than
@@ -845,13 +925,14 @@ export function sessionLocals(config: OAuthRoutesConfig) {
         let response = await withToken(endpoints.userinfo, session);
         // Refused before its time (revoked, a clock apart): renew once, and when that is
         // refused too the session is over, so the visitor goes the signed-out way.
-        if (response.status === 401 && !setCookie) {
-          session = await renewOrDrop(session).catch(() => session);
+        if (response.status === 401 && !setCookie && !paused) {
+          session = await renewOrDrop(session).catch(keep(session));
           if (!session) return signedOut();
           response = await withToken(endpoints.userinfo, session);
         }
         if (response.status === 401) {
-          setCookie = cookie.clear();
+          // Not renewable just now: signed out for this request, renewed on a later one.
+          if (!paused) setCookie = cookie.clear();
           return signedOut();
         }
         if (response.ok) {

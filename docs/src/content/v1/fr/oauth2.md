@@ -315,6 +315,24 @@ d'interroger le fournisseur à chaque rendu. `0` interroge à chaque fois. La co
 est la fraîcheur : une session terminée chez le fournisseur continue de s'afficher comme
 connectée jusqu'à l'expiration de l'entrée.
 
+### Quand un renouvellement échoue
+
+Un jeton d'accès expiré est renouvelé avec le jeton de rafraîchissement, sur la requête qui le
+trouve expiré. Un fournisseur qui fait tourner les jetons de rafraîchissement prend une seconde
+utilisation pour un vol et termine toutes les sessions de cette connexion. La suite dépend donc
+de ce que le fournisseur a pu traiter :
+
+| Le renouvellement | Signifie | `sessionLocals` |
+|---|---|---|
+| répond avec de nouveaux jetons | renouvelé | continue avec eux |
+| refusé (400, 401) | la session est terminée | efface le cookie |
+| 429, 5xx, ou connexion jamais ouverte | non traité | garde la session, rend la page déconnectée, redemande après `Retry-After` (5 secondes sans) |
+| délai dépassé, connexion coupée après l'envoi, ou succès sans jeton d'accès | peut-être traité, réponse perdue | efface le cookie et n'envoie plus jamais ce jeton de rafraîchissement |
+
+Le dernier cas coûte une connexion, que la session du fournisseur rend en général silencieuse.
+Renvoyer le jeton ne rendrait pas le nouveau et terminerait aussi les autres sessions de la
+personne. `tokenTimeoutMs` fixe la durée maximale d'une requête de jeton (10 secondes par défaut).
+
 ### Appeler vos API au nom de l'utilisateur
 
 Une requête connectée porte aussi un `fetch` sur `locals.auth`, qui envoie le jeton d'accès de
