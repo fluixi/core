@@ -1088,11 +1088,17 @@ function flattenArray(
               // new content has somewhere to go, then moves past what was adopted, where it
               // sits in a normal render: after its content.
               const here = () => (hydration.cursor && hydration.cursor.parentNode === parent ? hydration.cursor : null);
-              parent.insertBefore(slot, here());
+              const start = here();
+              parent.insertBefore(slot, start);
+              // Returns the disposer, which is also how the slot's nodes are read: called here it
+              // would dispose the slot's effect as soon as it was made.
               const disposeSlot = insert(parent, resolved, slot) as () => Node | Node[] | null;
-              const nodes = disposeSlot();
-              for (const node of Array.isArray(nodes) ? nodes : nodes ? [nodes] : []) adopted.add(node);
-              parent.insertBefore(slot, here());
+              // What the slot claimed is the run of server nodes the cursor passed, including
+              // those a slot nested in it adopted (a <Show> whose child is a <Show>). A node left
+              // out would be taken for an unclaimed one and removed by this array's reconcile.
+              const end = here();
+              for (let node = start; node && node !== end; node = node.nextSibling) adopted.add(node);
+              parent.insertBefore(slot, end);
               // The content only: the marker is in the array, see the note in insertExpression.
               onCleanup(() => cleanChildren(parent, disposeSlot()));
               reactiveSlots.push({ marker: slot, sig: resolved, wired: true });
