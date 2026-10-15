@@ -44,8 +44,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
-    "@fluixi/devtools": "workspace:*"
+    "@fluixi/compiler": "workspace:^",
+    "@fluixi/devtools": "workspace:^"
   },
   "peerDependencies": {
     "vite": ">=4"

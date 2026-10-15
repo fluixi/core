@@ -190,7 +190,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@fluixi/utils": "workspace:*"
+    "@fluixi/utils": "workspace:^"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",

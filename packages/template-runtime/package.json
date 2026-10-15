@@ -47,8 +47,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/compiler": "workspace:*",
-    "@fluixi/template-parser": "workspace:*"
+    "@fluixi/compiler": "workspace:^",
+    "@fluixi/template-parser": "workspace:^"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",

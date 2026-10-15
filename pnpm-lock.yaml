@@ -651,7 +651,7 @@ importers:
   packages/auth:
     dependencies:
       '@fluixi/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../utils
       better-auth:
         specifier: '>=1.6.22'
@@ -697,7 +697,7 @@ importers:
         specifier: ^7.28.5
         version: 7.29.7(@babel/core@7.29.7)
       '@fluixi/compiler':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../compiler
     devDependencies:
       '@bambiste/mix-builder':
@@ -719,10 +719,10 @@ importers:
   packages/cli:
     dependencies:
       '@fluixi/start':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../start
       '@fluixi/ts-plugin':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../ts-plugin
       typescript-api:
         specifier: npm:typescript@^6.0.3
@@ -744,7 +744,7 @@ importers:
         specifier: ^7.28.5
         version: 7.29.9
       '@fluixi/template-parser':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../template-parser
       '@jridgewell/sourcemap-codec':
         specifier: ^1.5.5
@@ -805,7 +805,7 @@ importers:
   packages/core:
     dependencies:
       '@fluixi/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../utils
     devDependencies:
       '@bambiste/mix-builder':
@@ -982,13 +982,17 @@ importers:
         version: 5.0.3(@types/node@26.6.2)(@vitest/coverage-v8@3.2.7)(@vitest/ui@5.0.3)(jsdom@25.0.1)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
 
   packages/oauth2:
+    dependencies:
+      '@fluixi/auth':
+        specifier: workspace:^
+        version: link:../auth
+      '@fluixi/session':
+        specifier: workspace:^
+        version: link:../session
     devDependencies:
       '@bambiste/mix-builder':
         specifier: ^0.4.0
         version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
-      '@fluixi/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
@@ -1004,12 +1008,12 @@ importers:
       '@fluixi/server':
         specifier: workspace:*
         version: link:../server
-      '@fluixi/session':
-        specifier: workspace:*
-        version: link:../session
       '@fluixi/start':
         specifier: workspace:*
         version: link:../start
+      '@fluixi/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@fluixi/testing':
         specifier: workspace:*
         version: link:../testing
@@ -1095,10 +1099,10 @@ importers:
   packages/start:
     dependencies:
       '@fluixi/compiler':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../compiler
       '@fluixi/vite-plugin':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../vite-plugin
       esbuild:
         specifier: ^0.27.1
@@ -1150,7 +1154,7 @@ importers:
   packages/storage:
     dependencies:
       '@fluixi/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../utils
     devDependencies:
       '@bambiste/mix-builder':
@@ -1178,10 +1182,10 @@ importers:
   packages/template-runtime:
     dependencies:
       '@fluixi/compiler':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../compiler
       '@fluixi/template-parser':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../template-parser
     devDependencies:
       '@bambiste/mix-builder':
@@ -1224,10 +1228,10 @@ importers:
   packages/ts-plugin:
     dependencies:
       '@fluixi/compiler':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../compiler
       '@fluixi/template-parser':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../template-parser
     devDependencies:
       esbuild:
@@ -1252,10 +1256,10 @@ importers:
   packages/vite-plugin:
     dependencies:
       '@fluixi/compiler':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../compiler
       '@fluixi/devtools':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../devtools
     devDependencies:
       '@babel/core':

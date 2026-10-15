@@ -38,8 +38,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fluixi/template-parser": "workspace:*",
-    "@fluixi/compiler": "workspace:*"
+    "@fluixi/template-parser": "workspace:^",
+    "@fluixi/compiler": "workspace:^"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",

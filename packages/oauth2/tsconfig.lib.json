@@ -18,25 +18,28 @@
       "path": "../testing/tsconfig.lib.json"
     },
     {
-      "path": "../dom/tsconfig.lib.json"
-    },
-    {
-      "path": "../di/tsconfig.lib.json"
+      "path": "../session/tsconfig.lib.json"
     },
     {
       "path": "../auth/tsconfig.lib.json"
     },
     {
-      "path": "../server/tsconfig.lib.json"
+      "path": "../storage/tsconfig.lib.json"
     },
     {
       "path": "../start/tsconfig.lib.json"
     },
     {
-      "path": "../session/tsconfig.lib.json"
+      "path": "../server/tsconfig.lib.json"
     },
     {
       "path": "../reactive/tsconfig.lib.json"
+    },
+    {
+      "path": "../dom/tsconfig.lib.json"
+    },
+    {
+      "path": "../di/tsconfig.lib.json"
     },
     {
       "path": "../core/tsconfig.lib.json"

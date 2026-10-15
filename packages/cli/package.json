@@ -64,8 +64,8 @@
     }
   },
   "dependencies": {
-    "@fluixi/start": "workspace:*",
-    "@fluixi/ts-plugin": "workspace:*",
+    "@fluixi/start": "workspace:^",
+    "@fluixi/ts-plugin": "workspace:^",
     "typescript-api": "npm:typescript@^6.0.3"
   },
   "devDependencies": {

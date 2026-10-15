@@ -138,16 +138,19 @@
       "default": "./dist/env-config.js"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "@fluixi/auth": "workspace:^",
+    "@fluixi/session": "workspace:^"
+  },
   "peerDependencies": {
     "@fluixi/core": "workspace:^",
+    "@fluixi/di": "workspace:^",
+    "@fluixi/dom": "workspace:^",
     "@fluixi/reactive": "workspace:^",
-    "@fluixi/session": "workspace:^",
-    "@fluixi/start": "workspace:^",
     "@fluixi/server": "workspace:^",
-    "@fluixi/auth": "workspace:^",
-    "jose": ">=5",
-    "@fluixi/di": "workspace:^"
+    "@fluixi/start": "workspace:^",
+    "@fluixi/storage": "workspace:^",
+    "jose": ">=5"
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
@@ -159,6 +162,7 @@
     "@fluixi/server": "workspace:*",
     "@fluixi/session": "workspace:*",
     "@fluixi/start": "workspace:*",
+    "@fluixi/storage": "workspace:*",
     "@fluixi/testing": "workspace:*",
     "cross-env": "^7.0.3",
     "jose": "^5.9.6"

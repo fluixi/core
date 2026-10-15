@@ -7,25 +7,28 @@
       "path": "../testing"
     },
     {
-      "path": "../dom"
-    },
-    {
-      "path": "../di"
+      "path": "../session"
     },
     {
       "path": "../auth"
     },
     {
-      "path": "../server"
+      "path": "../storage"
     },
     {
       "path": "../start"
     },
     {
-      "path": "../session"
+      "path": "../server"
     },
     {
       "path": "../reactive"
+    },
+    {
+      "path": "../dom"
+    },
+    {
+      "path": "../di"
     },
     {
       "path": "../core"
