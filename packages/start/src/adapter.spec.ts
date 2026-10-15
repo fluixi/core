@@ -137,6 +137,24 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
     warn.mockRestore();
   });
 
+  it('node externalizes shared packages too, with their subpaths, so loaded code finds the app\'s copies', () => {
+    const dir = appRoot(
+      { '@fluixi/core': '*', '@acme/sdk': '*' },
+      { '@acme/sdk': { '.': './index.js', './plugins': './plugins.js', './view': './view.js' } },
+    );
+    const cfg = resolveConfig({ root: dir, adapter: nodeAdapter, share: ['@acme/sdk/plugins', '@acme/sdk/view'] });
+    expect(ssrBuildOptions(cfg).external).toEqual(['@fluixi/core', '@acme/sdk', '@acme/sdk/plugins', '@acme/sdk/view']);
+  });
+
+  it('refuses to share from a server that bundles its dependencies', () => {
+    // Bundled, the app's copy is inside its server file: loaded code would import a second
+    // one from node_modules, with its own module state.
+    expect(() => ssrBuildOptions(resolveConfig({ root: root(), adapter: webAdapter, share: ['@fluixi/core'] }))).toThrow(
+      /share needs a server that imports its dependencies/,
+    );
+    expect(() => ssrBuildOptions(resolveConfig({ root: root(), share: ['@fluixi/core'] }))).toThrow(/adapter is unset/);
+  });
+
   it('a custom adapter picks either mode', () => {
     const edge: Adapter = { name: 'my-edge', bundle: 'inline', serve: ({ handler }) => ({ fetch: handler }) };
     expect(ssrBuildOptions(resolveConfig({ root: root(), adapter: edge }))).toEqual({ noExternal: true });

@@ -131,6 +131,17 @@ export interface FluixiConfig {
    */
   plugins?: unknown[];
   /**
+   * Modules the app shares with code it loads at run time, plugins installed into a
+   * deployment rather than built with the app, each as that code imports it. A subpath is a
+   * module of its own: `['@fluixi/core', '@fluixi/reactive/signal', '@acme/sdk/view']`.
+   *
+   * The browser build exposes them through an import map (`share.json`, and first in the
+   * document's head); the server build keeps their packages external, so code imported at
+   * run time from inside the app resolves the app's copies. Needs an adapter whose server
+   * imports its dependencies (`nodeAdapter`). Shared modules are kept whole in the bundle.
+   */
+  share?: string[];
+  /**
    * Deploy target. Decides how `fluixi build` bundles the server (see the adapter's
    * `bundle` mode) and how `fluixi start` serves it. Unset keeps Vite's own bundling
    * heuristic and serves with `nodeAdapter`.
@@ -203,6 +214,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     resolve: config.resolve ?? [],
     vitePlugin: config.vitePlugin ?? {},
     plugins: config.plugins ?? [],
+    share: config.share ?? [],
     webComponents: config.webComponents,
     adapter: config.adapter,
     i18n: resolveI18n(config.i18n),

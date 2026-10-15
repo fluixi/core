@@ -81,6 +81,30 @@ bundle, would put two routers with two sets of module state in the same server.
 > Only the build reads `bundle`. Dev never externalizes: `fluixi dev` loads server modules
 > through Vite so that editing them still triggers HMR.
 
+## Code loaded at run time
+
+A deployment may load code the app was not built with: plugins mounted into the container,
+say. That code imports `@fluixi/core` by name, and it has to get the app's copy, or it drives
+a second reactive runtime, a second injector and a second element registry. `share` lists the
+modules the app hands it, each as the code imports it, a subpath on its own line:
+
+```ts
+export default defineConfig({
+  adapter: nodeAdapter,
+  share: ['@fluixi/core', '@fluixi/reactive/signal', '@fluixi/di', '@acme/sdk/view'],
+});
+```
+
+- **In the browser**, each module becomes its own chunk with all its exports, and an import
+  map names it: first in the document's `<head>`, and in `dist/client/share.json` for a page
+  the app does not render itself.
+- **On the server**, the packages stay external, so a file imported from inside the app
+  directory resolves them from its `node_modules`, the same copies the app runs. That needs
+  `'external'` bundling: `share` with the web adapter, or with no adapter, is refused at build.
+
+A shared module is kept whole, since the app cannot know which exports the loaded code will
+use. A plain Vite app gets the browser half from `share()` in `@fluixi/vite-plugin`.
+
 ## The hosted platforms
 
 Three adapters emit the layout their platform reads. Each inlines the framework and

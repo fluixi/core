@@ -85,6 +85,33 @@ bundle-le quand même ».
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
 > serveur via Vite pour que leur édition déclenche toujours le HMR.
 
+## Du code chargé à l'exécution
+
+Un déploiement peut charger du code avec lequel l'application n'a pas été construite : des
+plugins montés dans le conteneur, par exemple. Ce code importe `@fluixi/core` par son nom, et
+il doit obtenir la copie de l'application, sinon il fait tourner un second runtime réactif, un
+second injecteur et un second registre d'éléments. `share` liste les modules que l'application
+lui confie, chacun tel que le code l'importe, un sous-chemin sur sa propre ligne :
+
+```ts
+export default defineConfig({
+  adapter: nodeAdapter,
+  share: ['@fluixi/core', '@fluixi/reactive/signal', '@fluixi/di', '@acme/sdk/view'],
+});
+```
+
+- **Dans le navigateur**, chaque module devient son propre chunk avec tous ses exports, et une
+  import map le nomme : en tête du `<head>` du document, et dans `dist/client/share.json` pour
+  une page que l'application ne rend pas elle-même.
+- **Sur le serveur**, les paquets restent externes : un fichier importé depuis le dossier de
+  l'application les résout depuis son `node_modules`, les mêmes copies que celles de
+  l'application. Il faut pour cela un bundling `'external'` : `share` avec l'adaptateur web,
+  ou sans adaptateur, est refusé au build.
+
+Un module partagé est gardé entier, puisque l'application ne peut pas savoir quels exports le
+code chargé utilisera. Une application Vite simple obtient la partie navigateur avec `share()`
+de `@fluixi/vite-plugin`.
+
 ## Les plateformes hébergées
 
 Trois adaptateurs produisent la disposition que leur plateforme lit. Chacun inline le

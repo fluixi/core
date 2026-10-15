@@ -185,6 +185,13 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   // virtual and an externalized package never reaches the plugin.
   const noExternal = [...new Set(['@fluixi/core', ...cfg.ssrNoExternal])];
   const mode = cfg.adapter?.bundle;
+  const shared = [...new Set(cfg.share.map(packageOf))];
+  if (shared.length && mode !== 'external') {
+    throw new Error(
+      `[fluixi] share needs a server that imports its dependencies at run time, or loaded code gets ` +
+        `copies of its own: set adapter to nodeAdapter (the adapter is ${cfg.adapter ? `"${cfg.adapter.name}", which bundles them` : 'unset'}).`,
+    );
+  }
 
   if (mode === 'inline') return { noExternal: true };
   if (mode !== 'external') return { noExternal };
@@ -194,7 +201,7 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
   const bundled = (name: string) =>
     cfg.ssrNoExternal.some((rule) => (rule instanceof RegExp ? rule.test(name) : rule === name));
 
-  const declared = frameworkDeps(cfg.root);
+  const declared = [...new Set([...frameworkDeps(cfg.root), ...shared])];
   const external = declared.filter((name) => !bundled(name)).flatMap((name) => withSubpaths(cfg.root, name));
 
   if (!external.length) {
@@ -210,6 +217,12 @@ export function ssrBuildOptions(cfg: ResolvedConfig): {
     );
   }
   return { noExternal, external: external.length ? external : undefined };
+}
+
+/** The package a module id belongs to: `@acme/sdk/view` is in `@acme/sdk`. */
+function packageOf(id: string): string {
+  const parts = id.split('/');
+  return id.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]!;
 }
 
 /** The app's own `@fluixi/core` and `@fluixi/*` dependencies, read from its package.json. */

@@ -290,6 +290,12 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   const { envReferencesVitePlugin } = await import('./env-references.js');
   plugins.push(envReferencesVitePlugin(cfg));
   if (cfg.plugins?.length) plugins.push(...cfg.plugins);
+  // Modules shared with code loaded at run time: an import map in the browser build. The
+  // server side is ssrBuildOptions keeping their packages external.
+  if (cfg.share.length) {
+    const { share } = await import('@fluixi/vite-plugin');
+    plugins.push(share({ modules: cfg.share }));
+  }
   // Auto-discover translations (src/i18n/<locale>.json → virtual:fluixi-i18n) unless disabled.
   if (cfg.i18n) plugins.push(i18nVitePlugin(cfg.i18n));
   // File-based API routes (src/api/** → virtual:fluixi-api). No-op until the folder has files.

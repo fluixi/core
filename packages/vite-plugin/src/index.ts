@@ -69,6 +69,8 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
 
 export default fluixi;
 
+export { share, type ShareOptions, type ShareManifest } from './share.js';
+
 // Backwards-compatible alias (matches the name fluixi has historically used).
 export { createVitePlugin };
 export type { CompilerOptions };
