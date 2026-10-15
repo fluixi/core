@@ -104,7 +104,22 @@ function markBind(code: string, at?: HolePosition): string {
 
 function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticTemplate[]): string {
   if (children.length === 1) return emitNode(children[0], used, templates);
-  return `[${children.map((c) => emitNode(c, used, templates)).join(', ')}]`;
+  // An element is built, and while hydrating claims its server node, when the array literal
+  // runs; a component, control flow or reactive expression is read later, when the array is
+  // placed. An element after one of those would claim first and take the server node that
+  // belongs to it, so from the first one on elements are deferred too (`deferElement`: built in
+  // order when the array is placed, once, in the owner the array was written in).
+  let deferred = false;
+  const items = children.map((child) => {
+    const code = emitNode(child, used, templates);
+    if (child.kind === 'element' && deferred) {
+      used.add('deferElement');
+      return `deferElement(() => ${paren(code, 'arrowBody')})`;
+    }
+    if (child.kind === 'component' || child.kind === 'control' || (child.kind === 'expr' && child.reactive)) deferred = true;
+    return code;
+  });
+  return `[${items.join(', ')}]`;
 }
 
 function emitComponent(

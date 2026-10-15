@@ -10,6 +10,9 @@
  * `Symbol.for` rather than a local symbol, so two bundled copies of this module agree.
  * That is the same reason the reactive graph brands its nodes that way.
  */
+import { getOwner, runWithOwner } from '@fluixi/reactive/signal';
+import { hydration } from '../dom/hydration-state.js';
+import { isServer } from '../dom/server/host.js';
 
 export function asRouter(value: any) {
   Object.defineProperty(value, Symbol.for('fluixi-router'), { value: true, enumerable: true });
@@ -102,4 +105,21 @@ export function checkRenderType(value: any): {
     return {type: 'context', value}
   }
   return {type: 'none', value}
+}
+
+/**
+ * An element of a JSX array that, while hydrating, is built when the array is placed rather
+ * than when it is written, in the owner it was written in. The compiler emits it for an element
+ * that follows a component, control flow or reactive expression in the same array: those are
+ * read when the array is placed, and an element built earlier would claim the server node that
+ * belongs to them. Called once and kept, as a component thunk is.
+ *
+ * Anywhere else it is built at once, as before: nothing claims nodes on the server or in a
+ * fresh render, and on the server a function left in the array would only be called while the
+ * markup is written, after the render has stopped tracking what it waits for.
+ */
+export function deferElement<T>(build: () => T): T | (() => T) {
+  if (isServer() || !hydration.active) return build();
+  const owner = getOwner();
+  return asComponent(() => runWithOwner(owner, build) as T);
 }
