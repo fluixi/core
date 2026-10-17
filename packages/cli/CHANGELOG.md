@@ -1,5 +1,15 @@
 # @fluixi/cli
 
+## 1.0.0-alpha.100
+
+### Patch Changes
+
+- 94153dc: `@fluixi/oauth2` installs `@fluixi/auth` and `@fluixi/session` directly, so applications using `@fluixi/oauth2` may remove `@fluixi/auth` from their dependencies if it's only used for OAuth2. Its peers include `@fluixi/dom` and `@fluixi/storage`, and Fluixi packages depend on each other through `^` ranges.
+- Updated dependencies [94153dc]
+- Updated dependencies [9d88d84]
+  - @fluixi/start@1.0.0-alpha.100
+  - @fluixi/ts-plugin@1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ### Patch Changes

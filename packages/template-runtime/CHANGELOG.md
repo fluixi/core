@@ -1,5 +1,15 @@
 # @fluixi/template-runtime
 
+## 1.0.0-alpha.100
+
+### Patch Changes
+
+- 94153dc: `@fluixi/oauth2` installs `@fluixi/auth` and `@fluixi/session` directly, so applications using `@fluixi/oauth2` may remove `@fluixi/auth` from their dependencies if it's only used for OAuth2. Its peers include `@fluixi/dom` and `@fluixi/storage`, and Fluixi packages depend on each other through `^` ranges.
+- Updated dependencies [5f91c50]
+- Updated dependencies [94153dc]
+  - @fluixi/compiler@1.0.0-alpha.100
+  - @fluixi/template-parser@1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ### Minor Changes

@@ -1,5 +1,15 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.100
+
+### Minor Changes
+
+- 5f91c50: During hydration, an element after a component, control flow or reactive expression in a JSX fragment is wrapped in `deferElement`, so it is built in order when the array is placed instead of being duplicated.
+
+### Patch Changes
+
+- 7070f14: A page rendered blank after hydration when a route layout returns a fragment with a sibling beside a `<Show>` whose content contains another `<Show>`, because the elements the nested `<Show>` adopted from the server were not counted as adopted and were removed.
+
 ## 1.0.0-alpha.99
 
 ### Minor Changes

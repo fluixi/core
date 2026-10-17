@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/core",
-  "version": "1.0.0-alpha.99",
+  "version": "1.0.0-alpha.100",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "framework to build apps with DOM runtime, reactive core, router, and JSX runtime; components run once, reactivity updates DOM",
