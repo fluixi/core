@@ -1,5 +1,7 @@
 # @fluixi/template-parser
 
+## 1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ## 0.1.0-alpha.4

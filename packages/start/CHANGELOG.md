@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 1.0.0-alpha.100
+
+### Minor Changes
+
+- 9d88d84: For code loaded at run time, the `share()` function creates separate chunks for each specified module and writes an import map to `share.json` that is placed in the `<head>` before any module script, and the `share` option in `@fluixi/start` adds this plugin and keeps those packages external in the server build, which needs `nodeAdapter`.
+
+### Patch Changes
+
+- 94153dc: `@fluixi/oauth2` installs `@fluixi/auth` and `@fluixi/session` directly, so applications using `@fluixi/oauth2` may remove `@fluixi/auth` from their dependencies if it's only used for OAuth2. Its peers include `@fluixi/dom` and `@fluixi/storage`, and Fluixi packages depend on each other through `^` ranges.
+- Updated dependencies [5f91c50]
+- Updated dependencies [94153dc]
+- Updated dependencies [9d88d84]
+  - @fluixi/compiler@1.0.0-alpha.100
+  - @fluixi/vite-plugin@1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ### Minor Changes

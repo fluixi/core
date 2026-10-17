@@ -1,5 +1,18 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.100
+
+### Minor Changes
+
+- 70f0007: When a renewal request times out, the connection is cut after sending, or a 2xx response has no `access_token`, the session ends and the refresh token is not sent again. If a renewal receives a 429 or 5xx response or the connection never opens, the session is kept and the renewal is retried after the `Retry-After` header or after 5 seconds by default. `tokenTimeoutMs` (default 10000 ms) limits how long a token request may take. A 400 or 401 response still ends the session.
+
+### Patch Changes
+
+- 94153dc: `@fluixi/oauth2` installs `@fluixi/auth` and `@fluixi/session` directly, so applications using `@fluixi/oauth2` may remove `@fluixi/auth` from their dependencies if it's only used for OAuth2. Its peers include `@fluixi/dom` and `@fluixi/storage`, and Fluixi packages depend on each other through `^` ranges.
+- Updated dependencies [94153dc]
+  - @fluixi/auth@1.0.0-alpha.100
+  - @fluixi/session@1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ### Patch Changes

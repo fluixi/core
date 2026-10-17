@@ -1,5 +1,16 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.100
+
+### Minor Changes
+
+- 5f91c50: During hydration, an element after a component, control flow or reactive expression in a JSX fragment is wrapped in `deferElement`, so it is built in order when the array is placed instead of being duplicated.
+
+### Patch Changes
+
+- 94153dc: `@fluixi/oauth2` installs `@fluixi/auth` and `@fluixi/session` directly, so applications using `@fluixi/oauth2` may remove `@fluixi/auth` from their dependencies if it's only used for OAuth2. Its peers include `@fluixi/dom` and `@fluixi/storage`, and Fluixi packages depend on each other through `^` ranges.
+  - @fluixi/template-parser@1.0.0-alpha.100
+
 ## 1.0.0-alpha.99
 
 ### Patch Changes
