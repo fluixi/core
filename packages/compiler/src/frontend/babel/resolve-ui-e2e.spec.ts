@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { compile as compileFixture } from '../../../test/fixtures.js';
 import { readFileSync } from 'node:fs';
@@ -11,7 +12,8 @@ import { readFileSync } from 'node:fs';
  * self-contained.
  */
 const MAP_PATH =
-  '/Users/admin/Desktop/workspace/adafri-projects/libs/fluixi-ui/packages/resolver/src/components.generated.ts';
+  // The sibling checkout, from this package's folder (where the tests run).
+  resolve(process.cwd(), '../../../fluixi-ui/packages/resolver/src/components.generated.ts');
 
 function loadUiMap(): Record<string, string> | undefined {
   try {

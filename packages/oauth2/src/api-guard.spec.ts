@@ -113,7 +113,7 @@ describe('a token that holds', () => {
   it('runs an arbitrary requirement and reports what it said', async () => {
     const guard = createApiGuard({ verify: verifier({ sub: 'u1', tenant: 'other' }) });
     const response = await guard(ok, {
-      require: (c) => c.tenant === 'adafri' || 'wrong tenant',
+      require: (c) => c.tenant === 'acme' || 'wrong tenant',
     })(request());
 
     expect(response.status).toBe(403);

@@ -28,7 +28,7 @@ describe('login-form island', () => {
       // The "API-key" data: fetched once on the server, seeded for the client.
       const [cfg] = createResource(() => {
         serverConfigFetches++;
-        return Promise.resolve({ domain: 'leuzma.com' });
+        return Promise.resolve({ domain: 'acme.com' });
       });
 
       const form = createNativeElement('form') as any;
@@ -46,15 +46,15 @@ describe('login-form island', () => {
     };
 
     // Server: render the page with the form as an island; its resource resolves + serializes.
-    const Page = () => Island({ name: 'LoginForm', component: LoginForm, props: { brand: 'Leuzma' } });
+    const Page = () => Island({ name: 'LoginForm', component: LoginForm, props: { brand: 'Acme' } });
     const html = await renderToStringAsync(Page);
     expect(serverConfigFetches).toBe(1); // fetched once, on the server
     expect(html).toContain('name="LoginForm"');
-    expect(html).toContain('@leuzma.com'); // seeded value server-rendered
+    expect(html).toContain('@acme.com'); // seeded value server-rendered
 
     const m = html.match(/<script type="application\/json" id="__FX_DATA__">(\{.*?\})<\/script>/);
     const seeded = JSON.parse(m![1]);
-    expect(seeded).toEqual({ 'LoginForm#0:r0': { domain: 'leuzma.com' } });
+    expect(seeded).toEqual({ 'LoginForm#0:r0': { domain: 'acme.com' } });
     (window as any).__FX_DATA__ = seeded;
 
     const container = document.createElement('div');
@@ -67,12 +67,12 @@ describe('login-form island', () => {
     const input = container.querySelector('fluixi-island input') as HTMLInputElement;
     const echo = container.querySelector('fluixi-island p') as HTMLParagraphElement;
     expect(serverConfigFetches).toBe(1); // NOT refetched on the client (seeded)
-    expect(container.querySelector('fluixi-island small')!.textContent).toBe('@leuzma.com');
+    expect(container.querySelector('fluixi-island small')!.textContent).toBe('@acme.com');
 
-    input.value = 'ada@leuzma.com';
+    input.value = 'ada@acme.com';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await flush();
-    expect(echo.textContent).toBe('ada@leuzma.com'); // interactive after hydration
+    expect(echo.textContent).toBe('ada@acme.com'); // interactive after hydration
 
     delete (window as any).__FX_DATA__;
   });

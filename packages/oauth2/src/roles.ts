@@ -42,7 +42,7 @@ export const rolesFrom = {
   /**
    * Auth0, which requires a namespaced custom claim added by an action.
    *
-   * `rolesFrom.namespaced('https://adafri.com/roles')`. Auth0 silently drops a custom claim
+   * `rolesFrom.namespaced('https://acme.com/roles')`. Auth0 silently drops a custom claim
    * that is not a URI, so an empty list here usually means the namespace, not the action.
    */
   namespaced:

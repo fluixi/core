@@ -39,16 +39,16 @@ describe('the agnostic path', () => {
 });
 
 describe('Keycloak', () => {
-  const p = presets.keycloak({ baseUrl: 'http://localhost:8080/', realm: 'adafri' });
+  const p = presets.keycloak({ baseUrl: 'http://localhost:8080/', realm: 'acme' });
 
   it('builds the realm issuer', () => {
-    expect(p.client.issuer).toBe('http://localhost:8080/realms/adafri');
+    expect(p.client.issuer).toBe('http://localhost:8080/realms/acme');
   });
 
   it('expects no aud, and checks azp instead', () => {
-    const v = p.verifier('adafri-admin');
+    const v = p.verifier('acme-admin');
     expect(v.audience).toBe(false);
-    expect(v.authorizedParty).toBe('adafri-admin');
+    expect(v.authorizedParty).toBe('acme-admin');
   });
 
   it('reads realm roles', () => {
@@ -75,9 +75,9 @@ describe('Auth0', () => {
   });
 
   it('sends the audience as an extra parameter, which is what makes the token a JWT', () => {
-    const p = presets.auth0({ domain: 'tenant.us.auth0.com', audience: 'https://api.adafri.com' });
-    expect(p.client.extraParams).toEqual({ audience: 'https://api.adafri.com' });
-    expect(p.verifier('web').audience).toBe('https://api.adafri.com');
+    const p = presets.auth0({ domain: 'tenant.us.auth0.com', audience: 'https://api.acme.com' });
+    expect(p.client.extraParams).toEqual({ audience: 'https://api.acme.com' });
+    expect(p.verifier('web').audience).toBe('https://api.acme.com');
   });
 
   it('expects an opaque token when no audience is given', () => {

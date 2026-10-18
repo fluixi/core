@@ -241,7 +241,7 @@ kettlejs g c
 - [ ] Component preview in CLI
 
 ### Contributors
-- Adafri Team
+- Acme Team
 
 ### Related Documentation
 - [Full CLI Documentation](./README.md)

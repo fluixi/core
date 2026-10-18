@@ -21,7 +21,7 @@ describe('__FX_DATA__ transport (escaping + reader)', () => {
   });
 
   it('getServerData parses the non-executable JSON <script> block', () => {
-    const payload = { r0: { domain: 'leuzma.com' }, '__i18n:locale': 'fr' };
+    const payload = { r0: { domain: 'acme.com' }, '__i18n:locale': 'fr' };
     const el = document.createElement('script');
     el.type = 'application/json';
     el.id = FX_DATA_ID;

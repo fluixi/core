@@ -1,7 +1,7 @@
 {
-  "issuer": "http://localhost:8080/realms/adafri",
+  "issuer": "http://localhost:8080/realms/acme",
   "client": {
-    "clientId": "adafri-admin",
+    "clientId": "acme-admin",
     "redirectUri": "http://localhost:3000/callback",
     "scopes": ["openid", "profile", "email"]
   },

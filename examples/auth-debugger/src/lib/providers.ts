@@ -66,14 +66,14 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
   keycloak: {
     id: 'keycloak',
     label: 'Keycloak',
-    issuer: 'http://localhost:8080/realms/adafri',
-    clientId: 'adafri-admin',
+    issuer: 'http://localhost:8080/realms/acme',
+    clientId: 'acme-admin',
     // A server-held session authenticates with a secret, which a public client has none
     // of, so that mode uses the confidential client registered alongside it.
-    serverClientId: 'adafri-admin-server',
+    serverClientId: 'acme-admin-server',
     modes: ['browser', 'server'],
     scopes: ['openid', 'profile', 'email'],
-    authorizedParty: 'adafri-admin',
+    authorizedParty: 'acme-admin',
     notes: [
       { kind: 'expected', text: 'No `aud` on an access token until an audience mapper is configured, so `azp` is the handle.' },
       { kind: 'expected', text: 'Refuses to introspect a token whose audience excludes the asking client, and says only `active: false`.' },
@@ -85,7 +85,7 @@ export const _PROVIDERS: Record<ProviderId, Provider> = {
     id: 'dex',
     label: 'Dex',
     issuer: 'http://localhost:5556/dex',
-    clientId: 'adafri-admin',
+    clientId: 'acme-admin',
     // Server only. Dex sends no CORS headers on its token endpoint either, so a page
     // cannot complete the exchange whatever it knows about the endpoints.
     modes: ['server'],

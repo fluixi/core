@@ -107,10 +107,10 @@ describe('the named providers', () => {
       ...base,
       VITE_AUTH_PROVIDER: 'keycloak',
       VITE_AUTH_BASE_URL: 'http://localhost:8080',
-      VITE_AUTH_REALM: 'adafri',
+      VITE_AUTH_REALM: 'acme',
     });
 
-    expect(auth.client.issuer).toBe('http://localhost:8080/realms/adafri');
+    expect(auth.client.issuer).toBe('http://localhost:8080/realms/acme');
     expect(auth.provider.roles({ realm_access: { roles: ['admin'] } })).toEqual(['admin']);
   });
 
@@ -119,11 +119,11 @@ describe('the named providers', () => {
       ...base,
       VITE_AUTH_PROVIDER: 'auth0',
       VITE_AUTH_DOMAIN: 'tenant.us.auth0.com',
-      VITE_AUTH_AUDIENCE: 'https://api.adafri.com',
+      VITE_AUTH_AUDIENCE: 'https://api.acme.com',
     });
 
     expect(auth.client.issuer).toBe('https://tenant.us.auth0.com/');
-    expect(auth.client.extraParams).toEqual({ audience: 'https://api.adafri.com' });
+    expect(auth.client.extraParams).toEqual({ audience: 'https://api.acme.com' });
   });
 
   it('builds Okta, and takes `org` as the org server', () => {

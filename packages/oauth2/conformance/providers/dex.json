@@ -1,7 +1,7 @@
 {
   "issuer": "http://localhost:5556/dex",
   "client": {
-    "clientId": "adafri-admin",
+    "clientId": "acme-admin",
     "redirectUri": "http://localhost:3000/callback",
     "scopes": [
       "openid",
@@ -11,7 +11,7 @@
     ]
   },
   "user": {
-    "username": "admin@adafri.test",
+    "username": "admin@acme.test",
     "password": "admin123",
     "form": {
       "actionPattern": "action=\"([^\"]+)\"",

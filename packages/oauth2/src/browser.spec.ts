@@ -417,12 +417,12 @@ describe('a user endpoint that is not the provider', () => {
 
   it('sends the extra headers an api asks for', async () => {
     const { client, seen } = await signedIn(
-      { userInfo: { url: 'https://api.test/me', headers: { 'x-tenant': 'adafri' } } },
+      { userInfo: { url: 'https://api.test/me', headers: { 'x-tenant': 'acme' } } },
       { id: 'u1' },
     );
     await client.fetchUser();
     const headers = seen.at(-1)!.init!.headers as Record<string, string>;
-    expect(headers['x-tenant']).toBe('adafri');
+    expect(headers['x-tenant']).toBe('acme');
     // The bearer token still goes: a custom endpoint is still authenticated by it.
     expect(headers.authorization).toBe('Bearer at');
   });

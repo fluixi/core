@@ -34,7 +34,7 @@ async function mint(claims: Record<string, unknown> = {}, key?: KeyLike, alg = '
   return new SignJWT({ scope: 'admin', ...claims })
     .setProtectedHeader({ alg, kid: 'k1' })
     .setIssuer(ISSUER)
-    .setAudience('adafri-admin')
+    .setAudience('acme-admin')
     .setSubject('u1')
     .setIssuedAt()
     .setExpirationTime('5m')
@@ -66,7 +66,7 @@ function serveJwks() {
 }
 
 const verifier = (over = {}) =>
-  createTokenVerifier({ issuer: ISSUER, audience: 'adafri-admin', jwks, ...over });
+  createTokenVerifier({ issuer: ISSUER, audience: 'acme-admin', jwks, ...over });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -123,7 +123,7 @@ describe('tokens that must be refused', () => {
     const token = await new SignJWT({})
       .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
       .setIssuer('https://evil.test/realms/app')
-      .setAudience('adafri-admin')
+      .setAudience('acme-admin')
       .setExpirationTime('5m')
       .sign(priv);
     await expect(verifier()(token)).rejects.toThrow(/not accepted/);
@@ -134,7 +134,7 @@ describe('tokens that must be refused', () => {
     const token = await new SignJWT({})
       .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
       .setIssuer(ISSUER)
-      .setAudience('adafri-admin')
+      .setAudience('acme-admin')
       .setExpirationTime(Math.floor(Date.now() / 1000) - 3600)
       .sign(priv);
     await expect(verifier()(token)).rejects.toThrow(/not accepted/);
@@ -143,7 +143,7 @@ describe('tokens that must be refused', () => {
   it('an unsigned one claiming alg none', async () => {
     serveJwks();
     const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' })).replace(/=+$/, '');
-    const body = btoa(JSON.stringify({ iss: ISSUER, aud: 'adafri-admin', sub: 'attacker' }))
+    const body = btoa(JSON.stringify({ iss: ISSUER, aud: 'acme-admin', sub: 'attacker' }))
       .replace(/=+$/, '');
     await expect(verifier()(`${header}.${body}.`)).rejects.toThrow(/not accepted/);
   });
@@ -156,7 +156,7 @@ describe('tokens that must be refused', () => {
     const token = await new Sign({ sub: 'attacker' })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuer(ISSUER)
-      .setAudience('adafri-admin')
+      .setAudience('acme-admin')
       .setExpirationTime('5m')
       .sign(new TextEncoder().encode('a'.repeat(32)));
     await expect(verifier()(token)).rejects.toThrow(/not accepted/);
@@ -207,19 +207,19 @@ describe('a provider that puts no aud on its tokens', () => {
       .sign(priv);
 
   it('accepts one issued to this client', async () => {
-    const verify = verifier({ audience: false, authorizedParty: 'adafri-admin' });
-    expect((await verify(await withAzp('adafri-admin'))).sub).toBe('u1');
+    const verify = verifier({ audience: false, authorizedParty: 'acme-admin' });
+    expect((await verify(await withAzp('acme-admin'))).sub).toBe('u1');
   });
 
   it('refuses one issued to a different client of the same issuer', async () => {
-    const verify = verifier({ audience: false, authorizedParty: 'adafri-admin' });
+    const verify = verifier({ audience: false, authorizedParty: 'acme-admin' });
     await expect(verify(await withAzp('some-other-app'))).rejects.toThrow(
       /issued to a different client/,
     );
   });
 
   it('refuses one with no azp at all', async () => {
-    const verify = verifier({ audience: false, authorizedParty: 'adafri-admin' });
+    const verify = verifier({ audience: false, authorizedParty: 'acme-admin' });
     const token = await new SignJWT({})
       .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
       .setIssuer(ISSUER)
@@ -260,7 +260,7 @@ describe('where the keys come from', () => {
       authorization_endpoint: `${ISSUER}/auth`,
       token_endpoint: `${ISSUER}/token`,
     }))));
-    const verify = createTokenVerifier({ issuer: ISSUER, audience: 'adafri-admin' });
+    const verify = createTokenVerifier({ issuer: ISSUER, audience: 'acme-admin' });
     await expect(verify(await mint())).rejects.toThrow(/no jwks_uri/);
   });
 
@@ -455,7 +455,7 @@ describe('a provider that names itself more than one way', () => {
     new SignJWT({})
       .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
       .setIssuer(iss)
-      .setAudience('adafri-admin')
+      .setAudience('acme-admin')
       .setSubject('u1')
       .setExpirationTime('5m')
       .sign(priv);
@@ -463,7 +463,7 @@ describe('a provider that names itself more than one way', () => {
   it('accepts either spelling when given both', async () => {
     const verify = createTokenVerifier({
       issuer: [FULL, BARE],
-      audience: 'adafri-admin',
+      audience: 'acme-admin',
       jwks,
     });
     expect((await verify(await signedBy(FULL))).sub).toBe('u1');
@@ -471,7 +471,7 @@ describe('a provider that names itself more than one way', () => {
   });
 
   it('still refuses an issuer that is on neither spelling', async () => {
-    const verify = createTokenVerifier({ issuer: [FULL, BARE], audience: 'adafri-admin', jwks });
+    const verify = createTokenVerifier({ issuer: [FULL, BARE], audience: 'acme-admin', jwks });
     await expect(verify(await signedBy('https://evil.test'))).rejects.toThrow(/not accepted/);
   });
 

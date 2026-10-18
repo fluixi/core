@@ -12,7 +12,7 @@
  * ```ts
  * const verify = createTokenVerifier({
  *   issuer: process.env.OIDC_ISSUER!,
- *   audience: 'adafri-admin',
+ *   audience: 'acme-admin',
  * });
  *
  * const claims = await verify.fromRequest(request);   // throws when it does not hold
@@ -34,7 +34,7 @@
  * naming the client in `azp` instead. A service in front of one wants:
  *
  * ```ts
- * createTokenVerifier({ issuer, audience: false, authorizedParty: 'adafri-admin' });
+ * createTokenVerifier({ issuer, audience: false, authorizedParty: 'acme-admin' });
  * ```
  *
  * Not `audience: false` on its own: that accepts a token minted for any client of the
