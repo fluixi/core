@@ -23,9 +23,9 @@ pieces → Reader (lexing + holes) → parseTemplate → Template AST
                compiler (→ IR)                            TS plugin
 ```
 
-The parser never resolves the JavaScript inside `${…}`. Each hole is recorded as
+The parser never resolves the JavaScript inside `${...}`. Each hole is recorded as
 an **opaque slot** (an index + a source span). Downstream, each tool binds slots
-to its own representation — a Babel node in the compiler, a `ts.Expression` in the TS
+to its own representation: a Babel node in the compiler, a `ts.Expression` in the TS
 plugin, raw text in a formatter. That single seam is what keeps the parser host-agnostic.
 
 ## Usage

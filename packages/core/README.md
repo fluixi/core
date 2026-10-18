@@ -12,7 +12,7 @@
 
 ---
 
-Most reactive frameworks ask you to keep a model in your head that the language doesn't share: which reads are tracked, what you may not destructure, where a value has to stay a function. The compiler can't help, because it doesn't know what your values are — so the burden is yours, and the failures are quiet ones.
+Most reactive frameworks ask you to keep a model in your head that the language doesn't share: which reads are tracked, what you may not destructure, where a value has to stay a function. The compiler can't help, because it doesn't know what your values are: so the burden is yours, and the failures are quiet ones.
 
 Fluixi's compiler knows. It resolves a reactive primitive by the binding it came from, not by how the name reads, and carries that through JSX and `` html`` `` templates, the DOM it generates, SSR, hydration and routing as one model.
 
@@ -67,7 +67,7 @@ const Counter = () => {
 render(() => <Counter />, document.getElementById('app')!);
 ```
 
-`$signal` needs no import — the compiler resolves it and adds what it needs. `signal(0)` from `@fluixi/reactive/signal` is the same primitive when you'd rather import it, and works in a package that never runs this compiler.
+`$signal` needs no import: the compiler resolves it and adds what it needs. `signal(0)` from `@fluixi/reactive/signal` is the same primitive when you'd rather import it, and works in a package that never runs this compiler.
 
 > JSX is compiled by `@fluixi/vite-plugin`. Scaffold a ready-to-run app with `npm create fluixi`.
 
@@ -90,8 +90,8 @@ name.set('Bob');   // "Bob counted to 5"
 ```
 
 Call it to read, `.set()` to write. `$memo` derives, `$store` holds an object you read
-properties off, `$resource` wraps async data. Each has an importable twin — `signal`,
-`memo`, `effect`, `store`, `resource` from `@fluixi/reactive/signal` — and they are the
+properties off, `$resource` wraps async data. Each has an importable twin: `signal`,
+`memo`, `effect`, `store`, `resource` from `@fluixi/reactive/signal`: and they are the
 same primitives, so the two spellings mix freely in one file.
 
 `createSignal` and its `[read, write]` pair are unchanged, and plenty of code is written
@@ -108,7 +108,7 @@ function Greeting(props: { name: string }) {
 }
 ```
 
-Destructuring them is fine — the compiler rewrites the bindings into reads, so they keep
+Destructuring them is fine: the compiler rewrites the bindings into reads, so they keep
 updating, and `...rest` becomes the `splitProps` call you would have written:
 
 ```tsx
@@ -117,8 +117,8 @@ function Card({ title, tone = 'calm', ...rest }) {
 }
 ```
 
-Where it can't prove a rewrite is safe — a reassigned binding, a computed key, a default
-it would have to re-run on every read — it leaves your code exactly as written and says
+Where it can't prove a rewrite is safe: a reassigned binding, a computed key, a default
+it would have to re-run on every read: it leaves your code exactly as written and says
 why at build time.
 
 ### Control Flow
@@ -163,12 +163,12 @@ import { RevenueChart } from './RevenueChart';
 ```
 
 Deferring replaces your static import with a dynamic one, so it applies when the name is
-used only as a tag. Reference it as a value too and the import stays — the build says so
+used only as a tag. Reference it as a value too and the import stays: the build says so
 rather than silently shipping the chunk eagerly.
 
 ### `` html`` `` templates
 
-The same reactive model without configuring JSX — useful in a library, a script, or a
+The same reactive model without configuring JSX: useful in a library, a script, or a
 plain-TypeScript codebase:
 
 ```ts
@@ -310,8 +310,8 @@ Fluixi is written in TypeScript and ships full types. Configure JSX in your `tsc
 
 | Package | Purpose |
 | --- | --- |
-| `@fluixi/core` | Framework façade — components, control flow, router, render |
-| `@fluixi/reactive` | Signals, memos, effects, store — usable on its own |
+| `@fluixi/core` | Framework façade: components, control flow, router, render |
+| `@fluixi/reactive` | Signals, memos, effects, store: usable on its own |
 | `@fluixi/dom` | The DOM rendering runtime |
 | `@fluixi/compiler` | JSX and `` html`` `` → IR → direct DOM calls |
 | `@fluixi/vite-plugin` | The compiler as a Vite plugin (rollup, esbuild and webpack adapters too) |

@@ -4,10 +4,10 @@ A Fluixi app authored with lit-html `` html`` `` templates instead of JSX.
 
 The point: `` html`` `` runs through the **same compiler** JSX does. The
 `@fluixi/vite-plugin` with `format: 'lit'` stitches the template, scans it, and
-builds the shared host-agnostic IR — then the imperative backend emits the exact
+builds the shared host-agnostic IR: then the imperative backend emits the exact
 same `@fluixi/dom` runtime calls (`createNativeElement` / `spread` / `insert` /
 `createComponent`). There is **no lit-html runtime** in the output; the template
-is compiled away. `html` (from `@fluixi/lit`) is a compile-time marker — it never
+is compiled away. `html` (from `@fluixi/lit`) is a compile-time marker: it never
 runs.
 
 ```ts
@@ -25,14 +25,14 @@ return html`
 
 ## What it covers
 
-- **`src/App.ts`** — the counter: delegated `@click`, reactive text, a mixed
+- **`src/App.ts`**: the counter, with delegated `@click`, reactive text, a mixed
   `class="value ${tone()}"` value, `<Show>`, and a keyed `<For>` of nested
   `` html`` `` templates.
-- **`src/Ssr.ts`** — an SSR-capable app: async `createResource` + `<Suspense>`.
+- **`src/Ssr.ts`**: an SSR-capable app with async `createResource` + `<Suspense>`.
   Renders on the server and hydrates on the client.
 
 The same features work as in JSX because the compiled output is identical.
-Control flow (`Show`/`For`/…) is auto-imported by the compiler; higher-level
+Control flow (`Show`/`For`/...) is auto-imported by the compiler; higher-level
 pieces (`Suspense`, `Router`, `createResource`) you import from `@fluixi/core`.
 
 ## Run
@@ -48,5 +48,5 @@ pnpm --filter @fluixi/example-lit-counter build   # production build
 `@fluixi/server` renders `SsrApp` to HTML per request (awaiting resources +
 resolving `<Suspense>`), and `src/entry-client.ts` hydrates it in the browser.
 
-Compare `src/App.ts` here with `../counter/src/App.tsx` — different syntax, same
+Compare `src/App.ts` here with `../counter/src/App.tsx`: different syntax, same
 runtime output.

@@ -1,7 +1,7 @@
 # @fluixi/example-start
 
 Smallest end-to-end app on the **`@fluixi/start`** meta-framework + the **`fluixi`**
-CLI. No hand-rolled `server.mjs`, no fluixi plugins in `vite.config` — `@fluixi/start`
+CLI. No hand-rolled `server.mjs`, no fluixi plugins in `vite.config`: `@fluixi/start`
 provides file routing + JSX/SSR.
 
 ```bash

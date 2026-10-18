@@ -21,10 +21,10 @@ pnpm test
 | request middleware          | src/middleware.ts                    | tests/middleware.spec.ts |
 | file api routes             | src/api/**                           | tests/api.spec.ts        |
 | reactive service state      | src/services/ticket-repo.ts          | tests/reactivity.spec.ts |
-| server functions            | src/actions.ts                       | —                        |
-| fetch interceptors          | src/entry-client.tsx                 | —                        |
-| seo and json-ld             | src/app.tsx and the routes           | —                        |
-| client route guards         | src/services/auth-hooks.ts           | —                        |
+| server functions            | src/actions.ts                       | - |
+| fetch interceptors          | src/entry-client.tsx                 | - |
+| seo and json-ld             | src/app.tsx and the routes           | - |
+| client route guards         | src/services/auth-hooks.ts           | - |
 
 The suite runs **52 tests across four files**. Verified test counts are: di 14, middleware 13, api 16, reactivity 9.
 

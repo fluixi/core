@@ -4,7 +4,7 @@
 
 # @fluixi/babel-plugin-jsx
 
-**Compiles JSX into fine-grained reactive DOM calls for Fluixi — no virtual DOM.**
+**Compiles JSX into fine-grained reactive DOM calls for Fluixi: no virtual DOM.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -15,13 +15,13 @@
 
 ## ✨ Overview
 
-`@fluixi/babel-plugin-jsx` transforms JSX at build time into direct, surgical DOM operations wired to signals — so updates touch only the nodes that actually change, with no diffing and no virtual DOM. It pairs with the runtime in [`@fluixi/jsx`](../jsx).
+`@fluixi/babel-plugin-jsx` transforms JSX at build time into direct, surgical DOM operations wired to signals: so updates touch only the nodes that actually change, with no diffing and no virtual DOM. It pairs with the runtime in [`@fluixi/jsx`](../jsx).
 
 > **You probably want [`@fluixi/vite-plugin`](../vite-plugin) instead.** Fluixi compiles
 > through [`@fluixi/compiler`](../compiler), which has no babel dependency, handles
 > `` html`` `` templates as well as JSX, and is where component resolution, `load:`
 > strategies and the `$` intrinsics live. This plugin exists for a build that has to run
-> through babel — an existing babel pipeline whose own plugins need to see the output, or a
+> through babel: an existing babel pipeline whose own plugins need to see the output, or a
 > toolchain with no Vite in it. It compiles JSX and nothing else.
 
 ## 📦 Installation

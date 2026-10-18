@@ -5,7 +5,7 @@
 
   <h1>Fluixi Core</h1>
 
-  <p><strong>A compiler-native reactive framework — the compiler knows what's reactive, so you write ordinary TypeScript.</strong></p>
+  <p><strong>A compiler-native reactive framework: the compiler knows what's reactive, so you write ordinary TypeScript.</strong></p>
 
   <p>
     <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
@@ -21,7 +21,7 @@
 ## ✨ Overview
 
 **Fluixi Core** is the engine behind **Fluixi**. Its compiler understands reactive values
-as values — resolved by the binding they came from, not by how the name reads — and
+as values, resolved by the binding they came from, not by how the name reads, and
 carries that through JSX and `` html`` `` templates, the DOM it generates, SSR, hydration
 and routing as one model. Everything is split into small, independently-publishable
 packages, so you can take the reactivity core alone or the whole framework.
@@ -42,9 +42,9 @@ Inside a compiled app, `$signal` is the same primitive without the import.
 
 | Package | Description |
 | --- | --- |
-| [`@fluixi/utils`](packages/utils) | Zero-dependency, strongly-typed utilities — primitives, objects, maths, arrays, color, DOM. |
-| [`@fluixi/reactive`](packages/reactive) | Fine-grained reactivity — signals, memos, effects, stores, and an RxJS-style observable layer. |
-| [`@fluixi/dom`](packages/dom) | Reactive DOM runtime — control-flow, hydration, and the universal SSR string renderer. |
+| [`@fluixi/utils`](packages/utils) | Zero-dependency, strongly-typed utilities: primitives, objects, maths, arrays, color, DOM. |
+| [`@fluixi/reactive`](packages/reactive) | Fine-grained reactivity: signals, memos, effects, stores, and an RxJS-style observable layer. |
+| [`@fluixi/dom`](packages/dom) | Reactive DOM runtime: control-flow, hydration, and the universal SSR string renderer. |
 | [`@fluixi/template-parser`](packages/template-parser) | The `` html`` `` template parser, standalone. |
 
 **JSX & compiler**
@@ -53,25 +53,25 @@ Inside a compiled app, `$signal` is the same primitive without the import.
 | --- | --- |
 | [`@fluixi/jsx`](packages/jsx) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + the `jsxImportSource` for Fluixi JSX. |
 | [`@fluixi/babel-plugin-jsx`](packages/babel) | Babel plugin that compiles JSX into fine-grained reactive DOM calls. |
-| [`@fluixi/compiler`](packages/compiler) | The JSX compiler — host-agnostic IR, codegen backends, and the `"use server"` transform. |
-| [`@fluixi/vite-plugin`](packages/vite-plugin) | The Vite plugin — JSX transform + codegen backend selection. |
+| [`@fluixi/compiler`](packages/compiler) | The JSX compiler: host-agnostic IR, codegen backends, and the `"use server"` transform. |
+| [`@fluixi/vite-plugin`](packages/vite-plugin) | The Vite plugin: JSX transform + codegen backend selection. |
 
 **Framework**
 
 | Package | Description |
 | --- | --- |
-| [`@fluixi/core`](packages/core) | The framework — components, lifecycle, control flow, context, router (`router`), client/server entries. |
-| [`@fluixi/router`](packages/router) | Framework-agnostic router core — URL → match tree + navigation (no DOM/reactivity). |
-| [`@fluixi/server`](packages/server) | Server-side rendering — request-scoped, streaming, hydration transport. |
+| [`@fluixi/core`](packages/core) | The framework: components, lifecycle, control flow, context, router (`router`), client/server entries. |
+| [`@fluixi/router`](packages/router) | Framework-agnostic router core: URL → match tree + navigation (no DOM/reactivity). |
+| [`@fluixi/server`](packages/server) | Server-side rendering: request-scoped, streaming, hydration transport. |
 
 **Meta-framework & tooling**
 
 | Package | Description |
 | --- | --- |
-| [`@fluixi/start`](packages/start) | The meta-framework — zero-config dev/build/start with SSR, file routing, middleware, server functions. |
-| [`@fluixi/cli`](packages/cli) | The `fluixi` CLI — dev/build/start + `fluixi generate`. |
-| [`create-fluixi`](packages/create) | App scaffolder — `npm create fluixi <dir>` (SSR or SPA). |
-| [`@fluixi/ts-plugin`](packages/ts-plugin) | Editor support for `` html`` `` templates — hover, completion, type-checking. |
+| [`@fluixi/start`](packages/start) | The meta-framework: zero-config dev/build/start with SSR, file routing, middleware, server functions. |
+| [`@fluixi/cli`](packages/cli) | The `fluixi` CLI: dev/build/start + `fluixi generate`. |
+| [`create-fluixi`](packages/create) | App scaffolder: `npm create fluixi <dir>` (SSR or SPA). |
+| [`@fluixi/ts-plugin`](packages/ts-plugin) | Editor support for `` html`` `` templates: hover, completion, type-checking. |
 | [`@fluixi/head`](packages/head) | Document head and SEO. |
 | [`@fluixi/auth`](packages/auth) · [`@fluixi/session`](packages/session) | Auth bindings and sessions. |
 | [`@fluixi/testing`](packages/testing) · [`@fluixi/devtools`](packages/devtools) | Test helpers and the reactive-graph devtools. |
@@ -94,7 +94,7 @@ Inside a compiled app, `$signal` is the same primitive without the import.
 
 ## 🚀 Quick start
 
-All `@fluixi/*` packages are on **public npm** — no registry configuration, no token.
+All `@fluixi/*` packages are on **public npm**: no registry configuration, no token.
 
 ```sh
 pnpm add @fluixi/core    # the full framework

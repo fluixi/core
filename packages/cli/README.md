@@ -4,7 +4,7 @@
 
 # @fluixi/cli
 
-**The `fluixi` command-line tool — dev / build / start + code generators.**
+**The `fluixi` command-line tool: dev / build / start + code generators.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -14,7 +14,7 @@
 
 ## ✨ Overview
 
-`@fluixi/cli` provides the `fluixi` binary — a thin dispatcher over
+`@fluixi/cli` provides the `fluixi` binary: a thin dispatcher over
 [`@fluixi/start`](../start) (the framework runtime) plus generators. A scaffolded app
 already includes it.
 
@@ -87,7 +87,7 @@ One pattern covers the whole folder, so you paste it once and every component af
 works. Apps scaffolded with `npm create fluixi` already have it.
 
 The CLI reads your config to decide whether to say this, and never writes to it. A config
-is ordinary TypeScript — it can spread a shared object or call a resolver function — so
+is ordinary TypeScript, it can spread a shared object or call a resolver function, so
 editing it would mean reprinting your file, and I'd rather print a line you paste than
 risk mangling it.
 
@@ -107,7 +107,7 @@ Scaffolding a whole app is [`create-fluixi`](../create), not the CLI:
 npm create fluixi my-app      # or: pnpm create fluixi my-app
 ```
 
-The dev/build/start logic + config live in [`@fluixi/start`](../start) — see its README
+The dev/build/start logic + config live in [`@fluixi/start`](../start): see its README
 for conventions (`src/entry-server.ts`, `src/routes/`, `index.html`, `fluixi.config.ts`).
 
 ## 📄 License

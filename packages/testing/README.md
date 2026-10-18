@@ -3,8 +3,8 @@
 Minimal helpers for testing Fluixi components. It renders a component into a
 jsdom container, gives you a disposer and query shorthands, and re-exports
 `flush` so you can await effects. For queries and matchers beyond the basics,
-reach for [`@testing-library/dom`](https://testing-library.com/docs/dom-testing-library/intro/)
-— it works against the DOM, so it composes with this out of the box.
+reach for [`@testing-library/dom`](https://testing-library.com/docs/dom-testing-library/intro/):
+it works against the DOM, so it composes with this out of the box.
 
 > Alpha. The surface here is deliberately small; richer utilities will grow from
 > real usage.
@@ -54,11 +54,11 @@ By default it creates a `<div>` and appends it to `document.body`; pass
 `options.container` to mount elsewhere.
 
 `RenderResult`:
-- `container` — the element rendered into.
-- `unmount()` — dispose the reactive root and detach the container.
-- `find(selector)` — `container.querySelector`.
-- `findAll(selector)` — `container.querySelectorAll`, as an array.
-- `html()` — the container's current `innerHTML`.
+- `container`: the element rendered into.
+- `unmount()`: dispose the reactive root and detach the container.
+- `find(selector)`: `container.querySelector`.
+- `findAll(selector)`: `container.querySelectorAll`, as an array.
+- `html()`: the container's current `innerHTML`.
 
 ### `flush() → Promise<void>`
 
@@ -66,7 +66,7 @@ Flushes pending reactive effects. Also exported as `flushEffects`.
 
 ### `fireEvent(node, type, init?) → boolean`
 
-Dispatches a bubbling, cancelable event. Bubbling matters — Fluixi delegates
+Dispatches a bubbling, cancelable event. Bubbling matters: Fluixi delegates
 `on*` handlers, so a non-bubbling event won't reach them. For anything richer,
 use `node.dispatchEvent(...)` directly or `@testing-library/dom`'s `fireEvent`.
 

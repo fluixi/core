@@ -1,12 +1,12 @@
 # @fluixi/auth
 
-Server-first auth for Fluixi — **native bindings over [Better Auth](https://better-auth.com)**.
+Server-first auth for Fluixi: **native bindings over [Better Auth](https://better-auth.com)**.
 Better Auth owns the security primitives (password hashing, sessions, CSRF, secure cookies,
-OAuth, 2FA/TOTP, organizations, RBAC, DB adapters — audited and maintained). This package
+OAuth, 2FA/TOTP, organizations, RBAC, DB adapters: audited and maintained). This package
 owns the *Fluixi integration* Better Auth can't provide: request-context server helpers,
 SSR-seeded reactive hooks, middleware wiring, and route protection.
 
-`better-auth` is a **peer dependency** — the bindings consume it structurally, so the app owns the version.
+`better-auth` is a **peer dependency**: the bindings consume it structurally, so the app owns the version.
 
 ## Server (`@fluixi/auth/server`)
 
@@ -67,6 +67,6 @@ export default protectedRoute(Login, { guestOnly: true });  // redirect authed a
 export default protectedRoute(Admin, { role: 'admin' });    // role-gated
 ```
 
-The session is a `createIsomorphicStore` — resolved on the server from `locals.auth`,
+The session is a `createIsomorphicStore`: resolved on the server from `locals.auth`,
 serialized into the page, and seeded synchronously on the client. No auth flash, no
 post-hydration refetch. `@fluixi/auth/client` never imports the server engine or Node.

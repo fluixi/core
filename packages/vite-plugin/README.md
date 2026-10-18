@@ -4,7 +4,7 @@
 
 # @fluixi/vite-plugin
 
-**The Vite plugin for Fluixi — compiles JSX and `` html`` `` templates.**
+**The Vite plugin for Fluixi: compiles JSX and `` html`` `` templates.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -16,12 +16,12 @@
 ## ✨ Overview
 
 `@fluixi/vite-plugin` sets the esbuild `jsxImportSource` and runs the Fluixi compile
-(via [`@fluixi/compiler`](../compiler)) — JSX and `` html`...` `` both, straight into
+(via [`@fluixi/compiler`](../compiler)): JSX and `` html`...` `` both, straight into
 `@fluixi/dom` runtime calls. It rewrites the source in place, so output carries a source
 map and holes keep the text the author wrote. Nothing from babel is installed for it.
 `@fluixi/core`
 re-exports `fluixi`/`createVitePlugin` from here, and [`@fluixi/start`](../start) wires it
-in automatically — use this plugin directly for a plain (non-meta-framework) Vite app.
+in automatically: use this plugin directly for a plain (non-meta-framework) Vite app.
 
 ## 📦 Installation
 
@@ -51,9 +51,9 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | Option | Default | What |
 | --- | --- | --- |
 | `importSource` | `@fluixi/jsx` | where the JSX *types* come from; also the `jsxImportSource` given to esbuild |
-| `format` | `both` | which syntaxes to compile — `jsx`, `lit`, or `both` |
+| `format` | `both` | which syntaxes to compile: `jsx`, `lit`, or `both` |
 | `signalModule` / `controlFlowModule` | `@fluixi/dom` | where emitted runtime symbols come from |
-| `resolve` | – | rules that supply a component import from a bare tag |
+| `resolve` | - | rules that supply a component import from a bare tag |
 | `globals` | `fluixi.d.ts` | where to write the generated ambient types (the resolved components and the `$signal`-style intrinsics). `false` skips it |
 | `propsDestructure` | `true` | rewrite a component's destructured props into property reads, so `function Card({ title })` keeps updating. A pattern it can't prove is left as written. Turn off for a package that ships its source |
 | `templateClone` / `partialTemplates` | `true` | clone static subtrees instead of building them |

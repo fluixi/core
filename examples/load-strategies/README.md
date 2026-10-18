@@ -17,7 +17,7 @@ Two separate decisions, deliberately kept apart:
 - **When** its module loads varies per usage, so it is written at the usage site in one
   token.
 
-Fusing them — `<Chart lazy="./Chart" />` — would repeat the path at every usage and
+Fusing them, `<Chart lazy="./Chart" />`, would repeat the path at every usage and
 still say nothing about timing.
 
 ## The proof
@@ -34,7 +34,7 @@ dist/assets/index-*.js          99.54 kB   ← only Summary is here
 Three deferred components, three chunks, none of them in the entry. `src/App.tsx`
 contains no import for any of them.
 
-`pnpm --filter @fluixi/example-load-strategies test` asserts exactly that — it runs the
+`pnpm --filter @fluixi/example-load-strategies test` asserts exactly that: it runs the
 real build and checks which chunk each component landed in. Rendering would pass either
 way, so the assertion has to be about the output.
 
@@ -45,8 +45,8 @@ way, so the assertion has to be about the output.
 | `load:eager` | in the parent chunk (the default; an explicit opt-out) |
 | `load:idle` | `requestIdleCallback` |
 | `load:visible="200px"` | it intersects the viewport, with an optional root margin |
-| `load:interaction` | first pointer / focus / key event — or the events you name |
-| `load:media="(…)"` | the media query matches |
+| `load:interaction` | first pointer / focus / key event: or the events you name |
+| `load:media="(...)"` | the media query matches |
 | `load:never` | server only, no client code |
 
 ## Collapsing

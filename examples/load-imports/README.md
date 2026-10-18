@@ -28,7 +28,7 @@ rendered, or keep it eager.
 ```
 
 There is no `resolve` map in this example. One is only needed for tags you don't import
-at all — see `examples/load-strategies` for that shape. Both produce identical output.
+at all: see `examples/load-strategies` for that shape. Both produce identical output.
 
 ```bash
 pnpm test    # runs a real `vite build` and reads the chunks

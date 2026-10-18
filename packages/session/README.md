@@ -35,5 +35,5 @@ await session.logout();
 ```
 
 Provide `refresh` + (`getExpiry` or an `expiresAt` from `login`) and the session
-schedules a refresh `refreshSkewMs` (default 60s) before the token expires — client
+schedules a refresh `refreshSkewMs` (default 60s) before the token expires: client
 only, never during SSR.

@@ -4,7 +4,7 @@
 
 # create-fluixi
 
-**Scaffold a new Fluixi app — `npm create fluixi <dir>`.**
+**Scaffold a new Fluixi app: `npm create fluixi <dir>`.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -14,7 +14,7 @@
 
 ## ✨ Overview
 
-Run via your package manager's `create` shortcut — no install needed:
+Run via your package manager's `create` shortcut: no install needed:
 
 ```bash
 npm create fluixi my-app
@@ -38,7 +38,7 @@ create-fluixi my-app --spa --html    # same app, html`` templates instead of JSX
 ```
 
 `--jsx` (default) or `--html` picks how you write components. The html`` variant is
-JSX-free — plain `.ts` files, no `jsxImportSource`, and [`@fluixi/ts-plugin`](../ts-plugin)
+JSX-free: plain `.ts` files, no `jsxImportSource`, and [`@fluixi/ts-plugin`](../ts-plugin)
 wired up so the editor still understands the templates. Both compile to the same thing.
 
 Then:

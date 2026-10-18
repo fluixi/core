@@ -1,6 +1,6 @@
 # @fluixi/head
 
-Built-in, **reactive, SSR-first** SEO & document-head management for Fluixi. No external library — it's a core part of the framework.
+Built-in, **reactive, SSR-first** SEO & document-head management for Fluixi. No external library: it's a core part of the framework.
 
 ```ts
 import { seo, jsonld } from '@fluixi/head';
@@ -18,17 +18,17 @@ seo({
 
 ## What it does
 
-- **Reactive** — pass a signal (or a function reading one) and the document updates live:
+- **Reactive**: pass a signal (or a function reading one) and the document updates live:
   ```ts
   const title = $signal('Dashboard');
   seo(() => ({ title: title() })); // document.title tracks the signal — no reload
   ```
-- **SSR-first** — `renderHead(registry)` serializes the resolved tags into `<head>` markup plus
+- **SSR-first**: `renderHead(registry)` serializes the resolved tags into `<head>` markup plus
   `<html>` attributes; the client reconciler reuses those tags **by key** → no hydration mismatch.
-- **Deduplicated** — one title, one description, one canonical; repeatable tags (extra `og:image`,
+- **Deduplicated**: one title, one description, one canonical; repeatable tags (extra `og:image`,
   hreflang alternates, JSON-LD) accumulate. Last write wins for singletons.
-- **Nested inheritance** — register from a layout, then a page; child values override, arrays merge.
-- **Typed** — every property is typed, including Open Graph, Twitter, robots, icons, verification.
+- **Nested inheritance**: register from a layout, then a page; child values override, arrays merge.
+- **Typed**: every property is typed, including Open Graph, Twitter, robots, icons, verification.
 
 ## Surface
 
@@ -46,7 +46,7 @@ product · breadcrumb · videoObject · event · localBusiness · softwareApplic
 
 ### Components
 
-`<Title>`, `<Meta>`, `<Link>`, `<Script>`, `<Base>`, `<JsonLD>` — render nothing, register metadata,
+`<Title>`, `<Meta>`, `<Link>`, `<Script>`, `<Base>`, `<JsonLD>`: render nothing, register metadata,
 work on server + client (a signal passed in updates the document live).
 
 ### Sitemap & robots

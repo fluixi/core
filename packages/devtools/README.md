@@ -1,7 +1,7 @@
 # @fluixi/devtools
 
 Live inspector for the Fluixi reactive graph. Instrument `signal` / `memo` / `effect`, then render
-the dependency graph and watch propagation animate — State → Memo → Effect, glitch-free, lazy.
+the dependency graph and watch propagation animate: State → Memo → Effect, glitch-free, lazy.
 
 ```ts
 import { createReactor, createGraphView, DEVTOOLS_CSS } from '@fluixi/devtools';
@@ -23,13 +23,13 @@ tick();
 
 The instrumented `createSignal`/`createMemo`/`createEffect` wrap the real `@fluixi/reactive`
 primitives. A read is a
-subscription, so edges are recorded from actual reads — it's the genuine dependency graph, not a
+subscription, so edges are recorded from actual reads: it's the genuine dependency graph, not a
 reconstruction. Values are re-read untracked each frame and effects count their own re-runs, so the
 inspector animates exactly as the core propagates.
 
 ## Watching an app you did not write
 
-createReactor hands out its own primitives, so it only sees code written against them. observeGraph() sees an ordinary app: the runtime reports each node as it is made, and the graph fills from plain `import { signal } from '@fluixi/core'`. Call it before the app's modules load — a node made earlier is not in the graph.
+createReactor hands out its own primitives, so it only sees code written against them. observeGraph() sees an ordinary app: the runtime reports each node as it is made, and the graph fills from plain `import { signal } from '@fluixi/core'`. Call it before the app's modules load: a node made earlier is not in the graph.
 
 ```ts
 import { observeGraph, createGraphView } from '@fluixi/devtools';
@@ -42,13 +42,13 @@ tick();
 
 The same Map<number, RNode> the reactor produces, so createGraphView and anything else reading the graph does not care which made it. Dependencies are read off the core node, which already keeps its own sources and observers, so nothing is wrapped and no read is intercepted.
 
-No write edges, because nothing records which computation was running when a setter fired. Render effects are left out — the dom layer makes one per binding. An unwatched runtime pays one null check per node creation and per recompute.
+No write edges, because nothing records which computation was running when a setter fired. Render effects are left out: the dom layer makes one per binding. An unwatched runtime pays one null check per node creation and per recompute.
 
 ## Getting the graph somewhere else
 
-serializeGraph flattens the graph to json — Sets become arrays, the live core node becomes version and state, the reader is dropped — and snapshotToRenderMap turns it back into something the view draws. sample() returns what moved, so a delta is the same call with those ids, and applySnapshot folds one into a graph already on screen.
+serializeGraph flattens the graph to json, Sets become arrays, the live core node becomes version and state, the reader is dropped, and snapshotToRenderMap turns it back into something the view draws. sample() returns what moved, so a delta is the same call with those ids, and applySnapshot folds one into a graph already on screen.
 
-installDevtoolsHook() is for a tool that cannot be imported by the app. It leaves a global behind; when the application's runtime loads it finds it and hands over its own registration function, so the graph is built from the app's copy of the framework rather than the tool's. It has to be installed before the app runs — a browser agent at document_start — because the runtime offers once. It works against a production build too, without names or locations.
+installDevtoolsHook() is for a tool that cannot be imported by the app. It leaves a global behind; when the application's runtime loads it finds it and hands over its own registration function, so the graph is built from the app's copy of the framework rather than the tool's. It has to be installed before the app runs, a browser agent at document_start, because the runtime offers once. It works against a production build too, without names or locations.
 
 ```js
 import { installDevtoolsHook } from '@fluixi/devtools';
@@ -72,7 +72,7 @@ globalThis.__fx_source?.("src/App.ts", 10, 15, "count");
 const count = signal(0);
 ```
 
-A renderer needs nothing else — no compiler, no source file, no ast — and file, line and column are enough for a host to decide how to open it. For example:
+A renderer needs nothing else, no compiler, no source file, no ast, and file, line and column are enough for a host to decide how to open it. For example:
 
 ```ts
 for (const node of reactor.graph.values()) {
@@ -82,9 +82,9 @@ for (const node of reactor.graph.values()) {
 }
 ```
 
-The compiler wraps every component in a memo, so the graph sees the wrapper rather than the component. A node whose value carries a component's name reports its kind as `component` and takes that name as its label, so the graph reads `App` rather than `m5`. Nothing about the node changes — it is the same memo, with the same dependencies.
+The compiler wraps every component in a memo, so the graph sees the wrapper rather than the component. A node whose value carries a component's name reports its kind as `component` and takes that name as its label, so the graph reads `App` rather than `m5`. Nothing about the node changes: it is the same memo, with the same dependencies.
 
-A component node's `source` is where its tag was written, which is where the node was made — the same meaning `source` has for every other kind. `declaredAt` is where the component itself was declared, which is usually another file. It stands in for `source` when nothing marked the tag, and two components sharing a name are reported without a location rather than with the wrong one.
+A component node's `source` is where its tag was written, which is where the node was made: the same meaning `source` has for every other kind. `declaredAt` is where the component itself was declared, which is usually another file. It stands in for `source` when nothing marked the tag, and two components sharing a name are reported without a location rather than with the wrong one.
 
 ### Making a node the compiler cannot see
 
@@ -105,7 +105,7 @@ A production build should leave `sourceLocations` off and then carries none of i
 - `observeGraph()` → `{ graph, sample(), detach() }`
 - `installDevtoolsHook()` → the global a tool attaches through
 - `serializeGraph(graph, now?, { ids, removed }?)` / `snapshotToRenderMap(snapshot)`
-- `applySnapshot(graph, snapshot)` — fold a full snapshot or a delta into what is drawn
-- `formatValue(value, limit?)` — a printable rendering of any value; never throws
+- `applySnapshot(graph, snapshot)`: fold a full snapshot or a delta into what is drawn
+- `formatValue(value, limit?)`: a printable rendering of any value; never throws
 - `createGraphView(svg)` → `{ update(graph, now?), clear() }`
-- `DEVTOOLS_CSS` — default theme string (override the `fx-*` classes to restyle)
+- `DEVTOOLS_CSS`: default theme string (override the `fx-*` classes to restyle)

@@ -1,6 +1,6 @@
 # Releasing
 
-How to publish `@fluixi/*` packages to GitHub Packages **entirely from the terminal** — no GitHub web UI needed.
+How to publish `@fluixi/*` packages to GitHub Packages **entirely from the terminal**: no GitHub web UI needed.
 
 We use [Changesets](https://github.com/changesets/changesets) with a **two-phase, PR-based** flow:
 
@@ -35,16 +35,16 @@ The CI side needs the repo/org secret **`PACKAGES_TOKEN`** (a classic PAT with `
 
 ## The full release, step by step
 
-### 1. Record what changed — add a changeset
+### 1. Record what changed: add a changeset
 
 ```bash
 pnpm changeset
 ```
 
 This is interactive:
-- **Select packages** to bump — use `space` to toggle, `enter` to confirm.
-- **Choose the bump type** — `patch` (0.0.x), `minor` (0.x.0), or `major` (x.0.0).
-- **Write a summary** — this becomes the changelog entry.
+- **Select packages** to bump: use `space` to toggle, `enter` to confirm.
+- **Choose the bump type**: `patch` (0.0.x), `minor` (0.x.0), or `major` (x.0.0).
+- **Write a summary**: this becomes the changelog entry.
 
 It writes a file under `.changeset/`, e.g. `.changeset/funny-otters-sing.md`:
 
@@ -60,7 +60,7 @@ Fix debounced signal subscriptions
 > group (see `.changeset/config.json`). Whichever package you select, **they all
 > bump together to the same version**. See [One package vs all](#one-package-vs-all-packages) below.
 
-You can also write the file by hand instead of using the prompt — same format.
+You can also write the file by hand instead of using the prompt: same format.
 
 ### 2. Commit & push
 
@@ -77,7 +77,7 @@ git push
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')"
 ```
 
-When it finishes, list your open PRs — the **"Version Packages" PR** will be there:
+When it finishes, list your open PRs: the **"Version Packages" PR** will be there:
 
 ```bash
 gh pr list
@@ -86,7 +86,7 @@ gh pr list
 ```
 
 The **first column is the PR number** (here, `2`). That number is what every
-following command uses — the branch name (`changeset-release/main`) is just info.
+following command uses: the branch name (`changeset-release/main`) is just info.
 
 Inspect it without leaving the terminal:
 
@@ -115,7 +115,7 @@ gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -
 npm view fluixi version --registry=https://npm.pkg.github.com/
 ```
 
-Done — packages are published.
+Done: packages are published.
 
 ---
 
@@ -124,7 +124,7 @@ Done — packages are published.
 ### All packages (the normal case here)
 
 Because every package sits in the **`fixed` group**, a single changeset bumps and
-publishes the **whole group** at once. That's the default behavior — just add one
+publishes the **whole group** at once. That's the default behavior: just add one
 changeset and follow the steps above.
 
 ### Only some packages
@@ -158,7 +158,7 @@ cd packages/utils && npm publish
 ```
 
 The version must not already exist on the registry, and `~/.npmrc` must hold a
-`write:packages` token. Use this only for hotfixes — prefer the changeset flow so
+`write:packages` token. Use this only for hotfixes: prefer the changeset flow so
 changelogs and tags stay correct.
 
 ---
@@ -197,6 +197,6 @@ gh pr list --head changeset-release/main
 |---|---|
 | Release run fails: *"GitHub Actions is not permitted to create or approve pull requests"* | `PACKAGES_TOKEN` secret missing or not used by the workflow. It must be a classic PAT (`repo` + `read/write:packages`). |
 | Version PR created but nothing published | Publishing only runs **after** you merge the PR. Merge it (step 4). |
-| `changeset publish` says *"already published"* | That version is already on the registry — add a changeset to bump again. |
+| `changeset publish` says *"already published"* | That version is already on the registry: add a changeset to bump again. |
 | Package published but not shown under the repo's **Packages** | Its `repository` field must point to this repo; the link is set at **first** publish. See team notes on re-linking. |
 | Install fails reading `@bambiste/*` | The token needs `read:packages` for the `@bambiste` scope (cross-account). |

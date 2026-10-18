@@ -4,7 +4,7 @@
 
 # @fluixi/router
 
-**Framework-agnostic router core — URL → a resolved match tree + navigation.**
+**Framework-agnostic router core: URL → a resolved match tree + navigation.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -15,7 +15,7 @@
 
 ## ✨ Overview
 
-`@fluixi/router` is the routing **core** — pure state and a `subscribe` API, with **no
+`@fluixi/router` is the routing **core**: pure state and a `subscribe` API, with **no
 reactivity, no DOM, no view framework**. View adapters (the Fluixi adapter lives in
 [`@fluixi/core/router`](../core)) render the match tree **top-down**, which makes
 deeply nested layout/outlet rendering work by construction. See [DESIGN.md](./DESIGN.md).
@@ -57,7 +57,7 @@ router.state().match.params; // { id: '42' }
 ## 🧭 Rendering contract
 
 `match.matched` is parent → child. An adapter folds from the deepest child upward,
-passing each rendered child to its parent as that parent's outlet — all concrete values,
+passing each rendered child to its parent as that parent's outlet: all concrete values,
 never a deferred build. That top-down composition is what makes deeply nested `<Outlet/>`
 rendering work at any depth.
 

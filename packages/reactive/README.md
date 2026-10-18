@@ -4,7 +4,7 @@
 
 # @fluixi/reactive
 
-**Fine-grained signals, memos, effects and stores on a TC39 Signals core — standalone, no framework required.**
+**Fine-grained signals, memos, effects and stores on a TC39 Signals core: standalone, no framework required.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -20,19 +20,19 @@ browser, on the server, or on its own.
 ## Features
 
 ### Core
-- **Signals, memos, effects** — fine-grained state, derived values, automatic tracking
-- **Stores** — nested reactive objects where reading a property *is* the read
-- **Resources** — async values that integrate with suspense
-- **Batching** — `batch()` collects writes so dependents run once
+- **Signals, memos, effects**: fine-grained state, derived values, automatic tracking
+- **Stores**: nested reactive objects where reading a property *is* the read
+- **Resources**: async values that integrate with suspense
+- **Batching**: `batch()` collects writes so dependents run once
 
 ### Beyond the basics
-- **Transitions** — `startTransition` defers non-critical effects so the view stays interactive
-- **Suspense and error boundaries** — as plain values, so any view layer can wrap them
-- **Context** — provide a value for the duration of a call, without prop drilling
-- **Owners** — explicit ownership and disposal, so a graph tears down completely
-- **Debounced primitives** — signal, resource and function variants
-- **Observable interop** — `Observable`/`Subject` for RxJS-shaped code
-- **TypeScript** — full type safety and inference
+- **Transitions**: `startTransition` defers non-critical effects so the view stays interactive
+- **Suspense and error boundaries**: as plain values, so any view layer can wrap them
+- **Context**: provide a value for the duration of a call, without prop drilling
+- **Owners**: explicit ownership and disposal, so a graph tears down completely
+- **Debounced primitives**: signal, resource and function variants
+- **Observable interop**: `Observable`/`Subject` for RxJS-shaped code
+- **TypeScript**: full type safety and inference
 
 ## Installation
 
@@ -82,7 +82,7 @@ setCount(1);
 ```
 
 `signal` **is** the accessor `createSignal` returns with the setter attached, so a read is
-the same call either way. They track each other and mix freely in one module — pick
+the same call either way. They track each other and mix freely in one module: pick
 whichever reads better, and keep the tuple when you want the halves apart.
 
 ### Stores and resources
@@ -152,7 +152,7 @@ const save = createDebounce((draft) => persist(draft), 500);
 ## Batching
 
 A write marks its dependents dirty and schedules them; memos stay lazy and recompute on
-read, so the graph is glitch-free — nothing observes a half-applied update.
+read, so the graph is glitch-free: nothing observes a half-applied update.
 
 ```typescript
 batch(() => {
@@ -230,31 +230,31 @@ current view. Pure computations still settle immediately.
 
 ## Documentation
 
-- [Signals](https://docs.fluixi.com/v1/en/signals) — state, reading and writing
-- [Derived values](https://docs.fluixi.com/v1/en/derived-values) — memos and selectors
-- [Effects](https://docs.fluixi.com/v1/en/effects) — side effects and cleanup
-- [Stores](https://docs.fluixi.com/v1/en/stores) — nested reactive objects
-- [Async](https://docs.fluixi.com/v1/en/async) — resources, suspense, transitions
-- [TC39 Signals](https://docs.fluixi.com/v1/en/tc39-signals) — the model underneath
+- [Signals](https://docs.fluixi.com/v1/en/signals): state, reading and writing
+- [Derived values](https://docs.fluixi.com/v1/en/derived-values): memos and selectors
+- [Effects](https://docs.fluixi.com/v1/en/effects): side effects and cleanup
+- [Stores](https://docs.fluixi.com/v1/en/stores): nested reactive objects
+- [Async](https://docs.fluixi.com/v1/en/async): resources, suspense, transitions
+- [TC39 Signals](https://docs.fluixi.com/v1/en/tc39-signals): the model underneath
 
 ## Compiler intrinsics
 
 Inside an app compiled by `@fluixi/compiler`, these primitives have `$`-prefixed twins that
-need no import — `$signal`, `$memo`, `$effect`, `$store`, `$resource`. They compile to the
+need no import: `$signal`, `$memo`, `$effect`, `$store`, `$resource`. They compile to the
 calls above, so there is one reactive graph and no difference in behaviour. This package
 stays importable exactly as documented here, which is what a library that never runs the
 compiler needs.
 
 ## Performance tips
 
-1. **Batch related updates** — `batch(() => { a.set(1); b.set(2); })` runs dependents once.
-2. **Transitions for expensive updates** — `startTransition(() => list.set(compute()))`
+1. **Batch related updates**: `batch(() => { a.set(1); b.set(2); })` runs dependents once.
+2. **Transitions for expensive updates**: `startTransition(() => list.set(compute()))`
    keeps the current view interactive while the next one is prepared.
-3. **Memo the expensive part** — a memo costs a node; it pays for itself when the
+3. **Memo the expensive part**: a memo costs a node; it pays for itself when the
    computation is heavier than the bookkeeping.
-4. **Read narrowly** — reading a whole object subscribes you to every write to it. Reach
+4. **Read narrowly**: reading a whole object subscribes you to every write to it. Reach
    for the property you need, or derive it.
-5. **Key your lists** — `mapArray` keeps a row's nodes across a reorder; `indexArray`
+5. **Key your lists**: `mapArray` keeps a row's nodes across a reorder; `indexArray`
    rebuilds them.
 
 ## Building
@@ -275,6 +275,6 @@ MIT
 
 ## Credits
 
-The graph implements the **TC39 Signals** model. The ergonomics owe a lot to prior art —
+The graph implements the **TC39 Signals** model. The ergonomics owe a lot to prior art: 
 SolidJS for fine-grained primitives and scheduling, React for transitions and suspense as
 concepts, Vue 3 for reactivity design. None of that was invented here.

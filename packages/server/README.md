@@ -4,7 +4,7 @@
 
 # @fluixi/server
 
-**Server-side rendering for Fluixi — request-scoped, streaming, framework-agnostic.**
+**Server-side rendering for Fluixi: request-scoped, streaming, framework-agnostic.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -27,7 +27,7 @@ concurrency-safe and ergonomic:
 - adds request helpers (`renderRequest`, `renderRequestAsync`, `renderRequestToPage`,
   `renderToBodyStream`, `startServer`, `createHtmlDocument`).
 
-No meta-framework coupling — SSR is a plain function you call from any server (Express,
+No meta-framework coupling: SSR is a plain function you call from any server (Express,
 Hono, a worker, or [`@fluixi/start`](../start)).
 
 ## 📦 Installation

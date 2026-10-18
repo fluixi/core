@@ -20,7 +20,7 @@ count();       // read — tracks wherever it runs
 count.set(1);      // write
 ```
 
-`createSignal` and its `[get, set]` tuple are unchanged, and the two forms mix freely —
+`createSignal` and its `[get, set]` tuple are unchanged, and the two forms mix freely: 
 `App.tsx` derives a `$memo` from a signal made the other way.
 
 A module that binds `$signal` itself keeps its own meaning, and the compiler reports it

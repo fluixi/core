@@ -4,7 +4,7 @@
 
 # @fluixi/dom
 
-**The DOM runtime the compiler targets — surgical fine-grained updates, hydration and SSR.**
+**The DOM runtime the compiler targets: surgical fine-grained updates, hydration and SSR.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -12,8 +12,8 @@
 
 ---
 
-The runtime `@fluixi/compiler` emits calls into. It provides the low-level DOM operations —
-element creation, reactive attributes and properties, insertion, control flow, hydration —
+The runtime `@fluixi/compiler` emits calls into. It provides the low-level DOM operations: 
+element creation, reactive attributes and properties, insertion, control flow, hydration: 
 that make a change update exactly the binding depending on it. Usable directly, though most
 code reaches it through compiled JSX or `` html`` `` templates.
 
@@ -76,14 +76,14 @@ setCount(1); // DOM updates to "Count: 1"
 
 ### Components
 
-Bindings work as soon as you import — the example above needs no setup. Rendering
+Bindings work as soon as you import: the example above needs no setup. Rendering
 *components* needs one seam filled in, so a component call is owned and disposable:
 
 ```typescript
 import '@fluixi/core'; // wires it for you at import time
 ```
 
-Using `@fluixi/dom` without `@fluixi/core`? Fill the seam yourself — see
+Using `@fluixi/dom` without `@fluixi/core`? Fill the seam yourself: see
 [Integration](#integration).
 
 ## Core API
@@ -335,8 +335,8 @@ ErrorBoundary({
 
 ## Integration
 
-This package renders; it doesn't own a reactive system. One seam connects the two — how a
-component call is wrapped — and it is a single function:
+This package renders; it doesn't own a reactive system. One seam connects the two: how a
+component call is wrapped, and it is a single function:
 
 ```typescript
 import { registerCreateComponent } from '@fluixi/dom';
@@ -373,7 +373,7 @@ function Counter() {
 }
 ```
 
-The lit-html bridge this package once carried is gone — `lit` is not a dependency, and the
+The lit-html bridge this package once carried is gone: `lit` is not a dependency, and the
 `@fluixi/dom/reactive` entry with its `$if`/`$each`/`rx` helpers no longer exists. Templates
 go through the compiler now.
 
@@ -499,6 +499,6 @@ MIT
 
 ## Resources
 
-- [SolidJS Documentation](https://www.solidjs.com/) — dom-expressions is the closest prior art
+- [SolidJS Documentation](https://www.solidjs.com/): dom-expressions is the closest prior art
 - [dom-expressions](https://github.com/ryansolid/dom-expressions)
 - [Fluixi docs](https://docs.fluixi.com)

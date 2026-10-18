@@ -17,7 +17,7 @@ This is the `jsxImportSource` for Fluixi: the `jsx`/`jsxs`/`Fragment` factories,
 helpers, and the JSX type definitions that give intrinsic elements and their attributes real
 types.
 
-It is a small package with a narrow job. **Most Fluixi code never imports it** — the compiler
+It is a small package with a narrow job. **Most Fluixi code never imports it**: the compiler
 turns JSX into direct DOM calls, so the factories are a fallback for anything it did not
 compile. Components, control flow, rendering and reactivity live elsewhere; see
 [Where things actually live](#where-things-actually-live).
@@ -109,7 +109,7 @@ function Field() {
 }
 ```
 
-A callback ref works too — `ref={(el) => …}` — and both forms are typed bivariantly, so a
+A callback ref works too, `ref={(el) => ...}`, and both forms are typed bivariantly, so a
 component that takes `HTMLElement` accepts a more specific ref.
 
 ## License

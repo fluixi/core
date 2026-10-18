@@ -4,7 +4,7 @@
 
 # @fluixi/start
 
-**The Fluixi meta-framework — zero-config dev/build/start with SSR, file routing, and hydration.**
+**The Fluixi meta-framework: zero-config dev/build/start with SSR, file routing, and hydration.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -45,7 +45,7 @@ pnpm add @fluixi/start @fluixi/cli
 
 ## ⚙️ Config
 
-`fluixi.config.{ts,mts,mjs,js}` — TypeScript configs are bundled on the fly:
+`fluixi.config.{ts,mts,mjs,js}`: TypeScript configs are bundled on the fly:
 
 ```ts
 import { defineConfig } from '@fluixi/start/config';
@@ -61,34 +61,34 @@ export default defineConfig({
 });
 ```
 
-`ssr: false` gives an SPA — the server still runs (file routing, middleware, env, server
+`ssr: false` gives an SPA: the server still runs (file routing, middleware, env, server
 functions), the first paint just happens on the client. `i18n` and `apiDir` default to
 `src/i18n` and `src/api`, and stay a no-op until those folders have files.
 
 ## 🚀 Features
 
-- **Streaming SSR** — export `renderStream(url)` (via `@fluixi/server`'s
+- **Streaming SSR**: export `renderStream(url)` (via `@fluixi/server`'s
   `renderToBodyStream`) and the `index.html` head is flushed first, then the app body is
   streamed into the mount point.
-- **Middleware / guards** — `src/middleware.ts` default-exports `defineMiddleware([...])`,
-  a `(request, next) => Response` chain run before SSR (auth redirects, headers, …).
-- **Server functions** — a `"use server"` function runs only on the server and is callable
+- **Middleware / guards**: `src/middleware.ts` default-exports `defineMiddleware([...])`,
+  a `(request, next) => Response` chain run before SSR (auth redirects, headers...).
+- **Server functions**: a `"use server"` function runs only on the server and is callable
   from the client over RPC (`/_server`, same-origin CSRF); `getRequestEvent()` works inside
   it.
-- **Routing** — `@fluixi/start/router` re-exports [`@fluixi/core/router`](../core):
+- **Routing**: `@fluixi/start/router` re-exports [`@fluixi/core/router`](../core):
   `Router`, `Outlet`, `Link`, `ActionForm`, the hooks, `createMemoryHistory`.
-- **Static generation** — `prerender: true` builds routes to static HTML in `dist/client`,
+- **Static generation**: `prerender: true` builds routes to static HTML in `dist/client`,
   crawling internal `<a href>` links; an object sets explicit `routes` for paths nothing
   links to. The pages still hydrate.
-- **API routes** — files under `src/api` export `GET`/`POST`/… and are served at `/api/*`.
-- **i18n** — `src/i18n/<locale>.json` is discovered and exposed as `virtual:fluixi-i18n`
+- **API routes**: files under `src/api` export `GET`/`POST`/... and are served at `/api/*`.
+- **i18n**: `src/i18n/<locale>.json` is discovered and exposed as `virtual:fluixi-i18n`
   for `createI18n`, with typed keys.
-- **Deploy adapters** — `createProdHandler` builds a runtime-neutral fetch handler, and an
+- **Deploy adapters**: `createProdHandler` builds a runtime-neutral fetch handler, and an
   adapter decides how the server is bundled and served: `nodeAdapter` (Node http + static
   files), `webAdapter` (`export { fetch }` for edge/worker), plus `cloudflareAdapter`,
   `netlifyAdapter` and `vercelAdapter`, which emit the layout each platform expects. The
   same handler runs on Node, Bun, Deno and edge runtimes.
-- **Component resolution** — `resolve` says where a capitalised tag with no import comes
+- **Component resolution**: `resolve` says where a capitalised tag with no import comes
   from; one pattern rule can cover a whole folder. See
   [`@fluixi/compiler`](../compiler) for the rule shapes and for `load:` deferral.
 
