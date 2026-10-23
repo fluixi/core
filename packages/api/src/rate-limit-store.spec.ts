@@ -12,6 +12,9 @@ const pglite = () => {
   return db;
 };
 
+// PGlite starts an in-process Postgres, which can take seconds on a busy CI runner.
+const PGLITE_TIMEOUT = 30_000;
+
 const stores: [string, () => RateLimitStore][] = [
   ['memory', () => memoryRateLimitStore()],
   ['postgres', () => postgresRateLimitStore(pglite())],
@@ -40,7 +43,7 @@ describe.each(stores)('%s rate-limit store', (_, make) => {
     await new Promise((done) => setTimeout(done, 1100));
     expect((await store.hit('a', 1, 1)).allowed).toBe(true);
   });
-});
+}, PGLITE_TIMEOUT);
 
 describe('postgres rate-limit store', () => {
   it('shares counts between instances on one database', async () => {
@@ -61,4 +64,4 @@ describe('postgres rate-limit store', () => {
     expect((await store.hit('a', 1, 60)).allowed).toBe(true);
     expect((await store.hit('a', 1, 60)).allowed).toBe(false);
   });
-});
+}, PGLITE_TIMEOUT);

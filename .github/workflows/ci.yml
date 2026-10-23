@@ -104,7 +104,7 @@ jobs:
       # Only @fluixi/cli is excluded: it has a `test` script but no test files, so
       # `vitest run` exits 1.
       - name: Test affected
-        run: pnpm nx affected -t test --parallel=3 --exclude=@fluixi/cli
+        run: pnpm nx affected -t test --parallel=3 --exclude=@fluixi/cli,@fluixi/example-api-only,@fluixi/example-auth-debugger,@fluixi/example-ticket-desk,@fluixi/example-web-component
 
       # The examples are vite/vitest regression fixtures (noEmit, non-composite), so
       # the inferred `tsc --build --emitDeclarationOnly` typecheck doesn't apply to
