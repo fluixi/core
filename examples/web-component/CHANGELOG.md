@@ -1,5 +1,19 @@
 # @fluixi/example-web-component
 
+## 0.0.2-alpha.14
+
+### Patch Changes
+
+- Updated dependencies [e043b28]
+  - @fluixi/core@1.0.0-alpha.101
+  - @fluixi/start@1.0.0-alpha.101
+  - @fluixi/cli@1.0.0-alpha.101
+  - @fluixi/dom@1.0.0-alpha.101
+  - @fluixi/jsx@1.0.0-alpha.101
+  - @fluixi/reactive@1.0.0-alpha.101
+  - @fluixi/server@1.0.0-alpha.101
+  - @fluixi/web-components@1.0.0-alpha.101
+
 ## 0.0.2-alpha.13
 
 ### Patch Changes

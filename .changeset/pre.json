@@ -360,6 +360,7 @@
     "reconcile-fragment-clone",
     "refresh-keeps-token",
     "remote-auth",
+    "remove-core-cli",
     "remove-vinxi",
     "rename-core-to-fluixi",
     "rename-kettlejs-to-core",

@@ -1,5 +1,12 @@
 # @fluixi/template-runtime
 
+## 1.0.0-alpha.101
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.101
+- @fluixi/template-parser@1.0.0-alpha.101
+
 ## 1.0.0-alpha.100
 
 ### Patch Changes

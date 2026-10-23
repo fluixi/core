@@ -1,5 +1,12 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.101
+
+### Patch Changes
+
+- e043b28: `fluixi generate` in @fluixi/cli replaces the removed `fluixi-generate` and `fluixi-run` commands.
+  - @fluixi/utils@1.0.0-alpha.101
+
 ## 1.0.0-alpha.100
 
 ### Patch Changes

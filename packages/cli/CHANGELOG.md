@@ -1,5 +1,12 @@
 # @fluixi/cli
 
+## 1.0.0-alpha.101
+
+### Patch Changes
+
+- @fluixi/start@1.0.0-alpha.101
+- @fluixi/ts-plugin@1.0.0-alpha.101
+
 ## 1.0.0-alpha.100
 
 ### Patch Changes
