@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.101
+
+### Patch Changes
+
+- a6841a4: The `format` compiler option no longer accepts `'lit'` and accepts `'html'` (or `'jsx'` or `'both'`). The lit helpers `isLitResult`, `isLitTemplateResult`, `getLitEventName` and `isTemplateFactory` are removed: they detected lit-html objects, which no longer occur.
+
 ## 1.0.0-alpha.100
 
 ### Minor Changes
