@@ -250,12 +250,10 @@ export const parseColor = (
     return null;
   }
 
-  // Handle transparent
   if (str === 'transparent') {
     return [0, 0, 0, 0];
   }
 
-  // Handle named colors
   const namedColor = str as NamedColor;
   if (NAMED_COLORS[namedColor]) {
     return parseColor(NAMED_COLORS[namedColor]);
@@ -322,9 +320,6 @@ export const parseColor = (
   return null;
 };
 
-/**
- * Convert HSL to RGB
- */
 export const hslToRgb = (
   h: number,
   s: number,
@@ -463,7 +458,6 @@ const parsePercentage = (value: string): number => {
  * @returns True if valid color
  */
 export const isValidColor = (color: string): boolean => {
-  // Check named colors
   if (color.toLowerCase() in NAMED_COLORS) {
     return true;
   }
@@ -965,7 +959,6 @@ export const createContrastColor = (
   const rgb = parseColor(color);
   if (!rgb) return fallbackColor;
 
-  // Calculate luminance
   const luminance = calculateLuminance(rgb[0], rgb[1], rgb[2]);
 
   // Calculate contrast with light and dark colors

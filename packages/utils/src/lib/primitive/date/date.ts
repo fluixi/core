@@ -155,7 +155,6 @@ export function parseDate(
     return applyTimezone(parsedDate, timezone);
   }
 
-  // Handle string input
   if (typeof input !== 'string') {
     throw new Error(`Invalid input type: ${typeof input}`);
   }

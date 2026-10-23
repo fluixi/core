@@ -354,7 +354,6 @@ export function normalizeUrl(
   try {
     const urlObj = new URL(url);
 
-    // Remove default ports
     if (removeDefaultPort) {
       if (
         (urlObj.protocol === 'http:' && urlObj.port === '80') ||

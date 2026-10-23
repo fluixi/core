@@ -50,17 +50,14 @@ export const deepClone = <T>(obj: T, skipKeys?: (string | symbol)[]): T => {
     return obj;
   }
 
-  // Handle Date
   if (obj instanceof Date) {
     return new Date(obj.getTime()) as T;
   }
 
-  // Handle RegExp
   if (obj instanceof RegExp) {
     return new RegExp(obj.source, obj.flags) as T;
   }
 
-  // Handle Map
   if (obj instanceof Map) {
     const clone = new Map();
     obj.forEach((value, key) => {
@@ -100,7 +97,6 @@ export const deepClone = <T>(obj: T, skipKeys?: (string | symbol)[]): T => {
       }
     }
 
-    // Handle symbols
     const symbols = Object.getOwnPropertySymbols(obj);
     for (const symbol of symbols) {
       if (

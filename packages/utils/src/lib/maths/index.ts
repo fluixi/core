@@ -15,10 +15,8 @@
 * @module MathUtils
 */
 
-// Export types
 export * from './types/index.js';
 
-// Export constants
 export * from './constants.js';
 
 // Export type guards
@@ -27,7 +25,6 @@ export * from './guards.js';
 // Export functions
 export * from './fn/index.js';
 
-// Export formatters
 export * from './formatter.js';
 
 // Export utilities

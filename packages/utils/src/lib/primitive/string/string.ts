@@ -705,7 +705,6 @@ export const replaceString = (
     return originalString;
   }
 
-  // Handle both positions case
   if (position === 'both') {
     let result = originalString;
 
@@ -982,7 +981,6 @@ export const parseArrayLiteral = (str: string): string[] | string => {
       continue;
     }
 
-    // Handle quotes
     if ((char === '"' || char === "'") && !inQuotes) {
       inQuotes = true;
       quoteChar = char;
@@ -1307,7 +1305,6 @@ export const stringToObjectArray = <T extends boolean = boolean>(
     }
   };
 
-  // Handle array input
   if (Array.isArray(input)) {
     const result = input.map(processItem);
     if (preserveNullUndefined) {
@@ -1316,7 +1313,6 @@ export const stringToObjectArray = <T extends boolean = boolean>(
     return result.filter((item): item is ParsedResult<T> => item !== null);
   }
 
-  // Handle string input
   if (typeof input !== 'string') {
     // Try to convert to string
     if (input == null) return [] as ParsedResult<T>[];

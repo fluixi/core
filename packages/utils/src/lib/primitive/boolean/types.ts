@@ -10,9 +10,6 @@ export type BooleanConvertible =
   | object 
   | any[];
 
-/**
- * Type for strict boolean values
- */
 export type StrictBoolean = boolean | 0 | 1 | 'true' | 'false' | '0' | '1';
 
 export type ComparatorOperator = '>' | '<' | '>=' | '<=' | '==' | '===' | '!=' | '!=='

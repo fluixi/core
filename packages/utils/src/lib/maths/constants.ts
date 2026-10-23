@@ -48,29 +48,14 @@ export const LOG2E = 1.4426950408889634 as const;
  */
 export const LOG10E = 0.4342944819032518 as const;
 
-/**
- * Degrees in a circle.
- */
 export const DEGREES_IN_CIRCLE = 360 as const;
 
-/**
- * Radians in a circle.
- */
 export const RADIANS_IN_CIRCLE = 2 * PI as number;
 
-/**
- * Gradians in a circle.
- */
 export const GRADIANS_IN_CIRCLE = 400 as const;
 
-/**
- * Degrees per radian.
- */
 export const DEGREES_PER_RADIAN = 180 / PI as number;
 
-/**
- * Radians per degree.
- */
 export const RADIANS_PER_DEGREE = PI / 180 as number;
 
 /**

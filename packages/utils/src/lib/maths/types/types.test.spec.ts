@@ -197,7 +197,6 @@ const polynomial: Polynomial<2> = {
   coefficients: [1, 2, 3], // 1x² + 2x + 3
 };
 
-// Interval types
 type TestClosedInterval = ClosedInterval<0, 1>;
 type TestOpenInterval = OpenInterval<0, 1>;
 type TestHalfOpenInterval = HalfOpenInterval<0, 1>;
@@ -247,7 +246,6 @@ const vectorOp: TestVectorOperation = {
   magnitude: 5,
 };
 
-// Test recursive types
 type TestRecursiveType = {
   value: number;
   next?: TestRecursiveType;

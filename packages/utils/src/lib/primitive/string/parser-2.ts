@@ -35,7 +35,6 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
     throw new ParseError('Input string is empty', 0, 1, 1);
   }
 
-  // Set defaults
   const defaultOptions: Required<ParseOptions> = {
     allowUnquotedKeys: true,
     allowTrailingCommas: true,
@@ -237,7 +236,6 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
       
       skipWhitespaceAndComments();
       
-      // Parse value
       obj[key] = parseValue();
       
       skipWhitespaceAndComments();

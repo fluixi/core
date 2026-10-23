@@ -265,9 +265,6 @@ export type HSLColor = {
   readonly l: number;  // 0-100
 };
 
-/**
- * Represents a statistical sample.
- */
 export type StatisticalSample<T = number> = {
   readonly values: readonly T[];
   readonly size: number;
@@ -341,16 +338,10 @@ export type Cone = {
   readonly height: Positive<number>;
 };
 
-/**
- * Represents a parametric function.
- */
 export type ParametricFunction<T = number, U = number> = {
   (t: T): U;
 };
 
-/**
- * Represents a differential equation.
- */
 export type DifferentialEquation<Y extends number = number, X extends number = number> = {
   (x: X, y: Y): number;
 };

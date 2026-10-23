@@ -832,7 +832,6 @@ describe('integration tests', () => {
       },
     };
 
-    // Get diff
     const diff = diffObject(original, updated);
     expect(diff).toEqual({
       user: {
@@ -856,7 +855,6 @@ describe('integration tests', () => {
       ['user.age', 'user.address.city', 'settings.theme'].sort()
     );
 
-    // Get changed paths
     const paths = getChangedPaths(original, updated);
     expect(paths.sort()).toEqual(
       ['user.age', 'user.address.city', 'settings.theme'].sort()
@@ -889,7 +887,6 @@ describe('integration tests', () => {
       },
     };
 
-    // Get diff
     const diff = diffObject(original, updated);
     expect(diff.users).toBeDefined();
     expect(diff.metadata).toBeDefined();

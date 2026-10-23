@@ -437,7 +437,6 @@ export function omitPath<T>(
 
       collectPaths(value);
 
-      // Process each path
       for (const { fullPath, segments: pathSegments } of pathsToProcess) {
         const pathSegmentsCopy = [...pathSegments];
         const lastSegment = pathSegmentsCopy.pop();
@@ -589,7 +588,6 @@ export function pickPath<T>(
     return {};
   }
 
-  // Handle array of paths
   if (Array.isArray(paths)) {
     // Create a merged result from all paths
     const result: Record<string, any> = {};
@@ -625,7 +623,6 @@ export function pickPath<T>(
         };
 
         const transformedValue = transformValue(pathValue, path);
-        // Merge into the result
         deepMerge(result, transformedValue);
       } else {
         // Merge without transformation

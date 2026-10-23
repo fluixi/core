@@ -249,7 +249,6 @@ export function get<T extends AnyObject, S extends SelectorFor<T>>(
   }
   // console.log('try to get', selector)
 
-  // Handle array of selectors
   if (Array.isArray(selector)) {
     if (preserveStructure) {
       // Return an object with all selected paths
@@ -637,7 +636,6 @@ export function set(
       typeof second === 'object' &&
       !Array.isArray(second)
     ) {
-      // Array of selectors with update object
       return setValueWithArraySelectors(obj, first as string[], second);
     } else if (params.length === 2) {
       // Array of selectors with single value
@@ -1836,7 +1834,6 @@ export const has = <
   selector: S,
   options: O = {} as O
 ): boolean | boolean[] => {
-  // Handle array of selectors
   if (Array.isArray(selector)) {
     return selector.map((sel) => has(obj, sel, options) as boolean);
   }
@@ -1869,7 +1866,6 @@ export const deletePath = <
 ): boolean | boolean[] => {
   const { throwOnError = false } = options;
 
-  // Handle array of selectors
   if (Array.isArray(selector)) {
     return selector.map((sel) => deletePath(obj, sel, options) as boolean);
   }
@@ -2032,7 +2028,6 @@ export const getPaths = <
 ): SelectorFor<T>[] => {
   const { format = 'selector', maxDepth = 20 } = options;
 
-  // Handle array of selectors
   if (selector && Array.isArray(selector)) {
     const allPaths: SelectorFor<T>[] = [];
     for (const sel of selector) {
@@ -2051,7 +2046,6 @@ export const getPaths = <
     ) as SelectorFor<T>[];
   }
 
-  // Get all paths
   const allPaths: Array<{ path: string; stringPath: string }> = [];
 
   const traverseAll = (
@@ -2164,7 +2158,6 @@ export const flattenWithArrays = (
         }
       }
 
-      // Handle symbols
       const symbols = Object.getOwnPropertySymbols(current);
       for (const symbol of symbols) {
         const newPath = [

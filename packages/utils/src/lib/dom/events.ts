@@ -33,7 +33,6 @@
  * @property {Event} 'scroll' - Scroll events
  */
 export interface DomEventMap {
-  // Mouse Events
   click: MouseEvent;
   dblclick: MouseEvent;
   mousedown: MouseEvent;
@@ -41,7 +40,6 @@ export interface DomEventMap {
   mousemove: MouseEvent;
   mouseenter: MouseEvent;
   mouseleave: MouseEvent;
-  // Keyboard Events
   keydown: KeyboardEvent;
   keyup: KeyboardEvent;
   keypress: KeyboardEvent;
@@ -51,7 +49,6 @@ export interface DomEventMap {
   submit: Event;
   focus: FocusEvent;
   blur: FocusEvent;
-  // Drag Events
   drag: DragEvent;
   dragstart: DragEvent;
   dragend: DragEvent;

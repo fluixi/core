@@ -95,7 +95,6 @@ export interface ContrastOptions {
   darkColor?: string;
   /** Target contrast ratio */
   targetRatio?: number;
-  /** Fallback color */
   fallbackColor?: string;
 }
 
@@ -233,9 +232,6 @@ export type AnyColor =
   | OKLCHColor
   | XYZColor;
 
-/**
- * Color conversion options
- */
 export interface ColorConversionOptions {
   /** Output format */
   format?: ColorFormat;
@@ -247,9 +243,6 @@ export interface ColorConversionOptions {
   precision?: number;
 }
 
-/**
- * Color temperature options
- */
 export interface ColorTemperatureOptions {
   /** Temperature adjustment in Kelvin */
   temperature?: number;
@@ -257,9 +250,6 @@ export interface ColorTemperatureOptions {
   intensity?: number;
 }
 
-/**
- * Color harmony options
- */
 export interface ColorHarmonyOptions {
   /** Type of harmony to generate */
   type?:

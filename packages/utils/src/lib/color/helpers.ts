@@ -124,9 +124,6 @@ export function simulateColorBlindness(
   ]);
 }
 
-/**
- * Invert color
- */
 export function invertColor(color: string | Color, bw: boolean = false): Color {
   const colorObj = color instanceof Color ? color : new Color(color);
   const rgb = colorObj.getRgbObject();

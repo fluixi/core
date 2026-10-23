@@ -1,9 +1,6 @@
 import { isObject } from './utils.js';
 import type { AnyObject } from './types.js';
 
-/**
- * Options for diffObject function
- */
 export interface DiffOptions {
   /**
    * If true, includes properties that exist in oldObj but not in newObj
@@ -475,10 +472,8 @@ export const diffObjectDetailed = <T extends AnyObject>(
         const path = currentPath ? `${currentPath}.${key}` : key;
 
         if (!(key in (old || {}))) {
-          // Added
           result.added.push(path);
         } else if (!(key in (newVal || {}))) {
-          // Deleted
           result.deleted.push(path);
         } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
           // Compare arrays
@@ -495,7 +490,6 @@ export const diffObjectDetailed = <T extends AnyObject>(
           result.deleted.push(...nested.deleted);
           result.modified.push(...nested.modified);
         } else if (oldValue !== newValue) {
-          // Modified
           result.modified.push(path);
         }
       }
@@ -557,7 +551,6 @@ export const diffObjectDetailed = <T extends AnyObject>(
       continue;
     }
 
-    // Check if values are different
     let isDifferent = false;
 
     if (Array.isArray(oldValue) && Array.isArray(newValue)) {

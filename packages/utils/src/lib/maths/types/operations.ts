@@ -21,9 +21,6 @@ type Tuple<N extends number, T = unknown, Acc extends T[] = []> =
  */
 type NumberToTuple<N extends number> = Tuple<N>;
 
-/**
- * Converts a tuple to a number.
- */
 type TupleToNumber<T extends unknown[]> = T['length'];
 
 /**

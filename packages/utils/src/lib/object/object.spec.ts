@@ -792,7 +792,6 @@ describe('Object Selector Utilities', () => {
       }
       // console.log('obj large', largeObj)
 
-      // Select all names
       const result = select(largeObj, '*.*.name');
       const end = performance.now();
 

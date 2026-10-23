@@ -96,7 +96,6 @@ export function merge(...sources: any[]): any {
         }
       }
 
-      // Handle symbols
       const symbols = Object.getOwnPropertySymbols(sourceObj);
       for (const symbol of symbols) {
         const value = sourceObj[symbol as any];
@@ -337,7 +336,6 @@ export function deepMergeWithOptions<T extends object>(
         }
       }
 
-      // Handle symbols
       const symbols = Object.getOwnPropertySymbols(sourceObj);
       for (const symbol of symbols) {
         if (options.strict && !((symbol as any) in resultObj)) {

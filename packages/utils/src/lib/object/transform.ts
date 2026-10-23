@@ -360,7 +360,6 @@ export const flatten = (
         flattenRecursive(current[key], newPath, depth + 1);
       }
 
-      // Handle symbols
       const symbols = Object.getOwnPropertySymbols(current);
       for (const symbol of symbols) {
         const newPath = path
@@ -1188,7 +1187,6 @@ export function transformKeysAtPath<T>(
       // Handle plain objects
       const transformed = transformObjectKeys(target);
 
-      // Update the object at path
       if (path) {
         set(result, path, transformed);
       } else {

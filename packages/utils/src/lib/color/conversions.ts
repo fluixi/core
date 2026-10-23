@@ -19,16 +19,10 @@ const D65_WHITE = { x: 0.95047, y: 1.0, z: 1.08883 };
 const EPSILON = 0.008856;
 const KAPPA = 903.3;
 
-/**
- * Utility function to clamp values
- */
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/**
- * Round to specified precision
- */
 function roundToPrecision(value: number, precision: number = 2): number {
   const multiplier = Math.pow(10, precision);
   return Math.round(value * multiplier) / multiplier;
@@ -36,9 +30,6 @@ function roundToPrecision(value: number, precision: number = 2): number {
 
 // RGB CONVERSIONS
 
-/**
- * Convert RGB to HSL
- */
 export function rgbToHsl(rgb: RGBColor): HSLColor {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
@@ -76,9 +67,6 @@ export function rgbToHsl(rgb: RGBColor): HSLColor {
   };
 }
 
-/**
- * Convert RGB to HSV
- */
 export function rgbToHsv(rgb: RGBColor): HSVColor {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
@@ -114,9 +102,6 @@ export function rgbToHsv(rgb: RGBColor): HSVColor {
   };
 }
 
-/**
- * Convert RGB to HWB
- */
 export function rgbToHwb(rgb: RGBColor): HWBColor {
   const hsv = rgbToHsv(rgb);
   const w = ((100 - hsv.s) * hsv.v) / 100;
@@ -130,9 +115,6 @@ export function rgbToHwb(rgb: RGBColor): HWBColor {
   };
 }
 
-/**
- * Convert RGB to CMYK
- */
 export function rgbToCmyk(rgb: RGBColor): CMYKColor {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
@@ -152,9 +134,6 @@ export function rgbToCmyk(rgb: RGBColor): CMYKColor {
   };
 }
 
-/**
- * Convert RGB to XYZ
- */
 export function rgbToXyz(rgb: RGBColor): XYZColor {
   let r = rgb.r / 255;
   let g = rgb.g / 255;
@@ -178,25 +157,16 @@ export function rgbToXyz(rgb: RGBColor): XYZColor {
   };
 }
 
-/**
- * Convert RGB to LAB
- */
 export function rgbToLab(rgb: RGBColor): LABColor {
   const xyz = rgbToXyz(rgb);
   return xyzToLab(xyz);
 }
 
-/**
- * Convert RGB to LCH
- */
 export function rgbToLch(rgb: RGBColor): LCHColor {
   const lab = rgbToLab(rgb);
   return labToLch(lab);
 }
 
-/**
- * Convert RGB to OKLAB
- */
 export function rgbToOklab(rgb: RGBColor): OKLABColor {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
@@ -224,9 +194,6 @@ export function rgbToOklab(rgb: RGBColor): OKLABColor {
   };
 }
 
-/**
- * Convert RGB to OKLCH
- */
 export function rgbToOklch(rgb: RGBColor): OKLCHColor {
   const oklab = rgbToOklab(rgb);
   return oklabToOklch(oklab);
@@ -234,9 +201,6 @@ export function rgbToOklch(rgb: RGBColor): OKLCHColor {
 
 // HSL CONVERSIONS
 
-/**
- * Convert HSL to RGB
- */
 export function hslToRgb(hsl: HSLColor): RGBColor {
   const h = hsl.h / 360;
   const s = hsl.s / 100;
@@ -272,17 +236,11 @@ export function hslToRgb(hsl: HSLColor): RGBColor {
   };
 }
 
-/**
- * Convert HSL to HSV
- */
 export function hslToHsv(hsl: HSLColor): HSVColor {
   const rgb = hslToRgb(hsl);
   return rgbToHsv(rgb);
 }
 
-/**
- * Convert HSL to HWB
- */
 export function hslToHwb(hsl: HSLColor): HWBColor {
   const rgb = hslToRgb(hsl);
   return rgbToHwb(rgb);
@@ -290,9 +248,6 @@ export function hslToHwb(hsl: HSLColor): HWBColor {
 
 // HSV CONVERSIONS
 
-/**
- * Convert HSV to RGB
- */
 export function hsvToRgb(hsv: HSVColor): RGBColor {
   const h = hsv.h / 360;
   const s = hsv.s / 100;
@@ -348,17 +303,11 @@ export function hsvToRgb(hsv: HSVColor): RGBColor {
   };
 }
 
-/**
- * Convert HSV to HSL
- */
 export function hsvToHsl(hsv: HSVColor): HSLColor {
   const rgb = hsvToRgb(hsv);
   return rgbToHsl(rgb);
 }
 
-/**
- * Convert HSV to HWB
- */
 export function hsvToHwb(hsv: HSVColor): HWBColor {
   const w = ((100 - hsv.s) * hsv.v) / 100;
   const b = 100 - hsv.v;
@@ -373,9 +322,6 @@ export function hsvToHwb(hsv: HSVColor): HWBColor {
 
 // HWB CONVERSIONS
 
-/**
- * Convert HWB to RGB
- */
 export function hwbToRgb(hwb: HWBColor): RGBColor {
   const h = hwb.h;
   let w = hwb.w / 100;
@@ -393,17 +339,11 @@ export function hwbToRgb(hwb: HWBColor): RGBColor {
   return hsvToRgb({ h, s: s * 100, v: v * 100, a: hwb.a });
 }
 
-/**
- * Convert HWB to HSL
- */
 export function hwbToHsl(hwb: HWBColor): HSLColor {
   const rgb = hwbToRgb(hwb);
   return rgbToHsl(rgb);
 }
 
-/**
- * Convert HWB to HSV
- */
 export function hwbToHsv(hwb: HWBColor): HSVColor {
   const rgb = hwbToRgb(hwb);
   return rgbToHsv(rgb);
@@ -411,9 +351,6 @@ export function hwbToHsv(hwb: HWBColor): HSVColor {
 
 // CMYK CONVERSIONS
 
-/**
- * Convert CMYK to RGB
- */
 export function cmykToRgb(cmyk: CMYKColor): RGBColor {
   const c = cmyk.c / 100;
   const m = cmyk.m / 100;
@@ -432,17 +369,11 @@ export function cmykToRgb(cmyk: CMYKColor): RGBColor {
   };
 }
 
-/**
- * Convert CMYK to HSL
- */
 export function cmykToHsl(cmyk: CMYKColor): HSLColor {
   const rgb = cmykToRgb(cmyk);
   return rgbToHsl(rgb);
 }
 
-/**
- * Convert CMYK to HSV
- */
 export function cmykToHsv(cmyk: CMYKColor): HSVColor {
   const rgb = cmykToRgb(cmyk);
   return rgbToHsv(rgb);
@@ -450,9 +381,6 @@ export function cmykToHsv(cmyk: CMYKColor): HSVColor {
 
 // XYZ CONVERSIONS
 
-/**
- * Convert XYZ to RGB
- */
 export function xyzToRgb(xyz: XYZColor): RGBColor {
   const x = xyz.x / 100;
   const y = xyz.y / 100;
@@ -476,9 +404,6 @@ export function xyzToRgb(xyz: XYZColor): RGBColor {
   };
 }
 
-/**
- * Convert XYZ to LAB
- */
 export function xyzToLab(xyz: XYZColor): LABColor {
   const xr = xyz.x / D65_WHITE.x / 100;
   const yr = xyz.y / D65_WHITE.y / 100;
@@ -502,9 +427,6 @@ export function xyzToLab(xyz: XYZColor): LABColor {
 
 // LAB CONVERSIONS
 
-/**
- * Convert LAB to XYZ
- */
 export function labToXyz(lab: LABColor): XYZColor {
   const fy = (lab.l + 16) / 116;
   const fx = lab.a / 500 + fy;
@@ -523,17 +445,11 @@ export function labToXyz(lab: LABColor): XYZColor {
   };
 }
 
-/**
- * Convert LAB to RGB
- */
 export function labToRgb(lab: LABColor): RGBColor {
   const xyz = labToXyz(lab);
   return xyzToRgb(xyz);
 }
 
-/**
- * Convert LAB to LCH
- */
 export function labToLch(lab: LABColor): LCHColor {
   const c = Math.sqrt(lab.a * lab.a + lab.b * lab.b);
   let h = (Math.atan2(lab.b, lab.a) * 180) / Math.PI;
@@ -552,9 +468,6 @@ export function labToLch(lab: LABColor): LCHColor {
 
 // LCH CONVERSIONS
 
-/**
- * Convert LCH to LAB
- */
 export function lchToLab(lch: LCHColor): LABColor {
   const h = (lch.h * Math.PI) / 180;
   const a = lch.c * Math.cos(h);
@@ -568,17 +481,11 @@ export function lchToLab(lch: LCHColor): LABColor {
   };
 }
 
-/**
- * Convert LCH to RGB
- */
 export function lchToRgb(lch: LCHColor): RGBColor {
   const lab = lchToLab(lch);
   return labToRgb(lab);
 }
 
-/**
- * Convert LCH to XYZ
- */
 export function lchToXyz(lch: LCHColor): XYZColor {
   const lab = lchToLab(lch);
   return labToXyz(lab);
@@ -586,9 +493,6 @@ export function lchToXyz(lch: LCHColor): XYZColor {
 
 // OKLAB CONVERSIONS
 
-/**
- * Convert OKLAB to RGB
- */
 export function oklabToRgb(oklab: OKLABColor): RGBColor {
   const l_ = oklab.l + 0.3963377774 * oklab.a + 0.2158037573 * oklab.b;
   const m_ = oklab.l - 0.1055613458 * oklab.a - 0.0638541728 * oklab.b;
@@ -615,9 +519,6 @@ export function oklabToRgb(oklab: OKLABColor): RGBColor {
   };
 }
 
-/**
- * Convert OKLAB to OKLCH
- */
 export function oklabToOklch(oklab: OKLABColor): OKLCHColor {
   const c = Math.sqrt(oklab.a * oklab.a + oklab.b * oklab.b);
   let h = (Math.atan2(oklab.b, oklab.a) * 180) / Math.PI;
@@ -636,9 +537,6 @@ export function oklabToOklch(oklab: OKLABColor): OKLCHColor {
 
 // OKLCH CONVERSIONS
 
-/**
- * Convert OKLCH to OKLAB
- */
 export function oklchToOklab(oklch: OKLCHColor): OKLABColor {
   const h = (oklch.h * Math.PI) / 180;
   const a = oklch.c * Math.cos(h);
@@ -652,9 +550,6 @@ export function oklchToOklab(oklch: OKLCHColor): OKLABColor {
   };
 }
 
-/**
- * Convert OKLCH to RGB
- */
 export function oklchToRgb(oklch: OKLCHColor): RGBColor {
   const oklab = oklchToOklab(oklch);
   return oklabToRgb(oklab);
@@ -803,7 +698,6 @@ export function batchConvert(
  * Get conversion path between two formats
  */
 export function getConversionPath(from: string, to: string): string[] | null {
-  // Direct conversions
   const directConversions: Record<string, string[]> = {
     rgb: ['hsl', 'hsv', 'hwb', 'cmyk', 'xyz', 'lab', 'lch', 'oklab', 'oklch'],
     hsl: ['rgb', 'hsv', 'hwb'],
@@ -824,7 +718,6 @@ export function getConversionPath(from: string, to: string): string[] | null {
     return [from];
   }
 
-  // Check for direct conversion
   if (directConversions[from]?.includes(to)) {
     return [from, to];
   }

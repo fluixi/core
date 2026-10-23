@@ -127,7 +127,6 @@ function compareValues(
   if (aNaN) return 1;
   if (bNaN) return -1;
 
-  // Date
   if (a instanceof Date && b instanceof Date) {
     return a.getTime() - b.getTime();
   }

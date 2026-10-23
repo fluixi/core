@@ -127,7 +127,6 @@ export const parseSelector = (
     const char = selector[i];
     const nextChar = selector[i + 1];
 
-    // Handle quotes
     if ((char === '"' || char === "'") && !inQuotes) {
       inQuotes = true;
       quoteChar = char;
@@ -319,7 +318,6 @@ export const validateSelector = (
 ):
   | { valid: boolean; error?: string; type?: SelectorType }
   | { valid: boolean; error?: string; type?: SelectorType }[] => {
-  // Handle array of selectors
   if (Array.isArray(selector)) {
     return selector.map(
       (sel) =>

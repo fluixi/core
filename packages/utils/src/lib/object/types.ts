@@ -11,18 +11,12 @@ import type {
 export type RecordObject = Record<string | number | symbol, any>;
 export type AnyObject = RecordObject | Array<RecordObject> | Array<any>;
 
-/**
- * Type for deep partial object
- */
 export type DeepPartial<T> = T extends object
   ? {
       [P in keyof T]?: DeepPartial<T[P]>;
     }
   : T;
 
-/**
- * Type for deep required object
- */
 export type DeepRequired<T> = T extends object
   ? {
       [P in keyof T]-?: DeepRequired<T[P]>;
@@ -38,9 +32,6 @@ export type DeepReadonly<T> = T extends object
     }
   : T;
 
-/**
- * Type for deep mutable object
- */
 export type DeepMutable<T> = T extends object
   ? {
       -readonly [P in keyof T]: DeepMutable<T[P]>;
@@ -903,9 +894,6 @@ export type SelectorType =
   | 'union' // users[0,2,4].name
   | 'descendant'; // users..name (recursive)
 
-/**
- * Selector options
- */
 export interface SelectorOptions {
   /** Type of selector parsing (default: 'auto' detects from string) */
   type?: SelectorType | 'auto';
@@ -1142,9 +1130,6 @@ export type ArrayFnParam<
  */
 export type Selector = string | string[];
 export type CompareFn<T> = (state: T) => boolean;
-/**
- * Type for update function or value
- */
 export type UpdateValue<T = any> = Partial<T> | ((state: T) => Partial<T>);
 // export type UpdateOrCompare<T = any, U = any> =
 //   | U
