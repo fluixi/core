@@ -47,7 +47,9 @@
     "@fluixi/example-api-only": "0.0.0",
     "@fluixi/api": "0.1.0-alpha.0",
     "@fluixi/storage": "0.0.0",
-    "@fluixi/di": "1.0.0-alpha.98"
+    "@fluixi/di": "1.0.0-alpha.98",
+    "@fluixi/example-html-counter": "0.0.1-alpha.44",
+    "@fluixi/example-html-showcase": "0.0.1-alpha.44"
   },
   "changesets": [
     "action-form",
@@ -234,6 +236,7 @@
     "head-request-scope",
     "head-theme-color",
     "hoist-templates-native",
+    "html-format",
     "html-template-feature-complete",
     "hydrate-anchor-position",
     "hydrate-controlflow",
@@ -360,6 +363,7 @@
     "reconcile-fragment-clone",
     "refresh-keeps-token",
     "remote-auth",
+    "remove-core-cli",
     "remove-vinxi",
     "rename-core-to-fluixi",
     "rename-kettlejs-to-core",

@@ -1,5 +1,22 @@
 # @fluixi/example-auth-debugger
 
+## 0.0.1-alpha.17
+
+### Patch Changes
+
+- Updated dependencies [a6841a4]
+- Updated dependencies [e043b28]
+  - @fluixi/dom@1.0.0-alpha.101
+  - @fluixi/core@1.0.0-alpha.101
+  - @fluixi/auth@1.0.0-alpha.101
+  - @fluixi/jsx@1.0.0-alpha.101
+  - @fluixi/oauth2@1.0.0-alpha.101
+  - @fluixi/server@1.0.0-alpha.101
+  - @fluixi/start@1.0.0-alpha.101
+  - @fluixi/session@1.0.0-alpha.101
+  - @fluixi/cli@1.0.0-alpha.101
+  - @fluixi/reactive@1.0.0-alpha.101
+
 ## 0.0.1-alpha.16
 
 ### Patch Changes
