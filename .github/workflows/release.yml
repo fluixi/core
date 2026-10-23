@@ -1,6 +1,7 @@
 name: Release
 
-# Runs on every push to main (stable), next, and alpha (prerelease channels).
+# Runs on every push to alpha. main and next carry the same code but release nothing until
+# the framework is declared stable; add them back to `branches` below then.
 # - If there are pending changesets  → opens/updates a "Version Packages" PR
 # - If the "Version Packages" PR was just merged → builds & publishes
 # On `next`/`alpha`, changesets is in prerelease mode (.changeset/pre.json, tag
@@ -9,7 +10,7 @@ name: Release
 # points the `alpha`/`next` dist-tag at them so `@fluixi/x@alpha` stays current.
 on:
   push:
-    branches: [main, next, alpha]
+    branches: [alpha]
   # Manual fallback. A push is normally the trigger, but that depends on GitHub
   # delivering the event. During the 2026-08-06 Actions incident a push landed with no
   # run created, and with no dispatch there was no way to start one short of
