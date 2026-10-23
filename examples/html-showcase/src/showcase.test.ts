@@ -5,7 +5,7 @@ import { html } from '@fluixi/core';
 import { App } from './App';
 
 /** Render the whole showcase and assert a spread of features produced DOM. */
-describe('lit-showcase App', () => {
+describe('html-showcase App', () => {
   it('renders every feature section without error', () => {
     const root = document.createElement('div');
     render(() => html`<${App} />`, root);

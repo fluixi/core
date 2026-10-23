@@ -5,13 +5,13 @@ import * as S from '@fluixi/reactive/signal';
 import * as Store from '@fluixi/reactive/store';
 import { compile as compileFixture, compileResult, load as loadModule } from '../../../test/fixtures.js';
 
-// The lit front-end wired into the plugin behind `format`. Drives the whole-file
+// The html front-end wired into the plugin behind `format`. Drives the whole-file
 // transform: `html`...`` templates compile through the shared IR + imperative
 // backend, with the runtime imports and delegateEvents() call injected, then the
 // output runs against the live @fluixi/dom runtime.
 
-const LIT = {
-  format: 'lit' as const,
+const HTML_FORMAT = {
+  format: 'html' as const,
   signalModule: '@fluixi/dom',
   controlFlowModule: '@fluixi/dom',
 };
@@ -50,7 +50,7 @@ function originalColumns(mappings: string, line: number): number[] {
   return columns;
 }
 
-const compileEsm = (src: string, options: Record<string, unknown> = LIT): string =>
+const compileEsm = (src: string, options: Record<string, unknown> = HTML_FORMAT): string =>
   compileFixture(src, { filename: 'test.tsx', ...options });
 
 const REQUIRE_MAP: Record<string, unknown> = {
@@ -59,14 +59,14 @@ const REQUIRE_MAP: Record<string, unknown> = {
   '@fluixi/reactive/store': Store,
 };
 
-const load = (src: string, options: Record<string, unknown> = LIT): any =>
+const load = (src: string, options: Record<string, unknown> = HTML_FORMAT): any =>
   loadModule(compileEsm(src, options), REQUIRE_MAP);
 
 beforeAll(() => {
   DOM.registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
 });
 
-describe('lit front-end (format: lit)', () => {
+describe('html front-end (format: html)', () => {
   it('compiles html`` to runtime calls and injects imports + delegateEvents', () => {
     const code = compileEsm(
       'export const r = (f, label) => html`<button @click=${f}>${label()}</button>`;',
@@ -136,7 +136,7 @@ describe('lit front-end (format: lit)', () => {
 
   it('router auto-import respects a custom routerModule', () => {
     const code = compileEsm('export const App = () => html`<${Outlet}/>`;', {
-      ...LIT,
+      ...HTML_FORMAT,
       routerModule: '@fluixi/start/router',
     });
     expect(code).toMatch(/import \{[^}]*\bOutlet\b[^}]*\} from "@fluixi\/start\/router"/);
@@ -149,7 +149,7 @@ describe('lit front-end (format: lit)', () => {
     const src = 'export const r = (c) => html`<div class=${c}>hi</div>`;';
     const templateStart = src.indexOf('html`');
 
-    const out = compileResult(src, { filename: 'test.tsx', ...LIT })!;
+    const out = compileResult(src, { filename: 'test.tsx', ...HTML_FORMAT })!;
 
     const line = out.code.split('\n').findIndex((l) => /createNativeElement\(/.test(l) && !l.startsWith('import'));
     const columns = originalColumns(out.map.mappings, line);
@@ -179,7 +179,7 @@ describe('lit front-end (format: lit)', () => {
 
   it('a file mixing JSX + html`` (format both) does not duplicate imports', () => {
     const code = compileEsm(
-      'export const a = () => <div>jsx</div>;\nexport const b = () => html`<span>lit</span>`;',
+      'export const a = () => <div>jsx</div>;\nexport const b = () => html`<span>html</span>`;',
       { format: 'both', signalModule: '@fluixi/dom' },
     );
     // Both styles compiled. Asserted by what is *gone* rather than by which runtime

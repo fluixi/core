@@ -1,11 +1,12 @@
 {
-  "name": "@fluixi/example-lit-showcase",
+  "name": "@fluixi/example-html-counter",
   "version": "0.0.1-alpha.44",
   "private": true,
   "type": "module",
-  "description": "A showcase of every html`` template feature: directives, bindings, events + modifiers, control flow, components, class/style objects, use, raw HTML, SVG.",
+  "description": "Counter authored with html`` templates, compiled through the shared JSX IR (fluixi vite-plugin, format: 'html') into direct @fluixi/dom runtime calls, no template runtime.",
   "scripts": {
     "dev": "vite",
+    "serve": "node server.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@fluixi/dom": "workspace:*",
     "@fluixi/core": "workspace:*",
+    "@fluixi/server": "workspace:*",
     "@fluixi/reactive": "workspace:*"
   },
   "devDependencies": {

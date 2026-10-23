@@ -1,10 +1,10 @@
 /**
  * `` html`...` `` / `` svg`...` ``, the compile-time template markers.
  *
- * These are the no-JSX authoring surface: the @fluixi/compiler (`format: 'lit'`)
+ * These are the no-JSX authoring surface: the @fluixi/compiler (`format: 'html'`)
  * replaces every `` html`...` `` call at build time with the same direct
  * @fluixi/dom runtime calls that JSX produces, so these functions never actually
- * run. They exist for types and as a guard, if one executes, the lit format
+ * run. They exist for types and as a guard, if one executes, the html format
  * wasn't enabled in the build.
  *
  * They live in @fluixi/dom (the runtime the compiler targets) so any tier can
@@ -28,14 +28,14 @@ export type TemplateResult = Node | (() => ComponentChild);
 /** A reactive value: a plain value or an accessor the compiler wires up. */
 export type Reactive<T> = T | (() => T);
 
-/** The `html` template tag. Compiled away by `fluixi({ format: 'lit' })`. */
+/** The `html` template tag. Compiled away by `fluixi({ format: 'html' })`. */
 export function html(_strings: TemplateStringsArray, ..._values: unknown[]): TemplateResult {
-  throw new Error("html`` was not compiled, enable the lit format: fluixi({ format: 'lit' }).");
+  throw new Error("html`` was not compiled, enable the html format: fluixi({ format: 'html' }).");
 }
 
 /** Same as `html`, but the subtree is created in the SVG namespace. */
 export function svg(_strings: TemplateStringsArray, ..._values: unknown[]): TemplateResult {
-  throw new Error("svg`` was not compiled, enable the lit format: fluixi({ format: 'lit' }).");
+  throw new Error("svg`` was not compiled, enable the html format: fluixi({ format: 'html' }).");
 }
 
 /** A compiled `` css`...` `` value: composable, attached where a component or element uses it. */

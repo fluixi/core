@@ -178,7 +178,7 @@ export const App: Component<{ name?: string}> = (props) => {
       <!-- fragment -->
       <>
         <hr />
-        <small>Every binding above is compiled to @fluixi/dom calls — no lit runtime.</small>
+        <small>Every binding above is compiled to @fluixi/dom calls: no template runtime.</small>
       </>
     </main>
   `;

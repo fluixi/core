@@ -9,7 +9,7 @@ export interface DynamicProps<T extends Record<string, any> = Record<string, any
    * Can be a reactive accessor that changes over time.
    *
    * JSX:    <Dynamic component={currentView()} {...props} />
-   * lit:    Dynamic({ component: currentView, ...props })
+   * html:   Dynamic({ component: currentView, ...props })
    */
   component: ((props: T) => any) | string | null | undefined | Accessor<((props: T) => any) | string | null | undefined>;
   [key: string]: any;

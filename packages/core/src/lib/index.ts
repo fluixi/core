@@ -125,7 +125,6 @@ export {
 
   // Utilities
   isDOMNode,
-  isLitTemplateResult,
   hydrate,
 } from '@fluixi/dom';
 
@@ -152,7 +151,7 @@ export function getFrameworkInfo() {
       ssr: true,
       hydration: true,
       jsx: true,
-      litHtml: true,
+      htmlTagged: true,
       signals: true,
       fineGrained: true,
       lazy: true,

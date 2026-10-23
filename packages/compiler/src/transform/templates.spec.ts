@@ -12,11 +12,11 @@ import { transformTemplates } from './templates.js';
  * against the real runtime, and check it against the plugin path on the same
  * source: the two must render the same DOM.
  */
-const LIT = { format: 'lit' as const, signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
+const HTML_FORMAT = { format: 'html' as const, signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
 const OPTS = { runtimeModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
 
 const viaPlugin = (src: string) =>
-  babel.transformSync(src, { filename: 't.ts', configFile: false, babelrc: false, plugins: [[plugin, LIT]] })!.code!;
+  babel.transformSync(src, { filename: 't.ts', configFile: false, babelrc: false, plugins: [[plugin, HTML_FORMAT]] })!.code!;
 
 const viaTransform = (src: string) => transformTemplates(src, 't.ts', OPTS)!.code;
 
@@ -158,7 +158,7 @@ const JSX = {
 const viaPluginJsx = (src: string) =>
   babel.transformSync(src, {
     filename: 't.tsx', configFile: false, babelrc: false,
-    plugins: [[plugin, { ...LIT, format: 'both' }]],
+    plugins: [[plugin, { ...HTML_FORMAT, format: 'both' }]],
   })!.code!;
 
 function bothRenderJsx(src: string, scope: Record<string, unknown> = {}): [string, string] {

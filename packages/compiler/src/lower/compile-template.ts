@@ -6,7 +6,7 @@
  *
  * Finding templates in a module and describing each hole still needs a front-end;
  * everything after that point is here. Passes run in the same order as
- * `emitLitViaIR`: compile-template.spec.ts compares the two.
+ * `emitHtmlViaIR`: compile-template.spec.ts compares the two.
  */
 import { applyTemplateStyles, type TemplateStyles } from '../transform/styles.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';

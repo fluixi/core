@@ -48,10 +48,10 @@ function bindHole(expr: t.Expression, used: Set<string>, onNested?: NestedHook):
 }
 
 /**
- * Build IR from a lit `` html`...` `` / `` svg`...` `` TaggedTemplateExpression.
+ * Build IR from an `` html`...` `` / `` svg`...` `` TaggedTemplateExpression.
  * `used` collects runtime symbols emitted for anything nested inside a hole.
  */
-export function lowerLitTemplate(
+export function lowerHtmlTemplate(
   node: t.TaggedTemplateExpression,
   used: Set<string>,
   opts: { svg?: boolean; onNested?: NestedHook } = {},

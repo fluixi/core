@@ -13,7 +13,7 @@ export interface IndexProps<T, U = any> {
    * `index` is a plain number (stable).
    *
    * JSX:    <Index each={items()}>{(item, index) => <li>{item().name}</li>}</Index>
-   * lit:    Index({ each: items, children: (item, index) => html`<li>${item().name}</li>` })
+   * html:   Index({ each: items, children: (item, index) => html`<li>${item().name}</li>` })
    */
   children: (item: Accessor<T>, index: number) => U;
 }

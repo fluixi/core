@@ -4,7 +4,7 @@
  *
  * The lowering is one function now, so what this actually guards is the part
  * either side could still get wrong on its own: which passes run, in what
- * order, and with which defaults. `emitLitViaIR` and `compileTemplate` are two
+ * order, and with which defaults. `emitHtmlViaIR` and `compileTemplate` are two
  * entry points into the same pipeline, and two entry points that drift are how
  * the compiler ended up with two lowerings in the first place.
  *
@@ -16,14 +16,14 @@ import { describe, it, expect } from 'vitest';
 import * as babel from '@babel/core';
 import { compileTemplate } from './compile-template.js';
 import type { TemplateHole } from './template.js';
-import { lowerLitTemplate } from '../frontend/babel/lower-template.js';
+import { lowerHtmlTemplate } from '../frontend/babel/lower-template.js';
 import { analyzeStatic } from '../optimize/analyze-static.js';
 import { collapseStrategies } from '../optimize/collapse-strategies.js';
 import { resolveComponentSources } from '../resolve/resolve-ir.js';
 import { createComponentResolver } from '../resolve/component-resolver.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 
-/** The Babel path, run exactly as plugin.ts's emitLitViaIR runs it. */
+/** The Babel path, run exactly as plugin.ts's emitHtmlViaIR runs it. */
 function viaBabel(source: string): string {
   const file = babel.parseSync(`(${source});`, {
     filename: 't.tsx',
@@ -34,7 +34,7 @@ function viaBabel(source: string): string {
   const node = (file as any).program.body[0].expression;
 
   const used = new Set<string>();
-  const ir = lowerLitTemplate(node, used, { svg: node.tag.name === 'svg' });
+  const ir = lowerHtmlTemplate(node, used, { svg: node.tag.name === 'svg' });
   analyzeStatic(ir);
   resolveComponentSources(ir, {
     resolver: createComponentResolver([]),

@@ -126,25 +126,25 @@ describe('html`` produces the same result as JSX', () => {
     out.split('\n').filter((l) => /^(import|const \w+ = deferred)/.test(l)).sort();
 
   it('defers a tag in a template', () => {
-    const out = compile('const v = html`<Chart load:visible="200px"/>`;', { format: 'lit' });
+    const out = compile('const v = html`<Chart load:visible="200px"/>`;', { format: 'html' });
     expect(out).toContain('deferred(() => import("@app/chart")');
     expect(out).toContain('rootMargin: "200px"');
   });
 
   it('injects the same bindings from either syntax', () => {
-    const lit = compile('const v = html`<Chart load:idle/>`;', { format: 'lit' });
+    const tagged = compile('const v = html`<Chart load:idle/>`;', { format: 'html' });
     const jsx = compile('const v = <Chart load:idle/>;', { format: 'jsx' });
-    expect(strip(lit)).toEqual(strip(jsx));
+    expect(strip(tagged)).toEqual(strip(jsx));
   });
 
   it('collapses inside a template too', () => {
-    const out = compile('const v = html`<Button/><Button load:visible/>`;', { format: 'lit' });
+    const out = compile('const v = html`<Button/><Button load:visible/>`;', { format: 'html' });
     expect(out).toContain('import { Button } from "@app/button"');
     expect(out).not.toContain('deferred(');
   });
 
   it('does not leak load: into the props object', () => {
-    const out = compile('const v = html`<Chart load:idle/>`;', { format: 'lit' });
+    const out = compile('const v = html`<Chart load:idle/>`;', { format: 'html' });
     expect(out).not.toContain('load:');
   });
 });

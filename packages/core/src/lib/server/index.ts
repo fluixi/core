@@ -1,7 +1,7 @@
 /**
  * @module @fluixi/core/server
  *
- * Implements Unified SSR Engine compatible with Lit and JSX.
+ * Implements Unified SSR Engine for JSX and `html` templates.
  */
 
 import {

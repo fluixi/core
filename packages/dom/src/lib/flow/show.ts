@@ -8,7 +8,7 @@ import {
   untrack,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { normalizeAccessor, resolveReactiveProp, isTruthy, isLitResult } from './utils.js';
+import { normalizeAccessor, resolveReactiveProp, isTruthy } from './utils.js';
 import { makeArrayFlat } from '../dom/runtime.js';
 import { Accessor, isResource } from '@fluixi/reactive/signal';
 
@@ -28,7 +28,7 @@ export interface ShowProps<T, W = any> {
    * Can be a function receiving the truthy value (useful to narrow types).
    *
    * JSX:    <Show when={user()}>{(u) => <span>{u.name}</span>}</Show>
-   * lit:    Show({ when: user, children: (u) => html`<span>${u.name}</span>` })
+   * html:   Show({ when: user, children: (u) => html`<span>${u.name}</span>` })
    */
   children: W | ((val: ShowValue<T>) => any);
   debug?: boolean
@@ -87,7 +87,7 @@ export function Show<T>(props: ShowProps<T>): any {
         return runWithOwner(branchScope, () => {
           if (!evaluate) return props.fallback;
           const children = props.children;
-          if (typeof children === 'function' && !isLitResult(children)) {
+          if (typeof children === 'function') {
             // A callback that takes the value, `{(user) => ...}`, renders again for a new one.
             // One that takes nothing is plain content the compiler wrapped: tracking the
             // value for it rebuilt the subtree on every new truthy value (a page under

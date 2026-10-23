@@ -236,35 +236,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.2)(@vitest/coverage-v8@3.2.7)(@vitest/ui@5.0.3)(jsdom@25.0.1)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
 
-  examples/intrinsics:
-    dependencies:
-      '@fluixi/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@fluixi/dom':
-        specifier: workspace:*
-        version: link:../../packages/dom
-      '@fluixi/jsx':
-        specifier: workspace:*
-        version: link:../../packages/jsx
-      '@fluixi/reactive':
-        specifier: workspace:*
-        version: link:../../packages/reactive
-    devDependencies:
-      '@fluixi/vite-plugin':
-        specifier: workspace:*
-        version: link:../../packages/vite-plugin
-      jsdom:
-        specifier: ^25.0.0
-        version: 25.0.1
-      vite:
-        specifier: ^8.3.2
-        version: 8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
-      vitest:
-        specifier: ^5.0.3
-        version: 5.0.3(@types/node@26.6.2)(@vitest/coverage-v8@3.2.7)(@vitest/ui@5.0.3)(jsdom@25.0.1)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
-
-  examples/lit-counter:
+  examples/html-counter:
     dependencies:
       '@fluixi/core':
         specifier: workspace:*
@@ -295,7 +267,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.2)(@vitest/coverage-v8@3.2.7)(@vitest/ui@5.0.3)(jsdom@25.0.1)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
 
-  examples/lit-showcase:
+  examples/html-showcase:
     dependencies:
       '@fluixi/core':
         specifier: workspace:*
@@ -310,6 +282,34 @@ importers:
       '@fluixi/ts-plugin':
         specifier: workspace:*
         version: link:../../packages/ts-plugin
+      '@fluixi/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      vite:
+        specifier: ^8.3.2
+        version: 8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@26.6.2)(@vitest/coverage-v8@3.2.7)(@vitest/ui@5.0.3)(jsdom@25.0.1)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
+
+  examples/intrinsics:
+    dependencies:
+      '@fluixi/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@fluixi/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@fluixi/jsx':
+        specifier: workspace:*
+        version: link:../../packages/jsx
+      '@fluixi/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+    devDependencies:
       '@fluixi/vite-plugin':
         specifier: workspace:*
         version: link:../../packages/vite-plugin

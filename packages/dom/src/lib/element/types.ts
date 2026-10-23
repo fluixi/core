@@ -121,7 +121,7 @@ export interface DefineElementOptions<
 
 // Element instance & constructor types
 
-/** Convert prop defs into the attribute interface for JSX / vanilla / lit */
+/** Convert prop defs into the attribute interface for JSX / vanilla / html */
 export type ElementAttributes<P extends Record<string, PropDefinition>> = {
   [K in keyof P]?: InferPropType<P[K]> | (() => InferPropType<P[K]>);
 };

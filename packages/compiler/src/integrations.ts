@@ -53,11 +53,11 @@ export interface CompilerOptions {
   importSource?: string;
 
   /**
-   * Authoring syntaxes to compile: 'jsx', 'lit' (only `` html`...` `` templates),
+   * Authoring syntaxes to compile: 'jsx', 'html' (only `` html`...` `` templates),
    * or 'both' (default). Both lower to the same IR and the same backend.
    * @default 'both'
    */
-  format?: 'jsx' | 'lit' | 'both';
+  format?: 'jsx' | 'html' | 'both';
 
   /**
    * Record where each reactive node is created, and serve the running app's graph to a tool
@@ -87,10 +87,10 @@ export interface CompilerOptions {
   babel?: boolean;
 
   /**
-   * Tag name marking a lit template for compilation (when `format` includes lit).
+   * Tag name marking an html template for compilation (when `format` includes html).
    * @default 'html'
    */
-  litTag?: string;
+  htmlTag?: string;
 
   /**
    * Rewrite a component's destructured props into property reads, so
@@ -166,7 +166,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
         ...(options.partialTemplates !== undefined
           ? { partialTemplates: options.partialTemplates }
           : {}),
-        ...(options.litTag ? { litTag: options.litTag } : {}),
+        ...(options.htmlTag ? { htmlTag: options.htmlTag } : {}),
         ...(options.signalModule ? { signalModule: options.signalModule } : {}),
         ...(options.controlFlowModule
           ? { controlFlowModule: options.controlFlowModule }
@@ -432,7 +432,7 @@ function transformOptions(
 ) {
   return {
     resolve: options.resolve,
-    litTag: options.litTag,
+    htmlTag: options.htmlTag,
     sourceLocations: marks(options, id),
     sourceRoot: options.sourceRoot,
     templateClone: options.templateClone,

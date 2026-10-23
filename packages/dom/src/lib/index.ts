@@ -14,7 +14,7 @@
 // Core imperative runtime + Solid-style control flow (flow/).
 export * from './dom/index.js';
 
-// html`` / svg`` template markers (compiled away by `format: 'lit'`). These are
+// html`` / svg`` template markers (compiled away by `format: 'html'`). These are
 // the no-JSX authoring surface; fluixi re-exports them for convenience.
 export { html, svg, css } from './html.js';
 export type { TemplateResult, Reactive, FluixiStyle } from './html.js';

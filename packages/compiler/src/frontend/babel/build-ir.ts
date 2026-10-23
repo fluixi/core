@@ -15,7 +15,7 @@
 import { types as t, traverse, template } from '@babel/core';
 import _generate from '@babel/generator';
 import { imperativeBackend, inlineTemplates } from '../../codegen/backends/imperative.js';
-import { buildIRFromLit } from './build-ir-lit.js';
+import { buildIRFromHtml } from './build-ir-html.js';
 import type { IRNode } from '../../ir/nodes.js';
 import { buildJsxIR } from '../../lower/jsx.js';
 import { isReactiveShape } from '../../analyze/reactive-expr.js';
@@ -56,12 +56,12 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
       const { code, imports, templates } = imperativeBackend.emit(nestedIR, {} as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
-    // Nested lit templates compose: ${cond ? html`...` : html`...`},
+    // Nested html templates compose: ${cond ? html`...` : html`...`},
     // ${list.map(x => html`<li>${x}</li>`)}. Compile them the same way.
     TaggedTemplateExpression(path: any) {
       const tag = path.node.tag;
       if (!t.isIdentifier(tag) || (tag.name !== 'html' && tag.name !== 'svg')) return;
-      const ir = buildIRFromLit(path.node, used, { svg: tag.name === 'svg', onNested });
+      const ir = buildIRFromHtml(path.node, used, { svg: tag.name === 'svg', onNested });
       onNested?.(ir);
       const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
       emitInto(path, inlineTemplates(code, templates), imports);

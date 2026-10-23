@@ -68,7 +68,7 @@ describe('builtin data matches what the compiler emits', () => {
   for (const name of BUILTIN_COMPONENTS) {
     it(`<${name}/> is imported from ${map[name]}`, () => {
       const out = compile(`const v = html\`<${name}>x</${name}>\`;`, {
-        format: 'lit',
+        format: 'html',
         optimizeControlFlow: false,
       });
       expect(moduleFor(out, name)).toBe(map[name]);
@@ -129,7 +129,7 @@ describe('rule precedence against builtins', () => {
   it('keeps control flow, whose name selects codegen a rule cannot supply', () => {
     const out = compile('const v = html`<Show when=${c()}>x</Show>`;', {
       resolve: rule,
-      format: 'lit',
+      format: 'html',
       optimizeControlFlow: false,
     });
     expect(moduleFor(out, 'Show')).toBe('@fluixi/dom');
@@ -152,22 +152,22 @@ describe('the resolve pass is the single decision', () => {
   const rule = [{ components: { Button: '@fluixi-ui/button' } }];
 
   it('injects identical imports from html`` and JSX', () => {
-    // The two frontends reach the decision by different routes, the lit path through
+    // The two frontends reach the decision by different routes, the html path through
     // the IR resolve pass, JSX through the Babel lowering, so they are pinned to
     // each other rather than each to a literal.
-    const litImports = importsOf(
-      compile('const v = html`<Button>a</Button>`;', { resolve: rule, format: 'lit' }),
+    const htmlImports = importsOf(
+      compile('const v = html`<Button>a</Button>`;', { resolve: rule, format: 'html' }),
     ).filter((l) => /\bButton\b/.test(l));
     const jsxImports = importsOf(
       compile('const v = <Button>a</Button>;', { resolve: rule, format: 'jsx' }),
     ).filter((l) => /\bButton\b/.test(l));
-    expect(litImports).toEqual(jsxImports);
-    expect(litImports).toHaveLength(1);
+    expect(htmlImports).toEqual(jsxImports);
+    expect(htmlImports).toHaveLength(1);
   });
 
   it('carries module overrides through the IR, not just import injection', () => {
     const out = compile('const v = html`<Outlet/>`;', {
-      format: 'lit',
+      format: 'html',
       routerModule: '@app/router',
     });
     expect(moduleFor(out, 'Outlet')).toBe('@app/router');

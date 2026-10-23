@@ -51,7 +51,7 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | Option | Default | What |
 | --- | --- | --- |
 | `importSource` | `@fluixi/jsx` | where the JSX *types* come from; also the `jsxImportSource` given to esbuild |
-| `format` | `both` | which syntaxes to compile: `jsx`, `lit`, or `both` |
+| `format` | `both` | which syntaxes to compile: `jsx`, `html`, or `both` |
 | `signalModule` / `controlFlowModule` | `@fluixi/dom` | where emitted runtime symbols come from |
 | `resolve` | - | rules that supply a component import from a bare tag |
 | `globals` | `fluixi.d.ts` | where to write the generated ambient types (the resolved components and the `$signal`-style intrinsics). `false` skips it |

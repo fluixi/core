@@ -107,7 +107,7 @@ import {
 import { ensureIntegration } from './render/component.js';
 
 // html`` / svg`` template markers, the no-JSX authoring surface. They live in
-// @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
+// @fluixi/dom (compiled away by `format: 'html'`/`both`); re-exported here so
 // `import { html } from '@fluixi/core'` works. Inert typed functions.
 export { html, svg, css } from '@fluixi/dom';
 export type { TemplateResult, Reactive, FluixiStyle } from '@fluixi/dom';
@@ -140,9 +140,7 @@ export {
   observeIntersection,
   observeResize,
 } from '@fluixi/dom';
-// (No lit runtime exists anymore: html`` compiles to @fluixi/dom calls.)
 
-// import {For as _For} from "@fluixi/dom"
 // export interface ForProps<T, U = any> {
 //   /** Reactive array to iterate over: static, readonly, accessor, or signal. */
 //   each: ReadonlyArray<T> | (() => ReadonlyArray<T> | null | undefined) | Accessor<ReadonlyArray<T>> | null | undefined | false;
@@ -153,7 +151,7 @@ export {
 //    * `index` is a reactive accessor: updates when the item moves position.
 //    *
 //    * JSX:    <For each={() => store.items}>{(item, index) => <li>{item.name}</li>}</For>
-//    * lit:    For({ each: items, children: (item, index) => html`<li>${item.name}</li>` })
+//    * html:   For({ each: items, children: (item, index) => html`<li>${item.name}</li>` })
 //    */
 //   children?: (item: T, index: Accessor<number>) => U;
 // }
@@ -222,7 +220,6 @@ export {
   Await,
   // Show,
   isNode,
-  isLitResult,
   isJSXElement,
   $component,
   type RenderOptions,
@@ -244,10 +241,7 @@ export {
 // export type { Context, ProviderProps } from './context/index.js';
 
 // Resources for async data
-// Router, from router (the framework-agnostic router). The old lit-based router
-// (./router) has been removed: it imported `html` from @fluixi/lit, which dragged lit
-// (extends HTMLElement at module init) into the core/SSR graph. router is the
-// only router now; `<Router routes={...}/>` replaces the old `<Routes>`/`<Route>` JSX.
+// Router, from router (the framework-agnostic router).
 export {
   Router,
   Link,

@@ -532,7 +532,7 @@ class Lowerer {
     ];
   }
 
-  /** A plain attribute (incl. lit `?bool`, mixed values), old `mkProp` behavior. */
+  /** A plain attribute (incl. html `?bool`, mixed values), old `mkProp` behavior. */
   private plainAttr(a: AttributeNode): IRProp {
     const v = a.value;
     // `class=${{...}}` (object literal) -> classList (Solid convention), so it

@@ -57,7 +57,7 @@ export interface SwitchProps {
    * One or more `Match` nodes (or an array of them).
    *
    * JSX:    children are <Match> elements
-   * lit:    children array of Match({...}) results
+   * html:   children array of Match({...}) results
    */
   children: ComponentChild;
 }
@@ -107,7 +107,7 @@ export function Switch(props: SwitchProps): Accessor<any> {
       const raw = branches[i];
       // The JSX compiler wraps <Match> in createMemo(createComponent(...)); unwrap
       // those (and skip whitespace/other children) to reach the MatchNode. Direct
-      // Match({...}) results (lit syntax) pass through unchanged.
+      // Match({...}) results (html syntax) pass through unchanged.
       let branch: any = raw;
       let guard = 0;
       while (typeof branch === 'function' && !branch[MATCH_MARKER] && guard++ < 10) {

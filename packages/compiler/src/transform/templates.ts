@@ -51,9 +51,9 @@ export interface TransformOptions extends CompileTemplateOptions {
    * about which source forms are touched, not about output.
    * @default 'both'
    */
-  format?: 'jsx' | 'lit' | 'both';
+  format?: 'jsx' | 'html' | 'both';
   /** Tag marking a template for compilation. @default 'html' */
-  litTag?: string;
+  htmlTag?: string;
   /** Module the emitted runtime symbols are imported from. @default '@fluixi/dom' */
   runtimeModule?: string;
   /** Where reactive primitives come from. @default '@fluixi/reactive/signal' */
@@ -437,11 +437,11 @@ export function transformTemplates(
   id: string,
   options: TransformOptions = {},
 ): TransformResult | null {
-  const litTag = options.litTag ?? 'html';
+  const htmlTag = options.htmlTag ?? 'html';
   const format = options.format ?? 'both';
-  const wantsLit = format !== 'jsx';
-  const wantsJsx = format !== 'lit';
-  const mayHaveTemplate = wantsLit && (code.includes(`${litTag}\``) || code.includes('svg`'));
+  const wantsHtml = format !== 'jsx';
+  const wantsJsx = format !== 'html';
+  const mayHaveTemplate = wantsHtml && (code.includes(`${htmlTag}\``) || code.includes('svg`'));
   // A module can be nothing but `$signal` calls, so the skip check has to look for those
   // too or the file is never parsed.
   const wantsIntrinsics = options.intrinsics !== false && mayHaveIntrinsic(code);
@@ -463,13 +463,13 @@ export function transformTemplates(
 
   // `html`, `svg`, and in an app `$html`/`$svg`/`$css`, which need no import.
   const intrinsicTags = options.intrinsics === false ? new Map<string, string>() : tagIntrinsics(moduleBindings(ast.program));
-  const templateTags = new Map<string, string>([[litTag, 'html'], ['svg', 'svg']]);
+  const templateTags = new Map<string, string>([[htmlTag, 'html'], ['svg', 'svg']]);
   for (const [name, tag] of intrinsicTags) if (tag !== 'css') templateTags.set(name, tag);
   const cssTags = [...intrinsicTags].filter(([, tag]) => tag === 'css').map(([name]) => name);
 
   const found: Node[] = [];
   walk(ast.program, (n, parent, key) => {
-    if (wantsLit && isTemplateTag(n, templateTags)) found.push(n);
+    if (wantsHtml && isTemplateTag(n, templateTags)) found.push(n);
     else if (wantsJsx && isJsxRoot(n, parent, key)) found.push(n);
   });
   // Props first: holes are sliced out of the function body, so the rewrite has to be

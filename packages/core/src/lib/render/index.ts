@@ -118,19 +118,6 @@ export function render(
   };
 }
 
-/**
- * Type guard for Lit template results
- * @internal
- */
-function isLitTemplateResult(value: any): boolean {
-  return (
-    value &&
-    typeof value === 'object' &&
-    (value['_$litType$'] !== undefined ||
-      value['_$litDirective$'] !== undefined)
-  );
-}
-
 // PORTAL RENDERING
 
 /**
@@ -176,7 +163,6 @@ export function isRenderable(value: any): boolean {
   if (value == null) return true;
   if (typeof value === 'function') return true;
   if (isDOMNode(value)) return true;
-  if (isLitTemplateResult(value)) return true;
   if (Array.isArray(value)) return true;
   if (
     typeof value === 'string' ||
@@ -248,7 +234,6 @@ export {
   type SuspenseListProps,
   // type ShowProps,
   isNode,
-  isLitResult,
   isPromise,
   isJSXElement,
 } from './suspense.js';

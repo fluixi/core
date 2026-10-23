@@ -1,9 +1,8 @@
 import { createSignal } from '@fluixi/core';
 import { html } from '@fluixi/core';
 
-// A fine-grained reactive counter written with lit html`` instead of JSX.
-// `html`, `Show`, etc. come from @fluixi/lit; the template is compiled to
-// @fluixi/dom runtime calls: no lit runtime ships.
+// A fine-grained reactive counter written with html`` instead of JSX. The template
+// is compiled to @fluixi/dom runtime calls: no template runtime ships.
 export function Counter(props: { start?: number }) {
   const [count, setCount] = createSignal(props.start ?? 0);
   const tone = () => (count() < 0 ? 'neg' : 'pos');
@@ -12,7 +11,7 @@ export function Counter(props: { start?: number }) {
 
   return html`
     <div class="counter">
-      <h1>Fluixi · lit-html</h1>
+      <h1>Fluixi · html templates</h1>
       <button class="dec" @click=${() => setCount(count() - 1)}>-</button>
       <span class="value ${tone()}">${count()}</span>
       <button class="inc" @click=${() => setCount(count() + 1)}>+</button>

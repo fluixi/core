@@ -11,7 +11,7 @@ produced DOM + reactivity, so they double as integration tests.
 | ------------- | ----- |
 | `counter`     | signals, a native element, delegated events, fine-grained text updates |
 | `todo`        | `For` (keyed list), `Show` (empty state), input binding, remove handlers |
-| `lit-counter` | the same counter authored with lit `` html`` `` templates, compiled through the shared IR (`fluixi({ format: 'lit' })`): no lit-html runtime |
+| `html-counter` | the same counter authored with `` html`` `` templates, compiled through the shared IR (`fluixi({ format: 'html' })`): no template runtime |
 | `load-strategies` | component resolution with no imports, plus `load:` deciding when each component's chunk is fetched: the test asserts on the real build output |
 
 ```bash

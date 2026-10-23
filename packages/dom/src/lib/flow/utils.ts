@@ -31,11 +31,3 @@ export function isTruthy<T>(
   return value !== null && value !== undefined && value !== false;
 }
 
-export function isLitResult(value: any): boolean {
-  if (!value || typeof value !== 'object') return false;
-  return !!(
-    typeof value['_$litType$'] !== 'undefined' ||
-    typeof value['_$litDirective$'] !== 'undefined' ||
-    (Array.isArray(value.strings) && Array.isArray(value.values))
-  );
-}

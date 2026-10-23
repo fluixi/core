@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // Loading the package barrel used to crash (src/index.ts read _DOM.createComponent
-// while the lit/control-flow files were mid-cycle through '@fluixi/dom').
+// while the template/control-flow files were mid-cycle through '@fluixi/dom').
 // After repointing those to relative imports, the barrel must load cleanly.
 import * as DOM from '@fluixi/dom';
 

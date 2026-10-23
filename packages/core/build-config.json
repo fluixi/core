@@ -44,7 +44,6 @@
       "react-dom",
       "react-dom/*",
       "@fluixi/*",
-      "@lit-labs/*",
       "stream",
       "http",
       "esbuild",

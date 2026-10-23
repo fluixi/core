@@ -4,17 +4,17 @@ import { render } from '@fluixi/core';
 import { flush } from '@fluixi/reactive/signal';
 import { Counter } from './App';
 
-// Real-DOM proof: App.ts is authored with lit html`` and compiled by the
-// @fluixi/vite-plugin (format: 'lit') into @fluixi/dom runtime calls, then
+// Real-DOM proof: App.ts is authored with html`` and compiled by the
+// @fluixi/vite-plugin (format: 'html') into @fluixi/dom runtime calls, then
 // rendered into jsdom. Same guarantees as the JSX counter, fine-grained
 // reactivity, delegated events, control flow.
-describe('lit-html counter compiled through the shared IR', () => {
+describe('html counter compiled through the shared IR', () => {
   it('renders the initial markup', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     render(() => Counter({ start: 5 }), host);
 
-    expect(host.querySelector('h1')?.textContent).toContain('lit-html');
+    expect(host.querySelector('h1')?.textContent).toContain('html templates');
     expect(host.querySelector('.value')?.textContent).toContain('5');
     expect(host.querySelectorAll('button').length).toBe(3); // dec, inc, reset
   });

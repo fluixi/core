@@ -1,7 +1,7 @@
 // Runnable SSR server for the html``-authored app: Vite in middleware mode
-// compiles the lit templates on the fly (format:'lit'); @fluixi/server renders
+// compiles the html templates on the fly (format:'html'); @fluixi/server renders
 // SsrApp to HTML per request; the client entry then hydrates.
-// Run: `pnpm --filter @fluixi/example-lit-counter serve`, then open the URL.
+// Run: `pnpm --filter @fluixi/example-html-counter serve`, then open the URL.
 import { createServer } from 'vite';
 import { readFileSync } from 'node:fs';
 import { createServer as createHttp } from 'node:http';
@@ -40,5 +40,5 @@ const http = createHttp((req, res) => {
 });
 
 http.listen(PORT, () => {
-  console.log(`Fluixi lit-html SSR example → http://localhost:${PORT}`);
+  console.log(`Fluixi html templates SSR example → http://localhost:${PORT}`);
 });

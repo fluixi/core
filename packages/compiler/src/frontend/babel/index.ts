@@ -25,7 +25,7 @@ export function createPreset(options: any = {}) {
           importSource: '@fluixi/jsx',
           development: process.env.NODE_ENV === 'development',
           detectReactivity: true,
-          useLitHTML: true,
+          useHtmlTag: true,
           hoistStatics: true,
           delegateEvents: true,
           optimizeControlFlow: true,
@@ -52,7 +52,7 @@ export const presets = {
   }),
   minimal: createPreset({
     detectReactivity: false,
-    useLitHTML: false,
+    useHtmlTag: false,
     hoistStatics: false,
     delegateEvents: false,
     optimizeControlFlow: false,

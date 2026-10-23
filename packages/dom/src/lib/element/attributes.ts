@@ -365,7 +365,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, Contr
   typeof?: string;
   vocab?: string;
 
-  // Lit-specific property/boolean/event bindings
+  // Property, boolean and event bindings (`.prop`, `?attr`, `@event`)
   [key: `.${string}`]: any;
   [key: `?${string}`]: boolean;
   [key: `@${string}`]: EventListener;

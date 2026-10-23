@@ -67,10 +67,10 @@ describe.skipIf(!uiMap)('fluixi-ui components resolve in html``', () => {
         .map((l) => l.trim())
         .sort();
 
-    const lit = compile('const v = html`<Card><Button>Save</Button></Card>`;', uiMap!);
+    const tagged = compile('const v = html`<Card><Button>Save</Button></Card>`;', uiMap!);
     const jsx = compile('const v = <Card><Button>Save</Button></Card>;', uiMap!);
-    expect(importsOf(lit)).toEqual(importsOf(jsx));
-    expect(importsOf(lit).length).toBe(2);
+    expect(importsOf(tagged)).toEqual(importsOf(jsx));
+    expect(importsOf(tagged).length).toBe(2);
   });
 
   it('still lets an app override a library name with its own import', () => {

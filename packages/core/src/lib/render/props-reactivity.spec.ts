@@ -27,7 +27,7 @@ let dir: string;
 let seq = 0;
 
 /** Compile the way a build does, one pass, the rewrite folded in, then load it. */
-async function build(src: string, format: 'jsx' | 'lit') {
+async function build(src: string, format: 'jsx' | 'html') {
   const compiled =
     transformTemplates(src, 'component.tsx', {
       format,
@@ -100,7 +100,7 @@ describe('a rewritten component stays reactive', () => {
         return html\`<\${Label} text=\${value()} />\`;
       }
       `,
-      'lit',
+      'html',
     );
 
     const { text } = mount(module.App);

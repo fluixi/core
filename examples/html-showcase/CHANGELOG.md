@@ -1,4 +1,4 @@
-# @fluixi/example-lit-showcase
+# @fluixi/example-html-showcase
 
 ## 0.0.1-alpha.44
 

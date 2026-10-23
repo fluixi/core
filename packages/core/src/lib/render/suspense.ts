@@ -46,15 +46,6 @@ function isNode(value: any): value is Node {
   return !!(value && typeof value === 'object' && typeof value.nodeType === 'number');
 }
 
-function isLitResult(value: any): boolean {
-  if (!value || typeof value !== 'object') return false;
-  return !!(
-    typeof value['_$litType$'] !== 'undefined' ||
-    typeof value['_$litDirective$'] !== 'undefined' ||
-    (Array.isArray(value.strings) && Array.isArray(value.values))
-  );
-}
-
 function isPromise<T = any>(value: any): value is Promise<T> {
   return !!(
     (value && typeof value === 'object' && typeof value.then === 'function') ||
@@ -255,4 +246,4 @@ function SuspenseListImpl(props: SuspenseListProps): any {
 asSuspense(Suspense);
 Object.defineProperty(Suspense, '__suspense', { value: true, enumerable: true });
 
-export { isNode, isLitResult, isPromise, isJSXElement };
+export { isNode, isPromise, isJSXElement };

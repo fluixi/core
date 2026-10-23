@@ -23,7 +23,7 @@ beforeAll(() => {
   DOM.registerCreateComponent(((Comp: any, props: any) => Comp(props)) as any);
 });
 
-describe('lit directives — events & bindings', () => {
+describe('html directives — events & bindings', () => {
   it('onClick is a byte-identical alias for @click', () => {
     const at = compileEsm('export const r = (h) => html`<button @click=${h}>x</button>`;');
     const on = compileEsm('export const r = (h) => html`<button onClick=${h}>x</button>`;');
@@ -39,7 +39,7 @@ describe('lit directives — events & bindings', () => {
   });
 });
 
-describe('lit directives — class: / style:', () => {
+describe('html directives — class: / style:', () => {
   it('style: updates one property per change, custom properties included', () => {
     const mod = load('export const render = (c, gap) => html`<div style:color=${c()} style:--gap=${gap()}></div>`;');
     const [c, setC] = S.createSignal('red');
@@ -125,7 +125,7 @@ describe('lit directives — class: / style:', () => {
   });
 });
 
-describe('lit forced bindings — prop: / attr: / bool:', () => {
+describe('html forced bindings — prop: / attr: / bool:', () => {
   it('prop:x forces a DOM property (no reflected attribute)', () => {
     const mod = load('export const render = () => html`<div prop:foo=${42}></div>`;');
     const el = mod.render() as HTMLElement;
@@ -156,7 +156,7 @@ describe('lit forced bindings — prop: / attr: / bool:', () => {
   });
 });
 
-describe('lit directives — bind:', () => {
+describe('html directives — bind:', () => {
   it('bind:value expands to value + onInput on a signal tuple', () => {
     const code = compileEsm('export const r = (name) => html`<input bind:value=${name} />`;');
     expect(code).toContain('(name)[0]()');
@@ -181,7 +181,7 @@ describe('lit directives — bind:', () => {
   });
 });
 
-describe('lit directives — if / else', () => {
+describe('html directives — if / else', () => {
   it('if lowers to <Show> and auto-imports it', () => {
     const code = compileEsm('export const r = (cond) => html`<div if=${cond()}>hi</div>`;');
     expect(code).toContain('createComponent');
@@ -206,7 +206,7 @@ describe('lit directives — if / else', () => {
   });
 });
 
-describe('lit directives — each', () => {
+describe('html directives — each', () => {
   it('each with a render arrow lowers to <For> and auto-imports it', () => {
     const code = compileEsm('export const r = (items) => html`<li each=${items()}>${(x) => x.name}</li>`;');
     expect(code).toContain('createComponent');
@@ -259,7 +259,7 @@ describe('lit directives — each', () => {
   });
 });
 
-describe('lit property binding reactivity', () => {
+describe('html property binding reactivity', () => {
   it('.prop with a reactive template-literal value updates', () => {
     const mod = load('export const render = (count) => html`<div .title=${`v ${count()}`}></div>`;');
     const [count, setCount] = S.createSignal(1);
@@ -295,7 +295,7 @@ describe('lit property binding reactivity', () => {
   });
 });
 
-describe('lit raw html + class/style objects', () => {
+describe('html raw html + class/style objects', () => {
   it('html=${x} sets innerHTML at runtime', () => {
     const mod = load('export const render = (h) => html`<div html=${h}></div>`;');
     const el = mod.render('<b>hi</b>') as HTMLElement;
@@ -343,7 +343,7 @@ describe('lit raw html + class/style objects', () => {
   });
 });
 
-describe('lit native events + modifiers', () => {
+describe('html native events + modifiers', () => {
   it('plain @click stays a delegated handler (byte-identical with onClick)', () => {
     const at = compileEsm('export const r = (h) => html`<button @click=${h}>x</button>`;');
     const on = compileEsm('export const r = (h) => html`<button onClick=${h}>x</button>`;');
@@ -393,7 +393,7 @@ describe('lit native events + modifiers', () => {
   });
 });
 
-describe('lit use directives', () => {
+describe('html use directives', () => {
   it('use=${dir} calls the directive with the element', () => {
     const mod = load('export const render = (dir) => html`<div use=${dir}></div>`;');
     let received: any;
@@ -420,7 +420,7 @@ describe('lit use directives', () => {
   });
 });
 
-describe('lit <component is> and <Await>', () => {
+describe('html <component is> and <Await>', () => {
   it('<component is=${C}> lowers to <Dynamic component>', () => {
     const code = compileEsm('export const r = (C) => html`<component is=${C} title="x">body</component>`;');
     expect(code).toContain('createComponent(Dynamic');
@@ -444,7 +444,7 @@ describe('lit <component is> and <Await>', () => {
   });
 });
 
-describe('lit named slots', () => {
+describe('html named slots', () => {
   it('a child with slot="name" becomes a named prop; the rest are children', () => {
     const code = compileEsm(
       'export const r = (Card) => html`<${Card}><div slot="header">H</div><span>body</span></${Card}>`;',
@@ -476,7 +476,7 @@ describe('lit named slots', () => {
   });
 });
 
-describe('lit framework components (static tags auto-import)', () => {
+describe('html framework components (static tags auto-import)', () => {
   it('static <Portal> auto-imports from dom, <Suspense> from core', () => {
     const code = compileEsm(
       'export const r = (el, fb) => html`<Portal mount=${el}><Suspense fallback=${fb}>x</Suspense></Portal>`;',
@@ -489,7 +489,7 @@ describe('lit framework components (static tags auto-import)', () => {
   });
 });
 
-describe('lit dynamic component tag', () => {
+describe('html dynamic component tag', () => {
   it('`<${UserCard}/>` compiles to createComponent(UserCard) — TS sees the reference', () => {
     const code = compileEsm('export const r = (UserCard) => html`<${UserCard} />`;');
     expect(code).toContain('createComponent(UserCard');
@@ -531,7 +531,7 @@ describe('named slots', () => {
   });
 });
 
-describe('lit directives: container', () => {
+describe('html directives: container', () => {
   it('repeats its content with no element of its own, two cells per row', () => {
     const mod = load(
       'export const render = (rows) => html`<tr><container each=${rows()}>${(r) => html`<td>${r.a}</td><td>${r.b}</td>`}</container></tr>`;',

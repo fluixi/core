@@ -30,24 +30,10 @@ export function isEventHandler(key: string): boolean {
 }
 
 /**
- * Get Lit event name from key
- */
-export function getLitEventName(key: string): string {
-  if (key.startsWith('@')) {
-    return key.slice(1);
-  }
-  if (key.startsWith('on')) {
-    const eventName = key.slice(2);
-    return eventName.toLowerCase();
-  }
-  return key;
-}
-
-/**
  * Check if attribute should be set as property
  */
 export function shouldSetAsProperty(element: string, key: string): boolean {
-  // These are always set as properties in Lit
+  // These are always set as properties
   const propertyAttributes = new Set([
     'checked',
     'value',
@@ -730,28 +716,6 @@ export function isReactElement(value: any): boolean {
     value !== null &&
     value.$$typeof === REACT_ELEMENT_TYPE
   );
-}
-
-export function isLitTemplateResult(value: any): boolean {
-  return (
-    value &&
-    typeof value === 'object' &&
-    value.strings &&
-    Array.isArray(value.strings) &&
-    value.values &&
-    Array.isArray(value.values)
-  );
-}
-
-export function isTemplateFactory(value: any): boolean {
-  if (typeof value !== 'function') return false;
-
-  try {
-    const result = value();
-    return isLitTemplateResult(result);
-  } catch {
-    return false;
-  }
 }
 
 export function isJSXTemplate(value: any): boolean {

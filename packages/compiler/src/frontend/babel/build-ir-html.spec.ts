@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import * as babel from '@babel/core';
 import { buildIR } from './build-ir.js';
-import { buildIRFromLit } from './build-ir-lit.js';
+import { buildIRFromHtml } from './build-ir-html.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
@@ -11,9 +11,6 @@ import * as S from '@fluixi/reactive/signal';
  * An `` html`...` `` template and its JSX twin flow through the SAME compiler, one IR,
  * one backend: and emit byte-identical code. That is what let the template layer become
  * a compile target instead of the runtime directive bridge it started as.
- *
- * (`lit` in these filenames is the compiler's internal name for the template format, not
- * the lit-html library, which is no longer involved.)
  */
 
 function findNode(src: string, type: string, plugins: string[]): any {
@@ -35,8 +32,8 @@ function findNode(src: string, type: string, plugins: string[]): any {
 
 const emitJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXElement', ['jsx'])), {} as any);
 const emitFragJSX = (src: string) => imperativeBackend.emit(buildIR(findNode(src, 'JSXFragment', ['jsx'])), {} as any);
-const emitLit = (src: string, svg = false) =>
-  imperativeBackend.emit(buildIRFromLit(findNode(src, 'TaggedTemplateExpression', ['typescript']), new Set(), { svg }), {} as any);
+const emitHtml = (src: string, svg = false) =>
+  imperativeBackend.emit(buildIRFromHtml(findNode(src, 'TaggedTemplateExpression', ['typescript']), new Set(), { svg }), {} as any);
 
 /** Run emitted code against the real @fluixi/dom runtime in jsdom. */
 function run(
@@ -52,91 +49,91 @@ function run(
   return fn(...runtimeVals, ...userNames.map((k) => vars[k]));
 }
 
-describe('lit → shared compiler (spike)', () => {
+describe('html → shared compiler', () => {
   it('emits byte-identical code to the JSX twin: event + child hole', () => {
-    const lit = emitLit('html`<button @click=${f}>${label()}</button>`');
+    const tagged = emitHtml('html`<button @click=${f}>${label()}</button>`');
     const jsx = emitJSX('(<button onClick={f}>{label()}</button>)');
-    expect(lit.code).toBe(jsx.code);
-    expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+    expect(tagged.code).toBe(jsx.code);
+    expect(new Set(tagged.imports)).toEqual(new Set(jsx.imports));
   });
 
   it('matches: static attr + nested element + text', () => {
-    const lit = emitLit('html`<div class="box"><span>Count: ${count()}</span></div>`');
+    const tagged = emitHtml('html`<div class="box"><span>Count: ${count()}</span></div>`');
     const jsx = emitJSX('(<div class="box"><span>Count: {count()}</span></div>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: dynamic attribute (reactive) + self-closing', () => {
-    const lit = emitLit('html`<input value=${name()} /><br/>`'); // fragment
+    const tagged = emitHtml('html`<input value=${name()} /><br/>`'); // fragment
     const jsx = emitFragJSX('(<><input value={name()} /><br/></>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: capitalized tag compiles as a component', () => {
-    const lit = emitLit('html`<Show when=${cond()}>${body()}</Show>`');
+    const tagged = emitHtml('html`<Show when=${cond()}>${body()}</Show>`');
     const jsx = emitJSX('(<Show when={cond()}>{body()}</Show>)');
-    expect(lit.code).toBe(jsx.code);
-    expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+    expect(tagged.code).toBe(jsx.code);
+    expect(new Set(tagged.imports)).toEqual(new Set(jsx.imports));
   });
 
   it('matches: For control flow with a render-prop child', () => {
-    const lit = emitLit('html`<For each=${items()}>${(x) => x}</For>`');
+    const tagged = emitHtml('html`<For each=${items()}>${(x) => x}</For>`');
     const jsx = emitJSX('(<For each={items()}>{(x) => x}</For>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: member-expression component tag', () => {
-    const lit = emitLit('html`<Ctx.Provider value=${v()}>${kids}</Ctx.Provider>`');
+    const tagged = emitHtml('html`<Ctx.Provider value=${v()}>${kids}</Ctx.Provider>`');
     const jsx = emitJSX('(<Ctx.Provider value={v()}>{kids}</Ctx.Provider>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: mixed text + hole attribute value (reactive template literal)', () => {
-    const lit = emitLit('html`<div class="box ${active()}"></div>`');
+    const tagged = emitHtml('html`<div class="box ${active()}"></div>`');
     const jsx = emitJSX('(<div class={`box ${active()}`}></div>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: quoted single hole === unquoted single hole', () => {
-    const q = emitLit('html`<input value="${name()}" />`');
-    const u = emitLit('html`<input value=${name()} />`');
+    const q = emitHtml('html`<input value="${name()}" />`');
+    const u = emitHtml('html`<input value=${name()} />`');
     expect(q.code).toBe(u.code);
   });
 
   it('matches: spread ${obj} in tag position', () => {
-    const lit = emitLit('html`<div ${props}>hi</div>`');
+    const tagged = emitHtml('html`<div ${props}>hi</div>`');
     const jsx = emitJSX('(<div {...props}>hi</div>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: html comments are dropped like JSX comments', () => {
-    const lit = emitLit('html`<div><!-- note -->${x()}</div>`');
+    const tagged = emitHtml('html`<div><!-- note -->${x()}</div>`');
     const jsx = emitJSX('(<div>{/* note */}{x()}</div>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('matches: nested html`` in a child hole (composition)', () => {
-    const lit = emitLit('html`<ul>${items().map((x) => html`<li>${x}</li>`)}</ul>`');
+    const tagged = emitHtml('html`<ul>${items().map((x) => html`<li>${x}</li>`)}</ul>`');
     const jsx = emitJSX('(<ul>{items().map((x) => <li>{x}</li>)}</ul>)');
-    expect(lit.code).toBe(jsx.code);
-    expect(new Set(lit.imports)).toEqual(new Set(jsx.imports));
+    expect(tagged.code).toBe(jsx.code);
+    expect(new Set(tagged.imports)).toEqual(new Set(jsx.imports));
   });
 
   it('handles a typed arrow param in a hole (TS annotation survives reparse)', () => {
     // (n: number) => ... in a hole must not break the emitted-code reparse.
-    const lit = emitLit('html`<For each=${xs()}>${(n: number) => html`<li>${n}</li>`}</For>`');
-    expect(lit.code).toContain('createComponent(For');
-    expect(lit.code).toMatch(/createNativeElement\("li"\)|<li>/);
+    const tagged = emitHtml('html`<For each=${xs()}>${(n: number) => html`<li>${n}</li>`}</For>`');
+    expect(tagged.code).toContain('createComponent(For');
+    expect(tagged.code).toMatch(/createNativeElement\("li"\)|<li>/);
   });
 
   it('matches: nested html`` in a ternary hole', () => {
-    const lit = emitLit('html`<div>${ok() ? html`<b>y</b>` : html`<i>n</i>`}</div>`');
+    const tagged = emitHtml('html`<div>${ok() ? html`<b>y</b>` : html`<i>n</i>`}</div>`');
     const jsx = emitJSX('(<div>{ok() ? <b>y</b> : <i>n</i>}</div>)');
-    expect(lit.code).toBe(jsx.code);
+    expect(tagged.code).toBe(jsx.code);
   });
 
   it('svg`` marks the whole subtree as SVG', () => {
-    const svg = emitLit('svg`<svg><g><unknownTag /></g></svg>`', true);
+    const svg = emitHtml('svg`<svg><g><unknownTag /></g></svg>`', true);
     // every element created with the SVG flag (createNativeElement(tag, true))
     expect(svg.code).not.toMatch(/createNativeElement\("unknownTag"\)/);
     expect(svg.code).toMatch(/createNativeElement\("unknownTag", true\)/);
@@ -146,18 +143,18 @@ describe('lit → shared compiler (spike)', () => {
   it('raw-text element keeps its content verbatim and interpolates holes', () => {
     (S as any); // keep import
     const [css, setCss] = S.createSignal('a{}');
-    const el = run(emitLit('html`<style>.x{} ${css()}</style>`'), { css }) as HTMLStyleElement;
+    const el = run(emitHtml('html`<style>.x{} ${css()}</style>`'), { css }) as HTMLStyleElement;
     expect(el.tagName).toBe('STYLE');
     expect(el.textContent).toContain('.x{}');
     expect(el.textContent).toContain('a{}');
     setCss('b{}');
   });
 
-  it('the emitted lit code actually renders, reacts, and handles events', async () => {
+  it('the emitted html code actually renders, reacts, and handles events', async () => {
     (DOM as any).delegateEvents(['click']); // install the delegated click listener
     const [label, setLabel] = S.createSignal('hi');
     let clicks = 0;
-    const el = run(emitLit('html`<button @click=${f}>${label()}</button>`'), {
+    const el = run(emitHtml('html`<button @click=${f}>${label()}</button>`'), {
       f: () => clicks++,
       label,
     }) as HTMLElement;

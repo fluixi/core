@@ -2,7 +2,7 @@
  * @module @fluixi/core/client
  *
  * Implements client-side mounting and hydration logic using @fluixi/dom runtime.
- * Supports both JSX and Lit HTML.
+ * Supports JSX and `html` templates.
  */
 
 import {
@@ -48,7 +48,7 @@ export function mount(App: () => any, container: HTMLElement | null) {
     throw new Error('Container element not found for mount()');
   }
 
-  // Use @fluixi/dom render which handles reactivity and supports Lit via registration
+  // Use @fluixi/dom render which handles reactivity and html templates
   domRender(() => App(), container);
 }
 

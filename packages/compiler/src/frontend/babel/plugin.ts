@@ -14,7 +14,7 @@ import {
 } from '../../resolve/builtins.js';
 import { types as t, template, type PluginObj } from '@babel/core';
 import { buildIR } from './build-ir.js';
-import { buildIRFromLit } from './build-ir-lit.js';
+import { buildIRFromHtml } from './build-ir-html.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import type { IRNode } from '../../ir/nodes.js';
 
@@ -89,26 +89,26 @@ export interface PluginOptions {
   /**
    * Which authoring syntaxes to compile:
    * - 'jsx': only JSX elements/fragments.
-   * - 'lit': only `` html`...` `` / `` svg`...` `` tagged templates.
+   * - 'html': only `` html`...` `` / `` svg`...` `` tagged templates.
    * - 'both' (default): JSX and `html``` templates in the same file.
    *
    * Both syntaxes lower to the same IR and the same imperative backend, so the
    * choice is about which source forms the plugin touches, not about output.
    * @default 'both'
    */
-  format?: 'jsx' | 'lit' | 'both';
+  format?: 'jsx' | 'html' | 'both';
 
   /**
-   * Tag name that marks a lit template for compilation (when `format` includes
-   * lit). Other tagged templates are left untouched.
+   * Tag name that marks an html template for compilation (when `format` includes
+   * html). Other tagged templates are left untouched.
    * @default 'html'
    */
-  litTag?: string;
+  htmlTag?: string;
 }
 
 interface PluginStateData {
   hasJSX: boolean;
-  hasLitHTML: boolean;
+  hasHtmlTag: boolean;
   needsControlFlowImport: boolean;
   needsCreateMemo: boolean;
   controlFlowComponents: Set<string>;
@@ -165,7 +165,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     // `fluixi()` needs no `format` option. Injected imports are deduped, so a
     // file mixing the two styles won't redeclare a binding.
     format = 'both',
-    litTag = 'html',
+    htmlTag = 'html',
     resolve: resolveRules = [],
   } = options;
 
@@ -173,7 +173,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
   // resolver memoises lookups, so every file in the build shares one cache.
   const componentResolver = createComponentResolver(resolveRules);
 
-  const compileLit = format === 'lit' || format === 'both';
+  const compileHtml = format === 'html' || format === 'both';
 
   const pluginState: PluginStateData = {
     irImports: new Set<string>(),
@@ -183,7 +183,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     templateClone,
     partialTemplates,
     hasJSX: false,
-    hasLitHTML: false,
+    hasHtmlTag: false,
     needsControlFlowImport: false,
     needsCreateMemo: false,
     controlFlowComponents: new Set(),
@@ -213,8 +213,8 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
           // Reset state for new file
           Object.assign(state, {
             hasJSX: false,
-            hasLitHTML: false,
-            hasLitIR: false,
+            hasHtmlTag: false,
+            hasHtmlIR: false,
             needsControlFlowImport: false,
             needsCreateMemo: false,
             controlFlowComponents: new Set(),
@@ -241,7 +241,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         exit(path, state: any) {
           const imports: t.ImportDeclaration[] = [];
 
-          if (state.hasJSX || state.hasLitIR) {
+          if (state.hasJSX || state.hasHtmlIR) {
             if (state.irImports.size > 0) {
               // Import exactly the symbols emit() reported, splitting control-flow
               // components to the control-flow module.
@@ -476,11 +476,11 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
         // `html`...`` and `svg`...`` lower through the same IR and the same
         // backend as JSX: one pipeline, two authoring syntaxes.
         if (
-          compileLit &&
+          compileHtml &&
           t.isIdentifier(path.node.tag) &&
-          (path.node.tag.name === litTag || path.node.tag.name === 'svg')
+          (path.node.tag.name === htmlTag || path.node.tag.name === 'svg')
         ) {
-          path.replaceWith(emitLitViaIR(path.node, state));
+          path.replaceWith(emitHtmlViaIR(path.node, state));
         }
       },
     },
@@ -574,7 +574,7 @@ function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression
   // (render-props, ternaries, fallback={<p/>}, ...) so we import them too.
   const used = new Set<string>();
   const ir = buildIR(node, used, nestedHook(state));
-  // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped
+  // The same passes the html path runs. Without them `codegen: 'ir'` silently skipped
   // resolution entirely: a resolved tag compiled to a reference with no import.
   resolveComponentSources(ir, {
     resolver: state.componentResolver,
@@ -627,15 +627,15 @@ function dedupeImports(imports: t.ImportDeclaration[]): t.ImportDeclaration[] {
 }
 
 /**
- * Lit-pipeline path: build IR from a `` html`...` `` template, emit through the
- * imperative backend, reparse. Mirrors emitViaIR, the whole point is that lit
+ * Html-template path: build IR from a `` html`...` `` template, emit through the
+ * imperative backend, reparse. Mirrors emitViaIR, the whole point is that html
  * and JSX share one IR + one backend. Collects runtime imports and the delegated
  * events used so Program.exit wires them.
  */
-function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
+function emitHtmlViaIR(node: t.TaggedTemplateExpression, state: any): t.Expression {
   const used = new Set<string>();
   const svg = t.isIdentifier(node.tag) && node.tag.name === 'svg';
-  const ir = buildIRFromLit(node, used, { svg, onNested: nestedHook(state) });
+  const ir = buildIRFromHtml(node, used, { svg, onNested: nestedHook(state) });
   // Resolve pass: annotate each component reference with where it comes from, before
   // codegen. Bindings are not checked here: Program.exit knows the whole file's scope
   // and drops any injected import whose name turns out to be bound.
@@ -656,7 +656,7 @@ function emitLitViaIR(node: t.TaggedTemplateExpression, state: any): t.Expressio
   for (const s of imports) used.add(s);
   for (const s of used) state.irImports.add(s);
   collectRuntimeNeeds(ir, state);
-  state.hasLitIR = true;
+  state.hasHtmlIR = true;
 
   // The IR is emitted as a string and reparsed, so the resulting nodes carry no
   // position: which is why compiled html`` had no source map at all. Give every
@@ -702,7 +702,7 @@ function inheritLocation(target: t.Node, source: t.Node): void {
 }
 
 /**
- * Walk the lit IR for things Program.exit wires: delegated events (-> the
+ * Walk the html IR for things Program.exit wires: delegated events (-> the
  * delegateEvents([...]) call) and control-flow component names used as tags
  * (-> auto-import from the control-flow module, like the inline JSX path).
  */

@@ -1,17 +1,17 @@
-# lit-counter
+# html-counter
 
-A Fluixi app authored with lit-html `` html`` `` templates instead of JSX.
+A Fluixi app authored with `` html`` `` templates instead of JSX.
 
 The point: `` html`` `` runs through the **same compiler** JSX does. The
-`@fluixi/vite-plugin` with `format: 'lit'` stitches the template, scans it, and
+`@fluixi/vite-plugin` with `format: 'html'` stitches the template, scans it, and
 builds the shared host-agnostic IR: then the imperative backend emits the exact
 same `@fluixi/dom` runtime calls (`createNativeElement` / `spread` / `insert` /
-`createComponent`). There is **no lit-html runtime** in the output; the template
-is compiled away. `html` (from `@fluixi/lit`) is a compile-time marker: it never
+`createComponent`). There is **no template runtime** in the output; the template
+is compiled away. `html` (from `@fluixi/core`) is a compile-time marker: it never
 runs.
 
 ```ts
-import { html, For } from '@fluixi/lit';
+import { html, For } from '@fluixi/core';
 
 return html`
   <div class="counter">
@@ -38,10 +38,10 @@ pieces (`Suspense`, `Router`, `createResource`) you import from `@fluixi/core`.
 ## Run
 
 ```bash
-pnpm --filter @fluixi/example-lit-counter dev     # client-only, in a browser
-pnpm --filter @fluixi/example-lit-counter serve   # real SSR + hydration server (http://localhost:5176)
-pnpm --filter @fluixi/example-lit-counter test    # jsdom proofs: DOM, SSR, Suspense, routing
-pnpm --filter @fluixi/example-lit-counter build   # production build
+pnpm --filter @fluixi/example-html-counter dev     # client-only, in a browser
+pnpm --filter @fluixi/example-html-counter serve   # real SSR + hydration server (http://localhost:5176)
+pnpm --filter @fluixi/example-html-counter test    # jsdom proofs: DOM, SSR, Suspense, routing
+pnpm --filter @fluixi/example-html-counter build   # production build
 ```
 
 `serve` runs `server.mjs`: Vite compiles the `` html`` `` templates on the fly,
