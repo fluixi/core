@@ -163,17 +163,7 @@ export function applyElementProp(
     element.removeAttribute(name);
     return;
   }
-  // For custom elements: set objects and arrays directly as DOM properties so
-  // Lit (and other web-component libraries) receive the rich value.
-  // if(element.name === 'stocked_quantity' && name === 'value'){
-  //   console.log(
-  //     'apply custom element prop',
-  //     name,
-  //     value,
-  //     (element as any)[name]
-  //   );
 
-  // }
   if (isCustomElement(element)) {
     if (isServer()) {
       serverCustomElementProp(element, name, value);
@@ -391,9 +381,6 @@ export function setAttribute(
 //     element.setAttribute(name, '');
 //     return;
 //   }
-
-//   element.setAttribute(name, String(value));
-// }
 
 /**
  * Gets an attribute from an element

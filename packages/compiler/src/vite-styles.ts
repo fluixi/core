@@ -80,7 +80,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
   let library: string | undefined;
   // What a library build writes: the file under the output directory, and its CSS.
   const emitted = new Map<string, string>();
-  // A module id is a file path, or, for modules a plugin imports by URL (`/src/routes/…`),
+  // A module id is a file path, or, for modules a plugin imports by URL (`/src/routes/...`),
   // a path from the project root.
   const fileOf = (id: string) => (existsSync(id) ? id : join(root, id));
   // The CSS of each module's blocks, with the source it came from, for `load` and for telling
@@ -134,7 +134,7 @@ export function createComponentStyles(compile: CompileWithStyles) {
   };
 
   const run = async (code: string, id: string, ctx: ResolveContext): Promise<Compiled | null> => {
-    // One name per file, whatever id it was reached by (`/src/…` from a plugin, an absolute
+    // One name per file, whatever id it was reached by (`/src/...` from a plugin, an absolute
     // path from `load`): the scope id is derived from it, and the elements and the CSS have to
     // agree on it.
     const file = fileOf(id);

@@ -186,13 +186,11 @@ describe('Boolean Utilities', () => {
 
       it('should throw error for invalid strings', () => {
         expect(() => toBoolean('invalid', 'string')).toThrow();
-        // expect(() => toBoolean('', 'string')).toThrow();
         expect(() => toBoolean('maybe', 'string')).toThrow();
       });
 
       it('should throw error for non-string inputs', () => {
         expect(() => toBoolean(1, 'string')).toThrow();
-        // expect(() => toBoolean(true, 'string')).toThrow();
         expect(() => toBoolean(null, 'string')).toThrow();
       });
     });
@@ -209,7 +207,6 @@ describe('Boolean Utilities', () => {
 
       it('should throw error for non-number inputs', () => {
         expect(() => toBoolean('1', 'number')).toThrow();
-        // expect(() => toBoolean(true, 'number')).toThrow();
         expect(() => toBoolean(null, 'number', true)).toThrow();
       });
     });

@@ -1,5 +1,5 @@
 /**
- * Type errors inside `${…}` holes, checked against the MAIN program.
+ * Type errors inside `${...}` holes, checked against the MAIN program.
  *
  * A `${(it) => it.nope}` is a real expression in a real file, TypeScript has
  * already parsed and bound it. The only thing it lacks is a contextual type for

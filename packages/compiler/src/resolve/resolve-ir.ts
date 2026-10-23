@@ -8,7 +8,7 @@
  *
  * Two suppliers, in precedence order:
  *
- *  1. **Control flow** (`Show`, `For`, `Switch`, …), the name selects a lowering, so a
+ *  1. **Control flow** (`Show`, `For`, `Switch`, ...), the name selects a lowering, so a
  *     rule cannot re-point it. Recorded as `builtin` so a later pass can tell the
  *     difference between "configured here" and "fixed by the compiler".
  *  2. **Configured rules**, then the **router built-ins**. Router components are only an

@@ -11,7 +11,7 @@ export function htmlPath(url: string): string {
   return clean === '' ? 'index.html' : `${clean.replace(/^\//, '')}/index.html`;
 }
 
-// internal links from rendered HTML: skip files (.js/.css/…), anchors, queries, external
+// internal links from rendered HTML: skip files (.js/.css/...), anchors, queries, external
 export function extractLinks(html: string): string[] {
   const out = new Set<string>();
   for (const m of html.matchAll(/href=["'](\/[^"'#?]*)["']/g)) {

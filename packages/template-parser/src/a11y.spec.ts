@@ -4,7 +4,7 @@ import { parse, parseTemplate, piecesFromStrings } from './index.js';
 const codes = (template: string): string[] =>
   parse([template]).diagnostics.filter((d) => d.code.startsWith('a11y-')).map((d) => d.code);
 
-/** Multi-segment statics, so the gaps between them are real `${…}` holes. */
+/** Multi-segment statics, so the gaps between them are real `${...}` holes. */
 const spreadCodes = (statics: string[]): string[] =>
   parse(statics).diagnostics.filter((d) => d.code.startsWith('a11y-')).map((d) => d.code);
 

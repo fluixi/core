@@ -51,25 +51,8 @@ export const invert = (obj: AnyObject, deep: boolean = false): AnyObject => {
  * @example
  * mapValues({a: 1, b: 2}, (value) => value * 2) // {a: 2, b: 4}
  */
-// export const mapValues = <T extends AnyObject, U>(
-//   obj: T,
-//   callback: (value: T[keyof T], key: keyof T) => U
-// ): Record<keyof T, U> => {
-//   if (Array.isArray(obj)) {
-//     return (obj as any).map(callback);
-//   }
-//   if (!isObject(obj)) {
-//     return {} as Record<keyof T, U>;
-//   }
 
 //   const result: Partial<Record<keyof T, U>> = {};
-
-//   for (const key in obj) {
-//     result[key] = callback(obj[key], key as any);
-//   }
-
-//   return result as Record<keyof T, U>;
-// };
 
 /**
  * Maps object keys using a callback function
@@ -79,26 +62,8 @@ export const invert = (obj: AnyObject, deep: boolean = false): AnyObject => {
  * @example
  * mapKeys({a: 1, b: 2}, (key) => key.toUpperCase()) // {A: 1, B: 2}
  */
-// export const mapKeys = <T extends AnyObject>(
-//   obj: T,
-//   callback: (key: keyof T, value: T[keyof T]) => string
-// ): AnyObject => {
-//   if (Array.isArray(obj)) {
-//     return (obj as any).map(callback);
-//   }
-//   if (!isObject(obj)) {
-//     return {};
-//   }
 
 //   const result: AnyObject = {};
-
-//   for (const key in obj) {
-//     const newKey = callback(key as any, obj[key]);
-//     result[newKey] = obj[key];
-//   }
-
-//   return result;
-// };
 
 /**
  * Filters object properties using a predicate
@@ -138,51 +103,6 @@ export const filter = <T extends AnyObject>(
  * @example
  * flatten({a: {b: {c: 1}}, d: 2}) // {'a.b.c': 1, d: 2}
  */
-// export const flatten = (obj: AnyObject, separator: string = '.'): AnyObject => {
-//   if (Array.isArray(obj)) {
-//     return obj.map((item) => flatten(item, separator));
-//     // return obj.reduce((acc, item) => {
-//     //   return {
-//     //     ...acc,
-//     //     ...flatten(item, separator),
-//     //   };
-//     // }, {});
-//   }
-//   const result: AnyObject = {};
-
-//   const flattenRecursive = (current: any, path: string = '') => {
-//     if (!isObject(current) && !Array.isArray(current)) {
-//       if (path) {
-//         result[path] = current;
-//       }
-//       return;
-//     }
-
-//     if (Array.isArray(current)) {
-//       for (let i = 0; i < current.length; i++) {
-//         const newPath = path ? `${path}[${i}]` : `[${i}]`;
-//         flattenRecursive(current[i], newPath);
-//       }
-//     } else {
-//       for (const key in current) {
-//         const newPath = path ? `${path}${separator}${key}` : key;
-//         flattenRecursive(current[key], newPath);
-//       }
-
-//       // Handle symbols
-//       const symbols = Object.getOwnPropertySymbols(current);
-//       for (const symbol of symbols) {
-//         const newPath = path
-//           ? `${path}${separator}${symbol.toString()}`
-//           : symbol.toString();
-//         flattenRecursive(current[symbol], newPath);
-//       }
-//     }
-//   };
-
-//   flattenRecursive(obj);
-//   return result;
-// };
 
 /**
  * Unflattens an object (reverse of flatten)
@@ -192,64 +112,9 @@ export const filter = <T extends AnyObject>(
  * @example
  * unflatten({'a.b.c': 1, d: 2}) // {a: {b: {c: 1}}, d: 2}
  */
-// export const unflatten = (
-//   obj: AnyObject,
-//   separator: string = '.'
-// ): AnyObject => {
-//   const result: AnyObject = {};
-
-//   for (const key in obj) {
-//     const keys = key.split(separator);
-//     let current: any = result;
 
 //     for (let i = 0; i < keys.length - 1; i++) {
 //       const part = keys[i];
-
-//       // Handle array indices
-//       if (part.startsWith('[') && part.endsWith(']')) {
-//         const index = parseInt(part.slice(1, -1), 10);
-
-//         if (!Array.isArray(current)) {
-//           current = [];
-//         }
-
-//         if (current[index] == null) {
-//           current[index] = {};
-//         }
-
-//         current = current[index];
-//       } else {
-//         if (current[part] == null) {
-//           current[part] = {};
-//         }
-//         current = current[part];
-//       }
-//     }
-
-//     const lastKey = keys[keys.length - 1];
-
-//     // Handle array indices
-//     if (lastKey.startsWith('[') && lastKey.endsWith(']')) {
-//       const index = parseInt(lastKey.slice(1, -1), 10);
-
-//       if (!Array.isArray(current)) {
-//         current = [];
-//       }
-
-//       if (index >= current.length) {
-//         for (let i = current.length; i <= index; i++) {
-//           current.push(undefined);
-//         }
-//       }
-
-//       current[index] = obj[key];
-//     } else {
-//       current[lastKey] = obj[key];
-//     }
-//   }
-
-//   return result;
-// };
 
 /**
  * Removes undefined or null properties from an object

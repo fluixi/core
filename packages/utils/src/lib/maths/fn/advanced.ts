@@ -3,7 +3,6 @@
  * @module AdvancedMathFunctions
  */
 
-// import { Constants } from '../constants';
 import type { Fraction } from '../types/advanced.js';
 import { gcd, round } from './basic.js';
 
@@ -195,7 +194,6 @@ export const percentage = (
   return round(percent, precision);
 };
 
-
 /**
  * Converts a number to a specified base (2-36)
  * 
@@ -224,7 +222,6 @@ export const toOrdinal = (n: number): string => {
   const v = n % 100;
   return n + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
 };
-
 
 /**
  * Generates a sequence of numbers

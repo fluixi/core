@@ -1,7 +1,7 @@
 /**
  * Go To Definition, Find References and Rename for component tags in templates.
  *
- * A `${…}` hole is a real expression, so TypeScript already answers all three for
+ * A `${...}` hole is a real expression, so TypeScript already answers all three for
  * it: the plugin just has to stop shadowing those methods. The synthetic part is
  * the tag name: `<UserCard>` is text inside a string literal, invisible to the
  * checker.

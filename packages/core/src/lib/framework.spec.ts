@@ -27,9 +27,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-// ---------------------------------------------------------------------------
 // Mock @fluixi/dom: identical to router.spec.ts so all imports satisfy
-// ---------------------------------------------------------------------------
 
 vi.mock('@fluixi/dom', async () => {
   // Spread the real reactive module into the dom mock so signal-based code
@@ -136,9 +134,7 @@ import { generateRouteModule } from './plugins/route-codegen.js';
 import { scanRoutes } from './plugins/route-scanner.js';
 import type { ScannedRoute } from './plugins/route-scanner.js';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Route component that returns a thunk (required by createLevelState's view()). */
 function makeComponent(label: string) {
@@ -160,9 +156,7 @@ function flushMicrotasks() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
 }
 
-// ===========================================================================
 // 1. Context & Provider
-// ===========================================================================
 
 describe('Context & Provider', () => {
   // ── 1a: createContext shape ─────────────────────────────────────────────
@@ -311,9 +305,7 @@ describe('Context & Provider', () => {
   });
 });
 
-// ===========================================================================
 // 2. Suspense
-// ===========================================================================
 
 // Skipped: these assert an old contract where Suspense() returns the value directly,
   // but it returns a memo, and this file's @fluixi/dom mock re-runs the component on every
@@ -446,9 +438,7 @@ describe('Context & Provider', () => {
   });
 });
 
-// ===========================================================================
 // 3. Lazy Components
-// ===========================================================================
 
 describe('lazy components', () => {
   let disposeRoot: (() => void) | null = null;
@@ -575,9 +565,7 @@ describe('lazy components', () => {
   });
 });
 
-// ===========================================================================
 // 6. Route Codegen: generateRouteModule
-// ===========================================================================
 
 describe('generateRouteModule', () => {
   function makeRoute(overrides: Partial<ScannedRoute>): ScannedRoute {
@@ -695,9 +683,7 @@ describe('generateRouteModule', () => {
   });
 });
 
-// ===========================================================================
 // 7. Route Scanner: scanRoutes
-// ===========================================================================
 
 describe('scanRoutes', () => {
   let tmpDir: string;
@@ -834,9 +820,7 @@ describe('scanRoutes', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Utility: collect all routes (including nested children) into a flat list
-// ---------------------------------------------------------------------------
 
 function collectAllRoutes(routes: ScannedRoute[]): ScannedRoute[] {
   const result: ScannedRoute[] = [];

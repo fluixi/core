@@ -55,7 +55,7 @@ import {
   type NavigateOptions,
 } from '@fluixi/router';
 
-// ─── Contexts ──────────────────────────────────────────────────────────────
+// Contexts
 
 interface RouterCtxValue {
   router: CoreRouter<any>;
@@ -87,7 +87,7 @@ interface RouteDataArgsLocal {
   location: () => RouterLocation;
 }
 
-// ─── Rendering ────────────────────────────────────────────────────────────────
+// Rendering
 
 /** A rendered layer, and whether its route data has arrived. */
 interface Layer {
@@ -353,7 +353,7 @@ function buildDefaultNotFound(): any {
   return el;
 }
 
-// ─── Router ────────────────────────────────────────────────────────────────────
+// Router
 
 export interface RouterProps<C = any> {
   routes: RouteDefinition<C>[];
@@ -558,7 +558,7 @@ export function Router<C = any>(props: RouterProps<C>) {
   });
 }
 
-// ─── Outlet ───────────────────────────────────────────────────────────────────
+// Outlet
 
 /** Renders this layout's child route, inside this layout's context. */
 export function Outlet() {
@@ -614,7 +614,7 @@ export function Redirect(props: { to: string; replace?: boolean }) {
 }
 
 
-// ─── Hooks ──────────────────────────────────────────────────────────────────
+// Hooks
 
 // Safe stub returned by useRouter on the SERVER when no RouterContext is on the owner
 // chain. That happens during a late/detached re-render: e.g. a slow data resource
@@ -885,7 +885,7 @@ export function useRouteData<T = any>(): () => T | undefined {
   return acc ?? (() => undefined);
 }
 
-// ─── Link ─────────────────────────────────────────────────────────────────────
+// Link
 
 type MaybeAccessor<T> = T | (() => T);
 const read = <T,>(v: MaybeAccessor<T> | undefined): T | undefined =>
@@ -966,7 +966,7 @@ export function Link(props: LinkProps) {
     if (LINK_OWN_PROPS.has(k)) continue;
     const v = (props as Record<string, unknown>)[k];
     if (typeof v === 'function') {
-      // An accessor (`title={() => t('…')}`, `aria-current={() => …}`): followed on the client,
+      // An accessor (`title={() => t('...')}`, `aria-current={() => ...}`): followed on the client,
       // read once for the server's markup. Event handlers are not attributes.
       if (/^on[A-Z]/.test(k)) continue;
       const read = v as () => unknown;
@@ -1091,7 +1091,7 @@ export function ActionForm(props: ActionFormProps) {
   return form;
 }
 
-// ─── Hydration preload ───────────────────────────────────────────────────────────
+// Hydration preload
 
 /**
  * Download the lazy component chunks for the route(s) matching `pathname` and resolve when
@@ -1115,7 +1115,7 @@ export async function preloadRoutes<C = any>(
   await Promise.all(loads);
 }
 
-// ─── Re-exports ────────────────────────────────────────────────────────────────
+// Re-exports
 
 export {
   createMemoryHistory,

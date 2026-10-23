@@ -43,7 +43,7 @@ export function isLoadDirective(name: string): boolean {
  * Parse `load:<strategy>` plus its optional value into a strategy.
  *
  * `value` is the attribute's literal text: `load:visible="200px"`, or null for a bare
- * directive. A `${…}` hole is rejected: the strategy has to be known at compile time
+ * directive. A `${...}` hole is rejected: the strategy has to be known at compile time
  * because it decides how the module is emitted, and a runtime value cannot.
  */
 export function parseLoadDirective(name: string, value: string | null): IRLoadStrategy {

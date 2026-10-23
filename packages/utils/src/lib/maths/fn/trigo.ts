@@ -12,7 +12,6 @@ import type { Degrees, Radians } from '../types/basic.js';
  * @returns Angle in radians
  */
 export function degToRad(degrees: number): Radians {
-  // return degrees * (Math.PI / 180);
   return (degrees * Constants.RADIANS_PER_DEGREE) as Radians;
 }
 
@@ -22,7 +21,6 @@ export function degToRad(degrees: number): Radians {
  * @returns Angle in degrees
  */
 export function radToDeg(radians: number): Degrees {
-  // return radians * (180 / Math.PI);
   return (radians * Constants.DEGREES_PER_RADIAN) as Degrees;
 }
 

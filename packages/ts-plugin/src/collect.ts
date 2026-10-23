@@ -72,7 +72,7 @@ export function shouldSuppress(
   const spanText = sourceFile.text.substr(diagnostic.start, diagnostic.length ?? 0);
 
   // An unused import: a SINGLE named import reports 6133 with the span covering
-  // the whole `import … ;` statement (not just the name); ALL-unused reports 6192.
+  // the whole `import ... ;` statement (not just the name); ALL-unused reports 6192.
   // Either way, resolve the declaration and check its imported names.
   const decl = importDeclarationAt(ts, sourceFile, diagnostic.start);
   if (decl) {

@@ -8,7 +8,7 @@ import { join, relative } from 'node:path';
 await build(await loadConfig());
 
 // Generate sitemap.xml from the prerendered pages (each route lands at <path>/index.html), with
-// en/fr hreflang alternates per doc. Keeps the sitemap in lockstep with whatever was crawled —
+// en/fr hreflang alternates per doc. Keeps the sitemap in lockstep with whatever was crawled: 
 // no hand-maintained URL list. Canonical (no trailing slash) matches the in-app links + seo().
 const SITE = 'https://docs.fluixi.com';
 const clientDir = 'dist/client';

@@ -21,7 +21,7 @@
  *   cookieSecret: process.env.SESSION_SECRET!,
  * });
  *
- * export default defineMiddleware([auth, …]);
+ * export default defineMiddleware([auth, ...]);
  * ```
  *
  * The cookie itself is `@fluixi/session/server`, which knows nothing about OAuth: it

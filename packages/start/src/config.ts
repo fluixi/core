@@ -42,11 +42,11 @@ export interface FluixiConfig {
   clientEntry?: string;
   /** HTML template. Default: index.html */
   template?: string;
-  /** Element id the app HTML is injected into (`<div id="…"></div>`). Default: root */
+  /** Element id the app HTML is injected into (`<div id="..."></div>`). Default: root */
   mountId?: string;
   /** File-routes directory (passed to fluixiRoutesPlugin). Default: src/routes */
   routesDir?: string;
-  /** File-based API routes directory; files export GET/POST/… handlers served at `/api/*`. Default: src/api */
+  /** File-based API routes directory; files export GET/POST/... handlers served at `/api/*`. Default: src/api */
   apiDir?: string;
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;

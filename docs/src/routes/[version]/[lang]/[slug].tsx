@@ -6,7 +6,7 @@ const langOf = (value: string | undefined): Lang => (value === 'fr' ? 'fr' : 'en
 
 // The page's HTML, its own module: on the server it is rendered into the page, and the browser
 // takes the server's value, so a visit loads only this page and a navigation only the next.
-// Every version is a path in the same site, /v1/…, /v2/…; a version with no such page is null.
+// Every version is a path in the same site, /v1/..., /v2/...; a version with no such page is null.
 export const routeData = ({ params }: { params: () => Record<string, string> }) =>
   loadDoc(params().version!, langOf(params().lang), params().slug!);
 

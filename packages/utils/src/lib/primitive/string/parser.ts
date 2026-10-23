@@ -1,25 +1,4 @@
-// type ParserOptions = {
-//   allowUnquotedKeys?: boolean;
-//   allowTrailingCommas?: boolean;
-//   allowSingleQuotes?: boolean;
-//   allowComments?: boolean;
-//   allowUndefined?: boolean;
-//   allowSpecialNumbers?: boolean;
-//   reviver?: (key: string, value: any) => any;
-//   strict?: boolean;
-//   maxDepth?: number;
-// };
 
-// class ParseError extends Error {
-//   constructor(
-//     message: string,
-//     public position: number,
-//     public context: string = ''
-//   ) {
-//     super(`ParseError at position ${position}: ${message}${context ? ` (${context})` : ''}`);
-//     this.name = 'ParseError';
-//   }
-// }
 
 // /**
 //  * Safe, typed parser for JavaScript object literals
@@ -30,89 +9,8 @@
 //     throw new TypeError('Input must be a string');
 //   }
 
-//   if (str.trim().length === 0) {
-//     throw new ParseError('Input string is empty', 0);
-//   }
-
-//   // Default options
-//   const opts: Required<ParserOptions> = {
-//     allowUnquotedKeys: true,
-//     allowTrailingCommas: true,
-//     allowSingleQuotes: true,
-//     allowComments: true,
-//     allowUndefined: false,
-//     allowSpecialNumbers: false,
-//     reviver: undefined!,
-//     strict: false,
-//     maxDepth: 100,
-//     ...options,
-//   };
-
-//   let index = 0;
-//   let currentChar = str[0] || '';
-
-//   // Helper functions
-//   const next = (): void => {
-//     index++;
-//     currentChar = str[index] || '';
-//   };
-
-//   const peek = (offset = 1): string => str[index + offset] || '';
-
-//   const isEnd = (): boolean => index >= str.length;
-
-//   const expectChar = (char: string, errorMessage: string): void => {
-//     if (currentChar !== char) {
-//       throw new ParseError(errorMessage, index, `Expected '${char}', got '${currentChar}'`);
-//     }
-//   };
-
-//   // Skip functions
-//   const skipWhitespace = (): void => {
-//     while (!isEnd() && /\s/.test(currentChar)) {
-//       next();
-//     }
-//   };
-
 //   const skipComments = (): void => {
 //     if (!opts.allowComments) return;
-
-//     // Single line comment
-//     if (currentChar === '/' && peek() === '/') {
-//       next(); // Skip '/'
-//       next(); // Skip second '/'
-//       while (!isEnd() && (peek() !== '\n' && peek() !== '\r')) {
-//       // while (!isEnd() && currentChar !== '\n' && currentChar !== '\r') {
-//         next();
-//       }
-//       skipWhitespace();
-//     }
-
-//     // Multi-line comment
-//     if (currentChar === '/' && peek() === '*') {
-//       next(); // Skip '/'
-//       next(); // Skip '*'
-//       while (!isEnd()) {
-//         if (peek() === '/') {
-//         // if (currentChar === '*' && peek() === '/') {
-//           next(); // Skip '*'
-//           next(); // Skip '/'
-//           break;
-//         }
-//         next();
-//       }
-//       skipWhitespace();
-//     }
-//   };
-
-//   const skipWhitespaceAndComments = (): void => {
-//     while (!isEnd()) {
-//       const prevIndex = index;
-//       skipWhitespace();
-//       skipComments();
-//       if (index === prevIndex) break;
-//     }
-//   };
 
 //   // Character classification helpers
 //   const isDigit = (char: string): boolean => char >= '0' && char <= '9';
@@ -128,199 +26,38 @@
 //   const isIdentifierChar = (char: string): boolean => 
 //     isIdentifierStart(char) || isDigit(char);
 
-//   // Main parse function with depth tracking
-//   const parseValue = (depth = 0): any => {
-//     if (depth > opts.maxDepth) {
-//       throw new ParseError(`Maximum nesting depth (${opts.maxDepth}) exceeded`, index);
-//     }
-
-//     skipWhitespaceAndComments();
-
-//     if (isEnd()) {
-//       throw new ParseError('Unexpected end of input', index);
-//     }
-
-//     switch (currentChar) {
-//       case '{':
-//         return parseObject(depth + 1);
-//       case '[':
-//         return parseArray(depth + 1);
-//       case '"':
-//       case "'":
-//         return parseString();
-//       case '-':
-//       case '0':
-//       case '1':
-//       case '2':
-//       case '3':
-//       case '4':
-//       case '5':
-//       case '6':
-//       case '7':
-//       case '8':
-//       case '9':
-//         return parseNumber();
-//       case 't':
-//       case 'f':
-//       case 'n':
-//         return parseKeyword();
-//       case 'u':
-//         if (opts.allowUndefined) {
-//           return parseKeyword();
-//         }
-//         throw new ParseError('Unexpected character', index, "'u' at start of undefined");
-//       case 'I':
-//       case 'N':
-//         if (opts.allowSpecialNumbers) {
-//           return parseSpecialNumber();
-//         }
-//         throw new ParseError('Unexpected character', index);
-//       default:
-//         throw new ParseError(`Unexpected character '${currentChar}'`, index);
-//     }
-//   };
-
 //   const parseObject = (depth: number): Record<string, any> => {
 //     const obj: Record<string, any> = {};
 //     next(); // Skip '{'
     
-//     skipWhitespaceAndComments();
-
-//     // Empty object
-//     if (currentChar === '}') {
-//       next();
-//       return obj;
-//     }
 
 //     while (!isEnd()) {
-//       skipWhitespaceAndComments();
-
-//       // Parse key
-//       let key: string;
-//       if (currentChar === '"' || (opts.allowSingleQuotes && currentChar === "'")) {
-//         key = parseString();
-//       } else if (opts.allowUnquotedKeys && isIdentifierStart(currentChar)) {
-//         const start = index;
-//         while (!isEnd() && isIdentifierChar(currentChar)) {
-//           next();
-//         }
-//         key = str.slice(start, index);
-//       } else {
-//         throw new ParseError('Expected property name', index);
-//       }
-
-//       skipWhitespaceAndComments();
-
-//       // Colon
-//       expectChar(':', 'Expected colon after property name');
-//       next();
-
 //       skipWhitespaceAndComments();
 
 //       // Value
 //       obj[key] = parseValue(depth);
 
-//       skipWhitespaceAndComments();
-
-//       // Check for end or comma
-//       if (currentChar === '}') {
-//         next();
-//         break;
-//       }
-
-//       if (currentChar === ',') {
-//         next();
-//         skipWhitespaceAndComments();
         
-//         // Check for trailing comma
-//         // if (currentChar === '}') {
-//         if (peek() === '}') {
-//           if (opts.allowTrailingCommas) {
-//             next();
-//             break;
-//           }
-//           throw new ParseError('Trailing comma not allowed', index);
-//         }
-//         continue;
-//       }
 
 //       throw new ParseError('Expected comma or closing brace', index);
 //     }
-
-//     return obj;
-//   };
 
 //   const parseArray = (depth: number): any[] => {
 //     const arr: any[] = [];
 //     next(); // Skip '['
     
-//     skipWhitespaceAndComments();
-
-//     // Empty array
-//     if (currentChar === ']') {
-//       next();
-//       return arr;
-//     }
 
 //     while (!isEnd()) {
 //       arr.push(parseValue(depth));
 
-//       skipWhitespaceAndComments();
-
-//       // Check for end or comma
-//       if (currentChar === ']') {
-//         next();
-//         break;
-//       }
-
-//       if (currentChar === ',') {
-//         next();
-//         skipWhitespaceAndComments();
         
-//         // Trailing comma check
-//         if (peek() === ']') {
-//         // if (currentChar === ']') {
-//           if (opts.allowTrailingCommas) {
-//             next();
-//             break;
-//           }
-//           throw new ParseError('Trailing comma not allowed', index);
-//         }
-//         continue;
-//       }
 
 //       throw new ParseError('Expected comma or closing bracket', index);
-//     }
-
-//     return arr;
-//   };
-
-//   const parseString = (): string => {
-//     const quoteChar = currentChar;
-//     if (quoteChar === "'" && !opts.allowSingleQuotes) {
-//       throw new ParseError('Single quotes not allowed', index);
 //     }
 
 //     next(); // Skip opening quote
 //     let result = '';
 //     const startIndex = index;
-
-//     while (!isEnd() && currentChar !== quoteChar) {
-//       if (currentChar === '\\') {
-//         next();
-//         if (isEnd()) {
-//           throw new ParseError('Unterminated string', startIndex);
-//         }
-//         result += parseEscapeSequence();
-//       } else {
-//         result += currentChar;
-//         next();
-//       }
-//     }
-
-//     if (currentChar !== quoteChar) {
-//       throw new ParseError('Unterminated string', startIndex);
-//     }
 
 //     next(); // Skip closing quote
 //     return result;
@@ -329,229 +66,26 @@
 //   const parseEscapeSequence = (): string => {
 //     const escStart = index;
     
-//     switch (currentChar) {
-//       case '"':
-//       case "'":
-//       case '\\':
-//       case '/':
-//         const char = currentChar;
-//         next();
-//         return char;
-//       case 'b':
-//         next();
-//         return '\b';
-//       case 'f':
-//         next();
-//         return '\f';
-//       case 'n':
-//         next();
-//         return '\n';
-//       case 'r':
-//         next();
-//         return '\r';
-//       case 't':
-//         next();
-//         return '\t';
-//       case 'u':
-//         next();
-//         return parseUnicodeEscape();
-//       default:
-//         // Return the character as-is (like JavaScript does)
-//         const escapedChar = currentChar;
-//         next();
-//         return escapedChar;
-//     }
-//   };
 
-//   const parseUnicodeEscape = (): string => {
-//     const start = index;
-//     let hex = '';
     
-//     // Parse 4 hex digits
-//     for (let i = 0; i < 4; i++) {
-//       if (isEnd() || !isHexDigit(currentChar)) {
-//         throw new ParseError('Invalid Unicode escape sequence', start);
-//       }
-//       hex += currentChar;
-//       next();
-//     }
     
-//     return String.fromCharCode(parseInt(hex, 16));
-//   };
 
-//   const parseNumber = (): number => {
-//     const start = index;
-//     let numberStr = '';
-
-//     // Sign
-//     if (currentChar === '-') {
-//       numberStr += currentChar;
-//       next();
-//     }
-
-//     // Integer part
-//     if (currentChar === '0') {
-//       numberStr += currentChar;
-//       next();
-//     } else {
-//       while (!isEnd() && isDigit(currentChar)) {
-//         numberStr += currentChar;
-//         next();
-//       }
-//     }
-
-//     // Fraction part
-//     if (currentChar === '.') {
-//       numberStr += currentChar;
-//       next();
       
-//       while (!isEnd() && isDigit(currentChar)) {
-//         numberStr += currentChar;
-//         next();
-//       }
-//     }
 
-//     // Exponent
-//     if (currentChar === 'e' || currentChar === 'E') {
-//       numberStr += currentChar;
-//       next();
       
-//       // if (currentChar === '+' || currentChar === '-') {
-//       if (peek() === '+' || peek() === '-') {
-//         numberStr += currentChar;
-//         next();
-//       }
       
-//       while (!isEnd() && isDigit(currentChar)) {
-//         numberStr += currentChar;
-//         next();
-//       }
-//     }
-
-//     const num = parseFloat(numberStr);
-//     if (isNaN(num)) {
-//       throw new ParseError('Invalid number', start);
-//     }
-
-//     return num;
-//   };
 
 //   const parseSpecialNumber = (): number => {
 //     const start = index;
     
-//     if (currentChar === 'I') {
-//       const word = str.slice(index, index + 8);
-//       if (word === 'Infinity') {
-//         for (let i = 0; i < 8; i++) next();
-//         return Infinity;
-//       }
-//     } else if (currentChar === 'N') {
-//       const word = str.slice(index, index + 3);
-//       if (word === 'NaN') {
-//         for (let i = 0; i < 3; i++) next();
-//         return NaN;
-//       }
-//     } else if (currentChar === '-' && peek() === 'I') {
-//       const word = str.slice(index, index + 9);
-//       if (word === '-Infinity') {
-//         for (let i = 0; i < 9; i++) next();
-//         return -Infinity;
-//       }
-//     }
     
 //     throw new ParseError('Invalid special number', start);
 //   };
 
-//   const parseKeyword = (): any => {
-//     const start = index;
-//     let keyword = '';
     
-//     while (!isEnd() && /[a-zA-Z]/.test(currentChar)) {
-//       keyword += currentChar;
-//       next();
-//     }
     
-//     switch (keyword) {
-//       case 'true':
-//         return true;
-//       case 'false':
-//         return false;
-//       case 'null':
-//         return null;
-//       case 'undefined':
-//         if (opts.allowUndefined) {
-//           return undefined;
-//         }
-//         throw new ParseError('undefined is not allowed', start);
-//       default:
-//         throw new ParseError(`Unexpected keyword '${keyword}'`, start);
-//     }
-//   };
-
-//   // Main parse execution
-//   try {
-//     skipWhitespaceAndComments();
-//     const result = parseValue();
-
-//     // Check for trailing characters
-//     skipWhitespaceAndComments();
-//     if (!isEnd()) {
-//       throw new ParseError('Unexpected trailing characters', index);
-//     }
-
-//     // Apply reviver if provided
-//     if (opts.reviver) {
-//       return applyReviver({ '': result }, '', result, opts.reviver);
-//     }
-
-//     return result as T;
-//   } catch (error) {
-//     // Fallback to JSON.parse if not strict
-//     if (!opts.strict && error instanceof ParseError) {
-//       try {
-//         return opts.reviver 
-//           ? JSON.parse(str, opts.reviver) 
-//           : JSON.parse(str);
-//       } catch {
-//         throw error;
-//       }
-//     }
-//     throw error;
-//   }
-// }
-
-// function applyReviver(
-//   holder: Record<string, any>,
-//   key: string,
-//   value: any,
-//   reviver: (key: string, value: any) => any
-// ): any {
-//   if (value && typeof value === 'object') {
-//     if (Array.isArray(value)) {
-//       return value.map((item, index) => 
-//         applyReviver(value, index.toString(), item, reviver)
-//       );
-//     } else {
-//       const result: Record<string, any> = {};
-//       for (const [k, v] of Object.entries(value)) {
-//         const transformed = applyReviver(value, k, v, reviver);
-//         if (transformed !== undefined) {
-//           result[k] = transformed;
-//         }
-//       }
-//       return result;
-//     }
-//   }
-//   return reviver.call(holder, key, value);
-// }
-
-
-
-
 
   
-
-
 
 /**
  * Fix the regex patterns in the custom parse function
@@ -813,7 +347,6 @@ function parseJsObjectLiteral(str: string, options: any = {}): any {
   }
 }
 
-
 // Alternative: A simpler regex-based approach with better patterns
 function simpleJsObjectParse(str: string): any {
   // This is a simpler version that just handles the most common cases
@@ -854,11 +387,6 @@ function simpleJsObjectParse(str: string): any {
   }
 }
 
-// console.log('Testing regex fixes:');
-
-// const testCases = [
-//   // Unquoted keys
-//   '{name: "John", age: 30}',
   
 //   // Single quotes
 //   "{'name': 'John', 'age': 30}",
@@ -884,16 +412,6 @@ function simpleJsObjectParse(str: string): any {
 //   // Nested with issues
 //   '{data: {name: "John", items: [1, 2, 3,]}}'
 // ];
-
-// testCases.forEach((test, i) => {
-//   console.log(`\nTest ${i + 1}: ${test.slice(0, 50)}...`);
-//   try {
-//     const result = simpleJsObjectParse(test);
-//     console.log('Success:', JSON.stringify(result));
-//   } catch (e) {
-//     console.log('Error:', e.message);
-//   }
-// });
 
 // Export for use
 export { customParse, simpleJsObjectParse, parseJsObjectLiteral };

@@ -73,7 +73,7 @@ export interface AuthServiceOptions<U, P = unknown, Q = (p: P) => boolean> {
 /**
  * What an application injects.
  *
- * The session's own surface (`user`, `token`, `status`, `isAuthenticated`, `can`, …) plus
+ * The session's own surface (`user`, `token`, `status`, `isAuthenticated`, `can`, ...) plus
  * the three things a redirect flow adds.
  */
 export interface AuthService<U, P = unknown, Q = (p: P) => boolean>

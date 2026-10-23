@@ -60,7 +60,7 @@ export function loadPackageTypes(): void {
 
   for (const [specifier, target] of Object.entries(BARRELS)) {
     const name = specifier.replace('@fluixi/', '');
-    // './dist/…' from the package root, '../dist/…' from a subpath directory. Without the
+    // './dist/...' from the package root, '../dist/...' from a subpath directory. Without the
     // leading './' the re-export reads as a bare specifier and resolves to nothing.
     const depth = name.split('/').length - 1;
     const up = depth ? '../'.repeat(depth) : './';

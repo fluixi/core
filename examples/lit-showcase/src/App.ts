@@ -7,7 +7,7 @@ import { html } from '@fluixi/core';
 // `props.x`: never destructure (props are getters; destructuring freezes them).
 
 // ── A component with a named slot ────────────────────────────────────────────
-// `<Card><span slot="header">…</span>body</Card>` → props.header + props.children.
+// `<Card><span slot="header">...</span>body</Card>` → props.header + props.children.
 function Card(props: { header?: unknown; children?: unknown }) {
   return html`<div class="box"><strong>${props.header}</strong> — ${props.children}</div>`;
 }

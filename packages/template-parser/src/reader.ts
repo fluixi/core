@@ -3,7 +3,7 @@
  *
  * HTML-template lexing is mode-dependent: data text, tag soup, attribute
  * values, raw-text bodies and comments each lex by different rules, and a
- * `${…}` hole can land in the middle of any of them (`class="a ${x} b"`). A
+ * `${...}` hole can land in the middle of any of them (`class="a ${x} b"`). A
  * single flat token array can't model that, so instead of pre-tokenizing we
  * expose hole-aware primitives the parser drives per mode. This is the
  * "tokenizer" in the classic sense: it owns character reads and hole

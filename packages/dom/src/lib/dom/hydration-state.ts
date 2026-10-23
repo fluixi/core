@@ -157,7 +157,7 @@ export function whenAppHydrated(fn: () => void): () => void {
   return () => state.waiting.delete(fn);
 }
 
-// ─── Hydration keys ─────────────────────────────────────────────────────────────
+// Hydration keys
 //
 // A cursor pairs client nodes with server nodes by creation order, so it breaks wherever
 // creation order is not document order: in `list.map(m => (m.soon ? <span/> : <Nav/>))` the

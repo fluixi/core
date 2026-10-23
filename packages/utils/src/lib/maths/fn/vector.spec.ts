@@ -144,7 +144,6 @@ describe('Vector Functions', () => {
 
   describe('magnitude4D', () => {
     it('should calculate magnitude of 4D vector', () => {
-      // expect(magnitude4D({ x: 2, y: 3, z: 6, w: 2 })).toBeCloseTo(7.681146);
       expect(magnitude4D({ x: 0, y: 0, z: 0, w: 0 })).toBe(0);
       expect(magnitude4D({ x: 1, y: 0, z: 0, w: 0 })).toBe(1);
     });
@@ -1250,7 +1249,6 @@ describe('Vector Functions', () => {
   describe('Edge Cases', () => {
     it('should handle near-zero magnitudes correctly', () => {
       const tiny = { x: 1e-15, y: 1e-15 };
-      // expect(magnitude2D(tiny)).toBeGreaterThan(0);
       expect(magnitude2D(tiny)).toBeLessThan(1e-14);
     });
 

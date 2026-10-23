@@ -13,7 +13,7 @@ export const SVG_TAGS = new Set([
 /** Elements whose content is text, not markup: don't descend into `<` inside. */
 export const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
 
-/** Void elements: no children, no close tag (`<input>`, `<br>`, …). */
+/** Void elements: no children, no close tag (`<input>`, `<br>`, ...). */
 export const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
   'link', 'meta', 'param', 'source', 'track', 'wbr',

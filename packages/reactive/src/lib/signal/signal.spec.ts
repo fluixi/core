@@ -55,7 +55,6 @@ describe('Signal System - Core Features', () => {
       setCount(0); // Same value
       expect(runs).toBe(1); // Should not trigger
       setCount(1);
-      // expect(runs).toBe(2);
     });
 
     it('should convert to observable', () => {
@@ -70,7 +69,6 @@ describe('Signal System - Core Features', () => {
       setCount(2);
       setCount(3);
 
-      // console.log('values', values);
       expect(values).toEqual([1, 2, 3]);
       sub.unsubscribe();
     });
@@ -348,31 +346,11 @@ describe('Signal System - Advanced Features', () => {
   //   it('should handle async data loading', async () => {
   //     const mockFetch = () => Promise.resolve({ id: 1, name: 'Test User' });
 
-  //     const DataComponent = createSuspense(
-  //       () => {
-  //         const data = trackPromise(mockFetch());
-  //         return data;
-  //       },
-  //       { loading: true }
-  //     );
-
-  //     expect(DataComponent).toBeDefined();
-  //   });
-
   //   it('should track multiple promises', async () => {
   //     const promise1 = Promise.resolve('data1');
   //     const promise2 = Promise.resolve('data2');
 
-  //     const tracked1 = trackPromise(promise1);
-  //     const tracked2 = trackPromise(promise2);
-
-  //     const results = await Promise.all([tracked1, tracked2]);
-  //     expect(results).toEqual(['data1', 'data2']);
-  //   });
-  // });
-
   describe('Error Boundaries', () => {
-
 
   });
 
@@ -497,7 +475,6 @@ describe('Signal System - Advanced Features', () => {
       expect(cleanups).toBeGreaterThan(0);
     });
 
-
     it('should support explicit dependencies with on()', () => {
       const [a, setA] = createSignal(1);
       const [b, setB] = createSignal(2);
@@ -585,7 +562,6 @@ describe('Signal System - Advanced Features', () => {
 
 describe('Signal System - Utilities', () => {
 
-
   describe('createMemo (lazy behavior)', () => {
     it('should compute value lazily', () => {
       const [trigger, setTrigger] = createSignal(0);
@@ -607,10 +583,6 @@ describe('Signal System - Utilities', () => {
     });
   });
 
-
-
-
-
   describe('createSelector', () => {
     it('should create keyed selector', () => {
       const [selected, setSelected] = createSignal({ name: 'test' });
@@ -623,27 +595,10 @@ describe('Signal System - Utilities', () => {
     });
   });
 
-  // describe('createDerivedTrigger', () => {
-  //   it('should trigger on derived value changes', () => {
-  //     const [count, setCount] = createSignal(0);
-  //     const isEven = createDerivedTrigger(() => count() % 2 === 0, {
-  //       name: 'isEven',
-  //     });
-
-  //     let runs = 0;
-  //     createEffect(() => {
-  //       isEven();
-  //       runs++;
-  //     });
-
   //     const initialRuns = runs;
   //     setCount(1); // Odd
   //     setCount(2); // Even
   //     setCount(4); // Even (no change)
-
-  //     expect(runs).toBeGreaterThan(initialRuns);
-  //   });
-  // });
 
   describe('createResource', () => {
     it('should create async resource', async () => {
@@ -673,15 +628,6 @@ describe('Signal System - Utilities', () => {
 
 describe('Signal System - Debugging', () => {
 
-  // describe('findPotentialLeaks', () => {
-  //   it('should find nodes with no observers', () => {
-  //     const [orphan, setOrphan] = createSignal(0);
-  //     // Signal with no effects tracking it
-
-  //     const leaks = findPotentialLeaks();
-  //     expect(Array.isArray(leaks)).toBe(true);
-  //   });
-
   //   it('should not report signals with observers as leaks', () => {
   //     const uniqueValue = 999888777; // Use unique value to avoid collision with other tests
   //     const [tracked, setTracked] = createSignal(uniqueValue);
@@ -691,12 +637,6 @@ describe('Signal System - Debugging', () => {
   //       trackedNodeId = (tracked as any)._node?.id;
   //     });
 
-  //     const leaks = findPotentialLeaks();
-  //     const trackedNode = leaks.find((node) => node.id === trackedNodeId);
-  //     // Should not find tracked signal as leak
-  //     expect(trackedNode).toBeUndefined();
-  //   });
-  // });
 });
 
 describe('Signal System - Integration Tests', () => {
@@ -742,7 +682,6 @@ describe('Signal System - Integration Tests', () => {
     expect(count()).toBe(3);
     expect(runs).toBeGreaterThan(initialRuns);
   });
-
 
   it('should combine context with effects', () => {
     const ConfigContext = createContext({ apiUrl: '/api' });
@@ -798,7 +737,6 @@ describe('Signal System - Integration Tests', () => {
     expect(innerDisposed).toBe(true);
     expect(outerDisposed).toBe(true);
   });
-
 
   it('should support conditional tracking', () => {
     const [tracked, setTracked] = createSignal(1);

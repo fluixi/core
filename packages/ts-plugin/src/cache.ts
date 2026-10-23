@@ -39,7 +39,7 @@ const templates = new WeakMap<TS.SourceFile, TS.TaggedTemplateExpression[]>();
 /**
  * Whether the text could hold a tagged template this plugin cares about. A plain
  * substring test, deliberately: it only has to be right when it says "no".
- * Whitespace between tag and backtick is legal (`html \`…\``) but nobody writes it,
+ * Whitespace between tag and backtick is legal (`html \`...\``) but nobody writes it,
  * and a false "no" costs only the plugin's features, never correctness.
  */
 function mayHaveTemplate(text: string): boolean {
@@ -84,7 +84,7 @@ export function templatesIn(ts: typeof TS, sf: TS.SourceFile): TS.TaggedTemplate
 
 /**
  * The innermost template containing `pos`. Templates nest (a template can appear
- * inside a `${…}` hole), so the last match wins.
+ * inside a `${...}` hole), so the last match wins.
  */
 export function templateAtCached(
   ts: typeof TS,

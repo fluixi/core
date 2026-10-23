@@ -143,9 +143,7 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
     }
   };
 
-  // ====================
   // Parsing Functions
-  // ====================
 
   const parseValue = (): any => {
     depth++;
@@ -235,10 +233,6 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
       
       skipWhitespaceAndComments();
       
-      // Expect colon
-      // if (char !== ':') {
-      //   throw createError('Expected colon after property name');
-      // }
       advance();
       
       skipWhitespaceAndComments();
@@ -517,7 +511,6 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
       
       // Check for non-decimal literals (only if allowUnquotedKeys is true)
       if (optionsRef.allowUnquotedKeys) {
-        // const radixChar = char;
         const radixChar = numberStr.charAt(1);
         if (radixChar === 'x' || radixChar === 'X') {
           // Hexadecimal
@@ -701,9 +694,7 @@ export function parseObjectLiteral<T = any>(str: string, options: ParseOptions =
     return reviver.call(holder, key, value);
   };
 
-  // ====================
   // Main Parsing Logic
-  // ====================
 
   try {
     // Start parsing

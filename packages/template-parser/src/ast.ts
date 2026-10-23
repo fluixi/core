@@ -6,7 +6,7 @@
  * language server, TypeScript plugin, and Biome/formatter alike.
  *
  * Design rules baked into these types:
- *  - Expression holes (`${…}`) are OPAQUE SLOTS. A node stores the hole's
+ *  - Expression holes (`${...}`) are OPAQUE SLOTS. A node stores the hole's
  *    integer `index` (its position in the template's `expressions[]`) and its
  *    source span: never resolved JS. Each consumer binds a slot to its own
  *    representation afterward (a Babel node in the compiler, a `ts.Expression`
@@ -25,9 +25,7 @@ export interface SourceSpan {
 /** Namespaces the parser tracks so SVG (and foreign content) lower correctly. */
 export type Namespace = 'html' | 'svg' | 'mathml';
 
-// ---------------------------------------------------------------------------
 // Node kinds
-// ---------------------------------------------------------------------------
 
 export type NodeKind =
   | 'Root'
@@ -88,9 +86,7 @@ export type AttributeLikeNode =
   | LoadDirectiveNode
   | SlotNode;
 
-// ---------------------------------------------------------------------------
 // Container / content nodes
-// ---------------------------------------------------------------------------
 
 export interface RootNode extends NodeBase {
   kind: 'Root';
@@ -141,15 +137,13 @@ export interface CommentNode extends NodeBase {
   value: string;
 }
 
-/** A `${…}` in child/text position. */
+/** A `${...}` in child/text position. */
 export interface ExpressionNode extends NodeBase {
   kind: 'Expression';
   hole: number;
 }
 
-// ---------------------------------------------------------------------------
 // Attribute / directive nodes
-// ---------------------------------------------------------------------------
 
 /** A single interpolation part of an attribute value. */
 export type ValuePart = { text: string } | { hole: number };
@@ -217,7 +211,7 @@ export interface ElseDirectiveNode extends NodeBase {
   kind: 'ElseDirective';
 }
 
-/** `each=${items}` with optional `key="id"` / `key=${…}`. */
+/** `each=${items}` with optional `key="id"` / `key=${...}`. */
 export interface EachDirectiveNode extends NodeBase {
   kind: 'EachDirective';
   hole: number;
@@ -246,7 +240,7 @@ export interface StyleDirectiveNode extends NodeBase {
 }
 
 /**
- * `load:visible`, `load:interaction="click"`, …: when the component's module is
+ * `load:visible`, `load:interaction="click"`, ...: when the component's module is
  * fetched.
  *
  * The node carries the strategy and its literal modifier as written; turning that into
@@ -275,9 +269,7 @@ export interface SlotNode extends NodeBase {
   name: string | null;
 }
 
-// ---------------------------------------------------------------------------
 // Diagnostics
-// ---------------------------------------------------------------------------
 
 export type Severity = 'error' | 'warning';
 
@@ -312,9 +304,7 @@ export interface ParseResult {
   diagnostics: Diagnostic[];
 }
 
-// ---------------------------------------------------------------------------
 // Tree helpers
-// ---------------------------------------------------------------------------
 
 /** Wire every node's `parent` pointer by walking the tree once. */
 export function setParents(root: RootNode): RootNode {

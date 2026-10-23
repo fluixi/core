@@ -284,10 +284,6 @@ export type NormalDistribution = {
 /**
  * Represents a uniform distribution between min and max.
  */
-// export type UniformDistribution = {
-//   readonly min: number;
-//   readonly max: number;
-// } & { readonly __constraint: Max extends number ? GreaterThan<Max, Min> : never };
 
 /**
  * Represents a bezier curve with control points.

@@ -26,7 +26,7 @@ export interface TemplateSource {
    * before the first `${`, between each pair, and after the last `}`.
    */
   statics: readonly string[];
-  /** One descriptor per `${…}`, in source order. */
+  /** One descriptor per `${...}`, in source order. */
   holes: readonly TemplateHole[];
 }
 

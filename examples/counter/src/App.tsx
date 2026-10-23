@@ -6,7 +6,7 @@ export function Counter(props: { start?: number }) {
   const count = signal(props.start ?? 0);
 
   // Try editing any t('...') below: the string arg autocompletes the LEAF keys
-  // from en.json / fr.json: 'title', 'clicks', 'actions.increment', 'footer.language', …
+  // from en.json / fr.json: 'title', 'clicks', 'actions.increment', 'footer.language', ...
   return (
     <div class="counter">
       <h1>{t('title')}</h1>

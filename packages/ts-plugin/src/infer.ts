@@ -2,14 +2,14 @@
  * Type inference for callback parameters inside html`` templates.
  *
  * A template is an opaque string to TypeScript, so a callback like
- * `${(it) => it.label}` (an each render fn) or `${(e) => …}` (an event handler)
+ * `${(it) => it.label}` (an each render fn) or `${(e) => ...}` (an event handler)
  * gets no contextual type: `it`/`e` are implicit `any`. We recover the type the
  * way JSX would infer it, by understanding the template STRUCTURE:
  *
- *   - `<li each=${items}>${(it) => …}</li>`  → `it` is the element type of `items`
- *   - `<button @click=${(e) => …}>`          → `e` is the DOM event type (MouseEvent…)
+ *   - `<li each=${items}>${(it) => ...}</li>`  → `it` is the element type of `items`
+ *   - `<button @click=${(e) => ...}>`          → `e` is the DOM event type (MouseEvent...)
  *
- * The arrow/function expression in a `${…}` is a REAL TS node (a template-span
+ * The arrow/function expression in a `${...}` is a REAL TS node (a template-span
  * expression), so once we know the role of its hole we can compute the parameter
  * type from the checker and surface it (hover now; completion/checking next).
  */
@@ -61,7 +61,7 @@ type HoleRole =
   | { kind: 'indexEach'; eachHole: number } // <Index>: item is an accessor () => T
   | { kind: 'show'; whenHole: number } // <Show>: value is the narrowed truthy `when`
   | { kind: 'event'; event: string }
-  | { kind: 'refEl'; tag: string }; // ref=${(el)=>…} / use=${(el)=>…}: el is the element
+  | { kind: 'refEl'; tag: string }; // ref=${(el)=>...} / use=${(el)=>...}: el is the element
 
 /** Map every hole index that is a typed callback to its role. */
 function holeRoles(nodes: readonly TemplateNode[], out: Map<number, HoleRole>): void {
@@ -197,7 +197,7 @@ function typeForRole(
     typeText = type ? checker.typeToString(type) : (TAG_ELEMENTS[role.tag.toLowerCase()] ?? 'HTMLElement');
     if (!type) type = resolveGlobalType(ts, checker, fn, typeText);
   } else if (role.kind === 'show') {
-    // <Show when=${cond}>${(value) => …}: value is the narrowed truthy `when`.
+    // <Show when=${cond}>${(value) => ...}: value is the narrowed truthy `when`.
     type = checker.getNonNullableType(checker.getTypeAtLocation(holeExprs[role.whenHole]!));
     typeText = checker.typeToString(type);
   } else if (role.kind === 'indexEach') {

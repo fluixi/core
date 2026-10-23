@@ -30,10 +30,6 @@ import type {
 } from './types.js';
 import { isObject, traverseStructure } from './utils.js';
 
-
-// const applyDiff = (obj: any, diff: any, keepRef?: boolean) => {
-//   return reconcile(diff)(obj);
-// }
 type A<T> = T extends AnyObject ? T : never;
 /**
  * Setter interface for advanced object manipulation
@@ -421,7 +417,6 @@ export function set(
     }
     return first;
   }
-  // const [first, second, third, fourth, fifth] = params;
 
   // Pattern 1 & 2: set(obj, "path", value) or set(obj, "path", updateFunction)
   // console.log('set v', first, second, params.length);
@@ -436,7 +431,6 @@ export function set(
       // console.log('is array', [...params[0]])
       // if ([...params[0]].some((v) => v.title === 'S / Red / Nike')) throw new Error('stop')
         if (Array.isArray(obj)) {
-          // obj = params[0];
           if (first.length === 0) {
             for (let i = 0; i < obj.length; i++) {
               obj.pop();
@@ -449,23 +443,15 @@ export function set(
             return obj;
           }
         }
-      // updateWithCallBack(obj, (value) => );
     } else if (typeof params[0] === 'object' && !Array.isArray(params[0])) {
       if (typeof obj === 'object' && !Array.isArray(obj)) {
         applyDiff(obj, params[0], true);
       }
-      // if (Array.isArray(obj)) {
-      //   obj.push(params[0]);
-      // } else {
-      //   obj = { ...obj, ...params[0] };
-      // }
-      // return updateWithCallBack(obj, (value) => ({ ...value, ...params[0] }));
     } else {
       obj = params[0];
     }
 
     return obj;
-    // return updateWithCallBack(obj, (value) => params[0]);
   }
 
   if (Array.isArray(obj)) {
@@ -492,9 +478,6 @@ export function set(
     }
   }
 
-  // if (Array.isArray(obj) && typeof second === 'object') {
-  //   console.log('items', obj, first, second);
-  // }
   if (
     (typeof first === 'string' || typeof first === 'number') &&
     (params.length === 2 || params.length === 3)
@@ -516,7 +499,6 @@ export function set(
 
       }
     }
-    // console.log('len 1', params.length);
     if (typeof second === 'number' && typeof third !== 'undefined') {
       return setValueAtIndex(obj, first, second, third as any);
     }
@@ -673,7 +655,6 @@ function handleFunctionParams(
   isArray = false
 ) {
   const paths = parseSelector(selector);
-  // console.log('p', { paths, selector, res: paths[paths.length - 1] });
   if(paths.length === 0) return value
   const isWildcard = paths[paths.length - 1].type === 'wildcard';
   const containWildcard =
@@ -700,9 +681,6 @@ function handleFunctionParams(
   if (!isWildcard && !finalValue) {
     finalValue = typeof value === 'function' ? value(data) : value;
   }
-  // if (selector === 'person.wife.childs') {
-  //   console.log('final', { finalValue, data, value });
-  // }
 
   return finalValue;
 }
@@ -758,15 +736,11 @@ export function setValueAtPath<
   value: IValueOfKey<T, K> | ((prev: IValueOfKey<T, K>) => IValueOfKey<T, K>),
   subPath?: string
 ): T {
-  // console.log('set value', selector);
   const paths = parseSelector(selector);
   let target = ValueOfKey(obj, selector, {
     paths,
     createMissing: true,
   } as any);
-  // if (selector === 'variantRows') {
-  //   console.log('set at p', target, value);
-  // }
   let get_value;
   if (subPath) {
     if (typeof value === 'function') {
@@ -780,10 +754,6 @@ export function setValueAtPath<
     value,
     Array.isArray(obj)
   );
-  // console.log('set value at path', {data, finalValue, selector, obj});
-  // if (selector === '[*]') {
-  //   console.log('finalValue', finalValue, selector);
-  // }
 
   if (subPath) {
     const result = setAtPath(obj, `${selector}.${subPath}`, finalValue, {
@@ -792,11 +762,6 @@ export function setValueAtPath<
     return result;
   } else {
     const r = setAtPath(obj, selector, finalValue, { createMissing: true });
-    // if (selector === '[*]') {
-    //   // console.log('r', r);
-    //   // console.log('r', obj);
-    // }
-    // console.log('r', obj);
     return r;
   }
 }
@@ -831,7 +796,6 @@ export function setValueAtIndex<
   const target_copy = structuredClone(target);
   const finalValue = handleFunctionParams(selector, target_copy[index], value);
 
-  // console.log('set value at index', {obj, selector, index, finalValue, value, target_copy});
   if (index < 0) {
     // Negative index counts from end
     const actualIndex = target.length + index;
@@ -871,7 +835,6 @@ const setIndexWithSubPath = <
   subPath: string,
   value: any
 ): T => {
-  // console.log('sub is fn', {obj, selector, index, subPath, value});
   if (typeof subPath === 'function') {
     return setValueAtPath(obj, `${selector}[${index}]` as any, subPath);
   }
@@ -1040,7 +1003,6 @@ type ArrayObject<T, P extends object> = T[] & P;
  */
 export function castProps<T>(arr: any, props: any): T {
   return Object.assign(arr, props) as T;
-  // return arr as T;
 }
 
 /**
@@ -1100,14 +1062,11 @@ export function setArrayValueWithFilter<
 ): T {
   let target = obj
 
-  // const target = ValueOfKey(obj, selector);
   if (!Array.isArray(target)) {
     throw new Error(`Target at ${selector} is not an array`);
   }
   // return setValueAtPath(obj, selector, value);
   // console.log('updating', selector, value, target)
-
-
 
   const indices: number[] = [];
   const target_copy = [...target];
@@ -1115,13 +1074,8 @@ export function setArrayValueWithFilter<
   target.forEach((item, index) => {
     const n = setAtPath(item, selector, value, { createMissing: true })
     item = n
-    // if (filterFn(item, index)) {
-    //   // console.log('set filter for done', index)
-    //   indices.push(index);
-    // }
   });
   return target
-  // return setValueWithIndices(obj, selector, indices, value);
 }
 
 /**
@@ -1366,7 +1320,6 @@ export function ValueOfKey<
             }
           }
         } else if (createMissing) {
-          // const nextSegment = segments[i + 1];
           current = {};
           current[String(segment.value)] =
             nextSegment.type === 'index' ||
@@ -1517,10 +1470,6 @@ export const setAtPath = <
       nextSegment.type === 'union' ||
       nextSegment.type === 'wildcard';
     if (segment.type === 'property') {
-      // if (selector === '[*].meta.count') {
-      //   console.log('on property first', { selector, current });
-      // }
-      // Handle numeric property on array as index
       if (Array.isArray(current) && typeof typeof segment.value === 'number') {
         const index = segment.value as number;
         if (index < 0) {
@@ -1559,10 +1508,6 @@ export const setAtPath = <
       }
       break;
     } else if (segment.type === 'index' || segment.type === 'wildcard') {
-      // console.log('ind', current)
-      // if (selector === '[*].meta.count') {
-      //   console.log('on index or  wildcard first', { selector, current });
-      // }
       if (!Array.isArray(current)) {
         if (!createMissing) return obj;
         current = [];
@@ -1601,10 +1546,6 @@ export const setAtPath = <
     }
   }
 
-  // if (selector === 'person.wife.childs') {
-  //   console.log('is array data', { current, value, lastSegment });
-  // }
-
   // Set the value
   switch (lastSegment.type) {
     case 'property':
@@ -1635,14 +1576,7 @@ export const setAtPath = <
           let ob: any;
           if (paths.length >= 2) {
             paths.shift();
-            // if (Array.isArray(value)) {
 
-            // }else{
-
-            // }
-            // if (selector === 'person.wife.childs') {
-            //   console.log('is array data', { current, value });
-            // }
             for (let i = 0; i < current.length; i++) {
               if (Array.isArray(value)) {
                 ob = fromPath(paths.join('.'), value[i]);
@@ -1664,14 +1598,6 @@ export const setAtPath = <
             };
           }
         } else {
-          // if (selector === 'person.wife.childs') {
-          //   console.log('on property', {
-          //     current,
-          //     lastSegment,
-          //     value,
-          //     key: String(lastSegment.value),
-          //   });
-          // }
           if (Array.isArray(value) && value.length === 0) {
             if (typeof current[String(lastSegment.value)] === 'undefined') {
               current[String(lastSegment.value)] = [];
@@ -1690,9 +1616,6 @@ export const setAtPath = <
       if (!Array.isArray(current)) {
         throw new Error(`Cannot use index on non-array for final segment`);
       }
-      // if (selector === '[*].meta.count') {
-      //   console.log('on index or Wildcard last', { selector, current });
-      // }
 
       const index = lastSegment.value as number;
       if (lastSegment.type === 'index') {
@@ -1715,18 +1638,9 @@ export const setAtPath = <
                 true
               );
             } catch (e) {
-              // console.log('expected on array', {
-              //   selector,
-              //   current,
-              //   value,
-              //   index,
-              // });
-              // console.log('current', current);
               throw Error('expected on array');
             }
           } else {
-            // current[index] = value[index];
-            // setValueAtIndex(current, selector, index, value[index]);
             current[index] = value;
           }
         } else {
@@ -2583,12 +2497,6 @@ export const updateWithCallBack = <
   updater: Callback<T>
 ): T => {
   const newValue = updater(obj as any);
-  // console.log('update trigger', obj, path, newValue)
-  // if(typeof newValue === 'number'){
-  //   return setAtPath(obj, path, newValue);
-  // }
-  // return setValueAtPath(obj as any, path as any, newValue as any);
-  // console.log('callback update before', Array.isArray(obj) ? [...obj] : {...obj} , newValue);
   const result = applyDiff(obj, newValue, true);
   // const result = deepMerge(obj, newValue);
   // console.log('callback update', {obj, result, updater, newValue})

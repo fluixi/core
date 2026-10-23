@@ -2,7 +2,7 @@
  * Names bound at module scope.
  *
  * Injected imports are skipped when the name already exists, so a file with its
- * own `Show` keeps it. Only module scope matters: a `const insert = …` inside a
+ * own `Show` keeps it. Only module scope matters: a `const insert = ...` inside a
  * function shadows our import there but cannot collide with it, which is the same
  * answer `path.scope.hasBinding` gives on the Program path.
  *

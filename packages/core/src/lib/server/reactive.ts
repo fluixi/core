@@ -20,9 +20,7 @@ import type {
   Context,
 } from '@fluixi/reactive/signal';
 
-// ============================================================================
 // SERVER SIGNAL
-// ============================================================================
 
 /**
  * Server createSignal - Returns snapshot value
@@ -59,9 +57,7 @@ export function createSignal<T>(
   return [read, write];
 }
 
-// ============================================================================
 // SERVER EFFECT
-// ============================================================================
 
 /**
  * Server createEffect - Runs once, no tracking
@@ -93,9 +89,7 @@ export function createEffect(
   return { dispose: () => {} };
 }
 
-// ============================================================================
 // SERVER MEMO
-// ============================================================================
 
 /**
  * Server createMemo - Compute once, return static accessor
@@ -120,9 +114,7 @@ export function createMemo<T>(
   return (() => computed) as Accessor<T>;
 }
 
-// ============================================================================
 // SERVER ROOT
-// ============================================================================
 
 /**
  * Server createRoot - Creates owner but no reactive tracking
@@ -162,9 +154,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
   }
 }
 
-// ============================================================================
 // SERVER BATCH
-// ============================================================================
 
 /**
  * Server batch - Execute immediately, no batching
@@ -185,9 +175,7 @@ export function batch<T>(fn: () => T): T {
   return fn();
 }
 
-// ============================================================================
 // SERVER UNTRACK
-// ============================================================================
 
 /**
  * Server untrack - Execute function (already untracked)
@@ -207,9 +195,7 @@ export function untrack<T>(fn: () => T): T {
   return fn();
 }
 
-// ============================================================================
 // SERVER CLEANUP
-// ============================================================================
 
 let currentCleanups: Array<() => void> | null = null;
 
@@ -235,9 +221,7 @@ export function onCleanup(fn: () => void): void {
   }
 }
 
-// ============================================================================
 // SERVER OWNER
-// ============================================================================
 
 let currentOwner: RootOwner | null = null;
 
@@ -265,9 +249,7 @@ export function runWithOwner<T>(owner: RootOwner | null, fn: () => T): T {
   }
 }
 
-// ============================================================================
 // SERVER CONTEXT
-// ============================================================================
 
 const contextMap = new Map<symbol, any>();
 
@@ -324,9 +306,7 @@ export function useContext<T>(context: Context<T>): T {
   return value !== undefined ? value : context.defaultValue!;
 }
 
-// ============================================================================
 // SERVER COMPUTED
-// ============================================================================
 
 /**
  * Server createComputed - Alias for createEffect
@@ -337,9 +317,7 @@ export function createComputed(fn: () => any): { dispose: () => void } {
   return createEffect(fn);
 }
 
-// ============================================================================
 // SERVER RENDER EFFECT
-// ============================================================================
 
 /**
  * Server createRenderEffect - Runs once for SSR rendering
@@ -348,9 +326,7 @@ export function createRenderEffect(fn: () => any): { dispose: () => void } {
   return createEffect(fn);
 }
 
-// ============================================================================
 // SERVER DEFERRED
-// ============================================================================
 
 /**
  * Server createDeferred - No deferring on server
@@ -359,9 +335,7 @@ export function createDeferred<T>(fn: () => T): Accessor<T> {
   return createMemo(fn);
 }
 
-// ============================================================================
 // SERVER SELECTOR
-// ============================================================================
 
 /**
  * Server createSelector - Returns static equality check
@@ -379,9 +353,7 @@ export function createSelector<T>(source: () => T): (key: T) => boolean {
   return (key: T) => key === value;
 }
 
-// ============================================================================
 // SERVER RESOURCE
-// ============================================================================
 
 /**
  * Server createResource - Stub for resource creation
@@ -400,9 +372,7 @@ export function createResource<T, S = true>(
   ];
 }
 
-// ============================================================================
 // SERVER STORE
-// ============================================================================
 
 export type Store<T extends object> = { readonly [K in keyof T]: T[K] };
 export type SetStoreFunction<T extends object> = {
@@ -438,9 +408,7 @@ export function createStore<T extends object>(
   return [state as Store<T>, setStore as SetStoreFunction<T>];
 }
 
-// ============================================================================
 // SERVER TRANSITION
-// ============================================================================
 
 /**
  * Server startTransition - Execute immediately
@@ -449,11 +417,8 @@ export function startTransition(fn: () => void): void {
   fn();
 }
 
-// ============================================================================
 // ENVIRONMENT
-// ============================================================================
 // ENVIRONMENT
-// ============================================================================
 
 /**
  * Check if running on server
@@ -465,15 +430,11 @@ export const isServer = true;
  */
 export const isClient = false;
 
-// ============================================================================
 // TYPE EXPORTS
-// ============================================================================
 
 export type { SignalTuple, Accessor, Setter, SignalOptions, RootOwner, Context };
 
-// ============================================================================
 // COMPATIBILITY
-// ============================================================================
 
 /**
  * Server sharedConfig - Empty config object for compatibility

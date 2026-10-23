@@ -117,7 +117,7 @@ const spent = new Set<string>();
  *
  *   return (
  *     <main>
- *       <Show when={error} fallback={<p>Signing you in…</p>}>
+ *       <Show when={error} fallback={<p>Signing you in...</p>}>
  *         <h1>Could not sign you in</h1>
  *         <p>{error}</p>
  *         <a href="/login">Try again</a>
@@ -239,7 +239,7 @@ export interface OAuthCallbackProps extends OAuthCallbackOptions {
  * import { OAuthCallback } from '@fluixi/oauth2/callback';
  *
  * export default OAuthCallback({
- *   pending: () => <p>Signing you in…</p>,
+ *   pending: () => <p>Signing you in...</p>,
  *   failed: (reason) => (
  *     <>
  *       <h1>Could not sign you in</h1>

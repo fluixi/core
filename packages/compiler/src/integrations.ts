@@ -1,22 +1,4 @@
-/**
- * @fileoverview Bundler integrations for the Fluixi compiler.
- * @module @fluixi/compiler/integrations
- *
- * vite, webpack, rollup and esbuild adapters. Each is a few lines around
- * `compileModule`, which rewrites the source in place, JSX and `` html`` `` both
- * lower to the shared IR and the imperative backend. fluixi re-exports
- * createVitePlugin from here.
- *
- * `babel: true` routes through the babel front-end instead, for a project whose
- * own babel plugins have to see the output. It is the only thing that needs
- * @babel/core, and it says so rather than degrading: source that was not compiled
- * is source whose templates never became DOM calls, and a build that ships it
- * looks successful until the page is opened.
- */
-
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface CompilerOptions {
   /**
@@ -137,7 +119,7 @@ export interface CompilerOptions {
   controlFlowModule?: string;
 
   /**
-   * Module the router components (Router/Outlet/…) are auto-imported from.
+   * Module the router components (Router/Outlet/...) are auto-imported from.
    * @default '@fluixi/core/router'
    */
   routerModule?: string;
@@ -149,9 +131,7 @@ export interface CompilerOptions {
   reactiveModule?: string;
 }
 
-// ============================================================================
 // Babel Plugin Helpers
-// ============================================================================
 
 /**
  * Helper for creating a Babel plugin
@@ -198,9 +178,7 @@ export async function createBabelPlugin(options: CompilerOptions = {}) {
   };
 }
 
-// ============================================================================
 // TypeScript Transformer Helpers
-// ============================================================================
 
 /**
  * Helper for creating a TypeScript transformer
@@ -249,9 +227,7 @@ function tryRequire(moduleName: string): any {
   }
 }
 
-// ============================================================================
 // Vite Plugin
-// ============================================================================
 
 /**
  * Subpaths that used to exist, and what to write instead. A rename is cheap to
@@ -414,12 +390,6 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
           sourceMaps: options.sourceMaps !== false,
         });
 
-        // console.log('[createVitePlugin] Transformation complete for:', id);
-        // console.log(
-        //   '[createVitePlugin] Has mergeProps in output:',
-        //   result?.code?.includes('mergeProps')
-        // );
-
         return {
           code: result?.code || code,
           map: result?.map,
@@ -562,9 +532,7 @@ async function compileModule(code: string, id: string, options: CompilerOptions)
   return result?.code ? { code: result.code, map: result.map } : null;
 }
 
-// ============================================================================
 // Webpack Loader
-// ============================================================================
 
 /**
  * Create a Webpack loader for JSX transformation
@@ -582,9 +550,7 @@ export function createWebpackLoader(options: CompilerOptions = {}) {
   };
 }
 
-// ============================================================================
 // Rollup Plugin
-// ============================================================================
 
 /**
  * Create a Rollup plugin for JSX transformation
@@ -600,9 +566,7 @@ export function createRollupPlugin(options: CompilerOptions = {}) {
   };
 }
 
-// ============================================================================
 // ESBuild Plugin
-// ============================================================================
 
 /**
  * Create an ESBuild plugin for JSX transformation
@@ -637,14 +601,9 @@ export function createESBuildPlugin(options: CompilerOptions = {}) {
   };
 }
 
-// ============================================================================
 // Exports
-// ============================================================================
 
-
-// ============================================================================
 // "use server": server functions vite plugin
-// ============================================================================
 
 export type { ServerFnTransformOptions } from './frontend/babel/server-functions.js';
 import type { ComponentResolverRule } from './resolve/component-resolver.js';

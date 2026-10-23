@@ -36,9 +36,7 @@ import {createStore} from "@fluixi/reactive/store";
 // Owner type comes from @fluixi/reactive/signal.
 type Owner = any;
 
-// ============================================================================
 // SHARED CONFIG (like SolidJS)
-// ============================================================================
 
 interface SharedConfig {
   context: Owner | null;
@@ -76,9 +74,7 @@ export function getContextOwner(): Owner | null {
   return sharedConfig.context || sharedConfig.owner;
 }
 
-// ============================================================================
 // GLOBAL STATE
-// ============================================================================
 
 /**
  * Development mode flag
@@ -86,9 +82,7 @@ export function getContextOwner(): Owner | null {
 export const DEV =
   typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 export type LifecycleCallback = {
   mounted?: boolean;
@@ -102,9 +96,7 @@ export interface RefObject<T> {
   current: T;
 }
 
-// ============================================================================
 // OWNER-BASED LIFECYCLE COORDINATION
-// ============================================================================
 // Every component has a reactive Owner (from createRoot).
 // onMount and useEffect attach callbacks to the Owner via a Symbol-keyed
 // property. A single queueMicrotask per Owner flushes them in order:
@@ -135,8 +127,6 @@ function getOwnerLifecycle(): OwnerLifecycle | null {
   }
   return owner[_LIFECYCLE];
 }
-
-
 
 /**
  * Schedule a microtask to flush the lifecycle for the current Owner.
@@ -235,16 +225,7 @@ export function createComponent<T extends (props?: any) => any, U = any>(
 const cached = new WeakMap<any, any>()
 
 export function $component<T extends (props?: any) => any, U = any>(value: T, props?: U) {
-  // if(isComponent(value) || isRoutes(value) || isRouter(value)) {
-  // //   if(!cached.has(value)){
-  // //     cached.set(value, ()=>untrack(()=>value(props)))
-  // //   }else{
 
-  // //     console.log('skipp track', value)
-  // //   }
-  // //  return cached.get(value)()
-  //   return untrack(() => value(props))
-  // }
   const component = (typeof value === 'function')
     ? untrack(() => value(props))
     : value;
@@ -266,9 +247,7 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
   return component as CreateComponentReturnType<T, U>;
 }
 
-// ============================================================================
 // LIFECYCLE HOOKS
-// ============================================================================
 
 /**
  * Register a callback to run when component mounts
@@ -357,9 +336,7 @@ export function onUnmount(fn: () => void): void {
  */
 export { onCleanup };
 
-// ============================================================================
 // HOOKS
-// ============================================================================
 
 /**
  * Create a reactive effect
@@ -400,8 +377,6 @@ export function useEffect(callback: () => void | (() => void)): void {
     });
   }
 }
-
-
 
 /**
  * Create a memoized computed value
@@ -609,10 +584,7 @@ export { getOwner };
  */
 export { runWithOwner };
 
-
-// ============================================================================
 // HELPER FUNCTIONS (INTERNAL)
-// ============================================================================
 
 /**
  * Helper to check if we're in a component context
@@ -622,10 +594,7 @@ export function hasLifecycleContext(): boolean {
   return getOwner() !== null;
 }
 
-// ============================================================================
 // DEV MODE UTILITIES
-// ============================================================================
-
 
 /**
  * Check if in development mode
@@ -660,5 +629,4 @@ export function devOnly(fn: () => void): void {
 
 export type { Component,
   ComponentProps} from "@fluixi/dom"
-
 

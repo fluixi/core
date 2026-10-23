@@ -19,7 +19,7 @@ import {
   createResource,
 } from '@fluixi/reactive/signal';
 
-// ─── Public types ────────────────────────────────────────────────────────────
+// Public types
 
 export type LazyComponent<P = ComponentProps> = () => Promise<{
   default: Component<P>;
@@ -47,7 +47,7 @@ function fromChunk<T>(value: T): T {
   return value;
 }
 
-// ─── Implementation ──────────────────────────────────────────────────────────
+// Implementation
 
 /**
  * Defer a component to its own chunk, loaded the first time it renders.

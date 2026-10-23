@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @fileoverview Fluixi CLI - Command-line interface for project and component generation
+ * Fluixi CLI - Command-line interface for project and component generation
  * @module @fluixi/core/cli
  */
 
@@ -11,9 +11,6 @@ import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
 
 /**
  * CLI version
@@ -58,7 +55,7 @@ function generateBasicComponent(
 ): string {
   if (pattern === 'fluixilement') {
     return `/**
- * @fileoverview ${name} component
+ * ${name} component
  */
 
 import { html } from 'lit';
@@ -91,7 +88,7 @@ export default ${name};
 
   if (pattern === 'withsignals') {
     return `/**
- * @fileoverview ${name} component
+ * ${name} component
  */
 
 import { html, LitElement } from 'lit';
@@ -124,7 +121,7 @@ export default ${name};
 
   if (pattern === 'controller') {
     return `/**
- * @fileoverview ${name} component
+ * ${name} component
  */
 
 import { html, LitElement } from 'lit';
@@ -159,7 +156,7 @@ export default ${name};
 
   if (pattern === 'litelement') {
     return `/**
- * @fileoverview ${name} component
+ * ${name} component
  */
 
 import { html, css, LitElement } from 'lit';
@@ -202,7 +199,7 @@ export default ${name};
 
   // Functional pattern (default)
   return `/**
- * @fileoverview ${name} component
+ * ${name} component
  */
 
 import { html, Component, ComponentProps } from '@fluixi/core';
@@ -255,7 +252,7 @@ function generateComponentWithState(
 ): string {
   if (pattern === 'litelement') {
     return `/**
- * @fileoverview ${name} component with state
+ * ${name} component with state
  */
 
 import { html, css, LitElement } from 'lit';
@@ -354,7 +351,7 @@ export default ${name};
 
   if (pattern === 'fluixilement') {
     return `/**
- * @fileoverview ${name} component with reactive state
+ * ${name} component with reactive state
  */
 
 import { html } from 'lit';
@@ -415,7 +412,7 @@ export default ${name};
 
   if (pattern === 'withsignals') {
     return `/**
- * @fileoverview ${name} component with reactive state
+ * ${name} component with reactive state
  */
 
 import { html, LitElement } from 'lit';
@@ -476,7 +473,7 @@ export default ${name};
 
   if (pattern === 'controller') {
     return `/**
- * @fileoverview ${name} component with reactive state
+ * ${name} component with reactive state
  */
 
 import { html, LitElement } from 'lit';
@@ -538,7 +535,7 @@ export default ${name};
 
   // Functional pattern (default)
   return `/**
- * @fileoverview ${name} component with reactive state
+ * ${name} component with reactive state
  */
 
 import { html, Component, ComponentProps } from '@fluixi/core';
@@ -613,7 +610,7 @@ function generateComponentWithResource(
 ): string {
   if (pattern === 'litelement') {
     return `/**
- * @fileoverview ${name} component with async resource fetching
+ * ${name} component with async resource fetching
  */
 
 import { html, css, LitElement } from 'lit';
@@ -723,7 +720,7 @@ export default ${name};
   }
 
   return `/**
- * @fileoverview ${name} component with async resource fetching
+ * ${name} component with async resource fetching
  */
 
 import { html, Component, ComponentProps, createResource, Show } from '@fluixi/core';
@@ -838,7 +835,7 @@ function generateComponentWithRouter(
 ): string {
   if (pattern === 'litelement') {
     return `/**
- * @fileoverview ${name} component with router integration
+ * ${name} component with router integration
  */
 
 import { html, css, LitElement } from 'lit';
@@ -961,7 +958,7 @@ export default ${name};
   }
 
   return `/**
- * @fileoverview ${name} component with router integration
+ * ${name} component with router integration
  */
 
 import {
@@ -1061,7 +1058,7 @@ export default ${name};
  */
 function generateFullComponent(name: string): string {
   return `/**
- * @fileoverview ${name} - Full-featured component with state, resources, and router
+ * ${name} - Full-featured component with state, resources, and router
  */
 
 import {
@@ -1538,7 +1535,7 @@ async function createComponent(
  */
 function generateTestFile(name: string): string {
   return `/**
- * @fileoverview Tests for ${name} component
+ * Tests for ${name} component
  */
 
 import { describe, it, expect } from 'vitest';

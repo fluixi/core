@@ -3,9 +3,7 @@
  * @module FilterStringTypes
  */
 
-// ============================================================================
 // BASIC FILTER TYPES
-// ============================================================================
 
 /**
  * Filters a union of strings to only those that match a literal string.
@@ -86,9 +84,7 @@ export type FilterContains<T extends string, Substring extends string> =
 export type FilterPattern<T extends string, Pattern extends string> = 
  T extends Pattern ? T : never;
 
-// ============================================================================
 // ADVANCED FILTER TYPES
-// ============================================================================
 
 /**
 * Filters a union of strings to only those that match a regular expression pattern.
@@ -175,9 +171,7 @@ export type FilterLength<T extends string, Len extends number> =
    Length<T> extends Len ? T : never
  : never;
 
-// ============================================================================
 // NEGATION FILTER TYPES
-// ============================================================================
 
 /**
 * Filters a union of strings to only those that DO NOT start with a prefix.
@@ -218,9 +212,7 @@ export type FilterNotEndsWith<T extends string, Suffix extends string> =
 export type FilterNotContains<T extends string, Substring extends string> = 
  T extends `${string}${Substring}${string}` ? never : T;
 
-// ============================================================================
 // CASE-SENSITIVE FILTER TYPES
-// ============================================================================
 
 /**
 * Filters a union of strings case-insensitively.
@@ -261,9 +253,7 @@ export type FilterLowercase<T extends string> =
 export type FilterUppercase<T extends string> = 
  T extends Uppercase<T> ? T : never;
 
-// ============================================================================
 // TRANSFORMATION FILTER TYPES
-// ============================================================================
 
 /**
 * Extracts the prefix from strings that match a pattern.
@@ -317,9 +307,7 @@ export type RemovePrefix<T extends string, Prefix extends string> =
 export type RemoveSuffix<T extends string, Suffix extends string> = 
  T extends `${infer Rest}${Suffix}` ? Rest : never;
 
-// ============================================================================
 // SET OPERATION TYPES
-// ============================================================================
 
 /**
 * Intersection of two string unions.
@@ -377,9 +365,7 @@ export type StringSymmetricDifference<A extends string, B extends string> =
  Acc['length'] extends N ? Acc : Tuple<N, T, [...Acc, T]>;
  type TupleToNumber<T extends unknown[]> = T['length'];
 type Add<A extends number, B extends number> = TupleToNumber<[...Tuple<A>, ...Tuple<B>]> & number;
-// ============================================================================
 // HELPER TYPES
-// ============================================================================
 
 
 // Helper to get length of a string (up to 45 characters for practical purposes)
@@ -435,9 +421,7 @@ type Decrement<N extends number> =
 type Array<N extends number, T = any, Result extends T[] = []> = 
  Result['length'] extends N ? Result : Array<N, T, [...Result, T]>;
 
-// ============================================================================
 // UTILITY TYPES
-// ============================================================================
 
 /**
 * Checks if a string union is empty (never).

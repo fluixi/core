@@ -8,9 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 export interface ScannedRoute {
   /** Relative file path from routes dir: 'users/[id].tsx' */
@@ -43,9 +41,7 @@ export interface ScanOptions {
 
 const DEFAULT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
 
-// ============================================================================
 // SCANNING
-// ============================================================================
 
 /**
  * Scan a routes directory and return a tree of ScannedRoute nodes.
@@ -158,9 +154,7 @@ function scanDirectory(
   return sortRoutes(routes);
 }
 
-// ============================================================================
 // ROUTE BUILDING
-// ============================================================================
 
 function buildFileRoute(
   fileName: string,
@@ -225,9 +219,7 @@ function buildFileRoute(
   } as any;
 }
 
-// ============================================================================
 // UTILITIES
-// ============================================================================
 
 function hasValidExtension(fileName: string, extensions: string[]): boolean {
   return extensions.some((ext) => fileName.endsWith(ext));

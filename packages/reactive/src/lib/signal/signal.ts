@@ -1,18 +1,3 @@
-/**
- * @fileoverview Fine-grained reactive signal system
- * @description Reactive primitives for signals, effects, memos, resources,
- * scheduling, ownership, and dependency tracking.
- *
- * Inspired by:
- * - S.js by Adam Haile (https://github.com/adamhaile/S)
- * - SolidJS by Ryan Carniato (https://github.com/solidjs/solid)
- *
- * This implementation was independently designed and written by
- * Ibrahima Touré.
- *
- * Copyright (c) 2026 Ibrahima Touré
- * Licensed under MIT.
- */
 import { isFunction, isPromise } from '../predicates.js';
 import { Observable } from '../observable/observable.js';
 // Detection guards + helpers now live in the TC39-owned ./graph/detect.js

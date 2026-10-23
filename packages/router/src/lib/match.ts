@@ -1,11 +1,3 @@
-/**
- * @fileoverview Pure route matching.
- *
- * `matchRoutes(routes, pathname)` resolves a pathname to a parent → child
- * {@link RouteMatch}. No side effects, no reactivity, same input, same output.
- * Ported from the fluixi router's matcher and made framework-agnostic.
- */
-
 import type { MatchedRoute, RouteDefinition, RouteMatch } from './types.js';
 
 /** Internal: result of matching a single pattern segment-prefix against a path. */
@@ -86,7 +78,7 @@ export function matchRoutes<C>(
   pathname: string
 ): RouteMatch<C> | null {
   // Tolerate a trailing slash (static hosts like Cloudflare Pages canonicalise
-  // `/a/b` → `/a/b/`). Leaf routes match exactly (`^…$`), so a stray `/` would
+  // `/a/b` → `/a/b/`). Leaf routes match exactly (`^...$`), so a stray `/` would
   // otherwise match nothing and render an empty root. Root `/` is preserved.
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') || '/' : pathname;
   const result = matchInto<C>(routes, path);

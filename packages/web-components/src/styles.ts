@@ -9,7 +9,7 @@
 
 /**
  * What `static styles` takes: CSS text, a constructed sheet, or a list of them, nested.
- * The list is how a subclass keeps its parent's: `static styles = [super.styles, '…']`.
+ * The list is how a subclass keeps its parent's: `static styles = [super.styles, '...']`.
  * `undefined`, `null` and `false` in a list are skipped, so an absent parent is fine.
  */
 export type ElementStyles = string | CSSStyleSheet | readonly (ElementStyles | undefined | null | false)[];

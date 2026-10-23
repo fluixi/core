@@ -11,7 +11,7 @@
  * the service it is handed.
  *
  * That restraint is deliberate. Two earlier designs for deep type-checking inside
- * `${…}` holes both had to go: a second `ts.LanguageService` (a second document
+ * `${...}` holes both had to go: a second `ts.LanguageService` (a second document
  * registry, so lib.d.ts and node_modules were parsed twice), and shadow files
  * added to the program by patching `getScriptFileNames`, which tsserver calls on
  * every project sync, so building shadows there re-entered host machinery and
@@ -150,7 +150,7 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
 
 
       // Hover (all computed on the main checker, so it always works): a component
-      // prop name; else an inferred callback param (each/event/ref/use/Show/…);
+      // prop name; else an inferred callback param (each/event/ref/use/Show/...);
       // else the real hover / component-tag hover.
       proxy.getQuickInfoAtPosition = (fileName: string, position: number) => {
         try {
@@ -192,7 +192,7 @@ function init(modules: { typescript: typeof import('typescript') }): PluginModul
         return ls.getCompletionsAtPosition(fileName, position, options as any, formatting as any);
       };
 
-      // Navigation. A `${…}` hole is a real expression, so the real service already
+      // Navigation. A `${...}` hole is a real expression, so the real service already
       // answers for it; only component TAGS need mapping. Rename merges rather than
       // replaces, so renaming from a declaration still rewrites its template tags.
       proxy.getDefinitionAtPosition = (fileName: string, position: number) => {

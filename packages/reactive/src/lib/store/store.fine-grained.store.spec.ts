@@ -1,18 +1,3 @@
-/**
- * @fileoverview Fine-Grained Reactivity Tests for Store System
- * @description Comprehensive tests proving that stores track changes at the property level.
- *
- * Fine-grained reactivity means:
- * - Object properties are tracked independently
- * - Nested properties are tracked separately from parents
- * - Array elements can be updated without recreating the entire array
- * - Effects only re-run when their specific dependencies change
- *
- * Note: Array operations trigger iterator signals which affect all array-dependent effects.
- * This is necessary for array methods like reduce, map, filter to work correctly.
- * Despite this, property-level tracking within array elements is still maintained.
- */
-
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore } from './store.js';
 import { createEffect, createMemo, batch } from '@fluixi/reactive/signal';

@@ -25,9 +25,9 @@ describe('@fluixi/server — isomorphic request state', () => {
 
     const html = await renderRequestAsync(App, { url: '/femme' });
 
-    // The render saw the server-resolved value (not the fallback)…
+    // The render saw the server-resolved value (not the fallback)...
     expect(html).toContain('reg_SERVER@/femme');
-    // …and it was serialized under the iso key so the client seeds the SAME value.
+    // ...and it was serialized under the iso key so the client seeds the SAME value.
     expect(html).toContain('__iso:region');
     expect(html).toContain('reg_SERVER');
   });
@@ -44,9 +44,9 @@ describe('@fluixi/server — isomorphic request state', () => {
       server: () => Promise.reject(new Error('backend down')),
       set: () => {},
     });
-    // preload swallows the rejection…
+    // preload swallows the rejection...
     await expect(preloadServerState({ url: '/' })).resolves.toBeUndefined();
-    // …and a render that depends on the registry still produces output.
+    // ...and a render that depends on the registry still produces output.
     const App = () => {
       const div = createNativeElement('div') as any;
       insert(div, () => 'still here', null);

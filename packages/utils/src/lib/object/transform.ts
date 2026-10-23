@@ -319,62 +319,9 @@ export function kebabCaseKeys<T extends AnyObject>(
  * // }
  * ```
  */
-// export function flatten<T extends AnyObject>(
-//   obj: T,
-// options: {
-//   delimiter?: string;
-//   includeArrays?: boolean;
-//   maxDepth?: number;
-// } = {}
-// ): Record<string, any> {
-//   const {
-//     delimiter = '.',
-//     includeArrays = true,
-//     maxDepth = Infinity,
-//   } = options;
 
 //   const result: Record<string, any> = {};
 
-//   function _flatten(current: any, path: string = '', depth: number = 0) {
-//     if (depth > maxDepth) {
-//       result[path] = current;
-//       return;
-//     }
-
-//     if (!isObject(current)) {
-//       result[path] = current;
-//       return;
-//     }
-
-//     if (Array.isArray(current) && !includeArrays) {
-//       result[path] = current;
-//       return;
-//     }
-
-//     if (Object.keys(current).length === 0) {
-//       result[path] = current;
-//       return;
-//     }
-
-//     const prefix = path ? `${path}${delimiter}` : '';
-
-//     if (Array.isArray(current)) {
-//       for (let i = 0; i < current.length; i++) {
-//         _flatten(current[i], `${prefix}${i}`, depth + 1);
-//       }
-//       return;
-//     }
-
-//     for (const key in current) {
-//       if (Object.prototype.hasOwnProperty.call(current, key)) {
-//         _flatten(current[key], `${prefix}${key}`, depth + 1);
-//       }
-//     }
-//   }
-
-//   _flatten(obj);
-//   return result;
-// }
 export const flatten = (
   obj: AnyObject,
   options: {
@@ -387,12 +334,6 @@ export const flatten = (
 
   if (Array.isArray(obj)) {
     return obj.map((item) => flatten(item, options));
-    // return obj.reduce((acc, item) => {
-    //   return {
-    //     ...acc,
-    //     ...flatten(item, separator),
-    //   };
-    // }, {});
   }
   const result: AnyObject = {};
 

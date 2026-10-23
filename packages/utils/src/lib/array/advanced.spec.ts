@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for advanced array utilities
- */
-
 import { describe, it, expect } from 'vitest';
 import {
   chunk,

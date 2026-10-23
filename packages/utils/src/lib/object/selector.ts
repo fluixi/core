@@ -131,11 +131,6 @@ export const parseSelector = (
     if ((char === '"' || char === "'") && !inQuotes) {
       inQuotes = true;
       quoteChar = char;
-      // if (inBrackets) {
-      //   bracketContent += char;
-      // } else {
-      //   current += char;
-      // }
       continue;
     } else if (char === quoteChar && inQuotes) {
       inQuotes = false;
@@ -208,7 +203,6 @@ export const parseSelector = (
       } else {
         const l = selector.split(lastDot?.raw!)[1];
         if (l !== undefined) {
-          // current = l;
           current = l;
         } else {
           current += char;
@@ -220,7 +214,6 @@ export const parseSelector = (
   if (current) {
     segments.push({ type: 'property', value: current, raw: current });
   }
-  // console.log('checking for last', segments);
 
   // Convert numeric strings in property segments
   return segments.map((segment) => {
@@ -228,7 +221,6 @@ export const parseSelector = (
       if (/^-?\d+$/.test(segment.value)) {
         const num = parseInt(segment.value, 10);
         if (!isNaN(num)) {
-          // return { ...segment, type: 'property', value: String(num) };
           return { ...segment, type: 'index', value: num };
         }
       }
@@ -358,7 +350,6 @@ export const validateSelector = (
   try {
     const segments = parseSelector(selector, { throwOnError: true });
     const type = detectSelectorType(selector);
-    // console.log('validate', segments, type);
     if (options.allowedTypes) {
       if (!options.allowedTypes.includes(type)) {
         return {

@@ -244,9 +244,7 @@ export function parseDate(
   }
 }
 
-// ============================================================================
 // Fixed Internal Helper Functions
-// ============================================================================
 
 /**
  * Parse ISO date string
@@ -1982,9 +1980,7 @@ export function convertTimezone(
   );
 }
 
-// ============================================================================
 // Internal Helper Functions
-// ============================================================================
 
 // /**
 //  * Parse ISO date string
@@ -2003,16 +1999,6 @@ export function convertTimezone(
 //     return new Date(`${input}T00:00:00.000Z`);
 //   }
 
-//   if (format === 'ISO_TIME') {
-//     // Parse time only (use today's date)
-//     const today = new Date().toISOString().split('T')[0];
-//     return new Date(`${today}T${input}Z`);
-//   }
-
-//   // Full ISO format
-//   return new Date(input);
-// }
-
 // /**
 //  * Parse US date string (MM/DD/YYYY or MM/DD/YY)
 //  * @private
@@ -2025,19 +2011,6 @@ export function convertTimezone(
 //   if (parts.length !== 3) {
 //     throw new Error('Invalid US date format');
 //   }
-
-//   let month = parseInt(parts[0]) - 1;
-//   let day = parseInt(parts[1]);
-//   let year = parseInt(parts[2]);
-
-//   // Handle 2-digit years
-//   if (year < 100) {
-//     year += year < 50 ? 2000 : 1900;
-//   }
-
-//   validateDateParts(year, month as Month, day);
-//   return new Date(year, month, day);
-// }
 
 // /**
 //  * Parse EU date string (DD/MM/YYYY or DD/MM/YY)
@@ -2052,19 +2025,6 @@ export function convertTimezone(
 //     throw new Error('Invalid EU date format');
 //   }
 
-//   let day = parseInt(parts[0]);
-//   let month = parseInt(parts[1]) - 1;
-//   let year = parseInt(parts[2]);
-
-//   // Handle 2-digit years
-//   if (year < 100) {
-//     year += year < 50 ? 2000 : 1900;
-//   }
-
-//   validateDateParts(year, month as Month, day);
-//   return new Date(year, month, day);
-// }
-
 // /**
 //  * Parse date with custom format string
 //  * @private
@@ -2077,48 +2037,8 @@ export function convertTimezone(
 //   const formatChars = format.split('');
 //   const inputChars = input.split('');
 
-//   let year = 0,
-//     month = 0,
-//     day = 0,
-//     hour = 0,
-//     minute = 0,
-//     second = 0;
-
-//   for (let i = 0; i < formatChars.length; i++) {
-//     const formatChar = formatChars[i];
-//     const inputChar = inputChars[i];
-
-//     switch (formatChar) {
-//       case 'Y':
-//         year = year * 10 + parseInt(inputChar);
-//         break;
-//       case 'M':
-//         month = month * 10 + parseInt(inputChar);
-//         break;
-//       case 'D':
-//         day = day * 10 + parseInt(inputChar);
-//         break;
-//       case 'h':
-//         hour = hour * 10 + parseInt(inputChar);
-//         break;
-//       case 'm':
-//         minute = minute * 10 + parseInt(inputChar);
-//         break;
-//       case 's':
-//         second = second * 10 + parseInt(inputChar);
-//         break;
-//       default:
-//         // Skip separator characters
-//         break;
-//     }
-//   }
-
 //   // Adjust month (format is 1-based, Date is 0-based)
 //   month = Math.max(1, month) - 1;
-
-//   validateDateParts(year, month as Month, day, hour, minute, second);
-//   return new Date(year, month, day, hour, minute, second);
-// }
 
 // /**
 //  * Parse RFC 2822 date string
@@ -2142,17 +2062,6 @@ export function convertTimezone(
 //     throw new Error('Invalid timestamp format');
 //   }
 
-//   const year = parseInt(input.substring(0, 4));
-//   const month = parseInt(input.substring(4, 6)) - 1;
-//   const day = parseInt(input.substring(6, 8));
-//   const hour = parseInt(input.substring(8, 10));
-//   const minute = parseInt(input.substring(10, 12));
-//   const second = parseInt(input.substring(12, 14));
-
-//   validateDateParts(year, month as Month, day, hour, minute, second);
-//   return new Date(year, month, day, hour, minute, second);
-// }
-
 // /**
 //  * Parse date using locale-specific formatting
 //  * @private
@@ -2167,18 +2076,6 @@ export function convertTimezone(
 //     new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }),
 //     new Intl.DateTimeFormat(locale, { dateStyle: 'long' }),
 //   ];
-
-//   for (const formatter of formats) {
-//     try {
-//       // Use Date's built-in parsing for now
-//       const date = new Date(input);
-//       if (isDate(date)) {
-//         return date;
-//       }
-//     } catch {
-//       // Continue to next format
-//     }
-//   }
 
 //   throw new Error('Could not parse date with locale');
 // }

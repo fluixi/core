@@ -1,7 +1,7 @@
 import { isPlainObject } from './utils.js';
 import type { AnyObject, SelectorFor } from './types.js';
 
-// ─── Public types ─────────────────────────────────────────────────────────────
+// Public types
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -88,7 +88,7 @@ export interface SortOptions<T = any> {
   comparator?: (a: T, b: T) => number;
 }
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// Internal helpers
 
 /** Read a value via dot-notation path, e.g. `'address.city'`. */
 function getAtPath(obj: any, path: string): any {
@@ -157,7 +157,7 @@ function dirFor(order: SortOrder | SortOrder[] | undefined, i: number): 1 | -1 {
   return o === 'desc' ? -1 : 1;
 }
 
-// ─── Core sort functions ──────────────────────────────────────────────────────
+// Core sort functions
 
 /**
  * Sort a flat array of primitives, Dates, or mixed values using natural
@@ -319,7 +319,7 @@ function sortArrayValue<T>(arr: T[], options: SortOptions<T>): T[] {
   return sortPrimitiveArray(arr, options);
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// Public API
 
 /**
  * Sort an array of any element type.
@@ -367,7 +367,7 @@ export function sort<T>(
   return input as any;
 }
 
-// ─── Convenience helpers ──────────────────────────────────────────────────────
+// Convenience helpers
 
 /**
  * Sort an array of objects by one or more key paths, returning a new array.

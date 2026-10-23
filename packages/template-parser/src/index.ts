@@ -8,7 +8,7 @@
  * opaque hole slots to its own representation and consumes the AST, the
  * compiler lowers it to codegen IR, the LSP answers completion/hover/rename.
  *
- * The parser never resolves the JS inside `${…}`; it records each hole as an
+ * The parser never resolves the JS inside `${...}`; it records each hole as an
  * index + span. That is the single seam that keeps this package host-agnostic.
  */
 export * from './ast.js';

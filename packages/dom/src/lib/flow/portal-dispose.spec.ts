@@ -3,8 +3,6 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { onCleanup, createEffect, createSignal, flush } from '@fluixi/reactive/signal';
 import { render, Portal, Show, createNativeElement } from '@fluixi/dom';
 
-// beforeAll(() => ensureIntegration());
-
 describe('Portal disposal', () => {
   it('disposes portal content and removes the container when the render root is disposed', () => {
     let cleaned = false;

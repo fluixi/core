@@ -1145,7 +1145,6 @@ export type CompareFn<T> = (state: T) => boolean;
 /**
  * Type for update function or value
  */
-// export type Update<T = any> = T | CompareFn<T>;
 export type UpdateValue<T = any> = Partial<T> | ((state: T) => Partial<T>);
 // export type UpdateOrCompare<T = any, U = any> =
 //   | U

@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for color conversion utilities
- */
-
 import { describe, it, expect } from 'vitest';
 import {
   rgbToHsl,

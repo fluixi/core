@@ -13,7 +13,7 @@ import {
 
 const SRC = 'export const V = (n) => <p class="x">{n()}</p>;';
 const OPTS = { signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
-// The emitted template string still contains `<p …>`, so look for the runtime
+// The emitted template string still contains `<p ...>`, so look for the runtime
 // calls and for the JSX expression being gone from the source position.
 const compiled = (code: string) =>
   /createNativeElement|templateNode/.test(code) && !/=>\s*<p/.test(code);

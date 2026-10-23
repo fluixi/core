@@ -51,7 +51,7 @@ describe('shouldSuppress', () => {
   });
 
   it('suppresses a single unused import (6133 spanning the whole statement) used in a template', () => {
-    // TS reports a lone unused import as 6133 with the span = the whole `import …;`.
+    // TS reports a lone unused import as 6133 with the span = the whole `import ...;`.
     const src = "import { App } from './App';\nconst t = html`<App />`;";
     const s = sf(src);
     const u = usedComponentTags(ts, s);

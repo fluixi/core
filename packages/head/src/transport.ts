@@ -24,7 +24,7 @@ export function encodeHeadMarker(head: SerializedHead): string {
 }
 
 /**
- * Client-side safety net: remove any `<!--fh:…-->` transport comment left inside the hydration
+ * Client-side safety net: remove any `<!--fh:...-->` transport comment left inside the hydration
  * container. A correct adapter/prerender/dev server lifts the marker into <head> before it reaches
  * the browser, but a streaming or custom server can leave it in the body. Since encodeHeadMarker
  * prepends it, an un-extracted marker is the mount root's first child, where it strands the

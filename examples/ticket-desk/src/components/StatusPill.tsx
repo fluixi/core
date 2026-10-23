@@ -1,4 +1,4 @@
-// Resolved by the `resolve` rule in fluixi.config.ts: a route writes <StatusPill …/>
+// Resolved by the `resolve` rule in fluixi.config.ts: a route writes <StatusPill .../>
 // with no import and the build points the tag here.
 import type { TicketStatus } from '../services/ticket-repo.js';
 

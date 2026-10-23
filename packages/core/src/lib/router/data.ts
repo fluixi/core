@@ -14,9 +14,7 @@ import { currentResourceCache, type ResourceCache } from '@fluixi/reactive/signa
 
 import { useContext, createContext } from '../context/context.js';
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 export type CacheFn<T, Args extends any[]> = (
   ...args: Args
@@ -38,9 +36,7 @@ export interface Submission<T, Args extends any[]> {
   retry: () => void;
 }
 
-// ============================================================================
 // CACHE (QUERY) SYSTEM
-// ============================================================================
 
 export interface CacheOptions {
   /** Milliseconds a value stays fresh. Default: until revalidated. */
@@ -170,9 +166,7 @@ if (typeof window !== 'undefined') {
 // `@fluixi/api/client` applies `x-fx-revalidate` through this, without importing the router.
 (globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.revalidate')] = (names: string[]) => revalidate(names);
 
-// ============================================================================
 // ASYNC DATA PRIMITIVES
-// ============================================================================
 
 /**
  * Create an async resource from a promise or cache function
@@ -183,12 +177,9 @@ export function createAsync<T, S extends any = true>(
 ):  Resource<S> {
   const [data] = createResource(source || (() => true as S) as any, fetcher as any);
   return data as Resource<S>;
-  // return () => '' as any;
 }
 
-// ============================================================================
 // ACTIONS
-// ============================================================================
 
 const submissionState = new Map<
   string,
@@ -355,9 +346,7 @@ export function useAction<T, Args extends any[]>(
   return actionFn as any;
 }
 
-// ============================================================================
 // ROUTE DATA
-// ============================================================================
 
 export interface RouteDataArgs {
   /**

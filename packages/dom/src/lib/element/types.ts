@@ -2,9 +2,7 @@
  * @module @fluixi/dom/element/types
  */
 
-// ============================================================================
 // Prop type inference
-// ============================================================================
 
 export type PropTypeConstructor =
   | typeof String
@@ -55,9 +53,7 @@ export type ElementRenderFn<
   E extends Record<string, EventDefinition> = Record<string, EventDefinition>
 > = (props: PropsSignals<T>, ctx: ElementRenderContext<E>) => unknown;
 
-// ============================================================================
 // Event type inference
-// ============================================================================
 
 export interface EventDefinition<T = unknown> {
   detail?: T;
@@ -84,9 +80,7 @@ export interface ElementRenderContext<
   ) => void;
 }
 
-// ============================================================================
 // Lifecycle callbacks
-// ============================================================================
 
 export interface ElementLifecycleCallbacks {
   connectedCallback?: (host: HTMLElement) => void;
@@ -111,9 +105,7 @@ export interface ElementLifecycleCallbacks {
   ) => void;
 }
 
-// ============================================================================
 // Options
-// ============================================================================
 
 export interface DefineElementOptions<
   P extends Record<string, PropDefinition> = Record<string, PropDefinition>,
@@ -127,9 +119,7 @@ export interface DefineElementOptions<
   lifecycle?: ElementLifecycleCallbacks;
 }
 
-// ============================================================================
 // Element instance & constructor types
-// ============================================================================
 
 /** Convert prop defs into the attribute interface for JSX / vanilla / lit */
 export type ElementAttributes<P extends Record<string, PropDefinition>> = {
@@ -160,9 +150,7 @@ export interface FluixiElementConstructor<
   readonly __events: E;
 }
 
-// ============================================================================
 // Global registration helper types
-// ============================================================================
 
 /**
  * Extract the JSX attributes interface from a FluixiElementConstructor.
@@ -224,9 +212,7 @@ export interface FluixiHTMLAttributes {
   [key: `data-${string}`]: string | undefined;
 }
 
-// ============================================================================
 // Type-level camelCase -> kebab-case
-// ============================================================================
 
 /** Map to build HTML attribute keys from prop defs (uses attribute override or kebab-case) */
 export type PropToAttribute<P extends Record<string, PropDefinition>> = {

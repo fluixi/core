@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for object diff utilities
- */
-
 import { describe, it, expect } from 'vitest';
 import {
   diffObject,
@@ -761,12 +757,6 @@ describe('diffObjectDetailed with array indices', () => {
     const array = ['task 1', 'task 2'];
     const diff = diffObjectDetailed(array, ['task 2']);
     console.log('copy', diff);
-    // applyDiff(array, ['task 1'])
-    // expect(diff).toMatchObject({
-    //   changes: ['task 1'],
-    //   added: [],
-    //   deleted: ["[1]"]
-    // })
   });
 
   it('should track multiple array changes with indices', () => {

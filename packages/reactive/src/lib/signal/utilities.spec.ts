@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for Signal Utilities
- */
-
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createSignal } from '@fluixi/reactive/signal';
 import {
@@ -317,65 +313,16 @@ describe('Signal Utilities', () => {
     });
   });
 
-  // describe('Timing Utilities', () => {
-  //   describe('debounce', () => {
-  // beforeEach(() => {
-  //   vi.useFakeTimers();
-  // });
-
-  // afterEach(() => {
-  //   vi.restoreAllMocks();
-  // });
-
   //     it('should debounce signal updates', () => {
   //       const [search, setSearch] = createSignal('');
   //       const debouncedSearch = debounce(search, 300);
-
-  //       expect(debouncedSearch()).toBe('');
-
-  //       setSearch('a');
-  //       expect(debouncedSearch()).toBe('');
-
-  //       vi.advanceTimersByTime(150);
-  //       setSearch('ab');
-  //       expect(debouncedSearch()).toBe('');
-
-  //       vi.advanceTimersByTime(150);
-  //       setSearch('abc');
-  //       expect(debouncedSearch()).toBe('');
-
-  //       vi.advanceTimersByTime(400);
-  //       expect(debouncedSearch()).toBe('abc');
-  //     });
-  //   });
-
-  //   describe('throttle', () => {
-  //     beforeEach(() => {
-  //       vi.useFakeTimers();
-  //     });
-
-  //     afterEach(() => {
-  //       vi.restoreAllMocks();
-  //     });
 
   //     it('should throttle signal updates', () => {
   //       const [scroll, setScroll] = createSignal(0);
   //       const throttledScroll = throttle(scroll, 100);
 
-  //       expect(throttledScroll()).toBe(0);
-
-  //       setScroll(10);
-  //       expect(throttledScroll()).toBe(10);
-
   //       setScroll(20);
   //       expect(throttledScroll()).toBe(10); // Still throttled
-
-  //       vi.advanceTimersByTime(100);
-  //       setScroll(30);
-  //       expect(throttledScroll()).toBe(30);
-  //     });
-  //   });
-  // });
 
   describe('Integration Tests', () => {
     it('should chain multiple utilities', () => {

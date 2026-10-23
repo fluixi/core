@@ -17,7 +17,7 @@ export enum SignalMode {
  * Universal Signal Interface
  */
 export interface UniversalSignal<T> {
-  // === GRANULAR API (SolidJS Style) ===
+  // GRANULAR API (SolidJS Style)
 
   /** Get current value (tracked) */
   get value(): T;
@@ -31,7 +31,7 @@ export interface UniversalSignal<T> {
   /** Update based on previous value */
   update(updater: (prev: T) => T): void;
 
-  // === STREAM API (RxJS Style) ===
+  // STREAM API (RxJS Style)
 
   /** Get as Observable */
   $: Observable<T>;
@@ -46,7 +46,7 @@ export interface UniversalSignal<T> {
   /** Pipe operators */
   pipe: (...operators: any[]) => Observable<T>;
 
-  // === DUAL-MODE API ===
+  // DUAL-MODE API
 
   /** Get current mode */
   readonly mode: SignalMode;
@@ -54,7 +54,7 @@ export interface UniversalSignal<T> {
   /** Switch operating mode */
   setMode(mode: SignalMode): void;
 
-  // === METADATA ===
+  // METADATA
 
   /** Signal version (increments on change) */
   readonly version: number;
@@ -62,7 +62,7 @@ export interface UniversalSignal<T> {
   /** Signal name */
   readonly name?: string;
 
-  // === UTILITY ===
+  // UTILITY
 
   /** Dispose signal */
   dispose(): void;
@@ -70,30 +70,13 @@ export interface UniversalSignal<T> {
   /** String representation */
   toString(): string;
 
-  // === INTERNAL ===
+  // INTERNAL
   readonly _meta: SignalMeta<T>;
 }
 
 /**
  * Signal metadata for performance optimization
  */
-//   interface SignalMeta<T> {
-//     value: T;
-//     version: number;
-//     // Granular tracking
-//     observers: Set<Computation<any>>;
-//     dependencies: Set<Computation<any>>;
-//     // Stream tracking
-//     subject?: Subject<T>;
-//     observable?: Observable<T>;
-//     // Performance
-//     hitCount: number;
-//     lastAccessed: number;
-//     mode: SignalMode;
-//     // Debugging
-//     name?, string;
-//     creationStack?, string;
-//   }
 
 /**
  * Computation types

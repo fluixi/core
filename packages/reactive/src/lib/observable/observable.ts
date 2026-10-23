@@ -503,5 +503,3 @@ export class Observable<T> extends Subscription {
     }
 }
 
-
-// Observable.prototype.toPromise = toPromise;

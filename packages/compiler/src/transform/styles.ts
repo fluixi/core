@@ -99,7 +99,7 @@ export interface CompiledStyle {
 /** A custom element class with a shadow root, and what its styles are made of. */
 interface ShadowClass {
   node: Node;
-  /** Its `static styles = …`, when it has one. */
+  /** Its `static styles = ...`, when it has one. */
   styles?: Node;
   /** Indexes in `plan.styles` of the blocks its render holds. */
   indexes: number[];
@@ -229,7 +229,7 @@ export function collectStyles(
   }
   const scopeOf = new Map<Node, string>();
   const names = new Map<string, number>();
-  // `const Card = () => …`: the component's name is the variable's.
+  // `const Card = () => ...`: the component's name is the variable's.
   const named = new Map<Node, string>();
 
   const visit = (node: Node, owners: Node[]) => {
@@ -340,7 +340,7 @@ export function collectStyles(
   return plan;
 }
 
-// ─── `` html`` `` templates ──────────────────────────────────────────────────
+// `` html`` `` templates
 
 /** What a template's compile needs to know about styles, and where it reports them. */
 export interface TemplateStyles {
@@ -398,7 +398,7 @@ function staticMember(cls: Node, name: string): Node | undefined {
 /**
  * Where a component's style blocks and css`` values are served: next to the component, a path
  * ending in `.css`. Every CSS tool in the bundler then sees CSS, and none sees TSX: Vite 8
- * matches its transforms on the path without the query, so `card.tsx?…` would read as a .tsx.
+ * matches its transforms on the path without the query, so `card.tsx?...` would read as a .tsx.
  * `?inline` (Vite's own) asks for the CSS as a string, for a shadow root.
  */
 export const styleIds = {
@@ -474,7 +474,7 @@ function isScoped(node: Node): boolean {
 /** The block's template pieces, a string counting as one piece; `null` when it is anything else. */
 /**
  * The `<style>` blocks of an html`` template, as pieces of its quasis: the CSS between the
- * tags, with the `${…}` that stand in it. Each piece keeps the position it starts at.
+ * tags, with the `${...}` that stand in it. Each piece keeps the position it starts at.
  */
 function templateBlocks(quasi: Node): { quasis: Node[]; expressions: Node[]; scoped: boolean }[] {
   const blocks: { quasis: Node[]; expressions: Node[]; scoped: boolean }[] = [];
@@ -603,7 +603,7 @@ export function hash(text: string): string {
   return (h >>> 0).toString(36);
 }
 
-// ─── Scoping ─────────────────────────────────────────────────────────────────
+// Scoping
 
 // Selectors of these at-rules are not element selectors (`from`, `50%`) or there are none.
 const OPAQUE = /(^|-)keyframes$|^font-face$|^property$|^counter-style$|^page$|^font-feature-values$/;
@@ -759,7 +759,7 @@ function splitTop(selector: string, separator: string): string[] {
   return parts.filter((p) => p.trim());
 }
 
-// ─── Printing ────────────────────────────────────────────────────────────────
+// Printing
 
 function shiftLoc(node: StyleNode, source: string, start: { line: number; column: number }): StyleNode {
   const loc = node.loc && node.loc.source === source

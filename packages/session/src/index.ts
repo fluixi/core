@@ -42,7 +42,7 @@ export interface SessionAdapter<U, C, R = unknown> {
   getExpiry?: (token: string) => number | null;
 }
 
-// ─── Access control (client-side RBAC) ─────────────────────────────────────────
+// Access control (client-side RBAC)
 
 export type Role = string;
 
@@ -51,7 +51,7 @@ export type Role = string;
  * object, a flat `Set`, a Better-Auth-style `{ resource: action[] }` statement, whatever you
  * check against. `Q` is the QUERY you pass to `can()`, by default a predicate `(p) => bool`,
  * but supply a `match` to use a declarative query instead (a `'resource:action'` string, an
- * object, a CASL ability, …). The framework derives the active role(s), hands you the matching
+ * object, a CASL ability, ...). The framework derives the active role(s), hands you the matching
  * permission set, and runs your matcher; it does not prescribe either shape.
  */
 export interface AccessControl<U, P, Q = (p: P) => boolean> {
@@ -80,7 +80,7 @@ export interface AccessControl<U, P, Q = (p: P) => boolean> {
   match?: (permissions: P, query: Q, user: U | null) => boolean;
 }
 
-// ─── Unauthorized guard (session expiry) ───────────────────────────────────────
+// Unauthorized guard (session expiry)
 
 export interface FetchGuardOptions {
   /** The fetch to wrap (default: the global fetch). */
@@ -140,7 +140,7 @@ export function installGlobalFetchGuard(opts: FetchGuardOptions): () => void {
   };
 }
 
-// ─── Session ───────────────────────────────────────────────────────────────────
+// Session
 
 export type SessionOp = 'login' | 'register' | 'hydrate' | 'refresh';
 

@@ -1,6 +1,6 @@
 /**
  * Typed schema.org JSON-LD builders. Each returns a plain object ready for `seo({ jsonLd })` or
- * `<JsonLD data={…} />`. Pass-through extra fields are allowed; `custom()` builds an arbitrary type.
+ * `<JsonLD data={...} />`. Pass-through extra fields are allowed; `custom()` builds an arbitrary type.
  */
 const CTX = 'https://schema.org' as const;
 type Obj = Record<string, unknown>;

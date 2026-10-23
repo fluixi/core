@@ -255,7 +255,7 @@ function mentions(node: Node): Set<string> {
 /**
  * A template literal as the parser wants it: static runs and hole slots, in order.
  *
- * The same shape the Babel front-end builds, so what the analyzer sees inside `` html`…` ``
+ * The same shape the Babel front-end builds, so what the analyzer sees inside `` html`...` ``
  * is what the compiler lowers.
  */
 function templatePieces(quasi: Node): Piece[] {
@@ -662,7 +662,7 @@ export function analyzeReactiveGraph(
     });
 
     /**
-     * The same again, for `` html`…` ``.
+     * The same again, for `` html`...` ``.
      *
      * The tags and holes are inside a string, so none of the walks above can see them: a
      * `<Show>` in a template is not a JSXElement and a `${count()}` is not an expression

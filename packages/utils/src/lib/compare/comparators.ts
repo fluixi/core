@@ -72,7 +72,7 @@ export const isDeepEqual = <T extends string | any>(
   return compare1 === compare2;
 };
 
-// ─── deepEqual options ────────────────────────────────────────────────────────
+// deepEqual options
 
 export interface DeepEqualOptions {
   /**
@@ -95,7 +95,7 @@ export interface DeepEqualOptions {
   unordered?: boolean;
 }
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// Internal helpers
 
 /**
  * O(n²) unordered array equality.
@@ -121,7 +121,7 @@ function unorderedArrayEqual(
   return true;
 }
 
-// ─── deepEqual ────────────────────────────────────────────────────────────────
+// deepEqual
 
 /**
  * Structural deep equality check.

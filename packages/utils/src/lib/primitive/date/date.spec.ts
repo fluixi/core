@@ -68,31 +68,10 @@ const mockDate = new Date('2024-01-15T10:30:45.123Z');
 /**
  * Setup mock date before each test
  */
-// beforeEach(() => {
-//   global.Date = class extends REAL_DATE {
-//     constructor(...args: any[]) {
-//       super();
-//       if (args.length === 0) {
-//         return mockDate;
-//       }
-//       return new REAL_DATE();
-//     }
-
-//     static override now() {
-//       return mockDate.getTime();
-//     }
-//   } as any;
-
-//   // Reset config before each test
-//   resetDateConfig();
-// });
 
 /**
  * Restore original Date after each test
  */
-// afterEach(() => {
-//   global.Date = REAL_DATE;
-// });
 
 /**
  * Test suite for date utilities
@@ -121,7 +100,6 @@ describe('Date Utilities', () => {
    */
   describe('parseDate', () => {
     it('should parse ISO dates', () => {
-      // const date = new Date('2024-01-15T10:30:45.123Z');
       const date = parseDate('2024-01-15T10:30:45.123Z');
       expect(date).toBeInstanceOf(Date);
       expect(date.toISOString()).toBe('2024-01-15T10:30:45.123Z');

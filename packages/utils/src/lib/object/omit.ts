@@ -379,7 +379,6 @@ export function omitPath<T>(
   transform?: (value: any, path: string, obj: any) => any | boolean
 ): T {
   if (!isObject(obj)) {
-    // return obj;
     return {} as T;
   }
 

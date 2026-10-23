@@ -69,7 +69,7 @@ export interface ComponentGlobalsOptions {
    */
   available?: Iterable<string>;
   /**
-   * Declare the framework builtins (`Show`, `For`, `Portal`, `Router`, …) too.
+   * Declare the framework builtins (`Show`, `For`, `Portal`, `Router`, ...) too.
    *
    * On by default because the compiler resolves them whether or not a rule mentions
    * them, so declaring them is what matches reality. A real import shadows the ambient
@@ -77,7 +77,7 @@ export interface ComponentGlobalsOptions {
    */
   builtins?: boolean;
   /**
-   * Declare the `$` reactive intrinsics (`$signal`, `$memo`, …).
+   * Declare the `$` reactive intrinsics (`$signal`, `$memo`, ...).
    *
    * On by default, matching the compiler: it rewrites those calls whether or not
    * anything declares them, and without the declaration the editor reports
@@ -201,7 +201,7 @@ export function componentGlobals(
     (m) => `import * as ${namespaceAlias(m)} from '${specifier(m)}';`,
   );
 
-  // `export import X = ns.X` rather than `const X: typeof import('…').X`: an alias
+  // `export import X = ns.X` rather than `const X: typeof import('...').X`: an alias
   // resolves to the original symbol, so hover shows the real declaration
   // (`Button(props: ButtonProps): ComponentChild`) and go-to-definition lands on the
   // source. Both forms keep the JSDoc; the alias also keeps the shape.

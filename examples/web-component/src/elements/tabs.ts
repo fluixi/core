@@ -59,7 +59,7 @@ export interface TabsEvents {
 }
 
 const tabsProps = {
-  /** The `name` of the open tab. Reflected, so `fx-tabs[selected=…]` can be styled. */
+  /** The `name` of the open tab. Reflected, so `fx-tabs[selected=...]` can be styled. */
   selected: prop.string('', { reflect: true }),
 };
 

@@ -215,7 +215,7 @@ export const auth = defineAuth<AppUser>(
   betterAuth({
     // database: <your adapter>,
     emailAndPassword: { enabled: true },
-    // socialProviders: { google: { … }, github: { … } },
+    // socialProviders: { google: { ... }, github: { ... } },
   } as Parameters<typeof betterAuth>[0]),
 );
 `;

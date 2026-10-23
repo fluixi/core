@@ -2,9 +2,7 @@ import { type Accessor, type MemoOptions, type EnhancedSignal } from './signal.j
 import { createSignal, createMemo, createEffect } from './graph/compat.js';
 import { Observable } from '../observable/observable.js';
 
-// ============================================================================
 // TRANSFORMATION UTILITIES
-// ============================================================================
 
 /**
  * Transform a signal value through a mapping function
@@ -154,9 +152,7 @@ export function distinctSignal<T>(
   return createMemo(() => [...new Set(signal())], undefined, options);
 }
 
-// ============================================================================
 // COMBINATION UTILITIES
-// ============================================================================
 
 /**
  * Combine multiple signals into a single computed signal
@@ -218,11 +214,6 @@ export function combineSignals<T extends any[]>(
       });
     };
   });
-  //     },
-  //     pipe(...operators: any[]): Observable<any> {
-  //       throw new Error('Pipe requires RxJS');
-  //     }
-  //   };
 }
 
 /**
@@ -264,9 +255,7 @@ export function zipSignal<T, U, V>(
   return createMemo(() => operator(a(), b()), undefined, options);
 }
 
-// ============================================================================
 // SELECTION UTILITIES
-// ============================================================================
 
 /**
  * Select a derived value from a signal with custom equality
@@ -348,9 +337,7 @@ export function omitSignal<T extends Record<string, any>, K extends keyof T>(
   );
 }
 
-// ============================================================================
 // CONDITIONAL UTILITIES
-// ============================================================================
 
 /**
  * Conditionally compute signal based on condition
@@ -400,9 +387,7 @@ export function guardSignal<T>(
   );
 }
 
-// ============================================================================
 // TIMING UTILITIES
-// ============================================================================
 
 /**
  * Debounce a signal - only update after delay period with no changes
@@ -499,7 +484,6 @@ export { type Accessor, type MemoOptions } from './signal.js';
  * return deferred.promise;
  * ```
  */
-
 
 export type ReadSignal<T, depth extends 0 | 1 | 2 | 3 | 4 = 0> = depth extends 4 ? T : T extends Accessor<infer U> ? U extends (()=>any) ? ReadSignal<U, depth extends 4 ? 4 : depth extends 3 ? 3 : depth extends 2 ? 2 : depth extends 1 ? 1 : 0> : U : T;
 

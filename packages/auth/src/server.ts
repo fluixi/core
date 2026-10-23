@@ -111,7 +111,7 @@ export async function requireRole<U extends { role?: string } = AuthUser>(
 }
 
 /**
- * Require a permission. Pass a boolean or a predicate (e.g. your RBAC/ABAC `can(user, …)`):
+ * Require a permission. Pass a boolean or a predicate (e.g. your RBAC/ABAC `can(user, ...)`):
  * `await requirePermission(() => can(user, 'edit', post))`. Throws `AuthError(403)` if false.
  */
 export async function requirePermission(

@@ -49,9 +49,7 @@ import type {
   OpenInterval,
 } from './index.js';
 
-// ============================================================================
 // Basic Type Tests
-// ============================================================================
 
 // Numeric should accept number and bigint
 // @ts-ignore
@@ -97,9 +95,7 @@ type TestPrime1 = Prime<7>; // 7
 type TestPrime2 = Prime<4>; // never
 type TestPrime3 = Prime<13>; // 13
 
-// ============================================================================
 // Operation Type Tests
-// ============================================================================
 
 // Absolute should convert negative to positive
 type TestAbsolute1 = Absolute<5>; // 5
@@ -165,9 +161,7 @@ type TestTrunc1 = Trunc<5.9>; // 5
 type TestTrunc2 = Trunc<5.1>; // 5
 type TestTrunc3 = Trunc<-1.5>; // -1
 
-// ============================================================================
 // Advanced Type Tests
-// ============================================================================
 
 // Vector2D should have x and y properties
 type TestVector2D = Vector2D;
@@ -227,9 +221,7 @@ const hslColor: HSLColor = { h: 30, s: 100, l: 50 };
 type TestNormalDistribution = NormalDistribution;
 const normalDist: NormalDistribution = { mean: 0, stdDev: 1 };
 
-// ============================================================================
 // Type Constraint Tests
-// ============================================================================
 
 // These should cause TypeScript errors if uncommented:
 // type Error1 = Positive<-5>; // Should error: negative number
@@ -238,9 +230,7 @@ const normalDist: NormalDistribution = { mean: 0, stdDev: 1 };
 // type Error4 = Even<3>; // Should error: 3 is odd
 // type Error5 = Prime<4>; // Should error: 4 is not prime
 
-// ============================================================================
 // Type Utility Tests
-// ============================================================================
 
 // Test type inference with conditional types
 type TestIsPositive1 = Positive<5> extends never ? false : true; // true
@@ -291,9 +281,7 @@ type NumberOrVector = number | Vector2D;
 const numberOrVector1: NumberOrVector = 42;
 const numberOrVector2: NumberOrVector = { x: 1, y: 2 };
 
-// ============================================================================
 // Export Test Types (for external verification)
-// ============================================================================
 
 export type TypeTests = {
   // Basic types

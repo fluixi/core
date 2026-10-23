@@ -1,12 +1,3 @@
-/**
- * @fileoverview @fluixi/vite-plugin: the Vite integration for Fluixi.
- * @module @fluixi/vite-plugin
- *
- * Thin, well-typed wrapper around @fluixi/compiler's vite integration. It sets
- * the esbuild jsxImportSource and runs the Fluixi transform: JSX and `` html`` ``
- * templates both lower to the shared IR and compile straight into @fluixi/dom
- * runtime calls: no per-render jsx() dispatch.
- */
 import type { Plugin } from 'vite';
 import { createVitePlugin, type CompilerOptions } from '@fluixi/compiler/integrations';
 import { withGraphChannel } from './graph-channel.js';

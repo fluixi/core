@@ -7,7 +7,7 @@
  * front-end reuse the exact same backend.
  *
  * JSX can appear nested inside arbitrary expressions (render-props, ternaries,
- * `fallback={<p/>}`, `arr.map(x => <li/>)`, `() => cond && <div/>`, …). The IR
+ * `fallback={<p/>}`, `arr.map(x => <li/>)`, `() => cond && <div/>`, ...). The IR
  * models prop/child *expressions* as code strings, so any JSX inside such an
  * expression is recursively compiled (build-ir -> emit) and spliced back in,
  * with the runtime symbols it uses collected into `used` for import injection.
@@ -40,7 +40,7 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
   let changed = false;
   const emitInto = (path: any, code: string, imports: string[]) => {
     for (const s of imports) used.add(s);
-    // parse as TS: a hole/arrow param may carry a type annotation ((x: T) => …);
+    // parse as TS: a hole/arrow param may carry a type annotation ((x: T) => ...);
     // preset-typescript strips it downstream, but the reparse must accept it.
     path.replaceWith(template.expression(code, { placeholderPattern: false, plugins: ['typescript'] })() as t.Expression);
     path.skip(); // build-ir already handled this subtree (incl. anything nested)
@@ -56,7 +56,7 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
       const { code, imports, templates } = imperativeBackend.emit(nestedIR, {} as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
-    // Nested lit templates compose: ${cond ? html`…` : html`…`},
+    // Nested lit templates compose: ${cond ? html`...` : html`...`},
     // ${list.map(x => html`<li>${x}</li>`)}. Compile them the same way.
     TaggedTemplateExpression(path: any) {
       const tag = path.node.tag;

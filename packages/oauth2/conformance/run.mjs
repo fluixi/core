@@ -28,7 +28,7 @@ const { createBrowserClient } = await import(`${DIST}/index.mjs`);
 const { createServiceClient } = await import(`${DIST}/service-client.mjs`);
 const { createTokenVerifier, createTokenIntrospector } = await import(`${DIST}/verify.mjs`);
 
-// ─── reporting ────────────────────────────────────────────────────────────────
+// reporting
 
 const results = [];
 const record = (area, name, status, detail = '') =>
@@ -62,7 +62,7 @@ async function capability(area, name, fn) {
   }
 }
 
-// ─── a browser, as far as the client is concerned ─────────────────────────────
+// a browser, as far as the client is concerned
 
 function fakeBrowser() {
   const store = new Map();
@@ -134,7 +134,7 @@ function resolveSecrets(value) {
   return value;
 }
 
-// ─── the suite ────────────────────────────────────────────────────────────────
+// the suite
 
 async function runProvider(name, cfg) {
   console.log(`\n${'─'.repeat(72)}\n  ${name}  ${cfg.issuer}\n${'─'.repeat(72)}`);
@@ -556,7 +556,7 @@ function report(provider) {
   );
 }
 
-// ─── entry ────────────────────────────────────────────────────────────────────
+// entry
 
 const args = process.argv.slice(2);
 const dir = join(HERE, 'providers');

@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for URL utilities
- */
-
 import { describe, it, expect } from 'vitest';
 import {
   url_parser,

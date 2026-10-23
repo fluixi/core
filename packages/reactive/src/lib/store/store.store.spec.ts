@@ -21,39 +21,14 @@ export interface Person {
 describe('store basics', () => {
   it('createStore and createEffect', () => {
     const [person, set] = createStore({ counter: 1 } as Person);
-    // const [person, set] = createStore(1);
-    // person.counter = 2;
-    // console.log('getter', get)
-    // let person = get();
-    // const double = createMemo<number>(() => person.counter * 2);
-    // const isEven = createMemo<number>(() => (person.counter % 2 ? 1 : 0));
-    // const isEven = createDerivedTrigger<boolean>(
-    //   () => person.counter % 2 === 0
-    // );
-    // createStoreEffect(get(), (p)=>p.counter, (e)=>{
-    //     console.log(`Count store: ${e}, IsEven: ${isEven()}`);
-    //     console.log('person', get().counter)
 
-    // })
-    // get.toObservable().subscribe((p) => {
-    //   console.log('person update', p);
-    //   console.log(
-    //     `Count store: ${
-    //       get().counter
-    //     }, IsEven: ${isEven()} IsDouble: ${double()}`
-    //   );
-    // });
     createEffect(
       // get(),
       // (p) => p.counter,
       () => {
-        // console.log(`IsEven: ${isEven()}`);
         console.log(`Count stored`, person.person?.name);
-        // person = get();
-        // console.log('person counter', person);
       }
     );
-    // set('person', ['name'], 'Ibrahima');
     set('counter', (v) => v * 8);
     expect(person!.counter).toBe(8);
     set('person.name', 'Ibrahima');
@@ -62,9 +37,6 @@ describe('store basics', () => {
       counter: 8,
     });
     set('person.last', 'touré');
-    // batch(() => {});
-    // set([['counter', (c) => c.counter || 1]]);
-    // console.log('person', person);
     expect(person).toMatchObject({
       person: { name: 'Ibrahima', last: 'touré' },
       counter: 8,
@@ -96,7 +68,6 @@ describe('store basics', () => {
       counter: 12,
     });
     set((state) => ({ ...state, counter: state.counter + 1 }));
-    // console.log('person update lats', person);
     expect(person).toMatchObject({
       person: { name: 'Ibrahima', last: 'touré ba', wife: { counter: 6 } },
       counter: 13,
@@ -106,61 +77,8 @@ describe('store basics', () => {
       person: { name: 'Ibrahima', last: 'touré ba', wife: { counter: 6 } },
       counter: 14,
     });
-    // set('person.wife.childs', [] as Base[]);
-    // set.push('person.wife.childs', [{ name: 'Ibrahima', age: 28 } as Base]);
-    // set.push('person.wife.childs', [{ name: 'Alioune', age: 33 } as Base]);
-    // const p = set.insert('person.wife.childs', 0, {
-    //   name: 'Bineta',
-    //   age: 18,
-    // } as Base);
-    // console.log('person last', person.person.wife.childs);
   });
-  // it('createStore and createEffect for store array', () => {
-  //   const [person, set] = createStore([{ counter: 1 }] as Person[]);
-  //   // const [person, set] = createStore(1);
-  //   // person.counter = 2;
-  //   // console.log('getter', get)
-  //   // let person = get();
-  //   // const double = createMemo<number>(() => person.counter * 2);
-  //   // const isEven = createMemo<number>(() => (person.counter % 2 ? 1 : 0));
-  //   // const isEven = createDerivedTrigger<boolean>(
-  //   //   () => person.counter % 2 === 0
-  //   // );
-  //   // createStoreEffect(get(), (p)=>p.counter, (e)=>{
-  //   //     console.log(`Count store: ${e}, IsEven: ${isEven()}`);
-  //   //     console.log('person', get().counter)
 
-  //   // })
-  //   // get.toObservable().subscribe((p) => {
-  //   //   console.log('person update', p);
-  //   //   console.log(
-  //   //     `Count store: ${
-  //   //       get().counter
-  //   //     }, IsEven: ${isEven()} IsDouble: ${double()}`
-  //   //   );
-  //   // });
-  //   createEffect(
-  //     // get(),
-  //     // (p) => p.counter,
-  //     () => {
-  //       // console.log(`IsEven: ${isEven()}`);
-  //       // console.log(`Count store: ${person.counter}`);
-  //       // person = get();
-  //       // console.log('person', person);
-  //     }
-  //   );
-  //   // const t = [{ counter: 0 }] as Person[];
-  //   // console.log(parseSelector('[0]'));
-  //   // type S = SelectorFor<Person[]>;
-  //   // type e = IValueOfKey<Person, 'person.wife'>;
-  //   set('[*].counter', (v) => {
-  //     return v * 8;
-  //   });
-  //   expect(person[0].counter).toBe(8);
-  //   set('[0].person', ['name'], 'Ibrahima');
-  //   console.log('person', person);
-  //   expect(person[0].person!.name).toBe('Ibrahima');
-  // });
 });
 
 describe('store with arrays - comprehensive tests', () => {
@@ -362,11 +280,9 @@ describe('store with arrays - comprehensive tests', () => {
       });
 
       expect(effectCount).toBeGreaterThan(0);
-      // const initialCount = effectCount;
 
       set('[0]', 10);
 
-      // expect(effectCount).toBe(initialCount + 1);
       expect(lastValue).toBe(10);
     });
 
@@ -393,7 +309,6 @@ describe('store with arrays - comprehensive tests', () => {
       const initialCount = effectCount;
 
       set('[0].value', (v) => v * 2);
-      // console.log('after triggered', initialCount);
 
       expect(effectCount).toBe(initialCount + 1);
       expect(lastValue).toBe(20);
@@ -410,9 +325,6 @@ describe('store with arrays - comprehensive tests', () => {
       set('[0]', 10);
       const s = sum();
       expect(s).toBe(24); // 10 + 2 + 3 + 4 + 5
-      // setTimeout(() => {
-      // }, 0);
-      // vi.advanceTimersByTime(10);
     });
   });
 
@@ -434,7 +346,6 @@ describe('store with arrays - comprehensive tests', () => {
         set('[1]', 20);
         set('[2]', 30);
       });
-      // console.log('after batch end', effectCount);
 
       // vi.advanceTimersByTime(10);
       // Effect should run once after batch

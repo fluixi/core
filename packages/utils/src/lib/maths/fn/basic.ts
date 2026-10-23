@@ -3,7 +3,6 @@
  * @module BasicMathFunctions
  */
 
-// import { Constants } from '../constants';
 import type { RoundingMode, Sign } from '../types/basic.js';
 
 /**
@@ -215,10 +214,6 @@ export const clamp = (value: number, min: number, max: number): number => {
   return value < min ? min : value > max ? max : value;
 };
 
-// export function clamp(value: number, min: number, max: number): number {
-//   return Math.max(min, Math.min(max, value));
-// }
-
 /**
  * Returns the sign of a number: -1, 0, or 1.
  * @param value - The number
@@ -298,7 +293,6 @@ export function lerp(start: number, end: number, t: number): number {
  * @returns The interpolation factor (0 to 1)
  */
 export const invLerp = (start: number, end: number, value: number): number => {
-  // return (value - start) / (end - start);
   return clamp((value - start) / (end - start), 0, 1);
 };
 

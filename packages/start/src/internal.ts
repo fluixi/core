@@ -84,7 +84,7 @@ export async function loadServerEnv(root: string, mode: string): Promise<void> {
  *
  * Instead of typing `messages` as `Record<string, unknown>` (which erases keys), we reference
  * each `<locale>.json` via `(typeof import('./i18n/en.json'))['default']`. TS reads the JSON's
- * real shape, so `t('…')` autocompletes keys discovered from `src/i18n/*.json`, no codegen of
+ * real shape, so `t('...')` autocompletes keys discovered from `src/i18n/*.json`, no codegen of
  * the key union, the compiler derives it. Falls back to the loose shape when no files exist yet
  * (or a configured locale has no file), keeping the module typed-but-open rather than broken.
  *

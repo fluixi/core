@@ -1,7 +1,7 @@
 /**
  * The panel.
  *
- * Everything drawn here comes from @fluixi/devtools — the same graph view, inspector, timeline
+ * Everything drawn here comes from @fluixi/devtools: the same graph view, inspector, timeline
  * and detail panel the playground and the editor use. What this file owns is the polling, the
  * toolbar and the two splitters.
  */

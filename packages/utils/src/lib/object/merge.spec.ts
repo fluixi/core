@@ -1,7 +1,3 @@
-/**
- * @fileoverview Tests for merge function
- */
-
 import { describe, it, expect } from 'vitest';
 import { merge } from './merge.js';
 

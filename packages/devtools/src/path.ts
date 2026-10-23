@@ -11,7 +11,7 @@
 /** Windows separators, and the leading slash an origin-stripped path can lose. */
 const normalize = (file: string): string => file.replace(/\\/g, '/');
 
-/** `Users/…`, `home/…`: an absolute path whose leading slash was trimmed off. */
+/** `Users/...`, `home/...`: an absolute path whose leading slash was trimmed off. */
 const ROOTED = /^\/|^(Users|home|var|opt|private|tmp|mnt|srv)\//;
 
 /** Where a monorepo keeps the things it builds. */

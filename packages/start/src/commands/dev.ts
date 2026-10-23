@@ -155,7 +155,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     const appHtml = await withPlatformRequest(request, () => render(path, request)); // sync or async; request enables the locals bridge
     // injectAppAndHead (not injectApp): lift the @fluixi/head marker renderRequestAsync prepends to
     // the body into <head> + <html>, exactly like the prod adapter/prerender. Plain injectApp left
-    // the `<!--fh:…-->` marker as the mount root's first child, which stranded the hydration cursor
+    // the `<!--fh:...-->` marker as the mount root's first child, which stranded the hydration cursor
     // (whole tree rebuilt → duplicated) AND skipped dev SEO. No marker → identical to injectApp.
     const styled = await injectStyles(
       vite,

@@ -1,17 +1,4 @@
-/**
- * @fileoverview Main entry point for @fluixi/jsx package
- * @module @fluixi/jsx
- *
- * This package provides a comprehensive JSX runtime with:
- * - Fine-grained reactive updates similar to SolidJS
- * - Support for both `html` templates and native JSX
- * - Seamless integration with signal and store systems
- * - Optimized DOM updates with compilation support
- */
-
-// ============================================================================
 // Core JSX Runtime
-// ============================================================================
 
 export {
   // JSX factory functions
@@ -41,16 +28,12 @@ export type {
   RefObject,
 } from './jsx-runtime.js';
 
-// ============================================================================
 // Compiler Utilities
-// ============================================================================
 
 // Build-time compiler utilities live in @fluixi/compiler (Node.js only):
 //   import { createVitePlugin } from '@fluixi/compiler/integrations'
 
-// ============================================================================
 // Legacy API (for backward compatibility)
-// ============================================================================
 
 export { delegateEvents } from '@fluixi/dom';
 
@@ -124,9 +107,7 @@ export function createReactiveJSX(config: ReactiveJSXConfig): ReactiveJSXAPI {
   };
 }
 
-// ============================================================================
 // Component Helpers
-// ============================================================================
 
 /**
  * Helper to create JSX-compatible components
@@ -188,9 +169,7 @@ function shallowEqual(a: any, b: any): boolean {
   return true;
 }
 
-// ============================================================================
 // Render Function
-// ============================================================================
 
 /**
  * Hydrate a server-rendered element
@@ -200,15 +179,11 @@ export function hydrate(element: JSX.Element, container: Element): () => void {
   return render(element, container);
 }
 
-// ============================================================================
 // Re-export JSX namespace types
-// ============================================================================
 
 export type {JSX} from './jsx.d.js';
 
-// ============================================================================
 // Default Export
-// ============================================================================
 
 export default {
   jsx,

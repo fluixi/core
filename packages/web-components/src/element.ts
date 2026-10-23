@@ -205,8 +205,8 @@ export class HTMLReactiveElement extends BaseElement {
   static shadow?: ShadowOption;
   /**
    * Adopted by the shadow root, one parsed sheet shared by every instance. CSS text, a
-   * `CSSStyleSheet`, or a list: `[super.styles, '…']` keeps the parent's. A class meant to be
-   * extended declares it as `static styles: ElementStyles = …`, since a bare string narrows
+   * `CSSStyleSheet`, or a list: `[super.styles, '...']` keeps the parent's. A class meant to be
+   * extended declares it as `static styles: ElementStyles = ...`, since a bare string narrows
    * the type and a subclass's list no longer fits. Ignored in light DOM, which has no scope.
    */
   static styles?: ElementStyles;

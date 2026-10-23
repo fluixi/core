@@ -6,7 +6,7 @@
  * ```
  *
  * Named `api-routes` because `@fluixi/start/api` is already the API plumbing you call
- * directly (`createApiHandler`, `imageLoader`, …); this is the generated route table.
+ * directly (`createApiHandler`, `imageLoader`, ...); this is the generated route table.
  *
  * A typed stand-in: the scan plugin serves the real one. `virtual:fluixi-api` still
  * resolves.

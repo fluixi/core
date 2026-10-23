@@ -5,7 +5,7 @@
  * *which module a name comes from*, and *whether the name has special lowering*. Only
  * the first is interesting outside the compiler, and every tool needs it, the TS
  * plugin, to resolve `<Show>` for hover and go-to-definition; the language server, to
- * complete and validate tags inside `` html`…` ``; a codemod, to materialise imports.
+ * complete and validate tags inside `` html`...` ``; a codemod, to materialise imports.
  * Having no published source, `@fluixi/ts-plugin` duplicated the list and pinned it
  * with a test that fails when the two drift.
  *
@@ -53,7 +53,7 @@ export const CORE_CONTROL_FLOW = ['Suspense', 'SuspenseList', 'Await'] as const;
 /**
  * Router components.
  *
- * `Routes` is not a component (routing is `<Router routes={…}>`) and `lazy` is a call
+ * `Routes` is not a component (routing is `<Router routes={...}>`) and `lazy` is a call
  * rather than a tag, so neither can be supplied this way.
  */
 export const ROUTER_COMPONENTS = ['Router', 'Outlet', 'Redirect', 'Link'] as const;

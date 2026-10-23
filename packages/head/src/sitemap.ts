@@ -82,9 +82,7 @@ export function generateSitemapIndex(sitemaps: Array<{ loc: string; lastmod?: st
   return s + '</sitemapindex>\n';
 }
 
-// ---------------------------------------------------------------------------
 // robots.txt
-// ---------------------------------------------------------------------------
 
 export interface RobotsRule {
   userAgent: string | string[];

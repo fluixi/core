@@ -123,7 +123,7 @@ export interface IRComponent {
    */
   at?: { file: string; line: number; column: number };
   /**
-   * Where the `${…}` that drives this subtree was written, the condition of an `if=`,
+   * Where the `${...}` that drives this subtree was written, the condition of an `if=`,
    * the list of an `each=`. The insert that adds and removes the subtree is a reactive
    * binding, and this is the position it reports. Distinct from `at`, which marks the
    * node itself rather than the binding that places it.

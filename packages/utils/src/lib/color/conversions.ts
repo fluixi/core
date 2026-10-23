@@ -1,8 +1,3 @@
-/**
- * @fileoverview Comprehensive color conversion utilities
- * Supports conversions between: RGB, HSL, HSV, HWB, CMYK, LAB, LCH, OKLAB, OKLCH, XYZ
- */
-
 import type {
   RGBColor,
   HSLColor,
@@ -39,9 +34,7 @@ function roundToPrecision(value: number, precision: number = 2): number {
   return Math.round(value * multiplier) / multiplier;
 }
 
-// ============================================================================
 // RGB CONVERSIONS
-// ============================================================================
 
 /**
  * Convert RGB to HSL
@@ -239,9 +232,7 @@ export function rgbToOklch(rgb: RGBColor): OKLCHColor {
   return oklabToOklch(oklab);
 }
 
-// ============================================================================
 // HSL CONVERSIONS
-// ============================================================================
 
 /**
  * Convert HSL to RGB
@@ -297,9 +288,7 @@ export function hslToHwb(hsl: HSLColor): HWBColor {
   return rgbToHwb(rgb);
 }
 
-// ============================================================================
 // HSV CONVERSIONS
-// ============================================================================
 
 /**
  * Convert HSV to RGB
@@ -382,9 +371,7 @@ export function hsvToHwb(hsv: HSVColor): HWBColor {
   };
 }
 
-// ============================================================================
 // HWB CONVERSIONS
-// ============================================================================
 
 /**
  * Convert HWB to RGB
@@ -422,9 +409,7 @@ export function hwbToHsv(hwb: HWBColor): HSVColor {
   return rgbToHsv(rgb);
 }
 
-// ============================================================================
 // CMYK CONVERSIONS
-// ============================================================================
 
 /**
  * Convert CMYK to RGB
@@ -463,9 +448,7 @@ export function cmykToHsv(cmyk: CMYKColor): HSVColor {
   return rgbToHsv(rgb);
 }
 
-// ============================================================================
 // XYZ CONVERSIONS
-// ============================================================================
 
 /**
  * Convert XYZ to RGB
@@ -517,9 +500,7 @@ export function xyzToLab(xyz: XYZColor): LABColor {
   };
 }
 
-// ============================================================================
 // LAB CONVERSIONS
-// ============================================================================
 
 /**
  * Convert LAB to XYZ
@@ -569,9 +550,7 @@ export function labToLch(lab: LABColor): LCHColor {
   };
 }
 
-// ============================================================================
 // LCH CONVERSIONS
-// ============================================================================
 
 /**
  * Convert LCH to LAB
@@ -605,9 +584,7 @@ export function lchToXyz(lch: LCHColor): XYZColor {
   return labToXyz(lab);
 }
 
-// ============================================================================
 // OKLAB CONVERSIONS
-// ============================================================================
 
 /**
  * Convert OKLAB to RGB
@@ -657,9 +634,7 @@ export function oklabToOklch(oklab: OKLABColor): OKLCHColor {
   };
 }
 
-// ============================================================================
 // OKLCH CONVERSIONS
-// ============================================================================
 
 /**
  * Convert OKLCH to OKLAB
@@ -685,9 +660,7 @@ export function oklchToRgb(oklch: OKLCHColor): RGBColor {
   return oklabToRgb(oklab);
 }
 
-// ============================================================================
 // UNIVERSAL CONVERTER
-// ============================================================================
 
 /**
  * Convert any color to RGB

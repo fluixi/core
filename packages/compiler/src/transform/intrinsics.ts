@@ -102,7 +102,7 @@ export function collectIntrinsicEdits(program: unknown): IntrinsicsResult {
  *
  * `$env('X')` becomes `env('X')`, and the import of `env` used to be skipped when the module
  * already bound `env`, on the assumption that it was the same import. A config module with its
- * own `const env = {…}` is common, and there the call reached the app's object instead. Such a
+ * own `const env = {...}` is common, and there the call reached the app's object instead. Such a
  * name is now imported under a private alias. A module that imports that very export from that
  * very module keeps the old behaviour: the binding is the runtime already.
  */

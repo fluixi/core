@@ -5,7 +5,7 @@
  *   const getUser = async (id) => { 'use server'; return db.users.find(id); };
  *
  * - **Server build** (`ssr: true`): keep the body, register it by a stable id so the
- *   RPC dispatcher can find it → `$$registerServerFn("id", async (id) => {…})`.
+ *   RPC dispatcher can find it → `$$registerServerFn("id", async (id) => {...})`.
  * - **Client build** (`ssr: false`): drop the body (server-only code never ships) and
  *   replace it with an RPC stub → `$$createServerReference("id")`.
  *
@@ -73,7 +73,7 @@ function serverFunctionsBabelPlugin({ types: t }: any) {
           : t.callExpression(t.identifier(helper), [t.stringLiteral(id)]);
 
         if (path.isFunctionDeclaration()) {
-          // function f(){…} → const f = wrap(…)  (loses hoisting; acceptable)
+          // function f(){...} → const f = wrap(...)  (loses hoisting; acceptable)
           path.replaceWith(
             t.variableDeclaration('const', [t.variableDeclarator(path.node.id, replacement)]),
           );

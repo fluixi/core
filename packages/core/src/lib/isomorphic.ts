@@ -94,7 +94,7 @@ export function createIsomorphicState<T>(
   return { value, set: set as (v: T | undefined) => void, key };
 }
 
-// ─── createIsomorphicStore ─────────────────────────────────────────────────────
+// createIsomorphicStore
 //
 // The object-shaped sibling of createIsomorphicState: for an isomorphic value that
 // is a RECORD ({ active, list }, { region, regions }, ...). It removes the boilerplate

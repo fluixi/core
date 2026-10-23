@@ -137,7 +137,6 @@ export type Gradians = number & { readonly __brand: 'Gradians' };
 /**
  * Represents a mathematical sign: -1, 0, or 1.
  */
-// export type Sign = -1 | 0 | 1;
 /**
  * Extracts the sign of a number as a type.
  * Returns -1, 0, or 1 as a numeric literal type.

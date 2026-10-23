@@ -10,7 +10,7 @@
  * The request matrix is the behaviour: the same requests every deploy has to answer,
  * run either against the emitted artifact in-process or against a URL. In-process
  * proves the handler assembles and renders without a filesystem. It does not prove the
- * platform routes to it — for that, point `--url` at `wrangler pages dev`,
+ * platform routes to it: for that, point `--url` at `wrangler pages dev`,
  * `netlify serve` or `vercel dev`, where the platform's own routing is in play.
  *
  * The portability scan is the runtime: a bundle that imports `node:fs` runs fine here
@@ -39,7 +39,7 @@ const ADAPTERS = {
   vercel: {
     artifact: '.vercel/output/functions/index.func/index.mjs',
     // Vercel's Nodejs launcher calls the export as `(req, res)`, so driving it with a
-    // Request would test a shape the platform never uses — which is exactly how a
+    // Request would test a shape the platform never uses: which is exactly how a
     // hanging function passed every local check.
     invoke: async (mod, request) => {
       const url = new URL(request.url);
@@ -79,8 +79,8 @@ const MATRIX = [
  *
  * Only imports fail the run. An import is resolved before any code executes, so it
  * breaks the deploy outright; a global read may well be a feature probe
- * (`typeof process !== 'undefined' && …`), and telling those apart by pattern is
- * guesswork — an earlier version of this flagged every guarded probe and would have
+ * (`typeof process !== 'undefined' && ...`), and telling those apart by pattern is
+ * guesswork: an earlier version of this flagged every guarded probe and would have
  * been ignored within a week. Probes are reported, not failed, and the runtime
  * question is settled by `--url` against an emulator rather than by reading strings.
  */

@@ -5,7 +5,6 @@
  * Import from '@fluixi/core/server' for SSR functionality.
  *
  * Server Reactive Behavior
- * ====================================
  * This module maps reactive primitives to server-appropriate behavior,
  * following the SolidJS server model:
  *

@@ -10,9 +10,7 @@
 
 import { isServer as domIsServer } from '@fluixi/dom';
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 /**
  * Hydration data structure
@@ -21,9 +19,7 @@ export interface HydrationData {
   [key: string]: any;
 }
 
-// ============================================================================
 // STATE
-// ============================================================================
 
 /**
  * Global hydration flag
@@ -42,9 +38,7 @@ const hydrationDataMap = new Map<string, any>();
  */
 let markerCounter = 0;
 
-// ============================================================================
 // HYDRATION STATE
-// ============================================================================
 
 /**
  * Check if currently hydrating
@@ -73,9 +67,7 @@ export function setHydrating(state: boolean): void {
   hydrating = state;
 }
 
-// ============================================================================
 // HYDRATION DATA MANAGEMENT
-// ============================================================================
 
 /**
  * Store data for hydration
@@ -135,9 +127,7 @@ export function clearHydrationDataKey(key: string): void {
   hydrationDataMap.delete(key);
 }
 
-// ============================================================================
 // SERIALIZATION
-// ============================================================================
 
 /**
  * Serialize hydration data to script tag
@@ -204,9 +194,7 @@ export function deserializeHydrationData(): boolean {
   }
 }
 
-// ============================================================================
 // HYDRATION MARKERS
-// ============================================================================
 
 /**
  * Generate unique hydration marker ID
@@ -248,9 +236,7 @@ export function hydrationMarkerEnd(id: string): string {
   return `<!--/${id}-->`;
 }
 
-// ============================================================================
 // RESOURCE HYDRATION
-// ============================================================================
 
 /**
  * Create hydration-friendly resource
@@ -328,9 +314,7 @@ export function useHydrationData<T>(key: string, value: T | (() => T)): T {
   return computedValue;
 }
 
-// ============================================================================
 // CLEANUP
-// ============================================================================
 
 /**
  * Cleanup hydration artifacts from DOM
@@ -390,9 +374,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// ============================================================================
 // ENVIRONMENT HELPERS
-// ============================================================================
 
 /**
  * Whether this is a server render.

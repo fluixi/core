@@ -5,10 +5,6 @@ export default defineConfig(() => ({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/packages/reactive',
   plugins: [solid()],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [ nxViteTsPaths() ],
-  // },
   test: {
     passWithNoTests: true,
     name: '@fluixi/reactive',

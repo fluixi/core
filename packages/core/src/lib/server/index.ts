@@ -29,9 +29,7 @@ import {
 // with AsyncLocalStorage injected so concurrent renders are isolated.
 import { renderToString as domRenderToString } from '@fluixi/server';
 
-// ============================================================================
 // TYPES
-// ============================================================================
 
 /**
  * SSR context for passing data during server rendering
@@ -54,9 +52,7 @@ export interface DocumentOptions {
   bodyAttributes?: string;
 }
 
-// ============================================================================
 // SSR CONTEXT MANAGEMENT
-// ============================================================================
 
 let currentSSRContext: SSRContext | null = null;
 
@@ -87,9 +83,7 @@ export function withSSRContext<T>(context: SSRContext, fn: () => T): T {
   }
 }
 
-// ============================================================================
 // HTML GENERATION
-// ============================================================================
 
 /**
  * Render complete HTML page
@@ -142,9 +136,7 @@ export function createHtmlDocument(
 </html>`;
 }
 
-// ============================================================================
 // ENVIRONMENT DETECTION
-// ============================================================================
 
 /**
  * Whether this is a server render.
@@ -189,9 +181,7 @@ export function onClient<T>(fn: () => T, fallback: T): T {
   return !domIsServer() ? fn() : fallback;
 }
 
-// ============================================================================
 // EXPORTS
-// ============================================================================
 
 /**
  * Render component to HTML string

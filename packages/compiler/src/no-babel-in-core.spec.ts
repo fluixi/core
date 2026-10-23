@@ -24,7 +24,7 @@ const BABEL_FREE_ENTRIES = ['index.ts', 'resolve/builtins.ts'];
 const PARSER_ONLY_ENTRIES = ['transform/index.ts', 'integrations.ts'];
 
 const STATIC_PATTERNS = [
-  // import … from 'x'  /  export … from 'x'. `import type` and `export type` are
+  // import ... from 'x'  /  export ... from 'x'. `import type` and `export type` are
   // erased before anything runs, so they cannot pull a package in.
   // `[^;]` keeps a match inside one statement: without it an `export interface`
   // runs on to the `from` of some later line.

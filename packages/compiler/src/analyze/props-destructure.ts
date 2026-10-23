@@ -28,7 +28,7 @@ interface Node {
 export type DestructureBail =
   /**
    * A rest we can't serve: destructured further (`...{ a }`), or in a function with no
-   * block to put the splitProps call in (`({ a, ...rest }) => …`).
+   * block to put the splitProps call in (`({ a, ...rest }) => ...`).
    */
   | 'rest'
   /** `const { [key]: a } = props`: we don't know the property until it runs. */
@@ -141,7 +141,7 @@ function walk(root: Node | null | undefined, visit: (node: Node) => void): void 
   }
 }
 
-/** Anything written to in the body: `name = x`, `name++`, `[name] = …`. */
+/** Anything written to in the body: `name = x`, `name++`, `[name] = ...`. */
 function reassignedNames(body: Node | null | undefined): Set<string> {
   const written = new Set<string>();
   walk(body, (node) => {

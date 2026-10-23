@@ -1,8 +1,3 @@
-/**
- * @fileoverview Advanced color helper utilities
- * Provides temperature adjustments, color blindness simulation, and other advanced operations
- */
-
 import type { RGBColor, ColorTemperatureOptions } from './types.js';
 import { Color } from './color.js';
 import {

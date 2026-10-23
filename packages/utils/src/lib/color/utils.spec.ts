@@ -1,8 +1,3 @@
-/**
- * @fileoverview Comprehensive tests for color utility functions
- * Focus on testing all RGB/RGBA syntax variations
- */
-
 import { describe, it, expect } from 'vitest';
 import { parseColor, parseRgbaColor, isValidColor } from './utils.js';
 

@@ -55,34 +55,7 @@ describe('createResource (core reactive primitive)', () => {
   // it("registers with nearest Suspense boundary", async () => {
   //   let resolve!: (v, number) => void;
 
-  //   const fetcher = () =>
-  //     new Promise<number>(r => {
-  //       resolve = r;
-  //     });
-
   //   let ctxDuringRead: any;
-
-  //   createRoot(() => {
-  //     Suspense({
-  //       fallback: () => null,
-  //       children: () => {
-  //         const [data] = createResource(fetcher);
-
-  //         try {
-  //           data();
-  //         } catch {
-  //           ctxDuringRead = getSuspenseContext();
-  //         }
-  //       }
-  //     });
-  //   });
-
-  //   expect(ctxDuringRead).not.toBe(null);
-  //   expect(ctxDuringRead).not.toBe(undefined);
-
-  //   resolve(123);
-  //   await wait();
-  // });
 
   it('reruns dependents when resource resolves', async () => {
     let resolve!: (v: string) => void;
@@ -165,39 +138,4 @@ describe('createResource (core reactive primitive)', () => {
   // it("supports nested suspense", async () => {
   //   let resolve!: (v, string) => void;
 
-  //   const fetcher = () =>
-  //     new Promise<string>(r => {
-  //       resolve = r;
-  //     });
-
-  //   let outerSuspended = false;
-  //   let innerSuspended = false;
-
-  //   createRoot(() => {
-  //     Suspense({
-  //       fallback: () => {
-  //         outerSuspended = true;
-  //         return null;
-  //       },
-  //       children: () => {
-  //         Suspense({
-  //           fallback: () => {
-  //             innerSuspended = true;
-  //             return null;
-  //           },
-  //           children: () => {
-  //             const [data] = createResource(fetcher);
-  //             data();
-  //           }
-  //         });
-  //       }
-  //     });
-  //   });
-
-  //   expect(innerSuspended).toBe(true);
-  //   expect(outerSuspended).toBe(false);
-
-  //   resolve("ok");
-  //   await wait();
-  // });
 });

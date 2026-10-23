@@ -1,8 +1,3 @@
-/**
- * @fileoverview Advanced array utilities with object integration
- * Provides powerful array manipulation functions that work seamlessly with objects
- */
-
 import type { AnyObject, RecordObject } from '../object/types.js';
 import { isObject, isPlainObject } from '../object/utils.js';
 import { deepClone } from '../object/clone.js';

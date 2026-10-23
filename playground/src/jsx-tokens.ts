@@ -21,7 +21,7 @@ const TAG_CLOSE = /<\/([A-Z][\w.$]*|[a-z][\w.-]*)\s*>/;
 const FRAGMENT = /<>|<\/>/;
 
 const JSX_STATES: Record<string, monaco.languages.IMonarchLanguageRule[]> = {
-  // Inside `<tag …>`, up to the closing bracket.
+  // Inside `<tag ...>`, up to the closing bracket.
   jsxTag: [
     [/\s+/, ''],
     [/[A-Za-z_$][\w$-]*(?=\s*=)/, 'attribute.name'],
@@ -32,7 +32,7 @@ const JSX_STATES: Record<string, monaco.languages.IMonarchLanguageRule[]> = {
     [/\{/, { token: 'delimiter.bracket', next: '@jsxExpression', bracket: '@open' }],
     [/\/?>/, { token: 'tag', next: '@pop' }],
   ],
-  // `{ … }` inside a tag is ordinary code, braces and all.
+  // `{ ... }` inside a tag is ordinary code, braces and all.
   jsxExpression: [
     [/\{/, { token: 'delimiter.bracket', next: '@jsxExpression', bracket: '@open' }],
     [/\}/, { token: 'delimiter.bracket', next: '@pop', bracket: '@close' }],

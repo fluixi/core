@@ -2,8 +2,8 @@
  * @fluixi/head: built-in, reactive, SSR-first SEO & document-head management.
  *
  *   import { seo, jsonld } from '@fluixi/head';
- *   seo({ title: 'Home', description: '…', canonical: 'https://site.com/' });
- *   seo({ jsonLd: jsonld.website({ name: 'Site', url: 'https://site.com', searchUrl: '…?q=' }) });
+ *   seo({ title: 'Home', description: '...', canonical: 'https://site.com/' });
+ *   seo({ jsonLd: jsonld.website({ name: 'Site', url: 'https://site.com', searchUrl: '...?q=' }) });
  *
  * Static, async, or reactive (signals update the document live). SSR renders into <head>; the
  * client reconciler reuses those tags by key (no hydration mismatch) and updates on signal change.

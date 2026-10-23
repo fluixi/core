@@ -147,7 +147,7 @@ describe('Solid-style JSX directives (parity)', () => {
   it('binds a native listener via on: (bypassing delegation)', () => {
     let n = 0;
     const el = evalExpr('(<div on:click={h}></div>)', { h: () => { n++; } }) as HTMLElement;
-    el.dispatchEvent(new MouseEvent('click')); // no bubbling — delegation would miss it
+    el.dispatchEvent(new MouseEvent('click')); // no bubbling: delegation would miss it
     expect(n).toBe(1);
   });
 

@@ -29,7 +29,7 @@ import type {
   LoadDirectiveNode,
 } from './ast.js';
 
-/** Recognized event modifiers (`@click.capture.once`, `on:input.passive`, …). */
+/** Recognized event modifiers (`@click.capture.once`, `on:input.passive`, ...). */
 export const EVENT_MODIFIERS = new Set(['capture', 'once', 'passive', 'prevent', 'stop', 'self']);
 
 /** A parsed-but-unclassified attribute handed to the registry. */
@@ -47,7 +47,7 @@ export interface RawAttribute {
 export interface DirectiveDescriptor {
   /** Stable id (for docs/debugging). */
   id: string;
-  /** DOM-only sugar (`if`/`each`/`class:`…) is ignored on component tags. */
+  /** DOM-only sugar (`if`/`each`/`class:`...) is ignored on component tags. */
   elementOnly?: boolean;
   match(name: string): boolean;
   build(raw: RawAttribute): AttributeLikeNode;

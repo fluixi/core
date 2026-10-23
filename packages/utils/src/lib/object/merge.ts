@@ -201,7 +201,6 @@ function mergeInPlace(target: any, source: any) {
       diff.hasChanges
     ) {
        applyDiff(tVal, sVal)
-      // mergeInPlace(tVal, sVal);
     } else {
       target[key] = sVal;
     }
@@ -289,31 +288,11 @@ export function deepMergeWithOptions<T extends object>(
         // In non-strict mode, concatenate arrays
         // console.log('pushing', [...resultArray], [...sourceArray])
         mergeInPlace(resultArray, sourceArray)
-        // if(sourceArray.length===resultArray.length){
-        //   for (let i=0; i<sourceArray.length; i++) {
-        //     const item = sourceArray[i];
-        //     // const result = resultArray[i];
-        //     // let index = -1;
-        //     // if(typeof item === 'object'){
-        //     //   const key = getKey(item);
-        //     //   if(key){
-        //     //     index = resultArray.find(s=>)
-        //     //   }else{
 
         //     //   }
 
         //     // }else{
 
-        //     // }
-        //     resultArray.push(deepClone(item));
-        //   }
-        // }else{
-        //   for (let i=0; i<sourceArray.length; i++) {
-        //     const item = sourceArray[i]
-        //     resultArray.push(deepClone(item));
-        //   }
-
-        // }
       }
     } else {
       // Object merging

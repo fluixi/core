@@ -70,7 +70,6 @@ export class Subject<T> extends Observable<T> implements Observer<T> {
 
   override unsubscribe(): void {
     this.isStopped = true;
-    //   this.closed = true;
     this.observers = [];
   }
 

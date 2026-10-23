@@ -14,7 +14,7 @@ import type { ReactiveSourceLocation } from './source.js';
  * A browser extension's own bundle.
  *
  * The devtools agent carries a copy of this package, so every frame inside it looked like
- * application code and every node reported `chrome-extension://…/agent.js` as its origin.
+ * application code and every node reported `chrome-extension://.../agent.js` as its origin.
  * Nothing under these schemes is ever the page's own source.
  */
 const EXTENSION = ['chrome-extension://', 'moz-extension://', 'safari-web-extension://', 'extension://'];

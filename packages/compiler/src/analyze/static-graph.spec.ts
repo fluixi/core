@@ -266,7 +266,7 @@ export function App() {
 });
 
 /**
- * The tags and holes of a `` html`…` `` are inside a string, so none of the walks over the
+ * The tags and holes of a `` html`...` `` are inside a string, so none of the walks over the
  * Babel tree can see them: a `<Show>` is not a JSXElement and a `${count()}` is not an
  * expression container. Everything below is what the JSX path already gave.
  */

@@ -19,7 +19,6 @@ import {
   type BetterAuthClient,
   type SessionData,
 } from './types.js';
-// import { isUseNavigate } from '@fluixi/core/router';
 
 export interface ProtectedRouteOptions<Q = (p: any) => boolean> {
   guestOnly?: boolean;

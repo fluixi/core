@@ -1,7 +1,7 @@
 /**
  * Hover for component tags inside `` html`` `` templates.
  *
- * TypeScript sees `<AsyncName …>` as text in a string, so hovering the tag shows
+ * TypeScript sees `<AsyncName ...>` as text in a string, so hovering the tag shows
  * nothing. We map the tag to the binding it names, then return the SAME quick
  * info TypeScript would show for that binding (its signature/type), remapped so
  * the hover highlights the tag in the template. Same idea as ts-lit-plugin.

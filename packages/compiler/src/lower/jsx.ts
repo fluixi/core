@@ -211,7 +211,7 @@ function buildProps(attrs: Node[], ctx: JsxContext, element = false): IRProp[] {
       (ns === 'class' ? classEntries : styleEntries).push(`${key}: ${value}`);
       continue;
     }
-    // style={{ … }}: one entry per property, so `--gap` moving does not rewrite `margin`.
+    // style={{ ... }}: one entry per property, so `--gap` moving does not rewrite `margin`.
     if (element && a.name.type === 'JSXIdentifier' && a.name.name === 'style' && a.value?.type === 'JSXExpressionContainer') {
       const entries = objectEntries(a.value.expression as Node, ctx);
       if (entries) {
@@ -343,7 +343,7 @@ function buildIf(node: Node, fallback: Node | null, ctx: JsxContext): IRNode {
 }
 
 /**
- * `<el each={items} key?>{(item) => …}</el>` → `<el><For each by>{…}</For></el>`: the
+ * `<el each={items} key?>{(item) => ...}</el>` → `<el><For each by>{...}</For></el>`: the
  * content repeats, the element does not. Null when there is no `each`.
  */
 function buildEach(node: Node, ctx: JsxContext): IRNode | null {

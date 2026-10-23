@@ -189,7 +189,7 @@ function outermost(list: Edit[]): Edit[] {
           o.end - o.start > e.end - e.start &&
           // An insertion at either edge of the container sits beside it, not inside it, so
           // it is not something the container's code already folded in. A statement can
-          // start where its callee starts (`$effect(…)`) and a declarator can end where its
+          // start where its callee starts (`$effect(...)`) and a declarator can end where its
           // JSX ends (`const Row = () => <b/>`).
           !(e.start === e.end && (e.start === o.start || e.start === o.end)),
       ),
@@ -211,13 +211,13 @@ function slice(code: string, start: number, end: number, edits: Edit[]): string 
   return out;
 }
 
-/** Describe one `${…}` for the lowering, substituting any template already compiled inside it. */
+/** Describe one `${...}` for the lowering, substituting any template already compiled inside it. */
 function bindHole(code: string, expr: Node, edits: Edit[], keepPosition = false): TemplateHole {
   const at = keepPosition ? expr.loc?.start : undefined;
   const hole: TemplateHole = {
     code: slice(code, expr.start, expr.end, edits),
     reactive: isReactiveShape(shapeOf(expr)),
-    // Where the `${…}` is, so a binding made from it can say so. The source map cannot:
+    // Where the `${...}` is, so a binding made from it can say so. The source map cannot:
     // the whole template is one overwrite. Only when source locations were asked for.
     ...(at ? { at: { line: at.line, column: at.column } } : {}),
   };
@@ -269,14 +269,14 @@ interface Needs {
   builtins: Set<string>;
   /** Names supplied by a resolve rule, as a static import. */
   resolved: Map<string, IRComponentSource>;
-  /** Names supplied lazily, as a `deferred(() => import(…))` binding. */
+  /** Names supplied lazily, as a `deferred(() => import(...))` binding. */
   deferred: Map<string, IRComponentSource>;
   delegatedEvents: Set<string>;
   /**
    * Capitalised tags nothing supplies and nothing binds.
    *
    * These compile to a reference to an identifier that does not exist. The build
-   * succeeds: the emitted `createComponent(Summary, …)` is just a free variable, and
+   * succeeds: the emitted `createComponent(Summary, ...)` is just a free variable, and
    * the page renders nothing where the component should be. Commenting one line out of a
    * `resolve` map is enough to cause it, which is exactly why it needs saying.
    */
@@ -479,7 +479,7 @@ export function transformTemplates(
       ? { edits: [], diagnostics: [], used: new Set<string>() }
       : collectPropsEdits(ast.program, code, { runtimeModule: options.runtimeModule });
 
-  // `$signal(…)` → `createSignal(…)`. Same edit list, so the callee is already rewritten
+  // `$signal(...)` → `createSignal(...)`. Same edit list, so the callee is already rewritten
   // by the time a template slices a hole containing one.
   const intrinsics =
     options.intrinsics === false

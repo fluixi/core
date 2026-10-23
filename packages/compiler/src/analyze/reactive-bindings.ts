@@ -84,7 +84,7 @@ function calledPrimitive(node: Node, bindings: ReactiveBindings): Intrinsic['ret
   const imported = bindings.primitives.get(name);
   if (imported) return imported;
 
-  // `$signal(…)`, unless the module bound that name itself.
+  // `$signal(...)`, unless the module bound that name itself.
   const intrinsic = INTRINSICS[name];
   if (intrinsic && !bindings.shadowed.has(name)) return intrinsic.returns;
   return undefined;
@@ -110,7 +110,7 @@ function classify(id: Node, returns: Intrinsic['returns'], kinds: Map<string, Re
  *
  * Deliberately scope-blind: it answers "does this file declare this name anywhere", which
  * is the question a diagnostic needs. A component declared inside a function
- * (`const Row = () => …`) is bound just as much as an import, and warning about it would
+ * (`const Row = () => ...`) is bound just as much as an import, and warning about it would
  * be noise. Over-permissive on purpose: missing a warning beats inventing one.
  */
 export function declaredNames(program: unknown): Set<string> {
@@ -156,7 +156,7 @@ export function resolveReactiveBindings(program: unknown): ReactiveBindings {
   const root = program as Node;
 
   // Anything the module declares under a `$` name shadows the intrinsic. Checked across
-  // the whole module, not just the top level: a nested `const $signal = …` still means
+  // the whole module, not just the top level: a nested `const $signal = ...` still means
   // the call at that point isn't ours, and refusing the rewrite there is the safe answer.
   walk(root, (node) => {
     const names = new Set<string>();

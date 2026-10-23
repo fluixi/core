@@ -1,8 +1,3 @@
-/**
- * @fileoverview Comprehensive color management utility with support for multiple color formats,
- * conversions, and color manipulation operations.
- */
-
 import { NAMED_COLORS, type NamedColor } from './constants.js';
 import { anyToRgb } from './conversions.js';
 import type {
@@ -453,24 +448,6 @@ const parsePercentage = (value: string): number => {
  * @param color - Color string in any supported format
  * @returns RGBA array [r, g, b, a] or null if invalid
  */
-// export const parseColor = (
-//   color: string
-// ): [number, number, number, number] | null => {
-//   // Handle transparent
-//   if (color.toLowerCase() === 'transparent') {
-//     return [0, 0, 0, 0];
-//   }
-
-//   // Handle named colors
-//   const namedColor = color.toLowerCase() as NamedColor;
-//   if (NAMED_COLORS[namedColor]) {
-//     return parseColor(NAMED_COLORS[namedColor]);
-//   }
-
-//   // Handle hex colors
-//   const hexMatch = color.match(COLOR_PATTERNS.HEX);
-//   if (hexMatch) {
-//     let hex = hexMatch[1];
 
 //     // Expand shorthand hex
 //     if (hex.length === 3 || hex.length === 4) {
@@ -479,91 +456,6 @@ const parsePercentage = (value: string): number => {
 //         .map((c) => c + c)
 //         .join('');
 //     }
-
-//     const r = parseInt(hex.substring(0, 2), 16);
-//     const g = parseInt(hex.substring(2, 4), 16);
-//     const b = parseInt(hex.substring(4, 6), 16);
-//     const a =
-//       hex.length === 8 ? round(parseInt(hex.substring(6, 8), 16) / 255, 1) : 1;
-
-//     return [r, g, b, a];
-//   }
-
-// // Handle rgb/rgba colors
-// const rgbMatch = color.match(COLOR_PATTERNS.RGB);
-// if (rgbMatch) {
-//   const r = parseInt(rgbMatch[1]);
-//   const g = parseInt(rgbMatch[2]);
-//   const b = parseInt(rgbMatch[3]);
-//   const a = rgbMatch[4] ? parsePercentage(rgbMatch[4]) : 1;
-
-//   return [r, g, b, a];
-// }
-
-//   // Handle hsl/hsla colors
-//   const hslMatch = color.match(COLOR_PATTERNS.HSL);
-//   if (hslMatch) {
-//     let h = parseFloat(hslMatch[1]);
-//     const s = parseFloat(hslMatch[2]) / 100;
-//     const l = parseFloat(hslMatch[3]) / 100;
-//     const a = hslMatch[4] ? parsePercentage(hslMatch[4]) : 1;
-
-//     // Convert HSL to RGB
-//     const chroma = (1 - Math.abs(2 * l - 1)) * s;
-//     const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
-//     const m = l - chroma / 2;
-
-//     let r = 0,
-//       g = 0,
-//       b = 0;
-
-//     if (h >= 0 && h < 60) {
-//       [r, g, b] = [chroma, x, 0];
-//     } else if (h >= 60 && h < 120) {
-//       [r, g, b] = [x, chroma, 0];
-//     } else if (h >= 120 && h < 180) {
-//       [r, g, b] = [0, chroma, x];
-//     } else if (h >= 180 && h < 240) {
-//       [r, g, b] = [0, x, chroma];
-//     } else if (h >= 240 && h < 300) {
-//       [r, g, b] = [x, 0, chroma];
-//     } else if (h >= 300 && h < 360) {
-//       [r, g, b] = [chroma, 0, x];
-//     }
-
-//     return [
-//       Math.round((r + m) * 255),
-//       Math.round((g + m) * 255),
-//       Math.round((b + m) * 255),
-//       a,
-//     ];
-//   }
-
-//   // Handle oklch colors
-//   const oklchMatch = color.match(COLOR_PATTERNS.OKLCH);
-//   if (oklchMatch) {
-//     // For simplicity, we'll convert oklch to rgb via hsl approximation
-//     // Note: This is a simplified conversion
-//     const L = parsePercentage(oklchMatch[1]);
-//     const C = parseFloat(oklchMatch[2]);
-//     const H = parseFloat(oklchMatch[3]);
-//     const a = oklchMatch[4] ? parsePercentage(oklchMatch[4]) : 1;
-
-//     // Approximate conversion from OKLCH to RGB
-//     // This is a simplified version - real conversion is more complex
-//     const h = H;
-//     const s = C * 100;
-//     const l = L * 100;
-
-//     const rgb = parseColor(`hsl(${h}, ${s}%, ${l}%)`);
-//     if (rgb) {
-//       rgb[3] = a;
-//       return rgb;
-//     }
-//   }
-
-//   return null;
-// };
 
 /**
  * Validates if a string is a valid color

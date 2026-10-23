@@ -7,7 +7,7 @@
  * `observeReactiveNodes`. Arriving late means the runtime has already looked and moved on.
  *
  * Nothing is sent from here. The panel reads the hook through `inspectedWindow.eval`, which
- * runs in this same world — so there is no relay, no service worker and no message protocol
+ * runs in this same world: so there is no relay, no service worker and no message protocol
  * to keep in step.
  */
 import { installDevtoolsHook } from '@fluixi/devtools';

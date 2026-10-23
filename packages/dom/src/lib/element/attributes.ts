@@ -11,9 +11,7 @@
 import type { Accessor } from '@fluixi/reactive/signal';
 import type { ComponentChild } from '../shared/types.js';
 
-// ============================================================================
 // Helper Types
-// ============================================================================
 
 /**
  * A prop value that may be a static value or a reactive accessor. The automatic JSX runtime
@@ -50,9 +48,7 @@ export type HTMLReferrerPolicy =
   | 'strict-origin-when-cross-origin'
   | 'unsafe-url';
 
-// ============================================================================
 // Style
-// ============================================================================
 
 /**
  * A `style` object: known camelCase CSS properties (autocompleted from the DOM
@@ -76,9 +72,7 @@ export type CSSProperties =
     }
   & { [key: `--${string}`]: string | number };
 
-// ============================================================================
 // ARIA Attributes
-// ============================================================================
 
 export interface AriaAttributes {
   'aria-activedescendant'?: Reactive<string>;
@@ -139,9 +133,7 @@ export interface AriaAttributes {
   role?: Reactive<string>;
 }
 
-// ============================================================================
 // DOM Attributes (Events)
-// ============================================================================
 
 export interface DOMAttributes<T = Element> extends AriaAttributes {
   // children?: JSX.Element | (()=>any) | ((arg: any) => any);
@@ -297,9 +289,7 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   [key: `on${string}`]: ((event: any) => void) | undefined;
 }
 
-// ============================================================================
 // HTML Attributes (Base)
-// ============================================================================
 
 /**
  * Control flow written on an element and compiled away: `if`, `else`, `each` (with `key`).
@@ -311,7 +301,7 @@ export interface ControlDirectives {
   /** The fallback of the `if` element just before it. */
   else?: boolean;
   /**
-   * Render this element once and its content per item: the content is `(item, index) => …`.
+   * Render this element once and its content per item: the content is `(item, index) => ...`.
    * JSX cannot infer `item` on a lowercase tag; annotate it, or use `<For>` where the type
    * should be inferred.
    */
@@ -417,9 +407,7 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, Contr
   textContent?: string | number;
 }
 
-// ============================================================================
 // Specific Element Attribute Interfaces
-// ============================================================================
 
 export interface AnchorHTMLAttributes<T = HTMLAnchorElement> extends HTMLAttributes<T> {
   download?: any;
@@ -968,9 +956,7 @@ export interface VideoHTMLAttributes<T = HTMLVideoElement> extends MediaHTMLAttr
 
 export interface AudioHTMLAttributes<T = HTMLAudioElement> extends MediaHTMLAttributes<T> {}
 
-// ============================================================================
 // SVG Attributes
-// ============================================================================
 
 export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, ControlDirectives {
   // Core SVG attributes. Reactive like the HTML ones, the presentation
@@ -1280,9 +1266,7 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   [key: string]: any;
 }
 
-// ============================================================================
 // Renderable value + the tag -> attributes map
-// ============================================================================
 
 /**
  * Anything the renderer accepts as output. `JSX.Element` aliases this; html``

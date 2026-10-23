@@ -117,7 +117,7 @@ export function publicEnv(): PublicEnvValues {
 
 /**
  * Server variable names found in the app's `.env` files, filled in by the same generated file
- * as `PublicEnv`. Names only, never values: they complete `env('…')` in the editor.
+ * as `PublicEnv`. Names only, never values: they complete `env('...')` in the editor.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ServerEnv {}

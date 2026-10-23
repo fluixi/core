@@ -1,8 +1,3 @@
-/**
- * @fileoverview Object diff utilities for comparing and tracking changes
- * @description Provides utilities to diff objects and return structured changes
- */
-
 import { isObject } from './utils.js';
 import type { AnyObject } from './types.js';
 

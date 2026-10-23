@@ -293,25 +293,9 @@ describe('String Utilities', () => {
     });
   });
 
-  // describe('randomString', () => {
-  //   beforeEach(() => {
-  //     vi.spyOn(Math, 'random').mockReturnValue(0.5);
-  //   });
-
-  //   afterEach(() => {
-  //     vi.restoreAllMocks();
-  //   });
-
   //   it('should generate random strings', () => {
   //     vi.spyOn(Math, 'random').mockReturnValue(0.5);
   //     expect(randomString(10)).toBe('NNNNN'); // N is at position 13 in default charset
-
-  //     expect(randomString(0)).toBe('');
-
-  //     // Test custom charset
-  //     expect(randomString(3, 'ABC')).toBe('BBB');
-  //   });
-  // });
 
   describe('countOccurrences', () => {
     it('should count occurrences (case-sensitive)', () => {
@@ -517,7 +501,6 @@ describe('String Utilities', () => {
       const value: unknown = 'test';
 
       //// @ts-expect-error - value is unknown
-      // value.toUpperCase();
 
       if (isString(value)) {
         expect(value.toUpperCase()).toBe('TEST');
@@ -630,30 +613,6 @@ describe('String Utilities', () => {
   });
 
   describe('replaceStringPattern', () => {
-    // it('should replace regex pattern at start', () => {
-    //   expect(replaceStringPattern('123abc', '\\d+', 'start', 'X')).toBe('Xabc');
-    //   expect(replaceStringPattern('hello world', '^hello', 'start', 'hi')).toBe('hi world');
-    // });
-
-    // it('should replace regex pattern at end', () => {
-    //   expect(replaceStringPattern('abc123', '\\d+', 'end', 'X')).toBe('abcX');
-    //   expect(replaceStringPattern('hello world', 'world$', 'end', 'there')).toBe('hello there');
-    // });
-
-    // it('should replace regex pattern at both ends', () => {
-    //   expect(replaceStringPattern('123abc123', '\\d+', 'both', 'X')).toBe('XabcX');
-    //   expect(replaceStringPattern('testtest', 'test', 'both', 'X')).toBe('XX');
-    // });
-
-    // it('should handle string patterns', () => {
-    //   expect(replaceStringPattern('hello world', 'hello', 'start', 'hi', false)).toBe('hi world');
-    //   expect(replaceStringPattern('hello world', 'world', 'end', 'there', false)).toBe('hello there');
-    // });
-
-    // it('should handle complex regex patterns', () => {
-    //   expect(replaceStringPattern('abc 123 def', '\\s+\\d+\\s+', 'both', ' | ', true)).toBe('abc | def');
-    //   expect(replaceStringPattern('test1 test2', 'test\\d', 'both', 'X', true)).toBe('X X');
-    // });
 
     it('should replace regex pattern at start', () => {
       expect(
@@ -733,7 +692,6 @@ describe('String Utilities', () => {
           useRegex: true,
         })
       ).toBe('abc | def');
-      // expect(replaceStringPattern('test1 test2', {pattern: 'test\\d', position: 'both', newValue: 'X', useRegex: true})).toBe('X X');
     });
   });
 
@@ -866,7 +824,6 @@ describe('String Utilities', () => {
     it('should create objects when valueKey is provided', () => {
       const result = stringToObjectArray('apple|banana', { valueKey: 'id' });
       expect(result).toEqual([{ id: 'apple' }, { id: 'banana' }]);
-      // expect(isObjectArray(result)).toBe(true);
     });
 
     it('should create objects with both valueKey and labelKey', () => {
@@ -978,7 +935,6 @@ describe('String Utilities', () => {
     it('should always return object array', () => {
       const result = stringToObjectArrayOnly('a|b', { valueKey: 'key' });
       expect(result).toEqual([{ key: 'a' }, { key: 'b' }]);
-      // expect(isObjectArray(result)).toBe(true);
     });
 
     it('should require object-related options', () => {
@@ -1122,34 +1078,6 @@ describe('String Utilities', () => {
       });
     });
 
-    // describe('isObjectArray', () => {
-    //   it('should return true for object arrays', () => {
-    //     expect(isObjectArray([{}])).toBe(true);
-    //     expect(isObjectArray([{ a: 1 }, { b: 2 }])).toBe(true);
-    //     expect(isObjectArray([])).toBe(true);
-    //   });
-
-    //   it('should return false for non-object arrays', () => {
-    //     expect(isObjectArray(['a', 'b'])).toBe(false);
-    //     expect(isObjectArray([1, 2, 3])).toBe(false);
-    //     expect(isObjectArray([[]])).toBe(false);
-    //     expect(isObjectArray([null])).toBe(false);
-    //     expect(isObjectArray([undefined])).toBe(false);
-    //     expect(isObjectArray([{}, []])).toBe(false);
-    //     expect(isObjectArray(null)).toBe(false);
-    //     expect(isObjectArray(undefined)).toBe(false);
-    //     expect(isObjectArray('not an array')).toBe(false);
-    //     expect(isObjectArray({})).toBe(false);
-    //   });
-
-    //   it('should act as a type guard', () => {
-    //     const value: unknown = [{ id: 1 }, { id: 2 }];
-    //     if (isObjectArray(value)) {
-    //       // TypeScript knows value is Record<string, any>[]
-    //       expect(value.map((obj) => obj.id)).toEqual([1, 2]);
-    //     }
-    //   });
-    // });
   });
 
   describe('Edge Cases and Error Handling', () => {

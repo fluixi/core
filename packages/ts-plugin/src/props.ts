@@ -61,7 +61,7 @@ export function componentPropCompletions(
 }
 
 /**
- * Hover for a component prop NAME (e.g. the cursor on `header` in `<Card header=…>`).
+ * Hover for a component prop NAME (e.g. the cursor on `header` in `<Card header=...>`).
  * Resolves the prop's type from the component's props for user components, or a
  * known signature for the auto-imported control-flow ones.
  */
@@ -208,7 +208,7 @@ function attrNameSpan(text: string, position: number): TS.TextSpan {
  * The type of the component `name` refers to at `template`.
  *
  * Scope first, so imports, locals and ambient globals all resolve, then the compiler's
- * own auto-imported names (`Show`, `Outlet`, …) which have no binding anywhere.
+ * own auto-imported names (`Show`, `Outlet`, ...) which have no binding anywhere.
  * `getTypeOfSymbolAtLocation` is used rather than `getTypeAtLocation` on a declaration
  * because the generated globals are alias declarations, and an alias has to be followed
  * to reach the function type.

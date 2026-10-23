@@ -86,7 +86,7 @@ export const markHole = (
  */
 export const PROPS_MARKER = '__fx_props';
 
-/** `_({ get a() {…} }, {"a":[9,25]})`, or the object untouched when nothing is watching. */
+/** `_({ get a() {...} }, {"a":[9,25]})`, or the object untouched when nothing is watching. */
 export const markProps = (object: string, at: Record<string, [number, number]>): string =>
   `(globalThis.${PROPS_MARKER} ?? ((p) => p))(${object},${JSON.stringify(at)})`;
 
@@ -146,8 +146,8 @@ function walk(node: Node | null | undefined, visit: (n: Node, stack: Node[]) => 
 
 /**
  *   const count = signal(0)      → count
- *   const [count, setCount] = …  → count, the accessor rather than the setter
- *   effect(() => …)              → nothing
+ *   const [count, setCount] = ...  → count, the accessor rather than the setter
+ *   effect(() => ...)              → nothing
  */
 function nameFor(stack: Node[]): string | undefined {
   const declarator = stack[stack.length - 1];
@@ -206,7 +206,7 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
       //
       // Only through what wraps a declaration. Anything else above it is a block or an
       // argument list, and a statement appended there lands outside the grammar , 
-      // `function Page(){}` inside `it('…', () => { … })` ended up between the `}` and the
+      // `function Page(){}` inside `it('...', () => { ... })` ended up between the `}` and the
       // `)`, which is a syntax error in a file that compiled a moment earlier.
       let end = node.end;
       for (let i = stack.length - 1; i >= 0; i--) {
@@ -305,7 +305,7 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
     }
     if (!statement) return;
 
-    // `export const [cart] = createStore(…)` finds the declaration, which starts after the
+    // `export const [cart] = createStore(...)` finds the declaration, which starts after the
     // keyword: a mark there splits `export` from what it exports.
     let start = statement.start;
     let end = statement.end;
@@ -331,7 +331,7 @@ export function collectSourceEdits(program: unknown, filename: string): SourceLo
 
     const mark = `globalThis.${SOURCE_MARKER}?.(${args});`;
 
-    // `if (c) effect(…)` has one statement where the grammar allows one statement, so
+    // `if (c) effect(...)` has one statement where the grammar allows one statement, so
     // putting the mark in front of it moves the branch body out of the branch. Braces are
     // added around both rather than skipping the mark.
     if (isLoneBranch(statement, parent)) {

@@ -6,7 +6,7 @@ import { html } from '@fluixi/core';
 // the client, exactly like the JSX examples/ssr app, because html`` compiles to
 // the same @fluixi/dom calls.
 //
-// Resources are read GUARDED by user.loading: `user.loading ? … : user().name`.
+// Resources are read GUARDED by user.loading: `user.loading ? ... : user().name`.
 // Calling user() only when NOT loading means it never throws (a bare user() while
 // pending suspends). This is the SSR pattern that hydrates cleanly, sync
 // renderToString serializes the loading text, async awaits the data, and hydration
@@ -30,7 +30,7 @@ function UserCard() {
 // Accepts a reactive `titlXe` prop and forwards it. NOTE: read it as `props.title`,
 // never destructure (`const { title } = props`), props are getters, so
 // destructuring reads the value ONCE and freezes it (that's why the bare
-// `.title=${`…${count()}`}` looked non-reactive). Accessing `props.title` inside
+// `.title=${`...${count()}`}` looked non-reactive). Accessing `props.title` inside
 // the template re-reads the getter, so it stays reactive with either form.
 function AsyncName(props: { title?: string }) {
   const [user] = createResource(() => fetchUser(9));

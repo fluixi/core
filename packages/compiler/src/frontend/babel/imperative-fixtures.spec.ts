@@ -10,7 +10,7 @@ import * as Store from '@fluixi/reactive/store';
 // Behavioural hardening: run a broad set of JSX patterns through the compiler,
 // execute the output against the real @fluixi/dom runtime in jsdom, and assert
 // the produced DOM. Catches backend edge cases (spreads, ref, style, fragments,
-// control flow, SVG, …) before real apps do.
+// control flow, SVG, ...) before real apps do.
 //
 // This ran each fixture through two codegens while a second, inline lowering
 // existed alongside the IR pipeline. That lowering is gone, one path, one set of
@@ -289,7 +289,7 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
-    // Regression: IR wrapped component prop *values* in `() => …` thunks (unlike
+    // Regression: IR wrapped component prop *values* in `() => ...` thunks (unlike
     // inline), so a prop like `history={createMemoryHistory()}` reached the
     // component as a function: `history.get is not a function`. Component props
     // must be passed as values (the createComponent call already sits in a memo).

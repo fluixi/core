@@ -123,7 +123,7 @@ describe('lit → shared compiler (spike)', () => {
   });
 
   it('handles a typed arrow param in a hole (TS annotation survives reparse)', () => {
-    // (n: number) => … in a hole must not break the emitted-code reparse.
+    // (n: number) => ... in a hole must not break the emitted-code reparse.
     const lit = emitLit('html`<For each=${xs()}>${(n: number) => html`<li>${n}</li>`}</For>`');
     expect(lit.code).toContain('createComponent(For');
     expect(lit.code).toMatch(/createNativeElement\("li"\)|<li>/);

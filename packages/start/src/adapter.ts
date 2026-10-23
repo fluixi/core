@@ -236,7 +236,7 @@ function frameworkDeps(root: string): string[] {
 }
 
 /**
- * `['@fluixi/core', '@fluixi/core/router', …]`: the package plus every static subpath it
+ * `['@fluixi/core', '@fluixi/core/router', ...]`: the package plus every static subpath it
  * exports. Wildcard entries (`./lib/*`) cannot be enumerated and are left to Vite; an
  * app importing through one gets it bundled, which is the safe direction.
  */

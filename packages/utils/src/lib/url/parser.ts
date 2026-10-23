@@ -15,7 +15,6 @@ export const url_parser = (url: string) => {
       searchParams: p.searchParams.toString(),
       protocol: p.protocol,
     } as URL_PARSER;
-    //JSON.parse(p.toJSON());
   } catch (e) {
     return null;
   }

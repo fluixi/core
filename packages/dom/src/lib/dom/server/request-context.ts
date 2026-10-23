@@ -240,7 +240,7 @@ export function getLocals(): RequestLocals {
   return event.locals;
 }
 
-// ─── middleware -> render bridge ─────────────────────────────────────────────────
+// middleware -> render bridge
 // Middleware runs on the raw platform request, OUTSIDE the render's request context.
 // This WeakMap associates a per-request locals bag with that request object; the render
 // adopts it in createRequestContext from the event's `request`, or from the one @fluixi/start
@@ -279,7 +279,7 @@ export function getRequestLocals(request: object): RequestLocals {
   return bag;
 }
 
-// ─── render -> response bridge ───────────────────────────────────────────────────
+// render -> response bridge
 // The mirror of locals: headers code inside a render (a cookie write) wants on the response.
 // Keyed by the platform request, which the host holds when it builds the Response.
 

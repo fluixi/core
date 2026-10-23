@@ -2,7 +2,7 @@
  * Reading the graph out of the inspected page.
  *
  * `inspectedWindow.eval` runs in the page's own world, which is where the agent left the
- * hook — so the panel asks the page directly and there is no relay, no service worker and no
+ * hook: so the panel asks the page directly and there is no relay, no service worker and no
  * message protocol between them. What comes back is json: the eval boundary only carries
  * structured values, and the graph holds sets and live nodes.
  *
@@ -19,7 +19,7 @@ export type PageState =
   | { kind: 'graph'; snapshot: GraphSnapshot; version: string | null }
   /** The hook is there and no runtime has claimed it: not a Fluixi page, or not loaded yet. */
   | { kind: 'waiting' }
-  /** The agent never ran — a page opened before the extension, or a restricted url. */
+  /** The agent never ran: a page opened before the extension, or a restricted url. */
   | { kind: 'absent' }
   | { kind: 'error'; message: string };
 

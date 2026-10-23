@@ -70,7 +70,7 @@ function propValue(p: IRProp): string {
  * The whole `createComponent(...)` call sits inside a `createMemo`, so reading a
  * signal in a prop re-evaluates when the memo re-runs, no per-prop thunk needed.
  * This matches the inline codegen; wrapping a prop like
- * `history={createMemoryHistory()}` in `() => …` would hand the component a
+ * `history={createMemoryHistory()}` in `() => ...` would hand the component a
  * function instead of the value (e.g. `history.get is not a function`).
  */
 function componentPropValue(p: IRProp): string {
@@ -171,7 +171,7 @@ function emitComponent(
   // The memo never recomputes: every prop is a getter, so this callback reads nothing
   // reactive. It is here for what it makes `insert` do, and it cannot be elided.
   //
-  // A component whose return value is *itself* bare control flow (`return <Show …/>`)
+  // A component whose return value is *itself* bare control flow (`return <Show .../>`)
   // produces a memo, which `createComponent` deliberately does not stamp as a component.
   // Without this wrapper `insert` stops re-reading it, and the subtree goes stale when a
   // sibling updates the context it depends on: see `show-context-insert.spec.ts`.

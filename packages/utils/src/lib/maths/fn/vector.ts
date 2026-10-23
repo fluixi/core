@@ -5,11 +5,6 @@
 
 import type { Vector2D, Vector3D, Vector4D } from '../types/advanced.js';
 
-// Constants
-// const EPSILON = Math.E;
-// const DEG_TO_RAD = Math.PI / 180;
-// const RAD_TO_DEG = 180 / Math.PI;
-
 /**
  * Validates that a value is a finite number.
  * @param value - The value to validate

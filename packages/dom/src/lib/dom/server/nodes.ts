@@ -24,9 +24,7 @@ export const NODE_ELEMENT = 1;
 export const NODE_TEXT = 3;
 export const NODE_COMMENT = 8;
 
-// ---------------------------------------------------------------------------
 // Base node, the linked-tree mechanics insert() relies on.
-// ---------------------------------------------------------------------------
 /**
  * A custom element's content on the server. @fluixi/web-components registers a renderer under
  * this key; a server node with a dashed tag is handed to it once, when it is attached to its
@@ -118,9 +116,7 @@ export abstract class ServerNode {
   removeEventListener(): void {}
 }
 
-// ---------------------------------------------------------------------------
 // Text + Comment
-// ---------------------------------------------------------------------------
 export class ServerText extends ServerNode {
   nodeType = NODE_TEXT;
   data: string;
@@ -187,10 +183,8 @@ export class ServerComment extends ServerNode {
   }
 }
 
-// ---------------------------------------------------------------------------
 // style + classList helpers (runtime sets element.style.cssText, element.style
 // .camelKey, and element.classList.toggle/add/remove/contains).
-// ---------------------------------------------------------------------------
 export class ServerStyle {
   // declared keys are stored as own props; cssText holds a raw string blob.
   cssText = '';
@@ -233,9 +227,7 @@ class ServerClassList {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Element: attributes + the JSX_PROPERTIES properties + style/classList.
-// ---------------------------------------------------------------------------
 export class ServerElement extends ServerNode {
   nodeType = NODE_ELEMENT;
   localName: string;

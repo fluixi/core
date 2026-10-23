@@ -1,10 +1,3 @@
-/**
- * @fileoverview Pluggable history backends.
- *
- * The router core depends only on the {@link HistoryAdapter} interface, so it
- * runs identically in tests/SSR (memory) and the browser (History API).
- */
-
 import type { HistoryAction, HistoryAdapter } from './types.js';
 
 let keys = 0;

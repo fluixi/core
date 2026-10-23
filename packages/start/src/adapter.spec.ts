@@ -57,7 +57,7 @@ describe('ssrBuildOptions — the adapter decides how the server is bundled', ()
         '@fluixi/core': {
           '.': './index.js',
           './router': './router.js',
-          './routes': './routes.js', // plugin-generated — a stub in the package
+          './routes': './routes.js', // plugin-generated: a stub in the package
           './lib/*': './lib/*.js',
           './package.json': './package.json',
         },

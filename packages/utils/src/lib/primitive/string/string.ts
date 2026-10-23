@@ -712,7 +712,6 @@ export const replaceString = (
     // Replace from start if applicable
     if (result.startsWith(valueToReplace)) {
       result = replaceStringByIndex(result, 0, valueToReplace.length, newValue);
-      // result = result.substring(valueToReplace.length);
     }
 
     // Replace from end if applicable
@@ -723,7 +722,6 @@ export const replaceString = (
         result.length,
         newValue
       );
-      // result = result.substring(0, result.length - valueToReplace.length);
     }
 
     // return result.length < originalString.length
@@ -792,9 +790,6 @@ export const replaceString = (
 //       'g'
 //     );
 //   }
-
-//   return originalString.replace(regex, newValue);
-// };
 
 interface ReplaceString {
   pattern: string | RegExp;
@@ -923,115 +918,11 @@ interface StringToObjectArrayOptions {
 //     filterEmpty = true,
 //   } = options;
 
-//   // Helper function to create object from string
-//   const createObject = (item: string): Record<string, any> => {
-//     const base = { ...defaultObject };
-//     const trimmed = trimItems ? item.trim() : item;
-
-//     // Only add value/label if they don't already exist in defaultObject
-//     if (!(valueKey in base)) {
-//       base[valueKey] = trimmed;
-//     }
-//     if (!(labelKey in base) && labelKey !== valueKey) {
-//       base[labelKey] = trimmed;
-//     }
-//     return base;
-//   };
-
-//   // Handle array input
-//   if (Array.isArray(input)) {
-//     return input
-//       .map((item): ParsedObject | null => {
-//         if (item == null) return null;
-
-//         if (typeof item === 'string') {
-//           return valueKey ? createObject(item) : item;
-//         }
-
-//         if (typeof item === 'object') {
-//           return item;
-//         }
-
-//         // Convert other types to string
-//         return valueKey ? createObject(String(item)) : String(item);
-//       })
-//       .filter((item): item is ParsedObject => {
-//         if (item == null) return false;
-//         if (filterEmpty && typeof item === 'string' && item.trim() === '')
-//           return false;
-//         if (
-//           filterEmpty &&
-//           typeof item === 'object' &&
-//           valueKey in item &&
-//           item[valueKey]?.trim() === ''
-//         )
-//           return false;
-//         return true;
-//       });
-//   }
-
-//   // Handle string input
-//   if (typeof input !== 'string') {
-//     return [];
-//   }
-
-//   const str = input.trim();
-
-//   // Return empty array for empty string
-//   if (str === '') {
-//     return [];
-//   }
-
-//   // Try to parse as JSON first
-//   if (
-//     (str.startsWith('[') && str.endsWith(']')) ||
-//     (str.startsWith('{') && str.endsWith('}'))
-//   ) {
-//     try {
-//       const parsed = JSON.parse(str);
-
-//       if (Array.isArray(parsed)) {
-//         return parsed.map((item): ParsedObject => {
-//           if (typeof item === 'string' && valueKey) {
-//             return createObject(item);
-//           }
-//           if (typeof item === 'object' && item !== null) {
-//             return { ...defaultObject, ...item };
-//           }
-//           return valueKey ? createObject(String(item)) : String(item);
-//         });
-//       }
-
-//       // Single object
-//       return [{ ...defaultObject, ...parsed }];
-//     } catch {
-//       // Not valid JSON, continue with other methods
-//     }
-//   }
-
-//   // Try to parse as array literal (handles cases like "[a, b, c]")
-//   const literalResult = parseArrayLiteral(str);
-//   if (Array.isArray(literalResult)) {
-//     return literalResult.map((item) =>
-//       valueKey ? createObject(String(item)) : String(item)
-//     );
-//   }
-
-//   // Try each delimiter
-//   for (const delimiter of delimiters) {
-//     if (str.includes(delimiter)) {
-//       const parts = str.split(delimiter);
-//       const items = trimItems ? parts.map((part) => part.trim()) : parts;
-
 //       return items
 //         .filter((item) => !filterEmpty || item !== '')
 //         .map((item) => (valueKey ? createObject(item) : item));
 //     }
 //   }
-
-//   // Single value
-//   return valueKey ? [createObject(str)] : [str];
-// };
 
 /**
  * Parses a string representation of an array literal
@@ -1061,7 +952,6 @@ export const parseArrayLiteral = (str: string): string[] | string => {
     const jsonStr = `[${innerStr}]`;
     const parsed = JSON.parse(jsonStr);
     if (Array.isArray(parsed)) {
-      // return parsed.map(String);
       return parsed;
     }
   } catch {

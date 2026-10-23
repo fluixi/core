@@ -4,7 +4,7 @@
 // search.
 //
 // One record per page, headings kept separate so a heading match can outrank a body
-// match, and the body flattened to plain text — code fences included, since "how do I
+// match, and the body flattened to plain text: code fences included, since "how do I
 // write bind:value" is a real query and the answer is in a code block.
 import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';

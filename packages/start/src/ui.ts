@@ -101,7 +101,7 @@ export function devReady(opts: { port: number; startedAt: number; version?: stri
   process.stdout.write(lines.join('\n') + '\n');
 }
 
-/** A build step line (e.g. "building client …"). */
+/** A build step line (e.g. "building client ..."). */
 export function step(text: string): void {
   process.stdout.write(`  ${c.cyan('•')} ${text}\n`);
 }

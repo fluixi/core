@@ -181,7 +181,7 @@ export async function linkProject(
       return `${lead}${quote}${shimFor(specifier)}${quote}`;
     });
 
-    // Name the module after its file: a stack trace otherwise reports `blob:http://…/9f2c`,
+    // Name the module after its file: a stack trace otherwise reports `blob:http://.../9f2c`,
     // and devtools reads stacks to place dom bindings and setters.
     const named = `${linked}\n//# sourceURL=${path}\n`;
     moduleUrls.set(path, track(new Blob([named], { type: 'text/javascript' })));

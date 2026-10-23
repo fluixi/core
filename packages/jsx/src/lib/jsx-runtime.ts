@@ -1,12 +1,3 @@
-/**
- * @fileoverview JSX Runtime with Reactive DOM Support
- * @module @fluixi/jsx
- *
- * Production-grade JSX runtime for the Fluixi reactive system.
- * Key design: event handlers stored as $$eventname properties on DOM nodes
- * (SolidJS delegation pattern) for reliable bubbling and preventDefault support.
- */
-
 import {
   insert,
   setAttribute,
@@ -32,9 +23,7 @@ import {
 import { createComponent, createDynamicElement } from '@fluixi/dom';
 import { createSignal, createMemo, createRenderEffect, readChildren } from '@fluixi/reactive/signal';
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export type JSXElement =
   | Node
@@ -56,9 +45,7 @@ export interface JSXProps {
 export type RefCallback<T> = (instance: T) => void;
 export type RefObject<T> = { current: T | null };
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 export const Fragment = Symbol.for('fluixi.fragment');
 
@@ -67,7 +54,6 @@ const isSSR = typeof window === 'undefined';
 // Track which event names we've registered globally (mirrors delegatedSet in runtime)
 const globalDelegatedSet = new Set<string>();
 
-// ============================================================================
 // Helper: createComponent
 //
 // Both backends now instantiate components through the framework's registered
@@ -76,11 +62,8 @@ const globalDelegatedSet = new Set<string>();
 // the proper owner/lifecycle handling + asComponent stamping, so the jsx and
 // imperative backends share one component-instantiation path. The dom shim
 // falls back to `() => Comp(props)` only when no system is registered.
-// ============================================================================
 
-// ============================================================================
 // Helper: normalizeChildren
-// ============================================================================
 
 function normalizeChildren(children: any): any {
   if (children === undefined || children === null || children === false) return null;
@@ -92,9 +75,7 @@ function normalizeChildren(children: any): any {
   return children;
 }
 
-// ============================================================================
 // JSX Factory
-// ============================================================================
 
 /**
  * Main JSX factory function.
@@ -143,9 +124,7 @@ export function jsxDEV(type: any, props: any, key?: string, _isStaticChildren?: 
   return jsx(type, props, key);
 }
 
-// ============================================================================
 // Native Element Creation
-// ============================================================================
 
 function createNativeElement(tag: string, props: any): any {
   if (isSSR) return { type: tag, props: props || {} };
@@ -155,9 +134,7 @@ function createNativeElement(tag: string, props: any): any {
   return createDynamicElement(tag, props);
 }
 
-// ============================================================================
 // Additional Exports
-// ============================================================================
 
 export function createElement(type: any, props: any, ...children: any[]): JSXElement {
   const p = { ...props };

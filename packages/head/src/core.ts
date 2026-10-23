@@ -30,9 +30,7 @@ function robotsToString(r: string | RobotsMeta): string {
   return out.join(', ');
 }
 
-// ---------------------------------------------------------------------------
 // Registry
-// ---------------------------------------------------------------------------
 
 export interface HeadRegistry {
   /** Ordered sources: layouts register before pages, so later entries override. */
@@ -126,9 +124,7 @@ export function useHead(input: HeadSource): () => void {
 /** Ergonomic alias: `seo({ title, description })`. */
 export const seo = useHead;
 
-// ---------------------------------------------------------------------------
 // Resolution (expand → dedupe)
-// ---------------------------------------------------------------------------
 
 function djb2(s: string): string {
   let h = 5381;
@@ -337,7 +333,7 @@ export interface ResolvedHead {
 
 /**
  * Flatten every source (in registration order: layouts first, page last) into tags, then
- * deduplicate by key: last write wins for singletons (title, description, canonical, …),
+ * deduplicate by key: last write wins for singletons (title, description, canonical, ...),
  * while repeatable tags (extra og:image, hreflang alternates, json-ld) accumulate.
  */
 export function resolveHead(head: HeadRegistry): ResolvedHead {

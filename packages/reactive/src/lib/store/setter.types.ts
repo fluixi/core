@@ -21,9 +21,9 @@ export interface RangeSelector {
   by?: number;
 }
 
-/* ============================================================
+/*
  * Utility Types
- * ============================================================ */
+  */
 
 type Decrement = [never, 0, 1, 2, 3, 4, 5, 6];
 
@@ -41,9 +41,9 @@ type IsArray<T> = T extends readonly any[]
   ? true
   : false;
 
-/* ============================================================
+/*
  * Selector Generation
- * ============================================================ */
+  */
 
 type SelectorInternal<
   T,
@@ -79,9 +79,9 @@ type SelectorInternal<
  */
 export type Selector<T> = SelectorInternal<T>;
 
-/* ============================================================
+/*
  * Path Resolution
- * ============================================================ */
+  */
 
 type NormalizePath<P extends string> =
   P extends `${infer A}[${infer B}]${infer C}`
@@ -131,9 +131,9 @@ type ResolveSegment<T, Segment extends string> = Segment extends keyof T
   : T; // Fallback
 export type PathValue<T, P extends string> = ResolvePath<T, P>;
 
-/* ============================================================
+/*
  * Update Values
- * ============================================================ */
+  */
 
 export type UpdateValue<V> = V extends Primitive
   ? V | ((prev: V) => V)
@@ -159,15 +159,15 @@ export type DeepReadonly<T> = T extends ImmutablePrimitive
 /** What deep-readonly leaves alone: a value with no interior to freeze. */
 type ImmutablePrimitive = Primitive | RegExp | Blob;
 
-/* ============================================================
+/*
  * Predicate
- * ============================================================ */
+  */
 
 export type Predicate<T> = (item: T, index: number) => boolean;
 
-/* ============================================================
+/*
  * Array Helpers
- * ============================================================ */
+  */
 
 export type ArrayStoreMethods<T extends readonly any[]> = {
   push(...items: ArrayElement<T>[]): void;
@@ -195,9 +195,9 @@ export type ArrayStoreMethods<T extends readonly any[]> = {
   ): ArrayElement<T>[];
 };
 
-/* ============================================================
+/*
  * Setter Argument Shapes
- * ============================================================ */
+  */
 
 type RootSetterArgs<T> = [value: UpdateValue<T>];
 
@@ -229,9 +229,9 @@ type PropertySetterArgs<T> = [
   value: any
 ];
 
-/* ============================================================
+/*
  * Combined Setter Args
- * ============================================================ */
+  */
 
 export type SetterArgs<T> =
   | RootSetterArgs<T>
@@ -242,13 +242,13 @@ export type SetterArgs<T> =
   | PredicateSetterArgs<T>
   | PropertySetterArgs<T>;
 
-/* ============================================================
+/*
  * Main Setter
- * ============================================================ */
+  */
 
-/* ============================================================
+/*
  * Main Setter with Overloads
- * ============================================================ */
+  */
 
 //   // Option B: Path-based Updates using a "Distributed" tuple
 //   <P extends string>(
@@ -371,9 +371,9 @@ export interface SetStoreFunction<T> extends StoreSetterMethods<T> {
 
 export type SetStore<T> = SetStoreFunction<T> &
   (T extends readonly any[] ? ArrayStoreMethods<T> : {});
-/* ============================================================
+/*
  * Example
- * ============================================================ */
+  */
 
 /*
 

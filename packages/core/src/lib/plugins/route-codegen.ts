@@ -81,7 +81,6 @@ function generateRouteObject(
         importPath
       )}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; if (typeof m.routeDeps === 'function') { if (typeof __deps === 'function') __deps(m.routeDeps); args = { ...args, deps: m.routeDeps() }; } return m.routeData(args); })`
     );
-    // props.push(`${indent}  data: (args) => import(${JSON.stringify(importPath)}).then(m => m.routeData ? m.routeData(args) : undefined)`);
   }
 
   // Children

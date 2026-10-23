@@ -1,7 +1,7 @@
 /**
  * Lower a parsed Template AST (`@fluixi/template-parser`) into the host-agnostic IR.
  *
- * No parser in here: the `${…}` holes arrive already described as `TemplateHole`,
+ * No parser in here: the `${...}` holes arrive already described as `TemplateHole`,
  * since reading them means reading JavaScript and that belongs to a front-end.
  *
  * Pipeline:  pieces → parseTemplate → Template AST → lowerTemplate → IRNode
@@ -25,7 +25,7 @@ import { paren } from '../analyze/paren.js';
 import { markHole } from '../transform/source-locations.js';
 
 /**
- * One `${…}` slot, as the front-end describes it. Conclusions about the
+ * One `${...}` slot, as the front-end describes it. Conclusions about the
  * expression only: never a syntax tree, or the parser dependency creeps back.
  */
 export interface TemplateHole {
@@ -34,15 +34,15 @@ export interface TemplateHole {
   /** Whether it must be wired reactively (see analyze/reactive-expr.ts). */
   reactive: boolean;
   /**
-   * Set when the hole is a single-expression arrow, `${item => …}`. `each` turns
+   * Set when the hole is a single-expression arrow, `${item => ...}`. `each` turns
    * that into `For`'s render function, so it needs the parameters and the body
    * separately rather than the arrow as written.
    */
   arrow?: { params: string[]; body: string; bodyReactive: boolean };
-  /** Whether the hole is an object literal: `class=${{…}}` lowers to classList. */
+  /** Whether the hole is an object literal: `class=${{...}}` lowers to classList. */
   object?: boolean;
   /**
-   * Where the `${…}` was written. Only kept when the host asked for source locations.
+   * Where the `${...}` was written. Only kept when the host asked for source locations.
    *
    * A template is emitted as one overwrite, so every hole in it traces back through the
    * source map to the line the template opens at. Without this, every node a template makes
@@ -104,7 +104,7 @@ class Lowerer {
     return inlineTemplates(code, templates);
   }
 
-  // --- content ------------------------------------------------------------
+  // content
 
   lowerRoot(children: TemplateNode[]): IRNode {
     const nodes = this.lowerChildren(children);
@@ -171,7 +171,7 @@ class Lowerer {
   }
 
   private lowerElement(el: ElementNode): IRNode {
-    // `<component is=${C} …>…</component>` → `<Dynamic component=${C} …>` (a
+    // `<component is=${C} ...>...</component>` → `<Dynamic component=${C} ...>` (a
     // reactive component swap). Dynamic reads `component` via normalizeAccessor,
     // so it must be an ACCESSOR `() => C` (a bare function would be mis-called).
     const isAttr = el.attributes.find((a): a is AttributeNode => a.kind === 'Attribute' && a.name === 'is');
@@ -200,7 +200,7 @@ class Lowerer {
 
   private lowerComponent(el: ComponentNode): IRNode {
     // `<${Comp} />`: the tag is an interpolated expression, use the hole's code
-    // as the component identity, so `createComponent(<expr>, …)` is emitted.
+    // as the component identity, so `createComponent(<expr>, ...)` is emitted.
     const name = el.tagHole != null ? this.hole(el.tagHole).code : el.tag;
     const props = this.lowerAttributes(el.attributes);
 
@@ -234,7 +234,7 @@ class Lowerer {
 
     // The parser's positions are relative to the template string, not the file, so the
     // tag itself has none to give. The first hole is the closest thing that does, and for
-    // the control-flow components: `<Show when=${…}>`, `<For each=${…}>`, it is the
+    // the control-flow components: `<Show when=${...}>`, `<For each=${...}>`, it is the
     // expression driving the subtree anyway.
     // A reactive one: a literal carries a position too now, and it drives nothing.
     const bindAt = props.find((p) => p.at && p.reactive)?.at;
@@ -275,9 +275,9 @@ class Lowerer {
     return { slots, rest };
   }
 
-  // --- control-flow sugar -------------------------------------------------
+  // control-flow sugar
 
-  /** `<el if=${cond}>…</el>` (+ optional `<el else>`) → `<Show when fallback>`. */
+  /** `<el if=${cond}>...</el>` (+ optional `<el else>`) → `<Show when fallback>`. */
   private lowerIf(el: ElementNode | ComponentNode, condHole: number, elseEl: ElementNode | ComponentNode | null): IRNode {
     const cond = this.hole(condHole);
     const props: IRProp[] = [
@@ -293,8 +293,8 @@ class Lowerer {
   }
 
   /**
-   * `<el each=${items} key?>${item => …}</el>` → `<el><For each>{item => …}</For></el>`: the
-   * content is repeated per item. Content that is not a `${item => …}` arrow is repeated as
+   * `<el each=${items} key?>${item => ...}</el>` → `<el><For each>{item => ...}</For></el>`: the
+   * content is repeated per item. Content that is not a `${item => ...}` arrow is repeated as
    * it is. Null when the element has no `each`.
    */
   private lowerEach(el: ElementNode): IRNode | null {
@@ -342,7 +342,7 @@ class Lowerer {
     return clone.kind === 'Element' ? this.lowerElement(clone) : this.lowerComponent(clone);
   }
 
-  // --- attributes ---------------------------------------------------------
+  // attributes
 
   /**
    * `element`: a DOM element, where each class:/style: value that moves is its own accessor.
@@ -442,7 +442,7 @@ class Lowerer {
     // Each entry that moves is its own accessor, so the runtime updates that key alone.
     if (styleEntries.length > 0) {
       const entries = `{ ${styleEntries.join(', ')} }`;
-      // `style=${…}` as well: it goes first, the keys after it, applied in order.
+      // `style=${...}` as well: it goes first, the keys after it, applied in order.
       const base = props.findIndex((p) => p.name === 'style');
       if (base === -1) props.push({ name: 'style', kind: 'attr', expr: entries, reactive: !element && anyReactive, ...(styleAt ? { at: styleAt } : {}) });
       else {
@@ -501,7 +501,7 @@ class Lowerer {
     return opts.length ? `{ ${opts.join(', ')} }` : null;
   }
 
-  /** `bind:value=${sig}` → `value={read()}` + `onInput={e => write(e…value)}`. */
+  /** `bind:value=${sig}` → `value={read()}` + `onInput={e => write(e...value)}`. */
   private bindProps(prop: string, h: TemplateHole): IRProp[] {
     const sigCode = h.code;
     const checked = prop === 'checked';
@@ -583,7 +583,7 @@ class Lowerer {
 
 /**
  * Lower a parsed template to IR. `pieces` are the static runs and hole slots as
- * the parser wants them; `holes` describes each `${…}` in the same order. `used`
+ * the parser wants them; `holes` describes each `${...}` in the same order. `used`
  * collects the runtime symbols the emitted code imports.
  */
 export function lowerTemplate(

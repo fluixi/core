@@ -5,7 +5,7 @@
  *
  *   import { seo, jsonld, Title, Meta, Link, JsonLD } from '@fluixi/start/head';
  *
- *   seo({ title: 'Home', description: '…', canonical: 'https://site.com/' });
+ *   seo({ title: 'Home', description: '...', canonical: 'https://site.com/' });
  *
  * SSR injection, route `seo` exports + nested-layout inheritance, and build-time
  * robots.txt/sitemap.xml emission are wired through @fluixi/start (see server + build).

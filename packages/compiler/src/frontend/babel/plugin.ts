@@ -1,20 +1,3 @@
-/**
- * @fileoverview Babel front-end for the Fluixi compiler.
- * @module @fluixi/babel-plugin-jsx
- *
- * This is a host adapter, not the compiler. It parses with babel and, for each
- * JSX element/fragment and each `` html`...` `` template, hands the node to the
- * shared pipeline: build IR, run the imperative backend, then splices the
- * emitted code back into the program. Everything that decides *what* the output
- * means (directives, control flow, component resolution, load strategies,
- * reactivity, templates) lives in ../../{ir,resolve,optimize,codegen}, which
- * import no babel at all.
- *
- * What stays here is genuinely host work: dispatching the visitors, collecting
- * the runtime symbols the backend reported so the imports can be injected, and
- * hoisting static templates to module scope.
- */
-
 import { declare } from '@babel/helper-plugin-utils';
 import {
   createComponentResolver,
@@ -35,9 +18,7 @@ import { buildIRFromLit } from './build-ir-lit.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import type { IRNode } from '../../ir/nodes.js';
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface PluginOptions {
   /**
@@ -79,7 +60,7 @@ export interface PluginOptions {
   controlFlowModule?: string;
 
   /**
-   * Module the router components (Router/Outlet/…) are auto-imported from.
+   * Module the router components (Router/Outlet/...) are auto-imported from.
    * @default '@fluixi/core/router'
    */
   routerModule?: string;
@@ -156,22 +137,18 @@ interface PluginStateData {
   needsMergeProps?: boolean;
 }
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 // Control-flow components that live in fluixi, NOT @fluixi/dom, they must
 // be auto-imported from core (dom doesn't export them).
 const CORE_ONLY_CONTROL_FLOW = new Set<string>(CORE_CONTROL_FLOW);
 
 // Router components auto-imported (from routerModule) the same way control flow is:
-// use `<Router>`/`<Outlet>`/… in a template and the import is injected if absent.
+// use `<Router>`/`<Outlet>`/... in a template and the import is injected if absent.
 const ROUTER_COMPONENTS = new Set<string>(ROUTER_COMPONENT_NAMES);
 
 
-// ============================================================================
 // Main Plugin
-// ============================================================================
 
 export default declare((api, options: PluginOptions = {}): PluginObj => {
   api.assertVersion(7);
@@ -511,9 +488,7 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
   };
 });
 
-// ============================================================================
 // JSX Transformation
-// ============================================================================
 
 /**
  * Two usages of one component in the same file share a binding, so their strategies
@@ -597,7 +572,7 @@ function adoptTemplates(
 
 function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
   // `used` collects runtime symbols emitted for JSX nested inside expressions
-  // (render-props, ternaries, fallback={<p/>}, …) so we import them too.
+  // (render-props, ternaries, fallback={<p/>}, ...) so we import them too.
   const used = new Set<string>();
   const ir = buildIR(node, used, nestedHook(state));
   // The same passes the lit path runs. Without them `codegen: 'ir'` silently skipped

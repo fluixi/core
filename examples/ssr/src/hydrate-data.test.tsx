@@ -31,7 +31,7 @@ describe('resource-data transport (no hydration flash)', () => {
 
     hydrate(() => App({ url: '/home' }), container);
 
-    // seeded → shows the data immediately, no flash back to "loading…"
+    // seeded → shows the data immediately, no flash back to "loading..."
     expect(container.querySelector('.user')!.textContent).toBe('User #7');
 
     // and it stays put (a refetch would briefly flip to loading then back)

@@ -41,7 +41,6 @@ import {
   HYDRATION_KEY,
 } from './hydration-state.js';
 
-
 function getElementFingerprint(el: Element): string {
   const parts: string[] = [];
 
@@ -98,9 +97,7 @@ export const generateID = () => {
   });
 };
 
-// ============================================================================
 // Types
-// ============================================================================
 
 type Accessor<T> = () => T;
 
@@ -142,9 +139,7 @@ export type Children =
   | undefined
   | (() => any);
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 const EMPTY_OBJ = {};
 const EMPTY_ARR: any[] = [];
@@ -190,13 +185,11 @@ const CUSTOM_TAG = /<[a-z][\w.]*-/i;
 // Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
 
-// ============================================================================
 // Event Delegation. SolidJS $$eventname property pattern
 //
 // Handlers are stored directly on DOM nodes as `node.$$click = handler`.
 // The capture listener reads `node.$$click` directly, no Map lookups needed.
 // This approach correctly handles e.preventDefault() and stopPropagation.
-// ============================================================================
 
 /**
  * Which events already have a document listener, shared across every copy of this module.
@@ -311,9 +304,7 @@ export function isDelegatedEvent(name: string): boolean {
   return !NON_DELEGATED.has(name);
 }
 
-// ============================================================================
 // Utilities
-// ============================================================================
 
 /**
  * Check if value is a function
@@ -627,20 +618,16 @@ export function iterateFn(item: any): any {
   return content;
 }
 
-// ============================================================================
 // Insert depth guard
-// ============================================================================
 
 let _insertDepth = 0;
 const MAX_INSERT_DEPTH = 200;
 
-// ============================================================================
 // _createInsertEffect
 //
 // Creates a reactive render effect for DOM insertion.
 // Uses a componentCache to ensure component thunks are called at most once:
 // same thunk function reference always returns the same output across re-runs.
-// ============================================================================
 
 function _createInsertEffect(
   getAccessor: () => any,
@@ -737,9 +724,7 @@ function _createInsertEffect(
   }
 }
 
-// ============================================================================
 // insert
-// ============================================================================
 
 /**
  * Place content in a parent, and keep it current when the content is reactive.
@@ -815,9 +800,7 @@ export function insert(
   return () => { dispose?.(); return current; };
 }
 
-// ============================================================================
 // insertExpression
-// ============================================================================
 
 export function insertExpression(
   parent: Node,
@@ -1191,9 +1174,7 @@ function flattenArray(
   }
 }
 
-// ============================================================================
 // reconcileArrays
-// ============================================================================
 
 function reconcileArrays(
   parent: Node,
@@ -1314,17 +1295,13 @@ function reconcileArrays(
   return b;
 }
 
-
-// ============================================================================
 // cleanChildren
-// ============================================================================
 
 export function cleanChildren(
   parent: Node,
   current?: Node | Node[] | null,
   marker?: Node
 ): null {
-  // console.log('cleanChildren', parent, current, marker);
   if (current) {
     if (Array.isArray(current)) {
       for (let i = 0; i < current.length; i++) {
@@ -1337,12 +1314,10 @@ export function cleanChildren(
   return null;
 }
 
-// ============================================================================
 // insertBefore
 //
 // DOM Runtime Guard: checks marker.parentNode === container before inserting.
 // This prevents failures when markers are removed during route changes.
-// ============================================================================
 
 function insertBefore(parent: Node, node: Node, marker?: Node) {
   if (hydration.active && node.parentNode === parent) return;
@@ -1358,9 +1333,7 @@ function insertBefore(parent: Node, node: Node, marker?: Node) {
   }
 }
 
-// ============================================================================
 // Attributes & Properties
-// ============================================================================
 
 export function setProperty(element: any, name: string, value: any): void {
   if (value == null) delete element[name];
@@ -1509,7 +1482,6 @@ export function setClassName(element: Element, value: any): void {
     return;
   }
 
-
   element.setAttribute('class', String(value));
 }
 
@@ -1565,7 +1537,7 @@ const styleKeys = new WeakMap<object, Set<string>>();
 
 /**
  * Apply a style: a string, an object of properties whose values may be accessors, or an array
- * of those applied in order (`style="…"` with `style:x` after it). With `disposers`, each
+ * of those applied in order (`style="..."` with `style:x` after it). With `disposers`, each
  * accessor gets its own render effect, so a change writes one property: `style:color=${c}`
  * touches `color` only.
  */
@@ -1605,9 +1577,7 @@ export function setStyle(element: any, _value: any, disposers?: Array<() => void
   styleKeys.set(element, keys);
 }
 
-// ============================================================================
 // spread
-// ============================================================================
 
 /**
  * Apply a props object to an element, and re-apply what changes.
@@ -1914,7 +1884,6 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       if (typeof val === 'function') {
         const dispose = createEffect(() => {
           let v = val();
-          //  console.log('apply inpit props', v, element);
           while (typeof v === 'function' && (v as Function).length === 0) v = v();
           // Only update if element is not currently focused: don't fight user input
           if (document.activeElement !== element) {
@@ -2109,11 +2078,7 @@ export function splitProps<T extends object, K extends (keyof T)[][]>(
   return [...groups, rest] as any;
 }
 
-
-
-// ============================================================================
 // Refs
-// ============================================================================
 
 export function handleRef(ref: any, element: Element): void {
   if (!ref) return;
@@ -2143,9 +2108,7 @@ export function handleRef(ref: any, element: Element): void {
   else if (typeof ref === 'object' && 'current' in ref) ref.current = element;
 }
 
-// ============================================================================
 // Portal
-// ============================================================================
 
 export function createPortal(children: any, element: any, props?: any) {
   // 1. Define the target (default to document.body)
@@ -2186,19 +2149,14 @@ export function createPortal(children: any, element: any, props?: any) {
     // 5. Return the cleanup function
     onCleanup(()=>{
       cleanups.forEach((fn) => fn());
-      // dispose();
     });
 
   })
 
-
-
   // Portal returns nothing to its original parent's DOM location
   return null;
 }
-// ============================================================================
 // Misc utilities
-// ============================================================================
 
 export function isNativeElement(tag: string): boolean {
   return typeof tag === 'string' && tag.toLowerCase() === tag;
@@ -2230,9 +2188,7 @@ export function isPromise(v: any): v is Promise<any> {
   );
 }
 
-// ============================================================================
 // isAccessor: deprecated, kept for backward compat
-// ============================================================================
 
 export function isAccessor<T>(value: any): value is Accessor<T> {
   return typeof value === 'function' && value.length === 0 && isSignal(value);
@@ -2267,7 +2223,6 @@ export function render<T>(
       stampVersions(container);
       warnOnVersionSkew();
 
-      // console.log('inserting', element);
       insert(container, element as any);
       return;
     });
@@ -2283,7 +2238,6 @@ export function render<T>(
     container.textContent = '';
   };
 }
-
 
 /**
  * Normalize what `bind:` was given into a `[read, write]` pair.

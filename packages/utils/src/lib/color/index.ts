@@ -1,9 +1,3 @@
-/**
- * @fileoverview Color utilities module
- * Comprehensive color management system with support for multiple color formats,
- * conversions, manipulations, and advanced operations.
- */
-
 // Core color class and types
 export * from './color.js';
 export * from './types.js';

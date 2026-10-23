@@ -385,7 +385,7 @@ export function createTokenVerifier(options: VerifierOptions): TokenVerifier {
   return verifier;
 }
 
-// ─── Introspection (RFC 7662) ─────────────────────────────────────────────────
+// Introspection (RFC 7662)
 
 /**
  * For a token this service cannot read on its own.

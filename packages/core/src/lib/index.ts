@@ -8,9 +8,7 @@
  * - JSX and Lit-html support
  */
 
-// ============================================================================
 // REACTIVE PRIMITIVES (from @fluixi/reactive)
-// ============================================================================
 
 export {
   createEffect,
@@ -48,9 +46,7 @@ export type { ReadSignal } from '@fluixi/reactive/operators';
 
 export { createStore, untrackStore,   Store, type StoreSetter} from '@fluixi/reactive/store';
 
-// ============================================================================
 // createComponent & LIFECYCLE
-// ============================================================================
 
 export {
   createComponent,
@@ -98,19 +94,11 @@ export type {
   SuspenseProps,
 };
 
-// ============================================================================
 // RENDERING (CLIENT)
-// ============================================================================
-
-// export { render } from './core/index.js';
-
-// export type { RenderOptions } from './render/index.js';
 
 // html`` / svg`` markers are re-exported from the main entry (lib/core.ts).
 
-// ============================================================================
 // DOM UTILITIES (from @fluixi/dom)
-// ============================================================================
 export {
   // Framework-agnostic reactive attribute maps (return Accessor<string>)
   classMap,
@@ -141,17 +129,13 @@ export {
   hydrate,
 } from '@fluixi/dom';
 
-// ============================================================================
 // JSX RUNTIME
-// ============================================================================
 
 export { jsx, jsxs, Fragment } from './jsx-runtime/index.js';
 
 export type { JSXElement } from './jsx-runtime/index.js';
 
-// ============================================================================
 // FRAMEWORK METADATA
-// ============================================================================
 
 /**
  * Framework version
@@ -184,9 +168,7 @@ export function getFrameworkInfo() {
   };
 }
 
-// ============================================================================
 // DEFAULT EXPORT
-// ============================================================================
 
 import {
   createSignal as _createSignal,
@@ -260,5 +242,4 @@ export default {
   FRAMEWORK_NAME,
   getFrameworkInfo,
 };
-
 

@@ -72,8 +72,6 @@ export const isInt = (value: unknown): value is number => {
   return !Number.isNaN(num) && Number.isInteger(num) && Number.isFinite(num);
 };
 
-
-
 /**
  * Checks if a value is a finite number (not NaN, Infinity, or string)
  * @param value - The value to check
@@ -88,7 +86,6 @@ export const isNumber = (value: unknown): value is number => {
   return typeof value === 'number' && Number.isFinite(value);
 };
 
-
 /**
  * Checks if a value is a safe integer within Number.MAX_SAFE_INTEGER range
  * @param value - The value to check
@@ -100,7 +97,6 @@ export const isNumber = (value: unknown): value is number => {
 export const isSafeInteger = (value: unknown): boolean => {
  return typeof value === 'number' && Number.isSafeInteger(value);
 };
-
 
 /** 
  * Checks if a value is a float (not an integer)
@@ -276,7 +272,6 @@ export function isInRange(value: number, min: number, max: number, inclusive: bo
  * @returns True if the number is even
  */
 export function isEven(value: number): boolean {
-  // return value % 2 === 0;
   return (value & 1) === 0;
 }
 
@@ -286,7 +281,6 @@ export function isEven(value: number): boolean {
  * @returns True if the number is odd
  */
 export function isOdd(value: number): boolean {
-  // return value % 2 !== 0;
   return (value & 1) === 1;
 }
 
@@ -345,7 +339,6 @@ export const approxEqual = (
   const relativeError = diff / Math.min(absA + absB, Number.MAX_SAFE_INTEGER);
   return relativeError < epsilon;
 };
-
 
 /**
  * Checks if a number is a power of two

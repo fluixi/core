@@ -16,7 +16,7 @@ export type Origins = readonly string[] | ((origin: string) => boolean);
 const allows = (origins: Origins, origin: string) =>
   typeof origins === 'function' ? origins(origin) : origins.includes(origin);
 
-// ─── Headers ────────────────────────────────────────────────────────────────
+// Headers
 
 /** OWASP's recommendations for a JSON API: nothing in it is meant to render, frame or be cached. */
 export const DEFAULT_SECURITY_HEADERS: Readonly<Record<string, string>> = {
@@ -46,7 +46,7 @@ export function securityHeaders(options: SecurityHeadersOptions = {}): Middlewar
     });
 }
 
-// ─── CORS ───────────────────────────────────────────────────────────────────
+// CORS
 
 export interface CorsOptions {
   /** Who may call from another origin. Nobody when empty. */
@@ -104,7 +104,7 @@ export function cors(options: CorsOptions): Middleware {
   };
 }
 
-// ─── Origin check ───────────────────────────────────────────────────────────
+// Origin check
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -128,7 +128,7 @@ export function originCheck(options: { origins: Origins }): Middleware {
   };
 }
 
-// ─── Together ───────────────────────────────────────────────────────────────
+// Together
 
 export interface ApiSecurityOptions {
   /** Origins of the apps that call the API from a browser: CORS and the origin check. */

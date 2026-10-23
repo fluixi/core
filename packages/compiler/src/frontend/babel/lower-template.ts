@@ -3,7 +3,7 @@
  *
  * The lowering itself is in ../../lower/template.ts and takes no Babel. What is
  * left here is the part that genuinely needs to read JavaScript: turning each
- * `${…}` into a `TemplateHole`: its source text, whether it is reactive, and
+ * `${...}` into a `TemplateHole`: its source text, whether it is reactive, and
  * the two structural facts the lowering branches on (a single-expression arrow,
  * an object literal).
  *
@@ -22,7 +22,7 @@ function gen(node: t.Node): string {
   return generate(node as any, { concise: true }).code;
 }
 
-/** Describe one `${…}` for the lowering. */
+/** Describe one `${...}` for the lowering. */
 function bindHole(expr: t.Expression, used: Set<string>, onNested?: NestedHook): TemplateHole {
   const hole: TemplateHole = {
     code: genExpr(expr, used, onNested),

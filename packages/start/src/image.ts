@@ -26,7 +26,7 @@ export type ImageTransform = (
 export interface ImageHandlerOptions {
   /** Root directory for local `/foo.jpg` sources. Default `<cwd>/public`. */
   root?: string;
-  /** Allowed hostnames for absolute `https://…` sources (SSRF guard). */
+  /** Allowed hostnames for absolute `https://...` sources (SSRF guard). */
   domains?: string[];
   /** Permitted target widths; a request outside the list is rejected. */
   sizes?: number[];

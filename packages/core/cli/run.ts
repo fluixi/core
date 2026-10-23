@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-// // cli/dev.ts
-// import { createApp } from 'vinxi';
-// import { frameworkVinxiConfig } from '../preset/vinxi';
-
-// export async function dev() {
-//   const config = frameworkVinxiConfig();
-//   await createApp({
-//     server: ()
-//   }).listen();
-// }
 
 import { exec } from 'child_process';
 import { execa } from 'execa';
@@ -26,25 +16,9 @@ async function run() {
       const command =
         'vinxi dev --config ' +
         path.resolve(__dirname, '../internal/vinxi/app.js');
-      // console.log('run dev', command);
       const dev = exec(command, (err) => {
         console.log('exec err', err);
       });
-      // Run Vinxi dev with your internal entry
-      // const dev = await execa({ stdio: 'inherit', cwd })`${command}`;
-      // const dev = await execa(
-      //   'vinxi',
-      //   [
-      //     'dev',
-      //     '--config',
-      //     path.resolve(__dirname, '../internal/vinxi/app.mjs'),
-      //   ],
-      //   {
-      //     stdio: 'inherit',
-      //     cwd,
-      //   }
-      // );
-      // console.log('run dev end', dev);
       break;
 
     case 'build':

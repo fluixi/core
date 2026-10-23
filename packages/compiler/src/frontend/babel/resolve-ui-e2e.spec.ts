@@ -49,7 +49,7 @@ describe.skipIf(!uiMap)('fluixi-ui components resolve in html``', () => {
   });
 
   it('resolves a compound component to its own package', () => {
-    // Sub-components (SplitterPanel, PageHeader…) are exported from the same package
+    // Sub-components (SplitterPanel, PageHeader...) are exported from the same package
     // as their root, so they must resolve without a separate rule.
     const out = compile(
       'const v = html`<Splitter><SplitterPanel>a</SplitterPanel></Splitter>`;',

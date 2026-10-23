@@ -59,7 +59,7 @@ export { imageLoader } from './image-loader.js';
 export type { ImageLoaderOptions } from './image-loader.js';
 export type { ImageHandlerOptions, ImageTransform, ImageTransformArgs } from './image.js';
 
-// Middleware→render locals bridge: write `getRequestLocals(request).x = …` in middleware;
+// Middleware→render locals bridge: write `getRequestLocals(request).x = ...` in middleware;
 // read it back in loaders/server-fns/render via getLocals() (the app entry forwards
 // `request` on the render event: `renderRequestAsync(App, { url, request })`).
 export { getRequestLocals, getLocals, type RequestLocals } from '@fluixi/server';

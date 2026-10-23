@@ -1,11 +1,3 @@
-/**
- * @fileoverview The router state machine.
- *
- * Pure: holds the current location + match, recomputes the match on every
- * history change, and notifies subscribers. Performs NO rendering, a view
- * adapter subscribes and renders the resolved match tree top-down (see DESIGN.md).
- */
-
 import { matchRoutes } from './match.js';
 import { splitPath } from './history.js';
 import type {

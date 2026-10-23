@@ -157,7 +157,7 @@ export function createRequestHandler(render: RenderFn): FetchHandler {
   };
 }
 
-// ─── Node bridge (the built-in "node adapter") ──────────────────────────────
+// Node bridge (the built-in "node adapter")
 
 export interface NodeRequestOptions {
   /** Reverse proxies whose forwarded headers are believed; see `FluixiConfig.trustProxy`. */

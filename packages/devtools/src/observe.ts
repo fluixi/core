@@ -694,7 +694,7 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
       const parentId = parent ? scopeIds.get(parent) : undefined;
       // Where it was opened: the line that defined the module, built the service, or, for
       // an element, the one that put it on the page. A bundler's virtual module (the
-      // generated app config, `\0virtual:…`) is nowhere a reader can go, so it is left out.
+      // generated app config, `\0virtual:...`) is nowhere a reader can go, so it is left out.
       const found = currentCallSite(origin);
       const site = found && !/\0|__x00__|^virtual:/.test(found.location.file ?? '') ? found : undefined;
       const node: RNode = {

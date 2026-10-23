@@ -7,9 +7,7 @@
 import { Integer, IsNegative } from "./basic.js";
 import { MakeNegative } from "./negative.js";
 
-// ============================================================================
 // UTILITY TYPES FOR TYPE-LEVEL ARITHMETIC
-// ============================================================================
 
 /**
  * Creates a tuple of length N.
@@ -52,9 +50,7 @@ type Prev = {
   41: 40, 42: 41, 43: 42, 44: 43, 45: 44, 46: 45, 47: 46, 48: 47, 49: 48, 50: 49
 };
 
-// ============================================================================
 // BASIC ARITHMETIC OPERATIONS
-// ============================================================================
 
 /**
  * Adds two numbers at the type level (works up to ~50).
@@ -152,9 +148,7 @@ export type Divide<A extends number, B extends number> =
       : never
     : never;
 
-// ============================================================================
 // COMPARISON OPERATIONS
-// ============================================================================
 
 /**
  * Compares two numbers at the type level.
@@ -212,9 +206,7 @@ export type Min<A extends number, B extends number> =
 export type Max<A extends number, B extends number> = 
   Compare<A, B> extends 1 | 0 ? A : B;
 
-// ============================================================================
 // ABSOLUTE VALUE AND SIGN
-// ============================================================================
 
 /**
  * Extracts the absolute value type from a number.
@@ -224,9 +216,7 @@ export type Absolute<T extends number> =
 
 
 
-// ============================================================================
 // ROUNDING OPERATIONS
-// ============================================================================
 
 /**
  * Represents a decimal number as a string for type manipulation.
@@ -282,9 +272,7 @@ export type Ceil<T extends number> =
  */
 export type Trunc<T extends number> = Floor<T>;
 
-// ============================================================================
 // POWER AND FACTORIAL
-// ============================================================================
 
 /**
  * Power operation at the type level (A^B).
@@ -307,9 +295,7 @@ export type Factorial<N extends number> =
   N extends 1 ? 1 :
   Multiply<N, Factorial<Subtract<N, 1>>>;
 
-// ============================================================================
 // CLAMPING AND RANGE
-// ============================================================================
 
 /**
  * Clamps a value between min and max at the type level.
@@ -338,9 +324,7 @@ export type Increment<T extends number> = Add<T, 1>;
  */
 export type Decrement<T extends number> = Subtract<T, 1>;
 
-// ============================================================================
 // EVEN/ODD AND DIVISIBILITY
-// ============================================================================
 
 /**
  * Checks if a number is even at the type level.
@@ -361,9 +345,7 @@ export type IsDivisible<A extends number, B extends number> =
   B extends 0 ? false :
   Mod<A, B> extends 0 ? true : false;
 
-// ============================================================================
 // TYPE TEST UTILITIES
-// ============================================================================
 
 /**
  * Asserts that a type condition is true.
@@ -379,9 +361,7 @@ export type AssertEqual<A, B> =
     ? true
     : false;
 
-// ============================================================================
 // EXPORT HELPER TYPES FOR INTERNAL USE
-// ============================================================================
 
 export type { Tuple, NumberToTuple, TupleToNumber };
 

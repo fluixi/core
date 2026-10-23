@@ -3,7 +3,7 @@
  *
  * At `${(it) => it.|}` TypeScript sees `it` as implicit `any`, so its own
  * completion offers nothing useful. We infer `it`'s type from the template
- * (each item, event, ref/use element, …) and return that type's members, the
+ * (each item, event, ref/use element, ...) and return that type's members, the
  * same list JSX would show. Runs entirely on the main language service.
  */
 import type * as TS from 'typescript';

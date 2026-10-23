@@ -73,16 +73,12 @@ export const toBoolean = (
 ): boolean => {
   // Handle null/undefined
 
-  // if (debug) {
-  //   console.log('null value', strategy, value);
-  // }
   if (value === null) {
     if (strategy === 'strict') {
       throw new Error(
         `Cannot convert ${value} to boolean with strict strategy`
       );
     }
-    // return false;
   }
 
   // Handle boolean directly
@@ -99,7 +95,6 @@ export const toBoolean = (
 
     case 'falsy':
       return convertFalsy(value);
-    // return !convertFalsy(value);
 
     case 'string':
       return convertFromString(value);

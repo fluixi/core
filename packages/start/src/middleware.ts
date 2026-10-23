@@ -45,7 +45,7 @@ export function normalizeMiddleware(mod: unknown): Middleware[] {
 
 /**
  * Compose a middleware chain around a core handler (the renderer). Returns a handler
- * that runs `middlewares[0] → … → core`. `next()` must be called at most once per
+ * that runs `middlewares[0] → ... → core`. `next()` must be called at most once per
  * middleware; a second call rejects.
  */
 export function composeMiddleware(
