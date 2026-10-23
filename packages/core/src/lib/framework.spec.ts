@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
-// Loads the router/render stack, which pulls in the lit renderer
-// (@lit/reactive-element extends HTMLElement), so it needs a DOM environment.
+// Loads the router/render stack, which needs a DOM environment.
 /**
  *
  * Groups:

@@ -22,8 +22,6 @@
     "rootDir": "src",
     "externals": [
       "@fluixi/*",
-      "lit",
-      "lit/*",
       "@babel/*",
       "@fluixi/reactive",
       "@fluixi/reactive/signal",

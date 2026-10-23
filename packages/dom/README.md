@@ -373,10 +373,6 @@ function Counter() {
 }
 ```
 
-The lit-html bridge this package once carried is gone: `lit` is not a dependency, and the
-`@fluixi/dom/reactive` entry with its `$if`/`$each`/`rx` helpers no longer exists. Templates
-go through the compiler now.
-
 ## Advanced Usage
 
 ### Memory Management

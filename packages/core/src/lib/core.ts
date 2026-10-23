@@ -2,8 +2,7 @@
  * @module fluixi
  *
  * Fluixi compiles JSX and `html` templates into direct DOM calls over the fine-grained
- * reactivity in @fluixi/reactive. The template layer is our own and compiled; the
- * lit-html runtime bridge this once wrapped is gone.
+ * reactivity in @fluixi/reactive. The template layer is our own and compiled.
  *
  * @example
  * ```typescript
@@ -109,7 +108,7 @@ import { ensureIntegration } from './render/component.js';
 
 // html`` / svg`` template markers, the no-JSX authoring surface. They live in
 // @fluixi/dom (compiled away by `format: 'lit'`/`both`); re-exported here so
-// `import { html } from '@fluixi/core'` works. Inert typed functions, no lit runtime.
+// `import { html } from '@fluixi/core'` works. Inert typed functions.
 export { html, svg, css } from '@fluixi/dom';
 export type { TemplateResult, Reactive, FluixiStyle } from '@fluixi/dom';
 

@@ -16,10 +16,9 @@ export default defineConfig({
       fileName: 'fluixi',
     },
     rollupOptions: {
-      external: ['lit', 'lit-html', '@fluixi/reactive'],
+      external: ['@fluixi/reactive'],
       output: {
         globals: {
-          lit: 'Lit',
           '@fluixi/reactive': 'Reactive',
         },
       },

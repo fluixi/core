@@ -5,7 +5,7 @@
  * - Components execute once
  * - Fine-grained reactivity (no VDOM)
  * - Server-side rendering with hydration
- * - JSX and Lit-html support
+ * - JSX and `html` tagged templates
  */
 
 // REACTIVE PRIMITIVES (from @fluixi/reactive)

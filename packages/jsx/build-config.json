@@ -32,8 +32,6 @@
       "@fluixi/core/plugins",
       "@fluixi/utils",
       "@fluixi/*",
-      "lit",
-      "lit/*",
       "@lit-labs/*",
       "fs",
       "@babel/*",
