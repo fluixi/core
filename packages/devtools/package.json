@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/devtools",
-  "version": "1.0.0-alpha.100",
+  "version": "1.0.0-alpha.101",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "Live inspector for the Fluixi reactive graph — instrument signals/memos/effects and visualize propagation.",
