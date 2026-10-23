@@ -24,9 +24,6 @@ import {
 
 // TYPES
 
-/**
- * Render options
- */
 export interface RenderOptions {
   /**
    * Whether to hydrate existing content

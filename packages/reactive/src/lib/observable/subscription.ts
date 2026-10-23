@@ -134,7 +134,6 @@ export class Subscription implements SubscriptionLike {
       this._subscriptions = [];
     }
 
-    // Add to subscriptions array
     this._subscriptions!.push(subscription as Subscription);
 
     // Set parent reference

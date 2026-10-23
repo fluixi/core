@@ -142,12 +142,10 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onCut?: (event: ClipboardEvent) => void;
   onPaste?: (event: ClipboardEvent) => void;
 
-  // Composition Events
   onCompositionEnd?: (event: CompositionEvent) => void;
   onCompositionStart?: (event: CompositionEvent) => void;
   onCompositionUpdate?: (event: CompositionEvent) => void;
 
-  // Focus Events
   onFocus?: (event: FocusEvent) => void;
   onFocusIn?: (event: FocusEvent) => void;
   onFocusOut?: (event: FocusEvent) => void;
@@ -166,7 +164,6 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onLoad?: (event: Event) => void;
   onError?: (event: Event) => void;
 
-  // Keyboard Events
   onKeyDown?: (event: KeyboardEvent) => void;
   /** @deprecated */
   onKeyPress?: (event: KeyboardEvent) => void;
@@ -197,7 +194,6 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onWaiting?: (event: Event) => void;
   onCueChange?: (event: Event) => void;
 
-  // Mouse Events
   onClick?: (event: MouseEvent) => void;
   onAuxClick?: (event: MouseEvent) => void;
   onContextMenu?: (event: MouseEvent) => void;
@@ -220,7 +216,6 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onMouseOver?: (event: MouseEvent) => void;
   onMouseUp?: (event: MouseEvent) => void;
 
-  // Pointer Events
   onPointerDown?: (event: PointerEvent) => void;
   onPointerMove?: (event: PointerEvent) => void;
   onPointerUp?: (event: PointerEvent) => void;
@@ -237,7 +232,6 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onSelectionChange?: (event: Event) => void;
   onSelectStart?: (event: Event) => void;
 
-  // Touch Events
   onTouchCancel?: (event: TouchEvent) => void;
   onTouchEnd?: (event: TouchEvent) => void;
   onTouchMove?: (event: TouchEvent) => void;
@@ -248,16 +242,13 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onScrollEnd?: (event: Event) => void;
   onResize?: (event: UIEvent) => void;
 
-  // Wheel Events
   onWheel?: (event: WheelEvent) => void;
 
-  // Animation Events
   onAnimationStart?: (event: AnimationEvent) => void;
   onAnimationEnd?: (event: AnimationEvent) => void;
   onAnimationIteration?: (event: AnimationEvent) => void;
   onAnimationCancel?: (event: AnimationEvent) => void;
 
-  // Transition Events
   onTransitionStart?: (event: TransitionEvent) => void;
   onTransitionRun?: (event: TransitionEvent) => void;
   onTransitionEnd?: (event: TransitionEvent) => void;
@@ -267,14 +258,11 @@ export interface DOMAttributes<T = Element> extends AriaAttributes {
   onToggle?: (event: Event) => void;
   onBeforeToggle?: (event: Event) => void;
 
-  // Fullscreen Events
   onFullscreenChange?: (event: Event) => void;
   onFullscreenError?: (event: Event) => void;
 
-  // Slot Events
   onSlotChange?: (event: Event) => void;
 
-  // Security
   onSecurityPolicyViolation?: (event: SecurityPolicyViolationEvent) => void;
 
   // Dialog/Popover
@@ -399,7 +387,6 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, Contr
   ref?: RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
   key?: string | number | ((item: any) => unknown);
 
-  // Children
   children?: DirectiveChildren;
 
   // innerHTML / textContent (a static value or a reactive accessor)
@@ -1016,12 +1003,10 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   y1?: Reactive<number | string>;
   y2?: Reactive<number | string>;
 
-  // Transform
   transform?: Reactive<string>;
   gradientTransform?: Reactive<string>;
   patternTransform?: Reactive<string>;
 
-  // View
   viewBox?: Reactive<string>;
   preserveAspectRatio?: Reactive<string>;
 
@@ -1081,7 +1066,6 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   'vector-effect'?: Reactive<number | string>;
   visibility?: Reactive<number | string>;
 
-  // Color
   colorInterpolation?: Reactive<number | string>;
   'color-interpolation'?: Reactive<number | string>;
   colorInterpolationFilters?: Reactive<'auto' | 'sRGB' | 'linearRGB' | 'inherit'>;
@@ -1408,7 +1392,6 @@ export interface IntrinsicElements {
   wbr: HTMLAttributes;
   webview: HTMLAttributes;
 
-  // SVG
   svg: SVGAttributes<SVGSVGElement>;
   animate: SVGAttributes;
   animateMotion: SVGAttributes;

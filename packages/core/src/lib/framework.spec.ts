@@ -526,7 +526,6 @@ describe('lazy components', () => {
       typeof memoResult === 'function' ? memoResult() : memoResult
     )).toBeUndefined();
 
-    // Resolve the loader
     resolveLoader({ default: RealComp });
     await flushMicrotasks(); // allow .then() callbacks to run
 

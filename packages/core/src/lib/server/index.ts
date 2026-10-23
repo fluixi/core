@@ -40,9 +40,6 @@ export interface SSRContext {
   [key: string]: any;
 }
 
-/**
- * Document options
- */
 export interface DocumentOptions {
   title?: string;
   lang?: string;
@@ -63,9 +60,6 @@ export function getSSRContext(): SSRContext | null {
   return currentSSRContext;
 }
 
-/**
- * Set SSR context
- */
 export function setSSRContext(context: SSRContext | null): void {
   currentSSRContext = context;
 }

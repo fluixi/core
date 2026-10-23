@@ -1,6 +1,5 @@
 import { Accessor } from '@fluixi/reactive/signal';
 
-/** Normalize a value or accessor to an accessor function */
 export function normalizeAccessor<T>(value: T | Accessor<T>): Accessor<T> {
   return typeof value === 'function'
     ? (value as Accessor<T>)

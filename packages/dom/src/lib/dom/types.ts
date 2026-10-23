@@ -43,9 +43,6 @@ export interface ComponentProps {
   [key: string]: any;
 }
 
-/**
- * Component function type
- */
 export type CreateComponent<P = ComponentProps, Return = any> = (props?: P) => Return;
 
 

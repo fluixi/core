@@ -65,7 +65,6 @@ function generateRouteObject(
   const props: string[] = [];
   const importPath = buildImportPath(route.filePath, routesDir);
 
-  // Path
   const routePath = computeRoutePath(route);
   props.push(`${indent}  path: ${JSON.stringify(routePath)}`);
 
@@ -83,7 +82,6 @@ function generateRouteObject(
     );
   }
 
-  // Children
   if (route.children.length > 0) {
     const childArray = generateRouteArray(route.children, routesDir, depth + 1);
     props.push(`${indent}  children: ${childArray}`);

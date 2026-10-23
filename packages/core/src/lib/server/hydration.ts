@@ -222,16 +222,10 @@ export function hydrationMarker(id: string): string {
   return `<!--#${id}-->`;
 }
 
-/**
- * Create start hydration marker
- */
 export function hydrationMarkerStart(id: string): string {
   return `<!--#${id}-->`;
 }
 
-/**
- * Create end hydration marker
- */
 export function hydrationMarkerEnd(id: string): string {
   return `<!--/${id}-->`;
 }

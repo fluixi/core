@@ -272,9 +272,6 @@ export type {
  */
 export const VERSION = '0.0.1';
 
-/**
- * Framework name
- */
 export const FRAMEWORK_NAME = 'Fluixi';
 
 export {

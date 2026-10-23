@@ -317,7 +317,6 @@ describe('Store Fine-Grained Reactivity', () => {
       expect(bRuns).toBe(1);
       expect(allRuns).toBe(1);
 
-      // Batch updates
       batch(() => {
         setState('a', 10);
         setState('b', 20);
@@ -634,7 +633,6 @@ describe('Store Fine-Grained Reactivity', () => {
       expect(emailNotifRuns).toBe(1);
       expect(statsRuns).toBe(1);
 
-      // Update firstName
       setUser('profile.firstName', 'Alicia');
       expect(fullName()).toBe('Alicia Johnson');
       expect(fullNameRuns).toBe(2);
@@ -649,7 +647,6 @@ describe('Store Fine-Grained Reactivity', () => {
       expect(emailNotifRuns).toBeGreaterThanOrEqual(1); // May be affected by parent update
       expect(statsRuns).toBe(1); // Independent
 
-      // Update email notification
       setUser('settings.notifications.email', false);
       expect(fullNameRuns).toBe(2); // Independent
       expect(themeRuns).toBeGreaterThanOrEqual(2); // May be affected by parent update
@@ -737,7 +734,6 @@ describe('Store Fine-Grained Reactivity', () => {
       expect(valueRuns).toBe(2);
       expect(otherRuns).toBe(1); // Independent
 
-      // Update other
       setState('other', 100);
       expect(valueRuns).toBe(2); // Independent
       expect(otherRuns).toBe(2);

@@ -182,7 +182,6 @@ function handOwnerToCustomElements(root: Node): void {
 /** A template's markup names a custom element: a tag with a dash. Checked before walking. */
 const CUSTOM_TAG = /<[a-z][\w.]*-/i;
 
-// Template cache
 const templateCache = new Map<string, HTMLTemplateElement>();
 
 // Event Delegation. SolidJS $$eventname property pattern
@@ -823,7 +822,6 @@ export function insertExpression(
     return cleanChildren(parent, current, marker);
   }
 
-  // Handle promises
   if (isPromise(value)) {
     const placeholder = createTextNode('', true);
     if (Array.isArray(current)) {

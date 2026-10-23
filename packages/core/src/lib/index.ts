@@ -142,14 +142,8 @@ export type { JSXElement } from './jsx-runtime/index.js';
  */
 export const VERSION = '0.0.1';
 
-/**
- * Framework name
- */
 export const FRAMEWORK_NAME = 'Fluixi';
 
-/**
- * Get framework info
- */
 export function getFrameworkInfo() {
   return {
     name: FRAMEWORK_NAME,
@@ -219,7 +213,6 @@ export default {
   createContext: _createContext,
   useContext: _useContext,
 
-  // Components
   createComponent: _createComponent,
   onMount: _onMount,
   onUnmount: _onUnmount,

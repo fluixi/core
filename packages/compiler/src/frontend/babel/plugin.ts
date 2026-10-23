@@ -204,7 +204,6 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
     },
 
     pre(state) {
-      // Initialize plugin state
       Object.assign(state, pluginState);
     },
 

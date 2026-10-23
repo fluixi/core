@@ -328,7 +328,6 @@ export class Observable<T> extends Subscription {
         error?: (error: any) => void,
         complete?: () => void
     ): Subscription {
-        // Create subscriber
         let subscriber: Subscriber<T>;
 
         if (observerOrNext instanceof Subscriber) {

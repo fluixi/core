@@ -30,7 +30,6 @@ export {
   setStyle,
   classMap,
   styleMap,
-  // events
   delegateEvents,
   // control flow
   Show,

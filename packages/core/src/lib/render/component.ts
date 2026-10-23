@@ -89,9 +89,6 @@ export type LifecycleCallback = {
   (): void | (() => void);
 };
 
-/**
- * Ref object type
- */
 export interface RefObject<T> {
   current: T;
 }

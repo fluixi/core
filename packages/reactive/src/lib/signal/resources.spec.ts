@@ -6,7 +6,6 @@ import {
   createSignal,
   createEffect,
   createResource,
-  // Suspense,
   getSuspenseContext,
 } from './signal.js';
 

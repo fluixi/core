@@ -13,9 +13,6 @@ export enum SignalMode {
   ADAPTIVE = 'adaptive',
 }
 
-/**
- * Universal Signal Interface
- */
 export interface UniversalSignal<T> {
   // GRANULAR API (SolidJS Style)
 
@@ -78,9 +75,6 @@ export interface UniversalSignal<T> {
  * Signal metadata for performance optimization
  */
 
-/**
- * Computation types
- */
 export enum ComputationType {
   EFFECT = 'effect',
   MEMO = 'memo',
@@ -175,7 +169,6 @@ export interface HybridComputation<T = any> extends Computation<T> {
   // Performance
   executionTime: number;
   dependencyCount: number;
-  // Cleanup
   onCleanup?: () => void;
   onDispose?: () => void;
 }

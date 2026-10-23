@@ -2,7 +2,6 @@
 export { default } from './plugin.js';
 export type { PluginOptions } from './plugin.js';
 
-// Export types
 export * from './types.js';
 
 // Re-export for convenience
@@ -11,7 +10,6 @@ import plugin from './plugin.js';
 /** Named export for explicit usage */
 export const babelPluginReactiveJSX = plugin;
 
-/** Helper to create plugin with options */
 export function createPlugin(options?: any) {
   return [plugin, options];
 }
