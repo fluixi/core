@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-api-only",
-  "version": "0.0.1-alpha.7",
+  "version": "0.0.1-alpha.8",
   "private": true,
   "type": "module",
   "description": "An API service on @fluixi/start with @fluixi/api contracts: no pages, only src/api.",
