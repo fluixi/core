@@ -85,10 +85,6 @@
   "main": "./src/index.ts",
   "unpkg": "./dist/cdn/core.global.js",
   "jsdelivr": "./dist/cdn/core.global.js",
-  "bin": {
-    "fluixi-generate": "./dist/cli/generate.js",
-    "fluixi-run": "./dist/cli/run.mjs"
-  },
   "files": [
     "dist",
     "types",

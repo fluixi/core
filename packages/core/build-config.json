@@ -17,8 +17,7 @@
       "cjs"
     ],
     "entries": [
-      "src/**/*.ts",
-      "cli/**/*.ts"
+      "src/**/*.ts"
     ],
     "rootDir": "./",
     "externals": [
@@ -46,9 +45,6 @@
       "react-dom/*",
       "@fluixi/*",
       "@lit-labs/*",
-      "@lit/*",
-      "lit",
-      "lit/*",
       "stream",
       "http",
       "esbuild",
