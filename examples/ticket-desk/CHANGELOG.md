@@ -1,5 +1,21 @@
 # @fluixi/example-ticket-desk
 
+## 0.0.2-alpha.17
+
+### Patch Changes
+
+- Updated dependencies [c2d1fea]
+  - @fluixi/cli@1.0.0-alpha.102
+  - @fluixi/auth@1.0.0-alpha.102
+  - @fluixi/core@1.0.0-alpha.102
+  - @fluixi/dom@1.0.0-alpha.102
+  - @fluixi/head@1.0.0-alpha.102
+  - @fluixi/jsx@1.0.0-alpha.102
+  - @fluixi/reactive@1.0.0-alpha.102
+  - @fluixi/server@1.0.0-alpha.102
+  - @fluixi/session@1.0.0-alpha.102
+  - @fluixi/start@1.0.0-alpha.102
+
 ## 0.0.2-alpha.16
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/dom",
-  "version": "1.0.0-alpha.101",
+  "version": "1.0.0-alpha.102",
   "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
   "author": "Ibrahima Touré",
