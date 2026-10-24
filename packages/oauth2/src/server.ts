@@ -75,6 +75,12 @@ export interface OAuthRoutesConfig {
    */
   allowedReturnOrigins?: string[];
   /**
+   * Query parameters of the login route passed on to the authorization request, for what a
+   * provider defines beyond OpenID Connect (an organisation, a tenant). Only these are forwarded;
+   * the ones the client sets itself cannot be named.
+   */
+  authorizeParams?: readonly string[];
+  /**
    * How this server authenticates to the token endpoint.
    *
    * `private_key_jwt` needs `privateKey` and sends no secret at all, which some providers
@@ -151,6 +157,8 @@ export interface OAuthRoutesConfig {
 /** Ends the state of a sign-in started again after an answer the browser had no flow for. */
 const RETRY_MARK = '.retry';
 const PROMPTS = new Set(['none', 'login', 'consent', 'select_account']);
+/** Set by the login route itself: forwarding one from the query string would let a link change it. */
+const CLIENT_PARAMS = new Set(['response_type', 'client_id', 'redirect_uri', 'scope', 'state', 'nonce', 'code_challenge', 'code_challenge_method', 'prompt', 'request', 'request_uri']);
 
 /** What a `prompt=none` request ends with when the provider would have to ask the visitor. */
 const SILENT_REFUSALS = new Set([
@@ -492,6 +500,9 @@ async function endedAtProvider(config: OAuthRoutesConfig, session: SessionPayloa
 }
 
 export function oauthRoutes(config: OAuthRoutesConfig) {
+  for (const name of config.authorizeParams ?? []) {
+    if (CLIENT_PARAMS.has(name)) throw new Error(`authorizeParams cannot include "${name}": the login route sets it.`);
+  }
   const { resolve, tokenRequest, clientAuth } = tokenClient(config);
   const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(body), {
@@ -575,6 +586,10 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       // Only the values OpenID Connect defines; anything else from the query string is dropped.
       const prompt = url.searchParams.get('prompt');
       if (prompt && PROMPTS.has(prompt)) target.searchParams.set('prompt', prompt);
+      for (const name of config.authorizeParams ?? []) {
+        const value = url.searchParams.get(name);
+        if (value) target.searchParams.set(name, value);
+      }
 
       // The verifier goes in the cookie, which is the only thing that survives the trip
       // and is not readable by the page.

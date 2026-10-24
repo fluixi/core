@@ -486,6 +486,18 @@ config: { /* ... */ tokenAuthMethod: 'basic' }
 config: { /* ... */ extraParams: { audience: 'https://api.example.com' } }
 ```
 
+**A parameter that changes from one login to the next,** such as the organisation a token is for.
+In server mode, name it in `authorizeParams` and put it on the login link; the route passes on
+only the names listed:
+
+```ts
+oauthRoutes({ /* ... */ authorizeParams: ['organization'] });
+// <a href="/auth/login?organization=o1&returnTo=/app">
+```
+
+The parameters the route sets itself (`client_id`, `redirect_uri`, `state`, `scope`, `prompt`
+and the PKCE ones) cannot be listed: a link must not be able to change them.
+
 **More than one provider on a page.** Each client namespaces its stored values by
 `clientId`, so two in-flight logins do not overwrite each other. Set `storageKey` when two
 clients share a provider.

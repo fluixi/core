@@ -506,6 +506,18 @@ config: { /* ... */ tokenAuthMethod: 'basic' }
 config: { /* ... */ extraParams: { audience: 'https://api.example.com' } }
 ```
 
+**Un paramètre qui change d'une connexion à l'autre,** comme l'organisation pour laquelle un jeton
+est demandé. En mode serveur, nommez-le dans `authorizeParams` et placez-le sur le lien de
+connexion ; la route ne transmet que les noms listés :
+
+```ts
+oauthRoutes({ /* ... */ authorizeParams: ['organization'] });
+// <a href="/auth/login?organization=o1&returnTo=/app">
+```
+
+Les paramètres que la route fixe elle-même (`client_id`, `redirect_uri`, `state`, `scope`,
+`prompt` et ceux de PKCE) ne peuvent pas être listés : un lien ne doit pas pouvoir les changer.
+
 **Plusieurs fournisseurs sur une page.** Chaque client isole ses valeurs stockées par
 `clientId`, donc deux connexions en cours ne s'écrasent pas. Renseignez `storageKey` quand
 deux clients partagent un fournisseur.

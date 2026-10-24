@@ -38,6 +38,23 @@ describe('the prompt a login asks the provider for', () => {
   });
 });
 
+describe('parameters an app adds to the authorization request', () => {
+  it('forwards the ones it names from the login query, and no others', async () => {
+    const cfg = config({ authorizeParams: ['organization'] });
+    const { target } = await startLogin(cfg, 'organization=o1&login_hint=x&tenant=t');
+    expect(target.searchParams.get('organization')).toBe('o1');
+    expect(target.searchParams.has('login_hint')).toBe(false);
+    expect(target.searchParams.has('tenant')).toBe(false);
+    expect((await startLogin(cfg, '')).target.searchParams.has('organization')).toBe(false);
+  });
+
+  it('refuses to forward a parameter the client sets itself', () => {
+    for (const name of ['client_id', 'redirect_uri', 'state', 'scope', 'response_type', 'code_challenge', 'prompt']) {
+      expect(() => oauthRoutes(config({ authorizeParams: [name] }))).toThrow(name);
+    }
+  });
+});
+
 describe('a signed-out page load', () => {
   it('renders as is by default', async () => {
     const answer = await sessionLocals(config())(page('/'), pass);
