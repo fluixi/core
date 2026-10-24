@@ -1,5 +1,7 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.102
+
 ## 1.0.0-alpha.101
 
 ### Patch Changes

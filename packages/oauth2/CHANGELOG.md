@@ -1,5 +1,13 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.102
+
+### Patch Changes
+
+- b1dd71b: `oauthRoutes` takes a new option, `authorizeParams`: names of login query parameters to pass to the authorization request, for provider parameters that vary per login.
+  - @fluixi/auth@1.0.0-alpha.102
+  - @fluixi/session@1.0.0-alpha.102
+
 ## 1.0.0-alpha.101
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.102
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.102
+
 ## 1.0.0-alpha.101
 
 ### Patch Changes
