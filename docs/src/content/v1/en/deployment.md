@@ -18,6 +18,10 @@ fluixi start     →  serves it with the node adapter
 `dist/client` from disk, falling through to the handler for anything not found. This is the
 default and needs no configuration.
 
+The port is the first of these that is set: `--port` (`fluixi start --port=8080`), the `PORT`
+variable most hosts provide, `port` in `fluixi.config.ts`, then 3000. `fluixi dev` reads them
+the same way.
+
 **An edge or serverless runtime.** Those platforms do not want a listening process; they
 want a module exporting `fetch`. That is what the web adapter returns:
 

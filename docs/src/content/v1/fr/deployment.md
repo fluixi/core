@@ -20,6 +20,10 @@ tourner.
 `dist/client` depuis le disque, en repassant au gestionnaire pour ce qui n'est pas trouvé.
 C'est le comportement par défaut, sans configuration.
 
+Le port est le premier défini parmi : `--port` (`fluixi start --port=8080`), la variable `PORT`
+que fournissent la plupart des hébergeurs, `port` dans `fluixi.config.ts`, puis 3000. `fluixi dev`
+les lit de la même façon.
+
 **Un runtime edge ou serverless.** Ces plateformes ne veulent pas d'un processus qui écoute,
 mais d'un module exportant `fetch`. C'est ce que renvoie l'adaptateur web :
 

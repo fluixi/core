@@ -7,6 +7,7 @@ import { add } from './add.js';
 import { startMismatch } from './start-copy.js';
 import { check } from './check.js';
 import { diagnose, resolvedVersions } from './doctor.js';
+import { portOverride } from './port.js';
 
 function usage(): string {
   const cmd = (name: string, desc: string) =>
@@ -17,10 +18,10 @@ function usage(): string {
     '',
     `  ${c.bold('Usage')}  ${c.gray('fluixi <command>')}`,
     '',
-    cmd('dev', 'start the SSR dev server (Vite middleware + HMR)'),
+    cmd('dev [--port=<n>]', 'start the SSR dev server (Vite middleware + HMR)'),
     cmd('build', 'build the client + server bundles for production'),
     cmd('build --format=web-component', 'build custom elements as portable files'),
-    cmd('start', 'run the production SSR server (after build)'),
+    cmd('start [--port=<n>]', 'run the production SSR server (after build); PORT also sets it'),
     cmd('generate <kind> <name>', 'scaffold code, see fluixi g --help  ' + c.dim('(alias: g)')),
     cmd('add auth', 'set up authentication: asks, writes, installs'),
     cmd('check [--strict]', 'env and auth rules over the project, for CI'),
@@ -73,7 +74,7 @@ async function main(): Promise<void> {
 
   switch (cmd) {
     case 'dev':
-      await dev(config);
+      await dev(withPort(config));
       break;
     case 'build': {
       // `--format=web-component` for a portable file, `--format=fluixi` for one that
@@ -88,7 +89,7 @@ async function main(): Promise<void> {
       break;
     }
     case 'start':
-      await start(config);
+      await start(withPort(config));
       break;
     case 'env':
       process.exitCode = await env(config);
@@ -103,6 +104,17 @@ async function main(): Promise<void> {
       console.error(`\n  ${c.red('✗')} Unknown command: ${c.bold(cmd)}`);
       console.log(usage());
       process.exit(1);
+  }
+}
+
+/** The config with the port `--port` or `PORT` chose, if any; a bad value stops here. */
+function withPort(config: Awaited<ReturnType<typeof loadConfig>>): Awaited<ReturnType<typeof loadConfig>> {
+  try {
+    const port = portOverride(process.argv.slice(3), process.env);
+    return port === undefined ? config : { ...config, port };
+  } catch (error) {
+    console.error(`\n  ${c.red('✗')} ${(error as Error).message}`);
+    process.exit(1);
   }
 }
 
