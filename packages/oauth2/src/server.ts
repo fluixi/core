@@ -156,7 +156,8 @@ export interface OAuthRoutesConfig {
 
 /** Ends the state of a sign-in started again after an answer the browser had no flow for. */
 const RETRY_MARK = '.retry';
-const PROMPTS = new Set(['none', 'login', 'consent', 'select_account']);
+// OpenID Connect Core's prompts, and `create` from its user registration specification.
+const PROMPTS = new Set(['none', 'login', 'consent', 'select_account', 'create']);
 /** Set by the login route itself: forwarding one from the query string would let a link change it. */
 const CLIENT_PARAMS = new Set(['response_type', 'client_id', 'redirect_uri', 'scope', 'state', 'nonce', 'code_challenge', 'code_challenge_method', 'prompt', 'request', 'request_uri']);
 

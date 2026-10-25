@@ -36,6 +36,10 @@ describe('the prompt a login asks the provider for', () => {
     expect((await startLogin(config(), 'prompt=login')).target.searchParams.get('prompt')).toBe('login');
     expect((await startLogin(config(), 'prompt=evil')).target.searchParams.has('prompt')).toBe(false);
   });
+
+  it('forwards create, which opens the provider\'s sign-up', async () => {
+    expect((await startLogin(config(), 'prompt=create')).target.searchParams.get('prompt')).toBe('create');
+  });
 });
 
 describe('parameters an app adds to the authorization request', () => {
