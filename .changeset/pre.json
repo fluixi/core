@@ -324,6 +324,7 @@
     "oauth2-modules",
     "oauth2-navigate-type",
     "oauth2-package",
+    "oauth2-prompt-create",
     "oauth2-provider-agnostic",
     "oauth2-renewal-failures",
     "oauth2-roles",

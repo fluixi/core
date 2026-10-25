@@ -1,5 +1,14 @@
 # @fluixi/example-html-counter
 
+## 0.0.1-alpha.47
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.103
+- @fluixi/dom@1.0.0-alpha.103
+- @fluixi/reactive@1.0.0-alpha.103
+- @fluixi/server@1.0.0-alpha.103
+
 ## 0.0.1-alpha.46
 
 ### Patch Changes
