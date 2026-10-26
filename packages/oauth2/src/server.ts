@@ -678,15 +678,37 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       const key = config.dpop
         ? await createDpopKey(config.dpopAlgorithm, { extractable: true })
         : null;
-      const payload = await tokenRequest(
-        {
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: config.redirectUri,
-          code_verifier: pending.verifier,
-        },
-        key,
-      );
+      let payload: Record<string, unknown>;
+      try {
+        payload = await tokenRequest(
+          {
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: config.redirectUri,
+            code_verifier: pending.verifier,
+          },
+          key,
+        );
+      } catch (error) {
+        if (!(error instanceof OAuthError)) throw error;
+        // Back to the app with the reason, as for a refusal at the provider, rather than an
+        // error page: a provider that did not answer in time, or the code it refused.
+        const unreachable = error.code === 'temporarily_unavailable' || error.code === 'answer_lost';
+        const back = safeReturnTo(pending.returnTo ?? config.defaultReturnTo, {
+          fallback: '/',
+          origin: url.origin,
+          allowedOrigins: config.allowedReturnOrigins,
+        });
+        const target = new URL(back, url.origin);
+        target.searchParams.set('auth_error', unreachable ? 'provider_unreachable' : error.code);
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: target.origin === url.origin ? target.pathname + target.search : target.toString(),
+            'set-cookie': cookie.clear(),
+          },
+        });
+      }
 
       const signedIn = await cookie.write({
         accessToken: String(payload.access_token ?? ''),

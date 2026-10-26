@@ -47,3 +47,36 @@ describe('a provider that does not answer', () => {
     await expect(discover('https://idp.test')).rejects.toThrow(/Could not reach the provider at .*is it running/);
   });
 });
+
+describe('a token request that fails at the callback', () => {
+  const withEndpoints = config({
+    basePath: '/auth',
+    endpoints: { authorization: 'https://idp.test/auth', token: 'https://idp.test/token' },
+  } as Partial<OAuthRoutesConfig>);
+  const pass = async () => new Response('next');
+
+  async function callbackAfter(fail: () => Promise<Response>) {
+    const login = await oauthRoutes(withEndpoints)(new Request('https://app.test/auth/login?returnTo=%2Fusers'), pass);
+    const state = new URL(login.headers.get('location')!).searchParams.get('state')!;
+    const cookie = login.headers.get('set-cookie')!.split(';')[0]!;
+    vi.stubGlobal('fetch', vi.fn(fail));
+    return oauthRoutes(withEndpoints)(
+      new Request(`https://app.test/auth/callback?code=c&state=${encodeURIComponent(state)}`, { headers: { cookie } }),
+      pass,
+    );
+  }
+
+  it('sends the person back to the app with a reason when the answer is lost', async () => {
+    const back = await callbackAfter(async () => {
+      throw new DOMException('timed out', 'TimeoutError');
+    });
+    expect(back.status).toBe(302);
+    expect(back.headers.get('location')).toBe('/users?auth_error=provider_unreachable');
+  });
+
+  it('names the refusal when the provider refuses the code', async () => {
+    const back = await callbackAfter(async () => new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400 }));
+    expect(back.status).toBe(302);
+    expect(back.headers.get('location')).toBe('/users?auth_error=invalid_grant');
+  });
+});
