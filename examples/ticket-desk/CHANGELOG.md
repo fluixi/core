@@ -1,5 +1,20 @@
 # @fluixi/example-ticket-desk
 
+## 0.0.2-alpha.18
+
+### Patch Changes
+
+- @fluixi/auth@1.0.0-alpha.103
+- @fluixi/cli@1.0.0-alpha.103
+- @fluixi/core@1.0.0-alpha.103
+- @fluixi/dom@1.0.0-alpha.103
+- @fluixi/head@1.0.0-alpha.103
+- @fluixi/jsx@1.0.0-alpha.103
+- @fluixi/reactive@1.0.0-alpha.103
+- @fluixi/server@1.0.0-alpha.103
+- @fluixi/session@1.0.0-alpha.103
+- @fluixi/start@1.0.0-alpha.103
+
 ## 0.0.2-alpha.17
 
 ### Patch Changes

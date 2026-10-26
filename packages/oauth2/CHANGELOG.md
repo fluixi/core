@@ -1,5 +1,13 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.103
+
+### Patch Changes
+
+- a36dd15: The login route forwards `prompt=create` to the provider.
+  - @fluixi/auth@1.0.0-alpha.103
+  - @fluixi/session@1.0.0-alpha.103
+
 ## 1.0.0-alpha.102
 
 ### Patch Changes

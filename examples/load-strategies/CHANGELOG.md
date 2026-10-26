@@ -1,5 +1,14 @@
 # @fluixi/example-load-strategies
 
+## 0.0.1-alpha.34
+
+### Patch Changes
+
+- @fluixi/core@1.0.0-alpha.103
+- @fluixi/dom@1.0.0-alpha.103
+- @fluixi/jsx@1.0.0-alpha.103
+- @fluixi/reactive@1.0.0-alpha.103
+
 ## 0.0.1-alpha.33
 
 ### Patch Changes
