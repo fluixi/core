@@ -28,7 +28,7 @@ export interface JsxContext {
   used: Set<string>;
   /** The file being compiled, when component usage sites are to be recorded. */
   sourceFile?: string;
-  /** Scoped styles: intrinsic elements inside a range get `data-fx-s` set to its value. */
+  /** Scoped styles: intrinsic elements inside a range, and components handed a class, get `data-fx-s` set to its value. */
   scopes?: { start: number; end: number; value: string }[];
   /** Start offsets of `<style>` elements the compiler took out of the template. */
   dropStyles?: Set<number>;
@@ -416,6 +416,12 @@ function buildNode(node: Node, ctx: JsxContext): IRNode {
   const { tag, component } = tagInfo(node.openingElement.name, ctx);
   if (!component) return buildElement(node, ctx, []);
   const props = buildProps(node.openingElement.attributes, ctx);
+  // A component draws its own elements, so it takes no scope, except when handed a class: the
+  // element it passes the class to then matches this component's scoped rule for that class.
+  const scope = ctx.scopes?.find((s) => node.start >= s.start && node.end <= s.end);
+  if (scope && props.some((p) => p.name === 'class' || p.name === 'className' || p.name === 'classList')) {
+    props.unshift({ name: 'data-fx-s', kind: 'attr', literal: scope.value });
+  }
   const children = buildChildren(node.children, ctx);
   const at = ctx.sourceFile && node.loc?.start
     ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }

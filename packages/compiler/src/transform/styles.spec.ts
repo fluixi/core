@@ -87,6 +87,25 @@ describe('transformTemplates with <style>', () => {
     expect(result.code).not.toMatch(/Button[^\\n]*data-fx-s/);
   });
 
+  it('gives the scope to a component handed a class, so the rule reaches the element it puts the class on', () => {
+    const { result } = run(`
+      export function Panel() {
+        return (
+          <div>
+            <style scoped>{\`.box { display: grid }\`}</style>
+            <Card class="box" />
+            <Card classList={{ box: true }} />
+            <Button />
+          </div>
+        );
+      }
+    `);
+    const id = hash('src/Card.tsx:Panel');
+    expect(result.code).toContain(`createComponent(Card, { get "data-fx-s"() { return "${id}"; }, get className()`);
+    expect(result.code).toContain(`createComponent(Card, { get "data-fx-s"() { return "${id}"; }, get classList()`);
+    expect(result.code).not.toMatch(/Button[^\n]*data-fx-s/);
+  });
+
   it('names an arrow-function component after its variable, and keeps a global block unscoped', () => {
     const { result } = run(`
       export const Panel = () => (
