@@ -58,7 +58,7 @@ export interface Theme<T extends string> {
   set: (theme: T) => void;
   /** Cycle to the next theme in `themes`. */
   toggle: () => void;
-  /** Apply the current theme to the DOM (call once on client mount). */
+  /** Apply the current theme to the DOM and run its `load` (call once on client mount). */
   init: () => void;
   /** Inline `<script>` for `<head>` that sets the attribute before first paint (no flash). */
   headScript: () => string;
@@ -136,6 +136,16 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
     env.document?.documentElement.setAttribute(attribute, t);
   };
 
+  const runLoad = (t: T): void => {
+    if (!options.load) return;
+    setLoading(true);
+    options.onLoading?.(t);
+    Promise.resolve(options.load(t)).finally(() => {
+      setLoading(false);
+      options.onLoaded?.(t);
+    });
+  };
+
   const set = (t: T): void => {
     if (!options.themes.includes(t)) return;
     const prev = value();
@@ -147,21 +157,20 @@ export function createTheme<T extends string>(options: ThemeOptions<T>): Theme<T
     }
     apply(t);
     options.onChange?.(t, prev);
-    if (options.load) {
-      setLoading(true);
-      options.onLoading?.(t);
-      Promise.resolve(options.load(t)).finally(() => {
-        setLoading(false);
-        options.onLoaded?.(t);
-      });
-    }
+    runLoad(t);
   };
   const toggle = (): void => {
     const i = options.themes.indexOf(value());
     set(options.themes[(i + 1) % options.themes.length]);
   };
 
-  const init = (): void => apply(value());
+  // A stored choice needs what `load` brings as much as a fresh one (a skin's stylesheet), or
+  // the attribute names a theme whose rules never arrive. Browser only: there is no page to style
+  // on the server.
+  const init = (): void => {
+    apply(value());
+    if (env.document) runLoad(value());
+  };
 
   const scriptBody = (): string => {
     const cfg = JSON.stringify({ s: storedLookup(storage, storageKey), a: attribute, d: options.default, sys, ts: options.themes }).replace(/</g, '\\u003c');

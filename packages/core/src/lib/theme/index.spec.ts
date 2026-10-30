@@ -74,6 +74,16 @@ describe('createTheme', () => {
     expect(theme.isLoading()).toBe(false);
   });
 
+  it('init runs load for a stored choice, not only on set', () => {
+    document.cookie = `skin=${envelope('glass')}; Path=/`;
+    const load = vi.fn();
+    const theme = createTheme({ themes: ['plain', 'glass'] as const, default: 'plain', storageKey: 'skin', attribute: 'data-ui', load });
+    theme.init();
+    expect(document.documentElement.getAttribute('data-ui')).toBe('glass');
+    expect(load).toHaveBeenCalledWith('glass');
+    document.documentElement.removeAttribute('data-ui');
+  });
+
   it('headScript embeds the storage key + attribute and sets the attribute', () => {
     const theme = createTheme({
       themes: ['light', 'dark'] as const,
