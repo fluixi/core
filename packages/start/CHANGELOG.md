@@ -1,5 +1,20 @@
 # @fluixi/start
 
+## 1.0.0-alpha.104
+
+### Minor Changes
+
+- 614b752: The mount element carries a single `data-fluixi` attribute in place of `fluixi`, `fx-dom` and `fx-reactive`; its value is the release in development and empty in production. `@fluixi/start` writes this attribute on the server so it appears in the page source, and `window.Fluixi` retains all three version strings.
+- e52244c: When an error is thrown by a page, server function, or middleware on a production server, the error is logged and the visitor receives a 500 response with a plain HTML page or the text "Internal Server Error" for non-page requests, never the stack trace; an application can provide its own error page via `public/error.html`; the Fluixi development environment continues to display the stack trace.
+- c2d8f84: `defineConfig` accepts a `dedupe` array of package names that are resolved once from the app root in addition to the framework's own deduped packages; if a listed package cannot be resolved by the app, it is ignored.
+
+### Patch Changes
+
+- Updated dependencies [da310b5]
+- Updated dependencies [91e9073]
+  - @fluixi/compiler@1.0.0-alpha.104
+  - @fluixi/vite-plugin@1.0.0-alpha.104
+
 ## 1.0.0-alpha.103
 
 ### Patch Changes

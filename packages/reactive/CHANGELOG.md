@@ -1,5 +1,11 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.104
+
+### Patch Changes
+
+- a5b7c70: A plain function child of a context Provider runs under the Provider's scope and reads the current context value instead of the default.
+
 ## 1.0.0-alpha.103
 
 ## 1.0.0-alpha.102

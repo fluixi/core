@@ -1,5 +1,13 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.104
+
+### Patch Changes
+
+- 4bc547f: A token request that fails at the callback redirects the user to the app with an `auth_error` (provider_unreachable or refusal code) rather than showing an error page.
+  - @fluixi/auth@1.0.0-alpha.104
+  - @fluixi/session@1.0.0-alpha.104
+
 ## 1.0.0-alpha.103
 
 ### Patch Changes

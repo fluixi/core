@@ -1,5 +1,16 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.104
+
+### Minor Changes
+
+- 614b752: The mount element carries a single `data-fluixi` attribute in place of `fluixi`, `fx-dom` and `fx-reactive`; its value is the release in development and empty in production. `@fluixi/start` writes this attribute on the server so it appears in the page source, and `window.Fluixi` retains all three version strings.
+
+### Patch Changes
+
+- e368ec7: `createTheme` initializes by calling `load` with the stored value, fixing the issue where the stylesheet was missing after a reload until the theme was picked again.
+  - @fluixi/utils@1.0.0-alpha.104
+
 ## 1.0.0-alpha.103
 
 ### Patch Changes
