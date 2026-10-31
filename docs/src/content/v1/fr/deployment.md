@@ -89,6 +89,17 @@ bundle-le quand même ».
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
 > serveur via Vite pour que leur édition déclenche toujours le HMR.
 
+## Quand une requête échoue
+
+Une erreur levée par une page, une fonction serveur ou un middleware est écrite dans le journal
+du serveur. Le visiteur reçoit une 500 avec une page sobre, ou un court texte quand la requête
+ne demandait pas une page ; jamais la pile, qui nomme des fichiers et des hôtes et peut contenir
+un secret. `fluixi dev` continue d'afficher la pile.
+
+Pour donner votre propre apparence à cette page, placez-la dans `public/error.html` : le build la
+copie avec les autres fichiers publics et le serveur Node répond avec elle. Une plateforme sans
+système de fichiers (un worker) sert la page sobre.
+
 ## Un seul exemplaire d'un paquet
 
 `fluixi dev` et `fluixi build` résolvent les paquets du framework une seule fois, depuis la racine

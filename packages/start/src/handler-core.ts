@@ -46,9 +46,13 @@ export interface HandlerParts {
    * without it a page is served exactly as before, just without preload hints.
    */
   preload?: (pathname: string) => string[];
+  /** The app's page for a failed request, its `public/error.html`; a plain one without it. */
+  errorPage?: string;
 }
 
-export function createHandlerFrom({ template, mod, cfg, middleware, preload }: HandlerParts): FetchHandler {
+export function createHandlerFrom({ template, mod, cfg, middleware, preload, errorPage }: HandlerParts): FetchHandler {
+  // This handler serves a build: an error is logged, and the visitor never sees its stack.
+  const onError = { production: true, page: errorPage };
   const withPreload = (html: string, pathname: string): string =>
     preload ? injectPreload(html, preload(pathname)) : html;
 
@@ -64,7 +68,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
     // path is still known, though, and the route it names still loads its own chunk, so
     // the shell can say so and save the client a round trip it would otherwise start
     // only after the router had booted.
-    core = createRequestHandler(async (url) => withPreload(template, url.split('?')[0]));
+    core = createRequestHandler(async (url) => withPreload(template, url.split('?')[0]), onError);
   } else if (typeof mod.renderStream === 'function') {
     core = async (request) => {
       const url = new URL(request.url);
@@ -78,9 +82,11 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
     };
   } else {
     const render = mod.render ?? mod.default;
-    core = createRequestHandler(async (url, request) =>
-      // `url` here is `pathname + search`; matching only ever wants the path.
-      injectAppAndHead(withPreload(template, url.split('?')[0]), await render!(url, request), cfg.mountId),
+    core = createRequestHandler(
+      async (url, request) =>
+        // `url` here is `pathname + search`; matching only ever wants the path.
+        injectAppAndHead(withPreload(template, url.split('?')[0]), await render!(url, request), cfg.mountId),
+      onError,
     );
   }
 
@@ -104,7 +110,11 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload }: H
   const chain = [...normalizeMiddleware(mod.__fluixiAppMiddleware), ...normalizeMiddleware(middleware as never)];
   // Inside the middleware, so it sees the cookies the page, function or route set.
   const inner = core;
-  return guardHandler(composeMiddleware(chain, async (request) => withResponseHeaders(request, await inner(request))));
+  return guardHandler(
+    composeMiddleware(chain, async (request) => withResponseHeaders(request, await inner(request))),
+    undefined,
+    onError,
+  );
 }
 
 /**

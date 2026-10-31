@@ -32,7 +32,11 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
     ? await import(/* @vite-ignore */ pathToFileURL(mwFile).href)
     : undefined;
 
-  return createHandlerFrom({ template, mod, cfg, middleware, preload: await loadPreloader(cfg) });
+  // The app's page for a failed request: public/error.html, copied into the client build.
+  const errorFile = join(clientDir, 'error.html');
+  const errorPage = existsSync(errorFile) ? readFileSync(errorFile, 'utf8') : undefined;
+
+  return createHandlerFrom({ template, mod, cfg, middleware, preload: await loadPreloader(cfg), errorPage });
 }
 
 /**

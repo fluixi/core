@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { extname, resolve, sep } from 'node:path';
-import { liftHead } from './document.js';
+import { errorResponse, liftHead, type ErrorResponseOptions } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
 import { setClientAddress } from './client-address.js';
 import { takeResponseHeaders } from '@fluixi/dom';
@@ -139,7 +139,7 @@ export function withResponseHeaders(request: Request, response: Response): Respo
 }
 
 /** Wrap a render function as a fetch handler (Node/Bun/Deno/edge-portable). */
-export function createRequestHandler(render: RenderFn): FetchHandler {
+export function createRequestHandler(render: RenderFn, options?: ErrorResponseOptions): FetchHandler {
   return async (request) => {
     const url = new URL(request.url);
     try {
@@ -148,11 +148,8 @@ export function createRequestHandler(render: RenderFn): FetchHandler {
         status: 200,
         headers: { 'content-type': 'text/html; charset=utf-8' },
       });
-    } catch (e: any) {
-      return new Response(String(e?.stack || e), {
-        status: 500,
-        headers: { 'content-type': 'text/plain; charset=utf-8' },
-      });
+    } catch (e) {
+      return errorResponse(e, request, options);
     }
   };
 }
@@ -271,9 +268,11 @@ export function serveNode(handler: FetchHandler, opts: ServeNodeOptions = {}): S
   const port = opts.port ?? 3000;
   const node = toNodeHandler(handler, { trustProxy: opts.trustProxy });
   const server = createHttpServer((req, res) => {
+    // Past the handler's own guard: logged here, never written to the visitor.
     node(req, res).catch((e) => {
+      console.error(e);
       res.statusCode = 500;
-      res.end(String((e as any)?.stack || e));
+      res.end('Internal Server Error');
     });
   });
   if (opts.onListenError) server.once('error', opts.onListenError);

@@ -85,6 +85,17 @@ bundle, would put two routers with two sets of module state in the same server.
 > Only the build reads `bundle`. Dev never externalizes: `fluixi dev` loads server modules
 > through Vite so that editing them still triggers HMR.
 
+## When a request fails
+
+An error thrown by a page, a server function or a middleware is logged on the server. The
+visitor gets a 500 with a plain page, or a short text when the request was not for a page;
+never the stack, which names files and hosts and can carry a secret. `fluixi dev` keeps showing
+the stack.
+
+To give the page your own look, put it at `public/error.html`: the build copies it with the
+other public files and the Node server answers with it. A platform without a filesystem (a
+worker) serves the plain page.
+
 ## One copy of a package
 
 `fluixi dev` and `fluixi build` resolve the framework's own packages once, from the app's root,

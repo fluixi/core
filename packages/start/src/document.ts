@@ -119,6 +119,41 @@ export function liftHead(html: string, rendered: string): { html: string; body: 
   return { html, body };
 }
 
+export interface ErrorResponseOptions {
+  /** Log the error and answer with a page that shows nothing of it. Off: the stack, for development. */
+  production?: boolean;
+  /** The app's own page for a failed request (its `public/error.html`), in production. */
+  page?: string;
+}
+
+const DEFAULT_ERROR_PAGE =
+  '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<title>Error</title></head><body style="margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif">' +
+  '<main style="padding:24px;text-align:center"><h1 style="margin:0 0 8px;font-size:20px">This page could not be loaded</h1>' +
+  '<p style="margin:0;opacity:.7">Try again in a moment.</p></main></body></html>';
+
+/**
+ * The answer to a request that failed. In production the error goes to the server's log and
+ * the visitor gets the app's error page (or a plain one), or a short text when the request was
+ * not for a page: a stack names files, hosts and sometimes secrets.
+ */
+export function errorResponse(e: unknown, request: Request | undefined, options: ErrorResponseOptions = {}): Response {
+  if (!options.production) {
+    return new Response(String((e as Error)?.stack || e), {
+      status: 500,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
+  }
+  console.error(e);
+  if (request?.headers.get('accept')?.includes('text/html')) {
+    return new Response(options.page ?? DEFAULT_ERROR_PAGE, {
+      status: 500,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
+  }
+  return new Response('Internal Server Error', { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+}
+
 /**
  * Wrap a fetch handler so a thrown/rejected error becomes a 500 instead of an
  * unhandled rejection. `createRequestHandler` already guards the renderer; this
@@ -127,16 +162,14 @@ export function liftHead(html: string, rendered: string): { html: string; body: 
 export function guardHandler(
   handler: FetchHandler,
   onError?: (e: unknown) => void,
+  options?: ErrorResponseOptions,
 ): FetchHandler {
   return async (request) => {
     try {
       return await handler(request);
-    } catch (e: any) {
+    } catch (e) {
       onError?.(e);
-      return new Response(String(e?.stack || e), {
-        status: 500,
-        headers: { 'content-type': 'text/plain; charset=utf-8' },
-      });
+      return errorResponse(e, request, options);
     }
   };
 }
