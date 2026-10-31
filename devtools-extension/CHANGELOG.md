@@ -1,5 +1,11 @@
 # @fluixi/devtools-extension
 
+## 0.0.1-alpha.10
+
+### Patch Changes
+
+- @fluixi/devtools@1.0.0-alpha.104
+
 ## 0.0.1-alpha.9
 
 ### Patch Changes

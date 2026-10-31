@@ -1,5 +1,17 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.104
+
+### Minor Changes
+
+- 91e9073: share() on a dev server pre-bundles the shared modules and writes the import map first in the page head, each id mapped to the URL the dev server gives the app's own import of it. Code loaded at runtime (a mounted plugin) gets the same module instance in development as in a build.
+
+### Patch Changes
+
+- Updated dependencies [da310b5]
+  - @fluixi/compiler@1.0.0-alpha.104
+  - @fluixi/devtools@1.0.0-alpha.104
+
 ## 1.0.0-alpha.103
 
 ### Patch Changes
