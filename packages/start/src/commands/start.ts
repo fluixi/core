@@ -14,6 +14,9 @@ export async function start(config: FluixiConfig = {}): Promise<void> {
   const cfg = resolveConfig(config);
   installCrashGuards();
   await loadServerEnv(cfg.root, 'production'); // .env → process.env (server-only secrets)
+  // The production server, unless the deployment says otherwise: libraries and the framework
+  // read it to drop development output (the release in the mount element's data-fluixi).
+  process.env.NODE_ENV ??= 'production';
 
   const clientDir = resolve(cfg.root, 'dist/client');
   const handler = await createProdHandler(cfg);

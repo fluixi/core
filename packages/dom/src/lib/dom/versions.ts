@@ -51,8 +51,19 @@ export const VERSION_ATTRIBUTE = 'data-fluixi';
  * packages ship as one release, so one version is enough; a skew is warned about on its own.
  */
 export function versionMark(): string {
-  const production = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
-  return production ? '' : (versions.core ?? versions.dom);
+  return isProduction() ? '' : (versions.core ?? versions.dom);
+}
+
+function isProduction(): boolean {
+  try {
+    // Written out in full: a bundler replaces exactly `process.env.NODE_ENV` in a browser
+    // build, where `process` does not exist; a guard or `?.` around it would survive and read
+    // as development.
+    return process.env.NODE_ENV === 'production';
+  } catch {
+    // No bundler and no `process`: an unbundled page, treated as development.
+    return false;
+  }
 }
 
 /**
