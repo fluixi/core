@@ -60,6 +60,17 @@ export interface FluixiConfig {
    */
   ssrNoExternal?: (string | RegExp)[];
   /**
+   * Packages resolved once, from the app's root, besides the framework's own: a library that
+   * holds a context (a theme provider, a store) and is reached through two installs otherwise
+   * gives the app two copies, and a provider in one is invisible to a reader in the other.
+   *
+   * @example
+   * ```ts
+   * dedupe: ['@fluixi-ui/theme']
+   * ```
+   */
+  dedupe?: string[];
+  /**
    * Which environment variables reach the browser.
    *
    * Declared rather than spelled. Vite's `VITE_` prefix puts that decision in a name, so moving
@@ -210,6 +221,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     ssrNoExternal: config.ssrNoExternal ?? [],
+    dedupe: config.dedupe ?? [],
     env: { public: config.env?.public ?? [] },
     resolve: config.resolve ?? [],
     vitePlugin: config.vitePlugin ?? {},

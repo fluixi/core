@@ -28,9 +28,10 @@ function installed(root: string, name: string): boolean {
   }
 }
 
-export function dedupeVitePlugin(root: string) {
+/** The framework's packages and `extra`, the app's own (`dedupe` in its config). */
+export function dedupeVitePlugin(root: string, extra: readonly string[] = []) {
   // Only what the app can resolve: deduping a package it cannot reach makes every import of it fail.
-  const dedupe = FRAMEWORK_PACKAGES.filter((name) => installed(root, name));
+  const dedupe = [...new Set([...FRAMEWORK_PACKAGES, ...extra])].filter((name) => installed(root, name));
   return {
     name: 'fluixi-dedupe',
     config: () => ({ resolve: { dedupe } }),

@@ -13,4 +13,12 @@ describe('dedupeVitePlugin', () => {
     const config = dedupeVitePlugin(app).config() as { resolve: { dedupe: string[] } };
     expect(config.resolve.dedupe).toEqual(['@fluixi/core', '@fluixi/reactive']);
   });
+
+  it("adds the app's own packages that hold a context, when the app can resolve them", () => {
+    const app = mkdtempSync(join(tmpdir(), 'fx-dedupe-'));
+    mkdirSync(join(app, 'node_modules', '@fluixi', 'core'), { recursive: true });
+    mkdirSync(join(app, 'node_modules', '@acme', 'theme'), { recursive: true });
+    const config = dedupeVitePlugin(app, ['@acme/theme', '@acme/missing']).config() as { resolve: { dedupe: string[] } };
+    expect(config.resolve.dedupe).toEqual(['@fluixi/core', '@acme/theme']);
+  });
 });

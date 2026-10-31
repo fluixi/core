@@ -85,6 +85,22 @@ bundle, would put two routers with two sets of module state in the same server.
 > Only the build reads `bundle`. Dev never externalizes: `fluixi dev` loads server modules
 > through Vite so that editing them still triggers HMR.
 
+## One copy of a package
+
+`fluixi dev` and `fluixi build` resolve the framework's own packages once, from the app's root,
+so a library installed with its own copy of `@fluixi/core` still shares the app's. A library
+of yours that holds a context needs the same, when an install can give it two copies (a linked
+checkout, two versions of a peer under it): list it in `dedupe`.
+
+```ts
+export default defineConfig({
+  dedupe: ['@fluixi-ui/theme'],
+});
+```
+
+Two copies of a theme provider means a menu reading one while the page wrote the other: the
+read fails as if the provider were missing.
+
 ## Code loaded at run time
 
 A deployment may load code the app was not built with: plugins mounted into the container,

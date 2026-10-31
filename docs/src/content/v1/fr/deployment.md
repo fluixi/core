@@ -89,6 +89,23 @@ bundle-le quand même ».
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
 > serveur via Vite pour que leur édition déclenche toujours le HMR.
 
+## Un seul exemplaire d'un paquet
+
+`fluixi dev` et `fluixi build` résolvent les paquets du framework une seule fois, depuis la racine
+de l'application : une bibliothèque installée avec son propre `@fluixi/core` partage quand même
+celui de l'application. Une bibliothèque à vous qui porte un contexte a besoin de la même chose
+quand une installation peut en donner deux exemplaires (un dépôt lié, deux versions d'une
+dépendance pair sous elle) : listez-la dans `dedupe`.
+
+```ts
+export default defineConfig({
+  dedupe: ['@fluixi-ui/theme'],
+});
+```
+
+Deux exemplaires d'un fournisseur de thème, c'est un menu qui lit l'un pendant que la page écrit
+dans l'autre : la lecture échoue comme si le fournisseur manquait.
+
 ## Du code chargé à l'exécution
 
 Un déploiement peut charger du code avec lequel l'application n'a pas été construite : des

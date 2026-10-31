@@ -261,7 +261,7 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   const plugins: any[] = [
     // First: a value it defines has to be visible to everything after it.
     envVitePlugin(cfg),
-    dedupeVitePlugin(cfg.root),
+    dedupeVitePlugin(cfg.root, cfg.dedupe),
     appConfigVitePlugin(cfg),
     serverOnlyVitePlugin(),
     serverFunctionsVitePlugin(),
