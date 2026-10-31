@@ -42,16 +42,27 @@ export function registerCoreVersion(version: string): void {
   versions.core = version;
 }
 
+/** The attribute that marks an element Fluixi mounted, as `ng-version` or `data-v-app` do. */
+export const VERSION_ATTRIBUTE = 'data-fluixi';
+
 /**
- * Stamp the versions onto the mount element and expose them as `window.Fluixi`.
+ * The value of {@link VERSION_ATTRIBUTE}: the release in development, empty in production, so a
+ * deployed page says it runs Fluixi without saying which release to look up flaws for. The
+ * packages ship as one release, so one version is enough; a skew is warned about on its own.
+ */
+export function versionMark(): string {
+  const production = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
+  return production ? '' : (versions.core ?? versions.dom);
+}
+
+/**
+ * Mark the mount element and expose the versions as `window.Fluixi`.
  *
- * The attributes make it visible in the page source and in a screenshot of devtools,
- * usually all a bug report contains, while the global is what you reach for in a console.
+ * The attribute shows in devtools and, written by the server too, in the page source: usually
+ * all a bug report contains. The global is what you reach for in a console.
  */
 export function stampVersions(container: Element): void {
-  if (versions.core) container.setAttribute('fluixi', versions.core);
-  container.setAttribute('fx-dom', versions.dom);
-  container.setAttribute('fx-reactive', versions.reactive);
+  container.setAttribute(VERSION_ATTRIBUTE, versionMark());
 
   if (typeof globalThis !== 'undefined') globalThis.Fluixi = versions;
 }

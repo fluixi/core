@@ -128,11 +128,13 @@ render(() => html`<${App} />`, document.getElementById('app')!);
 ## Quelle version est en cours d'exécution ?
 
 Quelle que soit la façon de monter, `render` depuis `@fluixi/core`, ou l'hydratation via
-`startClient`, l'élément de montage porte les versions réellement exécutées, également
-exposées dans `window.Fluixi` :
+`startClient`, l'élément de montage porte `data-fluixi`, et les versions réellement exécutées
+sont exposées dans `window.Fluixi`. En développement l'attribut contient la release ; en
+production il est vide : une page déployée dit qu'elle tourne avec Fluixi sans nommer la
+release. `@fluixi/start` l'écrit aussi côté serveur, il apparaît donc dans le source de la page :
 
 ```html
-<div id="app" fluixi="1.0.0" fx-dom="1.0.0" fx-reactive="1.0.0">
+<div id="app" data-fluixi="1.0.0">
 ```
 
 ```js

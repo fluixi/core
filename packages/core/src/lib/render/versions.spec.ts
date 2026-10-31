@@ -12,12 +12,10 @@ describe('version stamping', () => {
     }
   });
 
-  it('stamps each package separately so a mismatch is visible', () => {
+  it('marks the mount element with the core version', () => {
     const el = document.createElement('div');
     stampVersions(el);
-    expect(el.getAttribute('fluixi')).toBe(versions.core);
-    expect(el.getAttribute('fx-dom')).toBe(versions.dom);
-    expect(el.getAttribute('fx-reactive')).toBe(versions.reactive);
+    expect(el.getAttribute('data-fluixi')).toBe(versions.core);
   });
 
   it('exposes the versions on the global for the console', () => {

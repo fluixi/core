@@ -237,10 +237,11 @@ navigateur appelle l'API directement, listez l'origine de l'application web dans
 - **Le middleware ne s'exécute pas pour les pages prérendues.** Ce sont des fichiers. Une
   vérification par requête, authentification, géolocalisation, doit vivre là où quelque
   chose s'exécute réellement à chaque requête.
-- **Vérifiez les versions estampillées.** L'élément de montage porte `fluixi`, `fx-dom` et
-  `fx-reactive`, et `window.Fluixi` rapporte la même chose. Si elles divergent dans une
-  version déployée, l'installation a résolu deux copies, mieux vaut le voir avant que cela
-  ne devienne un rapport de bug.
+- **Vérifiez les versions.** `window.Fluixi` donne les versions de core, dom et reactive en
+  cours d'exécution ; le `data-fluixi` de l'élément de montage est vide en production et ne
+  nomme donc aucune release. Si les versions divergent dans une version déployée,
+  l'installation a résolu deux copies, mieux vaut le voir avant que cela ne devienne un
+  rapport de bug.
   `@fluixi/start` résout les paquets du framework une seule fois, depuis la racine de
   l'application : une bibliothèque qui installe sa propre copie tourne quand même sur celle de
   l'application.

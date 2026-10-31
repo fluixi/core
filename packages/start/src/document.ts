@@ -7,6 +7,7 @@
  * helpers drags a whole toolchain into the bundle with it.
  */
 import { extractHeadMarker } from '@fluixi/head';
+import { VERSION_ATTRIBUTE, versionMark } from '@fluixi/dom';
 import type { FetchHandler } from './handler.js';
 
 /**
@@ -17,12 +18,17 @@ import type { FetchHandler } from './handler.js';
 export function injectApp(template: string, appHtml: string, mountId = 'root'): string {
   const mount = new RegExp(`<div id=["']${mountId}["']\\s*>\\s*</div>`);
   if (mount.test(template)) {
-    return template.replace(mount, `<div id="${mountId}">${appHtml}</div>`);
+    return template.replace(mount, `${openMount(mountId)}${appHtml}</div>`);
   }
   if (template.includes('<!--ssr-outlet-->')) {
     return template.replace('<!--ssr-outlet-->', appHtml);
   }
-  return template.replace('</body>', `<div id="${mountId}">${appHtml}</div></body>`);
+  return template.replace('</body>', `${openMount(mountId)}${appHtml}</div></body>`);
+}
+
+/** The mount element's open tag, marked as Fluixi's so the page source says which framework drew it. */
+function openMount(mountId: string): string {
+  return `<div id="${mountId}" ${VERSION_ATTRIBUTE}="${versionMark()}">`;
 }
 
 /**
@@ -36,7 +42,7 @@ export function splitTemplate(template: string, mountId = 'root'): { head: strin
   const m = template.match(mount);
   if (m && m.index !== undefined) {
     return {
-      head: template.slice(0, m.index) + `<div id="${mountId}">`,
+      head: template.slice(0, m.index) + openMount(mountId),
       tail: `</div>` + template.slice(m.index + m[0].length),
     };
   }
@@ -50,7 +56,7 @@ export function splitTemplate(template: string, mountId = 'root'): { head: strin
   const body = template.indexOf('</body>');
   if (body !== -1) {
     return {
-      head: template.slice(0, body) + `<div id="${mountId}">`,
+      head: template.slice(0, body) + openMount(mountId),
       tail: `</div>` + template.slice(body),
     };
   }

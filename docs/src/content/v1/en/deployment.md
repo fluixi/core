@@ -235,9 +235,10 @@ list the web app's origin in `apiSecurity({ origins })`.
   time; with SSR off there is nothing to render with.
 - **Middleware does not run for prerendered pages.** They are files. A per-request check,
   auth, geolocation, has to live somewhere that actually runs per request.
-- **Check the version stamps.** The mount element carries `fluixi`, `fx-dom` and
-  `fx-reactive`, and `window.Fluixi` reports the same. If they disagree in a deployed
-  build, the install resolved two copies, worth catching before it becomes a bug report.
+- **Check the versions.** `window.Fluixi` reports the core, dom and reactive versions
+  running; the mount element's `data-fluixi` is empty in production, so it names no
+  release. If the versions disagree in a deployed build, the install resolved two copies,
+  worth catching before it becomes a bug report.
   `@fluixi/start` resolves the framework packages once, from the app's root, so a library
   that installs its own copy still runs on the app's.
 

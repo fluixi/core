@@ -90,6 +90,8 @@ export {
   warnOnVersionSkew,
   versions,
   type FluixiVersions,
+  VERSION_ATTRIBUTE,
+  versionMark,
 } from './lib/dom/versions.js';
 
 export type DOM = typeof DOM;

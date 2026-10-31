@@ -122,11 +122,13 @@ render(() => html`<${App} />`, document.getElementById('app')!);
 ## Which build am I running?
 
 Whichever way you mount, `render` from `@fluixi/core`, or hydration through
-`startClient`, the mount element is stamped with the versions actually running, and they
-are exposed as `window.Fluixi`:
+`startClient`, the mount element carries `data-fluixi`, and the versions actually running are
+exposed as `window.Fluixi`. In development the attribute holds the release; in production it
+is empty, so a deployed page says it runs Fluixi without naming the release. `@fluixi/start`
+writes it on the server as well, so it shows in the page source:
 
 ```html
-<div id="app" fluixi="1.0.0" fx-dom="1.0.0" fx-reactive="1.0.0">
+<div id="app" data-fluixi="1.0.0">
 ```
 
 ```js

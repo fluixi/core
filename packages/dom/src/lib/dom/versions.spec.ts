@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from './runtime.js';
 import { hydrate } from './hydration.js';
-import { registerCoreVersion, versions } from './versions.js';
+import { registerCoreVersion, versionMark, versions } from './versions.js';
 
 describe('version stamping', () => {
   beforeEach(() => {
@@ -14,8 +14,9 @@ describe('version stamping', () => {
 
     render(() => document.createTextNode('hi'), container);
 
-    expect(container.getAttribute('fx-dom')).toBe(versions.dom);
-    expect(container.getAttribute('fx-reactive')).toBe(versions.reactive);
+    // One attribute, the convention for marking which framework mounted an element.
+    expect(container.getAttribute('data-fluixi')).toBe(versions.core ?? versions.dom);
+    for (const old of ['fluixi', 'fx-dom', 'fx-reactive']) expect(container.hasAttribute(old)).toBe(false);
   });
 
   // The bug this file exists for: only core's render stamped, so every app that reached
@@ -27,8 +28,7 @@ describe('version stamping', () => {
 
     hydrate(() => document.createTextNode('hi'), container);
 
-    expect(container.getAttribute('fx-dom')).toBe(versions.dom);
-    expect(container.getAttribute('fx-reactive')).toBe(versions.reactive);
+    expect(container.getAttribute('data-fluixi')).toBe(versions.core ?? versions.dom);
   });
 
   it('stamps the core version once core has registered it', () => {
@@ -40,7 +40,25 @@ describe('version stamping', () => {
 
     render(() => document.createTextNode('hi'), container);
 
-    expect(container.getAttribute('fluixi')).toBe('9.9.9-test');
+    expect(container.getAttribute('data-fluixi')).toBe('9.9.9-test');
     expect(globalThis.Fluixi?.core).toBe('9.9.9-test');
+  });
+});
+
+describe('the version mark in production', () => {
+  const previous = process.env.NODE_ENV;
+  afterEach(() => {
+    process.env.NODE_ENV = previous;
+  });
+
+  it('marks the element without publishing the release', () => {
+    process.env.NODE_ENV = 'production';
+    expect(versionMark()).toBe('');
+    const container = document.createElement('div');
+    document.body.append(container);
+    render(() => document.createTextNode('hi'), container);
+    expect(container.getAttribute('data-fluixi')).toBe('');
+    // The console still has it, for whoever is debugging the page.
+    expect(globalThis.Fluixi?.dom).toBe(versions.dom);
   });
 });

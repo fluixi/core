@@ -6,6 +6,10 @@ import { defineConfig, resolveConfig, loadConfig } from './config.js';
 import { injectApp, injectAppAndHead, splitTemplate } from './internal.js';
 import { encodeHeadMarker } from '@fluixi/head';
 import { streamDocument } from './handler.js';
+import { versionMark } from '@fluixi/dom';
+
+// What the server writes on the mount element: the framework mark (its version in development).
+const mark = ` data-fluixi="${versionMark()}"`;
 import {
   defineMiddleware,
   composeMiddleware,
@@ -115,12 +119,12 @@ describe('@fluixi/start loadConfig', () => {
 describe('@fluixi/start injectApp', () => {
   it('injects into the mount div', () => {
     expect(injectApp('<body><div id="root"></div></body>', 'APP')).toBe(
-      '<body><div id="root">APP</div></body>',
+      `<body><div id="root"${mark}>APP</div></body>`,
     );
   });
 
   it('respects a custom mountId', () => {
-    expect(injectApp('<div id="app"></div>', 'APP', 'app')).toBe('<div id="app">APP</div>');
+    expect(injectApp('<div id="app"></div>', 'APP', 'app')).toBe(`<div id="app"${mark}>APP</div>`);
   });
 
   it('falls back to the ssr-outlet marker', () => {
@@ -128,7 +132,7 @@ describe('@fluixi/start injectApp', () => {
   });
 
   it('falls back to before </body>', () => {
-    expect(injectApp('<body></body>', 'APP')).toBe('<body><div id="root">APP</div></body>');
+    expect(injectApp('<body></body>', 'APP')).toBe(`<body><div id="root"${mark}>APP</div></body>`);
   });
 });
 
@@ -145,12 +149,12 @@ describe('@fluixi/start injectAppAndHead', () => {
     expect(html).not.toContain('<title>Old</title>');
     expect(html).toContain('<title data-fh>P</title>');
     expect(html).toContain('name="description"');
-    expect(html).toContain('<div id="root">APP</div>');
+    expect(html).toContain(`<div id="root"${mark}>APP</div>`);
   });
 
   it('equals injectApp when there is no head marker', () => {
     expect(injectAppAndHead('<body><div id="root"></div></body>', 'APP')).toBe(
-      '<body><div id="root">APP</div></body>',
+      `<body><div id="root"${mark}>APP</div></body>`,
     );
   });
 });
@@ -253,13 +257,13 @@ describe('@fluixi/start streaming', () => {
 
   it('splits at the mount div (head ends with open tag, tail starts with close)', () => {
     const { head, tail } = splitTemplate('<body><div id="root"></div><script src="/c.js"></script></body>');
-    expect(head).toBe('<body><div id="root">');
+    expect(head).toBe(`<body><div id="root"${mark}>`);
     expect(tail).toBe('</div><script src="/c.js"></script></body>');
   });
 
   it('splits at a custom mountId', () => {
     const { head, tail } = splitTemplate('<div id="app"></div>', 'app');
-    expect(head).toBe('<div id="app">');
+    expect(head).toBe(`<div id="app"${mark}>`);
     expect(tail).toBe('</div>');
   });
 
@@ -271,7 +275,7 @@ describe('@fluixi/start streaming', () => {
 
   it('falls back to before </body>', () => {
     const { head, tail } = splitTemplate('<body>x</body>');
-    expect(head).toBe('<body>x<div id="root">');
+    expect(head).toBe(`<body>x<div id="root"${mark}>`);
     expect(tail).toBe('</div></body>');
   });
 
