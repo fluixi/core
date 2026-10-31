@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { flush } from '@fluixi/reactive/signal';
 import { hydrate, setRequestStore } from '@fluixi/dom';
@@ -11,16 +11,12 @@ afterEach(() => {
   delete (window as any).__FX_DATA__;
 });
 
-// KNOWN, still-open framework bug (not specific to html templates, JSX and html`` behave the
-// same). A component that reads a resource with a THROWING accessor (`user().name`)
-// under <Suspense> suspends during hydration, so its content isn't adopted; when the
-// resource resolves post-hydration it rebuilds and duplicates ("User #9User #9").
-// Distinct from the empty-reactive-text bug that WAS fixed in @fluixi/dom
-// hydration.ts: the idiomatic non-throwing pattern (user.loading/user.latest, see
-// examples/html-counter SsrApp) hydrates cleanly. Skipped until the
-// suspend-during-hydrate reconciliation is fixed.
+// A component that reads a resource with a throwing accessor (`user().name`) under
+// <Suspense> suspends during hydration; its content is adopted once, not rebuilt beside
+// itself ("User #9User #9"). The guarded pattern (user.loading/user.latest) is covered by
+// examples/html-counter's SsrApp.
 describe('JSX <Suspense> SSR + hydrate — duplicate check', () => {
-  it.skip('does not double the Suspense content on hydration', async () => {
+  it('does not double the Suspense content on hydration', async () => {
     setRequestStore(new AsyncLocalStorage());
     const body = await renderToStringAsync(() => SuspenseApp({ url: '/' }));
 
@@ -29,7 +25,7 @@ describe('JSX <Suspense> SSR + hydrate — duplicate check', () => {
     root.innerHTML = body.replace(/<script type="application\/json"[^>]*>[^<]*<\/script>/, '');
 
     hydrate(() => SuspenseApp({ url: '/' }), root);
-    await new Promise((r) => setTimeout(r, 40));
+    await vi.waitFor(() => expect(root.querySelector('.async')?.textContent).toBe('User #9'));
     await flush();
 
     expect(root.querySelectorAll('.async').length).toBe(1);
