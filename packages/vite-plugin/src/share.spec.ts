@@ -7,7 +7,8 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSy
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { build, type InlineConfig } from 'vite';
+import { build, createServer, type InlineConfig, type ViteDevServer } from 'vite';
+import { mkdirSync } from 'node:fs';
 import { share } from './share.js';
 
 let root: string;
@@ -92,3 +93,33 @@ describe('share() in a server build', () => {
     expect(readdirSync(join(root, 'dist')).filter((f) => /share|shared-lib/.test(f))).toEqual([]);
   });
 });
+
+describe('share() on a dev server', () => {
+  let server: ViteDevServer | undefined;
+  afterEach(async () => {
+    await server?.close();
+    server = undefined;
+  });
+
+  /** The URL the dev server rewrote `spec` to in a transformed module. */
+  const importUrl = (code: string, spec: string) =>
+    [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]!).find((url) => url.includes(spec)) ?? null;
+
+  it("maps each shared module to the URL the app's own import of it gets, so loaded code shares its copy", async () => {
+    // A real package as well, which the dev server pre-bundles under a versioned URL.
+    mkdirSync(join(root, 'node_modules', 'shared-pkg'), { recursive: true });
+    writeFileSync(join(root, 'node_modules', 'shared-pkg', 'package.json'), '{ "name": "shared-pkg", "type": "module", "main": "index.js" }');
+    writeFileSync(join(root, 'node_modules', 'shared-pkg', 'index.js'), "export const pkg = 'PKG';\n");
+    writeFileSync(join(root, 'main.js'), "import { used } from 'shared-lib';\nimport { pkg } from 'shared-pkg';\ndocument.title = used + pkg;\n");
+    server = await createServer(
+      config({ plugins: [share({ modules: ['shared-lib', 'shared-pkg'] })], server: { middlewareMode: true }, appType: 'custom' }),
+    );
+    const html = await server.transformIndexHtml('/', readFileSync(join(root, 'index.html'), 'utf8'));
+    const map = JSON.parse(/<script type="importmap">(.*?)<\/script>/s.exec(html)![1]!) as { imports: Record<string, string> };
+    expect(html.indexOf('type="importmap"')).toBeLessThan(html.indexOf('type="module"'));
+    const main = (await server.transformRequest('/main.js'))!.code;
+    expect(map.imports['shared-lib']).toBe(importUrl(main, 'lib.js'));
+    expect(map.imports['shared-pkg']).toBe(importUrl(main, 'shared-pkg'));
+  });
+});
+

@@ -10,9 +10,14 @@
  * modules must stay external so loaded code resolves them from `node_modules` (`@fluixi/start`
  * does that from its own `share` option).
  *
+ * On a dev server each shared module is pre-bundled, and the import map names the URL the dev
+ * server gives the app's own import of it, version query included: loaded code then gets the very
+ * module instance the app runs.
+ *
  * @module
  */
-import type { Plugin } from 'vite';
+import { isAbsolute, relative } from 'node:path';
+import type { Plugin, ViteDevServer } from 'vite';
 
 /** Options of {@link share}. */
 export interface ShareOptions {
@@ -58,6 +63,22 @@ export function share(options: ShareOptions): Plugin {
   }
   let base = '/';
   let browser = true;
+  let serving = false;
+  let root = process.cwd();
+  let server: ViteDevServer | undefined;
+
+  /** The URL the dev server serves `id` at to the page: the one its own imports are rewritten to. */
+  const devUrl = async (id: string): Promise<string> => {
+    const client = server!.environments.client;
+    // The pre-bundling scan decides which URL an import gets; resolving before it ends could
+    // name the unbundled file while the app imports the bundle.
+    await (client.depsOptimizer as { scanProcessing?: Promise<void> } | undefined)?.scanProcessing;
+    const resolved = await client.pluginContainer.resolveId(id, `${root}/index.html`);
+    if (!resolved) throw new Error(`[fluixi] share: the dev server cannot resolve ${id}.`);
+    const file = resolved.id;
+    const inside = !relative(root, file).startsWith('..') && !isAbsolute(relative(root, file));
+    return base + (inside ? relative(root, file) : `@fs${file}`);
+  };
 
   /** The import map, read from the chunks this build wrote. */
   const importMap = (bundle: Record<string, { type: string; name?: string; fileName: string; isEntry?: boolean }>) => {
@@ -74,21 +95,29 @@ export function share(options: ShareOptions): Plugin {
 
   return {
     name: 'fluixi:share',
-    apply: 'build',
+    config(_, env) {
+      // Pre-bundled on a dev server: one URL per module, the same for the app and the map.
+      return env.command === 'serve' ? { optimizeDeps: { include: [...modules] } } : undefined;
+    },
     configResolved(config) {
+      serving = config.command === 'serve';
+      root = config.root;
       browser = !config.build.ssr;
       // A relative base cannot address a chunk from an import map, which resolves against the
       // page: the deployment's absolute base is what it needs.
       base = config.base.startsWith('/') ? config.base : '/';
     },
+    configureServer(devServer) {
+      server = devServer;
+    },
     buildStart() {
-      if (!browser) return;
+      if (serving || !browser) return;
       for (const id of modules) {
         this.emitFile({ type: 'chunk', id, name: chunkName(id), preserveSignature: 'strict' });
       }
     },
     generateBundle(_, bundle) {
-      if (!browser) return;
+      if (serving || !browser) return;
       this.emitFile({
         type: 'asset',
         fileName: options.manifest ?? 'share.json',
@@ -97,7 +126,12 @@ export function share(options: ShareOptions): Plugin {
     },
     transformIndexHtml: {
       order: 'post',
-      handler(_html, ctx) {
+      async handler(_html, ctx) {
+        if (serving && server) {
+          const imports: Record<string, string> = {};
+          for (const id of modules) imports[id] = await devUrl(id);
+          return [{ tag: 'script', attrs: { type: 'importmap' }, children: JSON.stringify({ imports }), injectTo: 'head-prepend' }];
+        }
         if (!browser || !ctx.bundle) return;
         // First in <head>: a module script or preload before it would resolve without the map.
         return [{ tag: 'script', attrs: { type: 'importmap' }, children: JSON.stringify(importMap(ctx.bundle as never)), injectTo: 'head-prepend' }];
