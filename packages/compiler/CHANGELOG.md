@@ -1,5 +1,11 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.105
+
+### Patch Changes
+
+- @fluixi/template-parser@1.0.0-alpha.105
+
 ## 1.0.0-alpha.104
 
 ### Patch Changes

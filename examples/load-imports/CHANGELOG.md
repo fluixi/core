@@ -1,5 +1,15 @@
 # @fluixi/example-load-imports
 
+## 0.0.1-alpha.28
+
+### Patch Changes
+
+- Updated dependencies [688ca61]
+  - @fluixi/dom@1.0.0-alpha.105
+  - @fluixi/core@1.0.0-alpha.105
+  - @fluixi/jsx@1.0.0-alpha.105
+  - @fluixi/reactive@1.0.0-alpha.105
+
 ## 0.0.1-alpha.27
 
 ### Patch Changes

@@ -160,6 +160,7 @@
     "css-style-ids",
     "custom-element-props",
     "data-fluixi-mark",
+    "data-fluixi-production",
     "dead-export-subpaths",
     "debounced-primitives",
     "declared-public-env",
