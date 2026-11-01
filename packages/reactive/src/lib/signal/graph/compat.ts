@@ -86,13 +86,17 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
     },
     enumerable: false,
   });
-  reportReactiveNode({
-    kind: 'signal',
-    node: state,
-    handle: read,
-    name: options?.name,
-    set: write as (value: unknown) => void,
-  });
+  // The report object is built only when someone is listening: at list scale
+  // an unobserved build per signal is creation cost with no reader.
+  if (isObserved()) {
+    reportReactiveNode({
+      kind: 'signal',
+      node: state,
+      handle: read,
+      name: options?.name,
+      set: write as (value: unknown) => void,
+    });
+  }
   // A signal goes when its owner does, the same as a memo. A list rebuilt without a key
   // makes one per row per update, and a watcher that is never told keeps every one of them.
   if (isObserved()) l1onCleanup(() => reportReactiveDispose(state));
@@ -135,7 +139,7 @@ export function createMemo<T>(
   // as reactive, caches it as a component, and freezes it -> updates never apply.
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
-  reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
+  if (isObserved()) reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
   // A memo goes when its owner does: unlink it from its sources, or a signal
   // that outlives the list keeps every row it ever had in its observers set.
   // Registered whether or not a watcher is looking; the report itself is not.

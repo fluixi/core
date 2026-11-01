@@ -21,6 +21,7 @@
 import { Computed, Watcher, untrack } from './core.js';
 import { G } from './state.js';
 import {
+  isObserved,
   reportReactiveContext,
   reportReactiveContextCreated,
   reportReactiveDispose,
@@ -343,7 +344,7 @@ class EffectNode {
     // Before the first run, so a watcher counts that run like every later one. A render
     // effect is reported too, marked as plumbing: it is not worth drawing, but a node made
     // inside one has to be able to find its way back to the component that caused it.
-    reportReactiveNode({ kind: 'effect', node: this.computed, handle: this, internal: !report, ...(name ? { name } : {}) });
+    if (isObserved()) reportReactiveNode({ kind: 'effect', node: this.computed, handle: this, internal: !report, ...(name ? { name } : {}) });
 
     // The watcher only schedules; the recompute happens on flush.
     this.watcher = new Watcher(() => enqueue(this));

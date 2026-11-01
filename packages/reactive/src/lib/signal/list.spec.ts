@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRoot, createSignal, createEffect, onCleanup } from '@fluixi/reactive/signal';
+import { createRoot, createSignal, createEffect, observeReactiveNodes, onCleanup } from '@fluixi/reactive/signal';
 import { mapArray, keyArray, indexArray } from './list.js';
 
 describe('mapArray (reference-keyed)', () => {
@@ -147,6 +147,38 @@ describe('keyArray (key-function keyed)', () => {
 
       dispose();
     });
+  });
+});
+
+describe('row index signal', () => {
+  it('is created only when a row reads its index', () => {
+    let indexSignals = 0;
+    const stop = observeReactiveNodes({
+      created: (r) => {
+        if (r.name === 'row index') indexSignals++;
+      },
+    });
+    try {
+      createRoot((dispose) => {
+        const [list] = createSignal([{ n: 'a' }, { n: 'b' }]);
+        const out = mapArray(list, (item) => item.n);
+        out();
+        expect(indexSignals).toBe(0);
+        dispose();
+      });
+      createRoot((dispose) => {
+        const [list, setList] = createSignal([{ n: 'a' }, { n: 'b' }]);
+        const out = mapArray(list, (item, index) => () => `${item.n}${index()}`);
+        expect(out().map((g) => g())).toEqual(['a0', 'b1']);
+        expect(indexSignals).toBe(2);
+        // A swap still reaches a lazily created index.
+        setList([{ n: 'b' }, { n: 'a' }]);
+        expect(out().map((g) => g())).toEqual(['b0', 'a1']);
+        dispose();
+      });
+    } finally {
+      stop();
+    }
   });
 });
 

@@ -8,7 +8,7 @@
  * this is what keeps list items owner-stable (the thing ad-hoc array handling gets
  * wrong).
  */
-import { type Accessor, createMemo, createRoot, createSignal, onCleanup, untrack } from './graph/compat.js';
+import { type Accessor, type Signal, createMemo, createRoot, createSignal, onCleanup, untrack } from './graph/compat.js';
 
 type ListSource<T> = Accessor<readonly T[] | null | undefined | false>;
 
@@ -23,6 +23,26 @@ interface ListOptions {
  * values are disposed. The map fn receives the plain value (a snapshot) and a
  * reactive index accessor. Backs `<For>`.
  */
+/**
+ * A row index that builds its signal on first read. Most rows never read
+ * their index, and an unread index signal is a State plus its closure per row.
+ * `set` keeps the plain number current until (and unless) that read happens.
+ */
+function lazyIndex(initial: number): { index: Accessor<number>; set: (n: number) => void } {
+  let current = initial;
+  let state: Signal<number> | null = null;
+  return {
+    index: () => {
+      if (!state) state = createSignal(current, { name: 'row index' });
+      return state[0]();
+    },
+    set: (n: number) => {
+      current = n;
+      if (state) state[1](n);
+    },
+  };
+}
+
 export function mapArray<T, U>(
   list: ListSource<T>,
   mapFn: (item: T, index: Accessor<number>) => U,
@@ -58,9 +78,9 @@ export function mapArray<T, U>(
           let rendered!: U, setIndex!: (n: number) => void, dispose!: () => void;
           createRoot((d) => {
             dispose = d;
-            const [index, setIdx] = createSignal(i, { name: 'row index' });
-            setIndex = setIdx;
-            rendered = mapFn(value, index);
+            const idx = lazyIndex(i);
+            setIndex = idx.set;
+            rendered = mapFn(value, idx.index);
           });
           const entry: Entry = { item: value, rendered, dispose, setIndex };
           result.push(entry);
@@ -119,8 +139,8 @@ export function keyArray<T, U>(
           let rendered!: U, setIndex!: (n: number) => void, setItem!: (v: T) => void, dispose!: () => void;
           createRoot((d) => {
             dispose = d;
-            const [index, setIdx] = createSignal(i, { name: 'row index' });
-            setIndex = setIdx;
+            const idx = lazyIndex(i);
+            setIndex = idx.set;
             // The entry's own signal, set during reconciliation. A memo that
             // read the whole list made every list write recompute every row;
             // this way only a row whose item actually changed is notified.
@@ -128,7 +148,7 @@ export function keyArray<T, U>(
             // mid-shrink, so render fns don't read undefined before disposal.
             const [item, writeItem] = createSignal<T>(next[i]);
             setItem = (v: T) => writeItem(() => v);
-            rendered = mapFn(item, index);
+            rendered = mapFn(item, idx.index);
           });
           resultEntries.push({ rendered, dispose, setIndex, setItem });
         }

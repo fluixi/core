@@ -592,12 +592,14 @@ class Store<T> {
     }
     // One node for the store itself, so the line that declared it is in the graph even
     // though its key signals are not made until something reads them.
-    reportReactiveNode({
-      kind: 'store',
-      node: this,
-      handle: () => this.root,
-      name: (options as { name?: string }).name,
-    });
+    if (isObserved()) {
+      reportReactiveNode({
+        kind: 'store',
+        node: this,
+        handle: () => this.root,
+        name: (options as { name?: string }).name,
+      });
+    }
   }
 
   get state(): Immutable<T> {

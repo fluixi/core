@@ -636,7 +636,10 @@ function _createInsertEffect(
   setCurrent: (v: Node | Node[] | null) => void
 ): () => void {
   let current = initialCurrent;
-  const componentCache = new Map<Function, any>();
+  // Built on the first component thunk, not up front: most insert positions
+  // never hold a component, and a Map per position is per-row weight in a list.
+  let componentCache: Map<Function, any> | undefined;
+  const cache = () => (componentCache ??= new Map<Function, any>());
   let adopted = false;
   return createRenderEffect(() => {
     // Only the first run adopts server nodes. A later run is an update, even when it happens
@@ -666,16 +669,16 @@ function _createInsertEffect(
     // must check !isSignal to avoid caching reactive values that are also
     // stamped as components (e.g. memos returned from components via $component/asComponent).
     if (isComponent(getAccessor as any) && !isSignal(getAccessor as any)) {
-      if (!componentCache.has(getAccessor as Function)) {
+      if (!cache().has(getAccessor as Function)) {
         _insertDepth++;
         try {
           const inst = (getAccessor as any)();
-          componentCache.set(getAccessor as Function, inst);
+          cache().set(getAccessor as Function, inst);
         } finally {
           _insertDepth--;
         }
       }
-      value = componentCache.get(getAccessor as Function)!;
+      value = cache().get(getAccessor as Function)!;
       while (typeof value === 'function' && isSignal(value)) value = value();
     } else {
       value = getAccessor();
@@ -691,17 +694,17 @@ function _createInsertEffect(
       let chainDepth = 0;
       while (typeof value === 'function' && chainDepth++ < 50) {
         if (isComponent(value)) {
-          if (!componentCache.has(value)) {
+          if (!cache().has(value)) {
             const thunk = value;
             _insertDepth++;
             try {
               const inst = thunk();
-              componentCache.set(thunk, inst);
+              cache().set(thunk, inst);
             } finally {
               _insertDepth--;
             }
           }
-          value = componentCache.get(value)!;
+          value = cache().get(value)!;
         } else if (isSignal(value)) {
           value = (value as Function)();
         } else {
@@ -713,6 +716,9 @@ function _createInsertEffect(
     }
 
     // ── 3. Insert resolved value ──────────────────────────────────────────
+    // An array can hide component thunks that only flattening meets; the cache
+    // has to exist before it does, so those thunks keep their identity too.
+    if (Array.isArray(value)) cache();
     _insertDepth++;
     try {
       current = insertExpression(parent, value, marker, current, componentCache);
