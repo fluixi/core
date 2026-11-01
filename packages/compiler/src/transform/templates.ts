@@ -528,14 +528,8 @@ export function transformTemplates(
   const hoisted = new Map<string, string>();
   const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits, ...(styles?.edits ?? [])];
   for (const node of found) {
-    // A root inside another root's hole is emitted without partial templates,
-    // matching what the plugin does for nested emits. Marker layout has to agree
-    // between server and client, so this is not the place to change it.
-    const nested = found.some(
-      (o) => o !== node && o.start <= node.start && o.end >= node.end && o.end - o.start > node.end - node.start,
-    );
     if (isJsx(node)) {
-      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, nested, used, needs, hoisted, options, sourceName, styles) });
+      edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, used, needs, hoisted, options, sourceName, styles) });
       continue;
     }
     const holes = node.quasi.expressions.map((e: Node) =>
@@ -567,7 +561,7 @@ export function transformTemplates(
         : {}),
       // Same defaults as the plugin, so moving a build over is not a rendering change.
       templateClone: options.templateClone ?? true,
-      partialTemplates: nested ? false : options.partialTemplates ?? true,
+      partialTemplates: options.partialTemplates ?? true,
       svg: templateTags.get(node.tag.name) === 'svg',
     });
     for (const symbol of result.imports) used.add(symbol);
@@ -694,7 +688,6 @@ function compileJsx(
   code: string,
   node: Node,
   edits: Edit[],
-  nested: boolean,
   used: Set<string>,
   needs: Needs,
   hoisted: Map<string, string>,
@@ -726,7 +719,7 @@ function compileJsx(
   collapseStrategies(ir);
   const emitted = imperativeBackend.emit(ir, {
     templateClone: options.templateClone ?? true,
-    partialTemplates: nested ? false : options.partialTemplates ?? true,
+    partialTemplates: options.partialTemplates ?? true,
   } as never);
   for (const symbol of emitted.imports) used.add(symbol);
   collectNeeds(ir, needs);

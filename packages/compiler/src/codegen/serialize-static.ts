@@ -43,7 +43,7 @@ const HTML_NAME: Record<string, string> = {
  * as an attribute sets the *default* value rather than the current one. Serializing any
  * of these changes what the code means, so they stay on the imperative path.
  */
-const PROPERTY_ONLY = new Set([
+export const PROPERTY_ONLY = new Set([
   'innerHTML',
   'outerHTML',
   'innerText',

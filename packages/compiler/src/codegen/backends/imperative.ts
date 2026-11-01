@@ -1,6 +1,6 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
 import type { HolePosition, IRNode, IRProp } from '../../ir/nodes.js';
-import { planPartialTemplate } from '../partial-template.js';
+import { planPartialTemplate, type TemplateBinding } from '../partial-template.js';
 import {
   isSerializable,
   serializeStatic,
@@ -198,6 +198,64 @@ function emitComponent(
   return `createMemo(${paren(`${mark}() => createComponent(${name}, ${obj})`, 'value')})`;
 }
 
+/** The attribute a binding writes: a forced name stripped, a plain name in its HTML spelling. */
+function bindingTarget(binding: TemplateBinding): string {
+  const name = binding.prop.name;
+  if (binding.kind === 'boolAttr') return name.slice('bool:'.length);
+  if (name.startsWith('prop:')) return name.slice('prop:'.length);
+  if (name.startsWith('attr:')) return name.slice('attr:'.length);
+  return htmlAttrName(name);
+}
+
+/**
+ * One attribute bound on a walked template node, through the same helper
+ * `spread` applies for that prop. A binding replaces the generic walk over
+ * every prop: what it does is decided here, once, instead of per element
+ * at runtime.
+ */
+function bindingStatement(binding: TemplateBinding, used: Set<string>): string {
+  const { ref, prop, kind } = binding;
+  const value = propValue(prop);
+  switch (kind) {
+    case 'class':
+      used.add('setClassName');
+      return `setClassName(${ref}, ${value});`;
+    case 'classList':
+      used.add('setClassList');
+      return `setClassList(${ref}, ${value}, []);`;
+    case 'classListDynamic':
+      used.add('setDynamicClassList');
+      return `setDynamicClassList(${ref}, ${value});`;
+    case 'style':
+      used.add('setStyle');
+      return `setStyle(${ref}, ${value}, []);`;
+    case 'styleDynamic':
+      used.add('setDynamicStyle');
+      return `setDynamicStyle(${ref}, ${value});`;
+    case 'attr':
+      used.add('setDynamicAttribute');
+      return `setDynamicAttribute(${ref}, ${JSON.stringify(bindingTarget(binding))}, ${value});`;
+    case 'property':
+      used.add('setDynamicProperty');
+      return `setDynamicProperty(${ref}, ${JSON.stringify(bindingTarget(binding))}, ${value});`;
+    case 'boolAttr':
+      used.add('setDynamicBoolAttribute');
+      return `setDynamicBoolAttribute(${ref}, ${JSON.stringify(bindingTarget(binding))}, ${value});`;
+    case 'event':
+      used.add('addDelegatedEventListener');
+      return `addDelegatedEventListener(${ref}, ${JSON.stringify(prop.event!.name)}, ${value});`;
+    case 'nativeEvent':
+      used.add('addNativeEventListener');
+      return `addNativeEventListener(${ref}, ${JSON.stringify(prop.name.slice(3))}, ${value});`;
+    case 'ref':
+      used.add('handleRef');
+      return `handleRef(${value}, ${ref});`;
+    case 'use':
+      used.add('applyUse');
+      return `applyUse(${ref}, ${value});`;
+  }
+}
+
 /** `el.setAttribute("class", "card")` for a compile-time constant. */
 function staticAttrAssignment(el: string, prop: IRProp): string {
   const name = htmlAttrName(prop.name);
@@ -278,6 +336,8 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
           // Every reference first: inserting shifts what follows, so the walk has to be
           // complete before any content goes in.
           for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);
+          // Attributes next, as spread applies props before children are inserted.
+          for (const binding of plan.bindings) lines.push(bindingStatement(binding, used));
           for (const hole of plan.holes) {
             // The fourth argument is what the hole already holds, nothing on a fresh
             // clone, the server's content when hydrating. `insert` reconciles against it,

@@ -30,8 +30,8 @@ describe('html directives — events & bindings', () => {
     expect(on).toBe(at);
   });
 
-  it('ref binding emits a ref prop', () => {
-    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('ref: ref');
+  it('ref binding wires the element to the ref', () => {
+    expect(compileEsm('export const r = (ref) => html`<input ref=${ref} />`;')).toContain('handleRef(ref, ');
   });
 
   it('property binding stays a property', () => {
@@ -60,7 +60,7 @@ describe('html directives — class: / style:', () => {
 
   it('style= and style: together apply in order, with no duplicate key', () => {
     const code = compileEsm('export const r = (c) => html`<div style=${"margin: 0"} style:color=${c()}></div>`;');
-    expect(code.match(/\bstyle:/g)).toHaveLength(1);
+    expect(code.match(/setStyle\(/g)).toHaveLength(1);
     const mod = load('export const render = (c) => html`<div style=${"margin: 0px"} style:color=${c()}></div>`;');
     const el = mod.render(() => 'red') as HTMLElement;
     expect(el.style.margin).toBe('0px');
@@ -69,7 +69,9 @@ describe('html directives — class: / style:', () => {
 
   it('JSX class: and style: lower like the template forms', () => {
     const code = compileEsm('export const R = (p) => <div class:on={p.on()} style:color={p.c()} style={{ "--gap": p.gap() }} />;');
-    expect(code).toContain('classList: {');
+    expect(code).toContain('setClassList(');
+    expect(code).toContain('"on": () => p.on()');
+    expect(code).toContain('setStyle(');
     expect(code).not.toContain('"class:on"');
     expect(code).not.toContain('"style:color"');
     const mod = load('export const R = (p) => <div class:on={p.on()} style:color={p.c()} style={{ "--gap": p.gap(), margin: "0px" }} />;');
@@ -102,14 +104,14 @@ describe('html directives — class: / style:', () => {
 
   it('class: merges into one classList map, an accessor per key that moves', () => {
     const code = compileEsm('export const r = (on, big) => html`<div class:active=${on()} class:big=${big()}></div>`;');
-    expect(code).toContain('classList: {');
+    expect(code).toContain('setClassList(');
     expect(code).toContain('"active": () => on()');
     expect(code).toContain('"big": () => big()');
   });
 
   it('style: merges into one style object, an accessor per key that moves', () => {
     const code = compileEsm('export const r = (c) => html`<div style:color=${c()} style:--gap=${"1rem"}></div>`;');
-    expect(code).toContain('style: {');
+    expect(code).toContain('setStyle(');
     expect(code).toContain('"color": () => c()');
     expect(code).toContain('"--gap": "1rem"');
   });
@@ -314,10 +316,11 @@ describe('html raw html + class/style objects', () => {
 
   it('a class object maps to classList (not className) so a static class does not collide', () => {
     const code = compileEsm('export const r = (on) => html`<div class="box" class=${{ active: on() }}></div>`;');
-    // static class -> className, object class -> classList: no duplicate key
-    expect(code).toContain('className: "box"');
-    expect(code).toContain('classList:');
-    expect(code).not.toMatch(/className:[^,]*,[\s\S]*className:/);
+    // static class -> serialized in the template, object class -> a classList
+    // binding on the same node: the two never share one key
+    expect(code).toContain('class=\\"box\\"');
+    expect(code).toContain('setDynamicClassList(');
+    expect(code).not.toContain('className:');
   });
 
   it('static class + class object both apply at runtime', () => {
@@ -388,7 +391,8 @@ describe('html native events + modifiers', () => {
 
   it('@scroll.capture emits capture options', () => {
     const code = compileEsm('export const r = (h) => html`<div @scroll.capture=${h}></div>`;');
-    expect(code).toContain('"on:scroll"');
+    expect(code).toContain('addNativeEventListener(');
+    expect(code).toContain('"scroll"');
     expect(flat(code)).toContain('capture: true');
   });
 });

@@ -63,8 +63,56 @@ describe('planPartialTemplate', () => {
     expect(plan(el('div', [], [text('x')]))).toBeNull();
   });
 
-  it('returns null when the element itself is dynamic', () => {
-    const node = el('div', [{ name: 'id', kind: 'attr', expr: 'f()' }], [hole()]);
+  it('binds a dynamic attribute instead of refusing the template', () => {
+    const node = el('div', [{ name: 'id', kind: 'attr', expr: 'f()', reactive: true }], [hole()]);
+    const p = plan(node)!;
+    expect(p).not.toBeNull();
+    expect(p.html).toBe('<div><!--fx--><!--fx/--></div>');
+    expect(p.bindings).toHaveLength(1);
+    expect(p.bindings[0]!.ref).toBe('_el$');
+    expect(p.bindings[0]!.prop.name).toBe('id');
+  });
+
+  it('binds an attribute on a nested element and walks to it', () => {
+    const inner = el('span', [{ name: 'title', kind: 'attr', expr: 't()', reactive: true }], [text('x')]);
+    const p = plan(el('div', [], [el('p', [], [text('a')]), inner]))!;
+    expect(p).not.toBeNull();
+    expect(p.html).toBe('<div><p>a</p><span>x</span></div>');
+    expect(p.bindings).toHaveLength(1);
+    expect(p.bindings[0]!.prop.name).toBe('title');
+  });
+
+  it('keeps a static attribute in the template beside a bound one', () => {
+    const node = el(
+      'div',
+      [attr('id', 'a'), { name: 'title', kind: 'attr', expr: 't()', reactive: true }],
+      [hole()],
+    );
+    const p = plan(node)!;
+    expect(p.html).toBe('<div id="a"><!--fx--><!--fx/--></div>');
+    expect(p.bindings.map((b) => b.prop.name)).toEqual(['title']);
+  });
+});
+
+describe('shapes that stay imperative', () => {
+  it('a spread, whose keys are not known at compile time', () => {
+    const node = el('div', [{ name: '', kind: 'spread', expr: 'p' }], [hole()]);
+    expect(plan(node)).toBeNull();
+  });
+
+  it('an svg subtree, whose clone would be the wrapper rather than the element', () => {
+    const node = el('svg', [{ name: 'className', kind: 'attr', expr: 'c()', reactive: true }], [hole()]);
+    node.svg = true;
+    expect(plan(node)).toBeNull();
+  });
+
+  it('a property-only name, which is assigned rather than set as an attribute', () => {
+    const node = el('input', [{ name: 'value', kind: 'attr', expr: 'v()', reactive: true }], []);
+    expect(plan(node)).toBeNull();
+  });
+
+  it('a custom element, whose props go to properties decided at runtime', () => {
+    const node = el('my-el', [{ name: 'label', kind: 'attr', expr: 'v()', reactive: true }], [hole()]);
     expect(plan(node)).toBeNull();
   });
 });

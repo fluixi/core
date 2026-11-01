@@ -34,7 +34,7 @@ function gen(node: t.Node): string {
  * for it (build-ir -> emit), so the resulting expression is plain JS. Runtime
  * symbols used by the nested code are added to `used`.
  */
-function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: NestedHook): t.Expression {
+function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: NestedHook, emit?: NestedEmitOptions): t.Expression {
   const clone = t.cloneNode(node, true) as t.Expression;
   const file = t.file(t.program([t.expressionStatement(clone)]));
   let changed = false;
@@ -51,9 +51,12 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
       const jsx = path.node as t.JSXElement | t.JSXFragment;
       // Resolve before emitting: the emitted call refers to the component by name,
       // and whoever injects the import has to have seen it.
-      const nestedIR = buildIR(jsx, used, onNested);
+      const nestedIR = buildIR(jsx, used, onNested, emit);
       onNested?.(nestedIR);
-      const { code, imports, templates } = imperativeBackend.emit(nestedIR, {} as any);
+      const { code, imports, templates } = imperativeBackend.emit(nestedIR, {
+        templateClone: emit?.templateClone,
+        partialTemplates: emit?.partialTemplates ?? true,
+      } as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
     // Nested html templates compose: ${cond ? html`...` : html`...`},
@@ -61,9 +64,12 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
     TaggedTemplateExpression(path: any) {
       const tag = path.node.tag;
       if (!t.isIdentifier(tag) || (tag.name !== 'html' && tag.name !== 'svg')) return;
-      const ir = buildIRFromHtml(path.node, used, { svg: tag.name === 'svg', onNested });
+      const ir = buildIRFromHtml(path.node, used, { svg: tag.name === 'svg', onNested, emit });
       onNested?.(ir);
-      const { code, imports, templates } = imperativeBackend.emit(ir, {} as any);
+      const { code, imports, templates } = imperativeBackend.emit(ir, {
+        templateClone: emit?.templateClone,
+        partialTemplates: emit?.partialTemplates ?? true,
+      } as any);
       emitInto(path, inlineTemplates(code, templates), imports);
     },
   });
@@ -73,8 +79,8 @@ function transformNestedJSX(node: t.Expression, used: Set<string>, onNested?: Ne
 }
 
 /** Stringify an expression, compiling any JSX nested inside it first. */
-export function genExpr(node: t.Expression, used: Set<string>, onNested?: NestedHook): string {
-  return gen(transformNestedJSX(node, used, onNested));
+export function genExpr(node: t.Expression, used: Set<string>, onNested?: NestedHook, emit?: NestedEmitOptions): string {
+  return gen(transformNestedJSX(node, used, onNested, emit));
 }
 
 /**
@@ -86,6 +92,16 @@ export function genExpr(node: t.Expression, used: Set<string>, onNested?: Nested
  * reference to `Input` that nothing imported.
  */
 export type NestedHook = (ir: IRNode) => void;
+
+/**
+ * Emit switches for JSX compiled inside an expression. The front-end passes its
+ * own, so a root inside a callback or a hole compiles the way a top-level root
+ * does; absent a front-end, partial templates stay on, as at the top level.
+ */
+export interface NestedEmitOptions {
+  partialTemplates?: boolean;
+  templateClone?: boolean;
+}
 
 export const SVG_TAGS = new Set([
   'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
@@ -130,6 +146,7 @@ export function buildIR(
   node: t.JSXElement | t.JSXFragment,
   used: Set<string> = new Set(),
   onNested?: NestedHook,
+  emit?: NestedEmitOptions,
 ): IRNode {
   const ir = buildJsxIR(node as never, {
     code: (n) =>
@@ -137,7 +154,7 @@ export function buildIR(
       // through the nested-JSX compile: it only ever needs printing.
       (n as t.Node).type === 'JSXMemberExpression'
         ? gen(n as t.Node)
-        : genExpr(n as never, used, onNested),
+        : genExpr(n as never, used, onNested, emit),
     used,
   });
   return ir;

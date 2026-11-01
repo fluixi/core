@@ -1575,6 +1575,36 @@ export function setStyle(element: any, _value: any, disposers?: Array<() => void
   styleKeys.set(element, keys);
 }
 
+/**
+ * A whole style value that moves: the branch `spread` takes for a function
+ * `style`, as a helper the compiler can bind directly on a templated element.
+ */
+export function setDynamicStyle(element: any, accessor: any): void {
+  if (typeof accessor !== 'function') {
+    setStyle(element, accessor, []);
+    return;
+  }
+  createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', 'style', accessor);
+    setStyle(element, accessor());
+  });
+}
+
+/**
+ * A whole classList map that moves: the branch `spread` takes for a function
+ * `classList`, as a helper the compiler can bind directly on a templated element.
+ */
+export function setDynamicClassList(element: Element, accessor: any): void {
+  if (typeof accessor !== 'function') {
+    setClassList(element, accessor, []);
+    return;
+  }
+  createRenderEffect(() => {
+    reportReactiveBinding(element, 'attribute', 'class', accessor);
+    setClassList(element, accessor());
+  });
+}
+
 // spread
 
 /**

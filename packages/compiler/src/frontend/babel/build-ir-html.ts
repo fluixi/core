@@ -17,6 +17,7 @@ import type { types as t } from '@babel/core';
 import type { IRNode } from '../../ir/nodes.js';
 import { lowerHtmlTemplate } from './lower-template.js';
 import { analyzeStatic } from '../../optimize/analyze-static.js';
+import type { NestedEmitOptions, NestedHook } from './build-ir.js';
 
 /**
  * Build IR from an `` html`...` `` (or `` svg`...` ``) TaggedTemplateExpression.
@@ -26,7 +27,7 @@ import { analyzeStatic } from '../../optimize/analyze-static.js';
 export function buildIRFromHtml(
   node: t.TaggedTemplateExpression,
   used: Set<string> = new Set(),
-  opts: { svg?: boolean; onNested?: (ir: IRNode) => void } = {},
+  opts: { svg?: boolean; onNested?: NestedHook; emit?: NestedEmitOptions } = {},
 ): IRNode {
   const ir = lowerHtmlTemplate(node, used, opts);
   // Same pass as the JSX frontend, so both agree on what is inert.

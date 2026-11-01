@@ -78,8 +78,9 @@ describe('<For> with a bare <Show> child', () => {
     // structural rather than leftovers; what must not survive is a dropped row's DOM.
     const html = document.getElementById('app')!.innerHTML;
     expect(html.replace(/<!--fx\/?-->/g, '')).toBe('<ul><li class="row">A</li></ul>');
-    // And the boundary must stay a single pair: accumulation would be the real leak.
-    expect((html.match(/<!--fx/g) ?? []).length).toBeLessThanOrEqual(2);
+    // And the boundaries must not accumulate: one pair for the list hole, one for
+    // the surviving row's own hole. A dropped row takes its pair with it.
+    expect((html.match(/<!--fx/g) ?? []).length).toBe(4);
   });
 
   it('keeps a sliding window correct', async () => {

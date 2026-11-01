@@ -71,7 +71,8 @@ describe('html front-end (format: html)', () => {
     const code = compileEsm(
       'export const r = (f, label) => html`<button @click=${f}>${label()}</button>`;',
     );
-    expect(code).toContain('createNativeElement');
+    expect(code).toContain('templateNode');
+    expect(code).toContain('addDelegatedEventListener');
     expect(code).toContain('insert');
     expect(code).toMatch(/import \{[^}]*\} from "@fluixi\/dom"/);
     expect(code).toMatch(/delegateEvents\(\["click"\]\)/);
@@ -151,7 +152,7 @@ describe('html front-end (format: html)', () => {
 
     const out = compileResult(src, { filename: 'test.tsx', ...HTML_FORMAT })!;
 
-    const line = out.code.split('\n').findIndex((l) => /createNativeElement\(/.test(l) && !l.startsWith('import'));
+    const line = out.code.split('\n').findIndex((l) => /templateNode\(/.test(l) && !l.startsWith('import'));
     const columns = originalColumns(out.map.mappings, line);
 
     expect(columns.length).toBeGreaterThan(0);

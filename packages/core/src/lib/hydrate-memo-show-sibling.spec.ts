@@ -155,7 +155,9 @@ describe('hydration: a memoised <Show> before a sibling', () => {
     const serverNodes = [...container.querySelectorAll('*')];
     DOM.hydrate(() => App(), container);
     await tick();
-    expect([...container.querySelectorAll('.module')].map((n) => n.firstChild?.textContent)).toEqual(['One', 'Two', 'Three']);
+    // First text node, not first child: a templated element opens with its hole marker.
+    const firstText = (n: Element) => [...n.childNodes].find((c) => c.nodeType === 3)?.textContent;
+    expect([...container.querySelectorAll('.module')].map(firstText)).toEqual(['One', 'Two', 'Three']);
     expect([...container.querySelectorAll('*')].every((node) => serverNodes.includes(node))).toBe(true);
   });
 

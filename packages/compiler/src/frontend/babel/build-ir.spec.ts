@@ -248,9 +248,13 @@ describe('template cloning produces the same DOM as building element by element'
     expect(code).toContain('insert(_el$');
   });
 
-  it('falls back to building when the element itself is dynamic', () => {
-    // A reactive attribute cannot be baked into a template.
-    expect(compile('(<div class={cls()}>x</div>)').code).toContain('createNativeElement');
+  it('binds a reactive attribute on the templated element', () => {
+    // A reactive attribute is not baked into the template: it is bound on the
+    // cloned node, so the element templates like a static one.
+    const { code } = compile('(<div class={cls()}>x</div>)');
+    expect(code).toContain('templateNode');
+    expect(code).toContain('setClassName(_el$, () => cls())');
+    expect(code).not.toContain('createNativeElement');
   });
 });
 
@@ -289,7 +293,8 @@ describe('a child of an element built by hand keeps its place', () => {
   }
 
   it('leaves a literal child without an anchor', () => {
-    const { code } = compile('(<form onSubmit={h}><p>a</p>{"text"}</form>)');
+    // A spread keeps the form on the hand-built path, where children go in one by one.
+    const { code } = compile('(<form {...p}><p>a</p>{"text"}</form>)');
     expect(code).toMatch(/insert\(_el\$\d*, "text"\);/);
   });
 });

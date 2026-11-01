@@ -103,6 +103,7 @@ describe('use: on the inline codegen path', () => {
     const flat = (s: string) => s.replace(/\s+/g, ' ');
     const src = 'import { tip } from "./directives";\nexport const v = (o) => <div use:tip={o} />;';
 
-    expect(flat(compile(src))).toContain('use: [[tip, () => o]]');
+    expect(flat(compile(src))).toContain('applyUse(');
+    expect(flat(compile(src))).toContain('[[tip, () => o]]');
   });
 });
