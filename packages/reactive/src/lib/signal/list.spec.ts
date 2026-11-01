@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRoot, createSignal, onCleanup } from '@fluixi/reactive/signal';
+import { createRoot, createSignal, createEffect, onCleanup } from '@fluixi/reactive/signal';
 import { mapArray, keyArray, indexArray } from './list.js';
 
 describe('mapArray (reference-keyed)', () => {
@@ -70,6 +70,80 @@ describe('keyArray (key-function keyed)', () => {
       setList([{ id: 2, v: 'B' }, { id: 1, v: 'A' }]);
       expect(out().map((g) => g())).toEqual(['B0', 'A1']);
       expect(maps).toBe(2); // no new maps: reused by key
+
+      dispose();
+    });
+  });
+
+  it('a swap reads the list once, not once per row', () => {
+    createRoot((dispose) => {
+      const rows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+      const [list, setList] = createSignal<any[]>(rows);
+      let reads = 0;
+      const each = () => {
+        reads++;
+        return list();
+      };
+      const runs = [0, 0, 0];
+      let slot = 0;
+      const out = keyArray(each, (row) => row.id, (item) => {
+        const mine = slot++;
+        createEffect(() => {
+          item();
+          runs[mine]++;
+        });
+        return item;
+      });
+      out();
+      expect(runs).toEqual([1, 1, 1]);
+      reads = 0;
+
+      // Same objects, new order: no row effect re-runs, and the only list
+      // read is the reconciliation itself.
+      setList([rows[2], rows[1], rows[0]]);
+      out();
+      expect(runs).toEqual([1, 1, 1]);
+      expect(reads).toBe(1);
+
+      // One row removed: still one list read, no surviving row re-runs.
+      setList([rows[2], rows[0]]);
+      out();
+      expect(runs).toEqual([1, 1, 1]);
+      expect(reads).toBe(2);
+
+      dispose();
+    });
+  });
+
+  it('a new object under the same key updates only that row', () => {
+    createRoot((dispose) => {
+      const first = { id: 1, v: 'a' };
+      const [list, setList] = createSignal<any[]>([first, { id: 2, v: 'b' }]);
+      const runs = [0, 0];
+      let slot = 0;
+      const items: (() => any)[] = [];
+      const out = keyArray(list, (row) => row.id, (item) => {
+        const mine = slot++;
+        items.push(item);
+        createEffect(() => {
+          item();
+          runs[mine]++;
+        });
+        return item;
+      });
+      out();
+      expect(runs).toEqual([1, 1]);
+
+      setList([first, { id: 2, v: 'B' }]);
+      out();
+      expect(runs).toEqual([1, 2]);
+      expect(items[1]().v).toBe('B');
+
+      // Shrink past a row, then read its accessor: the last value, not undefined.
+      const dropped = items[1];
+      setList([first]);
+      out();
+      expect(dropped().v).toBe('B');
 
       dispose();
     });

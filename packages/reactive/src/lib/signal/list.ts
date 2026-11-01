@@ -77,8 +77,9 @@ export function mapArray<T, U>(
 /**
  * Key-function map. Like `mapArray` but reuse is keyed by `keyFn(item)` (so the
  * same key survives object recreation), and the map fn receives a *live* item
- * accessor (reads through to the current list value, so sub-property updates
- * propagate). Backs `<For by={...}>`.
+ * accessor: a per-entry signal the reconciliation sets, so a new object under
+ * the same key propagates without the whole list being re-read per row.
+ * Backs `<For by={...}>`.
  */
 export function keyArray<T, U>(
   list: ListSource<T>,
@@ -86,7 +87,7 @@ export function keyArray<T, U>(
   mapFn: (item: Accessor<T>, index: Accessor<number>) => U,
   options?: ListOptions,
 ): Accessor<U[]> {
-  interface Entry { rendered: U; dispose: () => void; setIndex: (n: number) => void; }
+  interface Entry { rendered: U; dispose: () => void; setIndex: (n: number) => void; setItem: (v: T) => void; }
   let keys: any[] = [];
   let entries: Entry[] = [];
 
@@ -112,24 +113,24 @@ export function keyArray<T, U>(
         const reuse = prevByKey.get(key);
         if (reuse && !usedKeys.has(key)) {
           reuse.setIndex(i);
+          reuse.setItem(next[i]);
           resultEntries.push(reuse);
         } else {
-          let rendered!: U, setIndex!: (n: number) => void, dispose!: () => void;
+          let rendered!: U, setIndex!: (n: number) => void, setItem!: (v: T) => void, dispose!: () => void;
           createRoot((d) => {
             dispose = d;
             const [index, setIdx] = createSignal(i, { name: 'row index' });
             setIndex = setIdx;
-            // Live accessor: reads the current list at this index. Falls back to the
-            // last known value while the array is mid-shrink (idx out of bounds)
-            // so render fns don't read undefined before disposal completes.
-            const item = createMemo<T>((prev) => {
-              const cur = (list() || []) as readonly T[];
-              const v = cur[index()];
-              return v !== undefined && v !== null ? v : (prev as T);
-            }, next[i]);
+            // The entry's own signal, set during reconciliation. A memo that
+            // read the whole list made every list write recompute every row;
+            // this way only a row whose item actually changed is notified.
+            // The signal also holds the last value while the array is
+            // mid-shrink, so render fns don't read undefined before disposal.
+            const [item, writeItem] = createSignal<T>(next[i]);
+            setItem = (v: T) => writeItem(() => v);
             rendered = mapFn(item, index);
           });
-          resultEntries.push({ rendered, dispose, setIndex });
+          resultEntries.push({ rendered, dispose, setIndex, setItem });
         }
         resultKeys.push(key);
         usedKeys.add(key);
