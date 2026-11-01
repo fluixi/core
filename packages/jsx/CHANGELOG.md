@@ -1,5 +1,7 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.106
+
 ## 1.0.0-alpha.105
 
 ## 1.0.0-alpha.104

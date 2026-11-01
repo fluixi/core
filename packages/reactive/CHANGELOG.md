@@ -1,5 +1,15 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.106
+
+### Patch Changes
+
+- 3622062: Disposal unlinks a computation from the signals it read: `Computed.dispose()` removes it from those signals' observer sets, so a cleared list no longer stays reachable from a signal that outlives it.
+- e71f42c: The published builds replaced `process.env.NODE_ENV` with `"production"` at publish time, which turned off development-only behavior such as hydration warnings and the release in data-fluixi, in development too. The builds keep the expression, and the app bundler decides its value per build.
+- 9a3437f: keyArray rows now read their item from a per-entry signal set during reconciliation instead of a memo over the whole list.
+- 2d0fd5b: Per-row state is now built only when it is used: `@fluixi/reactive` creates the row index signal on first read and builds reactive node reports only when an observer is registered, and `@fluixi/dom` builds the insert component cache on the first component thunk.
+- 9427373: Effect runs now drain pending without allocating an array and dirty marking walks observer sets without copying them.
+
 ## 1.0.0-alpha.105
 
 ## 1.0.0-alpha.104
