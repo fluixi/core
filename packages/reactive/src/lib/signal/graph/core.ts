@@ -196,7 +196,9 @@ export class Computed<T> extends Source {
     if (changed) {
       this.version++;
       // Our value moved -> observers that were merely CHECK must now recompute.
-      if (this.observers) for (const o of [...this.observers]) o.markDirty(DIRTY);
+      // Marking runs no user code and never recomputes, so the set is walked
+      // as it stands; State.set is the loop that needs a copy, not this one.
+      if (this.observers) for (const o of this.observers) o.markDirty(DIRTY);
       notifyWatchers(this);
     }
   }
@@ -211,7 +213,7 @@ export class Computed<T> extends Source {
     const wasClean = this.state === CLEAN;
     this.state = level;
     if (wasClean) {
-      if (this.observers) for (const o of [...this.observers]) o.markDirty(CHECK);
+      if (this.observers) for (const o of this.observers) o.markDirty(CHECK);
       notifyWatchers(this);
     }
   }
@@ -262,6 +264,11 @@ export class Watcher {
     const out = [...this._pending];
     this._pending.clear();
     return out;
+  }
+
+  /** Drain pending without the array, for callers that only need it empty. */
+  clearPending(): void {
+    this._pending.clear();
   }
 
   /** @internal, a watched node became non-clean. Edge-triggered: notify once. */

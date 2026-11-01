@@ -353,7 +353,7 @@ class EffectNode {
 
   run(): void {
     if (this.disposed) return;
-    this.watcher.getPending(); // clear pending; reading re-arms the watcher
+    this.watcher.clearPending(); // clear pending; reading re-arms the watcher
     try {
       this.computed.get(); // recompute if dirty (re-runs the effect body)
     } catch (e) {

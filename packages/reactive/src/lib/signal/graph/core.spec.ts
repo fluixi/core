@@ -135,6 +135,36 @@ describe('graph core: Watcher', () => {
     expect(notify).toHaveBeenCalledTimes(2);
   });
 
+  it('re-subscription while the graph marks: a computed that swaps sources mid-propagation', () => {
+    // The marking loops walk observer sets without copying them, so a
+    // computation that drops one source and picks up another as a write
+    // propagates has to land exactly: no stale sink, no missed notify.
+    const flag = new Signal.State(true);
+    const a = new Signal.State(1);
+    const b = new Signal.State(10);
+    let runs = 0;
+    const pick = new Signal.Computed(() => {
+      runs++;
+      return flag.get() ? a.get() : b.get();
+    });
+    expect(pick.get()).toBe(1);
+    expect(Signal.subtle.hasSinks(a)).toBe(true);
+    expect(Signal.subtle.hasSinks(b)).toBe(false);
+
+    flag.set(false); // propagates through pick's observers while it re-runs
+    expect(pick.get()).toBe(10);
+    expect(Signal.subtle.hasSinks(a)).toBe(false);
+    expect(Signal.subtle.hasSinks(b)).toBe(true);
+
+    const before = runs;
+    a.set(2); // no longer a source: nothing recomputes
+    expect(pick.get()).toBe(10);
+    expect(runs).toBe(before);
+    b.set(11); // the live source: exactly one recompute
+    expect(pick.get()).toBe(11);
+    expect(runs).toBe(before + 1);
+  });
+
   it('the notify callback is purely a signal: getPending drives the work', () => {
     const a = new Signal.State('a');
     const c = new Signal.Computed(() => a.get().toUpperCase());
