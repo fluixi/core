@@ -375,6 +375,7 @@ class EffectNode {
     this.disposed = true;
     reportReactiveDispose(this.computed);
     this.watcher.unwatch(this.computed);
+    this.computed.dispose();
     disposeOwner(this.owner);
   }
 }

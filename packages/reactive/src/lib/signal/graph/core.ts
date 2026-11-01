@@ -99,6 +99,7 @@ export class Computed<T> extends Source {
   private _error: unknown;
   private _threw = false;
   private _initialized = false;
+  private _disposed = false;
   state: NodeState = DIRTY;
   /** Nodes this computation read on its last run. Rebuilt on every run. */
   sources: Set<Source> | null = null;
@@ -122,8 +123,24 @@ export class Computed<T> extends Source {
     return this._value as T;
   }
 
+  /**
+   * Unlink from every source, for good. Without this, a source outlives the
+   * computation and keeps it (and everything its function captured) reachable
+   * through its observers set: a disposed list row stayed in memory that way.
+   * The last value stays readable; the node simply never updates again.
+   */
+  dispose(): void {
+    if (this._disposed) return;
+    this._disposed = true;
+    if (this.sources) {
+      for (const s of this.sources) s.observers?.delete(this);
+      this.sources = null;
+    }
+  }
+
   /** Settle, if CHECK, verify sources; if DIRTY (or never run), recompute. */
   override updateIfNecessary(): void {
+    if (this._disposed) return;
     if (this.state === CHECK) {
       // Pull each source; if one recomputes to a new value it will have flipped
       // us to DIRTY (markDirty), so stop early.

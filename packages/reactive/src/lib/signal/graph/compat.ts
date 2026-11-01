@@ -136,9 +136,13 @@ export function createMemo<T>(
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
   reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
-  // A memo has no dispose of its own, it goes when its owner does. Without saying so, a
-  // list that re-renders leaves every row it ever had in a watcher's graph.
-  if (isObserved()) l1onCleanup(() => reportReactiveDispose(c));
+  // A memo goes when its owner does: unlink it from its sources, or a signal
+  // that outlives the list keeps every row it ever had in its observers set.
+  // Registered whether or not a watcher is looking; the report itself is not.
+  l1onCleanup(() => {
+    c.dispose();
+    if (isObserved()) reportReactiveDispose(c);
+  });
   return read;
 }
 
