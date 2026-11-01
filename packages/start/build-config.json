@@ -46,6 +46,9 @@
     },
     "platform": "node",
     "pkgExternal": true,
-    "libExternal": true
+    "libExternal": true,
+    "define": {
+      "process.env.NODE_ENV": "process.env.NODE_ENV"
+    }
   }
 }

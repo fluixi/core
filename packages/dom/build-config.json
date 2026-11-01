@@ -48,6 +48,9 @@
         "src/lib/element/index.ts",
         "src/lib/flow/index.ts"
       ]
+    },
+    "define": {
+      "process.env.NODE_ENV": "process.env.NODE_ENV"
     }
   }
 }

@@ -41,6 +41,9 @@
         "src/lib/store/index.ts",
         "src/version.generated.ts"
       ]
+    },
+    "define": {
+      "process.env.NODE_ENV": "process.env.NODE_ENV"
     }
   }
 }

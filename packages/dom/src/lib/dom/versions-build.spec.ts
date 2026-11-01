@@ -12,5 +12,12 @@ describe('the production check in a browser build', () => {
     const { code } = await transform(source, { loader: 'ts', define: { 'process.env.NODE_ENV': '"production"' } });
     expect(code).not.toMatch(/process\s*\.\s*env|typeof process/);
   });
+
+  it('is left to the app: the library build keeps the expression as written', () => {
+    // Baked at publish time it would be "production" in every app's development too, and
+    // every development-only check in this package would be off.
+    const config = JSON.parse(readFileSync(new URL('../../../build-config.json', import.meta.url), 'utf8'));
+    expect(config.esbuild.define['process.env.NODE_ENV']).toBe('process.env.NODE_ENV');
+  });
 });
 
