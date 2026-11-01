@@ -1,5 +1,18 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.106
+
+### Minor Changes
+
+- d0152b3: Elements with reactive attributes now stay in their template, binding each attribute individually, and nested elements are handled similarly. Generated code only: behaviour is unchanged, and `spread` still handles real spreads and the cases that cannot be bound one by one.
+
+  New in `@fluixi/dom`: `setDynamicStyle` and `setDynamicClassList`, the function branches of `spread` as standalone helpers.
+
+### Patch Changes
+
+- e71f42c: The published builds replaced `process.env.NODE_ENV` with `"production"` at publish time, which turned off development-only behavior such as hydration warnings and the release in data-fluixi, in development too. The builds keep the expression, and the app bundler decides its value per build.
+  - @fluixi/template-parser@1.0.0-alpha.106
+
 ## 1.0.0-alpha.105
 
 ### Patch Changes

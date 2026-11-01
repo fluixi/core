@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-ssr",
-  "version": "0.0.3-alpha.105",
+  "version": "0.0.3-alpha.106",
   "private": true,
   "type": "module",
   "description": "SSR example: real JSX compiled by the imperative backend, rendered to HTML by @fluixi/server (sync shell + async data via renderToStringAsync), then taken over on the client.",

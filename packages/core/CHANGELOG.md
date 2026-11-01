@@ -1,5 +1,12 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.106
+
+### Patch Changes
+
+- e71f42c: The published builds replaced `process.env.NODE_ENV` with `"production"` at publish time, which turned off development-only behavior such as hydration warnings and the release in data-fluixi, in development too. The builds keep the expression, and the app bundler decides its value per build.
+  - @fluixi/utils@1.0.0-alpha.106
+
 ## 1.0.0-alpha.105
 
 ### Patch Changes

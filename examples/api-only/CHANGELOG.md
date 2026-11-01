@@ -1,5 +1,14 @@
 # @fluixi/example-api-only
 
+## 0.0.1-alpha.13
+
+### Patch Changes
+
+- Updated dependencies [e71f42c]
+  - @fluixi/start@1.0.0-alpha.106
+  - @fluixi/api@1.0.0-alpha.106
+  - @fluixi/cli@1.0.0-alpha.106
+
 ## 0.0.1-alpha.12
 
 ### Patch Changes
