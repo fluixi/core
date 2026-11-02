@@ -7,18 +7,18 @@
  *   - Owner tree:   createRoot, onCleanup, getOwner, runWithOwner. No graph edges;
  *                   ownership is about disposal, not dependency.
  *   - Scheduler:    an effect queue with flushSync and batch.
- *   - effect():     a re-running side effect, built from a Computed, a Watcher and
- *                   an owner.
+ *   - effect():     a re-running side effect, a Computed that schedules itself
+ *                   when marked, plus an owner.
  *
  * This is the live implementation. `@fluixi/reactive/signal` re-exports it through
  * `signal-next.ts`, and `compat.ts` puts the `create*` names over the top, so the
  * long-standing public API lands here.
  *
- * Effects are built on `Signal.subtle.Watcher` the way the proposal intends: the
- * watcher's notify only schedules, and the re-run, a tracked recompute, happens on
- * flush.
+ * An effect schedules itself when a source marks it non-clean, and the re-run,
+ * a tracked recompute, happens on flush. `Signal.subtle.Watcher` in `core.ts`
+ * stays the eager primitive for outside observers.
  */
-import { Computed, Watcher, untrack } from './core.js';
+import { Computed, untrack } from './core.js';
 import { G } from './state.js';
 import {
   isObserved,
@@ -314,49 +314,52 @@ export function batch<T>(fn: () => T): T {
   }
 }
 
-// ── effect(): built on Computed + Watcher + Owner ───────────────────────────
-class EffectNode {
-  private readonly computed: Computed<void>;
-  private readonly watcher: Watcher;
+// ── effect(): a Computed that schedules itself ──────────────────────────────
+// The effect is its own Computed: when a source marks it from clean to dirty
+// or check it enqueues itself, and the flush pulls the recompute. The earlier
+// shape held a separate Computed plus a Watcher with two sets per effect,
+// which cost three of each per list row.
+class EffectNode extends Computed<void> {
   private readonly owner: Owner;
   queued = false;
   disposed = false;
 
   constructor(fn: () => void | (() => void), report = false, name?: string) {
+    let owner: Owner | null = null;
+    super(() => {
+      // teardown previous run's cleanups before re-running. not final: the owner is
+      // reused for this run, so it must stay alive (only its children are disposed).
+      disposeOwner(owner as Owner, false);
+      runWithOwner(owner, () => {
+        const r = fn();
+        if (typeof r === 'function') ((owner as Owner).cleanups ??= []).push(r);
+      });
+    });
     this.owner = makeOwner(G.owner);
+    owner = this.owner;
     // Tie disposal to the creating scope, when the parent owner tears down it must
-    // fully dispose this effect (unwatch + body cleanups), not just run the body
+    // fully dispose this effect (unlink + body cleanups), not just run the body
     // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
     if (G.owner) (G.owner.cleanups ??= []).push(() => this.dispose());
 
-    // The Computed runs the user fn inside a tracking scope + this effect's owner,
-    // so reads subscribe and onCleanup/nested roots attach here.
-    this.computed = new Computed<void>(() => {
-      // teardown previous run's cleanups before re-running. not final: the owner is
-      // reused for this run, so it must stay alive (only its children are disposed).
-      disposeOwner(this.owner, false);
-      runWithOwner(this.owner, () => {
-        const r = fn();
-        if (typeof r === 'function') (this.owner.cleanups ??= []).push(r);
-      });
-    });
+    // Before the first run. A render effect is reported too, marked as plumbing:
+    // it is not worth drawing, but a node made inside one has to be able to find
+    // its way back to the component that caused it.
+    if (isObserved()) reportReactiveNode({ kind: 'effect', node: this, handle: this, internal: !report, ...(name ? { name } : {}) });
 
-    // Before the first run, so a watcher counts that run like every later one. A render
-    // effect is reported too, marked as plumbing: it is not worth drawing, but a node made
-    // inside one has to be able to find its way back to the component that caused it.
-    if (isObserved()) reportReactiveNode({ kind: 'effect', node: this.computed, handle: this, internal: !report, ...(name ? { name } : {}) });
-
-    // The watcher only schedules; the recompute happens on flush.
-    this.watcher = new Watcher(() => enqueue(this));
     this.run(); // initial synchronous run (Solid semantics)
-    this.watcher.watch(this.computed);
+  }
+
+  override markDirty(level: Parameters<Computed<void>['markDirty']>[0]): void {
+    const wasClean = this.state === 0; // CLEAN in core.ts
+    super.markDirty(level);
+    if (wasClean && this.state !== 0 && !this.disposed) enqueue(this);
   }
 
   run(): void {
     if (this.disposed) return;
-    this.watcher.clearPending(); // clear pending; reading re-arms the watcher
     try {
-      this.computed.get(); // recompute if dirty (re-runs the effect body)
+      this.get(); // recompute if dirty (re-runs the effect body)
     } catch (e) {
       // A suspended read (createResource while pending) throws its promise. Report
       // it to the nearest Suspense boundary; the effect re-runs via normal
@@ -371,12 +374,11 @@ class EffectNode {
     }
   }
 
-  dispose(): void {
+  override dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    reportReactiveDispose(this.computed);
-    this.watcher.unwatch(this.computed);
-    this.computed.dispose();
+    reportReactiveDispose(this);
+    super.dispose();
     disposeOwner(this.owner);
   }
 }
