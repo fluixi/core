@@ -67,6 +67,33 @@ describe('runtime: effect', () => {
     expect(log).toEqual(['run x', 'clean x', 'run y']);
   });
 
+  it('does not re-run when a memo source settles unchanged', () => {
+    const a = new State(1);
+    const parity = new Computed(() => a.get() % 2);
+    const run = vi.fn(() => parity.get());
+    effect(run);
+    expect(run).toHaveBeenCalledTimes(1);
+    a.set(3); // parity stays 1: the effect is marked, settles, and stays put
+    flushSync();
+    expect(run).toHaveBeenCalledTimes(1);
+    a.set(4); // parity flips: the effect runs again
+    flushSync();
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not run an effect disposed while queued', () => {
+    const a = new State(1);
+    const run = vi.fn(() => a.get());
+    const dispose = effect(run);
+    run.mockClear();
+    batch(() => {
+      a.set(2);
+      dispose();
+    });
+    flushSync();
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it('async microtask scheduling (no manual flush)', async () => {
     const a = new State(1);
     const seen: number[] = [];
