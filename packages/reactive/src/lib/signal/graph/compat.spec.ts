@@ -15,6 +15,22 @@ import {
 // that flush synchronously on a write (no microtask), proving compat is a drop-in.
 
 describe('compat: createSignal', () => {
+  it('node view reads live value and version through the signal-node symbol', () => {
+    const [count, setCount] = createSignal(0);
+    const view = (count as unknown as Record<symbol, { value: number; version: number }>)[
+      Symbol.for('signal-node')
+    ];
+    expect(view.value).toBe(0);
+    const version = view.version;
+    setCount(5);
+    expect(view.value).toBe(5);
+    expect(view.version).toBeGreaterThan(version);
+    // The same view object on every read, so identity checks by consumers hold.
+    expect(
+      (count as unknown as Record<symbol, unknown>)[Symbol.for('signal-node')],
+    ).toBe(view);
+  });
+
   it('tuple get/set + functional updater + equality', () => {
     const [count, setCount] = createSignal(0);
     expect(count()).toBe(0);

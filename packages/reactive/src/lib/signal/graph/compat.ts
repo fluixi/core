@@ -75,14 +75,19 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
   }) as Setter<T>;
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   // Node-like view for consumers (e.g. the store) that read `signal[$NODE].value`.
+  // Built on first read: most signals are never read this way, and the view is
+  // an object plus two getters per signal at list scale.
+  let nodeView: { readonly value: T; readonly version: number } | undefined;
   Object.defineProperty(read, $NODE, {
-    value: {
-      get value() {
-        return state.peek();
-      },
-      get version() {
-        return state.version;
-      },
+    get() {
+      return (nodeView ??= {
+        get value() {
+          return state.peek();
+        },
+        get version() {
+          return state.version;
+        },
+      });
     },
     enumerable: false,
   });
