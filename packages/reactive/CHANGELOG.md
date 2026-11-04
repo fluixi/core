@@ -1,5 +1,14 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.107
+
+### Patch Changes
+
+- 6e09a84: An effect that reads no signal on its first run and leaves no cleanup, child or context is dropped, so its parent owner keeps no reference to it.
+- c3cf737: The signal node view behind the `signal-node` symbol is built on first read instead of at signal creation.
+- 357e5d0: An effect is its own Computed and schedules itself when a source marks it non-clean, removing the separate Computed and Watcher objects per effect.
+- 89abf38: Signal creation uses plain assignment for symbols, exposing the State node via `signal[$NODE]` and adding a value getter.
+
 ## 1.0.0-alpha.106
 
 ### Patch Changes

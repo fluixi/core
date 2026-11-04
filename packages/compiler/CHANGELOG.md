@@ -1,5 +1,12 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.107
+
+### Patch Changes
+
+- 00445ed: `draggable`, `spellcheck`, `contenteditable` and `aria-*` attributes write booleans as the text `true` or `false` in templates and `setAttribute`, and a function passed as the whole style value is tracked.
+  - @fluixi/template-parser@1.0.0-alpha.107
+
 ## 1.0.0-alpha.106
 
 ### Minor Changes
