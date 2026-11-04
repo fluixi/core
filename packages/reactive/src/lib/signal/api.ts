@@ -82,7 +82,8 @@ export function signal<T>(value: T, options?: SignalOptions<T>): SignalHandle<T>
 export function signal<T = undefined>(): SignalHandle<T | undefined>;
 export function signal<T>(value?: T, options?: SignalOptions<T>): SignalHandle<T> {
   const [read, write] = createSignal(value as T, options);
-  return Object.assign(read, { set: write }) as SignalHandle<T>;
+  (read as SignalHandle<T>).set = write;
+  return read as SignalHandle<T>;
 }
 
 /**

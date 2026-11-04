@@ -31,6 +31,16 @@ describe('compat: createSignal', () => {
     ).toBe(view);
   });
 
+  it('creation defines no properties: defineProperty on a function is slow at list scale', () => {
+    const spy = vi.spyOn(Object, 'defineProperty');
+    try {
+      createSignal(0);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('tuple get/set + functional updater + equality', () => {
     const [count, setCount] = createSignal(0);
     expect(count()).toBe(0);

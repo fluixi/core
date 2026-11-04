@@ -73,24 +73,11 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
     afterWrite(); // then flush effects once (no-op inside a batch)
     return v;
   }) as Setter<T>;
-  Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
-  // Node-like view for consumers (e.g. the store) that read `signal[$NODE].value`.
-  // Built on first read: most signals are never read this way, and the view is
-  // an object plus two getters per signal at list scale.
-  let nodeView: { readonly value: T; readonly version: number } | undefined;
-  Object.defineProperty(read, $NODE, {
-    get() {
-      return (nodeView ??= {
-        get value() {
-          return state.peek();
-        },
-        get version() {
-          return state.version;
-        },
-      });
-    },
-    enumerable: false,
-  });
+  // Plain writes: defineProperty on a function costs several times a signal's own
+  // creation at list scale. The node view for consumers that read
+  // `signal[$NODE].value` (the store, devtools) is the State itself.
+  (read as unknown as Record<symbol, unknown>)[$SIGNAL] = true;
+  (read as unknown as Record<symbol, unknown>)[$NODE] = state;
   // The report object is built only when someone is listening: at list scale
   // an unobserved build per signal is creation cost with no reader.
   if (isObserved()) {

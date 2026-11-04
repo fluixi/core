@@ -74,6 +74,11 @@ export class State<T> extends Source {
     return this._value;
   }
 
+  /** The current value without tracking, for consumers holding the node (`signal[$NODE]`). */
+  get value(): T {
+    return this._value;
+  }
+
   set(next: T): void {
     if (this._equals(this._value, next)) return;
     this._value = next;
