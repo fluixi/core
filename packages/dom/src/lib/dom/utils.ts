@@ -182,6 +182,14 @@ export function serverCustomElementProp(element: Element, name: string, value: u
   else if (typeof value === 'string' || typeof value === 'number') element.setAttribute(name, String(value));
 }
 
+/** Attributes spelled `true`/`false` rather than present or absent. Mirrored in the compiler's serializer. */
+const BOOLEAN_TEXT_ATTRIBUTES = new Set(['draggable', 'spellcheck', 'contenteditable']);
+
+/** Whether a boolean for this attribute is written as the text `true` or `false`. */
+export function takesBooleanText(name: string): boolean {
+  return name.startsWith('aria-') || BOOLEAN_TEXT_ATTRIBUTES.has(name.toLowerCase());
+}
+
 // Properties that should be set as properties, not attributes
 export const JSX_PROPERTIES = new Set([
   'className',
@@ -342,8 +350,12 @@ export function setAttribute(
   isSVG = false
 ): void {
   // null/undefined/false REMOVE the attribute (a conditionally-absent attribute must be omitted,
-  // not rendered as ="undefined"/"false"); true renders as the empty string. Matches Solid's
-  // dom-expressions semantics.
+  // not rendered as ="undefined"/"false"); true renders as the empty string. An attribute whose
+  // values are the words true and false takes them as text instead: `draggable=""` means auto.
+  if (typeof value === 'boolean' && takesBooleanText(name)) {
+    element.setAttribute(name, String(value));
+    return;
+  }
   if (value == null || value === false) {
     element.removeAttribute(name);
     return;

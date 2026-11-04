@@ -122,9 +122,20 @@ function serializeChild(child: IRNode): string {
   return serializeStatic(child);
 }
 
+/** Attributes spelled `true`/`false` rather than present or absent. Mirrors `@fluixi/dom`'s setAttribute. */
+const BOOLEAN_TEXT_ATTRIBUTES = new Set(['draggable', 'spellcheck', 'contenteditable']);
+
+function takesBooleanText(name: string): boolean {
+  return name.startsWith('aria-') || BOOLEAN_TEXT_ATTRIBUTES.has(name.toLowerCase());
+}
+
 function serializeProp(prop: IRProp): string {
   const name = HTML_NAME[prop.name] ?? prop.name;
   const value = prop.literal;
+  // `draggable=""` means auto, not true.
+  if ((value === true || value === false || value === undefined) && takesBooleanText(name)) {
+    return ` ${name}="${value !== false}"`;
+  }
   // A valueless attribute (`disabled`) is `true` in the IR and bare in HTML.
   if (value === true || value === undefined) return ` ${name}`;
   if (value === false || value === null) return '';

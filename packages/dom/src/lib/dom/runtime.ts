@@ -1546,6 +1546,11 @@ const styleKeys = new WeakMap<object, Set<string>>();
  * touches `color` only.
  */
 export function setStyle(element: any, _value: any, disposers?: Array<() => void>): void {
+  // A function for the whole value moves as a whole: read it inside an effect, not once here.
+  if (typeof _value === 'function' && disposers) {
+    disposers.push(createRenderEffect(() => setStyle(element, unwrap(_value))));
+    return;
+  }
   const value = unwrap(_value);
   const previous = styleKeys.get(element);
   if (value == null) {
