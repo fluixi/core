@@ -335,12 +335,9 @@ class EffectNode extends Computed<void> {
         if (typeof r === 'function') ((owner as Owner).cleanups ??= []).push(r);
       });
     });
-    this.owner = makeOwner(G.owner);
+    const parent = G.owner;
+    this.owner = makeOwner(parent);
     owner = this.owner;
-    // Tie disposal to the creating scope, when the parent owner tears down it must
-    // fully dispose this effect (unlink + body cleanups), not just run the body
-    // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
-    if (G.owner) (G.owner.cleanups ??= []).push(() => this.dispose());
 
     // Before the first run. A render effect is reported too, marked as plumbing:
     // it is not worth drawing, but a node made inside one has to be able to find
@@ -348,6 +345,20 @@ class EffectNode extends Computed<void> {
     if (isObserved()) reportReactiveNode({ kind: 'effect', node: this, handle: this, internal: !report, ...(name ? { name } : {}) });
 
     this.run(); // initial synchronous run (Solid semantics)
+
+    // A first run that read no signal and left no cleanup, child or context means nothing
+    // can run this effect again or needs tearing down, so the parent keeps no reference and
+    // the node is collected: `() => row.id` on a plain row is one per row. Kept while
+    // devtools listens, so the graph it draws matches what was written.
+    const o = this.owner;
+    if (!this.disposed && !this.sources?.size && !o.cleanups && !o.owned && !o.contexts && !isObserved()) {
+      this.disposed = true;
+      return;
+    }
+    // Tie disposal to the creating scope, when the parent owner tears down it must
+    // fully dispose this effect (unlink + body cleanups), not just run the body
+    // cleanups. Register dispose() as a parent cleanup rather than as an owned tree.
+    if (parent) (parent.cleanups ??= []).push(() => this.dispose());
   }
 
   override markDirty(level: Parameters<Computed<void>['markDirty']>[0]): void {
