@@ -194,6 +194,9 @@ function ensureWalker(): void {
   registerHydrationWalker({ hydrateElement, hydrateText, hydrateMarker, hydrateStatic, enterElement });
 }
 
+/** Path and query of the page, which the server's data was rendered for; null off a browser. */
+const currentAddress = () => (typeof location === 'undefined' ? null : `${location.pathname}${location.search}`);
+
 /**
  * Hydrate `element` over the server-rendered markup already in `container`: reuse the
  * existing DOM and wire events/reactivity in place (no re-render).
@@ -218,7 +221,11 @@ export function hydrate<T>(
   const ns = options?.resourceNamespace;
   let rid = 0;
   setResourceIdSource(() => (ns ? `${ns}:r${rid++}` : `r${rid++}`));
-  setServerDataGetter(data ? (id) => (id in data ? { value: data[id] } : undefined) : null);
+  // The data belongs to the address the server rendered. Once the browser is elsewhere (a
+  // redirect while this page hydrates), a new page fetches its own: matched by creation order,
+  // it would take the first page's values.
+  const rendered = currentAddress();
+  setServerDataGetter(data ? (id) => (id in data && currentAddress() === rendered ? { value: data[id] } : undefined) : null);
 
   try {
     return render(element, container);
