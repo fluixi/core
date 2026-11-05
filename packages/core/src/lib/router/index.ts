@@ -33,7 +33,11 @@ import {
   createComponent,
   createNativeElement,
   setAttribute,
+  getRequestEvent,
+  isServer,
+  setResponseRedirect,
 } from '@fluixi/dom';
+import { isRouteRedirect, type RouteRedirect } from './redirect.js';
 // Reactive context (not fluixi createProvider, which destructures children
 // eagerly) so a `get children()` getter renders after the context is stamped.
 import { createContext, useContext } from '@fluixi/reactive/signal';
@@ -105,6 +109,9 @@ function renderLayer(
   // Suspense; it is owned by the enclosing memo, so it is recreated only when this
   // layer's route changes (not on deeper navigation).
   let data: (() => any) | undefined;
+  // Set when this layer's data redirected and the page must not render: on the server the
+  // response is a redirect, or, once headers have gone out, the page redirects from itself.
+  const [redirected, setRedirected] = createSignal<{ to: string; late: boolean } | null>(null);
   const loader = (m.route as RouteDefinition<any>).data as
     | ((
         args: RouteDataArgsLocal,
@@ -138,6 +145,25 @@ function renderLayer(
     // which keeps this layer, concern it. Unknown until it has run here: a page hydrated from
     // the server got its data without running it.
     let readsLocation: boolean | undefined;
+    // The request this render answers, taken now: the load settles after awaits, where the
+    // ambient request may be gone.
+    const request = isServer() ? getRequestEvent()?.request : undefined;
+    const follow = (redirect: RouteRedirect): unknown => {
+      if (isServer()) {
+        const recorded = setResponseRedirect(redirect.to, redirect.status, request ?? undefined);
+        setRedirected({ to: redirect.to, late: !recorded });
+        return undefined;
+      }
+      queueMicrotask(() => {
+        if (!cancelled) router?.router.navigate(redirect.to, { replace: true });
+      });
+      // Stays loading: the page never renders with data it does not have.
+      return new Promise(() => {});
+    };
+    const settle = (value: unknown): unknown =>
+      value instanceof Promise || (value !== null && typeof value === 'object' && typeof (value as PromiseLike<unknown>).then === 'function')
+        ? Promise.resolve(value).catch((error: unknown) => (isRouteRedirect(error) ? follow(error) : Promise.reject(error)))
+        : value;
     const [resource, { refetch }] = createResource(() => {
       // The params and location this load is for, fixed now. Accessors read later would see
       // the next navigation's: a lazy route reads them after its module resolves, and a
@@ -146,19 +172,26 @@ function renderLayer(
       const params = untrack(base.params);
       const location = untrack(base.location);
       readsLocation = false;
-      const result = loader(
-        {
-          params: () => params,
-          location: () => {
-            readsLocation = true;
-            return location;
+      let result: unknown;
+      try {
+        result = loader(
+          {
+            params: () => params,
+            location: () => {
+              readsLocation = true;
+              return location;
+            },
           },
-        },
-        owner,
-        () => cancelled,
-        trackDeps,
-      );
-      return router ? router.trackLoad(result) : result;
+          owner,
+          () => cancelled,
+          trackDeps,
+        );
+      } catch (error) {
+        if (!isRouteRedirect(error)) throw error;
+        result = Promise.reject(error);
+      }
+      result = settle(result);
+      return router ? router.trackLoad(result as never) : result;
     });
     // A revalidated cache entry: load again. The page stays on screen with its current data.
     // Not a page on its way out (another route matched at this depth, kept until the next one
@@ -239,7 +272,29 @@ function renderLayer(
   // resource state (that would re-run renderLayer and recreate the resource, a loop).
   const [ready, setReady] = createSignal(untrack(() => !isLoading()));
   createEffect(() => setReady(!isLoading()));
-  return { view: createMemo(() => (ready() ? buildPage() : null)), ready };
+  return {
+    view: createMemo(() => {
+      const away = redirected();
+      if (away) return away.late ? redirectInPage(away.to) : null;
+      return ready() ? buildPage() : null;
+    }),
+    ready,
+  };
+}
+
+/**
+ * A redirect the server could no longer give as a status (the page was already streaming): the
+ * browser runs the script as it parses it, before anything hydrates; the refresh covers a page
+ * without scripts.
+ */
+function redirectInPage(to: string) {
+  const target = JSON.stringify(to).replace(/</g, '\\u003c');
+  const refresh = createNativeElement('meta');
+  setAttribute(refresh, 'http-equiv', 'refresh');
+  setAttribute(refresh, 'content', `0;url=${to}`);
+  const script = createNativeElement('script');
+  insert(script, `location.replace(${target})`);
+  return [refresh, script];
 }
 
 /**
@@ -1152,6 +1207,7 @@ export type {
   Submission,
   CacheFn,
 } from './data.js';
+export { redirect, isRouteRedirect, RouteRedirect, REDIRECT_STATUSES, type RedirectStatus } from './redirect.js';
 export { lazy } from '../render/lazy.js';
 // Navigation presentation. The router owns the integration; these are exported for
 // apps that need to ask what the environment supports.

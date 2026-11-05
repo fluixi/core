@@ -78,7 +78,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload, err
       // chunk while the server is still awaiting data for it.
       const { head, tail } = splitTemplate(withPreload(template, url.pathname), cfg.mountId);
       const body = await withPlatformRequest(request, () => mod.renderStream!(url.pathname + url.search, request));
-      return await streamDocument(head, body as never, tail);
+      return await streamDocument(head, body as never, tail, request);
     };
   } else {
     const render = mod.render ?? mod.default;

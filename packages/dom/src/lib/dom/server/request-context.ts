@@ -335,3 +335,34 @@ export function takeResponseHeaders(request: object): Headers | undefined {
   bag.sent = true;
   return bag.headers;
 }
+
+// render -> response bridge for a redirect: a page's data said the reader belongs elsewhere.
+
+/** Where a response sends the browser instead of answering with the page. */
+export interface ResponseRedirect {
+  location: string;
+  status: number;
+}
+
+const _redirects: WeakMap<object, ResponseRedirect> = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.responseRedirects')
+] ??= new WeakMap<object, ResponseRedirect>()) as WeakMap<object, ResponseRedirect>;
+
+/**
+ * Answers the request being rendered with a redirect instead of the page. The first one wins.
+ * Returns false when there is no request, or when its headers have already gone out (a
+ * streamed page sends them before its data settles): the caller must redirect in the page.
+ */
+export function setResponseRedirect(location: string, status: number, request: object | undefined = currentRequest()): boolean {
+  if (!request) return false;
+  if (_responseHeaders.get(request)?.sent) return false;
+  if (!_redirects.has(request)) _redirects.set(request, { location, status });
+  return true;
+}
+
+/** For the host, before it commits to a status: the redirect a render asked for, if any. */
+export function takeResponseRedirect(request: object): ResponseRedirect | undefined {
+  const redirect = _redirects.get(request);
+  _redirects.delete(request);
+  return redirect;
+}

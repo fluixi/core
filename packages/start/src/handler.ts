@@ -6,7 +6,7 @@ import { extname, resolve, sep } from 'node:path';
 import { errorResponse, liftHead, type ErrorResponseOptions } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
 import { setClientAddress } from './client-address.js';
-import { takeResponseHeaders } from '@fluixi/dom';
+import { takeResponseHeaders, takeResponseRedirect } from '@fluixi/dom';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -40,6 +40,7 @@ export async function streamDocument(
   head: string,
   body: ReadableStream<Uint8Array>,
   tail: string,
+  request?: Request,
 ): Promise<Response> {
   const enc = new TextEncoder();
   // The head waits for the body's opening marker: once flushed it cannot change, and
@@ -47,6 +48,12 @@ export async function streamDocument(
   // streamed page went out with the template's title, which is what a crawler reads.
   const reader = body.getReader();
   const { marker, rest } = await readHeadMarker(reader);
+  // A route's data that redirected before anything went out: the redirect is the answer.
+  const away = request ? takeResponseRedirect(request) : undefined;
+  if (away) {
+    await reader.cancel().catch(() => {});
+    return redirectResponse(away);
+  }
   const lifted = marker ? liftHead(head, marker).html : head;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -138,12 +145,19 @@ export function withResponseHeaders(request: Request, response: Response): Respo
   }
 }
 
+/** A route's `redirect()`, as the response; `Location` as given, which may be a path. */
+function redirectResponse(redirect: { location: string; status: number }): Response {
+  return new Response(null, { status: redirect.status, headers: { location: redirect.location } });
+}
+
 /** Wrap a render function as a fetch handler (Node/Bun/Deno/edge-portable). */
 export function createRequestHandler(render: RenderFn, options?: ErrorResponseOptions): FetchHandler {
   return async (request) => {
     const url = new URL(request.url);
     try {
       const html = await withPlatformRequest(request, () => render(url.pathname + url.search, request));
+      const away = takeResponseRedirect(request);
+      if (away) return redirectResponse(away);
       return new Response(html, {
         status: 200,
         headers: { 'content-type': 'text/html; charset=utf-8' },
