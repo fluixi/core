@@ -1,13 +1,23 @@
 /** Tag/name classification tables. Kept free of any host (Babel/TS) types. */
 
 /**
- * Tags placed in the SVG namespace by name in an `` html`` `` template. An
- * `` svg`` `` root puts its whole subtree in SVG regardless. Kept identical to
- * the compiler's `SVG_TAGS` so lowering stays byte-identical.
+ * SVG element names, for `` html`` `` templates and the compiler's JSX alike: an element named
+ * here is made in the SVG namespace wherever it is written, a fragment of `<defs>` returned
+ * from a helper included. `a` and `title` are left out because HTML has them too: they are SVG
+ * only inside an SVG parent. An `` svg`` `` root puts its whole subtree in SVG regardless.
  */
-export const SVG_TAGS = new Set([
-  'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
-  'ellipse', 'g', 'defs', 'clipPath', 'text',
+export const SVG_TAGS: ReadonlySet<string> = new Set([
+  'svg', 'g', 'defs', 'symbol', 'use', 'switch', 'view', 'desc', 'metadata',
+  'path', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'rect', 'image',
+  'text', 'tspan', 'textPath',
+  'linearGradient', 'radialGradient', 'stop', 'pattern', 'mask', 'clipPath', 'marker',
+  'foreignObject',
+  'animate', 'animateMotion', 'animateTransform', 'mpath', 'set',
+  'filter', 'feBlend', 'feColorMatrix', 'feComponentTransfer', 'feComposite', 'feConvolveMatrix',
+  'feDiffuseLighting', 'feDisplacementMap', 'feDistantLight', 'feDropShadow', 'feFlood',
+  'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR', 'feGaussianBlur', 'feImage', 'feMerge',
+  'feMergeNode', 'feMorphology', 'feOffset', 'fePointLight', 'feSpecularLighting',
+  'feSpotLight', 'feTile', 'feTurbulence',
 ]);
 
 /** Elements whose content is text, not markup: don't descend into `<` inside. */

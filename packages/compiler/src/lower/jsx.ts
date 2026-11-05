@@ -32,12 +32,11 @@ export interface JsxContext {
   scopes?: { start: number; end: number; value: string }[];
   /** Start offsets of `<style>` elements the compiler took out of the template. */
   dropStyles?: Set<number>;
+  /** Inside an SVG element: children are SVG too, whatever their name, until a `<foreignObject>`. */
+  inSvg?: boolean;
 }
 
-export const SVG_TAGS = new Set([
-  'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
-  'ellipse', 'g', 'defs', 'clipPath', 'text',
-]);
+import { SVG_TAGS } from '@fluixi/template-parser';
 
 const EVENT_RE = /^on[A-Z]/;
 const DELEGATED = new Set([
@@ -392,8 +391,11 @@ function buildElement(node: Node, ctx: JsxContext, handled: string[]): IRNode {
     (a: Node) => !(a.type === 'JSXAttribute' && a.name.type === 'JSXIdentifier' && (skip.has(a.name.name) || directives.has(a.name.name))),
   );
   const { tag } = tagInfo(node.openingElement.name, ctx);
-  const each = buildEach(node, ctx);
-  const children = each ? [each] : buildChildren(node.children, ctx);
+  const svg = SVG_TAGS.has(tag) || ctx.inSvg === true;
+  // `<foreignObject>` is SVG, its content HTML again.
+  const inner = svg !== (ctx.inSvg === true) || tag === 'foreignObject' ? { ...ctx, inSvg: svg && tag !== 'foreignObject' } : ctx;
+  const each = buildEach(node, inner);
+  const children = each ? [each] : buildChildren(node.children, inner);
   if (tag === CONTAINER) return children.length === 1 ? children[0]! : { kind: 'fragment', children };
   const at = ctx.sourceFile && node.loc?.start
     ? { file: ctx.sourceFile, line: node.loc.start.line as number, column: node.loc.start.column as number }
@@ -403,7 +405,7 @@ function buildElement(node: Node, ctx: JsxContext, handled: string[]): IRNode {
   // every render carries it, on the client, from the server and through hydration.
   const scope = ctx.scopes?.find((s) => node.start >= s.start && node.end <= s.end);
   if (scope) props.unshift({ name: 'data-fx-s', kind: 'attr', literal: scope.value });
-  return { kind: 'element', tag, svg: SVG_TAGS.has(tag), props, children, static: false, ...(at ? { at } : {}) };
+  return { kind: 'element', tag, svg, props, children, static: false, ...(at ? { at } : {}) };
 }
 
 function buildNode(node: Node, ctx: JsxContext): IRNode {

@@ -20,6 +20,7 @@ export {
   type RawAttribute,
 } from './directives.js';
 export { parseTemplate, type ParserOptions } from './parser.js';
+export { SVG_TAGS } from './tags.js';
 
 import type { Piece } from './reader.js';
 import { parseTemplate, type ParserOptions } from './parser.js';

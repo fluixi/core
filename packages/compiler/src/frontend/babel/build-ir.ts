@@ -103,11 +103,6 @@ export interface NestedEmitOptions {
   templateClone?: boolean;
 }
 
-export const SVG_TAGS = new Set([
-  'svg', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline',
-  'ellipse', 'g', 'defs', 'clipPath', 'text',
-]);
-
 const EVENT_RE = /^on[A-Z]/;
 const DELEGATED = new Set([
   'click', 'dblclick', 'input', 'change', 'submit', 'focus', 'blur',
