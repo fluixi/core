@@ -867,28 +867,38 @@ export interface LinkNavigationOptions {
  * another origin, and a hash pointing inside the current page, that last one is the
  * browser's scroll, and hijacking it breaks in-page anchors.
  */
+/**
+ * The address a click on `anchor` should route to, or null when the browser should have it:
+ * a modified or non-primary click, an already-prevented event, `target`, `download`,
+ * `rel="external"`, a non-http scheme, another origin, or a hash inside the current page.
+ * One rule for `<Link>` and `useLinkNavigation`, so the two never disagree.
+ */
+function routedUrl(event: MouseEvent, anchor: HTMLAnchorElement | null): URL | null {
+  if (event.defaultPrevented || event.button !== 0) return null;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+  if (!anchor || !anchor.getAttribute('href')) return null;
+  if (anchor.target && anchor.target !== '_self') return null;
+  if (anchor.hasAttribute('download')) return null;
+  if (/(^|\s)external(\s|$)/.test(anchor.getAttribute('rel') ?? '')) return null;
+  // `anchor.href` is resolved against the document, so a relative `./guide` from
+  // prerendered markdown lands on the right absolute path.
+  const url = new URL(anchor.href);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (url.origin !== window.location.origin) return null;
+  if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return null;
+  return url;
+}
+
 export function useLinkNavigation(
   options: LinkNavigationOptions = {},
 ): (event: MouseEvent) => void {
   const ctx = useContext(RouterContext);
 
   return (event: MouseEvent): void => {
-    if (!ctx || event.defaultPrevented || event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-    const target = event.target as Element | null;
-    const anchor = target?.closest?.('a') as HTMLAnchorElement | null;
-    if (!anchor || !anchor.getAttribute('href')) return;
-    if (anchor.target && anchor.target !== '_self') return;
-    if (anchor.hasAttribute('download')) return;
-    if (/(^|\s)external(\s|$)/.test(anchor.getAttribute('rel') ?? '')) return;
-
-    // `anchor.href` is resolved against the document, so a relative `./guide` from
-    // prerendered markdown lands on the right absolute path.
-    const url = new URL(anchor.href);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-    if (url.origin !== window.location.origin) return;
-    if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return;
+    if (!ctx) return;
+    const anchor = (event.target as Element | null)?.closest?.('a') as HTMLAnchorElement | null;
+    const url = routedUrl(event, anchor);
+    if (!url || !anchor) return;
     if (options.shouldNavigate && !options.shouldNavigate(url, anchor)) return;
 
     event.preventDefault();
@@ -1041,10 +1051,10 @@ export function Link(props: LinkProps) {
   // preventDefault reliably blocks navigation.
   if (typeof a.addEventListener === 'function') {
     a.addEventListener('click', (e: MouseEvent) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       // No router above this link: let the browser follow it rather than cancel the click
-      // and go nowhere.
-      if (!ctx) return;
+      // and go nowhere. An address on another site, a new tab or a download is the
+      // browser's too: routing it would go nowhere.
+      if (!ctx || !routedUrl(e, a as HTMLAnchorElement)) return;
       e.preventDefault();
       navigate();
     });
