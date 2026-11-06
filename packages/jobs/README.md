@@ -40,7 +40,8 @@ await jobs.send(sendInvitation, { invitationId }, { key: `invite:${invitationId}
   request context whose locals hold what it took.
 - **Workers**: `jobs.work()` runs the handlers; `jobs.stop({ timeoutSeconds })` stops taking
   jobs and waits for the running ones.
-- **Schedules**: `jobs.schedules` holds recurring sends, for `@fluixi/cron`.
+- **Schedules**: `createJobs({ schedules })` takes recurring sends declared with `@fluixi/cron`;
+  `jobs.work()` puts them in place, removing the ones no longer declared.
 
 ## Engines
 

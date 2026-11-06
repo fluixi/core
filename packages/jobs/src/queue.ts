@@ -15,6 +15,24 @@ export interface JobsOptions {
   captureContext?: () => Record<string, unknown> | undefined;
   /** How long a finished job is kept, which is how long its key stays taken. */
   retentionDays?: number;
+  /** Recurring sends (`defineSchedule` from `@fluixi/cron`), put in place by `work()`. */
+  schedules?: readonly DeclaredSchedule[];
+}
+
+/** A recurring send of a job, as `@fluixi/cron` declares it. */
+export interface DeclaredSchedule<Data = any> {
+  /** Unique: the schedule's key among its job's schedules. */
+  readonly name: string;
+  readonly cron: string;
+  /** An IANA time zone; the cron is read in it, daylight saving included. */
+  readonly timeZone: string;
+  readonly job: JobDefinition<Data>;
+  readonly data: Data;
+}
+
+export interface ScheduleReport {
+  set: string[];
+  removed: string[];
 }
 
 export interface SendOptions {
@@ -61,6 +79,11 @@ const DAY_S = 24 * 60 * 60;
 export function createJobs(options: JobsOptions) {
   const jobs = new Map(options.jobs.map((job) => [job.name, job]));
   if (jobs.size !== options.jobs.length) throw new Error('two jobs share a name');
+  const declared = options.schedules ?? [];
+  if (new Set(declared.map((schedule) => schedule.name)).size !== declared.length) throw new Error('two schedules share a name');
+  for (const schedule of declared) {
+    if (jobs.get(schedule.job.name) !== schedule.job) throw new Error(`schedule "${schedule.name}" sends job "${schedule.job.name}", which is not one of these jobs`);
+  }
   const { engine } = options;
   const known = (name: string) => {
     const job = jobs.get(name);
@@ -69,7 +92,7 @@ export function createJobs(options: JobsOptions) {
   };
   let started: Promise<void> | undefined;
 
-  return {
+  const api = {
     /** Prepares the engine and one queue per job; every process that sends or works calls it once. */
     start(): Promise<void> {
       started ??= engine.start(
@@ -100,8 +123,13 @@ export function createJobs(options: JobsOptions) {
       });
     },
 
-    /** Runs the handlers, what a worker does; each run is inside a request context holding the job's context. */
-    async work(): Promise<void> {
+    /**
+     * What a worker does: puts the declared schedules in place (the stored ones no longer declared
+     * are removed), then runs the handlers, each inside a request context holding the job's
+     * context. Several workers may start at once.
+     */
+    async work(): Promise<ScheduleReport> {
+      const report = await api.reconcile();
       for (const job of jobs.values()) {
         await engine.work(job.name, async (stored) => {
           const envelope = stored.payload as Envelope;
@@ -110,9 +138,26 @@ export function createJobs(options: JobsOptions) {
           await runWithRequestContext(createRequestContext({ locals: { ...run.context } }), () => job.handler(data, run));
         });
       }
+      return report;
     },
 
-    /** For `@fluixi/cron`: the recurring sends in place. */
+    /** Makes the stored schedules of these jobs exactly the declared ones. */
+    async reconcile(): Promise<ScheduleReport> {
+      const report: ScheduleReport = { set: [], removed: [] };
+      const wanted = new Set(declared.map((schedule) => `${schedule.job.name}:${schedule.name}`));
+      for (const stored of await api.schedules.list()) {
+        if (wanted.has(`${stored.job}:${stored.key}`)) continue;
+        await api.schedules.remove(stored.job, stored.key);
+        report.removed.push(stored.key);
+      }
+      for (const schedule of declared) {
+        await api.schedules.set({ key: schedule.name, job: schedule.job.name, cron: schedule.cron, timeZone: schedule.timeZone, data: schedule.data });
+        report.set.push(schedule.name);
+      }
+      return report;
+    },
+
+    /** The recurring sends stored; `reconcile` and `work` keep them to the declared ones. */
     schedules: {
       async list(): Promise<JobSchedule[]> {
         return (await engine.schedules.list())
@@ -131,6 +176,7 @@ export function createJobs(options: JobsOptions) {
 
     onError: (listener: (error: Error) => void) => engine.onError?.(listener),
   };
+  return api;
 }
 
 export type Jobs = ReturnType<typeof createJobs>;

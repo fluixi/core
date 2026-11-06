@@ -1,7 +1,7 @@
 import { createJobs, defineJob } from '@fluixi/jobs';
 import { memoryEngine } from '@fluixi/jobs/memory';
 import { describe, expect, it } from 'vitest';
-import { ScheduleDefinitionError, defineSchedule, reconcileSchedules } from './index.js';
+import { ScheduleDefinitionError, defineSchedule } from './index.js';
 
 const repair = defineJob({ name: 'organizations.repair', handler: () => {} });
 const deliver = defineJob({ name: 'events.deliver', handler: () => {} });
@@ -24,26 +24,28 @@ describe('defineSchedule', () => {
   });
 });
 
-describe('reconcileSchedules', () => {
-  it('stores exactly the declared schedules, changing and removing the rest', async () => {
-    const jobs = createJobs({ engine: memoryEngine(), jobs: [repair, deliver] });
-    await jobs.start();
+describe('schedules on createJobs', () => {
+  it('work() stores exactly the declared schedules, changing and removing the rest', async () => {
+    const engine = memoryEngine();
     const daily = defineSchedule({ name: 'repair.daily', cron: '0 3 * * *', timeZone: 'Africa/Dakar', job: repair, data: {} });
     const minute = defineSchedule({ name: 'deliver.minute', cron: '* * * * *', timeZone: 'UTC', job: deliver, data: {} });
-    await reconcileSchedules(jobs, [daily, minute]);
-    expect((await jobs.schedules.list()).map((s) => `${s.job}:${s.key}:${s.cron}`).sort()).toEqual([
+    const first = createJobs({ engine, jobs: [repair, deliver], schedules: [daily, minute] });
+    await first.start();
+    await first.work();
+    expect((await first.schedules.list()).map((s) => `${s.job}:${s.key}:${s.cron}`).sort()).toEqual([
       'events.deliver:deliver.minute:* * * * *',
       'organizations.repair:repair.daily:0 3 * * *',
     ]);
-    // The repair moved to 04:00 and the delivery schedule was deleted from the code.
-    const report = await reconcileSchedules(jobs, [{ ...daily, cron: '0 4 * * *' }]);
-    expect(report).toEqual({ set: ['repair.daily'], removed: ['deliver.minute'] });
-    expect((await jobs.schedules.list()).map((s) => `${s.key}:${s.cron}:${s.timeZone}`)).toEqual(['repair.daily:0 4 * * *:Africa/Dakar']);
+    // The next deploy moved the repair to 04:00 and dropped the delivery schedule.
+    const next = createJobs({ engine, jobs: [repair, deliver], schedules: [{ ...daily, cron: '0 4 * * *' }] });
+    expect(await next.work()).toEqual({ set: ['repair.daily'], removed: ['deliver.minute'] });
+    expect((await next.schedules.list()).map((s) => `${s.key}:${s.cron}:${s.timeZone}`)).toEqual(['repair.daily:0 4 * * *:Africa/Dakar']);
   });
 
-  it('refuses two schedules with one name', async () => {
-    const jobs = createJobs({ engine: memoryEngine(), jobs: [repair] });
+  it('refuses two schedules with one name, or one for a job it does not run', () => {
     const a = defineSchedule({ name: 'same', cron: '0 3 * * *', timeZone: 'UTC', job: repair, data: {} });
-    await expect(reconcileSchedules(jobs, [a, a])).rejects.toBeInstanceOf(ScheduleDefinitionError);
+    expect(() => createJobs({ engine: memoryEngine(), jobs: [repair], schedules: [a, a] })).toThrow(/share a name/);
+    const other = defineSchedule({ name: 'other', cron: '0 3 * * *', timeZone: 'UTC', job: deliver, data: {} });
+    expect(() => createJobs({ engine: memoryEngine(), jobs: [repair], schedules: [other] })).toThrow(/not one of these jobs/);
   });
 });
