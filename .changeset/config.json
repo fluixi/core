@@ -11,6 +11,7 @@
       "@fluixi/cli",
       "@fluixi/compiler",
       "@fluixi/core",
+      "@fluixi/cron",
       "@fluixi/devtools",
       "@fluixi/di",
       "@fluixi/dom",

@@ -80,6 +80,9 @@
     },
     {
       "path": "./packages/jobs"
+    },
+    {
+      "path": "./packages/cron"
     }
   ]
 }
