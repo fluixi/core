@@ -1,0 +1,100 @@
+{
+  "name": "@fluixi/jobs",
+  "version": "1.0.0-alpha.106",
+  "license": "MIT",
+  "author": "Ibrahima Tour\u00e9",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./pg-boss": {
+        "types": "./dist/engines/pg-boss.d.ts",
+        "import": "./dist/engines/pg-boss.mjs",
+        "require": "./dist/engines/pg-boss.cjs",
+        "default": "./dist/engines/pg-boss.js"
+      },
+      "./memory": {
+        "types": "./dist/engines/memory.d.ts",
+        "import": "./dist/engines/memory.mjs",
+        "require": "./dist/engines/memory.cjs",
+        "default": "./dist/engines/memory.js"
+      }
+    }
+  },
+  "description": "Background jobs for Fluixi apps: typed definitions, idempotent sends, retries and the request context carried into the worker, on an engine you choose (pg-boss on Postgres or PGlite, memory for tests).",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./pg-boss": {
+      "development": "./src/engines/pg-boss.ts",
+      "types": "./dist/engines/pg-boss.d.ts",
+      "import": "./dist/engines/pg-boss.mjs",
+      "require": "./dist/engines/pg-boss.cjs",
+      "default": "./dist/engines/pg-boss.js"
+    },
+    "./memory": {
+      "development": "./src/engines/memory.ts",
+      "types": "./dist/engines/memory.d.ts",
+      "import": "./dist/engines/memory.mjs",
+      "require": "./dist/engines/memory.cjs",
+      "default": "./dist/engines/memory.js"
+    }
+  },
+  "scripts": {
+    "build:typings": "tsc -p tsconfig.lib.json",
+    "build": "cross-env NODE_ENV=production mix-builder",
+    "dev": "tsc -w -p tsconfig.lib.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fluixi/dom": "workspace:^"
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": ">=0.5.0",
+    "pg-boss": "^12.38.1"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    },
+    "pg-boss": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@bambiste/mix-builder": "^0.4.0",
+    "@electric-sql/pglite": "^0.5.15",
+    "@types/node": "^22.0.0",
+    "cross-env": "^7.0.3",
+    "pg-boss": "^12.38.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fluixi/core.git",
+    "directory": "packages/jobs"
+  }
+}

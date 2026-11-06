@@ -15,6 +15,7 @@
       "@fluixi/di",
       "@fluixi/dom",
       "@fluixi/head",
+      "@fluixi/jobs",
       "@fluixi/jsx",
       "@fluixi/oauth2",
       "@fluixi/reactive",
