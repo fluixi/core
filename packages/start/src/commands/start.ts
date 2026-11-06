@@ -3,6 +3,8 @@ import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { installCrashGuards, loadServerEnv } from '../internal.js';
 import { createProdHandler, nodeAdapter } from '../adapter.js';
+import { runWorker, stopOnSignal } from '../worker.js';
+import { loadBuiltJobs } from './worker.js';
 
 /**
  * Production server: build the runtime-neutral SSR fetch handler from the `fluixi
@@ -26,6 +28,10 @@ export async function start(config: FluixiConfig = {}): Promise<void> {
   // so say that instead of exiting as if the server had started.
   const adapter = cfg.adapter ?? nodeAdapter;
   const served = await adapter.serve({ handler, cfg, clientDir });
+  if (cfg.worker.inline) {
+    const running = await runWorker(await loadBuiltJobs(cfg.root, cfg.jobs));
+    stopOnSignal(() => running.stop(cfg.worker.stopTimeoutSeconds));
+  }
   if (served && typeof served === 'object' && 'fetch' in served) {
     console.log(
       `  fluixi: the "${adapter.name}" adapter exports a fetch handler — there is no server ` +

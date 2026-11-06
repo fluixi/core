@@ -12,6 +12,7 @@ import { devReady } from '../ui.js';
 import { APP_VMOD, findAppConfig, hasAppConfig } from '../app-plugin.js';
 import { withPlatformRequest } from '../platform-request.js';
 import { notFoundJson } from '../handler-core.js';
+import { devWorker } from '../dev-worker.js';
 
 const STYLE_FILE = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/;
 
@@ -213,4 +214,6 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
 
   exitOnListenError(http, cfg.port);
   http.listen(cfg.port, () => devReady({ port: cfg.port, startedAt }));
+
+  if (cfg.worker.dev && existsSync(resolve(cfg.root, cfg.jobs))) devWorker(vite, cfg);
 }

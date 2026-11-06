@@ -120,6 +120,8 @@ export async function build(
     });
   }
 
+  await buildJobs(cfg, ssr, plugins);
+
   // An app that also publishes elements gets them beside its own bundles.
   if (cfg.webComponents) {
     step('custom elements');
@@ -310,6 +312,8 @@ async function buildApi(cfg: ResolvedConfig, ssr: unknown): Promise<void> {
       bundleEntry: (source, outFile) => bundleEntry(cfg, apiPlugins, source, outFile),
     });
   }
+
+  await buildJobs(cfg, ssr, apiPlugins);
 }
 
 /** `server bundle (node · external)`: the output shape is not obvious from the file. */
@@ -317,4 +321,25 @@ function bundleNote(cfg: ResolvedConfig): string {
   const adapter = cfg.adapter;
   if (!adapter?.bundle) return '';
   return c.gray(` (${adapter.name} · ${adapter.bundle})`);
+}
+
+/** The jobs module (`src/jobs.ts`), when the app has one → dist/server/jobs.js, what `fluixi worker` runs. */
+async function buildJobs(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[]): Promise<void> {
+  const source = resolve(cfg.root, cfg.jobs);
+  if (!existsSync(source)) return;
+  const { build: viteBuild } = await import('vite');
+  step('jobs');
+  await viteBuild({
+    root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
+    plugins: plugins as never,
+    logLevel: 'warn',
+    ssr: ssr as never,
+    build: {
+      outDir: 'dist/server',
+      ssr: source,
+      emptyOutDir: false,
+      rollupOptions: { output: { entryFileNames: 'jobs.js' } },
+    },
+  });
 }

@@ -51,6 +51,22 @@ export interface FluixiConfig {
   /** Request middleware module (default-exports `defineMiddleware([...])`). Default: src/middleware.ts */
   middleware?: string;
   /**
+   * Background jobs module: default-exports `createJobs(...)` from `@fluixi/jobs`, schedules
+   * included. `fluixi worker` runs it; `fluixi dev` runs it beside the server. Default: src/jobs.ts
+   */
+  jobs?: string;
+  worker?: {
+    /**
+     * Run the jobs in the `fluixi start` process too, instead of a separate `fluixi worker`: for
+     * a small deployment, or embedded PGlite, which allows one process. Default: false
+     */
+    inline?: boolean;
+    /** Run them beside `fluixi dev`. Default: true */
+    dev?: boolean;
+    /** How long a stop waits for running jobs, in seconds; the rest run again later. Default: 30 */
+    stopTimeoutSeconds?: number;
+  };
+  /**
    * SSR deps Vite must bundle rather than let node import, e.g. ESM packages without
    * file extensions.
    *
@@ -188,9 +204,10 @@ export interface ResolvedPrerender {
 }
 
 export type ResolvedConfig = Required<
-  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents'>
+  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents' | 'worker'>
 > & {
   ssrNoExternal: (string | RegExp)[];
+  worker: Required<NonNullable<FluixiConfig['worker']>>;
   i18n: ResolvedI18n | false;
   prerender: ResolvedPrerender | false;
   /** Stays optional: an app that publishes no elements declares none. */
@@ -220,6 +237,12 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     routesDir: config.routesDir ?? 'src/routes',
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
+    jobs: config.jobs ?? 'src/jobs.ts',
+    worker: {
+      inline: config.worker?.inline ?? false,
+      dev: config.worker?.dev ?? true,
+      stopTimeoutSeconds: config.worker?.stopTimeoutSeconds ?? 30,
+    },
     ssrNoExternal: config.ssrNoExternal ?? [],
     dedupe: config.dedupe ?? [],
     env: { public: config.env?.public ?? [] },

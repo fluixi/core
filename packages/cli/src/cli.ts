@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { loadConfig } from '@fluixi/start/config';
-import { dev, build, start, env, envReport, info } from '@fluixi/start/commands';
+import { dev, build, start, worker, env, envReport, info } from '@fluixi/start/commands';
 import { wordmark, c } from '@fluixi/start/ui';
 import { generate } from './generate.js';
 import { add } from './add.js';
@@ -22,6 +22,7 @@ function usage(): string {
     cmd('build', 'build the client + server bundles for production'),
     cmd('build --format=web-component', 'build custom elements as portable files'),
     cmd('start [--port=<n>]', 'run the production SSR server (after build); PORT also sets it'),
+    cmd('worker [--port=<n>]', 'run the background jobs (after build); the port answers /health'),
     cmd('generate <kind> <name>', 'scaffold code, see fluixi g --help  ' + c.dim('(alias: g)')),
     cmd('add auth', 'set up authentication: asks, writes, installs'),
     cmd('check [--strict]', 'env and auth rules over the project, for CI'),
@@ -91,6 +92,12 @@ async function main(): Promise<void> {
     case 'start':
       await start(withPort(config));
       break;
+    case 'worker': {
+      // Only an explicit port: PORT belongs to the web server on most platforms.
+      const port = portOverride(process.argv.slice(3), {});
+      await worker(config, port === undefined ? {} : { port });
+      break;
+    }
     case 'env':
       process.exitCode = await env(config);
       break;
