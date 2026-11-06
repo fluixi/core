@@ -5,7 +5,7 @@ import { createServer, type Server } from 'node:http';
  * `@fluixi/jobs`. Described by shape, so `@fluixi/start` does not depend on it.
  */
 export interface WorkerJobs {
-  start(): Promise<void>;
+  /** Starts the engine as a worker, puts the schedules in place and takes jobs. */
   work(): Promise<{ set: string[]; removed: string[] }>;
   stop(options?: { timeoutSeconds?: number }): Promise<void>;
   onError?(listener: (error: Error) => void): void;
@@ -13,7 +13,7 @@ export interface WorkerJobs {
 
 export function isWorkerJobs(value: unknown): value is WorkerJobs {
   const jobs = value as Partial<WorkerJobs> | null;
-  return !!jobs && typeof jobs.start === 'function' && typeof jobs.work === 'function' && typeof jobs.stop === 'function';
+  return !!jobs && typeof jobs.work === 'function' && typeof jobs.stop === 'function';
 }
 
 export interface RunningWorker {
@@ -21,10 +21,9 @@ export interface RunningWorker {
   stop(timeoutSeconds?: number): Promise<void>;
 }
 
-/** Starts the engine, puts the schedules in place and takes jobs. */
+/** Runs the jobs and logs the schedules it put in place. */
 export async function runWorker(jobs: WorkerJobs, log: (line: string) => void = console.log): Promise<RunningWorker> {
   jobs.onError?.((error) => console.warn('[fluixi] worker:', error.message));
-  await jobs.start();
   const { set, removed } = await jobs.work();
   log(`  worker taking jobs${set.length ? `, schedules ${set.join(', ')}` : ''}${removed.length ? `, removed ${removed.join(', ')}` : ''}`);
   let stopping: Promise<void> | undefined;

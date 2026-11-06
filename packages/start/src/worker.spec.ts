@@ -8,7 +8,6 @@ import { healthServer, isWorkerJobs, runWorker, type WorkerJobs, type WorkerStat
 function fakeJobs() {
   const calls: string[] = [];
   const jobs: WorkerJobs = {
-    start: async () => void calls.push('start'),
     work: async () => (calls.push('work'), { set: ['repair.daily'], removed: [] }),
     stop: async (options) => void calls.push(`stop ${options?.timeoutSeconds}`),
   };
@@ -16,12 +15,12 @@ function fakeJobs() {
 }
 
 describe('worker', () => {
-  it('starts the engine before taking jobs, and stops once however often asked', async () => {
+  it('takes jobs, and stops once however often asked', async () => {
     const { jobs, calls } = fakeJobs();
     const lines: string[] = [];
     const running = await runWorker(jobs, (line) => lines.push(line));
     await Promise.all([running.stop(7), running.stop(7)]);
-    expect(calls).toEqual(['start', 'work', 'stop 7']);
+    expect(calls).toEqual(['work', 'stop 7']);
     expect(lines[0]).toContain('repair.daily');
   });
 
@@ -51,6 +50,6 @@ describe('worker', () => {
     };
     await expect(loadBuiltJobs(built(), 'src/jobs.ts')).rejects.toThrow(/fluixi build/);
     await expect(loadBuiltJobs(built('export default { nothing: true };'), 'src/jobs.ts')).rejects.toThrow(/must default-export createJobs/);
-    expect(isWorkerJobs(await loadBuiltJobs(built('export default { start() {}, work() {}, stop() {} };'), 'src/jobs.ts'))).toBe(true);
+    expect(isWorkerJobs(await loadBuiltJobs(built('export default { work() {}, stop() {} };'), 'src/jobs.ts'))).toBe(true);
   });
 });

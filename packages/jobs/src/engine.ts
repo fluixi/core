@@ -39,8 +39,11 @@ export interface EngineSchedule {
 }
 
 export interface JobEngine {
-  /** Creates what it needs and the queues; called once per process before anything else. */
-  start(queues: readonly QueueSpec[]): Promise<void>;
+  /**
+   * Creates what it needs and the queues. A sender only sends; a worker also runs maintenance
+   * and the schedules. A sender started again as a worker becomes one.
+   */
+  start(queues: readonly QueueSpec[], options: { worker: boolean }): Promise<void>;
   /** The job's id, or null when `id` names a job already there. */
   send(queue: string, payload: unknown, options: EngineSendOptions): Promise<string | null>;
   /** Runs `handle` for the queue's jobs; a rejection is a failed attempt, retried by the queue's policy. */

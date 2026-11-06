@@ -114,4 +114,16 @@ describe.each(engines)('jobs on %s', (_name, makeEngine) => {
     stop = undefined;
     expect(finished).toBe(true);
   });
+
+  it('sends without being started, and works after sending in the same process', async () => {
+    const ran: string[] = [];
+    const welcome = defineJob({ name: 'mail.welcome', handler: (data: { to: string }) => void ran.push(data.to) });
+    const queue = createJobs({ engine: await makeEngine(), jobs: [welcome] });
+    stop = () => queue.stop({ timeoutSeconds: 2 });
+    await queue.send(welcome, { to: 'sent-first' });
+    await queue.work();
+    await queue.send(welcome, { to: 'sent-after' });
+    await until(() => ran.length === 2);
+    expect(ran.sort()).toEqual(['sent-after', 'sent-first']);
+  });
 });

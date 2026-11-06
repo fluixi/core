@@ -23,17 +23,35 @@ export function pgBossEngine(options: PgBossEngineOptions): JobEngine {
   if (Boolean(options.connectionString) === Boolean(options.pglite)) {
     throw new Error('pgBossEngine needs exactly one of connectionString and pglite');
   }
-  const boss = new PgBoss({
-    ...(options.pglite ? { db: pgliteDatabase(options.pglite) } : { connectionString: options.connectionString! }),
-    schema: options.schema ?? 'fluixi_jobs',
-    useListenNotify: true,
-  });
   const listeners: ((error: Error) => void)[] = [];
-  boss.on('error', (error: Error) => listeners.forEach((listener) => listener(error)));
-  let started = false;
+  let boss: PgBoss | undefined;
+  let worker = false;
+
+  const make = (asWorker: boolean) => {
+    const made = new PgBoss({
+      ...(options.pglite ? { db: pgliteDatabase(options.pglite), backend: 'pglite' as const } : { connectionString: options.connectionString! }),
+      schema: options.schema ?? 'fluixi_jobs',
+      useListenNotify: true,
+      // Maintenance and the schedules run where jobs run; a sender (an API instance) only inserts,
+      // so it adds no polling of its own.
+      supervise: asWorker,
+      schedule: asWorker,
+    });
+    made.on('error', (error: Error) => listeners.forEach((listener) => listener(error)));
+    return made;
+  };
+  const running = () => {
+    if (!boss) throw new Error('the job engine is not started');
+    return boss;
+  };
 
   return {
-    async start(queues) {
+    async start(queues, startOptions) {
+      if (boss && (worker || !startOptions.worker)) return;
+      // A sender becoming a worker (the dev server runs both in one process): one boss, the worker's.
+      if (boss) await boss.stop({ graceful: false, close: !options.pglite });
+      boss = make(startOptions.worker);
+      worker = startOptions.worker;
       await boss.start();
       for (const queue of queues) {
         await boss.createQueue(queue.name, {
@@ -45,10 +63,9 @@ export function pgBossEngine(options: PgBossEngineOptions): JobEngine {
           deleteAfterSeconds: queue.retentionSeconds,
         });
       }
-      started = true;
     },
     send: (queue, payload, sendOptions) =>
-      boss.send(queue, payload as object, {
+      running().send(queue, payload as object, {
         ...(sendOptions.id ? { id: sendOptions.id } : {}),
         ...(sendOptions.startAfter ? { startAfter: sendOptions.startAfter } : {}),
         ...(sendOptions.priority !== undefined ? { priority: sendOptions.priority } : {}),
@@ -56,20 +73,22 @@ export function pgBossEngine(options: PgBossEngineOptions): JobEngine {
     async work(queue, handle) {
       // Notifications wake workers; `pollSeconds` is the safety net, never shorter than the base poll.
       const poll = options.pollSeconds ?? 30;
-      await boss.work(queue, { pollingIntervalSeconds: Math.min(2, poll), notifyPollingIntervalSeconds: poll }, async ([job]) =>
+      await running().work(queue, { pollingIntervalSeconds: Math.min(2, poll), notifyPollingIntervalSeconds: poll }, async ([job]) =>
         handle({ id: job!.id, attempt: (job as { retryCount?: number }).retryCount ?? 0, payload: job!.data }),
       );
     },
     schedules: {
       list: async () =>
-        (await boss.getSchedules()).map((row) => ({ queue: row.name, key: row.key, cron: row.cron, timeZone: row.timezone, payload: row.data })),
-      set: (schedule) => boss.schedule(schedule.queue, schedule.cron, schedule.payload as object, { tz: schedule.timeZone, key: schedule.key }),
-      remove: (queue, key) => boss.unschedule(queue, key),
+        (await running().getSchedules()).map((row) => ({ queue: row.name, key: row.key, cron: row.cron, timeZone: row.timezone, payload: row.data })),
+      set: (schedule) => running().schedule(schedule.queue, schedule.cron, schedule.payload as object, { tz: schedule.timeZone, key: schedule.key }),
+      remove: (queue, key) => running().unschedule(queue, key),
     },
     async stop(timeoutSeconds) {
-      if (!started) return;
-      await boss.stop({ graceful: true, timeout: timeoutSeconds * 1000 });
-      started = false;
+      if (!boss) return;
+      const stopping = boss;
+      boss = undefined;
+      worker = false;
+      await stopping.stop({ graceful: true, timeout: timeoutSeconds * 1000 });
     },
     onError: (listener) => void listeners.push(listener),
   };

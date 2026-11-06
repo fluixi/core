@@ -90,23 +90,31 @@ export function createJobs(options: JobsOptions) {
     if (!job) throw new Error(`job "${name}" is not one of these jobs`);
     return job;
   };
-  let started: Promise<void> | undefined;
+  let starting: Promise<void> | undefined;
+  let asWorker = false;
+  const queues = () =>
+    [...jobs.values()].map((job) => ({
+      name: job.name,
+      retryLimit: job.retry.limit,
+      retryDelaySeconds: job.retry.delaySeconds ?? 10,
+      retryBackoff: job.retry.backoff ?? true,
+      timeoutSeconds: job.timeoutSeconds,
+      retentionSeconds: (options.retentionDays ?? 14) * DAY_S,
+    }));
+  // One start at a time; a worker start after a sender's upgrades it.
+  const start = (worker: boolean): Promise<void> => {
+    if (starting && (asWorker || !worker)) return starting;
+    asWorker ||= worker;
+    starting = (starting ?? Promise.resolve()).then(() => engine.start(queues(), { worker }));
+    return starting;
+  };
 
   const api = {
-    /** Prepares the engine and one queue per job; every process that sends or works calls it once. */
-    start(): Promise<void> {
-      started ??= engine.start(
-        [...jobs.values()].map((job) => ({
-          name: job.name,
-          retryLimit: job.retry.limit,
-          retryDelaySeconds: job.retry.delaySeconds ?? 10,
-          retryBackoff: job.retry.backoff ?? true,
-          timeoutSeconds: job.timeoutSeconds,
-          retentionSeconds: (options.retentionDays ?? 14) * DAY_S,
-        })),
-      );
-      return started;
-    },
+    /**
+     * Prepares the engine and one queue per job, to send: `send` does it by itself, and `work`
+     * starts a worker. Call it early to find a database problem at boot rather than at a send.
+     */
+    start: (): Promise<void> => start(false),
 
     /** Sends a job after checking its data (`JobDataError`): its id, or null when `key` names one already sent. */
     async send<Data>(job: JobDefinition<Data>, data: Data, sendOptions: SendOptions = {}): Promise<string | null> {
@@ -115,6 +123,7 @@ export function createJobs(options: JobsOptions) {
       // inside a request: a job sent from another job carries what it is given, nothing ambient.
       const context = getRequestEvent() ? (options.captureContext?.() ?? {}) : {};
       const checked = await check(job, data);
+      await start(false);
       const envelope: Envelope = { data: checked, context };
       return engine.send(job.name, envelope, {
         ...(sendOptions.key ? { id: jobIdFor(job.name, sendOptions.key) } : {}),
@@ -129,6 +138,7 @@ export function createJobs(options: JobsOptions) {
      * context. Several workers may start at once.
      */
     async work(): Promise<ScheduleReport> {
+      await start(true);
       const report = await api.reconcile();
       for (const job of jobs.values()) {
         await engine.work(job.name, async (stored) => {
@@ -160,19 +170,29 @@ export function createJobs(options: JobsOptions) {
     /** The recurring sends stored; `reconcile` and `work` keep them to the declared ones. */
     schedules: {
       async list(): Promise<JobSchedule[]> {
+        await start(false);
         return (await engine.schedules.list())
           .filter((schedule) => jobs.has(schedule.queue))
           .map((schedule) => ({ key: schedule.key, job: schedule.queue, cron: schedule.cron, timeZone: schedule.timeZone, data: (schedule.payload as Envelope | undefined)?.data }));
       },
       async set(schedule: JobSchedule): Promise<void> {
         const envelope: Envelope = { data: await check(known(schedule.job), schedule.data), context: {} };
+        await start(false);
         await engine.schedules.set({ queue: schedule.job, key: schedule.key, cron: schedule.cron, timeZone: schedule.timeZone, payload: envelope });
       },
-      remove: (job: string, key: string) => engine.schedules.remove(job, key),
+      async remove(job: string, key: string): Promise<void> {
+        await start(false);
+        await engine.schedules.remove(job, key);
+      },
     },
 
     /** Stops taking jobs and waits up to `timeoutSeconds` for running ones; the rest run again later. */
-    stop: (stopOptions: { timeoutSeconds?: number } = {}) => engine.stop(stopOptions.timeoutSeconds ?? 30),
+    async stop(stopOptions: { timeoutSeconds?: number } = {}): Promise<void> {
+      await starting;
+      starting = undefined;
+      asWorker = false;
+      await engine.stop(stopOptions.timeoutSeconds ?? 30);
+    },
 
     onError: (listener: (error: Error) => void) => engine.onError?.(listener),
   };
