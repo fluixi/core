@@ -8,6 +8,8 @@ export default defineConfig(() => ({
     passWithNoTests: true,
     name: '@fluixi/jobs',
     watch: false,
+    // pg-boss on PGlite starts a database and migrates it inside the first test; a CI runner needs longer than 5s.
+    testTimeout: 30_000,
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
