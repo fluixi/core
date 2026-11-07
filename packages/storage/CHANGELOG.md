@@ -1,5 +1,11 @@
 # @fluixi/storage
 
+## 1.0.0-alpha.108
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.108
+
 ## 1.0.0-alpha.107
 
 ### Patch Changes

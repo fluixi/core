@@ -1,5 +1,7 @@
 # @fluixi/router
 
+## 1.0.0-alpha.108
+
 ## 1.0.0-alpha.107
 
 ## 1.0.0-alpha.106

@@ -1,5 +1,13 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.108
+
+### Patch Changes
+
+- 8519d9b: SVG primitives such as `linearGradient`, `radialGradient`, `stop`, `mask`, `pattern`, `filter` and animation elements are recognized in the SVG namespace and rendered correctly, including when returned in a fragment outside an `<svg>` or as children of an SVG element, while `foreignObject` content is treated as HTML.
+- Updated dependencies [8519d9b]
+  - @fluixi/template-parser@1.0.0-alpha.108
+
 ## 1.0.0-alpha.107
 
 ### Patch Changes

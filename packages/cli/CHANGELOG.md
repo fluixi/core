@@ -1,5 +1,19 @@
 # @fluixi/cli
 
+## 1.0.0-alpha.108
+
+### Minor Changes
+
+- 672386c: `fluixi worker` runs the app's jobs module (default export `createJobs` from `src/jobs.ts`) and `fluixi build` outputs it to `dist/server/jobs.js` (including API-only apps), `--port` answers GET /health with a 503 status while starting or stopping, SIGTERM waits `worker.stopTimeoutSeconds` for running jobs, `fluixi dev` runs the worker beside the server and restarts it when its files change, and `worker.inline` runs it inside `fluixi start`.
+
+### Patch Changes
+
+- Updated dependencies [672386c]
+- Updated dependencies [622d590]
+- Updated dependencies [84191aa]
+  - @fluixi/start@1.0.0-alpha.108
+  - @fluixi/ts-plugin@1.0.0-alpha.108
+
 ## 1.0.0-alpha.107
 
 ### Patch Changes
