@@ -333,6 +333,42 @@ Le dernier cas coûte une connexion, que la session du fournisseur rend en gén�
 Renvoyer le jeton ne rendrait pas le nouveau et terminerait aussi les autres sessions de la
 personne. `tokenTimeoutMs` fixe la durée maximale d'une requête de jeton (10 secondes par défaut).
 
+### Quand l'application demande un nouveau scope
+
+Un renouvellement garde les scopes accordés à la connexion : ajouter un scope à `scopes` ne
+change rien pour les personnes déjà connectées, et leur prochain appel à une API qui l'exige
+échoue jusqu'à ce qu'elles se déconnectent et se reconnectent. La session enregistre désormais
+les scopes accordés, à la connexion et à chaque renouvellement, et le middleware les compare à
+`scopes`. S'il en manque un, le chargement de page suivant passe une fois par
+`/auth/login?prompt=none`, avec `returnTo` sur cette page. Le fournisseur accorde le nouveau
+scope sans rien demander quand le consentement de la personne le permet, et la page revient
+avec lui.
+
+- Seuls les chargements de page y sont envoyés, jamais les requêtes d'API ni de ressources, et
+  rien sous le chemin de base de l'authentification ni sous `publicPaths`.
+- `offline_access` est laissé hors de la comparaison : les fournisseurs l'accordent au jeton de
+  rafraîchissement, pas au jeton d'accès.
+- Une session qui n'a enregistré aucun scope compte comme ayant tout ce qui est demandé, car la
+  réponse du fournisseur omet `scope` quand il est égal à la demande. Les sessions antérieures à
+  cette version sont vérifiées à partir de leur prochain renouvellement, qui l'enregistre.
+- Un cookie, `<cookieName>_rescope`, retient pendant un jour quels scopes manquants ont été
+  tentés : un fournisseur qui en refuse encore un n'est pas sollicité à chaque page, alors
+  qu'un scope ajouté plus tard l'est.
+- Si le fournisseur doit demander quelque chose à la personne, il répond `login_required` ou
+  `consent_required`, et la personne reste connectée avec la session qu'elle avait.
+
+Un jeton lié à quelque chose que le fournisseur a choisi à la connexion, une organisation par
+exemple, doit le rester. `rescopeParams` ajoute des paramètres d'autorisation lus dans les
+claims du jeton d'accès courant (la charge utile d'un JWT ; vide pour un jeton opaque) ; les
+valeurs vides sont ignorées :
+
+```ts
+oauthRoutes({
+  scopes: ['openid', 'profile', 'email', 'appearance'],
+  rescopeParams: (claims) => ({ organization: String(claims.org_id ?? '') }),
+});
+```
+
 ### Appeler vos API au nom de l'utilisateur
 
 Une requête connectée porte aussi un `fetch` sur `locals.auth`, qui envoie le jeton d'accès de

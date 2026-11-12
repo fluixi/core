@@ -126,6 +126,43 @@ Chaque feuille de style distincte est construite une fois et partagée par toute
 sous-classes. Un parent destiné à être étendu déclare `static styles: ElementStyles`, et une
 sous-classe y ajoute avec `[super.styles, '...']`.
 
+## Enfants et slots nommés sans shadow DOM
+
+En light DOM, il n'y a pas de `<slot>` où projeter. Les enfants écrits entre les balises de
+l'élément sont retirés avant que `render()` ne s'exécute, et l'élément les place lui-même.
+`this.authoredChildren` les contient tous ; `this.slotted(nom)` ceux marqués `slot="nom"`, et
+`this.slotted()` ceux sans `slot`, textes compris :
+
+```tsx
+class FxPanel extends typedElement(panelProps) {
+  protected override render() {
+    return (
+      <section>
+        <header>{this.slotted('header')}</header>
+        <div class="body">{this.slotted()}</div>
+        <footer>{this.slotted('footer')}</footer>
+      </section>
+    );
+  }
+}
+```
+
+```html
+<fx-panel>
+  <h2 slot="header">Réglages</h2>
+  <p>Les changements s'enregistrent au fur et à mesure.</p>
+  <button slot="footer">Terminé</button>
+</fx-panel>
+```
+
+Un enfant que l'élément ne place pas n'est pas affiché, et Fluixi le signale en développement.
+Sous shadow DOM, les deux restent vides : le navigateur attribue lui-même les enfants aux
+`<slot>`.
+
+Découpez un élément plus grand en un conteneur et des parties, comme pour un composant
+(`fx-panel` et `fx-panel-item`), et laissez le conteneur transmettre son état aux parties par le
+[contexte](#contexte-entre-éléments) plutôt que par des props sur chacune.
+
 ## Contexte entre éléments
 
 Les éléments partagent des valeurs comme les composants. L'un fournit, tout élément à l'intérieur

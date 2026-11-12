@@ -66,6 +66,31 @@ either way.
 The [props example](https://github.com/fluixi/core/tree/main/examples/props) has all of it
 running, and turning the option off in its config is the quickest way to see the difference.
 
+### Which expressions stay live
+
+The compiler decides, for each prop and each child written in JSX, whether to pass a value or a
+read. It wraps the expression in a getter when anything in it can change: a call (`count()`,
+`t('key')`), a property read (`props.name`, `user.email`), or an operator over one of those.
+Literals and bare identifiers pass once.
+
+```tsx
+<Panel
+  open={open()}                    // live: a call
+  collapsed={!(pinned() && wide())} // live: a negation over calls
+  label={title() as string}        // live: a type assertion over a call
+  size="sm"                        // passed once: a literal
+  onClose={close}                  // passed once: a function value
+/>
+```
+
+Negations and other unary operators (`!x()`, `-x()`), and TypeScript's `x()!`, `x() as T` and
+`x() satisfies T`, count like the call inside them. Before 1.0.0-alpha.109 they were passed once,
+so `collapsed={!panelOpen()}` kept its first value until the page reloaded; the fix needs no
+change in your code.
+
+An arrow function is a value like any other: `onClose={() => close()}` hands over the function,
+it does not make the prop live.
+
 ## Children
 
 `props.children` holds whatever you nest inside a component:

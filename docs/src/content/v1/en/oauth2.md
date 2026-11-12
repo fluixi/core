@@ -322,6 +322,40 @@ The last case costs a sign-in, which the provider's own session usually makes si
 the token again could not get the new one back and would end the person's other sessions too.
 `tokenTimeoutMs` sets how long a token request may take (10 seconds by default).
 
+### When the app asks for a new scope
+
+A renewal keeps the scopes the session was granted at sign-in, so adding one to `scopes` does
+nothing for people already signed in: their next call to an API that needs it fails until they
+sign out and in again. The session now records the scopes it was granted, at sign-in and at each
+renewal, and the middleware compares them with `scopes`. When one is missing, the next page load
+goes once to `/auth/login?prompt=none` with `returnTo` set to that page. The provider grants the
+new scope without asking anything when the person's consent allows it, and the page comes back
+with it.
+
+- Only page loads are sent there, never API or asset requests, and nothing under the auth base
+  path or `publicPaths`.
+- `offline_access` is left out of the comparison: providers grant it to the refresh token, not
+  to the access token.
+- A session that recorded no scope counts as having everything asked for, as the token answer
+  omits `scope` when it equals the request. Sessions from before this version are checked from
+  their next renewal, which records it.
+- A cookie, `<cookieName>_rescope`, remembers for a day which missing scopes were tried, so a
+  provider that still withholds one is not asked on every page load, while a scope added later
+  is.
+- If the provider needs to ask the person something, it answers `login_required` or
+  `consent_required`, and the person stays signed in with the session they had.
+
+A token bound to something the provider chose at sign-in, an organization for instance, must
+stay bound. `rescopeParams` adds authorize parameters read from the current access token's
+claims (a JWT's payload; empty for an opaque token); empty values are left out:
+
+```ts
+oauthRoutes({
+  scopes: ['openid', 'profile', 'email', 'appearance'],
+  rescopeParams: (claims) => ({ organization: String(claims.org_id ?? '') }),
+});
+```
+
 ### Calling your APIs as the user
 
 A signed-in request also carries a `fetch` on `locals.auth` that sends the session's access

@@ -70,6 +70,32 @@ L'[exemple props](https://github.com/fluixi/core/tree/main/examples/props) montr
 fonctionnement ; désactiver l'option dans sa configuration est le moyen le plus rapide de voir
 la différence.
 
+### Quelles expressions restent vivantes
+
+Pour chaque prop et chaque enfant écrits en JSX, le compilateur choisit entre passer une valeur
+ou une lecture. Il enveloppe l'expression dans un getter dès qu'une partie peut changer : un
+appel (`count()`, `t('clé')`), une lecture de propriété (`props.name`, `user.email`), ou un
+opérateur appliqué à l'un des deux. Les littéraux et les identifiants seuls passent une fois.
+
+```tsx
+<Panel
+  open={open()}                    // vivant : un appel
+  collapsed={!(pinned() && wide())} // vivant : une négation d'appels
+  label={title() as string}        // vivant : une assertion de type sur un appel
+  size="sm"                        // passé une fois : un littéral
+  onClose={close}                  // passé une fois : une fonction
+/>
+```
+
+La négation et les autres opérateurs unaires (`!x()`, `-x()`), ainsi que `x()!`, `x() as T` et
+`x() satisfies T` de TypeScript, comptent comme l'appel qu'ils contiennent. Avant
+1.0.0-alpha.109, ils passaient une seule fois : `collapsed={!panelOpen()}` gardait sa première
+valeur jusqu'au rechargement de la page. Le correctif ne demande aucun changement dans votre
+code.
+
+Une fonction fléchée est une valeur comme une autre : `onClose={() => close()}` transmet la
+fonction, elle ne rend pas la prop vivante.
+
 ## Les enfants
 
 `props.children` contient ce que vous imbriquez dans un composant :

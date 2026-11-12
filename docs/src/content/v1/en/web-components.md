@@ -121,6 +121,42 @@ Each distinct stylesheet is constructed once and shared by every instance and su
 meant to be extended declares `static styles: ElementStyles`, and a subclass adds to it with
 `[super.styles, '...']`.
 
+## Children and named slots without shadow DOM
+
+In light DOM there is no `<slot>` to project into. The children written between the element's
+tags are taken out before `render()` runs, and the element places them itself.
+`this.authoredChildren` holds all of them; `this.slotted(name)` holds those marked
+`slot="name"`, and `this.slotted()` the ones without a `slot`, text included:
+
+```tsx
+class FxPanel extends typedElement(panelProps) {
+  protected override render() {
+    return (
+      <section>
+        <header>{this.slotted('header')}</header>
+        <div class="body">{this.slotted()}</div>
+        <footer>{this.slotted('footer')}</footer>
+      </section>
+    );
+  }
+}
+```
+
+```html
+<fx-panel>
+  <h2 slot="header">Settings</h2>
+  <p>Changes save as you go.</p>
+  <button slot="footer">Done</button>
+</fx-panel>
+```
+
+A child the element never places is not shown, and Fluixi warns about it in development. Under
+shadow DOM both stay empty: the browser assigns children to `<slot>`s itself.
+
+Split a larger element into a container and parts the way a component would (`fx-panel` and
+`fx-panel-item`), and let the container hand its state to the parts through
+[context](#context-between-elements) rather than props on each one.
+
 ## Context between elements
 
 Elements share values the way components do. One provides, any element inside it consumes, and
