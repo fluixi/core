@@ -14,11 +14,15 @@ interface Node {
 
 const CALL = new Set(['CallExpression', 'OptionalCallExpression']);
 const MEMBER = new Set(['MemberExpression', 'OptionalMemberExpression']);
+/** Type-only wrappers: `x()!`, `x() as T`, `x() satisfies T`, `<T>x()` read as what they wrap. */
+const TYPE_WRAPPER = new Set(['TSNonNullExpression', 'TSAsExpression', 'TSSatisfiesExpression', 'TSTypeAssertion', 'ParenthesizedExpression']);
 
 export function shapeOf(node: Node | null | undefined): ExprShape {
   if (!node) return { kind: 'opaque' };
 
   if (CALL.has(node.type)) return { kind: 'call' };
+
+  if (TYPE_WRAPPER.has(node.type)) return shapeOf(node.expression as Node);
 
   if (MEMBER.has(node.type)) {
     const property = node.property as Node | undefined;
@@ -34,6 +38,9 @@ export function shapeOf(node: Node | null | undefined): ExprShape {
   }
   if (node.type === 'LogicalExpression' || node.type === 'BinaryExpression') {
     return { kind: 'compound', parts: [node.left, node.right].map(part) };
+  }
+  if (node.type === 'UnaryExpression') {
+    return { kind: 'compound', parts: [part(node.argument)] };
   }
   if (node.type === 'TemplateLiteral') {
     return { kind: 'compound', parts: (node.expressions as Node[]).map(part) };

@@ -74,6 +74,12 @@ const REACTIVE: Array<[string, string]> = [
   ['{ width: w() }', 'the style-object case'],
   ['[a, b()]', 'an array with a reactive element'],
   ['{ a: { b: c() } }', 'nested objects'],
+  ['!open()', 'a negated call'],
+  ['!(a() && b())', 'a negated logical, the collapsed-when-not-open case'],
+  ['-offset()', 'a unary minus on a call'],
+  ['value()!', 'a non-null assertion on a call'],
+  ['value() as string', 'a type assertion on a call'],
+  ['value() satisfies string', 'a satisfies check on a call'],
 ];
 
 const INERT: Array<[string, string]> = [
@@ -94,6 +100,8 @@ const INERT: Array<[string, string]> = [
   ['() => count()', 'a function is passed through, not tracked'],
   ['{}', 'an empty object'],
   ['[]', 'an empty array'],
+  ['!open', 'a negated identifier'],
+  ['value as string', 'a type assertion on an identifier'],
 ];
 
 describe('the front-end maps syntax onto those shapes', () => {

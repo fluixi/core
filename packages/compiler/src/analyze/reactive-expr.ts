@@ -16,7 +16,7 @@ export type ExprShape =
    */
   | { kind: 'member'; property: string | null }
   /**
-   * Anything built out of sub-expressions: conditionals, logical and binary
+   * Anything built out of sub-expressions: conditionals, unary, logical and binary
    * operators, template literals, object and array literals. Reactive when any
    * part is, so `class={{ active: active() }}` reacts and `class={{ a: true }}`
    * does not. The front-end decides which children count: a spread element or a
