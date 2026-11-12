@@ -152,12 +152,21 @@ export interface OAuthRoutesConfig {
    * sign in, and shows the other pages as `signIn` decides.
    */
   protectedPaths?: string[];
+  /**
+   * Authorize parameters a silent sign-in for a missing scope carries over, read from the
+   * current access token's claims (a JWT's payload; empty for an opaque token). When `scopes`
+   * gains one that sessions made earlier lack, the next page load signs in again with
+   * `prompt=none` to get it, and a token bound to something (an organization) has to stay
+   * bound: `(claims) => ({ organization: String(claims.org_id ?? '') })`. Empty values are left out.
+   */
+  rescopeParams?: (claims: Record<string, unknown>) => Record<string, string>;
 }
 
 /** Ends the state of a sign-in started again after an answer the browser had no flow for. */
 const RETRY_MARK = '.retry';
 // OpenID Connect Core's prompts, and `create` from its user registration specification.
 const PROMPTS = new Set(['none', 'login', 'consent', 'select_account', 'create']);
+const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
 /** Set by the login route itself: forwarding one from the query string would let a link change it. */
 const CLIENT_PARAMS = new Set(['response_type', 'client_id', 'redirect_uri', 'scope', 'state', 'nonce', 'code_challenge', 'code_challenge_method', 'prompt', 'request', 'request_uri']);
 
@@ -230,6 +239,62 @@ function signInRedirect(request: Request, config: OAuthRoutesConfig): Response |
   const login = new URLSearchParams({ returnTo: url.pathname + url.search });
   if (mode === 'silent') login.set('prompt', 'none');
   return new Response(null, { status: 302, headers: { location: `${base}/login?${login}` } });
+}
+
+/** A JWT's payload, or nothing: the token is the session's own, so it is read, not verified. */
+function jwtClaims(token: string): Record<string, unknown> {
+  const part = token.split('.')[1];
+  if (!part) return {};
+  try {
+    const claims: unknown = JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
+    return claims && typeof claims === 'object' ? (claims as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The scopes the app asks for that this session was not granted. `offline_access` is left out:
+ * a provider grants it to the refresh token, not the access token. A session that recorded no
+ * scope is taken to have what was asked (RFC 6749 §5.1: the answer omits it when equal).
+ */
+function missingScopes(config: OAuthRoutesConfig, session: SessionPayload): string[] {
+  if (session.scope === undefined) return [];
+  const granted = new Set(session.scope.split(' ').filter(Boolean));
+  return (config.scopes ?? DEFAULT_SCOPES).filter((scope) => scope !== 'offline_access' && !granted.has(scope));
+}
+
+/**
+ * The cookie saying a silent sign-in was tried for these missing scopes. Its value is them, so
+ * a provider that still withholds one is not asked again on every page load, while a scope
+ * added later is.
+ */
+function rescopeCookie(config: OAuthRoutesConfig, missing?: string[]): { name: string; header: string } {
+  const name = `${config.cookieName ?? 'fx_session'}_rescope`;
+  const secure = config.secureCookie ?? process.env.NODE_ENV === 'production';
+  const value = encodeURIComponent((missing ?? []).join(' '));
+  return { name, header: `${name}=${value}; Path=/; Max-Age=${60 * 60 * 24}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}` };
+}
+
+/**
+ * Where a signed-in page request goes when its session lacks a scope the app now asks for: a
+ * silent sign-in, once per set of missing scopes, which keeps the session if the provider has
+ * to ask the person something. Null to render the page as is.
+ */
+function rescopeRedirect(request: Request, config: OAuthRoutesConfig, session: SessionPayload): Response | null {
+  if (!isPageRequest(request)) return null;
+  const missing = missingScopes(config, session);
+  if (!missing.length) return null;
+  const url = new URL(request.url);
+  const base = (config.basePath ?? '/auth').replace(/\/$/, '');
+  if ([base, ...(config.publicPaths ?? [])].some((path) => under(url.pathname, path))) return null;
+  const marker = rescopeCookie(config, missing);
+  if (cookieValue(request, marker.name) === encodeURIComponent(missing.join(' '))) return null;
+  const login = new URLSearchParams({ returnTo: url.pathname + url.search, prompt: 'none' });
+  for (const [name, value] of Object.entries(config.rescopeParams?.(jwtClaims(session.accessToken)) ?? {})) {
+    if (value) login.set(name, value);
+  }
+  return new Response(null, { status: 302, headers: { location: `${base}/login?${login}`, 'set-cookie': marker.header } });
 }
 
 /**
@@ -305,6 +370,8 @@ interface SessionPayload {
   dpop?: StoredDpopKey;
   /** What the provider's answer said about its browser session, for the page to watch. */
   sessionState?: string;
+  /** The scopes the provider granted, as its token answer listed them; absent when it did not. */
+  scope?: string;
   /** The flow's temporary values, kept only between the redirect and the callback. */
   pending?: { verifier: string; state: string; returnTo?: string; silent?: boolean };
 }
@@ -452,6 +519,7 @@ function renew(
       tokenType: typeof payload.token_type === 'string' ? payload.token_type : current.tokenType,
       dpop: current.dpop,
       sessionState: current.sessionState,
+      scope: typeof payload.scope === 'string' ? payload.scope : current.scope,
     } satisfies SessionPayload;
   })().catch((error: unknown) => {
     // Not processed (the provider down or busy): nothing was spent. Ask again after the pause.
@@ -511,7 +579,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       headers: { 'content-type': 'application/json', ...headers },
     });
   const base = (config.basePath ?? '/auth').replace(/\/$/, '');
-  const scopes = config.scopes ?? ['openid', 'profile', 'email'];
+  const scopes = config.scopes ?? DEFAULT_SCOPES;
   const cookie = createSessionCookie<SessionPayload>({
     secret: config.cookieSecret,
     name: config.cookieName,
@@ -593,10 +661,12 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
       }
 
       // The verifier goes in the cookie, which is the only thing that survives the trip
-      // and is not readable by the page.
+      // and is not readable by the page. A silent sign-in from a signed-in page (a scope the
+      // session lacks) keeps the session beside it, so a provider that has to ask leaves it.
+      const kept = prompt === 'none' ? await session() : null;
       const pendingCookie = await cookie.write(
         {
-          accessToken: '',
+          ...(kept?.accessToken ? { ...kept, pending: undefined } : { accessToken: '' }),
           pending: {
             verifier,
             state,
@@ -611,8 +681,8 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
           },
         },
         // Ten minutes: long enough to sign in, short enough that an abandoned attempt
-        // does not sit in the browser.
-        { maxAge: 600 },
+        // does not sit in the browser. A kept session keeps its own lifetime.
+        kept?.accessToken ? undefined : { maxAge: 600 },
       );
 
       return new Response(null, {
@@ -637,6 +707,12 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
           allowedOrigins: config.allowedReturnOrigins,
         });
         const headers = new Headers();
+        if (ours && pending.silent && SILENT_REFUSALS.has(error) && current?.accessToken) {
+          // Signed in already and only after a scope: the session stays as it was.
+          headers.set('set-cookie', await cookie.write({ ...current, pending: undefined }));
+          headers.set('location', location);
+          return new Response(null, { status: 302, headers });
+        }
         headers.append('set-cookie', cookie.clear());
         if (ours && pending.silent && SILENT_REFUSALS.has(error)) {
           // Nobody signed in at the provider: remember it was asked, and show the page as is.
@@ -719,6 +795,7 @@ export function oauthRoutes(config: OAuthRoutesConfig) {
         tokenType: typeof payload.token_type === 'string' ? payload.token_type : undefined,
         dpop: key ? await exportDpopKey(key) : undefined,
         sessionState: sessionStateFrom(url),
+        scope: typeof payload.scope === 'string' ? payload.scope : undefined,
       });
 
       return new Response(null, {
@@ -944,6 +1021,10 @@ export function sessionLocals(config: OAuthRoutesConfig) {
       session = null;
       return signedOut();
     }
+
+    // Granted fewer scopes than the app asks for now: a silent sign-in brings them, once.
+    const rescope = rescopeRedirect(request, config, session);
+    if (rescope) return respond(rescope);
 
     // Server code calls the app's APIs as this user with it; the token itself stays here.
     const live: SessionPayload = session;
