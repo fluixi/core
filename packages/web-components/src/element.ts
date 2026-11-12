@@ -8,7 +8,7 @@
  * that and `dispose` takes the whole subtree down.
  *
  * Visibility is deliberate. The platform callbacks are public because the browser calls
- * them. `render`, `emit`, `targets`, `renderRoot`, `internals` and `authoredChildren` are
+ * them. `render`, `emit`, `targets`, `renderRoot`, `internals`, `authoredChildren` and `slotted` are
  * protected: they are for the element's own code, not its consumers. The engine's state is
  * in `#private` fields, private at runtime and not only to TypeScript.
  *
@@ -423,6 +423,18 @@ export class HTMLReactiveElement extends BaseElement {
    */
   protected get authoredChildren(): readonly ChildNode[] {
     return this.#authored;
+  }
+
+  /**
+   * The authored children for one named slot in light DOM: those with `slot="name"`, or, with
+   * no name, those without a `slot` (text included). The element places each group itself, the
+   * light DOM counterpart of `<slot name>`. Empty under shadow DOM, where the browser assigns them.
+   */
+  protected slotted(name?: string): ChildNode[] {
+    return this.#authored.filter((node) => {
+      const slot = 'getAttribute' in node ? (node as Element).getAttribute('slot') : null;
+      return name ? slot === name : !slot;
+    });
   }
 
   /**
