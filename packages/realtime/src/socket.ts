@@ -1,4 +1,4 @@
-import { batch, getOwner, onCleanup, signal, type Accessor } from '@fluixi/reactive';
+import { batch, getOwner, onCleanup, signal, untrack, type Accessor } from '@fluixi/reactive';
 import { raw, type Serializer } from './serializers.js';
 import { byteSize, globalTransport, type CloseInfo, type RawData, type SendData, type WebSocketLike, type WebSocketTransport } from './transport.js';
 
@@ -365,7 +365,9 @@ export function createWebSocket<In, Out>(
     connect() {
       autoConnect = false;
       if (disposed || !transport) return;
-      const now = status();
+      // Commands read the state without tracking it: called from an effect, they must not make
+      // it run again on every status change.
+      const now = untrack(status);
       if (now === 'open' || now === 'connecting') return;
       if (now === 'closing') drop(1000, '');
       clearTimeout(retryTimer);
@@ -373,7 +375,7 @@ export function createWebSocket<In, Out>(
       void open();
     },
     send(message) {
-      const now = status();
+      const now = untrack(status);
       if (disposed || (now === 'idle' && !autoConnect) || now === 'closing' || now === 'closed') return 'closed';
       const frame = serializer.encode(message);
       if (byteSize(frame) > maxMessageSize) return 'too-large';
@@ -406,7 +408,7 @@ export function createWebSocket<In, Out>(
       generation += 1;
       clearTimers();
       if (!current) {
-        if (status() !== 'idle') status.set('closed');
+        if (untrack(status) !== 'idle') status.set('closed');
         discardQueue();
         return;
       }

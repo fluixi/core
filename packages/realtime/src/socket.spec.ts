@@ -449,3 +449,26 @@ describe('types', () => {
     expectTypeOf(plain.send).parameter(0).toEqualTypeOf<SendData>();
   });
 });
+
+describe('commands inside an effect', () => {
+  it('connect, send and close do not make the effect follow the status', async () => {
+    const { transport, last } = fakeTransport();
+    const socket = createWebSocket('wss://example.test', { transport, connect: false });
+    let runs = 0;
+    const dispose = createRoot((dispose) => {
+      effect(() => {
+        runs += 1;
+        socket.connect();
+        socket.send('hello');
+      });
+      return dispose;
+    });
+    await flush();
+    last().accept();
+    await flush();
+    last().drop(1006);
+    await flush();
+    expect(runs).toBe(1);
+    dispose();
+  });
+});

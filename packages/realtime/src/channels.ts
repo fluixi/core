@@ -1,4 +1,4 @@
-import { getOwner, onCleanup, type Accessor } from '@fluixi/reactive';
+import { getOwner, onCleanup, untrack, type Accessor } from '@fluixi/reactive';
 import { json } from './serializers.js';
 import type { ChannelMessage, ClientFrame, ServerFrame } from './channel-protocol.js';
 import { createWebSocket, type ConnectionStatus, type RealtimeError, type WebSocketConnection, type WebSocketOptions } from './socket.js';
@@ -57,7 +57,7 @@ export function createChannelClient(url: string | (() => string | Promise<string
   const channels = new Map<string, Channel>();
 
   const join = (name: string, channel: Channel) => {
-    if (channel.joined || !connection.connected()) return;
+    if (channel.joined || !untrack(connection.connected)) return;
     channel.joined = true;
     connection.send(channel.last === undefined ? { t: 'join', c: name } : { t: 'join', c: name, since: channel.last });
   };
@@ -102,7 +102,7 @@ export function createChannelClient(url: string | (() => string | Promise<string
         const current = channels.get(name);
         if (!current?.subscribers.delete(subscriber) || current.subscribers.size) return;
         channels.delete(name);
-        if (current.joined && connection.connected()) connection.send({ t: 'leave', c: name });
+        if (current.joined && untrack(connection.connected)) connection.send({ t: 'leave', c: name });
       };
       if (getOwner()) onCleanup(stop);
       return stop;
