@@ -1089,6 +1089,34 @@ importers:
         specifier: ^2.11.10
         version: 2.11.14(@testing-library/jest-dom@6.9.1)(solid-js@1.9.13)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
 
+  packages/realtime:
+    dependencies:
+      '@fluixi/reactive':
+        specifier: workspace:^
+        version: link:../reactive
+    devDependencies:
+      '@bambiste/mix-builder':
+        specifier: ^0.4.0
+        version: 0.4.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+      '@fluixi/dom':
+        specifier: workspace:^
+        version: link:../dom
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.5
+      '@types/ws':
+        specifier: ^8.5.13
+        version: 8.18.2
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      ws:
+        specifier: ^8.18.0
+        version: 8.21.0
+
   packages/router:
     devDependencies:
       '@bambiste/mix-builder':
@@ -4170,6 +4198,9 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260430.1':
     resolution: {integrity: sha512-1Rk5JoMlmlF4GzeNxQmpaZSSPFa056DCrGLjhXwVIqRf8+pGNKKxyD2ugGSyOeLShqYb1XUoE9LhsAhdh1xgSA==}
@@ -10296,6 +10327,10 @@ snapshots:
       '@types/node': 22.20.5
 
   '@types/trusted-types@2.0.7': {}
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 22.20.5
 
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260430.1':
     optional: true

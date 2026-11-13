@@ -83,6 +83,9 @@
     },
     {
       "path": "./packages/cron"
+    },
+    {
+      "path": "./packages/realtime"
     }
   ]
 }

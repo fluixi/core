@@ -19,7 +19,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Data', fr: 'Données' },
-    slugs: ['caching', 'storage', 'app-storage'],
+    slugs: ['caching', 'storage', 'app-storage', 'realtime'],
   },
   {
     group: { en: 'Authentication', fr: 'Authentification' },
