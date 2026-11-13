@@ -152,15 +152,19 @@ function TaskList() {
 ```
 
 `close()` s'arrête sans se reconnecter et `connect()` rouvre ; `dispose()` ferme pour de bon
-et retire tous les abonnés. `connect: false` crée la connexion sans l'ouvrir.
+et retire tous les abonnés. `connect: false` crée la connexion sans l'ouvrir ;
+`connect()` l'ouvre aussitôt.
 
 ## Rendu serveur
 
 Sans `document`, rien ne se connecte, même si Node 22 a un `WebSocket` : un module ou un
 composant évalué sur le serveur laisse la connexion en `idle`, `connect()` ne fait rien et
-`send` répond `closed`. L'hydratation exécute un composant une fois dans le navigateur, il
+`send` répond `closed`. Dans le navigateur, la première tentative démarre une fois la tâche
+en cours terminée : l'hydratation lit encore `idle`, donc un composant qui affiche l'état
+hydrate le texte envoyé par le serveur, puis se met à jour quand la connexion s'ouvre. Les
+messages envoyés avant sont mis en file. L'hydratation exécute un composant une fois, il
 ouvre donc une seule connexion, et une connexion partagée créée dans un module s'ouvre une
-fois par page. Le code qui dépend de `connected()` rend sa variante de repli sur le serveur.
+fois par page.
 
 Pour utiliser le client dans Node ou dans des tests, passez `transport` :
 `globalTransport()` pour le `WebSocket` du runtime, ou tout objet qui implémente

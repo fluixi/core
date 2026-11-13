@@ -150,15 +150,18 @@ function TaskList() {
 ```
 
 `close()` stops without reconnecting and `connect()` opens again; `dispose()` closes for good
-and drops every subscriber. `connect: false` creates the connection without opening it.
+and drops every subscriber. `connect: false` creates the connection without opening it;
+`connect()` opens it at once.
 
 ## Server rendering
 
 Without a `document` nothing connects, even though Node 22 has a `WebSocket`: a module or a
 component evaluated on the server leaves the connection `idle`, `connect()` does nothing and
-`send` answers `closed`. Hydration runs a component once in the browser, so it opens one
-connection, and a shared one created in a module opens once per page. Code that branches on
-`connected()` renders its fallback on the server.
+`send` answers `closed`. In the browser the first attempt starts once the running task ends:
+hydration still reads `idle`, so a component that shows the status hydrates the text the
+server sent, then updates as the connection opens. Messages sent before that are queued.
+Hydration runs a component once, so it opens one connection, and a shared one created in a
+module opens once per page.
 
 To use the client in Node or in tests, pass `transport`: `globalTransport()` for the
 runtime's own `WebSocket`, or anything that implements `WebSocketLike`.

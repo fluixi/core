@@ -73,7 +73,11 @@ export interface WebSocketOptions<In, Out> {
   protocols?: string | string[];
   /** Encoding of messages; frames pass as they are without one. */
   serializer?: Serializer<In, Out>;
-  /** Connect when created, in a browser. Default: true */
+  /**
+   * Connect once created, in a browser. The attempt starts when the code running now has
+   * finished, so a hydrating page still reads `idle`, as the server rendered it; messages sent
+   * before then are queued. Default: true
+   */
   connect?: boolean;
   /** Form of binary frames. Default: 'arraybuffer' */
   binaryType?: 'arraybuffer' | 'blob';
@@ -149,7 +153,7 @@ const BUFFER_POLL_MS = 100;
  * Created inside a reactive owner (a component), it closes with that owner; created outside one
  * (a module, an app-wide service), it lives until `dispose()`, and components consume it with
  * `subscribe` and `on`, which end with theirs. On the server, without a `transport`, nothing
- * connects: server rendering and hydration open no socket of their own.
+ * connects; in the browser the first attempt waits for the running task, hydration included.
  */
 export function createWebSocket(url: string | (() => string | Promise<string>), options?: WebSocketOptions<RawData, SendData> & { serializer?: undefined }): WebSocketConnection<RawData, SendData>;
 export function createWebSocket<In, Out>(url: string | (() => string | Promise<string>), options: WebSocketOptions<In, Out> & { serializer: Serializer<In, Out> }): WebSocketConnection<In, Out>;
@@ -187,6 +191,8 @@ export function createWebSocket<In, Out>(
   let generation = 0;
   let failures = 0;
   let disposed = false;
+  /** The automatic first connect, until it runs or something else decides. */
+  let autoConnect = options.connect !== false && !!transport;
   let connectTimer: ReturnType<typeof setTimeout> | undefined;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let beatTimer: ReturnType<typeof setInterval> | undefined;
@@ -357,6 +363,7 @@ export function createWebSocket<In, Out>(
     info,
     buffered,
     connect() {
+      autoConnect = false;
       if (disposed || !transport) return;
       const now = status();
       if (now === 'open' || now === 'connecting') return;
@@ -367,7 +374,7 @@ export function createWebSocket<In, Out>(
     },
     send(message) {
       const now = status();
-      if (disposed || now === 'idle' || now === 'closing' || now === 'closed') return 'closed';
+      if (disposed || (now === 'idle' && !autoConnect) || now === 'closing' || now === 'closed') return 'closed';
       const frame = serializer.encode(message);
       if (byteSize(frame) > maxMessageSize) return 'too-large';
       if (now === 'open') {
@@ -392,6 +399,7 @@ export function createWebSocket<In, Out>(
       return stop;
     },
     close(code = 1000, reason = '') {
+      autoConnect = false;
       clearTimeout(retryTimer);
       retryTimer = undefined;
       const current = socket;
@@ -423,7 +431,7 @@ export function createWebSocket<In, Out>(
   };
 
   if (getOwner()) onCleanup(() => connection.dispose());
-  if (options.connect !== false) connection.connect();
+  if (autoConnect) queueMicrotask(() => autoConnect && connection.connect());
   return connection;
 }
 
