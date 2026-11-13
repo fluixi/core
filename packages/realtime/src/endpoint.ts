@@ -15,6 +15,12 @@ export interface ServerConnection<Context> {
   /** Bytes queued in the socket and not yet written. */
   readonly buffered: number;
   send(data: ServerSendData): ServerSendResult;
+  /**
+   * Settles once at most `bytes` wait unsent (half of `maxBuffered` by default), or the
+   * connection closed: after `buffer-full`, wait on it before sending more. Node's socket gives
+   * no event for this through `ws`, so it is checked every 20 ms while it waits.
+   */
+  drained(bytes?: number): Promise<void>;
   close(code?: number, reason?: string): void;
   /** Text frames arrive as strings, binary ones as bytes. */
   on(event: 'message', handler: (data: string | Uint8Array) => void): () => void;
@@ -58,6 +64,8 @@ export interface WebSocketServerOptions<Context> {
    */
   maxAge?: number;
 }
+
+const DRAIN_POLL_MS = 20;
 
 /** The close code for a connection past `maxAge`: reconnect, authenticating again. */
 export const CLOSE_REAUTHENTICATE = 4100;
@@ -197,6 +205,15 @@ function wrap<Context>(ws: WebSocket, context: Context, maxBuffered: number): Se
       if (ws.bufferedAmount > maxBuffered) return 'buffer-full';
       ws.send(data);
       return 'sent';
+    },
+    drained(bytes = maxBuffered / 2) {
+      return new Promise<void>((resolve) => {
+        const check = () => {
+          if (ws.readyState !== ws.OPEN || ws.bufferedAmount <= bytes) return resolve();
+          setTimeout(check, DRAIN_POLL_MS);
+        };
+        check();
+      });
     },
     close(code = 1000, reason = '') {
       ws.close(code, reason);

@@ -225,7 +225,8 @@ export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close(
   reconnects to another instance), and drops what is left after 5 s.
 
 Text frames reach `on('message')` as strings, binary ones as bytes. `send` answers `sent`,
-`buffer-full` or `closed`.
+`buffer-full` or `closed`; after `buffer-full`, `await connection.drained()` waits until half of
+`maxBuffered` is left unsent (or the connection closed) before sending more.
 
 ## Channels
 
@@ -243,7 +244,7 @@ export const channels = createChannelServer({
   authenticate: (request) => sessionFromCookie(request.headers.cookie),
   authorize: (user, channel) => user.organizations.includes(channel.split(':')[1]),
   replay: (channel, since) => events.after(channel, since), // null when it cannot: clients resync
-  bus: postgresBus({ listen: pgListenClient }),
+  bus: postgresBus({ listen: () => new pg.Client(process.env.DATABASE_URL_DIRECT) }),
 });
 
 export default defineServer({ start: channels.start, upgrade: channels.upgrade, shutdown: () => channels.close() });
@@ -275,7 +276,9 @@ function TaskList() {
   when it returns null, the client gets `onResync`: refetch what the channel feeds.
 - **Several servers.** `publish` goes through the bus, so every instance delivers it.
   `memoryBus()` is the default for one process; `postgresBus` uses `LISTEN`/`NOTIFY` on a
-  direct connection (a pooler in transaction mode drops `LISTEN`). Postgres refuses payloads
+  direct connection (a pooler in transaction mode drops `LISTEN`). Give `listen` a function
+  that opens a client, and a lost connection is opened again with growing waits; what was
+  published meanwhile is missed, so every member gets `onResync` once it is back. Postgres refuses payloads
   of 8000 bytes or more: publish ids and let the page fetch the record through the API, which
   checks access again.
 - **Protocol.** JSON frames: `join`, `leave` from the client; `msg`, `joined`, `denied`,

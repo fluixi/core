@@ -118,7 +118,14 @@ describe('createWebSocketServer', () => {
     await client(`ws://${host}/live`, signedIn);
     await vi.waitFor(() => expect(connections).toHaveLength(1));
     expect(connections[0]!.send('x')).toBe('buffer-full');
+    // Nothing waits unsent on a fast local socket: drained settles at once for a real bound.
+    await expect(connections[0]!.drained(0)).resolves.toBeUndefined();
+    let settled = false;
+    void connections[0]!.drained(-1).then(() => (settled = true));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(settled).toBe(false);
     connections[0]!.close();
+    await vi.waitFor(() => expect(settled).toBe(true));
     await vi.waitFor(() => expect(connections[0]!.send('x')).toBe('closed'));
   });
 

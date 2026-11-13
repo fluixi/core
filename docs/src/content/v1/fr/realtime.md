@@ -232,7 +232,9 @@ export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close(
   se reconnecte à une autre instance), et coupe ce qui reste après 5 s.
 
 Les trames texte arrivent à `on('message')` en chaînes, les binaires en octets. `send` répond
-`sent`, `buffer-full` ou `closed`.
+`sent`, `buffer-full` ou `closed` ; après `buffer-full`, `await connection.drained()` attend
+qu'il ne reste plus que la moitié de `maxBuffered` à envoyer (ou que la connexion soit
+fermée) avant d'envoyer davantage.
 
 ## Canaux
 
@@ -250,7 +252,7 @@ export const channels = createChannelServer({
   authenticate: (request) => sessionFromCookie(request.headers.cookie),
   authorize: (user, channel) => user.organizations.includes(channel.split(':')[1]),
   replay: (channel, since) => events.after(channel, since), // null quand impossible : les clients resynchronisent
-  bus: postgresBus({ listen: pgListenClient }),
+  bus: postgresBus({ listen: () => new pg.Client(process.env.DATABASE_URL_DIRECT) }),
 });
 
 export default defineServer({ start: channels.start, upgrade: channels.upgrade, shutdown: () => channels.close() });
@@ -285,6 +287,9 @@ function TaskList() {
 - **Plusieurs serveurs.** `publish` passe par le bus, donc chaque instance le distribue.
   `memoryBus()` est la valeur par défaut pour un seul processus ; `postgresBus` utilise
   `LISTEN`/`NOTIFY` sur une connexion directe (un pooler en mode transaction perd `LISTEN`).
+  Donnez à `listen` une fonction qui ouvre un client, et une connexion perdue est rouverte
+  avec des attentes croissantes ; ce qui a été publié entre-temps est perdu, donc chaque
+  membre reçoit `onResync` une fois la connexion revenue.
   Postgres refuse les charges de 8000 octets ou plus : publiez des ids et laissez la page
   charger l'enregistrement par l'API, qui contrôle l'accès à nouveau.
 - **Protocole.** Des trames JSON : `join`, `leave` côté client ; `msg`, `joined`, `denied`,

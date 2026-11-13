@@ -183,6 +183,19 @@ describe('channels', () => {
     await vi.waitFor(() => expect(denied).toHaveBeenCalled());
   });
 
+  it('tells every member to resync when the bus reports a gap', async () => {
+    const gaps = new Set<() => void>();
+    const bus = { ...memoryBus(), onGap: (handler: () => void) => (gaps.add(handler), () => void gaps.delete(handler)) };
+    const { channels, url } = await serve({ bus });
+    const live = client(url);
+    const resync = vi.fn();
+    live.subscribe('team:a', () => {}, { onResync: resync });
+    await connectionsOf(channels);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    for (const gap of gaps) gap();
+    await vi.waitFor(() => expect(resync).toHaveBeenCalledTimes(1));
+  });
+
   it('reaches clients on another instance through a shared bus', async () => {
     const bus = memoryBus();
     const first = await serve({ bus });
@@ -199,17 +212,35 @@ describe('channels', () => {
 });
 
 describe('postgresBus', () => {
-  function fakePg() {
-    let listener: ((notification: { channel: string; payload?: string }) => void) | undefined;
-    const queries: [string, unknown[] | undefined][] = [];
-    const pg: PostgresNotifyClient = {
-      async query(sql, params) {
+  /**
+   * A Postgres client in memory: notifications loop back, and `lose()` drops the connection.
+   * `unconnected` for one made as `new pg.Client(...)` is: it records a LISTEN sent before `connect`.
+   */
+  function fakePg(unconnected = false) {
+    const log: [string, unknown[] | undefined][] = [];
+    const events: Record<string, ((value?: unknown) => void)[]> = {};
+    let listening = false;
+    const queries = log;
+    let connected = !unconnected;
+    const pg = {
+      connect: async () => void (connected = true),
+      async query(sql: string, params?: unknown[]) {
+        if (!connected && sql.startsWith('LISTEN')) queries.push(['(not connected)', undefined]);
         queries.push([sql, params]);
-        if (sql.startsWith('SELECT pg_notify')) listener?.({ channel: params![0] as string, payload: params![1] as string });
+        if (sql.startsWith('LISTEN')) listening = true;
+        if (sql.startsWith('UNLISTEN')) listening = false;
+        if (sql.startsWith('SELECT pg_notify') && listening) {
+          for (const fn of events.notification ?? []) fn({ channel: params![0] as string, payload: params![1] as string });
+        }
       },
-      on: (_, fn) => (listener = fn),
-      off: () => (listener = undefined),
-    };
+      on: (event: string, fn: (value?: never) => void) => void (events[event] ??= []).push(fn as (value?: unknown) => void),
+      off: (event: string, fn: unknown) => void (events[event] = (events[event] ?? []).filter((each) => each !== fn)),
+      end: async () => {},
+      lose() {
+        listening = false;
+        for (const fn of events.end ?? []) fn();
+      },
+    } as unknown as PostgresNotifyClient & { lose(): void };
     return { pg, queries };
   }
 
@@ -225,6 +256,25 @@ describe('postgresBus', () => {
     expect(received).toHaveBeenCalledWith('team:a', { id: '1', type: 't', data: null });
     await bus.close!();
     expect(queries.at(-1)![0]).toBe('UNLISTEN fluixi_realtime');
+  });
+
+  it('opens a lost listening connection again, and reports the gap', async () => {
+    const made: ReturnType<typeof fakePg>[] = [];
+    const bus = postgresBus({ listen: () => (made.push(fakePg(true)), made.at(-1)!.pg), reconnectDelay: 10 });
+    // Clients the bus makes are connected by it before LISTEN.
+    const received = vi.fn();
+    const gap = vi.fn();
+    bus.subscribe(received);
+    bus.onGap!(gap);
+    await bus.start!();
+    (made[0]!.pg as unknown as { lose(): void }).lose();
+    await vi.waitFor(() => expect(gap).toHaveBeenCalledTimes(1));
+    expect(made).toHaveLength(2);
+    expect(made[0]!.queries[0]![0]).toBe('LISTEN fluixi_realtime');
+    expect(made[1]!.queries[0]![0]).toBe('LISTEN fluixi_realtime');
+    await bus.publish('team:a', { id: '9', type: 't', data: null });
+    expect(received).toHaveBeenCalledWith('team:a', { id: '9', type: 't', data: null });
+    await bus.close!();
   });
 
   it('refuses a payload Postgres would refuse, and an unsafe channel name', async () => {

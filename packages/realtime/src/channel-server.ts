@@ -48,6 +48,10 @@ export function createChannelServer<Context>(options: ChannelServerOptions<Conte
     }
   };
   const unsubscribe = bus.subscribe(deliver);
+  // The bus may have missed messages: every member refetches what it shows.
+  const unwatchGaps = bus.onGap?.(() => {
+    for (const [channel, set] of members) for (const connection of set.keys()) send(connection, { t: 'resync', c: channel });
+  });
 
   const leave = (connection: ServerConnection<Context>, channel: string) => {
     const set = members.get(channel);
@@ -125,6 +129,7 @@ export function createChannelServer<Context>(options: ChannelServerOptions<Conte
     publish: (channel, message) => bus.publish(channel, message),
     async close(timeout) {
       unsubscribe();
+      unwatchGaps?.();
       await server.close(timeout);
       await bus.close?.();
     },
