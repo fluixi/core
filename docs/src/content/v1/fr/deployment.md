@@ -172,6 +172,21 @@ export default defineServer({
 - Les adaptateurs web, Cloudflare, Netlify et Vercel ne font tourner aucun processus
   durable : un build avec `src/server.ts` échoue pour eux, en disant pourquoi.
 
+Une application web qui transmet `/api` à un service d'API peut aussi lui transmettre ses
+upgrades WebSocket, pour que le navigateur garde une seule origine. `forward` ne le peut pas,
+fetch ne portant pas d'upgrade :
+
+```ts
+// src/server.ts de l'application web
+import { defineServer, forwardUpgrade } from '@fluixi/start/server';
+
+export default defineServer({ upgrade: forwardUpgrade({ to: process.env.API_URL!, prefix: '/api' }) });
+```
+
+La connexion est transmise telle quelle : rien n'y est lu ni ajouté, c'est donc l'API qui
+l'authentifie (avec un ticket de courte durée, voir [Temps réel](/v1/fr/realtime)). Un refus
+de l'API parvient entier au navigateur ; une API injoignable répond 502.
+
 ## Les plateformes hébergées
 
 Trois adaptateurs produisent la disposition que leur plateforme lit. Chacun inline le

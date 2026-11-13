@@ -163,6 +163,20 @@ export default defineServer({
 - The web, Cloudflare, Netlify and Vercel adapters run no long-lived process: a build with
   `src/server.ts` fails for them, saying why.
 
+A web app that forwards `/api` to an API service can forward its WebSocket upgrades too, so
+the browser keeps one origin. `forward` cannot, since fetch carries no upgrade:
+
+```ts
+// src/server.ts in the web app
+import { defineServer, forwardUpgrade } from '@fluixi/start/server';
+
+export default defineServer({ upgrade: forwardUpgrade({ to: process.env.API_URL!, prefix: '/api' }) });
+```
+
+The connection is piped as it is: nothing on it is read or added, so the API authenticates it
+(with a short-lived ticket, see [Realtime](/v1/en/realtime)). A refusal from the API reaches
+the browser whole; an API that cannot be reached answers 502.
+
 ## The hosted platforms
 
 Three adapters emit the layout their platform reads. Each inlines the framework and

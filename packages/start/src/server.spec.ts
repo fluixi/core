@@ -7,7 +7,7 @@ import { nodeAdapter, webAdapter, type RunningServer } from './adapter.js';
 import { checkServerModule } from './commands/build.js';
 import { loadBuiltServerHooks } from './commands/start.js';
 import { resolveConfig } from './config.js';
-import { defineServer, isServerHooks, type ServerHooks } from './server.js';
+import { defineServer, forwardUpgrade, isServerHooks, type ServerHooks } from './server.js';
 import { withDeadline } from './worker.js';
 
 /** Sends a raw upgrade request and returns the first chunk of the answer. */
@@ -116,5 +116,65 @@ describe('types', () => {
   it('takes hooks that return whatever promise they have', () => {
     const stop = () => Promise.all([Promise.resolve(1), Promise.resolve('x')]);
     expect(isServerHooks(defineServer({ start: stop, shutdown: stop }))).toBe(true);
+  });
+});
+
+describe('forwardUpgrade', () => {
+  /** An upstream that echoes what it gets after the handshake, and refuses /api/deny. */
+  async function upstream() {
+    const { createServer } = await import('node:http');
+    const seen: Record<string, string | string[] | undefined>[] = [];
+    const server = createServer();
+    server.on('upgrade', (request, socket) => {
+      seen.push(request.headers);
+      if (request.url === '/api/deny') return socket.end('HTTP/1.1 401 Unauthorized\r\nX-Why: no ticket\r\nContent-Length: 2\r\n\r\nno');
+      socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n');
+      socket.on('data', (chunk) => socket.write(Buffer.concat([Buffer.from('echo:'), chunk])));
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { server, seen, url: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+  }
+
+  function exchange(port: number, path: string, payload?: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let text = '';
+      const socket = connect(port, '127.0.0.1', () => {
+        socket.write(`GET ${path} HTTP/1.1\r\nHost: app.example.test\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nX-Forwarded-For: 6.6.6.6\r\n\r\n`);
+      });
+      socket.on('data', (chunk) => {
+        text += chunk.toString();
+        if (payload && text.includes('\r\n\r\n') && !text.includes(payload)) socket.write(payload);
+        if (!payload || text.includes(`echo:${payload}`)) {
+          socket.destroy();
+          resolve(text);
+        }
+      });
+      socket.once('close', () => resolve(text));
+      socket.once('error', reject);
+    });
+  }
+
+  it('pipes upgrades under the prefix both ways, with the caller address it saw', async () => {
+    const far = await upstream();
+    const { port, running } = await serve({ upgrade: forwardUpgrade({ to: far.url }) });
+    const text = await exchange(port, '/api/v1/live?x=1', 'hello');
+    expect(text).toMatch(/^HTTP\/1.1 101/);
+    expect(text).toContain('echo:hello');
+    expect(far.seen[0]!.host).toBe(new URL(far.url).host);
+    expect(far.seen[0]!['x-forwarded-for']).toBe('127.0.0.1');
+    await running.close();
+    far.server.close();
+  });
+
+  it('passes a refusal back whole, leaves other paths, and answers 502 when the far side is down', async () => {
+    const far = await upstream();
+    const { port, running } = await serve({ upgrade: forwardUpgrade({ to: far.url }) });
+    const refused = await exchange(port, '/api/deny');
+    expect(refused).toMatch(/^HTTP\/1.1 401/);
+    expect(refused).toContain('X-Why: no ticket');
+    expect(await exchange(port, '/elsewhere')).toMatch(/^HTTP\/1.1 404/);
+    await new Promise((resolve) => far.server.close(resolve));
+    expect(await exchange(port, '/api/live')).toMatch(/^HTTP\/1.1 502/);
+    await running.close();
   });
 });
