@@ -230,6 +230,64 @@ export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close(
 Les trames texte arrivent à `on('message')` en chaînes, les binaires en octets. `send` répond
 `sent`, `buffer-full` ou `closed`.
 
+## Canaux
+
+La plupart des applications veulent des flux nommés, pas une socket brute : « les changements
+sur les tâches de cette organisation ». Le serveur et le client de canaux ajoutent cela par
+dessus, avec un contrôle d'accès par canal et un rattrapage après une reconnexion.
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { createChannelServer, postgresBus } from '@fluixi/realtime/server';
+
+export const channels = createChannelServer({
+  path: '/live',
+  authenticate: (request) => sessionFromCookie(request.headers.cookie),
+  authorize: (user, channel) => user.organizations.includes(channel.split(':')[1]),
+  replay: (channel, since) => events.after(channel, since), // null quand impossible : les clients resynchronisent
+  bus: postgresBus({ listen: pgListenClient }),
+});
+
+export default defineServer({ start: channels.start, upgrade: channels.upgrade, shutdown: () => channels.close() });
+
+// là où un changement est enregistré
+await channels.publish(`org:${orgId}`, { id: String(event.sequence), type: 'task.changed', data: { id: task.id } });
+```
+
+```ts
+// dans le navigateur
+import { createChannelClient } from '@fluixi/realtime';
+
+export const live = createChannelClient('/live');
+
+function TaskList() {
+  live.subscribe(`org:${orgId}`, (message) => message.type === 'task.changed' && tasks.refetch(), {
+    onResync: () => tasks.refetch(),
+  });
+  // ...
+}
+```
+
+- **Rejoindre.** Le premier abonné d'un canal le rejoint, le dernier qui s'arrête le quitte,
+  et un abonnement fait dans un composant s'arrête avec lui. `authorize` s'exécute à chaque
+  entrée ; un refus appelle `onDenied`. Une connexion rejoint 100 canaux au plus
+  (`maxChannels`).
+- **Rattraper.** Chaque message porte un `id` que l'application ordonne. Après une
+  reconnexion, le client rejoint avec le dernier id vu, et `replay` rend ce qui a suivi. Les
+  messages publiés pendant le rattrapage sont retenus puis envoyés après, sans doublon. Sans
+  `replay`, ou quand il rend null, le client reçoit `onResync` : rechargez ce que le canal
+  alimente.
+- **Plusieurs serveurs.** `publish` passe par le bus, donc chaque instance le distribue.
+  `memoryBus()` est la valeur par défaut pour un seul processus ; `postgresBus` utilise
+  `LISTEN`/`NOTIFY` sur une connexion directe (un pooler en mode transaction perd `LISTEN`).
+  Postgres refuse les charges de 8000 octets ou plus : publiez des ids et laissez la page
+  charger l'enregistrement par l'API, qui contrôle l'accès à nouveau.
+- **Protocole.** Des trames JSON : `join`, `leave` côté client ; `msg`, `joined`, `denied`,
+  `resync`, `ping` côté serveur. Tout autre chose d'un client le ferme en 1008. Le serveur
+  envoie `ping` à chaque ping de protocole, et le client considère 60 s de silence comme une
+  connexion morte (`silenceTimeout`).
+
 ## Erreurs
 
 `error()` et l'événement `error` portent une `RealtimeError` avec un `code` :

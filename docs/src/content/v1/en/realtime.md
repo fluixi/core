@@ -224,6 +224,62 @@ export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close(
 Text frames reach `on('message')` as strings, binary ones as bytes. `send` answers `sent`,
 `buffer-full` or `closed`.
 
+## Channels
+
+Most apps want named streams, not a raw socket: "changes to this organisation's tasks". The
+channel server and client add that on top, with an access check per channel and catch-up after
+a reconnect.
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { createChannelServer, postgresBus } from '@fluixi/realtime/server';
+
+export const channels = createChannelServer({
+  path: '/live',
+  authenticate: (request) => sessionFromCookie(request.headers.cookie),
+  authorize: (user, channel) => user.organizations.includes(channel.split(':')[1]),
+  replay: (channel, since) => events.after(channel, since), // null when it cannot: clients resync
+  bus: postgresBus({ listen: pgListenClient }),
+});
+
+export default defineServer({ start: channels.start, upgrade: channels.upgrade, shutdown: () => channels.close() });
+
+// wherever a change is saved
+await channels.publish(`org:${orgId}`, { id: String(event.sequence), type: 'task.changed', data: { id: task.id } });
+```
+
+```ts
+// in the browser
+import { createChannelClient } from '@fluixi/realtime';
+
+export const live = createChannelClient('/live');
+
+function TaskList() {
+  live.subscribe(`org:${orgId}`, (message) => message.type === 'task.changed' && tasks.refetch(), {
+    onResync: () => tasks.refetch(),
+  });
+  // ...
+}
+```
+
+- **Joining.** The first subscriber to a channel joins it, the last to stop leaves it, and a
+  subscription made in a component stops with it. `authorize` runs on every join; a refusal
+  calls `onDenied`. One connection joins 100 channels at most (`maxChannels`).
+- **Catching up.** Every message carries an `id` the app orders. After a reconnect the client
+  rejoins with the last id it saw, and `replay` returns what came after it. Messages published
+  while the replay runs are held and sent after it, without duplicates. Without `replay`, or
+  when it returns null, the client gets `onResync`: refetch what the channel feeds.
+- **Several servers.** `publish` goes through the bus, so every instance delivers it.
+  `memoryBus()` is the default for one process; `postgresBus` uses `LISTEN`/`NOTIFY` on a
+  direct connection (a pooler in transaction mode drops `LISTEN`). Postgres refuses payloads
+  of 8000 bytes or more: publish ids and let the page fetch the record through the API, which
+  checks access again.
+- **Protocol.** JSON frames: `join`, `leave` from the client; `msg`, `joined`, `denied`,
+  `resync`, `ping` from the server. Anything else from a client closes it with 1008. The
+  server sends `ping` on every protocol ping, and the client treats 60 s of silence as a dead
+  connection (`silenceTimeout`).
+
 ## Errors
 
 `error()` and the `error` event carry a `RealtimeError` with a `code`:

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { createWebSocket, globalTransport, json } from './index.js';
-import { createWebSocketServer, type RealtimeServer, type ServerConnection, type WebSocketServerOptions } from './server.js';
+import { createWebSocketServer, type RealtimeServer, type ServerConnection, type WebSocketServerOptions } from './endpoint.js';
 
 type User = { id: string };
 
@@ -172,7 +172,7 @@ describe('the browser entry', () => {
       }
     };
     visit('./index.ts');
-    expect(seen.has('./server.ts')).toBe(false);
+    expect(seen.has('./server.ts') || seen.has('./endpoint.ts')).toBe(false);
     expect(seen.size).toBeGreaterThan(2);
   });
 });
