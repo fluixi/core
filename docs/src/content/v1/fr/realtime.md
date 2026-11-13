@@ -193,6 +193,43 @@ createWebSocket(async () => {
 Ne mettez jamais de jeton de longue durée dans l'adresse : les adresses finissent dans les
 journaux des serveurs et des proxies.
 
+## Côté serveur
+
+`@fluixi/realtime/server` est le point d'accès, sur la bibliothèque `ws` (une dépendance pair
+optionnelle : installez-la dans l'application qui sert les sockets). Il se branche sur le
+module serveur :
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { createWebSocketServer } from '@fluixi/realtime/server';
+
+const live = createWebSocketServer({
+  path: '/live',
+  authenticate: (request) => sessionFromCookie(request.headers.cookie), // null répond 401
+  onConnection(connection) {
+    connection.on('message', (data) => connection.send(data));
+  },
+});
+
+export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close() });
+```
+
+- **Origine.** Une page d'un autre site est refusée en 403 avant que `authenticate` ne
+  s'exécute. Par défaut, seules les pages de l'hôte de la requête peuvent se connecter ;
+  `origins` prend une liste ou une fonction. Un client qui n'envoie pas d'`Origin` n'est pas
+  une page de navigateur et passe à `authenticate`.
+- **Limites.** `maxConnections` (10000, puis 503), `maxMessageSize` (1 Mio, puis fermeture en
+  1009), `maxBuffered` (4 Mio non envoyés, puis `send` répond `buffer-full`).
+- **Connexions mortes.** Un ping de protocole toutes les `pingInterval` (25 s) ; une connexion
+  qui a manqué le précédent est coupée. Les pings sont invisibles au code du navigateur, donc
+  `keepAlive` envoie une trame texte au même rythme pour les clients qui ont un `heartbeat`.
+- **Arrêt.** `close()` refuse les nouvelles connexions, ferme les ouvertes en 1001 (le client
+  se reconnecte à une autre instance), et coupe ce qui reste après 5 s.
+
+Les trames texte arrivent à `on('message')` en chaînes, les binaires en octets. `send` répond
+`sent`, `buffer-full` ou `closed`.
+
 ## Erreurs
 
 `error()` et l'événement `error` portent une `RealtimeError` avec un `code` :

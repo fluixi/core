@@ -188,6 +188,42 @@ createWebSocket(async () => {
 
 Never put a long-lived token in the address: addresses end up in server and proxy logs.
 
+## The server side
+
+`@fluixi/realtime/server` is the endpoint, on the `ws` library (an optional peer: install it
+in the app that serves sockets). It plugs into the server module:
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { createWebSocketServer } from '@fluixi/realtime/server';
+
+const live = createWebSocketServer({
+  path: '/live',
+  authenticate: (request) => sessionFromCookie(request.headers.cookie), // null answers 401
+  onConnection(connection) {
+    connection.on('message', (data) => connection.send(data));
+  },
+});
+
+export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close() });
+```
+
+- **Origin.** A browser page from another site is refused with 403 before `authenticate`
+  runs. By default only pages from the request's own host may connect; `origins` takes a
+  list or a function. A client that sends no `Origin` is not a browser page and goes on to
+  `authenticate`.
+- **Limits.** `maxConnections` (10000, then 503), `maxMessageSize` (1 MiB, then close with
+  1009), `maxBuffered` (4 MiB unsent, then `send` answers `buffer-full`).
+- **Dead connections.** A protocol ping every `pingInterval` (25 s); a connection that missed
+  the previous one is dropped. Pings are invisible to browser code, so `keepAlive` sends a
+  text frame on the same beat for clients with a `heartbeat` timeout.
+- **Shutdown.** `close()` refuses new connections, closes open ones with 1001 (the client
+  reconnects to another instance), and drops what is left after 5 s.
+
+Text frames reach `on('message')` as strings, binary ones as bytes. `send` answers `sent`,
+`buffer-full` or `closed`.
+
 ## Errors
 
 `error()` and the `error` event carry a `RealtimeError` with a `code`:

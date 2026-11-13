@@ -14,10 +14,16 @@
         "import": "./dist/index.mjs",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
+      },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.mjs",
+        "require": "./dist/server.cjs",
+        "default": "./dist/server.js"
       }
     }
   },
-  "description": "Realtime connections for Fluixi apps: a WebSocket client whose status, latest message and errors are signals, with reconnection, bounded queueing and custom serialisation, safe to import during server rendering.",
+  "description": "Realtime connections for Fluixi apps: a WebSocket client whose status, latest message and errors are signals, with reconnection, bounded queueing and custom serialisation, safe to import during server rendering; and a WebSocket endpoint for the app's server, with origin checks, authentication and limits.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -36,6 +42,13 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
+    },
+    "./server": {
+      "development": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.cjs",
+      "default": "./dist/server.js"
     }
   },
   "scripts": {
@@ -46,6 +59,14 @@
   },
   "dependencies": {
     "@fluixi/reactive": "workspace:^"
+  },
+  "peerDependencies": {
+    "ws": "^8.18.0"
+  },
+  "peerDependenciesMeta": {
+    "ws": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@bambiste/mix-builder": "^0.4.0",
