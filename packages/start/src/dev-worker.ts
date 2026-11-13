@@ -1,7 +1,7 @@
 import type { ResolvedConfig } from './config.js';
 import { isWorkerJobs, runWorker, type RunningWorker } from './worker.js';
 
-interface DevServer {
+export interface DevServer {
   ssrLoadModule(url: string): Promise<Record<string, unknown>>;
   moduleGraph: { getModulesByFile(file: string): Set<{ file: string | null; importers: Set<unknown> }> | undefined };
   watcher: { on(event: 'change', listener: (file: string) => void): unknown };
@@ -32,6 +32,12 @@ export function devWorker(vite: DevServer, cfg: ResolvedConfig): void {
     });
   };
 
+  onModuleChange(vite, entry, () => restart('reloaded'));
+  restart('');
+}
+
+/** Calls `changed` when a file `entry` imports, directly or not, changes; bursts settle first. */
+export function onModuleChange(vite: DevServer, entry: string, changed: () => void): void {
   const reachesEntry = (file: string) => {
     const seen = new Set<GraphNode>();
     const stack = [...((vite.moduleGraph.getModulesByFile(file) ?? []) as Set<GraphNode>)];
@@ -49,7 +55,6 @@ export function devWorker(vite: DevServer, cfg: ResolvedConfig): void {
   vite.watcher.on('change', (file) => {
     if (!reachesEntry(file.replace(/\\/g, '/'))) return;
     clearTimeout(pending);
-    pending = setTimeout(() => restart('reloaded'), 100);
+    pending = setTimeout(changed, 100);
   });
-  restart('');
 }

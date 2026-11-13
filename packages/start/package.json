@@ -129,6 +129,12 @@
         "require": "./dist/image.cjs",
         "default": "./dist/image.js"
       },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.mjs",
+        "require": "./dist/server.cjs",
+        "default": "./dist/server.js"
+      },
       "./env": {
         "types": "./dist/env.d.ts",
         "import": "./dist/env.mjs",
@@ -286,6 +292,13 @@
       "import": "./dist/image.mjs",
       "require": "./dist/image.cjs",
       "default": "./dist/image.js"
+    },
+    "./server": {
+      "development": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.cjs",
+      "default": "./dist/server.js"
     },
     "./env": {
       "development": "./src/env.ts",

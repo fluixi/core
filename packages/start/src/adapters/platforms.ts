@@ -129,6 +129,7 @@ async function prerenderedRoutes(dir: string, mountId: string): Promise<string[]
 export const cloudflareAdapter: Adapter = {
   name: 'cloudflare',
   bundle: 'inline',
+  serverless: true,
   serve({ handler }) {
     return { fetch: handler };
   },
@@ -170,6 +171,7 @@ export const cloudflareAdapter: Adapter = {
 export const netlifyAdapter: Adapter = {
   name: 'netlify',
   bundle: 'inline',
+  serverless: true,
   serve({ handler }) {
     return { fetch: handler };
   },
@@ -210,6 +212,7 @@ export const netlifyAdapter: Adapter = {
 export const vercelAdapter: Adapter = {
   name: 'vercel',
   bundle: 'inline',
+  serverless: true,
   serve({ handler }) {
     return { fetch: handler };
   },

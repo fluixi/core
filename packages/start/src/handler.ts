@@ -1,7 +1,8 @@
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http';
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import { Readable } from 'node:stream';
+import { Readable, type Duplex } from 'node:stream';
+import type { AddressInfo } from 'node:net';
 import { extname, resolve, sep } from 'node:path';
 import { errorResponse, liftHead, type ErrorResponseOptions } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
@@ -255,6 +256,8 @@ export interface ServeNodeOptions extends NodeRequestOptions {
   onListen?: (port: number) => void;
   /** A failure to listen. Default: say why and exit non-zero. */
   onListenError?: (error: NodeJS.ErrnoException) => void;
+  /** HTTP upgrade requests (WebSocket). Without it Node drops them. */
+  onUpgrade?: (request: IncomingMessage, socket: Duplex, head: Buffer) => void;
 }
 
 /**
@@ -289,11 +292,15 @@ export function serveNode(handler: FetchHandler, opts: ServeNodeOptions = {}): S
       res.end('Internal Server Error');
     });
   });
+  if (opts.onUpgrade) server.on('upgrade', opts.onUpgrade);
   if (opts.onListenError) server.once('error', opts.onListenError);
   else exitOnListenError(server, port);
-  server.listen(port, () =>
-    opts.onListen ? opts.onListen(port) : console.log(`  fluixi → http://localhost:${port}`),
-  );
+  server.listen(port, () => {
+    // Port 0 asks the system for a free one: report the one it gave.
+    const bound = (server.address() as AddressInfo | null)?.port ?? port;
+    if (opts.onListen) opts.onListen(bound);
+    else console.log(`  fluixi → http://localhost:${bound}`);
+  });
   return server;
 }
 

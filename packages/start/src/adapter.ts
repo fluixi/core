@@ -8,6 +8,7 @@ import { resolveConfig } from './config.js';
 import { serveNode, withStaticFiles, type FetchHandler } from './handler.js';
 import { createHandlerFrom } from './handler-core.js';
 import { createPreloader, type RouteAssets } from './preload.js';
+import { routeUpgrade, type ServerHooks } from './server.js';
 
 /**
  * Build the production SSR fetch handler from a `fluixi build` output (dist/server +
@@ -75,6 +76,14 @@ export interface AdapterContext {
   cfg: ResolvedConfig;
   /** Built client assets dir (dist/client). */
   clientDir: string;
+  /** The app's server module (`src/server.ts`), for adapters that run a process. */
+  hooks?: ServerHooks;
+}
+
+/** A server an adapter started in this process. */
+export interface RunningServer {
+  /** Stops accepting connections, closes idle ones, and settles once the open requests end. */
+  close(): Promise<void>;
 }
 
 /** What an adapter is given after `fluixi build` has produced its output. */
@@ -108,6 +117,11 @@ export interface AdapterBuildContext {
 export interface Adapter {
   name: string;
   /**
+   * The platform runs no long-lived process: no WebSocket upgrades, no start or shutdown. A build
+   * with a server module (`src/server.ts`) fails for it instead of at runtime.
+   */
+  serverless?: boolean;
+  /**
    * How `fluixi build` bundles the framework into the server output. The choice is a
    * property of the deploy target, not of the app:
    *
@@ -120,7 +134,7 @@ export interface Adapter {
    * Unset leaves Vite's own heuristic alone (installed deps external, linked ones bundled).
    */
   bundle?: 'external' | 'inline';
-  serve(ctx: AdapterContext): Promise<void> | { fetch: FetchHandler };
+  serve(ctx: AdapterContext): Promise<void | RunningServer> | { fetch: FetchHandler };
   /**
    * Emit the platform's output layout. Runs after the client and server builds and
    * after prerendering, so everything it copies or wraps already exists.
@@ -134,12 +148,20 @@ export const nodeAdapter: Adapter = {
   // A Node server runs from the app directory, so node_modules is right there: keep the
   // framework as imports instead of copying it into the bundle.
   bundle: 'external',
-  async serve({ handler, cfg, clientDir }) {
-    serveNode(withStaticFiles(handler, clientDir), {
+  async serve({ handler, cfg, clientDir, hooks }) {
+    const server = serveNode(withStaticFiles(handler, clientDir), {
       port: cfg.port,
       trustProxy: cfg.trustProxy,
       onListen: (p) => console.log(`  fluixi start (node) → http://localhost:${p}`),
+      onUpgrade: (request, socket, head) => void routeUpgrade(hooks, request, socket, head),
     });
+    return {
+      close: () =>
+        new Promise<void>((done) => {
+          server.close(() => done());
+          server.closeIdleConnections();
+        }),
+    };
   },
 };
 
@@ -148,6 +170,7 @@ export { cloudflareAdapter, netlifyAdapter, vercelAdapter } from './adapters/pla
 /** Reference edge/web adapter: export `{ fetch }`; the platform serves assets. */
 export const webAdapter: Adapter = {
   name: 'web',
+  serverless: true,
   // An edge/serverless runtime uploads a file, not an install: nothing may be left to
   // resolve at runtime, so everything goes in the bundle.
   bundle: 'inline',

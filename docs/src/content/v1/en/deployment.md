@@ -136,6 +136,33 @@ export default defineConfig({
 A shared module is kept whole, since the app cannot know which exports the loaded code will
 use. A plain Vite app gets the browser half from `share()` in `@fluixi/vite-plugin`.
 
+## Code that lives with the server
+
+Some code lasts as long as the process rather than one request: a WebSocket endpoint, a
+listener on the database. `src/server.ts` holds it, found like `src/middleware.ts`:
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { live } from './live'; // createWebSocketServer from @fluixi/realtime/server
+import { changes } from './changes';
+
+export default defineServer({
+  start: () => changes.listen(),  // once the server listens
+  upgrade: live.upgrade,          // WebSocket upgrades; true for those it takes
+  shutdown: () => Promise.all([live.close(), changes.stop()]), // on SIGTERM or SIGINT
+});
+```
+
+- An upgrade no hook takes is answered 404.
+- On SIGTERM the server stops accepting connections, runs `shutdown`, then waits for open
+  requests, all within `shutdownTimeoutSeconds` (10 by default). Past that the process exits
+  anyway. A second signal exits at once.
+- `fluixi dev` runs the same file, sends upgrades to it except Vite's own HMR socket, and
+  starts it again when a file it imports changes.
+- The web, Cloudflare, Netlify and Vercel adapters run no long-lived process: a build with
+  `src/server.ts` fails for them, saying why.
+
 ## The hosted platforms
 
 Three adapters emit the layout their platform reads. Each inlines the framework and

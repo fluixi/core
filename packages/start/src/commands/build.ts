@@ -23,6 +23,7 @@ export async function build(
 ): Promise<void> {
   const startedAt = Date.now();
   const cfg = resolveConfig(config);
+  checkServerModule(cfg);
 
   // `--format=web-component` builds the elements and stops. A package that publishes
   // elements has no app to build, and running the client and server passes for it would
@@ -121,6 +122,7 @@ export async function build(
   }
 
   await buildJobs(cfg, ssr, plugins);
+  await buildServerHooks(cfg, ssr, plugins);
 
   // An app that also publishes elements gets them beside its own bundles.
   if (cfg.webComponents) {
@@ -314,6 +316,7 @@ async function buildApi(cfg: ResolvedConfig, ssr: unknown): Promise<void> {
   }
 
   await buildJobs(cfg, ssr, apiPlugins);
+  await buildServerHooks(cfg, ssr, apiPlugins);
 }
 
 /** `server bundle (node · external)`: the output shape is not obvious from the file. */
@@ -324,11 +327,32 @@ function bundleNote(cfg: ResolvedConfig): string {
 }
 
 /** The jobs module (`src/jobs.ts`), when the app has one → dist/server/jobs.js, what `fluixi worker` runs. */
-async function buildJobs(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[]): Promise<void> {
-  const source = resolve(cfg.root, cfg.jobs);
+function buildJobs(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[]): Promise<void> {
+  return buildServerModule(cfg, ssr, plugins, cfg.jobs, 'jobs');
+}
+
+/**
+ * The server module (`src/server.ts`), when the app has one → dist/server/server.js, what
+ * `fluixi start` runs beside the handler. A serverless target has no process for it to live in.
+ */
+function buildServerHooks(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[]): Promise<void> {
+  return buildServerModule(cfg, ssr, plugins, cfg.server, 'server');
+}
+
+/** Refuses, before anything is built, a server module the target has no process for. */
+export function checkServerModule(cfg: ResolvedConfig): void {
+  if (!cfg.adapter?.serverless || !existsSync(resolve(cfg.root, cfg.server))) return;
+  throw new Error(
+    `fluixi build: ${cfg.server} needs a long-running server, and the "${cfg.adapter.name}" adapter ` +
+      `has none (no WebSocket upgrades, no start or shutdown). Deploy with the node adapter, or remove it.`,
+  );
+}
+
+async function buildServerModule(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[], file: string, name: string): Promise<void> {
+  const source = resolve(cfg.root, file);
   if (!existsSync(source)) return;
   const { build: viteBuild } = await import('vite');
-  step('jobs');
+  step(name);
   await viteBuild({
     root: cfg.root,
     resolve: { alias: aliasesFromTsconfig(cfg.root) },
@@ -339,7 +363,7 @@ async function buildJobs(cfg: ResolvedConfig, ssr: unknown, plugins: unknown[]):
       outDir: 'dist/server',
       ssr: source,
       emptyOutDir: false,
-      rollupOptions: { output: { entryFileNames: 'jobs.js' } },
+      rollupOptions: { output: { entryFileNames: `${name}.js` } },
     },
   });
 }

@@ -55,6 +55,14 @@ export interface FluixiConfig {
    * included. `fluixi worker` runs it; `fluixi dev` runs it beside the server. Default: src/jobs.ts
    */
   jobs?: string;
+  /**
+   * Server module: default-exports `defineServer({ start, upgrade, shutdown })` from
+   * `@fluixi/start/server`, code that lives as long as the server process (WebSocket upgrades,
+   * listeners). Node adapter only. Default: src/server.ts
+   */
+  server?: string;
+  /** How long a shutdown waits for the server hooks and open requests, in seconds. Default: 10 */
+  shutdownTimeoutSeconds?: number;
   worker?: {
     /**
      * Run the jobs in the `fluixi start` process too, instead of a separate `fluixi worker`: for
@@ -238,6 +246,8 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
     jobs: config.jobs ?? 'src/jobs.ts',
+    server: config.server ?? 'src/server.ts',
+    shutdownTimeoutSeconds: config.shutdownTimeoutSeconds ?? 10,
     worker: {
       inline: config.worker?.inline ?? false,
       dev: config.worker?.dev ?? true,

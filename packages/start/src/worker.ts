@@ -30,6 +30,22 @@ export async function runWorker(jobs: WorkerJobs, log: (line: string) => void = 
   return { stop: (timeoutSeconds = 30) => (stopping ??= jobs.stop({ timeoutSeconds })) };
 }
 
+/**
+ * Settles when `work` does or after `seconds`, whichever comes first: a shutdown step that hangs
+ * must not keep the process alive past what the platform allows.
+ */
+export function withDeadline(work: Promise<unknown>, seconds: number, what: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<void>((done) => {
+    timer = setTimeout(() => {
+      console.warn(`[fluixi] ${what} still running after ${seconds}s, exiting anyway`);
+      done();
+    }, seconds * 1000);
+    timer.unref?.();
+  });
+  return Promise.race([work.then(() => undefined), late]).finally(() => clearTimeout(timer));
+}
+
 export type WorkerStatus = 'starting' | 'ok' | 'stopping';
 
 /**
@@ -57,7 +73,7 @@ export function stopOnSignal(stop: () => Promise<void>, onStopping: () => void =
     void stop().then(
       () => process.exit(0),
       (error: Error) => {
-        console.warn('[fluixi] worker stop failed:', error.message);
+        console.warn('[fluixi] stop failed:', error.message);
         process.exit(1);
       },
     );

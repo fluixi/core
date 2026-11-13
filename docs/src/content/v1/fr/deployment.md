@@ -144,6 +144,34 @@ Un module partagé est gardé entier, puisque l'application ne peut pas savoir q
 code chargé utilisera. Une application Vite simple obtient la partie navigateur avec `share()`
 de `@fluixi/vite-plugin`.
 
+## Du code qui vit avec le serveur
+
+Certains codes durent autant que le processus et non le temps d'une requête : un point
+d'accès WebSocket, une écoute sur la base de données. `src/server.ts` les accueille, trouvé
+comme `src/middleware.ts` :
+
+```ts
+// src/server.ts
+import { defineServer } from '@fluixi/start/server';
+import { live } from './live'; // createWebSocketServer de @fluixi/realtime/server
+import { changes } from './changes';
+
+export default defineServer({
+  start: () => changes.listen(),  // une fois que le serveur écoute
+  upgrade: live.upgrade,          // upgrades WebSocket ; true pour celles qu'il prend
+  shutdown: () => Promise.all([live.close(), changes.stop()]), // sur SIGTERM ou SIGINT
+});
+```
+
+- Un upgrade qu'aucun hook ne prend reçoit une 404.
+- Sur SIGTERM, le serveur cesse d'accepter des connexions, exécute `shutdown`, puis attend
+  les requêtes en cours, le tout dans `shutdownTimeoutSeconds` (10 par défaut). Au-delà, le
+  processus s'arrête quand même. Un second signal l'arrête aussitôt.
+- `fluixi dev` exécute le même fichier, lui transmet les upgrades sauf la socket HMR de Vite,
+  et le relance quand un fichier qu'il importe change.
+- Les adaptateurs web, Cloudflare, Netlify et Vercel ne font tourner aucun processus
+  durable : un build avec `src/server.ts` échoue pour eux, en disant pourquoi.
+
 ## Les plateformes hébergées
 
 Trois adaptateurs produisent la disposition que leur plateforme lit. Chacun inline le
