@@ -51,7 +51,16 @@ export interface WebSocketServerOptions<Context> {
   pingInterval?: number;
   /** A text frame sent every `pingInterval`, for clients that watch for silence. */
   keepAlive?: string;
+  /**
+   * Longest life of a connection, in ms. Past it the server closes with `CLOSE_REAUTHENTICATE`,
+   * which the client answers by reconnecting, through `authenticate` again: a person whose
+   * access ended stops receiving by then. Default: none
+   */
+  maxAge?: number;
 }
+
+/** The close code for a connection past `maxAge`: reconnect, authenticating again. */
+export const CLOSE_REAUTHENTICATE = 4100;
 
 export interface RealtimeServer {
   /** For `defineServer({ upgrade })`: true when the request was for `path`. */
@@ -138,6 +147,11 @@ export function createWebSocketServer<Context>(options: WebSocketServerOptions<C
       // A protocol error (an oversized or malformed frame) closes the socket on its own; without
       // a listener the error would end the process.
       ws.on('error', () => {});
+      if (options.maxAge) {
+        const timer = setTimeout(() => ws.close(CLOSE_REAUTHENTICATE, 'reauthenticate'), options.maxAge);
+        timer.unref?.();
+        ws.once('close', () => clearTimeout(timer));
+      }
       options.onConnection(wrap(ws, context as Context, maxBuffered));
     });
   };

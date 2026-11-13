@@ -218,6 +218,9 @@ export default defineServer({ upgrade: live.upgrade, shutdown: () => live.close(
 - **Dead connections.** A protocol ping every `pingInterval` (25 s); a connection that missed
   the previous one is dropped. Pings are invisible to browser code, so `keepAlive` sends a
   text frame on the same beat for clients with a `heartbeat` timeout.
+- **Access over time.** `authenticate` runs once per connection. `maxAge` closes a connection
+  after that many ms with `CLOSE_REAUTHENTICATE` (4100); the client reconnects and
+  authenticates again, so a person whose access ended stops receiving within `maxAge`.
 - **Shutdown.** `close()` refuses new connections, closes open ones with 1001 (the client
   reconnects to another instance), and drops what is left after 5 s.
 

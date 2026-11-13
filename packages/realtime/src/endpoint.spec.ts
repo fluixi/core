@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { createWebSocket, globalTransport, json } from './index.js';
-import { createWebSocketServer, type RealtimeServer, type ServerConnection, type WebSocketServerOptions } from './endpoint.js';
+import { CLOSE_REAUTHENTICATE, createWebSocketServer, type RealtimeServer, type ServerConnection, type WebSocketServerOptions } from './endpoint.js';
 
 type User = { id: string };
 
@@ -130,6 +130,20 @@ describe('createWebSocketServer', () => {
     const code = await new Promise<number>((resolve) => quiet.once('close', resolve));
     expect(code).toBe(1006);
     expect(frames[0]).toBe('{"type":"ping"}');
+  });
+
+  it('closes a connection past maxAge with the code that asks the client to reconnect', async () => {
+    const { host } = await start({ maxAge: 40 });
+    const ws = (await client(`ws://${host}/live`, signedIn)) as WebSocket;
+    expect(await new Promise<number>((resolve) => ws.once('close', resolve))).toBe(CLOSE_REAUTHENTICATE);
+  });
+
+  it('a client past maxAge comes back on its own', async () => {
+    const { host, connections } = await start({ maxAge: 40, origins: () => true, authenticate: () => ({ id: 'u1' }) });
+    const socket = createWebSocket(`ws://${host}/live`, { transport: globalTransport(), reconnect: { delay: 10, jitter: false } });
+    await vi.waitFor(() => expect(connections.length).toBeGreaterThanOrEqual(2));
+    await vi.waitFor(() => expect(socket.connected()).toBe(true));
+    socket.dispose();
   });
 
   it('closes open connections with 1001 and refuses new ones while closing', async () => {

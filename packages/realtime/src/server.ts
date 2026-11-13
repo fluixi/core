@@ -1,5 +1,6 @@
 export {
   createWebSocketServer,
+  CLOSE_REAUTHENTICATE,
   type RealtimeServer,
   type ServerConnection,
   type ServerSendData,
