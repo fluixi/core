@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { createSignal, createRoot } from '@fluixi/reactive/signal';
-import { splitProps, spread, applyProps, createNativeElement } from '@fluixi/dom';
+import { createMemo, createSignal, createRoot } from '@fluixi/reactive/signal';
+import { splitProps, spread, applyProps, createNativeElement, mergeProps } from '@fluixi/dom';
 
 // A component prop compiles to a getter: `get value() { return sig().toUpperCase() }`
 //: whose current result is a plain (non-function) value. When that prop reaches a
@@ -115,3 +115,26 @@ describe('applyProps: getter-backed props stay reactive', () => {
     });
   });
 });
+
+describe('spread inside a computation that builds the element', () => {
+  // `Show` and `For` build their children in a memo. What a spread reads while it sets the
+  // element up belongs to the spread's own bindings, not to that memo, or the memo rebuilt the
+  // element on every change.
+  it('updates the attribute without re-running the memo that created the element', () => {
+    createRoot(() => {
+      const [count, setCount] = createSignal(1);
+      let builds = 0;
+      const view = createMemo(() => {
+        builds += 1;
+        const el = createNativeElement('x-picker') as HTMLElement;
+        spread({ element: el, props: mergeProps(() => ({ 'data-count': String(count()) })), isCustomElement: true });
+        return el;
+      });
+      expect(view().getAttribute('data-count')).toBe('1');
+      setCount(2);
+      expect(view().getAttribute('data-count')).toBe('2');
+      expect(builds).toBe(1);
+    });
+  });
+});
+

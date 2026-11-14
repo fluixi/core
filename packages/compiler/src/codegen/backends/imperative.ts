@@ -79,6 +79,15 @@ function componentPropValue(p: IRProp): string {
   return JSON.stringify(p.literal ?? true);
 }
 
+/**
+ * A spread's argument as `mergeProps` takes it: a plain name (`props`, `others.rest`) as it is,
+ * anything computed (`attributes()`, a condition) as a function, read where the props are applied.
+ */
+function spreadSource(expr: string | undefined): string {
+  if (expr === undefined) return String(expr);
+  return /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(expr.trim()) ? expr : `() => (${expr})`;
+}
+
 /** Build a props object literal (or mergeProps(...) when spreads are present). */
 function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<string>): string {
   const spreads = props.filter((p) => p.kind === 'spread');
@@ -88,7 +97,7 @@ function emitProps(props: IRProp[], childrenExpr: string | null, used: Set<strin
   const obj = `{ ${entries.join(', ')} }`;
   if (spreads.length > 0) {
     used.add('mergeProps');
-    return `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
+    return `mergeProps(${spreads.map((s) => spreadSource(s.expr)).join(', ')}, ${obj})`;
   }
   return obj;
 }
@@ -161,7 +170,7 @@ function emitComponent(
   }
   if (spreads.length > 0) {
     used.add('mergeProps');
-    obj = `mergeProps(${spreads.map((s) => s.expr).join(', ')}, ${obj})`;
+    obj = `mergeProps(${spreads.map((s) => spreadSource(s.expr)).join(', ')}, ${obj})`;
   }
   // Every prop is a getter, so none of them can carry a position. The map rides alongside,
   // and a build that recorded no locations emits nothing.

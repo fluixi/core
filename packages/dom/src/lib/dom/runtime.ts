@@ -1662,167 +1662,172 @@ export function spread(options: SpreadOptions): () => void {
 
   const disposers: (() => void)[] = [];
 
-  for (const key in props) {
-    if (skipChildren && key === 'children') continue;
+  // What is read here only decides how each prop is bound; the bindings track their own values.
+  // Tracked, the reads belonged to whatever was creating the element (a Show or For memo), which
+  // then rebuilt it whenever a spread value changed.
+  untrack(() => {
+    for (const key in props) {
+      if (skipChildren && key === 'children') continue;
 
-    const value = props[key];
-    const prev = prevProps[key];
+      const value = props[key];
+      const prev = prevProps[key];
 
-    if (value === prev) continue;
+      if (value === prev) continue;
 
-    if (key === 'ref') { handleRef(value, element); continue; }
+      if (key === 'ref') { handleRef(value, element); continue; }
 
-    // Custom directives: `use=${dir}` / `use:name` / `use:name=${opts}`. The
-    // compiler normalizes to an array of [directive, accessor?] pairs; each is
-    // called with the element (accessor optional). Directives register their own
-    // onCleanup, so run them in the current reactive owner.
-    if (key === 'use') { applyUse(element, value); continue; }
+      // Custom directives: `use=${dir}` / `use:name` / `use:name=${opts}`. The
+      // compiler normalizes to an array of [directive, accessor?] pairs; each is
+      // called with the element (accessor optional). Directives register their own
+      // onCleanup, so run them in the current reactive owner.
+      if (key === 'use') { applyUse(element, value); continue; }
 
-    // Native event binding: `on:click` / `@click.capture` / `@input.passive`.
-    // Value is a handler or `[handler, options]`. Uses addEventListener (bypasses
-    // delegation) so capture/once/passive work. Must precede the `on`-delegated
-    // branch below (both start with "on").
-    if (key.startsWith('on:')) {
-      disposers.push(addNativeEventListener(element, key.slice(3), value));
-      continue;
-    }
-
-    // Forced bindings: prop:x always assigns the property, attr:x always sets the
-    // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
-    if (key.startsWith('prop:')) {
-      reportReactiveDirective(element, 'prop', key.slice(5), value);
-      disposers.push(setDynamicProperty(element, key.slice(5), value));
-      continue;
-    }
-    if (key.startsWith('attr:')) {
-      reportReactiveDirective(element, 'attr', key.slice(5), value);
-      disposers.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
-      continue;
-    }
-    if (key.startsWith('bool:')) {
-      reportReactiveDirective(element, 'bool', key.slice(5), value);
-      disposers.push(setDynamicBoolAttribute(element, key.slice(5), value));
-      continue;
-    }
-
-    if (key === 'class' || key === 'className') {
-      if (typeof value === 'function') {
-        disposers.push(
-          createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'class', value);
-            setClassName(element, value());
-          }),
-        );
-      } else {
-        setClassName(element, value);
+      // Native event binding: `on:click` / `@click.capture` / `@input.passive`.
+      // Value is a handler or `[handler, options]`. Uses addEventListener (bypasses
+      // delegation) so capture/once/passive work. Must precede the `on`-delegated
+      // branch below (both start with "on").
+      if (key.startsWith('on:')) {
+        disposers.push(addNativeEventListener(element, key.slice(3), value));
+        continue;
       }
-      continue;
-    }
 
-    if (key === 'classList') {
-      reportKeys(element, 'class', value);
-      if (typeof value === 'function') {
-        disposers.push(
-          createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'class', value);
-            setClassList(element, value());
-          }),
-        );
-      } else {
-        setClassList(element, value, disposers);
+      // Forced bindings: prop:x always assigns the property, attr:x always sets the
+      // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
+      if (key.startsWith('prop:')) {
+        reportReactiveDirective(element, 'prop', key.slice(5), value);
+        disposers.push(setDynamicProperty(element, key.slice(5), value));
+        continue;
       }
-      continue;
-    }
-
-    if (key === 'style') {
-      reportKeys(element, 'style', value);
-      if (typeof value === 'function') {
-        disposers.push(
-          createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'style', value);
-            setStyle(element as any, value());
-          }),
-        );
-      } else {
-        setStyle(element as any, value, disposers);
+      if (key.startsWith('attr:')) {
+        reportReactiveDirective(element, 'attr', key.slice(5), value);
+        disposers.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
+        continue;
       }
-      continue;
-    }
+      if (key.startsWith('bool:')) {
+        reportReactiveDirective(element, 'bool', key.slice(5), value);
+        disposers.push(setDynamicBoolAttribute(element, key.slice(5), value));
+        continue;
+      }
 
-    if (key.startsWith('on')) {
-      const eventName = key.slice(2).toLowerCase();
-      if (prev) removeDelegatedEventListener(element, eventName);
-      if (value) addDelegatedEventListener(element, eventName, value);
-      continue;
-    }
+      if (key === 'class' || key === 'className') {
+        if (typeof value === 'function') {
+          disposers.push(
+            createRenderEffect(() => {
+              reportReactiveBinding(element, 'attribute', 'class', value);
+              setClassName(element, value());
+            }),
+          );
+        } else {
+          setClassName(element, value);
+        }
+        continue;
+      }
 
-    // A custom element takes the property even when it does not have one yet.
-    //
-    // `key in element` is false until the element upgrades, so a page that renders
-    // before `customElements.define` runs sent every value to an attribute, and an
-    // object arrived as the string `[object Object]`. Upgrading afterwards did not
-    // recover it: the property was never assigned, so the element had nothing to read.
-    // Assigning it now leaves an own property that the element adopts on upgrade (see
-    // the constructor in @fluixi/web-components/element).
-    const custom = isCustomElement ?? element.localName.includes('-');
-    const asProperty =
-      JSX_PROPERTIES.has(key) ||
-      (!elementIsSVG && key in element) ||
-      (custom && !elementIsSVG && !isAttributeOnlyName(key));
-    const functionValue =
-      custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
-    if (functionValue) {
-      if (isServer()) serverCustomElementProp(element, key, value);
-      else setProperty(element, key, value);
-      continue;
-    }
-    if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
-      // No element object on a server: see serverCustomElementProp.
-      disposers.push(
-        createRenderEffect(() => {
-          let v = typeof value === 'function' ? (value as () => unknown)() : props[key];
-          while (typeof v === 'function' && (v as () => unknown).length === 0) v = (v as () => unknown)();
-          serverCustomElementProp(element, key, v);
-        }),
-      );
-      continue;
-    }
-    if (typeof value === 'function') {
-      // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
-      disposers.push(
-        asProperty
-          ? setDynamicProperty(element, key, value)
-          : setDynamicAttribute(element, key, value, elementIsSVG),
-      );
-    } else {
-      // A plain, non-function value may still be backed by a reactive getter:
-      // component props compile to `get x() {...}`, and splitProps/mergeProps
-      // forward those getters. Reading `props[key]` once (above) snapshots the
-      // current value and drops the dependency, so the DOM never updates. Re-read
-      // it inside a render effect so the getter's reads are tracked. (A truly
-      // static value just runs the effect once with no deps: negligible.)
-      disposers.push(
-        createRenderEffect(() =>
-          asProperty
-            ? setProperty(element, key, props[key])
-            : setAttribute(element, key, props[key], elementIsSVG),
-        ),
-      );
-    }
-  }
+      if (key === 'classList') {
+        reportKeys(element, 'class', value);
+        if (typeof value === 'function') {
+          disposers.push(
+            createRenderEffect(() => {
+              reportReactiveBinding(element, 'attribute', 'class', value);
+              setClassList(element, value());
+            }),
+          );
+        } else {
+          setClassList(element, value, disposers);
+        }
+        continue;
+      }
 
-  for (const key in prevProps as Record<string, any>) {
-    if (!(key in props)) {
+      if (key === 'style') {
+        reportKeys(element, 'style', value);
+        if (typeof value === 'function') {
+          disposers.push(
+            createRenderEffect(() => {
+              reportReactiveBinding(element, 'attribute', 'style', value);
+              setStyle(element as any, value());
+            }),
+          );
+        } else {
+          setStyle(element as any, value, disposers);
+        }
+        continue;
+      }
+
       if (key.startsWith('on')) {
         const eventName = key.slice(2).toLowerCase();
-        removeDelegatedEventListener(element, eventName);
-      } else if (JSX_PROPERTIES.has(key)) {
-        setProperty(element, key, null);
+        if (prev) removeDelegatedEventListener(element, eventName);
+        if (value) addDelegatedEventListener(element, eventName, value);
+        continue;
+      }
+
+      // A custom element takes the property even when it does not have one yet.
+      //
+      // `key in element` is false until the element upgrades, so a page that renders
+      // before `customElements.define` runs sent every value to an attribute, and an
+      // object arrived as the string `[object Object]`. Upgrading afterwards did not
+      // recover it: the property was never assigned, so the element had nothing to read.
+      // Assigning it now leaves an own property that the element adopts on upgrade (see
+      // the constructor in @fluixi/web-components/element).
+      const custom = isCustomElement ?? element.localName.includes('-');
+      const asProperty =
+        JSX_PROPERTIES.has(key) ||
+        (!elementIsSVG && key in element) ||
+        (custom && !elementIsSVG && !isAttributeOnlyName(key));
+      const functionValue =
+        custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
+      if (functionValue) {
+        if (isServer()) serverCustomElementProp(element, key, value);
+        else setProperty(element, key, value);
+        continue;
+      }
+      if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
+        // No element object on a server: see serverCustomElementProp.
+        disposers.push(
+          createRenderEffect(() => {
+            let v = typeof value === 'function' ? (value as () => unknown)() : props[key];
+            while (typeof v === 'function' && (v as () => unknown).length === 0) v = (v as () => unknown)();
+            serverCustomElementProp(element, key, v);
+          }),
+        );
+        continue;
+      }
+      if (typeof value === 'function') {
+        // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
+        disposers.push(
+          asProperty
+            ? setDynamicProperty(element, key, value)
+            : setDynamicAttribute(element, key, value, elementIsSVG),
+        );
       } else {
-        element.removeAttribute(key);
+        // A plain, non-function value may still be backed by a reactive getter:
+        // component props compile to `get x() {...}`, and splitProps/mergeProps
+        // forward those getters. Reading `props[key]` once (above) snapshots the
+        // current value and drops the dependency, so the DOM never updates. Re-read
+        // it inside a render effect so the getter's reads are tracked. (A truly
+        // static value just runs the effect once with no deps: negligible.)
+        disposers.push(
+          createRenderEffect(() =>
+            asProperty
+              ? setProperty(element, key, props[key])
+              : setAttribute(element, key, props[key], elementIsSVG),
+          ),
+        );
       }
     }
-  }
+
+    for (const key in prevProps as Record<string, any>) {
+      if (!(key in props)) {
+        if (key.startsWith('on')) {
+          const eventName = key.slice(2).toLowerCase();
+          removeDelegatedEventListener(element, eventName);
+        } else if (JSX_PROPERTIES.has(key)) {
+          setProperty(element, key, null);
+        } else {
+          element.removeAttribute(key);
+        }
+      }
+    }
+  });
 
   return () => { disposers.forEach((d) => d()); };
 }
@@ -2033,13 +2038,16 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
  * LAZILY off the sources: getter/signal-backed props stay live (re-read on every access, not
  * snapshotted), and the key set is the union across all sources (so dynamic prop objects work).
  */
-export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
+export function mergeProps<T extends object>(...sources: (Partial<T> | (() => Partial<T>))[]): T {
+  // A function source is called on each read: a spread computed from signals (`{...attrs()}`)
+  // is then read where the prop is applied, inside its binding, not where the element is made.
+  const at = (source: unknown): any => (typeof source === 'function' ? (source as () => unknown)() : source);
   // Last defined (non-undefined) value wins; scan sources from the end so a later `undefined`
   // falls through to an earlier source. Reads `source[key]` live each call, no snapshot, and
   // once: a `children` getter builds its nodes when read, so a second read built them twice.
   const resolve = (key: string | symbol): any => {
     for (let i = sources.length - 1; i >= 0; i--) {
-      const s = sources[i] as any;
+      const s = at(sources[i]);
       if (!s || !(key in s)) continue;
       const value = s[key];
       if (value !== undefined) return value;
@@ -2047,7 +2055,10 @@ export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
     return undefined;
   };
   const hasKey = (key: string | symbol): boolean => {
-    for (const s of sources) if (s && key in (s as any)) return true;
+    for (const source of sources) {
+      const s = at(source);
+      if (s && key in s) return true;
+    }
     return false;
   };
 
@@ -2056,7 +2067,10 @@ export function mergeProps<T extends object>(...sources: Partial<T>[]): T {
     has: (_, key) => hasKey(key),
     ownKeys: () => {
       const keys = new Set<string | symbol>();
-      for (const s of sources) if (s) for (const k of Reflect.ownKeys(s as object)) keys.add(k);
+      for (const source of sources) {
+        const s = at(source);
+        if (s) for (const k of Reflect.ownKeys(s as object)) keys.add(k);
+      }
       return [...keys];
     },
     getOwnPropertyDescriptor: (_, key) =>

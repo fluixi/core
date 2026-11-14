@@ -64,4 +64,20 @@ describe('mergeProps', () => {
     expect(merged.children).toBe('built');
     expect(reads).toBe(1);
   });
+
+  it('reads a function source on each access, so a spread built from signals stays live', () => {
+    const [count, setCount] = createSignal(1);
+    let built = 0;
+    const merged = mergeProps(() => {
+      built += 1;
+      return { 'data-count': String(count()) };
+    }, { title: 'x' }) as Record<string, string>;
+    expect(built).toBe(0);
+    expect(merged['data-count']).toBe('1');
+    setCount(2);
+    expect(merged['data-count']).toBe('2');
+    expect(Object.keys(merged).sort()).toEqual(['data-count', 'title']);
+    expect('data-count' in merged).toBe(true);
+  });
 });
+
