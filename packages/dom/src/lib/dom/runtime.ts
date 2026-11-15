@@ -1631,6 +1631,15 @@ export function setDynamicClassList(element: Element, accessor: any): void {
  * effect, not when the object was built, which is what keeps `splitProps` and a
  * polymorphic wrapper live.
  */
+/** Whether `key` is read through a getter, here or on a prototype: its value can change. */
+function isGetter(props: object, key: string): boolean {
+  for (let source: object | null = props; source; source = Object.getPrototypeOf(source)) {
+    const descriptor = Object.getOwnPropertyDescriptor(source, key);
+    if (descriptor) return typeof descriptor.get === 'function';
+  }
+  return false;
+}
+
 export function spread(options: SpreadOptions): () => void {
   const {
     element,
@@ -1672,7 +1681,12 @@ export function spread(options: SpreadOptions): () => void {
       const value = props[key];
       const prev = prevProps[key];
 
-      if (value === prev) continue;
+      // On the first pass every previous value is undefined, so a getter with no value yet would
+      // be skipped and never bound. Such a prop goes on to the generic binding below, which reads
+      // it inside an effect; an unset handler, ref, directive or prefixed binding stays skipped.
+      const unsetGetter = value === undefined && prevProps === EMPTY_OBJ && isGetter(props, key);
+      if (value === prev && !unsetGetter) continue;
+      if (unsetGetter && (key === 'ref' || key === 'use' || key.startsWith('on') || key.includes(':') || key === 'class' || key === 'className' || key === 'classList' || key === 'style')) continue;
 
       if (key === 'ref') { handleRef(value, element); continue; }
 
