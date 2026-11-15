@@ -74,7 +74,7 @@ export function moduleNames(source: string): string[] {
 export async function appInfo(config: FluixiConfig): Promise<AppInfo> {
   const cfg = resolveConfig(config);
   const root = cfg.root;
-  const { scanRoutes } = await import('@fluixi/core/plugins');
+  const { scanRoutes } = await import('../route-scanner.js');
   const pages: string[] = [];
   const visit = (routes: any[]) => {
     for (const r of routes) {

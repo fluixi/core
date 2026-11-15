@@ -26,6 +26,9 @@
       "path": "../utils"
     },
     {
+      "path": "../compiler"
+    },
+    {
       "path": "../storage"
     },
     {
@@ -45,12 +48,6 @@
     },
     {
       "path": "../dom"
-    },
-    {
-      "path": "../vite-plugin"
-    },
-    {
-      "path": "../compiler"
     },
     {
       "path": "./tsconfig.lib.json"

@@ -8,7 +8,7 @@ import { fluixiPlugins, loadServerEnv, singleFileOutput } from '../internal.js';
 import { ssrBuildOptions } from '../adapter.js';
 import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
-import type { ScannedRoute } from '@fluixi/core/plugins';
+import type { ScannedRoute } from '../route-scanner.js';
 import { wordmark, step, done, c } from '../ui.js';
 import { withImports, type ManifestChunk } from './route-imports.js';
 
@@ -188,7 +188,7 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
     // The build manifest, for what each route's chunk imports (see route-imports.ts).
     const chunksFile = join(clientDir, '.vite', 'manifest.json');
     const chunks: Record<string, ManifestChunk> = existsSync(chunksFile) ? JSON.parse(await readFile(chunksFile, 'utf-8')) : {};
-    const { scanRoutes } = await import('@fluixi/core/plugins');
+    const { scanRoutes } = await import('../route-scanner.js');
     const base = cfg.routesDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
 
     // Keyed by URL pattern: the runtime has a path, and resolving it here leaves it a

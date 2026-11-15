@@ -31,7 +31,6 @@
       "@fluixi/dom/directives",
       "@fluixi/core",
       "@fluixi/core/client",
-      "@fluixi/core/plugins",
       "@fluixi/utils"
     ],
     "clean": true,

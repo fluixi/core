@@ -25,6 +25,9 @@
       "path": "../utils/tsconfig.lib.json"
     },
     {
+      "path": "../compiler/tsconfig.lib.json"
+    },
+    {
       "path": "../storage/tsconfig.lib.json"
     },
     {
@@ -44,12 +47,6 @@
     },
     {
       "path": "../dom/tsconfig.lib.json"
-    },
-    {
-      "path": "../vite-plugin/tsconfig.lib.json"
-    },
-    {
-      "path": "../compiler/tsconfig.lib.json"
     }
   ],
   "exclude": [

@@ -1,6 +1,4 @@
 /**
- * @module @fluixi/core/plugins/fluixi-routes-plugin
- *
  * Scans a routes directory at build time and generates a virtual module
  * (virtual:fluixi-routes) containing the route tree. Replaces import.meta.glob.
  */

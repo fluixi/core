@@ -1,6 +1,4 @@
 /**
- * @module @fluixi/core/plugins/route-codegen
- *
  * Generates an ES module from a ScannedRoute tree.
  * Uses lazy() for code-split component loading with Suspense integration.
  */

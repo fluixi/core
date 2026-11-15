@@ -248,7 +248,8 @@ export function startTypesPlugin(cfg: ResolvedConfig): any {
  * bits only (optimizeDeps, ssr.noExternal via config, etc.).
  */
 export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
-  const { fluixi, fluixiRoutesPlugin } = await import('@fluixi/core/plugins');
+  const { fluixi } = await import('@fluixi/vite-plugin');
+  const { fluixiRoutesPlugin } = await import('./routes-plugin.js');
   const { serverFunctionsVitePlugin } = await import('@fluixi/compiler/integrations');
   // polyfills:false: the meta-framework is SSR-first; the browser node-polyfill shims
   // break server rendering. Apps that need Buffer/process in the browser opt in later.

@@ -1,6 +1,4 @@
 /**
- * @module @fluixi/core/plugins/route-scanner
- *
  * Scans a routes directory and builds a route tree following SolidStart conventions.
  * Pure utility, no bundler dependency.
  */

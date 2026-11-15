@@ -29,7 +29,6 @@
       "@fluixi/dom/directives",
       "@fluixi/core",
       "@fluixi/core/client",
-      "@fluixi/core/plugins",
       "@fluixi/utils",
       "@fluixi/*",
       "vite",
@@ -52,8 +51,7 @@
       "vinxi",
       "vinxi/*",
       "@vinxi/*",
-      "execa",
-      "vite-plugin-node-polyfills"
+      "execa"
     ],
     "copyFiles": [
       {
@@ -70,7 +68,6 @@
         "src/lib/i18n/index.ts",
         "src/lib/jsx-runtime/index.ts",
         "src/lib/jsx-runtime/jsx-dev-runtime.ts",
-        "src/lib/plugins/index.ts",
         "src/lib/router/index.ts",
         "src/lib/server/index.ts",
         "src/lib/storage/index.ts",
