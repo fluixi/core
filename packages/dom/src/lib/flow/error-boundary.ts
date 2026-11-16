@@ -10,11 +10,39 @@ import {
 } from '@fluixi/reactive/signal';
 
 /**
- * A value whose change means the content a boundary caught an error from is gone: a router
- * provides the route it has committed, so a boundary around the Outlet clears the failed page's
- * error when another page is shown. None outside a router.
+ * Where the app is, for a boundary to tell when the content it caught an error from is gone.
+ * A router provides it: `committed` is the location on screen, `current` the one being
+ * navigated to (ahead of `committed` while the next page loads). None outside a router.
  */
-export const ErrorResetContext = createContext<Accessor<unknown> | undefined>(undefined);
+export interface ErrorReset {
+  committed: Accessor<string>;
+  current: () => string;
+}
+
+/**
+ * A boundary under a router clears its error once a page at another location is committed: the
+ * failed page's error is not shown on the page that replaced it.
+ */
+export const ErrorResetContext = createContext<ErrorReset | undefined>(undefined);
+
+/**
+ * Clear `boundary` when a page at another location than the one it failed at is committed. The
+ * failure is pinned to the location being navigated to when it happened: a page that fails
+ * while it loads fails before it is committed, and committing it must not clear its own error.
+ */
+export function resetOnNavigation(reset: ErrorReset, boundary: { error(): unknown; reset(): void }): void {
+  let failedAt: string | undefined;
+  createEffect(() => {
+    if (boundary.error() === undefined) failedAt = undefined;
+    else failedAt ??= untrack(reset.current);
+  });
+  createEffect(() => {
+    const at = reset.committed();
+    untrack(() => {
+      if (failedAt !== undefined && at !== failedAt && boundary.error() !== undefined) boundary.reset();
+    });
+  });
+}
 
 export interface ErrorBoundaryProps {
   /** Rendered when an error is caught. Receives the error as argument. */
@@ -78,20 +106,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
   };
 
   // Outside the memo below, so it outlives the content the fallback replaced.
-  const resetKey = useContext(ErrorResetContext);
-  if (resetKey) {
-    let first = true;
-    createEffect(() => {
-      resetKey();
-      if (first) {
-        first = false;
-        return;
-      }
-      untrack(() => {
-        if (boundary.error() !== undefined) boundary.reset();
-      });
-    });
-  }
+  const navigation = useContext(ErrorResetContext);
+  if (navigation) resetOnNavigation(navigation, boundary);
 
   return createMemo(() => {
     const err = boundary.error();

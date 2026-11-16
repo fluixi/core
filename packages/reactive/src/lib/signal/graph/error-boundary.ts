@@ -11,6 +11,7 @@ import {
   readContextFrom,
   setErrorHandler,
   provide,
+  getOwner,
   type Owner,
 } from './runtime.js';
 import { G } from './state.js';
@@ -59,3 +60,8 @@ export function provideErrorBoundary<R>(boundary: ErrorBoundary, fn: () => R): R
 }
 
 export { ErrorContext };
+
+/** The error boundary the current scope reports to, if any. */
+export function nearestErrorBoundary(): ErrorBoundary | undefined {
+  return readContextFrom(getOwner(), ErrorContext);
+}

@@ -22,7 +22,8 @@ export type { PortalProps } from './portal.js';
 export { ClientOnly, NoSsr } from './client-only.js';
 export type { ClientOnlyProps, NoSsrProps } from './client-only.js';
 
-export { ErrorBoundary, ErrorResetContext } from './error-boundary.js';
+export { ErrorBoundary, ErrorResetContext, resetOnNavigation } from './error-boundary.js';
+export type { ErrorReset } from './error-boundary.js';
 export type { ErrorBoundaryProps } from './error-boundary.js';
 
 export { classMap } from './class-map.js';

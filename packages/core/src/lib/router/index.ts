@@ -22,6 +22,9 @@ import {
   runWithOwner,
   untrack,
   flush,
+  createErrorBoundary,
+  provideErrorBoundary,
+  nearestErrorBoundary,
 } from '@fluixi/reactive/signal';
 import {
   prepareComponents,
@@ -37,6 +40,7 @@ import {
   isServer,
   setResponseRedirect,
   ErrorResetContext,
+  resetOnNavigation,
 } from '@fluixi/dom';
 import { isRouteRedirect, type RouteRedirect } from './redirect.js';
 // Reactive context (not fluixi createProvider, which destructures children
@@ -70,6 +74,8 @@ interface RouterCtxValue {
   isRouting: () => boolean;
   /** Counts a layer's data load toward `isRouting` until the promise settles. */
   trackLoad: <T>(result: T) => T;
+  /** The Router's `error` option, for a route that failed with no boundary of the app above. */
+  routeError?: (error: unknown, reset: () => void) => any;
 }
 const RouterContext = createContext<RouterCtxValue>(undefined, 'router');
 
@@ -345,7 +351,7 @@ function renderChild(ctx: OutletCtxValue): any {
     const m = untrack(() => ctx.matched())[childIdx];
     return runWithOwner(owner, () =>
       createRoot((dispose) => ({
-        ...renderLayer(m, childIdx, { matched: ctx.matched, params: ctx.params, location: ctx.location }),
+        ...withRouteBoundary(() => renderLayer(m, childIdx, { matched: ctx.matched, params: ctx.params, location: ctx.location })),
         dispose,
       })),
     );
@@ -409,6 +415,64 @@ function buildDefaultNotFound(): any {
   return el;
 }
 
+/** The boundaries the router adds itself, told apart from the app's. */
+const routeBoundaries = new WeakSet<object>();
+
+/**
+ * Give a layer its own boundary when no boundary of the app sits above it, so a route that
+ * fails shows the router's error view in its own place, the layouts around it kept, instead
+ * of leaving the previous page on screen under the new URL. An app's ErrorBoundary above
+ * catches first and this adds nothing. A page's layer is replaced on navigation; a layout's
+ * stays, so its boundary also clears when another location is committed.
+ */
+function withRouteBoundary(build: () => Layer): Layer {
+  const above = nearestErrorBoundary();
+  if (above && !routeBoundaries.has(above)) return build();
+  const boundary = createErrorBoundary() as ReturnType<typeof createErrorBoundary> & { reset(): void };
+  routeBoundaries.add(boundary);
+  const navigation = useContext(ErrorResetContext);
+  if (navigation) resetOnNavigation(navigation, boundary);
+  const option = useContext(RouterContext)?.routeError;
+  const layer = provideErrorBoundary(boundary, build);
+  const content = layer.view;
+  return {
+    ...layer,
+    view: createMemo(() => {
+      const error = boundary.error();
+      return error !== undefined ? untrack(() => renderRouteError(option, error, boundary.reset)) : content;
+    }),
+  };
+}
+
+/** What the router shows for an error nothing in the app caught. */
+function renderRouteError(option: RouterProps['error'], error: unknown, reset: () => void): any {
+  // Caught here rather than left to reach the top, so log it the way an uncaught error would be.
+  console.error(error);
+  return option ? option(error, reset) : buildDefaultError();
+}
+
+/** Minimal default for a failed page, nothing of the error in it: it can carry internals. */
+function buildDefaultError(): any {
+  const el = createNativeElement('div');
+  setAttribute(el, 'class', 'fx-route-error');
+  setAttribute(el, 'role', 'alert');
+  setAttribute(
+    el,
+    'style',
+    'min-height:60vh;display:grid;place-content:center;gap:.25rem;text-align:center;' +
+      'font-family:system-ui,-apple-system,sans-serif',
+  );
+  const h1 = createNativeElement('h1');
+  setAttribute(h1, 'style', 'margin:0;font-size:1.5rem;font-weight:700');
+  insert(h1, 'Something went wrong');
+  const p = createNativeElement('p');
+  setAttribute(p, 'style', 'margin:0;opacity:.7');
+  insert(p, 'This page could not be loaded.');
+  el.appendChild(h1);
+  el.appendChild(p);
+  return el;
+}
+
 // Router
 
 export interface RouterProps<C = any> {
@@ -421,6 +485,13 @@ export interface RouterProps<C = any> {
    * that keeps your layout/chrome, add a catch-all file route instead (`[...slug].tsx` -> `*`).
    */
   notFound?: any;
+  /**
+   * Rendered in place of a route that throws when no `ErrorBoundary` of the app catches it, a
+   * route whose data failed being the common case; the layouts around it stay. Called with the
+   * error and a `reset` that renders the route again. Defaults to a minimal built-in view that
+   * shows nothing of the error; the error itself is logged. Navigating to another route clears it.
+   */
+  error?: (error: unknown, reset: () => void) => any;
   /**
    * How route changes are presented. `'auto'` (the default) hands the DOM swap to the
    * browser's View Transition API where there is one, and navigates directly where
@@ -561,6 +632,7 @@ export function Router<C = any>(props: RouterProps<C>) {
     location: createMemo(() => state().location),
     params: createMemo(() => state().match?.params ?? {}),
     isRouting: () => navigating() || loads() > 0,
+    routeError: props.error,
     // Counted by the promise, not by an owner: a load a newer navigation superseded still
     // settles and uncounts itself, and a resource seeded from the server never calls it.
     trackLoad(result) {
@@ -606,13 +678,18 @@ export function Router<C = any>(props: RouterProps<C>) {
   // reactive provider re-invokes it whenever content changes: caching keeps the
   // root chain from being rebuilt on every navigation.
   let rootView: any;
+  const where = (l: { pathname: string; search: string }) => l.pathname + l.search;
+  const navigationForErrors = {
+    committed: createMemo(() => where(state().location)),
+    current: () => where(history.get()),
+  };
   return RouterContext.Provider({
     value: ctx,
     get children() {
       // A boundary anywhere below clears a caught error once another route is committed,
       // so a failed page's error is not shown on the page that replaced it.
       return ErrorResetContext.Provider({
-        value: matched,
+        value: navigationForErrors,
         get children() {
           return (rootView ??= renderChild(root));
         },

@@ -126,6 +126,7 @@ export {
 export {
   createErrorBoundary,
   provideErrorBoundary,
+  nearestErrorBoundary,
   type ErrorBoundary,
 } from './error-boundary.js';
 
