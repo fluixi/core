@@ -21,7 +21,7 @@ import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
 // not in the reactive core (e.g. createComponent).
-import { batch, createEffect, createRenderEffect, createRoot, getOwner, onCleanup, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
+import { batch, createEffect, createRenderEffect, createRoot, getOwner, onCleanup, runWithOwner, readChildren, reportReactiveBinding, reportReactiveDirective, untrack } from '@fluixi/reactive/signal';
 import {
   isServer,
   getServerNodes,
@@ -1669,181 +1669,216 @@ export function spread(options: SpreadOptions): () => void {
   // namespaced server node.)
   const elementIsSVG = isSVG || (element as any).namespaceURI === SVG_NAMESPACE;
 
-  const disposers: (() => void)[] = [];
+  // Binds one key; what it registers goes in `own`, so a key that leaves the props can be undone
+  // alone. `fresh`: nothing was applied for this key before.
+  const bindKey = (key: string, prev: any, fresh: boolean, own: (() => void)[]): void => {
+    // JSX children of the element win over spread ones (the compiler says so with skipChildren).
+    // Spread `children` are content, as in Solid: written as a property they threw (a read-only
+    // property of every element), and on the server an attribute held a dump of a node.
+    if (key === 'children') {
+      if (!skipChildren) own.push(insert(element, () => props.children) as () => void);
+      return;
+    }
+    const value = props[key];
+
+    // On the first pass every previous value is undefined, so a getter with no value yet would
+    // be skipped and never bound. Such a prop goes on to the generic binding below, which reads
+    // it inside an effect; an unset handler, ref, directive or prefixed binding stays skipped.
+    const unsetGetter = value === undefined && fresh && isGetter(props, key);
+    if (value === prev && !unsetGetter) return;
+    if (unsetGetter && (key === 'ref' || key === 'use' || key.startsWith('on') || key.includes(':') || key === 'class' || key === 'className' || key === 'classList' || key === 'style')) return;
+
+    if (key === 'ref') { handleRef(value, element); return; }
+
+    // Custom directives: `use=${dir}` / `use:name` / `use:name=${opts}`. The
+    // compiler normalizes to an array of [directive, accessor?] pairs; each is
+    // called with the element (accessor optional). Directives register their own
+    // onCleanup, so run them in the current reactive owner.
+    if (key === 'use') { applyUse(element, value); return; }
+
+    // Native event binding: `on:click` / `@click.capture` / `@input.passive`.
+    // Value is a handler or `[handler, options]`. Uses addEventListener (bypasses
+    // delegation) so capture/once/passive work. Must precede the `on`-delegated
+    // branch below (both start with "on").
+    if (key.startsWith('on:')) {
+      own.push(addNativeEventListener(element, key.slice(3), value));
+      return;
+    }
+
+    // Forced bindings: prop:x always assigns the property, attr:x always sets the
+    // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
+    if (key.startsWith('prop:')) {
+      reportReactiveDirective(element, 'prop', key.slice(5), value);
+      own.push(setDynamicProperty(element, key.slice(5), value));
+      return;
+    }
+    if (key.startsWith('attr:')) {
+      reportReactiveDirective(element, 'attr', key.slice(5), value);
+      own.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
+      return;
+    }
+    if (key.startsWith('bool:')) {
+      reportReactiveDirective(element, 'bool', key.slice(5), value);
+      own.push(setDynamicBoolAttribute(element, key.slice(5), value));
+      return;
+    }
+
+    if (key === 'class' || key === 'className') {
+      if (typeof value === 'function') {
+        own.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassName(element, value());
+          }),
+        );
+      } else {
+        setClassName(element, value);
+      }
+      return;
+    }
+
+    if (key === 'classList') {
+      reportKeys(element, 'class', value);
+      if (typeof value === 'function') {
+        own.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'class', value);
+            setClassList(element, value());
+          }),
+        );
+      } else {
+        setClassList(element, value, own);
+      }
+      return;
+    }
+
+    if (key === 'style') {
+      reportKeys(element, 'style', value);
+      if (typeof value === 'function') {
+        own.push(
+          createRenderEffect(() => {
+            reportReactiveBinding(element, 'attribute', 'style', value);
+            setStyle(element as any, value());
+          }),
+        );
+      } else {
+        setStyle(element as any, value, own);
+      }
+      return;
+    }
+
+    if (key.startsWith('on')) {
+      const eventName = key.slice(2).toLowerCase();
+      if (prev) removeDelegatedEventListener(element, eventName);
+      if (value) addDelegatedEventListener(element, eventName, value);
+      return;
+    }
+
+    // A custom element takes the property even when it does not have one yet.
+    //
+    // `key in element` is false until the element upgrades, so a page that renders
+    // before `customElements.define` runs sent every value to an attribute, and an
+    // object arrived as the string `[object Object]`. Upgrading afterwards did not
+    // recover it: the property was never assigned, so the element had nothing to read.
+    // Assigning it now leaves an own property that the element adopts on upgrade (see
+    // the constructor in @fluixi/web-components/element).
+    const custom = isCustomElement ?? element.localName.includes('-');
+    const asProperty =
+      JSX_PROPERTIES.has(key) ||
+      (!elementIsSVG && key in element) ||
+      (custom && !elementIsSVG && !isAttributeOnlyName(key));
+    const functionValue =
+      custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
+    if (functionValue) {
+      if (isServer()) serverCustomElementProp(element, key, value);
+      else setProperty(element, key, value);
+      return;
+    }
+    if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
+      // No element object on a server: see serverCustomElementProp.
+      own.push(
+        createRenderEffect(() => {
+          let v = typeof value === 'function' ? (value as () => unknown)() : props[key];
+          while (typeof v === 'function' && (v as () => unknown).length === 0) v = (v as () => unknown)();
+          serverCustomElementProp(element, key, v);
+        }),
+      );
+      return;
+    }
+    if (typeof value === 'function') {
+      // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
+      own.push(
+        asProperty
+          ? setDynamicProperty(element, key, value)
+          : setDynamicAttribute(element, key, value, elementIsSVG),
+      );
+    } else {
+      // A plain, non-function value may still be backed by a reactive getter:
+      // component props compile to `get x() {...}`, and splitProps/mergeProps
+      // forward those getters. Reading `props[key]` once (above) snapshots the
+      // current value and drops the dependency, so the DOM never updates. Re-read
+      // it inside a render effect so the getter's reads are tracked. (A truly
+      // static value just runs the effect once with no deps: negligible.)
+      own.push(
+        createRenderEffect(() =>
+          asProperty
+            ? setProperty(element, key, props[key])
+            : setAttribute(element, key, props[key], elementIsSVG),
+        ),
+      );
+    }
+  };
+
+  const clearKey = (key: string): void => {
+    if (key === 'children') return;
+    if (key.startsWith('on')) {
+      removeDelegatedEventListener(element, key.slice(2).toLowerCase());
+    } else if (JSX_PROPERTIES.has(key)) {
+      setProperty(element, key, null);
+    } else {
+      element.removeAttribute(key);
+    }
+  };
+
+  const bound = new Map<string, (() => void)[]>();
+  const bind = (key: string, prev: any, fresh: boolean): void => {
+    const own: (() => void)[] = [];
+    bound.set(key, own);
+    bindKey(key, prev, fresh, own);
+  };
 
   // What is read here only decides how each prop is bound; the bindings track their own values.
   // Tracked, the reads belonged to whatever was creating the element (a Show or For memo), which
   // then rebuilt it whenever a spread value changed.
   untrack(() => {
-    for (const key in props) {
-      if (skipChildren && key === 'children') continue;
-
-      const value = props[key];
-      const prev = prevProps[key];
-
-      // On the first pass every previous value is undefined, so a getter with no value yet would
-      // be skipped and never bound. Such a prop goes on to the generic binding below, which reads
-      // it inside an effect; an unset handler, ref, directive or prefixed binding stays skipped.
-      const unsetGetter = value === undefined && prevProps === EMPTY_OBJ && isGetter(props, key);
-      if (value === prev && !unsetGetter) continue;
-      if (unsetGetter && (key === 'ref' || key === 'use' || key.startsWith('on') || key.includes(':') || key === 'class' || key === 'className' || key === 'classList' || key === 'style')) continue;
-
-      if (key === 'ref') { handleRef(value, element); continue; }
-
-      // Custom directives: `use=${dir}` / `use:name` / `use:name=${opts}`. The
-      // compiler normalizes to an array of [directive, accessor?] pairs; each is
-      // called with the element (accessor optional). Directives register their own
-      // onCleanup, so run them in the current reactive owner.
-      if (key === 'use') { applyUse(element, value); continue; }
-
-      // Native event binding: `on:click` / `@click.capture` / `@input.passive`.
-      // Value is a handler or `[handler, options]`. Uses addEventListener (bypasses
-      // delegation) so capture/once/passive work. Must precede the `on`-delegated
-      // branch below (both start with "on").
-      if (key.startsWith('on:')) {
-        disposers.push(addNativeEventListener(element, key.slice(3), value));
-        continue;
-      }
-
-      // Forced bindings: prop:x always assigns the property, attr:x always sets the
-      // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
-      if (key.startsWith('prop:')) {
-        reportReactiveDirective(element, 'prop', key.slice(5), value);
-        disposers.push(setDynamicProperty(element, key.slice(5), value));
-        continue;
-      }
-      if (key.startsWith('attr:')) {
-        reportReactiveDirective(element, 'attr', key.slice(5), value);
-        disposers.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
-        continue;
-      }
-      if (key.startsWith('bool:')) {
-        reportReactiveDirective(element, 'bool', key.slice(5), value);
-        disposers.push(setDynamicBoolAttribute(element, key.slice(5), value));
-        continue;
-      }
-
-      if (key === 'class' || key === 'className') {
-        if (typeof value === 'function') {
-          disposers.push(
-            createRenderEffect(() => {
-              reportReactiveBinding(element, 'attribute', 'class', value);
-              setClassName(element, value());
-            }),
-          );
-        } else {
-          setClassName(element, value);
-        }
-        continue;
-      }
-
-      if (key === 'classList') {
-        reportKeys(element, 'class', value);
-        if (typeof value === 'function') {
-          disposers.push(
-            createRenderEffect(() => {
-              reportReactiveBinding(element, 'attribute', 'class', value);
-              setClassList(element, value());
-            }),
-          );
-        } else {
-          setClassList(element, value, disposers);
-        }
-        continue;
-      }
-
-      if (key === 'style') {
-        reportKeys(element, 'style', value);
-        if (typeof value === 'function') {
-          disposers.push(
-            createRenderEffect(() => {
-              reportReactiveBinding(element, 'attribute', 'style', value);
-              setStyle(element as any, value());
-            }),
-          );
-        } else {
-          setStyle(element as any, value, disposers);
-        }
-        continue;
-      }
-
-      if (key.startsWith('on')) {
-        const eventName = key.slice(2).toLowerCase();
-        if (prev) removeDelegatedEventListener(element, eventName);
-        if (value) addDelegatedEventListener(element, eventName, value);
-        continue;
-      }
-
-      // A custom element takes the property even when it does not have one yet.
-      //
-      // `key in element` is false until the element upgrades, so a page that renders
-      // before `customElements.define` runs sent every value to an attribute, and an
-      // object arrived as the string `[object Object]`. Upgrading afterwards did not
-      // recover it: the property was never assigned, so the element had nothing to read.
-      // Assigning it now leaves an own property that the element adopts on upgrade (see
-      // the constructor in @fluixi/web-components/element).
-      const custom = isCustomElement ?? element.localName.includes('-');
-      const asProperty =
-        JSX_PROPERTIES.has(key) ||
-        (!elementIsSVG && key in element) ||
-        (custom && !elementIsSVG && !isAttributeOnlyName(key));
-      const functionValue =
-        custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
-      if (functionValue) {
-        if (isServer()) serverCustomElementProp(element, key, value);
-        else setProperty(element, key, value);
-        continue;
-      }
-      if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
-        // No element object on a server: see serverCustomElementProp.
-        disposers.push(
-          createRenderEffect(() => {
-            let v = typeof value === 'function' ? (value as () => unknown)() : props[key];
-            while (typeof v === 'function' && (v as () => unknown).length === 0) v = (v as () => unknown)();
-            serverCustomElementProp(element, key, v);
-          }),
-        );
-        continue;
-      }
-      if (typeof value === 'function') {
-        // Accessor value (`() => expr`): setDynamic* wraps it in its own effect.
-        disposers.push(
-          asProperty
-            ? setDynamicProperty(element, key, value)
-            : setDynamicAttribute(element, key, value, elementIsSVG),
-        );
-      } else {
-        // A plain, non-function value may still be backed by a reactive getter:
-        // component props compile to `get x() {...}`, and splitProps/mergeProps
-        // forward those getters. Reading `props[key]` once (above) snapshots the
-        // current value and drops the dependency, so the DOM never updates. Re-read
-        // it inside a render effect so the getter's reads are tracked. (A truly
-        // static value just runs the effect once with no deps: negligible.)
-        disposers.push(
-          createRenderEffect(() =>
-            asProperty
-              ? setProperty(element, key, props[key])
-              : setAttribute(element, key, props[key], elementIsSVG),
-          ),
-        );
-      }
-    }
-
-    for (const key in prevProps as Record<string, any>) {
-      if (!(key in props)) {
-        if (key.startsWith('on')) {
-          const eventName = key.slice(2).toLowerCase();
-          removeDelegatedEventListener(element, eventName);
-        } else if (JSX_PROPERTIES.has(key)) {
-          setProperty(element, key, null);
-        } else {
-          element.removeAttribute(key);
-        }
-      }
-    }
+    for (const key in props) bind(key, prevProps[key], prevProps === EMPTY_OBJ);
+    for (const key in prevProps as Record<string, any>) if (!(key in props)) clearKey(key);
   });
 
-  return () => { disposers.forEach((d) => d()); };
+  // The key set can move too: a spread source computed from signals (`{...attrs()}`) gains or
+  // loses keys. Listed in an effect of its own, it binds a key that appears and clears one that
+  // goes, leaving the bindings of the keys that stay as they are.
+  const owner = getOwner();
+  const keysEffect = createRenderEffect(() => {
+    const keys = new Set<string>();
+    for (const key in props) keys.add(key);
+    untrack(() =>
+      runWithOwner(owner, () => {
+        for (const key of keys) if (!bound.has(key)) bind(key, undefined, true);
+        for (const [key, own] of bound) {
+          if (keys.has(key)) continue;
+          own.forEach((d) => d());
+          bound.delete(key);
+          clearKey(key);
+        }
+      }),
+    );
+  });
+
+  return () => {
+    keysEffect();
+    for (const own of bound.values()) own.forEach((d) => d());
+  };
 }
 
 /**

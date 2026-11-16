@@ -397,8 +397,10 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
             .filter((p) => p.kind !== 'spread' && p.expr !== undefined && p.reactive && p.name !== 'ref')
             .map((p) => p.name);
           const customFlag = node.tag.includes('-') ? `, isCustomElement: true, accessors: ${JSON.stringify(accessors)}` : '';
+          // The element's own JSX children win: spread `children` are then left out, as in Solid.
+          const childrenFlag = node.children.length > 0 ? ', skipChildren: true' : '';
           parts.push(
-            `spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag}${customFlag} });`,
+            `spread({ element: ${el}, props: ${emitProps(node.props, null, used)}${svgFlag}${customFlag}${childrenFlag} });`,
           );
         }
       }
