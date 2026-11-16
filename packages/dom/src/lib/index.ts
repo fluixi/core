@@ -60,6 +60,8 @@ export {
   takeResponseHeaders,
   setResponseRedirect,
   takeResponseRedirect,
+  setResponseStatus,
+  takeResponseStatus,
   type ResponseRedirect,
   type RenderOptions,
   type RequestStore,

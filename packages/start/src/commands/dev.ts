@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
+import { takeResponseStatus } from '@fluixi/dom';
 import { setDeclaredPublicKeys } from '../env.js';
 import { resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
@@ -155,7 +156,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
         await injectStyles(vite, template, await renderedStyles(vite, cfg.serverEntry)),
       );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
-      return await streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail);
+      return await streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail, request);
     }
     const render = mod.render ?? mod.default;
     const appHtml = await withPlatformRequest(request, () => render(path, request)); // sync or async; request enables the locals bridge
@@ -169,7 +170,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       await renderedStyles(vite, cfg.serverEntry),
     );
     const html = await vite.transformIndexHtml(path, styled);
-    return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+    return new Response(html, { status: takeResponseStatus(request) ?? 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }), (e) => vite.ssrFixStacktrace?.(e));
 
   // Optional request middleware. Loaded per request via ssrLoadModule so edits hot-

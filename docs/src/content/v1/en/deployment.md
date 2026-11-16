@@ -87,12 +87,15 @@ bundle, would put two routers with two sets of module state in the same server.
 
 ## When a request fails
 
-An error thrown by a page, a server function or a middleware is logged on the server. The
-visitor gets a 500 with a plain page, or a short text when the request was not for a page;
-never the stack, which names files and hosts and can carry a secret. `fluixi dev` keeps showing
-the stack.
+An error thrown by a server function or a middleware is logged on the server. The visitor gets
+a 500 with a plain page, or a short text when the request was not for a page; never the stack,
+which names files and hosts and can carry a secret. `fluixi dev` keeps showing the stack.
 
-To give the page your own look, put it at `public/error.html`: the build copies it with the
+A page that throws while it renders, or whose data fails, is also a 500, but the rest of the
+app is still sent: the router renders its error view in the page's place, on the server and
+after hydration alike. [Routing](/v1/en/routing#failures) covers that view and how to replace it.
+
+To give the plain page your own look, put it at `public/error.html`: the build copies it with the
 other public files and the Node server answers with it. A platform without a filesystem (a
 worker) serves the plain page.
 

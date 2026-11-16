@@ -208,6 +208,18 @@ the failure instead of an empty page:
 The boundary also catches errors thrown later, from an effect long after the page was built.
 `reset` renders the children again.
 
+With no boundary of yours above a route, the router puts its own there. The route that failed
+is replaced by a short error view, the layouts around it stay, and the error is logged. The view
+shows nothing of the error itself, which can name files or hosts. Pass `error` to the Router for
+your own:
+
+```tsx
+<Router routes={routes} error={(error, reset) => <Failed error={error} onRetry={reset} />} />
+```
+
+Navigating to another page clears the error, from your boundary or the router's. When the server
+renders a page that failed, the response is a 500.
+
 ### Caching and dependencies
 
 `cache` keeps a function's results by name and arguments, shares one request between readers,

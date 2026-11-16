@@ -42,6 +42,7 @@ import {
   setResponseRedirect,
   ErrorResetContext,
   resetOnNavigation,
+  setResponseStatus,
 } from '@fluixi/dom';
 import { isRouteRedirect, type RouteRedirect } from './redirect.js';
 // Reactive context (not fluixi createProvider, which destructures children
@@ -434,7 +435,16 @@ function withRouteBoundary(build: () => Layer): Layer {
   const navigation = useContext(ErrorResetContext);
   if (navigation) resetOnNavigation(navigation, boundary);
   const option = useContext(RouterContext)?.routeError;
-  const layer = provideErrorBoundary(boundary, build);
+  let layer: Layer;
+  try {
+    layer = provideErrorBoundary(boundary, build);
+  } catch (error) {
+    // Thrown while the route's component was being created, the whole page not built: on
+    // the server that is the render itself, which would otherwise fail the response.
+    if (error && typeof (error as { then?: unknown }).then === 'function') throw error;
+    boundary.setError(error);
+    layer = { view: null, ready: () => true };
+  }
   // A plain function the route returned is called by whatever inserts it, under its owner,
   // outside this boundary: its error would miss it. Called through here, it reports back.
   // Signals and memos pass as they are; wrapping them would change how they are inserted.
@@ -469,6 +479,8 @@ function withRouteBoundary(build: () => Layer): Layer {
 function renderRouteError(option: RouterProps['error'], error: unknown, reset: () => void): any {
   // Caught here rather than left to reach the top, so log it the way an uncaught error would be.
   console.error(error);
+  // The page the server sends in its place is a failure, not a 200.
+  if (isServer()) setResponseStatus(500);
   return option ? option(error, reset) : buildDefaultError();
 }
 

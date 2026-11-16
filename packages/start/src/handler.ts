@@ -7,7 +7,7 @@ import { extname, resolve, sep } from 'node:path';
 import { errorResponse, liftHead, type ErrorResponseOptions } from './document.js';
 import { withPlatformRequest } from './platform-request.js';
 import { setClientAddress } from './client-address.js';
-import { takeResponseHeaders, takeResponseRedirect } from '@fluixi/dom';
+import { takeResponseHeaders, takeResponseRedirect, takeResponseStatus } from '@fluixi/dom';
 
 /**
  * The runtime-neutral request layer. Everything renders through a Web
@@ -55,6 +55,8 @@ export async function streamDocument(
     await reader.cancel().catch(() => {});
     return redirectResponse(away);
   }
+  // A status the render asked for (500 for a route that failed and showed its error view).
+  const status = (request && takeResponseStatus(request)) ?? 200;
   const lifted = marker ? liftHead(head, marker).html : head;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -74,7 +76,7 @@ export async function streamDocument(
     },
   });
   return new Response(stream, {
-    status: 200,
+    status,
     headers: { 'content-type': 'text/html; charset=utf-8' },
   });
 }
@@ -160,7 +162,7 @@ export function createRequestHandler(render: RenderFn, options?: ErrorResponseOp
       const away = takeResponseRedirect(request);
       if (away) return redirectResponse(away);
       return new Response(html, {
-        status: 200,
+        status: takeResponseStatus(request) ?? 200,
         headers: { 'content-type': 'text/html; charset=utf-8' },
       });
     } catch (e) {

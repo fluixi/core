@@ -44,6 +44,8 @@ export {
   takeResponseHeaders,
   setResponseRedirect,
   takeResponseRedirect,
+  setResponseStatus,
+  takeResponseStatus,
   type ResponseRedirect,
   type RequestStore,
   type RequestContext,

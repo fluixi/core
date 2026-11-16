@@ -374,6 +374,29 @@ export function setResponseRedirect(location: string, status: number, request: o
   return true;
 }
 
+const _statuses: WeakMap<object, number> = ((globalThis as Record<symbol, unknown>)[
+  Symbol.for('fluixi.responseStatuses')
+] ??= new WeakMap<object, number>()) as WeakMap<object, number>;
+
+/**
+ * The status the response to the request being rendered should carry, such as 500 when a
+ * route failed and its error view was rendered in its place. Returns false when there is no
+ * request or its headers have already gone out.
+ */
+export function setResponseStatus(status: number, request: object | undefined = currentRequest()): boolean {
+  if (!request) return false;
+  if (_responseHeaders.get(request)?.sent) return false;
+  _statuses.set(request, status);
+  return true;
+}
+
+/** For the host, before it commits to a status: the one a render asked for, if any. */
+export function takeResponseStatus(request: object): number | undefined {
+  const status = _statuses.get(request);
+  _statuses.delete(request);
+  return status;
+}
+
 /** For the host, before it commits to a status: the redirect a render asked for, if any. */
 export function takeResponseRedirect(request: object): ResponseRedirect | undefined {
   const redirect = _redirects.get(request);
