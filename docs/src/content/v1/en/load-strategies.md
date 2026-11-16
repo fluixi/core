@@ -28,6 +28,12 @@ the deferred binding.
 | `load:media` | When a media query matches. |
 | `load:never` | Never, no client code at all. |
 
+The server renders a deferred component in full either way. Until its code arrives, the page
+keeps what the server sent in its place: it shows, but does not respond yet. Once the code loads
+the component renders and takes over. A `load:media` component whose query never matches keeps
+the server's content for good. In a page reached by client navigation there is no server
+content, so the slot stays empty until the code loads.
+
 ### `load:visible`
 
 Takes an optional margin, passed through as the observer's `rootMargin`:

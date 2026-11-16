@@ -38,6 +38,7 @@ import {
   nextHydrationKey,
   templateSalt,
   claimKeyed,
+  keepKeyed,
   HYDRATION_KEY,
 } from './hydration-state.js';
 
@@ -807,6 +808,28 @@ export function insert(
 
 // insertExpression
 
+const KEEP_SERVER_CONTENT = Symbol.for('fluixi.keepServerContent');
+
+/** What {@link keepServerContent} returns. */
+export interface KeptServerContent {
+  readonly [KEEP_SERVER_CONTENT]: true;
+  readonly adopt?: (nodes: Node[]) => void;
+}
+
+/**
+ * A value a component returns during hydration to leave its slot as the server rendered it:
+ * `insert` keeps the nodes it holds there, and hands them to `adopt`. For a component that has
+ * nothing to build yet (its code not loaded) and must not blank what the server sent. Returning
+ * something else later replaces them.
+ */
+export function keepServerContent(adopt?: (nodes: Node[]) => void): KeptServerContent {
+  return { [KEEP_SERVER_CONTENT]: true, adopt } as KeptServerContent;
+}
+
+function isKeptServerContent(value: unknown): value is KeptServerContent {
+  return !!value && typeof value === 'object' && (value as Record<symbol, unknown>)[KEEP_SERVER_CONTENT] === true;
+}
+
 export function insertExpression(
   parent: Node,
   value: Children,
@@ -826,6 +849,14 @@ export function insertExpression(
 
   if (value == null || typeof value === 'boolean') {
     return cleanChildren(parent, current, marker);
+  }
+
+  if (isKeptServerContent(value)) {
+    const nodes = current == null ? [] : Array.isArray(current) ? current : [current];
+    // Nothing claims them, so the sweep after hydration would take them for stale markup.
+    keepKeyed(nodes);
+    value.adopt?.(nodes);
+    return current ?? null;
   }
 
   if (isPromise(value)) {

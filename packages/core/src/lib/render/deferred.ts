@@ -10,7 +10,7 @@
  * literal `import()`, which is what lets the bundler do chunking, hashing and
  * tree-shaking as ordinary behaviour rather than as an integration.
  */
-import { isServer } from '@fluixi/dom';
+import { isHydrating, isServer, keepServerContent } from '@fluixi/dom';
 import { createMemo, createSignal } from '@fluixi/reactive/signal';
 import { observeIntersection } from '@fluixi/dom/utils';
 import { lazy } from './lazy.js';
@@ -75,6 +75,26 @@ export function deferred(
     const start = (): void => {
       void Lazy.preload().then(() => setReady(true));
     };
+
+    // Hydrating, the server already rendered the component in full: its nodes stay as they are
+    // until the code arrives, rather than blanking until the trigger and showing up again (or,
+    // for a media query that never matches, never). `visible` watches that content itself.
+    if (isHydrating()) {
+      let adopted = false;
+      const keep = keepServerContent((nodes) => {
+        if (adopted) return;
+        adopted = true;
+        const watched = nodes.find((n): n is HTMLElement => n.nodeType === 1);
+        schedule(options.strategy, start, watched);
+      });
+      // Not inside a slot that hands its nodes over: schedule without content to watch.
+      queueMicrotask(() => {
+        if (adopted) return;
+        adopted = true;
+        schedule(options.strategy, start);
+      });
+      return createMemo(() => (ready() ? Lazy(props) : keep), undefined, { name: 'deferred' });
+    }
 
     // `visible` is the one strategy that needs something in the DOM to watch, so it
     // renders an anchor and observes that; the others key off global signals and can

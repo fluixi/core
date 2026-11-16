@@ -320,6 +320,22 @@ export function removeUnclaimedKeyed(within?: Node): number {
 }
 
 /**
+ * Take the keyed server elements in `nodes` (and below them) out of the unclaimed index: content
+ * a component kept as the server rendered it, which nothing claims and which must stay.
+ */
+export function keepKeyed(nodes: Node[]): void {
+  if (!keyed_nodes || nodes.length === 0) return;
+  for (const [key, el] of keyed_nodes) {
+    if (nodes.some((n) => n === el || n.contains(el))) keyed_nodes.delete(key);
+  }
+}
+
+/** Whether a hydration pass is running: what a component builds now adopts server nodes. */
+export function isHydrating(): boolean {
+  return hydration.active;
+}
+
+/**
  * The server element with this key and tag, taken out of the index so it is claimed once.
  * Null when there is none, and the caller falls back to the cursor.
  */
