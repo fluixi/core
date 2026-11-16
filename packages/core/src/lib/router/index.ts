@@ -457,7 +457,13 @@ function withRouteBoundary(build: () => Layer): Layer {
         return guard(fn());
       } catch (error) {
         if (error && typeof (error as { then?: unknown }).then === 'function') throw error;
-        // After the current run, as the graph's own handler does inside a computation.
+        // The server writes its HTML once, from this very read: the error view goes in now.
+        if (isServer()) {
+          boundary.setError(error);
+          return untrack(() => renderRouteError(option, error, boundary.reset));
+        }
+        // In the browser, after the current run, as the graph's own handler does inside a
+        // computation.
         queueMicrotask(() => boundary.setError(error));
         return null;
       }
@@ -467,7 +473,9 @@ function withRouteBoundary(build: () => Layer): Layer {
   return {
     ...layer,
     view: createMemo(() => {
-      const error = boundary.error();
+      // On the server, an effect of the page that failed while it was built has only been
+      // recorded so far: its view still holds the empty element it was writing into.
+      const error = boundary.error() ?? (isServer() ? boundary.caught() : undefined);
       if (error !== undefined) return untrack(() => renderRouteError(option, error, boundary.reset));
       // The layer's view is a memo of what the route returned: guard that, not the memo.
       return guard(isSignal(content) ? (content as () => unknown)() : content);
@@ -475,13 +483,25 @@ function withRouteBoundary(build: () => Layer): Layer {
   };
 }
 
+/**
+ * The HTTP status an error asks for: its own `status` when that is an error status (a route
+ * that found nothing throws one with 404, a refusal one with 403), otherwise 500.
+ */
+function routeErrorStatus(error: unknown): number {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === 'number' && Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+}
+
 /** What the router shows for an error nothing in the app caught. */
 function renderRouteError(option: RouterProps['error'], error: unknown, reset: () => void): any {
   // Caught here rather than left to reach the top, so log it the way an uncaught error would be.
   console.error(error);
+  const status = routeErrorStatus(error);
   // The page the server sends in its place is a failure, not a 200.
-  if (isServer()) setResponseStatus(500);
-  return option ? option(error, reset) : buildDefaultError();
+  if (isServer()) setResponseStatus(status);
+  if (option) return option(error, reset);
+  // A route that found nothing reads the same as a URL that matched nothing.
+  return status === 404 ? buildDefaultNotFound() : buildDefaultError();
 }
 
 /** Minimal default for a failed page, nothing of the error in it: it can carry internals. */
@@ -522,7 +542,9 @@ export interface RouterProps<C = any> {
    * Rendered in place of a route that throws when no `ErrorBoundary` of the app catches it, a
    * route whose data failed being the common case; the layouts around it stay. Called with the
    * error and a `reset` that renders the route again. Defaults to a minimal built-in view that
-   * shows nothing of the error; the error itself is logged. Navigating to another route clears it.
+   * shows nothing of the error (the not-found view for a 404); the error itself is logged.
+   * Navigating to another route clears it. On the server the response takes the error's
+   * `status` when it is 400 to 599, 500 otherwise.
    */
   error?: (error: unknown, reset: () => void) => any;
   /**

@@ -22,6 +22,11 @@ export interface ErrorBoundary {
   error(): unknown;
   /** Clear the error so children re-render (after a fix/retry). */
   reset(): void;
+  /**
+   * The error caught, at once and untracked, while `error()` may only see it after the current
+   * run. A server render writes its HTML in one pass and needs it before then.
+   */
+  caught(): unknown;
 }
 
 interface InternalBoundary extends ErrorBoundary {
@@ -38,6 +43,7 @@ setErrorHandler((error: unknown, owner: Owner | null): boolean => {
   // boundary, as a page under a memoised Outlet does), a write is not seen by that run and the
   // fallback would never render: record it once the run is over, as @fluixi/dom's
   // ErrorBoundary does for its own reports. Outside any computation it is recorded at once.
+  boundary.caught = () => error;
   if (G.consumer) queueMicrotask(() => boundary.setError(error));
   else boundary.setError(error);
   return true;
@@ -48,8 +54,15 @@ export function createErrorBoundary(): ErrorBoundary {
   const [error, setError] = createSignal<unknown>(undefined, { equals: false });
   const boundary: InternalBoundary = {
     error,
-    reset: () => setError(() => undefined),
-    setError: (e) => setError(() => e),
+    caught: () => undefined,
+    reset: () => {
+      boundary.caught = () => undefined;
+      setError(() => undefined);
+    },
+    setError: (e) => {
+      boundary.caught = () => e;
+      setError(() => e);
+    },
   };
   return boundary;
 }

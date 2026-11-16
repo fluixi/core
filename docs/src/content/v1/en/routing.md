@@ -218,7 +218,19 @@ your own:
 ```
 
 Navigating to another page clears the error, from your boundary or the router's. When the server
-renders a page that failed, the response is a 500.
+renders a page that failed, the response is a 500, or the error's own `status` when it has one
+from 400 to 599. Data that found nothing can say so:
+
+```ts
+export const routeData = async ({ params }) => {
+  const order = await findOrder(params.id);
+  if (!order) throw Object.assign(new Error('order not found'), { status: 404 });
+  return order;
+};
+```
+
+The response is then a 404 and the built-in view is the one shown for an unknown address. The
+`error` option receives the error, status included, to tell the cases apart.
 
 ### Caching and dependencies
 
