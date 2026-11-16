@@ -218,8 +218,8 @@ your own:
 ```
 
 Navigating to another page clears the error, from your boundary or the router's. When the server
-renders a page that failed, the response is a 500, or the error's own `status` when it has one
-from 400 to 599. Data that found nothing can say so:
+renders a page that failed, with your fallback or the router's view, the response is a 500, or
+the error's own `status` when it has one from 400 to 599. Data that found nothing can say so:
 
 ```ts
 export const routeData = async ({ params }) => {
@@ -230,7 +230,8 @@ export const routeData = async ({ params }) => {
 ```
 
 The response is then a 404 and the built-in view is the one shown for an unknown address. The
-`error` option receives the error, status included, to tell the cases apart.
+`error` option and your fallback receive the error, status included, to tell the cases apart. A
+fallback that wants another status sets it with `setResponseStatus` from `@fluixi/dom`.
 
 ### Caching and dependencies
 

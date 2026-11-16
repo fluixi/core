@@ -43,6 +43,7 @@ import {
   ErrorResetContext,
   resetOnNavigation,
   setResponseStatus,
+  errorResponseStatus,
 } from '@fluixi/dom';
 import { isRouteRedirect, type RouteRedirect } from './redirect.js';
 // Reactive context (not fluixi createProvider, which destructures children
@@ -486,20 +487,11 @@ function withRouteBoundary(build: () => Layer): Layer {
   };
 }
 
-/**
- * The HTTP status an error asks for: its own `status` when that is an error status (a route
- * that found nothing throws one with 404, a refusal one with 403), otherwise 500.
- */
-function routeErrorStatus(error: unknown): number {
-  const status = (error as { status?: unknown } | null)?.status;
-  return typeof status === 'number' && Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
-}
-
 /** What the router shows for an error nothing in the app caught. */
 function renderRouteError(option: RouterProps['error'], error: unknown, reset: () => void): any {
   // Caught here rather than left to reach the top, so log it the way an uncaught error would be.
   console.error(error);
-  const status = routeErrorStatus(error);
+  const status = errorResponseStatus(error);
   // The page the server sends in its place is a failure, not a 200.
   if (isServer()) setResponseStatus(status);
   if (option) return option(error, reset);

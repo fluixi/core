@@ -61,6 +61,7 @@ export {
   setResponseRedirect,
   takeResponseRedirect,
   setResponseStatus,
+  errorResponseStatus,
   takeResponseStatus,
   type ResponseRedirect,
   type RenderOptions,

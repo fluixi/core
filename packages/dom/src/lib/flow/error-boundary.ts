@@ -9,6 +9,7 @@ import {
   useContext,
 } from '@fluixi/reactive/signal';
 import { isServer } from '../dom/server/host.js';
+import { errorResponseStatus, setResponseStatus } from '../dom/server/request-context.js';
 
 /**
  * Where the app is, for a boundary to tell when the content it caught an error from is gone.
@@ -60,6 +61,9 @@ export interface ErrorBoundaryProps {
  * function `(err, reset) => UI`; calling `reset()` clears the error and renders the children
  * again. A thrown promise is not an error: it goes to the nearest Suspense.
  *
+ * In a server render the response takes the error's `status` when it is 400 to 599, 500
+ * otherwise; a fallback can call `setResponseStatus` for another.
+ *
  * Returns a memo: works in both JSX and `html` templates.
  *
  * @example JSX
@@ -81,8 +85,12 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
   const boundary = createErrorBoundary() as ReturnType<typeof createErrorBoundary> & { setError(e: unknown): void };
 
   const isPromise = (e: unknown) => !!e && typeof (e as { then?: unknown }).then === 'function';
-  const showFallback = (err: unknown) =>
-    typeof props.fallback === 'function' ? props.fallback(err, boundary.reset) : props.fallback;
+  const showFallback = (err: unknown) => {
+    // A page the server sends with a fallback in it is a failure. Set first, so a fallback can
+    // set its own.
+    if (isServer()) setResponseStatus(errorResponseStatus(err));
+    return typeof props.fallback === 'function' ? props.fallback(err, boundary.reset) : props.fallback;
+  };
   // Recorded after the current run: a write made while the boundary's own memo, or the insert
   // reading it, is still running is not seen by that run, so nothing would re-render.
   const report = (e: unknown) => {

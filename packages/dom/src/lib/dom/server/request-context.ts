@@ -390,6 +390,15 @@ export function setResponseStatus(status: number, request: object | undefined = 
   return true;
 }
 
+/**
+ * The HTTP status a failure shown in a page asks for: the error's own `status` when it is an
+ * error status (404 for a record not found, 403 for a refusal), otherwise 500.
+ */
+export function errorResponseStatus(error: unknown): number {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === 'number' && Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+}
+
 /** For the host, before it commits to a status: the one a render asked for, if any. */
 export function takeResponseStatus(request: object): number | undefined {
   const status = _statuses.get(request);
