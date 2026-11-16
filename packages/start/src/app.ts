@@ -20,7 +20,7 @@
  * injector: a singleton in the browser, one per request on the server. Scoping below the
  * root is what `provide()` in a component is for.
  */
-import { setModuleScope, type Provider } from './di.js';
+import { setModuleScope, type Provider } from '@fluixi/di';
 import { adoptReactiveScope, openReactiveScope, reactiveScopeOf, withReactiveScope } from '@fluixi/reactive/signal';
 import type { Middleware } from './middleware.js';
 
