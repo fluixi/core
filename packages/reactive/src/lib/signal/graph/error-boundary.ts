@@ -13,6 +13,7 @@ import {
   provide,
   type Owner,
 } from './runtime.js';
+import { G } from './state.js';
 import { createSignal } from './compat.js';
 
 export interface ErrorBoundary {
@@ -32,7 +33,12 @@ const ErrorContext = createContext<InternalBoundary | undefined>();
 setErrorHandler((error: unknown, owner: Owner | null): boolean => {
   const boundary = readContextFrom(owner, ErrorContext);
   if (!boundary) return false; // no boundary -> not handled (rethrows)
-  boundary.setError(error);
+  // Inside another computation (the effect that threw ran nested in the insert that reads the
+  // boundary, as a page under a memoised Outlet does), a write is not seen by that run and the
+  // fallback would never render: record it once the run is over, as @fluixi/dom's
+  // ErrorBoundary does for its own reports. Outside any computation it is recorded at once.
+  if (G.consumer) queueMicrotask(() => boundary.setError(error));
+  else boundary.setError(error);
   return true;
 });
 

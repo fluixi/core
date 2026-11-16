@@ -1,4 +1,20 @@
-import { Accessor, createErrorBoundary, createMemo, provideErrorBoundary } from '@fluixi/reactive/signal';
+import {
+  Accessor,
+  createContext,
+  createEffect,
+  createErrorBoundary,
+  createMemo,
+  provideErrorBoundary,
+  untrack,
+  useContext,
+} from '@fluixi/reactive/signal';
+
+/**
+ * A value whose change means the content a boundary caught an error from is gone: a router
+ * provides the route it has committed, so a boundary around the Outlet clears the failed page's
+ * error when another page is shown. None outside a router.
+ */
+export const ErrorResetContext = createContext<Accessor<unknown> | undefined>(undefined);
 
 export interface ErrorBoundaryProps {
   /** Rendered when an error is caught. Receives the error as argument. */
@@ -60,6 +76,22 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
       }
     };
   };
+
+  // Outside the memo below, so it outlives the content the fallback replaced.
+  const resetKey = useContext(ErrorResetContext);
+  if (resetKey) {
+    let first = true;
+    createEffect(() => {
+      resetKey();
+      if (first) {
+        first = false;
+        return;
+      }
+      untrack(() => {
+        if (boundary.error() !== undefined) boundary.reset();
+      });
+    });
+  }
 
   return createMemo(() => {
     const err = boundary.error();

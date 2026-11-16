@@ -36,6 +36,7 @@ import {
   getRequestEvent,
   isServer,
   setResponseRedirect,
+  ErrorResetContext,
 } from '@fluixi/dom';
 import { isRouteRedirect, type RouteRedirect } from './redirect.js';
 // Reactive context (not fluixi createProvider, which destructures children
@@ -608,7 +609,14 @@ export function Router<C = any>(props: RouterProps<C>) {
   return RouterContext.Provider({
     value: ctx,
     get children() {
-      return (rootView ??= renderChild(root));
+      // A boundary anywhere below clears a caught error once another route is committed,
+      // so a failed page's error is not shown on the page that replaced it.
+      return ErrorResetContext.Provider({
+        value: matched,
+        get children() {
+          return (rootView ??= renderChild(root));
+        },
+      });
     },
   });
 }
