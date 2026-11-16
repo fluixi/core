@@ -3,7 +3,7 @@
  * server, disposed when the request ends; one per app in the browser), and the component
  * injectors `provide()` attaches to the reactive owner tree.
  */
-import { getRequestContext, onRequestEnd } from '@fluixi/dom';
+import { onRequestEnd, requestScope } from '@fluixi/dom';
 import { getOwner } from '@fluixi/reactive/signal';
 import { Injector } from './injector.js';
 import { state } from './state.js';
@@ -14,18 +14,19 @@ export function platformInjector(): Injector {
 }
 
 /**
- * The root injector: one per request during a server render (disposed when the request ends),
- * one per app in the browser.
+ * The root injector: one per request on the server (disposed when the request ends), one per
+ * app in the browser. Keyed by the request scope rather than a render's context, so middleware
+ * and the page, route or function behind it get the same instances.
  */
 export function rootInjector(): Injector {
-  const ctx = getRequestContext() as object | undefined;
-  if (ctx) {
-    let inj = state.requestRoots.get(ctx);
+  const scope = requestScope();
+  if (scope) {
+    let inj = state.requestRoots.get(scope);
     if (!inj) {
       const root = new Injector(platformInjector(), 'root').register(state.rootProviders);
-      state.requestRoots.set(ctx, root);
+      state.requestRoots.set(scope, root);
       onRequestEnd(() => {
-        state.requestRoots.delete(ctx);
+        state.requestRoots.delete(scope);
         root.dispose();
       });
       inj = root;

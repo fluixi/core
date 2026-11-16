@@ -32,6 +32,8 @@ import {
   setRequestStoreIfUnset,
   onRequestEnd,
   endRequestContext,
+  endRequestScope,
+  requestScope,
   isServer,
   setServerMode,
   type RequestContext,
@@ -92,6 +94,8 @@ export {
   setRequestStoreIfUnset,
   onRequestEnd,
   endRequestContext,
+  endRequestScope,
+  requestScope,
   isServer,
   setServerMode,
 };

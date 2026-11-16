@@ -185,12 +185,21 @@ const _endHooks: WeakMap<object, Array<() => void>> = ((globalThis as Record<sym
  * say). Returns false outside a request context, where there is no request to end.
  */
 export function onRequestEnd(fn: () => void): boolean {
-  const ctx = getRequestContext();
-  if (!ctx) return false;
-  let hooks = _endHooks.get(ctx);
-  if (!hooks) _endHooks.set(ctx, (hooks = []));
+  const scope = requestScope();
+  if (!scope) return false;
+  let hooks = _endHooks.get(scope);
+  if (!hooks) _endHooks.set(scope, (hooks = []));
   hooks.push(fn);
   return true;
+}
+
+/**
+ * What one request's state hangs on. Under @fluixi/start, the platform request being answered:
+ * middleware, the render, an API route and a server function all run inside it, so they share
+ * one per-request injector. Elsewhere, the render's own context.
+ */
+export function requestScope(): object | undefined {
+  return platformRequest() ?? getRequestContext();
 }
 
 /**
@@ -198,9 +207,14 @@ export function onRequestEnd(fn: () => void): boolean {
  * the context (a render, a server function, an API route) when it is done with it.
  */
 export function endRequestContext(ctx: RequestContext): void {
-  const hooks = _endHooks.get(ctx);
+  endRequestScope(ctx);
+}
+
+/** End a request scope (see {@link requestScope}): its `onRequestEnd` hooks run, latest first. */
+export function endRequestScope(scope: object): void {
+  const hooks = _endHooks.get(scope);
   if (!hooks) return;
-  _endHooks.delete(ctx);
+  _endHooks.delete(scope);
   for (const hook of hooks.reverse()) {
     try {
       hook();

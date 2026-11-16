@@ -10,6 +10,8 @@
  * The store sits in the global registry, keyed the way `@fluixi/dom` reads it, so a server
  * bundle with its own copy of that package still finds it.
  */
+import { endRequestScope } from '@fluixi/server';
+
 type Store = { getStore(): object | undefined; run<R>(request: object, fn: () => R): R };
 type ALSCtor = new () => Store;
 
@@ -60,4 +62,19 @@ function store(): Store {
 /** Run `fn`, typically the entry's render, with `request` as the one being answered. */
 export function withPlatformRequest<R>(request: object, fn: () => R): R {
   return store().run(request, fn);
+}
+
+/**
+ * Answer `request` inside its own scope, from the first middleware to the response, then end
+ * it: middleware and the handler behind it share per-request state (the root injector), and
+ * what was registered for the request is released once the response exists.
+ */
+export async function answerRequest(request: Request, fn: () => Promise<Response>): Promise<Response> {
+  return withPlatformRequest(request, async () => {
+    try {
+      return await fn();
+    } finally {
+      endRequestScope(request);
+    }
+  });
 }

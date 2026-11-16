@@ -18,7 +18,7 @@ import { composeMiddleware, normalizeMiddleware } from './middleware.js';
 
 // The platform entries import only this module; they record the client address with it.
 export { setClientAddress } from './client-address.js';
-import { withPlatformRequest } from './platform-request.js';
+import { answerRequest, withPlatformRequest } from './platform-request.js';
 
 /** The shape a built `entry-server.js` exposes. Every field is optional. */
 export interface ServerModule {
@@ -110,11 +110,8 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload, err
   const chain = [...normalizeMiddleware(mod.__fluixiAppMiddleware), ...normalizeMiddleware(middleware as never)];
   // Inside the middleware, so it sees the cookies the page, function or route set.
   const inner = core;
-  return guardHandler(
-    composeMiddleware(chain, async (request) => withResponseHeaders(request, await inner(request))),
-    undefined,
-    onError,
-  );
+  const answer = composeMiddleware(chain, async (request) => withResponseHeaders(request, await inner(request)));
+  return guardHandler((request) => answerRequest(request, () => answer(request)), undefined, onError);
 }
 
 /**

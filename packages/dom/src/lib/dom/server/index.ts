@@ -32,6 +32,8 @@ export {
   setRequestStoreIfUnset,
   onRequestEnd,
   endRequestContext,
+  endRequestScope,
+  requestScope,
   createRequestContext,
   runWithRequestContext,
   getRequestContext,

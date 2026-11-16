@@ -11,7 +11,7 @@ import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
 import { isApiPath, API_VIRTUAL_MODULE } from '../api.js';
 import { devReady } from '../ui.js';
 import { APP_VMOD, findAppConfig, hasAppConfig } from '../app-plugin.js';
-import { withPlatformRequest } from '../platform-request.js';
+import { answerRequest, withPlatformRequest } from '../platform-request.js';
 import { notFoundJson } from '../handler-core.js';
 import { devWorker } from '../dev-worker.js';
 import { devServerHooks } from '../dev-server-hooks.js';
@@ -180,7 +180,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   // `/api` call after a restart would find no providers.
   const hasMiddleware = existsSync(resolve(cfg.root, cfg.middleware));
   const hasApp = hasAppConfig(findAppConfig(cfg.root));
-  const handler: FetchHandler =
+  const chained: FetchHandler =
     hasMiddleware || hasApp
       ? guardHandler(async (request) => {
           const app = hasApp ? await vite.ssrLoadModule(APP_VMOD) : null;
@@ -189,6 +189,8 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
           return composeMiddleware(chain, renderHandler)(request);
         }, (e) => vite.ssrFixStacktrace?.(e))
       : renderHandler;
+  // One scope per request, as in production, so middleware shares the request's injector.
+  const handler: FetchHandler = (request) => answerRequest(request, () => chained(request));
   const nodeHandler = toNodeHandler(handler, { trustProxy: cfg.trustProxy });
   const http = createHttp((req, res) => {
     // API calls go straight to the handler: Vite has nothing to serve under /api, and its CORS
