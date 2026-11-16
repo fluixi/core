@@ -72,6 +72,30 @@ describe('a failed route with no ErrorBoundary in the app', () => {
     expect(app.container.textContent).toBe('home page');
     logged.mockRestore();
   });
+  it('shows it for a page that returns a plain function, which its inserter calls', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let go!: (to: string) => void;
+    const Home = () => {
+      go = useNavigate();
+      return document.createTextNode('home page');
+    };
+    const Fail = () => {
+      const data = useRouteData<string>();
+      return () => String(data());
+    };
+    const routes = [
+      { path: '/', component: Home },
+      { path: '/fail', component: Fail, data: () => new Promise((_, reject) => setTimeout(() => reject(new Error('route data failed')), 20)) },
+    ];
+    const container = document.createElement('div');
+    createRoot(() => render(createMemo(() => createComponent(Router, { routes, history: createMemoryHistory('/') } as never)), container));
+    await wait(20);
+    go('/fail');
+    await wait(150);
+    expect(container.querySelector('[role=alert]')?.textContent).toBe('Something went wrongThis page could not be loaded.');
+    logged.mockRestore();
+  });
+
   it('shows it in a start-shaped app: a Suspense shell, a layout and a lazy page', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     let go!: (to: string) => void;

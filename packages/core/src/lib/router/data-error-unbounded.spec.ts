@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 /**
- * A route whose data fails, with no error boundary anywhere: one load, never a loop, and the
- * error reaches the top once. With no boundary the runtime rethrows it; it leaves through the
- * resource's settle callback, so here it is an unhandled rejection, which the test takes over
- * from Vitest while it runs.
+ * A route whose data fails, with no error boundary of the app: one load, never a loop, and the
+ * router's own boundary shows its error view and logs the error once. Nothing escapes as an
+ * unhandled rejection; the test listens for one while it runs to make sure.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createComponent, render } from '@fluixi/dom';
 import { Suspense } from '../render/suspense.js';
 import { createMemo, createRoot } from '@fluixi/reactive/signal';
@@ -20,6 +19,7 @@ describe('a route whose data rejects with no boundary', () => {
     let loads = 0;
     let renders = 0;
     const errors: unknown[] = [];
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     const vitest = process.listeners('unhandledRejection');
     process.removeAllListeners('unhandledRejection');
     process.on('unhandledRejection', (reason) => errors.push(reason));
@@ -44,6 +44,9 @@ describe('a route whose data rejects with no boundary', () => {
 
     expect(loads).toBe(1);
     expect(renders).toBeLessThanOrEqual(2);
-    expect(errors.map((e) => (e as Error).message)).toEqual(['signed_out']);
+    expect(errors).toEqual([]);
+    expect(container.querySelector('[role=alert]')?.textContent).toBe('Something went wrongThis page could not be loaded.');
+    expect(logged.mock.calls.filter((c) => String(c[0]).includes('signed_out'))).toHaveLength(1);
+    logged.mockRestore();
   });
 });

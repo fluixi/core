@@ -25,6 +25,7 @@ import {
   createErrorBoundary,
   provideErrorBoundary,
   nearestErrorBoundary,
+  isSignal,
 } from '@fluixi/reactive/signal';
 import {
   prepareComponents,
@@ -428,18 +429,38 @@ const routeBoundaries = new WeakSet<object>();
 function withRouteBoundary(build: () => Layer): Layer {
   const above = nearestErrorBoundary();
   if (above && !routeBoundaries.has(above)) return build();
-  const boundary = createErrorBoundary() as ReturnType<typeof createErrorBoundary> & { reset(): void };
+  const boundary = createErrorBoundary() as ReturnType<typeof createErrorBoundary> & { reset(): void; setError(e: unknown): void };
   routeBoundaries.add(boundary);
   const navigation = useContext(ErrorResetContext);
   if (navigation) resetOnNavigation(navigation, boundary);
   const option = useContext(RouterContext)?.routeError;
   const layer = provideErrorBoundary(boundary, build);
+  // A plain function the route returned is called by whatever inserts it, under its owner,
+  // outside this boundary: its error would miss it. Called through here, it reports back.
+  // Signals and memos pass as they are; wrapping them would change how they are inserted.
+  const guard = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(guard);
+    if (typeof value !== 'function' || isSignal(value)) return value;
+    const fn = value as () => unknown;
+    return () => {
+      try {
+        return guard(fn());
+      } catch (error) {
+        if (error && typeof (error as { then?: unknown }).then === 'function') throw error;
+        // After the current run, as the graph's own handler does inside a computation.
+        queueMicrotask(() => boundary.setError(error));
+        return null;
+      }
+    };
+  };
   const content = layer.view;
   return {
     ...layer,
     view: createMemo(() => {
       const error = boundary.error();
-      return error !== undefined ? untrack(() => renderRouteError(option, error, boundary.reset)) : content;
+      if (error !== undefined) return untrack(() => renderRouteError(option, error, boundary.reset));
+      // The layer's view is a memo of what the route returned: guard that, not the memo.
+      return guard(isSignal(content) ? (content as () => unknown)() : content);
     }),
   };
 }
