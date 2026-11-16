@@ -17,7 +17,7 @@ import {
   parseTemplate,
 } from '@fluixi/template-parser';
 import type { HolePosition, IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
-import { parseLoadDirective } from '../resolve/load-directive.js';
+import { LoadDirectiveError, parseLoadDirective } from '../resolve/load-directive.js';
 import { imperativeBackend, inlineTemplates } from '../codegen/backends/imperative.js';
 import { cleanTemplateText } from './text.js';
 import { decodeEntities } from './entities.js';
@@ -228,6 +228,11 @@ class Lowerer {
     // `load:` is a directive, not a prop: it says when this component's module is
     // fetched. Parsed with the same helper the JSX path uses so the two cannot drift.
     const loadAttr = el.attributes.find((a) => a.kind === 'LoadDirective');
+    if (loadAttr?.dynamic) {
+      throw new LoadDirectiveError(
+        `'load:${loadAttr.strategy}' needs a literal value, not an expression: the strategy is compile-time.`,
+      );
+    }
     const load = loadAttr
       ? parseLoadDirective(`load:${loadAttr.strategy}`, loadAttr.modifier)
       : undefined;
@@ -249,6 +254,7 @@ class Lowerer {
       ...(at ? { at } : {}),
       ...(bindAt ? { bindAt } : {}),
       ...(load ? { load } : {}),
+      ...(el.tagHole != null ? { tagExpression: true } : {}),
     };
   }
 

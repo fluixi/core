@@ -319,7 +319,7 @@ function readLoad(attrs: Node[]): IRLoadStrategy | undefined {
     if (!isLoadDirective(name)) continue;
     if (a.value && !isString(a.value)) {
       throw new LoadDirectiveError(
-        `'${name}' needs a literal value, not an expression — the strategy is compile-time.`,
+        `'${name}' needs a literal value, not an expression: the strategy is compile-time.`,
       );
     }
     return parseLoadDirective(name, a.value ? (literalOf(a.value) as string) : null);

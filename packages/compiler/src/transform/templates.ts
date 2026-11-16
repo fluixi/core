@@ -300,13 +300,21 @@ interface Needs {
    * code that was never split.
    */
   ignoredLoad: Map<string, IRLoadStrategy>;
+  /** Names the file renders somewhere without `load:`: a deferral elsewhere cannot take them out of the chunk. */
+  eagerTags: Set<string>;
+  /** Names whose `load:` sits on an expression tag (`<${Chart} load:...>`) in an html template. */
+  expressionTags: Set<string>;
+  /** Modules a `resolve` rule supplies both with `load:never` and eagerly: reported, not resolved. */
+  neverConflicts: Set<string>;
 }
 
 function collectNeeds(node: IRNode, out: Needs): void {
   if (node.kind === 'component' && node.load && !node.source && isDeferred(node.load)) {
     // One report per name, not one per usage.
     if (!out.ignoredLoad.has(node.name)) out.ignoredLoad.set(node.name, node.load);
+    if (node.tagExpression) out.expressionTags.add(node.name);
   }
+  if (node.kind === 'component' && !node.source && (!node.load || node.load.kind === 'eager')) out.eagerTags.add(node.name);
   if (node.kind === 'component' && node.source) {
     const src = node.source;
     if (src.origin === 'builtin') out.builtins.add(node.name);
@@ -527,7 +535,7 @@ export function transformTemplates(
   // the templates build rather than getting an import of its own.
   const used = new Set<string>(props.used);
   const needs: Needs = {
-    builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(),
+    builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(), eagerTags: new Set(), expressionTags: new Set(), neverConflicts: new Set(),
     ignoredLoad: new Map(), unresolved: new Set(),
     declared: declaredNames(ast.program),
   };
@@ -591,14 +599,27 @@ export function transformTemplates(
   // A `load:` on an import the author wrote: take the import away and let the prologue
   // emit the deferred binding, so this spelling and a `resolve` rule produce the same
   // output rather than merely equivalent output.
-  const why = new Map<string, 'value' | 'namespace' | 'local' | 'unsupplied'>();
+  const why = new Map<string, 'value' | 'namespace' | 'local' | 'unsupplied' | 'eager-never' | 'expression-tag'>();
 
   for (const [name] of needs.ignoredLoad) {
-    if (!bound.has(name)) why.set(name, 'unsupplied');
+    if (bound.has(name)) continue;
+    // `<NS.default load:idle>`: the name is a member, bound through its namespace.
+    const root = name.split('.')[0]!;
+    why.set(name, name.includes('.') && bound.has(root) && hasNamespaceImport(ast.program as never, root) ? 'namespace' : 'unsupplied');
   }
 
   for (const [name, strategy] of [...needs.ignoredLoad]) {
     if (!bound.has(name)) continue;
+
+    // Rendered eagerly elsewhere in this file: the module is in the chunk either way, so the
+    // import stays and every use is eager, as a `resolve` rule's usages collapse. Deferring
+    // the name instead delayed the eager use too. `never` beside an eager use is a
+    // contradiction, said rather than resolved.
+    if (needs.eagerTags.has(name)) {
+      if (strategy.kind === 'never') why.set(name, 'eager-never');
+      else needs.ignoredLoad.delete(name);
+      continue;
+    }
 
     const found = deferrableImport(ast.program as never, name);
     if (!found) {
@@ -607,7 +628,7 @@ export function transformTemplates(
       continue;
     }
     if (usedAsValue(ast.program as never, name, found.specifier)) {
-      why.set(name, 'value');
+      why.set(name, needs.expressionTags.has(name) ? 'expression-tag' : 'value');
       continue;
     }
 
@@ -643,12 +664,18 @@ export function transformTemplates(
   // somewhere that does not work.
   const reasons: Record<string, (name: string) => string> = {
     value: (name) =>
-      `${name} is used as a value here, not only as a tag, so its import has to stay — ` +
+      `${name} is used as a value here, not only as a tag, so its import has to stay: ` +
       `deferring would hand those references a lazy wrapper instead of the component. ` +
       `Defer it at the point it is rendered, or keep it eager.`,
     namespace: (name) =>
       `${name} came in through a namespace import, which has no single export to defer. ` +
-      `Import ${name} by name.`,
+      `Import ${name.includes('.') ? 'the component' : name} by name.`,
+    'eager-never': (name) =>
+      `<${name}> is also rendered without load: in this file, so its code ships in the client ` +
+      `chunk anyway. Render it server-only everywhere in the file, or drop load:never.`,
+    'expression-tag': (name) =>
+      `load: only defers a bare tag, and <\${${name}}> is an expression. Write <${name} load:...> ` +
+      `instead: an html template resolves the bare name the same way.`,
     local: (name) =>
       `${name} is declared in this file, so there is no module to load separately. ` +
       `Move it to its own file and import it.`,
@@ -657,11 +684,20 @@ export function transformTemplates(
       `\`resolve\` rule for it.`,
   };
 
-  const loadDiagnostics = [...needs.ignoredLoad].map(([name, strategy]) => ({
-    name,
-    strategy,
-    message: `load:${strategy.kind} has no effect on <${name}>: ${reasons[why.get(name) ?? 'unsupplied']!(name)}`,
-  }));
+  const loadDiagnostics = [
+    ...[...needs.ignoredLoad].map(([name, strategy]) => ({
+      name,
+      strategy,
+      message: `load:${strategy.kind} has no effect on <${name}>: ${reasons[why.get(name) ?? 'unsupplied']!(name)}`,
+    })),
+    ...[...needs.neverConflicts].map((module) => ({
+      name: module,
+      strategy: { kind: 'never' } as IRLoadStrategy,
+      message:
+        `load:never has no effect on the components from ${module}: the same module is also rendered ` +
+        `without load: in this file, so its code ships in the client chunk anyway.`,
+    })),
+  ];
 
   const unresolvedDiagnostics = [...needs.unresolved].map((name) => ({
     name,
@@ -722,7 +758,7 @@ function compileJsx(
     strategyFor: (n) => n.load,
   });
   for (const name of report.unresolved) needs.unresolved.add(name);
-  collapseStrategies(ir);
+  for (const module of collapseStrategies(ir).conflicted) needs.neverConflicts.add(module);
   const emitted = imperativeBackend.emit(ir, {
     templateClone: options.templateClone ?? true,
     partialTemplates: options.partialTemplates ?? true,

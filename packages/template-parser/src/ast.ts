@@ -253,6 +253,8 @@ export interface LoadDirectiveNode extends NodeBase {
   strategy: string;
   /** `load:visible="200px"` → `'200px'`. Null for a bare directive. */
   modifier: string | null;
+  /** The value was an expression (`load:visible=\${m}`), which a compile-time strategy cannot take. */
+  dynamic?: boolean;
 }
 
 /** `use=${directive}` or `use:tooltip` (optionally `use:tooltip=${opts}`). */

@@ -153,12 +153,20 @@ export const CORE_DIRECTIVES: DirectiveDescriptor[] = [
   {
     id: 'load',
     match: (n) => n.startsWith('load:'),
-    build: (raw): LoadDirectiveNode => ({
-      kind: 'LoadDirective',
-      strategy: raw.name.slice('load:'.length),
-      modifier: raw.value && raw.value.kind === 'static' ? raw.value.value : null,
-      loc: raw.loc,
-    }),
+    build: (raw): LoadDirectiveNode => {
+      // The strategy is fixed at compile time: a hole would be dropped without a word, the
+      // way `load:visible=\${margin}` once lost its margin. Same rule, same words as in JSX.
+      if (raw.value && raw.value.kind !== 'static') {
+        raw.report('invalid-binding', `'${raw.name}' needs a literal value, not an expression: the strategy is compile-time.`);
+      }
+      return {
+        kind: 'LoadDirective',
+        strategy: raw.name.slice('load:'.length),
+        modifier: raw.value && raw.value.kind === 'static' ? raw.value.value : null,
+        ...(raw.value && raw.value.kind !== 'static' ? { dynamic: true } : {}),
+        loc: raw.loc,
+      };
+    },
   },
   // Custom directive: `use=${d}` or `use:tooltip[=${opts}]`.
   {

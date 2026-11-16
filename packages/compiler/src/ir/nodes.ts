@@ -129,6 +129,8 @@ export interface IRComponent {
    * node itself rather than the binding that places it.
    */
   bindAt?: HolePosition;
+  /** The tag was an expression in an html template (`<${Chart}>`), not a bare name. */
+  tagExpression?: boolean;
   /**
    * A `load:` strategy read off the tag by the frontend. The resolve pass folds it into
    * `source.loading`; it lives here first because the frontend knows the directive and
