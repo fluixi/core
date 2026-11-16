@@ -56,3 +56,47 @@ describe('createImageHandler', () => {
     expect((await handle('/api/image?url=/nope.png&w=64')).status).toBe(404);
   });
 });
+
+describe('createImageHandler, remote redirects', () => {
+  // A 1x1 GIF: passed through untouched, so no codec is needed.
+  const gif = Uint8Array.from(Buffer.from('R0lGODlhAQABAAAAACw=', 'base64'));
+  let server: import('node:http').Server;
+  let port = 0;
+
+  beforeAll(async () => {
+    const { createServer } = await import('node:http');
+    server = createServer((req, res) => {
+      if (req.url === '/to-internal') return void res.writeHead(302, { location: `http://127.0.0.1:${port}/pixel.gif` }).end();
+      if (req.url === '/to-allowed') return void res.writeHead(301, { location: '/pixel.gif' }).end();
+      if (req.url === '/loop') return void res.writeHead(302, { location: '/loop' }).end();
+      if (req.url === '/pixel.gif') return void res.writeHead(200, { 'content-type': 'image/gif' }).end(gif);
+      res.writeHead(404).end();
+    });
+    await new Promise<void>((done) => server.listen(0, () => done()));
+    port = (server.address() as import('node:net').AddressInfo).port;
+  });
+  afterAll(() => new Promise<void>((done) => server.close(() => done())));
+
+  const ask = (path: string) =>
+    createImageHandler({ domains: ['localhost'], sizes: [64] })(
+      new Request(`http://app.test/api/image?url=${encodeURIComponent(`http://localhost:${port}${path}`)}&w=64`),
+    );
+
+  it('refuses a redirect from an allowed host to one that is not', async () => {
+    const res = await ask('/to-internal');
+    expect(res.status).toBe(403);
+    expect(await res.text()).toBe('domain not allowed');
+  });
+
+  it('follows a redirect that stays on an allowed host', async () => {
+    const res = await ask('/to-allowed');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('image/gif');
+  });
+
+  it('gives up on a redirect loop', async () => {
+    const res = await ask('/loop');
+    expect(res.status).toBe(502);
+    expect(await res.text()).toBe('too many redirects');
+  });
+});

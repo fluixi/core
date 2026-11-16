@@ -79,6 +79,33 @@ function imageResponse(body: Uint8Array, contentType: string, maxAge: number): R
   });
 }
 
+/** Redirects a remote source may take, each to an allowed host; past this it is refused. */
+const MAX_REDIRECTS = 5;
+
+/**
+ * Fetch a remote source, following redirects by hand: `fetch` would follow them itself and the
+ * allow-list would only see the first host, so one redirect from an allowed host could reach any
+ * other, an internal address included.
+ */
+async function fetchAllowed(
+  target: URL,
+  domains: ReadonlySet<string>,
+): Promise<{ upstream: Response } | { refused: Response }> {
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (target.protocol !== 'https:' && target.protocol !== 'http:') {
+      return { refused: new Response('bad url', { status: 400 }) };
+    }
+    if (!domains.has(target.hostname.toLowerCase())) {
+      return { refused: new Response('domain not allowed', { status: 403 }) };
+    }
+    const res = await fetch(target, { redirect: 'manual' });
+    const location = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
+    if (!location) return { upstream: res };
+    target = new URL(location, target);
+  }
+  return { refused: new Response('too many redirects', { status: 502 }) };
+}
+
 /**
  * Build a Web-standard image-optimization handler. Mount it as an API route and
  * point {@link imageLoader} at the same path:
@@ -122,10 +149,11 @@ export function createImageHandler(options: ImageHandlerOptions = {}): (request:
     let input: Uint8Array;
     let sourceType: string;
     if (/^https?:\/\//i.test(src)) {
-      let host: string;
-      try { host = new URL(src).hostname.toLowerCase(); } catch { return new Response('bad url', { status: 400 }); }
-      if (!domains.has(host)) return new Response('domain not allowed', { status: 403 });
-      const res = await fetch(src);
+      let target: URL;
+      try { target = new URL(src); } catch { return new Response('bad url', { status: 400 }); }
+      const fetched = await fetchAllowed(target, domains);
+      if ('refused' in fetched) return fetched.refused;
+      const res = fetched.upstream;
       if (!res.ok) return new Response('upstream error', { status: 502 });
       input = new Uint8Array(await res.arrayBuffer());
       sourceType = res.headers.get('content-type') ?? 'application/octet-stream';
