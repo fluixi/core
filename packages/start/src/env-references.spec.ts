@@ -57,6 +57,14 @@ describe('a read the browser cannot satisfy', () => {
   });
 });
 
+describe('an app that declares no env.public', () => {
+  it('still refuses a server-only name in browser code', async () => {
+    // The check used to switch off here, and the server then rendered the value into the HTML.
+    app(header + 'export const key = publicEnv().SESSION_SECRET;\n');
+    await expect(bundle([])).rejects.toThrow(/reads SESSION_SECRET in code the browser runs/);
+  });
+});
+
 describe('what it leaves alone', () => {
   it('passes declared names and VITE_ names', async () => {
     app(header + 'const { API_URL } = publicEnv();\nexport const both = [API_URL, publicEnv().VITE_LEGACY];\n');
@@ -73,8 +81,8 @@ describe('what it leaves alone', () => {
     await expect(bundle(['API_URL'], true)).resolves.toBeDefined();
   });
 
-  it('is off for an app that declares no env.public', async () => {
-    app(header + 'export const key = publicEnv().ANYTHING;\n');
+  it('passes a VITE_ name for an app that declares no env.public', async () => {
+    app(header + 'export const key = publicEnv().VITE_ANYTHING;\n');
     await expect(bundle([])).resolves.toBeDefined();
   });
 

@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
+import { setDeclaredPublicKeys } from '../env.js';
 import { resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, exitOnListenError, withResponseHeaders, type FetchHandler } from '../handler.js';
@@ -98,6 +99,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   const cfg = resolveConfig(config);
   installCrashGuards();
   await loadServerEnv(cfg.root, 'development'); // .env → process.env (server-only secrets)
+  // A published install loads @fluixi/start/env outside Vite's transform, where the build-time
+  // define never applies: tell it which names are public, so a server render reads no more.
+  setDeclaredPublicKeys(cfg.env?.public ?? []);
 
   // Said here too, so the mistake is caught while writing rather than at a deploy.
   const { findExposedSecrets } = await import('../env-guard.js');

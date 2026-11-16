@@ -18,6 +18,7 @@ import {
   publicEnv,
   serverEnv,
   selectPublic,
+  setBuildPublicEnv,
   setDeclaredPublicKeys,
   suspectPublicNames,
 } from './env.js';
@@ -25,11 +26,11 @@ import {
 const saved = { ...process.env };
 
 beforeEach(() => {
-  setDeclaredPublicKeys(null);
+  setBuildPublicEnv(null);
 });
 afterEach(() => {
   process.env = { ...saved };
-  setDeclaredPublicKeys(null);
+  setBuildPublicEnv(null);
   // Remove the browser jsdom-ish globals a test may have installed.
   delete (globalThis as Record<string, unknown>).window;
   delete (globalThis as Record<string, unknown>).document;
@@ -106,9 +107,41 @@ describe('reading the public set on a server', () => {
     }).toThrow();
   });
 
-  it('returns everything when no build declared a set, which is a test or a script', () => {
-    process.env.SOMETHING = 'here';
-    expect(publicEnv().SOMETHING).toBe('here');
+  it('returns only what is public by its prefix when nothing declared a set', () => {
+    // A server whose framework never saw the build or the config used to get every variable
+    // here, and a page could render a secret through publicEnv().
+    process.env.SESSION_SECRET = 'shh';
+    process.env.VITE_FLAG = 'on';
+    expect(publicEnv().SESSION_SECRET).toBeUndefined();
+    expect(publicEnv().VITE_FLAG).toBe('on');
+  });
+
+  it('holds only VITE_ names when the app declared an empty set', () => {
+    process.env.SESSION_SECRET = 'shh';
+    process.env.VITE_FLAG = 'on';
+    setDeclaredPublicKeys([]);
+    expect(Object.keys(publicEnv())).toEqual(['VITE_FLAG']);
+  });
+
+  it("serves the build's values over the server's own environment", () => {
+    // The browser bundle has what the build saw; a server reading its run-time value would
+    // render one thing and hydrate into another.
+    process.env.API_URL = 'https://changed-after-build.test';
+    process.env.SESSION_SECRET = 'shh';
+    setBuildPublicEnv({ keys: ['API_URL'], values: { API_URL: 'https://at-build.test' } });
+    expect(publicEnv()).toEqual({ API_URL: 'https://at-build.test' });
+    expect(env('API_URL')).toBe('https://at-build.test');
+    // A server-only name is still read from the server's environment.
+    expect(env('SESSION_SECRET')).toBe('shh');
+  });
+
+  it('shares the declared set across copies of the module', async () => {
+    // The production handler and the app import this module through different built entries.
+    setDeclaredPublicKeys(['AUTH_ISSUER']);
+    process.env.AUTH_ISSUER = 'https://idp.test';
+    process.env.OTHER = 'x';
+    const copy = await import('./env.js?copy' as string);
+    expect(copy.publicEnv()).toEqual({ AUTH_ISSUER: 'https://idp.test' });
   });
 
   it('finds a declared name under its VITE_ spelling, as the build did', () => {

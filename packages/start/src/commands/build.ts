@@ -60,6 +60,7 @@ export async function build(
 
   if (cfg.apiOnly) {
     await buildApi(cfg, ssr);
+    await writePublicEnv(cfg);
     const ms = Date.now() - startedAt;
     process.stdout.write('\n');
     done(`${c.bold('built')} in ${c.bold(String(ms))} ms  ${c.gray('→ dist/server')}\n`);
@@ -100,6 +101,7 @@ export async function build(
         emptyOutDir: true,
       },
     });
+    await writePublicEnv(cfg);
   }
 
   // Optional request middleware → its own server entry (emptyOutDir:false keeps
@@ -366,4 +368,16 @@ async function buildServerModule(cfg: ResolvedConfig, ssr: unknown, plugins: unk
       rollupOptions: { output: { entryFileNames: `${name}.js` } },
     },
   });
+}
+
+/**
+ * The public set this build put in the browser bundle, for a server that imports the framework
+ * from node_modules and so never sees the build-time define: it serves these values rather than
+ * its own environment, and the page hydrates with what it was rendered with.
+ */
+async function writePublicEnv(cfg: ResolvedConfig): Promise<void> {
+  const { PUBLIC_ENV_FILE, selectPublic } = await import('../env.js');
+  const keys = cfg.env?.public ?? [];
+  const values = selectPublic(process.env as Record<string, string | undefined>, keys);
+  await writeFile(join(resolve(cfg.root, 'dist/server'), PUBLIC_ENV_FILE), JSON.stringify({ keys, values }) + '\n');
 }

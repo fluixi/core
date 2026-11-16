@@ -7,6 +7,7 @@ import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
 import { serveNode, withStaticFiles, type FetchHandler } from './handler.js';
 import { createHandlerFrom } from './handler-core.js';
+import { PUBLIC_ENV_FILE, setBuildPublicEnv, setDeclaredPublicKeys } from './env.js';
 import { createPreloader, type RouteAssets } from './preload.js';
 import { routeUpgrade, type ServerHooks } from './server.js';
 
@@ -32,6 +33,12 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const middleware = existsSync(mwFile)
     ? await import(/* @vite-ignore */ pathToFileURL(mwFile).href)
     : undefined;
+
+  // The public set the build put in the browser bundle: served on this side too, so a value
+  // changed after the build cannot render one thing and hydrate into another.
+  const publicFile = resolve(cfg.root, 'dist/server', PUBLIC_ENV_FILE);
+  if (existsSync(publicFile)) setBuildPublicEnv(JSON.parse(readFileSync(publicFile, 'utf8')));
+  else setDeclaredPublicKeys(cfg.env?.public ?? []);
 
   // The app's page for a failed request: public/error.html, copied into the client build.
   const errorFile = join(clientDir, 'error.html');

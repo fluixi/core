@@ -186,7 +186,7 @@ export function envReferencesVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'env'
   return {
     name: 'fluixi:env-references',
     transform(this: any, code: string, id: string, options?: { ssr?: boolean }) {
-      if (!declared.size || options?.ssr) return null;
+      if (options?.ssr) return null;
       const file = id.replace(/\?.*$/, '');
       if (!SOURCE.test(file) || /[\\/]node_modules[\\/]/.test(file) || !/publicEnv|pickEnv|\benv\b|__fx_env/.test(code)) return null;
 

@@ -16,8 +16,9 @@ import { PUBLIC_ENV_DEFINE, PUBLIC_KEYS_DEFINE, selectPublic, suspectPublicNames
 /**
  * Defines the declared-public variables for both builds.
  *
- * A no-op for an app that declares none, which is every app until it opts in: the `VITE_` prefix
- * keeps working and nothing about this changes it.
+ * Also for an app that declares none: its public set is then the `VITE_` variables, which the
+ * bundle publishes anyway, and the empty list of names is what lets `env()` in a browser refuse
+ * a server-only name instead of answering undefined while the server rendered the value.
  */
 export function envVitePlugin(cfg: ResolvedConfig): unknown {
   const declared = cfg.env?.public ?? [];
@@ -28,8 +29,6 @@ export function envVitePlugin(cfg: ResolvedConfig): unknown {
     enforce: 'pre' as const,
 
     config(_userConfig: unknown, { mode }: { mode: string }) {
-      if (!declared.length) return undefined;
-
       // A name that reads like a secret. The allowlist is the protection, since nothing ships
       // unless it is named; this catches the line written in a hurry.
       const suspect = suspectPublicNames(declared);

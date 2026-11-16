@@ -42,6 +42,9 @@ declare const __FLUIXI_PUBLIC_KEYS__: string[] | undefined;
 
 /** The name the plugin defines, exported so the plugin and this module cannot disagree. */
 export const PUBLIC_ENV_DEFINE = '__FLUIXI_PUBLIC_ENV__';
+
+/** What the build put in the browser bundle, written beside the server bundle for the server. */
+export const PUBLIC_ENV_FILE = 'public-env.json';
 /** The declared names, set or not: what `env()` in a browser checks a name against. */
 export const PUBLIC_KEYS_DEFINE = '__FLUIXI_PUBLIC_KEYS__';
 
@@ -77,14 +80,16 @@ function readPublicEnv(): Readonly<Record<string, string>> {
 
   if (typeof process !== 'undefined' && process.env) {
     // A server, or a test. The defined literal never reaches a server that imports this package
-    // from node_modules rather than bundling it, which is the default for a published install,
-    // so this path has to answer the same way `selectPublic` did at build time: a declared name
-    // is found under its bare or its `VITE_` spelling. Without the declared list (set by the
-    // plugin during a build) every variable is returned, which is correct on a server and
-    // impossible in a browser, with the bare name added for each prefixed one.
+    // from node_modules rather than bundling it, which is the default for a published install.
+    // There the production handler hands over what the build put in the browser bundle, so the
+    // server renders the same values the page hydrates with.
+    const state = publicState();
+    if (state.values) return state.values;
+    // No build values: answer the way `selectPublic` did at build time, a declared name under
+    // its bare or its `VITE_` spelling. With no declared list either (a test or a script), only
+    // what is public by its prefix: never the whole process environment, which holds secrets.
     const source = process.env as Record<string, string | undefined>;
-    const keys = declaredPublicKeys ?? bareNames(source);
-    return Object.freeze(selectPublic(source, keys));
+    return Object.freeze(selectPublic(source, state.keys ?? prefixedNames(source)));
   }
 
   if (inBrowser() && !warned) {
@@ -158,10 +163,17 @@ export function env(key: string, options: { required?: boolean } = {}): string |
     }
     value = (readPublicEnv() as Record<string, string | undefined>)[key];
   } else {
-    // The bare name, then its `VITE_` spelling: the same rule `publicEnv()` applies, so a `.env`
-    // still mid-migration reads the same through either.
-    const source = typeof process === 'undefined' ? undefined : process.env;
-    value = source?.[key] || (key.startsWith('VITE_') ? undefined : source?.[`VITE_${key}`]);
+    // A declared name answers from the build's values when there are some, as the browser
+    // does, so both halves of a render agree on it.
+    const state = publicState();
+    if (state.values && state.keys?.includes(key)) {
+      value = state.values[key];
+    } else {
+      // The bare name, then its `VITE_` spelling: the same rule `publicEnv()` applies, so a
+      // `.env` still mid-migration reads the same through either.
+      const source = typeof process === 'undefined' ? undefined : process.env;
+      value = source?.[key] || (key.startsWith('VITE_') ? undefined : source?.[`VITE_${key}`]);
+    }
   }
   if (value === '') value = undefined;
   if (options.required && value === undefined) {
@@ -277,25 +289,49 @@ export function asUrl(raw: string): string {
   }
 }
 
-/** Every name in `source`, plus the bare form of each `VITE_` one. */
-function bareNames(source: Record<string, string | undefined>): string[] {
-  const names = new Set(Object.keys(source));
-  for (const key of names) if (key.startsWith('VITE_')) names.add(key.slice('VITE_'.length));
-  return [...names];
+/** The bare form of each `VITE_` name in `source`: public by its prefix, so safe to answer. */
+function prefixedNames(source: Record<string, string | undefined>): string[] {
+  return Object.keys(source)
+    .filter((key) => key.startsWith('VITE_'))
+    .map((key) => key.slice('VITE_'.length));
+}
+
+interface PublicState {
+  /** The names the app declared public, when something told us. */
+  keys: string[] | null;
+  /** The values the build put in the browser bundle, when the server was handed them. */
+  values: Readonly<Record<string, string>> | null;
 }
 
 /**
- * The keys an app declared public, when a build told us.
- *
- * Server side this narrows `publicEnv()` to the same set the browser gets, so a value that
- * only works on the server cannot be read through the public accessor in a loader and then be
- * missing in the browser: the two would disagree and only the browser would break.
+ * The declared set and the build's values, kept on `globalThis`: the production handler and the
+ * app import this module through different built entries, and a module variable would give each
+ * its own copy, so the handler would set one and the app read the other.
  */
-let declaredPublicKeys: string[] | null = null;
+const STATE = Symbol.for('fluixi.start.publicEnv');
 
-/** Called by the plugin. Not part of the app-facing surface. */
+function publicState(): PublicState {
+  const holder = globalThis as unknown as Record<symbol, PublicState | undefined>;
+  return (holder[STATE] ??= { keys: null, values: null });
+}
+
+/**
+ * Narrow `publicEnv()` on the server to the names the app declared, the set the browser gets.
+ * Called by the production handler. Not part of the app-facing surface.
+ */
 export function setDeclaredPublicKeys(keys: readonly string[] | null): void {
-  declaredPublicKeys = keys ? [...keys] : null;
+  publicState().keys = keys ? [...keys] : null;
+}
+
+/**
+ * Serve the values the build put in the browser bundle, rather than the server's own
+ * environment, so a value changed after the build cannot render one thing on the server and
+ * hydrate into another. Called by the production handler. Not part of the app-facing surface.
+ */
+export function setBuildPublicEnv(build: { keys: readonly string[]; values: Record<string, string> } | null): void {
+  const state = publicState();
+  state.keys = build ? [...build.keys] : null;
+  state.values = build ? Object.freeze({ ...build.values }) : null;
 }
 
 /**
