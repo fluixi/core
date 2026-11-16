@@ -31,3 +31,26 @@ describe('a resolve rule and your own import', () => {
     }
   });
 });
+
+describe('load:never', () => {
+  const compile = (ssr: boolean | undefined) =>
+    transformTemplates(
+      `import { Price } from './Price';\nexport function App() { return <Price load:never />; }`,
+      'a.tsx',
+      { ...BASE, ssr } as never,
+    )!.code;
+
+  it('leaves the browser build with no import of the component', () => {
+    const code = compile(false);
+    expect(code).not.toContain('./Price');
+    expect(code).toContain('const Price = deferred(null, { strategy: { kind: "never" }');
+  });
+
+  it('loads it on the server, and wherever the build is not known', () => {
+    for (const ssr of [true, undefined]) {
+      const code = compile(ssr);
+      expect(code).toContain('deferred(() => import("./Price")');
+      expect(code).not.toMatch(/^import \{ Price \}/m);
+    }
+  });
+});

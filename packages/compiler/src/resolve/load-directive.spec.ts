@@ -55,10 +55,11 @@ describe('helpers', () => {
     expect(isLoadDirective('onClick')).toBe(false);
   });
 
-  it('treats eager and never as not-deferred', () => {
-    // `never` means no client code at all, so there is nothing to schedule.
+  it('treats eager as not-deferred, and never as deferred', () => {
+    // `never` takes the component out of the parent chunk too: the server loads it, the
+    // browser build gets no import for it.
     expect(isDeferred(EAGER)).toBe(false);
-    expect(isDeferred({ kind: 'never' })).toBe(false);
+    expect(isDeferred({ kind: 'never' })).toBe(true);
     expect(isDeferred({ kind: 'idle' })).toBe(true);
   });
 

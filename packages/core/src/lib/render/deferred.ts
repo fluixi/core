@@ -43,10 +43,19 @@ type AnyComponent = (props: any) => any;
  * pull the module forward regardless of the strategy.
  */
 export function deferred(
-  loader: () => Promise<Record<string, unknown>>,
+  // `null` only for `load:never` in a browser build: there is no code to fetch there.
+  loader: (() => Promise<Record<string, unknown>>) | null,
   options: DeferredOptions,
 ): AnyComponent & { preload: () => Promise<void> } {
   const exportName = options.export ?? 'default';
+  if (!loader) {
+    const ServerOnly = (): unknown =>
+      // What the server rendered stays while the page hydrates; a page reached in the browser
+      // has none, and this component has no code here to render it with.
+      isHydrating() ? keepServerContent() : null;
+    ServerOnly.preload = (): Promise<void> => Promise.resolve();
+    return ServerOnly;
+  }
 
   // `lazy` wants `{ default }`; the resolver imports named exports, so adapt here rather
   // than making every call site emit an adapter.
@@ -68,7 +77,10 @@ export function deferred(
     // `never` is server-only: the component renders during SSR and its code is meant to
     // stay out of the client bundle entirely. The compiler is what actually drops it
     // this guard only stops the client from fetching it if one slips through.
-    if (options.strategy.kind === 'never') return isServer() ? Lazy(props) : null;
+    if (options.strategy.kind === 'never') {
+      if (isServer()) return Lazy(props);
+      return isHydrating() ? keepServerContent() : null;
+    }
     if (isServer() || options.strategy.kind === 'eager') return Lazy(props);
 
     const [ready, setReady] = createSignal(false);

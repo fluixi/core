@@ -32,7 +32,8 @@ The server renders a deferred component in full either way. Until its code arriv
 keeps what the server sent in its place: it shows, but does not respond yet. Once the code loads
 the component renders and takes over. A `load:media` component whose query never matches keeps
 the server's content for good. In a page reached by client navigation there is no server
-content, so the slot stays empty until the code loads.
+content, so the slot stays empty until the code loads; for `load:never`, which has no code in
+the browser build, it stays empty.
 
 ### `load:visible`
 

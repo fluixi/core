@@ -247,12 +247,12 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
   // Component `<style>` blocks, when @fluixi-css/vite is in the build to process them.
   let transformTemplates: typeof import('./transform/index.js')['transformTemplates'] | undefined;
   let projectRoot = process.cwd();
-  const componentStyles = createComponentStyles((code, id, styles) => {
+  const componentStyles = createComponentStyles((code, id, styles, ssr) => {
     // Scope ids hash the path from the project root, marks or not: the same on every machine
     // and for every id a module is reached by.
     // Reported by `transform`, from the module's last pass: a first pass, or a compile of
     // another module whose values this one uses, would report what the next pass resolves.
-    return transformTemplates!(code, id, { ...transformOptions(options, id), sourceRoot: projectRoot, styles });
+    return transformTemplates!(code, id, { ...transformOptions(options, id, ssr), sourceRoot: projectRoot, styles });
   });
   return {
     name: 'vite-fluixi-jsx',
@@ -318,18 +318,20 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       );
     },
 
-    async transform(code: string, id: string) {
+    async transform(code: string, id: string, opts?: { ssr?: boolean }) {
       // Only process JSX/TSX files
       if (!/\.(jsx|tsx|ts)$/i.test(id)) {
         return null;
       }
 
+      // Which build this is: what a `load:never` component compiles to depends on it.
+      const ssr = typeof opts?.ssr === 'boolean' ? opts.ssr : undefined;
       if (!options.babel && componentStyles.active) {
-        const result = await componentStyles.compile(code, id, this as never);
+        const result = await componentStyles.compile(code, id, this as never, ssr);
         reportDiagnostics(result as never, id);
         return result;
       }
-      if (!options.babel) return compileModule(code, id, options);
+      if (!options.babel) return compileModule(code, id, options, ssr);
 
       const babelPlugin = await createBabelPlugin(options);
 
@@ -429,8 +431,10 @@ function transformOptions(
     sourceRoot?: string;
   },
   id?: string,
+  ssr?: boolean,
 ) {
   return {
+    ssr,
     resolve: options.resolve,
     htmlTag: options.htmlTag,
     sourceLocations: marks(options, id),
@@ -505,10 +509,10 @@ function reportDiagnostics(result: unknown, id: string): void {
 }
 
 /** Compile one module, through babel only when asked for it. */
-async function compileModule(code: string, id: string, options: CompilerOptions) {
+async function compileModule(code: string, id: string, options: CompilerOptions, ssr?: boolean) {
   if (!options.babel) {
     const { transformTemplates } = await import('./transform/index.js');
-    const result = transformTemplates(code, id, transformOptions(options, id));
+    const result = transformTemplates(code, id, transformOptions(options, id, ssr));
     reportDiagnostics(result, id);
     return result;
   }

@@ -48,7 +48,8 @@ export function collapseStrategies(root: IRNode | IRNode[]): CollapseReport {
   const collapsed = new Map<string, number>();
   for (const node of components) {
     const source = node.source!;
-    if (!isDeferred(source.loading)) continue;
+    // `never` is not demoted: server-only next to eager is a contradiction, reported below.
+    if (!isDeferred(source.loading) || source.loading.kind === 'never') continue;
     if (!eager.has(source.module)) continue;
     source.loading = { kind: 'eager' };
     collapsed.set(source.module, (collapsed.get(source.module) ?? 0) + 1);

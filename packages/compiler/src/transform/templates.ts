@@ -47,6 +47,12 @@ interface Edit {
 
 export interface TransformOptions extends CompileTemplateOptions {
   /**
+   * Which build this module is compiled for, as the bundler says (Vite's `ssr` flag). `false`
+   * is a browser build: a `load:never` component then gets no `import()` at all, so its code
+   * is not emitted as a client chunk. Unknown (`undefined`) keeps the import, which is safe.
+   */
+  ssr?: boolean;
+  /**
    * Which authoring syntaxes to compile. Both lower to the same IR, so this is
    * about which source forms are touched, not about output.
    * @default 'both'
@@ -770,8 +776,11 @@ function buildPrologue(
   if (lazy.length > 0) {
     if (!bound.has('deferred')) lines.push(`import { deferred } from ${JSON.stringify(core)};`);
     for (const [name, src] of lazy) {
+      // Server output only: a browser build has no use for the code, and a literal import()
+      // would still have the bundler emit it as a public chunk.
+      const loader = src.loading.kind === 'never' && options.ssr === false ? 'null' : `() => import(${JSON.stringify(src.module)})`;
       lines.push(
-        `const ${name} = deferred(() => import(${JSON.stringify(src.module)}), ` +
+        `const ${name} = deferred(${loader}, ` +
           `{ strategy: ${strategyLiteral(src.loading)}, export: ${JSON.stringify(src.export)} });`,
       );
     }

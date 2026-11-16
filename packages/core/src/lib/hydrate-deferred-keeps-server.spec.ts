@@ -86,3 +86,33 @@ describe('a deferred component while the page hydrates', () => {
     expect(container.textContent).toBe('widgetafter');
   });
 });
+
+describe('a load:never component in the browser', () => {
+  it('keeps the server content with no code to fetch', async () => {
+    const widget = compile(`export function Widget() { return <p class="w">server only</p>; }`, {});
+    // As the two builds compile it: the server's loads the module, the browser's has none.
+    const OnServer = deferred(() => Promise.resolve({ default: widget.Widget }), { strategy: { kind: 'never' } });
+    const InBrowser = deferred(null, { strategy: { kind: 'never' } });
+    let Current: unknown = OnServer;
+    const { App } = compile(`import { Lazy } from 'lazy'; export function App() { return <main><Lazy /><span>after</span></main>; }`, {
+      lazy: { get Lazy() { return Current; } },
+    });
+
+    setServerMode(true);
+    const html = await renderToStringAsync(() => App());
+    setServerMode(false);
+    expect(html).toContain('server only');
+
+    Current = InBrowser;
+    document.body.innerHTML = `<div id="app">${html}</div>`;
+    const container = document.getElementById('app')!;
+    const serverP = container.querySelector('p.w');
+    DOM.beginAppHydration();
+    DOM.hydrate(() => App(), container);
+    DOM.endAppHydration();
+    await tick(10);
+    DOM.removeUnclaimedKeyed(container);
+    expect(container.querySelector('p.w')).toBe(serverP);
+    expect(container.textContent).toBe('server onlyafter');
+  });
+});

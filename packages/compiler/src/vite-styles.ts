@@ -25,7 +25,7 @@ interface Compiled {
 }
 
 /** Runs the compiler on one module with these style options. */
-export type CompileWithStyles = (code: string, id: string, styles: StyleOptions) => Compiled | null;
+export type CompileWithStyles = (code: string, id: string, styles: StyleOptions, ssr?: boolean) => Compiled | null;
 
 interface ResolveContext {
   resolve?(source: string, importer: string): Promise<{ id: string } | null | undefined>;
@@ -133,17 +133,17 @@ export function createComponentStyles(compile: CompileWithStyles) {
     return imported;
   };
 
-  const run = async (code: string, id: string, ctx: ResolveContext): Promise<Compiled | null> => {
+  const run = async (code: string, id: string, ctx: ResolveContext, ssr?: boolean): Promise<Compiled | null> => {
     // One name per file, whatever id it was reached by (`/src/...` from a plugin, an absolute
     // path from `load`): the scope id is derived from it, and the elements and the CSS have to
     // agree on it.
     const file = fileOf(id);
     const styles = api!.styles(file);
-    let result = compile(code, file, styles);
+    let result = compile(code, file, styles, ssr);
     if (result?.styleReferences?.length) {
       const modules: Modules = new Map();
       const imported = await resolveAll(result.styleReferences, id, ctx, new Set([file]), modules);
-      result = compile(code, file, { ...styles, imported, importedModules: modules });
+      result = compile(code, file, { ...styles, imported, importedModules: modules }, ssr);
     }
     const css = (result?.styles ?? []).map((s) => s.css);
     const maps = (result?.styles ?? []).map((s) => s.map ?? null);

@@ -96,9 +96,12 @@ function splitEvents(value: string): string[] {
   return events;
 }
 
-/** True when the strategy means "not in the parent chunk". */
+/**
+ * True when the strategy means "not in the parent chunk". `never` included: on the server it
+ * loads like any deferred component, in the browser it is never fetched.
+ */
 export function isDeferred(strategy: IRLoadStrategy): boolean {
-  return strategy.kind !== 'eager' && strategy.kind !== 'never';
+  return strategy.kind !== 'eager';
 }
 
 /** A stable key for grouping references that share a strategy. */
