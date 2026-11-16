@@ -15,17 +15,19 @@ import type { Token } from './token.js';
 /**
  * Resolve `token` from the current injection context: the injector set by
  * {@link runInInjectionContext} or building the current service, else the nearest component
- * injector up the reactive owner tree, else the root (the request's on the server, the app's in
- * the browser).
+ * injector up the reactive owner tree (the root when no component provides one), else, during a
+ * server request, that request's root.
  *
  * Call it during a component's setup, inside a provider's constructor or factory, or inside
  * {@link runInInjectionContext}. In an event handler or after an `await` there is no component
- * owner any more: keep the value, or the injector (`inject(INJECTOR)`), from setup instead.
+ * owner any more and it throws: keep the value, or the injector (`inject(INJECTOR)`), from setup
+ * instead.
  *
  * @param token - What to resolve.
  * @param options - Where to look and what to do when nothing is found; see {@link InjectOptions}.
  * @returns The value, or `null` when `optional` is set and nothing provides the token.
  * @throws {@link InjectionError} When nothing provides the token, or on a dependency cycle.
+ * @throws Error When there is no injection context (see {@link isInInjectionContext}).
  *
  * @example
  * ```ts

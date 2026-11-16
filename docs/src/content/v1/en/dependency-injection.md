@@ -192,12 +192,15 @@ another's render is a bug that only appears under concurrency.
 
 ## Where `inject()` does not work
 
-`inject()` reads the current injection context, which does not exist in three places:
+`inject()` reads the current injection context, which does not exist in three places. There it
+throws "inject() called outside an injection context" rather than guess:
 
 1. **Module scope.** A call at the top of a file runs before any component or request. Provide
    there; inject inside components and services.
-2. **After an `await`.** The context is synchronous. Resolve everything before the first `await`:
-   an API route that awaited `request.json()` before injecting its repository found no context.
+2. **After an `await`.** A component's context is synchronous. Resolve everything before the first
+   `await`: after it, the component's own providers are out of reach. On the server a request
+   stays a context across awaits, so code in a request still resolves from that request's root,
+   but never from a component's providers.
 3. **A callback that outlived its owner.** An interceptor, a `setTimeout`, a listener added
    outside a component. Keep the injector while the context exists and run the callback in it:
 

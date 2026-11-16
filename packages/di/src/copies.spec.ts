@@ -13,7 +13,8 @@ describe('@fluixi/di: one state across module copies', () => {
     const b = await import('./index.js');
     const T = a.injectionToken<string>('T');
     a.provideRoot([{ provide: T, useValue: 'shared' }]);
-    expect(b.inject(T)).toBe('shared');
+    // Below the root through the other copy: the root is the shared one.
+    expect(b.createInjector([]).get(T)).toBe('shared');
     expect(b.Injector).not.toBe(Injector);
   });
 });

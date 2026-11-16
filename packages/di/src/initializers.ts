@@ -5,6 +5,7 @@
  * @module
  */
 import { rootInjector } from './hierarchy.js';
+import { runInInjectionContext } from './inject.js';
 import type { Injector } from './injector.js';
 import type { Provider } from './provider.js';
 import { injectionToken, type Token } from './token.js';
@@ -45,5 +46,5 @@ export function provideAppInitializer(fn: () => unknown): Provider<() => unknown
  * @returns A promise settled when every initializer has finished.
  */
 export async function runAppInitializers(injector: Injector = rootInjector()): Promise<void> {
-  for (const run of injector.get(APP_INITIALIZER, { optional: true }) ?? []) await run();
+  for (const run of injector.get(APP_INITIALIZER, { optional: true }) ?? []) await runInInjectionContext(injector, run);
 }

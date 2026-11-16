@@ -47,5 +47,16 @@ export function nearestOwnerInjector(owner: any): Injector | null {
 }
 
 export function currentInjector(): Injector {
-  return state.explicit ?? nearestOwnerInjector(getOwner()) ?? rootInjector();
+  if (state.explicit) return state.explicit;
+  const owner = getOwner();
+  if (owner) return nearestOwnerInjector(owner) ?? rootInjector();
+  // A server request is a context of its own: its root is the request's.
+  if (requestScope()) return rootInjector();
+  // No component, request or explicit injector: after an `await`, in an event handler, at
+  // module load. Falling back to the root here returned its instance in place of the one a
+  // component provided, with no sign of it.
+  throw new Error(
+    '[fluixi/di] inject() called outside an injection context (after an await? in an event handler?). ' +
+      'Inject during setup and keep the value, or keep the injector (getInjector()) and use runInInjectionContext().',
+  );
 }
