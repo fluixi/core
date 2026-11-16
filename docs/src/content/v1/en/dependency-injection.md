@@ -168,7 +168,13 @@ others still run.
 ## App initializers
 
 Work that must finish before the app renders goes in an initializer. They run in registration
-order, each awaited; the first that fails stops the rest.
+order, each awaited; the first that fails stops the rest. On the server they run once per request,
+in that request's root, before the middleware; a failure answers 500. In the browser they run once,
+before the page hydrates; a failure stops it from rendering.
+
+Register them where the app's providers are registered, in an app module or the entry. One
+registered from a module a route imports arrives after rendering has started: it misses that
+render, and the browser's entirely. Outside production that logs a warning.
 
 ```ts
 import { provideAppInitializer, provideRoot, inject } from '@fluixi/di';
