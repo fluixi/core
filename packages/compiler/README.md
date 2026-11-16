@@ -44,9 +44,11 @@ Beyond turning markup into DOM calls:
 
 **Props you destructured stay reactive.** `function Card({ title })` compiles to
 `props.title` at each use, so the binding keeps updating, and `...rest` becomes the
-`splitProps` call you would have written. Anything it can't prove safe: a reassigned
-binding, a computed key, a default it would have to re-run per read: is left exactly as
-written and reported. On by default; set `propsDestructure: false` for a package that ships
+`splitProps` call you would have written. The same goes for `const { title, ...rest } = props`
+at the top of the component body. Anything it can't prove safe: a reassigned binding, a
+computed key, a default it would have to re-run per read, a destructure of `props` elsewhere
+in the setup: is left exactly as written and reported. One inside a callback is left alone,
+since it reads the current values each time the callback runs. On by default; set `propsDestructure: false` for a package that ships
 its **source** for consumers to compile, since the rewrite belongs to whoever compiles.
 
 **`$` intrinsics resolve without an import.** `$signal`, `$memo`, `$effect`, `$store`,
