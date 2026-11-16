@@ -172,7 +172,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "@fluixi/utils": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",

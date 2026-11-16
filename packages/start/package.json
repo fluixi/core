@@ -328,7 +328,7 @@
     "@babel/generator": "^7.29.1",
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/preset-typescript": "^7.28.5",
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "@fluixi/core": "workspace:*",
     "@fluixi/di": "workspace:*",
     "@fluixi/dom": "workspace:*",

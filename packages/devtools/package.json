@@ -68,7 +68,7 @@
   "dependencies": {},
   "devDependencies": {
     "@fluixi/reactive": "workspace:*",
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "cross-env": "^7.0.3"
   }
 }

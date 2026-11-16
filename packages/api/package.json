@@ -37,7 +37,7 @@
     "dev": "tsc -w -p tsconfig.lib.json"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "@electric-sql/pglite": "^0.5.8",
     "@fluixi/start": "workspace:*",
     "cross-env": "^7.0.3",

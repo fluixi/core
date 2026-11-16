@@ -143,7 +143,7 @@
     "stream": "^0.0.3"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "@fluixi/reactive": "workspace:*",
     "esbuild": "^0.27.1",
     "inquirer": "^13.1.0",

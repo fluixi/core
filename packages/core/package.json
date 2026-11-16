@@ -176,7 +176,7 @@
     "@fluixi/utils": "workspace:^"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.0",
+    "@bambiste/mix-builder": "^0.4.3",
     "@fluixi/compiler": "workspace:*",
     "@fluixi/dom": "workspace:*",
     "@fluixi/head": "workspace:*",
