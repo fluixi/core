@@ -203,6 +203,17 @@ function renderLayer(
       result = settle(result);
       return router ? router.trackLoad(result as never) : result;
     });
+    // A page hydrated from the server has its data without running the loader, which is where
+    // `routeDeps` reaches trackDeps: the route can hand them over without loading.
+    const depsOf = (m.route as RouteDefinition<any>).meta?.routeDeps;
+    if (!isServer() && typeof depsOf === 'function') {
+      Promise.resolve((depsOf as () => unknown)()).then(
+        (deps) => {
+          if (typeof deps === 'function') trackDeps(deps as () => unknown);
+        },
+        () => {},
+      );
+    }
     // A revalidated cache entry: load again. The page stays on screen with its current data.
     // Not a page on its way out (another route matched at this depth, kept until the next one
     // has its data): its loader would run with the params of the page replacing it.

@@ -75,6 +75,9 @@ function generateRouteObject(
         importPath
       )}).then(m => { if (typeof __isCancelled === 'function' && __isCancelled()) return undefined; if (!m.routeData) return undefined; if (typeof m.routeDeps === 'function') { if (typeof __deps === 'function') __deps(m.routeDeps); args = { ...args, deps: m.routeDeps() }; } return m.routeData(args); })`
     );
+    // The same export without loading: a page hydrated from the server has its data without
+    // running the loader above, and the router still has to watch what it depends on.
+    props.push(`${indent}  meta: { routeDeps: () => import(${JSON.stringify(importPath)}).then(m => m.routeDeps) }`);
   }
 
   if (route.children.length > 0) {

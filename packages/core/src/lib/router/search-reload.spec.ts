@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createComponent, insert, render } from '@fluixi/dom';
-import { createMemo, createRoot, setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
+import { createMemo, createRoot, createSignal, setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { ensureIntegration } from '../render/component.js';
 import { Outlet, Router, createMemoryHistory, useNavigate, useRouteData } from './index.js';
 
@@ -109,5 +109,44 @@ describe('a query-only navigation', () => {
     await wait(30);
     expect(searched).toEqual(['ada']);
     expect(container.textContent).toBe('users ada');
+  });
+
+  it("watches a hydrated page's routeDeps, though its loader never ran here", async () => {
+    let id = 0;
+    setResourceIdSource(() => `r${id++}`);
+    const seeded: Record<string, string> = { r0: 'ada' };
+    setServerDataGetter((key) => (key in seeded ? { value: seeded[key] } : undefined));
+    const user = createSignal('ada');
+    const loads: string[] = [];
+    const routeDeps = () => user[0]();
+    const Profile = () => {
+      const data = useRouteData<string>();
+      return text('p', () => `profile ${data() ?? ''}`);
+    };
+    const routes = [
+      {
+        path: '/profile',
+        component: Profile,
+        // As start generates it: the deps reach the router through the loader, and through
+        // `meta` without loading.
+        data: (_args: Args, _owner: unknown, _cancelled: unknown, track?: (deps: () => unknown) => void) => {
+          track?.(routeDeps);
+          const who = routeDeps();
+          loads.push(who);
+          return Promise.resolve(who);
+        },
+        meta: { routeDeps: () => Promise.resolve(routeDeps) },
+      },
+    ];
+    const container = document.createElement('div');
+    createRoot(() => render(createMemo(() => createComponent(Router, { routes, history: createMemoryHistory('/profile') } as never)), container));
+    await wait(30);
+    expect(loads).toEqual([]);
+    expect(container.textContent).toBe('profile ada');
+
+    user[1]('grace');
+    await wait(30);
+    expect(loads).toEqual(['grace']);
+    expect(container.textContent).toBe('profile grace');
   });
 });

@@ -68,6 +68,8 @@ describe('generateRouteModule', () => {
     // routeDeps: handed to the router, and its values passed to routeData.
     expect(output).toContain('__deps(m.routeDeps)');
     expect(output).toContain('deps: m.routeDeps()');
+    // And without loading, for a page hydrated from the server.
+    expect(output).toContain('meta: { routeDeps: () => import(');
   });
 
   it('generates children array for nested routes', () => {
