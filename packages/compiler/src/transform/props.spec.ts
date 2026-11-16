@@ -161,3 +161,41 @@ describe('a rest element', () => {
     expect(out(code)).toBe(code);
   });
 });
+
+describe('destructuring the props parameter in the body', () => {
+  it('rewrites a destructure at the top of the body, and a rest into splitProps', () => {
+    const result = run(
+      'function Panel(props) {\n  const { size, onToggle, ...rest } = props;\n  return <div data-size={size} {...rest} onClick={onToggle}>{props.label}</div>;\n}',
+    );
+    expect(result.diagnostics).toEqual([]);
+    expect(result.code).toContain('const [, rest] = splitProps(props, ["size", "onToggle"]);');
+    expect(result.code).toContain('data-size={props.size}');
+    expect(result.code).toContain('onClick={props.onToggle}');
+    expect(result.code).not.toContain('= props;');
+  });
+
+  it('keeps a default, re-run on each read', () => {
+    const code = out("function Panel(props) { const { size = 'md' } = props; return <b>{size}</b>; }");
+    expect(code).toContain("{(props.size === undefined ? 'md' : props.size)}");
+  });
+
+  it('reports one that runs once during setup and cannot be taken over', () => {
+    const inBlock = run('function Panel(props) { if (props.on) { const { size } = props; log(size); } return <b />; }');
+    expect(inBlock.diagnostics.map((d) => `${d.name}:${d.reason}`)).toEqual(['size:placement']);
+    const shared = run('function Panel(props) { const { size } = props, n = 1; return <b>{size}{n}</b>; }');
+    expect(shared.diagnostics.map((d) => `${d.name}:${d.reason}`)).toEqual(['size:placement']);
+    expect(shared.code).toContain('const { size } = props, n = 1;');
+  });
+
+  it('leaves one inside an inner function alone, which reads each time it runs', () => {
+    const code = 'function Panel(props) { const f = () => { const { size } = props; return size; }; return <b>{f()}</b>; }';
+    const result = run(code);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.code).toBe(code);
+  });
+
+  it('reports a binding it cannot rewrite, as for a parameter', () => {
+    const result = run('function Panel(props) { let { size } = props; size = 2; return <b>{size}</b>; }');
+    expect(result.diagnostics.map((d) => `${d.name}:${d.reason}`)).toEqual(['size:reassigned']);
+  });
+});

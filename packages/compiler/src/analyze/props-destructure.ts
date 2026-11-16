@@ -33,6 +33,11 @@ export type DestructureBail =
   | 'rest'
   /** `const { [key]: a } = props`: we don't know the property until it runs. */
   | 'computed'
+  /**
+   * `const { a } = props` somewhere other than a statement of its own at the top of the
+   * component (inside a block or a callback, or sharing its statement with other names).
+   */
+  | 'placement'
   /** The binding gets assigned to, and props are read-only, so it can't become a member. */
   | 'reassigned'
   /** An inner scope binds the same name, so a use site could mean either one. */
@@ -311,6 +316,8 @@ export function explainBail(reason: DestructureBail): string {
       return 'this rest element cannot be served by splitProps, and copying the props into a plain object would lose the getters';
     case 'computed':
       return 'the property is not known until it runs';
+    case 'placement':
+      return 'only a destructure of its own at the top of the component body is rewritten, and this one is not';
     case 'reassigned':
       return 'the binding is assigned to, and props are read-only';
     case 'shadowed':

@@ -20,7 +20,7 @@ call time. Read props **where you use them** and updates flow through:
 function Hello(props: { name: string }) {
   return <p>{props.name}</p>;   // stays reactive
 }
-// const { name } = props;       // reads once, see below
+// const { name } = props;       // in plain JavaScript, reads once: see below
 ```
 
 Destructuring copies the value out at that moment, so `name` stops following the prop. That is
@@ -28,13 +28,23 @@ ordinary JavaScript, not a rule Fluixi invented.
 
 ### Destructuring anyway
 
-The compiler rewrites those bindings back into reads, so the plain syntax keeps working:
+The compiler rewrites those bindings back into reads, so the plain syntax keeps working, in the
+parameter list or at the top of the body:
 
 ```tsx
 function Hello({ name, tone = 'calm' }) {
   return <p data-tone={tone}>{name}</p>;   // both stay reactive
 }
+
+function Badge(props) {
+  const { label, ...rest } = props;         // rewritten the same way
+  return <span {...rest}>{label}</span>;
+}
 ```
+
+A destructure of `props` that runs once elsewhere in the component's setup, inside an `if` block
+or sharing its `const` with other names, is left as written and the build warns about it. One
+inside a callback is fine as it is: it reads the current values each time the callback runs.
 
 It compiles to `props.name` at each use, the binding keeps its type, so nothing else about the
 function changes. This is on by default; `fluixi({ propsDestructure: false })` turns it off, which

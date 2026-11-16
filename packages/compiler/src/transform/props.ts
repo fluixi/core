@@ -155,6 +155,10 @@ export function collectPropsEdits(
 
   for (const fn of componentFunctions(program as Node)) {
     const pattern = (fn.params as Node[])?.[0];
+    if (pattern?.type === 'Identifier') {
+      collectBodyDestructures(fn, pattern.name as string, code, edits, diagnostics, used);
+      continue;
+    }
     if (pattern?.type !== 'ObjectPattern') continue;
 
     const plan = planPropsDestructure(pattern as never, fn.body as never);
@@ -235,6 +239,107 @@ export function collectPropsEdits(
   }
 
   return { edits, diagnostics, used };
+}
+
+/** The names a pattern introduces, for a diagnostic about the whole of it. */
+function namesOf(pattern: Node): string {
+  const names: string[] = [];
+  walk(pattern, (node, parent) => {
+    // A property's key is not a binding; in shorthand the value node carries the same name.
+    if (node.type === 'Identifier' && !(parent?.type === 'ObjectProperty' && parent.key === node)) {
+      names.push(node.name as string);
+    }
+  });
+  return names.join(', ');
+}
+
+/**
+ * `function Card(props) { const { title, ...rest } = props; ... }`: the same rewrite as for a
+ * destructured parameter. Each `const`/`let` of its own at the top of the body that destructures
+ * the props parameter is removed (or becomes the splitProps call for its rest) and its names read
+ * through the parameter. One elsewhere in the setup (a block, a statement shared with other
+ * names) is left as written and reported: it reads once, and without a word that only shows as
+ * a stale value on screen.
+ */
+function collectBodyDestructures(
+  fn: Node,
+  parameter: string,
+  code: string,
+  edits: PropsEdit[],
+  diagnostics: PropsDiagnostic[],
+  used: Set<string>,
+): void {
+  const body = fn.body as Node;
+  if (body?.type !== 'BlockStatement') return;
+  const destructuresProps = (d: Node) =>
+    d.type === 'VariableDeclarator' && (d.id as Node)?.type === 'ObjectPattern' && (d.init as Node)?.type === 'Identifier' && (d.init as Node).name === parameter;
+
+  // Statements of their own at the top of the body: the ones that can be taken over.
+  const top = (body.body as Node[]).filter(
+    (s) => s.type === 'VariableDeclaration' && s.kind !== 'var' && (s.declarations as Node[]).length === 1 && destructuresProps((s.declarations as Node[])[0]),
+  );
+  // Every other destructure that runs once, while the component is set up, reported. One in
+  // an inner function runs each time that function does and reads the current values.
+  walk(body, (node) => {
+    if (node !== body && /Function/.test(node.type)) return false;
+    if (node.type === 'VariableDeclaration' && top.includes(node)) return false;
+    if (destructuresProps(node)) {
+      diagnostics.push({ name: namesOf(node.id as Node), reason: 'placement', message: explainBail('placement'), start: (node.id as Node).start });
+    }
+    return undefined;
+  });
+  if (top.length === 0) return;
+
+  // The body as the plan sees it: without the declarations taken over, which would otherwise
+  // count as an inner scope binding the same names.
+  const rest = { ...body, body: (body.body as Node[]).filter((s) => !top.includes(s)) } as Node;
+  for (const statement of top) {
+    const pattern = (statement.declarations as Node[])[0].id as Node;
+    const plan = planPropsDestructure(pattern as never, rest as never);
+    for (const b of plan.bails) {
+      diagnostics.push({ name: b.name, reason: b.reason, message: explainBail(b.reason), start: pattern.start });
+    }
+    if (plan.bails.length > 0) continue;
+    if (plan.reads.length === 0 && !plan.rest) continue;
+
+    const replacement = new Map<string, string>();
+    for (const read of plan.reads) {
+      const access = `${parameter}.${read.path.join('.')}`;
+      const fallback = read.fallback as Node | undefined;
+      replacement.set(
+        read.name,
+        fallback ? `(${access} === undefined ? ${code.slice(fallback.start, fallback.end)} : ${access})` : access,
+      );
+    }
+
+    if (plan.rest) {
+      const keys = plan.rest.keys.map((k) => JSON.stringify(k)).join(', ');
+      edits.push({ start: statement.start, end: statement.end, code: `const [, ${plan.rest.name}] = splitProps(${parameter}, [${keys}]);` });
+      used.add('splitProps');
+    } else {
+      edits.push({ start: statement.start, end: statement.end, code: '' });
+    }
+
+    const matches: { node: Node; parent: Node | null; text: string; property: string }[] = [];
+    walk(rest, (node, parent): boolean | void => {
+      if (node.type !== 'Identifier') return undefined;
+      const text = replacement.get(node.name as string);
+      if (!text) return undefined;
+      const shorthand = parent?.type === 'ObjectProperty' && parent.shorthand && parent.value === node;
+      if (!shorthand && !isReferencePosition(node, parent)) return undefined;
+      const path = plan.reads.find((r) => r.name === node.name)!.path;
+      matches.push({ node, parent: shorthand ? parent : null, text, property: path[path.length - 1] as string });
+      return undefined;
+    });
+    for (const match of matches) {
+      if (match.parent) {
+        edits.push({ start: match.parent.start, end: match.parent.end, code: `${(match.node as Node).name}: ${match.text}` });
+      } else {
+        edits.push({ start: match.node.start, end: match.node.end, code: match.text });
+      }
+      asMemberRead(match.node, parameter, match.property);
+    }
+  }
 }
 
 /**
