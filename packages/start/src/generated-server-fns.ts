@@ -25,6 +25,6 @@ export function isServerFnRequest(_request: Request): boolean {
 }
 
 /** Run the addressed server function and return its response. */
-export function handleServerFn(_request: Request): Promise<Response> {
+export function handleServerFn(_request: Request, _options?: { production?: boolean }): Promise<Response> {
   missingPlugin();
 }

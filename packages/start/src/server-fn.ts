@@ -103,9 +103,12 @@ export function isServerFnRequest(request: Request): boolean {
 
 /**
  * Dispatch a server-function RPC: same-origin (CSRF) check, look up the id, run it with
- * the JSON args, return the JSON result. A thrown error → 500; unknown id → 404.
+ * the JSON args, return the JSON result. Unknown id → 404. A thrown error with a 4xx `status`
+ * is a refusal the client can act on and goes back as JSON; any other error → 500, with its
+ * message in development and nothing of it in production, where it is logged instead: a
+ * message can carry a query, a path or a host.
  */
-export async function handleServerFn(request: Request): Promise<Response> {
+export async function handleServerFn(request: Request, options: { production?: boolean } = {}): Promise<Response> {
   // CSRF: reject cross-origin POSTs (a same-origin fetch always sends a matching Origin).
   const origin = request.headers.get('origin');
   if (origin) {
@@ -145,6 +148,10 @@ export async function handleServerFn(request: Request): Promise<Response> {
     }
     return new Response(JSON.stringify(result ?? null), { status: 200, headers });
   } catch (e: any) {
-    return refusalResponse(e) ?? new Response(String(e?.message || e), { status: 500 });
+    const refused = refusalResponse(e);
+    if (refused) return refused;
+    if (!options.production) return new Response(String(e?.message || e), { status: 500 });
+    console.error(e);
+    return new Response('Internal Server Error', { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 }

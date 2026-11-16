@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { createHandlerFrom } from './handler-core.js';
 import {
   $$createServerReference,
   $$registerServerFn,
@@ -75,9 +76,44 @@ describe('@fluixi/start server functions', () => {
     }
   });
 
-  it('500 when the function throws', async () => {
+  it('500 when the function throws, with its message in development', async () => {
     $$registerServerFn('boom:0', () => { throw new Error('nope'); });
-    expect((await handleServerFn(rpc('boom:0', []))).status).toBe(500);
+    const res = await handleServerFn(rpc('boom:0', []));
+    expect(res.status).toBe(500);
+    expect(await res.text()).toBe('nope');
+  });
+
+  it('500 with nothing of the error in production, which logs it instead', async () => {
+    // A message can carry a query, a path or a host, and used to reach the browser as is.
+    $$registerServerFn('leak:0', () => { throw new Error('select * from users where token = abc'); });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await handleServerFn(rpc('leak:0', []), { production: true });
+    expect(res.status).toBe(500);
+    expect(await res.text()).toBe('Internal Server Error');
+    expect(String(logged.mock.calls[0]?.[0])).toContain('select * from users');
+    logged.mockRestore();
+  });
+
+  it('still answers a refusal with its code in production', async () => {
+    $$registerServerFn('member:2', () => {
+      throw Object.assign(new Error('not a member'), { status: 403, code: 'not_member' });
+    });
+    const res = await handleServerFn(rpc('member:2', []), { production: true });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: 'not_member' });
+  });
+
+  it('is answered in production mode by the production handler', async () => {
+    $$registerServerFn('leak:1', () => { throw new Error('connect ECONNREFUSED 10.0.0.5:5432'); });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const handler = createHandlerFrom({
+      template: '<div id="root"></div>',
+      mod: { isServerFnRequest, handleServerFn } as never,
+      cfg: { ssr: true, mountId: 'root' },
+    });
+    const res = await handler(rpc('leak:1', []));
+    expect(await res.text()).toBe('Internal Server Error');
+    logged.mockRestore();
   });
 
   it('403 on cross-origin (CSRF)', async () => {

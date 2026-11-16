@@ -26,7 +26,7 @@ export interface ServerModule {
   default?: (url: string, request: Request) => string | Promise<string>;
   renderStream?: (url: string, request: Request) => unknown;
   isServerFnRequest?: (request: Request) => boolean;
-  handleServerFn?: (request: Request) => Response | Promise<Response>;
+  handleServerFn?: (request: Request, options?: { production?: boolean }) => Response | Promise<Response>;
   isApiRequest?: (request: Request) => boolean;
   handleApiRequest?: (request: Request) => Response | Promise<Response>;
   /** Middleware from `app.config.ts` modules, re-exported into the entry by the start plugin. */
@@ -96,7 +96,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload, err
   if (typeof mod.handleServerFn === 'function' && typeof mod.isServerFnRequest === 'function') {
     const render = core;
     core = async (request) =>
-      mod.isServerFnRequest!(request) ? mod.handleServerFn!(request) : render(request);
+      mod.isServerFnRequest!(request) ? mod.handleServerFn!(request, { production: true }) : render(request);
   }
 
   // File-based API routes, re-exported by the entry from `@fluixi/start/api-routes`.
