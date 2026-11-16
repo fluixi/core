@@ -145,7 +145,9 @@ describe('@fluixi/start injectAppAndHead', () => {
       htmlAttrs: { lang: 'fr' },
     });
     const html = injectAppAndHead(tpl, marker + 'APP');
-    expect(html).toContain('<html lang="fr">');
+    expect(html).toMatch(/<html [^>]*lang="fr"/);
+    // What the template had, for the browser to restore when the page goes.
+    expect(html).toContain('data-fh-original=');
     expect(html).not.toContain('<title>Old</title>');
     expect(html).toContain('<title data-fh>P</title>');
     expect(html).toContain('name="description"');
@@ -233,7 +235,9 @@ describe('@fluixi/start streaming', () => {
   it("puts seo()'s title in the streamed head, not the template's", async () => {
     const html = await text(await streamDocument(doc, chunks(marker + '<p>app</p>'), '</div></body></html>'));
     expect(html).toContain('<head><title>Sign in</title></head>');
-    expect(html).toContain('<html lang="fr">');
+    expect(html).toMatch(/<html [^>]*lang="fr"/);
+    // What the template had, for the browser to restore when the page goes.
+    expect(html).toContain('data-fh-original=');
     expect(html).not.toContain('<!--fh:');
     expect(html).toContain('<div id="root"><p>app</p></div>');
   });

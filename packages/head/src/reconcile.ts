@@ -1,7 +1,7 @@
 import { createRoot, createEffect, onCleanup } from '@fluixi/reactive/signal';
 import type { HeadTag } from './types.js';
 import { resolveHead, type HeadRegistry } from './core.js';
-import { MANAGED_ATTR, KEY_ATTR } from './serialize.js';
+import { MANAGED_ATTR, KEY_ATTR, ORIGINAL_ATTR, readOriginalHtmlAttrs } from './serialize.js';
 
 function setAttrs(el: Element, attrs: Record<string, string>): void {
   // Remove attrs no longer present (except our markers).
@@ -21,8 +21,33 @@ function createEl(t: Extract<HeadTag, { tag: 'meta' | 'link' | 'base' | 'script'
   return el;
 }
 
+/**
+ * `<html>` attributes the head has set, each with the value to put back once no page sets it:
+ * the template's, as the server recorded it, or what the element had before the first change.
+ */
+function htmlAttrsOwner() {
+  const root = document.documentElement;
+  const original = new Map<string, string | null>(Object.entries(readOriginalHtmlAttrs(root.getAttribute(ORIGINAL_ATTR))));
+  const managed = new Set<string>(original.keys());
+  return (wanted: Record<string, string>): void => {
+    for (const [k, v] of Object.entries(wanted)) {
+      if (!original.has(k)) original.set(k, root.getAttribute(k));
+      managed.add(k);
+      if (root.getAttribute(k) !== v) root.setAttribute(k, v);
+    }
+    // What the page that set it no longer asks for goes back to how the document had it.
+    for (const k of managed) {
+      if (k in wanted) continue;
+      const before = original.get(k) ?? null;
+      if (before === null) root.removeAttribute(k);
+      else if (root.getAttribute(k) !== before) root.setAttribute(k, before);
+      managed.delete(k);
+    }
+  };
+}
+
 /** Reconcile the resolved tags into <head>, reusing the server-rendered managed nodes by key. */
-function apply(tags: HeadTag[], htmlAttrs: Record<string, string>): void {
+function apply(tags: HeadTag[], htmlAttrs: Record<string, string>, setHtmlAttrs: (wanted: Record<string, string>) => void): void {
   const head = document.head;
   // Index existing managed nodes by key.
   const existing = new Map<string, Element>();
@@ -54,9 +79,7 @@ function apply(tags: HeadTag[], htmlAttrs: Record<string, string>): void {
   for (const [key, el] of existing) if (!seen.has(key)) el.remove();
 
   if (title != null && document.title !== title) document.title = title;
-  for (const [k, v] of Object.entries(htmlAttrs)) {
-    if (document.documentElement.getAttribute(k) !== v) document.documentElement.setAttribute(k, v);
-  }
+  setHtmlAttrs(htmlAttrs);
 }
 
 /**
@@ -67,10 +90,11 @@ function apply(tags: HeadTag[], htmlAttrs: Record<string, string>): void {
  */
 export function mountHead(head: HeadRegistry): () => void {
   return createRoot((dispose) => {
+    const setHtmlAttrs = htmlAttrsOwner();
     createEffect(() => {
       head.version(); // re-run when sources are added/removed (route transitions)
       const { tags, htmlAttrs } = resolveHead(head);
-      apply(tags, htmlAttrs);
+      apply(tags, htmlAttrs, setHtmlAttrs);
     });
     onCleanup(() => {});
     return dispose;

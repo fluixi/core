@@ -17,6 +17,23 @@ function escScript(s: string): string {
 /** The attribute marking a head tag as managed by @fluixi/head (so the client reconciler owns it). */
 export const MANAGED_ATTR = 'data-fh';
 export const KEY_ATTR = 'data-fh-key';
+/**
+ * On `<html>`: what the document template had for each attribute the server's head replaced
+ * (`null` when it had none), URI-encoded JSON. The client restores those values when no page
+ * sets the attribute any more.
+ */
+export const ORIGINAL_ATTR = 'data-fh-original';
+
+/** Read {@link ORIGINAL_ATTR} back; `{}` when absent or unreadable. */
+export function readOriginalHtmlAttrs(value: string | null): Record<string, string | null> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(decodeURIComponent(value));
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string | null>) : {};
+  } catch {
+    return {};
+  }
+}
 
 function renderAttrs(attrs: Record<string, string>): string {
   let s = '';

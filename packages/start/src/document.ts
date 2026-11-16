@@ -6,7 +6,7 @@
  * worker as often as on Node, and a runtime module that reaches into the build
  * helpers drags a whole toolchain into the bundle with it.
  */
-import { extractHeadMarker } from '@fluixi/head';
+import { extractHeadMarker, ORIGINAL_ATTR } from '@fluixi/head';
 import { VERSION_ATTRIBUTE, versionMark } from '@fluixi/dom';
 import type { FetchHandler } from './handler.js';
 
@@ -91,6 +91,11 @@ export function injectPreload(template: string, files: string[]): string {
 }
 
 /** Set/replace an attribute on the template's <html> tag (e.g. lang). */
+function htmlAttrOf(html: string, name: string): string | null {
+  const match = new RegExp(`<html\\b[^>]*?\\s${name}="([^"]*)"`, 'i').exec(html);
+  return match ? match[1] : null;
+}
+
 function setHtmlAttr(html: string, name: string, value: string): string {
   const existing = new RegExp(`(<html\\b[^>]*?)\\s${name}="[^"]*"`, 'i');
   if (existing.test(html)) return html.replace(existing, `$1 ${name}="${value}"`);
@@ -120,7 +125,14 @@ export function liftHead(html: string, rendered: string): { html: string; body: 
       if (/<title[\s>]/i.test(head.headHtml)) html = html.replace(/<title>[\s\S]*?<\/title>/i, '');
       html = html.replace('</head>', `${head.headHtml}</head>`);
     }
-    for (const [k, v] of Object.entries(head.htmlAttrs)) html = setHtmlAttr(html, k, v);
+    const replaced = Object.keys(head.htmlAttrs);
+    if (replaced.length > 0) {
+      // What the template had, so the browser can put it back when the page that changed it goes.
+      const original: Record<string, string | null> = {};
+      for (const k of replaced) original[k] = htmlAttrOf(html, k);
+      for (const [k, v] of Object.entries(head.htmlAttrs)) html = setHtmlAttr(html, k, v);
+      html = setHtmlAttr(html, ORIGINAL_ATTR, encodeURIComponent(JSON.stringify(original)));
+    }
   }
   return { html, body };
 }
