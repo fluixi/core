@@ -8,6 +8,7 @@ import {
   untrack,
   useContext,
 } from '@fluixi/reactive/signal';
+import { isServer } from '../dom/server/host.js';
 
 /**
  * Where the app is, for a boundary to tell when the content it caught an error from is gone.
@@ -98,8 +99,16 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
     const fn = content as () => unknown;
     return () => {
       try {
-        return guard(fn());
+        const value = guard(fn());
+        // Content built by this call (an outlet's page) may have failed in one of its effects.
+        const caught = isServer() ? boundary.caught() : undefined;
+        return caught === undefined ? value : untrack(() => showFallback(caught));
       } catch (e) {
+        // The server writes its HTML once, from this very read: the fallback goes in now.
+        if (isServer() && !isPromise(e)) {
+          boundary.setError(e);
+          return untrack(() => showFallback(e));
+        }
         return report(e);
       }
     };
@@ -113,11 +122,15 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Accessor<any> {
     const err = boundary.error();
     if (err !== undefined) return showFallback(err);
     try {
-      return provideErrorBoundary(boundary, () => {
+      const content = provideErrorBoundary(boundary, () => {
         // Read once: a children getter builds its content on every read.
         const children = props.children;
         return guard(typeof children === 'function' ? children() : children);
       });
+      // On the server, an effect of the children that failed while they were built has only
+      // been recorded so far: the content still holds the empty element it was writing into.
+      const caught = isServer() ? boundary.caught() : undefined;
+      return caught === undefined ? content : untrack(() => showFallback(caught));
     } catch (e) {
       // Thrown while building: the fallback now, and the error kept for reset().
       report(e);

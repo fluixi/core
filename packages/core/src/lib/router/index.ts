@@ -454,7 +454,10 @@ function withRouteBoundary(build: () => Layer): Layer {
     const fn = value as () => unknown;
     return () => {
       try {
-        return guard(fn());
+        const value = guard(fn());
+        // Content built by this call may have failed in one of its effects.
+        const caught = isServer() ? boundary.caught() : undefined;
+        return caught === undefined ? value : untrack(() => renderRouteError(option, caught, boundary.reset));
       } catch (error) {
         if (error && typeof (error as { then?: unknown }).then === 'function') throw error;
         // The server writes its HTML once, from this very read: the error view goes in now.
