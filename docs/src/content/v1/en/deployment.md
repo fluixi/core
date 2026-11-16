@@ -99,6 +99,14 @@ To give the plain page your own look, put it at `public/error.html`: the build c
 other public files and the Node server answers with it. A platform without a filesystem (a
 worker) serves the plain page.
 
+## Clicks before the page hydrates
+
+A server-rendered page shows its buttons before their handlers exist. A small inline script at the
+top of `<head>` records the clicks, input and key presses made in that window, and the client
+replays them once it has hydrated, so an early click is not lost. A Content Security Policy that
+refuses inline scripts blocks it; turn it off with `eventReplay: false` in `fluixi.config.ts`. With
+`ssr: false` there is no server markup to click, and nothing is added.
+
 ## One copy of a package
 
 `fluixi dev` and `fluixi build` resolve the framework's own packages once, from the app's root,

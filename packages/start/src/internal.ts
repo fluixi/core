@@ -259,11 +259,13 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   const { appConfigVitePlugin } = await import('./app-plugin.js');
   const { serverOnlyVitePlugin } = await import('./server-only-plugin.js');
   const { dedupeVitePlugin } = await import('./dedupe-plugin.js');
+  const { eventReplayVitePlugin } = await import('./event-replay-plugin.js');
   const plugins: any[] = [
     // First: a value it defines has to be visible to everything after it.
     envVitePlugin(cfg),
     dedupeVitePlugin(cfg.root, cfg.dedupe),
     appConfigVitePlugin(cfg),
+    eventReplayVitePlugin(cfg),
     serverOnlyVitePlugin(),
     serverFunctionsVitePlugin(),
     fluixiRoutesPlugin({ routesDir: cfg.routesDir, polyfills: false }),

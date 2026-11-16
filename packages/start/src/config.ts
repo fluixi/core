@@ -44,6 +44,14 @@ export interface FluixiConfig {
   template?: string;
   /** Element id the app HTML is injected into (`<div id="..."></div>`). Default: root */
   mountId?: string;
+  /**
+   * Keep clicks, input and key presses a visitor makes on the server-rendered page before it
+   * hydrates: a small inline script at the top of `<head>` records them, and the client replays
+   * them once its handlers are wired. Turn it off for a Content Security Policy that refuses
+   * inline scripts. Not emitted with `ssr: false`, where there is no server markup to click.
+   * Default: true
+   */
+  eventReplay?: boolean;
   /** File-routes directory (passed to fluixiRoutesPlugin). Default: src/routes */
   routesDir?: string;
   /** File-based API routes directory; files export GET/POST/... handlers served at `/api/*`. Default: src/api */
@@ -242,6 +250,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     clientEntry: config.clientEntry ?? 'src/entry-client.ts',
     template: config.template ?? 'index.html',
     mountId: config.mountId ?? 'root',
+    eventReplay: config.eventReplay ?? true,
     routesDir: config.routesDir ?? 'src/routes',
     apiDir: config.apiDir ?? 'src/api',
     middleware: config.middleware ?? 'src/middleware.ts',
