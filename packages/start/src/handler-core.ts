@@ -13,7 +13,7 @@
  */
 import type { ResolvedConfig } from './config.js';
 import { injectAppAndHead, injectPreload, splitTemplate, guardHandler } from './document.js';
-import { createRequestHandler, streamDocument, withResponseHeaders, type FetchHandler } from './handler.js';
+import { createRequestHandler, streamDocument, withResponseHeaders, type FetchHandler } from './respond.js';
 import { composeMiddleware, normalizeMiddleware } from './middleware.js';
 
 // The platform entries import only this module; they record the client address with it.
