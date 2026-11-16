@@ -34,6 +34,7 @@ import {
   endRequestContext,
   endRequestScope,
   requestScope,
+  prepareRender,
   isServer,
   setServerMode,
   type RequestContext,
@@ -220,9 +221,11 @@ export function renderRequestAsync(
   const head = createHead();
   return renderToStringAsync(() => createComponent(app, { url: event.url ?? '/' }), {
     event,
-    preload: (e) => {
+    preload: async (e) => {
       const ctx = getRequestContext();
       if (ctx) requestHeads.set(ctx, head);
+      // Once per request: a host that prepared it already (@fluixi/start) is not run twice.
+      await prepareRender();
       return preloadServerState(e);
     },
   }).then((body) => encodeHeadMarker(renderHead(head)) + body);

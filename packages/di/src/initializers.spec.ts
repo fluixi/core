@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { prepareRender } from '@fluixi/dom';
 import { inject, injectionToken, provideRoot, provideAppInitializer, runAppInitializers, runInInjectionContext, createInjector, isInInjectionContext, assertInInjectionContext, INJECTOR } from './index.js';
 import { resetInjection } from './testing.js';
 
@@ -29,6 +30,17 @@ describe('@fluixi/di: app initializers and context', () => {
     ]);
     await runAppInitializers();
     expect(settings.loaded).toBe(true);
+  });
+
+  it('warns about an initializer registered once the app has started rendering', async () => {
+    const warned = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    provideRoot([provideAppInitializer(() => {})]);
+    expect(warned).not.toHaveBeenCalled();
+    await prepareRender();
+    // As from a module a route imports while the page renders.
+    provideRoot([provideAppInitializer(() => {})]);
+    expect(warned).toHaveBeenCalledWith(expect.stringMatching(/registered after the app started rendering/));
+    warned.mockRestore();
   });
 
   it('knows whether inject() can run, and resolves INJECTOR to the current injector', () => {

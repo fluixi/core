@@ -11,6 +11,7 @@
  * bundle with its own copy of that package still finds it.
  */
 import { endRequestScope } from '@fluixi/server';
+import { prepareRender } from '@fluixi/dom';
 
 type Store = { getStore(): object | undefined; run<R>(request: object, fn: () => R): R };
 type ALSCtor = new () => Store;
@@ -72,6 +73,9 @@ export function withPlatformRequest<R>(request: object, fn: () => R): R {
 export async function answerRequest(request: Request, fn: () => Promise<Response>): Promise<Response> {
   return withPlatformRequest(request, async () => {
     try {
+      // Before the first middleware: everything behind it may inject what the app's
+      // initializers set up.
+      await prepareRender();
       return await fn();
     } finally {
       endRequestScope(request);

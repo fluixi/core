@@ -63,6 +63,8 @@ export {
   setResponseStatus,
   errorResponseStatus,
   takeResponseStatus,
+  beforeFirstRender,
+  prepareRender,
   type ResponseRedirect,
   type RenderOptions,
   type RequestStore,

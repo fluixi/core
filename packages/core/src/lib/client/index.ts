@@ -12,6 +12,7 @@ import {
   endAppHydration,
   removeUnclaimedKeyed,
   clearHydrationKeys,
+  prepareRender,
 } from '@fluixi/dom';
 // Registers core's version with the DOM runtime, which does the stamping. This entry is a
 // separate subpath, so it does not otherwise load core's render, and without this the
@@ -149,10 +150,13 @@ export async function startClient(
       // hydration render, the lazy boundary then adopts the server DOM in place instead of
       // resolving a tick later and rebuilding a duplicate. Dynamic import keeps the router out of
       // client-only bundles that never pass `routes`.
+      // The app's own work before its first render (DI app initializers), alongside.
+      const ready = prepareRender();
       if (options.routes && options.routes.length) {
         const { preloadRoutes } = await import('../router/index.js');
         await preloadRoutes(options.routes, window.location.pathname);
       }
+      await ready;
       deserializeHydrationData();
       setHydrating(true);
       // A memo around createComponent, which is what compiled JSX emits for every other
@@ -181,6 +185,7 @@ export async function startClient(
       cleanupHydration();
     }, 100);
   } else {
+    await prepareRender();
     render(rootOf(App), container as HTMLElement);
   }
 

@@ -202,6 +202,48 @@ export function requestScope(): object | undefined {
   return platformRequest() ?? getRequestContext();
 }
 
+// Work a render waits for, and what has run it: one promise per request scope on the server,
+// one for the page in the browser. In the global registry, so a task registered through one
+// copy of this module runs from another.
+const _beforeRender = ((globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.beforeRender')] ??= {
+  tasks: [] as Array<() => unknown>,
+  prepared: new WeakMap<object, Promise<void>>(),
+  page: undefined as Promise<void> | undefined,
+}) as { tasks: Array<() => unknown>; prepared: WeakMap<object, Promise<void>>; page: Promise<void> | undefined };
+
+/**
+ * Register work that has to finish before the app renders, such as `@fluixi/di`'s app
+ * initializers. It runs once per request on the server, inside that request, and once in the
+ * browser, in registration order, each awaited.
+ *
+ * @returns A function that unregisters it.
+ */
+export function beforeFirstRender(task: () => unknown): () => void {
+  _beforeRender.tasks.push(task);
+  return () => {
+    const at = _beforeRender.tasks.indexOf(task);
+    if (at >= 0) _beforeRender.tasks.splice(at, 1);
+  };
+}
+
+/**
+ * Run the {@link beforeFirstRender} work for the current request, or for the page in the
+ * browser, unless it already ran there. For whatever starts a render: the client entry, the
+ * server's request handler. Rejects with the first task's error: an app that could not get
+ * ready should not render as if it had.
+ */
+export function prepareRender(): Promise<void> {
+  const scope = requestScope();
+  if (!scope) return (_beforeRender.page ??= runBeforeRender());
+  let prepared = _beforeRender.prepared.get(scope);
+  if (!prepared) _beforeRender.prepared.set(scope, (prepared = runBeforeRender()));
+  return prepared;
+}
+
+async function runBeforeRender(): Promise<void> {
+  for (const task of [..._beforeRender.tasks]) await task();
+}
+
 /**
  * End `ctx`: its `onRequestEnd` hooks run, latest first, each once. Called by whatever created
  * the context (a render, a server function, an API route) when it is done with it.

@@ -10,6 +10,7 @@ import { currentInjector, nearestOwnerInjector, rootInjector } from './hierarchy
 import { Injector } from './injector.js';
 import type { InjectOptions, Provider } from './provider.js';
 import { state } from './state.js';
+import { warnLateInitializers } from './initializers.js';
 import type { Token } from './token.js';
 
 /**
@@ -98,6 +99,7 @@ export function provide(providers: ReadonlyArray<Provider>): Injector {
  * ```
  */
 export function provideRoot(providers: ReadonlyArray<Provider>): void {
+  warnLateInitializers(providers);
   state.rootProviders.push(...providers);
   state.clientRoot?.register(providers);
   const ctx = getRequestContext() as object | undefined;
