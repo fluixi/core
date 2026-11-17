@@ -97,17 +97,17 @@ export async function build(
       ssr,
       build: {
         outDir: 'dist/server',
-        ssr: serverEntrySrc,
         emptyOutDir: true,
+        ...serverInputs(serverEntrySrc, middlewareOf(cfg)),
       },
     });
     await writePublicEnv(cfg);
   }
 
-  // Optional request middleware → its own server entry (emptyOutDir:false keeps
-  // entry-server.js). createProdHandler picks up dist/server/middleware.js if present.
+  // Request middleware with no server bundle to join: its own build. With one, it is an input
+  // of that build (see serverInputs). createProdHandler picks up dist/server/middleware.js.
   const middlewareSrc = resolve(cfg.root, cfg.middleware);
-  if (existsSync(middlewareSrc)) {
+  if (existsSync(middlewareSrc) && !(cfg.ssr || existsSync(serverEntrySrc))) {
     step('middleware');
     await viteBuild({
       root: cfg.root,
@@ -287,24 +287,10 @@ async function buildApi(cfg: ResolvedConfig, ssr: unknown): Promise<void> {
     ssr: ssr as never,
     build: {
       outDir: 'dist/server',
-      ssr: entry,
       emptyOutDir: true,
-      rollupOptions: { output: { entryFileNames: 'entry-server.js' } },
+      ...serverInputs(entry, middlewareOf(cfg), 'entry-server'),
     },
   });
-
-  const middlewareSrc = resolve(cfg.root, cfg.middleware);
-  if (existsSync(middlewareSrc)) {
-    step('middleware');
-    await viteBuild({
-      root: cfg.root,
-      resolve: { alias: aliasesFromTsconfig(cfg.root) },
-      plugins: apiPlugins as never,
-      logLevel: 'warn',
-      ssr: ssr as never,
-      build: { outDir: 'dist/server', ssr: middlewareSrc, emptyOutDir: false },
-    });
-  }
   if (cfg.adapter?.build) {
     step(`${cfg.adapter.name} output`);
     await cfg.adapter.build({
@@ -380,4 +366,27 @@ async function writePublicEnv(cfg: ResolvedConfig): Promise<void> {
   const keys = cfg.env?.public ?? [];
   const values = selectPublic(process.env as Record<string, string | undefined>, keys);
   await writeFile(join(resolve(cfg.root, 'dist/server'), PUBLIC_ENV_FILE), JSON.stringify({ keys, values }) + '\n');
+}
+
+/** The app's middleware file, when it has one. */
+function middlewareOf(cfg: { root: string; middleware: string }): string | undefined {
+  const file = resolve(cfg.root, cfg.middleware);
+  return existsSync(file) ? file : undefined;
+}
+
+/**
+ * The server entry and the middleware as inputs of one build. Built apart, a module both of
+ * them import (a service, a session store) was bundled twice, each copy with its own state, so
+ * middleware and the page saw two instances per request in production and one in dev. One
+ * build turns what they share into a shared chunk. The files keep their names:
+ * `entry-server.js`, `middleware.js`.
+ */
+function serverInputs(entry: string, middleware: string | undefined, entryName = basename(entry).replace(/\.[cm]?[jt]sx?$/, '')) {
+  return {
+    ssr: true,
+    rollupOptions: {
+      input: { [entryName]: entry, ...(middleware ? { middleware } : {}) },
+      output: { entryFileNames: '[name].js' },
+    },
+  };
 }
