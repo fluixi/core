@@ -21,6 +21,7 @@ import {
   releaseKeyed,
   registerHydrationWalker,
   removeUnclaimedKeyed,
+  flushAfterHydrationPass,
 } from './hydration-state.js';
 
 /**
@@ -83,12 +84,23 @@ function ownsServerContent(el: Element): boolean {
   return el.hasAttribute('data-fx-ssr') || (el as unknown as Record<symbol, unknown>)[OWNS_CONTENT] === true;
 }
 
+/**
+ * The nodes the server rendered inside a custom element, as the page claims it. What the page
+ * inserts into it afterwards are its authored children, which the element tells apart by this.
+ */
+const SERVER_CONTENT = Symbol.for('fluixi.serverContent');
+function recordServerContent(el: Element): void {
+  const record = el as unknown as Record<symbol, unknown>;
+  if (!record[SERVER_CONTENT]) record[SERVER_CONTENT] = Array.from(el.childNodes);
+}
+
 function hydrateElement(tag: string): Element | null {
   recoverCursor();
   const c = hydration.cursor;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
     releaseKeyed(c as Element);
     if (VOID_ELEMENTS.has(tag.toLowerCase()) || ownsServerContent(c as Element)) {
+      if (!VOID_ELEMENTS.has(tag.toLowerCase())) recordServerContent(c as Element);
       hydration.cursor = c.nextSibling;
     } else {
       hydration.parents.push(c);
@@ -103,6 +115,7 @@ function hydrateElement(tag: string): Element | null {
 /** An element claimed by key: descend into it, or step past it when it has nothing to adopt. */
 function enterElement(el: Element): void {
   if (VOID_ELEMENTS.has(el.localName) || ownsServerContent(el)) {
+    if (!VOID_ELEMENTS.has(el.localName)) recordServerContent(el);
     hydration.cursor = el.nextSibling;
   } else {
     hydration.parents.push(el);
@@ -236,6 +249,7 @@ export function hydrate<T>(
     hydration.active = false;
     hydration.cursor = null;
     hydration.parents = [];
+    flushAfterHydrationPass();
   }
 }
 
@@ -259,5 +273,7 @@ export function hydrateChildren(container: Element, build: () => unknown): void 
     hydration.active = previous.active;
     hydration.cursor = previous.cursor;
     hydration.parents = previous.parents;
+    // The outermost pass, when an element hydrates with no page pass around it.
+    if (!previous.active) flushAfterHydrationPass();
   }
 }

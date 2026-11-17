@@ -1,6 +1,6 @@
 import type { CodegenBackend, CodegenResult, StaticTemplate } from '../backend.js';
 import type { HolePosition, IRNode, IRProp } from '../../ir/nodes.js';
-import { planPartialTemplate, type TemplateBinding } from '../partial-template.js';
+import { containsCustomElement, planPartialTemplate, type TemplateBinding } from '../partial-template.js';
 import {
   isSerializable,
   serializeStatic,
@@ -311,7 +311,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // `cloneTemplate(t, true)` returns that wrapper, not the serialized element, so
       // cloning would hand back the wrong node. Correctness first, SVG keeps the
       // imperative path until the runtime grows an unwrapping clone.
-      if (templates && node.static && !node.svg && isSerializable(node)) {
+      if (templates && node.static && !node.svg && isSerializable(node) && !containsCustomElement(node)) {
         used.add('templateNode');
         const id = `_tmpl$${templates.length}`;
         templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });

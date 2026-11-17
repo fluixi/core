@@ -330,6 +330,30 @@ export function keepKeyed(nodes: Node[]): void {
   }
 }
 
+const afterPass: Array<() => void> = [];
+
+/**
+ * Run `fn` once the hydration pass running now is over, synchronously at its end; at once when
+ * none is running. For a custom element the page claims: the page inserts the element's authored
+ * children after claiming it, in the same pass, and the element has to see them to place them.
+ */
+export function afterHydrationPass(fn: () => void): void {
+  if (hydration.active) afterPass.push(fn);
+  else fn();
+}
+
+/** Run what waited for the pass to end. Called by the outermost pass as it finishes. */
+export function flushAfterHydrationPass(): void {
+  while (afterPass.length > 0) {
+    const fn = afterPass.shift()!;
+    try {
+      fn();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
 /** Whether a hydration pass is running: what a component builds now adopts server nodes. */
 export function isHydrating(): boolean {
   return hydration.active;

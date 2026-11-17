@@ -163,6 +163,21 @@ export class ServerRaw extends ServerNode {
   cloneNode(): ServerRaw {
     return new ServerRaw(this.rawOuterHTML);
   }
+  /**
+   * An attribute of the outermost element, read off its opening tag: how a custom element's
+   * `slotted('name')` finds `slot="name"` on a static child the server carries as raw HTML.
+   */
+  getAttribute(name: string): string | null {
+    const open = /^\s*<[a-zA-Z][^\s/>]*([^>]*)>/.exec(this.rawOuterHTML)?.[1];
+    if (!open) return null;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = new RegExp(`(?:^|\\s)${escaped}(?:\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+)))?(?=\\s|/|$)`, 'i').exec(open);
+    if (!match) return null;
+    return match[1] ?? match[2] ?? match[3] ?? '';
+  }
+  hasAttribute(name: string): boolean {
+    return this.getAttribute(name) !== null;
+  }
 }
 
 export class ServerComment extends ServerNode {

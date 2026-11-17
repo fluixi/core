@@ -29,5 +29,6 @@ export {
   removeUnclaimedKeyed,
   clearHydrationKeys,
   isHydrating,
+  afterHydrationPass,
 } from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'

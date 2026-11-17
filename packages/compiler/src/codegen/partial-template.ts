@@ -90,7 +90,23 @@ export interface PartialTemplate {
 }
 
 function isHole(node: IRNode): boolean {
-  return node.kind === 'expr' || node.kind === 'component' || node.kind === 'control';
+  return node.kind === 'expr' || node.kind === 'component' || node.kind === 'control' || isCustomElement(node);
+}
+
+/**
+ * A custom element is always created as a node, never baked into a template string: on the
+ * server a template is one opaque piece of HTML the element renderer never sees, so the
+ * element was sent empty. As a hole it is built the way an element with a dynamic attribute
+ * already is, which the server renders.
+ */
+export function isCustomElement(node: IRNode): boolean {
+  return node.kind === 'element' && node.tag.includes('-');
+}
+
+/** Whether a subtree holds a custom element anywhere. */
+export function containsCustomElement(node: IRNode): boolean {
+  if (isCustomElement(node)) return true;
+  return 'children' in node && Array.isArray(node.children) && node.children.some(containsCustomElement);
 }
 
 /** A child the template contains rather than fills in at runtime. */
@@ -191,6 +207,7 @@ function propPlan(el: IRElement): PropPlan | null {
  */
 function isTemplateElement(node: IRElement): boolean {
   if (node.svg) return false;
+  if (isCustomElement(node)) return false;
   if (isRawTextElement(node.tag)) return false;
   if (!propPlan(node)) return false;
   return node.children.every((c) => isTemplateChild(c) || isHole(c));

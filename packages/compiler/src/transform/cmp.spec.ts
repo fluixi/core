@@ -93,3 +93,18 @@ describe('load: diagnostics and mixed uses', () => {
     );
   });
 });
+
+describe('a custom element in the markup', () => {
+  it('is created as a node, never baked into a template string, so the server can render it', () => {
+    const code = transformTemplates(
+      `export function A() { return <section><h1>Deals</h1><fx-panel title="x"><h2 slot="header">T</h2></fx-panel></section>; }`,
+      'a.tsx',
+      BASE as never,
+    )!.code;
+    expect(code).toContain('createNativeElement("fx-panel")');
+    expect(code).not.toMatch(/`[^`]*<fx-panel/);
+    expect(code).not.toMatch(/"[^"]*<fx-panel/);
+    // What is around it keeps its template.
+    expect(code).toMatch(/<section><h1>Deals<\/h1>/);
+  });
+});

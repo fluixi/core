@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { HYDRATION_KEY, hydrateChildren, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
+import { HYDRATION_KEY, afterHydrationPass, hydrateChildren, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -50,6 +50,8 @@ const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
 const RENDER_ON_SERVER = Symbol.for('fluixi.renderOnServer');
 /** Tells @fluixi/dom's page hydration that this element's children are its own, adopted already. */
 const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
+/** Set by @fluixi/dom's hydration: the nodes the server rendered inside this element. */
+const SERVER_CONTENT = Symbol.for('fluixi.serverContent');
 /** Marks content an element rendered on the server, and carries the props that have no attribute. */
 const SSR_ATTRIBUTE = 'data-fx-ssr';
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
@@ -547,7 +549,19 @@ export class HTMLReactiveElement extends BaseElement {
     } else if (this.hasAttribute(SSR_ATTRIBUTE)) {
       // Rendered on the server: its children are render()'s output, adopted below, and the
       // props with no attribute form come back from the JSON the server wrote.
-      this.#hydrating = true;
+      //
+      // Unless the page put authored children in after claiming it: those are the live nodes
+      // (handlers and all) that render() places, while the server's content holds copies of
+      // them in their places. Adopting that content would leave the authored nodes appended
+      // after it and the slots empty, so the element renders afresh, as a browser-built one.
+      const server = (this as unknown as Record<symbol, unknown>)[SERVER_CONTENT] as ChildNode[] | undefined;
+      const authored = server ? Array.from(this.childNodes).filter((node) => !server.includes(node)) : [];
+      if (authored.length > 0) {
+        for (const node of Array.from(this.childNodes)) node.remove();
+        this.#authored = authored;
+      } else {
+        this.#hydrating = true;
+      }
       const json = this.getAttribute(SSR_PROPS_ATTRIBUTE);
       if (json) {
         try {
@@ -665,7 +679,13 @@ export class HTMLReactiveElement extends BaseElement {
     if (this.#waiting) {
       this.#waiting();
       this.#waiting = null;
-      if (this.isConnected) this.#build();
+      // At the end of the page's hydration pass, not now: the page claims this element, then
+      // inserts the children written between its tags, and the build has to see them to place
+      // them. Still inside the pass's call, so before anything that follows hydration (the
+      // replay of early clicks among them).
+      afterHydrationPass(() => {
+        if (!this.#built && this.isConnected) this.#build();
+      });
       return;
     }
     if (!this.#rootOwner) return;
@@ -822,8 +842,8 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
  * Define a Fluixi component as a custom element.
  *
  * Returns the constructor, so a caller can subclass it or hand it to a lazy loader. On a
- * server it builds the class and registers nothing, which keeps the module importable from
- * code that also runs during a server render.
+ * server it registers with the server renderer's stand-in registry, which is how a page's
+ * server render finds and renders the element.
  */
 export function defineElement<S extends Schema>(name: string, setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
   const constructor = createElementClass(setup, options);
@@ -831,6 +851,7 @@ export function defineElement<S extends Schema>(name: string, setup: Setup<S>, o
   // trace and the devtools graph show for this element.
   const className = name.replace(/(^|-)([a-z0-9])/g, (_, _dash: string, ch: string) => ch.toUpperCase());
   Object.defineProperty(constructor, 'name', { value: className, configurable: true });
-  if (isServer()) return constructor;
+  // On the server too: defineCustomElement knows the stand-in registry, and returning early
+  // here left the element unknown to the server renderer, sent as an empty tag.
   return defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
 }
