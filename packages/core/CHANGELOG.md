@@ -1,5 +1,27 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.109
+
+### Minor Changes
+
+- 3e5278a: fluixiRoutesPlugin, scanRoutes and generateRouteModule are now internal to `@fluixi/start` and `@fluixi/core/plugins` is removed. Import `fluixi` from `@fluixi/vite-plugin` instead. `@fluixi/core` no longer lists the compiler, the Vite plugin or vite-plugin-node-polyfills as peers.
+
+### Patch Changes
+
+- 65e3cfe: ErrorBoundary now renders its fallback in the HTML when a child's effect fails during server render, instead of outputting an empty element.
+- 51809e7: ErrorBoundary fallback rendered by the server now uses the error status (400-599 or 500) as the response status, matching the router. A fallback can call `setResponseStatus` to set another; `errorResponseStatus(error)` returns the status the rule picks.
+- 3bf7cb2: `provideAppInitializer` now runs before the app renders, executing per request on the server and once in the browser before hydration, and `beforeFirstRender` tasks are run once per request or page.
+- 53d85d6: `load:` deferred components now retain their server-rendered content during hydration until the component code loads, and components can return `keepServerContent` while hydrating to preserve their slot content.
+- 22b99b9: A page hydrated from the server now watches its `routeDeps` and reloads its data when they change.
+- ed50785: `load:never` now excludes the component from the browser build (no import and no chunk), while the server still renders it and hydration preserves the content, resulting in an empty placeholder on pages reached via client navigation.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 1c9e2d6: With an ErrorBoundary around `<Outlet />`, a failing route data load now shows the boundary on that page, and navigating to another route clears the error.
+- 7bac1da: A route error with a status from 400 to 599 now returns that status on the server (404 shows the built-in not-found view); any other error answers 500, a page whose data fails inside an element now renders the error view on the server instead of an empty element, and the reactive `ErrorBoundary` now provides a `caught()` method that returns the error immediately and untracked.
+- 6da921b: A route whose `routeData` fails without an `ErrorBoundary` now shows a built-in error view in place of that route while keeping layouts, and the new Router option `error` lets you replace that view.
+- 66fa4cf: A page that throws while the server renders it now returns a 500 response with the router error view while preserving layouts, instead of a 200 empty shell.
+- Updated dependencies [c530572]
+  - @fluixi/utils@1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ### Minor Changes

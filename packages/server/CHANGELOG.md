@@ -1,5 +1,13 @@
 # @fluixi/server
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- 3bf7cb2: `provideAppInitializer` now runs before the app renders, executing per request on the server and once in the browser before hydration, and `beforeFirstRender` tasks are run once per request or page.
+- 97d105d: `inject()` in middleware now creates a separate root injector for each request that is disposed when the response is ready, and `requestScope()` and `endRequestScope()` are added to `@fluixi/dom`.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+
 ## 1.0.0-alpha.108
 
 ## 1.0.0-alpha.107

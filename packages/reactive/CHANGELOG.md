@@ -1,5 +1,14 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 1c9e2d6: With an ErrorBoundary around `<Outlet />`, a failing route data load now shows the boundary on that page, and navigating to another route clears the error.
+- 7bac1da: A route error with a status from 400 to 599 now returns that status on the server (404 shows the built-in not-found view); any other error answers 500, a page whose data fails inside an element now renders the error view on the server instead of an empty element, and the reactive `ErrorBoundary` now provides a `caught()` method that returns the error immediately and untracked.
+- 6da921b: A route whose `routeData` fails without an `ErrorBoundary` now shows a built-in error view in place of that route while keeping layouts, and the new Router option `error` lets you replace that view.
+
 ## 1.0.0-alpha.108
 
 ## 1.0.0-alpha.107

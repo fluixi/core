@@ -1,5 +1,17 @@
 # @fluixi/web-components
 
+## 1.0.0-alpha.109
+
+### Minor Changes
+
+- 2db6afe: Light DOM elements now have `slotted(name)` to retrieve light-DOM children marked with `slot="name"` or those without a slot, to place in `render()`.
+
+### Patch Changes
+
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 34ccbfa: A custom element now parses string literals on typed props as their attribute values, so a number prop receives 2 instead of `"2"` while string props remain unchanged.
+- 7ac76c1: Static-attribute custom elements, elements defined with `defineElement`, and `slotted(name)` now render correctly on the server, and after hydration children placed between server-rendered tags appear where `render()` puts them, with a new `afterHydrationPass(fn)` API available.
+
 ## 1.0.0-alpha.108
 
 ## 1.0.0-alpha.107
