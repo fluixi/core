@@ -24,4 +24,16 @@ describe('a string literal on a typed prop', () => {
     el.n = 5;
     expect(el.n).toBe(5);
   });
+
+  it('keeps a string as is on a prop with no attribute', () => {
+    class Loose extends typedElement({ day: prop.any<string | null>(null) }) {
+      protected override render(): unknown {
+        return null;
+      }
+    }
+    defineCustomElement('fx-string-literal-any', Loose);
+    const el = document.createElement('fx-string-literal-any') as unknown as { day: unknown };
+    el.day = '2026-11-20';
+    expect(el.day).toBe('2026-11-20');
+  });
 });

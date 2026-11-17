@@ -186,9 +186,12 @@ function prepare(constructor: Function): void {
       set(this: HTMLReactiveElement, value: unknown) {
         // `<fx-props n="2">` in JSX assigns the property, and the literal arrives as the string
         // "2". Read as its attribute would be, so a number prop gets a number either way; a
-        // string prop, whose default is a string, takes it as it is.
+        // string prop, whose default is a string, takes it as it is, and so does a prop with no
+        // attribute (`prop.any`), which has no attribute form to read it as.
         const declaration = stateOf(this, name).declaration;
-        if (typeof value === 'string' && typeof declaration.initial !== 'string') value = declaration.fromAttribute(value);
+        if (typeof value === 'string' && typeof declaration.initial !== 'string' && declaration.attribute !== false) {
+          value = declaration.fromAttribute(value);
+        }
         writeFromOutside(this, name, value);
       },
     });
