@@ -27,7 +27,7 @@ const FEATURES: { title: string; body: string }[] = [
 // Sizes are the minified+gzipped globals @fluixi/cdn publishes; regenerate them here if
 // the bundles move, since a stale number on the front page is worse than none.
 const STATS: { value: string; label: string }[] = [
-  { value: '25.9 KB', label: 'The whole framework, gzipped, reactivity, components, router and all.' },
+  { value: '35.8 KB', label: 'The whole framework, gzipped, reactivity, components, router and all.' },
   { value: 'Zero', label: 'Virtual DOM nodes. The compiler emits the DOM calls directly.' },
   { value: 'TC39', label: 'Signals, the standards-track proposal, as the reactive core.' },
 ];

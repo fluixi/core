@@ -12,11 +12,11 @@ qu'un seul fichier. Les tailles sont minifiées ; le `gzip` est ce qui transite 
 
 | Script | Global | Contenu | Taille |
 | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 3.3 Ko <small>(1.3 Ko gz)</small> |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 40.8 Ko <small>(12.2 Ko gz)</small> |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 58.1 Ko <small>(18.9 Ko gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 78.5 Ko <small>(25.9 Ko gz)</small> |
-| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | Le framework **+** le compilateur de templates, pour que `` html`` `` fonctionne dans la page | 103.3 Ko <small>(32.9 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 4.5 Ko <small>(1.8 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 44.2 Ko <small>(13.7 Ko gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 79.4 Ko <small>(26.7 Ko gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 106.4 Ko <small>(35.8 Ko gz)</small> |
+| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | Le framework **+** le compilateur de templates, pour que `` html`` `` fonctionne dans la page | 130.5 Ko <small>(43.5 Ko gz)</small> |
 
 Choisissez le plus petit qui couvre votre besoin : juste la réactivité → `signal` ou `reactive` ;
 une UI réactive → `dom` ; le framework applicatif complet → `core`.

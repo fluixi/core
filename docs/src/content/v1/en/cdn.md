@@ -11,11 +11,11 @@ file. Sizes are minified; `gzip` is what ships over the wire.
 
 | Script | Global | What's in it | Size |
 | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | The raw TC39-Signals core (`State`, `Computed`, `subtle`) | 3.3 KB <small>(1.3 KB gz)</small> |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | Full reactive API (signals, memos, effects, stores, resources) | 40.8 KB <small>(12.2 KB gz)</small> |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | DOM runtime (render, control flow) **+** the reactive API | 58.1 KB <small>(18.9 KB gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 78.5 KB <small>(25.9 KB gz)</small> |
-| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | The framework **+** the template compiler, so `` html`` `` works in the page | 103.3 KB <small>(32.9 KB gz)</small> |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | The raw TC39-Signals core (`State`, `Computed`, `subtle`) | 4.5 KB <small>(1.8 KB gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | Full reactive API (signals, memos, effects, stores, resources) | 44.2 KB <small>(13.7 KB gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | DOM runtime (render, control flow) **+** the reactive API | 79.4 KB <small>(26.7 KB gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | The whole framework (reactivity + components + control flow + router + `startClient`) | 106.4 KB <small>(35.8 KB gz)</small> |
+| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | The framework **+** the template compiler, so `` html`` `` works in the page | 130.5 KB <small>(43.5 KB gz)</small> |
 
 Pick the smallest one that covers what you need: just reactivity → `signal` or `reactive`; a
 reactive UI → `dom`; the full app framework → `core`; `` html`` `` in the page → `fluixi`.
