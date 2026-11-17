@@ -14,7 +14,7 @@ defineCustomElement('fx-string-literal-props', Props);
 
 describe('a string literal on a typed prop', () => {
   it('is parsed like the attribute for a non-string prop, kept as is for a string prop', () => {
-    const el = document.createElement('fx-string-literal-props') as Props & { n: unknown; label: unknown; items: unknown };
+    const el = document.createElement('fx-string-literal-props') as unknown as { n: unknown; label: unknown; items: unknown };
     el.n = '2';
     el.label = '2';
     el.items = '["a","b"]';
