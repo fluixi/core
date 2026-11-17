@@ -1,5 +1,24 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- 65e3cfe: ErrorBoundary now renders its fallback in the HTML when a child's effect fails during server render, instead of outputting an empty element.
+- 51809e7: ErrorBoundary fallback rendered by the server now uses the error status (400-599 or 500) as the response status, matching the router. A fallback can call `setResponseStatus` to set another; `errorResponseStatus(error)` returns the status the rule picks.
+- 3bf7cb2: `provideAppInitializer` now runs before the app renders, executing per request on the server and once in the browser before hydration, and `beforeFirstRender` tasks are run once per request or page.
+- 53d85d6: `load:` deferred components now retain their server-rendered content during hydration until the component code loads, and components can return `keepServerContent` while hydrating to preserve their slot content.
+- 97d105d: `inject()` in middleware now creates a separate root injector for each request that is disposed when the response is ready, and `requestScope()` and `endRequestScope()` are added to `@fluixi/dom`.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 862ef6c: `Portal` now renders its children only on the client after hydration, avoiding server-side errors.
+- 1c9e2d6: With an ErrorBoundary around `<Outlet />`, a failing route data load now shows the boundary on that page, and navigating to another route clears the error.
+- 6da921b: A route whose `routeData` fails without an `ErrorBoundary` now shows a built-in error view in place of that route while keeping layouts, and the new Router option `error` lets you replace that view.
+- 0a275da: Spread children are now rendered as content with JSX children taking precedence, and spreads that gain a key become bound while those that lose a key are cleared, preserving bindings for unchanged keys.
+- 22875b1: A spread computed from signals (`{...attributes()}`) now stays reactive on its element and no longer rebuilds what creates it.
+- 2e6b254: A spread prop backed by a getter that is undefined when the element is created now updates once it has a value, showing the attribute and property after the element is created.
+- 66fa4cf: A page that throws while the server renders it now returns a 500 response with the router error view while preserving layouts, instead of a 200 empty shell.
+- 7ac76c1: Static-attribute custom elements, elements defined with `defineElement`, and `slotted(name)` now render correctly on the server, and after hydration children placed between server-rendered tags appear where `render()` puts them, with a new `afterHydrationPass(fn)` API available.
+
 ## 1.0.0-alpha.108
 
 ### Minor Changes

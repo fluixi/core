@@ -1,5 +1,22 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- 21b0560: Props and children written as `!x()`, `-x()`, `x()!`, `x() as T` or `x() satisfies T` now update when `x` changes.
+- 2122aa0: An imported component that has a `load:` and also a use without `load:` in the same file now treats both uses as eager, as with a resolve rule. A warning now appears when `load:never` is placed next to an eager use of the same component. When `load:` is used on `NS.default`, the message now names the namespace import. In HTML templates, a hole in a `load:` value is now refused like JSX, and using `load:` on `<${Chart}>` now prompts a message to write the bare tag.
+- ed50785: `load:never` now excludes the component from the browser build (no import and no chunk), while the server still renders it and hydration preserves the content, resulting in an empty placeholder on pages reached via client navigation.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 002cce9: `props` destructuring at the top of a component body now remains reactive and is treated as a destructured parameter, and a build warning is emitted when a props destructure runs only once during setup (such as inside an if block or shared const).
+- aa0270f: Destructured props read under `as`, `!` or `satisfies` are now rewritten to prop reads.
+- 0a275da: Spread children are now rendered as content with JSX children taking precedence, and spreads that gain a key become bound while those that lose a key are cleared, preserving bindings for unchanged keys.
+- 22875b1: A spread computed from signals (`{...attributes()}`) now stays reactive on its element and no longer rebuilds what creates it.
+- 7ac76c1: Static-attribute custom elements, elements defined with `defineElement`, and `slotted(name)` now render correctly on the server, and after hydration children placed between server-rendered tags appear where `render()` puts them, with a new `afterHydrationPass(fn)` API available.
+- Updated dependencies [2122aa0]
+- Updated dependencies [c530572]
+  - @fluixi/template-parser@1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ### Patch Changes

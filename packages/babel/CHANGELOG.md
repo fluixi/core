@@ -1,5 +1,21 @@
 # @fluixi/babel-plugin-jsx
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- Updated dependencies [21b0560]
+- Updated dependencies [2122aa0]
+- Updated dependencies [ed50785]
+- Updated dependencies [c530572]
+- Updated dependencies [002cce9]
+- Updated dependencies [aa0270f]
+- Updated dependencies [0a275da]
+- Updated dependencies [22875b1]
+- Updated dependencies [7ac76c1]
+  - @fluixi/compiler@1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ### Patch Changes

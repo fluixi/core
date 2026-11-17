@@ -1,5 +1,7 @@
 # @fluixi/cdn
 
+## 1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ## 1.0.0-alpha.107

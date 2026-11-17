@@ -1,5 +1,12 @@
 # @fluixi/head
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- 323e365: `seo()` now restores `<html>` attributes such as `lang` and `htmlAttrs` to their original values when the page that set them is removed, and on initial load the server records the template's original `<html>` values in a `data-fh-original` attribute.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+
 ## 1.0.0-alpha.108
 
 ## 1.0.0-alpha.107

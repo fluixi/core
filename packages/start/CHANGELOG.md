@@ -1,5 +1,39 @@
 # @fluixi/start
 
+## 1.0.0-alpha.109
+
+### Minor Changes
+
+- a6ba51a: New: `forwardUpgrade({ to, prefix })` from `@fluixi/start/server` pipes WebSocket upgrades under the specified prefix (default `/api`) to the target origin, setting the host to the target and forwarding the caller's IP via `x-forwarded-for`, while forwarding refusals, returning a 502 when unreachable, and closing both sides when either ends.
+- 18caf11: `fluixi start` now runs the default-exported `defineServer({ start, upgrade, shutdown })` from `src/server.ts`, listening, handling upgrades, and shutting down on SIGTERM or SIGINT with a configurable timeout. `fluixi dev` runs the same file, and a build with `src/server.ts` fails for a serverless adapter.
+
+### Patch Changes
+
+- 3bf7cb2: `provideAppInitializer` now runs before the app renders, executing per request on the server and once in the browser before hydration, and `beforeFirstRender` tasks are run once per request or page.
+- 3e5278a: fluixiRoutesPlugin, scanRoutes and generateRouteModule are now internal to `@fluixi/start` and `@fluixi/core/plugins` is removed. Import `fluixi` from `@fluixi/vite-plugin` instead. `@fluixi/core` no longer lists the compiler, the Vite plugin or vite-plugin-node-polyfills as peers.
+- f1fc408: The build now refuses `publicEnv().X` or `env('X')` in browser code for undeclared X even when `env.public` is empty. Server `publicEnv()` now returns only declared names and `VITE_` names, never the full `process.env`, and in production it uses the build values from `dist/server/public-env.json`.
+- 30f31a2: `@fluixi/start` now replays clicks, input and key presses that occur on a server-rendered page before hydration by inserting an event-capture script at the top of `<head>`, and you can disable this with the new `eventReplay` option (default true).
+- 3c788e3: A server function error now results in a 500 Internal Server Error with no message in the response in production, while development still shows the message and 4xx errors remain unchanged.
+- 323e365: `seo()` now restores `<html>` attributes such as `lang` and `htmlAttrs` to their original values when the page that set them is removed, and on initial load the server records the template's original `<html>` values in a `data-fh-original` attribute.
+- 22b99b9: A page hydrated from the server now watches its `routeDeps` and reloads its data when they change.
+- dfc029a: createImageHandler now follows redirects of a remote source one by one, checking each target against allowed domains and only http/https, refusing with 403 on disallowed hosts and returning 502 after more than 5 redirects.
+- 9d264eb: The service imported by both `src/middleware.ts` and the app is now a single instance in production, as it is in development.
+- 97d105d: `inject()` in middleware now creates a separate root injector for each request that is disposed when the response is ready, and `requestScope()` and `endRequestScope()` are added to `@fluixi/dom`.
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- 66fa4cf: A page that throws while the server renders it now returns a 500 response with the router error view while preserving layouts, instead of a 200 empty shell.
+- 8fda14e: Importing `addInterceptor` or `defineMiddleware` from `@fluixi/start` in page code no longer throws a node:fs/promises error in development.
+- Updated dependencies [21b0560]
+- Updated dependencies [2122aa0]
+- Updated dependencies [ed50785]
+- Updated dependencies [c530572]
+- Updated dependencies [002cce9]
+- Updated dependencies [aa0270f]
+- Updated dependencies [0a275da]
+- Updated dependencies [22875b1]
+- Updated dependencies [7ac76c1]
+  - @fluixi/compiler@1.0.0-alpha.109
+  - @fluixi/vite-plugin@1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ### Minor Changes

@@ -1,5 +1,28 @@
 # @fluixi/cli
 
+## 1.0.0-alpha.109
+
+### Patch Changes
+
+- c530572: The library now builds with mix-builder 0.4.3, sharing chunks across ES module entries so each module and its state appears only once and the published ES module files are 50-80 % smaller, with CDN globals using a single copy of the signal graph.
+- Updated dependencies [3bf7cb2]
+- Updated dependencies [3e5278a]
+- Updated dependencies [f1fc408]
+- Updated dependencies [30f31a2]
+- Updated dependencies [3c788e3]
+- Updated dependencies [a6ba51a]
+- Updated dependencies [323e365]
+- Updated dependencies [22b99b9]
+- Updated dependencies [dfc029a]
+- Updated dependencies [9d264eb]
+- Updated dependencies [97d105d]
+- Updated dependencies [c530572]
+- Updated dependencies [66fa4cf]
+- Updated dependencies [8fda14e]
+- Updated dependencies [18caf11]
+  - @fluixi/start@1.0.0-alpha.109
+  - @fluixi/ts-plugin@1.0.0-alpha.109
+
 ## 1.0.0-alpha.108
 
 ### Minor Changes
