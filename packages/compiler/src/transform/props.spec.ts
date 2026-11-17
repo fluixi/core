@@ -174,6 +174,17 @@ describe('destructuring the props parameter in the body', () => {
     expect(result.code).not.toContain('= props;');
   });
 
+  it('rewrites a name read under a type assertion or a non-null mark', () => {
+    const code = out('function Link(props: P) {\n  const { children, ...rest } = props;\n  return <a {...rest}>{children as Element}{rest!}</a>;\n}');
+    expect(code).toContain('{props.children as Element}');
+    expect(code).not.toMatch(/\{children/);
+  });
+
+  it('does the same for a destructured parameter', () => {
+    const code = out('function Link({ title }: P) { return <a>{title!}{title satisfies string}</a>; }');
+    expect(code).toContain('{props.title!}{props.title satisfies string}');
+  });
+
   it('keeps a default, re-run on each read', () => {
     const code = out("function Panel(props) { const { size = 'md' } = props; return <b>{size}</b>; }");
     expect(code).toContain("{(props.size === undefined ? 'md' : props.size)}");

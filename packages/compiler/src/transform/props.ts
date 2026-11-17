@@ -61,10 +61,16 @@ export interface PropsEditsResult {
   used: Set<string>;
 }
 
-/** Walk everything under a node. Skips TS annotations, where a name isn't a value. */
+/** TS nodes that wrap a value: `x as T`, `<T>x`, `x!`, `x satisfies T`, `f<T>`. */
+const TS_VALUE_WRAPPERS = new Set(['TSAsExpression', 'TSTypeAssertion', 'TSNonNullExpression', 'TSSatisfiesExpression', 'TSInstantiationExpression']);
+
+/**
+ * Walk everything under a node. Skips TS annotations, where a name isn't a value, but enters
+ * a wrapper's expression; its type annotation is skipped in turn.
+ */
 function walk(root: Node | null | undefined, visit: (node: Node, parent: Node | null) => boolean | void, parent: Node | null = null): void {
   if (!root || typeof root !== 'object' || typeof root.type !== 'string') return;
-  if (root.type.startsWith('TS')) return;
+  if (root.type.startsWith('TS') && !TS_VALUE_WRAPPERS.has(root.type)) return;
   if (visit(root, parent) === false) return;
 
   for (const key of Object.keys(root)) {
