@@ -319,8 +319,10 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     },
 
     async transform(code: string, id: string, opts?: { ssr?: boolean }) {
-      // Only process JSX/TSX files
-      if (!/\.(jsx|tsx|ts)$/i.test(id)) {
+      // The same files the esbuild adapter takes: `.js` too, an app may write JSX there. Not
+      // a dependency's `.js`, which a build would otherwise pass through the compiler, one
+      // file at a time.
+      if (!/\.(jsx|tsx|ts)$/i.test(id) && !(/\.js$/i.test(id) && !id.includes('/node_modules/'))) {
         return null;
       }
 
