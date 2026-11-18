@@ -1,9 +1,3 @@
-/**
- * @fileoverview JSX Type Definitions for Fluixi
- * @module @fluixi/core/jsx-runtime
- */
-
-
 import type { Accessor } from '@fluixi/reactive/signal';
 
 // Element attribute types live in @fluixi/dom: they describe the DOM, not JSX

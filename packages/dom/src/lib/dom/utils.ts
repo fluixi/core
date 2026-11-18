@@ -371,14 +371,6 @@ export function setAttribute(
   element.setAttribute(name, String(value));
 }
 
-// /**
-//  * Set an attribute or property on an element
-//  */
-//   if (value === true) {
-//     element.setAttribute(name, '');
-//     return;
-//   }
-
 /**
  * Gets an attribute from an element
  *

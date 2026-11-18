@@ -47,7 +47,6 @@ export interface ShowProps<T, W = any> {
  * @example html template
  * Show({ when: isLoggedIn, fallback: html`<p>Login</p>`, children: html`<p>Dashboard</p>` })
  */
-//   return createMemo(() => {
 export function Show<T>(props: ShowProps<T>): any {
   // Read `when` lazily through the prop getter so `when={cond()}` re-runs the caller's
   // expression inside these memos (reactive), while `when={cond}` / `when={() => cond}`

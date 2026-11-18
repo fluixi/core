@@ -177,7 +177,6 @@ import {
   createComponent as _createComponent,
   onMount as _onMount,
   onUnmount as _onUnmount,
-  // lazy as _lazy,
   useEffect as _useEffect,
   useMemo as _useMemo,
   useRef as _useRef,
@@ -191,10 +190,8 @@ import {
   createContext as _createContext,
   useContext as _useContext,
 } from './context/index.js';
-// } from './core/component.js';
 
 import { render as _render } from './render/index.js';
-// './core/index.js';
 
 // Web Component support moved to @fluixi/element (wc-element repo): import from there.
 
