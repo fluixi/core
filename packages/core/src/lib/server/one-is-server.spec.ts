@@ -2,7 +2,6 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { isServer as domIsServer, setServerMode } from '@fluixi/dom';
 import { isServer as fromServerEntry, isClient as clientFromServerEntry } from './index.js';
-import { isServerEnvironment, isClientEnvironment } from './hydration.js';
 import { isServer as fromRootEntry } from '../env/index.js';
 
 /**
@@ -25,23 +24,19 @@ describe('one isServer for the whole package', () => {
     setServerMode(true);
     expect(domIsServer()).toBe(true);
     expect(fromServerEntry()).toBe(true);
-    expect(isServerEnvironment()).toBe(true);
     expect(fromRootEntry()).toBe(true);
 
     setServerMode(false);
     expect(fromServerEntry()).toBe(false);
-    expect(isServerEnvironment()).toBe(false);
     expect(fromRootEntry()).toBe(false);
   });
 
   it('the client predicates are the exact negation', () => {
     setServerMode(true);
     expect(clientFromServerEntry()).toBe(false);
-    expect(isClientEnvironment()).toBe(false);
 
     setServerMode(false);
     expect(clientFromServerEntry()).toBe(true);
-    expect(isClientEnvironment()).toBe(true);
   });
 
   it('the root entry and the server subpath are the same function', () => {

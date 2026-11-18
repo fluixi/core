@@ -20,8 +20,6 @@ import {
   createHydratableResource,
   useHydrationData,
   cleanupHydration,
-  isServerEnvironment,
-  isClientEnvironment,
   type HydrationData,
 } from './hydration.js';
 
@@ -271,8 +269,6 @@ export {
   createHydratableResource,
   useHydrationData,
   cleanupHydration,
-  isServerEnvironment,
-  isClientEnvironment,
 };
 
 export type { HydrationData };

@@ -8,7 +8,6 @@
  * - Structural markers required
  */
 
-import { isServer as domIsServer } from '@fluixi/dom';
 
 // TYPES
 
@@ -366,23 +365,4 @@ if (typeof window !== 'undefined') {
     // Delay cleanup to ensure hydration is complete
     setTimeout(cleanupHydration, 100);
   });
-}
-
-// ENVIRONMENT HELPERS
-
-/**
- * Whether this is a server render.
- *
- * Defers to `@fluixi/dom`, which keeps the flag on a realm singleton that
- * `renderToString` sets. A local `typeof window` test disagrees with it inside a jsdom
- * process, which is where server rendering is usually tested, and `router/data.ts`
- * branches on this to decide whether a loader may touch the client.
- */
-export function isServerEnvironment(): boolean {
-  return domIsServer();
-}
-
-/** Whether this is running in a browser, the negation of a server render. */
-export function isClientEnvironment(): boolean {
-  return !domIsServer();
 }
