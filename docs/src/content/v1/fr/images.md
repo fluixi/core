@@ -5,15 +5,19 @@ demande, et un loader qui y pointe le balisage.
 
 ```ts
 // src/api/image.ts  →  /api/image
-import { createImageHandler } from '@fluixi/start';
+import { createImageHandler } from '@fluixi/start/image';
 
 export const GET = createImageHandler({
   domains: ['images.example.com'],
 });
 ```
 
+`<Image>` est le composant de `@fluixi-ui/image` ; tout balisage qui accepte un `loader` fonctionne
+de la même façon.
+
 ```tsx
 import { imageLoader } from '@fluixi/start';
+import { Image } from '@fluixi-ui/image';
 
 const loader = imageLoader();   // par défaut /api/image
 

@@ -52,7 +52,7 @@ vous dit quand il n'y arrive pas.**
   représentation réactive. Aucun n'est un portage de l'autre.
 - **DOM direct.** Un changement exécute la liaison précise qui en dépend. Pas de réaffichage de
   composant, pas de diff, pas d'arbre virtuel.
-- **Le même modèle de bout en bout.** Rendu client, rendu serveur, streaming, hydratation, routeur
+- **Le même modèle de bout en bout.** Rendu client, rendu serveur, hydratation, routeur
   et méta-framework partagent un seul graphe réactif au lieu de s'accorder aux frontières.
 - **Deux écritures, une primitive.** `signal(0)` et `$signal(0)` compilent vers le même appel. La
   forme `$` évite l'import ; l'API explicite reste publique, car une bibliothèque qui n'exécute

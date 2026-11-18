@@ -58,4 +58,22 @@ Sur une balise en minuscules, TypeScript ne peut pas inférer l'élément : anno
 `<For>` là où le type doit être inféré. Dans une application construite par `@fluixi/start`,
 `Show`, `For`, `Index`, `Switch` et `Match` n'ont pas besoin d'import.
 
+## Portal
+
+Rendez ailleurs dans le document, une boîte de dialogue ou une infobulle, tout en restant partie
+du composant qui en est propriétaire : son contexte, et son nettoyage quand ce composant
+disparaît.
+
+```tsx
+import { Portal } from '@fluixi/core';
+
+<Portal mount={document.getElementById('modal-root')!}>
+  <Dialog />
+</Portal>;
+```
+
+Sans `mount`, il va à la fin de `document.body`. Sur le serveur, un portal ne rend rien, faute de
+document où le placer ; dans le navigateur, son contenu se monte une fois la page hydratée, dans
+le contexte qui l'entoure.
+
 Suivant : **[Le cycle de vie](/v1/fr/lifecycle)**.

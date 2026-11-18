@@ -62,7 +62,27 @@ tant que la page n'est pas hydratée et n'en appelle pas une. Une vérification 
 authentification, géolocalisation, un test A/B, ne peut pas vivre uniquement dans le
 middleware si la route est aussi prérendue.
 
-Les déploiements mixtes sont parfaitement valables : prérendez les pages vitrine et laissez
-les routes applicatives être servies par `fluixi start`.
+Les fichiers prérendus sont destinés à un hôte qui les sert avant d'appeler le serveur : un hôte
+statique, ou une plateforme que l'adaptateur configure ainsi (l'adaptateur Cloudflare les liste
+dans `_routes.json`). `fluixi start` ne les lit pas : il rend chaque page à chaque requête,
+prérendue ou non, et le middleware s'exécute pour chacune. Les déploiements mixtes sont valables
+sur un tel hôte : prérendez les pages vitrine, et les routes applicatives vont au serveur.
+
+## Déployer des fichiers seulement
+
+Quand le site va sur un hôte statique sans aucun serveur, dites-le avec `static: true` :
+
+```ts
+export default defineConfig({
+  ssr: true,
+  prerender: { routes: ['/', '/pricing'], static: true },
+});
+```
+
+Le build liste alors ce qui y échouerait : un lien, dans une page prérendue, vers une page qui
+ne l'a pas été (l'hôte n'a pas de fichier pour elle), et une page dont le code appelle une
+fonction serveur (l'appel n'a pas de serveur à joindre quand la page est ouverte par navigation
+côté client). Chaque ligne nomme la page : ajoutez-la à `routes`, chargez ses données autrement,
+ou déployez le serveur malgré tout.
 
 Ensuite : **[Déploiement](/v1/fr/deployment)**.

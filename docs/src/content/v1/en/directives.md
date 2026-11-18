@@ -1,7 +1,7 @@
 # Directives
 
 Directives are special attributes the compiler understands. Most work in **both** JSX and
-`` html`` ``; a few keyword forms (`if`, `each`, `bind:`, `class:name`, `style:prop`) are
+`` html`` ``; a few forms (`bind:`, `.prop`, `?attr`, dotted event modifiers) are
 `` html`` ``-only, because they have no clean, type-checkable JSX equivalent.
 
 ## Events

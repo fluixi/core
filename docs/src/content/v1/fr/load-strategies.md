@@ -9,7 +9,7 @@ utilisation-ci* doit attendre le viewport est une propriété de l'utilisation.
 
 ```tsx
 <Summary total={total()} />                    {/* eager, chunk d'entrée */}
-<ExportDialog load:interaction />              {/* chunk dédié, à la première interaction */}
+<ExportDialog load:interaction />              {/* chunk dédié, à la première interaction avec la page */}
 <AuditLog load:media="(min-width: 1024px)" />  {/* chunk dédié, bureau uniquement */}
 <RevenueChart load:visible="200px" />          {/* chunk dédié, juste avant l'affichage */}
 ```
@@ -24,9 +24,17 @@ dynamique et la liaison différée.
 | `load:eager` | Immédiatement, dans le chunk parent. Le défaut. |
 | `load:idle` | Quand le navigateur devient inactif. |
 | `load:visible` | Quand l'élément approche du viewport. |
-| `load:interaction` | À la première interaction avec l'élément. |
+| `load:interaction` | À la première interaction n'importe où sur la page. |
 | `load:media` | Quand une media query correspond. |
 | `load:never` | Jamais, aucun code client. |
+
+Le serveur rend de toute façon un composant différé en entier. Tant que son code n'est pas
+arrivé, la page garde à sa place ce que le serveur a envoyé : visible, mais pas encore
+interactif. Une fois le code chargé, le composant se rend et prend le relais. Un composant
+`load:media` dont la requête ne correspond jamais garde le contenu du serveur pour de bon. Sur une
+page atteinte par navigation côté client il n'y a pas de contenu serveur : l'emplacement reste
+vide jusqu'au chargement du code, et pour `load:never`, qui n'a pas de code dans le build
+navigateur, il reste vide.
 
 ### `load:visible`
 
@@ -42,8 +50,10 @@ attendre l'utilisateur devant un espace vide pendant que le réseau travaille.
 
 ### `load:interaction`
 
-Par défaut `pointerdown`, `focusin` et `keydown`, les trois qui précèdent de façon fiable
-une véritable interaction, au clavier comme au pointeur. Nommez les vôtres pour restreindre :
+Le chargement part à la première interaction n'importe où sur la page, pas seulement avec le
+composant : celui-ci n'a souvent pas encore de balisage sur lequel écouter. Par défaut
+`pointerdown`, `focusin` et `keydown`, les trois qui précèdent de façon fiable une véritable
+interaction, au clavier comme au pointeur. Nommez les vôtres pour restreindre :
 
 ```tsx
 <ExportDialog load:interaction />

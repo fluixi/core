@@ -1,8 +1,8 @@
 # Directives
 
 Les directives sont des attributs spéciaux que le compilateur comprend. La plupart
-fonctionnent dans **JSX et `` html`` ``** ; quelques formes à mot-clé (`if`, `each`,
-`bind:`, `class:name`, `style:prop`) sont réservées à `` html`` ``, car elles n'ont pas
+fonctionnent dans **JSX et `` html`` ``** ; quelques formes (`bind:`, `.prop`, `?attr`, les
+modificateurs d'événement pointés) sont réservées à `` html`` ``, car elles n'ont pas
 d'équivalent JSX propre et vérifiable par le typage.
 
 ## Événements
@@ -19,9 +19,9 @@ html`<button @click=${onClick}>Enregistrer</button>`;   // html``, @event
 
 ### Délégué ou natif
 
-Quatre événements sont délégués : **`click`, `input`, `change`, `submit`**. Un seul
-écouteur est posé à la racine puis distribué au bon élément : mille lignes coûtent un
-écouteur, pas mille.
+Douze événements sont délégués : **`click`, `dblclick`, `input`, `change`, `submit`, `focus`,
+`blur`, `keydown`, `keyup`, `keypress`, `mousedown`, `mouseup`**. Un seul écouteur est posé à la
+racine puis distribué au bon élément : mille lignes coûtent un écouteur, pas mille.
 
 Tout le reste est attaché directement. Pour un écouteur **natif** sur un événement délégué,
 nécessaire pour `capture`, `once` ou `passive` : utilisez `on:` :
@@ -37,7 +37,7 @@ attaché, comme avec `addEventListener` : `new FormData(event.currentTarget)` fo
 
 ### Modificateurs
 
-Les modificateurs pointés s'appliquent aux formes `@`/`on:` :
+Les modificateurs pointés s'appliquent aux formes `@`/`on:` des templates `` html`` `` ; un nom d'attribut JSX ne peut pas contenir les points, donc en JSX passez le gestionnaire et ses options à `on:` sous forme de paire, `on:scroll={[onScroll, { passive: true }]}`. Les modificateurs :
 
 | Modificateur | Effet |
 | --- | --- |
@@ -144,10 +144,9 @@ html`<div style=${{ color: c(), '--x': px() }}></div>`;
 Un `class` statique et un `class` dynamique se cumulent, `class="box"` reste la classe de
 l'élément et l'objet s'y ajoute : vous pouvez garder les classes de base dans le balisage.
 
-> **`class=` ne devient `classList` que pour un objet littéral.** Le compilateur décide en
-> regardant la syntaxe : `class=${{ on: a() }}` est une carte de classes, tandis que
-> `const o = { on: a() }; class=${o}` compile en `className = o` et affiche
-> `[object Object]`. Passez le littéral en ligne, ou utilisez `classList=` explicitement.
+> **Un objet dans `class=` est une carte de classes, en ligne ou non.** `class=${{ on: a() }}`
+> compile en carte, et `const o = { on: a() }; class=${o}` arrive au runtime comme un objet,
+> qui affiche ses clés vraies de la même façon.
 
 Les bascules par nom évitent complètement le problème, dans les deux surfaces, et chacune ne met à
 jour que sa propre classe ou propriété :
@@ -305,7 +304,8 @@ liaison lit `event.target` : elle fonctionne donc sur tout élément portant `va
 
 | Directive | JSX | html`` |
 | --- | --- | --- |
-| `@click` / `onClick`, `on:event`, modificateurs | ✓ | ✓ |
+| `@click` / `onClick`, `on:event` | ✓ | ✓ |
+| modificateurs d'événement (`@click.once`, `.capture`, `.passive`) |, | ✓ |
 | `ref` | ✓ | ✓ |
 | `use:` | ✓ | ✓ |
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
@@ -313,6 +313,6 @@ liaison lit `event.target` : elle fonctionne donc sur tout élément portant `va
 | HTML brut | `innerHTML` | `html=` ou `innerHTML` |
 | `oncapture:event` | ✓ |, |
 | `.prop`, `?attr` |, | ✓ |
-| `class:name`, `style:prop` |, | ✓ |
+| `class:name`, `style:prop` | ✓ | ✓ |
 | `if` / `else`, `each` / `key`, `<container>` | ✓ | ✓ |
 | `bind:` |, | ✓ |

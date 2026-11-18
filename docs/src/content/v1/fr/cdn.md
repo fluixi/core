@@ -87,7 +87,9 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 ## Tout le framework, `window.Fluixi`
 
 `core.global.js` inclut tout, réactivité, composants, contrôle de flux, le router, et
-`startClient`. À utiliser quand vous voulez le framework complet sans build :
+`startClient`. À utiliser quand vous voulez le framework complet sans build. Son API réactive est
+la forme `createSignal` / `createMemo` / `createEffect` ; les poignées `signal` / `memo` /
+`effect` de `@fluixi/core` en module ne sont pas sur l'objet global :
 
 ```html
 <div id="app"></div>

@@ -176,7 +176,15 @@ est journalisée et les autres s'exécutent quand même.
 ## Initialisation de l'application
 
 Ce qui doit être terminé avant le rendu va dans un initialiseur. Ils s'exécutent dans l'ordre
-d'enregistrement, chacun attendu ; le premier qui échoue arrête les suivants.
+d'enregistrement, chacun attendu ; le premier qui échoue arrête les suivants. Sur le serveur ils
+s'exécutent une fois par requête, dans la racine de cette requête, avant le middleware ; un échec
+répond 500. Dans le navigateur ils s'exécutent une fois, avant l'hydratation de la page ; un échec
+l'empêche de s'afficher.
+
+Enregistrez-les là où sont enregistrés les fournisseurs de l'application, dans un module
+d'application ou dans le point d'entrée. Un initialiseur enregistré depuis un module qu'importe
+une route arrive après le début du rendu : il manque ce rendu, et entièrement celui du
+navigateur. Hors production, un avertissement le signale.
 
 ```ts
 import { provideAppInitializer, provideRoot, inject } from '@fluixi/di';
@@ -202,13 +210,15 @@ charge.
 
 ## Où `inject()` ne fonctionne pas
 
-`inject()` lit le contexte d'injection courant, qui n'existe pas à trois endroits :
+`inject()` lit le contexte d'injection courant, qui n'existe pas à trois endroits. Là, il lève
+« inject() called outside an injection context » plutôt que de deviner :
 
 1. **Au niveau du module.** Un appel en haut d'un fichier s'exécute avant tout composant et
    toute requête. On y fournit ; on injecte dans les composants et les services.
-2. **Après un `await`.** Le contexte est synchrone. Résolvez tout avant le premier `await` : une
-   route d'API qui attendait `request.json()` avant d'injecter son dépôt ne trouvait aucun
-   contexte.
+2. **Après un `await`.** Le contexte d'un composant est synchrone. Résolvez tout avant le premier
+   `await` : ensuite, les fournisseurs propres au composant sont hors d'atteinte. Sur le serveur,
+   une requête reste un contexte à travers les `await` : le code d'une requête résout toujours
+   depuis la racine de cette requête, mais jamais depuis les fournisseurs d'un composant.
 3. **Dans un rappel qui survit à son propriétaire.** Un intercepteur, un `setTimeout`, un
    écouteur ajouté hors d'un composant. Gardez l'injecteur tant que le contexte existe et
    exécutez le rappel dedans :

@@ -119,7 +119,7 @@ La liste est la protection. Quatre contrôles rattrapent la ligne écrite trop v
 
 | Contrôle | Quand | Ce qui se passe |
 | --- | --- | --- |
-| un nom de `env.public` ressemble à un secret (`SECRET`, `PASSWORD`, `PRIVATE_KEY`, `CREDENTIALS`) | build | refusé, en le nommant |
+| un nom de `env.public` ressemble à un secret : `SECRET`, `PASSWORD`, `PASSWD`, `PRIVATE_KEY`, `CLIENT_SECRET` ou `CREDENTIAL(S)` n'importe où, ou se termine par `TOKEN`, `API_KEY`, `APIKEY`, `DSN`, `DATABASE_URL` ou `SECRETS` | build | refusé, en le nommant |
 | une variable `VITE_` d'un fichier `.env` ressemble à un secret | `fluixi build` | refusé ; `fluixi dev` avertit |
 | `publicEnv().X` dans du code navigateur, `X` non déclaré (une faute de frappe, ou une valeur serveur) | build | refusé, en nommant le fichier, la ligne et la variable |
 | `serverEnv()` appelé dans le navigateur | exécution | lève une erreur |

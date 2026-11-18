@@ -213,6 +213,32 @@ plus proche affiche l'échec au lieu d'une page vide.
 La limite attrape aussi les erreurs levées plus tard, par un effet bien après la construction de
 la page. `reset` rend de nouveau les enfants.
 
+Sans limite de votre part au-dessus d'une route, le routeur place la sienne. La route en échec
+est remplacée par une courte vue d'erreur, les layouts autour restent, et l'erreur est écrite dans
+le journal. La vue ne montre rien de l'erreur elle-même, qui peut nommer des fichiers ou des
+hôtes. Passez `error` au Router pour la vôtre :
+
+```tsx
+<Router routes={routes} error={(error, reset) => <Failed error={error} onRetry={reset} />} />
+```
+
+Naviguer vers une autre page efface l'erreur, celle de votre limite comme celle du routeur. Quand
+le serveur rend une page en échec, avec votre repli ou la vue du routeur, la réponse est une 500,
+ou le `status` propre à l'erreur quand elle en a un entre 400 et 599. Des données qui n'ont rien
+trouvé peuvent le dire :
+
+```ts
+export const routeData = async ({ params }) => {
+  const order = await findOrder(params.id);
+  if (!order) throw Object.assign(new Error('order not found'), { status: 404 });
+  return order;
+};
+```
+
+La réponse est alors une 404 et la vue intégrée est celle d'une adresse inconnue. L'option `error`
+et votre repli reçoivent l'erreur, statut compris, pour distinguer les cas. Un repli qui veut un
+autre statut le fixe avec `setResponseStatus` de `@fluixi/dom`.
+
 ### Cache et dépendances
 
 `cache` garde les résultats d'une fonction par nom et arguments, partage une seule requête entre

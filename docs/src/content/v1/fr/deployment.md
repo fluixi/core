@@ -16,9 +16,10 @@ fluixi start     →  le sert avec l'adaptateur node
 dans `dist/client` en HTML. Envoyez ce dossier n'importe où, il n'y a aucun serveur à faire
 tourner.
 
-**Un serveur Node.** `fluixi start` lance l'adaptateur node : il écoute sur un port et sert
-`dist/client` depuis le disque, en repassant au gestionnaire pour ce qui n'est pas trouvé.
-C'est le comportement par défaut, sans configuration.
+**Un serveur Node.** `fluixi start` lance l'adaptateur node : il écoute sur un port, sert depuis
+le disque les fichiers de `dist/client` qui ont une extension (scripts, styles, images), et rend
+chaque page par le gestionnaire, prérendue ou non. C'est le comportement par défaut, sans
+configuration.
 
 Le port est le premier défini parmi : `--port` (`fluixi start --port=8080`), la variable `PORT`
 que fournissent la plupart des hébergeurs, `port` dans `fluixi.config.ts`, puis 3000. `fluixi dev`
@@ -28,7 +29,7 @@ les lit de la même façon.
 mais d'un module exportant `fetch`. C'est ce que renvoie l'adaptateur web :
 
 ```ts
-import { createProdHandler, webAdapter } from '@fluixi/start';
+import { createProdHandler, webAdapter } from '@fluixi/start/adapter';
 
 const handler = await createProdHandler(/* ... */);
 
@@ -91,14 +92,28 @@ bundle-le quand même ».
 
 ## Quand une requête échoue
 
-Une erreur levée par une page, une fonction serveur ou un middleware est écrite dans le journal
-du serveur. Le visiteur reçoit une 500 avec une page sobre, ou un court texte quand la requête
-ne demandait pas une page ; jamais la pile, qui nomme des fichiers et des hôtes et peut contenir
-un secret. `fluixi dev` continue d'afficher la pile.
+Une erreur levée par une fonction serveur ou un middleware est écrite dans le journal du serveur.
+Le visiteur reçoit une 500 avec une page sobre, ou un court texte quand la requête ne demandait
+pas une page ; jamais la pile, qui nomme des fichiers et des hôtes et peut contenir un secret.
+`fluixi dev` continue d'afficher la pile.
 
-Pour donner votre propre apparence à cette page, placez-la dans `public/error.html` : le build la
+Une page qui lève une erreur pendant son rendu, ou dont les données échouent, répond aussi 500,
+mais le reste de l'application est envoyé : le routeur affiche sa vue d'erreur à la place de la
+page, sur le serveur comme après l'hydratation. [Le routage](/v1/fr/routing#échecs) décrit cette
+vue et comment la remplacer.
+
+Pour donner votre propre apparence à la page sobre, placez-la dans `public/error.html` : le build la
 copie avec les autres fichiers publics et le serveur Node répond avec elle. Une plateforme sans
 système de fichiers (un worker) sert la page sobre.
+
+## Les clics avant l'hydratation
+
+Une page rendue par le serveur montre ses boutons avant que leurs gestionnaires n'existent. Un
+petit script en ligne en tête du `<head>` enregistre les clics, saisies et touches de cet
+intervalle, et le client les rejoue une fois hydraté : un clic précoce n'est pas perdu. Une
+Content Security Policy qui refuse les scripts en ligne le bloque ; désactivez-le avec
+`eventReplay: false` dans `fluixi.config.ts`. Avec `ssr: false`, il n'y a pas de rendu serveur à
+cliquer et rien n'est ajouté.
 
 ## Un seul exemplaire d'un paquet
 
@@ -281,7 +296,8 @@ navigateur appelle l'API directement, listez l'origine de l'application web dans
   vérification par requête, authentification, géolocalisation, doit vivre là où quelque
   chose s'exécute réellement à chaque requête.
 - **Vérifiez les versions.** `window.Fluixi` donne les versions de core, dom et reactive en
-  cours d'exécution ; le `data-fluixi` de l'élément de montage est vide en production et ne
+  cours d'exécution (`window.Fluixi.versions` sur une page qui a chargé une version CDN, dont
+  l'API occupe ce nom) ; le `data-fluixi` de l'élément de montage est vide en production et ne
   nomme donc aucune release. Si les versions divergent dans une version déployée,
   l'installation a résolu deux copies, mieux vaut le voir avant que cela ne devienne un
   rapport de bug.

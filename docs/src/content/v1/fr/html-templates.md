@@ -78,9 +78,15 @@ Appelez l'accesseur dans le trou. Le trou est lui-même la frontière réactive 
 compilateur l'enveloppe dans un effet pour vous.
 
 ```ts
-html`<p>${count()}</p>`;   // ✓ suivi, ne réexécute que ce nœud texte
-html`<p>${count}</p>`;     // affiche la fonction, pas sa valeur
+html`<p>${count()}</p>`;              // ✓ suivi, ne réexécute que ce nœud texte
+html`<p>${count}</p>`;                // se met à jour aussi : l'insertion appelle la fonction
+html`<p class="n ${count}"></p>`;     // ✗ le source de la fonction, une fois : appelez-la ici
 ```
+
+La place du trou en décide. En position d'enfant, un signal nu est appelé et suivi comme une
+lecture. Dans un attribut qui mêle du texte au trou, la valeur est construite une fois comme
+chaîne : il faut appeler le signal. Avec le runtime navigateur (des templates utilisés sans
+étape de build), un trou est évalué une fois et seule la forme nue, `${count}`, se met à jour.
 
 ## Composants
 

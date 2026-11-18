@@ -60,11 +60,23 @@ complexes, et transmettez ce dont vous avez besoin plutôt que d'y revenir plus 
 
 ## Erreurs
 
-Une exception levée côté serveur ressort en promesse rejetée au site d'appel. Seul le
-message traverse le réseau, les traces de pile restent sur le serveur, une erreur interne
-ne peut donc pas divulguer de chemins ni de requêtes SQL au navigateur. Levez une erreur
-délibérée et lisible pour ce que le client doit traiter, et laissez le reste être un échec
-générique.
+Une exception levée côté serveur rejette l'appel avec une `ServerFunctionError` (de
+`@fluixi/start`), qui porte `status`, `code` et `details`. Ce qui l'atteint dépend de ce qui a
+été levé :
+
+- **Un refus**, une erreur dont le `status` est un 4xx, arrive avec ce statut et les `code` et
+  `details` de l'erreur. C'est la façon de dire au client quelque chose qu'il peut traiter :
+
+  ```ts
+  throw Object.assign(new Error('quota reached'), { status: 403, code: 'quota', details: { limit: 10 } });
+  // au site d'appel : err.status === 403, err.code === 'quota', err.details.limit === 10
+  ```
+
+- **Tout le reste** est une 500. En développement, son message arrive dans `code` ; en
+  production, rien n'en arrive, et l'erreur est écrite dans le journal du serveur : un échec
+  interne ne peut pas divulguer de chemins ni de requêtes au navigateur.
+
+Aucune autre propriété de l'erreur levée ne traverse le réseau, et la pile jamais.
 
 ## Actions de formulaire
 

@@ -21,7 +21,7 @@ valeur transmise à l'appel. Lisez-les **là où vous les utilisez** et les mise
 function Hello(props: { name: string }) {
   return <p>{props.name}</p>;   // reste réactif
 }
-// const { name } = props;       // lit une seule fois, voir plus bas
+// const { name } = props;       // en JavaScript seul, lu une fois : voir plus bas
 ```
 
 La déstructuration recopie la valeur à cet instant : `name` cesse alors de suivre la prop. C'est
@@ -29,13 +29,24 @@ du JavaScript ordinaire, pas une règle inventée par Fluixi.
 
 ### Déstructurer quand même
 
-Le compilateur retransforme ces liaisons en lectures, ce qui rend la syntaxe simple utilisable :
+Le compilateur retransforme ces liaisons en lectures, ce qui rend la syntaxe simple utilisable,
+dans la liste des paramètres ou en tête du corps :
 
 ```tsx
 function Hello({ name, tone = 'calm' }) {
   return <p data-tone={tone}>{name}</p>;   // les deux restent réactifs
 }
+
+function Badge(props) {
+  const { label, ...rest } = props;         // réécrit de la même façon
+  return <span {...rest}>{label}</span>;
+}
 ```
+
+Une déstructuration de `props` exécutée une seule fois ailleurs dans la mise en place du
+composant, dans un bloc `if` ou partageant son `const` avec d'autres noms, reste telle quelle et
+la compilation le signale. Celle d'une fonction de rappel convient comme elle est : elle lit les
+valeurs actuelles à chaque appel.
 
 Le compilateur écrit `props.name` à chaque usage : la liaison garde son type, donc rien d'autre
 ne change dans la fonction. C'est actif par défaut ; `fluixi({ propsDestructure: false })` le
