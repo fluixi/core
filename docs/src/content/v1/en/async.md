@@ -56,9 +56,11 @@ loading for the first time has no value to keep, so it suspends as usual.
 
 On the server, Fluixi **awaits** resources before serializing the HTML, then seeds the resolved
 value into the page so the client hydrates without refetching, no loading flash, no waterfall.
+The head goes out first; the body follows in one piece once every resource has loaded, so the
+slowest one decides when the page appears. Content is not streamed in as each resource settles.
 
 ```ts
-// the same code renders on the server (awaited) and the client (streamed):
+// the same code renders on the server (awaited) and the client (seeded, no refetch):
 const posts = $resource(fetchPosts);
 ```
 

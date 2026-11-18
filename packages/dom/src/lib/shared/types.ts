@@ -37,7 +37,7 @@ export type ComponentChildIsNotAny = Assert<IsAny<ComponentChild>>;
 /**
  * A component is a function of its props: annotate it to type `props`:
  *
- *   const MyComp: Component<{ name, string }> = (props) => <h1>{props.name}</h1>;
+ *   const MyComp: Component<{ name: string }> = (props) => <h1>{props.name}</h1>;
  *
  * `props` is typed as `P` (required), the return is anything renderable. A zero-arg `() => ...`
  * component is still assignable (fewer params is fine). `FxComponent`/`FxC` are short brand

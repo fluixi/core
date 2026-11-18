@@ -50,7 +50,7 @@ when it can't.**
   representation. Neither is a port of the other.
 - **Direct DOM.** A change runs the specific binding that depends on it. There is no component
   re-render, no diff, no virtual tree.
-- **The same model end to end.** Client rendering, SSR, streaming, hydration, the router and the
+- **The same model end to end.** Client rendering, SSR, hydration, the router and the
   meta-framework share one reactive graph rather than agreeing at the edges.
 - **Two ways to write a primitive, one primitive.** `signal(0)` and `$signal(0)` compile to the
   same call. The `$` form skips the import; the explicit API stays public, because a library that

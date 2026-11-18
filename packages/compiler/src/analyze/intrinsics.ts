@@ -23,13 +23,13 @@
 /** What a binding holds, once we know where it came from. */
 export type ReactiveKind =
   | 'plain'
-  /** `signal(0)`: one object, read with `.get()` and written with `.set()`. */
+  /** `signal(0)`: one object, read by calling it (`n()`) and written with `.set()`. */
   | 'signal-handle'
-  /** `memo(fn)`: read-only, so `.get()` only. */
+  /** `memo(fn)`: read-only, read by calling it. */
   | 'memo-handle'
   /** `store(obj)`: read properties directly, `.set()` writes. */
   | 'store-handle'
-  /** `resource(fn)`: `.get()` reads, with `.loading`/`.latest`/`.refetch()` on it. */
+  /** `resource(fn)`: read by calling it, with `.loading`/`.latest`/`.refetch()` on it. */
   | 'resource-handle'
   /** The accessor half of the tuple form, `const [count] = createSignal(0)`. */
   | 'signal-accessor'

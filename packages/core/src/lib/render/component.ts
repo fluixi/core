@@ -249,9 +249,9 @@ export function $component<T extends (props?: any) => any, U = any>(value: T, pr
 /**
  * Register a callback to run when component mounts
  *
- * SolidJS-aligned: uses createEffect to schedule the callback.
- * The effect runs once after the reactive graph is established,
- * tied to the current Owner for automatic cleanup.
+ * Queued on the current owner and flushed in a microtask, before the owner's `useEffect`
+ * callbacks; a returned function runs when the owner is disposed. With no owner, an effect
+ * runs it instead. Never runs on the server.
  *
  * @example
  * ```typescript

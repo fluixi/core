@@ -95,7 +95,7 @@ describe('the intrinsics compile to the runtime', () => {
   });
 
   it('works inside a component, next to JSX', () => {
-    const code = compile('export function C() { const n = $signal(0); return <b>{n.get()}</b>; }');
+    const code = compile('export function C() { const n = $signal(0); return <b>{n()}</b>; }');
     expect(code).toContain('signal(0)');
     expect(code).toContain('import { signal }');
   });
@@ -215,7 +215,7 @@ describe('the rest of the reactive surface', () => {
 
 describe('the tracking operations', () => {
   it('compiles $untrack and $untrackStore', () => {
-    const code = compile('const a = $untrack(() => count.get()); const b = $untrackStore(() => s.x);');
+    const code = compile('const a = $untrack(() => count()); const b = $untrackStore(() => s.x);');
     expect(code).toContain('untrack(');
     expect(code).toContain('untrackStore(');
     expect(code).toContain('import { untrack } from "@fluixi/reactive/signal"');

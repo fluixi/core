@@ -1,16 +1,13 @@
 /**
- * createResource, on the TC39 core by way of the compat layer. This is
- * Additive, the legacy `createResource` in ../signal.ts stays intact; this is the
- * parallel implementation that runs on the new graph.
+ * createResource, on the TC39 core by way of the compat layer.
  *
- * Resources are the one part of the surface that touches framework-coupled bits, so
- * they're ported by hand. The SSR transport hooks (`nextResourceId`/`getServerData`/
- * `trackResourcePromise`/`reportResourceData`) are standalone module functions, so we
- * Reuse them from ../signal.ts, same `__FX_DATA__` seeding + async-SSR drain as legacy.
+ * The SSR transport (`nextResourceId`, `getServerData`, `trackResourcePromise`,
+ * `reportResourceData`) comes from ./ssr-hooks.js: the server awaits each resource and
+ * serialises its value into `__FX_DATA__`, and hydration seeds from it without refetching.
  *
- * Suspense boundary integration (throwing the pending promise to a boundary that
- * increments/decrements) lands with the Suspense port; the throwing getter is here so
- * a boundary built on the new effect can catch it.
+ * Reading a loading resource throws its promise, which the nearest Suspense boundary catches
+ * and shows its fallback for; a reload started inside `startTransition` reads as the current
+ * value instead.
  */
 import {
   createSignal,

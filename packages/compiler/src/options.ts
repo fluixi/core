@@ -7,10 +7,9 @@ import type { ComponentResolverRule } from './resolve/component-resolver.js';
 export interface CompilerOptions {
   /**
    * Clone static subtrees from a `<template>` instead of building them element by
-   * element. Roughly 2x faster to instantiate, but **client-only**: `createTemplate`
-   * produces real DOM nodes, which the SSR renderer's ServerElement tree rejects, and a
-   * clone creates a fresh node where hydration must adopt the existing one. Opt in for
-   * a client-rendered app; leave off wherever SSR or hydration is involved.
+   * element. Roughly 2x faster to instantiate. Safe under SSR and hydration: `templateNode`
+   * writes the template string as it is on the server and adopts the server's nodes while
+   * hydrating. On by default in the transform.
    */
   templateClone?: boolean;
   /**
