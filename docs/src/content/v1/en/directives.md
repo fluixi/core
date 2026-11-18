@@ -18,9 +18,10 @@ html`<button @click=${onClick}>Save</button>`;   // html``, @event
 
 ### Delegated vs native
 
-Four events are delegated: **`click`, `input`, `change`, `submit`**. One listener is
-attached at the root and dispatched to the right element, so a thousand rows cost one
-listener rather than a thousand.
+Twelve events are delegated: **`click`, `dblclick`, `input`, `change`, `submit`, `focus`,
+`blur`, `keydown`, `keyup`, `keypress`, `mousedown`, `mouseup`**. One listener is attached at the
+root and dispatched to the right element, so a thousand rows cost one listener rather than a
+thousand.
 
 Everything else attaches directly. For a **native** listener on a delegated event,
 required for `capture`, `once` or `passive`, use `on:`:
@@ -35,7 +36,7 @@ would with `addEventListener`, so `new FormData(event.currentTarget)` works in a
 
 ### Modifiers
 
-Dotted modifiers work on the `@`/`on:` forms:
+Dotted modifiers work on the `@`/`on:` forms in html`` templates; a JSX attribute name cannot hold the dots, so in JSX pass the handler and its options to `on:` as a pair, `on:scroll={[onScroll, { passive: true }]}`. The modifiers:
 
 | Modifier | Effect |
 | --- | --- |
@@ -140,10 +141,9 @@ html`<div style=${{ color: c(), '--x': px() }}></div>`;
 A static `class` and a dynamic one combine, `class="box"` stays as the element's class
 and the object adds to it, so you can keep base classes in markup.
 
-> **`class=` only becomes `classList` for a literal object.** The compiler decides by
-> looking at the syntax, so `class=${{ on: a() }}` is a class map, while
-> `const o = { on: a() }; class=${o}` compiles to `className = o` and renders
-> `[object Object]`. Pass the literal inline, or use `classList=` explicitly.
+> **An object in `class=` is a class map, inline or not.** `class=${{ on: a() }}` compiles to
+> one, and `const o = { on: a() }; class=${o}` reaches the runtime as an object, which
+> renders its truthy keys the same way.
 
 Per-name toggles sidestep that entirely, in both surfaces, and each one updates only its own class
 or property:
@@ -299,7 +299,8 @@ write the two halves yourself; `bind:` is deliberately only the common case.
 
 | Directive | JSX | html`` |
 | --- | --- | --- |
-| `@click` / `onClick`, `on:event`, modifiers | ✓ | ✓ |
+| `@click` / `onClick`, `on:event` | ✓ | ✓ |
+| event modifiers (`@click.once`, `.capture`, `.passive`) |, | ✓ |
 | `ref` | ✓ | ✓ |
 | `use:` | ✓ | ✓ |
 | `prop:` / `attr:` / `bool:` | ✓ | ✓ |
@@ -307,6 +308,6 @@ write the two halves yourself; `bind:` is deliberately only the common case.
 | raw HTML | `innerHTML` | `html=` or `innerHTML` |
 | `oncapture:event` | ✓ |, |
 | `.prop`, `?attr` |, | ✓ |
-| `class:name`, `style:prop` |, | ✓ |
+| `class:name`, `style:prop` | ✓ | ✓ |
 | `if` / `else`, `each` / `key`, `<container>` | ✓ | ✓ |
 | `bind:` |, | ✓ |

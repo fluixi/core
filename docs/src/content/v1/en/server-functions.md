@@ -57,10 +57,23 @@ complex flows, and pass what you need down rather than reaching for it again lat
 
 ## Errors
 
-An exception thrown on the server surfaces as a rejected promise at the call site. Only the
-message crosses the wire, stack traces stay on the server, so an internal error cannot
-leak paths or query text to the browser. Throw a deliberate, readable error for anything
-the client is meant to act on, and let everything else be a generic failure.
+An exception thrown on the server rejects the call with a `ServerFunctionError` (from
+`@fluixi/start`), carrying `status`, `code` and `details`. What reaches it depends on what was
+thrown:
+
+- **A refusal**, an error with a 4xx `status`, arrives with that status and the error's own
+  `code` and `details`. This is the way to tell the client something it can act on:
+
+  ```ts
+  throw Object.assign(new Error('quota reached'), { status: 403, code: 'quota', details: { limit: 10 } });
+  // at the call site: err.status === 403, err.code === 'quota', err.details.limit === 10
+  ```
+
+- **Anything else** is a 500. In development its message arrives in `code`; in production
+  nothing of it does, and the error is logged on the server instead, so an internal failure
+  cannot leak paths or query text to the browser.
+
+No other property of the thrown error crosses the wire, and the stack never does.
 
 ## Form actions
 

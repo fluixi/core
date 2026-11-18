@@ -9,7 +9,7 @@ viewport is a property of the usage.
 
 ```tsx
 <Summary total={total()} />                    {/* eager, entry chunk */}
-<ExportDialog load:interaction />              {/* own chunk, on first interaction */}
+<ExportDialog load:interaction />              {/* own chunk, on the first interaction with the page */}
 <AuditLog load:media="(min-width: 1024px)" />  {/* own chunk, desktop only */}
 <RevenueChart load:visible="200px" />          {/* own chunk, just before it scrolls in */}
 ```
@@ -24,7 +24,7 @@ the deferred binding.
 | `load:eager` | Immediately, in the parent chunk. The default. |
 | `load:idle` | When the browser goes idle. |
 | `load:visible` | When the element approaches the viewport. |
-| `load:interaction` | On first interaction with the element. |
+| `load:interaction` | On the first interaction anywhere on the page. |
 | `load:media` | When a media query matches. |
 | `load:never` | Never, no client code at all. |
 
@@ -49,8 +49,10 @@ blank space while the network works.
 
 ### `load:interaction`
 
-Defaults to `pointerdown`, `focusin` and `keydown`, the three that reliably precede a
-real interaction, keyboard and pointer alike. Name your own to narrow it:
+Fetches on the first interaction anywhere on the page, not only with the component: the
+component often has no markup yet to listen on. Defaults to `pointerdown`, `focusin` and
+`keydown`, the three that reliably precede a real interaction, keyboard and pointer alike.
+Name your own to narrow it:
 
 ```tsx
 <ExportDialog load:interaction />

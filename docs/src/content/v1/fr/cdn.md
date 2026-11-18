@@ -115,11 +115,11 @@ tag `` html`` `` (templates à l'exécution) plutôt qu'en JSX.
 
 L’utilisation d’un objet global pose un seul objet sur `window`, et `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut être chargé. Avec une carte, la page écrit les mêmes `import` qu’une application compilée, et ne charge que les sous-chemins qu’elle touche. Un navigateur ne résout un spécificateur nu que par une carte et ne lit jamais `package.json`, donc chaque sous-chemin transitif doit y figurer ; `@fluixi/cdn` est cette liste, générée à chaque version et épinglée sur elle.
 
-- `min` (15 entrées, `core`, `dom`, `utils` et le graphe derrière)
+- `min` (20 entrées, `core`, `dom`, `utils` et le graphe derrière)
 - `templates` (3 entrées, pour compiler `html`` dans la page)
-- `full` (19, tout ce qu’un navigateur peut utiliser)
+- `full` (23, tout ce qu’un navigateur peut utiliser)
 
-Chacune existe en `.json` à lire ou coller et en `.js` à charger. Le `.js` installe la carte et doit venir avant le premier script de module, parce qu’une carte ajoutée après qu’un module a commencé à charger est ignorée.
+Chacune existe en `.json` à lire ou coller et en `.js` à charger. Le `.js` installe la carte. Placez-le avant le premier script de module : un Chromium récent accepte une carte ajoutée après le début du chargement des modules, mais un navigateur qui ne prend pas en charge plusieurs cartes d’import l’ignore.
 
 ```html
 <div id="app"></div>

@@ -58,8 +58,11 @@ A prerendered page is a file. At request time there is no server work, which mea
 the page has hydrated and calls one. A per-request check, auth, geolocation, an A/B split,
 cannot live only in middleware if the route is also prerendered.
 
-Mixed deployments are fine: prerender the marketing pages and let the app routes be served
-by `fluixi start`.
+The prerendered files are for a host that serves them before calling the server: a static
+host, or a platform the adapter sets up that way (the Cloudflare adapter lists them in
+`_routes.json`). `fluixi start` does not read them: it renders every page per request,
+prerendered or not, and middleware runs for each. Mixed deployments are fine on such a host:
+prerender the marketing pages, and the app routes go to the server.
 
 ## Deploying files only
 

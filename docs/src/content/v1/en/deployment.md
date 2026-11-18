@@ -14,9 +14,9 @@ fluixi start     →  serves it with the node adapter
 **A static site.** With [`prerender`](/v1/en/static-generation) every route is written to
 `dist/client` as HTML. Upload that directory anywhere, there is no server to run.
 
-**A Node server.** `fluixi start` runs the node adapter: it listens on a port and serves
-`dist/client` from disk, falling through to the handler for anything not found. This is the
-default and needs no configuration.
+**A Node server.** `fluixi start` runs the node adapter: it listens on a port, serves the files
+in `dist/client` that have an extension (scripts, styles, images) from disk, and renders every
+page through the handler, prerendered or not. This is the default and needs no configuration.
 
 The port is the first of these that is set: `--port` (`fluixi start --port=8080`), the `PORT`
 variable most hosts provide, `port` in `fluixi.config.ts`, then 3000. `fluixi dev` reads them
@@ -26,7 +26,7 @@ the same way.
 want a module exporting `fetch`. That is what the web adapter returns:
 
 ```ts
-import { createProdHandler, webAdapter } from '@fluixi/start';
+import { createProdHandler, webAdapter } from '@fluixi/start/adapter';
 
 const handler = await createProdHandler(/* ... */);
 

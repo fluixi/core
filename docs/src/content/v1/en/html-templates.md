@@ -76,9 +76,15 @@ Read the signal inside the hole. The hole itself is the reactive boundary, so th
 compiler wraps it in an effect for you:
 
 ```ts
-html`<p>${count()}</p>`;   // ✓ tracked, re-runs this text node only
-html`<p>${count}</p>`;         // renders the object, not its value
+html`<p>${count()}</p>`;              // ✓ tracked, re-runs this text node only
+html`<p>${count}</p>`;                // also updates: the insert calls the function
+html`<p class="n ${count}"></p>`;     // ✗ the function's source, once: call it here
 ```
+
+Where the hole stands decides it. As a child, a bare signal is called and tracked like a read.
+Inside an attribute that mixes text with it, the value is built as a string once, so the
+signal has to be called. With the browser runtime (templates used with no build step), a hole
+is evaluated once and only the bare form, `${count}`, keeps updating.
 
 ## Components
 

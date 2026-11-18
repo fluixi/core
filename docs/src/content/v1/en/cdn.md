@@ -82,7 +82,9 @@ reactive primitives (dom no longer bundles them itself), so you don't need a sec
 ## The whole framework, `window.Fluixi`
 
 `core.global.js` bundles everything, reactivity, components, control flow, the router, and
-`startClient`. Use it when you want the full framework without a build:
+`startClient`. Use it when you want the full framework without a build. Its reactive API is the
+`createSignal` / `createMemo` / `createEffect` form; the `signal` / `memo` / `effect` handles of
+`@fluixi/core` as a module are not on the global:
 
 ```html
 <div id="app"></div>
@@ -151,11 +153,11 @@ Compiling in the page evaluates the code it emits, so a Content-Security-Policy 
 
 A global puts one object on `window`, and `reactive`, `core` and `fluixi` all claim the same name, so only one may be loaded. With a map the page writes the same `import` statements a built app writes, and loads only the subpaths it touches. A browser resolves a bare specifier only through a map and never reads package.json, so every transitive subpath has to be listed; `@fluixi/cdn` is that list, generated per release and pinned to it.
 
-- `min.js` (15 entries): core, dom, utils and the graph behind them
+- `min.js` (20 entries): core, dom, utils and the graph behind them
 - `templates.js` (3 entries): adds compiling `html`` in the page
-- `full.js` (19 entries): everything a browser can use
+- `full.js` (23 entries): everything a browser can use
 
-The `.js` installs the map, and has to come before the first module script, because a map added after one has begun loading is ignored.
+The `.js` installs the map. Put it before the first module script: recent Chromium accepts a map added after modules started loading, but browsers that do not support several import maps ignore it.
 
 ```html
 <div id="app"></div>

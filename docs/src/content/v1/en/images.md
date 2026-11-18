@@ -5,15 +5,19 @@ and a loader that points image markup at it.
 
 ```ts
 // src/api/image.ts  →  /api/image
-import { createImageHandler } from '@fluixi/start';
+import { createImageHandler } from '@fluixi/start/image';
 
 export const GET = createImageHandler({
   domains: ['images.example.com'],
 });
 ```
 
+`<Image>` is the component from `@fluixi-ui/image`; any markup that takes a `loader` works the
+same way.
+
 ```tsx
 import { imageLoader } from '@fluixi/start';
+import { Image } from '@fluixi-ui/image';
 
 const loader = imageLoader();   // defaults to /api/image
 
