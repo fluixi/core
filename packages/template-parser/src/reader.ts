@@ -52,6 +52,17 @@ export class Reader {
     return this.pi >= this.pieces.length;
   }
 
+  /** Where the cursor is, to come back to with `reset`. */
+  mark(): [number, number] {
+    return [this.pi, this.oi];
+  }
+
+  /** Back to a position `mark` returned. */
+  reset([pi, oi]: [number, number]): void {
+    this.pi = pi;
+    this.oi = oi;
+  }
+
   /** Absolute source offset of the cursor. */
   pos(): number {
     if (this.eof()) {

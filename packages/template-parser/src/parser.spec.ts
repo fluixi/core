@@ -150,7 +150,7 @@ describe('template parser — attributes & directives', () => {
 describe('template parser — diagnostics & recovery', () => {
   it('reports an unclosed tag but still returns a tree', () => {
     const { root, diagnostics } = p(['<div><span>hi</div>']);
-    expect(diagnostics.some((d) => d.code === 'mismatched-close-tag')).toBe(true);
+    expect(diagnostics.some((d) => d.code === 'unclosed-tag' && d.message === 'Unclosed <span>')).toBe(true);
     expect(root.children[0]).toMatchObject({ kind: 'Element', tag: 'div' });
   });
 
