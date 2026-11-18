@@ -24,6 +24,15 @@ import type { ComponentChild } from '../shared/types.js';
  */
 export type Reactive<T> = T | undefined | Accessor<T | undefined>;
 
+/**
+ * What `class` takes, as the runtime applies it: a string, a list (falsy entries skipped), or a
+ * map of class names to a flag or an accessor of one.
+ */
+export type ClassValue =
+  | string
+  | ReadonlyArray<string | false | null | undefined>
+  | Record<string, boolean | undefined | Accessor<boolean | undefined>>;
+
 // Bivariant ref callback (method position defeats strict param contravariance)
 // so a base-element handler is assignable to a specific-element ref slot and
 // vice versa. Paired with the base-element object form on `ref` below, this lets
@@ -304,13 +313,13 @@ export type DirectiveChildren = ComponentChild | ((item: any, index: () => numbe
 
 export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, ControlDirectives {
   // Standard HTML attributes
-  accessKey?: string;
+  accessKey?: Reactive<string>;
   accesskey?: string;
   autocapitalize?: HTMLAutocapitalize;
   autoCapitalize?: HTMLAutocapitalize;
   autocorrect?: 'on' | 'off';
-  class?: string | Record<string, boolean> | Accessor<string>;
-  className?: string | Record<string, boolean> | Accessor<string>;
+  class?: Reactive<ClassValue>;
+  className?: Reactive<ClassValue>;
   classList?: Record<string, boolean>;
   contentEditable?: boolean | 'true' | 'false' | 'inherit' | 'plaintext-only';
   contenteditable?: boolean | 'true' | 'false' | 'inherit' | 'plaintext-only';
@@ -458,7 +467,7 @@ export interface ButtonHTMLAttributes<T = HTMLButtonElement> extends HTMLAttribu
   popoverTargetAction?: 'hide' | 'show' | 'toggle';
   popovertargetaction?: 'hide' | 'show' | 'toggle';
   type?: 'submit' | 'reset' | 'button';
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface CanvasHTMLAttributes<T = HTMLCanvasElement> extends HTMLAttributes<T> {
@@ -476,7 +485,7 @@ export interface ColgroupHTMLAttributes<T = HTMLTableColElement> extends HTMLAtt
 }
 
 export interface DataHTMLAttributes<T = HTMLDataElement> extends HTMLAttributes<T> {
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface DetailsHTMLAttributes<T = HTMLDetailsElement> extends HTMLAttributes<T> {
@@ -647,7 +656,7 @@ export interface InputHTMLAttributes<T = HTMLInputElement>
     | (string & {});
   useMap?: string;
   usemap?: string;
-  value?: string | number | ReadonlyArray<string> | Accessor<string | number>;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
   width?: number | string;
 }
 
@@ -675,7 +684,7 @@ export interface LabelHTMLAttributes<T = HTMLLabelElement> extends HTMLAttribute
 }
 
 export interface LiHTMLAttributes<T = HTMLLIElement> extends HTMLAttributes<T> {
-  value?: number | string;
+  value?: Reactive<number | string>;
 }
 
 export interface LinkHTMLAttributes<T = HTMLLinkElement> extends HTMLAttributes<T> {
@@ -735,7 +744,7 @@ export interface MeterHTMLAttributes<T = HTMLMeterElement> extends HTMLAttribute
   max?: number | string;
   min?: number | string;
   optimum?: number;
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface ModHTMLAttributes<T = HTMLModElement> extends HTMLAttributes<T> {
@@ -772,7 +781,7 @@ export interface OptionHTMLAttributes<T = HTMLOptionElement> extends HTMLAttribu
   disabled?: Reactive<boolean>;
   label?: string;
   selected?: Reactive<boolean>;
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface OutputHTMLAttributes<T = HTMLOutputElement> extends HTMLAttributes<T> {
@@ -786,12 +795,12 @@ export interface ParamHTMLAttributes<T = HTMLParamElement> extends HTMLAttribute
   /** @deprecated */
   name?: string;
   /** @deprecated */
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface ProgressHTMLAttributes<T = HTMLProgressElement> extends HTMLAttributes<T> {
   max?: number | string;
-  value?: string | ReadonlyArray<string> | number;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface ScriptHTMLAttributes<T = HTMLScriptElement> extends HTMLAttributes<T> {
@@ -823,7 +832,7 @@ export interface SelectHTMLAttributes<T = HTMLSelectElement> extends HTMLAttribu
   name?: string;
   required?: Reactive<boolean>;
   size?: Reactive<number>;
-  value?: string | ReadonlyArray<string> | number | Accessor<string | number>;
+  value?: Reactive<string | ReadonlyArray<string> | number>;
 }
 
 export interface SlotHTMLAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
@@ -897,7 +906,7 @@ export interface TextareaHTMLAttributes<T = HTMLTextAreaElement> extends HTMLAtt
   readonly?: Reactive<boolean>;
   required?: Reactive<boolean>;
   rows?: number;
-  value?: string | ReadonlyArray<string> | Accessor<string>;
+  value?: Reactive<string | ReadonlyArray<string>>;
   wrap?: 'hard' | 'soft' | 'off';
 }
 
@@ -950,8 +959,8 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   // attributes below already were, so an SVG that could animate its `fill` still
   // couldn't compute its `id` or `style`.
   id?: Reactive<string>;
-  class?: Reactive<string>;
-  className?: Reactive<string>;
+  class?: Reactive<ClassValue>;
+  className?: Reactive<ClassValue>;
   style?: Reactive<string | CSSProperties>;
   ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
   key?: string | number | ((item: any) => unknown);
