@@ -1,0 +1,64 @@
+// @vitest-environment jsdom
+/**
+ * SuspenseList coordinates the Suspense boundaries compiled JSX puts inside it: `forwards`
+ * reveals them in order, and `tail="collapsed"` shows one fallback, the next one's.
+ */
+import { describe, it, expect, beforeAll } from 'vitest';
+import * as DOM from '@fluixi/dom';
+import * as S from '@fluixi/reactive/signal';
+import { ensureIntegration } from './render/component.js';
+import * as babel from '@babel/core';
+import { transformTemplates } from '@fluixi/compiler/transform';
+import * as Fluixi from '@fluixi/core';
+
+beforeAll(() => ensureIntegration());
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function compile(src: string, extra: Record<string, unknown>): any {
+  const opts = { importSource: '@fluixi/dom', signalModule: '@fluixi/dom', controlFlowModule: '@fluixi/dom' };
+  const step1 = transformTemplates(src, 't.tsx', { ...opts, runtimeModule: opts.signalModule })?.code ?? src;
+  const code = babel.transformSync(step1, { filename: 't.js', configFile: false, babelrc: false, plugins: [['@babel/plugin-transform-modules-commonjs']] })!.code!;
+  const m = { exports: {} as any };
+  const map: Record<string, unknown> = { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S, '@fluixi/core': Fluixi, ...extra };
+  new Function('exports', 'require', 'module', code)(m.exports, (id: string) => {
+    if (id in map) return map[id];
+    throw new Error('unexpected require: ' + id);
+  }, m);
+  return m.exports;
+}
+
+describe('SuspenseList', () => {
+  it('reveals forwards in order, with one fallback when collapsed', async () => {
+    const Row = (props: { name: string; ms: number }) => {
+      const [data] = S.createResource(() => new Promise<string>((r) => setTimeout(() => r(props.name), props.ms)));
+      const p = DOM.createNativeElement('p');
+      DOM.insert(p, () => data() ?? '');
+      return p;
+    };
+    const { App } = compile(
+      `import { Suspense, SuspenseList } from '@fluixi/core';
+       import { Row } from 'row';
+       export function App() {
+         return (
+           <SuspenseList revealOrder="forwards" tail="collapsed">
+             <Suspense fallback={<i>wait one</i>}><Row name="one" ms={30} /></Suspense>
+             <Suspense fallback={<i>wait two</i>}><Row name="two" ms={10} /></Suspense>
+             <Suspense fallback={<i>wait three</i>}><Row name="three" ms={20} /></Suspense>
+           </SuspenseList>
+         );
+       }`,
+      { row: { Row } },
+    );
+    const container = document.createElement('div');
+    S.createRoot(() => DOM.render(() => App(), container));
+    await wait(1);
+    expect(container.textContent).toBe('wait one');
+
+    await wait(15);
+    // `two` has resolved, but `one` has not: nothing is revealed out of order.
+    expect(container.textContent).toBe('wait one');
+
+    await wait(30);
+    expect(container.textContent).toBe('onetwothree');
+  });
+});

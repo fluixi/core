@@ -162,6 +162,9 @@ function SuspenseImpl(props: SuspenseProps): any {
   return createMemo(() => {
     const showFallback = listState ? listState.showFallback() : boundary.inFallback();
     if (showFallback) return fallback;
+    // Held by its list (an earlier item still loading) with no fallback of its own to show,
+    // as with `collapsed` or `hidden`: nothing yet, not its content.
+    if (listState && !listState.showContent()) return null;
     if (childIsPromise) return resolved();
     return children;
   });
@@ -213,9 +216,11 @@ function SuspenseListImpl(props: SuspenseListProps): any {
       let blocked = false;
       for (const r of items) {
         if (blocked || r.inFallback()) {
+          // `collapsed`: only the first item still waiting shows its fallback.
+          const first = !blocked;
           blocked = true;
           r.setShowContent(false);
-          r.setShowFallback(tail !== 'hidden');
+          r.setShowFallback(tail === 'hidden' ? false : tail === 'collapsed' ? first : true);
         } else {
           r.setShowContent(true);
           r.setShowFallback(false);
@@ -237,9 +242,13 @@ function SuspenseListImpl(props: SuspenseListProps): any {
     },
   };
 
+  // A getter, so the children are built inside the provider: read here, each Suspense was
+  // already built outside the list, never registered, and revealed on its own.
   return SuspenseListContext.Provider({
     value: coordinator,
-    children: props.children,
+    get children() {
+      return props.children;
+    },
   });
 }
 
