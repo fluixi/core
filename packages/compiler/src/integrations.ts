@@ -722,3 +722,5 @@ export default {
   createRollupPlugin,
   createESBuildPlugin,
 };
+
+export { hotRewrite } from './transform/hot.js';

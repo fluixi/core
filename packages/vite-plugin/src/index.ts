@@ -1,8 +1,14 @@
 import type { Plugin } from 'vite';
-import { createVitePlugin, type CompilerOptions } from '@fluixi/compiler/integrations';
+import { createVitePlugin, hotRewrite, type CompilerOptions } from '@fluixi/compiler/integrations';
 import { withGraphChannel } from './graph-channel.js';
 
-export type FluixiViteOptions = CompilerOptions;
+export type FluixiViteOptions = CompilerOptions & {
+  /**
+   * Swap an edited component in place in dev, keeping the rest of the page's state, instead of
+   * reloading the page. Default true. `// @refresh reload` in a file opts that file out.
+   */
+  hot?: boolean;
+};
 
 /**
  * Fluixi Vite plugin.
@@ -31,6 +37,7 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
 
   const base = createVitePlugin<Plugin>(settings);
   const inherited = base.configResolved as ((config: unknown) => void | Promise<void>) | undefined;
+  const compile = base.transform as (this: unknown, code: string, id: string, opts?: { ssr?: boolean }) => Promise<unknown>;
 
   const start = () => {
     settings.sourceLocations = true;
@@ -51,6 +58,17 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
         // channel turns them on from configureServer, which only a real server calls.
         serving = config?.command === 'serve';
         settings.sourceRoot = config.root;
+      },
+      // After the compiler, on the app's own files, in dev: the server render goes through it too,
+      // so both sides have the same structure to hydrate.
+      async transform(this: unknown, code: string, id: string, opts?: { ssr?: boolean }) {
+        const result = (await compile.call(this, code, id, opts)) as { code: string; map?: unknown } | string | null | undefined;
+        if (!serving || options.hot === false || !result || id.includes('/node_modules/') || id.startsWith('\0') || id.includes('?')) {
+          return result;
+        }
+        const compiled = typeof result === 'string' ? { code: result, map: null } : result;
+        const hot = hotRewrite(compiled.code, id);
+        return hot ? { ...compiled, code: hot } : result;
       },
     } as Plugin,
     enabled,
