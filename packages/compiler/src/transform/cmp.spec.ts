@@ -108,3 +108,16 @@ describe('a custom element in the markup', () => {
     expect(code).toMatch(/<section><h1>Deals<\/h1>/);
   });
 });
+
+describe('html template diagnostics in a build', () => {
+  const run = (code: string) => transformTemplates(code, 'a.tsx', { ...BASE, format: 'both' } as never)!;
+
+  it('fails on a template the parser would have to repair', () => {
+    expect(() => run('export const A = () => html`<div><span>x</div>`;')).toThrow(/html template/);
+  });
+
+  it('reports accessibility warnings at their place in the file', () => {
+    const result = run('\nexport const A = () => html`<img src="a.png">`;') as { templateDiagnostics?: { line: number; message: string }[] };
+    expect(result.templateDiagnostics).toEqual([expect.objectContaining({ line: 2, message: expect.stringContaining('alt') })]);
+  });
+});

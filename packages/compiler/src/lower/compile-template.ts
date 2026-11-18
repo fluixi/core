@@ -63,7 +63,16 @@ export interface CompileTemplateOptions {
   templateStyles?: TemplateStyles;
 }
 
+/** A warning about a template, at an offset into the source the pieces came from. */
+export interface TemplateDiagnostic {
+  code: string;
+  message: string;
+  offset: number;
+}
+
 export interface CompileTemplateResult {
+  /** Warnings from the template parser and its accessibility checks. */
+  diagnostics?: TemplateDiagnostic[];
   /** A JavaScript expression that builds the DOM when evaluated. */
   code: string;
   /** Runtime symbols the code refers to, for the caller to import. */
@@ -122,7 +131,9 @@ export function compilePieces(
   options: CompileTemplateOptions = {},
 ): CompileTemplateResult {
   const used = new Set<string>();
+  const diagnostics: TemplateDiagnostic[] = [];
   const ir = lowerTemplate(pieces, [...holes], used, {
+    onDiagnostic: (d) => diagnostics.push({ code: d.code, message: d.message, offset: d.loc.start }),
     svg: options.svg,
     ...(options.sourceFile ? { sourceFile: options.sourceFile } : {}),
     ...(options.positionAt ? { positionAt: options.positionAt } : {}),
@@ -149,6 +160,7 @@ export function compilePieces(
   } as never);
   for (const symbol of imports) used.add(symbol);
 
-  if (options.hoistTemplates) return { code, imports: [...used], ir, templates };
-  return { code: inlineTemplates(code, templates), imports: [...used], ir };
+  if (options.hoistTemplates) return { ...(diagnostics.length ? { diagnostics } : {}), code, imports: [...used], ir, templates };
+  return {
+    ...(diagnostics.length ? { diagnostics } : {}), code: inlineTemplates(code, templates), imports: [...used], ir };
 }

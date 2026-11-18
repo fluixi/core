@@ -14,6 +14,7 @@ import {
   type ElementNode,
   type Piece,
   type TemplateNode,
+  type Diagnostic,
   parseTemplate,
 } from '@fluixi/template-parser';
 import type { HolePosition, IRNode, IRProp, IRPropKind } from '../ir/nodes.js';
@@ -596,8 +597,25 @@ export function lowerTemplate(
   pieces: Piece[],
   holes: TemplateHole[],
   used: Set<string>,
-  opts: { svg?: boolean; sourceFile?: string; positionAt?: (offset: number) => { line: number; column: number } } = {},
+  opts: {
+    svg?: boolean;
+    sourceFile?: string;
+    positionAt?: (offset: number) => { line: number; column: number };
+    /** Warnings the parser and the accessibility checks raised, for the caller to report. */
+    onDiagnostic?: (diagnostic: Diagnostic) => void;
+  } = {},
 ): IRNode {
-  const { root } = parseTemplate(pieces, { svg: opts.svg });
+  const { root, diagnostics } = parseTemplate(pieces, { svg: opts.svg });
+  // A template the parser had to repair (an unclosed tag, a stray close) builds into
+  // something other than what was written, and the browser runtime throws on the same
+  // source: an error, as a JSX syntax error is. Warnings go back to be printed.
+  // The parser's diagnostics include its accessibility checks.
+  for (const d of diagnostics) {
+    if (d.severity === 'error') {
+      const at = opts.positionAt?.(d.loc.start);
+      throw new Error(`html template${at ? ` (${at.line}:${at.column + 1})` : ''}: ${d.message}`);
+    }
+    opts.onDiagnostic?.(d);
+  }
   return new Lowerer(holes, used, opts.sourceFile, opts.positionAt).lowerRoot(root.children);
 }

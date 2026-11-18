@@ -491,6 +491,7 @@ function reportDiagnostics(result: unknown, id: string): void {
     propsDiagnostics?: { name: string; message: string }[];
     intrinsicDiagnostics?: { name: string; message: string }[];
     styleDiagnostics?: { line: number; column: number; message: string }[];
+    templateDiagnostics?: { line: number; column: number; message: string }[];
   } | null;
   const say = (message: string): void => {
     const key = `${id}\u0000${message}`;
@@ -503,6 +504,7 @@ function reportDiagnostics(result: unknown, id: string): void {
   for (const d of r?.loadDiagnostics ?? []) say(d.message);
   for (const d of r?.intrinsicDiagnostics ?? []) say(d.message);
   for (const d of r?.styleDiagnostics ?? []) say(`${d.line}:${d.column + 1} ${d.message}`);
+  for (const d of r?.templateDiagnostics ?? []) say(`${d.line}:${d.column + 1} ${d.message}`);
   for (const d of r?.propsDiagnostics ?? []) {
     say(`\`${d.name}\` was left destructured: ${d.message}. It reads once instead of tracking.`);
   }

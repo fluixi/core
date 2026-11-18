@@ -176,9 +176,9 @@ describe('template parser — diagnostics & recovery', () => {
     expect(diagnostics.filter((x) => x.code === 'invalid-directive')).toHaveLength(0);
   });
 
-  it('reports `if` and `each` on the same element', () => {
+  it('accepts `if` and `each` on the same element, which the compiler supports (if gates the list)', () => {
     const { diagnostics } = p(['<div if=', ' each=', '></div>']);
-    expect(diagnostics.some((d) => d.code === 'unsupported-combination')).toBe(true);
+    expect(diagnostics.some((d) => d.code === 'unsupported-combination')).toBe(false);
   });
 
   it('reports `if` and `else` on the same element', () => {

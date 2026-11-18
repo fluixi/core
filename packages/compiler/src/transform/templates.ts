@@ -541,6 +541,10 @@ export function transformTemplates(
   };
   const hoisted = new Map<string, string>();
   const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits, ...(styles?.edits ?? [])];
+  // Warnings from html`` templates (parser repairs, accessibility), at file positions.
+  const templateDiagnostics: { line: number; column: number; message: string }[] = [];
+  let positionOf: (offset: number) => { line: number; column: number } = () => ({ line: 0, column: 0 });
+  if (found.length > 0) positionOf = positionsIn(code);
   for (const node of found) {
     if (isJsx(node)) {
       edits.push({ start: node.start, end: node.end, code: compileJsx(code, node, edits, used, needs, hoisted, options, sourceName, styles) });
@@ -579,6 +583,7 @@ export function transformTemplates(
       svg: templateTags.get(node.tag.name) === 'svg',
     });
     for (const symbol of result.imports) used.add(symbol);
+    for (const d of result.diagnostics ?? []) templateDiagnostics.push({ ...positionOf(d.offset), message: d.message });
     collectNeeds(result.ir, needs);
     edits.push({ start: node.start, end: node.end, code: adoptTemplates(result.code, result.templates, hoisted) });
   }
@@ -712,6 +717,7 @@ export function transformTemplates(
     map: out.generateMap({ source: id, includeContent: true, hires: true }),
     ...(loadDiagnostics.length ? { loadDiagnostics } : {}),
     ...(unresolvedDiagnostics.length ? { unresolvedDiagnostics } : {}),
+    ...(templateDiagnostics.length ? { templateDiagnostics } : {}),
     ...(props.diagnostics.length ? { propsDiagnostics: props.diagnostics } : {}),
     ...(intrinsics.diagnostics.length ? { intrinsicDiagnostics: intrinsics.diagnostics } : {}),
     ...(styles?.styles.length ? { styles: styles.styles } : {}),
