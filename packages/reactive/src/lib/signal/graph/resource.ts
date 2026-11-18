@@ -18,6 +18,8 @@ import {
   batch,
   untrack,
   onCleanup,
+  inTransition,
+  trackTransitionLoad,
 } from './compat.js';
 // Standalone SSR hooks: graph-agnostic injectables.
 import {
@@ -103,6 +105,8 @@ export function createResource<T, S = true>(
     { equals: false },
   );
   const [error, setError] = createSignal<unknown>(undefined, { equals: false });
+  // Set per load: a transition started it while the resource had a value to keep showing.
+  let keepValue = false;
   const [state, setState] = createSignal<ResourceState>(
     seed !== undefined || options.initialValue !== undefined ? 'ready' : 'unresolved',
     { equals: false },
@@ -138,6 +142,8 @@ export function createResource<T, S = true>(
     const currentState = untrack(state);
     const currentValue = untrack(value);
     const isRefreshing = currentState === 'ready' || currentState === 'refreshing';
+    // Started by a transition with a value to keep: read as that value until it settles.
+    keepValue = isRefreshing && inTransition();
     batch(() => {
       setState(isRefreshing ? 'refreshing' : 'pending');
       setError(undefined);
@@ -146,6 +152,7 @@ export function createResource<T, S = true>(
       const res = fetcher(val, { value: currentValue, refetching: isRefreshing });
       if (isPromise(res)) {
         setPromise(res as Promise<T>);
+        if (keepValue) trackTransitionLoad(res as Promise<T>);
         trackResourcePromise(res); // server async SSR: collect & await
         (res as Promise<T>).then(
           (v) => {
@@ -190,7 +197,7 @@ export function createResource<T, S = true>(
   const resource = (() => {
     const e = error();
     if (e) throw e;
-    if (loading()) {
+    if (loading() && !(keepValue && state() === 'refreshing')) {
       const p = promise();
       if (p) throw p; // suspends, a boundary on the new effect catches this
     }

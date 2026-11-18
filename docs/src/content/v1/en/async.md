@@ -34,6 +34,24 @@ user.error;   // the thrown error, if any
 user();   // the resolved value (suspends while pending)
 ```
 
+## Transitions
+
+A change that makes a resource load again normally suspends it, and the nearest `Suspense` shows
+its fallback until the new value arrives. Made inside `startTransition`, the change keeps the page
+as it is instead: the resource reads as its current value until the new one is there.
+`useTransition` says whether such a load is still running.
+
+```ts
+import { useTransition } from '@fluixi/reactive/signal';
+
+const [isPending, startTransition] = useTransition();
+// The current tab stays on screen, dimmed by isPending(), until the next one has loaded.
+const open = (tab: string) => startTransition(() => setTab(tab));
+```
+
+`startTransition` returns a promise that settles once every load it started has. A resource
+loading for the first time has no value to keep, so it suspends as usual.
+
 ## Server-side rendering
 
 On the server, Fluixi **awaits** resources before serializing the HTML, then seeds the resolved

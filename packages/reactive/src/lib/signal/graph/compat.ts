@@ -199,19 +199,62 @@ export function untrack<T>(fn: () => T): T {
   return l0untrack(fn);
 }
 
-/**
- * startTransition: run `fn`'s updates as one batch. (Minimal port, the concurrent
- * time-slicing/deferral of the legacy implementation is a later refinement; the
- * batched-commit semantics that callers rely on are preserved.)
- */
-export function startTransition(fn: () => void): Promise<void> {
-  l1batch(fn);
-  return Promise.resolve();
+// Transitions. Shared through the global registry, as the graph state is, so every copy of
+// this module sees the same one.
+const transition = ((globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.transition')] ??= {
+  depth: 0,
+  loads: new Set<Promise<unknown>>(),
+  pending: undefined,
+}) as { depth: number; loads: Set<Promise<unknown>>; pending: [() => number, (n: number) => void] | undefined };
+
+function pendingSignal(): [() => number, (n: number) => void] {
+  return (transition.pending ??= createSignal(0) as unknown as [() => number, (n: number) => void]);
 }
 
-/** useTransition: `[isPending, startTransition]`. isPending is synchronous here (no deferral). */
+/** Whether the code running now is inside `startTransition`: a load it starts keeps the current UI. */
+export function inTransition(): boolean {
+  return transition.depth > 0;
+}
+
+/** A load a transition started: counted in `isPending` until it settles. */
+export function trackTransitionLoad(load: Promise<unknown>): void {
+  const [, setPending] = pendingSignal();
+  transition.loads.add(load);
+  setPending(transition.loads.size);
+  const done = () => {
+    transition.loads.delete(load);
+    setPending(transition.loads.size);
+  };
+  load.then(done, done);
+}
+
+/**
+ * Run `fn`'s updates as a transition: a resource they make load again keeps showing its
+ * current value instead of suspending, so the page stays as it is (no Suspense fallback)
+ * until the new data is there. The returned promise settles once every load the transition
+ * started has. A first load has no value to keep and suspends as usual.
+ */
+export function startTransition(fn: () => void): Promise<void> {
+  const before = new Set(transition.loads);
+  transition.depth++;
+  try {
+    l1batch(fn);
+    // The loads `fn` causes start in effects: run them now, inside the transition.
+    flushSync();
+  } finally {
+    transition.depth--;
+  }
+  const started = [...transition.loads].filter((load) => !before.has(load));
+  return Promise.allSettled(started).then(() => undefined);
+}
+
+/**
+ * useTransition: `[isPending, startTransition]`. `isPending` is true while a load a
+ * transition started is in flight.
+ */
 export function useTransition(): [() => boolean, (fn: () => void) => Promise<void>] {
-  return [() => false, startTransition];
+  const [pending] = pendingSignal();
+  return [() => pending() > 0, startTransition];
 }
 
 /** Force any pending effects to run now. */
