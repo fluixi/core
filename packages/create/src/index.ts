@@ -9,7 +9,7 @@
  * wordmark, gutter, arrow-key select) are hand-rolled ANSI.
  */
 import { INTRINSICS, TAG_INTRINSICS } from '@fluixi/compiler/intrinsics';
-import { cpSync, renameSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, renameSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -134,6 +134,7 @@ Scaffold a Fluixi app in dir. What is not given is asked for.
 
   --ssr | --spa               rendered on the server or in the browser, both with @fluixi/start
   --jsx | --html              template syntax
+  --document                  the page shell as a component (src/document.tsx) instead of index.html
   --ui | --no-ui              @fluixi-ui components
   --fluixi-css | --tailwind | --no-css
   --auth=oauth2|better-auth   authentication; --no-auth for none
@@ -145,7 +146,7 @@ npm keeps options for itself unless they follow --:
   npm create fluixi@alpha -- my-app --spa
 `;
 
-const FLAGS = new Set(['--ssr', '--spa', '--jsx', '--html', '--ui', '--no-ui', '--tailwind', '--fluixi-css', '--no-css', '--no-auth', '--help', '-h']);
+const FLAGS = new Set(['--ssr', '--spa', '--jsx', '--html', '--document', '--ui', '--no-ui', '--tailwind', '--fluixi-css', '--no-css', '--no-auth', '--help', '-h']);
 const VALUED = ['auth', 'provider', 'tokens'];
 
 /** `--name=value` or `--name value`. */
@@ -179,12 +180,12 @@ function addDeps(pkg: Record<string, any>, section: string, deps: Record<string,
  * entry imports directly, so this file only holds what the engine has to read, the dark
  * variant, where to scan, and the theme the app defines.
  */
-function styleSheet(ui: Ui, css: Css): string {
+function styleSheet(ui: Ui, css: Css, shell: 'index' | 'document'): string {
   // Dark from the attribute @fluixi/core's createTheme sets, not the OS preference, so
   // a theme toggle in the app actually drives it.
   const darkVariant = `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));`;
   // Where to look for utility classes. Relative to this file.
-  const sources = `@source '.';\n@source '../index.html';`;
+  const sources = shell === 'document' ? `@source '.';` : `@source '.';\n@source '../index.html';`;
   const theme = `@theme {\n  /* Design tokens. A --color-* scale here drives the whole app. */\n}`;
 
   if (css === 'fluixi-css') {
@@ -272,6 +273,53 @@ function importStyles(target: string, ui: Ui, css: Css): void {
   writeFileSync(file, head + readFileSync(file, 'utf8'));
 }
 
+/**
+ * Replaces the template's `index.html` with `src/document.tsx` (or `.ts` for html`` apps) that
+ * renders the same shell, keeping its title.
+ */
+function writeDocument(target: string, format: 'jsx' | 'html'): void {
+  const index = join(target, 'index.html');
+  const title = /<title>([^<]*)<\/title>/.exec(readFileSync(index, 'utf8'))?.[1] ?? 'Fluixi';
+  const head = `<meta charset="UTF-8" />\n        <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n        <title>${title}</title>`;
+  const source =
+    format === 'html'
+      ? `import { html } from '@fluixi/core';
+import { Html, Head, Main, Scripts } from '@fluixi/start/document';
+
+// Rendered on the server for each request; only the app inside Main hydrates.
+export default function Document() {
+  return html\`<\${Html} lang="en">
+    <\${Head}>
+        ${head}
+    </\${Head}>
+    <body>
+      <\${Main} />
+      <\${Scripts} />
+    </body>
+  </\${Html}>\`;
+}
+`
+      : `import { Html, Head, Main, Scripts } from '@fluixi/start/document';
+
+// Rendered on the server for each request; only the app inside Main hydrates.
+export default function Document() {
+  return (
+    <Html lang="en">
+      <Head>
+        ${head}
+      </Head>
+      <body>
+        <Main />
+        <Scripts />
+      </body>
+    </Html>
+  );
+}
+`;
+  writeFileSync(join(target, 'src', format === 'html' ? 'document.ts' : 'document.tsx'), source);
+  rmSync(index);
+}
+
 async function main(): Promise<void> {
   const args = argv.slice(2);
   if (args.includes('--help') || args.includes('-h')) {
@@ -281,6 +329,7 @@ async function main(): Promise<void> {
   let dir = args.find((a) => !a.startsWith('-'));
   let mode: 'ssr' | 'spa' | undefined =
     args.includes('--spa') ? 'spa' : args.includes('--ssr') ? 'ssr' : undefined;
+  const document = args.includes('--document');
   let format: 'jsx' | 'html' | undefined =
     args.includes('--html') ? 'html' : args.includes('--jsx') ? 'jsx' : undefined;
   let ui: Ui | undefined =
@@ -372,6 +421,8 @@ async function main(): Promise<void> {
   const template = `../template-${mode}${format === 'html' ? '-html' : ''}`;
   cpSync(here(template), target, { recursive: true });
 
+  if (document) writeDocument(target, format);
+
   // npm strips a real .gitignore from published packages → restore it from _gitignore.
   const gi = join(target, '_gitignore');
   if (existsSync(gi)) renameSync(gi, join(target, '.gitignore'));
@@ -418,7 +469,7 @@ async function main(): Promise<void> {
     // Only for fluixi-css: it is the engine that defines `flx.base`, and without a
     // declared order that layer lands above the components it belongs under.
     if (css === 'fluixi-css') writeFileSync(join(target, 'src', 'layers.css'), LAYERS_CSS);
-    const sheet = styleSheet(ui, css);
+    const sheet = styleSheet(ui, css, document ? 'document' : 'index');
     // An empty sheet still gets written: it is where an app puts its own css, and the
     // entry already imports it.
     writeFileSync(join(target, 'src', 'styles.css'), sheet);

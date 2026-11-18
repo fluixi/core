@@ -98,3 +98,27 @@ describe('create-fluixi --auth', () => {
     expect(existsSync(join(cwd, 'app'))).toBe(false);
   });
 });
+
+describe('create-fluixi --document', () => {
+  it('writes the page shell as src/document.tsx in place of index.html', () => {
+    create('--ssr', '--document');
+    expect(existsSync(join(cwd, 'app', 'index.html'))).toBe(false);
+    const document = read('src/document.tsx');
+    expect(document).toContain("import { Html, Head, Main, Scripts } from '@fluixi/start/document';");
+    expect(document).toContain('<title>Fluixi Start Example</title>');
+    expect(document).toMatch(/<body>\s*<Main \/>\s*<Scripts \/>\s*<\/body>/);
+  });
+
+  it('writes src/document.ts with an html template for an html app', () => {
+    execFileSync('node', [bin, 'app', '--html', '--ssr', '--no-ui', '--no-css', '--document'], { cwd, input: '', encoding: 'utf8' });
+    const document = read('src/document.ts');
+    expect(document).toContain("import { html } from '@fluixi/core';");
+    expect(document).toMatch(/<\$\{Main\} \/>\s*<\$\{Scripts\} \/>/);
+  });
+
+  it('keeps index.html without the flag', () => {
+    create('--ssr');
+    expect(existsSync(join(cwd, 'app', 'index.html'))).toBe(true);
+    expect(existsSync(join(cwd, 'app', 'src', 'document.tsx'))).toBe(false);
+  });
+});
