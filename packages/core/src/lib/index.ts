@@ -136,10 +136,8 @@ export type { JSXElement } from './jsx-runtime/index.js';
 
 // FRAMEWORK METADATA
 
-/**
- * Framework version
- */
-export const VERSION = '0.0.1';
+import { VERSION } from '../version.generated.js';
+export { VERSION };
 
 export const FRAMEWORK_NAME = 'Fluixi';
 

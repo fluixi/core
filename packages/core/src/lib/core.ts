@@ -260,10 +260,8 @@ export type {
 // Web Component support moved to @fluixi/element (now in the wc-element repo).
 // Import { defineElement, FluixiElement, createComponent, ... } from '@fluixi/element'.
 
-/**
- * Framework version
- */
-export const VERSION = '0.0.1';
+import { VERSION } from '../version.generated.js';
+export { VERSION };
 
 export const FRAMEWORK_NAME = 'Fluixi';
 
