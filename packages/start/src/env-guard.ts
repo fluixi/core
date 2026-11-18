@@ -11,14 +11,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-
-/**
- * Words that make a value a secret.
- *
- * Deliberately short. `TOKEN` is absent because `VITE_TOKEN_ENDPOINT` is an ordinary URL,
- * and a list that cries wolf gets suppressed wholesale.
- */
-const SECRETISH = /(SECRET|PASSWORD|PASSWD|PRIVATE_KEY|CLIENT_SECRET|CREDENTIALS?)($|_)/;
+import { readsLikeSecret } from './env.js';
 
 /** An escape hatch for a name that reads like a secret and is not. */
 const ALLOW = 'FLUIXI_ALLOW_PUBLIC_SECRETS';
@@ -59,7 +52,7 @@ export function findExposedSecrets(root: string, prefix = 'VITE_'): ExposedSecre
       if (!name?.startsWith(prefix)) continue;
       // Compared without the prefix, so `VITE_SECRET` is caught as readily as
       // `VITE_APP_SECRET`.
-      if (SECRETISH.test(name.slice(prefix.length))) found.push({ name, file });
+      if (readsLikeSecret(name.slice(prefix.length))) found.push({ name, file });
     }
   }
   return found;

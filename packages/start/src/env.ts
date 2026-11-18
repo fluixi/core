@@ -403,13 +403,29 @@ export function selectPublic(
 }
 
 /**
+ * Words that make a value a secret anywhere in its name.
+ *
+ * Deliberately short: a list that cries wolf gets suppressed wholesale.
+ */
+const SECRETISH = /(SECRET|PASSWORD|PASSWD|PRIVATE_KEY|CLIENT_SECRET|CREDENTIALS?)($|_)/;
+
+/**
+ * Words that make a value a secret only as the name's last part: `GITHUB_TOKEN` and
+ * `SENTRY_DSN` are secrets, `TOKEN_ENDPOINT` is an ordinary URL.
+ */
+const SECRETISH_LAST = /(^|_)(TOKEN|API_KEY|APIKEY|DSN|DATABASE_URL|SECRETS)$/;
+
+/** Whether a name (without its public prefix) reads like a secret. */
+export function readsLikeSecret(name: string): boolean {
+  return SECRETISH.test(name) || SECRETISH_LAST.test(name);
+}
+
+/**
  * Names in the public set that look like secrets.
  *
  * The allowlist is the real protection: nothing ships unless it is named. This is the second
  * look, for a line written in a hurry. Same words as the build guard, and deliberately short.
  */
 export function suspectPublicNames(declared: readonly string[]): string[] {
-  return declared.filter((name) =>
-    /(SECRET|PASSWORD|PASSWD|PRIVATE_KEY|CLIENT_SECRET|CREDENTIALS?)($|_)/.test(name),
-  );
+  return declared.filter(readsLikeSecret);
 }

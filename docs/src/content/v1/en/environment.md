@@ -117,7 +117,7 @@ The list is the protection. Four checks catch the line written in a hurry:
 
 | Check | When | What happens |
 | --- | --- | --- |
-| a name in `env.public` reads like a secret (`SECRET`, `PASSWORD`, `PRIVATE_KEY`, `CREDENTIALS`) | build | refused, naming it |
+| a name in `env.public` reads like a secret: `SECRET`, `PASSWORD`, `PASSWD`, `PRIVATE_KEY`, `CLIENT_SECRET` or `CREDENTIAL(S)` anywhere in it, or ending in `TOKEN`, `API_KEY`, `APIKEY`, `DSN`, `DATABASE_URL` or `SECRETS` | build | refused, naming it |
 | a `VITE_` variable in any `.env` file reads like a secret | `fluixi build` | refused; `fluixi dev` warns |
 | `publicEnv().X` in browser code, `X` not declared (a typo, or a server-only value) | build | refused, naming the file, line and variable |
 | `serverEnv()` called in the browser | run time | throws |
