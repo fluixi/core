@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createImageHandler, imageLoader } from './image.js';
+import { createImageHandler, imageLoader } from './image-server.js';
 
 describe('imageLoader', () => {
   it('builds an optimization URL for the handler path', () => {

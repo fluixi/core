@@ -1,214 +1,76 @@
-// On-demand image optimization: a Web `Request` → `Response` handler that resizes
-// and re-encodes images (to AVIF/WebP by content negotiation), plus a matching
-// `imageLoader` for `@fluixi-ui/image`. The actual codec is pluggable, the
-// default uses `sharp` if it's installed, otherwise it streams the source through
-// unchanged (so the framework never hard-depends on a native module).
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { resolve as resolvePath, join, extname, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { createDynamicElement, mergeProps, splitProps } from '@fluixi/dom';
+import type { ImgHTMLAttributes } from '@fluixi/dom/attributes';
+import { IMAGE_WIDTHS, imageLoader, type ImageLoaderOptions } from './image-loader.js';
 
-export interface ImageTransformArgs {
-  /** Target width in px. */
-  width: number;
-  /** Quality 1–100. */
-  quality: number;
-  /** Negotiated output format (`original` = keep the source encoding). */
-  format: 'avif' | 'webp' | 'jpeg' | 'png' | 'original';
-  /** The source `content-type`. */
-  contentType: string;
-}
+export { IMAGE_WIDTHS, imageLoader, type ImageLoaderOptions };
 
-/** Resize / re-encode `input`; return `null` to pass the source through untouched. */
-export type ImageTransform = (
-  input: Uint8Array,
-  args: ImageTransformArgs,
-) => Promise<{ data: Uint8Array; contentType: string } | null>;
+/** Turns a source and a width into the URL of that image at that width. */
+export type ImageLoader = (args: { src: string; width: number; quality?: number }) => string;
 
-export interface ImageHandlerOptions {
-  /** Root directory for local `/foo.jpg` sources. Default `<cwd>/public`. */
-  root?: string;
-  /** Allowed hostnames for absolute `https://...` sources (SSRF guard). */
-  domains?: string[];
-  /** Permitted target widths; a request outside the list is rejected. */
-  sizes?: number[];
-  /** Max quality (also the default when `q` is omitted). Default `80`. */
+export interface ImgProps
+  extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcset' | 'sizes' | 'loading' | 'width' | 'height' | 'style'> {
+  src: string;
+  alt: string;
+  /** The image's own width in pixels: the browser reserves the space, and the 1x and 2x URLs are built from it. */
+  width?: number;
+  height?: number;
+  /** How wide the image is drawn, as the `sizes` attribute: with it, `srcset` lists every width. */
+  sizes?: string;
+  /** Above the fold: loaded at once and early, instead of when it nears the viewport. */
+  priority?: boolean;
+  loading?: 'lazy' | 'eager';
   quality?: number;
-  /** `Cache-Control` max-age, seconds. Default one year (immutable). */
-  cacheMaxAge?: number;
-  /** Override the codec. Default: `sharp` if present, else passthrough. */
-  transform?: ImageTransform;
-  /** In-memory result cache; `false` disables, a number sets max entries (default `100`). */
-  cache?: boolean | number;
+  /** The widths URLs are built for. Default `IMAGE_WIDTHS`, the endpoint's own list. */
+  widths?: readonly number[];
+  /** Default `imageLoader()`, the start endpoint at `/api/image`. */
+  loader?: ImageLoader;
+  /** Cover the positioned parent, with no width or height of its own. */
+  fill?: boolean;
+  /** The plain `src`, no `srcset`. SVG sources are always served this way. */
+  unoptimized?: boolean;
+  style?: string | Record<string, string | number>;
 }
 
-const DEFAULT_SIZES = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
-const MIME: Record<string, string> = {
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
-  '.avif': 'image/avif', '.gif': 'image/gif', '.svg': 'image/svg+xml',
-};
-
-let sharpModule: unknown;
-async function loadSharp(): Promise<any> {
-  if (sharpModule !== undefined) return sharpModule;
-  // Variable specifier so bundlers/tsc treat `sharp` as an optional runtime dep.
-  const name = 'sharp';
-  try {
-    sharpModule = (await import(/* @vite-ignore */ name)).default;
-  } catch {
-    // Resolved from this package, `sharp` is only found when installed beside it; under a
-    // strict layout (pnpm) the app's own copy is not. Look from the app's root too.
-    try {
-      const found = createRequire(join(process.cwd(), 'package.json')).resolve(name);
-      sharpModule = (await import(/* @vite-ignore */ pathToFileURL(found).href)).default;
-    } catch {
-      sharpModule = null;
-    }
-  }
-  return sharpModule;
-}
-
-const defaultTransform: ImageTransform = async (input, { width, quality, format }) => {
-  const sharp = await loadSharp();
-  if (!sharp) return null; // no codec → passthrough
-  const pipe = sharp(input).rotate().resize({ width, withoutEnlargement: true });
-  if (format === 'avif') return { data: new Uint8Array(await pipe.avif({ quality }).toBuffer()), contentType: 'image/avif' };
-  if (format === 'webp') return { data: new Uint8Array(await pipe.webp({ quality }).toBuffer()), contentType: 'image/webp' };
-  if (format === 'png') return { data: new Uint8Array(await pipe.png().toBuffer()), contentType: 'image/png' };
-  if (format === 'original') {
-    // The source's own encoding, resized: a PNG stays a PNG, transparency and all. What sharp
-    // cannot write (an SVG) goes out as it came.
-    const source = (await sharp(input).metadata()).format as string | undefined;
-    const kind = source === 'jpg' ? 'jpeg' : source;
-    if (!kind || !['jpeg', 'png', 'webp', 'avif', 'gif'].includes(kind)) return null;
-    const data = kind === 'png' || kind === 'gif' ? await pipe.toFormat(kind).toBuffer() : await pipe.toFormat(kind, { quality }).toBuffer();
-    return { data: new Uint8Array(data), contentType: `image/${kind}` };
-  }
-  return { data: new Uint8Array(await pipe.jpeg({ quality, mozjpeg: true }).toBuffer()), contentType: 'image/jpeg' };
-};
-
-function imageResponse(body: Uint8Array, contentType: string, maxAge: number): Response {
-  return new Response(body as BodyInit, {
-    headers: {
-      'content-type': contentType,
-      'cache-control': `public, max-age=${maxAge}, immutable`,
-      vary: 'Accept',
-    },
-  });
-}
-
-/** Redirects a remote source may take, each to an allowed host; past this it is refused. */
-const MAX_REDIRECTS = 5;
+const FILL = { position: 'absolute', inset: '0', width: '100%', height: '100%' };
+const defaultLoader = imageLoader();
 
 /**
- * Fetch a remote source, following redirects by hand: `fetch` would follow them itself and the
- * allow-list would only see the first host, so one redirect from an allowed host could reach any
- * other, an internal address included.
+ * An `<img>` that loads the size it is drawn at, from the start image endpoint or any `loader`.
+ * Unstyled and stateless: it renders the same markup on the server and in the browser.
  */
-async function fetchAllowed(
-  target: URL,
-  domains: ReadonlySet<string>,
-): Promise<{ upstream: Response } | { refused: Response }> {
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    if (target.protocol !== 'https:' && target.protocol !== 'http:') {
-      return { refused: new Response('bad url', { status: 400 }) };
-    }
-    if (!domains.has(target.hostname.toLowerCase())) {
-      return { refused: new Response('domain not allowed', { status: 403 }) };
-    }
-    const res = await fetch(target, { redirect: 'manual' });
-    const location = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
-    if (!location) return { upstream: res };
-    target = new URL(location, target);
-  }
-  return { refused: new Response('too many redirects', { status: 502 }) };
-}
-
-/**
- * Build a Web-standard image-optimization handler. Mount it as an API route and
- * point {@link imageLoader} at the same path:
- *
- * ```ts
- * // src/api/image.ts
- * import { createImageHandler } from '@fluixi/start/image';
- * export const GET = createImageHandler({ root: 'public', domains: ['cdn.example.com'] });
- * ```
- *
- * Install `sharp` to get real resizing + AVIF/WebP; without it, sources stream
- * through unchanged (so it's safe to ship either way).
- */
-export function createImageHandler(options: ImageHandlerOptions = {}): (request: Request) => Promise<Response> {
-  const root = resolvePath(options.root ?? join(process.cwd(), 'public'));
-  const domains = new Set((options.domains ?? []).map((d) => d.toLowerCase()));
-  const sizes = options.sizes ?? DEFAULT_SIZES;
-  const maxQuality = options.quality ?? 80;
-  const maxAge = options.cacheMaxAge ?? 60 * 60 * 24 * 365;
-  const transform = options.transform ?? defaultTransform;
-  const cacheMax = options.cache === false ? 0 : typeof options.cache === 'number' ? options.cache : 100;
-  const cache = new Map<string, { body: Uint8Array; contentType: string }>();
-
-  return async (request: Request): Promise<Response> => {
-    const url = new URL(request.url);
-    const src = url.searchParams.get('url') ?? url.searchParams.get('src');
-    const width = Number(url.searchParams.get('w'));
-    // Capped at the configured quality: a visitor asking for `q=100` does not get a bigger file
-    // than the app chose to serve.
-    const quality = Math.min(Math.max(Number(url.searchParams.get('q')) || maxQuality, 1), maxQuality, 100);
-
-    if (!src) return new Response('missing "url"', { status: 400 });
-    if (!Number.isInteger(width) || !sizes.includes(width)) return new Response('invalid "w"', { status: 400 });
-
-    const accept = request.headers.get('accept') ?? '';
-    const format: ImageTransformArgs['format'] =
-      accept.includes('image/avif') ? 'avif' : accept.includes('image/webp') ? 'webp' : 'original';
-
-    const key = `${src}|${width}|${quality}|${format}`;
-    const hit = cache.get(key);
-    if (hit) return imageResponse(hit.body, hit.contentType, maxAge);
-
-    let input: Uint8Array;
-    let sourceType: string;
-    if (/^https?:\/\//i.test(src)) {
-      let target: URL;
-      try { target = new URL(src); } catch { return new Response('bad url', { status: 400 }); }
-      const fetched = await fetchAllowed(target, domains);
-      if ('refused' in fetched) return fetched.refused;
-      const res = fetched.upstream;
-      if (!res.ok) return new Response('upstream error', { status: 502 });
-      input = new Uint8Array(await res.arrayBuffer());
-      sourceType = res.headers.get('content-type') ?? 'application/octet-stream';
-    } else {
-      const filePath = resolvePath(root, src.startsWith('/') ? src.slice(1) : src);
-      if (filePath !== root && !filePath.startsWith(root + sep)) return new Response('forbidden', { status: 403 });
-      try {
-        input = new Uint8Array(await readFile(filePath));
-      } catch {
-        return new Response('not found', { status: 404 });
-      }
-      sourceType = MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
-    }
-
-    // Vector / animated sources aren't rasterized, stream them through.
-    if (sourceType === 'image/svg+xml' || sourceType === 'image/gif') {
-      return imageResponse(input, sourceType, maxAge);
-    }
-
-    let out: { data: Uint8Array; contentType: string } | null = null;
-    try {
-      out = await transform(input, { width, quality, format, contentType: sourceType });
-    } catch {
-      out = null;
-    }
-    const body = out?.data ?? input;
-    const contentType = out?.contentType ?? sourceType;
-
-    if (cacheMax > 0) {
-      if (cache.size >= cacheMax) cache.delete(cache.keys().next().value as string);
-      cache.set(key, { body, contentType });
-    }
-    return imageResponse(body, contentType, maxAge);
+export function Img(props: ImgProps): HTMLImageElement {
+  const [own, rest] = splitProps(props, [
+    'src', 'width', 'height', 'sizes', 'priority', 'loading', 'quality', 'widths', 'loader', 'fill', 'unoptimized', 'style',
+  ]);
+  const plain = () => Boolean(own.unoptimized) || /\.svg([?#]|$)/i.test(own.src);
+  const url = (width: number) => (own.loader ?? defaultLoader)({ src: own.src, width, quality: own.quality });
+  const sizes = () => own.sizes ?? (own.fill ? '100vw' : undefined);
+  // Drawn at a width the page decides: every width, described by its size. Drawn at a fixed
+  // width: that width and twice it, by pixel density, each rounded up to one the endpoint serves.
+  const candidates = (): { width: number; descriptor: string }[] => {
+    const all = [...(own.widths ?? IMAGE_WIDTHS)].sort((a, b) => a - b);
+    if (sizes() || !own.width) return all.map((width) => ({ width, descriptor: `${width}w` }));
+    const up = (width: number) => all.find((w) => w >= width) ?? all[all.length - 1]!;
+    const one = up(own.width);
+    const two = up(own.width * 2);
+    return one === two ? [{ width: one, descriptor: '1x' }] : [{ width: one, descriptor: '1x' }, { width: two, descriptor: '2x' }];
   };
+  const style = () => {
+    if (!own.fill) return own.style;
+    if (typeof own.style === 'string') return `position:absolute;inset:0;width:100%;height:100%;${own.style}`;
+    return { ...FILL, ...own.style };
+  };
+  // Accessors, so each attribute follows the props it is computed from.
+  const computed: Record<string, unknown> = {
+    src: () => (plain() ? own.src : url(candidates().at(-1)!.width)),
+    srcset: () => (plain() ? undefined : candidates().map((c) => `${url(c.width)} ${c.descriptor}`).join(', ')),
+    sizes: () => (plain() ? undefined : sizes()),
+    width: () => (own.fill ? undefined : own.width),
+    height: () => (own.fill ? undefined : own.height),
+    loading: () => (own.priority ? 'eager' : own.loading ?? 'lazy'),
+    fetchpriority: () => (own.priority ? 'high' : undefined),
+    decoding: 'async',
+    style,
+  };
+  return createDynamicElement('img', mergeProps(rest, computed)) as HTMLImageElement;
 }
-
-// The loader lives apart, so a page can import it without this module's `node:fs`.
-export { imageLoader, type ImageLoaderOptions } from './image-loader.js';

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createImageHandler } from './image.js';
+import { createImageHandler } from './image-server.js';
 
 describe('image quality', () => {
   it('never exceeds the configured quality', async () => {

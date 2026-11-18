@@ -1,4 +1,10 @@
 /**
+ * The widths the image endpoint serves by default, and the ones `Img` builds its `srcset` from:
+ * one list, so a URL the component writes is one the endpoint accepts.
+ */
+export const IMAGE_WIDTHS: readonly number[] = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+
+/**
  * The client half of the image support.
  *
  * `imageLoader` builds a URL; `createImageHandler` reads files and transforms them. Only

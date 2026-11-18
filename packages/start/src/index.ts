@@ -20,7 +20,7 @@
  *   nodeAdapter, webAdapter, cloudflareAdapter,
  *     netlifyAdapter, vercelAdapter,
  *     createProdHandler, ssrBuildOptions          `@fluixi/start/adapter`
- *   createImageHandler                            `@fluixi/start/image`
+ *   createImageHandler                            `@fluixi/start/image/server`
  *   the dev/build/start commands                  `@fluixi/start/commands`
  *
  * `defineConfig` stays here, because a config file is the first thing an app writes and
@@ -54,10 +54,10 @@ export type { Middleware, MiddlewareNext } from './middleware.js';
 export { addInterceptor, clearInterceptors, fetchWithInterceptors } from './interceptors.js';
 export type { Interceptor } from './interceptors.js';
 
-// Builds an image URL. The handler that serves it reads files, so it is behind `/image`.
+// Builds an image URL. The handler that serves it reads files, so it is behind `/image/server`.
 export { imageLoader } from './image-loader.js';
 export type { ImageLoaderOptions } from './image-loader.js';
-export type { ImageHandlerOptions, ImageTransform, ImageTransformArgs } from './image.js';
+export type { ImageHandlerOptions, ImageTransform, ImageTransformArgs } from './image-server.js';
 
 // Middleware→render locals bridge: write `getRequestLocals(request).x = ...` in middleware;
 // read it back in loaders/server-fns/render via getLocals() (the app entry forwards

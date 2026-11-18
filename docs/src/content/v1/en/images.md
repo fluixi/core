@@ -1,31 +1,47 @@
 # Images
 
-`@fluixi/start` ships an image pipeline: a route that resizes and re-encodes on demand,
-and a loader that points image markup at it.
+`@fluixi/start` ships an image pipeline: a route that resizes and re-encodes on demand, and an
+`Img` component that asks it for the size each image is drawn at.
 
 ```ts
 // src/api/image.ts  →  /api/image
-import { createImageHandler } from '@fluixi/start/image';
+import { createImageHandler } from '@fluixi/start/image/server';
 
 export const GET = createImageHandler({
   domains: ['images.example.com'],
 });
 ```
 
-`<Image>` is the component from `@fluixi-ui/image`; any markup that takes a `loader` works the
-same way.
-
 ```tsx
-import { imageLoader } from '@fluixi/start';
-import { Image } from '@fluixi-ui/image';
+import { Img } from '@fluixi/start/image';
 
-const loader = imageLoader();   // defaults to /api/image
-
-<Image src="/mug.jpg" loader={loader} widths={[120, 240, 480]} />;
+<Img src="/mug.jpg" alt="A mug" width={480} height={320} />;
 ```
 
-The handler reads `url`, `w` and optional `q` from the query string, so the loader's only
-job is building that URL, which means anything that can produce a `srcset` can use it.
+`Img` renders one `<img>` with a `srcset`, and nothing else: no wrapper, no styles, no state.
+
+| Prop | |
+| --- | --- |
+| `width`, `height` | the image's own size, so the browser reserves its space; the URLs are its 1x and 2x widths |
+| `sizes` | how wide the image is drawn, for a layout that decides it; the `srcset` then lists every width |
+| `priority` | an image above the fold: loaded at once and early, instead of lazily |
+| `fill` | cover the positioned parent, with no size of its own; drawn at `100vw` unless `sizes` says otherwise |
+| `quality` | passed to the endpoint, which caps it |
+| `loader` | builds the URLs, by default for `/api/image`; any `({ src, width, quality }) => url`, a CDN's for instance |
+| `unoptimized` | the plain `src`; SVG sources are always served this way |
+
+Every other attribute goes to the `<img>`.
+
+The handler reads `url`, `w` and optional `q` from the query string, and `imageLoader()` builds
+that URL. For a styled image with a loading state, a placeholder and a fallback, use
+`@fluixi-ui/image` with the same loader:
+
+```tsx
+import { imageLoader } from '@fluixi/start/image';
+import { Image } from '@fluixi-ui/image';
+
+<Image src="/mug.jpg" loader={imageLoader()} widths={[120, 240, 480]} aspectRatio={3 / 2} />;
+```
 
 ## Configuring the handler
 
@@ -50,7 +66,9 @@ reason to widen it consciously.
 
 **`sizes` bounds the work.** A request for a width outside the list is rejected rather than
 resized, so a crawler walking `?w=1`, `?w=2`, `?w=3` cannot make your server encode
-thousands of variants and fill the cache. The default list covers common device widths.
+thousands of variants and fill the cache. The default list, `IMAGE_WIDTHS`, covers common
+device widths, and it is also the list `Img` builds its URLs from. If you set your own
+`sizes`, give `Img` the same list as `widths`, or it asks for widths the handler refuses.
 
 `quality` is both the default and the ceiling, a request asking for more than the
 configured quality does not get it.
