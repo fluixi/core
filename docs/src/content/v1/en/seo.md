@@ -143,4 +143,4 @@ canonical link, one `og:image`, whichever the most specific caller set. That is 
 layout defaults safe: a page overriding `description` replaces it rather than emitting a
 second tag.
 
-Next: **[Images](/v1/en/images)**.
+Next: **[Page document](/v1/en/document)**.

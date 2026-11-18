@@ -144,4 +144,4 @@ Les sources sont fusionnées et dédupliquées par identité avant le rendu : un
 spécifique. C'est ce qui rend les valeurs par défaut d'un layout sûres : une page qui
 redéfinit `description` la remplace au lieu d'émettre une seconde balise.
 
-Ensuite : **[Images](/v1/fr/images)**.
+Ensuite : **[Document de page](/v1/fr/document)**.
