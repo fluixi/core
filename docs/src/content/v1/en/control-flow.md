@@ -58,4 +58,21 @@ On a lowercase tag TypeScript cannot infer the item, so annotate it, or use `<Fo
 should be inferred. In an app built by `@fluixi/start`, `Show`, `For`, `Index`, `Switch` and
 `Match` need no import.
 
+## Portal
+
+Render somewhere else in the document, a dialog or a tooltip, while it stays part of the
+component that owns it: its context, and its cleanup when that component goes.
+
+```tsx
+import { Portal } from '@fluixi/core';
+
+<Portal mount={document.getElementById('modal-root')!}>
+  <Dialog />
+</Portal>;
+```
+
+Without `mount` it goes at the end of `document.body`. On the server a portal renders nothing,
+there being no document to place it in; in the browser its content mounts once the page has
+hydrated, in the context around it.
+
 Next: **[Lifecycle](/v1/en/lifecycle)**.
