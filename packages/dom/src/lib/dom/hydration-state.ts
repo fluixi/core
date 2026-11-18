@@ -196,8 +196,12 @@ function scopeOf(owner: Owner | null): KeyScope {
   return { id: '', next: 0 };
 }
 
-/** Keys are only needed while rendering on the server or hydrating. */
-function keyed(): boolean {
+/**
+ * Keys are only needed while rendering on the server or hydrating. Off for a server render
+ * nothing will hydrate (`renderToString(app, { hydrationKeys: false })`), which also leaves out
+ * the hole markers hydration would look for.
+ */
+export function keyed(): boolean {
   return isServer() ? getRequestContext()?.hydrationKeys !== false : hydration.active;
 }
 
