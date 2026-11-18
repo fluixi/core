@@ -241,6 +241,10 @@ async function bundleEntry(
       build: {
         outDir: dir,
         emptyOutDir: false,
+        // Vite copies `public/` into every output folder by default, which put the whole of it
+        // inside each function. The platform serves those files itself, and the function
+        // reads none of them.
+        copyPublicDir: false,
         ssr: temp,
         rollupOptions: {
           output: {
