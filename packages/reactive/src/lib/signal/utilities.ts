@@ -189,21 +189,15 @@ export function combineSignals<T extends any[]>(
   return new Observable<T>((observer) => {
     const getValues = () =>
       signals.map((s) => (typeof s === 'function' ? s() : s.get())) as T;
-    const disposers = signals.map((signal) => {
-      if (typeof signal === 'function' && (signal as any).subscribe) {
-        return (signal as any).subscribe(() => {
-          observer.next(getValues());
-        });
-      } else if (typeof signal !== 'function') {
-        return signal.subscribe(() => {
-          observer.next(getValues());
-        });
-      }
-
-      return createEffect(() => {
-        observer.next(getValues());
-      });
-    });
+    // Sources with a `subscribe` of their own notify through it.
+    const disposers: any[] = signals
+      .filter((signal) => typeof signal !== 'function' || (signal as any).subscribe)
+      .map((signal) => (signal as any).subscribe(() => observer.next(getValues())));
+    // The plain accessors share one effect, which reads them all: one per accessor emitted
+    // every value once per source, at the start and on each write.
+    if (signals.some((signal) => typeof signal === 'function' && !(signal as any).subscribe)) {
+      disposers.push(createEffect(() => observer.next(getValues())));
+    }
 
     return () => {
       disposers.forEach((dispose) => {
