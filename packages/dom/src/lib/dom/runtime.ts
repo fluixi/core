@@ -1922,9 +1922,10 @@ export function spread(options: SpreadOptions): () => void {
  */
 export function applyProps(element: Element, props: Record<string, any>, isSVG = false): void {
   for (const key in props) {
+    // Before the read: a `get children()` builds the subtree, and the caller inserts its own.
+    if (key === 'children') continue;
     const val = props[key];
     if (key === 'ref') { handleRef(val, element); continue; }
-    if (key === 'children') continue;
     if (key === 'use') { applyUse(element, val); continue; }
     if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
     // Forced bindings: see spread().

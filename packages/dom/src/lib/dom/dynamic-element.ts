@@ -106,8 +106,18 @@ export function createDynamicElement<T extends DynamicType>(
  * a second copy. Children are read through `readChildren`, so a lazy `get children()`,
  * which is how the compiler emits component children, resolves here with the cursor placed.
  */
+/**
+ * Whether there are children, without reading them: reading a `get children()` builds the
+ * subtree, and a copy built only to be compared with `undefined` stays alive in the owner.
+ */
+function hasChildren(props: Record<string, any>): boolean {
+  if (!props || !('children' in props)) return false;
+  const own = Object.getOwnPropertyDescriptor(props, 'children');
+  return !own || 'get' in own ? true : own.value !== undefined;
+}
+
 function insertChildren(element: Element, props: Record<string, any>): void {
-  if (!props || props.children === undefined) return;
+  if (!hasChildren(props)) return;
 
   let start = element.firstChild as Node | null;
   let end: Node;
