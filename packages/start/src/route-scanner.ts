@@ -58,6 +58,26 @@ export function scanRoutes(
   return scanDirectory(absDir, absDir, '', extensions);
 }
 
+/**
+ * Page files that answer the same address: `[a].tsx` and `[b].tsx` side by side, or the same
+ * page in two route groups. The router takes the first in its order and the other never
+ * renders, so the scan says so. Parameter names do not matter, only where they sit.
+ */
+export function overlappingRoutes(routes: ScannedRoute[]): string[][] {
+  const byPath = new Map<string, string[]>();
+  const visit = (nodes: ScannedRoute[]): void => {
+    for (const route of nodes) {
+      if (!route.isLayout) {
+        const shape = route.urlPath.replace(/\/:[^/]+/g, '/:').replace(/\/\*[^/]*$/, '/*') || '/';
+        byPath.set(shape, [...(byPath.get(shape) ?? []), route.filePath]);
+      }
+      visit(route.children);
+    }
+  };
+  visit(routes);
+  return [...byPath.values()].filter((files) => files.length > 1);
+}
+
 function scanDirectory(
   dir: string,
   rootDir: string,

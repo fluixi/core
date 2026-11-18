@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import { scanRoutes, type ScanOptions } from './route-scanner.js';
+import { overlappingRoutes, scanRoutes, type ScanOptions } from './route-scanner.js';
 import { generateRouteModule } from './route-codegen.js';
 
 export interface FluixiRoutesPluginOptions {
@@ -58,11 +58,22 @@ export function fluixiRoutesPlugin(
   let projectRoot = '';
   /** The module body most recently served, so the watcher can tell a real change from a save. */
   let lastGenerated: string | null = null;
+  /** Overlaps already reported, so a rescan on every edit does not repeat them. */
+  const warnedOverlaps = new Set<string>();
 
   function generateModule(root: string): string {
     const absRoutesDir = path.resolve(root, routesDir);
     const scanOpts: ScanOptions = { extensions };
     const routes = scanRoutes(absRoutesDir, scanOpts);
+    for (const files of overlappingRoutes(routes)) {
+      const key = files.join('\0');
+      if (warnedOverlaps.has(key)) continue;
+      warnedOverlaps.add(key);
+      console.warn(
+        `[fluixi] ${files.join(' and ')} in ${routesDir} answer the same address: only the first renders. ` +
+          `Rename one, or move it into its own folder.`,
+      );
+    }
     // Import paths are relative to project root, prefixed with ./
     return generateRouteModule(routes, './' + routesDir);
   }
