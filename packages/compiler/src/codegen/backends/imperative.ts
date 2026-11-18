@@ -29,17 +29,6 @@ import { paren } from '../../analyze/paren.js';
  *   fragment   -> [ ...children ]
  */
 
-const CONTROL_COMPONENT: Record<string, string> = {
-  show: 'Show',
-  for: 'For',
-  index: 'Index',
-  switch: 'Switch',
-  match: 'Match',
-  dynamic: 'Dynamic',
-  errorBoundary: 'ErrorBoundary',
-  suspense: 'Suspense',
-};
-
 function isIdent(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
@@ -125,7 +114,7 @@ function emitChildren(children: IRNode[], used: Set<string>, templates?: StaticT
       used.add('deferElement');
       return `deferElement(() => ${paren(code, 'arrowBody')})`;
     }
-    if (child.kind === 'component' || child.kind === 'control' || (child.kind === 'expr' && child.reactive)) deferred = true;
+    if (child.kind === 'component' || (child.kind === 'expr' && child.reactive)) deferred = true;
     return code;
   });
   return `[${items.join(', ')}]`;
@@ -298,12 +287,6 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // without this it reports whatever the runtime stack says, a line in the compiled file.
       return markBind(emitComponent(node.name, node.props, node.children, used, templates, node.at), node.bindAt ?? node.at);
 
-    case 'control': {
-      const name = CONTROL_COMPONENT[node.control] ?? node.control;
-      used.add(name);
-      return markBind(emitComponent(name, node.props, node.children, used, templates), node.bindAt);
-    }
-
     case 'element': {
       // A static subtree is parsed once into a <template> and cloned per instance:
       // one cloneNode instead of an createNativeElement + spread per element.
@@ -417,8 +400,7 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
         // Only a literal never changes, and it goes straight in.
         const anchored =
           (child.kind === 'expr' && (child.reactive || !isLiteralCode(child.code))) ||
-          child.kind === 'component' ||
-          child.kind === 'control';
+          child.kind === 'component';
         parts.push(anchored ? `insert(${el}, ${childCode}, null);` : `insert(${el}, ${childCode});`);
       }
       parts.push(`return ${el};`);

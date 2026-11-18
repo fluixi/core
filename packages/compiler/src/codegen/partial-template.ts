@@ -90,7 +90,7 @@ export interface PartialTemplate {
 }
 
 function isHole(node: IRNode): boolean {
-  return node.kind === 'expr' || node.kind === 'component' || node.kind === 'control' || isCustomElement(node);
+  return node.kind === 'expr' || node.kind === 'component' || isCustomElement(node);
 }
 
 /**

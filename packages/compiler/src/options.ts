@@ -24,7 +24,7 @@ export interface CompilerOptions {
   partialTemplates?: boolean;
 
   /** which codegen backend to use */
-  backend?: 'imperative' | 'template-clone';
+  backend?: 'imperative';
   /** runtime module emitted symbols are imported from */
   moduleName?: string;
   delegateEvents?: boolean;

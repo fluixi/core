@@ -736,7 +736,7 @@ function collectRuntimeNeeds(node: IRNode, state: any): void {
       });
     }
   }
-  if (node.kind === 'element' || node.kind === 'component' || node.kind === 'control') {
+  if (node.kind === 'element' || node.kind === 'component') {
     if ('props' in node) {
       for (const p of node.props) {
         if (p.kind === 'event' && p.event?.delegated) state.delegatedEvents.add(p.event.name);

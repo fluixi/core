@@ -71,13 +71,6 @@ describe('analyzeStatic', () => {
     expect(reasons.get(node)).toBe('component-child');
   });
 
-  it('rejects an ancestor of control flow', () => {
-    const node = el('div', [], [{ kind: 'control', control: 'show', props: [], children: [] }]);
-    const { reasons } = analyzeStatic(node);
-    expect(node.static).toBe(false);
-    expect(reasons.get(node)).toBe('control-child');
-  });
-
   it('still marks a static subtree nested under a dynamic parent', () => {
     // The parent cannot be cloned wholesale, but the child is worth a template of its own.
     const staticChild = el('span', [attr('className', 'k')], [text('Label')]);

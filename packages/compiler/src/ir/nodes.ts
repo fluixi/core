@@ -21,7 +21,6 @@ export type IRNode =
   | IRComponent
   | IRText
   | IRExpression
-  | IRControl
   | IRFragment;
 
 export type IRPropKind =
@@ -153,16 +152,3 @@ export interface IRExpression {
 
 export interface IRFragment { kind: 'fragment'; children: IRNode[]; loc?: SourceSpan; }
 
-export type ControlKind =
-  | 'show' | 'for' | 'index' | 'switch' | 'match'
-  | 'dynamic' | 'errorBoundary' | 'suspense';
-
-export interface IRControl {
-  kind: 'control';
-  control: ControlKind;
-  props: IRProp[];
-  children: IRNode[];
-  /** As on IRComponent: where the hole driving this subtree was written. */
-  bindAt?: HolePosition;
-  loc?: SourceSpan;
-}

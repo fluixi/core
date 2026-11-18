@@ -26,8 +26,7 @@ export type DynamicReason =
   | 'spread'
   | 'class-or-style-directive'
   | 'expression-child'
-  | 'component-child'
-  | 'control-child';
+  | 'component-child';
 
 export interface StaticReport {
   /** Elements marked static, in visit order. */
@@ -85,8 +84,7 @@ export function analyzeStatic(root: IRNode | IRNode[]): StaticReport {
         return false;
 
       case 'component':
-      case 'control':
-        // Both produce their own subtree at runtime, so an ancestor cannot be cloned
+        // A component produces its own subtree at runtime, so an ancestor cannot be cloned
         // wholesale. Still walk in, so nested elements are marked for their own sake.
         for (const child of node.children) visit(child);
         return false;
@@ -136,7 +134,6 @@ function childReason(node: IRElement): DynamicReason {
   for (const child of node.children) {
     if (child.kind === 'expr') return 'expression-child';
     if (child.kind === 'component') return 'component-child';
-    if (child.kind === 'control') return 'control-child';
     if (child.kind === 'element' && !child.static) return 'expression-child';
     if (child.kind === 'fragment') return 'expression-child';
   }
