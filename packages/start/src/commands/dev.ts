@@ -5,7 +5,7 @@ import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import type { FluixiConfig } from '../config.js';
 import { takeResponseStatus } from '@fluixi/dom';
 import { setDeclaredPublicKeys } from '../env.js';
-import { resolveConfig } from '../config.js';
+import { clientEntryFile, resolveConfig } from '../config.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, exitOnListenError, withResponseHeaders, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
@@ -114,7 +114,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
 
   const { createServer } = await import('vite');
   // An API-only app has no page and so no template.
-  const template = cfg.apiOnly ? '' : readFileSync(resolve(cfg.root, cfg.template), 'utf-8');
+  const templateFile = resolve(cfg.root, cfg.template);
+  // A document component renders the page per request: it needs no index.html beside it.
+  const template = cfg.apiOnly || (cfg.document && !existsSync(templateFile)) ? '' : readFileSync(templateFile, 'utf-8');
 
   // Create the HTTP server FIRST so Vite's HMR WebSocket attaches to it instead of
   // opening its own port (which, if held by a zombie, loops "[vite] server
@@ -150,10 +152,21 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
       return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
     }
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);
+    // The document component, rendered for this request, or index.html. In dev the page loads
+    // the entry's source; Vite's client and the styles are added below, as for index.html.
+    const page =
+      cfg.document && mod.__fluixiDocument && mod.__fluixiRenderDocument
+        ? mod.__fluixiRenderDocument(mod.__fluixiDocument, {
+            request,
+            mountId: cfg.mountId,
+            assets: { scripts: ['/' + clientEntryFile(cfg)], styles: [], preloads: [] },
+            file: cfg.document,
+          })
+        : template;
     if (typeof mod.renderStream === 'function') {
       const shell = await vite.transformIndexHtml(
         path,
-        await injectStyles(vite, template, await renderedStyles(vite, cfg.serverEntry)),
+        await injectStyles(vite, page, await renderedStyles(vite, cfg.serverEntry)),
       );
       const { head, tail } = splitTemplate(shell, cfg.mountId);
       return await streamDocument(head, await withPlatformRequest(request, () => mod.renderStream(path, request)), tail, request);
@@ -166,7 +179,7 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     // (whole tree rebuilt → duplicated) AND skipped dev SEO. No marker → identical to injectApp.
     const styled = await injectStyles(
       vite,
-      injectAppAndHead(template, appHtml, cfg.mountId),
+      injectAppAndHead(page, appHtml, cfg.mountId),
       await renderedStyles(vite, cfg.serverEntry),
     );
     const html = await vite.transformIndexHtml(path, styled);

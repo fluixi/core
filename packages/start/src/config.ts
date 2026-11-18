@@ -42,6 +42,12 @@ export interface FluixiConfig {
   clientEntry?: string;
   /** HTML template. Default: index.html */
   template?: string;
+  /**
+   * The page shell as a component, rendered per request on the server in place of `template`
+   * (see `@fluixi/start/document`). Default: `src/document.tsx`, `.ts`, `.jsx` or `.js` when one
+   * exists; without one, `template` is used. `null` keeps `template` even when one exists.
+   */
+  document?: string | null;
   /** Element id the app HTML is injected into (`<div id="..."></div>`). Default: root */
   mountId?: string;
   /**
@@ -225,8 +231,10 @@ export interface ResolvedPrerender {
 }
 
 export type ResolvedConfig = Required<
-  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents' | 'worker'>
+  Omit<FluixiConfig, 'ssrNoExternal' | 'i18n' | 'prerender' | 'adapter' | 'webComponents' | 'worker' | 'document'>
 > & {
+  /** The document component's file, relative to the root, or null when the app has none. */
+  document: string | null;
   ssrNoExternal: (string | RegExp)[];
   worker: Required<NonNullable<FluixiConfig['worker']>>;
   i18n: ResolvedI18n | false;
@@ -254,6 +262,7 @@ export function resolveConfig(config: FluixiConfig = {}): ResolvedConfig {
     serverEntry: config.serverEntry ?? 'src/entry-server.ts',
     clientEntry: config.clientEntry ?? 'src/entry-client.ts',
     template: config.template ?? 'index.html',
+    document: config.document === undefined ? findDocument(root) : config.document,
     mountId: config.mountId ?? 'root',
     eventReplay: config.eventReplay ?? true,
     routesDir: config.routesDir ?? 'src/routes',
@@ -370,4 +379,21 @@ async function loadConfigFile(file: string): Promise<FluixiConfig> {
   } finally {
     await unlink(tempFile).catch(() => {});
   }
+}
+
+/** Where an app's document component is looked for, in order. */
+export const DOCUMENT_FILES = ['src/document.tsx', 'src/document.ts', 'src/document.jsx', 'src/document.js'] as const;
+
+function findDocument(root: string): string | null {
+  return DOCUMENT_FILES.find((file) => existsSync(resolve(root, file))) ?? null;
+}
+
+/**
+ * The client entry as it exists on disk: `clientEntry`, or the same name with another
+ * script extension (the default names `.ts`, and many apps write `.tsx`).
+ */
+export function clientEntryFile(cfg: Pick<ResolvedConfig, 'root' | 'clientEntry'>): string {
+  if (existsSync(resolve(cfg.root, cfg.clientEntry))) return cfg.clientEntry;
+  const base = cfg.clientEntry.replace(/\.[cm]?[jt]sx?$/, '');
+  return ['.tsx', '.ts', '.jsx', '.js'].map((ext) => base + ext).find((file) => existsSync(resolve(cfg.root, file))) ?? cfg.clientEntry;
 }

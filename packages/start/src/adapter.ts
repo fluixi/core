@@ -7,6 +7,7 @@ import type { FluixiConfig, ResolvedConfig } from './config.js';
 import { resolveConfig } from './config.js';
 import { serveNode, withStaticFiles, type FetchHandler } from './handler.js';
 import { createHandlerFrom } from './handler-core.js';
+import type { DocumentAssets } from './document-shell.js';
 import { PUBLIC_ENV_FILE, setBuildPublicEnv, setDeclaredPublicKeys } from './env.js';
 import { createPreloader, type RouteAssets } from './preload.js';
 import { routeUpgrade, type ServerHooks } from './server.js';
@@ -20,8 +21,10 @@ import { routeUpgrade, type ServerHooks } from './server.js';
 export async function createProdHandler(config: FluixiConfig = {}): Promise<FetchHandler> {
   const cfg = resolveConfig(config);
   const clientDir = resolve(cfg.root, 'dist/client');
-  // An API has no page, so no shell to read.
-  const template = cfg.apiOnly ? '' : await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
+  // The client entry's files, written by the build when the app has a document component.
+  const document = readDocumentAssets(resolve(cfg.root, 'dist/server'), cfg.document);
+  // An API has no page, and a document is the page: neither has a shell to read.
+  const template = cfg.apiOnly || document ? '' : await readTemplate(clientDir, resolve(cfg.root, 'dist/server'));
   const serverEntry = resolve(cfg.root, 'dist/server', 'entry-server.js');
   // SPA apps may ship no server entry (or one only for server functions), import if present.
   const mod = existsSync(serverEntry)
@@ -44,7 +47,16 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
   const errorFile = join(clientDir, 'error.html');
   const errorPage = existsSync(errorFile) ? readFileSync(errorFile, 'utf8') : undefined;
 
-  return createHandlerFrom({ template, mod, cfg, middleware, preload: await loadPreloader(cfg), errorPage });
+  return createHandlerFrom({ template, mod, cfg, middleware, preload: await loadPreloader(cfg), errorPage, document });
+}
+
+/** The file the build writes the client entry's files to, for the document component. */
+export const DOCUMENT_ASSETS_FILE = 'document-assets.json';
+
+function readDocumentAssets(serverDir: string, file: string | null): { assets: DocumentAssets; file: string } | undefined {
+  const path = join(serverDir, DOCUMENT_ASSETS_FILE);
+  if (!file || !existsSync(path)) return undefined;
+  return { assets: JSON.parse(readFileSync(path, 'utf8')) as DocumentAssets, file };
 }
 
 /**

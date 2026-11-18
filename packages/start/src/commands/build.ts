@@ -3,9 +3,9 @@ import { aliasesFromTsconfig } from '../tsconfig-paths.js';
 import { mkdir, writeFile, rm, copyFile, readFile } from 'node:fs/promises';
 import { resolve, dirname, join, basename } from 'node:path';
 import type { FluixiConfig, ResolvedConfig } from '../config.js';
-import { resolveConfig } from '../config.js';
+import { clientEntryFile, resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv, singleFileOutput } from '../internal.js';
-import { ssrBuildOptions } from '../adapter.js';
+import { DOCUMENT_ASSETS_FILE, ssrBuildOptions } from '../adapter.js';
 import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
 import type { ScannedRoute } from '../route-scanner.js';
@@ -74,7 +74,14 @@ export async function build(
     resolve: { alias: aliasesFromTsconfig(cfg.root) },
     plugins,
     logLevel: 'warn',
-    build: { outDir: 'dist/client', ssrManifest: true, manifest: true, emptyOutDir: true },
+    build: {
+      outDir: 'dist/client',
+      ssrManifest: true,
+      manifest: true,
+      emptyOutDir: true,
+      // A document component is the page: the bundle starts from the client entry, not index.html.
+      ...(cfg.document ? { rollupOptions: { input: resolve(cfg.root, clientEntryFile(cfg)) } } : {}),
+    },
   });
 
   // SSR builds a server bundle that renders HTML. A SPA may still ship one, only for server
@@ -139,11 +146,14 @@ export async function build(
     // Prerendering `/` writes over the built `index.html`, and that file is also the
     // template the server renders into. Keep the shell before it goes: without this a
     // prerendered home page becomes the template, so every SSR response carries the
-    // home page's markup and head around the app it just rendered.
-    await copyFile(
-      resolve(cfg.root, 'dist/client', 'index.html'),
-      resolve(cfg.root, 'dist/server', 'template.html'),
-    );
+    // home page's markup and head around the app it just rendered. A document component
+    // has no such file: it renders the shell per request.
+    if (!cfg.document) {
+      await copyFile(
+        resolve(cfg.root, 'dist/client', 'index.html'),
+        resolve(cfg.root, 'dist/server', 'template.html'),
+      );
+    }
     process.stdout.write('\n');
     await prerender(config);
   }
@@ -184,6 +194,7 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
   if (!existsSync(manifestFile)) return;
 
   const serverDir = resolve(cfg.root, 'dist/server');
+  if (cfg.document && existsSync(serverDir)) await writeDocumentAssets(cfg, clientDir, serverDir);
   const routesDir = resolve(cfg.root, cfg.routesDir);
   if (existsSync(serverDir) && existsSync(routesDir)) {
     const manifest: Record<string, string[]> = JSON.parse(await readFile(manifestFile, 'utf-8'));
@@ -393,4 +404,26 @@ function serverInputs(entry: string, middleware: string | undefined, entryName =
       output: { entryFileNames: '[name].js' },
     },
   };
+}
+
+/**
+ * The client entry's files, for the document's `<Head />` and `<Scripts />`: the entry chunk,
+ * the styles it and its imports carry, and the chunks it imports, to preload. From the build
+ * manifest, before it is deleted from the published output.
+ */
+async function writeDocumentAssets(cfg: ResolvedConfig, clientDir: string, serverDir: string): Promise<void> {
+  const chunksFile = join(clientDir, '.vite', 'manifest.json');
+  const chunks: Record<string, ManifestChunk> = existsSync(chunksFile) ? JSON.parse(await readFile(chunksFile, 'utf-8')) : {};
+  const entry = chunks[clientEntryFile(cfg).replace(/\\/g, '/').replace(/^\.\//, '')];
+  if (!entry) throw new Error(`[fluixi] the client build has no chunk for ${clientEntryFile(cfg)}, so the document has no script to load.`);
+  const files = withImports(['/' + entry.file], chunks);
+  // The event capture the Vite HTML hook puts in index.html; a document has no index.html.
+  const capture = cfg.ssr && cfg.eventReplay ? (await import('@fluixi/server')).eventCaptureScript().replace(/^<script>|<\/script>$/g, '') : null;
+  const assets = {
+    ...(capture ? { inline: [capture] } : {}),
+    scripts: ['/' + entry.file],
+    styles: [...new Set([...(entry.css ?? []).map((css) => '/' + css), ...files.filter((f) => f.endsWith('.css'))])],
+    preloads: files.filter((f) => f.endsWith('.js') && f !== '/' + entry.file),
+  };
+  await writeFile(join(serverDir, DOCUMENT_ASSETS_FILE), JSON.stringify(assets, null, 2) + '\n');
 }

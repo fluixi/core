@@ -123,6 +123,12 @@
         "require": "./dist/handler.cjs",
         "default": "./dist/handler.js"
       },
+      "./document": {
+        "types": "./dist/document-shell.d.ts",
+        "import": "./dist/document-shell.mjs",
+        "require": "./dist/document-shell.cjs",
+        "default": "./dist/document-shell.js"
+      },
       "./image": {
         "types": "./dist/image.d.ts",
         "import": "./dist/image.mjs",
@@ -285,6 +291,13 @@
       "import": "./dist/handler.mjs",
       "require": "./dist/handler.cjs",
       "default": "./dist/handler.js"
+    },
+    "./document": {
+      "development": "./src/document-shell.ts",
+      "types": "./dist/document-shell.d.ts",
+      "import": "./dist/document-shell.mjs",
+      "require": "./dist/document-shell.cjs",
+      "default": "./dist/document-shell.js"
     },
     "./image": {
       "development": "./src/image.ts",

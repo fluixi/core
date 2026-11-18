@@ -12,6 +12,7 @@
  * all under middleware) is a property of the framework, not of the host.
  */
 import type { ResolvedConfig } from './config.js';
+import type { DocumentAssets, DocumentRender } from './document-shell.js';
 import { injectAppAndHead, injectPreload, splitTemplate, guardHandler } from './document.js';
 import { createRequestHandler, streamDocument, withResponseHeaders, type FetchHandler } from './respond.js';
 import { composeMiddleware, normalizeMiddleware } from './middleware.js';
@@ -31,6 +32,9 @@ export interface ServerModule {
   handleApiRequest?: (request: Request) => Response | Promise<Response>;
   /** Middleware from `app.config.ts` modules, re-exported into the entry by the start plugin. */
   __fluixiAppMiddleware?: unknown;
+  /** The app's document component and the renderer bundled with it (`document-plugin.ts`). */
+  __fluixiDocument?: (props: never) => unknown;
+  __fluixiRenderDocument?: (Document: (props: never) => unknown, input: DocumentRender) => string;
 }
 
 export interface HandlerParts {
@@ -48,13 +52,22 @@ export interface HandlerParts {
   preload?: (pathname: string) => string[];
   /** The app's page for a failed request, its `public/error.html`; a plain one without it. */
   errorPage?: string;
+  /** With a document component: the client entry's files, and the document's file for errors. */
+  document?: { assets: DocumentAssets; file: string };
 }
 
-export function createHandlerFrom({ template, mod, cfg, middleware, preload, errorPage }: HandlerParts): FetchHandler {
+export function createHandlerFrom({ template, mod, cfg, middleware, preload, errorPage, document }: HandlerParts): FetchHandler {
   // This handler serves a build: an error is logged, and the visitor never sees its stack.
   const onError = { production: true, page: errorPage };
   const withPreload = (html: string, pathname: string): string =>
     preload ? injectPreload(html, preload(pathname)) : html;
+  // The page template: the document component rendered for this request, or index.html.
+  const Document = document && mod.__fluixiDocument;
+  const renderDocument = mod.__fluixiRenderDocument;
+  const page = (request: Request): string =>
+    Document && renderDocument
+      ? renderDocument(Document, { request, mountId: cfg.mountId, assets: document.assets, file: document.file })
+      : template;
 
   // Streaming when the entry exports `renderStream` (a body stream): flush the split
   // template head first, pipe the body, then the tail. Else inject the string render.
@@ -76,7 +89,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload, err
       // the head is the part that flushes before the body is known, which is the whole
       // reason streaming wants them, since the browser can start fetching the route's
       // chunk while the server is still awaiting data for it.
-      const { head, tail } = splitTemplate(withPreload(template, url.pathname), cfg.mountId);
+      const { head, tail } = splitTemplate(withPreload(page(request), url.pathname), cfg.mountId);
       const body = await withPlatformRequest(request, () => mod.renderStream!(url.pathname + url.search, request));
       return await streamDocument(head, body as never, tail, request);
     };
@@ -85,7 +98,7 @@ export function createHandlerFrom({ template, mod, cfg, middleware, preload, err
     core = createRequestHandler(
       async (url, request) =>
         // `url` here is `pathname + search`; matching only ever wants the path.
-        injectAppAndHead(withPreload(template, url.split('?')[0]), await render!(url, request), cfg.mountId),
+        injectAppAndHead(withPreload(page(request), url.split('?')[0]), await render!(url, request), cfg.mountId),
       onError,
     );
   }
