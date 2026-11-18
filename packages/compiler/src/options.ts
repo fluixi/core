@@ -28,7 +28,6 @@ export interface CompilerOptions {
   /** runtime module emitted symbols are imported from */
   moduleName?: string;
   delegateEvents?: boolean;
-  hydratable?: boolean;
   sourceMaps?: boolean;
   dev?: boolean;
   /**
@@ -42,7 +41,6 @@ export const defaultOptions: CompilerOptions = {
   backend: 'imperative',
   moduleName: '@fluixi/dom',
   delegateEvents: true,
-  hydratable: false,
   sourceMaps: true,
   dev: false,
 };
