@@ -39,6 +39,7 @@ import {
   templateSalt,
   claimKeyed,
   keepKeyed,
+  warnTextMismatch,
   HYDRATION_KEY,
 } from './hydration-state.js';
 
@@ -899,13 +900,16 @@ export function insertExpression(
         return node;
       }
       if (current.length === 1 && current[0].nodeType === 3) {
-        (current[0] as Text).data = value as string;
+        const text = current[0] as Text;
+        if (hydration.active && text.data !== value) warnTextMismatch(text.data, value as string);
+        text.data = value as string;
         return current;
       }
       current = cleanChildren(parent, current, marker);
     }
 
     if (current && isDomText(current)) {
+      if (hydration.active && (current as Text).data !== value) warnTextMismatch((current as Text).data, value as string);
       (current as Text).data = value as string;
       return current;
     }

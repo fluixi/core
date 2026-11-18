@@ -22,7 +22,9 @@ import {
   registerHydrationWalker,
   removeUnclaimedKeyed,
   flushAfterHydrationPass,
+  warnTextMismatch,
 } from './hydration-state.js';
+import { isProduction } from './versions.js';
 
 /**
  * Re-sync the cursor onto the next adoptable server node. Two things can leave it off-target
@@ -51,9 +53,9 @@ const VOID_ELEMENTS = new Set([
   'link', 'meta', 'param', 'source', 'track', 'wbr',
 ]);
 
-// Tree-shaken out of production (vite/esbuild replace process.env.NODE_ENV).
-const DEV =
-  typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production';
+// Tree-shaken out of production (bundlers replace process.env.NODE_ENV). Not behind
+// `typeof process`, which is undefined in a browser and kept the warnings from ever firing.
+const DEV = !isProduction();
 
 /** Dev-only: warn when the cursor node diverges from what the client builds. */
 function warnMismatch(expected: string, found: Node): void {
@@ -178,7 +180,10 @@ function hydrateText(value: string): Text | null {
       return c as Text;
     }
     hydration.cursor = c.nextSibling;
-    if (data !== value) (c as Text).data = value;
+    if (data !== value) {
+      warnTextMismatch(data, value);
+      (c as Text).data = value;
+    }
     return c as Text;
   }
   if (DEV && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);

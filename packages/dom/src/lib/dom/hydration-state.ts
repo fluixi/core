@@ -11,6 +11,7 @@
 import { createChildOwner, getOwner, type Owner } from '@fluixi/reactive/signal';
 import { isServer } from './server/host.js';
 import { getRequestContext } from './server/request-context.js';
+import { isProduction } from './versions.js';
 
 export const hydration: { active: boolean; cursor: Node | null; parents: Node[] } = {
   active: false,
@@ -352,6 +353,19 @@ export function flushAfterHydrationPass(): void {
       console.error(error);
     }
   }
+}
+
+/**
+ * Dev only: a text node the server rendered with other text than the client's. Hydration keeps
+ * the node and writes the client's text, so without this the difference passed unseen.
+ */
+export function warnTextMismatch(server: string, client: string): void {
+  if (isProduction()) return;
+  console.warn(
+    `[fluixi] hydration mismatch: expected text ${JSON.stringify(client.slice(0, 24))} but the server DOM has text ` +
+      `${JSON.stringify(server.slice(0, 24))}. Server and client rendered different markup; keeping the node and writing ` +
+      `the client's text. Check for non-deterministic render (Date.now(), Math.random(), browser-only branches, untransported data).`,
+  );
 }
 
 /** Whether a hydration pass is running: what a component builds now adopts server nodes. */

@@ -54,7 +54,7 @@ export function versionMark(): string {
   return isProduction() ? '' : (versions.core ?? versions.dom);
 }
 
-function isProduction(): boolean {
+export function isProduction(): boolean {
   try {
     // Written out in full: a bundler replaces exactly `process.env.NODE_ENV` in a browser
     // build, where `process` does not exist; a guard or `?.` around it would survive and read
