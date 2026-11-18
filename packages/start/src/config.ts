@@ -202,8 +202,11 @@ export interface FluixiConfig {
    * `dist/client` (served by any static host; hydrates on the client). `true` prerenders `/`
    * and crawls internal `<a href>` links. An object sets explicit `routes` (for dynamic paths
    * with no incoming link) and toggles `crawl`. Requires `ssr: true` (it renders to prerender).
+   * `static: true` says the site is deployed as files only, with no server: the build then
+   * warns about links to pages that were not prerendered and about pages whose code calls a
+   * server function, both of which fail on a static host.
    */
-  prerender?: boolean | { routes?: string[]; crawl?: boolean };
+  prerender?: boolean | { routes?: string[]; crawl?: boolean; static?: boolean };
 }
 
 /** Resolved i18n discovery config (or `false` when disabled). */
@@ -217,6 +220,8 @@ export interface ResolvedI18n {
 export interface ResolvedPrerender {
   routes: string[];
   crawl: boolean;
+  /** Deployed as files only: the build reports what would need a server. */
+  static: boolean;
 }
 
 export type ResolvedConfig = Required<
@@ -283,6 +288,7 @@ function resolvePrerender(prerender: FluixiConfig['prerender']): ResolvedPrerend
   return {
     routes: opts.routes?.length ? opts.routes : ['/'],
     crawl: opts.crawl ?? true,
+    static: opts.static ?? false,
   };
 }
 

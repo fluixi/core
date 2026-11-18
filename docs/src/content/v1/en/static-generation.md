@@ -61,4 +61,21 @@ cannot live only in middleware if the route is also prerendered.
 Mixed deployments are fine: prerender the marketing pages and let the app routes be served
 by `fluixi start`.
 
+## Deploying files only
+
+When the site goes to a static host with no server at all, say so with `static: true`:
+
+```ts
+export default defineConfig({
+  ssr: true,
+  prerender: { routes: ['/', '/pricing'], static: true },
+});
+```
+
+The build then lists what would fail there: a link in a prerendered page to a page that was
+not prerendered (the host has no file for it), and a page whose code calls a server function
+(the call has no server to reach when the page is opened by client navigation). Each line
+names the page, so you can add it to `routes`, load its data another way, or deploy the
+server after all.
+
 Next: **[Deployment](/v1/en/deployment)**.

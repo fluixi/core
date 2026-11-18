@@ -1,4 +1,5 @@
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import type { FluixiConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -49,6 +50,8 @@ export async function prerender(config: FluixiConfig = {}): Promise<string[]> {
   const queue = routes.map(norm);
   const seen = new Set<string>();
   const written: string[] = [];
+  /** Every internal link a written page holds, with the first page that holds it. */
+  const linkedFrom = new Map<string, string>();
 
   while (queue.length) {
     const url = queue.shift()!;
@@ -74,9 +77,80 @@ export async function prerender(config: FluixiConfig = {}): Promise<string[]> {
     await writeFile(file, html);
     written.push(url);
 
-    if (crawl) for (const link of extractLinks(html)) if (!seen.has(link)) queue.push(link);
+    for (const link of extractLinks(html)) {
+      if (!linkedFrom.has(link)) linkedFrom.set(link, url);
+      if (crawl && !seen.has(link)) queue.push(link);
+    }
   }
 
   done(`${c.bold('prerendered')} ${c.bold(String(written.length))} page(s)  ${c.gray('→ dist/client')}\n`);
+  if (cfg.prerender.static) {
+    for (const line of await staticProblems(cfg.root, written, linkedFrom)) {
+      process.stdout.write(`    ${c.yellow('!')} ${line}\n`);
+    }
+  }
   return written;
+}
+
+async function jsFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await jsFiles(path)));
+    else if (entry.name.endsWith('.js')) out.push(path);
+  }
+  return out;
+}
+
+/** Whether a concrete path matches a route pattern (`/blog/:slug`, `/files/*`). */
+export function matchesPattern(pattern: string, path: string): boolean {
+  const p = pattern.split('/').filter(Boolean);
+  const u = path.split('/').filter(Boolean);
+  for (let i = 0; i < p.length; i++) {
+    if (p[i]!.startsWith('*')) return true;
+    if (i >= u.length) return false;
+    if (!p[i]!.startsWith(':') && p[i] !== u[i]) return false;
+  }
+  return p.length === u.length;
+}
+
+/**
+ * What fails on a static host, for a site built with `prerender: { static: true }`:
+ * links to pages that were not written (no file to serve), and pages whose code calls a
+ * server function (the request goes to a server that is not there, on the first client
+ * navigation to them). A server function is found by its id: every one the server bundle
+ * registers is a `"<hash>:<n>"` literal there, and its client stub carries the same one (a minifier may
+ * quote it with backticks).
+ */
+export async function staticProblems(root: string, written: string[], linkedFrom: Map<string, string>): Promise<string[]> {
+  const out: string[] = [];
+  const pages = new Set(written);
+  for (const [link, from] of linkedFrom) {
+    if (!pages.has(link)) out.push(`${from} links to ${link}, which was not prerendered: a static host has no page there. Add it to prerender.routes, or deploy the server.`);
+  }
+
+  const serverDir = resolve(root, 'dist/server');
+  const assetsFile = join(serverDir, 'route-assets.json');
+  if (!existsSync(serverDir) || !existsSync(assetsFile)) return out;
+  const ids = new Set<string>();
+  for (const file of await jsFiles(serverDir)) {
+    for (const m of (await readFile(file, 'utf-8')).matchAll(/["'`]([0-9a-f]{1,8}:\d+)["'`]/g)) ids.add(m[1]!);
+  }
+  if (!ids.size) return out;
+  const assets: Record<string, string[]> = JSON.parse(await readFile(assetsFile, 'utf-8'));
+  const clientDir = resolve(root, 'dist/client');
+  for (const [pattern, files] of Object.entries(assets)) {
+    if (!written.some((page) => matchesPattern(pattern, page))) continue;
+    for (const file of files) {
+      const path = join(clientDir, file.replace(/^\//, ''));
+      if (!file.endsWith('.js') || !existsSync(path)) continue;
+      const code = await readFile(path, 'utf-8');
+      const id = [...code.matchAll(/["'`]([0-9a-f]{1,8}:\d+)["'`]/g)].map((m) => m[1]!).find((x) => ids.has(x));
+      if (id) {
+        out.push(`${pattern} calls a server function (${file}): on a static host it fails when reached by client navigation. Load its data another way, or deploy the server.`);
+        break;
+      }
+    }
+  }
+  return out;
 }

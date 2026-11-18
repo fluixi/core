@@ -26,10 +26,11 @@ describe('prerender', () => {
 
   it('config: prerender true → crawl from /, object sets routes + crawl', () => {
     expect(resolveConfig({}).prerender).toBe(false);
-    expect(resolveConfig({ prerender: true }).prerender).toEqual({ routes: ['/'], crawl: true });
+    expect(resolveConfig({ prerender: true }).prerender).toEqual({ routes: ['/'], crawl: true, static: false });
     expect(resolveConfig({ prerender: { routes: ['/a', '/b'], crawl: false } }).prerender).toEqual({
       routes: ['/a', '/b'],
       crawl: false,
+      static: false,
     });
   });
 });
