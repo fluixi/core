@@ -11,6 +11,8 @@
  * `createProdHandler` does on Node and what none of these can do.
  */
 
+import type { DocumentAssets } from '../document-shell.js';
+
 export interface EntrySource {
   /** Path to the built server entry, relative to the generated file. */
   serverEntry: string;
@@ -24,10 +26,12 @@ export interface EntrySource {
   prerendered: string[];
   /** URL pattern → built files, inlined: a worker cannot read the map off disk. */
   routeAssets: Record<string, string[]>;
+  /** With a document component: the client entry's files and the document's file, inlined. */
+  document?: { assets: DocumentAssets; file: string } | null;
 }
 
 /** Imports and the handler, shared by every platform entry. */
-function preamble({ serverEntry, middleware, template, ssr, mountId, routeAssets }: EntrySource): string {
+function preamble({ serverEntry, middleware, template, ssr, mountId, routeAssets, document }: EntrySource): string {
   return [
     `import { createHandlerFrom, setClientAddress } from '@fluixi/start/handler-core';`,
     `import { createPreloader } from '@fluixi/start/preload';`,
@@ -44,6 +48,7 @@ function preamble({ serverEntry, middleware, template, ssr, mountId, routeAssets
     `  cfg: { ssr: ${ssr}, mountId: ${JSON.stringify(mountId)} },`,
     `  preload: createPreloader(routeAssets),`,
     middleware ? `  middleware,` : '',
+    document ? `  document: ${JSON.stringify(document)},` : '',
     `});`,
   ]
     .filter(Boolean)

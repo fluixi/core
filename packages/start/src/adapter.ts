@@ -53,7 +53,7 @@ export async function createProdHandler(config: FluixiConfig = {}): Promise<Fetc
 /** The file the build writes the client entry's files to, for the document component. */
 export const DOCUMENT_ASSETS_FILE = 'document-assets.json';
 
-function readDocumentAssets(serverDir: string, file: string | null): { assets: DocumentAssets; file: string } | undefined {
+export function readDocumentAssets(serverDir: string, file: string | null): { assets: DocumentAssets; file: string } | undefined {
   const path = join(serverDir, DOCUMENT_ASSETS_FILE);
   if (!file || !existsSync(path)) return undefined;
   return { assets: JSON.parse(readFileSync(path, 'utf8')) as DocumentAssets, file };

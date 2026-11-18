@@ -6,6 +6,9 @@ import type { FluixiConfig, ResolvedConfig } from '../config.js';
 import { clientEntryFile, resolveConfig } from '../config.js';
 import { fluixiPlugins, loadServerEnv, singleFileOutput } from '../internal.js';
 import { DOCUMENT_ASSETS_FILE, ssrBuildOptions } from '../adapter.js';
+import { DOCUMENT_VMOD } from '../document-plugin.js';
+import type { DocumentAssets } from '../document-shell.js';
+import { pathToFileURL } from 'node:url';
 import { buildWebComponents } from './web-component.js';
 import { prerender } from './prerender.js';
 import type { ScannedRoute } from '../route-scanner.js';
@@ -83,6 +86,8 @@ export async function build(
       ...(cfg.document ? { rollupOptions: { input: resolve(cfg.root, clientEntryFile(cfg)) } } : {}),
     },
   });
+  // An SPA serves one shell to every path: its document renders once, here, to index.html.
+  if (cfg.document && !cfg.ssr) await renderSpaShell(cfg, plugins);
 
   // SSR builds a server bundle that renders HTML. A SPA may still ship one, only for server
   // functions / middleware: so build it when the entry exists; a pure static SPA skips it.
@@ -194,7 +199,8 @@ async function collectRouteAssets(cfg: ResolvedConfig): Promise<void> {
   if (!existsSync(manifestFile)) return;
 
   const serverDir = resolve(cfg.root, 'dist/server');
-  if (cfg.document && existsSync(serverDir)) await writeDocumentAssets(cfg, clientDir, serverDir);
+  // An SPA's shell is index.html already (renderSpaShell); only a server render needs these.
+  if (cfg.document && cfg.ssr && existsSync(serverDir)) await writeDocumentAssets(cfg, clientDir, serverDir);
   const routesDir = resolve(cfg.root, cfg.routesDir);
   if (existsSync(serverDir) && existsSync(routesDir)) {
     const manifest: Record<string, string[]> = JSON.parse(await readFile(manifestFile, 'utf-8'));
@@ -412,6 +418,10 @@ function serverInputs(entry: string, middleware: string | undefined, entryName =
  * manifest, before it is deleted from the published output.
  */
 async function writeDocumentAssets(cfg: ResolvedConfig, clientDir: string, serverDir: string): Promise<void> {
+  await writeFile(join(serverDir, DOCUMENT_ASSETS_FILE), JSON.stringify(await documentAssets(cfg, clientDir), null, 2) + '\n');
+}
+
+async function documentAssets(cfg: ResolvedConfig, clientDir: string): Promise<DocumentAssets> {
   const chunksFile = join(clientDir, '.vite', 'manifest.json');
   const chunks: Record<string, ManifestChunk> = existsSync(chunksFile) ? JSON.parse(await readFile(chunksFile, 'utf-8')) : {};
   const entry = chunks[clientEntryFile(cfg).replace(/\\/g, '/').replace(/^\.\//, '')];
@@ -425,5 +435,35 @@ async function writeDocumentAssets(cfg: ResolvedConfig, clientDir: string, serve
     styles: [...new Set([...(entry.css ?? []).map((css) => '/' + css), ...files.filter((f) => f.endsWith('.css'))])],
     preloads: files.filter((f) => f.endsWith('.js') && f !== '/' + entry.file),
   };
-  await writeFile(join(serverDir, DOCUMENT_ASSETS_FILE), JSON.stringify(assets, null, 2) + '\n');
+  return assets;
+}
+
+/**
+ * Renders an SPA's document to `dist/client/index.html`, for a plain `/` request with no locals:
+ * nothing renders per request, so whatever serves the SPA serves this one file. The document
+ * is built on its own for this, and the build is removed after.
+ */
+async function renderSpaShell(cfg: ResolvedConfig, plugins: unknown[]): Promise<void> {
+  const { build: viteBuild } = await import('vite');
+  const clientDir = resolve(cfg.root, 'dist/client');
+  const outDir = resolve(cfg.root, 'dist/.document');
+  await viteBuild({
+    root: cfg.root,
+    resolve: { alias: aliasesFromTsconfig(cfg.root) },
+    plugins: plugins as never,
+    logLevel: 'warn',
+    build: { outDir, emptyOutDir: true, ssr: true, rollupOptions: { input: DOCUMENT_VMOD, output: { entryFileNames: 'document.mjs' } } },
+  });
+  try {
+    const { Document, renderDocument } = await import(pathToFileURL(join(outDir, 'document.mjs')).href);
+    const html: string = renderDocument(Document, {
+      request: new Request('http://localhost/'),
+      mountId: cfg.mountId,
+      assets: await documentAssets(cfg, clientDir),
+      file: cfg.document!,
+    });
+    await writeFile(join(clientDir, 'index.html'), html);
+  } finally {
+    await rm(outDir, { recursive: true, force: true });
+  }
 }

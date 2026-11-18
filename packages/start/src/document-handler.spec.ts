@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createComponent, createDynamicElement, getRequestLocals } from '@fluixi/dom';
 import { createHandlerFrom } from './handler-core.js';
-import { documentVitePlugin, DOCUMENT_EXPORT, RENDER_DOCUMENT_EXPORT } from './document-plugin.js';
+import { documentVitePlugin, DOCUMENT_EXPORT, DOCUMENT_VMOD, RENDER_DOCUMENT_EXPORT } from './document-plugin.js';
+import { netlifyEntry } from './adapters/entry.js';
 import { Head, Html, Main, Scripts, renderDocument, type DocumentProps } from './document-shell.js';
 
 const assets = { scripts: ['/assets/entry.js'], styles: [], preloads: [] };
@@ -88,3 +89,30 @@ describe('the document plugin', () => {
     expect(none.transform('x', '/app/src/entry-server.ts', { ssr: true })).toBeNull();
   });
 });
+
+describe('the document outside the server entry', () => {
+  it('is a module of its own, for an SPA and the dev server', () => {
+    const plugin = documentVitePlugin({ root: '/app', serverEntry: 'src/entry-server.ts', document: 'src/document.tsx' });
+    const id = plugin.resolveId(DOCUMENT_VMOD);
+    expect(plugin.load(id)).toBe(
+      `export { default as Document } from "/app/src/document.tsx";\nexport { renderDocument } from '@fluixi/start/document';\n`,
+    );
+    const none = documentVitePlugin({ root: '/app', serverEntry: 'src/entry-server.ts', document: null });
+    expect(none.resolveId(DOCUMENT_VMOD)).toBeNull();
+  });
+
+  it('reaches a platform entry with its assets, in place of the template', () => {
+    const source = netlifyEntry({
+      serverEntry: './dist/server/entry-server.js',
+      middleware: null,
+      template: '',
+      ssr: true,
+      mountId: 'root',
+      prerendered: [],
+      routeAssets: {},
+      document: { assets, file: 'src/document.tsx' },
+    });
+    expect(source).toContain(`document: ${JSON.stringify({ assets, file: 'src/document.tsx' })},`);
+  });
+});
+

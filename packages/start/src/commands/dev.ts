@@ -6,6 +6,7 @@ import type { FluixiConfig } from '../config.js';
 import { takeResponseStatus } from '@fluixi/dom';
 import { setDeclaredPublicKeys } from '../env.js';
 import { clientEntryFile, resolveConfig } from '../config.js';
+import { DOCUMENT_VMOD } from '../document-plugin.js';
 import { injectAppAndHead, splitTemplate, installCrashGuards, fluixiPlugins, guardHandler, loadServerEnv, SERVER_FNS_VMOD } from '../internal.js';
 import { toNodeHandler, streamDocument, exitOnListenError, withResponseHeaders, type FetchHandler } from '../handler.js';
 import { composeMiddleware, normalizeMiddleware } from '../middleware.js';
@@ -129,6 +130,15 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   // (a streaming error after the head is out can only truncate the response).
   // Cookies the render set (appendResponseHeader) join whatever Response comes back.
   const withHeaders = (fn: FetchHandler): FetchHandler => async (request) => withResponseHeaders(request, await fn(request));
+  const renderDocumentIn = async (server: any, request: Request): Promise<string> => {
+    const { Document, renderDocument } = await server.ssrLoadModule(DOCUMENT_VMOD);
+    return renderDocument(Document, {
+      request,
+      mountId: cfg.mountId,
+      assets: { scripts: ['/' + clientEntryFile(cfg)], styles: [], preloads: [] },
+      file: cfg.document,
+    });
+  };
   const renderHandler: FetchHandler = guardHandler(withHeaders(async (request) => {
     const url = new URL(request.url);
     const path = url.pathname + url.search;
@@ -148,7 +158,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
     // SPA mode: serve the static shell; the client entry renders. The server still ran
     // (server functions above + middleware below), there's just no SSR render pass.
     if (!cfg.ssr) {
-      const html = await vite.transformIndexHtml(path, template);
+      // An SPA's document has no server entry to come through: it is loaded on its own.
+      const shell = cfg.document ? await renderDocumentIn(vite, request) : template;
+      const html = await vite.transformIndexHtml(path, shell);
       return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
     }
     const mod = await vite.ssrLoadModule('/' + cfg.serverEntry);

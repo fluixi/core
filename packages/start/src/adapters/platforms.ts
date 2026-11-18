@@ -11,7 +11,7 @@
 import { mkdir, writeFile, readFile, cp, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { readTemplate, type Adapter, type AdapterBuildContext } from '../adapter.js';
+import { readDocumentAssets, readTemplate, type Adapter, type AdapterBuildContext } from '../adapter.js';
 import { cloudflareEntry, netlifyEntry, vercelEntry, type EntrySource } from './entry.js';
 
 /** What the generated entry needs to know about this build. */
@@ -20,7 +20,9 @@ async function entrySource(
   from: string,
   prerendered: string[],
 ): Promise<EntrySource> {
-  const template = await readTemplate(ctx.clientDir, ctx.serverDir);
+  // A document component renders the page per request; the entry carries its assets instead.
+  const document = readDocumentAssets(ctx.serverDir, ctx.cfg.document) ?? null;
+  const template = document ? '' : await readTemplate(ctx.clientDir, ctx.serverDir);
   // Written by the build from Vite's SSR manifest; absent for an app with no file routes.
   const assetFile = join(ctx.serverDir, 'route-assets.json');
   const routeAssets = existsSync(assetFile) ? JSON.parse(await readFile(assetFile, 'utf-8')) : {};
@@ -39,6 +41,7 @@ async function entrySource(
     mountId: ctx.cfg.mountId,
     prerendered,
     routeAssets,
+    document,
   };
 }
 
