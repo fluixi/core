@@ -17,7 +17,7 @@
  * of hole contents.
  */
 import type * as TS from 'typescript';
-import type { ElementNode, ExpressionNode, TemplateNode } from '@fluixi/template-parser';
+import type { ElementNode, TemplateNode } from '@fluixi/template-parser';
 import { parseCached, templatesIn } from './cache.js';
 import { inferParamsIn } from './infer.js';
 
@@ -36,17 +36,13 @@ function acceptsAnyProperty(ts: typeof TS, checker: TS.TypeChecker, type: TS.Typ
 }
 
 /**
- * A signal read without calling it.
+ * A signal read without calling it, where that is a mistake: inside an attribute value that
+ * mixes text with a hole (`class="btn ${size}"`). The compiler builds that value as a string,
+ * once, so a bare accessor writes its function source and never updates. In child position
+ * (`${count}`) it is fine: the insert calls the function and tracks it.
  *
- * `${count}` in child position renders the function object and never updates;
- * `${count()}` is what was meant: the compiler wraps a call in a reactive insert.
- * The editor's existing rule for this covers JSX only, so html`` templates had no
- * equivalent despite it being the same mistake.
- *
- * Scoped hard to keep it honest: only a bare identifier, only in the children of a
- * NATIVE element, and only when its type is callable with no required arguments.
- * A component legitimately receives accessors (`<For each=${items}>`), and a
- * render-prop child is a function on purpose: neither is touched.
+ * Scoped hard to keep it honest: only an accessor-shaped read whose type is callable with no
+ * required arguments.
  */
 function accessorDiagnostics(
   ts: typeof TS,
@@ -63,9 +59,13 @@ function accessorDiagnostics(
 
     const visit = (nodes: readonly TemplateNode[], parent: TemplateNode | null): void => {
       for (const node of nodes) {
-        if (node.kind === 'Expression' && parent?.kind === 'Element') {
-          const expression = holes[(node as ExpressionNode).hole];
-          if (expression && isAccessorRead(ts, expression) && isAccessor(ts, checker, expression)) {
+        const attributes = 'attributes' in node ? ((node as ElementNode).attributes as unknown as { value?: { kind: string; parts?: ({ text: string } | { hole: number })[] } | null }[]) : [];
+        for (const attribute of attributes) {
+          if (attribute.value?.kind !== 'mixed') continue;
+          for (const part of attribute.value.parts ?? []) {
+            if (!('hole' in part)) continue;
+            const expression = holes[part.hole];
+            if (!expression || !isAccessorRead(ts, expression) || !isAccessor(ts, checker, expression)) continue;
             const text = expression.getText(sf);
             out.push({
               file: sf,
@@ -74,8 +74,8 @@ function accessorDiagnostics(
               category: ts.DiagnosticCategory.Warning,
               code: ACCESSOR_NOT_CALLED,
               messageText:
-                `'${text}' is an accessor — call it (\`${text}()\`). ` +
-                'Left bare it renders the function and never updates.',
+                `'${text}' is an accessor: call it (\`${text}()\`). In an attribute that mixes text ` +
+                'with it, it is turned into text once, so it writes the function and never updates.',
               source: 'fluixi',
             });
           }
@@ -127,6 +127,32 @@ function isOptional(ts: typeof TS, symbol: TS.Symbol): boolean {
  */
 const cache = new WeakMap<TS.SourceFile, TS.Diagnostic[]>();
 
+/** The plugin's code for what the template parser reports (a repaired tag, a missing `alt`). */
+export const TEMPLATE_PARSE = 9002;
+
+/**
+ * What the template parser found in each html`` template: the same errors that fail a build
+ * and the warnings it prints, accessibility ones included. The pieces carry source offsets,
+ * so the parser's spans are file positions as they are.
+ */
+function parserDiagnostics(ts: typeof TS, sf: TS.SourceFile): TS.Diagnostic[] {
+  const out: TS.Diagnostic[] = [];
+  for (const template of templatesIn(ts, sf)) {
+    for (const d of parseCached(ts, sf, template.template).diagnostics) {
+      out.push({
+        file: sf,
+        start: d.loc.start,
+        length: Math.max(0, d.loc.end - d.loc.start),
+        category: d.severity === 'error' ? ts.DiagnosticCategory.Error : ts.DiagnosticCategory.Warning,
+        code: TEMPLATE_PARSE,
+        messageText: d.message,
+        source: 'fluixi',
+      });
+    }
+  }
+  return out;
+}
+
 export function templateDiagnostics(
   ts: typeof TS,
   ls: TS.LanguageService,
@@ -146,6 +172,7 @@ export function templateDiagnostics(
   const out: TS.Diagnostic[] = [];
 
   out.push(...accessorDiagnostics(ts, program, sf));
+  out.push(...parserDiagnostics(ts, sf));
 
   for (const { fn, paramName, type } of inferParamsIn(ts, program, sf)) {
     if (acceptsAnyProperty(ts, checker, type)) continue;

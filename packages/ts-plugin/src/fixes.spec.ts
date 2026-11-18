@@ -45,7 +45,7 @@ function apply(code: string, changes: readonly ts.TextChange[]): string {
 }
 
 describe('call-the-accessor fix', () => {
-  const code = 'declare const count: () => number;\nconst t = html`<div>${count}</div>`;';
+  const code = 'declare const count: () => number;\nconst t = html`<div class="n ${count}"></div>`;';
 
   it('offers a fix on the diagnostic', () => {
     const { ls, fileName } = plugin(code);
@@ -88,7 +88,7 @@ describe('call-the-accessor fix', () => {
   it('fixes every occurrence at once, without shifting offsets', () => {
     const many =
       'declare const a: () => number;\ndeclare const b: () => number;\n' +
-      'const t = html`<div>${a}</div><p>${b}</p>`;';
+      'const t = html`<div title="x ${a}"></div><p title="y ${b}"></p>`;';
     const { ls, fileName } = plugin(many);
 
     const combined = ls.getCombinedCodeFix(

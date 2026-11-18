@@ -121,14 +121,22 @@ describe('restraint', () => {
 });
 
 describe('a signal read without calling it', () => {
-  it('reports a bare accessor in child position', () => {
+  it('reports a bare accessor inside an attribute that mixes text with it', () => {
+    const code =
+      'declare const size: () => string;\n' +
+      'const t = html`<div class="btn ${size}"></div>`;';
+    const { ls, fileName } = plugin(code);
+    const bad = find(ls, fileName, 'accessor');
+    expect(bad).toBeDefined();
+    expect(code.slice(bad!.start!, bad!.start! + bad!.length!)).toBe('size');
+  });
+
+  it('leaves a bare accessor in child position alone: the insert calls it and updates', () => {
     const code =
       'declare const count: () => number;\n' +
       'const t = html`<div>${count}</div>`;';
     const { ls, fileName } = plugin(code);
-    const bad = find(ls, fileName, 'accessor');
-    expect(bad).toBeDefined();
-    expect(code.slice(bad!.start!, bad!.start! + bad!.length!)).toBe('count');
+    expect(find(ls, fileName, 'accessor')).toBeUndefined();
   });
 
   it('accepts the call', () => {
@@ -164,7 +172,7 @@ describe('a signal read without calling it', () => {
   it('reports an accessor reached by index', () => {
     const code =
       'declare const signals: Array<() => number>;\n' +
-      'const t = html`<strong>${signals[0]}</strong>`;';
+      'const t = html`<strong title="n ${signals[0]}"></strong>`;';
     const { ls, fileName } = plugin(code);
     const bad = find(ls, fileName, 'accessor');
     expect(bad).toBeDefined();
@@ -174,7 +182,7 @@ describe('a signal read without calling it', () => {
   it('reports an accessor reached by property', () => {
     const code =
       'declare const state: { count: () => number };\n' +
-      'const t = html`<strong>${state.count}</strong>`;';
+      'const t = html`<strong title="n ${state.count}"></strong>`;';
     const { ls, fileName } = plugin(code);
     expect(find(ls, fileName, 'accessor')).toBeDefined();
   });
@@ -193,5 +201,15 @@ describe('a signal read without calling it', () => {
     const code = 'declare const fmt: (n: number) => string;\nconst t = html`<div>${fmt}</div>`;';
     const { ls, fileName } = plugin(code);
     expect(find(ls, fileName, 'accessor')).toBeUndefined();
+  });
+});
+
+describe('what the template parser reports', () => {
+  it('shows a missing alt on an img, at the tag', () => {
+    const code = 'const t = html`<img src="a.png">`;';
+    const { ls, fileName } = plugin(code);
+    const d = find(ls, fileName, 'alt');
+    expect(d).toBeDefined();
+    expect(code.slice(d!.start!, d!.start! + 4)).toBe('<img');
   });
 });
