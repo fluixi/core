@@ -4,7 +4,9 @@
 // default uses `sharp` if it's installed, otherwise it streams the source through
 // unchanged (so the framework never hard-depends on a native module).
 import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { resolve as resolvePath, join, extname, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export interface ImageTransformArgs {
   /** Target width in px. */
@@ -49,12 +51,19 @@ const MIME: Record<string, string> = {
 let sharpModule: unknown;
 async function loadSharp(): Promise<any> {
   if (sharpModule !== undefined) return sharpModule;
+  // Variable specifier so bundlers/tsc treat `sharp` as an optional runtime dep.
+  const name = 'sharp';
   try {
-    // Variable specifier so bundlers/tsc treat `sharp` as an optional runtime dep.
-    const name = 'sharp';
     sharpModule = (await import(/* @vite-ignore */ name)).default;
   } catch {
-    sharpModule = null;
+    // Resolved from this package, `sharp` is only found when installed beside it; under a
+    // strict layout (pnpm) the app's own copy is not. Look from the app's root too.
+    try {
+      const found = createRequire(join(process.cwd(), 'package.json')).resolve(name);
+      sharpModule = (await import(/* @vite-ignore */ pathToFileURL(found).href)).default;
+    } catch {
+      sharpModule = null;
+    }
   }
   return sharpModule;
 }
@@ -66,6 +75,15 @@ const defaultTransform: ImageTransform = async (input, { width, quality, format 
   if (format === 'avif') return { data: new Uint8Array(await pipe.avif({ quality }).toBuffer()), contentType: 'image/avif' };
   if (format === 'webp') return { data: new Uint8Array(await pipe.webp({ quality }).toBuffer()), contentType: 'image/webp' };
   if (format === 'png') return { data: new Uint8Array(await pipe.png().toBuffer()), contentType: 'image/png' };
+  if (format === 'original') {
+    // The source's own encoding, resized: a PNG stays a PNG, transparency and all. What sharp
+    // cannot write (an SVG) goes out as it came.
+    const source = (await sharp(input).metadata()).format as string | undefined;
+    const kind = source === 'jpg' ? 'jpeg' : source;
+    if (!kind || !['jpeg', 'png', 'webp', 'avif', 'gif'].includes(kind)) return null;
+    const data = kind === 'png' || kind === 'gif' ? await pipe.toFormat(kind).toBuffer() : await pipe.toFormat(kind, { quality }).toBuffer();
+    return { data: new Uint8Array(data), contentType: `image/${kind}` };
+  }
   return { data: new Uint8Array(await pipe.jpeg({ quality, mozjpeg: true }).toBuffer()), contentType: 'image/jpeg' };
 };
 
@@ -133,7 +151,9 @@ export function createImageHandler(options: ImageHandlerOptions = {}): (request:
     const url = new URL(request.url);
     const src = url.searchParams.get('url') ?? url.searchParams.get('src');
     const width = Number(url.searchParams.get('w'));
-    const quality = Math.min(Math.max(Number(url.searchParams.get('q')) || maxQuality, 1), 100);
+    // Capped at the configured quality: a visitor asking for `q=100` does not get a bigger file
+    // than the app chose to serve.
+    const quality = Math.min(Math.max(Number(url.searchParams.get('q')) || maxQuality, 1), maxQuality, 100);
 
     if (!src) return new Response('missing "url"', { status: 400 });
     if (!Number.isInteger(width) || !sizes.includes(width)) return new Response('invalid "w"', { status: 400 });
