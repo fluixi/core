@@ -28,6 +28,12 @@
         "require": "./dist/lib/dom/server-renderer.cjs",
         "default": "./dist/lib/dom/server-renderer.js"
       },
+      "./hot": {
+        "types": "./dist/lib/dom/hot.d.ts",
+        "import": "./dist/lib/dom/hot.mjs",
+        "require": "./dist/lib/dom/hot.cjs",
+        "default": "./dist/lib/dom/hot.js"
+      },
       "./runtime": {
         "types": "./dist/lib/dom/runtime.d.ts",
         "import": "./dist/lib/dom/runtime.mjs",
@@ -94,6 +100,13 @@
       "import": "./dist/lib/dom/server-renderer.mjs",
       "require": "./dist/lib/dom/server-renderer.cjs",
       "default": "./dist/lib/dom/server-renderer.js"
+    },
+    "./hot": {
+      "development": "./src/lib/dom/hot.ts",
+      "types": "./dist/lib/dom/hot.d.ts",
+      "import": "./dist/lib/dom/hot.mjs",
+      "require": "./dist/lib/dom/hot.cjs",
+      "default": "./dist/lib/dom/hot.js"
     },
     "./runtime": {
       "development": "./src/lib/dom/runtime.ts",

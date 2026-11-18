@@ -62,6 +62,9 @@ export function onRevalidate(listener: () => void): () => void {
 const reloadMounted = () => {
   for (const listener of [...revalidationListeners]) listener();
 };
+// Hot reload calls it when a route's `routeData` changes (`@fluixi/dom/hot`), by a global key
+// so neither package imports the other.
+(globalThis as Record<symbol, unknown>)[Symbol.for('fluixi.hot.reloadRouteData')] = reloadMounted;
 
 /**
  * A function whose results are kept by name and arguments: route data that should not be

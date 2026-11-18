@@ -54,6 +54,23 @@ const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
 const SERVER_CONTENT = Symbol.for('fluixi.serverContent');
 /** Marks content an element rendered on the server, and carries the props that have no attribute. */
 const SSR_ATTRIBUTE = 'data-fx-ssr';
+
+/**
+ * Hot reload in dev (`@fluixi/dom/hot` creates the registry): a tag defined again swaps the setup
+ * its class reads and rebuilds the instances on the page. The browser cannot redefine a tag.
+ */
+const HOT_SETUP = Symbol('fluixi.hotSetup');
+const HOT_REBUILD = Symbol('fluixi.hotRebuild');
+
+interface HotSetup {
+  setup: Setup<any>;
+  /** Built instances, while hot reload runs. */
+  instances: Set<WeakRef<HTMLReactiveElement>>;
+}
+
+function hotElements(): Map<string, unknown> | undefined {
+  return (globalThis as Record<symbol, { elements: Map<string, unknown> } | undefined>)[Symbol.for('fluixi.hot')]?.elements;
+}
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
 
 /**
@@ -544,10 +561,22 @@ export class HTMLReactiveElement extends BaseElement {
     }
   }
 
+  /** Hot reload: the class's setup changed, so render again from scratch, keeping the props. */
+  [HOT_REBUILD](): void {
+    if (!this.#built) return;
+    this.#teardown();
+    if (this.#root !== this) (this.#root as ShadowRoot).replaceChildren();
+    // What the server rendered was the old setup's output: render afresh.
+    this.removeAttribute(SSR_ATTRIBUTE);
+    this.#build();
+  }
+
   #build(): void {
     if (this.#shouldWaitForHost()) return this.#waitForHost();
     this.#built = true;
     const constructor = this.constructor as typeof HTMLReactiveElement;
+    const hot = (constructor as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
+    if (hot && hotElements()) hot.instances.add(new WeakRef(this));
     const shadow = constructor.shadow;
 
     if (shadow !== undefined && shadow !== false) {
@@ -815,6 +844,7 @@ export interface Host<S extends Schema> {
 export type Setup<S extends Schema> = (host: Host<S>) => unknown;
 
 export function createElementClass<S extends Schema>(setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
+  const hot: HotSetup = { setup, instances: new Set() };
   let Base: ElementBase = HTMLReactiveElement;
   // Either shape takes what the previous one returned: the runtime class is the same.
   for (const mixin of options.mixins ?? []) Base = (mixin as (base: ElementBase) => ElementBase)(Base);
@@ -824,12 +854,14 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
     static override shadow = options.shadow;
     static override styles = options.styles;
 
+    static [HOT_SETUP] = hot;
+
     protected override render(): unknown {
       const accessors: Record<string, Accessor<unknown>> = {};
       for (const name of Object.keys(schemaOf(this.constructor))) {
         accessors[name] = () => (this as unknown as Record<string, unknown>)[name];
       }
-      return setup({
+      return (hot.setup as Setup<S>)({
         el: this,
         props: accessors as PropAccessors<S>,
         set: (name, value) => {
@@ -854,6 +886,20 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
  * server render finds and renders the element.
  */
 export function defineElement<S extends Schema>(name: string, setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
+  const elements = hotElements();
+  const existing = elements?.get(name) as ElementConstructor<S> | undefined;
+  if (existing) {
+    // Defined again by hot reload: new setup, same class, every live instance rebuilt.
+    const hot = (existing as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
+    if (!hot) return existing;
+    hot.setup = setup as Setup<any>;
+    for (const ref of [...hot.instances]) {
+      const element = ref.deref();
+      if (element?.isConnected) element[HOT_REBUILD]();
+      else hot.instances.delete(ref);
+    }
+    return existing;
+  }
   const constructor = createElementClass(setup, options);
   // `fx-disclosure` → `FxDisclosure`, rather than the generated `SetupElement`: what a stack
   // trace and the devtools graph show for this element.
@@ -861,5 +907,7 @@ export function defineElement<S extends Schema>(name: string, setup: Setup<S>, o
   Object.defineProperty(constructor, 'name', { value: className, configurable: true });
   // On the server too: defineCustomElement knows the stand-in registry, and returning early
   // here left the element unknown to the server renderer, sent as an empty tag.
-  return defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
+  const defined = defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
+  elements?.set(name, defined);
+  return defined;
 }
