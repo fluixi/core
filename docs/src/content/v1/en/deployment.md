@@ -288,7 +288,7 @@ list the web app's origin in `apiSecurity({ origins })`.
 - **Middleware does not run for prerendered pages.** They are files. A per-request check,
   auth, geolocation, has to live somewhere that actually runs per request.
 - **Check the versions.** `window.Fluixi` reports the core, dom and reactive versions
-  running; the mount element's `data-fluixi` is empty in production, so it names no
+  running (`window.Fluixi.versions` on a page that loaded a CDN build, whose API that global is); the mount element's `data-fluixi` is empty in production, so it names no
   release. If the versions disagree in a deployed build, the install resolved two copies,
   worth catching before it becomes a bug report.
   `@fluixi/start` resolves the framework packages once, from the app's root, so a library

@@ -75,7 +75,15 @@ function isProduction(): boolean {
 export function stampVersions(container: Element): void {
   container.setAttribute(VERSION_ATTRIBUTE, versionMark());
 
-  if (typeof globalThis !== 'undefined') globalThis.Fluixi = versions;
+  if (typeof globalThis === 'undefined') return;
+  const current = (globalThis as { Fluixi?: unknown }).Fluixi;
+  // A page that loaded a CDN build already has its API there (`window.Fluixi.createSignal`):
+  // replacing it broke every later call. The versions go on it instead.
+  if (current && typeof current === 'object' && Object.values(current).some((v) => typeof v === 'function')) {
+    (current as { versions?: unknown }).versions = versions;
+  } else {
+    globalThis.Fluixi = versions;
+  }
 }
 
 /**
