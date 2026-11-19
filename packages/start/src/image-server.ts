@@ -7,7 +7,6 @@ import { IMAGE_WIDTHS } from './image-loader.js';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { resolve as resolvePath, join, extname, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 export interface ImageTransformArgs {
   /** Target width in px. */
@@ -58,9 +57,11 @@ async function loadSharp(): Promise<any> {
   } catch {
     // Resolved from this package, `sharp` is only found when installed beside it; under a
     // strict layout (pnpm) the app's own copy is not. Look from the app's root too.
+    // Required, not imported: in dev this module runs in Vite's module runner, which rewrites a
+    // dynamic import and could not load `sharp` (CommonJS, with a native addon) from there, so
+    // dev served every image untouched.
     try {
-      const found = createRequire(join(process.cwd(), 'package.json')).resolve(name);
-      sharpModule = (await import(/* @vite-ignore */ pathToFileURL(found).href)).default;
+      sharpModule = createRequire(join(process.cwd(), 'package.json'))(name);
     } catch {
       sharpModule = null;
     }
