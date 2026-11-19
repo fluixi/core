@@ -50,11 +50,13 @@ blank space while the network works.
 ### `load:interaction`
 
 Fetches on the first interaction with the component: the events are listened for on the HTML
-the server rendered for it, or on its `fallback` when it renders in the browser. What the user
+the server rendered for it. What the user
 does there before the code arrives (the click after the `pointerdown`, text typed in a field)
 is played again on the component once it renders, so the interaction that woke it is not lost.
-With nothing on the page yet (rendered in the browser, no element fallback), the first
-interaction anywhere on the page starts it.
+Rendered in the browser instead (a page reached by a client navigation, or an app without
+server rendering), the component has nothing on the page yet, and the first interaction
+anywhere on the page starts it. A component wrapped with `deferred()` and given an element as
+`fallback` listens on that element.
 
 Defaults to `pointerdown`, `focusin` and `keydown`, the three that reliably precede a real
 interaction, keyboard and pointer alike. Name your own to narrow it:

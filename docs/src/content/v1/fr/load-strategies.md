@@ -51,11 +51,12 @@ attendre l'utilisateur devant un espace vide pendant que le réseau travaille.
 ### `load:interaction`
 
 Le chargement part à la première interaction avec le composant : les événements sont écoutés
-sur le HTML que le serveur a rendu pour lui, ou sur son `fallback` quand il est rendu dans le
-navigateur. Ce que l'utilisateur y fait avant l'arrivée du code (le clic qui suit le
+sur le HTML que le serveur a rendu pour lui. Ce que l'utilisateur y fait avant l'arrivée du code (le clic qui suit le
 `pointerdown`, le texte saisi dans un champ) est rejoué sur le composant une fois rendu : l'interaction
-qui l'a réveillé n'est pas perdue. Sans rien encore sur la page (rendu dans le navigateur, sans
-`fallback` élément), la première interaction n'importe où sur la page le déclenche.
+qui l'a réveillé n'est pas perdue. Rendu dans le navigateur à la place (une page atteinte par une
+navigation côté client, ou une application sans rendu serveur), le composant n'a encore rien sur
+la page, et la première interaction n'importe où sur la page le déclenche. Un composant
+enveloppé avec `deferred()` et doté d'un élément comme `fallback` écoute sur cet élément.
 
 Par défaut `pointerdown`, `focusin` et `keydown`, les trois qui précèdent de façon fiable une
 véritable interaction, au clavier comme au pointeur. Nommez les vôtres pour restreindre :
