@@ -212,7 +212,9 @@ jobs:
         env:
           # The action's own answer to "did this run publish", rather than inferring it from
           # which tags moved: a one-package release that npm is slow to show moves nothing.
-          PUBLISHED: ${{ steps.changesets.outputs.published }}
+          # The action's output is unset when its step failed after publishing (the tag push
+          # it rate-limits on), so the merged version PR as the commit counts as a release too.
+          PUBLISHED: "${{ steps.changesets.outputs.published == 'true' || startsWith(github.event.head_commit.message, 'chore: version packages') }}"
         run: |
           if [ ! -f .changeset/pre.json ]; then
             echo "Not in pre mode, latest is authoritative; nothing to do."; exit 0
