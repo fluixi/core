@@ -113,4 +113,42 @@ function Card(props: { children?: any }) {
 <Card><p>Body</p></Card>;
 ```
 
+Reading `props.children` runs the code that builds them. Read it once; when the component
+needs to look at its children (count them, pick some out), resolve them with `readChildren`,
+which keeps the result in a memo with nested functions resolved and arrays flattened:
+
+```tsx
+import { readChildren } from '@fluixi/core';
+
+function Tabs(props: { children?: any }) {
+  const items = readChildren(() => props.children);
+  return <nav data-count={() => [items()].flat().length}>{items()}</nav>;
+}
+```
+
+## Ids for labels and ARIA
+
+`createUniqueId()` gives an id the server render and the browser agree on, for pairing
+elements: a `<label for>` with its `<input id>`, `aria-describedby`, `aria-controls`.
+
+```tsx
+import { createUniqueId } from '@fluixi/core';
+
+function Field(props: { label: string; hint: string }) {
+  const id = createUniqueId();
+  const hint = createUniqueId();
+  return (
+    <div>
+      <label for={id}>{props.label}</label>
+      <input id={id} aria-describedby={hint} />
+      <p id={hint}>{props.hint}</p>
+    </div>
+  );
+}
+```
+
+Call it in the component body, the same number of times on both sides: the ids follow the
+component's place in the page, so a call made only on one side shifts the ones after it. A
+component created later in the browser gets an id unique within the page.
+
 Next: **[Control flow](/v1/en/control-flow)**.

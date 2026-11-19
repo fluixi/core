@@ -183,6 +183,11 @@ export {
 } from '@fluixi/dom';
 
 export * from "./control-flow.js"
+// An id the server and the browser agree on, for label/input pairs and ARIA references.
+export { createUniqueId } from '@fluixi/dom';
+// Solid's `children()`: resolve `props.children` once into a memo, nested functions unwrapped,
+// arrays flattened, signals kept reactive.
+export { readChildren } from '@fluixi/reactive/signal';
 
 // Re-export reactive primitives from @fluixi/reactive
 

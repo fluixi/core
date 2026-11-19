@@ -176,6 +176,8 @@ export const HYDRATION_KEY = 'data-hk';
 interface KeyScope {
   id: string;
   next: number;
+  /** `createUniqueId` calls in this scope, counted apart so element keys do not move. */
+  ids?: number;
 }
 
 type ScopedOwner = Owner & { contexts: Map<symbol, unknown> | null };
@@ -234,6 +236,23 @@ export function nextHydrationKey(salt?: string): string | null {
   const scope = scopeOf(getOwner());
   const path = scope.id + (scope.next++).toString(36);
   return salt ? `${hashKey(path)}-${salt}` : hashKey(path);
+}
+
+/** Ids made where nothing will hydrate: the browser after hydration, or a keyless render. */
+let looseIds = 0;
+
+/**
+ * An id the server render and the browser agree on, for pairing elements: `<label for>` and
+ * `<input id>`, `aria-describedby`, `aria-controls`. Rendered on the server and hydrated, the
+ * same component at the same place gets the same id on both sides, as long as it calls this the
+ * same number of times in the same order: call it in the component body, not in a branch that
+ * only one side takes. Created later in the browser, it is unique within the page.
+ */
+export function createUniqueId(): string {
+  if (!keyed()) return `fx-c${(looseIds++).toString(36)}`;
+  const scope = scopeOf(getOwner());
+  scope.ids = (scope.ids ?? 0) + 1;
+  return `fx-${hashKey(`${scope.id}#${scope.ids}`)}`;
 }
 
 /** A template's identity for its keys: hashed once per template string. */

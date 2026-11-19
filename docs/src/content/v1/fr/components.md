@@ -119,4 +119,43 @@ function Card(props: { children?: any }) {
 <Card><p>Contenu</p></Card>;
 ```
 
+Lire `props.children` exécute le code qui les construit. Lisez-le une fois ; quand le
+composant doit examiner ses enfants (les compter, en isoler certains), résolvez-les avec
+`readChildren`, qui garde le résultat dans un memo, fonctions imbriquées résolues et tableaux
+aplatis :
+
+```tsx
+import { readChildren } from '@fluixi/core';
+
+function Tabs(props: { children?: any }) {
+  const items = readChildren(() => props.children);
+  return <nav data-count={() => [items()].flat().length}>{items()}</nav>;
+}
+```
+
+## Des ids pour les libellés et l’ARIA
+
+`createUniqueId()` donne un id sur lequel le rendu serveur et le navigateur s’accordent, pour
+relier des éléments : un `<label for>` et son `<input id>`, `aria-describedby`, `aria-controls`.
+
+```tsx
+import { createUniqueId } from '@fluixi/core';
+
+function Field(props: { label: string; hint: string }) {
+  const id = createUniqueId();
+  const hint = createUniqueId();
+  return (
+    <div>
+      <label for={id}>{props.label}</label>
+      <input id={id} aria-describedby={hint} />
+      <p id={hint}>{props.hint}</p>
+    </div>
+  );
+}
+```
+
+Appelez-le dans le corps du composant, autant de fois de chaque côté : les ids suivent la place
+du composant dans la page, donc un appel fait d’un seul côté décale ceux qui suivent. Un
+composant créé plus tard dans le navigateur reçoit un id unique dans la page.
+
 Suivant : **[Le flux de contrôle](/v1/fr/control-flow)**.

@@ -30,5 +30,6 @@ export {
   clearHydrationKeys,
   isHydrating,
   afterHydrationPass,
+  createUniqueId,
 } from './hydration-state.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'
