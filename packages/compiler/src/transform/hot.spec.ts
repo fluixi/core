@@ -35,6 +35,11 @@ describe('hotRewrite', () => {
     expect(hotRewrite('export { Card } from "./card";\n', id)).toBeNull();
   });
 
+  it('leaves API routes and constants alone: GET is not a component', () => {
+    expect(hotRewrite('export async function GET(request) { return new Response("x"); }\n', '/app/src/api/x.ts')).toBeNull();
+    expect(hotRewrite('export const MAX_ITEMS = 3;\nexport function Card() { return null; }\n', id)).toBeNull();
+  });
+
   it('leaves a module alone when it holds state of its own', () => {
     expect(hotRewrite('const [n] = createSignal(0);\nexport function Card() { return n(); }\n', id)).toBeNull();
     expect(hotRewrite('const theme = _createContext();\nexport function Card() { return null; }\n', id)).toBeNull();

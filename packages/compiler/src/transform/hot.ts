@@ -41,7 +41,7 @@ export function hotRewrite(code: string, id: string): string | null {
   let definesElement = false;
 
   const classify = (exported: string, local: string): boolean => {
-    if (exported === 'default' || /^[A-Z]/.test(exported)) exports.push({ exported, local, kind: 'component' });
+    if (exported === 'default' || isComponentName(exported)) exports.push({ exported, local, kind: 'component' });
     else if (ROUTE_EXPORTS.has(exported)) exports.push({ exported, local, kind: 'data' });
     else return false;
     return true;
@@ -104,6 +104,15 @@ export function hotRewrite(code: string, id: string): string | null {
   if (exports.length) lines.push(`export { ${exports.map((entry, i) => `__fx${i} as ${entry.exported}`).join(', ')} };`);
   lines.push(`__fxh.done();`, `if (import.meta.hot) import.meta.hot.accept();`);
   return `${out}\n${lines.join('\n')}\n`;
+}
+
+/**
+ * Capitalised, with a lowercase letter: `Card`, not `GET` or `MAX_ITEMS`. An API route's method
+ * handlers are capitalised too, and wrapping one as a component made it answer with a render
+ * accessor instead of a Response.
+ */
+function isComponentName(name: string): boolean {
+  return /^[A-Z]/.test(name) && /[a-z]/.test(name);
 }
 
 function declaredNames(declaration: Node): string[] | null {
