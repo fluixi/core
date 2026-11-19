@@ -26,15 +26,16 @@ export class FxDisclosure extends typedElement(disclosureProps) {
   static override shadow = 'open' as const;
   static override styles = `
     :host { display: block; }
-    .summary { cursor: pointer; font-weight: 600; }
+    .summary { all: unset; display: block; cursor: pointer; font-weight: 600; }
+    .summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
     .body[hidden] { display: none; }
   `;
 
   protected override render(): unknown {
     return html`
-      <div class="summary" @click=${() => this.toggle()}>
+      <button type="button" class="summary" aria-expanded=${() => String(this.open)} @click=${() => this.toggle()}>
         <slot name="summary">${() => this.summary}</slot>
-      </div>
+      </button>
       <div class="body" ?hidden=${() => !this.open}>
         <slot></slot>
       </div>

@@ -44,7 +44,10 @@ export interface IslandProps<P = any> {
  * serialized props for the client to hydrate from.
  */
 export function Island<P = any>(props: IslandProps<P>): any {
-  const { component, props: cprops = {} as P, name } = props;
+  // Read once: an island renders its component a single time, with the props it was given.
+  const component = props.component;
+  const cprops = props.props ?? ({} as P);
+  const name = props.name;
   const el = createNativeElement(TAG);
   const islandName = name ?? (component as any).name ?? 'Island';
   setAttribute(el as Element, 'name', islandName);
