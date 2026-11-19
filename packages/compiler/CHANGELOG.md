@@ -1,5 +1,26 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- 11b381f: hotRewrite now swaps component modules in place on save.
+
+### Patch Changes
+
+- f1a6609: A module registering an element class with `defineCustomElement` now accepts hot updates for it, and classes using `#private` fields trigger a page reload on update.
+- f1a6609: `hotRewrite` now accepts a `keepState` option, and files containing `// @refresh reset` start fresh.
+- 8d8d454: A module registering its element class with `customElements.define` now reloads the page on save.
+- 9099ab8: `// @refresh reload` now reloads the page on save. A module exporting a class is no longer hot-swapped.
+- 3578435: Hot reload now serves API route GET or POST handlers directly instead of wrapping them as a component, preventing empty responses in development.
+- 2e58dd2: The `hydratable` compiler option is no longer available. Remove any `hydratable` setting from your compiler configuration.
+- 80c6567: The Vite plugin now compiles JSX in an app's `.js` files, while leaving dependency `.js` files untouched.
+- 9c9b0c4: The `backend` option now accepts only `imperative`, the sole backend, and the unused control IR node kind is removed.
+- c98e9c9: The build now fails on broken HTML templates, prints warnings with file positions (including accessibility warnings such as img without alt) at build time, and no longer reports using `if` and `each` together on one element as an error.
+- Updated dependencies [c98e9c9]
+- Updated dependencies [933bfdd]
+  - @fluixi/template-parser@1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

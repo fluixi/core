@@ -1,5 +1,22 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- 05388af: The router now announces each client navigation to screen readers and moves focus to the main element, a new `announce(text)` export speaks custom text, and the `announce` prop on Router accepts a focus target or `false` to disable it.
+- dd6ed1d: Link now loads its target route code on hover, focus or touch (disable with `preload={false}`), and a new `usePreloadRoute` hook lets you preload navigation without a link.
+- 5b42f0b: `@fluixi/core` now exports `createUniqueId` and `readChildren`.
+
+### Patch Changes
+
+- b2a1a0b: The router now reloads the data of routes on screen when hot reload changes a route data loader.
+- f04b030: `load:interaction` now listens on the component's own nodes, and any interaction that occurred before the code arrived is replayed once it renders.
+- 5ff14df: `isServer` and `isClient` now replace `isServerEnvironment` and `isClientEnvironment` in `@fluixi/core/server`. Update imports to use `isServer` and `isClient` instead of the removed names.
+- 7e48c9d: The default export's `VERSION`, `getFrameworkInfo()` and the CDN global now report the published version instead of 0.0.1.
+- 9cdf4a5: `SuspenseList` now coordinates its `Suspense` children from compiled JSX, revealing `forwards` in order and collapsing the tail to show a single fallback.
+  - @fluixi/utils@1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Minor Changes

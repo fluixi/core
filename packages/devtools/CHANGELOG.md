@@ -1,5 +1,11 @@
 # @fluixi/devtools
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- 4730d2a: Hot updates now appear as separate timeline commits and rebuilt elements are outlined.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

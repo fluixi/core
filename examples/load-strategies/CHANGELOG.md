@@ -1,5 +1,38 @@
 # @fluixi/example-load-strategies
 
+## 0.0.1-alpha.41
+
+### Patch Changes
+
+- Updated dependencies [05388af]
+- Updated dependencies [8de4b88]
+- Updated dependencies [2bbf785]
+- Updated dependencies [92ab3a4]
+- Updated dependencies [6872737]
+- Updated dependencies [fd9c22e]
+- Updated dependencies [f1a6609]
+- Updated dependencies [5efb203]
+- Updated dependencies [454e933]
+- Updated dependencies [b6db4f8]
+- Updated dependencies [b2a1a0b]
+- Updated dependencies [b2a1a0b]
+- Updated dependencies [4795b32]
+- Updated dependencies [8fd12ef]
+- Updated dependencies [f04b030]
+- Updated dependencies [092d4aa]
+- Updated dependencies [5ff14df]
+- Updated dependencies [7e48c9d]
+- Updated dependencies [dd6ed1d]
+- Updated dependencies [efae582]
+- Updated dependencies [9cdf4a5]
+- Updated dependencies [6146dbb]
+- Updated dependencies [5b42f0b]
+- Updated dependencies [5b42f0b]
+  - @fluixi/core@1.0.0-alpha.110
+  - @fluixi/dom@1.0.0-alpha.110
+  - @fluixi/reactive@1.0.0-alpha.110
+  - @fluixi/jsx@1.0.0-alpha.110
+
 ## 0.0.1-alpha.40
 
 ### Patch Changes

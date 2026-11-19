@@ -1,5 +1,30 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- f1a6609: The `hot` option now keeps a swapped component's state when `keepState: true` is set.
+- 11b381f: Editing a component in dev now swaps it in place and keeps the rest of the page state, instead of reloading the page; set `hot` to false to turn this off.
+
+### Patch Changes
+
+- 9099ab8: Hot reload now reaches a custom element written in plain TypeScript, and leaves packages linked from outside the app alone.
+- 092d4aa: The package descriptions now correctly state that `@fluixi/reactive` does not claim RxJS interop, `@fluixi/server` does not claim streaming, and `@fluixi/vite-plugin` does not mention a JSX backend.
+- Updated dependencies [f1a6609]
+- Updated dependencies [f1a6609]
+- Updated dependencies [4730d2a]
+- Updated dependencies [11b381f]
+- Updated dependencies [8d8d454]
+- Updated dependencies [9099ab8]
+- Updated dependencies [3578435]
+- Updated dependencies [2e58dd2]
+- Updated dependencies [80c6567]
+- Updated dependencies [9c9b0c4]
+- Updated dependencies [c98e9c9]
+  - @fluixi/compiler@1.0.0-alpha.110
+  - @fluixi/devtools@1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

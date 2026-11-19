@@ -1,5 +1,11 @@
 # @fluixi/create
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- 9470ec9: `--document` now starts the app with its page shell as `src/document.tsx` (or `src/document.ts` with `--html`) instead of `index.html`.
+
 ## 1.0.0-alpha.109
 
 ## 1.0.0-alpha.108

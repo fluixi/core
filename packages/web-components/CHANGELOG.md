@@ -1,5 +1,17 @@
 # @fluixi/web-components
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- d3417c8: Element renders now keep their state under `keepState` and a class redefined by hot reload gets the new methods, causing instances to re-render.
+- b2a1a0b: In dev, an element redefined by hot reload now takes the new setup and its instances on the page rebuild, keeping their props.
+
+### Patch Changes
+
+- de565d1: A string assigned to a `prop.any` prop is now kept as is again.
+- b6db4f8: On the server, an element that writes `dataset`, `style`, `classList` or attributes from render now writes them into the HTML and `attachInternals` is accepted.
+
 ## 1.0.0-alpha.109
 
 ### Minor Changes

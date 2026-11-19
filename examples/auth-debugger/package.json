@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-auth-debugger",
-  "version": "0.0.1-alpha.25",
+  "version": "0.0.1-alpha.26",
   "private": true,
   "type": "module",
   "description": "One app against five OAuth2 providers, showing what each hands back: tokens decoded, the user, and what refresh, introspection, revocation and logout actually do.",

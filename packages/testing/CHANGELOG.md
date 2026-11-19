@@ -1,5 +1,7 @@
 # @fluixi/testing
 
+## 1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes
