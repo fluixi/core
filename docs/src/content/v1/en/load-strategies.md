@@ -9,7 +9,7 @@ viewport is a property of the usage.
 
 ```tsx
 <Summary total={total()} />                    {/* eager, entry chunk */}
-<ExportDialog load:interaction />              {/* own chunk, on the first interaction with the page */}
+<ExportDialog load:interaction />              {/* own chunk, on the first interaction with it */}
 <AuditLog load:media="(min-width: 1024px)" />  {/* own chunk, desktop only */}
 <RevenueChart load:visible="200px" />          {/* own chunk, just before it scrolls in */}
 ```
@@ -24,7 +24,7 @@ the deferred binding.
 | `load:eager` | Immediately, in the parent chunk. The default. |
 | `load:idle` | When the browser goes idle. |
 | `load:visible` | When the element approaches the viewport. |
-| `load:interaction` | On the first interaction anywhere on the page. |
+| `load:interaction` | On the first interaction with the component. |
 | `load:media` | When a media query matches. |
 | `load:never` | Never, no client code at all. |
 
@@ -49,10 +49,15 @@ blank space while the network works.
 
 ### `load:interaction`
 
-Fetches on the first interaction anywhere on the page, not only with the component: the
-component often has no markup yet to listen on. Defaults to `pointerdown`, `focusin` and
-`keydown`, the three that reliably precede a real interaction, keyboard and pointer alike.
-Name your own to narrow it:
+Fetches on the first interaction with the component: the events are listened for on the HTML
+the server rendered for it, or on its `fallback` when it renders in the browser. What the user
+does there before the code arrives (the click after the `pointerdown`, text typed in a field)
+is played again on the component once it renders, so the interaction that woke it is not lost.
+With nothing on the page yet (rendered in the browser, no element fallback), the first
+interaction anywhere on the page starts it.
+
+Defaults to `pointerdown`, `focusin` and `keydown`, the three that reliably precede a real
+interaction, keyboard and pointer alike. Name your own to narrow it:
 
 ```tsx
 <ExportDialog load:interaction />

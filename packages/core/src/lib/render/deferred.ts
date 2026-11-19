@@ -11,9 +11,10 @@
  * tree-shaking as ordinary behaviour rather than as an integration.
  */
 import { isHydrating, isServer, keepServerContent } from '@fluixi/dom';
-import { createMemo, createSignal } from '@fluixi/reactive/signal';
+import { createMemo, createSignal, untrack } from '@fluixi/reactive/signal';
 import { observeIntersection } from '@fluixi/dom/utils';
 import { lazy } from './lazy.js';
+import { captureInteraction, type InteractionCapture } from './interaction-replay.js';
 
 
 
@@ -93,11 +94,18 @@ export function deferred(
     // for a media query that never matches, never). `visible` watches that content itself.
     if (isHydrating()) {
       let adopted = false;
+      let capture: InteractionCapture | undefined;
       const keep = keepServerContent((nodes) => {
         if (adopted) return;
         adopted = true;
-        const watched = nodes.find((n): n is HTMLElement => n.nodeType === 1);
-        schedule(options.strategy, start, watched);
+        const elements = nodes.filter((n): n is HTMLElement => n.nodeType === 1);
+        // `interaction` listens on the component's own nodes when it has some, and plays what
+        // happened there again once it renders.
+        if (options.strategy.kind === 'interaction' && elements.length) {
+          capture = captureInteraction(elements, options.strategy.events, start);
+          return;
+        }
+        schedule(options.strategy, start, elements[0]);
       });
       // Not inside a slot that hands its nodes over: schedule without content to watch.
       queueMicrotask(() => {
@@ -105,22 +113,58 @@ export function deferred(
         adopted = true;
         schedule(options.strategy, start);
       });
-      return createMemo(() => (ready() ? Lazy(props) : keep), undefined, { name: 'deferred' });
+      return createMemo(
+        () => {
+          if (!ready()) return keep;
+          const rendered = Lazy(props);
+          // After the insert that puts the new nodes where the server's were.
+          if (capture) queueMicrotask(() => capture!.replay(nodesOf(rendered)));
+          return rendered;
+        },
+        undefined,
+        { name: 'deferred' },
+      );
     }
 
     // `visible` is the one strategy that needs something in the DOM to watch, so it
     // renders an anchor and observes that; the others key off global signals and can
     // render the plain fallback.
     const anchor = options.strategy.kind === 'visible' ? createAnchor() : undefined;
-    schedule(options.strategy, start, anchor);
+    // Rendered in the browser, `interaction` listens on the fallback when it is an element; with
+    // nothing on the page to interact with, on the page.
+    const fallback = options.fallback;
+    const capture =
+      options.strategy.kind === 'interaction' && typeof Element !== 'undefined' && fallback instanceof Element
+        ? captureInteraction([fallback], options.strategy.events, start)
+        : undefined;
+    if (!capture) schedule(options.strategy, start, anchor);
 
-    return createMemo(() => (ready() ? Lazy(props) : (anchor ?? options.fallback ?? null)), undefined, {
-      name: 'deferred',
-    });
+    return createMemo(
+      () => {
+        if (!ready()) return anchor ?? fallback ?? null;
+        const rendered = Lazy(props);
+        if (capture) queueMicrotask(() => capture.replay(nodesOf(rendered)));
+        return rendered;
+      },
+      undefined,
+      { name: 'deferred' },
+    );
   }
 
   Deferred.preload = Lazy.preload;
   return Deferred;
+}
+
+/** The nodes a rendered component produced, for the replay to find its targets in. */
+function nodesOf(value: unknown): Node[] {
+  const out: Node[] = [];
+  const walk = (v: unknown): void => {
+    if (typeof Node !== 'undefined' && v instanceof Node) out.push(v);
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (typeof v === 'function') walk(untrack(v as () => unknown));
+  };
+  walk(value);
+  return out;
 }
 
 /**
@@ -174,8 +218,8 @@ function schedule(strategy: LoadStrategy, start: () => void, anchor?: HTMLElemen
     }
 
     case 'interaction': {
-      // Listened for on the document rather than the element: the point is the user's
-      // first interaction anywhere, and the component often has no DOM yet.
+      // On the page: the component has no nodes of its own yet (rendered in the browser with
+      // no element fallback). With nodes, `captureInteraction` listens on them instead.
       const handler = (): void => {
         for (const event of strategy.events) {
           document.removeEventListener(event, handler, true);

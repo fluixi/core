@@ -70,7 +70,7 @@ describe('a deferred component while the page hydrates', () => {
     expect(container.querySelector('p.w')).toBe(serverP);
     expect(container.textContent).toBe('widgetafter');
 
-    document.dispatchEvent(new Event('click'));
+    serverP!.dispatchEvent(new Event('click', { bubbles: true }));
     await tick(10);
     expect(renders()).toBe(1);
     expect(container.querySelectorAll('p.w').length).toBe(1);
@@ -114,5 +114,70 @@ describe('a load:never component in the browser', () => {
     DOM.removeUnclaimedKeyed(container);
     expect(container.querySelector('p.w')).toBe(serverP);
     expect(container.textContent).toBe('server onlyafter');
+  });
+
+  describe('load:interaction on the component, with the interaction played again (finding 015)', () => {
+    async function counter() {
+      const mod = compile(
+        `import { createSignal } from '@fluixi/reactive/signal';
+         export function Counter() {
+           const [n, setN] = createSignal(0);
+           const [text, setText] = createSignal('');
+           return <form class="c" onSubmit={(e) => e.preventDefault()}>
+             <button type="button" onClick={() => setN(n() + 1)}>clicks {() => n()}</button>
+             <input onInput={(e) => setText(e.currentTarget.value)} />
+             <output>{() => text()}</output>
+           </form>;
+         }`,
+        {},
+      );
+      // Renders, not loads: the server render already loaded the module in this process.
+      let renders = 0;
+      const Counter = (props: unknown) => (renders++, mod.Counter(props));
+      const Lazy = deferred(() => Promise.resolve({ default: Counter }), {
+        strategy: { kind: 'interaction', events: ['pointerdown', 'focusin'] },
+      });
+      const { App } = compile(`import { Lazy } from 'lazy'; export function App() { return <main><Lazy /><p class="elsewhere">x</p></main>; }`, { lazy: { Lazy } });
+      setServerMode(true);
+      const html = await renderToStringAsync(() => App());
+      setServerMode(false);
+      renders = 0;
+      document.body.innerHTML = `<div id="app">${html}</div>`;
+      const container = document.getElementById('app')!;
+      DOM.beginAppHydration();
+      DOM.hydrate(() => App(), container);
+      DOM.endAppHydration();
+      await tick();
+      DOM.removeUnclaimedKeyed(container);
+      return { container, renders: () => renders };
+    }
+
+    it('does not load for an interaction elsewhere on the page', async () => {
+      const { container, renders } = await counter();
+      container.querySelector('.elsewhere')!.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      await tick(10);
+      expect(renders()).toBe(0);
+    });
+
+    it('loads on an interaction inside it and replays the click that followed', async () => {
+      const { container, renders } = await counter();
+      const button = container.querySelector('button')!;
+      button.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await tick(10);
+      expect(renders()).toBe(1);
+      expect(container.querySelector('button')!.textContent).toBe('clicks 1');
+    });
+
+    it('replays text typed before the code arrived', async () => {
+      const { container } = await counter();
+      const input = container.querySelector('input')!;
+      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      input.value = 'ada';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await tick(10);
+      expect(container.querySelector('input')!.value).toBe('ada');
+      expect(container.querySelector('output')!.textContent).toBe('ada');
+    });
   });
 });

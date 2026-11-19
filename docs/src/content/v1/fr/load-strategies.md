@@ -9,7 +9,7 @@ utilisation-ci* doit attendre le viewport est une propriété de l'utilisation.
 
 ```tsx
 <Summary total={total()} />                    {/* eager, chunk d'entrée */}
-<ExportDialog load:interaction />              {/* chunk dédié, à la première interaction avec la page */}
+<ExportDialog load:interaction />              {/* chunk dédié, à la première interaction avec lui */}
 <AuditLog load:media="(min-width: 1024px)" />  {/* chunk dédié, bureau uniquement */}
 <RevenueChart load:visible="200px" />          {/* chunk dédié, juste avant l'affichage */}
 ```
@@ -24,7 +24,7 @@ dynamique et la liaison différée.
 | `load:eager` | Immédiatement, dans le chunk parent. Le défaut. |
 | `load:idle` | Quand le navigateur devient inactif. |
 | `load:visible` | Quand l'élément approche du viewport. |
-| `load:interaction` | À la première interaction n'importe où sur la page. |
+| `load:interaction` | À la première interaction avec le composant. |
 | `load:media` | Quand une media query correspond. |
 | `load:never` | Jamais, aucun code client. |
 
@@ -50,10 +50,15 @@ attendre l'utilisateur devant un espace vide pendant que le réseau travaille.
 
 ### `load:interaction`
 
-Le chargement part à la première interaction n'importe où sur la page, pas seulement avec le
-composant : celui-ci n'a souvent pas encore de balisage sur lequel écouter. Par défaut
-`pointerdown`, `focusin` et `keydown`, les trois qui précèdent de façon fiable une véritable
-interaction, au clavier comme au pointeur. Nommez les vôtres pour restreindre :
+Le chargement part à la première interaction avec le composant : les événements sont écoutés
+sur le HTML que le serveur a rendu pour lui, ou sur son `fallback` quand il est rendu dans le
+navigateur. Ce que l'utilisateur y fait avant l'arrivée du code (le clic qui suit le
+`pointerdown`, le texte saisi dans un champ) est rejoué sur le composant une fois rendu : l'interaction
+qui l'a réveillé n'est pas perdue. Sans rien encore sur la page (rendu dans le navigateur, sans
+`fallback` élément), la première interaction n'importe où sur la page le déclenche.
+
+Par défaut `pointerdown`, `focusin` et `keydown`, les trois qui précèdent de façon fiable une
+véritable interaction, au clavier comme au pointeur. Nommez les vôtres pour restreindre :
 
 ```tsx
 <ExportDialog load:interaction />
