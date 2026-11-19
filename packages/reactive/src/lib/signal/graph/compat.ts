@@ -28,6 +28,7 @@ import {
   onCleanup as l1onCleanup,
 } from './runtime.js';
 import { isObserved, reportReactiveDispose, reportReactiveNode } from './observe.js';
+import { G } from './state.js';
 
 function isThenable(v: unknown): v is Promise<unknown> {
   return !!v && typeof (v as { then?: unknown }).then === 'function';
@@ -64,6 +65,9 @@ export interface MemoOptions<T> extends SignalOptions<T> {
 
 /** createSignal, a writable cell, returned as the legacy `[get, set]` tuple. */
 export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T> {
+  const hot = G.hot;
+  const initial = value;
+  if (hot) value = hot.take('signal', value) as T;
   const state = new State<T>(value, { equals: options?.equals });
   const read = (() => state.get()) as Accessor<T>;
   const write = ((next: T | ((prev: T) => T)) => {
@@ -92,6 +96,7 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
   // A signal goes when its owner does, the same as a memo. A list rebuilt without a key
   // makes one per row per update, and a watcher that is never told keeps every one of them.
   if (isObserved()) l1onCleanup(() => reportReactiveDispose(state));
+  if (hot) hot.keep(() => state.peek(), () => write(() => initial));
   return [read, write];
 }
 

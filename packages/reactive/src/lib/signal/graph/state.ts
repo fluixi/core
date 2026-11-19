@@ -65,6 +65,8 @@ export interface GraphState {
   /** A tool watching the graph (see observe.ts). Here for the same reason the rest is. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   observer: any;
+  /** Hot reload keeping state across a swap (see hot.ts). Dev only, null otherwise. */
+  hot: import('./hot.js').HotState | null;
 }
 
 /**
@@ -104,6 +106,7 @@ function defaults(): GraphState {
     onSuspend: null,
     onError: null,
     observer: null,
+    hot: null,
   } satisfies GraphState;
 }
 

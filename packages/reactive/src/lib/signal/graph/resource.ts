@@ -9,6 +9,7 @@
  * and shows its fallback for; a reload started inside `startTransition` reads as the current
  * value instead.
  */
+import { G } from './state.js';
 import {
   createSignal,
   createEffect,
@@ -97,6 +98,9 @@ export function createResource<T, S = true>(
   const seed = ssrId !== undefined ? getServerData(ssrId) : undefined;
   let skipFirstFetch = seed !== undefined;
 
+  // Its own signals are not the component's state: hot reload must not count or restore them.
+  const hot = G.hot;
+  G.hot = null;
   const [value, setValue] = createSignal<T | undefined>(
     seed !== undefined ? (seed.value as T) : options.initialValue,
     { equals: false },
@@ -110,6 +114,7 @@ export function createResource<T, S = true>(
   );
   const [promise, setPromise] = createSignal<Promise<T> | undefined>(undefined, { equals: false });
   const [track, trigger] = createSignal(undefined, { equals: false });
+  G.hot = hot;
 
   let prevKey: S | typeof UNSET = UNSET;
   let manualRefetch = false;

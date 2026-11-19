@@ -16,6 +16,8 @@ import {
   reportReactiveNode,
   withReactiveOrigin,
 } from '../signal/graph/observe.js';
+import { G } from '../signal/graph/state.js';
+import { withoutHotState } from '../signal/graph/hot.js';
 import type { SetStoreFunction as StoreSetter, DeepReadonly } from './setter.types.js';
 import type { ReconcileOptions } from './types.js';
 
@@ -116,7 +118,7 @@ function createDataNode(initial?: any, ns?: NodeStore, key?: PropertyKey): DataN
   const owner = ns?.owner;
   const label = owner && key !== undefined ? pathOf(owner.name, key, ns?.array) : undefined;
   const [get, set] = withReactiveOrigin(owner?.store, () =>
-    createSignal(initial, label ? { name: label } : undefined),
+    withoutHotState(() => createSignal(initial, label ? { name: label } : undefined)),
   );
   const node = get as any as DataNode;
   node.$ = set as any;
@@ -765,7 +767,7 @@ class Store<T> {
   }
 
   toObservable(): Observable<T> {
-    const [get] = createSignal(this.state);
+    const [get] = withoutHotState(() => createSignal(this.state));
     return (get as any).toObservable();
   }
 
@@ -836,8 +838,10 @@ function createStore<T>(
   initialState: T,
   options: StoreOptions<T> = { immutable: true }
 ): [Immutable<T>, Store<T>['set']] {
-  const store = new Store(initialState, options);
+  const hot = G.hot;
+  const store = new Store(hot ? (hot.take('store', initialState) as T) : initialState, options);
   attachStoreMethods(store.set, store);
+  if (hot) hot.keep(() => unwrap(store.proxy), () => (store.set as unknown as (fn: () => T) => void)(() => initialState));
   return [store.proxy as Immutable<T>, store.set];
 }
 
