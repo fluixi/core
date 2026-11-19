@@ -1,5 +1,11 @@
 # @fluixi/cdn
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- 3efa459: Import maps now point at bundled copies shipped in the package, so a page importing `@fluixi/core` fetches about 25 files instead of about 180.
+
 ## 1.0.0-alpha.109
 
 ## 1.0.0-alpha.108

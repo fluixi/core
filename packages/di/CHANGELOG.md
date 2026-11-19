@@ -1,5 +1,11 @@
 # @fluixi/di
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- 8fd12ef: An app initializer registered after the page started rendering now warns in dev even when `@fluixi/di` is first loaded by a route; before, it never ran and nothing said so.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

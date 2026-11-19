@@ -1,5 +1,24 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- f1a6609: `createHotModule` now keeps the state of signals and stores of a swapped component and its children, and disposes the old build on swap.
+- b2a1a0b: `@fluixi/dom/hot` now enables component hot reload in development.
+- 5b42f0b: The new `createUniqueId` generates an ID that is consistent between server render and the hydrated page for label-for and ARIA references.
+
+### Patch Changes
+
+- 8de4b88: `accessKey` and `value` now accept an accessor, and `class`/`className` now accept a string, a list, a class map, or an accessor (`ClassValue`).
+- 2bbf785: `createDynamicElement` now builds its children once, preventing multiple lazy evaluations per element.
+- 6872737: `renderToString` with `hydrationKeys` false writes dynamic elements without the hydration markers around their children.
+- fd9c22e: `render()` now adds version information to `window.Fluixi.versions` instead of overwriting `window.Fluixi` when a CDN build already put its API there.
+- 5efb203: Island now reads its props once without a destructure.
+- b6db4f8: Server elements now have a `dataset` and `toggleAttribute`.
+- 4795b32: Hydration mismatch warnings now appear in the browser during development, and text that the server rendered differently from the client is reported.
+- 8fd12ef: `renderStarted()` now indicates if the first-render work of the request or page has started.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

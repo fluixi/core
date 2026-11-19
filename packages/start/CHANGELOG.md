@@ -1,5 +1,39 @@
 # @fluixi/start
 
+## 1.0.0-alpha.110
+
+### Minor Changes
+
+- c758d7a: A page shell can now be a component (`src/document.tsx`) that renders `Html`, `Head`, `Main` and `Scripts` from `@fluixi/start/document` per request, allowing request-derived values like `lang` or a theme class, while only the app inside `Main` hydrates and `index.html` remains the default.
+- 2fdecc3: The document component now works in an SPA (ssr false: rendered once to index.html at build), with prerendering, and on the Cloudflare, Netlify and Vercel adapters.
+- 89bf3d0: The `Img` component from `@fluixi/start/image` now provides an unstyled `<img>` with srcset, width/height, sizes, priority, fill, quality, loader, and unoptimized options. `createImageHandler` moves to `@fluixi/start/image/server`.
+
+### Patch Changes
+
+- cddf140: The dev server now reports when a document component replaces an existing `index.html`.
+- f6015b9: The image endpoint now finds `sharp` installed by the app under a strict layout (pnpm), serves resized images while keeping the source encoding (a PNG stays a PNG with its transparency and an SVG passes through), and caps the request `q` at the configured quality.
+- ef03615: The build now includes a `static: true` prerender option that lists links to non-prerendered pages and pages calling server functions, which fail on a static host.
+- 3af1e92: Netlify and Vercel builds no longer copy `public/` into the server function; the platform serves those files itself.
+- 1d76f1e: The route scan now warns when two page files answer the same address: only the first renders.
+- ecbcf9e: The build now refuses to publish env names ending in `TOKEN`, `API_KEY`, `APIKEY`, `DSN`, `DATABASE_URL` or `SECRETS` (e.g., `GITHUB_TOKEN`, `STRIPE_API_KEY`), while `TOKEN_ENDPOINT` still passes.
+- f65c412: The image endpoint now optimizes images in development when sharp is installed, instead of serving them untouched.
+- Updated dependencies [f1a6609]
+- Updated dependencies [f1a6609]
+- Updated dependencies [f1a6609]
+- Updated dependencies [11b381f]
+- Updated dependencies [8d8d454]
+- Updated dependencies [9099ab8]
+- Updated dependencies [9099ab8]
+- Updated dependencies [3578435]
+- Updated dependencies [11b381f]
+- Updated dependencies [2e58dd2]
+- Updated dependencies [80c6567]
+- Updated dependencies [092d4aa]
+- Updated dependencies [9c9b0c4]
+- Updated dependencies [c98e9c9]
+  - @fluixi/compiler@1.0.0-alpha.110
+  - @fluixi/vite-plugin@1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Minor Changes

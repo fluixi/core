@@ -1,5 +1,12 @@
 # @fluixi/template-parser
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- c98e9c9: The build now fails on broken HTML templates, prints warnings with file positions (including accessibility warnings such as img without alt) at build time, and no longer reports using `if` and `each` together on one element as an error.
+- 933bfdd: `<div><span>x</div>` now reports Unclosed `<span>`, the element left open; before, it named the `<div>`, whose closing tag the `<span>` had taken.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

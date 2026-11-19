@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-web-component",
-  "version": "0.0.2-alpha.22",
+  "version": "0.0.2-alpha.23",
   "private": true,
   "type": "module",
   "description": "Custom elements built with @fluixi/web-components: portable files for any page, and the same elements inside a Fluixi app.",

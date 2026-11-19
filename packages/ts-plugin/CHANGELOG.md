@@ -1,5 +1,24 @@
 # @fluixi/ts-plugin
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- 63220ca: The editor now shows the HTML template parser's repaired-tag error and missing-alt accessibility warnings (code 9002), and warning 9001 no longer fires for a child accessor but still fires when the accessor is mixed with text inside an attribute.
+- Updated dependencies [f1a6609]
+- Updated dependencies [f1a6609]
+- Updated dependencies [11b381f]
+- Updated dependencies [8d8d454]
+- Updated dependencies [9099ab8]
+- Updated dependencies [3578435]
+- Updated dependencies [2e58dd2]
+- Updated dependencies [80c6567]
+- Updated dependencies [9c9b0c4]
+- Updated dependencies [c98e9c9]
+- Updated dependencies [933bfdd]
+  - @fluixi/compiler@1.0.0-alpha.110
+  - @fluixi/template-parser@1.0.0-alpha.110
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

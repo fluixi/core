@@ -1,5 +1,11 @@
 # @fluixi/server
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- 092d4aa: The package descriptions now correctly state that `@fluixi/reactive` does not claim RxJS interop, `@fluixi/server` does not claim streaming, and `@fluixi/vite-plugin` does not mention a JSX backend.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes

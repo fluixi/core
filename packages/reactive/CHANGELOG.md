@@ -1,5 +1,15 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.110
+
+### Patch Changes
+
+- 92ab3a4: `combineSignals` now emits each combined value once at the start and on each write, instead of once per source signal.
+- 454e933: The library now exports `setHotState` which lets dev tooling choose the start value of new signals and stores.
+- 092d4aa: The package descriptions now correctly state that `@fluixi/reactive` does not claim RxJS interop, `@fluixi/server` does not claim streaming, and `@fluixi/vite-plugin` does not mention a JSX backend.
+- efae582: A store key now does not allocate a closure per key when hot reload is off.
+- 6146dbb: `startTransition` and `useTransition` now keep the current resource value during a transition, showing no Suspense fallback while `isPending` is true and returning a promise that resolves when the loads finish; the initial load still suspends.
+
 ## 1.0.0-alpha.109
 
 ### Patch Changes
