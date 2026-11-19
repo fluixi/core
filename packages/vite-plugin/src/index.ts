@@ -63,12 +63,17 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
       // so both sides have the same structure to hydrate.
       async transform(this: unknown, code: string, id: string, opts?: { ssr?: boolean }) {
         const result = (await compile.call(this, code, id, opts)) as { code: string; map?: unknown } | string | null | undefined;
-        if (!serving || options.hot === false || !result || id.includes('/node_modules/') || id.startsWith('\0') || id.includes('?')) {
+        // The app's own files only: a package linked from outside the root (a workspace copy of
+        // the framework or a component library) is left as it is.
+        const own = settings.sourceRoot !== undefined && id.startsWith(settings.sourceRoot.replace(/\/$/, '') + '/');
+        if (!serving || options.hot === false || !own || !/\.[cm]?[jt]sx?$/.test(id) || id.includes('/node_modules/') || id.startsWith('\0') || id.includes('?')) {
           return result;
         }
-        const compiled = typeof result === 'string' ? { code: result, map: null } : result;
+        // A module with nothing to compile (no JSX, no html``) comes back null: a custom element
+        // in plain TypeScript still needs its swap.
+        const compiled = !result ? { code, map: null } : typeof result === 'string' ? { code: result, map: null } : result;
         const hot = hotRewrite(compiled.code, id);
-        return hot ? { ...compiled, code: hot } : result;
+        return hot ? { ...compiled, code: hot } : result ?? null;
       },
     } as Plugin,
     enabled,

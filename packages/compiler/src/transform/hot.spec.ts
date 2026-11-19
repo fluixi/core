@@ -35,6 +35,12 @@ describe('hotRewrite', () => {
     expect(hotRewrite('export { Card } from "./card";\n', id)).toBeNull();
   });
 
+  it('leaves a module exporting a class alone: extends needs the class itself', () => {
+    expect(hotRewrite('export class Observable {}\n', id)).toBeNull();
+    expect(hotRewrite('export default class Store {}\n', id)).toBeNull();
+    expect(hotRewrite('export const Model = class {};\n', id)).toBeNull();
+  });
+
   it('leaves API routes and constants alone: GET is not a component', () => {
     expect(hotRewrite('export async function GET(request) { return new Response("x"); }\n', '/app/src/api/x.ts')).toBeNull();
     expect(hotRewrite('export const MAX_ITEMS = 3;\nexport function Card() { return null; }\n', id)).toBeNull();
@@ -46,7 +52,9 @@ describe('hotRewrite', () => {
   });
 
   it('respects @refresh reload, and ignores a module with nothing to swap', () => {
-    expect(hotRewrite('// @refresh reload\nexport function Card() { return null; }\n', id)).toBeNull();
+    const optOut = hotRewrite('// @refresh reload\nexport function Card() { return null; }\n', id)!;
+    expect(optOut).toContain('import.meta.hot.accept(() => globalThis.location?.reload())');
+    expect(optOut).not.toContain('__fxh');
     expect(hotRewrite('import "./styles.css";\nstart();\n', id)).toBeNull();
   });
 

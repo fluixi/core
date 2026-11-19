@@ -3,7 +3,8 @@
  * `routeData` / `routeDeps`) has them routed through `@fluixi/dom/hot` and accepts its own
  * update, so a save swaps the components in place instead of reloading the page.
  *
- * Every edit to the source keeps its length: `export ` becomes spaces, `export default `
+ * `// @refresh reload` makes a file reload the page on every save. Every edit to the source keeps
+ * its length: `export ` becomes spaces, `export default `
  * becomes `const __fxd = `, and the new code goes at the end. Lines and columns do not move, so
  * the compiler's source map still holds.
  */
@@ -28,7 +29,9 @@ interface Export {
 type Node = { type: string; start: number; end: number; [key: string]: any };
 
 export function hotRewrite(code: string, id: string): string | null {
-  if (OPT_OUT.test(code)) return null;
+  // Accepted, then reloaded: left unaccepted, the update would go to the first module above
+  // that accepts, and that one would swap instead of the page reloading.
+  if (OPT_OUT.test(code)) return `${code}\nif (import.meta.hot) import.meta.hot.accept(() => globalThis.location?.reload());\n`;
   let program: { body: Node[] };
   try {
     program = (parse(code, { sourceType: 'module', plugins: ['typescript', 'jsx'] }) as unknown as { program: { body: Node[] } }).program;
@@ -74,7 +77,8 @@ export function hotRewrite(code: string, id: string): string | null {
 
     if (node.type === 'ExportDefaultDeclaration') {
       const declaration = node.declaration as Node;
-      if ((declaration.type === 'FunctionDeclaration' || declaration.type === 'ClassDeclaration') && declaration.id) {
+      if (declaration.type.startsWith('Class')) return null;
+      if (declaration.type === 'FunctionDeclaration' && declaration.id) {
         classify('default', declaration.id.name);
         blanks.push([node.start, declaration.start]);
       } else {
@@ -115,12 +119,13 @@ function isComponentName(name: string): boolean {
   return /^[A-Z]/.test(name) && /[a-z]/.test(name);
 }
 
+/** The names a declaration exports, or null when one is not a component's: a class never is (`extends` needs the class itself). */
 function declaredNames(declaration: Node): string[] | null {
-  if ((declaration.type === 'FunctionDeclaration' || declaration.type === 'ClassDeclaration') && declaration.id) return [declaration.id.name];
+  if (declaration.type === 'FunctionDeclaration' && declaration.id) return [declaration.id.name];
   if (declaration.type === 'VariableDeclaration') {
     const names: string[] = [];
     for (const declarator of declaration.declarations as Node[]) {
-      if (declarator.id.type !== 'Identifier') return null;
+      if (declarator.id.type !== 'Identifier' || declarator.init?.type === 'ClassExpression') return null;
       names.push(declarator.id.name);
     }
     return names;
