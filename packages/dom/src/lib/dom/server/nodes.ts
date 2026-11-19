@@ -279,6 +279,21 @@ export class ServerElement extends ServerNode {
   getAttribute(name: string): string | null {
     return this.attributes.has(name) ? this.attributes.get(name)! : null;
   }
+  /** `data-*` attributes by camelCase name, as `HTMLElement.dataset`. */
+  get dataset(): Record<string, string | undefined> {
+    const attr = (key: string) => `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+    return new Proxy({} as Record<string, string | undefined>, {
+      get: (_, key) => (typeof key === 'string' ? this.getAttribute(attr(key)) ?? undefined : undefined),
+      set: (_, key, value) => (typeof key === 'string' && this.setAttribute(attr(key), String(value)), true),
+      deleteProperty: (_, key) => (typeof key === 'string' && this.removeAttribute(attr(key)), true),
+    });
+  }
+  toggleAttribute(name: string, force?: boolean): boolean {
+    const on = force ?? !this.hasAttribute(name);
+    if (on) this.setAttribute(name, '');
+    else this.removeAttribute(name);
+    return on;
+  }
   hasAttribute(name: string): boolean {
     return this.attributes.has(name);
   }

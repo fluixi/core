@@ -38,6 +38,32 @@ describe('an element rendered on the server', () => {
     expect(out).toMatch(/data-fx-props="\{&quot;items&quot;:\[&quot;Maison Ndiaye&quot;,&quot;Keur Tech&quot;\]\}"/);
   });
 
+  it('puts what render() writes to its host into the server HTML', async () => {
+    const { HTMLReactiveElement, defineCustomElement } = await import('./index.js');
+    const { createNativeElement } = await import('@fluixi/dom');
+    const { renderToString } = await import('@fluixi/dom/server');
+    const { effect } = await import('@fluixi/reactive/signal');
+
+    class Themed extends HTMLReactiveElement {
+      protected override render(): unknown {
+        effect(() => {
+          this.dataset.theme = 'dark';
+          this.style.setProperty('--accent', 'teal');
+          this.toggleAttribute('ready', true);
+        });
+        this.internals.setFormValue('3');
+        this.internals.states.add('rated');
+        return null;
+      }
+    }
+    defineCustomElement('fx-ssr-themed', Themed);
+
+    const out = renderToString(() => createNativeElement('fx-ssr-themed'), { hydrationKeys: false });
+    expect(out).toContain('data-theme="dark"');
+    expect(out).toMatch(/style="--accent: ?teal;?"/);
+    expect(out).toContain('ready=""');
+  });
+
   it('reads a context the app provides around it', async () => {
     const { typedElement, defineCustomElement } = await import('./index.js');
     const { createNativeElement, insert } = await import('@fluixi/dom');

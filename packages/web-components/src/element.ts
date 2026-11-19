@@ -205,6 +205,42 @@ if (typeof HTMLElement === 'undefined' && typeof (globalThis as { customElements
   };
 }
 
+/** The host APIs a server-rendered instance reaches its server node through. */
+const HOST_PROPERTIES = ['dataset', 'style', 'classList', 'id', 'className'] as const;
+const HOST_METHODS = ['setAttribute', 'getAttribute', 'removeAttribute', 'hasAttribute', 'toggleAttribute'] as const;
+
+function bindHost(element: object, node: object): void {
+  const target = node as Record<string, unknown>;
+  for (const name of HOST_PROPERTIES) {
+    Object.defineProperty(element, name, {
+      configurable: true,
+      get: () => target[name],
+      set: (value: unknown) => void (target[name] = value),
+    });
+  }
+  for (const name of HOST_METHODS) {
+    Object.defineProperty(element, name, { configurable: true, value: (...args: unknown[]) => (target[name] as (...a: unknown[]) => unknown)(...args) });
+  }
+  // Form value, validity and custom states only mean something in a browser: accepted, kept
+  // nowhere, so a render that sets them runs the same on both sides.
+  Object.defineProperty(element, 'attachInternals', { configurable: true, value: serverInternals });
+}
+
+function serverInternals(): ElementInternals {
+  return {
+    states: new Set<string>(),
+    setFormValue() {},
+    setValidity() {},
+    checkValidity: () => true,
+    reportValidity: () => true,
+    validity: {} as ValidityState,
+    validationMessage: '',
+    willValidate: false,
+    form: null,
+    labels: [] as unknown as NodeList,
+  } as unknown as ElementInternals;
+}
+
 /** The platform callbacks, looked up on whatever sits above this class in the chain. */
 interface Lifecycle {
   connectedCallback?(): void;
@@ -589,6 +625,9 @@ export class HTMLReactiveElement extends BaseElement {
       }
     }
 
+    // Without a DOM the instance is a bare object: what render() writes to its host (a data-*
+    // attribute, a custom property) goes to the server node, so it is in the HTML.
+    if (BaseElement !== (globalThis as { HTMLElement?: unknown }).HTMLElement) bindHost(element, node);
     element.#authored = [...node.childNodes] as ChildNode[];
     for (const child of element.#authored) node.removeChild(child);
     element.#root = node as unknown as HTMLElement;
@@ -615,6 +654,9 @@ export class HTMLReactiveElement extends BaseElement {
       }
     }
   }
+
+  /** This element's entry in its class's hot instances, once it has one. */
+  #hotRef: WeakRef<HTMLReactiveElement> | undefined;
 
   /** Hot reload: the class's setup changed, so render again from scratch, keeping the props. */
   [HOT_REBUILD](): void {
@@ -661,9 +703,6 @@ export class HTMLReactiveElement extends BaseElement {
         this.#hydrating = true;
       }
       const json = this.getAttribute(SSR_PROPS_ATTRIBUTE);
-  /** This element's entry in its class's hot instances, once it has one. */
-  #hotRef: WeakRef<HTMLReactiveElement> | undefined;
-
       if (json) {
         try {
           const states = this.#states();
