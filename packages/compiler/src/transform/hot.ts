@@ -3,7 +3,8 @@
  * `routeData` / `routeDeps`) has them routed through `@fluixi/dom/hot` and accepts its own
  * update, so a save swaps the components in place instead of reloading the page.
  *
- * `// @refresh reload` makes a file reload the page on every save. Every edit to the source keeps
+ * `// @refresh reload` makes a file reload the page on every save; `// @refresh reset` makes it start
+ * fresh on a swap when the app keeps state. Every edit to the source keeps
  * its length: `export ` becomes spaces, `export default `
  * becomes `const __fxd = `, and the new code goes at the end. Lines and columns do not move, so
  * the compiler's source map still holds.
@@ -19,6 +20,13 @@ const STATE_CALLS = new Set([
 const ROUTE_EXPORTS = new Set(['routeData', 'routeDeps']);
 /** The file opts out: always a full reload. */
 const OPT_OUT = /@refresh\s+reload/;
+/** The file opts out of keeping state: its components start fresh on a swap. */
+const RESET = /@refresh\s+reset/;
+
+export interface HotRewriteOptions {
+  /** Keep a swapped component's signals and stores, and its children's. */
+  keepState?: boolean;
+}
 
 interface Export {
   exported: string;
@@ -28,15 +36,22 @@ interface Export {
 
 type Node = { type: string; start: number; end: number; [key: string]: any };
 
-export function hotRewrite(code: string, id: string): string | null {
+export function hotRewrite(code: string, id: string, options: HotRewriteOptions = {}): string | null {
   // Accepted, then reloaded: left unaccepted, the update would go to the first module above
   // that accepts, and that one would swap instead of the page reloading.
-  if (OPT_OUT.test(code)) return `${code}\nif (import.meta.hot) import.meta.hot.accept(() => globalThis.location?.reload());\n`;
+  if (OPT_OUT.test(code)) return reloadOnUpdate(code);
   let program: { body: Node[] };
   try {
     program = (parse(code, { sourceType: 'module', plugins: ['typescript', 'jsx'] }) as unknown as { program: { body: Node[] } }).program;
   } catch {
     return null;
+  }
+
+  // A class registered as a custom element. The browser keeps the first class for a tag, so the
+  // module accepts its own update and the runtime moves the new methods onto that class. Methods
+  // reading `#private` fields cannot run on an instance the old class built: reload instead.
+  if (program.body.some(registersElementClass)) {
+    return program.body.some(hasPrivateMembers) ? reloadOnUpdate(code) : `${code}\nif (import.meta.hot) import.meta.hot.accept();\n`;
   }
 
   const blanks: [number, number, string?][] = [];
@@ -102,12 +117,16 @@ export function hotRewrite(code: string, id: string): string | null {
 
   const lines = [
     `import { createHotModule as __fxHot } from '@fluixi/dom/hot';`,
-    `const __fxh = __fxHot(import.meta.hot, ${JSON.stringify(id)});`,
+    `const __fxh = __fxHot(import.meta.hot, ${JSON.stringify(id)}${options.keepState && !RESET.test(code) ? ', { keepState: true }' : ''});`,
   ];
   exports.forEach((entry, i) => lines.push(`const __fx${i} = __fxh.${entry.kind}(${JSON.stringify(entry.exported)}, ${entry.local});`));
   if (exports.length) lines.push(`export { ${exports.map((entry, i) => `__fx${i} as ${entry.exported}`).join(', ')} };`);
   lines.push(`__fxh.done();`, `if (import.meta.hot) import.meta.hot.accept();`);
-  return `${out}\n${lines.join('\n')}\n`;
+  // `defineElement` rebuilds the live elements while the body runs, before the lines above: a
+  // file that opts out of keeping state says so first. Line 1 only, where the opt-out comment
+  // usually is, so no other line or column moves.
+  const head = definesElement && options.keepState && RESET.test(code) ? `if (import.meta.hot) globalThis[Symbol.for('fluixi.hot')]?.reset?.(true); ` : '';
+  return `${head}${out}\n${lines.join('\n')}\n`;
 }
 
 /**
@@ -134,6 +153,29 @@ function declaredNames(declaration: Node): string[] | null {
 }
 
 /** The name a call is made through, without the prefixes generated imports carry (`_signal`). */
+function reloadOnUpdate(code: string): string {
+  return `${code}\nif (import.meta.hot) import.meta.hot.accept(() => globalThis.location?.reload());\n`;
+}
+
+/**
+ * `defineCustomElement('x-a', XA)` at the top level. `customElements.define` is left to Vite: the
+ * runtime only patches classes that went through `defineCustomElement`.
+ */
+function registersElementClass(node: Node): boolean {
+  if (node.type !== 'ExpressionStatement' || node.expression.type !== 'CallExpression') return false;
+  const callee = node.expression.callee as Node;
+  return callee.type === 'Identifier' && callee.name === 'defineCustomElement';
+}
+
+/** A top-level class with a `#private` field or method. */
+function hasPrivateMembers(node: Node): boolean {
+  const declaration = node.type.startsWith('Export') && node.declaration ? (node.declaration as Node) : node;
+  if (declaration.type !== 'ClassDeclaration') return false;
+  return ((declaration.body as Node).body as Node[]).some(
+    (member) => member.type.startsWith('ClassPrivate') || (member.key as Node | undefined)?.type === 'PrivateName',
+  );
+}
+
 function calleeName(node: Node | null | undefined): string | null {
   if (!node || node.type !== 'CallExpression') return null;
   const callee = node.callee as Node;

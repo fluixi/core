@@ -6,8 +6,12 @@ export type FluixiViteOptions = CompilerOptions & {
   /**
    * Swap an edited component in place in dev, keeping the rest of the page's state, instead of
    * reloading the page. Default true. `// @refresh reload` in a file opts that file out.
+   *
+   * `{ keepState: true }` also keeps the edited component's signals and stores, matched by the
+   * order its body creates them, and its children's, matched by position. Off by default;
+   * `// @refresh reset` in a file opts that file out.
    */
-  hot?: boolean;
+  hot?: boolean | { keepState?: boolean };
 };
 
 /**
@@ -72,7 +76,8 @@ export function fluixi(options: FluixiViteOptions = {}): Plugin {
         // A module with nothing to compile (no JSX, no html``) comes back null: a custom element
         // in plain TypeScript still needs its swap.
         const compiled = !result ? { code, map: null } : typeof result === 'string' ? { code: result, map: null } : result;
-        const hot = hotRewrite(compiled.code, id);
+        const file = id.slice(settings.sourceRoot!.replace(/\/$/, '').length + 1);
+        const hot = hotRewrite(compiled.code, file, { keepState: typeof options.hot === 'object' && !!options.hot.keepState });
         return hot ? { ...compiled, code: hot } : result ?? null;
       },
     } as Plugin,

@@ -68,4 +68,28 @@ describe('hotRewrite', () => {
     const out = hotRewrite('export type Props = { a: string };\nexport function Card() { return null; }\n', id)!;
     expect(out).toContain('__fxh.component("Card", Card)');
   });
+
+  it('passes keepState to the hot module, unless the file says // @refresh reset', () => {
+    const code = 'export function Card() { return null; }\n';
+    expect(hotRewrite(code, 'src/card.tsx', { keepState: true })).toContain('__fxHot(import.meta.hot, "src/card.tsx", { keepState: true })');
+    expect(hotRewrite(code, 'src/card.tsx')).toContain('__fxHot(import.meta.hot, "src/card.tsx");');
+    expect(hotRewrite(`// @refresh reset\n${code}`, 'src/card.tsx', { keepState: true })).toContain('__fxHot(import.meta.hot, "src/card.tsx");');
+  });
+
+  it('lets a custom element class module take its own update, unless the class has #private members', () => {
+    const reload = 'import.meta.hot.accept(() => globalThis.location?.reload())';
+    const plain = 'export class FxCounter extends HTMLReactiveElement { render() { return null; } }\ndefineCustomElement("fx-counter", FxCounter);\n';
+    const withPrivate = 'export class FxCounter extends HTMLReactiveElement { #count = 0; }\ndefineCustomElement("fx-counter", FxCounter);\n';
+    expect(hotRewrite(plain, id)).toMatch(/import\.meta\.hot\.accept\(\);\n$/);
+    expect(hotRewrite(withPrivate, id)).toContain(reload);
+    expect(hotRewrite('export class Store {}\n', id)).toBeNull();
+  });
+
+  it('tells the runtime first when a file defining elements opts out of keeping state', () => {
+    const code = '// @refresh reset\ndefineElement("x-a", () => null);\n';
+    const out = hotRewrite(code, 'src/a.ts', { keepState: true })!;
+    expect(out.startsWith("if (import.meta.hot) globalThis[Symbol.for('fluixi.hot')]?.reset?.(true); // @refresh reset\n")).toBe(true);
+    expect(out.split('\n')[1]).toBe('defineElement("x-a", () => null);');
+    expect(hotRewrite('defineElement("x-a", () => null);\n', 'src/a.ts', { keepState: true })!.startsWith('defineElement')).toBe(true);
+  });
 });

@@ -723,4 +723,4 @@ export default {
   createESBuildPlugin,
 };
 
-export { hotRewrite } from './transform/hot.js';
+export { hotRewrite, type HotRewriteOptions } from './transform/hot.js';
