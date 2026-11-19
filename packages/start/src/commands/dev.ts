@@ -116,6 +116,9 @@ export async function dev(config: FluixiConfig = {}): Promise<void> {
   const { createServer } = await import('vite');
   // An API-only app has no page and so no template.
   const templateFile = resolve(cfg.root, cfg.template);
+  if (cfg.document && !cfg.apiOnly && existsSync(templateFile)) {
+    console.warn(`[fluixi] ${cfg.document} renders the page, so ${cfg.template} is not used. Delete it, or set document: null in fluixi.config to keep it.`);
+  }
   // A document component renders the page per request: it needs no index.html beside it.
   const template = cfg.apiOnly || (cfg.document && !existsSync(templateFile)) ? '' : readFileSync(templateFile, 'utf-8');
 
