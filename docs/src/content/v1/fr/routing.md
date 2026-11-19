@@ -165,6 +165,20 @@ setParams({ page: null });            // la supprime
 setParams({ page: '1' }, { replace: true });
 ```
 
+### Préchargement à l’intention
+
+Un `<Link>` commence à charger le code de sa route cible quand le pointeur l’atteint, qu’il
+reçoit le focus ou qu’un doigt le touche : le clic trouve le code prêt. Seulement le code : les
+données de la route se chargent toujours à la navigation. Chaque chemin ne se charge qu’une
+fois. `<Link preload={false}>` le désactive pour un lien. Pour une navigation qui ne passe pas
+par un lien (une ligne cliquable, une palette de commandes), `usePreloadRoute()` renvoie la même
+fonction :
+
+```tsx
+const preload = usePreloadRoute();
+<tr onPointerEnter={() => preload(`/orders/${row.id}`)} onClick={() => navigate(`/orders/${row.id}`)}>
+```
+
 ### Lecteurs d’écran
 
 Une navigation côté client change la page sans en charger une : un lecteur d’écran ne dirait

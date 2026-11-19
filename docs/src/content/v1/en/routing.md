@@ -161,6 +161,19 @@ setParams({ page: null });            // removes it
 setParams({ page: '1' }, { replace: true });
 ```
 
+### Preloading on intent
+
+A `<Link>` starts loading its target route's code when the pointer reaches it, it gets focus,
+or a finger touches it, so the click finds the code ready. Only the code: the route's data
+still loads on navigation. Each path loads once. `<Link preload={false}>` turns it off for a
+link. For navigation that does not go through a link (a clickable row, a command palette),
+`usePreloadRoute()` returns the same function:
+
+```tsx
+const preload = usePreloadRoute();
+<tr onPointerEnter={() => preload(`/orders/${row.id}`)} onClick={() => navigate(`/orders/${row.id}`)}>
+```
+
 ### Screen readers
 
 A client-side navigation changes the page without loading one, so a screen reader would say

@@ -82,6 +82,8 @@ interface RouterCtxValue {
   trackLoad: <T>(result: T) => T;
   /** The Router's `error` option, for a route that failed with no boundary of the app above. */
   routeError?: (error: unknown, reset: () => void) => any;
+  /** Start loading the code of the route `href` leads to, once per path. */
+  preload: (href: string) => void;
 }
 const RouterContext = createContext<RouterCtxValue>(undefined, 'router');
 
@@ -701,8 +703,17 @@ export function Router<C = any>(props: RouterProps<C>) {
     (state().match?.matched ?? []).filter((m) => m.component)
   );
 
+  // Paths whose route code was asked for already: a pointer passing over a link twice loads once.
+  const preloaded = new Set<string>();
   const ctx: RouterCtxValue = {
     router: router as CoreRouter<any>,
+    preload(href) {
+      // An app path only: `href` is relative to `base`, as navigate takes it.
+      const path = href.split(/[?#]/)[0]!;
+      if (!path.startsWith('/') || path.startsWith('//') || preloaded.has(path)) return;
+      preloaded.add(path);
+      void preloadRoutes(props.routes, path).catch(() => preloaded.delete(path));
+    },
     location: createMemo(() => state().location),
     params: createMemo(() => state().match?.params ?? {}),
     isRouting: () => navigating() || loads() > 0,
@@ -784,6 +795,16 @@ export function Outlet() {
 }
 
 /**
+ * Start loading the code of the route a path leads to, for navigation that does not go through
+ * a `<Link>`: a row that navigates on click, a command palette. Call the returned function on
+ * the same intent a link uses (pointer over it, focus).
+ */
+export function usePreloadRoute(): (href: string) => void {
+  const ctx = useContext(RouterContext);
+  return (href) => ctx?.preload(href);
+}
+
+/**
  * Whether a navigation is in progress: from the moment it starts until the route it lands on
  * has loaded its modules and its route data. For a progress bar or a busy cursor.
  *
@@ -843,6 +864,7 @@ const _ssrRouterStub: RouterCtxValue = {
   location: () =>
     ({ pathname: '', search: '', hash: '', query: {} }) as unknown as RouterLocation,
   params: () => ({}),
+  preload: () => {},
   isRouting: () => false,
   trackLoad: (result) => result,
 };
@@ -1129,6 +1151,12 @@ export interface LinkProps {
   slot?: string;
   children?: any;
   /**
+   * Start loading the target route's code when the pointer reaches the link, it gets focus, or
+   * a finger touches it, so the click finds it ready. Code only: its data loads on navigation.
+   * Default true.
+   */
+  preload?: boolean;
+  /**
    * Everything else is forwarded onto the `<a>`: id, style, title, aria-*,
    * data-*, event handlers. Typed openly because the forwarding is
    * allow-by-default: a prop this interface forgot still reaches the DOM, and
@@ -1140,6 +1168,7 @@ export interface LinkProps {
 // Props Link handles itself, so they aren't blindly forwarded as <a> attributes.
 const LINK_OWN_PROPS = new Set([
   'href',
+  'preload',
   'slot',
   'class',
   'className',
@@ -1210,6 +1239,11 @@ export function Link(props: LinkProps) {
 
   // Client only (ServerNode has no addEventListener). Direct listener (not delegated) so
   // preventDefault reliably blocks navigation.
+  if (typeof a.addEventListener === 'function' && ctx && props.preload !== false) {
+    const intent = () => ctx.preload(read(props.href) ?? '');
+    for (const type of ['pointerenter', 'focus', 'touchstart']) a.addEventListener(type, intent, { passive: true });
+  }
+
   if (typeof a.addEventListener === 'function') {
     a.addEventListener('click', (e: MouseEvent) => {
       // No router above this link: let the browser follow it rather than cancel the click
