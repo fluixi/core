@@ -66,7 +66,14 @@ export interface DevtoolsHook {
    * index per step: `12:0/1/2`. Null clears it.
    */
   highlight(target: number | string | null): void;
+  /** Called by the runtime before a hot update: the update's writes are one commit named `label`. */
+  mark(label: string): void;
+  /** Outline what a hot update rebuilt, for a moment. */
+  flash(elements: readonly Element[], label: string): void;
 }
+
+/** How long a hot update's outline stays. */
+const FLASH_MS = 1200;
 
 /**
  * Install the hook. Returns the existing one if something got there first, so two agents on
@@ -87,6 +94,7 @@ export function installDevtoolsHook(): DevtoolsHook {
   /** Whether whoever is watching brought its own devtools, rather than being given this one. */
   let owned = false;
   let version: string | null = null;
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
   /** What has happened, for whoever asks. Bounded: nothing here is ever consumed. */
   const history: GraphEvent[] = [];
 
@@ -113,6 +121,15 @@ export function installDevtoolsHook(): DevtoolsHook {
     },
     get version() {
       return version;
+    },
+    mark(label) {
+      observed?.mark(label);
+    },
+    flash(elements, label) {
+      if (!elements.length) return;
+      showHighlight([...elements], label);
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(hideHighlight, FLASH_MS);
     },
     highlight(target) {
       if (!observed || target === null) {

@@ -78,4 +78,18 @@ describe('toCommits', () => {
     expect(commits[0]?.cause).toBeUndefined();
     expect(commits[0]?.events.map((e) => e.id)).toEqual([2, 3]);
   });
+
+  it('puts the write after a mark in the mark\'s commit, named by it', () => {
+    const history = createHistory(50);
+    history.wrote(1, undefined);
+    history.marked('hot update: Card (src/card.tsx)');
+    history.wrote(2, undefined);
+    history.disposed(3, 'old');
+    history.wrote(4, undefined);
+
+    const commits = toCommits(history.take());
+    expect(commits.map((c) => c.events.map((e) => e.kind))).toEqual([['write'], ['mark', 'write', 'disposed'], ['write']]);
+    expect(commits[1]!.mark?.label).toBe('hot update: Card (src/card.tsx)');
+    expect(commits[2]!.mark).toBeUndefined();
+  });
 });

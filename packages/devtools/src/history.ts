@@ -9,7 +9,7 @@
 
 import type { ValueChange } from './diff.js';
 
-export type GraphEventKind = 'write' | 'ran' | 'created' | 'disposed';
+export type GraphEventKind = 'write' | 'ran' | 'created' | 'disposed' | 'mark';
 
 export interface GraphEvent {
   /** Monotonic across the session, so a consumer folding deltas never reorders them. */
@@ -48,6 +48,11 @@ export interface History {
   ran(id: number, by?: number): void;
   created(id: number, by?: number, label?: string): void;
   disposed(id: number, label?: string): void;
+  /**
+   * Open a commit named by the tool, such as a hot update: the write that follows joins it
+   * instead of opening its own.
+   */
+  marked(label: string): void;
   /** Everything since the last call. Draining is what keeps a producer nobody polls bounded. */
   take(): GraphEvent[];
   /** How many events were dropped for being older than the limit. */
@@ -61,6 +66,7 @@ const OFF: History = {
   ran() {},
   created() {},
   disposed() {},
+  marked() {},
   take: () => [],
   dropped: 0,
   clear() {},
@@ -74,6 +80,8 @@ export function createHistory(limit: number): History {
   let seq = 0;
   let commit = 0;
   let dropped = 0;
+  /** A mark just opened the commit; the next outside write belongs to it. */
+  let held = false;
 
   const push = (event: Omit<GraphEvent, 'seq' | 't' | 'commit'>): void => {
     events.push({ ...event, seq: seq++, t: Date.now(), commit });
@@ -86,7 +94,10 @@ export function createHistory(limit: number): History {
   return {
     wrote(id, by, detail) {
       // Nothing running: it came from outside, which is where a reader wants the cut.
-      if (by === undefined) commit++;
+      if (by === undefined) {
+        if (held) held = false;
+        else commit++;
+      }
       push({ kind: 'write', id, by, ...detail });
     },
     ran(id, by) {
@@ -97,6 +108,11 @@ export function createHistory(limit: number): History {
     },
     disposed(id, label) {
       push({ kind: 'disposed', id, label });
+    },
+    marked(label) {
+      commit++;
+      held = true;
+      push({ kind: 'mark', id: -1, label });
     },
     take() {
       const taken = events;
@@ -120,6 +136,8 @@ export interface Commit {
   readonly events: GraphEvent[];
   /** The write that opened it, if the buffer still holds it. */
   readonly cause?: GraphEvent;
+  /** What a tool named it, such as a hot update. */
+  readonly mark?: GraphEvent;
 }
 
 /**
@@ -140,5 +158,6 @@ export function toCommits(events: readonly GraphEvent[]): Commit[] {
       t: group[0]!.t,
       events: group,
       cause: group.find((e) => e.kind === 'write' && e.by === undefined),
+      mark: group.find((e) => e.kind === 'mark'),
     }));
 }

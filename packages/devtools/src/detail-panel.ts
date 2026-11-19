@@ -37,6 +37,7 @@ const VERBS: Record<GraphEvent['kind'], string> = {
   ran: 'ran',
   created: 'made',
   disposed: 'gone',
+  mark: 'marked',
 };
 
 /** So it cannot be resized into a sliver. */

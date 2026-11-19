@@ -102,6 +102,8 @@ export interface ObservedGraph {
   takeRemoved(): number[];
   /** What happened since the last call, in order. Empty when history is off. */
   takeEvents(): GraphEvent[];
+  /** Open a commit named `label`, such as a hot update; the writes that follow land in it. */
+  mark(label: string): void;
   /** Where this node reaches the page, for whatever is still on it. */
   elementsFor(id: number): Element[];
   /** The node driving `element`, or the nearest ancestor that has one. */
@@ -1041,6 +1043,9 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
     },
     takeEvents() {
       return history.take();
+    },
+    mark(label) {
+      history.marked(label);
     },
     detach() {
       stop();

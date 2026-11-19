@@ -47,12 +47,14 @@ export type NameOf = (event: GraphEvent) => string;
 
 /** The name of what the commit started from: `count`, or what to say when there is none. */
 function subject(commit: Commit, nameOf: NameOf): string {
+  if (commit.mark) return commit.mark.label ?? 'marked';
   if (!commit.cause) return commit.commit === 0 ? 'first render' : 'continued';
   return nameOf(commit.cause);
 }
 
 /** `0 → 1`, when the write carried both sides of it. */
 function change(commit: Commit): string {
+  if (commit.mark) return '';
   const cause = commit.cause;
   if (!cause || cause.from === undefined || cause.to === undefined) return '';
   return `${cause.from} → ${cause.to}`;
@@ -74,7 +76,7 @@ function detail(commit: Commit, nameOf: NameOf): string {
 
 /** "2 ran · 1 created": what the commit caused, without listing every line of it. */
 function summary(commit: Commit): string {
-  const counts = { ran: 0, created: 0, disposed: 0, write: 0 };
+  const counts = { ran: 0, created: 0, disposed: 0, write: 0, mark: 0 };
   for (const event of commit.events) counts[event.kind]++;
   // The opening write is the title, so it is not also a thing the commit did.
   const writes = counts.write - (commit.cause ? 1 : 0);
