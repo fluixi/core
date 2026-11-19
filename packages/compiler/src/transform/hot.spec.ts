@@ -82,6 +82,7 @@ describe('hotRewrite', () => {
     const withPrivate = 'export class FxCounter extends HTMLReactiveElement { #count = 0; }\ndefineCustomElement("fx-counter", FxCounter);\n';
     expect(hotRewrite(plain, id)).toMatch(/import\.meta\.hot\.accept\(\);\n$/);
     expect(hotRewrite(withPrivate, id)).toContain(reload);
+    expect(hotRewrite('class FxTabs extends HTMLElement {}\ncustomElements.define("fx-tabs", FxTabs);\n', id)).toContain(reload);
     expect(hotRewrite('export class Store {}\n', id)).toBeNull();
   });
 

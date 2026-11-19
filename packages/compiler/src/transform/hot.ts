@@ -53,6 +53,8 @@ export function hotRewrite(code: string, id: string, options: HotRewriteOptions 
   if (program.body.some(registersElementClass)) {
     return program.body.some(hasPrivateMembers) ? reloadOnUpdate(code) : `${code}\nif (import.meta.hot) import.meta.hot.accept();\n`;
   }
+  // Registered with the platform directly, nothing can patch it: the page would keep the old one.
+  if (program.body.some(registersWithPlatform)) return reloadOnUpdate(code);
 
   const blanks: [number, number, string?][] = [];
   const exports: Export[] = [];
@@ -165,6 +167,18 @@ function registersElementClass(node: Node): boolean {
   if (node.type !== 'ExpressionStatement' || node.expression.type !== 'CallExpression') return false;
   const callee = node.expression.callee as Node;
   return callee.type === 'Identifier' && callee.name === 'defineCustomElement';
+}
+
+/** `customElements.define('x-a', XA)` at the top level. */
+function registersWithPlatform(node: Node): boolean {
+  if (node.type !== 'ExpressionStatement' || node.expression.type !== 'CallExpression') return false;
+  const callee = node.expression.callee as Node;
+  return (
+    callee.type === 'MemberExpression' &&
+    (callee.object as Node).type === 'Identifier' &&
+    (callee.object as Node).name === 'customElements' &&
+    (callee.property as Node).name === 'define'
+  );
 }
 
 /** A top-level class with a `#private` field or method. */
