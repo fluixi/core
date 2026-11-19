@@ -240,6 +240,15 @@ export function prepareRender(): Promise<void> {
   return prepared;
 }
 
+/**
+ * Whether the {@link beforeFirstRender} work of this request, or of the page in the browser, has
+ * started: what registers too late for it can tell, however late its own module loaded.
+ */
+export function renderStarted(): boolean {
+  const scope = requestScope();
+  return scope ? _beforeRender.prepared.has(scope) : _beforeRender.page !== undefined;
+}
+
 async function runBeforeRender(): Promise<void> {
   for (const task of [..._beforeRender.tasks]) await task();
 }

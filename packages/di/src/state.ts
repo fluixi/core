@@ -21,8 +21,6 @@ export interface DiState {
   explicit: Injector | null;
   /** The tokens being resolved, outermost first, for error messages. */
   path: string[];
-  /** Whether the app's initializers have been run once: a later one comes too late for that render. */
-  initialized: boolean;
 }
 
 export function freshState(): DiState {
@@ -37,7 +35,6 @@ export function freshState(): DiState {
     overrides: new Map(),
     explicit: null,
     path: [],
-    initialized: false,
   };
 }
 

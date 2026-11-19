@@ -48,6 +48,7 @@ export {
   errorResponseStatus,
   takeResponseStatus,
   beforeFirstRender,
+  renderStarted,
   prepareRender,
   type ResponseRedirect,
   type RequestStore,
