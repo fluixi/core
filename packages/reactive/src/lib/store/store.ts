@@ -117,8 +117,10 @@ function createDataNode(initial?: any, ns?: NodeStore, key?: PropertyKey): DataN
   // line the store was declared rather than wherever it was first read.
   const owner = ns?.owner;
   const label = owner && key !== undefined ? pathOf(owner.name, key, ns?.array) : undefined;
+  const options = label ? { name: label } : undefined;
+  // The hot reload hook exists only in dev: production pays one check, not a closure per key.
   const [get, set] = withReactiveOrigin(owner?.store, () =>
-    withoutHotState(() => createSignal(initial, label ? { name: label } : undefined)),
+    G.hot ? withoutHotState(() => createSignal(initial, options)) : createSignal(initial, options),
   );
   const node = get as any as DataNode;
   node.$ = set as any;
