@@ -165,6 +165,29 @@ setParams({ page: null });            // la supprime
 setParams({ page: '1' }, { replace: true });
 ```
 
+### Lecteurs d’écran
+
+Une navigation côté client change la page sans en charger une : un lecteur d’écran ne dirait
+rien. Le routeur annonce donc chaque nouvelle page, une fois affichée : son titre s’il a
+changé, sinon son premier `h1`, sinon son chemin. Le focus passe au `<main>` de la page, pour
+que les utilisateurs du clavier et des lecteurs d’écran reprennent au nouveau contenu. Rien de
+cela au premier chargement, que le navigateur annonce, ni quand seuls la requête ou le hash
+changent sur la même page.
+
+L’annonce vit dans un élément caché `<fluixi-route-announcer>` sur `<body>`, hors de
+l’application. Pour dire quelque chose de plus précis, appelez `announce` pendant le rendu de
+la page ; hors navigation, le texte est dit aussitôt :
+
+```tsx
+import { announce } from '@fluixi/start/router';
+
+announce(`Résultats : ${orders().length} commandes`);
+announce('Commande enregistrée');
+```
+
+`<Router announce={{ focus: 'h1' }}>` place le focus sur le premier titre,
+`{ focus: false }` le laisse où il est, et `announce={false}` désactive le tout.
+
 ## Charger des données
 
 Un fichier de route peut exporter `routeData`, et le plus proche est disponible via

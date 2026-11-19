@@ -161,6 +161,28 @@ setParams({ page: null });            // removes it
 setParams({ page: '1' }, { replace: true });
 ```
 
+### Screen readers
+
+A client-side navigation changes the page without loading one, so a screen reader would say
+nothing. The router announces each new page instead, once it is on screen: its title if it
+changed, else its first `h1`, else its path. Focus moves to the page's `<main>`, so keyboard
+and screen reader users continue from the new content. Neither happens on the first load,
+which the browser announces, nor when only the query or hash changes on the same page.
+
+The announcement lives in a hidden `<fluixi-route-announcer>` element on `<body>`, outside
+the app. To say something more specific, call `announce` while the page renders; outside a
+navigation it is spoken at once:
+
+```tsx
+import { announce } from '@fluixi/start/router';
+
+announce(`Search results: ${orders().length} orders`);
+announce('Order saved');
+```
+
+`<Router announce={{ focus: 'h1' }}>` moves focus to the first heading instead,
+`{ focus: false }` leaves it where it is, and `announce={false}` turns all of it off.
+
 ## Loading data
 
 A route file can export `routeData`, and the nearest one is available through

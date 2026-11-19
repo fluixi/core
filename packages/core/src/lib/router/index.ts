@@ -54,6 +54,9 @@ import type { IsUndefined } from '@fluixi/utils/primitive';
 import { deepEqual } from '@fluixi/utils/compare';
 
 import { keepScroll } from './scroll.js';
+import { createRouteAnnouncer, type AnnounceOptions } from './announce.js';
+
+export { announce, type AnnounceFocus, type AnnounceOptions } from './announce.js';
 import {
   createRouter as createCoreRouter,
   createBrowserHistory,
@@ -563,6 +566,12 @@ export interface RouterProps<C = any> {
    * `::view-transition-new(root)`: so the router imposes no visual style of its own.
    */
   transition?: TransitionMode;
+  /**
+   * Tell screen readers about each client navigation, as a page load would: the new page's
+   * title (or first `h1`, or path) is announced, and focus moves to its `<main>`. On by default;
+   * `{ focus: 'h1' }` or `{ focus: false }` changes where focus goes, `false` turns it all off.
+   */
+  announce?: boolean | AnnounceOptions;
 }
 
 /**
@@ -614,6 +623,8 @@ export function Router<C = any>(props: RouterProps<C>) {
   // The window's scroll, for a browser history: where each navigation lands once its page is
   // shown. `arrived` is the navigation whose page was last committed.
   const scroll = history.window ? keepScroll(router.state().location) : undefined;
+  const announcer =
+    scroll && props.announce !== false ? createRouteAnnouncer(props.announce === true ? {} : props.announce) : undefined;
   let arriving: { id: number; location: RouterLocation; from: RouterLocation | undefined } | null =
     scroll ? { id: 0, location: router.state().location, from: undefined } : null;
   const [arrived, setArrived] = createSignal(0);
@@ -639,6 +650,7 @@ export function Router<C = any>(props: RouterProps<C>) {
     setNavigating(true);
     if (scroll) {
       scroll.leave();
+      announcer?.leave();
       arriving = { id, location: next.location, from: untrack(state).location };
     }
 
@@ -676,6 +688,7 @@ export function Router<C = any>(props: RouterProps<C>) {
   onCleanup(() => {
     unsub();
     scroll?.dispose();
+    announcer?.dispose();
     router.destroy();
     // Anything still preparing is now stale, so nothing can commit into a torn-down
     // router.
@@ -719,7 +732,9 @@ export function Router<C = any>(props: RouterProps<C>) {
       if (!next || next.id !== id || id !== navigationId) return;
       arriving = null;
       nextFrame(() => {
-        if (id === navigationId) scroll.arrive(next.location, next.from);
+        if (id !== navigationId) return;
+        scroll.arrive(next.location, next.from);
+        announcer?.arrive(next.location, next.from);
       });
     });
   }
