@@ -712,6 +712,9 @@ importers:
       '@fluixi/template-runtime':
         specifier: workspace:*
         version: link:../template-runtime
+      esbuild:
+        specifier: ^0.27.1
+        version: 0.27.7
       mappel:
         specifier: ^0.3.0
         version: 0.3.0

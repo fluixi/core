@@ -1,6 +1,6 @@
 # @fluixi/cdn
 
-This package provides the import maps a page needs, already generated, and a script that installs one. It is designed for developers who want to load the framework from a script tag, with no bundler. It lists all the bare specifiers a browser needs to resolve, ensuring that every transitive subpath is included. These maps are pinned to the version of this package.
+This package provides the import maps a page needs, already generated, and a script that installs one. It is designed for developers who want to load the framework from a script tag, with no bundler. It lists all the bare specifiers a browser needs to resolve, ensuring that every transitive subpath is included. These maps are pinned to the version of this package. Their entries point at bundled copies of the packages shipped here, in `dist/esm`, so a page fetches a few dozen files at most rather than one per module.
 
 The maps are available in three versions: `min`, `templates`, and `full`. Each comes as a `.json` file to read or paste and a `.js` file to load. The `min` version includes `@fluixi/core`, `@fluixi/dom`, `@fluixi/utils`, and the graph behind them. It is enough to write components by hand, as `@fluixi/core` re-exports most of the DOM and reactive surface, so one import covers most of it. The `templates` version adds compiling `html`` in the page and must be loaded with `min`. The `full` version includes everything a browser can use, in one file.
 

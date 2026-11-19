@@ -25,15 +25,30 @@
     "./full.js": "./dist/full.js"
   },
   "scripts": {
-    "build": "mappel"
+    "build": "mappel && node scripts/bundle.mjs"
   },
   "devDependencies": {
     "@fluixi/template-runtime": "workspace:*",
+    "esbuild": "^0.27.1",
     "mappel": "^0.3.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/fluixi/core.git",
     "directory": "packages/cdn"
+  },
+  "nx": {
+    "implicitDependencies": [
+      "@fluixi/core",
+      "@fluixi/dom",
+      "@fluixi/utils",
+      "@fluixi/reactive",
+      "@fluixi/router",
+      "@fluixi/head",
+      "@fluixi/storage",
+      "@fluixi/compiler",
+      "@fluixi/template-parser",
+      "@fluixi/template-runtime"
+    ]
   }
 }

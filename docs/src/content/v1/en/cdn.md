@@ -151,7 +151,7 @@ Compiling in the page evaluates the code it emits, so a Content-Security-Policy 
 
 ## Bare imports, `@fluixi/cdn`
 
-A global puts one object on `window`, and `reactive`, `core` and `fluixi` all claim the same name, so only one may be loaded. With a map the page writes the same `import` statements a built app writes, and loads only the subpaths it touches. A browser resolves a bare specifier only through a map and never reads package.json, so every transitive subpath has to be listed; `@fluixi/cdn` is that list, generated per release and pinned to it.
+A global puts one object on `window`, and `reactive`, `core` and `fluixi` all claim the same name, so only one may be loaded. With a map the page writes the same `import` statements a built app writes, and loads only the subpaths it touches. A browser resolves a bare specifier only through a map and never reads package.json, so every transitive subpath has to be listed; `@fluixi/cdn` is that list, generated per release and pinned to it. Each entry points at a bundled copy shipped in `@fluixi/cdn` rather than at the package's own files, so a page importing `@fluixi/core` fetches about 25 files instead of one per module.
 
 - `min.js` (20 entries): core, dom, utils and the graph behind them
 - `templates.js` (3 entries): adds compiling `html`` in the page

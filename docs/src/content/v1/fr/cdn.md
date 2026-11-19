@@ -115,7 +115,7 @@ la forme `createSignal` / `createMemo` / `createEffect` ; les poignées `signal`
 
 ## Imports nus, `@fluixi/cdn`
 
-L’utilisation d’un objet global pose un seul objet sur `window`, et `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut être chargé. Avec une carte, la page écrit les mêmes `import` qu’une application compilée, et ne charge que les sous-chemins qu’elle touche. Un navigateur ne résout un spécificateur nu que par une carte et ne lit jamais `package.json`, donc chaque sous-chemin transitif doit y figurer ; `@fluixi/cdn` est cette liste, générée à chaque version et épinglée sur elle.
+L’utilisation d’un objet global pose un seul objet sur `window`, et `reactive`, `core` et `fluixi` revendiquent le même nom, donc un seul peut être chargé. Avec une carte, la page écrit les mêmes `import` qu’une application compilée, et ne charge que les sous-chemins qu’elle touche. Un navigateur ne résout un spécificateur nu que par une carte et ne lit jamais `package.json`, donc chaque sous-chemin transitif doit y figurer ; `@fluixi/cdn` est cette liste, générée à chaque version et épinglée sur elle. Chaque entrée pointe vers une copie groupée fournie par `@fluixi/cdn` plutôt que vers les fichiers du paquet lui-même : une page qui importe `@fluixi/core` récupère environ 25 fichiers au lieu d’un par module.
 
 - `min` (20 entrées, `core`, `dom`, `utils` et le graphe derrière)
 - `templates` (3 entrées, pour compiler `html`` dans la page)
