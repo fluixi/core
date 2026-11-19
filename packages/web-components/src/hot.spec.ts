@@ -33,4 +33,28 @@ describe('a custom element under hot reload', () => {
     expect(Second).toBe(First);
     expect(card.textContent).toBe('bonjour Ada');
   });
+
+  it('runs the rebuild under the registry announce, outlining the live instances', () => {
+    const calls: string[] = [];
+    const registry = host[KEY] as { announce?: unknown };
+    registry.announce = (label: string, swap: () => void, rebuilt?: () => Element[]) => {
+      calls.push(`before ${label}`);
+      swap();
+      calls.push(`after ${rebuilt?.().length}`);
+    };
+    defineElement('fx-hot-badge', setup('a') as never, { props: { name: prop.string() } as never });
+    const badge = document.createElement('fx-hot-badge') as HTMLElement & { name: string };
+    badge.name = 'Bo';
+    document.body.append(badge);
+
+    defineElement('fx-hot-badge', setup('b') as never, { props: { name: prop.string() } as never });
+    expect(calls).toEqual(['before hot update: <fx-hot-badge>', 'after 1']);
+    expect(badge.textContent).toBe('b Bo');
+
+    // A third version: the element is rebuilt once, not once per earlier build.
+    let builds = 0;
+    defineElement('fx-hot-badge', ((ctx: never) => (builds++, setup('c')(ctx))) as never, { props: { name: prop.string() } as never });
+    expect(builds).toBe(1);
+    delete registry.announce;
+  });
 });

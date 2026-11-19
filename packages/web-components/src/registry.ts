@@ -43,6 +43,7 @@ export function defineCustomElement(
   if (isServer() && typeof HTMLElement !== 'undefined') return constructor;
 
   const registered = defined.get(name);
+  if (registered && registered !== constructor && redefine?.(name, registered, constructor)) return registered;
   if (registered) return registered;
 
   const ce = registry();
@@ -60,6 +61,17 @@ export function defineCustomElement(
   ce.define(name, constructor, options.extends ? { extends: options.extends } : undefined);
   defined.set(name, constructor);
   return constructor;
+}
+
+/**
+ * Hot reload's hook for a tag defined again with a new class (see element.ts). Returns whether
+ * it took the new class.
+ */
+let redefine: ((name: string, registered: CustomElementConstructor, next: CustomElementConstructor) => boolean) | null = null;
+
+/** @internal */
+export function onRedefine(hook: typeof redefine): void {
+  redefine = hook;
 }
 
 /** Whether a name has been claimed, by this module or anyone else. */

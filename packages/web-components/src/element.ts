@@ -35,7 +35,7 @@ import {
   type PropDeclaration,
   type PropState,
 } from './props.js';
-import { defineCustomElement, type DefineOptions } from './registry.js';
+import { defineCustomElement, onRedefine, type DefineOptions } from './registry.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
@@ -68,8 +68,63 @@ interface HotSetup {
   instances: Set<WeakRef<HTMLReactiveElement>>;
 }
 
+type HotShared = {
+  elements: Map<string, unknown>;
+  announce?: (label: string, swap: () => void, rebuilt?: () => Element[]) => void;
+  keep?: <T>(host: object, render: () => T) => T;
+};
+function hotShared(): HotShared | undefined {
+  return (globalThis as Record<symbol, HotShared | undefined>)[Symbol.for('fluixi.hot')];
+}
 function hotElements(): Map<string, unknown> | undefined {
-  return (globalThis as Record<symbol, { elements: Map<string, unknown> } | undefined>)[Symbol.for('fluixi.hot')]?.elements;
+  return hotShared()?.elements;
+}
+/** Built instances of class elements, by tag, while hot reload runs. */
+const classElements = new Map<string, Set<WeakRef<HTMLReactiveElement>>>();
+function classInstances(tag: string): Set<WeakRef<HTMLReactiveElement>> {
+  let set = classElements.get(tag);
+  if (!set) classElements.set(tag, (set = new Set()));
+  return set;
+}
+
+/**
+ * A class element's module ran again with a new class. The browser keeps the first class for a
+ * tag, so the new methods move onto it and each live instance renders again: the instance and
+ * its fields stay. A class that is not a Fluixi element, or a render that throws (a method
+ * reading a `#private` field the old instance does not have), reloads the page.
+ */
+function redefineClass(name: string, registered: CustomElementConstructor, next: CustomElementConstructor): boolean {
+  if (!hotElements()) return false;
+  const reload = (): void => void (globalThis as { location?: Location }).location?.reload();
+  const live = (): HTMLReactiveElement[] =>
+    [...classInstances(name)].map((ref) => ref.deref()).filter((el): el is HTMLReactiveElement => !!el?.isConnected);
+  hotAnnounce()(`hot update: <${name}>`, () => {
+    if (!(registered.prototype instanceof HTMLReactiveElement)) return reload();
+    for (const key of Reflect.ownKeys(next.prototype)) {
+      if (key !== 'constructor') Object.defineProperty(registered.prototype, key, Object.getOwnPropertyDescriptor(next.prototype, key)!);
+    }
+    for (const key of Object.getOwnPropertyNames(next)) {
+      if (key !== 'prototype' && key !== 'length' && key !== 'name') Object.defineProperty(registered, key, Object.getOwnPropertyDescriptor(next, key)!);
+    }
+    try {
+      for (const element of live()) element[HOT_REBUILD]();
+    } catch {
+      reload();
+    }
+  }, live);
+  return true;
+}
+onRedefine(redefineClass);
+
+/** A render under `@fluixi/dom/hot`'s keepState, or the render alone. */
+function hotKeep<T>(host: object, render: () => T): T {
+  const keep = hotShared()?.keep;
+  return keep ? keep(host, render) : render();
+}
+
+/** `@fluixi/dom/hot`'s devtools mark around a swap, or the swap alone. */
+function hotAnnounce(): NonNullable<HotShared['announce']> {
+  return hotShared()?.announce ?? ((_label, swap) => swap());
 }
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
 
@@ -576,7 +631,13 @@ export class HTMLReactiveElement extends BaseElement {
     this.#built = true;
     const constructor = this.constructor as typeof HTMLReactiveElement;
     const hot = (constructor as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
-    if (hot && hotElements()) hot.instances.add(new WeakRef(this));
+    // Once per element: a rebuild or a reconnect builds again, and a second entry rebuilt it
+    // again on every later swap. A class element is tracked by its tag.
+    if (hotElements() && !this.#hotRef) {
+      this.#hotRef = new WeakRef(this);
+      if (hot) hot.instances.add(this.#hotRef);
+      else classInstances(this.localName).add(this.#hotRef);
+    }
     const shadow = constructor.shadow;
 
     if (shadow !== undefined && shadow !== false) {
@@ -600,6 +661,9 @@ export class HTMLReactiveElement extends BaseElement {
         this.#hydrating = true;
       }
       const json = this.getAttribute(SSR_PROPS_ATTRIBUTE);
+  /** This element's entry in its class's hot instances, once it has one. */
+  #hotRef: WeakRef<HTMLReactiveElement> | undefined;
+
       if (json) {
         try {
           const states = this.#states();
@@ -634,9 +698,9 @@ export class HTMLReactiveElement extends BaseElement {
         if (this.#hydrating) {
           // The scope the server rendered this content in (see renderOnServer).
           setKeyScope(`${this.getAttribute(HYDRATION_KEY) ?? ''}~`);
-          hydrateChildren(this, () => this.render());
+          hydrateChildren(this, () => hotKeep(this, () => this.render()));
         }
-        else insert(this.#root as unknown as Element, this.render() as never);
+        else insert(this.#root as unknown as Element, hotKeep(this, () => this.render()) as never);
         this.#hydrating = false;
       }),
     ));
@@ -892,12 +956,15 @@ export function defineElement<S extends Schema>(name: string, setup: Setup<S>, o
     // Defined again by hot reload: new setup, same class, every live instance rebuilt.
     const hot = (existing as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
     if (!hot) return existing;
-    hot.setup = setup as Setup<any>;
-    for (const ref of [...hot.instances]) {
-      const element = ref.deref();
-      if (element?.isConnected) element[HOT_REBUILD]();
-      else hot.instances.delete(ref);
-    }
+    const live = (): Element[] => [...hot.instances].map((ref) => ref.deref()).filter((el): el is NonNullable<typeof el> => !!el?.isConnected);
+    hotAnnounce()(`hot update: <${name}>`, () => {
+      hot.setup = setup as Setup<any>;
+      for (const ref of [...hot.instances]) {
+        const element = ref.deref();
+        if (element?.isConnected) element[HOT_REBUILD]();
+        else hot.instances.delete(ref);
+      }
+    }, live);
     return existing;
   }
   const constructor = createElementClass(setup, options);
