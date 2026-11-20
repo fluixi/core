@@ -4,6 +4,9 @@
 
 The guide, page by page: https://docs.fluixi.com/llms.txt. Every page is also Markdown at its address plus `.md`, and the whole guide is at https://docs.fluixi.com/llms-full.txt.
 
+For the component library (buttons, forms, layout, skins), read https://ui.fluixi.com/llms.txt as well:
+an app using it follows its rules too.
+
 ## Rules for writing Fluixi code
 
 Fluixi looks like React and works like Solid. Code written from React habits compiles and then
