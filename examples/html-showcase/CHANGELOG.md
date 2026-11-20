@@ -1,5 +1,14 @@
 # @fluixi/example-html-showcase
 
+## 0.0.1-alpha.55
+
+### Patch Changes
+
+- Updated dependencies [54981aa]
+  - @fluixi/core@1.0.0-alpha.111
+  - @fluixi/dom@1.0.0-alpha.111
+  - @fluixi/reactive@1.0.0-alpha.111
+
 ## 0.0.1-alpha.54
 
 ### Patch Changes

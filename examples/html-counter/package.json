@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-html-counter",
-  "version": "0.0.1-alpha.54",
+  "version": "0.0.1-alpha.55",
   "private": true,
   "type": "module",
   "description": "Counter authored with html`` templates, compiled through the shared JSX IR (fluixi vite-plugin, format: 'html') into direct @fluixi/dom runtime calls, no template runtime.",

@@ -1,5 +1,11 @@
 # @fluixi/head
 
+## 1.0.0-alpha.111
+
+### Minor Changes
+
+- 1ecff38: `HeadLink` now replaces the `Link` component exported from `@fluixi/head`. Import `HeadLink` from `@fluixi/head` or `@fluixi/start/head` instead of `Link`.
+
 ## 1.0.0-alpha.110
 
 ## 1.0.0-alpha.109

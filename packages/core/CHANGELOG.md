@@ -1,5 +1,15 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.111
+
+### Minor Changes
+
+- 54981aa: The package now ships `llms.txt` with coding assistant rules and a link to the docs, readable from node_modules.
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.111
+
 ## 1.0.0-alpha.110
 
 ### Minor Changes
