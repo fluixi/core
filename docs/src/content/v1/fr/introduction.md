@@ -91,4 +91,13 @@ déstructuration et les valeurs dérivées, jusqu'aux liaisons DOM générées, 
 l'hydratation et à la libération. Jugez-le sur un point : écrire du TypeScript ordinaire
 continue-t-il de fonctionner ?
 
+## Avec un assistant de code
+
+Les assistants ont vu bien plus de React que de Fluixi, et les habitudes React compilent en Fluixi
+mais ne se mettent pas à jour. Donnez au vôtre les règles et le guide avant qu'il écrive du code :
+
+- [`/llms.txt`](https://docs.fluixi.com/llms.txt) : les règles, puis chaque page avec un résumé d'une ligne ;
+- [`/llms-full.txt`](https://docs.fluixi.com/llms-full.txt) : les règles et tout le guide en un fichier ;
+- n'importe quelle page en Markdown : ajoutez `.md` à son adresse (en anglais).
+
 Suivant : **[Démarrage rapide](/v1/fr/quickstart)**.

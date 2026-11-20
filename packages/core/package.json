@@ -83,6 +83,7 @@
     "dist",
     "types",
     "README.md",
+    "llms.txt",
     "LICENSE"
   ],
   "exports": {

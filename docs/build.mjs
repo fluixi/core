@@ -4,6 +4,7 @@ import { build } from '@fluixi/start/commands';
 import { generateSitemap } from '@fluixi/start/head';
 import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { writeLlmsFiles } from './scripts/llms.mjs';
 
 await build(await loadConfig());
 
@@ -37,6 +38,7 @@ const entries = pages(clientDir).map((path) => {
 
 writeFileSync(join(clientDir, 'sitemap.xml'), generateSitemap(entries));
 console.log(`  ✓ sitemap.xml (${entries.length} urls)`);
+console.log(`  ✓ llms.txt, llms-full.txt (${writeLlmsFiles(clientDir)} pages)`);
 
 // search-index.json is generated into `public/` by the prestep in package.json, so
 // the dev server and the build serve the same asset; the build copies it from there.

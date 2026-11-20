@@ -4,7 +4,7 @@ import { VERSION } from '@fluixi/core';
 import { has, VERSIONS, type Lang } from './content.js';
 
 export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
-  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'cdn'] },
+  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'coming-from', 'cdn'] },
   {
     group: { en: 'Reactivity', fr: 'Réactivité' },
     slugs: ['signals', 'derived-values', 'effects', 'stores', 'async', 'tc39-signals'],
@@ -27,7 +27,7 @@ export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
   },
   {
     group: { en: 'Building with Fluixi', fr: 'Construire avec Fluixi' },
-    slugs: ['routing', 'server-functions', 'api-routes', 'api-contracts', 'openapi', 'middleware', 'app-modules', 'environment', 'seo', 'document', 'styling', 'theming', 'images', 'static-generation', 'deployment', 'dependency-injection', 'i18n', 'compiler', 'hot-reload'],
+    slugs: ['routing', 'server-functions', 'api-routes', 'api-contracts', 'openapi', 'middleware', 'app-modules', 'environment', 'seo', 'document', 'styling', 'theming', 'images', 'static-generation', 'deployment', 'dependency-injection', 'i18n', 'compiler', 'hot-reload', 'troubleshooting'],
   },
 ];
 

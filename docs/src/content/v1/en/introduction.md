@@ -88,4 +88,13 @@ reaches: one semantic model from a value's creation, through aliasing and destru
 computations, into generated DOM bindings, across SSR and hydration, and out to disposal. Judge it
 on whether writing ordinary TypeScript keeps working, not on the feature list.
 
+## With a coding assistant
+
+Assistants have seen far more React than Fluixi, and React habits compile in Fluixi but do not
+update. Give yours the rules and the guide before it writes code:
+
+- [`/llms.txt`](https://docs.fluixi.com/llms.txt): the rules, then every page with a one-line summary;
+- [`/llms-full.txt`](https://docs.fluixi.com/llms-full.txt): the rules and the whole guide in one file;
+- any page as Markdown: add `.md` to its address.
+
 Next: **[Quickstart](/v1/en/quickstart)**.

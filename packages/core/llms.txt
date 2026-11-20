@@ -1,0 +1,72 @@
+# Fluixi
+
+> Fluixi is a TypeScript framework for the web: fine-grained signals, JSX components that run once, and @fluixi/start for file routes, server rendering, server functions and static output.
+
+The guide, page by page: https://docs.fluixi.com/llms.txt. Every page is also Markdown at its address plus `.md`, and the whole guide is at https://docs.fluixi.com/llms-full.txt.
+
+## Rules for writing Fluixi code
+
+Fluixi looks like React and works like Solid. Code written from React habits compiles and then
+fails to update. Read these before writing a component.
+
+### Components run once
+
+- A component function runs one time. There is no re-render. Reactivity updates only the text,
+  attribute or branch that reads a value.
+- No early `return` on a condition: it is decided once. Use `<Show when={...} fallback={...}>`.
+- No `cond() && <X />` for anything with state: it rebuilds `X`. Use `<Show>`.
+- No `.map()` for a list that changes. Use `<For each={list()}>`, with `by={(x) => x.id}` when
+  the objects are recreated (refetched data). With `by`, the item is an accessor: `item().name`.
+  Without `by`, the item is the value and the index an accessor: `i()`.
+- `<Index each={...}>` for primitives or fixed slots: item is an accessor, index a number.
+- Never call a component as a function. Write `<Card {...props} />`.
+- `class`, not `className`.
+
+### State
+
+- In an app built by `@fluixi/start`, use the intrinsics with no import: `$signal`, `$memo`,
+  `$effect`, `$store`, `$resource`, `$untrack`, `$batch`. In a package or library, import
+  `signal`, `memo`, `effect`, `resource` from `@fluixi/reactive/signal`.
+- A signal is one handle: read `count()`, write `count.set(1)` or `count.set((n) => n + 1)`.
+  There is no `.get()`. No `useState`, no tuple in new code.
+- Derive with `$memo(() => ...)`. No dependency arrays anywhere: reads are tracked.
+- Never write a signal from an effect to derive a value. Never create a signal or effect inside an
+  effect or memo.
+- Set a new array or object; changing one in place and setting it again does not notify.
+- `$store({...})` for nested state: read `cart.lines`, write `cart.set('lines', 0, 'qty', 2)`.
+  Assigning a store property does nothing. Stores wrap plain objects and arrays only.
+
+### Effects and lifecycle
+
+- `$effect` runs on the server too. Browser APIs (`document`, `window`, `localStorage`) go in
+  `onMount`, which runs only in the browser.
+- `onMount` does not track: a signal read inside it subscribes nothing.
+- Every listener, timer and subscription gets `onCleanup(() => ...)` next to it.
+- Refs: `let el!: HTMLInputElement;` then `<input ref={el} />`. Use the element in `onMount`.
+
+### Props
+
+- Props are getters. Read `props.name` where it is used. `function C({ name })` is rewritten by
+  the compiler to `props.name`; a destructure inside a nested block is not, and reads once.
+- Defaults: `mergeProps({ size: 'md' }, props)`. Forwarding: `splitProps`.
+- Read `props.children` once, or resolve it with `readChildren(() => props.children)`.
+
+### Data and routing (apps built by `@fluixi/start`)
+
+- Routes are files in `src/routes`. Page data: `export const routeData = ...` returning a promise,
+  read with `useRouteData()`. Not a resource and not `fetch` in `onMount`.
+- Shared cached reads: `cache(fn, 'name')`, invalidated with `revalidate('name')`.
+- Writes: `'use server'` functions and `action(fn, 'name')`. Every action has a name.
+- Navigation: `<Link href>` and `useNavigate()` from `@fluixi/start/router`, not `<a>` or
+  `window.location` for in-app routes.
+- A resource read while loading suspends the nearest `<Suspense>`; failures go to the nearest
+  `<ErrorBoundary fallback={(err, reset) => ...}>`. `resource.latest` never suspends.
+- Server-only code lives in `*.server.ts` files, API routes, middleware and `'use server'`
+  functions. Browser code may read only variables listed in `env.public`.
+
+### Server render and hydration
+
+- The server and the browser must render the same markup. No `Date.now()`, `Math.random()` or
+  browser checks during render: take the value from data, set it in `onMount`, or wrap the part
+  in `<ClientOnly>` (imported from `@fluixi/core`).
+- Create resources unconditionally, in the same order on both sides.
