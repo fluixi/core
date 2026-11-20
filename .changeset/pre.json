@@ -58,6 +58,7 @@
     "action-form",
     "adapter-bundle-mode",
     "adapters-native",
+    "agents-md",
     "announcer",
     "any-prop-string",
     "api-client",

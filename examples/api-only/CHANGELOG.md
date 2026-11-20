@@ -1,5 +1,13 @@
 # @fluixi/example-api-only
 
+## 0.0.1-alpha.19
+
+### Patch Changes
+
+- @fluixi/api@1.0.0-alpha.112
+- @fluixi/cli@1.0.0-alpha.112
+- @fluixi/start@1.0.0-alpha.112
+
 ## 0.0.1-alpha.18
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fluixi/create
 
+## 1.0.0-alpha.112
+
+### Minor Changes
+
+- f9e974d: New apps now include `AGENTS.md` pointing coding assistants to the llms.txt of installed fluixi packages and listing the npm scripts, and `CLAUDE.md` imports it.
+
 ## 1.0.0-alpha.111
 
 ## 1.0.0-alpha.110
