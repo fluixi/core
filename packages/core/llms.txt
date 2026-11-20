@@ -7,6 +7,9 @@ The guide, page by page: https://docs.fluixi.com/llms.txt. Every page is also Ma
 For the component library (buttons, forms, layout, skins), read https://ui.fluixi.com/llms.txt as well:
 an app using it follows its rules too.
 
+For forms (`@fluixi/forms`: fields, validation, schemas, submitting), read
+https://unpkg.com/@fluixi/forms@alpha/llms.txt, which ships in the package.
+
 ## Rules for writing Fluixi code
 
 Fluixi looks like React and works like Solid. Code written from React habits compiles and then
