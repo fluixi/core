@@ -746,6 +746,9 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
               {ui().released} <a href={LICENSE_URL}>{ui().license}</a>.
             </p>
             <p>Copyright © 2026 Ibrahima Touré</p>
+            <p>
+              <a href="/llms.txt">llms.txt</a>
+            </p>
           </footer>
         </main>
       </div>

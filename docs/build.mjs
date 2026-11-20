@@ -36,6 +36,8 @@ const entries = pages(clientDir).map((path) => {
   return { loc, changefreq: 'weekly', priority: path === '' ? 1 : 0.8, ...(alternates ? { alternates } : {}) };
 });
 
+// Listed so assistants that answer from a search index, rather than fetching, can find them.
+entries.push(...['llms.txt', 'llms-full.txt'].map((f) => ({ loc: `${SITE}/${f}`, changefreq: 'weekly', priority: 0.5 })));
 writeFileSync(join(clientDir, 'sitemap.xml'), generateSitemap(entries));
 console.log(`  ✓ sitemap.xml (${entries.length} urls)`);
 console.log(`  ✓ llms.txt, llms-full.txt (${writeLlmsFiles(clientDir)} pages)`);

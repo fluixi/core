@@ -581,6 +581,7 @@ function Footer() {
           <h2>Product</h2>
           <a href={DOCS_URL}>Documentation</a>
           <a href={PLAYGROUND_URL}>Playground</a>
+          <a href="/llms.txt">llms.txt</a>
         </div>
         <div>
           <h2>Source</h2>
