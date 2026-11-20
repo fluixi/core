@@ -124,7 +124,7 @@ seo({
 ## Components
 
 For markup-shaped code there are components covering the same ground, `Title`, `Meta`,
-`Link`, `Script`, `Base`, `JsonLD`. They render nothing and register into the same
+`HeadLink`, `Script`, `Base`, `JsonLD`. They render nothing and register into the same
 registry, so they compose with `seo` calls and dedupe against them.
 
 ```tsx

@@ -125,7 +125,7 @@ seo({
 ## Composants
 
 Pour du code en forme de balisage, des composants couvrent le même terrain, `Title`,
-`Meta`, `Link`, `Script`, `Base`, `JsonLD`. Ils n'affichent rien et s'enregistrent dans le
+`Meta`, `HeadLink`, `Script`, `Base`, `JsonLD`. Ils n'affichent rien et s'enregistrent dans le
 même registre : ils se composent donc avec les appels à `seo` et se dédupliquent avec eux.
 
 ```tsx

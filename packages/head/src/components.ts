@@ -5,7 +5,7 @@
  *
  *   <Title>{() => `${page()} · Fluixi`}</Title>
  *   <Meta name="description" content={desc} />
- *   <Link rel="canonical" href={url} />
+ *   <HeadLink rel="canonical" href={url} />
  *   <JsonLD data={jsonld.article({ headline: title() })} />
  */
 import { useHead } from './core.js';
@@ -25,7 +25,7 @@ export function Meta(props: { name?: string; property?: string; httpEquiv?: stri
   return null;
 }
 
-export function Link(props: Record<string, Reactive<string> | undefined>): null {
+export function HeadLink(props: Record<string, Reactive<string> | undefined>): null {
   useHead(() => {
     const l: Record<string, string | undefined> = {};
     for (const [k, v] of Object.entries(props)) l[k] = read(v);

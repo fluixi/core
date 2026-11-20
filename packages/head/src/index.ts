@@ -43,7 +43,7 @@ export { encodeHeadMarker, extractHeadMarker, stripHeadMarker } from './transpor
 export { mountHead } from './reconcile.js';
 export { jsonld } from './jsonld.js';
 export * as components from './components.js';
-export { Title, Meta, Link, Script, Base, JsonLD } from './components.js';
+export { Title, Meta, HeadLink, Script, Base, JsonLD } from './components.js';
 export {
   generateSitemap,
   generateSitemapIndex,
