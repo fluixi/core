@@ -488,6 +488,7 @@ async function main(): Promise<void> {
   if (authResult) addDeps(pkg, 'dependencies', authResult.dependencies);
 
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  writeAgentsGuide(target, pkg, format);
 
   // Outro + next steps. The leading gutter only makes sense after the intro/prompts.
   const authTag = auth === 'oauth2' ? `OAuth2 ${provider ?? 'oidc'}` : auth === 'better-auth' ? 'Better Auth' : '';
@@ -506,3 +507,43 @@ async function main(): Promise<void> {
 }
 
 main();
+
+/**
+ * Instructions for coding assistants, read from the project root. The rules themselves ship in
+ * the installed packages (`llms.txt`), so this file only points at them and stays right as the
+ * app upgrades. `CLAUDE.md` imports it for the tools that read that name instead.
+ */
+function writeAgentsGuide(target: string, pkg: { scripts?: Record<string, string>; dependencies?: Record<string, string> }, format: string): void {
+  const deps = pkg.dependencies ?? {};
+  const rules = [
+    '- `node_modules/@fluixi/core/llms.txt`: the framework (components, signals, routing, server code).',
+    ...(deps['@fluixi-ui/kit'] ? ['- `node_modules/@fluixi-ui/kit/llms.txt`: the component library (controls, layout, skins).'] : []),
+    ...(deps['@fluixi/forms'] ? ['- `node_modules/@fluixi/forms/llms.txt`: forms (fields, validation, submitting).'] : []),
+  ];
+  const scripts = Object.keys(pkg.scripts ?? {}).map((name) => `- \`npm run ${name}\``);
+  const markup =
+    format === 'html'
+      ? 'Components are written as html`` templates, compiled at build time.'
+      : 'Components are written in JSX.';
+  const guide = [
+    '# Agent instructions',
+    '',
+    `This app is built with Fluixi and @fluixi/start. ${markup}`,
+    '',
+    'Fluixi looks like React and works like Solid: components run once, and code written from React',
+    'habits compiles but does not update. Before writing code, read the rules for the installed',
+    'versions:',
+    '',
+    ...rules,
+    '',
+    'The full guide is at https://docs.fluixi.com/llms-full.txt; any docs page is Markdown at its',
+    'address plus `.md`.',
+    '',
+    '## Commands',
+    '',
+    ...scripts,
+    '',
+  ].join('\n');
+  writeFileSync(join(target, 'AGENTS.md'), guide);
+  writeFileSync(join(target, 'CLAUDE.md'), '@AGENTS.md\n');
+}

@@ -122,3 +122,19 @@ describe('create-fluixi --document', () => {
     expect(existsSync(join(cwd, 'app', 'src', 'document.tsx'))).toBe(false);
   });
 });
+
+describe('create-fluixi agent instructions', () => {
+  it('points assistants at the rules of the installed packages', () => {
+    create('--ssr');
+    const guide = read('AGENTS.md');
+    expect(guide).toContain('node_modules/@fluixi/core/llms.txt');
+    expect(guide).not.toContain('@fluixi-ui/kit/llms.txt');
+    expect(guide).toContain('- `npm run dev`');
+    expect(read('CLAUDE.md')).toBe('@AGENTS.md\n');
+  });
+
+  it('adds the component library rules when it is installed', () => {
+    create('--ssr', '--ui');
+    expect(read('AGENTS.md')).toContain('node_modules/@fluixi-ui/kit/llms.txt');
+  });
+});
