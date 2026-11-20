@@ -151,4 +151,107 @@ Call it in the component body, the same number of times on both sides: the ids f
 component's place in the page, so a call made only on one side shifts the ones after it. A
 component created later in the browser gets an id unique within the page.
 
+## Default props
+
+`mergeProps` fills in defaults without reading the props, so they stay live:
+
+```tsx
+import { mergeProps } from '@fluixi/core';
+
+function Button(props: { size?: 'sm' | 'md'; children?: any }) {
+  const p = mergeProps({ size: 'md' }, props);
+  return <button data-size={p.size}>{p.children}</button>;
+}
+```
+
+A destructuring default (`function Button({ size = 'md' })`) does the same once the compiler
+rewrites it, as above.
+
+## Events
+
+`onClick={handler}` and the other `on` props attach handlers. Events that bubble are delegated:
+one listener per event type on the document finds the handler when the event bubbles up, so a
+list of a thousand rows does not add a thousand listeners. Events that do not bubble (`focus`,
+`blur`, `scroll`, `mouseenter`) get a listener on the element. `on:click` always attaches
+directly to the element, for when you need that.
+
+A callback prop is how a component tells its parent something happened:
+
+```tsx
+function Rating(props: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div role="radiogroup">
+      <For each={[1, 2, 3, 4, 5]}>
+        {(n) => (
+          <button aria-pressed={String(props.value >= n)} onClick={() => props.onChange(n)}>{n}</button>
+        )}
+      </For>
+    </div>
+  );
+}
+```
+
+## A realistic example
+
+An editable field: it shows a value, switches to an input on click, and reports the new value.
+State that belongs to the component stays inside it; what the parent owns comes in as props and
+goes out as a callback.
+
+```tsx
+function EditableTitle(props: { value: string; onSave: (v: string) => void }) {
+  const editing = $signal(false);
+  const draft = $signal('');
+  let input!: HTMLInputElement;
+
+  const start = () => {
+    draft.set(props.value);
+    editing.set(true);
+    queueMicrotask(() => input.focus());
+  };
+  const save = () => {
+    editing.set(false);
+    if (draft() !== props.value) props.onSave(draft());
+  };
+
+  return (
+    <Show when={editing()} fallback={<h2 onClick={start}>{props.value}</h2>}>
+      <input
+        ref={input}
+        value={draft()}
+        onInput={(e) => draft.set(e.currentTarget.value)}
+        onKeyDown={(e) => e.key === 'Enter' ? save() : e.key === 'Escape' && editing.set(false)}
+        onBlur={save}
+      />
+    </Show>
+  );
+}
+```
+
+## Where to use it, and where not
+
+Make a component for a piece of UI with its own meaning or state. Keep logic that must run again
+in memos and effects, not in the component body: the body runs once.
+
+**Not called as a function.** `Card(props)` runs it outside the framework: no owner for its
+effects and cleanups, no reactive props. Write `<Card {...props} />`.
+
+**Not an early `return`.** The body runs once, so `if (!user()) return <Login />` is decided once;
+use `<Show>` ([Control flow](/v1/en/control-flow)).
+
+**Not `props.children` read twice.** Each read builds the children again; read it once, or use
+`readChildren`.
+
+**Not a value from the browser in the first render.** `Date.now()`, `Math.random()`, `window`,
+`localStorage`: the server and the browser would render different markup. Take the value from data,
+set it in `onMount`, or wrap the part in `<ClientOnly>`.
+
+## Under the hood
+
+The compiler turns `<Greeting name={x()} />` into a call that creates the component with a props
+object whose `name` is a getter: `{ get name() { return x(); } }`. The component function runs
+once, untracked, so nothing it reads makes its parent run again; each prop is read through its
+getter where the child uses it, which is how a change reaches the child without calling it again.
+The component runs under its own owner, which holds its effects and cleanups and is disposed when
+the component leaves the page.
+
 Next: **[Control flow](/v1/en/control-flow)**.

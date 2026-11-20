@@ -158,4 +158,110 @@ Appelez-le dans le corps du composant, autant de fois de chaque côté : les ids
 du composant dans la page, donc un appel fait d’un seul côté décale ceux qui suivent. Un
 composant créé plus tard dans le navigateur reçoit un id unique dans la page.
 
+## Props par défaut
+
+`mergeProps` complète les valeurs par défaut sans lire les props, qui restent donc vivantes :
+
+```tsx
+import { mergeProps } from '@fluixi/core';
+
+function Button(props: { size?: 'sm' | 'md'; children?: any }) {
+  const p = mergeProps({ size: 'md' }, props);
+  return <button data-size={p.size}>{p.children}</button>;
+}
+```
+
+Une valeur par défaut dans une déstructuration (`function Button({ size = 'md' })`) fait la même
+chose une fois réécrite par le compilateur, comme plus haut.
+
+## Événements
+
+`onClick={handler}` et les autres props `on` attachent des gestionnaires. Les événements qui
+remontent sont délégués : un seul écouteur par type d'événement sur le document trouve le
+gestionnaire quand l'événement remonte, donc une liste de mille lignes n'ajoute pas mille
+écouteurs. Les événements qui ne remontent pas (`focus`, `blur`, `scroll`, `mouseenter`) ont un
+écouteur sur l'élément. `on:click` attache toujours directement sur l'élément, quand c'est ce qu'il
+vous faut.
+
+Une prop de rappel est la façon dont un composant prévient son parent que quelque chose s'est
+passé :
+
+```tsx
+function Rating(props: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div role="radiogroup">
+      <For each={[1, 2, 3, 4, 5]}>
+        {(n) => (
+          <button aria-pressed={String(props.value >= n)} onClick={() => props.onChange(n)}>{n}</button>
+        )}
+      </For>
+    </div>
+  );
+}
+```
+
+## Un exemple réaliste
+
+Un champ modifiable : il affiche une valeur, passe en saisie au clic, et transmet la nouvelle
+valeur. L'état propre au composant reste à l'intérieur ; ce qui appartient au parent arrive en
+props et repart par un rappel.
+
+```tsx
+function EditableTitle(props: { value: string; onSave: (v: string) => void }) {
+  const editing = $signal(false);
+  const draft = $signal('');
+  let input!: HTMLInputElement;
+
+  const start = () => {
+    draft.set(props.value);
+    editing.set(true);
+    queueMicrotask(() => input.focus());
+  };
+  const save = () => {
+    editing.set(false);
+    if (draft() !== props.value) props.onSave(draft());
+  };
+
+  return (
+    <Show when={editing()} fallback={<h2 onClick={start}>{props.value}</h2>}>
+      <input
+        ref={input}
+        value={draft()}
+        onInput={(e) => draft.set(e.currentTarget.value)}
+        onKeyDown={(e) => e.key === 'Enter' ? save() : e.key === 'Escape' && editing.set(false)}
+        onBlur={save}
+      />
+    </Show>
+  );
+}
+```
+
+## Où l'utiliser, et où non
+
+Faites un composant pour un morceau d'interface qui a son propre sens ou son propre état. Gardez la
+logique qui doit se relancer dans des memos et des effets, pas dans le corps du composant : le
+corps s'exécute une fois.
+
+**Pas appelé comme une fonction.** `Card(props)` l'exécute en dehors du framework : pas de
+propriétaire pour ses effets et ses nettoyages, pas de props réactives. Écrivez `<Card {...props} />`.
+
+**Pas de `return` anticipé.** Le corps s'exécute une fois, donc `if (!user()) return <Login />` est
+décidé une fois ; utilisez `<Show>` ([Le flux de contrôle](/v1/fr/control-flow)).
+
+**Pas `props.children` lu deux fois.** Chaque lecture reconstruit les enfants ; lisez-le une fois,
+ou utilisez `readChildren`.
+
+**Pas de valeur propre au navigateur dans le premier rendu.** `Date.now()`, `Math.random()`,
+`window`, `localStorage` : le serveur et le navigateur afficheraient un balisage différent. Prenez la
+valeur dans les données, fixez-la dans `onMount`, ou enveloppez la partie dans `<ClientOnly>`.
+
+## Sous le capot
+
+Le compilateur transforme `<Greeting name={x()} />` en un appel qui crée le composant avec un objet
+de props dont `name` est un accesseur : `{ get name() { return x(); } }`. La fonction du composant
+s'exécute une fois, sans suivi, donc rien de ce qu'elle lit ne relance son parent ; chaque prop est
+lue par son accesseur là où l'enfant l'utilise, et c'est ainsi qu'un changement atteint l'enfant
+sans l'appeler à nouveau. Le composant s'exécute sous son propre propriétaire, qui garde ses effets
+et ses nettoyages et disparaît quand le composant quitte la page.
+
 Suivant : **[Le flux de contrôle](/v1/fr/control-flow)**.
