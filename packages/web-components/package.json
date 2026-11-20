@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/web-components",
-  "version": "1.0.0-alpha.110",
+  "version": "1.0.0-alpha.111",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

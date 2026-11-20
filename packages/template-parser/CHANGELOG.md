@@ -1,5 +1,7 @@
 # @fluixi/template-parser
 
+## 1.0.0-alpha.111
+
 ## 1.0.0-alpha.110
 
 ### Patch Changes
