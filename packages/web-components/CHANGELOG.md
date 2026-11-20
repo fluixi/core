@@ -1,5 +1,7 @@
 # @fluixi/web-components
 
+## 1.0.0-alpha.112
+
 ## 1.0.0-alpha.111
 
 ## 1.0.0-alpha.110

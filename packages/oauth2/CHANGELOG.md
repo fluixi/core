@@ -1,5 +1,12 @@
 # @fluixi/oauth2
 
+## 1.0.0-alpha.112
+
+### Patch Changes
+
+- @fluixi/auth@1.0.0-alpha.112
+- @fluixi/session@1.0.0-alpha.112
+
 ## 1.0.0-alpha.111
 
 ### Patch Changes

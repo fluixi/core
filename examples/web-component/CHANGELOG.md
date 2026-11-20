@@ -1,5 +1,18 @@
 # @fluixi/example-web-component
 
+## 0.0.2-alpha.25
+
+### Patch Changes
+
+- @fluixi/cli@1.0.0-alpha.112
+- @fluixi/core@1.0.0-alpha.112
+- @fluixi/dom@1.0.0-alpha.112
+- @fluixi/jsx@1.0.0-alpha.112
+- @fluixi/reactive@1.0.0-alpha.112
+- @fluixi/server@1.0.0-alpha.112
+- @fluixi/start@1.0.0-alpha.112
+- @fluixi/web-components@1.0.0-alpha.112
+
 ## 0.0.2-alpha.24
 
 ### Patch Changes
