@@ -850,6 +850,7 @@ function compileJsx(
   const emitted = imperativeBackend.emit(ir, {
     templateClone: options.templateClone ?? true,
     partialTemplates: options.partialTemplates ?? true,
+    assignEvents: true,
   } as never);
   for (const symbol of emitted.imports) used.add(symbol);
   collectNeeds(ir, needs);

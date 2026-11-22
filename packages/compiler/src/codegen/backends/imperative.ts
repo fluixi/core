@@ -240,6 +240,9 @@ function bindingStatement(binding: TemplateBinding, used: Set<string>): string {
       used.add('setDynamicBoolAttribute');
       return `setDynamicBoolAttribute(${ref}, ${JSON.stringify(bindingTarget(binding))}, ${value});`;
     case 'event':
+      // The delegated listener reads `$$name` off the element; the module registers the event
+      // with `delegateEvents([...])`, so the assignment is all a bubbling event needs.
+      if (assignEvents && prop.event!.delegated) return `${ref}.$$${prop.event!.name} = ${value};`;
       used.add('addDelegatedEventListener');
       return `addDelegatedEventListener(${ref}, ${JSON.stringify(prop.event!.name)}, ${value});`;
     case 'nativeEvent':
@@ -267,6 +270,8 @@ function staticAttrAssignment(el: string, prop: IRProp): string {
 }
 
 let partial = false;
+/** Set by a caller that registers delegated events at module level (`transformTemplates`). */
+let assignEvents = false;
 
 function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[]): string {
   switch (node.kind) {
@@ -443,6 +448,7 @@ export const imperativeBackend: CodegenBackend = {
       ? []
       : undefined;
     partial = options?.partialTemplates === true;
+    assignEvents = (options as { assignEvents?: boolean } | undefined)?.assignEvents === true;
     const code = emitNode(node, used, templates);
     return { code, imports: Array.from(used), templates };
   },

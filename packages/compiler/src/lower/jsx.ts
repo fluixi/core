@@ -39,12 +39,9 @@ export interface JsxContext {
 }
 
 import { SVG_TAGS } from '@fluixi/template-parser';
+import { DELEGATED_EVENTS } from './delegated-events.js';
 
 const EVENT_RE = /^on[A-Z]/;
-const DELEGATED = new Set([
-  'click', 'dblclick', 'input', 'change', 'submit', 'focus', 'blur',
-  'keydown', 'keyup', 'keypress', 'mousedown', 'mouseup',
-]);
 
 const isReactive = (node: Node): boolean => isReactiveShape(shapeOf(node as never));
 
@@ -123,7 +120,7 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
   const base: IRProp = { name, kind };
   if (isEvent) {
     const evt = name.slice(2).toLowerCase();
-    base.event = { name: evt, delegated: DELEGATED.has(evt) };
+    base.event = { name: evt, delegated: DELEGATED_EVENTS.has(evt) };
   }
 
   const v = attr.value;

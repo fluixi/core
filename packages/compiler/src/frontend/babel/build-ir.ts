@@ -122,10 +122,6 @@ function assignableIn(scope: NestedEmitOptions['scope']) {
 }
 
 const EVENT_RE = /^on[A-Z]/;
-const DELEGATED = new Set([
-  'click', 'dblclick', 'input', 'change', 'submit', 'focus', 'blur',
-  'keydown', 'keyup', 'keypress', 'mousedown', 'mouseup',
-]);
 
 /** A JSX tag is a component when its name is capitalized / a member / namespaced. */
 function tagInfo(name: t.JSXOpeningElement['name']): { tag: string; component: boolean } {

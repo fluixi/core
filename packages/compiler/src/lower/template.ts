@@ -24,6 +24,7 @@ import { cleanTemplateText } from './text.js';
 import { decodeEntities } from './entities.js';
 import { paren } from '../analyze/paren.js';
 import { markHole } from '../transform/source-locations.js';
+import { DELEGATED_EVENTS } from './delegated-events.js';
 
 /**
  * One `${...}` slot, as the front-end describes it. Conclusions about the
@@ -52,10 +53,6 @@ export interface TemplateHole {
   at?: HolePosition;
 }
 
-const DELEGATED = new Set([
-  'click', 'dblclick', 'input', 'change', 'submit', 'focus', 'blur',
-  'keydown', 'keyup', 'keypress', 'mousedown', 'mouseup',
-]);
 
 /** Escape a static text run for embedding in a template literal. */
 function escapeTemplate(s: string): string {
@@ -479,7 +476,7 @@ class Lowerer {
       return {
         name: 'on' + capitalize(a.name),
         kind: 'event',
-        event: { name: dom, delegated: DELEGATED.has(dom) },
+        event: { name: dom, delegated: DELEGATED_EVENTS.has(dom) },
         expr: handler,
       };
     }
@@ -532,7 +529,7 @@ class Lowerer {
       {
         name: 'on' + capitalize(evt),
         kind: 'event',
-        event: { name: evt, delegated: DELEGATED.has(evt) },
+        event: { name: evt, delegated: DELEGATED_EVENTS.has(evt) },
         // delegated handler: `target` is the bound element (currentTarget is the root)
         expr: `(e) => ${sig}[1](e.target.${accessor})`,
       },
