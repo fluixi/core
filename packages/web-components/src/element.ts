@@ -36,6 +36,7 @@ import {
   type PropState,
 } from './props.js';
 import { defineCustomElement, onRedefine, type DefineOptions } from './registry.js';
+import { DEV } from './dev.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
@@ -114,7 +115,7 @@ function redefineClass(name: string, registered: CustomElementConstructor, next:
   }, live);
   return true;
 }
-onRedefine(redefineClass);
+if (DEV) onRedefine(redefineClass);
 
 /** A render under `@fluixi/dom/hot`'s keepState, or the render alone. */
 function hotKeep<T>(host: object, render: () => T): T {
@@ -675,7 +676,7 @@ export class HTMLReactiveElement extends BaseElement {
     const hot = (constructor as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
     // Once per element: a rebuild or a reconnect builds again, and a second entry rebuilt it
     // again on every later swap. A class element is tracked by its tag.
-    if (hotElements() && !this.#hotRef) {
+    if (DEV && hotElements() && !this.#hotRef) {
       this.#hotRef = new WeakRef(this);
       if (hot) hot.instances.add(this.#hotRef);
       else classInstances(this.localName).add(this.#hotRef);
@@ -737,9 +738,9 @@ export class HTMLReactiveElement extends BaseElement {
         if (this.#hydrating) {
           // The scope the server rendered this content in (see renderOnServer).
           setKeyScope(`${this.getAttribute(HYDRATION_KEY) ?? ''}~`);
-          hydrateChildren(this, () => hotKeep(this, () => this.render()));
+          hydrateChildren(this, () => (DEV ? hotKeep(this, () => this.render()) : this.render()));
         }
-        else insert(this.#root as unknown as Element, hotKeep(this, () => this.render()) as never);
+        else insert(this.#root as unknown as Element, (DEV ? hotKeep(this, () => this.render()) : this.render()) as never);
         this.#hydrating = false;
       }),
     ));
@@ -989,9 +990,9 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
  * server render finds and renders the element.
  */
 export function defineElement<S extends Schema>(name: string, setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
-  const elements = hotElements();
+  const elements = DEV ? hotElements() : undefined;
   const existing = elements?.get(name) as ElementConstructor<S> | undefined;
-  if (existing) {
+  if (DEV && existing) {
     // Defined again by hot reload: new setup, same class, every live instance rebuilt.
     const hot = (existing as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
     if (!hot) return existing;
@@ -1014,6 +1015,6 @@ export function defineElement<S extends Schema>(name: string, setup: Setup<S>, o
   // On the server too: defineCustomElement knows the stand-in registry, and returning early
   // here left the element unknown to the server renderer, sent as an empty tag.
   const defined = defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
-  elements?.set(name, defined);
+  if (DEV) elements?.set(name, defined);
   return defined;
 }

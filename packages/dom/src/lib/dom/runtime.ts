@@ -17,6 +17,7 @@ import  {
 } from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, serverCustomElementProp, SVG_NAMESPACE } from './utils.js';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
+import { DEV } from './dev.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
@@ -154,6 +155,7 @@ const LOC_TAG = '__fx_loc';
 
 /** Only ever called with a position when the compiler recorded one. */
 function located<T extends Element>(element: T, at?: { file: string; line: number; column: number }): T {
+  if (!DEV) return element;
   if (at) (element as unknown as Record<string, unknown>)[LOC_TAG] = at;
   return element;
 }
@@ -469,6 +471,7 @@ export interface TemplatePositions {
  * Only reached when the compiler emitted positions, which it does for a dev build.
  */
 function stampPositions(node: Node, at?: TemplatePositions): Node {
+  if (!DEV) return node;
   const root = node as Element;
   if (!at || typeof root?.querySelectorAll !== 'function') return node;
   const all: Element[] = [root, ...root.querySelectorAll('*')];

@@ -11,6 +11,7 @@
  * element is fully built before the next sibling is created).
  */
 import { insert, render } from './runtime.js';
+import { DEV as IS_DEV } from './dev.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
 import {
@@ -55,7 +56,8 @@ const VOID_ELEMENTS = new Set([
 
 // Tree-shaken out of production (bundlers replace process.env.NODE_ENV). Not behind
 // `typeof process`, which is undefined in a browser and kept the warnings from ever firing.
-const DEV = !isProduction();
+// `__DEV__`-based, so a production bundle folds the warnings away.
+const DEV = IS_DEV;
 
 /** Dev-only: warn when the cursor node diverges from what the client builds. */
 function warnMismatch(expected: string, found: Node): void {
