@@ -8,6 +8,7 @@
   <p><strong>A compiler-native reactive framework: the compiler knows what's reactive, so you write ordinary TypeScript.</strong></p>
 
   <p>
+    <img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-f97316" />
     <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
     <img alt="Registry" src="https://img.shields.io/badge/registry-npm-cb3837?logo=npm&logoColor=white" />
@@ -15,6 +16,8 @@
     <img alt="Reactivity" src="https://img.shields.io/badge/reactivity-fine--grained-ec4899" />
   </p>
 </div>
+
+> Fluixi is experimental: APIs can change between alpha releases. Pin exact versions.
 
 ---
 

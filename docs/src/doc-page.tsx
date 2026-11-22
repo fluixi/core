@@ -529,6 +529,8 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         .d-pager :deep(.pager span) { font-size: 11.5px; color: var(--muted); }
         .d-pager :deep(.pager b) { font-size: 14px; font-weight: 500; color: var(--text); }
 
+        .d-experimental { margin: 0 0 20px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+        .d-experimental a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
         .d-foot { margin-top: 48px; padding-top: 22px; font-size: 12px; line-height: 1.6; color: var(--muted); display: flex; justify-content: center; gap: .5rem; }
         .d-foot p { margin: 0; }
         .d-foot a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); margin-left: .25rem; }
@@ -722,6 +724,10 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
             onLinkClick(e);
           }}
         >
+          <p class="d-experimental" role="note">
+            {ui().experimental}{' '}
+            <a href={RELEASES_URL} target="_blank" rel="noopener">{ui().releaseNotes}</a>
+          </p>
           <article class="prose" innerHTML={doc()?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">
             {() => (prev() ? (

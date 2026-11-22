@@ -2,6 +2,10 @@
 
 > Fluixi is a TypeScript framework for the web: fine-grained signals, JSX components that run once, and @fluixi/start for file routes, server rendering, server functions and static output.
 
+Fluixi is experimental: APIs change between alpha releases. Code remembered from an older
+alpha may no longer compile; check it against these rules and the installed version, and pin exact
+versions.
+
 The guide, page by page: https://docs.fluixi.com/llms.txt. Every page is also Markdown at its address plus `.md`, and the whole guide is at https://docs.fluixi.com/llms-full.txt.
 
 For the component library (buttons, forms, layout, skins), read https://ui.fluixi.com/llms.txt as well:
