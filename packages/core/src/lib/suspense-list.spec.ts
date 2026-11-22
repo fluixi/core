@@ -29,8 +29,10 @@ function compile(src: string, extra: Record<string, unknown>): any {
 
 describe('SuspenseList', () => {
   it('reveals forwards in order, with one fallback when collapsed', async () => {
-    const Row = (props: { name: string; ms: number }) => {
-      const [data] = S.createResource(() => new Promise<string>((r) => setTimeout(() => r(props.name), props.ms)));
+    // Each row loads until the test resolves it, so the order is the test's, not the timers'.
+    const resolvers = new Map<string, (value: string) => void>();
+    const Row = (props: { name: string }) => {
+      const [data] = S.createResource(() => new Promise<string>((r) => resolvers.set(props.name, r)));
       const p = DOM.createNativeElement('p');
       DOM.insert(p, () => data() ?? '');
       return p;
@@ -41,9 +43,9 @@ describe('SuspenseList', () => {
        export function App() {
          return (
            <SuspenseList revealOrder="forwards" tail="collapsed">
-             <Suspense fallback={<i>wait one</i>}><Row name="one" ms={30} /></Suspense>
-             <Suspense fallback={<i>wait two</i>}><Row name="two" ms={10} /></Suspense>
-             <Suspense fallback={<i>wait three</i>}><Row name="three" ms={20} /></Suspense>
+             <Suspense fallback={<i>wait one</i>}><Row name="one" /></Suspense>
+             <Suspense fallback={<i>wait two</i>}><Row name="two" /></Suspense>
+             <Suspense fallback={<i>wait three</i>}><Row name="three" /></Suspense>
            </SuspenseList>
          );
        }`,
@@ -54,11 +56,14 @@ describe('SuspenseList', () => {
     await wait(1);
     expect(container.textContent).toBe('wait one');
 
-    await wait(15);
-    // `two` has resolved, but `one` has not: nothing is revealed out of order.
+    resolvers.get('two')!('two');
+    resolvers.get('three')!('three');
+    await wait(1);
+    // `two` and `three` have resolved, but `one` has not: nothing is revealed out of order.
     expect(container.textContent).toBe('wait one');
 
-    await wait(30);
+    resolvers.get('one')!('one');
+    await wait(1);
     expect(container.textContent).toBe('onetwothree');
   });
 });
