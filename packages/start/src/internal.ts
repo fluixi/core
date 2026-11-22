@@ -256,7 +256,7 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
   // serverFunctionsVitePlugin applies the "use server" transform (client RPC stub /
   // server registration) per-build via the ssr flag.
   const { envVitePlugin } = await import('./env-plugin.js');
-  const { appConfigVitePlugin } = await import('./app-plugin.js');
+  const { appConfigVitePlugin, elementHydrationVitePlugin } = await import('./app-plugin.js');
   const { documentVitePlugin } = await import('./document-plugin.js');
   const { serverOnlyVitePlugin } = await import('./server-only-plugin.js');
   const { dedupeVitePlugin } = await import('./dedupe-plugin.js');
@@ -266,6 +266,7 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
     envVitePlugin(cfg),
     dedupeVitePlugin(cfg.root, cfg.dedupe),
     appConfigVitePlugin(cfg),
+    elementHydrationVitePlugin(cfg),
     documentVitePlugin(cfg),
     eventReplayVitePlugin(cfg),
     serverOnlyVitePlugin(),

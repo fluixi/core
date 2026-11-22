@@ -13,6 +13,8 @@ const h = (tag: string, children: unknown) => {
   return node;
 };
 import { typedElement, prop, defineCustomElement } from './index.js';
+// What an app's client entry imports (@fluixi/start adds it): elements adopt server markup.
+import './hydrate.js';
 
 class Deals extends typedElement({ heading: prop.string(''), items: prop.object<string[]>([]) }) {
   protected override render(): unknown {

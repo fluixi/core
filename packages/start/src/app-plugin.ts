@@ -97,3 +97,26 @@ export function appConfigVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'clientEn
     },
   };
 }
+
+const ELEMENT_HYDRATION = '@fluixi/web-components/hydrate';
+
+/**
+ * Element hydration for apps that use Fluixi custom elements: the client entry imports
+ * `@fluixi/web-components/hydrate` when the package is installed, so an element the server
+ * rendered adopts its markup. Elements leave that code out unless something installs it, which
+ * keeps it out of elements used in other frameworks; a start app server-renders its elements.
+ */
+export function elementHydrationVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'clientEntry'>): any {
+  const clientEntry = stripExt(resolve(cfg.root, cfg.clientEntry));
+  return {
+    name: 'fluixi-element-hydration',
+    enforce: 'pre',
+    async transform(this: { resolve(source: string, importer: string): Promise<unknown> }, code: string, id: string, options?: { ssr?: boolean }) {
+      if (options?.ssr || !SOURCE.test(id.replace(/\?.*$/, '')) || stripExt(id) !== clientEntry) return null;
+      if (!(await this.resolve(ELEMENT_HYDRATION, id))) return null;
+      // On line 1 without a newline, as the app config import: no later line moves.
+      return { code: `import '${ELEMENT_HYDRATION}';` + code, map: null };
+    },
+  };
+}
+

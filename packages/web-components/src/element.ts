@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { HYDRATION_KEY, afterHydrationPass, hydrateChildren, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
+import { HYDRATION_KEY, afterHydrationPass, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -126,6 +126,21 @@ function hotKeep<T>(host: object, render: () => T): T {
 function hotAnnounce(): NonNullable<HotShared['announce']> {
   return hotShared()?.announce ?? ((_label, swap) => swap());
 }
+/**
+ * Adopting the content a server rendered, installed by `@fluixi/web-components/hydrate` (which
+ * `@fluixi/start` adds to an app's client entry). Without it the element carries no hydration
+ * code: an element used inside another framework is never server-rendered.
+ */
+export interface ElementHydrator {
+  /** Render `render()`'s output into `element`, adopting the server's nodes. */
+  hydrate(element: Element, render: () => unknown): void;
+}
+let hydrator: ElementHydrator | null = null;
+
+export function installElementHydration(next: ElementHydrator): void {
+  hydrator = next;
+}
+
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
 
 /**
@@ -739,12 +754,18 @@ export class HTMLReactiveElement extends BaseElement {
         this.#dispose = dispose;
         // Reflects live in the same scope as the content, so they stop when it does.
         this.#startReflecting();
-        if (this.#hydrating) {
-          // The scope the server rendered this content in (see renderOnServer).
-          setKeyScope(`${this.getAttribute(HYDRATION_KEY) ?? ''}~`);
-          hydrateChildren(this, () => ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render()));
+        const draw = () => ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render());
+        if (this.#hydrating && hydrator) hydrator.hydrate(this, draw);
+        else {
+          if (this.#hydrating) {
+            // Server content and nothing to adopt it with: render afresh rather than beside it.
+            if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) {
+              console.warn(`[fluixi] <${this.localName}> was rendered on the server, but nothing installs element hydration, so it renders again in the browser. Import '@fluixi/web-components/hydrate' in the client entry (@fluixi/start adds it).`);
+            }
+            this.replaceChildren();
+          }
+          insert(this.#root as unknown as Element, draw() as never);
         }
-        else insert(this.#root as unknown as Element, ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render()) as never);
         this.#hydrating = false;
       }),
     ));
