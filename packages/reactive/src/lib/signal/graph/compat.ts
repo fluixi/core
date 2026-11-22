@@ -29,6 +29,11 @@ import {
 } from './runtime.js';
 import { isObserved, reportReactiveDispose, reportReactiveNode } from './observe.js';
 import { G } from './state.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops the devtools reporting it
+// guards; without it the check reads NODE_ENV. Written inline at each use: a bundler keeps a
+// function whose only caller sits behind a constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 function isThenable(v: unknown): v is Promise<unknown> {
   return !!v && typeof (v as { then?: unknown }).then === 'function';
@@ -84,7 +89,7 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
   (read as unknown as Record<symbol, unknown>)[$NODE] = state;
   // The report object is built only when someone is listening: at list scale
   // an unobserved build per signal is creation cost with no reader.
-  if (isObserved()) {
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) {
     reportReactiveNode({
       kind: 'signal',
       node: state,
@@ -95,7 +100,7 @@ export function createSignal<T>(value: T, options?: SignalOptions<T>): Signal<T>
   }
   // A signal goes when its owner does, the same as a memo. A list rebuilt without a key
   // makes one per row per update, and a watcher that is never told keeps every one of them.
-  if (isObserved()) l1onCleanup(() => reportReactiveDispose(state));
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) l1onCleanup(() => reportReactiveDispose(state));
   if (hot) hot.keep(() => state.peek(), () => write(() => initial));
   return [read, write];
 }
@@ -136,13 +141,13 @@ export function createMemo<T>(
   // as reactive, caches it as a component, and freezes it -> updates never apply.
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
-  if (isObserved()) reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
   // A memo goes when its owner does: unlink it from its sources, or a signal
   // that outlives the list keeps every row it ever had in its observers set.
   // Registered whether or not a watcher is looking; the report itself is not.
   l1onCleanup(() => {
     c.dispose();
-    if (isObserved()) reportReactiveDispose(c);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) reportReactiveDispose(c);
   });
   return read;
 }

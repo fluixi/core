@@ -11,7 +11,6 @@
  * element is fully built before the next sibling is created).
  */
 import { insert, render } from './runtime.js';
-import { DEV as IS_DEV } from './dev.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
 import {
@@ -26,6 +25,11 @@ import {
   warnTextMismatch,
 } from './hydration-state.js';
 import { isProduction } from './versions.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops what it guards; without it
+// the check reads NODE_ENV. Written inline at each use: a bundler keeps a function whose only
+// caller sits behind an imported or local constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 /**
  * Re-sync the cursor onto the next adoptable server node. Two things can leave it off-target
@@ -56,8 +60,6 @@ const VOID_ELEMENTS = new Set([
 
 // Tree-shaken out of production (bundlers replace process.env.NODE_ENV). Not behind
 // `typeof process`, which is undefined in a browser and kept the warnings from ever firing.
-// `__DEV__`-based, so a production bundle folds the warnings away.
-const DEV = IS_DEV;
 
 /** Dev-only: warn when the cursor node diverges from what the client builds. */
 function warnMismatch(expected: string, found: Node): void {
@@ -112,7 +114,7 @@ function hydrateElement(tag: string): Element | null {
     }
     return c as Element;
   }
-  if (DEV && c) warnMismatch(`<${tag}>`, c);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && c) warnMismatch(`<${tag}>`, c);
   return null;
 }
 
@@ -143,14 +145,14 @@ function hydrateStatic(tag: string, salt?: string): Element | null {
     // it would patch one into the other. Build the client's; the sweep removes the server's.
     const server = keySalt(c as Element);
     if (salt && server && server !== salt) {
-      if (DEV) warnMismatch(`<${tag}> (another template)`, c);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnMismatch(`<${tag}> (another template)`, c);
       return null;
     }
     releaseKeyed(c as Element);
     hydration.cursor = c.nextSibling;
     return c as Element;
   }
-  if (DEV && c) warnMismatch(`<${tag}> (static)`, c);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && c) warnMismatch(`<${tag}> (static)`, c);
   return null;
 }
 
@@ -183,12 +185,12 @@ function hydrateText(value: string): Text | null {
     }
     hydration.cursor = c.nextSibling;
     if (data !== value) {
-      warnTextMismatch(data, value);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnTextMismatch(data, value);
       (c as Text).data = value;
     }
     return c as Text;
   }
-  if (DEV && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && c) warnMismatch(`text ${JSON.stringify(value.slice(0, 24))}`, c);
   return null;
 }
 
@@ -201,7 +203,7 @@ function hydrateMarker(value: string): Comment | null {
     return c as Comment;
   }
   // Empty markers ARE serialized (`<!---->`), so a missing/diverged one is a real divergence.
-  if (DEV && c) warnMismatch(`marker <!--${value.slice(0, 24)}-->`, c);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && c) warnMismatch(`marker <!--${value.slice(0, 24)}-->`, c);
   return null;
 }
 

@@ -36,7 +36,6 @@ import {
   type PropState,
 } from './props.js';
 import { defineCustomElement, onRedefine, type DefineOptions } from './registry.js';
-import { DEV } from './dev.js';
 import { createDispatch, type Dispatch, type DispatchInit } from './events.js';
 import { createTargets, type Targets } from './targets.js';
 import { applyStyles, type ElementStyles } from './styles.js';
@@ -115,7 +114,7 @@ function redefineClass(name: string, registered: CustomElementConstructor, next:
   }, live);
   return true;
 }
-if (DEV) onRedefine(redefineClass);
+if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) onRedefine(redefineClass);
 
 /** A render under `@fluixi/dom/hot`'s keepState, or the render alone. */
 function hotKeep<T>(host: object, render: () => T): T {
@@ -165,6 +164,11 @@ interface ServerNodeLike {
   removeChild(child: unknown): unknown;
 }
 import type { PropValues } from './types.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops what it guards; without it
+// the check reads NODE_ENV. Written inline at each use: a bundler keeps a function whose only
+// caller sits behind an imported or local constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 /**
  * `true`, `'open'` or `'closed'` for a plain shadow root, or the options `attachShadow` takes:
@@ -676,7 +680,7 @@ export class HTMLReactiveElement extends BaseElement {
     const hot = (constructor as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
     // Once per element: a rebuild or a reconnect builds again, and a second entry rebuilt it
     // again on every later swap. A class element is tracked by its tag.
-    if (DEV && hotElements() && !this.#hotRef) {
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && hotElements() && !this.#hotRef) {
       this.#hotRef = new WeakRef(this);
       if (hot) hot.instances.add(this.#hotRef);
       else classInstances(this.localName).add(this.#hotRef);
@@ -738,9 +742,9 @@ export class HTMLReactiveElement extends BaseElement {
         if (this.#hydrating) {
           // The scope the server rendered this content in (see renderOnServer).
           setKeyScope(`${this.getAttribute(HYDRATION_KEY) ?? ''}~`);
-          hydrateChildren(this, () => (DEV ? hotKeep(this, () => this.render()) : this.render()));
+          hydrateChildren(this, () => ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render()));
         }
-        else insert(this.#root as unknown as Element, (DEV ? hotKeep(this, () => this.render()) : this.render()) as never);
+        else insert(this.#root as unknown as Element, ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render()) as never);
         this.#hydrating = false;
       }),
     ));
@@ -990,9 +994,9 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
  * server render finds and renders the element.
  */
 export function defineElement<S extends Schema>(name: string, setup: Setup<S>, options: ElementOptions<S> = {}): ElementConstructor<S> {
-  const elements = DEV ? hotElements() : undefined;
+  const elements = (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotElements() : undefined;
   const existing = elements?.get(name) as ElementConstructor<S> | undefined;
-  if (DEV && existing) {
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && existing) {
     // Defined again by hot reload: new setup, same class, every live instance rebuilt.
     const hot = (existing as unknown as Record<symbol, HotSetup | undefined>)[HOT_SETUP];
     if (!hot) return existing;
@@ -1015,6 +1019,6 @@ export function defineElement<S extends Schema>(name: string, setup: Setup<S>, o
   // On the server too: defineCustomElement knows the stand-in registry, and returning early
   // here left the element unknown to the server renderer, sent as an empty tag.
   const defined = defineCustomElement(name, constructor, options.define) as ElementConstructor<S>;
-  if (DEV) elements?.set(name, defined);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) elements?.set(name, defined);
   return defined;
 }

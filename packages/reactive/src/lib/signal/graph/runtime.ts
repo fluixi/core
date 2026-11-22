@@ -27,6 +27,11 @@ import {
   reportReactiveDispose,
   reportReactiveNode,
 } from './observe.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops the devtools reporting it
+// guards; without it the check reads NODE_ENV. Written inline at each use: a bundler keeps a
+// function whose only caller sits behind a constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 // ── Ownership (TC39 has none) ────────────────────────────────────────────────
 export interface Owner {
@@ -90,7 +95,7 @@ export interface Context<T> {
 export function createContext<T>(defaultValue?: T, name?: string): Context<T> {
   // Named so a watcher can tell two of them apart. Nothing else reads the description.
   const id = Symbol(name ?? 'context');
-  reportReactiveContextCreated(id);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveContextCreated(id);
   const Provider = (props: { value: T; children?: unknown; debug?: boolean }): any => {
     // Stamp the value on a DEDICATED child owner, then read `children` under it: never
     // on the current owner directly. Two sibling <Ctx.Provider> elements used inline (no
@@ -99,7 +104,7 @@ export function createContext<T>(defaultValue?: T, name?: string): Context<T> {
     // A child scope isolates each Provider; because createMemo captures the owner at
     // creation, the children memos built while reading `props.children` here capture this
     // scope and resolve the right value even when rendered lazily (Portal/Show/For).
-    reportReactiveContext(id, 'provide', props.value);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveContext(id, 'provide', props.value);
     const parent = G.owner;
     const owner = makeOwner(parent);
     (owner.contexts = new Map()).set(id, props.value);
@@ -120,12 +125,12 @@ export function useContext<T>(context: { id: symbol; defaultValue?: T }): T | un
   while (o) {
     if (o.contexts && o.contexts.has(context.id)) {
       const found = o.contexts.get(context.id) as T;
-      reportReactiveContext(context.id, 'read', found);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveContext(context.id, 'read', found);
       return found;
     }
     o = o.parent;
   }
-  reportReactiveContext(context.id, 'read', context.defaultValue);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveContext(context.id, 'read', context.defaultValue);
   return context.defaultValue;
 }
 
@@ -342,7 +347,7 @@ class EffectNode extends Computed<void> {
     // Before the first run. A render effect is reported too, marked as plumbing:
     // it is not worth drawing, but a node made inside one has to be able to find
     // its way back to the component that caused it.
-    if (isObserved()) reportReactiveNode({ kind: 'effect', node: this, handle: this, internal: !report, ...(name ? { name } : {}) });
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) reportReactiveNode({ kind: 'effect', node: this, handle: this, internal: !report, ...(name ? { name } : {}) });
 
     this.run(); // initial synchronous run (Solid semantics)
 
@@ -351,7 +356,7 @@ class EffectNode extends Computed<void> {
     // the node is collected: `() => row.id` on a plain row is one per row. Kept while
     // devtools listens, so the graph it draws matches what was written.
     const o = this.owner;
-    if (!this.disposed && !this.sources?.size && !o.cleanups && !o.owned && !o.contexts && !isObserved()) {
+    if (!this.disposed && !this.sources?.size && !o.cleanups && !o.owned && !o.contexts && !((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved())) {
       this.disposed = true;
       return;
     }
@@ -388,7 +393,7 @@ class EffectNode extends Computed<void> {
   override dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    reportReactiveDispose(this);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDispose(this);
     super.dispose();
     disposeOwner(this.owner);
   }

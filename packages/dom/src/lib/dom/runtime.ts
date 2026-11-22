@@ -17,7 +17,6 @@ import  {
 } from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, serverCustomElementProp, SVG_NAMESPACE } from './utils.js';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
-import { DEV } from './dev.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
@@ -43,6 +42,11 @@ import {
   warnTextMismatch,
   HYDRATION_KEY,
 } from './hydration-state.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops what it guards; without it
+// the check reads NODE_ENV. Written inline at each use: a bundler keeps a function whose only
+// caller sits behind an imported or local constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 function getElementFingerprint(el: Element): string {
   const parts: string[] = [];
@@ -155,7 +159,7 @@ const LOC_TAG = '__fx_loc';
 
 /** Only ever called with a position when the compiler recorded one. */
 function located<T extends Element>(element: T, at?: { file: string; line: number; column: number }): T {
-  if (!DEV) return element;
+  if (!(typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) return element;
   if (at) (element as unknown as Record<string, unknown>)[LOC_TAG] = at;
   return element;
 }
@@ -471,7 +475,7 @@ export interface TemplatePositions {
  * Only reached when the compiler emitted positions, which it does for a dev build.
  */
 function stampPositions(node: Node, at?: TemplatePositions): Node {
-  if (!DEV) return node;
+  if (!(typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) return node;
   const root = node as Element;
   if (!at || typeof root?.querySelectorAll !== 'function') return node;
   const all: Element[] = [root, ...root.querySelectorAll('*')];
@@ -904,7 +908,7 @@ export function insertExpression(
       }
       if (current.length === 1 && current[0].nodeType === 3) {
         const text = current[0] as Text;
-        if (hydration.active && text.data !== value) warnTextMismatch(text.data, value as string);
+        if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && hydration.active && text.data !== value) warnTextMismatch(text.data, value as string);
         text.data = value as string;
         return current;
       }
@@ -912,7 +916,7 @@ export function insertExpression(
     }
 
     if (current && isDomText(current)) {
-      if (hydration.active && (current as Text).data !== value) warnTextMismatch((current as Text).data, value as string);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && hydration.active && (current as Text).data !== value) warnTextMismatch((current as Text).data, value as string);
       (current as Text).data = value as string;
       return current;
     }
@@ -2371,7 +2375,8 @@ export function render<T>(
       // Which build is running, on the element and as `window.Fluixi`. Stamped here
       // rather than in core's render so the hydrate path gets it too.
       stampVersions(container);
-      warnOnVersionSkew();
+      // Several copies of the runtime in one bundle is a development mistake to report there.
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnOnVersionSkew();
 
       insert(container, element as any);
       return;

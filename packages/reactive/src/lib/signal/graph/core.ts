@@ -22,6 +22,11 @@
 
 import { G } from './state.js';
 import { enterReactiveRun, exitReactiveRun, reportReactiveRun, reportReactiveWrite } from './observe.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops the devtools reporting it
+// guards; without it the check reads NODE_ENV. Written inline at each use: a bundler keeps a
+// function whose only caller sits behind a constant.
+declare const __DEV__: boolean | undefined;
+import { isDevelopment } from './dev-env.js';
 
 // CLEAN, the cached value is current. CHECK, a source may have changed, so verify on
 // read. DIRTY, recompute without checking.
@@ -84,7 +89,7 @@ export class State<T> extends Source {
     this._value = next;
     this.version++;
     // Who wrote it: once a write has propagated, nothing else records what caused it.
-    reportReactiveWrite(this, G.consumer);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveWrite(this, G.consumer);
     // Push: direct observers go DIRTY, their transitive observers CHECK.
     // Snapshot first. The scheduler is synchronous, so an effect can re-run part way
     // through this loop, and re-running re-subscribes it, which mutates `observers`.
@@ -168,7 +173,7 @@ export class Computed<T> extends Source {
     }
     const prevConsumer = G.consumer;
     const prevUntracked = G.untracked;
-    const watched = enterReactiveRun(this);
+    const watched = (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && enterReactiveRun(this);
     G.consumer = this;
     G.untracked = false;
     let next: T;
@@ -196,7 +201,7 @@ export class Computed<T> extends Source {
     this._error = err;
     this._value = next;
 
-    reportReactiveRun(this);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveRun(this);
 
     if (changed) {
       this.version++;
