@@ -671,7 +671,7 @@ function _createInsertEffect(
     // again here builds the dom twice, during hydration, a duplicated subtree.
     //
     // Every run, because what this effect writes into moves as the value does.
-    reportReactiveBinding(marker ?? parent, 'content', undefined, getAccessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(marker ?? parent, 'content', undefined, getAccessor);
     let value: any;
 
     // ── 0. If accessor itself is a component thunk (not a signal/memo), call it once via cache ──
@@ -1423,20 +1423,20 @@ function reportMarked(element: Element, accessor: unknown): void {
   if (!written) return;
   const colon = written.indexOf(':');
   if (colon === -1) return;
-  reportReactiveDirective(element, written.slice(0, colon), written.slice(colon + 1), accessor);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, written.slice(0, colon), written.slice(colon + 1), accessor);
 }
 
 function reportKeys(element: Element, kind: string, value: unknown): void {
   const from = typeof value === 'function' ? untrack(() => (value as () => unknown)()) : value;
   if (!from || typeof from !== 'object') return;
-  for (const key of Object.keys(from)) reportReactiveDirective(element, kind, key);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) for (const key of Object.keys(from)) reportReactiveDirective(element, kind, key);
 }
 
 export function applyUse(element: Element, value: any): void {
   const call = (dir: any, accessor?: any) => {
     if (typeof dir !== 'function') return;
     // Named so a watcher can tell one directive from another. Nothing else reads it.
-    reportReactiveDirective(element, 'use', dir.name || 'use', accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'use', dir.name || 'use', accessor);
     dir(element, accessor ?? (() => undefined));
   };
   if (typeof value === 'function') { call(value); return; }
@@ -1461,7 +1461,7 @@ export function setDynamicAttribute(
     return () => {};
   }
   return createRenderEffect(() => {
-    reportReactiveBinding(element, 'attribute', name, accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setAttribute(element, name, value, isSVG);
   });
@@ -1474,7 +1474,7 @@ export function setDynamicProperty(element: any, name: string, accessor: any): (
   }
   reportMarked(element, accessor);
   return createRenderEffect(() => {
-    reportReactiveBinding(element, 'property', name, accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'property', name, accessor);
     const value = typeof accessor === 'function' ? accessor() : accessor;
     setProperty(element, name, value);
   });
@@ -1488,7 +1488,7 @@ export function setDynamicBoolAttribute(element: Element, name: string, accessor
     return () => {};
   }
   return createRenderEffect(() => {
-    reportReactiveBinding(element, 'attribute', name, accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', name, accessor);
     const value = (accessor as () => unknown)();
     setAttribute(element, name, !!value);
   });
@@ -1504,7 +1504,7 @@ export function setClassName(element: Element, value: any): void {
     // A render effect, like every other attribute binding: `spread` already wraps
     // class this way, so going through `applyProps` shouldn't schedule it later.
     createRenderEffect(() => {
-      reportReactiveBinding(element, 'attribute', 'class', value);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'class', value);
       setClassName(element, value());
     });
     return;
@@ -1638,7 +1638,7 @@ export function setDynamicStyle(element: any, accessor: any): void {
     return;
   }
   createRenderEffect(() => {
-    reportReactiveBinding(element, 'attribute', 'style', accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'style', accessor);
     setStyle(element, accessor());
   });
 }
@@ -1653,7 +1653,7 @@ export function setDynamicClassList(element: Element, accessor: any): void {
     return;
   }
   createRenderEffect(() => {
-    reportReactiveBinding(element, 'attribute', 'class', accessor);
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'class', accessor);
     setClassList(element, accessor());
   });
 }
@@ -1750,17 +1750,17 @@ export function spread(options: SpreadOptions): () => void {
     // Forced bindings: prop:x always assigns the property, attr:x always sets the
     // attribute, bool:x toggles a boolean attribute, skipping the heuristic below.
     if (key.startsWith('prop:')) {
-      reportReactiveDirective(element, 'prop', key.slice(5), value);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'prop', key.slice(5), value);
       own.push(setDynamicProperty(element, key.slice(5), value));
       return;
     }
     if (key.startsWith('attr:')) {
-      reportReactiveDirective(element, 'attr', key.slice(5), value);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'attr', key.slice(5), value);
       own.push(setDynamicAttribute(element, key.slice(5), value, elementIsSVG));
       return;
     }
     if (key.startsWith('bool:')) {
-      reportReactiveDirective(element, 'bool', key.slice(5), value);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'bool', key.slice(5), value);
       own.push(setDynamicBoolAttribute(element, key.slice(5), value));
       return;
     }
@@ -1769,7 +1769,7 @@ export function spread(options: SpreadOptions): () => void {
       if (typeof value === 'function') {
         own.push(
           createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'class', value);
+            if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'class', value);
             setClassName(element, value());
           }),
         );
@@ -1784,7 +1784,7 @@ export function spread(options: SpreadOptions): () => void {
       if (typeof value === 'function') {
         own.push(
           createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'class', value);
+            if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'class', value);
             setClassList(element, value());
           }),
         );
@@ -1799,7 +1799,7 @@ export function spread(options: SpreadOptions): () => void {
       if (typeof value === 'function') {
         own.push(
           createRenderEffect(() => {
-            reportReactiveBinding(element, 'attribute', 'style', value);
+            if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'style', value);
             setStyle(element as any, value());
           }),
         );
@@ -1937,15 +1937,15 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
     if (key.startsWith('on:')) { addNativeEventListener(element, key.slice(3), val); continue; }
     // Forced bindings: see spread().
     if (key.startsWith('prop:')) {
-      reportReactiveDirective(element, 'prop', key.slice(5), val);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'prop', key.slice(5), val);
       setDynamicProperty(element, key.slice(5), val); continue;
     }
     if (key.startsWith('attr:')) {
-      reportReactiveDirective(element, 'attr', key.slice(5), val);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'attr', key.slice(5), val);
       setDynamicAttribute(element, key.slice(5), val, isSVG); continue;
     }
     if (key.startsWith('bool:')) {
-      reportReactiveDirective(element, 'bool', key.slice(5), val);
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(element, 'bool', key.slice(5), val);
       setDynamicBoolAttribute(element, key.slice(5), val); continue;
     }
     if (key.startsWith('on') && key.length > 2) {
@@ -1977,7 +1977,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       reportKeys(element, 'class', val);
       if (typeof val === 'function')
         createRenderEffect(() => {
-          reportReactiveBinding(element, 'attribute', 'class', val);
+          if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'class', val);
           setClassList(element, val());
         });
       else setClassList(element, val, []);
@@ -1991,7 +1991,7 @@ export function applyProps(element: Element, props: Record<string, any>, isSVG =
       reportKeys(element, 'style', val);
       if (typeof val === 'function')
         createRenderEffect(() => {
-          reportReactiveBinding(element, 'attribute', 'style', val);
+          if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveBinding(element, 'attribute', 'style', val);
           setStyle(element as HTMLElement, (val as () => unknown)());
         });
       else setStyle(element as HTMLElement, val, []);
@@ -2240,7 +2240,7 @@ export function handleRef(ref: any, element: Element, assign?: (element: Element
   // The compiler's mark names the variable it is stored in; a function's own name is the
   // next best thing.
   const held = (ref as Record<string, { name?: string }>)[HOLE_TAG]?.name;
-  reportReactiveDirective(
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) reportReactiveDirective(
     element,
     'ref',
     held || (typeof ref === 'function' ? ref.name || 'ref' : 'ref'),

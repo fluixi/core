@@ -8,6 +8,10 @@ import { runWithOwner } from '@fluixi/reactive/signal';
 import { asComponent } from '../component/modifiers.js';
 import { hydrationKeys } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
+import { isDevelopment } from './dev-env.js';
+// `__DEV__` is folded by a build that defines it, so a bundler drops the devtools reporting it
+// guards; without it the check reads NODE_ENV. Written inline at each use.
+declare const __DEV__: boolean | undefined;
 
 type CreateComponentFn = (fn: () => any, props?: any) => any;
 
@@ -47,7 +51,7 @@ function build<T extends (props?: any) => any, U = any>(Comp: T, props?: U): Cre
 
   // Before the call, so the computation this is created inside is still the running one.
   // A property read when nobody is watching.
-  if (props) reportReactiveProps(props);
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && props) reportReactiveProps(props);
 
   // Untracked: a component reading a signal while it is created must not make its
   // caller depend on that signal, or the caller re-runs and rebuilds the subtree.
