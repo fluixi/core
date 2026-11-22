@@ -530,8 +530,7 @@ describe('named slots', () => {
 
   it('leaves a slotless attribute alone', () => {
     const out = compile('const v = html`<Card header>d</Card>`;');
-    expect(out).toContain('get header()');
-    expect((out.match(/get header\(\)/g) ?? []).length).toBe(1);
+    expect((out.match(/\bheader: true\b/g) ?? []).length).toBe(1);
   });
 });
 

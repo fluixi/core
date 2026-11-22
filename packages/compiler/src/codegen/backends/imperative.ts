@@ -68,6 +68,13 @@ function componentPropValue(p: IRProp): string {
   return JSON.stringify(p.literal ?? true);
 }
 
+/** A number, string, boolean or `null` written as is: the same on every read. */
+const CONSTANT = /^(?:-?\d[\d_]*(?:\.\d+)?(?:e[+-]?\d+)?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|true|false|null)$/;
+
+function isConstantProp(p: IRProp): boolean {
+  return p.expr === undefined || CONSTANT.test(p.expr.trim());
+}
+
 /**
  * A spread's argument as `mergeProps` takes it: a plain name (`props`, `others.rest`) as it is,
  * anything computed (`attributes()`, a condition) as a function, read where the props are applied.
@@ -132,13 +139,15 @@ function emitComponent(
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
-  // ALL component props are emitted as getters (Solid model): reading a signal in a prop
+  // Component props are emitted as getters (Solid model): reading a signal in a prop
   // eagerly inside `createMemo(() => createComponent(...))` would re-create the whole component
   // on every change (a <Portal> then piles up). As getters the component is built ONCE and
-  // reactivity flows through the getter into its own effects. Static props as getters are
-  // harmless (they return the same value). Matches lazyProps() in the inline codegen.
+  // reactivity flows through the getter into its own effects.
+  // A literal (`step={1}`, `label="Count"`) cannot change, so it goes in as a plain value.
   // Each body emitted once: emitting children registers their templates.
-  const bodies: [string, string][] = normal.map((p) => [p.name, componentPropValue(p)]);
+  const plain: [string, string][] = [];
+  const bodies: [string, string][] = [];
+  for (const p of normal) (isConstantProp(p) ? plain : bodies).push([p.name, componentPropValue(p)]);
   if (children.length > 0) {
     // Children are a LAZY getter: evaluated inside the component's execution, so
     // child components are created in the component's owner scope (preserves owner
@@ -146,7 +155,8 @@ function emitComponent(
     // ordering), and lazily (ErrorBoundary can still catch a throwing child).
     bodies.push(['children', emitChildren(children, used, templates)]);
   }
-  let obj = `{ ${bodies.map(([name, body]) => `get ${propKey(name)}() { return ${body}; }`).join(', ')} }`;
+  const values = plain.map(([name, value]) => `${propKey(name)}: ${value}`);
+  let obj = `{ ${[...values, ...bodies.map(([name, body]) => `get ${propKey(name)}() { return ${body}; }`)].join(', ')} }`;
   // A getter is a method: `this` inside it is the props object. Written in a class method
   // (a custom element's render), `title={() => this.name}` then read the props, not the
   // element. Arrows keep the enclosing `this`, so those props go out as arrow thunks and the
@@ -155,18 +165,18 @@ function emitComponent(
     // Parenthesised: an object literal body would otherwise parse as a block.
     const thunks = bodies.map(([name, body]) => `${JSON.stringify(name)}: () => (${body})`);
     const getters = bodies.map(([name]) => `get ${propKey(name)}() { return _$t[${JSON.stringify(name)}](); }`);
-    obj = `((_$t) => ({ ${getters.join(', ')} }))({ ${thunks.join(', ')} })`;
+    obj = `((_$t) => ({ ${[...values, ...getters].join(', ')} }))({ ${thunks.join(', ')} })`;
   }
   if (spreads.length > 0) {
     used.add('mergeProps');
     obj = `mergeProps(${spreads.map((s) => spreadSource(s.expr)).join(', ')}, ${obj})`;
   }
-  // Every prop is a getter, so none of them can carry a position. The map rides alongside,
+  // A getter cannot carry a position, nor can a plain value. The map rides alongside,
   // and a build that recorded no locations emits nothing.
   const propAt: Record<string, [number, number]> = {};
   for (const p of normal) if (p.at) propAt[p.name] = [p.at.line, p.at.column];
   if (Object.keys(propAt).length) obj = markProps(obj, propAt);
-  // The memo never recomputes: every prop is a getter, so this callback reads nothing
+  // The memo never recomputes: every prop is a getter or a constant, so this callback reads nothing
   // reactive. It is here for what it makes `insert` do, and it cannot be elided.
   //
   // A component whose return value is *itself* bare control flow (`return <Show .../>`)

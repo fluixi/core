@@ -101,8 +101,8 @@ describe('transformTemplates with <style>', () => {
       }
     `);
     const id = hash('src/Card.tsx:Panel');
-    expect(result.code).toContain(`createComponent(Card, { get "data-fx-s"() { return "${id}"; }, get className()`);
-    expect(result.code).toContain(`createComponent(Card, { get "data-fx-s"() { return "${id}"; }, get classList()`);
+    expect(result.code).toContain(`createComponent(Card, { "data-fx-s": "${id}", className: "box" }`);
+    expect(result.code).toContain(`createComponent(Card, { "data-fx-s": "${id}", get classList()`);
     expect(result.code).not.toMatch(/Button[^\n]*data-fx-s/);
   });
 
