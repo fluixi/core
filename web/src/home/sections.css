@@ -1,0 +1,52 @@
+/* The homepage sections below the tour. Glass cards float over the scene; the stages between
+   them are scroll the scene uses to tell its story. */
+
+.stage { position: relative; min-height: 120vh; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.stage-label { margin: 0; font: 500 13px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.stage-line { margin: 0; font-size: clamp(30px, 4.4vw, 54px); font-weight: 700; letter-spacing: -.03em; line-height: 1.1; max-width: 14em; text-wrap: balance; }
+.stage-code { margin: 8px 0 0; font: clamp(18px, 2.6vw, 30px) var(--mono); color: var(--accent); }
+
+.parade { position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 96px; padding-bottom: 120px; }
+.parade ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+.parade li { font-size: clamp(34px, 7vw, 92px); font-weight: 700; line-height: 1.05; letter-spacing: -.04em; }
+.parade li:nth-child(3n + 1) { color: light-dark(#15803d, #5ee08f); }
+.parade li:nth-child(3n + 2) { color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
+.parade li:nth-child(3n) { color: light-dark(#0e7490, #22d3ee); }
+.parade p { margin: 18px 0 0; font: 13px var(--mono); color: var(--muted); text-align: center; }
+
+.glass {
+  border: 1px solid var(--line); border-radius: 24px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.glass-section { position: relative; padding-top: 72px; padding-bottom: 72px; }
+.glass.narrow { max-width: 720px; margin: 0 auto; }
+.glass-head { padding: 44px 44px 32px; display: flex; flex-direction: column; gap: 14px; }
+.glass h2 { margin: 0; font-size: clamp(28px, 3.6vw, 44px); letter-spacing: -.03em; text-wrap: balance; }
+.glass-head p, .glass-grid p, .glass-list p, .closing p { margin: 0; color: var(--muted); line-height: 1.6; }
+.glass-head p { font-size: 17px; max-width: 40em; }
+.glass-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.glass-grid > div { padding: 28px 44px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.glass-grid > div:nth-child(odd) { border-right: 1px solid var(--line); }
+.glass-grid > div:nth-last-child(-n + 2) { border-bottom: 0; }
+.glass-list > div { padding: 24px 44px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.glass h3 { margin: 0; font-size: 19px; letter-spacing: -.01em; }
+.glass-grid p, .glass-list p { font-size: 15px; }
+
+.closing { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding-top: 72px; padding-bottom: 72px; }
+.closing .glass { padding: 40px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.closing-install { font: 14px var(--mono); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+.closing-install b { color: var(--muted); font-weight: 400; margin-right: 10px; }
+
+.ending { position: relative; min-height: 110vh; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 88px; font: 12px var(--mono); color: var(--muted); }
+.ending nav { display: flex; gap: 16px; flex-wrap: wrap; }
+.ending a { color: var(--text); }
+.ending a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .glass-grid, .closing { grid-template-columns: minmax(0, 1fr); }
+  .glass-grid > div:nth-child(odd) { border-right: 0; }
+  .glass-grid > div:nth-last-child(2) { border-bottom: 1px solid var(--line); }
+  .glass-head, .glass-grid > div, .glass-list > div { padding-left: 22px; padding-right: 22px; }
+  .stage { min-height: 100vh; }
+}

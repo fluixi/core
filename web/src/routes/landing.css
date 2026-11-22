@@ -22,7 +22,6 @@ a { color: inherit; text-decoration: none; }
 .logo { width: 21px; height: 21px; flex: none; }
 
 /* buttons */
-.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
 .btn {
   display: inline-flex; align-items: center; border-radius: var(--r-md);
   padding: 10px 17px; font-size: 14px; font-weight: 500; cursor: pointer;
@@ -35,52 +34,6 @@ a { color: inherit; text-decoration: none; }
 .btn.primary:hover { opacity: .88; }
 .btn.ghost { color: var(--text); border-color: var(--line-strong); }
 .btn.ghost:hover { background: var(--hover); }
-
-/* code window */
-.code-window {
-  background: var(--code-bg); border: 1px solid var(--code-line);
-  border-radius: var(--r-lg); overflow: hidden;
-}
-.code-bar {
-  display: flex; align-items: flex-end; gap: 3px; flex-wrap: wrap;
-  padding: 9px 12px 0; border-bottom: 1px solid var(--code-line); background: var(--code-bar);
-}
-.code-name { margin-left: auto; padding-bottom: 9px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
-.code { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--code-text); white-space: pre; overflow-x: auto; }
-
-/* Syntax for the hand-marked snippets. They are set with innerHTML, so they carry no component
-   scope and stay here. `i` carries no emphasis, it is just the shortest inline element; the
-   colours are the docs' so the two sites agree. */
-.code .t-com { color: var(--hl-comment); font-style: italic; }
-.code .t-str { color: var(--hl-string); font-style: normal; }
-.code .t-kw  { color: var(--hl-keyword); font-style: normal; }
-.code .t-api { color: var(--hl-title); font-style: normal; }
-
-/* section furniture */
-.section { max-width: var(--maxw); margin: 0 auto; padding: 84px 24px; }
-
-/* split (copy beside a code window) */
-.split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-.split.flip .split-copy { order: 2; }
-.split .code-window { min-width: 0; }
-.split-copy h2 { margin: 0 0 14px; font-size: 28px; letter-spacing: -.024em; font-weight: 700; line-height: 1.22; }
-.split-copy p { color: var(--prose); font-size: 15.5px; line-height: 1.7; margin: 0; }
-.split-copy code {
-  font-family: var(--mono); font-size: .88em; color: var(--text);
-  background: var(--panel-2); border: 1px solid var(--line); padding: .1em .38em; border-radius: var(--r-sm);
-}
-.checks { list-style: none; padding: 0; margin: 20px 0 0; }
-.checks li {
-  position: relative; padding-left: 22px; margin: 9px 0;
-  color: var(--prose); font-size: 14.5px; line-height: 1.6;
-}
-.checks li::before { content: ""; position: absolute; left: 0; top: .62em; width: 10px; height: 1px; background: var(--line-strong); }
-
-@media (max-width: 900px) {
-  .split, .split.flip .split-copy { grid-template-columns: 1fr; order: 0; }
-  .split { gap: 30px; }
-  .section { padding: 60px 24px; }
-}
 
 /* Keyboard access ---------------------------------------------------------
    There were no focus styles at all: tabbing the nav, both CTAs and the copy
@@ -108,3 +61,14 @@ main:focus { outline: none; }
     scroll-behavior: auto !important;
   }
 }
+
+/* The scroll-driven scene sits behind everything; the page's sections scroll over it. */
+.journey { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; }
+.page { position: relative; z-index: 1; }
+.journey-pause {
+  position: fixed; z-index: 2;
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  font: 12px var(--mono, ui-monospace, monospace); color: var(--muted);
+  background: var(--bg-head); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-height: 36px; cursor: pointer;
+}
+.journey-pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

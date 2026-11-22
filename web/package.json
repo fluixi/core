@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "fluixi dev",
-    "build": "node build.mjs",
+    "dev": "node scripts/hero-compile.mjs && fluixi dev",
+    "build": "node scripts/hero-compile.mjs && node build.mjs",
     "start": "fluixi start"
   },
   "dependencies": {

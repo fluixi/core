@@ -5,7 +5,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node build.mjs",
+        "command": "node scripts/hero-compile.mjs && node build.mjs",
         "cwd": "web"
       },
       "dependsOn": ["^build"]
@@ -13,9 +13,10 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit -p tsconfig.json",
+        "command": "node scripts/hero-compile.mjs && tsc --noEmit -p tsconfig.json",
         "cwd": "web"
-      }
+      },
+      "dependsOn": ["^build"]
     }
   }
 }
