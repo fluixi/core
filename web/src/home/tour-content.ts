@@ -219,7 +219,7 @@ export const TABS: Tab[] = [
           '    const id = setInterval(refresh, 30_000);',
           '    return () => clearInterval(id);',
           '  });',
-          '  return <input ref={(el) => (input = el)} type="search" />;',
+          '  return <input ref={input} type="search" />;',
           '}',
         ),
       },

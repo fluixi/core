@@ -33,7 +33,7 @@ export function Journey() {
 
   return (
     <>
-      <canvas ref={(el: HTMLCanvasElement) => (canvas = el)} class="journey" aria-hidden="true" />
+      <canvas ref={canvas} class="journey" aria-hidden="true" />
       <button type="button" class="journey-pause" aria-pressed={paused() ? 'true' : 'false'} onClick={toggle}>
         {paused() ? 'Play motion' : 'Pause motion'}
       </button>
