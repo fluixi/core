@@ -6,6 +6,7 @@
  * disposed afterwards.
  */
 import { createRoot } from '@fluixi/reactive/signal';
+import { useHydrationKeys } from '../hydration-keys.js';
 import {
   setResourceTracker,
   setResourceIdSource,
@@ -75,6 +76,7 @@ export interface RenderOptions {
 export function renderToString(app: () => any, options: RenderOptions = {}): string {
   const prev = isServer();
   ensureServerNodes();
+  useHydrationKeys();
   setServerMode(true);
   const ctx = createRequestContext(options.event);
   ctx.hydrationKeys = options.hydrationKeys !== false;
@@ -199,6 +201,7 @@ export async function renderToStringAsync(
 ): Promise<string> {
   const prev = isServer();
   ensureServerNodes();
+  useHydrationKeys();
   setServerMode(true);
   ensureResourceHooks();
   const ctx = createRequestContext(options.event);

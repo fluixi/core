@@ -35,10 +35,7 @@ import {
   isAdopted,
   runHydrationAt,
   ascendPast,
-  nextHydrationKey,
-  templateSalt,
-  claimKeyed,
-  keepKeyed,
+  hydrationKeys,
   warnTextMismatch,
   HYDRATION_KEY,
 } from './hydration-state.js';
@@ -357,14 +354,16 @@ export function createNativeElement(
   isSVG = false,
   at?: { file: string; line: number; column: number },
 ): Element {
-  const key = nextHydrationKey();
+  // Null unless a server render or `hydrate()` loaded the keys: a page that only renders here.
+  const keys = hydrationKeys();
+  const key = keys ? keys.next() : null;
   if (isServer()) {
     const node = getServerNodes().createElement(tag, isSVG) as unknown as Element;
     if (key) node.setAttribute(HYDRATION_KEY, key);
     return node;
   }
   if (hydration.active) {
-    const claimed = claimKeyed(key, tag);
+    const claimed = keys ? keys.claim(key, tag) : null;
     if (claimed) {
       getHydrationWalker()?.enterElement(claimed);
       if (tag.includes('-')) handOwner(claimed);
@@ -421,8 +420,9 @@ export function templateNode(
   isSVG = false,
   at?: TemplatePositions,
 ): Node {
-  const salt = templateSalt(html);
-  const key = nextHydrationKey(salt);
+  const keys = hydrationKeys();
+  const salt = keys ? keys.salt(html) : '';
+  const key = keys ? keys.next(salt) : null;
   if (isServer()) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
@@ -435,7 +435,7 @@ export function templateNode(
     return nodes.createRaw(key ? withKey(html, key) : html) as unknown as Node;
   }
   if (hydration.active) {
-    const claimed = claimKeyed(key, tag);
+    const claimed = keys ? keys.claim(key, tag) : null;
     if (claimed) {
       // Adopted whole, as a static template is: the generated walk reaches the holes.
       hydration.cursor = claimed.nextSibling;
@@ -862,7 +862,7 @@ export function insertExpression(
   if (isKeptServerContent(value)) {
     const nodes = current == null ? [] : Array.isArray(current) ? current : [current];
     // Nothing claims them, so the sweep after hydration would take them for stale markup.
-    keepKeyed(nodes);
+    hydrationKeys()?.keep(nodes);
     value.adopt?.(nodes);
     return current ?? null;
   }

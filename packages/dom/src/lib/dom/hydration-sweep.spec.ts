@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** The sweep after hydration: what nothing claimed goes, an unbuilt element's content stays. */
 import { describe, it, expect } from 'vitest';
-import { clearHydrationKeys, claimKeyed, indexHydrationKeys, removeUnclaimedKeyed } from './hydration-state.js';
+import { clearHydrationKeys, claimKeyed, indexHydrationKeys, removeUnclaimedKeyed } from './hydration-keys.js';
 
 describe('removeUnclaimedKeyed', () => {
   it('removes keyed server elements nothing claimed, and keeps the claimed ones', () => {

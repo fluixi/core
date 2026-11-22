@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 // What every client-rendered Fluixi app pays before its own code: a counter, written as the
 // compiler emits it, bundled and minified for production from source. A change that adds to
 // the shared runtime shows here first. Lower the budget when a change makes it smaller.
-const BUDGET_GZIP = 7_200;
+const BUDGET_GZIP = 6_600;
 
 const COUNTER_APP = `
 import { addDelegatedEventListener, createComponent, delegateEvents, holeContent, holeEnd, holeScope, insert, render, templateNode } from "@fluixi/dom";

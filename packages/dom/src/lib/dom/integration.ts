@@ -6,7 +6,7 @@
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
 import { runWithOwner } from '@fluixi/reactive/signal';
 import { asComponent } from '../component/modifiers.js';
-import { openKeyScope } from './hydration-state.js';
+import { hydrationKeys } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
 
 type CreateComponentFn = (fn: () => any, props?: any) => any;
@@ -37,7 +37,7 @@ export function createComponent<T extends (props?: any) => any, U = any>(
   props?: U | undefined,
 ): CreateComponentReturnType<T, U> {
   // Before anything the component builds, now or in a memo later: its hydration keys.
-  const scope = openKeyScope();
+  const scope = hydrationKeys()?.scope() as Parameters<typeof runWithOwner>[0] | null | undefined;
   if (scope) return runWithOwner(scope, () => build(Comp, props));
   return build(Comp, props);
 }

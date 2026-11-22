@@ -13,17 +13,8 @@
 import { insert, render } from './runtime.js';
 import { setResourceIdSource, setServerDataGetter } from '@fluixi/reactive/signal';
 import { getServerData } from './server/fx-data.js';
-import {
-  clearHydrationKeys,
-  hydration,
-  indexHydrationKeys,
-  keySalt,
-  releaseKeyed,
-  registerHydrationWalker,
-  removeUnclaimedKeyed,
-  flushAfterHydrationPass,
-  warnTextMismatch,
-} from './hydration-state.js';
+import { hydration, registerHydrationWalker, flushAfterHydrationPass, warnTextMismatch } from './hydration-state.js';
+import { clearHydrationKeys, indexHydrationKeys, keySalt, releaseKeyed, removeUnclaimedKeyed, useHydrationKeys } from './hydration-keys.js';
 import { isProduction } from './versions.js';
 // `__DEV__` is folded by a build that defines it, so a bundler drops what it guards; without it
 // the check reads NODE_ENV. Written inline at each use: a bundler keeps a function whose only
@@ -234,6 +225,7 @@ export function hydrate<T>(
   hydration.active = true;
   hydration.cursor = container.firstChild;
   hydration.parents = [];
+  useHydrationKeys();
   clearHydrationKeys();
   indexHydrationKeys(container);
 
@@ -268,6 +260,7 @@ export function hydrate<T>(
  * since an element can upgrade while the page around it is still hydrating.
  */
 export function hydrateChildren(container: Element, build: () => unknown): void {
+  useHydrationKeys();
   ensureWalker();
   indexHydrationKeys(container);
   const previous = { active: hydration.active, cursor: hydration.cursor, parents: hydration.parents };

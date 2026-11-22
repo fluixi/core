@@ -24,12 +24,9 @@ export {
   endAppHydration,
   isAppHydrationPending,
   whenAppHydrated,
-  setKeyScope,
   HYDRATION_KEY,
-  removeUnclaimedKeyed,
-  clearHydrationKeys,
   isHydrating,
   afterHydrationPass,
-  createUniqueId,
 } from './hydration-state.js';
+export { setKeyScope, removeUnclaimedKeyed, clearHydrationKeys, createUniqueId, useHydrationKeys } from './hydration-keys.js';
 export type {CreateComponentReturnType, CreateComponent} from './types.js'

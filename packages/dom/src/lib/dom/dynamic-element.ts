@@ -15,7 +15,7 @@
  * `applyProps` did.
  */
 import { applyProps, createNativeElement, holeContent, holeEnd, holeScope, insert, isSVGElement } from './runtime.js';
-import { hydration, keyed } from './hydration-state.js';
+import { hydration, hydrationKeys } from './hydration-state.js';
 import { getServerNodes, isServer } from './server/host.js';
 import { createComponent } from './integration.js';
 import { readChildren } from '@fluixi/reactive/signal';
@@ -119,7 +119,7 @@ function hasChildren(props: Record<string, any>): boolean {
 function insertChildren(element: Element, props: Record<string, any>): void {
   if (!hasChildren(props)) return;
   // Markup nothing hydrates needs no markers to find its children by.
-  if (isServer() && !keyed()) {
+  if (isServer() && !(hydrationKeys()?.keyed() ?? false)) {
     insert(element, readChildren(() => props.children) as never);
     return;
   }

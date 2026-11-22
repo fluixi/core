@@ -8,9 +8,6 @@
 
 // `parents` is the stack of elements the cursor has descended into (via the walker's
 // hydrateElement). Lets the cursor auto-ascend when a sibling list is exhausted.
-import { createChildOwner, getOwner, type Owner } from '@fluixi/reactive/signal';
-import { isServer } from './server/host.js';
-import { getRequestContext } from './server/request-context.js';
 import { isProduction } from './versions.js';
 
 export const hydration: { active: boolean; cursor: Node | null; parents: Node[] } = {
@@ -18,6 +15,39 @@ export const hydration: { active: boolean; cursor: Node | null; parents: Node[] 
   cursor: null,
   parents: [],
 };
+
+/**
+ * The hydration key bookkeeping (./hydration-keys.ts), once something that needs keys has
+ * started: `hydrate()`, or a server render. A render in the browser that never hydrates leaves
+ * it null, so it ships without the keys, their hashing and the server's request context.
+ */
+export interface HydrationKeys {
+  /** Whether keys are needed now: rendering on the server, or hydrating. */
+  keyed(): boolean;
+  /** The next key in the current scope, or null when none is needed. */
+  next(salt?: string): string | null;
+  /** A template's identity for its keys. */
+  salt(html: string): string;
+  /** The server element with this key and tag, claimed once. */
+  claim(key: string | null, tag: string): Element | null;
+  /** Keep server elements a component kept as rendered out of the unclaimed sweep. */
+  keep(nodes: Node[]): void;
+  /** The owner a component runs under, opening its own key scope; null when none is needed. */
+  scope(): unknown;
+}
+
+/** The attribute a server render stamps an element's key in. */
+export const HYDRATION_KEY = 'data-hk';
+
+let keys: HydrationKeys | null = null;
+
+export function installHydrationKeys(next: HydrationKeys): void {
+  keys = next;
+}
+
+export function hydrationKeys(): HydrationKeys | null {
+  return keys;
+}
 
 // The heavy walker, registered by ./hydration.ts when hydrate() runs.
 export interface HydrationWalker {
@@ -158,202 +188,6 @@ export function whenAppHydrated(fn: () => void): () => void {
   return () => state.waiting.delete(fn);
 }
 
-// Hydration keys
-//
-// A cursor pairs client nodes with server nodes by creation order, so it breaks wherever
-// creation order is not document order: in `list.map(m => (m.soon ? <span/> : <Nav/>))` the
-// spans are built at once and Nav, a lazy memo, later. Keys pair them by identity instead.
-// The server and the client run the same code in the same order, lazy memos and discarded
-// reads included, so a counter gives the same key on both sides. Each component opens its
-// own scope, so a branch that renders more or less shifts only the keys inside it.
-//
-// The server stamps the key on each element it builds (`data-hk`); the client indexes them
-// once and claims by key. Inside a claimed element, text and markers stay positional.
-
-const KEY_SCOPE = Symbol.for('fluixi.hydrationKeys');
-export const HYDRATION_KEY = 'data-hk';
-
-interface KeyScope {
-  id: string;
-  next: number;
-  /** `createUniqueId` calls in this scope, counted apart so element keys do not move. */
-  ids?: number;
-}
-
-type ScopedOwner = Owner & { contexts: Map<symbol, unknown> | null };
-
-/** The nearest scope up the owner chain; the root gets one the first time it is asked. */
-function scopeOf(owner: Owner | null): KeyScope {
-  let o = owner as ScopedOwner | null;
-  while (o) {
-    const scope = o.contexts?.get(KEY_SCOPE) as KeyScope | undefined;
-    if (scope) return scope;
-    if (!o.parent) {
-      const root: KeyScope = { id: '', next: 0 };
-      (o.contexts ??= new Map()).set(KEY_SCOPE, root);
-      return root;
-    }
-    o = o.parent as ScopedOwner;
-  }
-  return { id: '', next: 0 };
-}
-
-/**
- * Keys are only needed while rendering on the server or hydrating. Off for a server render
- * nothing will hydrate (`renderToString(app, { hydrationKeys: false })`), which also leaves out
- * the hole markers hydration would look for.
- */
-export function keyed(): boolean {
-  return isServer() ? getRequestContext()?.hydrationKeys !== false : hydration.active;
-}
-
-/**
- * A short, opaque key for a scope path such as `0.3.1`. Keys are only compared, never read,
- * so both sides hash the same path. 53 bits (cyrb53) rather than 32: at 32 bits a page of
- * ten thousand keyed elements has about a one in a hundred chance of two sharing a key, and
- * a shared key adopts the wrong element without a word.
- */
-export function hashKey(path: string): string {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < path.length; i++) {
-    const ch = path.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
-}
-
-/**
- * The next key in the current scope, or null when no key is needed. `salt` names what is built
- * there (a template): if the server built something else at this position, the keys differ, and
- * the client builds its own instead of adopting the server's and patching one into the other.
- */
-export function nextHydrationKey(salt?: string): string | null {
-  if (!keyed()) return null;
-  const scope = scopeOf(getOwner());
-  const path = scope.id + (scope.next++).toString(36);
-  return salt ? `${hashKey(path)}-${salt}` : hashKey(path);
-}
-
-/** Ids made where nothing will hydrate: the browser after hydration, or a keyless render. */
-let looseIds = 0;
-
-/**
- * An id the server render and the browser agree on, for pairing elements: `<label for>` and
- * `<input id>`, `aria-describedby`, `aria-controls`. Rendered on the server and hydrated, the
- * same component at the same place gets the same id on both sides, as long as it calls this the
- * same number of times in the same order: call it in the component body, not in a branch that
- * only one side takes. Created later in the browser, it is unique within the page.
- */
-export function createUniqueId(): string {
-  if (!keyed()) return `fx-c${(looseIds++).toString(36)}`;
-  const scope = scopeOf(getOwner());
-  scope.ids = (scope.ids ?? 0) + 1;
-  return `fx-${hashKey(`${scope.id}#${scope.ids}`)}`;
-}
-
-/** A template's identity for its keys: hashed once per template string. */
-const templateSalts = new Map<string, string>();
-export function templateSalt(html: string): string {
-  let salt = templateSalts.get(html);
-  if (salt === undefined) templateSalts.set(html, (salt = hashKey(html).slice(0, 6)));
-  return salt;
-}
-
-/** The template part of a key (`<position>-<template>`), empty for an element's key. */
-export function keySalt(el: Element): string {
-  const key = el.getAttribute(HYDRATION_KEY) ?? '';
-  const dash = key.indexOf('-');
-  return dash < 0 ? '' : key.slice(dash + 1);
-}
-
-/** An element adopted by the cursor: it is in use, so the sweep must not take it. */
-export function releaseKeyed(el: Element): void {
-  const key = el.getAttribute(HYDRATION_KEY);
-  if (key && keyed_nodes?.get(key) === el) keyed_nodes.delete(key);
-}
-
-/**
- * A component starts: the elements it builds, now or later, number within its own scope.
- * Returns the owner to run the component under, or null when no key is needed. The scope goes
- * on a child owner, never on the current one: a component created directly in its parent
- * shares the parent's owner, and stamping there moved every later sibling into the
- * component's scope, so a branch that rendered differently on the client shifted their keys.
- */
-export function openKeyScope(): Owner | null {
-  if (!keyed()) return null;
-  const owner = getOwner() as ScopedOwner | null;
-  if (!owner) return null;
-  const parent = scopeOf(owner);
-  const scope: KeyScope = { id: parent.id + (parent.next++).toString(36) + '.', next: 0 };
-  const child = createChildOwner(owner) as ScopedOwner;
-  (child.contexts = new Map()).set(KEY_SCOPE, scope);
-  return child;
-}
-
-/** Name the current owner's scope: an element rendering its own content in its own root. */
-export function setKeyScope(id: string): void {
-  const owner = getOwner() as ScopedOwner | null;
-  if (!owner) return;
-  (owner.contexts ??= new Map()).set(KEY_SCOPE, { id, next: 0 } satisfies KeyScope);
-}
-
-/** Server elements by key, indexed once per hydrated container. */
-let keyed_nodes: Map<string, Element> | null = null;
-
-/** Index the keyed server elements under `container`. Adds to what is already indexed. */
-export function indexHydrationKeys(container: ParentNode): void {
-  keyed_nodes ??= new Map();
-  for (const el of container.querySelectorAll(`[${HYDRATION_KEY}]`)) {
-    const key = el.getAttribute(HYDRATION_KEY)!;
-    if (!keyed_nodes.has(key)) keyed_nodes.set(key, el);
-  }
-}
-
-/** Drop the index: hydration of the page is over. */
-export function clearHydrationKeys(): void {
-  keyed_nodes = null;
-}
-
-
-/**
- * Remove the keyed server elements nothing claimed: markup the server rendered and the client
- * did not, or rendered differently. Left in place they show as a stale or duplicate copy.
- * Content of a custom element that has not built yet is kept for it; the element cleans its own
- * subtree once it has hydrated. `within` limits the sweep to one subtree.
- */
-export function removeUnclaimedKeyed(within?: Node): number {
-  if (!keyed_nodes) return 0;
-  let removed = 0;
-  for (const [key, el] of keyed_nodes) {
-    if (!el.isConnected) {
-      keyed_nodes.delete(key);
-      continue;
-    }
-    if (within && !within.contains(el)) continue;
-    // Inside an element still waiting to build: its content is its own to adopt.
-    if (el.parentElement?.closest('[data-fx-ssr]')) continue;
-    keyed_nodes.delete(key);
-    el.remove();
-    removed++;
-  }
-  return removed;
-}
-
-/**
- * Take the keyed server elements in `nodes` (and below them) out of the unclaimed index: content
- * a component kept as the server rendered it, which nothing claims and which must stay.
- */
-export function keepKeyed(nodes: Node[]): void {
-  if (!keyed_nodes || nodes.length === 0) return;
-  for (const [key, el] of keyed_nodes) {
-    if (nodes.some((n) => n === el || n.contains(el))) keyed_nodes.delete(key);
-  }
-}
-
 const afterPass: Array<() => void> = [];
 
 /**
@@ -394,16 +228,4 @@ export function warnTextMismatch(server: string, client: string): void {
 /** Whether a hydration pass is running: what a component builds now adopts server nodes. */
 export function isHydrating(): boolean {
   return hydration.active;
-}
-
-/**
- * The server element with this key and tag, taken out of the index so it is claimed once.
- * Null when there is none, and the caller falls back to the cursor.
- */
-export function claimKeyed(key: string | null, tag: string): Element | null {
-  if (!key || !keyed_nodes) return null;
-  const el = keyed_nodes.get(key);
-  if (!el || el.localName !== tag.toLowerCase()) return null;
-  keyed_nodes.delete(key);
-  return el;
 }
