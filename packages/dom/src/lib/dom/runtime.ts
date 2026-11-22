@@ -867,33 +867,7 @@ export function insertExpression(
     return current ?? null;
   }
 
-  if (isPromise(value)) {
-    const placeholder = createTextNode('', true);
-    if (Array.isArray(current)) {
-      if (current.length > 0) {
-        parent.replaceChild(placeholder, current[0]);
-        cleanChildren(parent, current.slice(1), marker);
-      } else {
-        insertBefore(parent, placeholder, marker);
-      }
-    } else if (current) {
-      parent.replaceChild(placeholder, current as Node);
-    } else {
-      insertBefore(parent, placeholder, marker);
-    }
-
-    (value as Promise<any>)
-      .then((resolved) => {
-        if (placeholder.parentNode === parent) {
-          insertExpression(parent, resolved, placeholder.nextSibling as Node, placeholder);
-        }
-      })
-      .catch((err) => {
-        console.error('Error resolving promise in insertExpression:', err);
-      });
-
-    return placeholder;
-  }
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isPromise(value)) console.warn('[fluixi] A Promise was passed as a child and renders nothing. Load it with a resource and read it under <Suspense>.');
 
   const t = typeof value;
 
@@ -940,27 +914,7 @@ export function insertExpression(
       ascendPast(value as Node);
       return value;
     }
-    if (Array.isArray(current)) {
-      if (current.length === 0) {
-        insertBefore(parent, value, marker);
-      } else if (current[0].parentNode === parent) {
-        parent.replaceChild(value, current[0]);
-        cleanChildren(parent, current.slice(1), marker);
-      } else {
-        insertBefore(parent, value, marker);
-      }
-      return value;
-    }
-
-    if (!current) {
-      insertBefore(parent, value, marker);
-    } else if (current !== value) {
-      if ((current as Node).parentNode === parent) {
-        parent.replaceChild(value, current as Node);
-      } else {
-        insertBefore(parent, value, marker);
-      }
-    }
+    if (current !== value) replaceCurrent(parent, current, value as Node, marker);
     return value;
   }
 
@@ -1158,22 +1112,7 @@ function flattenArray(
     }
 
     if (isPromise(item)) {
-      const placeholder = createTextNode('', true);
-      result.push(placeholder);
-      (item as Promise<any>)
-        .then((resolved) => {
-          if (placeholder.parentNode) {
-            const tempNodes: Node[] = [];
-            flattenArray([resolved], tempNodes, placeholder.parentNode, undefined, false, componentCache);
-            if (tempNodes.length > 0) {
-              placeholder.parentNode.replaceChild(tempNodes[0], placeholder);
-              for (let j = 1; j < tempNodes.length; j++) {
-                placeholder.parentNode?.insertBefore(tempNodes[j], tempNodes[j - 1].nextSibling);
-              }
-            }
-          }
-        })
-        .catch((err) => console.error('Error resolving promise in array:', err));
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) console.warn('[fluixi] A Promise was passed as a child and renders nothing. Load it with a resource and read it under <Suspense>.');
       continue;
     }
 
@@ -1342,6 +1281,18 @@ function reconcileArrays(
 }
 
 // cleanChildren
+
+/**
+ * Put `node` where `current` was: in place of its first node, the rest removed, or before
+ * `marker` when there was nothing, or nothing still in `parent`.
+ */
+function replaceCurrent(parent: Node, current: Node | Node[] | null | undefined, node: Node, marker?: Node): void {
+  const first = Array.isArray(current) ? current[0] : current;
+  if (first && first.parentNode === parent) {
+    parent.replaceChild(node, first);
+    if (Array.isArray(current)) cleanChildren(parent, current.slice(1), marker);
+  } else insertBefore(parent, node, marker);
+}
 
 export function cleanChildren(
   parent: Node,
