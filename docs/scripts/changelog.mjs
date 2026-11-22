@@ -7,6 +7,55 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+// Release notes are text: a tag named in one (`<script>`, `<Suspense>`) must show as written,
+// not reach the page as markup. Code spans and fenced blocks already show as written, so the
+// scan pairs backticks the way CommonMark does: a run of N opens a span that only a run of
+// exactly N closes, and a backslash-escaped backtick outside a span is a plain character.
+function escapeInline(text) {
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '\\' && text[i + 1] === '`') {
+      out += text.slice(i, i + 2);
+      i += 2;
+    } else if (c === '`') {
+      let n = 0;
+      while (text[i + n] === '`') n++;
+      const run = '`'.repeat(n);
+      let j = text.indexOf(run, i + n);
+      while (j !== -1 && (text[j - 1] === '`' || text[j + n] === '`')) j = text.indexOf(run, j + 1);
+      const end = j === -1 ? i + n : j + n;
+      out += text.slice(i, end);
+      i = end;
+    } else {
+      out += c === '<' ? '&lt;' : c === '>' ? '&gt;' : c;
+      i++;
+    }
+  }
+  return out;
+}
+
+function escapeProse(lines) {
+  const out = [];
+  let prose = [];
+  let fenced = false;
+  const flush = () => {
+    if (prose.length) out.push(...escapeInline(prose.join('\n')).split('\n'));
+    prose = [];
+  };
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      flush();
+      fenced = !fenced;
+      out.push(line);
+    } else if (fenced) out.push(line);
+    else prose.push(line);
+  }
+  flush();
+  return out;
+}
+
 export function writeChangelog({ packagesDir, reference, outDir, title, intro }) {
   const releases = new Map();
   for (const dir of readdirSync(packagesDir)) {
@@ -26,7 +75,7 @@ export function writeChangelog({ packagesDir, reference, outDir, title, intro })
         else if (line.startsWith('- ')) entries[kind].push(line.replace(/^- [0-9a-f]{7,}: /, '- '));
         else if (/^\s+\S/.test(line) && entries[kind].length) entries[kind][entries[kind].length - 1] += `\n${line}`;
       }
-      const lines = [...entries.Major, ...entries.Minor, ...entries.Patch];
+      const lines = escapeProse([...entries.Major, ...entries.Minor, ...entries.Patch].join('\n').split('\n'));
       if (!lines.length) continue;
       if (!releases.has(version)) releases.set(version, []);
       releases.get(version).push({ name: pkg.name, lines });
