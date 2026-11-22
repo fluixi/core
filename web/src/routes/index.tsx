@@ -293,8 +293,14 @@ function Hero() {
         @media (max-width: 620px) {
           .hero h1 { font-size: 33px; }
         }
+        .experimental-pill { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; padding: 6px 12px; border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent); border-radius: 999px; background: color-mix(in srgb, #f59e0b 12%, transparent); font-size: 14px; line-height: 1.4; color: var(--text); }
+        .experimental-pill svg { flex: none; color: #d97706; }
       `}</style>
       <div class="hero-copy">
+        <div class="experimental-pill" role="note">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          Experimental: APIs may change between alpha releases
+        </div>
         <div class="eyebrow">compiler-native · reactive · full-stack · inspectable</div>
         <h1>
           The compiler knows

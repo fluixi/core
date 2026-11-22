@@ -328,7 +328,7 @@ function VersionMenu(props: { version: string; lang: Lang; slug: string; label: 
         }
         <li class="vmenu-sep" role="separator" />
         <li>
-          <a href={RELEASES_URL} target="_blank" rel="noopener">
+          <a href={RELEASES_URL}>
             <span>{props.notes}</span>
             <span aria-hidden="true">↗</span>
           </a>
@@ -529,7 +529,8 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
         .d-pager :deep(.pager span) { font-size: 11.5px; color: var(--muted); }
         .d-pager :deep(.pager b) { font-size: 14px; font-weight: 500; color: var(--text); }
 
-        .d-experimental { margin: 0 0 20px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+        .d-experimental { margin: 0 0 20px; padding: 10px 14px; border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent); border-left: 3px solid #f59e0b; border-radius: 8px; background: color-mix(in srgb, #f59e0b 10%, transparent); font-size: 13px; line-height: 1.5; color: var(--text); display: flex; gap: 10px; align-items: flex-start; }
+        .d-experimental-icon { flex: none; margin-top: 1px; color: #d97706; }
         .d-experimental a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
         .d-foot { margin-top: 48px; padding-top: 22px; font-size: 12px; line-height: 1.6; color: var(--muted); display: flex; justify-content: center; gap: .5rem; }
         .d-foot p { margin: 0; }
@@ -641,7 +642,7 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
                 ))
               }
               <li>
-                <a href={RELEASES_URL} target="_blank" rel="noopener">
+                <a href={RELEASES_URL}>
                   {ui().releaseNotes} <span aria-hidden="true">↗</span>
                 </a>
               </li>
@@ -725,8 +726,15 @@ export default function DocPage(props: { version: string; lang: Lang; slug: stri
           }}
         >
           <p class="d-experimental" role="note">
-            {ui().experimental}{' '}
-            <a href={RELEASES_URL} target="_blank" rel="noopener">{ui().releaseNotes}</a>
+            <svg class="d-experimental-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+            <span>
+              {ui().experimental}{' '}
+              <a href={link('changelog')}>{ui().releaseNotes}</a>
+            </span>
           </p>
           <article class="prose" innerHTML={doc()?.html ?? '<h1>Not found</h1>'} />
           <nav class="d-pager">

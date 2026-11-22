@@ -54,7 +54,8 @@ export function writeLlmsFiles(outDir) {
       const href = `${SITE}/${VERSION}/${LANG}/${slug}.md`;
       const text = summary(md);
       lines.push(`- [${title(md, slug)}](${href})${text ? `: ${text}` : ''}`);
-      full.push(md.trim());
+      // The release history would swamp the guide; the index still links it.
+      if (slug !== 'changelog') full.push(md.trim());
       const dir = join(outDir, VERSION, LANG);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, `${slug}.md`), md);

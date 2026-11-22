@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/search-index.mjs && fluixi dev",
-    "build": "node scripts/search-index.mjs && node build.mjs",
+    "dev": "node scripts/changelog.mjs && node scripts/search-index.mjs && fluixi dev",
+    "build": "node scripts/changelog.mjs && node scripts/search-index.mjs && node build.mjs",
     "start": "fluixi start"
   },
   "dependencies": {

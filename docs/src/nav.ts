@@ -4,7 +4,7 @@ import { VERSION } from '@fluixi/core';
 import { has, VERSIONS, type Lang } from './content.js';
 
 export const NAV: { group: Record<Lang, string>; slugs: string[] }[] = [
-  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'coming-from', 'cdn'] },
+  { group: { en: 'Getting started', fr: 'Premiers pas' }, slugs: ['introduction', 'quickstart', 'coming-from', 'cdn', 'changelog'] },
   {
     group: { en: 'Reactivity', fr: 'Réactivité' },
     slugs: ['signals', 'derived-values', 'effects', 'stores', 'async', 'tc39-signals'],
@@ -55,7 +55,7 @@ export function orderOf(version: string, lang: Lang): string[] {
   return ORDER.filter((s) => has(version, lang, s));
 }
 
-export const RELEASES_URL = 'https://github.com/fluixi/core/releases';
+export const RELEASES_URL = '/v1/en/changelog';
 
 /**
  * Where each version takes a reader: the same page in that version, or its introduction when
