@@ -14,7 +14,8 @@ const SERVER_ONLY = ['plugins', 'server'];
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) return SERVER_ONLY.includes(entry) ? [] : sources(full);
+    if (statSync(full).isDirectory())
+      return SERVER_ONLY.includes(entry) ? [] : sources(full);
     return /\.tsx?$/.test(entry) && !/\.spec\.tsx?$/.test(entry) ? [full] : [];
   });
 }
@@ -24,14 +25,18 @@ describe('browser-reachable source', () => {
     const offenders: string[] = [];
 
     for (const file of sources(ROOT)) {
-      readFileSync(file, 'utf8')
-        .split('\n')
-        .forEach((line, i) => {
-          if (line.trimStart().startsWith('//')) return;
-          if (!/(?<!typeof\s)\bprocess\s*\./.test(line)) return;
-          if (line.includes('typeof process')) return;
-          offenders.push(`${file.slice(ROOT.length + 1)}:${i + 1} ${line.trim()}`);
-        });
+      const lines = readFileSync(file, 'utf8').split('\n');
+      lines.forEach((line, i) => {
+        if (line.trimStart().startsWith('//')) return;
+        if (!/(?<!typeof\s)\bprocess\s*\./.test(line)) return;
+        if (line.includes('typeof process')) return;
+        // The first statement of a `try`: the catch handles a page with no `process`, and the
+        // read stays in the exact form a bundler replaces, which a `typeof` guard would not.
+        if (lines[i - 1]?.trim() === 'try {') return;
+        offenders.push(
+          `${file.slice(ROOT.length + 1)}:${i + 1} ${line.trim()}`
+        );
+      });
     }
 
     expect(offenders).toEqual([]);

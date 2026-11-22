@@ -16,7 +16,7 @@ import  {
   isSignal,
 } from '@fluixi/reactive/signal';
 import { JSX_PROPERTIES, isAttributeOnlyName, setAttribute, applyElementProp, serverCustomElementProp, SVG_NAMESPACE } from './utils.js';
-import { stampVersions, warnOnVersionSkew } from './versions.js';
+import { VERSION_ATTRIBUTE, stampVersions, warnOnVersionSkew } from './versions.js';
 import { isComponent } from '../component/modifiers.js';
 // Reactive primitives come straight from the signal core (the globalThis-singleton graph makes
 // this duplication-safe). The integration bridge is only for framework-provided glue that is
@@ -2257,11 +2257,13 @@ export function render<T>(
         container.textContent = '';
       }
 
-      // Which build is running, on the element and as `window.Fluixi`. Stamped here
-      // rather than in core's render so the hydrate path gets it too.
-      stampVersions(container);
-      // Several copies of the runtime in one bundle is a development mistake to report there.
-      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnOnVersionSkew();
+      // Which build is running, on the element and as `window.Fluixi`, in development; here
+      // rather than in core's render so the hydrate path gets it too. Production keeps the
+      // empty mark only: a deployed page says it runs Fluixi without naming the release.
+      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) {
+        stampVersions(container);
+        warnOnVersionSkew();
+      } else container.setAttribute(VERSION_ATTRIBUTE, '');
 
       insert(container, element as any);
       return;

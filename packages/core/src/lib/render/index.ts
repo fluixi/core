@@ -8,9 +8,11 @@
  * Following SolidJS structure: render logic separated from component creation
  */
 
-import { isServer } from '@fluixi/dom';
+import { isServer, VERSION_ATTRIBUTE } from '@fluixi/dom';
 import { createRoot } from '@fluixi/reactive/signal';
 import { stampVersions, warnOnVersionSkew } from './versions.js';
+import { isDevelopment } from '../dev-env.js';
+
 import {
   isDOMNode,
   delegateEvents,
@@ -20,6 +22,7 @@ import {
   ensureIntegration,
 } from './component.js';
 
+declare const __DEV__: boolean | undefined;
 
 
 // TYPES
@@ -96,10 +99,12 @@ export function render(
     // render effects share the Owner chain with Provider context nodes.
     // Using domRender() would create a second createRoot, severing the chain.
     container.textContent = '';
-    // Which build is running, on the element and as `window.Fluixi`. `fluixi-js="v1"`
-    // said only that Fluixi was involved; a bug report needs the actual versions.
-    stampVersions(container);
-    warnOnVersionSkew();
+    // Which build is running, on the element and as `window.Fluixi`, in development. Production
+    // keeps the empty mark only: a deployed page says it runs Fluixi without naming the release.
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) {
+      stampVersions(container);
+      warnOnVersionSkew();
+    } else container.setAttribute(VERSION_ATTRIBUTE, '');
     // Wrap the (already-computed) result in a STABLE thunk so insert() creates a
     // top-level render effect. Without this, a static array result: e.g. the
     // imperative backend's `[createMemo(() => createComponent(App)), " "]`: is

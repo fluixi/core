@@ -49,16 +49,20 @@ describe('the version mark in production', () => {
   const previous = process.env.NODE_ENV;
   afterEach(() => {
     process.env.NODE_ENV = previous;
+    delete (globalThis as { __DEV__?: boolean }).__DEV__;
   });
 
   it('marks the element without publishing the release', () => {
     process.env.NODE_ENV = 'production';
+    // What a production build defines; the NODE_ENV fallback is read once per page.
+    (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     expect(versionMark()).toBe('');
+    delete globalThis.Fluixi;
     const container = document.createElement('div');
     document.body.append(container);
     render(() => document.createTextNode('hi'), container);
     expect(container.getAttribute('data-fluixi')).toBe('');
-    // The console still has it, for whoever is debugging the page.
-    expect(globalThis.Fluixi?.dom).toBe(versions.dom);
+    // Nor on the global: the versions are a development aid.
+    expect(globalThis.Fluixi).toBeUndefined();
   });
 });
