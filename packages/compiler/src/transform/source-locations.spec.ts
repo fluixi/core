@@ -118,6 +118,11 @@ export function App() {
     expect(out).toContain('__fx_source?.("src/App.ts",8,4,"Show")');
   });
 
+  it('assigns a ref variable itself, not the value marked for the devtools', () => {
+    const out = compile(`export function A() { let el; return <div ref={el} />; }`, { ...OPTIONS, filename: 'src/App.tsx' });
+    expect(out).toContain('(_v) => (el = _v)');
+  });
+
   it('leaves the source alone when off', () => {
     const out = compile(`import { signal } from '@fluixi/reactive/signal';\nconst c = signal(0);`, { ...OPTIONS, sourceLocations: false });
     expect(out).not.toContain('__fx_source');

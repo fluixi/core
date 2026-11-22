@@ -101,6 +101,24 @@ export type NestedHook = (ir: IRNode) => void;
 export interface NestedEmitOptions {
   partialTemplates?: boolean;
   templateClone?: boolean;
+  /**
+   * The scope the JSX was written in, so `ref={el}` can tell a variable it may assign from a
+   * `const`. Only for the tree it belongs to: JSX nested in an expression is compiled from a
+   * copy, where a name could be shadowed, and keeps calling the ref.
+   */
+  scope?: { getBinding(name: string): { kind: string } | undefined };
+}
+
+const ASSIGNABLE_KINDS = new Set(['let', 'var', 'param', 'hoisted']);
+
+function assignableIn(scope: NestedEmitOptions['scope']) {
+  return (node: unknown): boolean => {
+    const n = node as t.Node;
+    if (t.isMemberExpression(n)) return !n.optional;
+    if (!t.isIdentifier(n) || !scope) return false;
+    const binding = scope.getBinding(n.name);
+    return !!binding && ASSIGNABLE_KINDS.has(binding.kind);
+  };
 }
 
 const EVENT_RE = /^on[A-Z]/;
@@ -143,14 +161,16 @@ export function buildIR(
   onNested?: NestedHook,
   emit?: NestedEmitOptions,
 ): IRNode {
+  const nested = emit?.scope ? { ...emit, scope: undefined } : emit;
   const ir = buildJsxIR(node as never, {
     code: (n) =>
       // A member-expression tag (`<ns.Foo/>`) is not an Expression, so it cannot go
       // through the nested-JSX compile: it only ever needs printing.
       (n as t.Node).type === 'JSXMemberExpression'
         ? gen(n as t.Node)
-        : genExpr(n as never, used, onNested, emit),
+        : genExpr(n as never, used, onNested, nested),
     used,
+    assignable: assignableIn(emit?.scope),
   });
   return ir;
 }

@@ -109,6 +109,45 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    // ref={el} on a variable assigns the element; before, the variable stayed undefined.
+    name: 'ref variable is assigned',
+    src: `export const render = () => { let el; const node = <div ref={el} class="v">x</div>; return { node, get: () => el }; };`,
+    run: (mod) => {
+      const r = mod.render();
+      const node = resolve(r.node);
+      expect(r.get()).toBe(node);
+    },
+  },
+  {
+    name: 'ref variable inside a fragment is assigned',
+    src: `export const render = () => { let el; const nodes = <><canvas ref={el} /><b>y</b></>; return { nodes, get: () => el }; };`,
+    run: (mod) => {
+      const r = mod.render();
+      const el = r.get();
+      expect(el).toBeTruthy();
+      expect(el.tagName.toLowerCase()).toBe('canvas');
+    },
+  },
+  {
+    // A const holding a callback is never assigned to: that would not even compile.
+    name: 'ref const callback is called',
+    src: `export const render = (cb) => { const set = cb; return <div ref={set} class="c">x</div>; };`,
+    run: (mod) => {
+      let captured: any = null;
+      resolve(mod.render((el: any) => { captured = el; }));
+      expect(captured?.className).toBe('c');
+    },
+  },
+  {
+    name: 'ref object gets current',
+    src: `export const render = (box) => <div ref={box} class="o">x</div>;`,
+    run: (mod) => {
+      const box = { current: null as any };
+      resolve(mod.render(box));
+      expect(box.current?.className).toBe('o');
+    },
+  },
+  {
     name: 'reactive style object',
     src: `export const render = (st) => <div style={st()}>x</div>;`,
     run: async (mod) => {

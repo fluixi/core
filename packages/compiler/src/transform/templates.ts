@@ -289,6 +289,8 @@ interface Needs {
   unresolved: Set<string>;
   /** Every name the file binds, in any scope: so a diagnostic doesn't fire on them. */
   declared: Set<string>;
+  /** Names a `ref={name}` may assign the element to: see `refAssignable`. */
+  refAssignable: Set<string>;
   /**
    * Components carrying a deferring `load:` that could not be acted on, because the
    * compiler does not supply the binding.
@@ -538,6 +540,7 @@ export function transformTemplates(
     builtins: new Set(), resolved: new Map(), deferred: new Map(), delegatedEvents: new Set(), eagerTags: new Set(), expressionTags: new Set(), neverConflicts: new Set(),
     ignoredLoad: new Map(), unresolved: new Set(),
     declared: declaredNames(ast.program),
+    refAssignable: refAssignable(ast.program as unknown as AstNode),
   };
   const hoisted = new Map<string, string>();
   const edits: Edit[] = [...props.edits, ...intrinsics.edits, ...sources.edits, ...(styles?.edits ?? [])];
@@ -732,6 +735,80 @@ export function transformTemplates(
  * with anything already compiled inside them folded in, so nested JSX and nested
  * `` html`` `` both come along for free.
  */
+interface AstNode {
+  type: string;
+  [key: string]: unknown;
+}
+
+function boundNames(node: AstNode | null | undefined, out: Set<string>): void {
+  if (!node) return;
+  switch (node.type) {
+    case 'Identifier':
+      out.add(node.name as string);
+      return;
+    case 'AssignmentPattern':
+      boundNames(node.left as AstNode, out);
+      return;
+    case 'RestElement':
+      boundNames(node.argument as AstNode, out);
+      return;
+    case 'TSParameterProperty':
+      boundNames(node.parameter as AstNode, out);
+      return;
+    case 'ObjectPattern':
+      for (const p of node.properties as AstNode[]) boundNames((p.type === 'RestElement' ? p : p.value) as AstNode, out);
+      return;
+    case 'ArrayPattern':
+      for (const e of node.elements as (AstNode | null)[]) boundNames(e, out);
+  }
+}
+
+/**
+ * Names a `ref={name}` may assign the element to: declared with `let`, `var` or as a
+ * parameter, and never bound any other way anywhere in the file. A name that is also a
+ * `const`, an import, a class or a function somewhere keeps calling the ref instead, so the
+ * output never assigns to a binding that cannot be assigned.
+ */
+function refAssignable(program: AstNode): Set<string> {
+  const mutable = new Set<string>();
+  const fixed = new Set<string>();
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const n of node) visit(n);
+      return;
+    }
+    const n = node as AstNode;
+    if (typeof n.type !== 'string') return;
+    switch (n.type) {
+      case 'VariableDeclaration':
+        for (const d of n.declarations as AstNode[]) boundNames(d.id as AstNode, n.kind === 'const' ? fixed : mutable);
+        break;
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+      case 'ArrowFunctionExpression':
+        if (n.type === 'FunctionDeclaration' && n.id) boundNames(n.id as AstNode, fixed);
+        for (const p of n.params as AstNode[]) boundNames(p, mutable);
+        break;
+      case 'CatchClause':
+        boundNames(n.param as AstNode, mutable);
+        break;
+      case 'ClassDeclaration':
+        if (n.id) boundNames(n.id as AstNode, fixed);
+        break;
+      case 'ImportSpecifier':
+      case 'ImportDefaultSpecifier':
+      case 'ImportNamespaceSpecifier':
+        boundNames(n.local as AstNode, fixed);
+        break;
+    }
+    for (const key in n) if (key !== 'type' && key !== 'start' && key !== 'end') visit(n[key]);
+  };
+  visit(program);
+  for (const name of fixed) mutable.delete(name);
+  return mutable;
+}
+
 function compileJsx(
   code: string,
   node: Node,
@@ -746,6 +823,11 @@ function compileJsx(
   const ir = buildJsxIR(node as never, {
     code: (n) => slice(code, (n as Node).start, (n as Node).end, edits),
     used,
+    assignable: (n) => {
+      const e = n as { type: string; name?: string; optional?: boolean };
+      if (e.type === 'MemberExpression') return !e.optional;
+      return e.type === 'Identifier' && needs.refAssignable.has(e.name!);
+    },
     ...(styles?.scopes.length ? { scopes: styles.scopes } : {}),
     ...(styles?.drop.size ? { dropStyles: styles.drop } : {}),
     ...(options.sourceLocations === true && sourceFile ? { sourceFile } : {}),

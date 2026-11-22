@@ -13,7 +13,7 @@ import {
   ROUTER_COMPONENTS as ROUTER_COMPONENT_NAMES,
 } from '../../resolve/builtins.js';
 import { types as t, template, type PluginObj } from '@babel/core';
-import { buildIR } from './build-ir.js';
+import { buildIR, type NestedEmitOptions } from './build-ir.js';
 import { buildIRFromHtml } from './build-ir-html.js';
 import { imperativeBackend } from '../../codegen/backends/imperative.js';
 import type { IRNode } from '../../ir/nodes.js';
@@ -464,12 +464,12 @@ export default declare((api, options: PluginOptions = {}): PluginObj => {
       // below this node needs its own visitor.
       JSXElement(path, state: any) {
         state.hasJSX = true;
-        path.replaceWith(emitViaIR(path.node, state));
+        path.replaceWith(emitViaIR(path.node, state, path.scope));
       },
 
       JSXFragment(path, state: any) {
         state.hasJSX = true;
-        path.replaceWith(emitViaIR(path.node, state));
+        path.replaceWith(emitViaIR(path.node, state, path.scope));
       },
 
       TaggedTemplateExpression(path, state) {
@@ -569,13 +569,14 @@ function adoptTemplates(
   return code.replace(/_tmpl\$\d+/g, (id) => rename.get(id) ?? id);
 }
 
-function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any): t.Expression {
+function emitViaIR(node: t.JSXElement | t.JSXFragment, state: any, scope?: NestedEmitOptions['scope']): t.Expression {
   // `used` collects runtime symbols emitted for JSX nested inside expressions
   // (render-props, ternaries, fallback={<p/>}, ...) so we import them too.
   const used = new Set<string>();
   const ir = buildIR(node, used, nestedHook(state), {
     partialTemplates: state.partialTemplates,
     templateClone: state.templateClone,
+    scope,
   });
   // The same passes the html path runs. Without them `codegen: 'ir'` silently skipped
   // resolution entirely: a resolved tag compiled to a reference with no import.

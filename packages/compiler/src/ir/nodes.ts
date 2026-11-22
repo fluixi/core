@@ -37,6 +37,12 @@ export interface IRProp {
   literal?: string | number | boolean | null;
   /** Raw JS expression code. Mutually exclusive with `literal`. */
   expr?: string;
+  /**
+   * `ref={el}` names a variable or property the element is assigned to, unless it holds a
+   * function or a `{ current }` object when the element is built. Only set when the compiler
+   * could see that `expr` can be assigned (a `let`, `var` or parameter, or a member).
+   */
+  assign?: boolean;
   /** When true, `expr` must be wired reactively (emitted as a `() => expr` thunk). */
   reactive?: boolean;
   /** Where the expression was written. Only kept when the host asked for source locations. */

@@ -34,6 +34,8 @@ export interface JsxContext {
   dropStyles?: Set<number>;
   /** Inside an SVG element: children are SVG too, whatever their name, until a `<foreignObject>`. */
   inSvg?: boolean;
+  /** Whether an expression can be assigned to: a `ref={el}` then receives the element. */
+  assignable?(node: Node): boolean;
 }
 
 import { SVG_TAGS } from '@fluixi/template-parser';
@@ -145,6 +147,7 @@ function buildAttr(attr: Node, ctx: JsxContext): IRProp {
     }
     base.expr = ctx.code(expr);
     base.reactive = isHandler ? false : isReactive(expr);
+    if (name === 'ref' && ctx.assignable?.(expr)) base.assign = true;
     // Every prop, not only the ones that move: a panel names the line for each of them.
     // Nothing treats this as a binding position: that asks for `reactive` as well.
     base.at = posOf(expr, ctx);

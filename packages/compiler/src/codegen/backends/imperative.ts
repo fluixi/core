@@ -247,7 +247,9 @@ function bindingStatement(binding: TemplateBinding, used: Set<string>): string {
       return `addNativeEventListener(${ref}, ${JSON.stringify(prop.name.slice(3))}, ${value});`;
     case 'ref':
       used.add('handleRef');
-      return `handleRef(${value}, ${ref});`;
+      // A variable gets the element assigned; a function or `{ current }` in it still wins.
+      // The target is the expression as written: `value` may carry the devtools' wrapper.
+      return prop.assign ? `handleRef(${value}, ${ref}, (_v) => (${prop.expr} = _v));` : `handleRef(${value}, ${ref});`;
     case 'use':
       used.add('applyUse');
       return `applyUse(${ref}, ${value});`;

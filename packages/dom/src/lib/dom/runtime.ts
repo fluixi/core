@@ -2218,8 +2218,16 @@ export function splitProps<T extends object, K extends (keyof T)[][]>(
 
 // Refs
 
-export function handleRef(ref: any, element: Element): void {
-  if (!ref) return;
+/**
+ * Hand an element to its ref: call a function, fill a `{ current }` object, or, for
+ * `ref={el}` on a variable, assign it through `assign`, which the compiler passes when the
+ * expression can be assigned.
+ */
+export function handleRef(ref: any, element: Element, assign?: (element: Element) => void): void {
+  if (!ref) {
+    assign?.(element);
+    return;
+  }
   // Which variable ends up holding the element is the question a ref raises, and only the
   // compiler's mark on the value can answer it.
   // The compiler's mark names the variable it is stored in; a function's own name is the
@@ -2244,6 +2252,7 @@ export function handleRef(ref: any, element: Element): void {
 
   if (typeof ref === 'function') ref(element);
   else if (typeof ref === 'object' && 'current' in ref) ref.current = element;
+  else assign?.(element);
 }
 
 // Portal
