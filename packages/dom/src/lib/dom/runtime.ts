@@ -867,7 +867,7 @@ export function insertExpression(
     return current ?? null;
   }
 
-  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isPromise(value)) console.warn('[fluixi] A Promise was passed as a child and renders nothing. Load it with a resource and read it under <Suspense>.');
+  if (isPromise(value) && (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) console.warn('[fluixi] A Promise was passed as a child and renders nothing. Load it with a resource and read it under <Suspense>.');
 
   const t = typeof value;
 
@@ -882,7 +882,7 @@ export function insertExpression(
       }
       if (current.length === 1 && current[0].nodeType === 3) {
         const text = current[0] as Text;
-        if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && hydration.active && text.data !== value) warnTextMismatch(text.data, value as string);
+        if (hydration.active && text.data !== value && (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnTextMismatch(text.data, value as string);
         text.data = value as string;
         return current;
       }
@@ -890,7 +890,7 @@ export function insertExpression(
     }
 
     if (current && isDomText(current)) {
-      if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && hydration.active && (current as Text).data !== value) warnTextMismatch((current as Text).data, value as string);
+      if (hydration.active && (current as Text).data !== value && (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) warnTextMismatch((current as Text).data, value as string);
       (current as Text).data = value as string;
       return current;
     }
