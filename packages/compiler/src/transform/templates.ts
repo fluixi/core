@@ -53,6 +53,13 @@ export interface TransformOptions extends CompileTemplateOptions {
    */
   ssr?: boolean;
   /**
+   * `false` for code that is never rendered on the server nor hydrated: templates lose the
+   * hydration markers and are cloned by `template()`. Applies to browser builds only; a
+   * server build always gets hydratable output.
+   * @default true
+   */
+  hydratable?: boolean;
+  /**
    * Which authoring syntaxes to compile. Both lower to the same IR, so this is
    * about which source forms are touched, not about output.
    * @default 'both'
@@ -584,6 +591,8 @@ export function transformTemplates(
       templateClone: options.templateClone ?? true,
       partialTemplates: options.partialTemplates ?? true,
       svg: templateTags.get(node.tag.name) === 'svg',
+      assignEvents: true,
+      client: isClientOutput(options),
     });
     for (const symbol of result.imports) used.add(symbol);
     for (const d of result.diagnostics ?? []) templateDiagnostics.push({ ...positionOf(d.offset), message: d.message });
@@ -851,6 +860,7 @@ function compileJsx(
     templateClone: options.templateClone ?? true,
     partialTemplates: options.partialTemplates ?? true,
     assignEvents: true,
+    client: isClientOutput(options),
   } as never);
   for (const symbol of emitted.imports) used.add(symbol);
   collectNeeds(ir, needs);
@@ -863,6 +873,11 @@ function compileJsx(
  * lazy ones, and the delegateEvents call. A name already bound in the file wins,
  * so enabling resolution can never change what an existing module means.
  */
+/** Output for a browser build of code that is never server rendered nor hydrated. */
+function isClientOutput(options: TransformOptions): boolean {
+  return options.hydratable === false && options.ssr !== true;
+}
+
 function buildPrologue(
   used: Set<string>,
   needs: Needs,
@@ -891,6 +906,10 @@ function buildPrologue(
     if (!bound.has(name)) add(src.module, src.export === 'default' ? `default as ${name}` : name === src.export ? name : `${src.export} as ${name}`);
   }
 
+  // Aliased: `template` is a common name in application code, and a name the module binds
+  // itself would otherwise win over the runtime's.
+  if (hoisted.size > 0 && isClientOutput(options)) add(runtime, 'template as _fxTemplate');
+
   const lines: string[] = [];
   for (const [mod, names] of groups) {
     lines.push(`import { ${names.join(', ')} } from ${JSON.stringify(mod)};`);
@@ -913,8 +932,10 @@ function buildPrologue(
   // Just the HTML: parsing is deferred to `templateNode`, which knows whether this
   // is a server render, a hydration or a fresh client render. A module-scope
   // `createTemplate` would touch `document` at import time and break SSR.
+  const client = isClientOutput(options);
   for (const [key, name] of hoisted) {
-    lines.push(`const ${name} = ${JSON.stringify(key.startsWith('svg:') ? key.slice(4) : key)};`);
+    const html = JSON.stringify(key.startsWith('svg:') ? key.slice(4) : key);
+    lines.push(`const ${name} = ${client ? `_fxTemplate(${html})` : html};`);
   }
   if (needs.delegatedEvents.size > 0) {
     lines.push(`delegateEvents(${JSON.stringify([...needs.delegatedEvents])});`);

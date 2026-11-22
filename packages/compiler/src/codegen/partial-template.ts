@@ -50,10 +50,12 @@ export interface WalkStep {
 export interface TemplateHole {
   /** Reference to the hole's parent element. */
   parentRef: string;
-  /** Reference to the opening marker. */
-  startRef: string;
-  /** Reference to the closing marker, resolved at runtime by scanning from the start. */
-  endRef: string;
+  /** Reference to the opening marker. Hydratable output only. */
+  startRef?: string;
+  /** Reference to the closing marker, resolved at runtime by scanning from the start. Hydratable output only. */
+  endRef?: string;
+  /** Client output: the node the content goes before; absent for the last child, which appends. */
+  anchorRef?: string;
   node: IRNode;
 }
 
@@ -257,7 +259,7 @@ function addressable(el: IRElement): boolean {
  * Returns null for a subtree with no holes and no bindings: that is the fully-static
  * case, which has a cheaper path of its own and must not be routed through this one.
  */
-export function planPartialTemplate(root: IRElement): PartialTemplate | null {
+export function planPartialTemplate(root: IRElement, client = false): PartialTemplate | null {
   if (!isTemplateElement(root)) return null;
   if (!addressable(root)) return null;
   if (!interesting(root)) return null;
@@ -273,8 +275,62 @@ export function planPartialTemplate(root: IRElement): PartialTemplate | null {
     return ref;
   };
 
-  walk(root, '_el$');
-  return { html: serializeWithMarkers(root), tag: root.tag, steps, holes, bindings };
+  // Client output: the holes that need a `<!>` of their own to insert before.
+  const marked = new Set<IRNode>();
+  if (client) walkClient(root, '_el$');
+  else walk(root, '_el$');
+  return { html: client ? serializeClient(root, marked) : serializeWithMarkers(root), tag: root.tag, steps, holes, bindings };
+
+  /**
+   * The client walk. Nothing is ever hydrated, so a hole needs no markers: its content goes
+   * before the next node of the template, or at the end of its parent when it is last. A hole
+   * followed by another hole, or with text on both sides (which the parser would merge into
+   * one node), gets a single `<!>` to stand before.
+   */
+  function walkClient(el: IRElement, elementRef: string): void {
+    const plan = propPlan(el);
+    if (plan) {
+      for (const binding of plan.bindings) {
+        bindings.push({ ref: elementRef, prop: binding.prop, kind: binding.kind });
+      }
+    }
+    let last = -1;
+    el.children.forEach((child, i) => {
+      if (interesting(child)) last = i;
+    });
+
+    let previous: string | null = null;
+    let previousIsText = false;
+    // A node declared early, as the anchor of the hole before it.
+    let declared: string | null = null;
+    const nextExpr = () => (previous ? `${previous}.nextSibling` : `${elementRef}.firstChild`);
+    for (let i = 0; i <= last; i++) {
+      const child = el.children[i]!;
+      if (isHole(child)) {
+        const next = el.children[i + 1];
+        if (!next) {
+          holes.push({ parentRef: elementRef, node: child });
+          continue;
+        }
+        if (isHole(next) || (next.kind === 'text' && previousIsText)) {
+          marked.add(child);
+          const ref = declare(nextExpr());
+          holes.push({ parentRef: elementRef, anchorRef: ref, node: child });
+          previous = ref;
+          previousIsText = false;
+          continue;
+        }
+        declared = declare(nextExpr());
+        holes.push({ parentRef: elementRef, anchorRef: declared, node: child });
+        continue;
+      }
+      const ref = declared ?? declare(nextExpr());
+      declared = null;
+      if (child.kind === 'element' && interesting(child)) walkClient(child, ref);
+      previous = ref;
+      previousIsText = child.kind === 'text';
+    }
+  }
 
   function walk(el: IRElement, elementRef: string): void {
     const plan = propPlan(el);
@@ -317,17 +373,22 @@ function serializeWithMarkers(el: IRElement): string {
   return serializeStatic(templateTree(el)).split(SENTINEL).join(HOLE_START + HOLE_END);
 }
 
+/** The client template: a `<!>` where a hole needs one to insert before, nothing elsewhere. */
+function serializeClient(el: IRElement, marked: Set<IRNode>): string {
+  return serializeStatic(templateTree(el, marked)).split(SENTINEL).join('<!>').split(UNMARKED).join('');
+}
+
 /** The element as the template holds it: serialized props only, holes as sentinels. */
-function templateTree(el: IRElement): IRElement {
+function templateTree(el: IRElement, marked?: Set<IRNode>): IRElement {
   const plan = propPlan(el);
   return {
     ...el,
     props: plan ? plan.serialize : [],
     children: el.children.map((child) =>
       isHole(child)
-        ? ({ kind: 'text', value: SENTINEL } as IRNode)
+        ? ({ kind: 'text', value: !marked || marked.has(child) ? SENTINEL : UNMARKED } as IRNode)
         : child.kind === 'element'
-          ? templateTree(child)
+          ? templateTree(child, marked)
           : child,
     ),
   };
@@ -335,3 +396,5 @@ function templateTree(el: IRElement): IRElement {
 
 /** A value no real template text contains, swapped for the markers after serializing. */
 const SENTINEL = '\u0000fx-hole\u0000';
+/** A client hole that stands before its neighbour: it leaves nothing in the template. */
+const UNMARKED = '\u0000fx-none\u0000';

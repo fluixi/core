@@ -71,8 +71,8 @@ describe('html front-end (format: html)', () => {
     const code = compileEsm(
       'export const r = (f, label) => html`<button @click=${f}>${label()}</button>`;',
     );
-    expect(code).toContain('templateNode');
-    expect(code).toContain('addDelegatedEventListener');
+    expect(code).toContain('_fxTmpl$0');
+    expect(code).toContain('.$$click = ');
     expect(code).toContain('insert');
     expect(code).toMatch(/import \{[^}]*\} from "@fluixi\/dom"/);
     expect(code).toMatch(/delegateEvents\(\["click"\]\)/);
@@ -152,7 +152,7 @@ describe('html front-end (format: html)', () => {
 
     const out = compileResult(src, { filename: 'test.tsx', ...HTML_FORMAT })!;
 
-    const line = out.code.split('\n').findIndex((l) => /templateNode\(/.test(l) && !l.startsWith('import'));
+    const line = out.code.split('\n').findIndex((l) => /_fxTmpl\$0\(|templateNode\(/.test(l) && !l.startsWith('import'));
     const columns = originalColumns(out.map.mappings, line);
 
     expect(columns.length).toBeGreaterThan(0);
@@ -166,7 +166,7 @@ describe('html front-end (format: html)', () => {
             templateClone: true,
     });
     // Fully static, so it is cloned from a template rather than built element by element.
-    expect(code).toContain('templateNode');
+    expect(code).toContain('_fxTmpl$0');
     expect(code).not.toContain('html`'); // template consumed
   });
 
@@ -188,7 +188,7 @@ describe('html front-end (format: html)', () => {
     expect(code).not.toContain('html`');
     // Either codegen shape counts as compiled; the point is that neither export was
     // left as JSX.
-    expect(code).toMatch(/createNativeElement|templateNode/);
+    expect(code).toMatch(/createNativeElement|_fxTmpl\$\d/);
     expect(code).not.toMatch(/=>\s*<\w/);
 
     // The point of the test: no module imported twice, no name bound twice.

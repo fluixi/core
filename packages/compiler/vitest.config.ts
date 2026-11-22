@@ -6,6 +6,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+    // Every test twice: against the hydratable output and the browser-only one.
+    projects: [
+      { extends: true, test: { name: 'hydratable' } },
+      { extends: true, test: { name: 'client', env: { FIXTURE_OUTPUT: 'client' } } },
+    ],
   },
   resolve: {
     // load workspace sources directly (matches the "development" export condition)

@@ -280,6 +280,8 @@ function staticAttrAssignment(el: string, prop: IRProp): string {
 }
 
 let partial = false;
+/** Output for code that only renders in the browser: no hydration markers, cloned templates. */
+let client = false;
 /** Set by a caller that registers delegated events at module level (`transformTemplates`). */
 let assignEvents = false;
 
@@ -312,12 +314,13 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // cloning would hand back the wrong node. Correctness first, SVG keeps the
       // imperative path until the runtime grows an unwrapping clone.
       if (templates && node.static && !node.svg && isSerializable(node) && !containsCustomElement(node)) {
-        used.add('templateNode');
         const id = `_tmpl$${templates.length}`;
         templates.push({ id, html: serializeStatic(node), tag: node.tag, svg: false });
         // The positions ride along so devtools can name the line each element was written
         // on; the template string itself maps back to the root and nothing finer.
         const at = templatePositions(node);
+        if (client) return `${id}(${at ? JSON.stringify(at) : ''})`;
+        used.add('templateNode');
         return at
           ? `templateNode(${id}, ${JSON.stringify(node.tag)}, false, false, ${JSON.stringify(at)})`
           : `templateNode(${id}, ${JSON.stringify(node.tag)})`;
@@ -326,7 +329,22 @@ function emitNode(node: IRNode, used: Set<string>, templates?: StaticTemplate[])
       // structure, then each hole filled through a reference into the clone. Every
       // reference is read before any insertion, since inserting shifts later positions.
       if (templates && partial) {
-        const plan = planPartialTemplate(node);
+        const plan = planPartialTemplate(node, client);
+        if (plan && client) {
+          used.add('insert');
+          const id = `_tmpl$${templates.length}`;
+          templates.push({ id, html: plan.html, tag: plan.tag, svg: false });
+          const at = templatePositions(node);
+          const lines = [`const _el$ = ${id}(${at ? JSON.stringify(at) : ''});`];
+          for (const step of plan.steps) lines.push(`const ${step.ref} = ${step.expr};`);
+          for (const binding of plan.bindings) lines.push(bindingStatement(binding, used));
+          for (const hole of plan.holes) {
+            const anchor = hole.anchorRef ? `, ${hole.anchorRef}` : '';
+            lines.push(`insert(${hole.parentRef}, ${emitNode(hole.node, used, templates)}${anchor});`);
+          }
+          lines.push('return _el$;');
+          return `(() => { ${lines.join(' ')} })()`;
+        }
         if (plan) {
           used.add('templateNode');
           used.add('insert');
@@ -459,6 +477,7 @@ export const imperativeBackend: CodegenBackend = {
       : undefined;
     partial = options?.partialTemplates === true;
     assignEvents = (options as { assignEvents?: boolean } | undefined)?.assignEvents === true;
+    client = (options as { client?: boolean } | undefined)?.client === true;
     const code = emitNode(node, used, templates);
     return { code, imports: Array.from(used), templates };
   },

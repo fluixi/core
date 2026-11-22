@@ -33,6 +33,10 @@ export interface TemplateSource {
 export interface CompileTemplateOptions {
   /** An `` svg`...` `` root, which changes how the parser namespaces tags. */
   svg?: boolean;
+  /** @internal Set by `transformTemplates`, which registers delegated events per module. */
+  assignEvents?: boolean;
+  /** @internal Set by `transformTemplates` for browser-only output (`hydratable: false`). */
+  client?: boolean;
   /** Clone static subtrees from a template instead of building them element by element. */
   templateClone?: boolean;
   /** Also clone subtrees whose structure is static but which contain holes. */
@@ -157,6 +161,8 @@ export function compilePieces(
   const { code, imports, templates } = imperativeBackend.emit(ir, {
     templateClone: options.templateClone,
     partialTemplates: options.partialTemplates,
+    assignEvents: options.assignEvents,
+    client: options.client,
   } as never);
   for (const symbol of imports) used.add(symbol);
 

@@ -4,12 +4,30 @@ import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-// What every client-rendered Fluixi app pays before its own code: a counter, written as the
-// compiler emits it, bundled and minified for production from source. A change that adds to
-// the shared runtime shows here first. Lower the budget when a change makes it smaller.
-const BUDGET_GZIP = 5_900;
+// What a Fluixi app pays before its own code: a counter, written as the compiler emits it,
+// bundled and minified for production from source. A change that adds to the shared runtime
+// shows here first. Lower a budget when a change makes it smaller.
+//
+// Browser-only output (`hydratable: false`): single-page apps and standalone custom elements.
+const CLIENT_BUDGET_GZIP = 5_550;
 
-const COUNTER_APP = `
+const CLIENT_COUNTER = `
+import { createComponent, delegateEvents, insert, render, template as _fxTemplate } from "@fluixi/dom";
+import { createMemo, signal } from "@fluixi/reactive/signal";
+const _fxTmpl$0 = _fxTemplate("<button>: </button>");
+delegateEvents(["click"]);
+function Counter(props) {
+  const count = signal(0);
+  return (() => { const _el$ = _fxTmpl$0(); const _n$0 = _el$.firstChild; _el$.$$click = () => count.set((c) => c + props.step); insert(_el$, () => props.label, _n$0); insert(_el$, () => count()); return _el$; })();
+}
+render(() => createMemo(() => createComponent(Counter, { step: 1, label: "Count" })), document.getElementById("app"));
+`;
+
+// Hydratable output, the default: the same counter as a server-rendered app's browser bundle
+// compiles it, before `hydrate()` brings in the hydration code.
+const HYDRATABLE_BUDGET_GZIP = 5_900;
+
+const HYDRATABLE_COUNTER = `
 import { createComponent, delegateEvents, holeContent, holeEnd, holeScope, insert, render, templateNode } from "@fluixi/dom";
 import { createMemo, signal } from "@fluixi/reactive/signal";
 const _fxTmpl$0 = "<button><!--fx--><!--fx/-->: <!--fx--><!--fx/--></button>";
@@ -37,8 +55,11 @@ async function gzipSize(source: string): Promise<number> {
 }
 
 describe('runtime size', () => {
-  it(`keeps a client-rendered counter app under ${BUDGET_GZIP} bytes gzipped`, async () => {
-    const size = await gzipSize(COUNTER_APP);
-    expect(size).toBeLessThanOrEqual(BUDGET_GZIP);
+  it(`keeps a browser-only counter app under ${CLIENT_BUDGET_GZIP} bytes gzipped`, async () => {
+    expect(await gzipSize(CLIENT_COUNTER)).toBeLessThanOrEqual(CLIENT_BUDGET_GZIP);
+  }, 30_000);
+
+  it(`keeps the hydratable counter app under ${HYDRATABLE_BUDGET_GZIP} bytes gzipped`, async () => {
+    expect(await gzipSize(HYDRATABLE_COUNTER)).toBeLessThanOrEqual(HYDRATABLE_BUDGET_GZIP);
   }, 30_000);
 });

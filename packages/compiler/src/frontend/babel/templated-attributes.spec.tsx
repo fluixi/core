@@ -142,8 +142,11 @@ export function Card() {
 }
 `;
 
-function loadSrc() {
-  return load(compile(SRC, OPTS), { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S });
+// Hydration needs the hydratable output whichever output the run is checking.
+const HYDRATABLE = { hydratable: true };
+
+function loadSrc(extra = {}) {
+  return load(compile(SRC, { ...OPTS, ...extra }), { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S });
 }
 
 describe('runtime bindings on a templated element', () => {
@@ -236,8 +239,8 @@ export function List() {
 }
 `;
 
-function loadList() {
-  return load(compile(LIST_SRC, OPTS), { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S });
+function loadList(extra = {}) {
+  return load(compile(LIST_SRC, { ...OPTS, ...extra }), { '@fluixi/dom': DOM, '@fluixi/reactive/signal': S });
 }
 
 describe('templated rows in a list', () => {
@@ -259,10 +262,10 @@ describe('templated rows in a list', () => {
   });
 
   it('hydrates by adopting the server rows, then updates the adopted row', async () => {
-    const serverMod = loadList();
+    const serverMod = loadList(HYDRATABLE);
     const html = DOM.renderToString(() => serverMod.List());
 
-    const clientMod = loadList();
+    const clientMod = loadList(HYDRATABLE);
     const container = document.createElement('div');
     document.body.append(container);
     container.innerHTML = html;
@@ -284,11 +287,11 @@ describe('templated rows in a list', () => {
 
 describe('hydration of a templated element with reactive attributes', () => {
   it('adopts the server node once and binds updates onto it', async () => {
-    const serverMod = loadSrc();
+    const serverMod = loadSrc(HYDRATABLE);
     const html = DOM.renderToString(() => serverMod.Card());
     expect(html).toContain('class=""');
 
-    const clientMod = loadSrc();
+    const clientMod = loadSrc(HYDRATABLE);
     const container = document.createElement('div');
     document.body.append(container);
     container.innerHTML = html;

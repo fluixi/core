@@ -57,6 +57,7 @@ Options are [`@fluixi/compiler`](../compiler)'s `CompilerOptions`:
 | `globals` | `fluixi.d.ts` | where to write the generated ambient types (the resolved components and the `$signal`-style intrinsics). `false` skips it |
 | `propsDestructure` | `true` | rewrite a component's destructured props into property reads, so `function Card({ title })` keeps updating. A pattern it can't prove is left as written. Turn off for a package that ships its source |
 | `templateClone` / `partialTemplates` | `true` | clone static subtrees instead of building them |
+| `hydratable` | `true` | `false` for code that is never server rendered nor hydrated (a single-page app, a standalone custom element): templates carry no hydration markers and the bundle leaves hydration out. A `@fluixi/start` app with `ssr: false` gets it already; a server build is always hydratable |
 | `delegateEvents` | `true` | event delegation |
 | `sourceMaps` | `true` | emit source maps |
 | `babel` | `false` | compile through the babel front-end instead, for a project whose own babel plugins have to see the output. Needs `@babel/core`, which is an optional peer |

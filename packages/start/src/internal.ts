@@ -285,6 +285,8 @@ export async function fluixiPlugins(cfg: ResolvedConfig): Promise<any[]> {
     // An API resolves no components, so no ambient types for them; an app can still ask.
     fluixi({
       ...(cfg.apiOnly ? { globals: false as const } : {}),
+      // Nothing is server rendered, so nothing hydrates: the lighter browser output.
+      ...(cfg.ssr === false ? { hydratable: false } : {}),
       ...(cfg.vitePlugin ?? {}),
       ...(cfg.resolve ? { resolve: cfg.resolve } : {}),
     }),

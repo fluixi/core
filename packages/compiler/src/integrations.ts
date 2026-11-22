@@ -27,6 +27,13 @@ export interface CompilerOptions {
   /** Also clone subtrees whose structure is static but which contain dynamic holes. */
   partialTemplates?: boolean;
   /**
+   * `false` when nothing is rendered on the server, nor hydrated: a single-page app or a
+   * standalone custom element. Templates then carry no hydration markers and the runtime
+   * leaves hydration out. A server build always gets hydratable output.
+   * @default true
+   */
+  hydratable?: boolean;
+  /**
    * Whether to generate source maps
    * @default false
    */
@@ -443,6 +450,7 @@ function transformOptions(
     sourceRoot: options.sourceRoot,
     templateClone: options.templateClone,
     partialTemplates: options.partialTemplates,
+    hydratable: options.hydratable,
     runtimeModule: options.signalModule,
     controlFlowModule: options.controlFlowModule,
     routerModule: options.routerModule,

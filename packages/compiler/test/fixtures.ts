@@ -26,6 +26,9 @@ export function compileResult(src: string, options: FixtureOptions = {}) {
     runtimeModule: signalModule ?? rest.runtimeModule ?? '@fluixi/dom',
     controlFlowModule: rest.controlFlowModule ?? signalModule ?? '@fluixi/dom',
     ...rest,
+    // The `client` test project runs every fixture against browser-only output; a test about
+    // one output asks for it in its options.
+    ...(process.env.FIXTURE_OUTPUT === 'client' && rest.hydratable === undefined ? { hydratable: false } : {}),
   });
 }
 

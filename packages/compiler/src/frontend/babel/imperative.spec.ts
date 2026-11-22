@@ -67,7 +67,7 @@ describe('imperative backend codegen', () => {
     // How the element is built is codegen's choice, element-by-element, or cloned from a
     // template when its structure is static. Asserting one of those pinned an optimisation
     // rather than the behaviour this test is about.
-    expect(code).toMatch(/createNativeElement|templateNode/);
+    expect(code).toMatch(/createNativeElement|_fxTmpl\$\d/);
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);
     expect(code).not.toMatch(/\bjsxs\(/);
@@ -317,7 +317,7 @@ describe('imperative backend via the IR codegen path (codegen: ir)', () => {
   it('emits the same runtime calls through the plugin', () => {
     const code = compileEsm(`export const r = (x) => <div id="a">{x()}</div>;`, IMPERATIVE_IR);
     // Structure static with one hole: a partial template, then the hole is inserted.
-    expect(code).toContain('templateNode');
+    expect(code).toContain('_fxTmpl$0');
     expect(code).toContain('insert');
     expect(code).not.toMatch(/\bjsx\(/);
   });

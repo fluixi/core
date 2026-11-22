@@ -424,6 +424,18 @@ export function templateNode(
   return stampPositions(cloneTemplate(createTemplate(html, isSVG), isSVG).firstChild as Node, at);
 }
 
+/**
+ * A compiled template for code that only renders in the browser: parsed on first use, then
+ * cloned per call. Code compiled to render on the server or hydrate uses `templateNode`.
+ */
+export function template(html: string): (at?: TemplatePositions) => Node {
+  let parsed: HTMLTemplateElement | undefined;
+  return (at) => {
+    parsed ??= createTemplate(html);
+    return stampPositions(parsed.content.firstChild!.cloneNode(true), at);
+  };
+}
+
 /** The template's root tag with its hydration key: `<div class` to `<div data-hk="3" class`. */
 function withKey(html: string, key: string): string {
   return html.replace(/^(\s*<[^\s/>]+)/, `$1 ${HYDRATION_KEY}="${key}"`);
