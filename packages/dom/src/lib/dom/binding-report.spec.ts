@@ -9,6 +9,7 @@ import { createRoot, createSignal, createMemo, observeReactiveNodes } from '@flu
 import { applyUse, handleRef, holeScope, insert, setDynamicAttribute, setDynamicProperty } from './runtime.js';
 import { createComponent } from './integration.js';
 import { hydration } from './hydration-state.js';
+import { useHydrationKeys } from './hydration-keys.js';
 
 interface Bound {
   target: unknown;
@@ -96,6 +97,7 @@ describe('a hole keeps where it was written', () => {
     const accessor = () => 'x';
     (accessor as Record<string, unknown>)['__fx_at'] = { line: 11, column: 11 };
 
+    useHydrationKeys();
     hydration.active = true;
     try {
       const out = holeScope(hole(), () => accessor);
@@ -109,6 +111,7 @@ describe('a hole keeps where it was written', () => {
 
   it('leaves an untagged accessor alone', () => {
     const accessor = () => 'x';
+    useHydrationKeys();
     hydration.active = true;
     try {
       const out = holeScope(hole(), () => accessor);

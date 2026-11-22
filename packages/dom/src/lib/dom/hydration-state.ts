@@ -17,8 +17,8 @@ export const hydration: { active: boolean; cursor: Node | null; parents: Node[] 
 };
 
 /**
- * The hydration key bookkeeping (./hydration-keys.ts), once something that needs keys has
- * started: `hydrate()`, or a server render. A render in the browser that never hydrates leaves
+ * What hydration and server rendering add to the runtime (./hydration-keys.ts: keys, adopting a
+ * hole, handing the owner to custom elements), once something that needs them has started: `hydrate()`, or a server render. A render in the browser that never hydrates leaves
  * it null, so it ships without the keys, their hashing and the server's request context.
  */
 export interface HydrationKeys {
@@ -34,9 +34,20 @@ export interface HydrationKeys {
   keep(nodes: Node[]): void;
   /** The owner a component runs under, opening its own key scope; null when none is needed. */
   scope(): unknown;
+  /** Hand the page's owner to an adopted custom element, which upgraded with none. */
+  handOwner(element: Element): void;
+  /** The same for every custom element in an adopted template, when its markup names one. */
+  handOwnerTree(root: Node, html: string): void;
+  /** `holeScope` while hydrating: the hole's content is built with the cursor placed at it. */
+  holeScope<T>(start: Node, produce: () => T): T;
+  /** Run `fn` with the cursor at `cursor`. */
+  resume<T>(cursor: Node | null, fn: () => T): T;
 }
 
 /** The attribute a server render stamps an element's key in. */
+/** Where devtools leaves the source position of a hole. Absent in a production build. */
+export const HOLE_TAG = '__fx_at';
+
 export const HYDRATION_KEY = 'data-hk';
 
 let keys: HydrationKeys | null = null;

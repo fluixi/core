@@ -7,7 +7,7 @@
 import { createChildOwner, getOwner, type Owner } from '@fluixi/reactive/signal';
 import { isServer } from './server/host.js';
 import { getRequestContext } from './server/request-context.js';
-import { HYDRATION_KEY, hydration, installHydrationKeys } from './hydration-state.js';
+import { HOLE_TAG, HYDRATION_KEY, hydration, installHydrationKeys, runHydrationAt } from './hydration-state.js';
 
 // Hydration keys
 //
@@ -217,7 +217,81 @@ export function claimKeyed(key: string | null, tag: string): Element | null {
 }
 
 
+/**
+ * Where hydration leaves the owner a custom element was rendered under.
+ *
+ * On the client that owner is current when the template makes the element, so the element
+ * reads it in its constructor. A server-rendered element is different: it upgrades when its
+ * definition is imported, before hydration reaches it, with no owner around. Hydration hands
+ * it over here instead. An element that has upgraded takes it through a setter on this key; one
+ * that has not finds it as an own property when it does. Nothing else reads it.
+ */
+const OWNER_KEY = Symbol.for('fluixi.owner');
+
+export function handOwner(element: Element): void {
+  const owner = getOwner();
+  if (owner) (element as unknown as Record<symbol, unknown>)[OWNER_KEY] = owner;
+}
+
+/** Every custom element in an adopted subtree, the root included. */
+function handOwnerToCustomElements(root: Node): void {
+  if (!(root instanceof Element)) return;
+  if (root.localName.includes('-')) handOwner(root);
+  for (const element of root.querySelectorAll('*')) if (element.localName.includes('-')) handOwner(element);
+}
+
+/** A template's markup names a custom element: a tag with a dash. Checked before walking. */
+const CUSTOM_TAG = /<[a-z][\w.]*-/i;
+
+/** Hand the owner to the custom elements in an adopted template, when its markup names one. */
+function handOwnerTree(root: Node, html: string): void {
+  if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(root);
+}
+
+/**
+ * The compiler tags a hole's accessor with where it was written, and devtools reads the tag
+ * off whatever finally reaches `insert`. Under hydration that is this wrapper, not the
+ * accessor, so the tag has to come along: otherwise the binding reports the frame it was
+ * created from, which is a line in this file.
+ */
+function carryHoleTag<T extends object>(from: object, to: T): T {
+  const tag = (from as Record<string, unknown>)[HOLE_TAG];
+  if (tag !== undefined) (to as Record<string, unknown>)[HOLE_TAG] = tag;
+  return to;
+}
+
+/** `holeScope` while hydrating: place the cursor at the hole for whatever builds its content. */
+function hydrateHole<T>(start: Node, produce: () => T): T {
+
+  // `produce` is called with the cursor already placed, because the value may be built
+  // eagerly: `props.children` is a getter, and reading it constructs its nodes there and
+  // then. Wrapping the result instead would be too late: the DOM would already exist,
+  // built against whatever cursor happened to be current, and the server's nodes would be
+  // left behind as duplicates.
+  const value = runHydrationAt(start.nextSibling, produce);
+
+  // A memo or accessor builds nothing until it is read, which happens inside `insert`'s
+  // effect, so it needs the cursor placed again at that moment. The guard matters: once
+  // hydration is over, later updates must render normally rather than re-enter it.
+  if (typeof value === 'function') {
+    const accessor = value as unknown as (...args: unknown[]) => unknown;
+    // A memo can return another (a component that returns its own memo): read the whole chain
+    // here, with the cursor placed, not after this returns. insert() unwraps functions the same
+    // way, so the value it ends up with is unchanged.
+    const wrapped = (...args: unknown[]) =>
+      hydration.active
+        ? runHydrationAt(start.nextSibling, () => {
+            let value = accessor(...args);
+            while (typeof value === 'function') value = (value as () => unknown)();
+            return value;
+          })
+        : accessor(...args);
+    return carryHoleTag(accessor, wrapped) as unknown as T;
+  }
+  return value;
+}
+
 /** Start using hydration keys: called by `hydrate()` and the server renders before they render. */
 export function useHydrationKeys(): void {
-  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope });
+  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope, handOwner, handOwnerTree, holeScope: hydrateHole, resume: runHydrationAt });
 }

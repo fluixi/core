@@ -33,7 +33,7 @@ import {
   hydration,
   getHydrationWalker,
   isAdopted,
-  runHydrationAt,
+  HOLE_TAG,
   ascendPast,
   hydrationKeys,
   warnTextMismatch,
@@ -148,9 +148,6 @@ export type Children =
 const EMPTY_OBJ = {};
 const EMPTY_ARR: any[] = [];
 
-/** Where devtools leaves the source position of a hole. Absent in a production build. */
-const HOLE_TAG = '__fx_at';
-
 /** Where an element's own source position goes, for devtools to read back. */
 const LOC_TAG = '__fx_loc';
 
@@ -160,32 +157,6 @@ function located<T extends Element>(element: T, at?: { file: string; line: numbe
   if (at) (element as unknown as Record<string, unknown>)[LOC_TAG] = at;
   return element;
 }
-
-/**
- * Where hydration leaves the owner a custom element was rendered under.
- *
- * On the client that owner is current when the template makes the element, so the element
- * reads it in its constructor. A server-rendered element is different: it upgrades when its
- * definition is imported, before hydration reaches it, with no owner around. Hydration hands
- * it over here instead. An element that has upgraded takes it through a setter on this key; one
- * that has not finds it as an own property when it does. Nothing else reads it.
- */
-const OWNER_KEY = Symbol.for('fluixi.owner');
-
-function handOwner(element: Element): void {
-  const owner = getOwner();
-  if (owner) (element as unknown as Record<symbol, unknown>)[OWNER_KEY] = owner;
-}
-
-/** Every custom element in an adopted subtree, the root included. */
-function handOwnerToCustomElements(root: Node): void {
-  if (!(root instanceof Element)) return;
-  if (root.localName.includes('-')) handOwner(root);
-  for (const element of root.querySelectorAll('*')) if (element.localName.includes('-')) handOwner(element);
-}
-
-/** A template's markup names a custom element: a tag with a dash. Checked before walking. */
-const CUSTOM_TAG = /<[a-z][\w.]*-/i;
 
 const templateCache = new Map<string, HTMLTemplateElement>();
 
@@ -366,12 +337,12 @@ export function createNativeElement(
     const claimed = keys ? keys.claim(key, tag) : null;
     if (claimed) {
       getHydrationWalker()?.enterElement(claimed);
-      if (tag.includes('-')) handOwner(claimed);
+      if (tag.includes('-')) keys?.handOwner(claimed);
       return at ? located(claimed, at) : claimed;
     }
     const node = getHydrationWalker()?.hydrateElement(tag);
     if (node) {
-      if (tag.includes('-')) handOwner(node);
+      if (tag.includes('-')) keys?.handOwner(node);
       return at ? located(node, at) : node;
     }
   }
@@ -439,14 +410,14 @@ export function templateNode(
     if (claimed) {
       // Adopted whole, as a static template is: the generated walk reaches the holes.
       hydration.cursor = claimed.nextSibling;
-      if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(claimed);
+      keys?.handOwnerTree(claimed, html);
       return stampPositions(claimed, at);
     }
     // Adopt the server's root either way. With holes the generated walk reaches them
     // through the adopted tree, whose structure matches the template by construction.
     const node = getHydrationWalker()?.hydrateStatic(tag, salt);
     if (node) {
-      if (CUSTOM_TAG.test(html)) handOwnerToCustomElements(node);
+      keys?.handOwnerTree(node, html);
       return stampPositions(node, at);
     }
   }
@@ -499,46 +470,8 @@ function stampPositions(node: Node, at?: TemplatePositions): Node {
  * The markers make the position exact: the content starts immediately after `start`.
  */
 export function holeScope<T>(start: Node, produce: () => T): T {
-  if (!hydration.active) return produce();
-
-  // `produce` is called with the cursor already placed, because the value may be built
-  // eagerly: `props.children` is a getter, and reading it constructs its nodes there and
-  // then. Wrapping the result instead would be too late: the DOM would already exist,
-  // built against whatever cursor happened to be current, and the server's nodes would be
-  // left behind as duplicates.
-  const value = runHydrationAt(start.nextSibling, produce);
-
-  // A memo or accessor builds nothing until it is read, which happens inside `insert`'s
-  // effect, so it needs the cursor placed again at that moment. The guard matters: once
-  // hydration is over, later updates must render normally rather than re-enter it.
-  if (typeof value === 'function') {
-    const accessor = value as unknown as (...args: unknown[]) => unknown;
-    // A memo can return another (a component that returns its own memo): read the whole chain
-    // here, with the cursor placed, not after this returns. insert() unwraps functions the same
-    // way, so the value it ends up with is unchanged.
-    const wrapped = (...args: unknown[]) =>
-      hydration.active
-        ? runHydrationAt(start.nextSibling, () => {
-            let value = accessor(...args);
-            while (typeof value === 'function') value = (value as () => unknown)();
-            return value;
-          })
-        : accessor(...args);
-    return carryHoleTag(accessor, wrapped) as unknown as T;
-  }
-  return value;
-}
-
-/**
- * The compiler tags a hole's accessor with where it was written, and devtools reads the tag
- * off whatever finally reaches `insert`. Under hydration that is this wrapper, not the
- * accessor, so the tag has to come along: otherwise the binding reports the frame it was
- * created from, which is a line in this file.
- */
-function carryHoleTag<T extends object>(from: object, to: T): T {
-  const tag = (from as Record<string, unknown>)[HOLE_TAG];
-  if (tag !== undefined) (to as Record<string, unknown>)[HOLE_TAG] = tag;
-  return to;
+  const keys = hydration.active && hydrationKeys();
+  return keys ? keys.holeScope(start, produce) : produce();
 }
 
 /**
@@ -934,7 +867,8 @@ export function insertExpression(
     // Hydrating a hole: its server nodes are `current`, so the items (resolved here, after the
     // hole's accessor returned and its cursor was restored) claim from the first of them.
     const flatten = () => flattenArray(value as any[], array, parent, marker, true, componentCache, reactiveSlots, adopted);
-    if (hydration.active && currentArray.length) runHydrationAt(currentArray[0] as Node, flatten);
+    const keys = hydration.active && currentArray.length && hydrationKeys();
+    if (keys) keys.resume(currentArray[0] as Node, flatten);
     else flatten();
     const reconciled = reconcileArrays(
       parent,
