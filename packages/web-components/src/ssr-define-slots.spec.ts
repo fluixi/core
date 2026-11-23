@@ -4,6 +4,8 @@
  * children, which a page compiles to raw template HTML, by their `slot` attribute.
  */
 import { describe, it, expect } from 'vitest';
+// What renders elements on a server, as an app's server entry imports it.
+import './server.js';
 
 describe('a custom element in a server render', () => {
   it('renders when it was defined with defineElement', async () => {

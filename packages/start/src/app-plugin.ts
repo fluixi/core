@@ -99,23 +99,29 @@ export function appConfigVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'clientEn
 }
 
 const ELEMENT_HYDRATION = '@fluixi/web-components/hydrate';
+const ELEMENT_SERVER = '@fluixi/web-components/server';
 
 /**
- * Element hydration for apps that use Fluixi custom elements: the client entry imports
- * `@fluixi/web-components/hydrate` when the package is installed, so an element the server
- * rendered adopts its markup. Elements leave that code out unless something installs it, which
- * keeps it out of elements used in other frameworks; a start app server-renders its elements.
+ * Server rendering and hydration for apps that use Fluixi custom elements: when the package is
+ * installed, the server entry imports `@fluixi/web-components/server`, so elements render into
+ * the HTML, and the client entry imports `@fluixi/web-components/hydrate`, so they adopt it.
+ * Elements leave both out unless something installs them, which keeps them out of elements used
+ * in other frameworks.
  */
-export function elementHydrationVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'clientEntry'>): any {
+export function elementHydrationVitePlugin(cfg: Pick<ResolvedConfig, 'root' | 'clientEntry' | 'serverEntry'>): any {
   const clientEntry = stripExt(resolve(cfg.root, cfg.clientEntry));
+  const serverEntry = stripExt(resolve(cfg.root, cfg.serverEntry));
   return {
     name: 'fluixi-element-hydration',
     enforce: 'pre',
     async transform(this: { resolve(source: string, importer: string): Promise<unknown> }, code: string, id: string, options?: { ssr?: boolean }) {
-      if (options?.ssr || !SOURCE.test(id.replace(/\?.*$/, '')) || stripExt(id) !== clientEntry) return null;
-      if (!(await this.resolve(ELEMENT_HYDRATION, id))) return null;
+      if (!SOURCE.test(id.replace(/\?.*$/, ''))) return null;
+      const entry = options?.ssr ? serverEntry : clientEntry;
+      if (stripExt(id) !== entry) return null;
+      const module = options?.ssr ? ELEMENT_SERVER : ELEMENT_HYDRATION;
+      if (!(await this.resolve(module, id))) return null;
       // On line 1 without a newline, as the app config import: no later line moves.
-      return { code: `import '${ELEMENT_HYDRATION}';` + code, map: null };
+      return { code: `import '${module}';` + code, map: null };
     },
   };
 }

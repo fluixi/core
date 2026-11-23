@@ -5,7 +5,7 @@
  *
  *   import '@fluixi/web-components/hydrate';
  */
-import { HYDRATION_KEY, hydrateChildren, setKeyScope } from '@fluixi/dom';
+import { HYDRATION_KEY, afterHydrationPass, hydrateChildren, isAppHydrationPending, setKeyScope, whenAppHydrated } from '@fluixi/dom';
 import { installElementHydration } from './element.js';
 
 installElementHydration({
@@ -14,4 +14,20 @@ installElementHydration({
     setKeyScope(`${element.getAttribute(HYDRATION_KEY) ?? ''}~`);
     hydrateChildren(element, render);
   },
+  wait(resume) {
+    let cancelled = false;
+    let stop: () => void = () => {};
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (isAppHydrationPending()) stop = whenAppHydrated(() => !cancelled && resume());
+      else resume();
+    });
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  },
+  afterPass: afterHydrationPass,
+  pending: isAppHydrationPending,
+  whenDone: (fn) => void whenAppHydrated(fn),
 });

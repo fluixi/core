@@ -229,6 +229,15 @@ that markup instead of building it again, and waits for the app to hydrate so it
 context. Declarative shadow DOM is not emitted yet, so a shadow-root element renders its content
 on the client.
 
+`@fluixi/start` sets this up for you. Elsewhere, two imports turn it on, and an app that leaves
+them out carries none of that code: `@fluixi/web-components/server` where the server renders,
+`@fluixi/web-components/hydrate` in the browser entry.
+
+```ts
+import '@fluixi/web-components/server'; // server entry, before rendering
+import '@fluixi/web-components/hydrate'; // client entry, before hydrating
+```
+
 ## Loading and registration
 
 `defineCustomElement(name, constructor)` registers through the browser's registry and skips a name

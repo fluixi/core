@@ -23,6 +23,13 @@
       "import": "./dist/hydrate.mjs",
       "require": "./dist/hydrate.cjs",
       "default": "./dist/hydrate.js"
+    },
+    "./server": {
+      "development": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.cjs",
+      "default": "./dist/server.js"
     }
   },
   "files": [
@@ -53,6 +60,12 @@
         "import": "./dist/hydrate.mjs",
         "require": "./dist/hydrate.cjs",
         "default": "./dist/hydrate.js"
+      },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.mjs",
+        "require": "./dist/server.cjs",
+        "default": "./dist/server.js"
       }
     }
   },

@@ -27,7 +27,7 @@ import {
   type Accessor,
   type Owner,
 } from '@fluixi/reactive/signal';
-import { HYDRATION_KEY, afterHydrationPass, insert, isAppHydrationPending, isServer, setKeyScope, whenAppHydrated } from '@fluixi/dom';
+import { insert, isServer } from '@fluixi/dom';
 import {
   createPropStates,
   observedFrom,
@@ -42,18 +42,16 @@ import { applyStyles, type ElementStyles } from './styles.js';
 import { announceOwner, consumeContext, provideContext, type ConsumeOptions, type ElementContext } from './context.js';
 
 /** Where `@fluixi/dom`'s hydration hands a server-rendered element its owner. Kept in step. */
-const OWNER_KEY = Symbol.for('fluixi.owner');
+export const OWNER_KEY = Symbol.for('fluixi.owner');
 /** Where @fluixi/dom keeps a server node's props, and where it looks for the element renderer. */
-const SERVER_PROPS = Symbol.for('fluixi.serverProps');
-const ELEMENT_RENDERER = Symbol.for('fluixi.serverElementRenderer');
+export const SERVER_PROPS = Symbol.for('fluixi.serverProps');
 /** Each element class's own server render, so the copy of this package that defined it does the work. */
-const RENDER_ON_SERVER = Symbol.for('fluixi.renderOnServer');
 /** Tells @fluixi/dom's page hydration that this element's children are its own, adopted already. */
 const OWNS_CONTENT = Symbol.for('fluixi.ownsContent');
 /** Set by @fluixi/dom's hydration: the nodes the server rendered inside this element. */
 const SERVER_CONTENT = Symbol.for('fluixi.serverContent');
 /** Marks content an element rendered on the server, and carries the props that have no attribute. */
-const SSR_ATTRIBUTE = 'data-fx-ssr';
+export const SSR_ATTRIBUTE = 'data-fx-ssr';
 
 /**
  * Hot reload in dev (`@fluixi/dom/hot` creates the registry): a tag defined again swaps the setup
@@ -134,6 +132,18 @@ function hotAnnounce(): NonNullable<HotShared['announce']> {
 export interface ElementHydrator {
   /** Render `render()`'s output into `element`, adopting the server's nodes. */
   hydrate(element: Element, render: () => unknown): void;
+  /**
+   * Wait a microtask, so an entry module that imported the element has called `startClient`;
+   * then `resume` when the app's hydration ends, or at once when no app is hydrating. Returns
+   * a cancel.
+   */
+  wait?(resume: () => void): () => void;
+  /** Run `fn` at the end of the page's hydration pass. */
+  afterPass?(fn: () => void): void;
+  /** Whether the app around the element is still hydrating. */
+  pending?(): boolean;
+  /** Run `fn` once the app's hydration ends. */
+  whenDone?(fn: () => void): void;
 }
 // On the global, not in this module: a bundler can load two copies of this package, one
 // pre-bundled with the elements that use it and one for the `hydrate` entry the app imports. A
@@ -147,34 +157,8 @@ export function installElementHydration(next: ElementHydrator): void {
   (globalThis as Record<symbol, ElementHydrator | undefined>)[HYDRATOR] = next;
 }
 
-const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
+export const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
 
-/**
- * Whether a value comes back from JSON as it went in: primitives, arrays, and objects with no
- * prototype but Object's. A class instance serialises without its methods and getters, so a
- * Zod schema carried this way reached the client as an object with no `shape`, and the element
- * read that until hydration assigned the real one. Such values wait for hydration instead.
- */
-function isPlainData(value: unknown, seen = new Set<object>()): boolean {
-  if (value === null) return true;
-  switch (typeof value) {
-    case 'string':
-    case 'number':
-    case 'boolean':
-      return true;
-    case 'object':
-      break;
-    default:
-      return false;
-  }
-  const object = value as object;
-  if (seen.has(object)) return false;
-  seen.add(object);
-  const proto = Object.getPrototypeOf(object);
-  if (Array.isArray(object)) return object.every((item) => isPlainData(item, seen));
-  if (proto !== Object.prototype && proto !== null) return false;
-  return Object.values(object).every((item) => isPlainData(item, seen));
-}
 
 /** The part of a @fluixi/dom server node the renderer uses. */
 interface ServerNodeLike {
@@ -210,7 +194,7 @@ type Schema = Record<string, PropDeclaration<unknown>>;
  * `class X extends HTMLReactiveElement` is still imported by code that renders there, so
  * the base is an inert stand-in: the class can be declared, nothing is ever defined.
  */
-const BaseElement: typeof HTMLElement =
+export const BaseElement: typeof HTMLElement =
   typeof HTMLElement === 'undefined' ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
 
 /**
@@ -231,41 +215,6 @@ if (typeof HTMLElement === 'undefined' && typeof (globalThis as { customElements
   };
 }
 
-/** The host APIs a server-rendered instance reaches its server node through. */
-const HOST_PROPERTIES = ['dataset', 'style', 'classList', 'id', 'className'] as const;
-const HOST_METHODS = ['setAttribute', 'getAttribute', 'removeAttribute', 'hasAttribute', 'toggleAttribute'] as const;
-
-function bindHost(element: object, node: object): void {
-  const target = node as Record<string, unknown>;
-  for (const name of HOST_PROPERTIES) {
-    Object.defineProperty(element, name, {
-      configurable: true,
-      get: () => target[name],
-      set: (value: unknown) => void (target[name] = value),
-    });
-  }
-  for (const name of HOST_METHODS) {
-    Object.defineProperty(element, name, { configurable: true, value: (...args: unknown[]) => (target[name] as (...a: unknown[]) => unknown)(...args) });
-  }
-  // Form value, validity and custom states only mean something in a browser: accepted, kept
-  // nowhere, so a render that sets them runs the same on both sides.
-  Object.defineProperty(element, 'attachInternals', { configurable: true, value: serverInternals });
-}
-
-function serverInternals(): ElementInternals {
-  return {
-    states: new Set<string>(),
-    setFormValue() {},
-    setValidity() {},
-    checkValidity: () => true,
-    reportValidity: () => true,
-    validity: {} as ValidityState,
-    validationMessage: '',
-    willValidate: false,
-    form: null,
-    labels: [] as unknown as NodeList,
-  } as unknown as ElementInternals;
-}
 
 /** The platform callbacks, looked up on whatever sits above this class in the chain. */
 interface Lifecycle {
@@ -333,6 +282,19 @@ function prepare(constructor: Function): void {
 }
 
 /** Filled by the class's static block: the one way in to its private state. */
+/** The private state `./server.ts` reaches an instance through. */
+export interface ServerAccess {
+  states(element: HTMLReactiveElement): Record<string, PropState<unknown>>;
+  adopt(element: HTMLReactiveElement, node: object, authored: ChildNode[]): void;
+  render(element: HTMLReactiveElement): unknown;
+}
+/** A loaded copy of this package, as a server sees it: its base class and its access. */
+export interface ElementCopy {
+  base: abstract new () => HTMLReactiveElement;
+  access: ServerAccess;
+}
+/** Where each copy lists itself on a server. */
+export const ELEMENT_COPIES = Symbol.for('fluixi.elementCopies');
 let stateOf: (element: HTMLReactiveElement, name: string) => PropState<unknown>;
 /** Filled by the class's static block: a prop written from outside, by a page or a script. */
 let writeFromOutside: (element: HTMLReactiveElement, name: string, value: unknown) => void;
@@ -389,15 +351,23 @@ export class HTMLReactiveElement extends BaseElement {
         this.#adoptOwner(owner);
       },
     });
-    // On a server, @fluixi/dom hands each attached custom element node to this renderer. It
-    // defers to the element's class: after a dev reload, or with two bundles of this package,
-    // the renderer registered first belongs to another copy whose classes are not this one's.
+    // What `./server.ts` needs of an instance to render it on a server, kept out of browser
+    // bundles. Listed per copy of this package: a server renderer from one copy renders the
+    // elements of another (a dev reload loads the package again) through that copy's access.
     if (typeof HTMLElement === 'undefined') {
-      (globalThis as Record<symbol, unknown>)[ELEMENT_RENDERER] ??= (node: ServerNodeLike) => {
-        const registry = (globalThis as { customElements?: { get(name: string): unknown } }).customElements;
-        const constructor = registry?.get(node.localName) as Record<symbol, ((node: ServerNodeLike) => void) | undefined> | undefined;
-        constructor?.[RENDER_ON_SERVER]?.(node);
-      };
+      ((globalThis as Record<symbol, unknown>)[ELEMENT_COPIES] ??= [] as ElementCopy[]) as ElementCopy[];
+      ((globalThis as Record<symbol, ElementCopy[]>)[ELEMENT_COPIES]).push({
+        base: HTMLReactiveElement,
+        access: {
+          states: (element) => element.#states(),
+          adopt(element, node, authored) {
+            element.#authored = authored;
+            element.#root = node as unknown as HTMLElement;
+            element.#built = true;
+          },
+          render: (element) => element.render(),
+        },
+      });
     }
     stateOf = (element, name) => {
       const state = element.#states()[name];
@@ -417,13 +387,15 @@ export class HTMLReactiveElement extends BaseElement {
   #deferred: Map<string, () => void> | null = null;
 
   #writeFromOutside(name: string, value: unknown, apply: () => void = () => stateOf(this, name).write(value)): void {
-    if (!this.#built || !isAppHydrationPending()) {
+    // Only a page that hydrates can be mid-hydration, and only element hydration makes one wait.
+    const hydrator = installedHydrator();
+    if (!this.#built || !hydrator?.pending?.()) {
       apply();
       return;
     }
     if (!this.#deferred) {
       this.#deferred = new Map();
-      whenAppHydrated(() => {
+      hydrator.whenDone!(() => {
         const pending = this.#deferred;
         this.#deferred = null;
         for (const write of pending?.values() ?? []) write();
@@ -612,70 +584,13 @@ export class HTMLReactiveElement extends BaseElement {
       if (!Object.prototype.hasOwnProperty.call(this, name)) continue;
       const value = (this as unknown as Record<string, unknown>)[name];
       delete (this as unknown as Record<string, unknown>)[name];
-      if (warn) {
+      if (warn && (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) {
         console.warn(
           `[fluixi] <${this.localName}> has a class field named "${name}", which hides the declared prop. ` +
             `Declare it only in static props, and set a default there.`,
         );
       }
       this.#states()[name].write(value);
-    }
-  }
-
-  /**
-   * Render a light DOM element's content into its server node, under the page's owner so its
-   * context and resources are the page's. Props come from what @fluixi/dom recorded on the
-   * node; the ones with no attribute form ride along as JSON for the client. Shadow DOM
-   * elements are left to the client until declarative shadow roots are emitted.
-   */
-  static [RENDER_ON_SERVER](this: typeof HTMLReactiveElement, node: ServerNodeLike): void {
-    HTMLReactiveElement.#renderOnServer(this as typeof HTMLReactiveElement & (new () => HTMLReactiveElement), node);
-  }
-
-  static #renderOnServer(constructor: typeof HTMLReactiveElement & (new () => HTMLReactiveElement), node: ServerNodeLike): void {
-    if (constructor.shadow !== undefined && constructor.shadow !== false) return;
-
-    const element = new constructor();
-    const recorded = (node as unknown as Record<symbol, Record<string, unknown> | undefined>)[SERVER_PROPS] ?? {};
-    const carried: Record<string, unknown> = {};
-    for (const [name, state] of Object.entries(element.#states())) {
-      if (name in recorded) {
-        const value = recorded[name];
-        state.write(value);
-        if (value !== null && typeof value === 'object' && isPlainData(value)) carried[name] = value;
-      } else if (state.attribute !== false) {
-        const attribute = node.getAttribute(state.attribute);
-        if (attribute !== null) state.write(state.declaration.fromAttribute(attribute));
-      }
-    }
-
-    // Without a DOM the instance is a bare object: what render() writes to its host (a data-*
-    // attribute, a custom property) goes to the server node, so it is in the HTML.
-    if (BaseElement !== (globalThis as { HTMLElement?: unknown }).HTMLElement) bindHost(element, node);
-    element.#authored = [...node.childNodes] as ChildNode[];
-    for (const child of element.#authored) node.removeChild(child);
-    element.#root = node as unknown as HTMLElement;
-    element.#built = true;
-    // Its own key scope, named after its own key: the client renders this content in the
-    // element's root, not in the page's, and must number it the same way.
-    const scope = `${node.getAttribute(HYDRATION_KEY) ?? ''}~`;
-    // Under the scope that created the node (recorded by @fluixi/dom), so the app's providers
-    // reach `useContext` here as they do in the browser.
-    const createdIn = (node as unknown as Record<symbol, Owner | undefined>)[OWNER_KEY] ?? null;
-    runWithOwner(createdIn, () =>
-      root(() => {
-        setKeyScope(scope);
-        insert(node as unknown as Element, element.render() as never);
-      }),
-    );
-
-    node.setAttribute(SSR_ATTRIBUTE, '');
-    if (Object.keys(carried).length) {
-      try {
-        node.setAttribute(SSR_PROPS_ATTRIBUTE, JSON.stringify(carried));
-      } catch {
-        // A cycle: the client waits for hydration to assign it.
-      }
     }
   }
 
@@ -808,7 +723,9 @@ export class HTMLReactiveElement extends BaseElement {
    */
   #shouldWaitForHost(): boolean {
     const shadow = (this.constructor as typeof HTMLReactiveElement).shadow;
-    return !this.#waited && !this.#handed && (shadow === undefined || shadow === false) && this.hasAttribute(SSR_ATTRIBUTE);
+    // Without element hydration nothing adopts the server's content, so there is nothing to wait for.
+    // A hydrator from an older copy of this package may not offer `wait`: then nothing waits.
+    return !!installedHydrator()?.wait && !this.#waited && !this.#handed && (shadow === undefined || shadow === false) && this.hasAttribute(SSR_ATTRIBUTE);
   }
 
   /**
@@ -817,24 +734,13 @@ export class HTMLReactiveElement extends BaseElement {
    * this element. No app hydrating (a static page, another framework): build now.
    */
   #waitForHost(): void {
-    let cancelled = false;
-    let stop: () => void = () => {};
-    this.#waiting = () => {
-      cancelled = true;
-      stop();
-    };
-    const resume = () => {
-      if (cancelled) return;
+    this.#waiting = installedHydrator()!.wait!(() => {
       this.#waiting = null;
       this.#waited = true;
       if (!this.#built && this.isConnected) this.#build();
-    };
-    queueMicrotask(() => {
-      if (cancelled) return;
-      if (isAppHydrationPending()) stop = whenAppHydrated(resume);
-      else resume();
     });
   }
+
 
   #adoptOwner(owner: Owner | null): void {
     if (!owner || this.#handed) return;
@@ -847,7 +753,7 @@ export class HTMLReactiveElement extends BaseElement {
       // inserts the children written between its tags, and the build has to see them to place
       // them. Still inside the pass's call, so before anything that follows hydration (the
       // replay of early clicks among them).
-      afterHydrationPass(() => {
+      installedHydrator()!.afterPass!(() => {
         if (!this.#built && this.isConnected) this.#build();
       });
       return;

@@ -4,6 +4,8 @@
  * props that have no attribute form carried for the client.
  */
 import { describe, it, expect, vi } from 'vitest';
+// What renders elements on a server, as an app's server entry imports it.
+import './server.js';
 
 describe('an element rendered on the server', () => {
   it('renders its content inside its tag, from attributes and object props', async () => {

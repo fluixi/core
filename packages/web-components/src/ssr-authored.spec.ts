@@ -5,6 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import { beginAppHydration, createNativeElement, endAppHydration, hydrate, insert, templateNode } from '@fluixi/dom';
 import { HTMLReactiveElement, defineCustomElement } from './index.js';
+// A page that hydrates server-rendered elements installs element hydration (`@fluixi/start` adds it).
+import './hydrate.js';
 
 class Panel extends HTMLReactiveElement {
   protected override render(): unknown {

@@ -236,6 +236,15 @@ navigateur, il adopte ce balisage au lieu de le reconstruire, et attend que l'ap
 pour lire son contexte. Le shadow DOM déclaratif n'est pas encore émis : un élément à racine shadow
 rend son contenu côté client.
 
+`@fluixi/start` le met en place pour vous. Ailleurs, deux imports l'activent, et une application qui
+les omet n'embarque rien de ce code : `@fluixi/web-components/server` là où le serveur rend,
+`@fluixi/web-components/hydrate` dans le point d'entrée du navigateur.
+
+```ts
+import '@fluixi/web-components/server'; // point d'entrée serveur, avant le rendu
+import '@fluixi/web-components/hydrate'; // point d'entrée client, avant l'hydratation
+```
+
 ## Chargement et enregistrement
 
 `defineCustomElement(name, constructor)` enregistre auprès du registre du navigateur et ignore un nom
