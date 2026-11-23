@@ -161,21 +161,24 @@ Split a larger element into a container and parts the way a component would (`fx
 
 Elements share values the way components do. One provides, any element inside it consumes, and
 the context objects are those of [Context](/v1/en/context), so an element also reads what a
-Provider in the app gives:
+Provider in the app gives. `provideContext` and `consumeContext` take the element first; an
+element that uses neither carries none of this code:
 
 ```ts
+import { consumeContext, provideContext } from '@fluixi/web-components';
+
 const Tabs = createContext<TabsState | null>(null, 'tabs');
 
 class FxTabs extends typedElement(tabsProps) {
   protected override render() {
-    this.provide(Tabs, { selected, select });
+    provideContext(this, Tabs, { selected, select });
     return html`<slot></slot>`;
   }
 }
 
 class FxTab extends typedElement(tabProps) {
   protected override render() {
-    const tabs = this.consume(Tabs); // an accessor; follows the provider when it arrives
+    const tabs = consumeContext(this, Tabs); // an accessor; follows the provider when it arrives
     // ...
   }
 }

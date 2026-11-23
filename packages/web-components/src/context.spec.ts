@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { createContext, createRoot, getOwner, signal, useContext } from '@fluixi/reactive/signal';
 import { LitElement } from 'lit';
 import { ContextConsumer, ContextProvider, type Context as LitContext } from '@lit/context';
-import { ContextRequestEvent, HTMLReactiveElement, type ElementContext } from './index.js';
+import { ContextRequestEvent, HTMLReactiveElement, consumeContext, provideContext, type ElementContext } from './index.js';
 
 let n = 0;
 const tag = (base: string) => `${base}-ctx-${++n}`;
@@ -19,7 +19,7 @@ const theme = signal('dark');
 class ThemeRoot extends HTMLReactiveElement {
   static override shadow = true;
   protected override render(): unknown {
-    this.provide(Theme, () => theme());
+    provideContext(this, Theme, () => theme());
     const slot = document.createElement('slot');
     const inner = document.createElement(READER);
     return [inner, slot];
@@ -30,7 +30,7 @@ class ThemeRoot extends HTMLReactiveElement {
 class ThemeReader extends HTMLReactiveElement {
   current!: () => string | undefined;
   protected override render(): unknown {
-    this.current = this.consume(Theme);
+    this.current = consumeContext(this, Theme);
     const out = document.createElement('output');
     return [out, () => (out.textContent = this.current() ?? '')][0];
   }
@@ -63,7 +63,7 @@ describe('between elements', () => {
     const inner = tag('fx-inner-theme');
     customElements.define(inner, class extends HTMLReactiveElement {
       protected override render(): unknown {
-        this.provide(Theme, 'inner');
+        provideContext(this, Theme, 'inner');
         return [...this.authoredChildren];
       }
     });
@@ -102,7 +102,7 @@ describe('between elements', () => {
 
     class Late extends HTMLReactiveElement {
       protected override render(): unknown {
-        this.provide(Theme, 'late');
+        provideContext(this, Theme, 'late');
         return [...this.authoredChildren];
       }
     }
@@ -116,8 +116,8 @@ describe('between elements', () => {
     let seen: string | undefined;
     customElements.define(middle, class extends HTMLReactiveElement {
       protected override render(): unknown {
-        seen = this.consume(Theme)();
-        this.provide(Theme, 'middle');
+        seen = consumeContext(this, Theme)();
+        provideContext(this, Theme, 'middle');
         return null;
       }
     });
@@ -146,7 +146,7 @@ describe('with a Fluixi app', () => {
     let inComponent: string | undefined;
     customElements.define(host, class extends HTMLReactiveElement {
       protected override render(): unknown {
-        this.provide(Theme, 'element');
+        provideContext(this, Theme, 'element');
         // What a component rendered here would do.
         inComponent = useContext(Theme);
         return null;

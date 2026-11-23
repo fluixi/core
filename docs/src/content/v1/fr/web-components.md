@@ -167,21 +167,24 @@ Découpez un élément plus grand en un conteneur et des parties, comme pour un 
 
 Les éléments partagent des valeurs comme les composants. L'un fournit, tout élément à l'intérieur
 consomme, et les objets de contexte sont ceux de [Contexte](/v1/fr/context) : un élément lit aussi
-ce que fournit un Provider de l'application.
+ce que fournit un Provider de l'application. `provideContext` et `consumeContext` prennent
+l'élément en premier ; un élément qui n'utilise ni l'un ni l'autre n'embarque rien de ce code :
 
 ```ts
+import { consumeContext, provideContext } from '@fluixi/web-components';
+
 const Tabs = createContext<TabsState | null>(null, 'tabs');
 
 class FxTabs extends typedElement(tabsProps) {
   protected override render() {
-    this.provide(Tabs, { selected, select });
+    provideContext(this, Tabs, { selected, select });
     return html`<slot></slot>`;
   }
 }
 
 class FxTab extends typedElement(tabProps) {
   protected override render() {
-    const tabs = this.consume(Tabs); // un accesseur ; suit le fournisseur quand il arrive
+    const tabs = consumeContext(this, Tabs); // un accesseur ; suit le fournisseur quand il arrive
     // ...
   }
 }

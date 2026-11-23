@@ -365,6 +365,20 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   static {
+    // Development only: defined here rather than as a method, so a production build drops it.
+    if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())) {
+      Object.defineProperty(HTMLReactiveElement.prototype, HOT_REBUILD, {
+        configurable: true,
+        value(this: HTMLReactiveElement): void {
+          if (!this.#built) return;
+          this.#teardown();
+          if (this.#root !== this) (this.#root as ShadowRoot).replaceChildren();
+          // What the server rendered was the old setup's output: render afresh.
+          this.removeAttribute(SSR_ATTRIBUTE);
+          this.#build();
+        },
+      });
+    }
     // Not a member in the type: it is a handshake with the runtime, not API.
     Object.defineProperty(HTMLReactiveElement.prototype, OWNER_KEY, {
       configurable: true,
@@ -525,22 +539,6 @@ export class HTMLReactiveElement extends BaseElement {
   }
 
   /**
-   * Give `context` to the elements inside this one, and to `useContext` in the components it
-   * renders. A value or an accessor; subscribed consumers follow the accessor. Call in `render()`.
-   */
-  protected provide<T>(context: ElementContext<T>, value: T | Accessor<T>): void {
-    provideContext(this, context, value);
-  }
-
-  /**
-   * The nearest value of `context` above this element, as an accessor: an element providing
-   * it, else the Fluixi app the element was rendered in, else the default. Call in `render()`.
-   */
-  protected consume<T>(context: ElementContext<T>, options?: ConsumeOptions): Accessor<T> {
-    return consumeContext(this, context, options);
-  }
-
-  /**
    * Dispatch a `CustomEvent`, bubbling and composed by default. False when cancelled.
    *
    * The name goes out lowercased: a JSX handler listens for the name after `on`, lowercased,
@@ -685,14 +683,7 @@ export class HTMLReactiveElement extends BaseElement {
   #hotRef: WeakRef<HTMLReactiveElement> | undefined;
 
   /** Hot reload: the class's setup changed, so render again from scratch, keeping the props. */
-  [HOT_REBUILD](): void {
-    if (!this.#built) return;
-    this.#teardown();
-    if (this.#root !== this) (this.#root as ShadowRoot).replaceChildren();
-    // What the server rendered was the old setup's output: render afresh.
-    this.removeAttribute(SSR_ATTRIBUTE);
-    this.#build();
-  }
+  declare [HOT_REBUILD]: () => void;
 
   #build(): void {
     if (this.#shouldWaitForHost()) return this.#waitForHost();
@@ -971,9 +962,9 @@ export interface Host<S extends Schema> {
   readonly targets: Targets;
   /** The children the author wrote between the tags, in light DOM. Empty under shadow DOM. */
   children(): ChildNode[];
-  /** See `HTMLReactiveElement.provide`. */
+  /** `provideContext` for this element: give `context` to what is inside it. */
   provide<T>(context: ElementContext<T>, value: T | Accessor<T>): void;
-  /** See `HTMLReactiveElement.consume`. */
+  /** `consumeContext` for this element: the nearest value of `context` above it. */
   consume<T>(context: ElementContext<T>, options?: ConsumeOptions): Accessor<T>;
 }
 
@@ -1006,8 +997,8 @@ export function createElementClass<S extends Schema>(setup: Setup<S>, options: E
         dispatch: (type, detail, init) => this.emit(type, detail, init),
         targets: this.targets,
         children: () => [...this.authoredChildren],
-        provide: (context, value) => this.provide(context, value),
-        consume: (context, options) => this.consume(context, options),
+        provide: (context, value) => provideContext(this, context, value),
+        consume: (context, options) => consumeContext(this, context, options),
       });
     }
   }
