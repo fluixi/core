@@ -135,10 +135,16 @@ export interface ElementHydrator {
   /** Render `render()`'s output into `element`, adopting the server's nodes. */
   hydrate(element: Element, render: () => unknown): void;
 }
-let hydrator: ElementHydrator | null = null;
+// On the global, not in this module: a bundler can load two copies of this package, one
+// pre-bundled with the elements that use it and one for the `hydrate` entry the app imports. A
+// module variable would leave the elements' copy without the hydrator the other copy installed.
+const HYDRATOR = Symbol.for('fluixi.elementHydrator');
+
+const installedHydrator = (): ElementHydrator | undefined =>
+  (globalThis as Record<symbol, ElementHydrator | undefined>)[HYDRATOR];
 
 export function installElementHydration(next: ElementHydrator): void {
-  hydrator = next;
+  (globalThis as Record<symbol, ElementHydrator | undefined>)[HYDRATOR] = next;
 }
 
 const SSR_PROPS_ATTRIBUTE = 'data-fx-props';
@@ -755,7 +761,8 @@ export class HTMLReactiveElement extends BaseElement {
         // Reflects live in the same scope as the content, so they stop when it does.
         this.#startReflecting();
         const draw = () => ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) ? hotKeep(this, () => this.render()) : this.render());
-        if (this.#hydrating && hydrator) hydrator.hydrate(this, draw);
+        const hydrator = this.#hydrating ? installedHydrator() : undefined;
+        if (hydrator) hydrator.hydrate(this, draw);
         else {
           if (this.#hydrating) {
             // Server content and nothing to adopt it with: render afresh rather than beside it.
