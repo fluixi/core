@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createRoot } from '@fluixi/reactive/signal';
+import { createChildOwner, createEffect, createRoot, createSignal, getOwner, runWithOwner } from '@fluixi/reactive/signal';
 import { createComponent } from './integration.js';
 
 const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 afterEach(() => warn.mockClear());
-const warnings = () => warn.mock.calls.filter(([m]) => String(m).includes('read props.children more than once'));
+const warnings = () => warn.mock.calls.filter(([m]) => String(m).includes('read props.children again'));
+const tick = () => new Promise((r) => setTimeout(r, 0));
 
 function propsWithChildren() {
   let builds = 0;
@@ -16,12 +17,27 @@ function propsWithChildren() {
 }
 
 describe('reading props.children', () => {
-  it('warns when a component reads it twice in one turn', () => {
+  it('warns when a component reads it twice in one place', () => {
     const { props } = propsWithChildren();
     function Twice(p: { children: unknown }) { p.children; return p.children; }
     createRoot(() => createComponent(Twice, props));
     expect(warnings()).toHaveLength(1);
     expect(String(warnings()[0][0])).toContain('Twice');
+  });
+
+  it('warns when an effect reads it again each time it runs', async () => {
+    const { props, builds } = propsWithChildren();
+    const [count, setCount] = createSignal(0);
+    function Rebuilds(p: { children: unknown }) {
+      createEffect(() => { count(); p.children; });
+      return null;
+    }
+    createRoot(() => createComponent(Rebuilds, props));
+    await tick();
+    setCount(1);
+    await tick();
+    expect(builds()).toBe(2);
+    expect(warnings()).toHaveLength(1);
   });
 
   it('says nothing when it is read once', () => {
@@ -39,13 +55,15 @@ describe('reading props.children', () => {
     expect(warnings()).toHaveLength(0);
   });
 
-  it('says nothing when it is read again in a later turn, as control flow does', async () => {
+  it('says nothing when it is read again under a new owner, as control flow does when a branch comes back', () => {
     const { props } = propsWithChildren();
-    let again: () => unknown = () => undefined;
-    function Later(p: { children: unknown }) { again = () => p.children; return p.children; }
-    createRoot(() => createComponent(Later, props));
-    await Promise.resolve();
-    again();
+    function Branches(p: { children: unknown }) {
+      const parent = getOwner();
+      runWithOwner(createChildOwner(parent), () => p.children);
+      runWithOwner(createChildOwner(parent), () => p.children);
+      return null;
+    }
+    createRoot(() => createComponent(Branches, props));
     expect(warnings()).toHaveLength(0);
   });
 });

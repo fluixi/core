@@ -4,7 +4,7 @@
 // who had not loaded core. The slot stays so a host can still override it.
 
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
-import { createMemo, runWithOwner } from '@fluixi/reactive/signal';
+import { createMemo, getOwner, runWithOwner } from '@fluixi/reactive/signal';
 import { asComponent } from '../component/modifiers.js';
 import { hydrationKeys } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
@@ -97,41 +97,38 @@ export function resetIntegration(): void {
 
 /**
  * Each read of `props.children` builds the children again: the compiler calls components where
- * they are written, inside the getter. Two reads in one turn are two builds where one was meant,
- * the second thrown away or shown twice. Control flow reads again on purpose, in a later turn,
- * when a branch comes back.
+ * they are written, inside the getter. A second read under the same owner builds a second copy
+ * where one was meant, whether it is two reads in a row or an effect or memo that reads it again
+ * each time it runs. Control flow reads again on purpose, under a new owner each time a branch
+ * comes back, and a render function builds nothing until it is called.
  */
 function warnOnRepeatedChildren(Comp: unknown, props: object): void {
   const descriptor = Object.getOwnPropertyDescriptor(props, 'children');
   if (!descriptor?.get || !descriptor.configurable) return;
   const read = descriptor.get;
-  let readThisTurn = false;
+  const readers = new WeakSet<object>();
   let warned = false;
   // Settled on the first read: a getter returns a render function every time, or never.
   let returnsFunction = false;
   Object.defineProperty(props, 'children', {
     ...descriptor,
     get() {
-      if (readThisTurn && !warned && !returnsFunction) {
-        warned = true;
-        const name = (Comp as { name?: string })?.name || 'A component';
-        console.warn(
-          `[fluixi] ${name} read props.children more than once. Each read builds the children again: ` +
-            'read it once into a local, or resolve it with readChildren(() => props.children).',
-        );
-      }
-      if (!readThisTurn && !returnsFunction) {
-        readThisTurn = true;
-        queueMicrotask(() => {
-          readThisTurn = false;
-        });
+      const owner = getOwner();
+      if (owner && !returnsFunction) {
+        if (readers.has(owner) && !warned) {
+          warned = true;
+          const name = (Comp as { name?: string })?.name || 'A component';
+          console.warn(
+            `[fluixi] ${name} read props.children again where it had already built them. Each read ` +
+              'builds the children again: read it once into a local, or resolve it with ' +
+              'readChildren(() => props.children). Reading it inside an effect or memo rebuilds ' +
+              'the children each time it runs.',
+          );
+        }
+        readers.add(owner);
       }
       const value = read.call(this);
-      // A render function builds nothing until it is called: reading it again costs nothing.
-      if (typeof value === 'function') {
-        returnsFunction = true;
-        readThisTurn = false;
-      }
+      if (typeof value === 'function') returnsFunction = true;
       return value;
     },
   });
