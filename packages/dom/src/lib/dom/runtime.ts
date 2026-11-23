@@ -878,7 +878,7 @@ export function insertExpression(
     const adopted = new Set<Node>();
     // Hydrating a hole: its server nodes are `current`, so the items (resolved here, after the
     // hole's accessor returned and its cursor was restored) claim from the first of them.
-    const flatten = () => flattenArray(value as any[], array, parent, marker, true, componentCache, reactiveSlots, adopted);
+    const flatten = () => flattenArray(value as any[], array, parent, componentCache, reactiveSlots, adopted);
     const keys = hydration.active && currentArray.length && hydrationKeys();
     if (keys) keys.resume(currentArray[0] as Node, flatten);
     else flatten();
@@ -911,18 +911,22 @@ export function insertExpression(
     return reconciled;
   }
 
-  if (t === 'object' && value !== null && typeof value === 'object') {
-    const objValue = value as Record<string, any>;
-    if ('type' in objValue && 'props' in objValue) {
-      const jsxValue = objValue as { type: any; props: any };
-      if (typeof jsxValue.type === 'function') {
-        const result = jsxValue.type(jsxValue.props || {});
-        return insertExpression(parent, result, marker, current);
-      }
-    }
+  if (expandElementObject && typeof value === 'object') {
+    const expanded = expandElementObject(value);
+    if (expanded !== value) return insertExpression(parent, expanded as Children, marker, current);
   }
-
   return cleanChildren(parent, current, marker);
+}
+
+/**
+ * Expands a `{ type, props }` element, the shape the uncompiled JSX runtime returns on the
+ * server, into what its component renders; returns anything else as it is. Installed by that
+ * runtime when it loads, so compiled code, which never makes these, does not carry it.
+ */
+let expandElementObject: ((value: object) => unknown) | null = null;
+
+export function installElementObjects(expand: (value: object) => unknown): void {
+  expandElementObject = expand;
 }
 
 // flattenArray: flatten a children array to DOM nodes. A signal whose result is a
@@ -933,8 +937,6 @@ function flattenArray(
   arr: any[],
   result: Node[],
   parent: Node,
-  marker?: Node,
-  track = true,
   componentCache?: Map<Function, any>,
   // When provided, a reactive member is not read inline (which would subscribe the enclosing
   // render effect and re-render the whole subtree on change). Instead it emits a placeholder
@@ -950,8 +952,10 @@ function flattenArray(
 
     if (item == null || typeof item === 'boolean') continue;
 
-    // Resolve plain functions (not signals, not component thunks)
-    while (typeof item === 'function' && !isPromise(item) && !isSignal(item) && !isComponent(item)) {
+    // Where the caller collects slots, every reactive member is one: it gets its own insert and
+    // updates on its own, so a change to one never runs, or rebuilds, its siblings. Elsewhere (an
+    // array read inside an effect that owns it) plain functions are read here.
+    while (!reactiveSlots && typeof item === 'function' && !isSignal(item) && !isComponent(item)) {
       item = item();
       if (item == null || typeof item === 'boolean') break;
     }
@@ -978,7 +982,7 @@ function flattenArray(
         // is one: it gets its own insert, so it updates in place. A component hands back the
         // control flow it returns as such a memo, and read here it would be read once. Anywhere
         // else it is read to track it.
-        resolved = reactiveSlots && isSignal(item) ? item : item();
+        resolved = reactiveSlots ? item : item();
       }
 
       // Unwrap plain wrappers; stop at signals and component thunks.
@@ -989,12 +993,7 @@ function flattenArray(
       // (triggered by unrelated signals like `activeLevel()`) hit the cache and
       // return the same DOM nodes. reconcileArrays then sees identical references
       // and skips the slot, the focused <input> is never removed.
-      while (
-        typeof resolved === 'function' &&
-        !isPromise(resolved) &&
-        !isSignal(resolved) &&
-        !isComponent(resolved)
-      ) {
+      while (resolved !== item && typeof resolved === 'function' && !isSignal(resolved) && !isComponent(resolved)) {
         if (!componentCache) componentCache = new Map();
         if (!componentCache.has(resolved)) componentCache.set(resolved, resolved());
         resolved = componentCache.get(resolved);
@@ -1003,7 +1002,7 @@ function flattenArray(
       if (resolved == null || typeof resolved === 'boolean') continue;
 
       if (typeof resolved === 'function') {
-        if (isSignal(resolved)) {
+        if (isSignal(resolved) || resolved === item) {
           // Defer to a per-slot insert effect (see reactiveSlots) so a reactive member updates
           // in place instead of re-rendering the enclosing subtree. Only the synchronous array
           // path collects slots; async/promise resolutions fall back to the inline read below.
@@ -1046,8 +1045,8 @@ function flattenArray(
           while (typeof val === 'function' && isSignal(val)) val = val();
           if (val == null || typeof val === 'boolean') continue;
           if (Array.isArray(val)){
-            flattenArray(val, result, parent, marker, track, componentCache)
-          }else flattenArray([val], result, parent, marker, track, componentCache);
+            flattenArray(val, result, parent, componentCache)
+          }else flattenArray([val], result, parent, componentCache);
           continue;
         }
         // Other function type: skip
@@ -1055,8 +1054,8 @@ function flattenArray(
       }
 
       // resolved is not a function
-      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, track, componentCache, reactiveSlots, adopted);
-      else flattenArray([resolved], result, parent, marker, track, componentCache, reactiveSlots, adopted);
+      if (Array.isArray(resolved)) flattenArray(resolved, result, parent, componentCache, reactiveSlots, adopted);
+      else flattenArray([resolved], result, parent, componentCache, reactiveSlots, adopted);
       continue;
     }
 
@@ -1066,7 +1065,7 @@ function flattenArray(
     }
 
     if (Array.isArray(item)) {
-      flattenArray(item, result, parent, marker, track, componentCache, reactiveSlots, adopted);
+      flattenArray(item, result, parent, componentCache, reactiveSlots, adopted);
       continue;
     }
 
@@ -1084,17 +1083,10 @@ function flattenArray(
       continue;
     }
 
-    if (
-      typeof item === 'object' &&
-      item !== null &&
-      'type' in item &&
-      'props' in item
-    ) {
-      const jsxItem = item as { type: any; props: any };
-      if (typeof jsxItem.type === 'function') {
-        const resolved = jsxItem.type(jsxItem.props || {});
-        if (Array.isArray(resolved)) flattenArray(resolved, result, parent, marker, false, componentCache);
-        else flattenArray([resolved], result, parent, marker, false, componentCache);
+    if (expandElementObject && typeof item === 'object') {
+      const expanded = expandElementObject(item);
+      if (expanded !== item) {
+        flattenArray(Array.isArray(expanded) ? expanded : [expanded], result, parent, componentCache);
         continue;
       }
     }

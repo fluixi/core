@@ -20,7 +20,7 @@ import {
   applyProps as domProps
 } from '@fluixi/dom';
 
-import { createComponent, createDynamicElement } from '@fluixi/dom';
+import { createComponent, createDynamicElement, installElementObjects } from '@fluixi/dom';
 import { createSignal, createMemo, createRenderEffect, readChildren } from '@fluixi/reactive/signal';
 
 // Types
@@ -50,6 +50,15 @@ export type RefObject<T> = { current: T | null };
 export const Fragment = Symbol.for('fluixi.fragment');
 
 const isSSR = typeof window === 'undefined';
+
+// On the server this runtime returns `{ type, props }` elements; the DOM runtime expands them
+// only once this has told it how, so code that never loads this runtime does not carry it.
+installElementObjects((value) => {
+  const element = value as { type?: unknown; props?: Record<string, unknown> };
+  return typeof element.type === 'function' && 'props' in element
+    ? (element.type as (props: Record<string, unknown>) => unknown)(element.props || {})
+    : value;
+});
 
 // Track which event names we've registered globally (mirrors delegatedSet in runtime)
 const globalDelegatedSet = new Set<string>();
