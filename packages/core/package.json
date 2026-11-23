@@ -165,7 +165,7 @@
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "node ../../scripts/gen-version.mjs && cross-env NODE_ENV=production mix-builder && cp types/fluixi.d.ts dist/fluixi.d.ts && pnpm run build:cdn",
-    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
+    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json && cross-env NODE_ENV=development mix-builder --buildConfigFile=build-config.cdn.dev.json",
     "send": "mix-publisher --scoped --buildConfigFileConfig=publish-config.json",
     "pack": "pnpm pack",
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc",

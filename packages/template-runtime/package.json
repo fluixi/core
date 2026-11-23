@@ -42,7 +42,7 @@
   "scripts": {
     "build:typings": "tsc -p tsconfig.lib.json",
     "build": "cross-env NODE_ENV=production mix-builder && pnpm run build:cdn",
-    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json",
+    "build:cdn": "cross-env NODE_ENV=production mix-builder --buildConfigFile=build-config.cdn.json && cross-env NODE_ENV=development mix-builder --buildConfigFile=build-config.cdn.dev.json",
     "dev": "tsc -w -p tsconfig.lib.json",
     "test": "vitest run"
   },

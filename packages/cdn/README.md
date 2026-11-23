@@ -13,6 +13,12 @@ To use one of the maps, include the corresponding `.js` file before the first mo
 </script>
 ```
 
+Every map has a development counterpart, `min.development.js` and so on, pointing at unminified bundles in `dist/esm-dev` that keep Fluixi's development warnings and devtools reporting. Use it while building the page and the production map once it is deployed:
+
+```html
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.development.js"></script>
+```
+
 If a page prefers to hold the map itself or build its markup from something other than a script tag, the `.json` file can be used with this block:
 
 ```html

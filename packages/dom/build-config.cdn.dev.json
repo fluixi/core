@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/@bambiste/mix-builder/dist/lib/builder/schema/build-config.schema.json",
+  "builder": "esbuild",
+  "esbuild": {
+    "extensions": [
+      ".ts"
+    ],
+    "target": "es2021",
+    "platform": "browser",
+    "minify": false,
+    "noExternal": true,
+    "outdir": "dist/cdn/dev",
+    "rootDir": "src/cdn",
+    "entries": {
+      "src/cdn/dom.ts": {
+        "globalName": "FluixiDOM",
+        "formats": [
+          "iife"
+        ]
+      },
+      "src/cdn/dom-client.ts": {
+        "globalName": "FluixiDOM",
+        "formats": [
+          "iife"
+        ]
+      }
+    },
+    "define": {
+      "__DEV__": "true",
+      "process.env.NODE_ENV": "\"development\""
+    },
+    "banner": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */"
+  }
+}

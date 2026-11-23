@@ -12,11 +12,11 @@ qu'un seul fichier. Les tailles sont minifiées ; le `gzip` est ce qui transite 
 
 | Script | Global | Contenu | Taille |
 | --- | --- | --- | --- |
-| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 4.5 Ko <small>(1.8 Ko gz)</small> |
-| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 44.2 Ko <small>(13.7 Ko gz)</small> |
-| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 79.4 Ko <small>(26.7 Ko gz)</small> |
-| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 106.4 Ko <small>(35.8 Ko gz)</small> |
-| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | Le framework **+** le compilateur de templates, pour que `` html`` `` fonctionne dans la page | 130.5 Ko <small>(43.5 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/signal.global.js` | `window.Signal` | Le cœur TC39-Signals brut (`State`, `Computed`, `subtle`) | 4.3 Ko <small>(1.7 Ko gz)</small> |
+| `@fluixi/reactive/dist/cdn/reactive.global.js` | `window.Fluixi` | API réactive complète (signals, memos, effects, stores, resources) | 44.1 Ko <small>(13.7 Ko gz)</small> |
+| `@fluixi/dom/dist/cdn/dom.global.js` | `window.FluixiDOM` | Runtime DOM (render, contrôle de flux) **+** l'API réactive | 77.5 Ko <small>(26.0 Ko gz)</small> |
+| `@fluixi/core/dist/cdn/core.global.js` | `window.Fluixi` | Tout le framework (réactivité + composants + contrôle de flux + router + `startClient`) | 106.0 Ko <small>(35.8 Ko gz)</small> |
+| `@fluixi/template-runtime/dist/cdn/fluixi.global.js` | `window.Fluixi` | Le framework **+** le compilateur de templates, pour que `` html`` `` fonctionne dans la page | 131.4 Ko <small>(43.8 Ko gz)</small> |
 
 Choisissez le plus petit qui couvre votre besoin : juste la réactivité → `signal` ou `reactive` ;
 une UI réactive → `dom` ; le framework applicatif complet → `core`.
@@ -160,6 +160,28 @@ Chacune existe en `.json` à lire ou coller et en `.js` à charger. Le `.js` ins
 ```
 
 Le `.json` reste pour une page qui préfère porter la carte dans son propre balisage ; plusieurs cartes dans une page demandent Chromium 133 ou plus récent, d’où `full` en un seul fichier. `@fluixi-ui/cdn` fait la même chose pour la bibliothèque de composants et se compose avec celles-ci.
+
+## Builds de développement
+
+Chaque fichier ci-dessus est un build de production : minifié, sans les avertissements de
+développement de Fluixi ni le reporting vers les devtools. Pendant que vous construisez une page,
+chargez plutôt le build de développement. Il a la même API au même chemin avec `/dev/` en plus,
+non minifié, et il signale les erreurs comme une promesse passée en enfant :
+
+```html
+<script src="https://unpkg.com/@fluixi/dom/dist/cdn/dev/dom.global.js"></script>
+```
+
+Les import maps fonctionnent de la même façon : `min.development.js`, `templates.development.js`
+et `full.development.js` pointent vers des bundles de développement, et les fichiers `.json` ont
+les mêmes équivalents.
+
+```html
+<script src="https://unpkg.com/@fluixi/cdn/dist/min.development.js"></script>
+```
+
+Un build de développement fait environ le double de la taille : revenez au fichier de production
+avant de déployer.
 
 ## Épinglage de version
 

@@ -2,7 +2,7 @@
   "name": "@fluixi/cdn",
   "version": "1.0.0-alpha.112",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "description": "pre-generated import maps for loading the framework from a CDN: the minimum for writing components by hand, the addition that compiles html`` in the page, and everything",
   "publishConfig": {
@@ -22,7 +22,13 @@
     "./full.json": "./dist/full.json",
     "./min.js": "./dist/min.js",
     "./templates.js": "./dist/templates.js",
-    "./full.js": "./dist/full.js"
+    "./full.js": "./dist/full.js",
+    "./min.development.json": "./dist/min.development.json",
+    "./min.development.js": "./dist/min.development.js",
+    "./templates.development.json": "./dist/templates.development.json",
+    "./templates.development.js": "./dist/templates.development.js",
+    "./full.development.json": "./dist/full.development.json",
+    "./full.development.js": "./dist/full.development.js"
   },
   "scripts": {
     "build": "mappel && node scripts/bundle.mjs"
