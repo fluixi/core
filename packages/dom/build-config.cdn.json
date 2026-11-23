@@ -25,6 +25,10 @@
         ]
       }
     },
+    "define": {
+      "__DEV__": "false",
+      "process.env.NODE_ENV": "\"production\""
+    },
     "banner": "/*! {name} v{version} | (c) {year} {author} and Fluixi contributors | {license} */"
   }
 }

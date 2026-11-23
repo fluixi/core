@@ -45,6 +45,9 @@ await build({
   format: 'esm',
   platform: 'browser',
   minify: true,
+  // Production: a page loading these has no bundler to say so, and without it the packages'
+  // development code would ship and run.
+  define: { __DEV__: 'false', 'process.env.NODE_ENV': '"production"' },
   chunkNames: 'chunk-[hash]',
   banner: { js: `/*! @fluixi/cdn v${version} | (c) 2026 Ibrahima Touré and Fluixi contributors | MIT */` },
   legalComments: 'none',
