@@ -1072,7 +1072,9 @@ function flattenArray(
       // the cursor is, or the cursor is still inside it after its children were adopted, as
       // `createNativeElement` leaves it. Step past it either way, as the single-node path does,
       // or every later slot in this parent anchors at its end.
-      if (hydration.active && (hydration.cursor === item || hydration.parents.includes(item as Node))) {
+      // Inside it means anywhere below: an element adopted by position, not by key, is not on
+      // the parents stack, and its holes leave the cursor at their own markers.
+      if (hydration.active && (hydration.cursor === item || hydration.parents.includes(item as Node) || (item as Node).contains?.(hydration.cursor))) {
         ascendPast(item as Node);
       }
       result.push(item);

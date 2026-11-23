@@ -164,9 +164,10 @@ describe('hydration: a memoised <Show> before a sibling', () => {
   it('adopts a form whose children open with an empty reactive slot', async () => {
     const src = `
       import { createSignal } from '@fluixi/reactive/signal';
-      // Reads the children getter twice, as @fluixi-ui/form's Form does.
+      // Reads the children getter once: each read builds the children again.
       function Form(props) {
-        const content = () => (typeof props.children === 'function' ? props.children() : props.children);
+        const children = props.children;
+        const content = () => (typeof children === 'function' ? children() : children);
         return <form>{content}</form>;
       }
       function Field(props) { return <div data-field="">{props.label}</div>; }

@@ -4,7 +4,7 @@
 // who had not loaded core. The slot stays so a host can still override it.
 
 import { untrack, isSignal, reportReactiveProps } from '@fluixi/reactive';
-import { runWithOwner } from '@fluixi/reactive/signal';
+import { createMemo, runWithOwner } from '@fluixi/reactive/signal';
 import { asComponent } from '../component/modifiers.js';
 import { hydrationKeys } from './hydration-state.js';
 import type { CreateComponentReturnType } from './types.js';
@@ -49,13 +49,23 @@ export function createComponent<T extends (props?: any) => any, U = any>(
 function build<T extends (props?: any) => any, U = any>(Comp: T, props?: U): CreateComponentReturnType<T, U> {
   if (_slot.fn) return _slot.fn(Comp, props);
 
-  // Before the call, so the computation this is created inside is still the running one.
-  // A property read when nobody is watching.
-  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && props) reportReactiveProps(props);
-
   // Untracked: a component reading a signal while it is created must not make its
   // caller depend on that signal, or the caller re-runs and rebuilds the subtree.
-  const component = typeof Comp === 'function' ? untrack(() => Comp(props)) : Comp;
+  //
+  // In development the component also runs inside a memo of its own, read at once: it is built
+  // right here as in production, and the memo is only a node devtools can show, named by the
+  // compiler's mark just before this call and holding the props. It reads nothing, so it never
+  // runs again.
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && props) warnOnRepeatedChildren(Comp, props);
+  const component =
+    typeof Comp !== 'function'
+      ? Comp
+      : (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())
+        ? untrack(createMemo(() => {
+            if (props) reportReactiveProps(props);
+            return untrack(() => Comp(props));
+          }))
+        : untrack(() => Comp(props));
 
   // Primitives cannot carry properties, and a signal must not be stamped as a
   // component or the runtime caches it as a static thunk.
@@ -83,4 +93,38 @@ export const isIntegrationInitialized = (): boolean => _slot.fn !== null;
 
 export function resetIntegration(): void {
   _slot.fn = null;
+}
+
+/**
+ * Each read of `props.children` builds the children again: the compiler calls components where
+ * they are written, inside the getter. Two reads in one turn are two builds where one was meant,
+ * the second thrown away or shown twice. Control flow reads again on purpose, in a later turn,
+ * when a branch comes back.
+ */
+function warnOnRepeatedChildren(Comp: unknown, props: object): void {
+  const descriptor = Object.getOwnPropertyDescriptor(props, 'children');
+  if (!descriptor?.get || !descriptor.configurable) return;
+  const read = descriptor.get;
+  let readThisTurn = false;
+  let warned = false;
+  Object.defineProperty(props, 'children', {
+    ...descriptor,
+    get() {
+      if (readThisTurn && !warned) {
+        warned = true;
+        const name = (Comp as { name?: string })?.name || 'A component';
+        console.warn(
+          `[fluixi] ${name} read props.children more than once. Each read builds the children again: ` +
+            'read it once into a local, or resolve it with readChildren(() => props.children).',
+        );
+      }
+      if (!readThisTurn) {
+        readThisTurn = true;
+        queueMicrotask(() => {
+          readThisTurn = false;
+        });
+      }
+      return read.call(this);
+    },
+  });
 }

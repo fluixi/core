@@ -135,7 +135,6 @@ function emitComponent(
   templates?: StaticTemplate[],
   at?: { file: string; line: number; column: number },
 ): string {
-  used.add('createMemo');
   used.add('createComponent');
   const spreads = props.filter((p) => p.kind === 'spread');
   const normal = props.filter((p) => p.kind !== 'spread');
@@ -176,34 +175,15 @@ function emitComponent(
   const propAt: Record<string, [number, number]> = {};
   for (const p of normal) if (p.at) propAt[p.name] = [p.at.line, p.at.column];
   if (Object.keys(propAt).length) obj = markProps(obj, propAt);
-  // The memo never recomputes: every prop is a getter or a constant, so this callback reads nothing
-  // reactive. It is here for what it makes `insert` do, and it cannot be elided.
-  //
-  // A component whose return value is *itself* bare control flow (`return <Show .../>`)
-  // produces a memo, which `createComponent` deliberately does not stamp as a component.
-  // Without this wrapper `insert` stops re-reading it, and the subtree goes stale when a
-  // sibling updates the context it depends on: see `show-context-insert.spec.ts`.
-  //
-  // Static props are not a sufficient condition for dropping it either: safety depends on
-  // what the callee *returns*, which lives in another module and is not visible here.
-  //
-  // Nor can it be a plain `() => createComponent(...)` thunk. The memo also provides
-  // *identity*: it runs once and caches. A thunk is re-invoked by insert's render effect
-  // on every run, rebuilding the component with a fresh owner, which loses context,
-  // duplicates the tree on hydration and piles up Portals. Measured: dropping the wrapper
-  // fails 3 tests, replacing it with a thunk fails 14.
-  //
-  // Control flow does use a bare arrow, and that is not a counter-example: control flow
-  // is the reactive boundary and is *meant* to re-run. A user component is meant to run
-  // once.
-  // The mark goes inside the call, where it runs before createMemo makes the node and so
-  // is the one the node takes. Devtools installs the global; without it this is a no-op.
+  // Devtools installs the global; without it the mark is a no-op.
   const mark = at
     ? `globalThis.${SOURCE_MARKER}?.(${JSON.stringify(at.file)},${at.line},${at.column},${JSON.stringify(name)}), `
     : '';
-  // The mark makes this a sequence, which has to stay wrapped to pass as one argument.
-  // Without one there is nothing to wrap, and a production build never has one.
-  return `createMemo(${paren(`${mark}() => createComponent(${name}, ${obj})`, 'value')})`;
+  // Called where it is written, as Solid does: the component builds now, once. Only the result
+  // of control flow it returns stays reactive, and `insert` tracks that. The mark goes just
+  // before the call: in development the component runs in a memo of its own, the next node
+  // made, which takes it.
+  return mark ? `(${mark}createComponent(${name}, ${obj}))` : `createComponent(${name}, ${obj})`;
 }
 
 /** The attribute a binding writes: a forced name stripped, a plain name in its HTML spelling. */

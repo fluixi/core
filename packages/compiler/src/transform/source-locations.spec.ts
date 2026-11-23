@@ -42,13 +42,13 @@ function helper() { return 1; }`);
     expect(out).toContain('"src/App.ts",2,31,"b"');
   });
 
-  it('marks where a component is used, inside the memo that wraps it', () => {
+  it('marks where a component is used, just before the call', () => {
     const out = run(`import { Row } from './Row';
 export function App() {
   return <div><Row label="x" /></div>;
 }`);
-    // Before the arrow, so it is the mark the wrapping memo takes.
-    expect(out).toContain('createMemo((globalThis.__fx_source?.("src/App.ts",3,14,"Row"), () =>');
+    // The memo a development build runs the component in is the next node made, and takes it.
+    expect(out).toContain('(globalThis.__fx_source?.("src/App.ts",3,14,"Row"), createComponent(Row,');
   });
 
   /**
