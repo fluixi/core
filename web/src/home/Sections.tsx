@@ -64,6 +64,7 @@ export function Runtime() {
       title="A small runtime, a compiler on top."
       lead="The runtime does the reactive work; the compiler removes the ceremony around it."
       points={[
+        { title: 'About 5 KB for a whole app', text: 'A counter app ships 5.3 KB gzipped, runtime included, or 5.6 KB when the page is rendered on the server and hydrates.' },
         { title: 'Reactivity without a build', text: 'Signals, effects and html`` templates run from a script tag through the CDN build.' },
         { title: 'A compiler for the rest', text: 'JSX, live destructured props, $signal with no import, the server boundary.' },
         { title: 'One package, or all', text: 'Use @fluixi/reactive alone, or the full stack through @fluixi/start.' },

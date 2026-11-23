@@ -90,6 +90,20 @@ bundle-le quand même ».
 > Seul le build lit `bundle`. Le dev n'externalise jamais : `fluixi dev` charge les modules
 > serveur via Vite pour que leur édition déclenche toujours le HMR.
 
+## Ce que livre une application
+
+Le bundle navigateur d'une application compteur, runtime compris, construit pour la production et
+compressé en gzip :
+
+| | Taille |
+|---|---|
+| Application côté client seulement (`ssr: false`) | 5,3 Ko |
+| Application rendue sur le serveur | 5,6 Ko |
+| Le même compteur en élément personnalisé | 8,5 Ko |
+
+Un test du dépôt construit les deux applications et échoue si l'une d'elles grossit : ces chiffres
+restent à jour.
+
 ## Quand une requête échoue
 
 Une erreur levée par une fonction serveur ou un middleware est écrite dans le journal du serveur.
