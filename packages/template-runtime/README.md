@@ -23,6 +23,6 @@ Components defined with `define()` can be used with a bare tag, like `<Counter /
 
 | Item | Value |
 |------|-------|
-| Size (CDN build) | 103 KB |
-| Gzipped size | 33 KB |
+| Size (CDN build) | 131.3 KB |
+| Gzipped size | 43.8 KB |
 | Content-Security-Policy requirement | 'unsafe-eval' is required |
