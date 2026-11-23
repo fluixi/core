@@ -44,6 +44,10 @@ import {
 // caller sits behind an imported or local constant.
 declare const __DEV__: boolean | undefined;
 import { isDevelopment } from './dev-env.js';
+// `false` in a production browser build (the Vite integration and the CDN builds define it), so
+// a bundler drops the server branches; without it the check asks the runtime. Written inline at
+// each use, as `__DEV__` is: a bundler keeps a function whose only caller sits behind a constant.
+declare const __FLUIXI_SERVER__: boolean | undefined;
 
 function getElementFingerprint(el: Element): string {
   const parts: string[] = [];
@@ -196,7 +200,7 @@ const NON_DELEGATED = new Set(['scroll', 'focus', 'blur', 'load', 'error', 'resi
  * Stores handlers as `element.$$eventname = handler` properties.
  */
 export function delegateEvents(eventNames: string[]): void {
-  if (isServer()) return; // no document to attach to; events are inert in SSR
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) return; // no document to attach to; events are inert in SSR
   for (const name of eventNames) {
     if (delegatedSet.has(name) || NON_DELEGATED.has(name)) continue;
     delegatedSet.add(name);
@@ -289,7 +293,7 @@ export function isFunction(value: any): value is Function {
 }
 
 function createTextNode(value: string, anchor = false): Text {
-  if (isServer()) return getServerNodes().createText(value) as unknown as Text;
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) return getServerNodes().createText(value) as unknown as Text;
   // Anchors/placeholders (insert markers) are client-only insertion points, the server
   // serialized nothing for them, so they must never adopt a server text node. Only real
   // content goes through the hydration walker.
@@ -301,7 +305,7 @@ function createTextNode(value: string, anchor = false): Text {
 }
 
 function createMarker(value: string): Comment {
-  if (isServer()) return getServerNodes().createComment(value) as unknown as Comment;
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) return getServerNodes().createComment(value) as unknown as Comment;
   if (hydration.active) {
     const node = getHydrationWalker()?.hydrateMarker(value);
     if (node) return node;
@@ -328,7 +332,7 @@ export function createNativeElement(
   // Null unless a server render or `hydrate()` loaded the keys: a page that only renders here.
   const keys = hydrationKeys();
   const key = keys ? keys.next() : null;
-  if (isServer()) {
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) {
     const node = getServerNodes().createElement(tag, isSVG) as unknown as Element;
     if (key) node.setAttribute(HYDRATION_KEY, key);
     return node;
@@ -394,7 +398,7 @@ export function templateNode(
   const keys = hydrationKeys();
   const salt = keys ? keys.salt(html) : '';
   const key = keys ? keys.next(salt) : null;
-  if (isServer()) {
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) {
     // With holes the server needs real nodes for the hole content to be inserted into;
     // without them the string can be written out untouched, which is strictly cheaper.
     const nodes = getServerNodes();
@@ -1726,11 +1730,11 @@ export function spread(options: SpreadOptions): () => void {
     const functionValue =
       custom && !elementIsSVG && !isAttributeOnlyName(key) && accessors !== undefined && typeof value === 'function' && !accessors.includes(key);
     if (functionValue) {
-      if (isServer()) serverCustomElementProp(element, key, value);
+      if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) serverCustomElementProp(element, key, value);
       else setProperty(element, key, value);
       return;
     }
-    if (custom && !elementIsSVG && !isAttributeOnlyName(key) && isServer()) {
+    if (custom && !elementIsSVG && !isAttributeOnlyName(key) && (typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) {
       // No element object on a server: see serverCustomElementProp.
       own.push(
         createRenderEffect(() => {

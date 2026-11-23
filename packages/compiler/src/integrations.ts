@@ -289,6 +289,19 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
       return user?.css?.devSourcemap === undefined ? { ...jsx, ...define, css: { devSourcemap: true } } : { ...jsx, ...define };
     },
 
+    // A browser build carries no server rendering: `__FLUIXI_SERVER__` is false there, so the
+    // runtime's server branches fold away. Only for a build, and only the client environment:
+    // dev and tests switch the runtime into server mode in the same process.
+    configEnvironment(
+      this: unknown,
+      name: string,
+      config: { consumer?: string; define?: Record<string, unknown> },
+      env?: { command?: string },
+    ) {
+      if (env?.command !== 'build' || name !== 'client' || config.define?.__FLUIXI_SERVER__ !== undefined) return;
+      return { define: { __FLUIXI_SERVER__: 'false' } };
+    },
+
     // Written once per build, and on dev-server start, rather than per transform: the
     // set of resolvable names comes from config, so nothing a file does can change it.
     async configResolved(config: { root?: string; plugins?: readonly unknown[]; command?: string; build?: { lib?: false | { entry?: unknown } } }) {

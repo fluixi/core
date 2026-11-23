@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 // shows here first. Lower a budget when a change makes it smaller.
 //
 // Browser-only output (`hydratable: false`): single-page apps and standalone custom elements.
-const CLIENT_BUDGET_GZIP = 5_400;
+const CLIENT_BUDGET_GZIP = 5_340;
 
 const CLIENT_COUNTER = `
 import { createComponent, delegateEvents, insert, render, template as _fxTemplate } from "@fluixi/dom";
@@ -25,7 +25,7 @@ render(() => createComponent(Counter, { step: 1, label: "Count" }), document.get
 
 // Hydratable output, the default: the same counter as a server-rendered app's browser bundle
 // compiles it, before `hydrate()` brings in the hydration code.
-const HYDRATABLE_BUDGET_GZIP = 5_760;
+const HYDRATABLE_BUDGET_GZIP = 5_600;
 
 const HYDRATABLE_COUNTER = `
 import { createComponent, delegateEvents, holeContent, holeEnd, holeScope, insert, render, templateNode } from "@fluixi/dom";
@@ -47,7 +47,7 @@ async function gzipSize(source: string): Promise<number> {
     format: 'esm',
     platform: 'browser',
     conditions: ['development'],
-    define: { 'process.env.NODE_ENV': '"production"', __DEV__: 'false' },
+    define: { 'process.env.NODE_ENV': '"production"', __DEV__: 'false', __FLUIXI_SERVER__: 'false' },
     write: false,
     logLevel: 'silent',
   });

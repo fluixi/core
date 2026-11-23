@@ -19,6 +19,10 @@ import { hydration, hydrationKeys } from './hydration-state.js';
 import { getServerNodes, isServer } from './server/host.js';
 import { createComponent } from './integration.js';
 import { readChildren } from '@fluixi/reactive/signal';
+// `false` in a production browser build (the Vite integration and the CDN builds define it), so
+// a bundler drops the server branches; without it the check asks the runtime. Written inline at
+// each use, as `__DEV__` is: a bundler keeps a function whose only caller sits behind a constant.
+declare const __FLUIXI_SERVER__: boolean | undefined;
 
 /** A tag name, or a component function. */
 export type DynamicType = string | ((props: any) => any);
@@ -119,7 +123,7 @@ function hasChildren(props: Record<string, any>): boolean {
 function insertChildren(element: Element, props: Record<string, any>): void {
   if (!hasChildren(props)) return;
   // Markup nothing hydrates needs no markers to find its children by.
-  if (isServer() && !(hydrationKeys()?.keyed() ?? false)) {
+  if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer()) && !(hydrationKeys()?.keyed() ?? false)) {
     insert(element, readChildren(() => props.children) as never);
     return;
   }
@@ -139,5 +143,5 @@ function insertChildren(element: Element, props: Record<string, any>): void {
 }
 
 function marker(data: string): Comment {
-  return isServer() ? (getServerNodes().createComment(data) as unknown as Comment) : document.createComment(data);
+  return (typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer()) ? (getServerNodes().createComment(data) as unknown as Comment) : document.createComment(data);
 }

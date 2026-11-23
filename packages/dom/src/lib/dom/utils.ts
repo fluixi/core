@@ -1,4 +1,8 @@
 import { isServer } from './server/host.js';
+// `false` in a production browser build (the Vite integration and the CDN builds define it), so
+// a bundler drops the server branches; without it the check asks the runtime. Written inline at
+// each use, as `__DEV__` is: a bundler keeps a function whose only caller sits behind a constant.
+declare const __FLUIXI_SERVER__: boolean | undefined;
 /**
  * @module @fluixi/core/dom
  *
@@ -150,7 +154,7 @@ export function applyElementProp(
   }
 
   if (isCustomElement(element)) {
-    if (isServer()) {
+    if ((typeof __FLUIXI_SERVER__ !== 'undefined' ? __FLUIXI_SERVER__ : isServer())) {
       serverCustomElementProp(element, name, value);
       return;
     }
