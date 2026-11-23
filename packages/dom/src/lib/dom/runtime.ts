@@ -2277,7 +2277,11 @@ export function render<T>(
         warnOnVersionSkew();
       } else container.setAttribute(VERSION_ATTRIBUTE, '');
 
-      insert(container, element as any);
+      // The code runs once, untracked, as core's `render` and Solid's do. Handed to `insert` as a
+      // function it ran inside the insert's effect, so anything the app read while building made
+      // that effect re-run it and build the whole app again.
+      const code = element as unknown;
+      insert(container, (typeof code === 'function' && !isSignal(code) ? untrack(code as () => unknown) : code) as any);
       return;
     });
     disposeRoot = dispose;
