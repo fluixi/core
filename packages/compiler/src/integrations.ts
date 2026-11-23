@@ -270,12 +270,23 @@ export function createVitePlugin<T>(options: CompilerOptions = {}): T {
     // esbuild before, which Vite 8 warns about.
     // In dev, CSS maps are on unless the app says otherwise, so devtools show the line a
     // component's rule was written on. Vite leaves them off by default; a build never has them.
-    config(this: { meta?: { rolldownVersion?: string } } | void, user?: { css?: { devSourcemap?: boolean } }) {
+    //
+    // `__DEV__` is defined for the app and its dependencies: the Fluixi packages guard their
+    // development code with it, and only a defined value lets the bundler drop that code from a
+    // production build. Left alone when the app defines it.
+    config(
+      this: { meta?: { rolldownVersion?: string } } | void,
+      user?: { css?: { devSourcemap?: boolean }; define?: Record<string, unknown> },
+      env?: { mode?: string },
+    ) {
       const importSource = options.importSource || '@fluixi/jsx';
       const jsx = this && this.meta?.rolldownVersion
         ? { oxc: { jsx: { runtime: 'automatic' as const, importSource } } }
         : { esbuild: { jsx: 'automatic' as const, jsxImportSource: importSource } };
-      return user?.css?.devSourcemap === undefined ? { ...jsx, css: { devSourcemap: true } } : jsx;
+      const define = user?.define?.__DEV__ === undefined && env?.mode
+        ? { define: { __DEV__: JSON.stringify(env.mode !== 'production') } }
+        : {};
+      return user?.css?.devSourcemap === undefined ? { ...jsx, ...define, css: { devSourcemap: true } } : { ...jsx, ...define };
     },
 
     // Written once per build, and on dev-server start, rather than per transform: the
