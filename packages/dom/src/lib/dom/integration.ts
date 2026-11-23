@@ -107,10 +107,12 @@ function warnOnRepeatedChildren(Comp: unknown, props: object): void {
   const read = descriptor.get;
   let readThisTurn = false;
   let warned = false;
+  // Settled on the first read: a getter returns a render function every time, or never.
+  let returnsFunction = false;
   Object.defineProperty(props, 'children', {
     ...descriptor,
     get() {
-      if (readThisTurn && !warned) {
+      if (readThisTurn && !warned && !returnsFunction) {
         warned = true;
         const name = (Comp as { name?: string })?.name || 'A component';
         console.warn(
@@ -118,13 +120,19 @@ function warnOnRepeatedChildren(Comp: unknown, props: object): void {
             'read it once into a local, or resolve it with readChildren(() => props.children).',
         );
       }
-      if (!readThisTurn) {
+      if (!readThisTurn && !returnsFunction) {
         readThisTurn = true;
         queueMicrotask(() => {
           readThisTurn = false;
         });
       }
-      return read.call(this);
+      const value = read.call(this);
+      // A render function builds nothing until it is called: reading it again costs nothing.
+      if (typeof value === 'function') {
+        returnsFunction = true;
+        readThisTurn = false;
+      }
+      return value;
     },
   });
 }

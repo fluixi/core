@@ -86,6 +86,10 @@ export function Show<T>(props: ShowProps<T>): any {
         return runWithOwner(branchScope, () => {
           if (!evaluate) return props.fallback;
           const children = props.children;
+          // A signal or memo is content that changes on its own, what a component that returns
+          // control flow hands back (a <Suspense> swapping fallback for content): returned as
+          // it is, so `insert` keeps reading it. Called here it would be read once.
+          if (isSignal(children)) return children;
           if (typeof children === 'function') {
             // A callback that takes the value, `{(user) => ...}`, renders again for a new one.
             // One that takes nothing is plain content the compiler wrapped: tracking the

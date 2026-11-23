@@ -84,7 +84,8 @@ export interface SwitchProps {
  * })
  */
 export function Switch(props: SwitchProps): Accessor<any> {
-  const branches = Array.isArray(props.children) ? props.children : [props.children];
+  const children = props.children;
+  const branches = Array.isArray(children) ? children : [children];
 
   // Each branch renders in its own scope, disposed when a different branch takes
   // over, so whatever it registered with `onCleanup`, a listener, an observer, a

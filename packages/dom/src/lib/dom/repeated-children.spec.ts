@@ -32,6 +32,13 @@ describe('reading props.children', () => {
     expect(warnings()).toHaveLength(0);
   });
 
+  it('says nothing about a render function, which builds nothing until it is called', () => {
+    const props = { get children() { return (item: unknown) => item; } };
+    function List(p: { children: unknown }) { p.children; return p.children; }
+    createRoot(() => createComponent(List, props));
+    expect(warnings()).toHaveLength(0);
+  });
+
   it('says nothing when it is read again in a later turn, as control flow does', async () => {
     const { props } = propsWithChildren();
     let again: () => unknown = () => undefined;
