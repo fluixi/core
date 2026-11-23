@@ -974,8 +974,11 @@ function flattenArray(
         if (!componentCache.has(item)) componentCache.set(item, item());
         resolved = componentCache.get(item);
       } else {
-        // Signal/memo (or memo-stamped component): read to track reactivity.
-        resolved = item();
+        // Signal/memo (or memo-stamped component). Where the caller collects slots, the signal
+        // is one: it gets its own insert, so it updates in place. A component hands back the
+        // control flow it returns as such a memo, and read here it would be read once. Anywhere
+        // else it is read to track it.
+        resolved = reactiveSlots && isSignal(item) ? item : item();
       }
 
       // Unwrap plain wrappers; stop at signals and component thunks.
