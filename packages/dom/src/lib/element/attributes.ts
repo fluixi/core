@@ -407,8 +407,8 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, Contr
   // Data attributes
   [key: `data-${string}`]: string | number | boolean | undefined;
 
-  // Ref: a variable the compiler assigns (`ref={el}`), a bivariant callback, or an object.
-  ref?: T | RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
+  // Ref (bivariant callback + base-element object form: see RefCallback)
+  ref?: RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
   key?: string | number | ((item: any) => unknown);
 
   children?: DirectiveChildren;
@@ -977,7 +977,7 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   class?: Reactive<ClassValue>;
   className?: Reactive<ClassValue>;
   style?: Reactive<string | CSSProperties>;
-  ref?: T | RefCallback<T> | { current: T | null } | { current: SVGElement | null };
+  ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
   key?: string | number | ((item: any) => unknown);
   children?: DirectiveChildren;
   tabIndex?: Reactive<number>;
@@ -1289,11 +1289,22 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
 export type FxElement = ComponentChild;
 
 /**
+ * On a tag, `ref={el}` also takes a variable: the compiler assigns the element to it. Only here,
+ * not in the attribute interfaces components extend, where a ref is forwarded and has to stay a
+ * callback or an object.
+ */
+type TagRef<A> = A extends { ref?: infer R }
+  ? Omit<A, 'ref'> & { ref?: R | (Extract<R, (el: never) => void> extends (el: infer E) => void ? E : never) }
+  : A;
+
+/**
  * Every intrinsic tag mapped to the attributes it accepts. `JSX.IntrinsicElements`
  * aliases this. It lives here because html`` tooling needs the same map to type
  * `<div class=...>` inside a template, that has nothing to do with JSX.
  */
-export interface IntrinsicElements {
+export type IntrinsicElements = { [K in keyof IntrinsicElementAttributes]: TagRef<IntrinsicElementAttributes[K]> };
+
+interface IntrinsicElementAttributes {
   /** Carries `if`, `else` or `each` and renders only its content. Never in the DOM. */
   container: ControlDirectives & { key?: string | ((item: any) => unknown); children?: DirectiveChildren };
   // HTML

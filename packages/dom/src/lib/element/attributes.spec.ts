@@ -2,7 +2,7 @@
  * Types only: these assertions fail the typecheck, not the run.
  */
 import { describe, expectTypeOf, it } from 'vitest';
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, SVGAttributes } from './attributes.js';
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, IntrinsicElements } from './attributes.js';
 
 type EventOf<H> = NonNullable<H> extends (event: infer E) => void ? E : never;
 
@@ -31,8 +31,14 @@ describe('event handler types', () => {
 });
 
 describe('ref types', () => {
-  it('accept the element itself, which the compiler assigns to a variable', () => {
-    expectTypeOf<HTMLCanvasElement>().toExtend<NonNullable<HTMLAttributes<HTMLCanvasElement>['ref']>>();
-    expectTypeOf<SVGCircleElement>().toExtend<NonNullable<SVGAttributes<SVGCircleElement>['ref']>>();
+  it('accept the element itself on a tag, which the compiler assigns to a variable', () => {
+    expectTypeOf<HTMLCanvasElement>().toExtend<NonNullable<IntrinsicElements['canvas']['ref']>>();
+    expectTypeOf<SVGCircleElement>().toExtend<NonNullable<IntrinsicElements['circle']['ref']>>();
+  });
+
+  it('keep a forwarded ref a callback or an object in the attributes a component extends', () => {
+    expectTypeOf<HTMLCanvasElement>().not.toExtend<NonNullable<HTMLAttributes<HTMLCanvasElement>['ref']>>();
+    // Props typed for any element spread onto a paragraph.
+    expectTypeOf<HTMLAttributes<HTMLElement>['ref']>().toExtend<HTMLAttributes<HTMLParagraphElement>['ref']>();
   });
 });
