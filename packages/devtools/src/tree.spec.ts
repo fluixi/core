@@ -281,6 +281,37 @@ describe('the dom a tag rendered', () => {
     ]);
   });
 
+  it('nests components that share a root element, each once, outermost first', () => {
+    // Profile returns what Card returns, which is what Poly rendered: one element, three tags.
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>Title</h3>';
+    const main = document.createElement('main');
+    main.append(card);
+    const graph = new Map<number, RNode>([
+      [0, node(0, { kind: 'component', label: 'App' })],
+      [1, node(1, { kind: 'component', label: 'Profile', createdIn: 0 })],
+      [2, node(2, { kind: 'component', label: 'Card', createdIn: 1 })],
+      [3, node(3, { kind: 'component', label: 'Poly', createdIn: 2 })],
+    ]);
+    tree = createComponentTree(host, { domFor: domOf({ 0: [main], 1: [card], 2: [card], 3: [card] }, graph) });
+    tree.render(graph);
+    expect(labels()).toEqual(['<App>', '<main>', '<Profile>', '<Card>', '<Poly>', '<div.card>', '<h3 />']);
+  });
+
+  it('puts a root that rendered its own markup inside the element it was mounted into', () => {
+    const mount = document.createElement('div');
+    mount.id = 'app';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>Title</h3>';
+    mount.append(card);
+    const graph = new Map<number, RNode>([[0, node(0, { kind: 'component', label: 'App' })]]);
+    tree = createComponentTree(host, { domFor: domOf({ 0: [card] }, graph) });
+    tree.render(graph);
+    expect(labels()).toEqual(['<div#app>', '<App>', '<div.card>', '<h3 />']);
+  });
+
   it('draws a custom element once: its scope row stands for the element', () => {
     const el = document.createElement('fx-counter');
     el.innerHTML = '<div class="counter"><output>0</output><button>+</button></div>';

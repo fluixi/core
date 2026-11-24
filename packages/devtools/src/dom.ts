@@ -91,12 +91,24 @@ export function describeAll(
   const owners = new Map<Element, number>();
   const writers = new Map<Element, number[]>();
   const rendered = new Map<number, readonly Element[]>();
+  /**
+   * The tags that returned each element, outermost first. A component returning another
+   * component's output shares its root: `Profile` returns what `Card` returns, which is what
+   * `Polymorphic` rendered. Each of them points at the next one in, and only the innermost
+   * describes the element. Giving the element to one of them made every other one point back
+   * at it, so the tree drew that tag's subtree once per tag sharing the root.
+   */
+  const sharers = new Map<Element, number[]>();
 
   for (const node of graph.values()) {
     if (kinds.has(node.kind)) {
       const found = roots(node.id);
       rendered.set(node.id, found);
-      for (const element of found) if (!owners.has(element)) owners.set(element, node.id);
+      for (const element of found) {
+        const held = sharers.get(element);
+        if (held) held.push(node.id);
+        else sharers.set(element, [node.id]);
+      }
       continue;
     }
     for (const element of writtenBy(node.id)) {
@@ -104,6 +116,12 @@ export function describeAll(
       if (held) held.push(node.id);
       else writers.set(element, [node.id]);
     }
+  }
+
+  const depth = tagDepths(graph, kinds);
+  for (const [element, ids] of sharers) {
+    ids.sort((a, b) => (depth.get(a) ?? 0) - (depth.get(b) ?? 0) || a - b);
+    owners.set(element, ids[0]!);
   }
 
   const { claimed, containers } = claimOrphans(graph, rendered, writtenBy, kinds, owners);
@@ -121,7 +139,11 @@ export function describeAll(
     if (!kinds.has(node.kind)) continue;
     const budget = { left: DOM_BUDGET };
     const walk = (element: Element): DomNode => {
-      const owner = owners.get(element) ?? claimed.get(element);
+      // From outside, the outermost tag that returned it; from one of those tags, the next one
+      // in; from the innermost, nobody, so it describes the element.
+      const shared = sharers.get(element);
+      const at = shared ? shared.indexOf(node.id) : -1;
+      const owner = at === -1 ? (owners.get(element) ?? claimed.get(element)) : shared![at + 1];
       // Another tag starts here, so stop. Its DOM goes under its own row.
       const where = locationOf(element);
       if (owner !== undefined && owner !== node.id) {
@@ -297,6 +319,16 @@ function claimOrphans(
     });
     claimed.set(element, pick);
     if (container) containers.add(element);
+  }
+  // A root tag that rendered elements of its own was mounted into their parent. Since
+  // components are called directly, the root returns its markup rather than writing into the
+  // mount point, so the pass above, which only sees tags that rendered nothing, missed it.
+  for (const [id, elements] of rendered) {
+    if (!elements.length || depth.get(id) !== 0) continue;
+    const parent = elements[0]!.parentElement;
+    if (!parent || owners.has(parent) || claimed.has(parent) || covered(parent)) continue;
+    claimed.set(parent, id);
+    containers.add(parent);
   }
   return { claimed, containers };
 }

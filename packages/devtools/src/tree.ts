@@ -568,13 +568,13 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       children: row.children.map((child, i) => again(child, `${key}/${i}`)),
     });
 
-    const expand = (row: Row): Row => {
+    const expand = (row: Row, given?: readonly DomNode[]): Row => {
       if (row.value || row.id === undefined) return row;
       if (done.has(row)) return row;
       done.add(row);
-      const dom = domFor(row.id);
+      const dom = given ?? domFor(row.id);
       if (!dom.length) {
-        row.children = row.children.map(expand);
+        row.children = row.children.map((child) => expand(child));
         return row;
       }
 
@@ -629,12 +629,14 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       const mount = dom.findIndex((node) => node.container);
       if (mount !== -1) {
         const node = dom[mount]!;
-        row.children = row.children.map(expand);
+        // The tag inside it, with whatever markup it rendered itself.
+        done.delete(row);
+        const inner = expand(row, dom.filter((_, i) => i !== mount));
         return {
           key: `${row.id}:${mount}`,
           label: node.label,
           kind: 'element',
-          children: [row],
+          children: [inner],
           owner: row.id,
           ...(node.at ? { at: node.at } : {}),
           ...(node.element ? { element: node.element } : {}),
@@ -659,7 +661,7 @@ export function createComponentTree(host: HTMLElement, options: ComponentTreeOpt
       // Above the markup, not below it. A signal a nested tag consumes writes nowhere this
       // description reaches, so it never nests beside an element, and appending it left
       // `todos` alone at the bottom of `App` well away from the `For` that reads it.
-      const rest = row.children.filter((child) => !placed.has(child)).map(expand);
+      const rest = row.children.filter((child) => !placed.has(child)).map((child) => expand(child));
 
       // A value the dom cannot place goes under the tag that reads it.
       //

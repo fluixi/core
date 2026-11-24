@@ -243,6 +243,9 @@ function readProps(props: object): PropReport[] | undefined {
 }
 
 /** Each props object's reports, from its first read. */
+/** The marks the reactive package puts on its accessors. */
+const MEMO_MARK = Symbol.for('memo');
+const SIGNAL_MARK = Symbol.for('signal');
 const readOnce = new WeakMap<object, PropReport[] | undefined>();
 
 export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
@@ -328,11 +331,22 @@ export function observeGraph(options: ObserveOptions = {}): ObservedGraph {
   const rendered = new Map<number, WeakRef<Element>[]>();
 
   /** The elements in a component's return value, however it was shaped. */
-  const elementsIn = (value: unknown): Element[] => {
+  const elementsIn = (value: unknown, hops = 0): Element[] => {
     if (value instanceof Element) return [value];
     if (value instanceof DocumentFragment) return [...value.children];
     // A component returning several roots hands back an array of nodes.
-    if (Array.isArray(value)) return value.flatMap(elementsIn);
+    if (Array.isArray(value)) return value.flatMap((item) => elementsIn(item, hops));
+    // A component whose body is another component's reactive result returns its accessor:
+    // `Stack` returns what `Polymorphic` built through `Dynamic`. Followed, so the component
+    // has elements and the tree can put it where they are. Guarded as `readRaw` is, since
+    // a memo holding an error rethrows it.
+    if (typeof value === 'function' && hops < 8 && ((value as any)[MEMO_MARK] || (value as any)[SIGNAL_MARK])) {
+      try {
+        return elementsIn((value as () => unknown)(), hops + 1);
+      } catch {
+        return [];
+      }
+    }
     return [];
   };
   const cores = new Map<number, CoreNode>();

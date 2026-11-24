@@ -636,6 +636,21 @@ describe('where a node reaches the page', () => {
     expect(observed.elementsFor(id)).toEqual([]);
   });
 
+  it('follows a component that returns another component\'s reactive result to its elements', () => {
+    const own = document.createElement('section');
+    document.body.append(own);
+    observed = observeGraph();
+    createRoot(() => {
+      // `Stack` returns what `Polymorphic` built: an accessor, not an element.
+      const inner = createMemo(() => asComponent(own, 'Inner'));
+      createMemo(() => Object.assign(inner, { $name: 'Outer' }))();
+    });
+    observed.sample();
+    observed.sample();
+    expect(observed.renderedFor(byLabel(observed, 'Outer')!.id)).toEqual([own]);
+    own.remove();
+  });
+
   it('answers which node a pointer landed on, walking up from where it hit', () => {
     const box = document.createElement('div');
     const inner = document.createElement('em');
