@@ -3,10 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 // These should be your framework primitives
 import {
   createRoot,
-  createSignal,
   createEffect,
   createResource,
-  getSuspenseContext,
 } from './signal.js';
 
 function wait(ms = 0) {

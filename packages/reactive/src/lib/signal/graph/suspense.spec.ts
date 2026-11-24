@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createContext, useContext, provide, createRoot } from './runtime.js';
-import { createEffect, createSignal } from './compat.js';
+import { createEffect } from './compat.js';
 import { createResource } from './resource.js';
 import { createSuspenseBoundary, provideSuspense } from './suspense.js';
 
@@ -33,7 +33,7 @@ describe('context (on the owner tree)', () => {
 describe('Suspense boundary', () => {
   it('a suspended resource read flips inFallback until it resolves', async () => {
     const boundary = createSuspenseBoundary();
-    const [data] = createResource(() => new Promise((r) => setTimeout(() => r('LOADED'), 5)));
+    const [data] = createResource(() => new Promise<string>((r) => setTimeout(() => r('LOADED'), 5)));
 
     let value: string | undefined;
     createRoot(() => {
@@ -55,8 +55,8 @@ describe('Suspense boundary', () => {
 
   it('counts multiple pending reads and only clears when all resolve', async () => {
     const boundary = createSuspenseBoundary();
-    const [a] = createResource(() => new Promise((r) => setTimeout(() => r('A'), 5)));
-    const [b] = createResource(() => new Promise((r) => setTimeout(() => r('B'), 25)));
+    const [a] = createResource(() => new Promise<string>((r) => setTimeout(() => r('A'), 5)));
+    const [b] = createResource(() => new Promise<string>((r) => setTimeout(() => r('B'), 25)));
 
     createRoot(() => {
       provideSuspense(boundary, () => {

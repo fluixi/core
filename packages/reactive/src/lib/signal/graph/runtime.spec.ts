@@ -14,7 +14,7 @@ describe('runtime: effect', () => {
   it('runs once immediately, re-runs when a dep changes', () => {
     const a = new State(1);
     const seen: number[] = [];
-    effect(() => seen.push(a.get()));
+    effect(() => { seen.push(a.get()); });
     expect(seen).toEqual([1]); // synchronous first run
     a.set(2);
     flushSync();
@@ -28,7 +28,7 @@ describe('runtime: effect', () => {
     const a = new State(2);
     const doubled = new Computed(() => a.get() * 2);
     const seen: number[] = [];
-    effect(() => seen.push(doubled.get()));
+    effect(() => { seen.push(doubled.get()); });
     expect(seen).toEqual([4]);
     a.set(5);
     flushSync();
@@ -70,7 +70,7 @@ describe('runtime: effect', () => {
   it('does not re-run when a memo source settles unchanged', () => {
     const a = new State(1);
     const parity = new Computed(() => a.get() % 2);
-    const run = vi.fn(() => parity.get());
+    const run = vi.fn(() => { parity.get(); });
     effect(run);
     expect(run).toHaveBeenCalledTimes(1);
     a.set(3); // parity stays 1: the effect is marked, settles, and stays put
@@ -83,7 +83,7 @@ describe('runtime: effect', () => {
 
   it('does not run an effect disposed while queued', () => {
     const a = new State(1);
-    const run = vi.fn(() => a.get());
+    const run = vi.fn(() => { a.get(); });
     const dispose = effect(run);
     run.mockClear();
     batch(() => {
@@ -97,7 +97,7 @@ describe('runtime: effect', () => {
   it('async microtask scheduling (no manual flush)', async () => {
     const a = new State(1);
     const seen: number[] = [];
-    effect(() => seen.push(a.get()));
+    effect(() => { seen.push(a.get()); });
     a.set(2);
     expect(seen).toEqual([1]); // not yet: scheduled
     await Promise.resolve();
@@ -131,7 +131,7 @@ describe('runtime: ownership', () => {
     let dispose!: () => void;
     createRoot((d) => {
       dispose = d;
-      effect(() => seen.push(a.get()));
+      effect(() => { seen.push(a.get()); });
     });
     expect(seen).toEqual([1]);
     a.set(2);

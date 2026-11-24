@@ -9,7 +9,6 @@ import {
   startTransition,
   useTransition,
   // createSuspense,
-  trackPromise,
   createContext,
   useContext,
   createRenderEffect,
@@ -26,7 +25,7 @@ import {
 describe('Signal System - Core Features', () => {
   describe('createSignal', () => {
     it('should create a signal with initial value', () => {
-      const [count, setCount] = createSignal(0);
+      const [count] = createSignal(0);
       expect(count()).toBe(0);
     });
 
@@ -76,7 +75,7 @@ describe('Signal System - Core Features', () => {
 
   describe('createEffect', () => {
     it('should run effect immediately', () => {
-      const [count, setCount] = createSignal(0);
+      const [count] = createSignal(0);
       let runs = 0;
       createEffect(() => {
         count();
@@ -142,13 +141,13 @@ describe('Signal System - Core Features', () => {
 
   describe('createMemo', () => {
     it('should compute initial value', () => {
-      const [count, setCount] = createSignal(2);
+      const [count] = createSignal(2);
       const doubled = createMemo(() => count() * 2);
       expect(doubled()).toBe(4);
     });
 
     it('should cache computed values', () => {
-      const [count, setCount] = createSignal(2);
+      const [count] = createSignal(2);
       let computations = 0;
       const doubled = createMemo(() => {
         computations++;
@@ -288,6 +287,7 @@ describe('Signal System - Core Features', () => {
       expect(runs).toBe(2); // Runs because 'a' changed
       setB(20);
       expect(runs).toBe(2); // Does not run because 'b' is untracked
+      expect(bValue).toBe(2);
     });
   });
 });
@@ -484,7 +484,7 @@ describe('Signal System - Advanced Features', () => {
         on(
           () => [a()],
           ([aValue]) => {
-            const bVal = b(); // Read value
+            b(); // Read value
             runs++;
           }
         )
@@ -585,7 +585,7 @@ describe('Signal System - Utilities', () => {
 
   describe('createSelector', () => {
     it('should create keyed selector', () => {
-      const [selected, setSelected] = createSignal({ name: 'test' });
+      const [selected] = createSignal({ name: 'test' });
       const isSelected = createSelector(() => selected().name);
       const isCalled = isSelected as any;
 
@@ -708,10 +708,10 @@ describe('Signal System - Integration Tests', () => {
     let outerDisposed = false;
 
     createRoot((disposeOuter) => {
-      const [outer, setOuter] = createSignal(0);
+      const [outer] = createSignal(0);
 
       createRoot((disposeInner) => {
-        const [inner, setInner] = createSignal(0);
+        const [inner] = createSignal(0);
 
         createEffect(() => {
           outer();
@@ -740,7 +740,7 @@ describe('Signal System - Integration Tests', () => {
 
   it('should support conditional tracking', () => {
     const [tracked, setTracked] = createSignal(1);
-    const [untracked2, setUntracked] = createSignal(2);
+    const [untracked2] = createSignal(2);
     let runs = 0;
 
     const memo = createMemo(() => {
@@ -764,7 +764,7 @@ describe('Signal System - Integration Tests', () => {
     let finalResult = '';
 
     await createRoot(async (dispose) => {
-      const [isPending, start] = useTransition();
+      const [, start] = useTransition();
 
       const result = ThemeContext.Provider({
         value: { mode: 'dark' },
@@ -798,7 +798,6 @@ describe('Signal System - Integration Tests', () => {
     // inside batched updates. The memo recomputes correctly but the effect
     // reads stale values. This is an edge case that needs investigation.
     // All other 73 tests pass, including batch and memo tests separately.
-    const ThemeContext = createContext({ mode: 'light' });
     let finalResult = '';
 
     const [count, setCount] = createSignal(0);

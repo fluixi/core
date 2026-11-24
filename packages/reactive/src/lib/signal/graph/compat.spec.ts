@@ -167,7 +167,7 @@ describe('compat: batch / untrack / on', () => {
   it('on() with defer skips the first run, then fires on dep change', () => {
     const [a, setA] = createSignal('x');
     const seen: string[] = [];
-    createEffect(on(a, (v) => seen.push(v), { defer: true }));
+    createEffect(on(a, (v) => { seen.push(v); }, { defer: true }));
     expect(seen).toEqual([]); // deferred
     setA('y');
     expect(seen).toEqual(['y']);

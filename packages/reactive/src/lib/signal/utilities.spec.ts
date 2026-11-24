@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createSignal } from '@fluixi/reactive/signal';
 import {
   mapSignal as map,
@@ -17,8 +17,6 @@ import {
   omitSignal as omit,
   whenSignal as when,
   guardSignal as guard,
-  debounceSignal as debounce,
-  throttleSignal as throttle,
 } from './utilities.js';
 
 describe('Signal Utilities', () => {
@@ -54,7 +52,7 @@ describe('Signal Utilities', () => {
       });
 
       it('should work with object arrays', () => {
-        const [users, setUsers] = createSignal([
+        const [users] = createSignal([
           { name: 'Alice', active: true },
           { name: 'Bob', active: false },
           { name: 'Charlie', active: true },
@@ -77,7 +75,7 @@ describe('Signal Utilities', () => {
       });
 
       it('should work with complex reducers', () => {
-        const [items, setItems] = createSignal([
+        const [items] = createSignal([
           { price: 10 },
           { price: 20 },
           { price: 30 },
@@ -99,7 +97,7 @@ describe('Signal Utilities', () => {
       });
 
       it('should work with object arrays', () => {
-        const [users, setUsers] = createSignal([
+        const [users] = createSignal([
           { id: 1, name: 'Alice' },
           { id: 2, name: 'Bob' },
         ]);
@@ -133,21 +131,21 @@ describe('Signal Utilities', () => {
 
     describe('sort', () => {
       it('should sort array signal', () => {
-        const [numbers, setNumbers] = createSignal([3, 1, 4, 1, 5]);
+        const [numbers] = createSignal([3, 1, 4, 1, 5]);
         const sorted = sort(numbers);
 
         expect(sorted()).toEqual([1, 1, 3, 4, 5]);
       });
 
       it('should work with custom compare function', () => {
-        const [numbers, setNumbers] = createSignal([3, 1, 4, 1, 5]);
+        const [numbers] = createSignal([3, 1, 4, 1, 5]);
         const descending = sort(numbers, (a, b) => b - a);
 
         expect(descending()).toEqual([5, 4, 3, 1, 1]);
       });
 
       it('should not mutate original array', () => {
-        const [numbers, setNumbers] = createSignal([3, 1, 4]);
+        const [numbers] = createSignal([3, 1, 4]);
         const sorted = sort(numbers);
 
         sorted();
@@ -172,7 +170,7 @@ describe('Signal Utilities', () => {
       it('should combine multiple signals', () => {
         const [a, setA] = createSignal(1);
         const [b, setB] = createSignal(2);
-        const [c, setC] = createSignal(3);
+        const [c] = createSignal(3);
         const sum = combine([a, b, c], ([x, y, z]) => x + y + z);
 
         expect(sum()).toBe(6);
@@ -183,8 +181,8 @@ describe('Signal Utilities', () => {
       });
 
       it('should work with different types', () => {
-        const [name, setName] = createSignal('Alice');
-        const [age, setAge] = createSignal(30);
+        const [name] = createSignal('Alice');
+        const [age] = createSignal(30);
         const info = combine([name, age], ([n, a]) => `${n} is ${a} years old`);
 
         expect(info()).toBe('Alice is 30 years old');
@@ -194,7 +192,7 @@ describe('Signal Utilities', () => {
     describe('merge', () => {
       it('should return first truthy value', () => {
         const [primary, setPrimary] = createSignal<string | null>(null);
-        const [fallback, setFallback] = createSignal('fallback');
+        const [fallback] = createSignal('fallback');
         const result = merge(primary, fallback);
 
         expect(result()).toBe('fallback');
@@ -206,7 +204,7 @@ describe('Signal Utilities', () => {
     describe('zip', () => {
       it('should combine two signals with operator', () => {
         const [x, setX] = createSignal(5);
-        const [y, setY] = createSignal(3);
+        const [y] = createSignal(3);
         const product = zip(x, y, (a, b) => a * b);
 
         expect(product()).toBe(15);
@@ -251,7 +249,7 @@ describe('Signal Utilities', () => {
 
     describe('pick', () => {
       it('should pick specific properties', () => {
-        const [user, setUser] = createSignal({
+        const [user] = createSignal({
           id: 1,
           name: 'Alice',
           age: 30,
@@ -268,7 +266,7 @@ describe('Signal Utilities', () => {
 
     describe('omit', () => {
       it('should omit specific properties', () => {
-        const [user, setUser] = createSignal({
+        const [user] = createSignal({
           id: 1,
           name: 'Alice',
           age: 30,
@@ -290,8 +288,8 @@ describe('Signal Utilities', () => {
     describe('when', () => {
       it('should conditionally compute value', () => {
         const [isLoggedIn, setIsLoggedIn] = createSignal(false);
-        const [user, setUser] = createSignal({ name: 'Alice' });
-        const [guest, setGuest] = createSignal({ name: 'Guest' });
+        const [user] = createSignal({ name: 'Alice' });
+        const [guest] = createSignal({ name: 'Guest' });
         const currentUser = when(isLoggedIn, user, guest);
 
         expect(currentUser().name).toBe('Guest');
@@ -303,7 +301,7 @@ describe('Signal Utilities', () => {
     describe('guard', () => {
       it('should return value when condition is true', () => {
         const [showDetails, setShowDetails] = createSignal(false);
-        const [details, setDetails] = createSignal({ info: 'Details here' });
+        const [details] = createSignal({ info: 'Details here' });
         const visibleDetails = guard(showDetails, details);
 
         expect(visibleDetails()).toBeUndefined();
@@ -326,7 +324,7 @@ describe('Signal Utilities', () => {
 
   describe('Integration Tests', () => {
     it('should chain multiple utilities', () => {
-      const [numbers, setNumbers] = createSignal([
+      const [numbers] = createSignal([
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
       ]);
 
@@ -343,7 +341,7 @@ describe('Signal Utilities', () => {
     });
 
     it('should combine transformation with selection', () => {
-      const [users, setUsers] = createSignal([
+      const [users] = createSignal([
         { id: 1, name: 'Alice', age: 30, active: true },
         { id: 2, name: 'Bob', age: 25, active: false },
         { id: 3, name: 'Charlie', age: 35, active: true },
@@ -359,7 +357,7 @@ describe('Signal Utilities', () => {
 
     it('should work with conditional and transformation utilities', () => {
       const [hasData, setHasData] = createSignal(true);
-      const [data, setData] = createSignal([1, 2, 3, 4, 5]);
+      const [data] = createSignal([1, 2, 3, 4, 5]);
 
       const processedData = guard(
         hasData,

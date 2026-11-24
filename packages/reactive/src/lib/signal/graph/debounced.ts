@@ -127,19 +127,22 @@ function meaningful(query: unknown): boolean {
  * <Show when={results.loading}>searching...</Show>
  * ```
  */
+/** `''` as an initial query is any string afterwards: without this, `setQuery('a')` did not typecheck. */
+type Widen<S> = S extends string ? string : S extends number ? number : S extends boolean ? boolean : S;
+
 export function createDebouncedResource<T, S>(
   initial: S,
-  fetcher: (query: S, info: ResourceFetcherInfo<T>) => T | Promise<T>,
+  fetcher: (query: Widen<S>, info: ResourceFetcherInfo<T>) => T | Promise<T>,
   options: DebouncedResourceOptions<T> = {},
-): [ResourceReturn<T>[0], DebouncedResourceControls<S>] {
+): [ResourceReturn<T>[0], DebouncedResourceControls<Widen<S>>] {
   const { delay = 300, initialValue, shouldFetch = meaningful } = options;
-  const [query, setQuery, controls] = createDebouncedSignal(initial, delay);
+  const [query, setQuery, controls] = createDebouncedSignal<Widen<S>>(initial as Widen<S>, delay);
 
   // createResource treats a falsy source as "don't fetch", which is exactly the
   // empty-query case, so the predicate rides on the source rather than the fetcher.
-  const source = (): S | false => (shouldFetch(query()) ? query() : false);
+  const source = (): Widen<S> | false => (shouldFetch(query()) ? query() : false);
 
-  const [resource, { refetch }] = createResource<T, S>(
+  const [resource, { refetch }] = createResource<T, Widen<S>>(
     source,
     fetcher,
     initialValue === undefined ? {} : { initialValue },

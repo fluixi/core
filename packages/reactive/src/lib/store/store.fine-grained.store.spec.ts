@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createStore } from './store.js';
 import { createEffect, createMemo, batch } from '@fluixi/reactive/signal';
 
@@ -276,8 +276,6 @@ describe('Store Fine-Grained Reactivity', () => {
 
       // Update text property - array iteration still triggers
       // This demonstrates property-level tracking within elements
-      const lengthBeforeText = lengthComputeCount;
-      const completedBeforeText = completedComputeCount;
       setTodos('[0].text', 'Updated Task');
       // Both may increment due to iterator signal, but this is still fine-grained
       // compared to tracking the entire state

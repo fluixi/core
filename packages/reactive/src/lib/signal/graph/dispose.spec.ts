@@ -11,7 +11,7 @@ describe('disposal unlinks computations', () => {
   it('a disposed effect leaves its sources with no sink for it', () => {
     const a = new State(1);
     const seen: number[] = [];
-    const dispose = effect(() => seen.push(a.get()));
+    const dispose = effect(() => { seen.push(a.get()); });
     expect(seen).toEqual([1]);
     expect(hasSinks(a)).toBe(true);
 

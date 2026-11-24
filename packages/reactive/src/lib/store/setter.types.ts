@@ -57,12 +57,19 @@ type SelectorInternal<
   ?
       | `${Prefix}[*]`
       | `${Prefix}[${number}]`
-      | SelectorInternal<U, `${Prefix}[*].`, Decrement[Depth]>
+      // A nested array continues with its brackets: `[0][1]`.
+      | SelectorInternal<U, U extends readonly unknown[] ? `${Prefix}[*]` : `${Prefix}[*].`, Decrement[Depth]>
+      | SelectorInternal<U, U extends readonly unknown[] ? `${Prefix}[${number}]` : `${Prefix}[${number}].`, Decrement[Depth]>
   : T extends object
   ? {
+      // An array value continues with its brackets, `users[0].name`, as the examples below read.
       [K in keyof T & string]:
         | `${Prefix}${K}`
-        | SelectorInternal<T[K], `${Prefix}${K}.`, Decrement[Depth]>;
+        | SelectorInternal<
+            T[K],
+            NonNullable<T[K]> extends readonly unknown[] ? `${Prefix}${K}` : `${Prefix}${K}.`,
+            Decrement[Depth]
+          >;
     }[keyof T & string]
   : never;
 
@@ -104,7 +111,10 @@ type SplitPath<P extends string> =
 
 // 2. The recursive resolver that consumes the path segment by segment
 type _ResolvePath<T, P extends string> = P extends `${infer Head}.${infer Tail}`
-  ? ResolveSegment<T, Head> extends infer Next
+  ? // `users[*]` before the dot is a key and then an index into it.
+    Head extends `${infer Key}[${infer Index}]`
+    ? _ResolvePath<ResolveSegment<Key extends '' ? T : ResolveSegment<T, Key>, `[${Index}]`>, Tail>
+    : ResolveSegment<T, Head> extends infer Next
     ? _ResolvePath<Next, Tail>
     : never
   : P extends `${infer Left}[${infer Index}]${infer Right}`
@@ -116,16 +126,19 @@ type _ResolvePath<T, P extends string> = P extends `${infer Head}.${infer Tail}`
     ? _ResolvePath<Next, `[${Index}]${Right}`>
     : never
   : ResolveSegment<T, P>;
-type ResolvePath<T, P extends string> = _ResolvePath<T, P> & GetAtPath<T,P>;
+// What a write at `P` takes. A wildcard writes each element, so it resolves to the element type.
+type ResolvePath<T, P extends string> = _ResolvePath<T, P>;
 // 3. Logic for individual segments
-type ResolveSegment<T, Segment extends string> = Segment extends keyof T
-  ? T[Segment]
+// Through an optional step too: `wife?: Person` continues into the Person.
+type ResolveSegment<T, Segment extends string> = Segment extends keyof NonNullable<T>
+  ? NonNullable<T>[Segment]
+  // Each element: a wildcard write runs once per element, so `set('[*]', (v) => v * 2)` gets a number.
   : Segment extends '[*]'
-  ? T extends readonly (infer U)[]
-    ? U[]
+  ? NonNullable<T> extends readonly (infer U)[]
+    ? U
     : never
   : Segment extends `[${number}]`
-  ? T extends readonly (infer U)[]
+  ? NonNullable<T> extends readonly (infer U)[]
     ? U
     : never
   : T; // Fallback
@@ -366,8 +379,42 @@ export interface SetStoreFunction<T> extends StoreSetterMethods<T> {
     k2: K2,
     value: UpdateValue<V>
   ): void;
-  //   <K extends any[]>(...args: [...K, UpdateValue<any>]), void;
+
+  // 6. Steps of any kind: set('user', 'address', 'city', 'Paris'), set('todos', '*', 'done', true),
+  // set('user.address', 'city', 'Berlin').
+  <S1 extends Step<T>, S2 extends Step<At<T, S1>>>(s1: S1, s2: S2, value: UpdateValue<At<At<T, S1>, S2>>): void;
+  <S1 extends Step<T>, S2 extends Step<At<T, S1>>, S3 extends Step<At<At<T, S1>, S2>>>(
+    s1: S1,
+    s2: S2,
+    s3: S3,
+    value: UpdateValue<At<At<At<T, S1>, S2>, S3>>
+  ): void;
+  <
+    S1 extends Step<T>,
+    S2 extends Step<At<T, S1>>,
+    S3 extends Step<At<At<T, S1>, S2>>,
+    S4 extends Step<At<At<At<T, S1>, S2>, S3>>,
+  >(
+    s1: S1,
+    s2: S2,
+    s3: S3,
+    s4: S4,
+    value: UpdateValue<At<At<At<At<T, S1>, S2>, S3>, S4>>
+  ): void;
 }
+
+/**
+ * One step of a multi-argument write. Into an array: an index, `'*'`, several indexes, a range or a
+ * predicate. Into an object: a key or a dotted path.
+ */
+type Step<T> =
+  NonNullable<T> extends readonly (infer U)[]
+    ? number | '*' | number[] | RangeSelector | Predicate<U>
+    : Selector<NonNullable<T>>;
+
+/** Where a step leads: the element for any array step, else the value at the path. */
+type At<T, S> =
+  NonNullable<T> extends readonly (infer U)[] ? U : S extends string ? ResolvePath<NonNullable<T>, S> : never;
 
 export type SetStore<T> = SetStoreFunction<T> &
   (T extends readonly any[] ? ArrayStoreMethods<T> : {});
