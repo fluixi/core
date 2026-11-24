@@ -438,8 +438,19 @@ export function template(html: string): (at?: TemplatePositions) => Node {
   let parsed: HTMLTemplateElement | undefined;
   return (at) => {
     parsed ??= createTemplate(html);
-    return stampPositions(parsed.content.firstChild!.cloneNode(true), at);
+    return stampPositions(copyIntoDocument(parsed.content.firstChild!), at);
   };
+}
+
+/**
+ * A deep copy owned by the page's document. A plain `cloneNode` of template content belongs to
+ * the template's inert document until it is inserted: a ref that kept `el.ownerDocument` found no
+ * `body`, and a custom element in it stays un-upgraded, so a property set before insertion misses
+ * its class. The server renderer has no document and clones.
+ */
+function copyIntoDocument<T extends Node>(node: T): T {
+  const doc = typeof document === 'undefined' ? undefined : document;
+  return (doc && node.ownerDocument !== doc ? doc.importNode(node, true) : node.cloneNode(true)) as T;
 }
 
 /** The template's root tag with its hydration key: `<div class` to `<div data-hk="3" class`. */
@@ -528,7 +539,7 @@ export function cloneTemplate(
   template: HTMLTemplateElement,
   isSVG = false
 ): DocumentFragment | Element {
-  const clone = template.content.cloneNode(true) as DocumentFragment;
+  const clone = copyIntoDocument(template.content);
   if (isSVG) return clone.firstChild as Element;
   return clone;
 }
