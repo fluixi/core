@@ -332,12 +332,20 @@ export function get<T extends AnyObject, S extends SelectorFor<T>>(
  * // Pattern 10: Multiple selectors
  * set(obj, ['users[0].name', 'users[1].name'], ['Alice', 'Bob'])
  */
+/**
+ * A write to the elements an index, a list of indexes or a range selects: a value or an updater,
+ * applied to each element.
+ */
+type ElementUpdate<A> = A extends readonly (infer U)[] ? U | ((item: U) => U) : never;
+
 export function set<
   T extends AnyObject,
   K extends SelectorFor<T> | (T extends any[] ? Indices : never),
   V extends
     | DataParam<T, K>
     | (T extends any[] ? SelectorForIfIndices<T, K> : never)
+    // Past a wildcard the write goes to each element: `set(obj, 'users[*].active', false)`.
+    | (K extends `${string}[*]${string}` ? ElementUpdate<IValueOfKey<T, K>> : never)
 >(obj: T, key: K, value?: V): any;
 export function set<
   T extends AnyObject,
@@ -353,9 +361,9 @@ export function set<
         | (K extends Indices
             ? SelectorFor<T>
             : SelectorFor<Flattened<KeyOf<T, K>>>[]),
-  V extends
-    | PropertyOrArrayValue<T, K, I extends Indices ? I : never>
-    | Flattened<DataParam<T, K, I>>
+  V extends I extends Indices | RangeCompare
+    ? ElementUpdate<KeyOf<T, K>>
+    : PropertyOrArrayValue<T, K, I extends Indices ? I : never> | Flattened<DataParam<T, K, I>>
 >(obj: T, key: K, index: I, value: V): any;
 // 4. Array indices + property
 export function set<

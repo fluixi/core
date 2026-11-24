@@ -7,13 +7,11 @@ import {
   magnitudeSquared2D,
   magnitudeSquared3D,
   magnitudeSquared4D,
-
   // Normalization variants
   safeNormalize2D,
   safeNormalize3D,
   normalize4D,
   safeNormalize4D,
-
   // Additional vector operations
   dotProduct4D,
   addVectors3D,
@@ -22,41 +20,33 @@ import {
   subtractVectors4D,
   scaleVector3D,
   scaleVector4D,
-
   // Angle calculations
   angleBetween3D,
   signedAngleBetween2D,
-
   // Geometry operations
   reflect2D,
   project2D,
-
   // Equality checks
   vectorsEqual2D,
   vectorsEqual3D,
   vectorsEqual4D,
-
   // Interpolation and bezier
   lerpClamped2D,
   lerpClamped3D,
   lerpClamped4D,
   slerp3D,
-  smoothstep2D,
   smoothstepClamped2D,
   smootherstep2D,
   quadraticBezier2D,
   cubicBezier2D,
-
   // Midpoint and centroid
   midpoint2D,
   centroid2D,
-
   // Vector transformations
   negateVector2D,
   negateVector3D,
   negateVector4D,
   perpendicular2D,
-
   // Special vectors
   zeroVector2D,
   zeroVector3D,
@@ -66,15 +56,11 @@ import {
   unitX3D,
   unitY3D,
   unitZ3D,
-
   // Range mapping
   mapRange,
   mapRangeClamped,
-
   // Helper functions
   lerp2D,
-  lerp3D,
-  lerp4D,
   magnitude2D,
   magnitude3D,
   magnitude4D,

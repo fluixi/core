@@ -9,7 +9,8 @@
       "node",
       "vitest"
     ],
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["dom", "DOM.Iterable", "es2022"]
   },
   "include": [
     "vite.config.ts",

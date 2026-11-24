@@ -60,7 +60,8 @@ type _Add<A extends number, B extends number> = IsNegative<A> extends true
  :TupleToNumber<[...Tuple<A>, ...Tuple<B>]> & number;
 
 /**
- * Subtracts B from A at the type level (A - B).
+ * Subtracts B from A at the type level (A - B), for natural numbers: `never` when B is larger,
+ * which `Divide` and `Mod` stop on. `Add<A, -B>` gives a result below zero.
  */
 export type Subtract<A extends number, B extends number> = 
   Tuple<A> extends [...Tuple<B>, ...infer R] 
@@ -250,7 +251,10 @@ type ToNumber<S extends string> =
  * Rounds a number down to the nearest integer at the type level.
  */
 export type Floor<T extends number> = 
-  DecimalString<T> extends [infer I extends string, any]
+  // Below zero, down is away from zero: floor(-1.5) is -(ceil(1.5)).
+  `${T}` extends `-${infer P extends number}`
+    ? MakeNegative<Ceil<P>>
+    : DecimalString<T> extends [infer I extends string, any]
     ? ToNumber<I>
     : T;
 
@@ -258,7 +262,9 @@ export type Floor<T extends number> =
  * Rounds a number up to the nearest integer at the type level.
  */
 export type Ceil<T extends number> = 
-  DecimalString<T> extends [infer I extends string, infer F extends string]
+  `${T}` extends `-${infer P extends number}`
+    ? MakeNegative<Floor<P>>
+    : DecimalString<T> extends [infer I extends string, infer F extends string]
     ? F extends '0' 
       ? ToNumber<I>
       : Add<ToNumber<I>, 1>
@@ -267,7 +273,8 @@ export type Ceil<T extends number> =
 /**
  * Truncates the decimal part of a number at the type level.
  */
-export type Trunc<T extends number> = Floor<T>;
+export type Trunc<T extends number> =
+  `${T}` extends `-${infer P extends number}` ? MakeNegative<Floor<P>> : Floor<T>;
 
 // POWER AND FACTORIAL
 

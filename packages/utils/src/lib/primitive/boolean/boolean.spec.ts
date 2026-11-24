@@ -654,9 +654,9 @@ describe('Boolean Utilities', () => {
       const mockFn = vi.fn().mockReturnValue(true);
       const debounced = debounceBoolean(mockFn, 100);
 
-      const result1 = debounced('test');
-      const result2 = debounced('test');
-      const result3 = debounced('test');
+      debounced('test');
+      debounced('test');
+      debounced('test');
 
       // Function not called yet
       expect(mockFn).not.toHaveBeenCalled();

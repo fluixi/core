@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   trim,
   trimStart,
@@ -24,7 +24,6 @@ import {
   isValidEmail,
   isValidUrl,
   extractDomain,
-  randomString,
   countOccurrences,
   removeWhitespace,
   reverse,
@@ -499,8 +498,6 @@ describe('String Utilities', () => {
   describe('TypeScript type tests', () => {
     it('should have proper type inference for isString', () => {
       const value: unknown = 'test';
-
-      //// @ts-expect-error - value is unknown
 
       if (isString(value)) {
         expect(value.toUpperCase()).toBe('TEST');

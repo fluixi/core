@@ -3,16 +3,14 @@
  * @description Comprehensive test suite for date utilities
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   configureDateUtils,
   resetDateConfig,
   parseDate,
   formatDate,
-  isDate,
   createDate,
   add,
-  subtract,
   addDays,
   subtractDays,
   addMonths,
@@ -20,7 +18,6 @@ import {
   addYears,
   subtractYears,
   startOf,
-  endOf,
   startOfDay,
   endOfDay,
   startOfMonth,
@@ -60,18 +57,6 @@ import {
   tomorrow,
   yesterday,
 } from './date.js';
-
-// Mock Date for consistent testing
-const REAL_DATE = Date;
-const mockDate = new Date('2024-01-15T10:30:45.123Z');
-
-/**
- * Setup mock date before each test
- */
-
-/**
- * Restore original Date after each test
- */
 
 /**
  * Test suite for date utilities
