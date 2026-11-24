@@ -1,5 +1,12 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.114
+
+### Patch Changes
+
+- 164d4cd: A lazy component now opens its hydration key scope regardless of whether its module was already loaded, ensuring consistent hydration depth between server and browser.
+  - @fluixi/utils@1.0.0-alpha.114
+
 ## 1.0.0-alpha.113
 
 ### Minor Changes
