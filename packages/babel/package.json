@@ -50,7 +50,7 @@
     "@fluixi/compiler": "workspace:^"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.3",
+    "@bambiste/mix-builder": "^0.5.0",
     "inquirer": "^14.0.2"
   },
   "repository": {

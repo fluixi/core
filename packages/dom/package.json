@@ -1,9 +1,9 @@
 {
   "name": "@fluixi/dom",
   "version": "1.0.0-alpha.112",
-  "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
+  "description": "Reactive DOM runtime for Fluixi \u2014 surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -12,54 +12,99 @@
       "./package.json": "./package.json",
       ".": {
         "types": "./dist/index.d.ts",
+        "development": {
+          "import": "./dist/dev/index.mjs",
+          "require": "./dist/dev/index.cjs",
+          "default": "./dist/dev/index.mjs"
+        },
         "import": "./dist/index.mjs",
         "require": "./dist/index.cjs",
         "default": "./dist/index.js"
       },
       "./element": {
         "types": "./dist/lib/element/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/element/index.mjs",
+          "require": "./dist/dev/lib/element/index.cjs",
+          "default": "./dist/dev/lib/element/index.mjs"
+        },
         "import": "./dist/lib/element/index.mjs",
         "require": "./dist/lib/element/index.cjs",
         "default": "./dist/lib/element/index.js"
       },
       "./server": {
         "types": "./dist/lib/dom/server-renderer.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/dom/server-renderer.mjs",
+          "require": "./dist/dev/lib/dom/server-renderer.cjs",
+          "default": "./dist/dev/lib/dom/server-renderer.mjs"
+        },
         "import": "./dist/lib/dom/server-renderer.mjs",
         "require": "./dist/lib/dom/server-renderer.cjs",
         "default": "./dist/lib/dom/server-renderer.js"
       },
       "./hot": {
         "types": "./dist/lib/dom/hot.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/dom/hot.mjs",
+          "require": "./dist/dev/lib/dom/hot.cjs",
+          "default": "./dist/dev/lib/dom/hot.mjs"
+        },
         "import": "./dist/lib/dom/hot.mjs",
         "require": "./dist/lib/dom/hot.cjs",
         "default": "./dist/lib/dom/hot.js"
       },
       "./runtime": {
         "types": "./dist/lib/dom/runtime.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/dom/runtime.mjs",
+          "require": "./dist/dev/lib/dom/runtime.cjs",
+          "default": "./dist/dev/lib/dom/runtime.mjs"
+        },
         "import": "./dist/lib/dom/runtime.mjs",
         "require": "./dist/lib/dom/runtime.cjs",
         "default": "./dist/lib/dom/runtime.js"
       },
       "./integration": {
         "types": "./dist/lib/dom/integration.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/dom/integration.mjs",
+          "require": "./dist/dev/lib/dom/integration.cjs",
+          "default": "./dist/dev/lib/dom/integration.mjs"
+        },
         "import": "./dist/lib/dom/integration.mjs",
         "require": "./dist/lib/dom/integration.cjs",
         "default": "./dist/lib/dom/integration.js"
       },
       "./control-flow": {
         "types": "./dist/lib/flow/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/flow/index.mjs",
+          "require": "./dist/dev/lib/flow/index.cjs",
+          "default": "./dist/dev/lib/flow/index.mjs"
+        },
         "import": "./dist/lib/flow/index.mjs",
         "require": "./dist/lib/flow/index.cjs",
         "default": "./dist/lib/flow/index.js"
       },
       "./utils": {
         "types": "./dist/lib/dom/utils.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/dom/utils.mjs",
+          "require": "./dist/dev/lib/dom/utils.cjs",
+          "default": "./dist/dev/lib/dom/utils.mjs"
+        },
         "import": "./dist/lib/dom/utils.mjs",
         "require": "./dist/lib/dom/utils.cjs",
         "default": "./dist/lib/dom/utils.js"
       },
       "./attributes": {
         "types": "./dist/lib/element/attributes.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/element/attributes.mjs",
+          "require": "./dist/dev/lib/element/attributes.cjs",
+          "default": "./dist/dev/lib/element/attributes.mjs"
+        },
         "import": "./dist/lib/element/attributes.mjs",
         "require": "./dist/lib/element/attributes.cjs",
         "default": "./dist/lib/element/attributes.js"
@@ -156,7 +201,7 @@
     "stream": "^0.0.3"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.3",
+    "@bambiste/mix-builder": "^0.5.0",
     "@fluixi/reactive": "workspace:*",
     "esbuild": "^0.27.1",
     "inquirer": "^13.1.0",

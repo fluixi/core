@@ -26,6 +26,7 @@
       "include": [
         "src/index.ts"
       ]
-    }
+    },
+    "development": true
   }
 }

@@ -205,7 +205,7 @@
     "@babel/helper-plugin-utils": "^7.27.1",
     "@babel/plugin-transform-modules-commonjs": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@bambiste/mix-builder": "^0.4.3",
+    "@bambiste/mix-builder": "^0.5.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "@jridgewell/trace-mapping": "^0.3.31",

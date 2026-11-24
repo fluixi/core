@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.112",
   "description": "implements TC39 Signals proposal with zero runtime dependencies: signals, memos, effects, resources, stores",
   "license": "MIT",
-  "author": "Ibrahima Touré",
+  "author": "Ibrahima Tour\u00e9",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -12,60 +12,110 @@
       "./package.json": "./package.json",
       ".": {
         "types": "./dist/lib/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/index.mjs",
+          "require": "./dist/dev/lib/index.cjs",
+          "default": "./dist/dev/lib/index.mjs"
+        },
         "import": "./dist/lib/index.mjs",
         "require": "./dist/lib/index.cjs",
         "default": "./dist/lib/index.js"
       },
       "./observable": {
         "types": "./dist/lib/observable/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/observable/index.mjs",
+          "require": "./dist/dev/lib/observable/index.cjs",
+          "default": "./dist/dev/lib/observable/index.mjs"
+        },
         "import": "./dist/lib/observable/index.mjs",
         "require": "./dist/lib/observable/index.cjs",
         "default": "./dist/lib/observable/index.js"
       },
       "./store": {
         "types": "./dist/lib/store/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/store/index.mjs",
+          "require": "./dist/dev/lib/store/index.cjs",
+          "default": "./dist/dev/lib/store/index.mjs"
+        },
         "import": "./dist/lib/store/index.mjs",
         "require": "./dist/lib/store/index.cjs",
         "default": "./dist/lib/store/index.js"
       },
       "./signal": {
         "types": "./dist/lib/signal/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/index.mjs",
+          "require": "./dist/dev/lib/signal/index.cjs",
+          "default": "./dist/dev/lib/signal/index.mjs"
+        },
         "import": "./dist/lib/signal/index.mjs",
         "require": "./dist/lib/signal/index.cjs",
         "default": "./dist/lib/signal/index.js"
       },
       "./core": {
         "types": "./dist/lib/signal/graph/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/graph/index.mjs",
+          "require": "./dist/dev/lib/signal/graph/index.cjs",
+          "default": "./dist/dev/lib/signal/graph/index.mjs"
+        },
         "import": "./dist/lib/signal/graph/index.mjs",
         "require": "./dist/lib/signal/graph/index.cjs",
         "default": "./dist/lib/signal/graph/index.js"
       },
       "./signal-legacy": {
         "types": "./dist/lib/signal/index-legacy.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/index-legacy.mjs",
+          "require": "./dist/dev/lib/signal/index-legacy.cjs",
+          "default": "./dist/dev/lib/signal/index-legacy.mjs"
+        },
         "import": "./dist/lib/signal/index-legacy.mjs",
         "require": "./dist/lib/signal/index-legacy.cjs",
         "default": "./dist/lib/signal/index-legacy.js"
       },
       "./operators": {
         "types": "./dist/lib/signal/utilities.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/utilities.mjs",
+          "require": "./dist/dev/lib/signal/utilities.cjs",
+          "default": "./dist/dev/lib/signal/utilities.mjs"
+        },
         "import": "./dist/lib/signal/utilities.mjs",
         "require": "./dist/lib/signal/utilities.cjs",
         "default": "./dist/lib/signal/utilities.js"
       },
       "./cached-resource": {
         "types": "./dist/lib/signal/cached-resource.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/cached-resource.mjs",
+          "require": "./dist/dev/lib/signal/cached-resource.cjs",
+          "default": "./dist/dev/lib/signal/cached-resource.mjs"
+        },
         "import": "./dist/lib/signal/cached-resource.mjs",
         "require": "./dist/lib/signal/cached-resource.cjs",
         "default": "./dist/lib/signal/cached-resource.js"
       },
       "./tc39": {
         "types": "./dist/lib/signal/graph/index.d.ts",
+        "development": {
+          "import": "./dist/dev/lib/signal/graph/index.mjs",
+          "require": "./dist/dev/lib/signal/graph/index.cjs",
+          "default": "./dist/dev/lib/signal/graph/index.mjs"
+        },
         "import": "./dist/lib/signal/graph/index.mjs",
         "require": "./dist/lib/signal/graph/index.cjs",
         "default": "./dist/lib/signal/graph/index.js"
       },
       "./version": {
         "types": "./dist/version.generated.d.ts",
+        "development": {
+          "import": "./dist/dev/version.generated.mjs",
+          "require": "./dist/dev/version.generated.cjs",
+          "default": "./dist/dev/version.generated.mjs"
+        },
         "import": "./dist/version.generated.mjs",
         "require": "./dist/version.generated.cjs",
         "default": "./dist/version.generated.js"
@@ -172,7 +222,7 @@
     "artifact:copy": "cp ~/npm-artifacts/.npmrc .npmrc"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.3",
+    "@bambiste/mix-builder": "^0.5.0",
     "@fluixi/utils": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",

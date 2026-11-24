@@ -71,7 +71,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@bambiste/mix-builder": "^0.4.3",
+    "@bambiste/mix-builder": "^0.5.0",
     "@fluixi/dom": "workspace:*",
     "@fluixi/reactive": "workspace:*",
     "inquirer": "^13.1.0",

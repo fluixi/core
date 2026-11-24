@@ -133,7 +133,7 @@ importers:
     devDependencies:
       '@fluixi-css/vite':
         specifier: 1.0.0-next.5
-        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.5)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
+        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
@@ -630,8 +630,8 @@ importers:
         version: 11.2.1
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@electric-sql/pglite':
         specifier: ^0.5.8
         version: 0.5.8
@@ -658,8 +658,8 @@ importers:
         version: 1.7.7(@opentelemetry/api@1.10.0)(pg@8.23.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.13)(svelte@5.57.1)(vitest@5.0.3)(vue@3.5.43(typescript@7.0.2))
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
@@ -701,8 +701,8 @@ importers:
         version: link:../compiler
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       inquirer:
         specifier: ^14.0.2
         version: 14.2.2(@types/node@26.6.2)
@@ -732,8 +732,8 @@ importers:
         version: typescript@6.0.3
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -772,8 +772,8 @@ importers:
         specifier: ^7.28.5
         version: 7.29.7(@babel/core@7.29.7)
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -812,8 +812,8 @@ importers:
         version: link:../utils
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)
       '@fluixi/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -878,8 +878,8 @@ importers:
   packages/core-test:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -906,8 +906,8 @@ importers:
         version: link:../jobs
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.5
@@ -918,8 +918,8 @@ importers:
   packages/devtools:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -930,8 +930,8 @@ importers:
   packages/di:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -949,8 +949,8 @@ importers:
         version: 0.0.3
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -970,8 +970,8 @@ importers:
   packages/head:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -986,8 +986,8 @@ importers:
         version: link:../dom
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@electric-sql/pglite':
         specifier: ^0.5.15
         version: 0.5.15
@@ -1004,8 +1004,8 @@ importers:
   packages/jsx:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1032,8 +1032,8 @@ importers:
         version: link:../session
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
@@ -1068,8 +1068,8 @@ importers:
   packages/reactive:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1096,8 +1096,8 @@ importers:
         version: link:../reactive
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:^
         version: link:../dom
@@ -1120,8 +1120,8 @@ importers:
   packages/router:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1129,8 +1129,8 @@ importers:
   packages/server:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1147,8 +1147,8 @@ importers:
   packages/session:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
@@ -1196,8 +1196,8 @@ importers:
         specifier: ^7.28.5
         version: 7.29.7(@babel/core@7.29.7)
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/core':
         specifier: workspace:*
         version: link:../core
@@ -1227,8 +1227,8 @@ importers:
         version: link:../utils
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1236,8 +1236,8 @@ importers:
   packages/template-parser:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1258,8 +1258,8 @@ importers:
         version: link:../template-parser
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1279,8 +1279,8 @@ importers:
   packages/testing:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1316,8 +1316,8 @@ importers:
   packages/utils:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       inquirer:
         specifier: ^13.1.0
         version: 13.4.3(@types/node@26.6.2)
@@ -1344,8 +1344,8 @@ importers:
         specifier: ^7.28.5
         version: 7.29.7(@babel/core@7.29.7)
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1362,8 +1362,8 @@ importers:
   packages/web-components:
     devDependencies:
       '@bambiste/mix-builder':
-        specifier: ^0.4.3
-        version: 0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)
       '@fluixi/dom':
         specifier: workspace:*
         version: link:../dom
@@ -1734,7 +1734,7 @@ importers:
     devDependencies:
       '@fluixi-css/vite':
         specifier: 1.0.0-next.5
-        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.5)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
+        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
@@ -2357,8 +2357,8 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@bambiste/mix-builder@0.4.3':
-    resolution: {integrity: sha512-ojOnE1ObEwOPr+WhbxGw5+yAkxZ2rEORaI1sh0Wudwzr0zD7tOXbodcAByzQ5lS74BnIzxY82uQjG8nqcNyc7w==}
+  '@bambiste/mix-builder@0.5.0':
+    resolution: {integrity: sha512-N2U7SCZ0n3+TS+biSt0DxDXlAFvPwY2JvAH71G0ePQF/W3LOyCNrISQYAlDhNtx7O9b3w9vAzuMa7ndSb6TALQ==}
     hasBin: true
 
   '@bcoe/v8-coverage@1.0.2':
@@ -3262,8 +3262,8 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fluixi-css/core@1.0.0-next.5':
-    resolution: {integrity: sha512-iq0XVfaU+4owgSpUm9KrrucYcMsYVb6Rj4WVGQxt98RkfSmr6ouge3jCeV2JULhVHJGvfi2LZSp4T4xj4oV3oA==}
+  '@fluixi-css/core@1.0.0-next.8':
+    resolution: {integrity: sha512-K2jL4iHp5tg+hqcbELN+Ryj+9FHFDvHNYFNGQ+7hoBkJuDyyEtT6ZkbicATi24azaYi1E9LAvQyTlSmpGAETuA==}
 
   '@fluixi-css/vite@1.0.0-next.5':
     resolution: {integrity: sha512-Y5ltPZLeWcq2TAKjxmP6PuV/YUd8vGE2F6d/TUGLyFanuACnZvDEUZW8vth6LpEd6xhrdV5PjKi9vrKA+gBlZQ==}
@@ -4919,7 +4919,6 @@ packages:
 
   '@types/minimatch@6.0.0':
     resolution: {integrity: sha512-zmPitbQ8+6zNutpwgcQuLcsEpn/Cj54Kbn7L5pX0Os5kdWplB7xPgEh/g+SWOB/qmows2gpuCaPyduq8ZZRnxA==}
-    deprecated: This is a stub types definition. minimatch provides its own type definitions, so you do not need this installed.
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
@@ -6245,12 +6244,10 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globby@10.0.1:
     resolution: {integrity: sha512-sSs4inE1FB2YQiymcmTv6NWENryABjUNPeWhOvmn4SjtKybglsyPZxFB3U1/+L1bYi0rNZDqCLlHyLYDl1Pq5A==}
@@ -6274,7 +6271,6 @@ packages:
   har-validator@5.1.5:
     resolution: {integrity: sha512-nmT2T0lljbxdQZfspsno9hgrG3Uir6Ks5afism62poxqBM6sDnMEuPmzTq8XN0OEwqKLLdh1jQI3qyE66Nzb3w==}
     engines: {node: '>=6'}
-    deprecated: this library is no longer supported
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -6410,7 +6406,6 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
-    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -7437,7 +7432,6 @@ packages:
   request@2.88.2:
     resolution: {integrity: sha512-MsvtOrfG9ZcrOwAW+Qi+F6HbD0CWXEh9ou77uOb7FM2WPhwT7smM833PzanhJLsgXjN89Ir6V2PczXNnMpwKhw==}
     engines: {node: '>= 6'}
-    deprecated: request has been deprecated, see https://github.com/request/request/issues/3142
 
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
@@ -7962,7 +7956,6 @@ packages:
 
   uuid@3.4.0:
     resolution: {integrity: sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   valibot@1.5.0:
@@ -8157,12 +8150,10 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
-    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
-    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -9102,7 +9093,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@bambiste/mix-builder@0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)':
+  '@bambiste/mix-builder@0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)':
     dependencies:
       '@babel/preset-react': 7.29.7(@babel/core@7.29.7)
       '@rollup/plugin-babel': 6.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(rollup@4.68.3)
@@ -9139,7 +9130,7 @@ snapshots:
       - typescript
       - yaml
 
-  '@bambiste/mix-builder@0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)':
+  '@bambiste/mix-builder@0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@6.0.3)(yaml@2.9.0)':
     dependencies:
       '@babel/preset-react': 7.29.7(@babel/core@7.29.7)
       '@rollup/plugin-babel': 6.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(rollup@4.68.3)
@@ -9176,7 +9167,7 @@ snapshots:
       - typescript
       - yaml
 
-  '@bambiste/mix-builder@0.4.3(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)':
+  '@bambiste/mix-builder@0.5.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.100.0)(terser@5.51.2)(typescript@7.0.2)(yaml@2.9.0)':
     dependencies:
       '@babel/preset-react': 7.29.7(@babel/core@7.29.7)
       '@rollup/plugin-babel': 6.1.0(@babel/core@7.29.7)(@types/babel__core@7.20.5)(rollup@4.68.3)
@@ -9878,7 +9869,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fluixi-css/core@1.0.0-next.5':
+  '@fluixi-css/core@1.0.0-next.8':
     dependencies:
       '@alloc/quick-lru': 5.3.0
       css-tree: 3.2.1
@@ -9886,9 +9877,9 @@ snapshots:
       lightningcss: 1.33.0
       source-map: 0.7.6
 
-  '@fluixi-css/vite@1.0.0-next.5(@fluixi-css/core@1.0.0-next.5)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))':
+  '@fluixi-css/vite@1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))':
     dependencies:
-      '@fluixi-css/core': 1.0.0-next.5
+      '@fluixi-css/core': 1.0.0-next.8
       vite: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
 
   '@fluixi-ui/accordion@0.2.0-alpha.25(@babel/parser@7.29.9)(@fluixi/core@packages+core)(@fluixi/dom@packages+dom)(@fluixi/reactive@packages+reactive)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))':
@@ -13809,7 +13800,7 @@ snapshots:
 
   is-reference@1.2.1:
     dependencies:
-      '@types/estree': 1.0.9
+      '@types/estree': 1.0.10
 
   is-reference@3.0.3:
     dependencies:
