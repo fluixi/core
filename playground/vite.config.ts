@@ -8,7 +8,9 @@ export default defineConfig({
   // The SSR tab runs the server renderer inside this browser bundle. Left to the plugin, a
   // production build defines `__FLUIXI_SERVER__` false and strips it: the tab failed with
   // ".for is not iterable". Undefined, the runtime asks `isServer()` as it renders.
-  define: { __FLUIXI_SERVER__: 'undefined' },
+  // The graph, tree and inspector read what the runtime reports, which a production build
+  // compiles out with `__DEV__` false. The playground is a development tool in every build.
+  define: { __FLUIXI_SERVER__: 'undefined', __DEV__: 'true' },
   // prototype.html is the monaco-vscode-api spike. Dev serves it; the production build
   // leaves it out, because those packages reach for node builtins (@vscode/diff imports
   // node:fs/promises) and making that bundle is its own piece of work.
