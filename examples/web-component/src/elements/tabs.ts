@@ -9,7 +9,7 @@
  * Both use shadow DOM: the page's children stay where the server rendered them, which is what
  * hydration expects to find. The arrow keys, Home and End move between tabs (`rovingFocus`).
  */
-import { defineCustomElement, prop, rovingFocus, typedElement, type ElementAttributes } from '@fluixi/web-components';
+import { consumeContext, provideContext, defineCustomElement, prop, rovingFocus, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { createContext, effect, type Accessor } from '@fluixi/reactive/signal';
 import { Accent, Theme } from '../context.js';
@@ -40,8 +40,8 @@ export class FxTab extends typedElement(tabProps) {
   `;
 
   protected override render(): unknown {
-    const tabs = this.consume(Tabs);
-    const accent = this.consume(Accent);
+    const tabs = consumeContext(this, Tabs);
+    const accent = consumeContext(this, Accent);
     const active = () => tabs()?.selected() === this.name;
     effect(() => this.style.setProperty('--accent', accent()()), undefined, { name: 'accent' });
 
@@ -72,7 +72,7 @@ export class FxTabs extends typedElement(tabsProps) {
   `;
 
   protected override render(): unknown {
-    this.provide(Tabs, {
+    provideContext(this, Tabs, {
       selected: () => this.selected,
       select: (name) => {
         if (name === this.selected) return;
@@ -80,7 +80,7 @@ export class FxTabs extends typedElement(tabsProps) {
         this.emit('change', { selected: name });
       },
     });
-    const theme = this.consume(Theme);
+    const theme = consumeContext(this, Theme);
     effect(() => (this.dataset.theme = theme()()), undefined, { name: 'theme' });
 
     rovingFocus(this, {

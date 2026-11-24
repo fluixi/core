@@ -9,7 +9,7 @@
  * `render` runs once. The bindings in it (`() => this.step`) update the one text node they
  * belong to when a prop or the count changes; nothing re-renders.
  */
-import { defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
+import { consumeContext, defineCustomElement, prop, typedElement, type ElementAttributes } from '@fluixi/web-components';
 import { html } from '@fluixi/dom';
 import { effect, signal } from '@fluixi/reactive/signal';
 import { Accent, Theme } from '../context.js';
@@ -31,8 +31,8 @@ export class FxCounter extends typedElement(counterProps) {
 
   protected override render(): unknown {
     // From the app, through context. `data-theme` and `--accent` are what the page CSS reads.
-    const theme = this.consume(Theme);
-    const accent = this.consume(Accent);
+    const theme = consumeContext(this, Theme);
+    const accent = consumeContext(this, Accent);
     effect(
       () => {
         this.dataset.theme = theme()();
