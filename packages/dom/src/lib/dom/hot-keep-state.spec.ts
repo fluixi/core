@@ -3,14 +3,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createRoot, createSignal, flush, onCleanup } from '@fluixi/reactive/signal';
 import { createStore } from '@fluixi/reactive/store';
 import { createComponent } from './integration.js';
-import { createNativeElement, insert, render } from './runtime.js';
-import { createHotModule } from './hot.js';
+import { createNativeElement, insert, render, type Children } from './runtime.js';
+import { createHotModule, type HotModuleOptions } from './hot.js';
 
 function fakeHot() {
   return { data: {} as Record<string, unknown>, invalidate: () => {} };
 }
 
-const KEEP = { keepState: true };
+const KEEP: HotModuleOptions = { keepState: true };
 
 /** A counter whose setter the test can reach, rendering `label:count`. */
 function counter(label: string, writers: Array<(n: number) => void>, extra = 0) {
@@ -25,7 +25,7 @@ function counter(label: string, writers: Array<(n: number) => void>, extra = 0) 
 }
 
 /** As compiled JSX does: the component's value goes into a container built once. */
-function mount(view: () => unknown): HTMLElement {
+function mount(view: () => Children): HTMLElement {
   const host = document.createElement('div');
   createRoot(() =>
     render(() => {
@@ -126,7 +126,7 @@ describe('hot reload keeping state', () => {
   it('keeps a store as a copy of its state', () => {
     const hot = fakeHot();
     let set!: (fn: (s: { items: string[] }) => { items: string[] }) => void;
-    let seen: { items: string[] } | null = null;
+    let seen: { readonly items: readonly string[] } | null = null;
     const list = (label: string) => () => {
       const [state, setState] = createStore({ items: [] as string[] });
       set = setState as never;

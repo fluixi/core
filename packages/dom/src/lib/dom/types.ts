@@ -46,11 +46,11 @@ export interface ComponentProps {
 export type CreateComponent<P = ComponentProps, Return = any> = (props?: P) => Return;
 
 
-export type IComponent<T, U = any, W = any> = ()=>CreateComponent<U, W> & {
-  $COMPONENT: boolean
-}
-
-export type CreateComponentReturnType<T, V> = T extends (props?: infer U) => any ? IComponent<T, V extends never ? U : V, ReturnType<T>> : T extends object ? IComponent<T, V> : never
+/**
+ * What `createComponent` returns: the component's own value, since components are called directly.
+ * `V`, the props, is kept so existing `CreateComponentReturnType<T, U>` uses still compile.
+ */
+export type CreateComponentReturnType<T, V = unknown> = T extends (...args: any[]) => infer R ? R : T;
 
 
 export type DevComponent = <P, V>(Comp: (props?: P) => V, props?: P)=> V

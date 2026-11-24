@@ -139,7 +139,9 @@ export type PropertyValue = any;
 export type AttributeValue = string | number | boolean | null | undefined;
 export type Children =
   | Node
-  | Node[]
+  // Mixed, as written by hand: `insert(el, [header, () => label(), panel])`. Each reactive member
+  // updates on its own.
+  | Children[]
   | string
   | number
   | boolean
@@ -705,7 +707,8 @@ function _createInsertEffect(
 export function insert(
   parent: Node,
   accessor?: Children | Accessor<Children> | null,
-  marker?: Node,
+  /** Insert before this node. `null`: before an anchor of its own, appended (or at the hydration cursor). */
+  marker?: Node | null,
   init?: Node | Node[] | null
 ): (() => Node | Node[] | null) | (Node | Node[] | null) {
   if (_insertDepth > MAX_INSERT_DEPTH) {

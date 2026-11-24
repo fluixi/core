@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseTemplate, TemplateParseError } from './parse-template.js';
 import { serializeNode } from './serialize.js';
+import type { ServerElement, ServerText } from './nodes.js';
 
 /**
  * The parser's contract is a round trip: whatever the compiler serialized must parse back
@@ -65,8 +66,8 @@ describe('tree shape', () => {
     // `_el$.firstChild` / `.nextSibling` is how generated code reaches a hole.
     const root = parseTemplate('<div><span>a</span><em>b</em></div>');
     const first = root.firstChild!;
-    expect((first as { localName: string }).localName).toBe('span');
-    expect((first.nextSibling as { localName: string }).localName).toBe('em');
+    expect((first as ServerElement).localName).toBe('span');
+    expect((first.nextSibling as ServerElement).localName).toBe('em');
     expect(first.parentNode).toBe(root);
   });
 
@@ -78,12 +79,12 @@ describe('tree shape', () => {
   it('does not descend into void elements', () => {
     const root = parseTemplate('<div><br><span>after</span></div>');
     expect(root.childNodes).toHaveLength(2);
-    expect((root.lastChild as { localName: string }).localName).toBe('span');
+    expect((root.lastChild as ServerElement).localName).toBe('span');
   });
 
   it('decodes entities into text rather than leaving them encoded', () => {
     const root = parseTemplate('<p>a &amp; b</p>');
-    expect((root.firstChild as { data: string }).data).toBe('a & b');
+    expect((root.firstChild as ServerText).data).toBe('a & b');
   });
 
   it('treats a valueless attribute as the empty string, as the DOM does', () => {
@@ -103,8 +104,8 @@ describe('hole markers', () => {
   it('keeps text on both sides of a marker separate', () => {
     const root = parseTemplate('<p>a <!----> b</p>');
     expect(root.childNodes).toHaveLength(3);
-    expect((root.firstChild as { data: string }).data).toBe('a ');
-    expect((root.lastChild as { data: string }).data).toBe(' b');
+    expect((root.firstChild as ServerText).data).toBe('a ');
+    expect((root.lastChild as ServerText).data).toBe(' b');
   });
 });
 

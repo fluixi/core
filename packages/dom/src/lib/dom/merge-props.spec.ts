@@ -30,7 +30,7 @@ describe('mergeProps', () => {
   });
 
   it('merges the union of keys across sources', () => {
-    const merged = mergeProps({ a: 1 }, { b: 2 }, { c: 3 });
+    const merged = mergeProps<{ a: number; b: number; c: number }>({ a: 1 }, { b: 2 }, { c: 3 });
     expect({ ...merged }).toEqual({ a: 1, b: 2, c: 3 });
     expect(Object.keys(merged).sort()).toEqual(['a', 'b', 'c']);
     expect('b' in merged).toBe(true);
@@ -41,7 +41,7 @@ describe('mergeProps', () => {
     const live = {} as { x: number };
     Object.defineProperty(live, 'x', { enumerable: true, get: () => v });
     const merged = mergeProps({ x: 0 }, live);
-    const remerged = mergeProps(merged, { y: 9 });
+    const remerged = mergeProps<{ x: number; y: number }>(merged, { y: 9 });
     expect(remerged.x).toBe(1);
     v = 42;
     expect(remerged.x).toBe(42);
@@ -55,7 +55,7 @@ describe('mergeProps', () => {
 
   it('reads a getter once per access: a children getter builds its nodes when read', () => {
     let reads = 0;
-    const merged = mergeProps({ a: 1 }, {
+    const merged = mergeProps<{ a: number; children: string }>({ a: 1 }, {
       get children() {
         reads++;
         return 'built';
@@ -68,7 +68,7 @@ describe('mergeProps', () => {
   it('reads a function source on each access, so a spread built from signals stays live', () => {
     const [count, setCount] = createSignal(1);
     let built = 0;
-    const merged = mergeProps(() => {
+    const merged = mergeProps<Record<string, string>>(() => {
       built += 1;
       return { 'data-count': String(count()) };
     }, { title: 'x' }) as Record<string, string>;

@@ -95,7 +95,7 @@ describe('a hole keeps where it was written', () => {
 
   it('carries the tag onto the accessor hydration wraps', () => {
     const accessor = () => 'x';
-    (accessor as Record<string, unknown>)['__fx_at'] = { line: 11, column: 11 };
+    (accessor as unknown as Record<string, unknown>)['__fx_at'] = { line: 11, column: 11 };
 
     useHydrationKeys();
     hydration.active = true;
@@ -103,7 +103,7 @@ describe('a hole keeps where it was written', () => {
       const out = holeScope(hole(), () => accessor);
       // A different function, or the cursor could not be replaced when it is read.
       expect(out).not.toBe(accessor);
-      expect((out as Record<string, unknown>)['__fx_at']).toEqual({ line: 11, column: 11 });
+      expect((out as unknown as Record<string, unknown>)['__fx_at']).toEqual({ line: 11, column: 11 });
     } finally {
       hydration.active = false;
     }

@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 /**
  * Types only: these assertions fail the typecheck, not the run.
  */

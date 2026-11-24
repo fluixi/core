@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { onCleanup, createEffect, createSignal, flush } from '@fluixi/reactive/signal';
 import { render, Portal, Show, createNativeElement } from '@fluixi/dom';
 
