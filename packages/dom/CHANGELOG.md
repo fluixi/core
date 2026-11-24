@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.114
+
+### Patch Changes
+
+- e7cec8d: A Suspense fallback that is not shown now takes no hydration keys on the server, as in the browser.
+
 ## 1.0.0-alpha.113
 
 ### Minor Changes

@@ -1,5 +1,7 @@
 # @fluixi/head
 
+## 1.0.0-alpha.114
+
 ## 1.0.0-alpha.113
 
 ## 1.0.0-alpha.112

@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/cli",
-  "version": "1.0.0-alpha.113",
+  "version": "1.0.0-alpha.114",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "The `fluixi` command-line tool — dev/build/start (via @fluixi/start) and, later, scaffolding + generators.",

@@ -1,5 +1,12 @@
 # @fluixi/ts-plugin
 
+## 1.0.0-alpha.114
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.114
+- @fluixi/template-parser@1.0.0-alpha.114
+
 ## 1.0.0-alpha.113
 
 ### Patch Changes

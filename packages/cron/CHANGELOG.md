@@ -1,5 +1,11 @@
 # @fluixi/cron
 
+## 1.0.0-alpha.114
+
+### Patch Changes
+
+- @fluixi/jobs@1.0.0-alpha.114
+
 ## 1.0.0-alpha.113
 
 ### Patch Changes

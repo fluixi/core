@@ -1,5 +1,12 @@
 # @fluixi/start
 
+## 1.0.0-alpha.114
+
+### Patch Changes
+
+- @fluixi/compiler@1.0.0-alpha.114
+- @fluixi/vite-plugin@1.0.0-alpha.114
+
 ## 1.0.0-alpha.113
 
 ### Minor Changes
