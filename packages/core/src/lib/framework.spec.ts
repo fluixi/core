@@ -10,15 +10,12 @@
  *  5. Nested layouts: 3-level hierarchy, Outlet, RouteContext.params
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   createRoot,
-  createRenderEffect,
-  createSignal,
   createMemo,
   untrack,
   getOwner,
-  batch,
 } from '@fluixi/reactive/signal';
 
 // Mock @fluixi/dom: identical to router.spec.ts so all imports satisfy
@@ -126,12 +123,6 @@ import { Suspense } from './render/suspense.js';
 import { lazy } from './render/lazy.js';
 
 // Helpers
-
-/** Route component that returns a thunk (required by createLevelState's view()). */
-function makeComponent(label: string) {
-  const fn = vi.fn(() => () => label);
-  return fn;
-}
 
 /**
  * Force-evaluate a lazy memo accessor to establish the reactive chain.
@@ -476,8 +467,7 @@ describe('lazy components', () => {
 
   it('returns undefined from the memo while the module is still loading', () => {
     // Loader that never resolves during this test
-    let resolveLoader!: (m: any) => void;
-    const loader = () => new Promise<any>(r => { resolveLoader = r; });
+    const loader = () => new Promise<any>(() => {});
     const LazyComp = lazy(loader);
 
     let memoResult: any;

@@ -62,7 +62,7 @@ describe('reactive prop on a component does not re-create it', () => {
       export function runs() { return runCount; }
     `);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => mod.App(), document.getElementById('app'));
+    DOM.render(() => mod.App(), document.getElementById('app')!);
     await tick();
     expect(document.querySelector('.v')!.textContent).toBe('1');
     mod.bump(); await tick(); await tick();
@@ -80,7 +80,7 @@ describe('reactive prop on a component does not re-create it', () => {
       export function bump() { setN(n() + 1); }
     `);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => mod.App(), document.getElementById('app'));
+    DOM.render(() => mod.App(), document.getElementById('app')!);
     await tick(); await tick();
     expect(document.querySelectorAll('.modal').length).toBe(1);
     mod.bump(); await tick(); await tick();

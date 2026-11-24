@@ -33,9 +33,7 @@ async function build(src: string, format: 'jsx' | 'html') {
       format,
       propsDestructure: true,
       runtimeModule: '@fluixi/dom',
-      signalModule: '@fluixi/dom',
       controlFlowModule: '@fluixi/dom',
-      importSource: '@fluixi/dom',
     })?.code ?? src;
 
   const file = join(dir, `component${seq++}.js`);
@@ -237,9 +235,7 @@ describe('without the rewrite', () => {
       format: 'jsx',
       propsDestructure: false,
       runtimeModule: '@fluixi/dom',
-      signalModule: '@fluixi/dom',
       controlFlowModule: '@fluixi/dom',
-      importSource: '@fluixi/dom',
     })!.code;
     const file = join(dir, `component${seq++}.js`);
     writeFileSync(file, compiled);

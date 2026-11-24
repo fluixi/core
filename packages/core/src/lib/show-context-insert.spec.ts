@@ -12,7 +12,7 @@ import * as DOM from '@fluixi/dom';
 import * as S from '@fluixi/reactive/signal';
 import * as Fluixi from '@fluixi/core';
 import { ensureIntegration } from './render/component.js';
-import { startClient } from './client/index.js';
+import './client/index.js';
 
 function cjsTransform({ types: t }: any): any {
   return {
@@ -108,7 +108,7 @@ describe('bare control-flow return with sibling-updated context', () => {
   it('re-renders a bare <Show> when a sibling toggles the context signal', async () => {
     const { App } = load(SRC('Show'));
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => (App as any)(), document.getElementById('app'));
+    DOM.render(() => (App as any)(), document.getElementById('app')!);
     await tick();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
 
@@ -121,7 +121,7 @@ describe('bare control-flow return with sibling-updated context', () => {
   it('re-renders a bare <Switch>/<Match> the same way', async () => {
     const { App } = load(SRC('Switch, Match'));
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => (App as any)(), document.getElementById('app'));
+    DOM.render(() => (App as any)(), document.getElementById('app')!);
     await tick();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
 
@@ -134,7 +134,7 @@ describe('bare control-flow return with sibling-updated context', () => {
   it('re-renders when the control-flow return is wrapped in a Fragment', async () => {
     const { App } = load(FRAGMENT_SRC);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => (App as any)(), document.getElementById('app'));
+    DOM.render(() => (App as any)(), document.getElementById('app')!);
     await tick();
     expect(document.querySelector('[role="dialog"]')).toBeNull();
 
@@ -158,7 +158,7 @@ describe('owner wiring in control-flow thunks', () => {
     `;
     const mod = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => mod.App(), document.getElementById('app'));
+    DOM.render(() => mod.App(), document.getElementById('app')!);
     await tick();
     mod.toggle();
     await tick(); await tick();
@@ -175,7 +175,7 @@ describe('owner wiring in control-flow thunks', () => {
     `;
     const { App } = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => App(), document.getElementById('app'));
+    DOM.render(() => App(), document.getElementById('app')!);
     await tick(); await tick();
     const ids = [...document.querySelectorAll('.item')].map((e) => e.getAttribute('data-id')).sort();
     expect(ids).toEqual(['A', 'B']);

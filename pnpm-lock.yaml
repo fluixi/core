@@ -838,6 +838,9 @@ importers:
       '@fluixi/storage':
         specifier: workspace:*
         version: link:../storage
+      '@types/babel__core':
+        specifier: ^7.20.5
+        version: 7.20.5
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4

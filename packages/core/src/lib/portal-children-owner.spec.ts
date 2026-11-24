@@ -84,7 +84,7 @@ describe('context for consumer passed as props.children through Portal/Show', ()
     `;
     const { App } = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => (App as any)(), document.getElementById('app'));
+    DOM.render(() => (App as any)(), document.getElementById('app')!);
     await tick(); await tick();
     const ids = [...document.querySelectorAll('.v')].map((e) => e.getAttribute('data-v')).sort();
     expect(ids).toEqual(['A', 'B']);
@@ -110,7 +110,7 @@ describe('context for consumer passed as props.children through Portal/Show', ()
     `;
     const { App } = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => (App as any)(), document.getElementById('app'));
+    DOM.render(() => (App as any)(), document.getElementById('app')!);
     await tick(); await tick();
     const ids = [...document.querySelectorAll('.v')].map((e) => e.getAttribute('data-v')).sort();
     expect(ids).toEqual(['A', 'B']);

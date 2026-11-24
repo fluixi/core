@@ -82,7 +82,7 @@ const VITE_OPTS = { importSource: '@fluixi/jsx', signalModule: '@fluixi/dom', co
 async function run(opts: any): Promise<string[]> {
   const { App } = load(SRC, opts);
   document.body.innerHTML = '<div id="app"></div>';
-  DOM.render(() => App(), document.getElementById('app'));
+  DOM.render(() => App(), document.getElementById('app')!);
   await tick(); await tick();
   return [...document.querySelectorAll('.v')].map((e) => e.getAttribute('data-v')!).sort();
 }

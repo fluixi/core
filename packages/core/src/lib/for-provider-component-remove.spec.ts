@@ -51,7 +51,7 @@ beforeAll(() => ensureIntegration());
 
 async function mount(mod: any) {
   document.body.innerHTML = '<div id="app"></div>';
-  DOM.render(() => mod.App(), document.getElementById('app'));
+  DOM.render(() => mod.App(), document.getElementById('app')!);
   await tick(); await tick();
 }
 

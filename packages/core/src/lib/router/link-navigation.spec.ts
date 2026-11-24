@@ -84,7 +84,7 @@ describe('useLinkNavigation', () => {
   });
 
   it('works for a click on something nested inside the anchor', () => {
-    const { history, click } = mount('<a class="deep" href="/guide"><span><code>x</code></span></a>');
+    const { history } = mount('<a class="deep" href="/guide"><span><code>x</code></span></a>');
     const a = document.querySelector('.deep code') as HTMLElement;
     a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
 

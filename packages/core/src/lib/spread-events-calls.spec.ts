@@ -80,7 +80,7 @@ describe('#3 spread wires delegated event handlers', () => {
     `;
     const mod = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => mod.App(), document.getElementById('app'));
+    DOM.render(() => mod.App(), document.getElementById('app')!);
     await tick();
     const input = document.querySelector('input')!;
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -100,7 +100,7 @@ describe('#4 call-expression child is reactive', () => {
     `;
     const mod = load(src);
     document.body.innerHTML = '<div id="app"></div>';
-    DOM.render(() => mod.App(), document.getElementById('app'));
+    DOM.render(() => mod.App(), document.getElementById('app')!);
     await tick();
     expect(document.querySelector('.t')!.textContent).toBe('v1');
     mod.bump();
