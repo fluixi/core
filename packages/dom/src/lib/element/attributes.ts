@@ -40,6 +40,21 @@ export type ClassValue =
 // both spread onto the same intrinsic.
 export type RefCallback<T> = { bivarianceHack(el: T): void }['bivarianceHack'];
 
+/**
+ * An event handler on element `T`: `currentTarget` is that element. Bivariant, as `RefCallback`
+ * is, so a handler written for one element still passes through a component that renders another.
+ */
+export type EventHandler<T, E extends Event> = {
+  bivarianceHack(event: E & { currentTarget: T; target: Element }): void;
+}['bivarianceHack'];
+
+type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+/** Input and change events, where `target` is the control itself when `T` is one: `e.target.value`. */
+export type InputEventHandler<T, E extends Event> = {
+  bivarianceHack(event: E & { currentTarget: T; target: T extends FormControl ? T : Element }): void;
+}['bivarianceHack'];
+
 export type HTMLDir = 'ltr' | 'rtl' | 'auto';
 export type HTMLAutocapitalize = 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';
 export type HTMLInputMode = 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
@@ -147,140 +162,140 @@ export interface AriaAttributes {
 export interface DOMAttributes<T = Element> extends AriaAttributes {
   // children?: JSX.Element | (()=>any) | ((arg: any) => any);
   // Clipboard Events
-  onCopy?: (event: ClipboardEvent) => void;
-  onCut?: (event: ClipboardEvent) => void;
-  onPaste?: (event: ClipboardEvent) => void;
+  onCopy?: EventHandler<T, ClipboardEvent>;
+  onCut?: EventHandler<T, ClipboardEvent>;
+  onPaste?: EventHandler<T, ClipboardEvent>;
 
-  onCompositionEnd?: (event: CompositionEvent) => void;
-  onCompositionStart?: (event: CompositionEvent) => void;
-  onCompositionUpdate?: (event: CompositionEvent) => void;
+  onCompositionEnd?: EventHandler<T, CompositionEvent>;
+  onCompositionStart?: EventHandler<T, CompositionEvent>;
+  onCompositionUpdate?: EventHandler<T, CompositionEvent>;
 
-  onFocus?: (event: FocusEvent) => void;
-  onFocusIn?: (event: FocusEvent) => void;
-  onFocusOut?: (event: FocusEvent) => void;
-  onBlur?: (event: FocusEvent) => void;
+  onFocus?: EventHandler<T, FocusEvent>;
+  onFocusIn?: EventHandler<T, FocusEvent>;
+  onFocusOut?: EventHandler<T, FocusEvent>;
+  onBlur?: EventHandler<T, FocusEvent>;
 
   // Form Events
-  onChange?: (event: InputEvent) => void;
-  onInput?: (event: InputEvent) => void;
-  onBeforeInput?: (event: InputEvent) => void;
-  onReset?: (event: Event) => void;
-  onSubmit?: (event: SubmitEvent) => void;
-  onInvalid?: (event: Event) => void;
-  onFormData?: (event: FormDataEvent) => void;
+  onChange?: InputEventHandler<T, InputEvent>;
+  onInput?: InputEventHandler<T, InputEvent>;
+  onBeforeInput?: InputEventHandler<T, InputEvent>;
+  onReset?: EventHandler<T, Event>;
+  onSubmit?: EventHandler<T, SubmitEvent>;
+  onInvalid?: EventHandler<T, Event>;
+  onFormData?: EventHandler<T, FormDataEvent>;
 
   // Image Events
-  onLoad?: (event: Event) => void;
-  onError?: (event: Event) => void;
+  onLoad?: EventHandler<T, Event>;
+  onError?: EventHandler<T, Event>;
 
-  onKeyDown?: (event: KeyboardEvent) => void;
+  onKeyDown?: EventHandler<T, KeyboardEvent>;
   /** @deprecated */
-  onKeyPress?: (event: KeyboardEvent) => void;
-  onKeyUp?: (event: KeyboardEvent) => void;
+  onKeyPress?: EventHandler<T, KeyboardEvent>;
+  onKeyUp?: EventHandler<T, KeyboardEvent>;
 
   // Media Events
-  onAbort?: (event: Event) => void;
-  onCanPlay?: (event: Event) => void;
-  onCanPlayThrough?: (event: Event) => void;
-  onDurationChange?: (event: Event) => void;
-  onEmptied?: (event: Event) => void;
-  onEncrypted?: (event: Event) => void;
-  onEnded?: (event: Event) => void;
-  onLoadedData?: (event: Event) => void;
-  onLoadedMetadata?: (event: Event) => void;
-  onLoadStart?: (event: Event) => void;
-  onPause?: (event: Event) => void;
-  onPlay?: (event: Event) => void;
-  onPlaying?: (event: Event) => void;
-  onProgress?: (event: Event) => void;
-  onRateChange?: (event: Event) => void;
-  onSeeked?: (event: Event) => void;
-  onSeeking?: (event: Event) => void;
-  onStalled?: (event: Event) => void;
-  onSuspend?: (event: Event) => void;
-  onTimeUpdate?: (event: Event) => void;
-  onVolumeChange?: (event: Event) => void;
-  onWaiting?: (event: Event) => void;
-  onCueChange?: (event: Event) => void;
+  onAbort?: EventHandler<T, Event>;
+  onCanPlay?: EventHandler<T, Event>;
+  onCanPlayThrough?: EventHandler<T, Event>;
+  onDurationChange?: InputEventHandler<T, Event>;
+  onEmptied?: EventHandler<T, Event>;
+  onEncrypted?: EventHandler<T, Event>;
+  onEnded?: EventHandler<T, Event>;
+  onLoadedData?: EventHandler<T, Event>;
+  onLoadedMetadata?: EventHandler<T, Event>;
+  onLoadStart?: EventHandler<T, Event>;
+  onPause?: EventHandler<T, Event>;
+  onPlay?: EventHandler<T, Event>;
+  onPlaying?: EventHandler<T, Event>;
+  onProgress?: EventHandler<T, Event>;
+  onRateChange?: EventHandler<T, Event>;
+  onSeeked?: EventHandler<T, Event>;
+  onSeeking?: EventHandler<T, Event>;
+  onStalled?: EventHandler<T, Event>;
+  onSuspend?: EventHandler<T, Event>;
+  onTimeUpdate?: EventHandler<T, Event>;
+  onVolumeChange?: EventHandler<T, Event>;
+  onWaiting?: EventHandler<T, Event>;
+  onCueChange?: EventHandler<T, Event>;
 
-  onClick?: (event: MouseEvent) => void;
-  onAuxClick?: (event: MouseEvent) => void;
-  onContextMenu?: (event: MouseEvent) => void;
-  onDblClick?: (event: MouseEvent) => void;
+  onClick?: EventHandler<T, MouseEvent>;
+  onAuxClick?: EventHandler<T, MouseEvent>;
+  onContextMenu?: EventHandler<T, MouseEvent>;
+  onDblClick?: EventHandler<T, MouseEvent>;
   /** @deprecated use onDblClick */
-  onDoubleClick?: (event: MouseEvent) => void;
-  onDrag?: (event: DragEvent) => void;
-  onDragEnd?: (event: DragEvent) => void;
-  onDragEnter?: (event: DragEvent) => void;
-  onDragExit?: (event: DragEvent) => void;
-  onDragLeave?: (event: DragEvent) => void;
-  onDragOver?: (event: DragEvent) => void;
-  onDragStart?: (event: DragEvent) => void;
-  onDrop?: (event: DragEvent) => void;
-  onMouseDown?: (event: MouseEvent) => void;
-  onMouseEnter?: (event: MouseEvent) => void;
-  onMouseLeave?: (event: MouseEvent) => void;
-  onMouseMove?: (event: MouseEvent) => void;
-  onMouseOut?: (event: MouseEvent) => void;
-  onMouseOver?: (event: MouseEvent) => void;
-  onMouseUp?: (event: MouseEvent) => void;
+  onDoubleClick?: EventHandler<T, MouseEvent>;
+  onDrag?: EventHandler<T, DragEvent>;
+  onDragEnd?: EventHandler<T, DragEvent>;
+  onDragEnter?: EventHandler<T, DragEvent>;
+  onDragExit?: EventHandler<T, DragEvent>;
+  onDragLeave?: EventHandler<T, DragEvent>;
+  onDragOver?: EventHandler<T, DragEvent>;
+  onDragStart?: EventHandler<T, DragEvent>;
+  onDrop?: EventHandler<T, DragEvent>;
+  onMouseDown?: EventHandler<T, MouseEvent>;
+  onMouseEnter?: EventHandler<T, MouseEvent>;
+  onMouseLeave?: EventHandler<T, MouseEvent>;
+  onMouseMove?: EventHandler<T, MouseEvent>;
+  onMouseOut?: EventHandler<T, MouseEvent>;
+  onMouseOver?: EventHandler<T, MouseEvent>;
+  onMouseUp?: EventHandler<T, MouseEvent>;
 
-  onPointerDown?: (event: PointerEvent) => void;
-  onPointerMove?: (event: PointerEvent) => void;
-  onPointerUp?: (event: PointerEvent) => void;
-  onPointerCancel?: (event: PointerEvent) => void;
-  onPointerEnter?: (event: PointerEvent) => void;
-  onPointerLeave?: (event: PointerEvent) => void;
-  onPointerOver?: (event: PointerEvent) => void;
-  onPointerOut?: (event: PointerEvent) => void;
-  onGotPointerCapture?: (event: PointerEvent) => void;
-  onLostPointerCapture?: (event: PointerEvent) => void;
+  onPointerDown?: EventHandler<T, PointerEvent>;
+  onPointerMove?: EventHandler<T, PointerEvent>;
+  onPointerUp?: EventHandler<T, PointerEvent>;
+  onPointerCancel?: EventHandler<T, PointerEvent>;
+  onPointerEnter?: EventHandler<T, PointerEvent>;
+  onPointerLeave?: EventHandler<T, PointerEvent>;
+  onPointerOver?: EventHandler<T, PointerEvent>;
+  onPointerOut?: EventHandler<T, PointerEvent>;
+  onGotPointerCapture?: EventHandler<T, PointerEvent>;
+  onLostPointerCapture?: EventHandler<T, PointerEvent>;
 
   // Selection Events
-  onSelect?: (event: Event) => void;
-  onSelectionChange?: (event: Event) => void;
-  onSelectStart?: (event: Event) => void;
+  onSelect?: EventHandler<T, Event>;
+  onSelectionChange?: InputEventHandler<T, Event>;
+  onSelectStart?: EventHandler<T, Event>;
 
-  onTouchCancel?: (event: TouchEvent) => void;
-  onTouchEnd?: (event: TouchEvent) => void;
-  onTouchMove?: (event: TouchEvent) => void;
-  onTouchStart?: (event: TouchEvent) => void;
+  onTouchCancel?: EventHandler<T, TouchEvent>;
+  onTouchEnd?: EventHandler<T, TouchEvent>;
+  onTouchMove?: EventHandler<T, TouchEvent>;
+  onTouchStart?: EventHandler<T, TouchEvent>;
 
   // UI Events
-  onScroll?: (event: UIEvent) => void;
-  onScrollEnd?: (event: Event) => void;
-  onResize?: (event: UIEvent) => void;
+  onScroll?: EventHandler<T, UIEvent>;
+  onScrollEnd?: EventHandler<T, Event>;
+  onResize?: EventHandler<T, UIEvent>;
 
-  onWheel?: (event: WheelEvent) => void;
+  onWheel?: EventHandler<T, WheelEvent>;
 
-  onAnimationStart?: (event: AnimationEvent) => void;
-  onAnimationEnd?: (event: AnimationEvent) => void;
-  onAnimationIteration?: (event: AnimationEvent) => void;
-  onAnimationCancel?: (event: AnimationEvent) => void;
+  onAnimationStart?: EventHandler<T, AnimationEvent>;
+  onAnimationEnd?: EventHandler<T, AnimationEvent>;
+  onAnimationIteration?: EventHandler<T, AnimationEvent>;
+  onAnimationCancel?: EventHandler<T, AnimationEvent>;
 
-  onTransitionStart?: (event: TransitionEvent) => void;
-  onTransitionRun?: (event: TransitionEvent) => void;
-  onTransitionEnd?: (event: TransitionEvent) => void;
-  onTransitionCancel?: (event: TransitionEvent) => void;
+  onTransitionStart?: EventHandler<T, TransitionEvent>;
+  onTransitionRun?: EventHandler<T, TransitionEvent>;
+  onTransitionEnd?: EventHandler<T, TransitionEvent>;
+  onTransitionCancel?: EventHandler<T, TransitionEvent>;
 
   // Toggle/Popover Events
-  onToggle?: (event: Event) => void;
-  onBeforeToggle?: (event: Event) => void;
+  onToggle?: EventHandler<T, Event>;
+  onBeforeToggle?: EventHandler<T, Event>;
 
-  onFullscreenChange?: (event: Event) => void;
-  onFullscreenError?: (event: Event) => void;
+  onFullscreenChange?: EventHandler<T, Event>;
+  onFullscreenError?: EventHandler<T, Event>;
 
-  onSlotChange?: (event: Event) => void;
+  onSlotChange?: EventHandler<T, Event>;
 
-  onSecurityPolicyViolation?: (event: SecurityPolicyViolationEvent) => void;
+  onSecurityPolicyViolation?: EventHandler<T, SecurityPolicyViolationEvent>;
 
   // Dialog/Popover
-  onClose?: (event: Event) => void;
-  onCancel?: (event: Event) => void;
+  onClose?: EventHandler<T, Event>;
+  onCancel?: EventHandler<T, Event>;
 
   // Context Events (WebGL)
-  onContextLost?: (event: Event) => void;
-  onContextRestored?: (event: Event) => void;
+  onContextLost?: EventHandler<T, Event>;
+  onContextRestored?: EventHandler<T, Event>;
 
   // Custom events (arbitrary on* handlers)
   [key: `on${string}`]: ((event: any) => void) | undefined;
@@ -392,8 +407,8 @@ export interface HTMLAttributes<T = HTMLElement> extends DOMAttributes<T>, Contr
   // Data attributes
   [key: `data-${string}`]: string | number | boolean | undefined;
 
-  // Ref (bivariant callback + base-element object form: see RefCallback)
-  ref?: RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
+  // Ref: a variable the compiler assigns (`ref={el}`), a bivariant callback, or an object.
+  ref?: T | RefCallback<T> | { current: T | null } | { current: HTMLElement | null };
   key?: string | number | ((item: any) => unknown);
 
   children?: DirectiveChildren;
@@ -962,7 +977,7 @@ export interface SVGAttributes<T = SVGElement> extends DOMAttributes<T>, Control
   class?: Reactive<ClassValue>;
   className?: Reactive<ClassValue>;
   style?: Reactive<string | CSSProperties>;
-  ref?: RefCallback<T> | { current: T | null } | { current: SVGElement | null };
+  ref?: T | RefCallback<T> | { current: T | null } | { current: SVGElement | null };
   key?: string | number | ((item: any) => unknown);
   children?: DirectiveChildren;
   tabIndex?: Reactive<number>;
