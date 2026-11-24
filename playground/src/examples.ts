@@ -313,9 +313,17 @@ export function App() {
         code: `// Components from fluixi-ui, styled by a skin. Import a package to load it.
 import '@fluixi-ui/tokens/tokens.css';
 import '@fluixi-ui/styles/all.css';
+// Every skin's stylesheet, so the picker can switch between them.
 import '@fluixi-ui/skin-soft/styles.css';
-import { AppearanceProvider } from '@fluixi-ui/theme';
+import '@fluixi-ui/skin-material/styles.css';
+import '@fluixi-ui/skin-paper/styles.css';
+import '@fluixi-ui/skin-paper/fonts.css';
+import '@fluixi-ui/skin-glass/styles.css';
+import { AppearanceProvider, useAppearance } from '@fluixi-ui/theme';
 import { softSkin } from '@fluixi-ui/skin-soft/skin';
+import { materialSkin } from '@fluixi-ui/skin-material/skin';
+import { paperSkin } from '@fluixi-ui/skin-paper/skin';
+import { glassSkin } from '@fluixi-ui/skin-glass/skin';
 import { Card, CardHeader, CardTitle, CardDescription, CardBody, CardFooter } from '@fluixi-ui/card';
 import { Field, FieldLabel, FieldDescription } from '@fluixi-ui/field';
 import { Input } from '@fluixi-ui/input';
@@ -323,42 +331,66 @@ import { Switch } from '@fluixi-ui/switch';
 import { Badge } from '@fluixi-ui/badge';
 import { Button } from '@fluixi-ui/button';
 import { Stack } from '@fluixi-ui/layout';
+import { ToggleGroup, ToggleGroupItem } from '@fluixi-ui/toggle-group';
+
+const skins = [softSkin, materialSkin, paperSkin, glassSkin];
 
 export function App() {
+  return (
+    <AppearanceProvider skins={skins}>
+      <Stack gap={4}>
+        <SkinPicker />
+        <Profile />
+      </Stack>
+    </AppearanceProvider>
+  );
+}
+
+// Reads the provider, so it renders inside it.
+function SkinPicker() {
+  const { skin } = useAppearance();
+  return (
+    <ToggleGroup type="single" value={skin.value()} onChange={(next) => next && skin.set(next)}>
+      {skin.options.map((id) => (
+        <ToggleGroupItem value={id}>{id}</ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  );
+}
+
+function Profile() {
   const name = $signal('Ada', { name: 'name' });
   const notify = $signal(true, { name: 'notify' });
   const saved = $signal(0, { name: 'saved' });
 
   return (
-    <AppearanceProvider skins={[softSkin]}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Saved {saved()} times</CardDescription>
-        </CardHeader>
-        <CardBody>
-          <Stack gap={4}>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input value={name()} onInput={(e) => name.set(e.currentTarget.value)} />
-              <FieldDescription>Shown to your team as {name() || 'nobody'}.</FieldDescription>
-            </Field>
-            <Stack direction="row" gap={3} align="center">
-              <label>
-                <Stack direction="row" gap={2} align="center">
-                  <Switch checked={notify()} onChange={(on) => notify.set(on)} />
-                  <span>Email me</span>
-                </Stack>
-              </label>
-              <Badge tone={notify() ? 'success' : 'neutral'}>{notify() ? 'On' : 'Off'}</Badge>
-            </Stack>
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile</CardTitle>
+        <CardDescription>Saved {saved()} times</CardDescription>
+      </CardHeader>
+      <CardBody>
+        <Stack gap={4}>
+          <Field>
+            <FieldLabel>Name</FieldLabel>
+            <Input value={name()} onInput={(e) => name.set(e.currentTarget.value)} />
+            <FieldDescription>Shown to your team as {name() || 'nobody'}.</FieldDescription>
+          </Field>
+          <Stack direction="row" gap={3} align="center">
+            <label>
+              <Stack direction="row" gap={2} align="center">
+                <Switch checked={notify()} onChange={(on) => notify.set(on)} />
+                <span>Email me</span>
+              </Stack>
+            </label>
+            <Badge tone={notify() ? 'success' : 'neutral'}>{notify() ? 'On' : 'Off'}</Badge>
           </Stack>
-        </CardBody>
-        <CardFooter>
-          <Button onClick={() => saved.set(saved() + 1)}>Save</Button>
-        </CardFooter>
-      </Card>
-    </AppearanceProvider>
+        </Stack>
+      </CardBody>
+      <CardFooter>
+        <Button onClick={() => saved.set(saved() + 1)}>Save</Button>
+      </CardFooter>
+    </Card>
   );
 }
 `,
