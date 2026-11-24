@@ -312,6 +312,7 @@ export function App() {
         path: 'src/app.tsx',
         code: `// Components from fluixi-ui, styled by a skin. Import a package to load it.
 import '@fluixi-ui/tokens/tokens.css';
+import '@fluixi-ui/styles/all.css';
 import '@fluixi-ui/skin-soft/styles.css';
 import { AppearanceProvider } from '@fluixi-ui/theme';
 import { softSkin } from '@fluixi-ui/skin-soft/skin';
@@ -363,6 +364,65 @@ export function App() {
 `,
       },
       ...scaffold('fluixi-ui · Fluixi'),
+    ],
+  },
+  {
+    name: 'Dialog and menu',
+    entry: 'src/main.tsx',
+    files: [
+      {
+        path: 'src/app.tsx',
+        code: `// No component imports: the compiler finds <Dialog>, <Button> and the rest in fluixi-ui,
+// as it does in an app that lists uiComponents() in its resolve rules.
+import '@fluixi-ui/tokens/tokens.css';
+import '@fluixi-ui/styles/all.css';
+import '@fluixi-ui/skin-soft/styles.css';
+import { softSkin } from '@fluixi-ui/skin-soft/skin';
+
+export function App() {
+  const sort = $signal('Newest', { name: 'sort' });
+  const removed = $signal(0, { name: 'removed' });
+
+  return (
+    <AppearanceProvider skins={[softSkin]}>
+      <Stack direction="row" gap={3} align="center">
+        <DropdownMenu>
+          <DropdownMenuTrigger data-variant="outline">Sort: {sort()}</DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent>
+              <DropdownMenuItem onSelect={() => sort.set('Newest')}>Newest</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => sort.set('Oldest')}>Oldest</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => sort.set('Name')}>Name</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenu>
+
+        <Dialog>
+          <DialogTrigger data-variant="solid" data-tone="danger">Delete</DialogTrigger>
+          <DialogPortal>
+            <DialogOverlay />
+            <DialogContent>
+              <DialogTitle>Delete this item?</DialogTitle>
+              <DialogDescription>It goes to the trash, where you can restore it.</DialogDescription>
+              <Stack direction="row" gap={2} justify="end">
+                <DialogClose data-variant="ghost">Cancel</DialogClose>
+                <DialogClose data-variant="solid" data-tone="danger" onClick={() => removed.set(removed() + 1)}>
+                  Delete
+                </DialogClose>
+              </Stack>
+            </DialogContent>
+          </DialogPortal>
+        </Dialog>
+
+        <Badge>{removed()} deleted</Badge>
+      </Stack>
+    </AppearanceProvider>
+  );
+}
+`,
+      },
+      ...scaffold('Dialog and menu · Fluixi'),
     ],
   },
 ];

@@ -90,6 +90,8 @@ export const UI_MODULES: Record<string, () => Promise<Record<string, unknown>>> 
 export const UI_STYLES: Record<string, () => Promise<unknown>> = {
   // The design tokens every component reads: colours, spacing, radii, type.
   '@fluixi-ui/tokens/tokens.css': () => import('@fluixi-ui/tokens/tokens.css'),
+  // Every component's rules in one stylesheet, as fluixi-ui's setup has it.
+  '@fluixi-ui/styles/all.css': () => import('@fluixi-ui/styles/all.css'),
   '@fluixi-ui/skin-glass/styles.css': () => import('@fluixi-ui/skin-glass/styles.css'),
   '@fluixi-ui/skin-material/styles.css': () => import('@fluixi-ui/skin-material/styles.css'),
   '@fluixi-ui/skin-paper/styles.css': () => import('@fluixi-ui/skin-paper/styles.css'),

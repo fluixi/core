@@ -7,6 +7,11 @@ type BabelStandalone = {
 };
 
 let babel: BabelStandalone | null = null;
+
+/** fluixi-ui components by tag, as an app gets them (`<Button>` with no import); loaded with the compiler. */
+let resolveRules: Promise<readonly [{ components: Record<string, string> }]> | null = null;
+const uiResolve = () =>
+  (resolveRules ??= import('@fluixi-ui/resolver').then(({ uiComponents }) => [uiComponents()] as const));
 let loading: Promise<BabelStandalone> | null = null;
 
 async function ensureBabel(): Promise<BabelStandalone> {
@@ -81,6 +86,7 @@ export async function compileFile(code: string, filename: string): Promise<strin
     controlFlowModule: '@fluixi/dom',
     // The playground is a development tool, so every node can say where it came from.
     sourceLocations: true,
+    resolve: await uiResolve(),
   });
   const source = pre?.code ?? code;
 
@@ -109,6 +115,7 @@ export async function compileFileWithOrigin(code: string, filename: string): Pro
     runtimeModule: '@fluixi/dom',
     controlFlowModule: '@fluixi/dom',
     sourceLocations: true,
+    resolve: await uiResolve(),
   });
   const source = pre?.code ?? code;
 
