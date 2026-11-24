@@ -1,5 +1,29 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- cc64846: Each CDN global file now includes an unminified development copy under `dist/cdn/dev/`, and the `@fluixi/cdn` package ships `*.development.js` files and corresponding map files that point to the development bundles.
+- 57138ea: The new `hydratable` compiler option (default `true`) can be set to `false` for code that is never server rendered to omit hydration markers, producing smaller components and runtime. `@fluixi/start` apps with `ssr: false` get it automatically.
+- 33fd1bc: Components now compile to direct `createComponent` calls instead of a memo wrapper, and each read of `props.children` rebuilds the children; read `props.children` once into a local variable or use `readChildren(() => props.children)`. Development builds warn when a component reads it twice in one turn.
+- 03410e3: A Promise passed as a JSX child now renders nothing and triggers a development-only warning, so load async data with a resource and read it inside `<Suspense>`.
+- cde5492: Every reactive member of a children array now updates on its own, plain functions included, so a change to one member no longer re-runs its siblings or rebuilds components they built, and the server-only element object handling now loads with the jsx-runtime, reducing bundle size.
+- 3d27673: window.Fluixi is now set only in development, and production pages keep the empty `data-fluixi` attribute without a global variable.
+
+### Patch Changes
+
+- 8079702: The CDN files and import-map bundles are now production builds, so development warnings and devtools reporting are omitted and the files are smaller.
+- 5777fdf: The development export now provides a dev build in `dist/dev` with warnings and devtools reporting, while `dist` remains the production build without them.
+- 7e4f13e: `insert` now typechecks mixed arrays of children, its marker argument accepts `null`, and `createComponent` is typed to return the component value instead of a thunk.
+- 62066aa: JSX event handlers now type `e.currentTarget` as the element and, in input and change handlers on an `input`, `select` or `textarea`, `e.target` as that control (elsewhere `Element`), and `ref` can be passed a variable reference.
+- 3871f65: createHotModule now ignores a hot object without a data property, allowing the module to load and run as if hot reload were not present.
+- bcb5dc3: Devtools now shows a hot-reloaded component only once at its declaration instead of three times, and the internal option of `createMemo` now reaches the watcher.
+- cda67d0: `ref={el}` now assigns the element to a let, var, or parameter variable, whereas previously the variable remained undefined.
+- 7ddf98a: `render()` and `hydrate()` now execute the app code only once, and a signal read during app building no longer triggers a full rebuild when it changes.
+- f0bdef1: The Vite plugin now produces production browser builds that omit the runtime server rendering branches, resulting in smaller bundles of about 65 to 165 bytes gzipped.
+- ebbbd07: Elements from a compiled template now belong to the page document when a ref receives them, and custom elements in a template are upgraded immediately.
+
 ## 1.0.0-alpha.112
 
 ## 1.0.0-alpha.111

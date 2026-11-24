@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/server",
-  "version": "1.0.0-alpha.112",
+  "version": "1.0.0-alpha.113",
   "description": "Server-side rendering for Fluixi: request-scoped and framework-agnostic; the head is flushed first, the body sent once its data has loaded.",
   "license": "MIT",
   "author": "Ibrahima Touré",

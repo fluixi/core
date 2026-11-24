@@ -1,6 +1,6 @@
 {
   "name": "create-fluixi",
-  "version": "1.0.0-alpha.112",
+  "version": "1.0.0-alpha.113",
   "license": "MIT",
   "author": "Ibrahima Touré",
   "description": "Scaffold a new Fluixi app — `npm create fluixi <dir>`.",

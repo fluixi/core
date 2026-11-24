@@ -1,5 +1,15 @@
 # @fluixi/cdn
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- cc64846: Each CDN global file now includes an unminified development copy under `dist/cdn/dev/`, and the `@fluixi/cdn` package ships `*.development.js` files and corresponding map files that point to the development bundles.
+
+### Patch Changes
+
+- 8079702: The CDN files and import-map bundles are now production builds, so development warnings and devtools reporting are omitted and the files are smaller.
+
 ## 1.0.0-alpha.112
 
 ## 1.0.0-alpha.111

@@ -1,9 +1,9 @@
 {
   "name": "@fluixi/dom",
-  "version": "1.0.0-alpha.112",
-  "description": "Reactive DOM runtime for Fluixi \u2014 surgical fine-grained updates, SSR and hydration.",
+  "version": "1.0.0-alpha.113",
+  "description": "Reactive DOM runtime for Fluixi — surgical fine-grained updates, SSR and hydration.",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "private": false,
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

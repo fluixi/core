@@ -1,5 +1,24 @@
 # @fluixi/vite-plugin
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- 57138ea: The new `hydratable` compiler option (default `true`) can be set to `false` for code that is never server rendered to omit hydration markers, producing smaller components and runtime. `@fluixi/start` apps with `ssr: false` get it automatically.
+
+### Patch Changes
+
+- f0bdef1: The Vite plugin now produces production browser builds that omit the runtime server rendering branches, resulting in smaller bundles of about 65 to 165 bytes gzipped.
+- ce8c5f6: The Vite plugin now defines `__DEV__` as false in production builds, causing Fluixi development code to be omitted from the bundle while preserving any user-defined `__DEV__` value.
+- Updated dependencies [57138ea]
+- Updated dependencies [a131955]
+- Updated dependencies [33fd1bc]
+- Updated dependencies [cda67d0]
+- Updated dependencies [f0bdef1]
+- Updated dependencies [ce8c5f6]
+  - @fluixi/compiler@1.0.0-alpha.113
+  - @fluixi/devtools@1.0.0-alpha.113
+
 ## 1.0.0-alpha.112
 
 ### Patch Changes

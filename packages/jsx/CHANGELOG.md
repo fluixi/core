@@ -1,5 +1,11 @@
 # @fluixi/jsx-runtime
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- cde5492: Every reactive member of a children array now updates on its own, plain functions included, so a change to one member no longer re-runs its siblings or rebuilds components they built, and the server-only element object handling now loads with the jsx-runtime, reducing bundle size.
+
 ## 1.0.0-alpha.112
 
 ## 1.0.0-alpha.111
