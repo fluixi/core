@@ -378,8 +378,22 @@ export function createEditor(host: HTMLElement, options: EditorOptions): CodeEdi
       model.dispose();
     },
     reset(next) {
-      disposeAll();
-      for (const file of next) modelFor(file.path, file.code);
+      // A path both projects have keeps its model and takes the new text. Disposed and created
+      // again at the same uri, it kept the old text in the TypeScript worker, which went on
+      // reporting the previous project's errors.
+      const notify = changed;
+      changed = null;
+      const keep = new Set(next.map((f) => f.path));
+      for (const [path, model] of models) {
+        if (keep.has(path)) continue;
+        model.dispose();
+        models.delete(path);
+      }
+      for (const file of next) {
+        const model = modelFor(file.path, file.code);
+        if (model.getValue() !== file.code) model.setValue(file.code);
+      }
+      changed = notify;
     },
     onChange(fn) {
       changed = fn;
