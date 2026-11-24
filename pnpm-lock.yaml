@@ -131,9 +131,12 @@ importers:
         specifier: ^2.1.4
         version: 2.2.4(marked@14.1.4)
     devDependencies:
+      '@fluixi-css/core':
+        specifier: 1.0.0-next.8
+        version: 1.0.0-next.8
       '@fluixi-css/vite':
-        specifier: 1.0.0-next.5
-        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
+        specifier: 1.0.0-next.8
+        version: 1.0.0-next.8(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
@@ -1732,9 +1735,12 @@ importers:
         specifier: workspace:*
         version: link:../packages/start
     devDependencies:
+      '@fluixi-css/core':
+        specifier: 1.0.0-next.8
+        version: 1.0.0-next.8
       '@fluixi-css/vite':
-        specifier: 1.0.0-next.5
-        version: 1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
+        specifier: 1.0.0-next.8
+        version: 1.0.0-next.8(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
@@ -3265,10 +3271,10 @@ packages:
   '@fluixi-css/core@1.0.0-next.8':
     resolution: {integrity: sha512-K2jL4iHp5tg+hqcbELN+Ryj+9FHFDvHNYFNGQ+7hoBkJuDyyEtT6ZkbicATi24azaYi1E9LAvQyTlSmpGAETuA==}
 
-  '@fluixi-css/vite@1.0.0-next.5':
-    resolution: {integrity: sha512-Y5ltPZLeWcq2TAKjxmP6PuV/YUd8vGE2F6d/TUGLyFanuACnZvDEUZW8vth6LpEd6xhrdV5PjKi9vrKA+gBlZQ==}
+  '@fluixi-css/vite@1.0.0-next.8':
+    resolution: {integrity: sha512-ryLvHFa77julIsVwB/96DJ4JMyxyIhPlbMK5W5rNmnsu72JqTpC2PEErzN4PMvYnFK+XosGDwR4jzcoZtnxCmA==}
     peerDependencies:
-      '@fluixi-css/core': 1.0.0-next.5
+      '@fluixi-css/core': 1.0.0-next.8
       vite: '>=4'
 
   '@fluixi-ui/accordion@0.2.0-alpha.25':
@@ -9877,7 +9883,7 @@ snapshots:
       lightningcss: 1.33.0
       source-map: 0.7.6
 
-  '@fluixi-css/vite@1.0.0-next.5(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))':
+  '@fluixi-css/vite@1.0.0-next.8(@fluixi-css/core@1.0.0-next.8)(vite@8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0))':
     dependencies:
       '@fluixi-css/core': 1.0.0-next.8
       vite: 8.3.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.100.0)(terser@5.51.2)(yaml@2.9.0)
