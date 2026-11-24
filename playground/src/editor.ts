@@ -57,7 +57,11 @@ function languageFor(path: string): string {
  * reason an editor there would.
  */
 let libs: monaco.IDisposable[] = [];
+let uiTypes: Promise<void> | null = null;
 export function setProjectLibs(files: ProjectFile[]): void {
+  if (!uiTypes && files.some((f) => f.code.includes('@fluixi-ui/'))) {
+    uiTypes = import('./ui-types').then((m) => m.addUiTypes());
+  }
   for (const lib of libs) lib.dispose();
   libs = files
     .filter((f) => f.path.endsWith('.d.ts'))
