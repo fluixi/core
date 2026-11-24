@@ -1,5 +1,17 @@
 # @fluixi/web-components
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- df32661: The `provide` and `consume` methods are removed from class elements; use `provideContext(this, context, value)` and `consumeContext(this, context)` from `@fluixi/web-components` instead. Update any code that calls `element.provide(...)` or `element.consume(...)` to use these functions.
+- e635f72: Server rendering of class elements now resides in `@fluixi/web-components/server`, so browser bundles no longer include it. Apps built with `@fluixi/start` need no change; elsewhere, import `@fluixi/web-components/server` before rendering on the server.
+
+### Patch Changes
+
+- 5777fdf: The development export now provides a dev build in `dist/dev` with warnings and devtools reporting, while `dist` remains the production build without them.
+- c80366f: Element hydration now reaches every copy of the package; when a bundler loads it twice (pre-bundled with the elements, and again for the hydrate entry), server-rendered elements adopt their markup instead of rendering again.
+
 ## 1.0.0-alpha.112
 
 ## 1.0.0-alpha.111

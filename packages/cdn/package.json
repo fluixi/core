@@ -1,8 +1,8 @@
 {
   "name": "@fluixi/cdn",
-  "version": "1.0.0-alpha.112",
+  "version": "1.0.0-alpha.113",
   "license": "MIT",
-  "author": "Ibrahima Tour\u00e9",
+  "author": "Ibrahima Touré",
   "private": false,
   "description": "pre-generated import maps for loading the framework from a CDN: the minimum for writing components by hand, the addition that compiles html`` in the page, and everything",
   "publishConfig": {

@@ -1,5 +1,19 @@
 # @fluixi/compiler
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- 57138ea: The new `hydratable` compiler option (default `true`) can be set to `false` for code that is never server rendered to omit hydration markers, producing smaller components and runtime. `@fluixi/start` apps with `ssr: false` get it automatically.
+- 33fd1bc: Components now compile to direct `createComponent` calls instead of a memo wrapper, and each read of `props.children` rebuilds the children; read `props.children` once into a local variable or use `readChildren(() => props.children)`. Development builds warn when a component reads it twice in one turn.
+
+### Patch Changes
+
+- cda67d0: `ref={el}` now assigns the element to a let, var, or parameter variable, whereas previously the variable remained undefined.
+- f0bdef1: The Vite plugin now produces production browser builds that omit the runtime server rendering branches, resulting in smaller bundles of about 65 to 165 bytes gzipped.
+- ce8c5f6: The Vite plugin now defines `__DEV__` as false in production builds, causing Fluixi development code to be omitted from the bundle while preserving any user-defined `__DEV__` value.
+  - @fluixi/template-parser@1.0.0-alpha.113
+
 ## 1.0.0-alpha.112
 
 ### Patch Changes

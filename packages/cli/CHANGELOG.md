@@ -1,5 +1,15 @@
 # @fluixi/cli
 
+## 1.0.0-alpha.113
+
+### Patch Changes
+
+- Updated dependencies [57138ea]
+- Updated dependencies [e635f72]
+- Updated dependencies [ce8c5f6]
+  - @fluixi/start@1.0.0-alpha.113
+  - @fluixi/ts-plugin@1.0.0-alpha.113
+
 ## 1.0.0-alpha.112
 
 ### Patch Changes

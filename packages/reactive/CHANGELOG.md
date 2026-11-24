@@ -1,5 +1,18 @@
 # @fluixi/reactive
 
+## 1.0.0-alpha.113
+
+### Minor Changes
+
+- cc64846: Each CDN global file now includes an unminified development copy under `dist/cdn/dev/`, and the `@fluixi/cdn` package ships `*.development.js` files and corresponding map files that point to the development bundles.
+
+### Patch Changes
+
+- 8079702: The CDN files and import-map bundles are now production builds, so development warnings and devtools reporting are omitted and the files are smaller.
+- 5777fdf: The development export now provides a dev build in `dist/dev` with warnings and devtools reporting, while `dist` remains the production build without them.
+- bcb5dc3: Devtools now shows a hot-reloaded component only once at its declaration instead of three times, and the internal option of `createMemo` now reaches the watcher.
+- f4e0d8f: Store setter now accepts array paths like `[0].text`, `users[*].name`, `[0][1]`, supports wildcard writes that take the element, optional steps, and writes of three and four steps; `createDebouncedResource(empty string, fetcher)` now lets `setQuery` accept any string.
+
 ## 1.0.0-alpha.112
 
 ## 1.0.0-alpha.111

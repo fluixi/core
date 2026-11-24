@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-load-strategies",
-  "version": "0.0.1-alpha.43",
+  "version": "0.0.1-alpha.44",
   "private": true,
   "type": "module",
   "description": "Component resolution with no imports, plus the load: directive deciding when each component's chunk is fetched.",

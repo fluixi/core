@@ -1,5 +1,12 @@
 # @fluixi/auth
 
+## 1.0.0-alpha.113
+
+### Patch Changes
+
+- Updated dependencies [cc02104]
+  - @fluixi/utils@1.0.0-alpha.113
+
 ## 1.0.0-alpha.112
 
 ### Patch Changes
