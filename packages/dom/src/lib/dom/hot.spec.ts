@@ -18,11 +18,18 @@ const text = (s: string) => () => {
 };
 
 describe('component hot reload', () => {
+  it('builds as without hot reload when the module has no hot data, as under a test runner', () => {
+    const Card = createHotModule({} as never, 'no-data.tsx').component('Card', text('card'));
+    const host = document.createElement('div');
+    createRoot(() => render(() => createComponent(Card as never, {}), host));
+    expect(host.textContent).toBe('card');
+  });
+
   it('shows a watcher one node for a hot component, not one per layer of the proxy', () => {
     const Card = createHotModule(fakeHot(), 'shown.tsx').component('Card', text('card'));
     const shown: string[] = [];
     const stop = observeReactiveNodes({
-      created(report) {
+      created(report: { kind: string; internal?: boolean }) {
         if (report.kind === 'memo' && !report.internal) shown.push(report.kind);
       },
     } as never);

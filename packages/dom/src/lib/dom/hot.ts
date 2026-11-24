@@ -95,6 +95,9 @@ type Entry =
  * render, so the server and the browser produce the same structure, and nothing is swapped.
  */
 export function createHotModule(hot: ViteHot | undefined, id: string, options: HotModuleOptions = {}) {
+  // A test runner serves modules with an `import.meta.hot` that has no `data`: nothing outlives a
+  // run there, so it gets what a production build gets.
+  if (hot && !hot.data) hot = undefined;
   const entries = ((hot?.data ?? {}) as { fluixiHot?: Record<string, Entry> }).fluixiHot ?? {};
   if (hot) (hot.data as { fluixiHot?: Record<string, Entry> }).fluixiHot = entries;
   const update = Object.keys(entries).length > 0;
