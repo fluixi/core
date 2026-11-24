@@ -38,6 +38,19 @@ export default defineConfig({
   optimizeDeps: {
     // @babel/standalone is a large prebundle; include the babel plugin too.
     include: ['@babel/standalone'],
+    // The framework stays out of the pre-bundle. fluixi-ui is pre-bundled, and a package left
+    // in would be inlined into its chunks: a second copy of the runtime beside the one the
+    // project imports, with its own owner stack, so devtools placed every component that copy
+    // created at the root of the tree.
+    exclude: [
+      '@fluixi/core',
+      '@fluixi/core/storage',
+      '@fluixi/dom',
+      '@fluixi/dom/attributes',
+      '@fluixi/forms',
+      '@fluixi/reactive',
+      '@fluixi/reactive/signal',
+    ],
   },
   // The playground has real logic worth pinning: linking, resolution, and the source-map
   // composition the devtools cards depend on.
