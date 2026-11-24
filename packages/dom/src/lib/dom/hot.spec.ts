@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { createRoot, createSignal, flush } from '@fluixi/reactive/signal';
+import { createRoot, createSignal, flush, observeReactiveNodes } from '@fluixi/reactive/signal';
 import { createComponent } from './integration.js';
 import { createNativeElement, insert, render } from './runtime.js';
 import { createHotModule } from './hot.js';
@@ -18,6 +18,26 @@ const text = (s: string) => () => {
 };
 
 describe('component hot reload', () => {
+  it('shows a watcher one node for a hot component, not one per layer of the proxy', () => {
+    const Card = createHotModule(fakeHot(), 'shown.tsx').component('Card', text('card'));
+    const shown: string[] = [];
+    const stop = observeReactiveNodes({
+      created(report) {
+        if (report.kind === 'memo' && !report.internal) shown.push(report.kind);
+      },
+    } as never);
+    try {
+      const host = document.createElement('div');
+      createRoot(() => render(() => createComponent(Card as never, {}), host));
+      expect(host.textContent).toBe('card');
+    } finally {
+      stop();
+    }
+    // The component's own memo. The proxy's, and the one `createComponent` made for the proxy,
+    // each drew a second and third `Card`.
+    expect(shown).toHaveLength(1);
+  });
+
   it('swaps a component in place; the parent and a sibling keep their state', () => {
     const hot = fakeHot();
     const Card = createHotModule(hot, 'card.tsx').component('Card', text('old'));

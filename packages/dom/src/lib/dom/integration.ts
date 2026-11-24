@@ -56,11 +56,12 @@ function build<T extends (props?: any) => any, U = any>(Comp: T, props?: U): Cre
   // right here as in production, and the memo is only a node devtools can show, named by the
   // compiler's mark just before this call and holding the props. It reads nothing, so it never
   // runs again.
+  // A hot proxy gets none: it builds its component through here itself, and that one is the node.
   if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && props) warnOnRepeatedChildren(Comp, props);
   const component =
     typeof Comp !== 'function'
       ? Comp
-      : (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment())
+      : (typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && !(Comp as any)[Symbol.for('fluixi.hotProxy')]
         ? untrack(createMemo(() => {
             if (props) reportReactiveProps(props);
             return untrack(() => Comp(props));

@@ -24,6 +24,9 @@ import {
 } from '@fluixi/reactive/signal';
 import { createComponent } from './integration.js';
 
+/** On a hot proxy, which builds its component through `createComponent` itself. */
+export const HOT_PROXY = Symbol.for('fluixi.hotProxy');
+
 /** What dev tooling shares through the global registry. */
 export interface HotRegistry {
   /** Custom elements defined with `defineElement`, by tag, while hot reload runs. */
@@ -131,12 +134,14 @@ export function createHotModule(hot: ViteHot | undefined, id: string, options: H
           // Untracked: the body's own reads must not re-render it whole, only a new implementation.
           const render = () => runWithOwner(scope, () => untrack(() => createComponent(Component as never, props as never)));
           return frames ? build(proxy, keep, instance, render) : render();
-        });
+          // Machinery: the component it builds is the node a watcher shows.
+        }, undefined, { internal: true });
         views.add(view);
         onCleanup(() => views.delete(view));
         return view;
       };
       Object.defineProperty(proxy, 'name', { value: (impl as { name?: string }).name || name });
+      (proxy as unknown as Record<symbol, boolean>)[HOT_PROXY] = true;
       copyStatics(proxy, impl);
       entries[name] = { kind: 'component', proxy, set: (next) => set(next as never), views };
       return proxy as T;

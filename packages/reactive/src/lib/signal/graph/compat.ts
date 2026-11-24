@@ -61,7 +61,7 @@ export type Signal<T> = [get: Accessor<T>, set: Setter<T>];
 export interface SignalOptions<T> {
   equals?: ((a: T, b: T) => boolean) | false;
   name?: string;
-  /** Legacy passthrough flags (ignored by the TC39 core); kept for option compatibility. */
+  /** Framework machinery: a watcher keeps it out of the graph and credits what it makes to its creator. */
   internal?: boolean;
 }
 export interface MemoOptions<T> extends SignalOptions<T> {
@@ -141,7 +141,7 @@ export function createMemo<T>(
   // as reactive, caches it as a component, and freezes it -> updates never apply.
   Object.defineProperty(read, $SIGNAL, { value: true, enumerable: true });
   Object.defineProperty(read, $MEMO, { value: true, enumerable: true });
-  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name });
+  if ((typeof __DEV__ !== 'undefined' ? __DEV__ : isDevelopment()) && isObserved()) reportReactiveNode({ kind: 'memo', node: c, handle: read, name: options?.name, internal: options?.internal });
   // A memo goes when its owner does: unlink it from its sources, or a signal
   // that outlives the list keeps every row it ever had in its observers set.
   // Registered whether or not a watcher is looking; the report itself is not.
