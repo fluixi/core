@@ -14,7 +14,6 @@
 import { Component, ComponentProps, createComponent } from '@fluixi/dom';
 import {
   Accessor,
-  untrack,
   createMemo,
   createResource,
 } from '@fluixi/reactive/signal';
@@ -101,8 +100,10 @@ export function lazy<T extends (...args: any[]) => any>(
     // Fast path: module already loaded (eager preload, or preloaded before hydration).
     // Render straight through: under hydration this consumes the cursor in place.
     if (resolved) {
-      const C = resolved;
-      return fromChunk(untrack(() => C(props)));
+      // Through `createComponent`, as the cold path below: it opens the component's key scope.
+      // Called directly it opened none, so a page the server rendered cold (its first) keyed
+      // everything one scope deeper than the browser did, and no element was claimed by key.
+      return fromChunk(createComponent(resolved, props));
     }
 
     // Cold path: not loaded yet (client-side navigation to a route whose chunk hasn't been
