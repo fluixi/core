@@ -5,6 +5,10 @@ import { fluixi } from '@fluixi/vite-plugin';
 export default defineConfig({
   // monaco-vscode-api's workers are ES modules and cannot be bundled as iife.
   worker: { format: 'es' },
+  // The SSR tab runs the server renderer inside this browser bundle. Left to the plugin, a
+  // production build defines `__FLUIXI_SERVER__` false and strips it: the tab failed with
+  // ".for is not iterable". Undefined, the runtime asks `isServer()` as it renders.
+  define: { __FLUIXI_SERVER__: 'undefined' },
   // prototype.html is the monaco-vscode-api spike. Dev serves it; the production build
   // leaves it out, because those packages reach for node builtins (@vscode/diff imports
   // node:fs/promises) and making that bundle is its own piece of work.
