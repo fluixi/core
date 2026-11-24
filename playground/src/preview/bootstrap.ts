@@ -9,7 +9,7 @@
 // Vite serves this module, so its bare imports are already resolved; importing it from the
 // iframe loads the framework into the iframe.
 import { observeGraph, type ObservedGraph } from '@fluixi/devtools';
-import { createRegistry } from '../modules';
+import { createRegistry, loadInto } from '../modules';
 
 const REGISTRY = Symbol.for('fluixi.playground.registry');
 
@@ -17,6 +17,8 @@ declare global {
   interface Window {
     /** Set by the page before this runs. */
     __fxEntry?: string;
+    /** The bare specifiers the project imports: fluixi-ui packages and stylesheets load here. */
+    __fxPackages?: string[];
     /** The page's source-map tracer: a compiled position, put back in the author's file. */
     __fxOrigin?: (file: string, at: { line: number; column: number }) => { line: number; column: number } | undefined;
     /** How to put the app on the page: client render, or server html then hydrate. */
@@ -46,6 +48,8 @@ async function boot(): Promise<void> {
   });
 
   const registry = createRegistry();
+  // In this realm, so components build their DOM here and stylesheets style this document.
+  await loadInto(registry, window.__fxPackages ?? []);
   const ssr = window.__fxMode === 'ssr';
 
   // In ssr mode the entry's `render(() => <App/>, root)` is caught rather than run: the same

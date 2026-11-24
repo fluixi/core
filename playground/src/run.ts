@@ -62,6 +62,7 @@ function documentFor(project: Project, assets: Map<string, string>): string {
 
 interface PreviewWindow extends Window {
   __fxEntry?: string;
+  __fxPackages?: string[];
   __fxOrigin?: (file: string, at: { line: number; column: number }) => { line: number; column: number } | undefined;
   __fxMode?: RenderMode;
   __fxSsrHtml?: string;
@@ -114,6 +115,7 @@ export async function runProject(
     doc.close();
 
     win.__fxEntry = linked.entryUrl;
+    win.__fxPackages = linked.packages;
     win.__fxMode = mode;
     // A function, not the maps: the iframe is same-origin and the data stays in one place.
     win.__fxOrigin = linked.origin;

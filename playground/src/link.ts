@@ -8,7 +8,7 @@
 // A blob URL has to exist before anything can reference it, so files are linked in dependency
 // order. That leaves import cycles unrepresentable; they are reported rather than half-run.
 import { compileFileWithOrigin, type CompiledFile, type Position } from './compile';
-import { createRegistry } from './modules';
+import { createRegistry, isStylesheet, loadInto } from './modules';
 import type { Project, ProjectFile } from './project';
 
 const SOURCE = /\.(tsx?|jsx?)$/;
@@ -81,6 +81,8 @@ export function orderFiles(files: ProjectFile[], entry: string): { order: string
 
 export interface LinkResult {
   entryUrl: string;
+  /** The bare specifiers the project imports: the preview loads the fluixi-ui ones first. */
+  packages: string[];
   compiled: Map<string, string>;
   /** Non-source files as urls, for the html shell's own `<link>` and `<img>` to point at. */
   assets: Map<string, string>;
@@ -119,6 +121,12 @@ export async function linkProject(
   const shimFor = (specifier: string): string => {
     const existing = shims.get(specifier);
     if (existing) return existing;
+    // A stylesheet has nothing to import: the preview loads it, where it styles the page.
+    if (isStylesheet(specifier)) {
+      const url = track(new Blob(['export default undefined;\n'], { type: 'text/javascript' }));
+      shims.set(specifier, url);
+      return url;
+    }
     const namespace = registry[specifier];
     if (!namespace) {
       throw new Error(
@@ -137,6 +145,8 @@ export async function linkProject(
 
   const moduleUrls = new Map<string, string>();
   const compiled = new Map<string, string>();
+  /** The bare specifiers the project imports, for the preview to load before it runs. */
+  const packages = new Set<string>();
   /** Per file: a position in its compiled output, put back in the author's file. */
   const origins = new Map<string, CompiledFile['origin']>();
   /** What a non-source file resolves to, for `index.html` to point at. */
@@ -171,6 +181,11 @@ export async function linkProject(
     compiled.set(path, code);
     origins.set(path, origin);
 
+    // fluixi-ui packages load on first use: read their exports before the shims name them.
+    const bare = [...code.matchAll(IMPORT_SPECIFIER)].map((m) => m[3]).filter((s) => !isRelative(s));
+    for (const specifier of bare) packages.add(specifier);
+    await loadInto(registry, bare, { styles: false });
+
     const linked = code.replace(IMPORT_SPECIFIER, (whole, lead: string, quote: string, specifier: string) => {
       if (isRelative(specifier)) {
         const target = resolveRelative(path, specifier, files);
@@ -194,6 +209,7 @@ export async function linkProject(
 
   return {
     entryUrl,
+    packages: [...packages],
     compiled,
     assets,
     origin,
