@@ -293,5 +293,18 @@ function hydrateHole<T>(start: Node, produce: () => T): T {
 
 /** Start using hydration keys: called by `hydrate()` and the server renders before they render. */
 export function useHydrationKeys(): void {
-  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope, handOwner, handOwnerTree, holeScope: hydrateHole, resume: runHydrationAt });
+  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope, handOwner, handOwnerTree, holeScope: hydrateHole, resume: runHydrationAt, unkeyed });
+}
+
+/** Run `fn` with keys off for this server render; elsewhere keys follow hydration already. */
+function unkeyed<T>(fn: () => T): T {
+  const context = isServer() ? getRequestContext() : undefined;
+  if (!context || context.hydrationKeys === false) return fn();
+  const previous = context.hydrationKeys;
+  context.hydrationKeys = false;
+  try {
+    return fn();
+  } finally {
+    context.hydrationKeys = previous;
+  }
 }

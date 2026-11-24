@@ -42,6 +42,8 @@ export interface HydrationKeys {
   holeScope<T>(start: Node, produce: () => T): T;
   /** Run `fn` with the cursor at `cursor`. */
   resume<T>(cursor: Node | null, fn: () => T): T;
+  /** Run `fn` taking no keys: rendering on the server, what it builds is never adopted. */
+  unkeyed<T>(fn: () => T): T;
 }
 
 /** The attribute a server render stamps an element's key in. */
@@ -128,7 +130,9 @@ export function runHydrationAt<T>(cursor: Node | null, fn: () => T): T {
  * instantiated Suspense fallback that isn't showing).
  */
 export function runWithoutHydration<T>(fn: () => T): T {
-  if (!hydration.active) return fn();
+  // On the server the same subtree takes no keys either. Keyed there and not in the browser, it
+  // shifted every key after it, and the page hydrated by position alone.
+  if (!hydration.active) return keys ? keys.unkeyed(fn) : fn();
   const prevCursor = hydration.cursor;
   const prevParents = hydration.parents;
   hydration.active = false;
