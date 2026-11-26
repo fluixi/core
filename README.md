@@ -1,157 +1,130 @@
-<div align="center">
-  <a href="https://fluixi.dev" target="_blank" rel="noreferrer">
-    <img src="https://raw.githubusercontent.com/fluixi/assets/main/logos/512x512.png" alt="Fluixi" width="128" height="128" />
+<p align="center">
+  <a href="https://fluixi.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.png" />
+      <img alt="Fluixi: compiler-native reactivity for TypeScript" src=".github/assets/banner-light.png" width="100%" />
+    </picture>
   </a>
+</p>
 
-  <h1>Fluixi Core</h1>
+<p align="center">
+  <a href="https://www.npmjs.com/package/@fluixi/core"><img alt="npm" src="https://img.shields.io/npm/v/@fluixi/core/alpha?color=0f9f87&label=npm" /></a>
+  <a href="https://github.com/fluixi/core/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/fluixi/core/ci.yml?branch=alpha&label=CI" /></a>
+  <img alt="TypeScript strict" src="https://img.shields.io/badge/TypeScript-strict-3178c6" />
+  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d7c0f" /></a>
+</p>
 
-  <p><strong>A compiler-native reactive framework: the compiler knows what's reactive, so you write ordinary TypeScript.</strong></p>
+<p align="center">
+  <a href="https://fluixi.com">Website</a> ·
+  <a href="https://docs.fluixi.com">Docs</a> ·
+  <a href="https://playground.fluixi.com">Playground</a> ·
+  <a href="./examples">Examples</a>
+</p>
 
-  <p>
-    <img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-f97316" />
-    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-22c55e.svg" /></a>
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white" />
-    <img alt="Registry" src="https://img.shields.io/badge/registry-npm-cb3837?logo=npm&logoColor=white" />
-    <img alt="Monorepo" src="https://img.shields.io/badge/monorepo-Nx%20%2B%20pnpm-blue" />
-    <img alt="Reactivity" src="https://img.shields.io/badge/reactivity-fine--grained-ec4899" />
-  </p>
-</div>
+Fluixi is a compiler-native reactive framework. The compiler knows which values are reactive, so you write ordinary TypeScript and the DOM updates exactly where it changed.
 
-> Fluixi is experimental: APIs can change between alpha releases. Pin exact versions.
+> [!NOTE]
+> Fluixi is in alpha. APIs can change between releases, so pin exact versions.
 
----
+## Why Fluixi
 
-## ✨ Overview
+- **Compiler-native.** Reactivity is resolved at build time: no hook rules, no dependency arrays.
+- **Fine-grained.** An update touches the text node or attribute that changed. There is no virtual DOM.
+- **Small.** A counter app ships about 5.3 KB gzip to the browser.
+- **Full-stack.** `@fluixi/start` brings routing, SSR, hydration, API routes and jobs into one app.
 
-**Fluixi Core** is the engine behind **Fluixi**. Its compiler understands reactive values
-as values, resolved by the binding they came from, not by how the name reads, and
-carries that through JSX and `` html`` `` templates, the DOM it generates, SSR, hydration
-and routing as one model. Everything is split into small, independently-publishable
-packages, so you can take the reactivity core alone or the whole framework.
+## A taste
 
-```ts
-import { signal, effect } from '@fluixi/reactive/signal';
+```tsx
+import { signal, memo } from '@fluixi/core';
 
-const count = signal(0);
-effect(() => console.log('count is', count())); // re-runs on every change
-count.set((c) => c + 1);                        // → "count is 1"
+export function Counter() {
+  const count = signal(0);
+  const double = memo(() => count() * 2);
+
+  return (
+    <button onClick={() => count.set(count() + 1)}>
+      {count()} × 2 = {double()}
+    </button>
+  );
+}
 ```
 
-Inside a compiled app, `$signal` is the same primitive without the import.
+The compiler binds `{count()}` and `{double()}` to their text nodes. A click re-runs nothing else.
 
-## 🧩 Packages
-
-**Foundation & rendering**
-
-| Package | Description |
-| --- | --- |
-| [`@fluixi/utils`](packages/utils) | Zero-dependency, strongly-typed utilities: primitives, objects, maths, arrays, color, DOM. |
-| [`@fluixi/reactive`](packages/reactive) | Fine-grained reactivity: signals, memos, effects, stores, and an RxJS-style observable layer. |
-| [`@fluixi/dom`](packages/dom) | Reactive DOM runtime: control-flow, hydration, and the universal SSR string renderer. |
-| [`@fluixi/template-parser`](packages/template-parser) | The `` html`` `` template parser, standalone. |
-
-**JSX & compiler**
-
-| Package | Description |
-| --- | --- |
-| [`@fluixi/jsx`](packages/jsx) | JSX runtime (`jsx` / `jsxs` / `Fragment`) + the `jsxImportSource` for Fluixi JSX. |
-| [`@fluixi/babel-plugin-jsx`](packages/babel) | Babel plugin that compiles JSX into fine-grained reactive DOM calls. |
-| [`@fluixi/compiler`](packages/compiler) | The JSX compiler: host-agnostic IR, codegen backends, and the `"use server"` transform. |
-| [`@fluixi/vite-plugin`](packages/vite-plugin) | The Vite plugin: JSX transform + codegen backend selection. |
-
-**Framework**
-
-| Package | Description |
-| --- | --- |
-| [`@fluixi/core`](packages/core) | The framework: components, lifecycle, control flow, context, router (`router`), client/server entries. |
-| [`@fluixi/router`](packages/router) | Framework-agnostic router core: URL → match tree + navigation (no DOM/reactivity). |
-| [`@fluixi/server`](packages/server) | Server-side rendering: request-scoped, streaming, hydration transport. |
-
-**Meta-framework & tooling**
-
-| Package | Description |
-| --- | --- |
-| [`@fluixi/start`](packages/start) | The meta-framework: zero-config dev/build/start with SSR, file routing, middleware, server functions. |
-| [`@fluixi/cli`](packages/cli) | The `fluixi` CLI: dev/build/start + `fluixi generate`. |
-| [`create-fluixi`](packages/create) | App scaffolder: `npm create fluixi <dir>` (SSR or SPA). |
-| [`@fluixi/ts-plugin`](packages/ts-plugin) | Editor support for `` html`` `` templates: hover, completion, type-checking. |
-| [`@fluixi/head`](packages/head) | Document head and SEO. |
-| [`@fluixi/auth`](packages/auth) · [`@fluixi/session`](packages/session) | Auth bindings and sessions. |
-| [`@fluixi/testing`](packages/testing) · [`@fluixi/devtools`](packages/devtools) | Test helpers and the reactive-graph devtools. |
-
-> The component library lives in the separate
-> [**fluixi-ui**](https://github.com/fluixi/ui) repo, published as `@fluixi-ui/*`.
-
-### Architecture
-
-```
-@fluixi/utils ─► @fluixi/reactive ─► @fluixi/dom
-                                          │
-@fluixi/template-parser ─► @fluixi/compiler ◄──┐      @fluixi/router
-                                 ▲             │           │
-        @fluixi/jsx ─────────────┴ @fluixi/vite-plugin      ▼
-              └──────────────────────────────► fluixi ─► @fluixi/server
-                                                     │              │
-                                                     └──► @fluixi/start ─► @fluixi/cli ─► create-fluixi
-```
-
-## 🚀 Quick start
-
-All `@fluixi/*` packages are on **public npm**: no registry configuration, no token.
+## Quick start
 
 ```sh
-pnpm add @fluixi/core    # the full framework
-# …or just the reactivity core
-pnpm add @fluixi/reactive
+npm create fluixi@alpha my-app
+cd my-app && npm run dev
 ```
 
-### Or scaffold a full-stack app
+To add Fluixi to an existing Vite app:
 
 ```sh
-npm create fluixi my-app   # SSR (file routing + hydration) or SPA — prompted
-cd my-app && pnpm install && pnpm dev
+npm i @fluixi/core
+npm i -D @fluixi/vite-plugin
 ```
 
-## 🛠️ Local development
+## Benchmarks
 
-This is an [Nx](https://nx.dev) + [pnpm](https://pnpm.io) workspace.
+Bundle size of a counter app built with Vite:
 
-```sh
-pnpm install                     # install dependencies
-pnpm nx run-many -t build        # build every package (dependency-ordered)
-pnpm nx run-many -t test         # run unit tests (Vitest)
-pnpm nx run-many -t typecheck    # type-check every package
-```
+| Build | gzip |
+| --- | ---: |
+| Browser only | 5.3 KB |
+| Server-rendered and hydrated | 5.6 KB |
+| As a custom element | 8.5 KB |
 
-Scope to a single package with `pnpm nx <target> @fluixi/<name>`, or to changed code only with `pnpm nx affected -t <target>`.
+Keyed rows, compared with Solid (lower is better):
 
-## 📦 Releasing
+| Scenario | Fluixi | vs Solid |
+| --- | ---: | ---: |
+| Create 1,000 rows | 32.5 ms | +19% |
+| Update one row | 2.6 ms | +4% |
+| Update all rows | 12.5 ms | +0.2% |
+| Create 10,000 rows | 302.6 ms | +9% |
+| Memory after create | 4.1 MB | +22% |
 
-Versioning and publishing are automated with [Changesets](https://github.com/changesets/changesets):
+Each scenario ran 40 times.
 
-```sh
-pnpm changeset                   # describe your change (patch / minor / major)
-git commit -am "feat: …" && git push
-```
+## Packages
 
-On merge, CI opens a **Version Packages** PR. Merging that PR builds and publishes the affected packages to npm.
-
-## 📋 Requirements
-
-| Tool | Version |
+| Package | |
 | --- | --- |
-| **Node.js** | ≥ 20 (CI uses 22) |
-| **pnpm** | ≥ 10 |
-| **TypeScript** | ≥ 5.8 |
+| **Core** | |
+| [`@fluixi/core`](packages/core) | The framework: components, control flow, context, router and JSX in one import. |
+| [`@fluixi/reactive`](packages/reactive) | Signals, memos, effects and stores. No dependencies. |
+| [`@fluixi/dom`](packages/dom) | The DOM runtime: fine-grained updates, server rendering and hydration. |
+| [`@fluixi/compiler`](packages/compiler) | Compiles JSX and `html` templates to direct DOM calls. |
+| **Full-stack** | |
+| [`@fluixi/start`](packages/start) | Dev server, builds and the production SSR server. |
+| [`@fluixi/router`](packages/router) | URL matching and navigation. |
+| [`@fluixi/server`](packages/server) · [`@fluixi/head`](packages/head) | Request-scoped rendering, document head and SEO. |
+| [`@fluixi/api`](packages/api) · [`@fluixi/jobs`](packages/jobs) · [`@fluixi/cron`](packages/cron) | Typed API routes, background jobs and schedules. |
+| [`@fluixi/auth`](packages/auth) · [`@fluixi/oauth2`](packages/oauth2) · [`@fluixi/session`](packages/session) | Sign-in, OAuth2 and OIDC, sessions. |
+| [`@fluixi/realtime`](packages/realtime) · [`@fluixi/storage`](packages/storage) · [`@fluixi/di`](packages/di) | WebSockets, typed storage, dependency injection. |
+| **Rendering anywhere** | |
+| [`@fluixi/web-components`](packages/web-components) | Publish a component as a standard custom element. |
+| [`@fluixi/template-runtime`](packages/template-runtime) · [`@fluixi/cdn`](packages/cdn) | `html` templates without a build step, from a CDN. |
+| **Tooling** | |
+| [`@fluixi/vite-plugin`](packages/vite-plugin) · [`@fluixi/cli`](packages/cli) · [`create-fluixi`](packages/create) | Vite integration, the `fluixi` command, project scaffolding. |
+| [`@fluixi/devtools`](packages/devtools) · [`@fluixi/ts-plugin`](packages/ts-plugin) · [`@fluixi/testing`](packages/testing) | Reactive graph inspector, editor support for templates, test helpers. |
 
-## 🤝 Contributing
+Components live in [fluixi-ui](https://github.com/fluixi/ui), published as `@fluixi-ui/*`.
 
-1. Fork & clone, then run `pnpm install`.
-2. Create a branch and make your change **with tests**.
-3. Run `pnpm nx affected -t build test typecheck`.
-4. Add a changeset: `pnpm changeset`.
-5. Open a pull request.
+## Contributing
 
-## 📄 License
+This is an [Nx](https://nx.dev) and [pnpm](https://pnpm.io) workspace. It needs Node 20 or later and pnpm 10.
 
-[MIT](./LICENSE) © [Fluixi](https://fluixi.dev)
+```sh
+pnpm install
+pnpm nx run-many -t build
+pnpm nx run-many -t test typecheck
+```
+
+Run one package with `pnpm nx <target> @fluixi/<name>`. Add a changeset with `pnpm changeset` before opening a pull request.
+
+## License
+
+[MIT](./LICENSE) © Ibrahima Touré
