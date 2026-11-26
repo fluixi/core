@@ -123,7 +123,7 @@ pnpm nx run-many -t build
 pnpm nx run-many -t test typecheck
 ```
 
-Run one package with `pnpm nx <target> @fluixi/<name>`. Add a changeset with `pnpm changeset` before opening a pull request.
+Run one package with `pnpm nx <target> @fluixi/<name>`. See [CONTRIBUTING.md](./CONTRIBUTING.md) for changesets and pull requests, and [SECURITY.md](./SECURITY.md) to report a vulnerability.
 
 ## License
 

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.fluixi.com
+    about: Guides and API reference.
+  - name: Security vulnerability
+    url: https://github.com/fluixi/core/security/advisories/new
+    about: Report security issues privately.
+  - name: Components (fluixi-ui)
+    url: https://github.com/fluixi/ui/issues
+    about: Issues with @fluixi-ui/* packages.
