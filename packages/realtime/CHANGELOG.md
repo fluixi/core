@@ -1,5 +1,11 @@
 # @fluixi/realtime
 
+## 1.0.0-alpha.115
+
+### Patch Changes
+
+- @fluixi/reactive@1.0.0-alpha.115
+
 ## 1.0.0-alpha.114
 
 ### Patch Changes

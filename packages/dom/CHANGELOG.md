@@ -1,5 +1,11 @@
 # @fluixi/dom
 
+## 1.0.0-alpha.115
+
+### Patch Changes
+
+- 3baaefe: List items that are fragments with a conditional text before a component now keep their server text after hydration.
+
 ## 1.0.0-alpha.114
 
 ### Patch Changes

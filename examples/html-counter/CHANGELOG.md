@@ -1,5 +1,15 @@
 # @fluixi/example-html-counter
 
+## 0.0.1-alpha.59
+
+### Patch Changes
+
+- Updated dependencies [3baaefe]
+  - @fluixi/dom@1.0.0-alpha.115
+  - @fluixi/core@1.0.0-alpha.115
+  - @fluixi/server@1.0.0-alpha.115
+  - @fluixi/reactive@1.0.0-alpha.115
+
 ## 0.0.1-alpha.58
 
 ### Patch Changes
