@@ -293,7 +293,30 @@ function hydrateHole<T>(start: Node, produce: () => T): T {
 
 /** Start using hydration keys: called by `hydrate()` and the server renders before they render. */
 export function useHydrationKeys(): void {
-  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope, handOwner, handOwnerTree, holeScope: hydrateHole, resume: runHydrationAt, unkeyed });
+  installHydrationKeys({ keyed, next: nextHydrationKey, salt: templateSalt, claim: claimKeyed, keep: keepKeyed, scope: openKeyScope, handOwner, handOwnerTree, holeScope: hydrateHole, resume: runHydrationAt, unkeyed, slotStart, slotOrder });
+}
+
+/**
+ * A slot's server content starts right after the member before it. A member built before the
+ * walk reached it, a router <Link> adopting its <a>, can leave the cursor past the slot's text,
+ * which would then go to the next slot.
+ */
+function slotStart(parent: Node, members: Node[]): void {
+  const prev = members[members.length - 1];
+  if (prev && prev.parentNode === parent) hydration.cursor = prev.nextSibling;
+}
+
+/**
+ * A slot that claimed while hydrating put its marker in the DOM, after what it adopted. Left out
+ * of what the reconcile starts from, the markers read as new nodes and all went in before the
+ * first sibling; each slot's insert then moved its content back in front of its marker.
+ */
+function slotOrder(parent: Node, current: Node[], adopted: Set<Node>, slots: { marker: Node; wired?: boolean }[]): Node[] {
+  const before = adopted.size ? current.filter((node) => !adopted.has(node)) : current;
+  const placed = slots.filter((slot) => slot.wired).map((slot) => slot.marker);
+  if (!placed.length) return before;
+  const ours = new Set<Node>([...before, ...placed]);
+  return Array.from(parent.childNodes).filter((node) => ours.has(node));
 }
 
 /** Run `fn` with keys off for this server render; elsewhere keys follow hydration already. */

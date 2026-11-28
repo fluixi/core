@@ -38,6 +38,13 @@ export interface HydrationKeys {
   handOwner(element: Element): void;
   /** The same for every custom element in an adopted template, when its markup names one. */
   handOwnerTree(root: Node, html: string): void;
+  /** Place the cursor where a slot's server content starts: right after the member before it. */
+  slotStart(parent: Node, members: Node[]): void;
+  /**
+   * What an array's reconcile starts from: its server nodes less those its slots adopted, with
+   * the markers the slots placed while claiming.
+   */
+  slotOrder(parent: Node, current: Node[], adopted: Set<Node>, slots: { marker: Node; wired?: boolean }[]): Node[];
   /** `holeScope` while hydrating: the hole's content is built with the cursor placed at it. */
   holeScope<T>(start: Node, produce: () => T): T;
   /** Run `fn` with the cursor at `cursor`. */

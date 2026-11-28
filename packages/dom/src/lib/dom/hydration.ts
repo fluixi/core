@@ -93,7 +93,12 @@ function recordServerContent(el: Element): void {
 
 function hydrateElement(tag: string): Element | null {
   recoverCursor();
-  const c = hydration.cursor;
+  let c = hydration.cursor;
+  // A text the server wrote before this element can belong to a slot that is read after it: in
+  // `<For>{() => <>{sep}<Link/></>}</For>` every item's Link builds its <a> before the slots
+  // run. The element takes the node after the text, and the slot claims the text from there.
+  const next = c?.nextSibling;
+  if (c && c.nodeType === 3 && next && next.nodeType === 1 && (next as Element).tagName.toLowerCase() === tag.toLowerCase()) c = next;
   if (c && c.nodeType === 1 && (c as Element).tagName.toLowerCase() === tag.toLowerCase()) {
     releaseKeyed(c as Element);
     if (VOID_ELEMENTS.has(tag.toLowerCase()) || ownsServerContent(c as Element)) {

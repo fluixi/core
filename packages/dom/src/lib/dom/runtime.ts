@@ -900,12 +900,7 @@ export function insertExpression(
     const keys = hydration.active && currentArray.length && hydrationKeys();
     if (keys) keys.resume(currentArray[0] as Node, flatten);
     else flatten();
-    const reconciled = reconcileArrays(
-      parent,
-      adopted.size ? currentArray.filter((node) => !adopted.has(node)) : currentArray,
-      array,
-      marker,
-    );
+    const reconciled = reconcileArrays(parent, keys ? keys.slotOrder(parent, currentArray, adopted, reactiveSlots) : currentArray, array, marker);
     // Markers are now in the DOM: wire a per-slot reactive insert. insert() sets up a nested
     // render effect that re-inserts the member's content before its marker on change, so a bare
     // control-flow component return (<Show>/<Switch>/<For>) updates in place.
@@ -1037,6 +1032,7 @@ function flattenArray(
               // new content has somewhere to go, then moves past what was adopted, where it
               // sits in a normal render: after its content.
               const here = () => (hydration.cursor && hydration.cursor.parentNode === parent ? hydration.cursor : null);
+              hydrationKeys()?.slotStart(parent, result);
               const start = here();
               parent.insertBefore(slot, start);
               // Returns the disposer, which is also how the slot's nodes are read: called here it
