@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/example-ticket-desk",
-  "version": "0.0.2-alpha.29",
+  "version": "0.0.2-alpha.30",
   "private": true,
   "type": "module",
   "description": "A support desk built on @fluixi/start: dependency injection, request middleware, fetch interceptors, server functions, file API routes, SEO and image handling, with tests asserting each one holds under SSR.",

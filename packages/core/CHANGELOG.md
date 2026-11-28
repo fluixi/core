@@ -1,5 +1,11 @@
 # @fluixi/kettlejs
 
+## 1.0.0-alpha.115
+
+### Patch Changes
+
+- @fluixi/utils@1.0.0-alpha.115
+
 ## 1.0.0-alpha.114
 
 ### Patch Changes

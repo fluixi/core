@@ -1,5 +1,15 @@
 # @fluixi/example-router
 
+## 0.0.5-alpha.115
+
+### Patch Changes
+
+- Updated dependencies [3baaefe]
+  - @fluixi/dom@1.0.0-alpha.115
+  - @fluixi/core@1.0.0-alpha.115
+  - @fluixi/jsx@1.0.0-alpha.115
+  - @fluixi/reactive@1.0.0-alpha.115
+
 ## 0.0.5-alpha.114
 
 ### Patch Changes

@@ -269,6 +269,7 @@
     "fluixi-routes-polyfills-optout",
     "fluixi-worker",
     "fn-error-prod",
+    "for-fragment-hydration",
     "for-reactive-slot-removal",
     "forced-binding-directives",
     "form-action",

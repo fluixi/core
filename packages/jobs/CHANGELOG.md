@@ -1,5 +1,12 @@
 # @fluixi/jobs
 
+## 1.0.0-alpha.115
+
+### Patch Changes
+
+- Updated dependencies [3baaefe]
+  - @fluixi/dom@1.0.0-alpha.115
+
 ## 1.0.0-alpha.114
 
 ### Patch Changes

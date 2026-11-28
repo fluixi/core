@@ -1,6 +1,6 @@
 {
   "name": "@fluixi/reactive",
-  "version": "1.0.0-alpha.114",
+  "version": "1.0.0-alpha.115",
   "description": "implements TC39 Signals proposal with zero runtime dependencies: signals, memos, effects, resources, stores",
   "license": "MIT",
   "author": "Ibrahima Touré",
